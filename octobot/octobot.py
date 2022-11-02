@@ -141,6 +141,37 @@ class OctoBot:
             service_api.create_notification(f"{constants.PROJECT_NAME} {constants.LONG_VERSION} is starting ...",
                                             markdown_format=enums.MarkdownFormat.ITALIC))
         self._init_metadata_run_task = asyncio.create_task(self._store_run_metadata_when_available())
+        # await self._custom()
+
+    async def _custom(self):
+        try:
+            import octobot.api as bot_module_api
+            import tentacles.Services.Interfaces.web_interface_strategy_designer_plugin as strategy_designer_plugin
+            temp_independent_backtesting = bot_module_api.create_independent_backtesting(
+                self.octobot_api.get_edited_config(), None, [])
+            optimizer_config = await bot_module_api.initialize_independent_backtesting_config(temp_independent_backtesting)
+            config = strategy_designer_plugin.StrategyDesignerPlugin.get_strategy_design_config(default_name=None) \
+                .get("strategy_design_optimizer", {}).get("inputs", {})
+            #TODO
+            optimizer = bot_module_api.create_design_strategy_optimizer(
+                trading_api.get_activated_trading_mode(self.octobot_api.get_edited_tentacles_config()),
+                optimizer_config,
+                self.octobot_api.get_edited_tentacles_config(),
+                config)
+            optimizer_ids = await optimizer.get_queued_optimizer_ids()
+            data_files = ["ExchangeBotSnapshotWithHistoryCollector_binance_BTCUSDT_4h.data"]
+            return await optimizer.resume(data_files, optimizer_ids, False,
+                                          start_timestamp=None,
+                                          end_timestamp=None,
+                                          empty_the_queue=False,
+                                          required_idle_cores=1,
+                                          notify_when_complete=True,
+                                          enable_automated_optimization=True,
+                                          automated_optimization_iterations_count=5)
+        except Exception as e:
+            self.logger.exception(e, True, e)
+            print(e)
+
 
     async def _wait_for_run_data_init(self, exchange_managers, timeout):
         for exchange_manager in exchange_managers:

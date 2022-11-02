@@ -335,6 +335,7 @@ def octobot_parser(parser):
                                             "(ie the web interface that handle encryption automatically).",
                         action='store_true')
     parser.add_argument('--identifier', help="OctoBot community identifier.", type=str, nargs=1)
+    parser.add_argument('--custom', help="Custom.", action='store_true')
     parser.add_argument('-o', '--strategy_optimizer', help='Start Octobot strategy optimizer. This mode will make '
                                                            'octobot play backtesting scenarii located in '
                                                            'abstract_strategy_test.py with different timeframes, '

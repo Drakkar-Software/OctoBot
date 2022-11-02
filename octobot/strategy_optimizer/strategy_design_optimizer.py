@@ -60,12 +60,13 @@ class NoMoreRunError(Exception):
 class StrategyDesignOptimizer:
     MAX_OPTIMIZER_RUNS = 100000
     DEFAULT_GENERATIONS_COUNT = 10
-    DEFAULT_SCORING_PARAMETERS = [
-        commons_enums.BacktestingMetadata.PERCENT_GAINS.value,
-        commons_enums.BacktestingMetadata.PERCENT_GAINS.value,
-        commons_enums.BacktestingMetadata.COEFFICIENT_OF_DETERMINATION_MAX_BALANCE.value,
-    ]
+    DEFAULT_RUN_PER_GENERATION = 80
+    DEFAULT_SCORING_PARAMETERS = {
+        commons_enums.BacktestingMetadata.PERCENT_GAINS.value: 1,
+        commons_enums.BacktestingMetadata.COEFFICIENT_OF_DETERMINATION_MAX_BALANCE.value: 1,
+    }
     DEFAULT_MUTATION_PERCENT = 65
+    DEFAULT_MAX_MUTATION_NUMBER_MULTIPLIER = 3
     DEFAULT_CROSSOVER_PERCENT = 15
     SHARED_KEEP_RUNNING_KEY = "keep_running"
     SHARED_RUN_TIMES_KEY = "run_times"
@@ -466,7 +467,9 @@ class StrategyDesignOptimizer:
                      notify_when_complete=False,
                      enable_automated_optimization=False,
                      automated_optimization_iterations_count=None,
-                     relevant_scoring_parameters=None):
+                     run_per_generation=None,
+                     relevant_scoring_parameters=None,
+                     optimize_within_boundaries=False):
         self.empty_the_queue = empty_the_queue
         self.total_nb_runs = await self._get_total_nb_runs(optimizer_ids)
         self.prioritized_optimizer_ids = optimizer_ids
@@ -483,6 +486,7 @@ class StrategyDesignOptimizer:
                 notify_when_complete=notify_when_complete,
                 automated_optimization_iterations_count=automated_optimization_iterations_count,
                 relevant_scoring_parameters=relevant_scoring_parameters,
+                optimize_within_boundaries=optimize_within_boundaries,
             )
         else:
             await self.multi_processed_optimize(
@@ -505,119 +509,273 @@ class StrategyDesignOptimizer:
         required_idle_cores=0,
         notify_when_complete=False,
         automated_optimization_iterations_count=DEFAULT_GENERATIONS_COUNT,
+        run_per_generation=DEFAULT_RUN_PER_GENERATION,
         relevant_scoring_parameters=None,
+        optimize_within_boundaries=False,
     ):
         optimizer_id = optimizer_ids[0]
         relevant_scoring_parameters = relevant_scoring_parameters or self.DEFAULT_SCORING_PARAMETERS
-        generation_run_data = await self._generate_first_generation_run_data(optimizer_id,
-                                                                             automated_optimization_iterations_count)
-        for generation_id in range(automated_optimization_iterations_count):
-            # 1. run current generation
-            await self.multi_processed_optimize(
-                data_files,
-                optimizer_ids=[optimizer_id],
-                randomly_chose_runs=False,
-                start_timestamp=start_timestamp,
-                end_timestamp=end_timestamp,
-                empty_the_queue=False,
-                required_idle_cores=required_idle_cores,
-                notify_when_complete=False,
-                run_data_by_optimizer_id={
-                    optimizer_id: generation_run_data
-                },
-            )
-            # 2. score results (fitness function)
-            current_generation_results = await self._score_current_generation(generation_run_data,
-                                                                              optimizer_id,
-                                                                              relevant_scoring_parameters)
-            # 3. create next generation (crossover and mutation)
-            generation_run_data = self._create_next_generation(
-                current_generation_results,
-                automated_optimization_iterations_count
-            )
+        generation_run_data = await self._generate_first_generation_run_data(optimizer_id, run_per_generation)
+        already_run_index = len(generation_run_data)
+        try:
+            for generation_id in range(automated_optimization_iterations_count):
+                # 1. run current generation
+                await self.multi_processed_optimize(
+                    data_files,
+                    optimizer_ids=[optimizer_id],
+                    randomly_chose_runs=False,
+                    start_timestamp=start_timestamp,
+                    end_timestamp=end_timestamp,
+                    empty_the_queue=False,
+                    required_idle_cores=required_idle_cores,
+                    notify_when_complete=False,
+                    run_data_by_optimizer_id={
+                        optimizer_id: {
+                            index: value
+                            for index, value in generation_run_data.items()
+                            if index < already_run_index
+                        }
+                    },
+                )
+                # 2. score results (fitness function)
+                all_run_results = await self._get_all_finished_run_results(optimizer_id)
+                current_generation_results = await self._score_current_generation(generation_run_data,
+                                                                                  all_run_results,
+                                                                                  relevant_scoring_parameters)
+                formatted_results = "\n".join([
+                    f"{i + 1} - {run_result.result_str()}"
+                    for i, run_result in enumerate(current_generation_results)
+                ])
+                self.logger.info(f"Generation {generation_id + 1} top run results:\n{formatted_results}")
+                # 3. create next generation (crossover and mutation)
+                generation_run_data, already_run_index = await self._create_next_generation(
+                    current_generation_results,
+                    all_run_results,
+                    automated_optimization_iterations_count,
+                    generation_id,
+                    run_per_generation,
+                    optimize_within_boundaries
+                )
+        except NoMoreRunError:
+            # nothing left to optimize
+            pass
+        except Exception as e:
+            self.logger.exception(e, True, "Unexpected error when running optimizer: {e}")
         if notify_when_complete:
             await self._send_optimizer_finished_notification()
 
-    async def _score_current_generation(self, generation_run_data, optimizer_id, relevant_scoring_parameters):
-        # 1. get current generation results from metadata
-        db_identifier = databases.RunDatabasesIdentifier(
-            self.trading_mode, self.optimization_campaign_name,
-            optimizer_id=optimizer_id
-        )
-        async with databases.DBReader.database(db_identifier.get_backtesting_metadata_identifier()) as reader:
-            full_run_data = await reader.read()
-        run_results = []
+    async def _score_current_generation(self, generation_run_data, all_run_results, relevant_scoring_parameters):
         # 2. find results of generation_run_data
-        if full_run_data:
-            for run_data_from_runs in full_run_data.reverse():
-                for to_find_run_data in generation_run_data:
-                    if self._is_using_these_user_inputs(
-                        run_data_from_runs[commons_enums.BacktestingMetadata.USER_INPUTS.value],
-                        to_find_run_data
-                    ):
-                        run_results.append(
-                            RunResult(
-                                run_data_from_runs[commons_enums.BacktestingMetadata.USER_INPUTS.value],
-                                to_find_run_data
-                            )
-                        )
-        if len(run_results) != generation_run_data:
+        run_results = [
+            RunResult(
+                run_data_from_results,
+                run_data
+            )
+            for run_data, run_data_from_results in self._get_from_run_results(generation_run_data, all_run_results)
+        ]
+        if len(run_results) != len(generation_run_data):
             self.logger.warning(f"Different run results than expected: expected {len(generation_run_data)}, "
                                 f"found: {len(run_results)}")
         # 3 compute score
         for run_result in run_results:
             run_result.compute_score(relevant_scoring_parameters)
-        return sorted(run_results, key=lambda r: r.score)
+        return sorted(run_results, key=lambda r: r.score, reverse=True)
+
+    def _get_from_run_results(self, run_data_elements, all_run_results):
+        if all_run_results:
+            yielded_count = 1
+            for run_data_from_runs in reversed(all_run_results):
+                for to_find_run_data in run_data_elements.values():
+                    if self._is_using_these_user_inputs(
+                        run_data_from_runs,
+                        to_find_run_data
+                    ):
+                        yield to_find_run_data, run_data_from_runs
+                        if yielded_count == len(run_data_elements):
+                            return
+                        yielded_count += 1
+
+    async def _get_all_finished_run_results(self, optimizer_id):
+        db_identifier = databases.RunDatabasesIdentifier(
+            self.trading_mode, self.optimization_campaign_name,
+            optimizer_id=optimizer_id
+        )
+        async with databases.DBReader.database(db_identifier.get_backtesting_metadata_identifier()) as reader:
+            return await reader.all(commons_enums.DBTables.METADATA.value)
 
     def _is_using_these_user_inputs(self, full_run_data, to_find_run_data):
         full_run_data_user_inputs = full_run_data[commons_enums.BacktestingMetadata.USER_INPUTS.value]
         for user_input_data in to_find_run_data:
             try:
                 # todo handle user input with object config
-                if full_run_data_user_inputs[user_input_data[self.CONFIG_TENTACLE]] \
+                if full_run_data_user_inputs[user_input_data[self.CONFIG_TENTACLE][0]] \
                    [user_input_data[self.CONFIG_USER_INPUT]] != user_input_data[self.CONFIG_VALUE]:
                     return False
             except KeyError:
                 return False
-        return False
+        return True
 
-    async def _create_next_generation(self, current_generation_results, automated_optimization_iterations_count):
-        crossovers_count = int(automated_optimization_iterations_count * self.DEFAULT_CROSSOVER_PERCENT / 100)
-        mutuations_count = int(automated_optimization_iterations_count * self.DEFAULT_MUTATION_PERCENT / 100)
-        parents_count = automated_optimization_iterations_count - crossovers_count - mutuations_count
-        new_generation = current_generation_results[:parents_count]
+    async def _create_next_generation(
+            self,
+            current_generation_results,
+            all_run_results,
+            automated_optimization_iterations_count,
+            generation_id,
+            run_per_generation,
+            mutate_within_boundaries
+    ):
+        crossovers_count = int(run_per_generation * self.DEFAULT_CROSSOVER_PERCENT / 100)
+        mutations_count = int(run_per_generation * self.DEFAULT_MUTATION_PERCENT / 100)
+        new_generation = []
         current_gen_len = len(current_generation_results)
+        # 0. init ui config
+        for parent in current_generation_results:
+            for ui_element in parent.optimizer_run_data:
+                _, ui_element[self.CONFIG_KEY] = self._get_ui_config(ui_element)
         # 1. crossover
         i = 0
-        while i < crossovers_count + mutuations_count and i < len(current_generation_results) - 1:
+        while i < crossovers_count + mutations_count and i < len(current_generation_results) - 1:
             parent_1 = current_generation_results[i % current_gen_len]
             parent_2 = current_generation_results[(i + 1 + i // current_gen_len) % current_gen_len]
             new_generation.append(self._crossover(parent_1, parent_2))
             i += 1
+        self.logger.info(f"Generated {len(new_generation)} new runs based on top previous runs")
         # 2. mutations
-        start_mutations_index = crossovers_count + parents_count
+        start_mutations_index = crossovers_count
+        if len(new_generation) < crossovers_count + mutations_count:
+            mutations_count = int(len(new_generation) * self.DEFAULT_MUTATION_PERCENT / 100)
+            start_mutations_index = len(new_generation) - mutations_count
+        mutations_count = 0
         for run_data in new_generation[start_mutations_index:]:
-            self._mutate(run_data)
-        # 3. return new generation
-        return {
-            i: run
-            for i, run in enumerate(self.shuffle_and_select_runs(new_generation))
-        }
+            mutations_count += \
+                self._mutate(run_data,
+                             1 - generation_id/automated_optimization_iterations_count,
+                             mutate_within_boundaries)
+        self.logger.info(f"Added mutations to {mutations_count} of the generated runs")
+        # 3. filter invalid configurations according to filters and already run configurations
+        filtered_new_generation = self._filter_generation(new_generation, all_run_results)
+        self.logger.info(f"Filtered already run configurations")
+        if len(filtered_new_generation) == 0:
+            # nothing else to run, stop optimization
+            self.logger.info(f"No more run to generate")
+            raise NoMoreRunError
+        formatted_new_generation = "\n".join([
+             "-" + str(
+                    {
+                        ui[StrategyDesignOptimizer.CONFIG_USER_INPUT]: ui[StrategyDesignOptimizer.CONFIG_VALUE]
+                        for ui in run
+                    }
+                )
+            for run in filtered_new_generation
+        ])
+        self.logger.info(f"Evaluating new generation: {formatted_new_generation}")
+        new_generation = filtered_new_generation
+        # 4. fill with parents to retain the same amounts to compare and mutate in next generation
+        already_run_index = len(new_generation) - 1
+        if len(new_generation) < run_per_generation:
+            missing_elements_count = run_per_generation - len(new_generation)
+            new_generation += [
+                result.optimizer_run_data
+                for result in current_generation_results[:missing_elements_count]
+            ]
+        # 5. return new generation
+        return self.shuffle_and_select_runs(
+            {i: v for i, v in enumerate(new_generation)}
+        ), already_run_index
+
+    def _filter_generation(self, generation, all_run_results):
+        # remove invalid configurations according to user defined filters
+        # remove already run configurations
+        return [
+            element
+            for element in generation
+            if self._is_run_allowed(element) and not self._is_already_run(element, all_run_results)
+        ]
+
+    def _is_already_run(self, element, all_run_results):
+        try:
+            # create temp dict to keep the same interface
+            next(iter(self._get_from_run_results({None: element}, all_run_results)))
+            return True
+        except StopIteration:
+            return False
 
     def _crossover(self, parent_1, parent_2):
-        # TODO average parents taking filters into account
-        pass
+        child_ui_data_elements = []
+        for parent_1_ui_data, parent_2_ui_data in zip(parent_1.optimizer_run_data, parent_2.optimizer_run_data):
+            child_ui_data_element = copy.deepcopy(parent_1_ui_data)
+            ui_config, _ = self._get_ui_config(child_ui_data_element)
+            min_val, _, step = self._get_number_config(ui_config)
+            child_ui_data_element[self.CONFIG_VALUE] = self._get_child_value(
+                parent_1_ui_data,
+                parent_2_ui_data,
+                min_val,
+                step,
+                ui_config
+            )
+            child_ui_data_elements.append(child_ui_data_element)
+        return child_ui_data_elements
 
-    def _mutate(self, run_data):
-        # TODO mutate run_data taking filters into account
-        pass
+    def _mutate(self, run_data, mutation_intensity, mutate_within_boundaries):
+        # the closer to 1 is mutation_intensity, the stronger the mutations
+        max_mutation_probability_percent = 50
+        min_mutation_probability_percent = 10
+        intensity_multiplier = mutation_intensity + (min_mutation_probability_percent / 100)
+        mutation_trigger_threshold = max_mutation_probability_percent / ((100 + min_mutation_probability_percent) / 100)
+        mutated = False
+        for ui_element in run_data:
+            if random.randint(0, 100) <= intensity_multiplier * mutation_trigger_threshold:
+                self._mutate_element(ui_element, mutation_intensity, mutate_within_boundaries)
+                mutated = True
+        return mutated
 
-    async def _generate_first_generation_run_data(self, optimizer_id, automated_optimization_iterations_count):
+    def _mutate_element(self, ui_element, mutation_intensity, mutate_within_boundaries):
+        ui_config, _ = self._get_ui_config(ui_element)
+        ui_type = self._get_config_type(ui_config)
+        if ui_type is ConfigTypes.NUMBER:
+            # mutate numbers
+            min_val, max_val, step = self._get_number_config(ui_config)
+            mutation_max_delta = (max_val - min_val) * self.DEFAULT_MAX_MUTATION_NUMBER_MULTIPLIER * mutation_intensity
+            new_value = ui_element[self.CONFIG_VALUE] + (mutation_max_delta * random.random())
+            if mutate_within_boundaries:
+                if new_value < min_val:
+                    new_value = min_val
+                elif new_value > max_val:
+                    new_value = max_val
+            # apply the right type to the new value
+            mutated_value = type(ui_element[self.CONFIG_VALUE])(new_value)
+            ui_element[self.CONFIG_VALUE] = mutated_value
+
+    def _get_child_value(self, parent_1_ui, parent_2_ui, min_val, step, ui_config):
+        value_1 = parent_1_ui[self.CONFIG_VALUE]
+        value_2 = parent_2_ui[self.CONFIG_VALUE]
+        if type(value_1) != type(value_2):
+            raise TypeError(f"{value_1} and {value_2} have a different type")
+        ui_type = self._get_config_type(ui_config)
+        if ui_type in (ConfigTypes.OPTIONS, ConfigTypes.BOOLEAN):
+            # on options and booleans, don't generate values, use a parent value
+            return value_1 if random.randint(0, 1) == 1 else value_2
+        if ui_type is ConfigTypes.NUMBER:
+            # on numbers, generate a value between parents taking step into account
+            child_value = (value_1 + value_2) / 2
+            # ensure step is taken into account
+            normalized_value = child_value - min_val
+            normalized_mod = normalized_value % step
+            if normalized_mod == 0:
+                return type(value_1)(child_value)
+            # find the closest valid value
+            to_add_val = step - normalized_mod
+            if normalized_mod < step / 2:
+                to_add_val = -to_add_val
+            # apply the right type to the new value
+            return type(value_1)(child_value + to_add_val)
+        raise TypeError(f"unsupported config type: {ui_type}")
+
+    async def _generate_first_generation_run_data(self, optimizer_id, run_per_generation):
         async with databases.DBReader.database(self.run_dbs_identifier.get_optimizer_runs_schedule_identifier()) \
                 as reader:
             run_data = await self._get_run_data_from_db(optimizer_id, reader)
-        return self.shuffle_and_select_runs(run_data[0][self.CONFIG_RUNS],
-                                            select_size=automated_optimization_iterations_count)
+        return self.shuffle_and_select_runs(run_data[0][self.CONFIG_RUNS], select_size=run_per_generation)
 
     async def _send_optimizer_finished_notification(self):
         await services_api.send_notification(
@@ -961,6 +1119,33 @@ class StrategyDesignOptimizer:
                 self.CONFIG_TYPE: self._get_config_type(val)
             }
 
+    def _get_config_key(self, ui_element):
+        # todo check
+        return f"{ui_element[self.CONFIG_TENTACLE][0]}{self.CONFIG_NESTED_TENTACLE_SEPARATOR}" \
+               f"{ui_element[self.CONFIG_USER_INPUT]}"
+
+    def _get_ui_config(self, ui_element):
+        try:
+            # try using the self.CONFIG_KEY value element if ui_element
+            return self.optimizer_config[self.CONFIG_USER_INPUTS][ui_element[self.CONFIG_KEY]], \
+                   ui_element[self.CONFIG_KEY]
+        except KeyError:
+            pass
+        except TypeError:
+            i=1
+        for key, val in self.optimizer_config[self.CONFIG_USER_INPUTS].items():
+            if self._is_user_input_config(val, ui_element):
+                return val, key
+        raise KeyError(ui_element[self.CONFIG_USER_INPUT])
+
+    def _get_number_config(self, ui_config):
+        config_val = ui_config[self.CONFIG_VALUE]
+        return config_val[self.CONFIG_MIN], config_val[self.CONFIG_MAX], config_val[self.CONFIG_STEP]
+
+    def _is_user_input_config(self, ui_config, ui_element):
+        return ui_config[self.CONFIG_USER_INPUT] == ui_element[self.CONFIG_USER_INPUT] and \
+            ui_config[self.CONFIG_TENTACLE] == ui_element[self.CONFIG_TENTACLE][-1]
+
     def _get_config_type(self, value):
         config_values = value[self.CONFIG_VALUE]
         if isinstance(config_values, list):
@@ -1019,19 +1204,35 @@ class RunResult:
         self.full_result = full_result
         self.optimizer_run_data = optimizer_run_data
         self.score = 0
+        self.total_weight = 0
 
     def compute_score(self, relevant_scoring_parameters):
         self.score = 0
-        self.score = numpy.average([
-            self._compute_score(scoring_parameter)
-            for scoring_parameter in relevant_scoring_parameters
-        ])
-
-    def _compute_score(self, scoring_parameter):
         try:
-            return self.full_result[scoring_parameter] * self._get_parameter_normalizer(scoring_parameter)
+            self.score = sum([
+                self._compute_score(scoring_parameter, weight)
+                for scoring_parameter, weight in relevant_scoring_parameters.items()
+            ]) / self.total_weight
+        except ZeroDivisionError:
+            self.score = 0
+
+    def _compute_score(self, scoring_parameter, weight):
+        try:
+            score = self.full_result[scoring_parameter] * self._get_parameter_normalizer(scoring_parameter) * weight
+            self.total_weight += weight
+            return score
         except KeyError:
             return 0
 
     def _get_parameter_normalizer(self, parameter):
         return 0.01 if "%" in parameter else 1
+
+    def __repr__(self):
+        return f"[{self.__class__.__name__}] score: {self.score}, total_weight: {self.total_weight}"
+
+    def result_str(self):
+        user_inputs = {
+            ui[StrategyDesignOptimizer.CONFIG_USER_INPUT]: ui[StrategyDesignOptimizer.CONFIG_VALUE]
+            for ui in self.optimizer_run_data
+        }
+        return f"fitness score: {self.score} from {user_inputs}"
