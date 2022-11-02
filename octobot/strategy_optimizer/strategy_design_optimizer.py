@@ -44,6 +44,7 @@ import octobot_tentacles_manager.api as tentacles_manager_api
 import octobot_tentacles_manager.constants as tentacles_manager_constants
 import octobot_services.api as services_api
 import octobot_services.enums as services_enums
+import octobot_trading.constants as trading_constants
 
 
 class ConfigTypes(enum.Enum):
@@ -66,7 +67,9 @@ class StrategyDesignOptimizer:
         commons_enums.BacktestingMetadata.COEFFICIENT_OF_DETERMINATION_MAX_BALANCE.value: 1,
     }
     DEFAULT_MUTATION_PERCENT = 65
-    DEFAULT_MAX_MUTATION_NUMBER_MULTIPLIER = 3
+    MAX_MUTATION_PROBABILITY_PERCENT = decimal.Decimal(50)
+    MIN_MUTATION_PROBABILITY_PERCENT = decimal.Decimal(10)
+    DEFAULT_MAX_MUTATION_NUMBER_MULTIPLIER = decimal.Decimal(3)
     DEFAULT_CROSSOVER_PERCENT = 15
     SHARED_KEEP_RUNNING_KEY = "keep_running"
     SHARED_RUN_TIMES_KEY = "run_times"
@@ -646,11 +649,10 @@ class StrategyDesignOptimizer:
             mutations_count = int(len(new_generation) * self.DEFAULT_MUTATION_PERCENT / 100)
             start_mutations_index = len(new_generation) - mutations_count
         mutations_count = 0
+        mutation_intensity = decimal.Decimal(str(1 - generation_id/automated_optimization_iterations_count))
         for run_data in new_generation[start_mutations_index:]:
             mutations_count += \
-                self._mutate(run_data,
-                             1 - generation_id/automated_optimization_iterations_count,
-                             mutate_within_boundaries)
+                self._mutate(run_data, mutation_intensity, mutate_within_boundaries)
         self.logger.info(f"Added mutations to {mutations_count} of the generated runs")
         # 3. filter invalid configurations according to filters and already run configurations
         filtered_new_generation = self._filter_generation(new_generation, all_run_results)
@@ -718,10 +720,11 @@ class StrategyDesignOptimizer:
 
     def _mutate(self, run_data, mutation_intensity, mutate_within_boundaries):
         # the closer to 1 is mutation_intensity, the stronger the mutations
-        max_mutation_probability_percent = 50
-        min_mutation_probability_percent = 10
-        intensity_multiplier = mutation_intensity + (min_mutation_probability_percent / 100)
-        mutation_trigger_threshold = max_mutation_probability_percent / ((100 + min_mutation_probability_percent) / 100)
+        intensity_multiplier = \
+            mutation_intensity + (self.MIN_MUTATION_PROBABILITY_PERCENT / trading_constants.ONE_HUNDRED)
+        mutation_trigger_threshold = \
+            self.MAX_MUTATION_PROBABILITY_PERCENT / \
+            ((trading_constants.ONE_HUNDRED + self.MIN_MUTATION_PROBABILITY_PERCENT) / trading_constants.ONE_HUNDRED)
         mutated = False
         for ui_element in run_data:
             if random.randint(0, 100) <= intensity_multiplier * mutation_trigger_threshold:
@@ -735,8 +738,11 @@ class StrategyDesignOptimizer:
         if ui_type is ConfigTypes.NUMBER:
             # mutate numbers
             min_val, max_val, step = self._get_number_config(ui_config)
+            min_val = decimal.Decimal(str(min_val))
+            max_val = decimal.Decimal(str(max_val))
             mutation_max_delta = (max_val - min_val) * self.DEFAULT_MAX_MUTATION_NUMBER_MULTIPLIER * mutation_intensity
-            new_value = ui_element[self.CONFIG_VALUE] + (mutation_max_delta * random.random())
+            new_value = decimal.Decimal(str(ui_element[self.CONFIG_VALUE])) + (mutation_max_delta *
+                                                                               decimal.Decimal(str(random.random())))
             if mutate_within_boundaries:
                 if new_value < min_val:
                     new_value = min_val
@@ -757,15 +763,16 @@ class StrategyDesignOptimizer:
             return value_1 if random.randint(0, 1) == 1 else value_2
         if ui_type is ConfigTypes.NUMBER:
             # on numbers, generate a value between parents taking step into account
-            child_value = (value_1 + value_2) / 2
+            child_value = (decimal.Decimal(str(value_1)) + decimal.Decimal(str(value_2))) / decimal.Decimal(2)
             # ensure step is taken into account
-            normalized_value = child_value - min_val
-            normalized_mod = normalized_value % step
+            normalized_value = child_value - decimal.Decimal(str(min_val))
+            decimal_step = decimal.Decimal(str(step))
+            normalized_mod = normalized_value % decimal_step
             if normalized_mod == 0:
                 return type(value_1)(child_value)
             # find the closest valid value
-            to_add_val = step - normalized_mod
-            if normalized_mod < step / 2:
+            to_add_val = decimal_step - normalized_mod
+            if normalized_mod < decimal_step / decimal.Decimal(2):
                 to_add_val = -to_add_val
             # apply the right type to the new value
             return type(value_1)(child_value + to_add_val)
@@ -1089,13 +1096,11 @@ class StrategyDesignOptimizer:
                     values = config_element[self.CONFIG_VALUE][self.CONFIG_VALUE]
                 if config_element[self.CONFIG_TYPE] is ConfigTypes.NUMBER:
                     config = config_element[self.CONFIG_VALUE][self.CONFIG_VALUE]
-                    addition = 1 if config[self.CONFIG_STEP] > 1 else config[self.CONFIG_STEP]
-                    # Add 1 or step to max to include the max value in generated interval
-                    values = [v.item()
-                              for v in numpy.arange(config[self.CONFIG_MIN],
-                                                    config[self.CONFIG_MAX] + addition,
-                                                    config[self.CONFIG_STEP])
-                              if v.item() <= config[self.CONFIG_MAX]]
+                    values = [v
+                              for v in self._get_all_possible_values(config[self.CONFIG_MIN],
+                                                                     config[self.CONFIG_MAX],
+                                                                     config[self.CONFIG_STEP])
+                              if v <= config[self.CONFIG_MAX]]
             return [
                 {
                     self.CONFIG_USER_INPUT: config_element[self.CONFIG_USER_INPUT],
@@ -1108,6 +1113,17 @@ class StrategyDesignOptimizer:
             ]
         except ZeroDivisionError as e:
             raise ZeroDivisionError("Step value has to be greater than 0") from e
+
+    def _get_all_possible_values(self, start, stop, step):
+        # use custom decimal function for precision instead of numpy.arange
+        d_start = decimal.Decimal(str(start))
+        d_stop = decimal.Decimal(str(stop))
+        d_step = decimal.Decimal(str(step))
+        return_type = int if all(isinstance(e, int) for e in (start, stop, step)) else float
+        current = d_start
+        while current <= d_stop:
+            yield return_type(current)
+            current += d_step
 
     def _get_config_elements(self):
         for key, val in self.optimizer_config[self.CONFIG_USER_INPUTS].items():
