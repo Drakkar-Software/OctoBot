@@ -469,16 +469,18 @@ class StrategyDesignOptimizer:
                      required_idle_cores=0,
                      notify_when_complete=False,
                      enable_automated_optimization=False,
-                     automated_optimization_iterations_count=None,
-                     run_per_generation=None,
-                     relevant_scoring_parameters=None,
-                     optimize_within_boundaries=False):
+                     optimization_iterations_count=None,
+                     optimization_run_per_generations=None,
+                     optimization_within_boundaries=None,
+                     optimization_target_fitness_score=None,
+                     relevant_scoring_parameters=None,):
         self.empty_the_queue = empty_the_queue
         self.total_nb_runs = await self._get_total_nb_runs(optimizer_ids)
         self.prioritized_optimizer_ids = optimizer_ids
         self.enable_automated_optimization = enable_automated_optimization
-        automated_optimization_iterations_count = automated_optimization_iterations_count \
+        automated_optimization_iterations_count = optimization_iterations_count \
             or self.DEFAULT_GENERATIONS_COUNT
+        optimization_run_per_generations = optimization_run_per_generations or self.DEFAULT_RUN_PER_GENERATION
         if self.enable_automated_optimization:
             await self._launch_automated_optimization(
                 data_files,
@@ -488,8 +490,10 @@ class StrategyDesignOptimizer:
                 required_idle_cores=required_idle_cores,
                 notify_when_complete=notify_when_complete,
                 automated_optimization_iterations_count=automated_optimization_iterations_count,
+                run_per_generation=optimization_run_per_generations,
+                optimization_target_fitness_score=optimization_target_fitness_score,
                 relevant_scoring_parameters=relevant_scoring_parameters,
-                optimize_within_boundaries=optimize_within_boundaries,
+                optimize_within_boundaries=optimization_within_boundaries,
             )
         else:
             await self.multi_processed_optimize(
@@ -513,6 +517,7 @@ class StrategyDesignOptimizer:
         notify_when_complete=False,
         automated_optimization_iterations_count=DEFAULT_GENERATIONS_COUNT,
         run_per_generation=DEFAULT_RUN_PER_GENERATION,
+        optimization_target_fitness_score=None,
         relevant_scoring_parameters=None,
         optimize_within_boundaries=False,
     ):
@@ -550,6 +555,7 @@ class StrategyDesignOptimizer:
                     for i, run_result in enumerate(current_generation_results)
                 ])
                 self.logger.info(f"Generation {generation_id + 1} top run results:\n{formatted_results}")
+                self._check_target_fitness(optimization_target_fitness_score, current_generation_results)
                 # 3. create next generation (crossover and mutation)
                 generation_run_data, already_run_index = await self._create_next_generation(
                     current_generation_results,
@@ -564,8 +570,17 @@ class StrategyDesignOptimizer:
             pass
         except Exception as e:
             self.logger.exception(e, True, "Unexpected error when running optimizer: {e}")
+        self.logger.info("Optimizer complete")
         if notify_when_complete:
             await self._send_optimizer_finished_notification()
+
+    def _check_target_fitness(self, target_fitness_score, results):
+        if target_fitness_score is None:
+            return
+        for result in results:
+            if result.score >= target_fitness_score:
+                self.logger.info(f"The target fitness score of {target_fitness_score} has been reached.")
+                raise NoMoreRunError
 
     async def _score_current_generation(self, generation_run_data, all_run_results, relevant_scoring_parameters):
         # 2. find results of generation_run_data
@@ -670,7 +685,7 @@ class StrategyDesignOptimizer:
                 )
             for run in filtered_new_generation
         ])
-        self.logger.info(f"Evaluating new generation: {formatted_new_generation}")
+        self.logger.info(f"Evaluating new generation:\n{formatted_new_generation}")
         new_generation = filtered_new_generation
         # 4. fill with parents to retain the same amounts to compare and mutate in next generation
         already_run_index = len(new_generation) - 1

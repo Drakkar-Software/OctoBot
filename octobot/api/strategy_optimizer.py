@@ -46,7 +46,10 @@ async def generate_and_save_strategy_optimizer_runs(trading_mode, tentacles_setu
 async def resume_design_strategy_optimizer(optimizer, data_files, randomly_chose_runs, start_timestamp, end_timestamp,
                                            required_idle_cores, notify_when_complete=False, optimizer_ids=None,
                                            enable_automated_optimization=False,
-                                           automated_optimization_iterations_count=None):
+                                           automated_optimization_iterations_count=None,
+                                           optimization_within_boundaries=None,
+                                           optimization_run_per_generations=None,
+                                           optimization_target_fitness_score=None):
     empty_the_queue = optimizer_ids is None  # continue till the queue is empty if no optimizer id is specified
     optimizer_ids = optimizer_ids or await optimizer.get_queued_optimizer_ids()
     return await optimizer.resume(data_files, optimizer_ids, randomly_chose_runs,
@@ -56,7 +59,10 @@ async def resume_design_strategy_optimizer(optimizer, data_files, randomly_chose
                                   required_idle_cores=required_idle_cores,
                                   notify_when_complete=notify_when_complete,
                                   enable_automated_optimization=enable_automated_optimization,
-                                  automated_optimization_iterations_count=automated_optimization_iterations_count)
+                                  optimization_iterations_count=automated_optimization_iterations_count,
+                                  optimization_run_per_generations=optimization_run_per_generations,
+                                  optimization_within_boundaries=optimization_within_boundaries,
+                                  optimization_target_fitness_score=optimization_target_fitness_score)
 
 
 def find_optimal_configuration(strategy_optimizer, TAs=None, time_frames=None, risks=None) -> None:
