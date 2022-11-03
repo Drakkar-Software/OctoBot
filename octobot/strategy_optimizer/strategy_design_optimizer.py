@@ -547,6 +547,7 @@ class StrategyDesignOptimizer:
                 )
                 # 2. score results (fitness function)
                 all_run_results = await self._get_all_finished_run_results(optimizer_id)
+                self._format_user_inputs_names(all_run_results)
                 current_generation_results = await self._score_current_generation(generation_run_data,
                                                                                   all_run_results,
                                                                                   relevant_scoring_parameters)
@@ -574,6 +575,12 @@ class StrategyDesignOptimizer:
         if notify_when_complete:
             await self._send_optimizer_finished_notification()
 
+    def _format_user_inputs_names(self, run_results):
+        for run_result in run_results:
+            for tentacle_user_inputs in run_result[commons_enums.BacktestingMetadata.USER_INPUTS.value].values():
+                for key in list(tentacle_user_inputs):
+                    tentacle_user_inputs[key.replace(" ", "_")] = tentacle_user_inputs[key]
+
     def _check_target_fitness(self, target_fitness_score, results):
         if target_fitness_score is None:
             return
@@ -591,9 +598,6 @@ class StrategyDesignOptimizer:
             )
             for run_data, run_data_from_results in self._get_from_run_results(generation_run_data, all_run_results)
         ]
-        if len(run_results) != len(generation_run_data):
-            self.logger.warning(f"Different run results than expected: expected {len(generation_run_data)}, "
-                                f"found: {len(run_results)}")
         # 3 compute score
         for run_result in run_results:
             run_result.compute_score(relevant_scoring_parameters)
