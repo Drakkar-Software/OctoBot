@@ -298,7 +298,7 @@ class StrategyDesignOptimizer:
     async def _read_optimizer_runs_details_and_hashes(self, optimizer_id):
         async with databases.DBReader.database(self.run_dbs_identifier.get_optimizer_runs_schedule_identifier()) \
                 as reader:
-            run_data = await self._get_run_data_from_db(optimizer_id, reader)
+            run_data = await self._get_run_data(optimizer_id, reader)
         try:
             return self._get_optimizer_runs_details_and_hashes(run_data[0][self.CONFIG_RUNS])
         except IndexError:
@@ -450,6 +450,11 @@ class StrategyDesignOptimizer:
     def get_errors_description(self):
         return ""
 
+    async def _get_run_data(self, optimizer_id, reader):
+        if self.runs_schedule:
+            return [self.runs_schedule]
+        return await self._get_run_data_from_db(optimizer_id, reader)
+
     async def _get_run_data_from_db(self, optimizer_id, reader):
         if optimizer_id is None:
             raise RuntimeError("No optimizer id")
@@ -541,7 +546,7 @@ class StrategyDesignOptimizer:
                         optimizer_id: {
                             index: value
                             for index, value in generation_run_data.items()
-                            if index < already_run_index
+                            if index <= already_run_index
                         }
                     },
                 )
@@ -566,6 +571,13 @@ class StrategyDesignOptimizer:
                     run_per_generation,
                     optimize_within_boundaries
                 )
+                # 4. update self.runs_schedule
+                self.runs_schedule = {
+                    self.CONFIG_RUNS: {
+                        index: value
+                        for index, value in generation_run_data.items()
+                    }
+                }
         except NoMoreRunError:
             # nothing left to optimize
             pass
@@ -700,9 +712,7 @@ class StrategyDesignOptimizer:
                 for result in current_generation_results[:missing_elements_count]
             ]
         # 5. return new generation
-        return self.shuffle_and_select_runs(
-            {i: v for i, v in enumerate(new_generation)}
-        ), already_run_index
+        return {i: element for i, element in enumerate(new_generation)}, already_run_index
 
     def _filter_generation(self, generation, all_run_results):
         # remove invalid configurations according to user defined filters
@@ -800,7 +810,7 @@ class StrategyDesignOptimizer:
     async def _generate_first_generation_run_data(self, optimizer_id, run_per_generation):
         async with databases.DBReader.database(self.run_dbs_identifier.get_optimizer_runs_schedule_identifier()) \
                 as reader:
-            run_data = await self._get_run_data_from_db(optimizer_id, reader)
+            run_data = await self._get_run_data(optimizer_id, reader)
         return self.shuffle_and_select_runs(run_data[0][self.CONFIG_RUNS], select_size=run_per_generation)
 
     async def _send_optimizer_finished_notification(self):
