@@ -93,9 +93,12 @@ def _check_tentacles_install_exit():
 
 
 def _get_first_non_imported_profile_tentacles_setup_config(config):
-    return tentacles_manager_api.get_tentacles_setup_config(
-        config.get_non_imported_profiles()[0].get_tentacles_config_path()
-    )
+    try:
+        return tentacles_manager_api.get_tentacles_setup_config(
+            config.get_non_imported_profiles()[0].get_tentacles_config_path()
+        )
+    except IndexError:
+        return None
 
 
 async def update_or_repair_tentacles_if_necessary(selected_profile_tentacles_setup_config, config):
@@ -113,7 +116,8 @@ async def update_or_repair_tentacles_if_necessary(selected_profile_tentacles_set
                            f"This profile might not work properly.")
             # only update tentacles based on local (non imported) profiles tentacles installation version
             local_profile_tentacles_setup_config = _get_first_non_imported_profile_tentacles_setup_config(config)
-    if not tentacles_manager_api.are_tentacles_up_to_date(local_profile_tentacles_setup_config, constants.VERSION):
+    if local_profile_tentacles_setup_config is None or \
+            not tentacles_manager_api.are_tentacles_up_to_date(local_profile_tentacles_setup_config, constants.VERSION):
         logger.info("OctoBot tentacles are not up to date. Updating tentacles...")
         _check_tentacles_install_exit()
         if await install_or_update_tentacles(config):
