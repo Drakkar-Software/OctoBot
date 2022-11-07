@@ -69,7 +69,8 @@ class FitnessParameter:
         normalized_value = raw_value * self._get_parameter_normalizer() * self.weight
         if self.is_ratio_from_max:
             # use ratio if relevant
-            return normalized_value / self.max_ratio_value if self.max_ratio_value else normalized_value
+            return normalized_value / (self.max_ratio_value * self._get_parameter_normalizer()) \
+                if self.max_ratio_value else normalized_value
         return normalized_value
 
     def _get_parameter_normalizer(self):
@@ -1360,6 +1361,7 @@ class RunResult:
     def __init__(self, full_result, optimizer_run_data):
         self.full_result = full_result
         self.optimizer_run_data = optimizer_run_data
+        self.values = {}
         self.score = 0
         self.total_weight = 0
 
@@ -1375,7 +1377,8 @@ class RunResult:
 
     def _compute_score(self, scoring_parameter: FitnessParameter):
         try:
-            score = scoring_parameter.get_normalized_value(self.full_result[scoring_parameter.name])
+            self.values[scoring_parameter.name] = self.full_result[scoring_parameter.name]
+            score = scoring_parameter.get_normalized_value(self.values[scoring_parameter.name])
             self.total_weight += scoring_parameter.weight
             return score
         except KeyError:
@@ -1389,4 +1392,4 @@ class RunResult:
             ui[StrategyDesignOptimizer.CONFIG_USER_INPUT]: ui[StrategyDesignOptimizer.CONFIG_VALUE]
             for ui in self.optimizer_run_data
         }
-        return f"fitness score: {self.score} from {user_inputs}"
+        return f"fitness score: {self.score} ({self.values}) from {user_inputs}"
