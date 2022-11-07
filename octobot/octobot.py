@@ -147,27 +147,32 @@ class OctoBot:
         try:
             import octobot.api as bot_module_api
             import tentacles.Services.Interfaces.web_interface_strategy_designer_plugin as strategy_designer_plugin
+            import octobot_tentacles_manager.api as tentacles_manager_api
             temp_independent_backtesting = bot_module_api.create_independent_backtesting(
                 self.octobot_api.get_edited_config(), None, [])
             optimizer_config = await bot_module_api.initialize_independent_backtesting_config(temp_independent_backtesting)
             config = strategy_designer_plugin.StrategyDesignerPlugin.get_strategy_design_config(default_name=None) \
                 .get("strategy_design_optimizer", {}).get("inputs", {})
-            #TODO
             optimizer = bot_module_api.create_design_strategy_optimizer(
                 trading_api.get_activated_trading_mode(self.octobot_api.get_edited_tentacles_config()),
                 optimizer_config,
                 self.octobot_api.get_edited_tentacles_config(),
                 config)
             optimizer_ids = await optimizer.get_queued_optimizer_ids()
-            data_files = ["ExchangeBotSnapshotWithHistoryCollector_binance_BTCUSDT_4h.data"]
+            data_files = ["ExchangeBotSnapshotWithHistoryCollector_bybit_BTCUSDT_USDT_15m.data"]
+            tentacles_manager_api.import_user_tentacles_config_folder(self.octobot_api.get_edited_tentacles_config())
             return await optimizer.resume(data_files, optimizer_ids, False,
-                                          start_timestamp=None,
-                                          end_timestamp=None,
+                                          start_timestamp=1661990400.0,
+                                          end_timestamp=1667347200.000,
                                           empty_the_queue=False,
-                                          required_idle_cores=1,
+                                          required_idle_cores=0,
                                           notify_when_complete=True,
                                           enable_automated_optimization=True,
-                                          automated_optimization_iterations_count=5)
+                                          optimization_iterations_count=10,
+                                          optimization_run_per_generations=8,
+                                          optimization_initial_optimization_run_count=8,
+                                          optimization_within_boundaries=True,
+                                          optimization_target_fitness_score=None,)
         except Exception as e:
             self.logger.exception(e, True, e)
             print(e)

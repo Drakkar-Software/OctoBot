@@ -58,14 +58,103 @@ class NoMoreRunError(Exception):
     pass
 
 
+class FitnessParameter:
+    def __init__(self, name, weight, is_ratio_from_max):
+        self.name = name
+        self.weight = weight
+        self.is_ratio_from_max = is_ratio_from_max
+        self.max_ratio_value = None
+
+    def get_normalized_value(self, raw_value):
+        normalized_value = raw_value * self._get_parameter_normalizer() * self.weight
+        if self.is_ratio_from_max:
+            # use ratio if relevant
+            return normalized_value / self.max_ratio_value if self.max_ratio_value else normalized_value
+        return normalized_value
+
+    def _get_parameter_normalizer(self):
+        return 0.01 if "%" in self.name else 1
+
+    def update_max_ratio(self, full_result):
+        try:
+            if self.max_ratio_value is None or full_result[self.name] > self.max_ratio_value:
+                self.max_ratio_value = full_result[self.name]
+        except KeyError:
+            pass
+
+
+class OptimizerFilter:
+    def __init__(self, left_operand_key, right_operand_key, left_operand_value, right_operand_value, operator):
+        self.left_operand_key = left_operand_key
+        self.right_operand_key = right_operand_key
+        self.left_operand_value = left_operand_value
+        self.right_operand_value = right_operand_value
+        self.operator = operator
+
+    def is_valid(self):
+        return self.left_operand_value and self.right_operand_value and self.operator
+
+    def load_values(self, values: dict):
+        succeeded = False
+        if self.left_operand_key is not None:
+            try:
+                self.left_operand_value = values[self.left_operand_key]
+                succeeded = True
+            except KeyError:
+                pass
+        if self.right_operand_key is not None:
+            try:
+                self.right_operand_value = values[self.right_operand_key]
+            except KeyError:
+                if not succeeded:
+                    # require at least one value read
+                    raise
+
+    def is_filtered(self):
+        if not self.is_valid():
+            return False
+        try:
+            left_operand = decimal.Decimal(self.left_operand_value)
+        except decimal.InvalidOperation:
+            left_operand = str(self.left_operand_value)
+        try:
+            right_operand = decimal.Decimal(self.right_operand_value)
+        except decimal.InvalidOperation:
+            right_operand = str(self.right_operand_value)
+        return logical_operators.evaluate_condition(left_operand, right_operand, self.operator)
+
+
 class StrategyDesignOptimizer:
     MAX_OPTIMIZER_RUNS = 100000
     DEFAULT_GENERATIONS_COUNT = 10
     DEFAULT_RUN_PER_GENERATION = 80
-    DEFAULT_SCORING_PARAMETERS = {
-        commons_enums.BacktestingMetadata.PERCENT_GAINS.value: 1,
-        commons_enums.BacktestingMetadata.COEFFICIENT_OF_DETERMINATION_MAX_BALANCE.value: 1,
-    }
+    DEFAULT_SCORING_PARAMETERS = [
+        FitnessParameter(commons_enums.BacktestingMetadata.PERCENT_GAINS.value, 1, True),
+        FitnessParameter(commons_enums.BacktestingMetadata.COEFFICIENT_OF_DETERMINATION_MAX_BALANCE.value, 1, False),
+    ]
+    DEFAULT_EXCLUDE_FILTERS = [
+        OptimizerFilter(
+            commons_enums.BacktestingMetadata.TRADES.value,
+            None,
+            None,
+            1,
+            commons_enums.LogicalOperators.LOWER_THAN.value
+        ),
+        OptimizerFilter(
+            commons_enums.BacktestingMetadata.COEFFICIENT_OF_DETERMINATION_MAX_BALANCE.value,
+            None,
+            None,
+            0,
+            commons_enums.LogicalOperators.LOWER_THAN
+        ),
+        OptimizerFilter(
+            commons_enums.BacktestingMetadata.PERCENT_GAINS.value,
+            None,
+            None,
+            0,
+            commons_enums.LogicalOperators.LOWER_THAN
+        ),
+    ]
     DEFAULT_MUTATION_PERCENT = 65
     MAX_MUTATION_PROBABILITY_PERCENT = decimal.Decimal(50)
     MIN_MUTATION_PROBABILITY_PERCENT = decimal.Decimal(10)
@@ -475,15 +564,19 @@ class StrategyDesignOptimizer:
                      notify_when_complete=False,
                      enable_automated_optimization=False,
                      optimization_iterations_count=None,
+                     optimization_initial_optimization_run_count=None,
                      optimization_run_per_generations=None,
                      optimization_within_boundaries=None,
                      optimization_target_fitness_score=None,
-                     relevant_scoring_parameters=None,):
+                     relevant_scoring_parameters=None,
+                     exclude_filters=None,):
         self.empty_the_queue = empty_the_queue
         self.total_nb_runs = await self._get_total_nb_runs(optimizer_ids)
         self.prioritized_optimizer_ids = optimizer_ids
         self.enable_automated_optimization = enable_automated_optimization
         automated_optimization_iterations_count = optimization_iterations_count \
+            or self.DEFAULT_GENERATIONS_COUNT
+        initial_optimization_run_count = optimization_initial_optimization_run_count \
             or self.DEFAULT_GENERATIONS_COUNT
         optimization_run_per_generations = optimization_run_per_generations or self.DEFAULT_RUN_PER_GENERATION
         if self.enable_automated_optimization:
@@ -495,10 +588,12 @@ class StrategyDesignOptimizer:
                 required_idle_cores=required_idle_cores,
                 notify_when_complete=notify_when_complete,
                 automated_optimization_iterations_count=automated_optimization_iterations_count,
+                automated_initial_optimization_run_count=initial_optimization_run_count,
                 run_per_generation=optimization_run_per_generations,
                 optimization_target_fitness_score=optimization_target_fitness_score,
                 relevant_scoring_parameters=relevant_scoring_parameters,
                 optimize_within_boundaries=optimization_within_boundaries,
+                exclude_filters=exclude_filters,
             )
         else:
             await self.multi_processed_optimize(
@@ -521,14 +616,19 @@ class StrategyDesignOptimizer:
         required_idle_cores=0,
         notify_when_complete=False,
         automated_optimization_iterations_count=DEFAULT_GENERATIONS_COUNT,
+        automated_initial_optimization_run_count=DEFAULT_RUN_PER_GENERATION,
         run_per_generation=DEFAULT_RUN_PER_GENERATION,
         optimization_target_fitness_score=None,
         relevant_scoring_parameters=None,
         optimize_within_boundaries=False,
+        exclude_filters=None,
     ):
         optimizer_id = optimizer_ids[0]
         relevant_scoring_parameters = relevant_scoring_parameters or self.DEFAULT_SCORING_PARAMETERS
-        generation_run_data = await self._generate_first_generation_run_data(optimizer_id, run_per_generation)
+        exclude_filters = exclude_filters or self.DEFAULT_EXCLUDE_FILTERS
+        self.logger.info(f"Launching initial generation with a pool of {automated_initial_optimization_run_count} runs")
+        generation_run_data = await self._generate_first_generation_run_data(optimizer_id,
+                                                                             automated_initial_optimization_run_count)
         already_run_index = len(generation_run_data)
         try:
             for generation_id in range(automated_optimization_iterations_count):
@@ -569,7 +669,8 @@ class StrategyDesignOptimizer:
                     automated_optimization_iterations_count,
                     generation_id,
                     run_per_generation,
-                    optimize_within_boundaries
+                    optimize_within_boundaries,
+                    exclude_filters
                 )
                 # 4. update self.runs_schedule
                 self.runs_schedule = {
@@ -602,6 +703,11 @@ class StrategyDesignOptimizer:
                 raise NoMoreRunError
 
     async def _score_current_generation(self, generation_run_data, all_run_results, relevant_scoring_parameters):
+        # 1. update ratio dependent fitness score
+        for fitness_score in relevant_scoring_parameters:
+            if fitness_score.is_ratio_from_max:
+                for run_data, run_data_from_results in self._get_from_run_results(generation_run_data, all_run_results):
+                    fitness_score.update_max_ratio(run_data_from_results)
         # 2. find results of generation_run_data
         run_results = [
             RunResult(
@@ -649,6 +755,13 @@ class StrategyDesignOptimizer:
                 return False
         return True
 
+    def _is_excluded(self, run, exclude_filters):
+        for exclude_filter in exclude_filters:
+            exclude_filter.load_values(run.full_result)
+            if exclude_filter.is_filtered():
+                return True
+        return False
+
     async def _create_next_generation(
             self,
             current_generation_results,
@@ -656,7 +769,8 @@ class StrategyDesignOptimizer:
             automated_optimization_iterations_count,
             generation_id,
             run_per_generation,
-            mutate_within_boundaries
+            mutate_within_boundaries,
+            exclude_filters
     ):
         crossovers_count = int(run_per_generation * self.DEFAULT_CROSSOVER_PERCENT / 100)
         mutations_count = int(run_per_generation * self.DEFAULT_MUTATION_PERCENT / 100)
@@ -667,6 +781,12 @@ class StrategyDesignOptimizer:
             for ui_element in parent.optimizer_run_data:
                 _, ui_element[self.CONFIG_KEY] = self._get_ui_config(ui_element)
         # 1. crossover
+        # TODO
+        parents_from_current_generation_results = [
+            run_result
+            for run_result in current_generation_results
+            if not self._is_excluded(run_result, exclude_filters)
+        ]
         i = 0
         while i < crossovers_count + mutations_count and i < len(current_generation_results) - 1:
             parent_1 = current_generation_results[i % current_gen_len]
@@ -807,11 +927,13 @@ class StrategyDesignOptimizer:
             return type(value_1)(child_value + to_add_val)
         raise TypeError(f"unsupported config type: {ui_type}")
 
-    async def _generate_first_generation_run_data(self, optimizer_id, run_per_generation):
+    async def _generate_first_generation_run_data(self, optimizer_id,
+                                                  automated_initial_optimization_run_count):
         async with databases.DBReader.database(self.run_dbs_identifier.get_optimizer_runs_schedule_identifier()) \
                 as reader:
             run_data = await self._get_run_data(optimizer_id, reader)
-        return self.shuffle_and_select_runs(run_data[0][self.CONFIG_RUNS], select_size=run_per_generation)
+        return self.shuffle_and_select_runs(run_data[0][self.CONFIG_RUNS],
+                                            select_size=automated_initial_optimization_run_count)
 
     async def _send_optimizer_finished_notification(self):
         await services_api.send_notification(
@@ -1081,18 +1203,8 @@ class StrategyDesignOptimizer:
         return True
 
     def _is_filtered(self, run, run_filter_config):
-        left_operand, operator, right_operand = self._parse_filter_entry(run, run_filter_config)
-        if not (left_operand and right_operand):
-            return False
-        try:
-            left_operand = decimal.Decimal(left_operand)
-        except decimal.InvalidOperation:
-            left_operand = str(left_operand)
-        try:
-            right_operand = decimal.Decimal(right_operand)
-        except decimal.InvalidOperation:
-            right_operand = str(right_operand)
-        return logical_operators.evaluate_condition(left_operand, right_operand, operator)
+        operator_filter = self._parse_filter_entry(run, run_filter_config)
+        return operator_filter.is_filtered()
 
     def _parse_filter_entry(self, run, run_filter_config):
         user_input_left_operand_key = run_filter_config["user_input_left_operand"][self.CONFIG_VALUE]
@@ -1107,7 +1219,7 @@ class StrategyDesignOptimizer:
             if user_input[self.CONFIG_KEY] == user_input_right_operand_key:
                 user_input_right_operand = user_input[self.CONFIG_VALUE]
         right_operand = user_input_right_operand if text_right_operand in ("null", "") else text_right_operand
-        return left_operand, operator, right_operand
+        return OptimizerFilter(user_input_left_operand_key, user_input_right_operand_key, left_operand, right_operand, operator)
 
     def _get_config_possible_iterations(self):
         return [
@@ -1255,22 +1367,19 @@ class RunResult:
         self.score = 0
         try:
             self.score = sum([
-                self._compute_score(scoring_parameter, weight)
-                for scoring_parameter, weight in relevant_scoring_parameters.items()
+                self._compute_score(scoring_parameter)
+                for scoring_parameter in relevant_scoring_parameters
             ]) / self.total_weight
         except ZeroDivisionError:
             self.score = 0
 
-    def _compute_score(self, scoring_parameter, weight):
+    def _compute_score(self, scoring_parameter: FitnessParameter):
         try:
-            score = self.full_result[scoring_parameter] * self._get_parameter_normalizer(scoring_parameter) * weight
-            self.total_weight += weight
+            score = scoring_parameter.get_normalized_value(self.full_result[scoring_parameter.name])
+            self.total_weight += scoring_parameter.weight
             return score
         except KeyError:
             return 0
-
-    def _get_parameter_normalizer(self, parameter):
-        return 0.01 if "%" in parameter else 1
 
     def __repr__(self):
         return f"[{self.__class__.__name__}] score: {self.score}, total_weight: {self.total_weight}"

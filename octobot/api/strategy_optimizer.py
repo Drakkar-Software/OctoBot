@@ -48,6 +48,7 @@ async def resume_design_strategy_optimizer(optimizer, data_files, randomly_chose
                                            enable_automated_optimization=False,
                                            automated_optimization_iterations_count=None,
                                            optimization_within_boundaries=None,
+                                           optimization_initial_optimization_run_count=None,
                                            optimization_run_per_generations=None,
                                            optimization_target_fitness_score=None):
     empty_the_queue = optimizer_ids is None  # continue till the queue is empty if no optimizer id is specified
@@ -60,6 +61,7 @@ async def resume_design_strategy_optimizer(optimizer, data_files, randomly_chose
                                   notify_when_complete=notify_when_complete,
                                   enable_automated_optimization=enable_automated_optimization,
                                   optimization_iterations_count=automated_optimization_iterations_count,
+                                  optimization_initial_optimization_run_count=optimization_initial_optimization_run_count,
                                   optimization_run_per_generations=optimization_run_per_generations,
                                   optimization_within_boundaries=optimization_within_boundaries,
                                   optimization_target_fitness_score=optimization_target_fitness_score)
