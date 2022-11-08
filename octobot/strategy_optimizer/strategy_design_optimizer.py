@@ -29,6 +29,7 @@ import numpy
 import logging
 import ctypes
 import random
+import math
 
 import octobot_commons.optimization_campaign as optimization_campaign
 import octobot_commons.constants as commons_constants
@@ -157,7 +158,7 @@ class StrategyDesignOptimizer:
         ),
     ]
     DEFAULT_MUTATION_PERCENT = 65
-    MAX_MUTATION_PROBABILITY_PERCENT = decimal.Decimal(50)
+    MAX_MUTATION_PROBABILITY_PERCENT = decimal.Decimal(95)
     MIN_MUTATION_PROBABILITY_PERCENT = decimal.Decimal(10)
     DEFAULT_MAX_MUTATION_NUMBER_MULTIPLIER = decimal.Decimal(3)
     DEFAULT_CROSSOVER_PERCENT = 15
@@ -625,8 +626,8 @@ class StrategyDesignOptimizer:
         exclude_filters=None,
     ):
         optimizer_id = optimizer_ids[0]
-        relevant_scoring_parameters = relevant_scoring_parameters or self.DEFAULT_SCORING_PARAMETERS
-        exclude_filters = exclude_filters or self.DEFAULT_EXCLUDE_FILTERS
+        relevant_scoring_parameters = relevant_scoring_parameters or copy.deepcopy(self.DEFAULT_SCORING_PARAMETERS)
+        exclude_filters = exclude_filters or copy.deepcopy(self.DEFAULT_EXCLUDE_FILTERS)
         self.logger.info(f"Launching initial generation with a pool of {automated_initial_optimization_run_count} runs")
         generation_run_data = await self._generate_first_generation_run_data(optimizer_id,
                                                                              automated_initial_optimization_run_count)
@@ -776,24 +777,33 @@ class StrategyDesignOptimizer:
         crossovers_count = int(run_per_generation * self.DEFAULT_CROSSOVER_PERCENT / 100)
         mutations_count = int(run_per_generation * self.DEFAULT_MUTATION_PERCENT / 100)
         new_generation = []
-        current_gen_len = len(current_generation_results)
         # 0. init ui config
         for parent in current_generation_results:
             for ui_element in parent.optimizer_run_data:
                 _, ui_element[self.CONFIG_KEY] = self._get_ui_config(ui_element)
         # 1. crossover
-        # TODO
         parents_from_current_generation_results = [
             run_result
             for run_result in current_generation_results
             if not self._is_excluded(run_result, exclude_filters)
         ]
-        i = 0
-        while i < crossovers_count + mutations_count and i < len(current_generation_results) - 1:
-            parent_1 = current_generation_results[i % current_gen_len]
-            parent_2 = current_generation_results[(i + 1 + i // current_gen_len) % current_gen_len]
-            new_generation.append(self._crossover(parent_1, parent_2))
-            i += 1
+        if len(parents_from_current_generation_results) < 2:
+            self.logger.info(f"Not enough runs to generate a next generation after filtering results. "
+                             f"{len(current_generation_results)} results before filters "
+                             f"and {len(parents_from_current_generation_results)} after filters. "
+                             f"At least 2 results after filters are required to create the next generation.")
+            raise NoMoreRunError
+        parents_count = len(parents_from_current_generation_results)
+        left_parent_index = 0
+        parents_delta = 1
+        while left_parent_index < crossovers_count + mutations_count:
+            right_parent_index = left_parent_index + parents_delta
+            left_parent = parents_from_current_generation_results[left_parent_index % parents_count]
+            right_parent = parents_from_current_generation_results[right_parent_index % parents_count]
+            new_generation.append(self._crossover(left_parent, right_parent))
+            left_parent_index += 1
+            if left_parent_index == parents_count - 1:
+                parents_delta += 1
         self.logger.info(f"Generated {len(new_generation)} new runs based on top previous runs")
         # 2. mutations
         start_mutations_index = crossovers_count
@@ -801,7 +811,7 @@ class StrategyDesignOptimizer:
             mutations_count = int(len(new_generation) * self.DEFAULT_MUTATION_PERCENT / 100)
             start_mutations_index = len(new_generation) - mutations_count
         mutations_count = 0
-        mutation_intensity = decimal.Decimal(str(1 - generation_id/automated_optimization_iterations_count))
+        mutation_intensity = self._get_mutation_multiplier(generation_id, automated_optimization_iterations_count)
         for run_data in new_generation[start_mutations_index:]:
             mutations_count += \
                 self._mutate(run_data, mutation_intensity, mutate_within_boundaries)
@@ -882,6 +892,11 @@ class StrategyDesignOptimizer:
                 mutated = True
         return mutated
 
+    def _get_mutation_multiplier(self, generation_number, total_generations):
+        linear_intensity = decimal.Decimal(str(1 - generation_number / total_generations))
+        exp_intensity = pow(linear_intensity, 2)
+        return exp_intensity
+
     def _mutate_element(self, ui_element, mutation_intensity, mutate_within_boundaries):
         ui_config, _ = self._get_ui_config(ui_element)
         ui_type = self._get_config_type(ui_config)
@@ -891,8 +906,10 @@ class StrategyDesignOptimizer:
             min_val = decimal.Decimal(str(min_val))
             max_val = decimal.Decimal(str(max_val))
             mutation_max_delta = (max_val - min_val) * self.DEFAULT_MAX_MUTATION_NUMBER_MULTIPLIER * mutation_intensity
-            new_value = decimal.Decimal(str(ui_element[self.CONFIG_VALUE])) + (mutation_max_delta *
-                                                                               decimal.Decimal(str(random.random())))
+            # use exponential multiplier to get more often results around 1 and use the max delta more often
+            exp_random_multiplier = decimal.Decimal(math.sqrt(random.random()))
+            new_value = decimal.Decimal(str(ui_element[self.CONFIG_VALUE])) + \
+                (mutation_max_delta * exp_random_multiplier)
             if mutate_within_boundaries:
                 if new_value < min_val:
                     new_value = min_val
@@ -1220,7 +1237,9 @@ class StrategyDesignOptimizer:
             if user_input[self.CONFIG_KEY] == user_input_right_operand_key:
                 user_input_right_operand = user_input[self.CONFIG_VALUE]
         right_operand = user_input_right_operand if text_right_operand in ("null", "") else text_right_operand
-        return OptimizerFilter(user_input_left_operand_key, user_input_right_operand_key, left_operand, right_operand, operator)
+        return OptimizerFilter(user_input_left_operand_key, user_input_right_operand_key,
+                               left_operand, right_operand,
+                               operator)
 
     def _get_config_possible_iterations(self):
         return [
@@ -1392,4 +1411,4 @@ class RunResult:
             ui[StrategyDesignOptimizer.CONFIG_USER_INPUT]: ui[StrategyDesignOptimizer.CONFIG_VALUE]
             for ui in self.optimizer_run_data
         }
-        return f"fitness score: {self.score} ({self.values}) from {user_inputs}"
+        return f"fitness score: {self.score} {self.values} from {user_inputs}"
