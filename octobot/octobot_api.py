@@ -32,25 +32,25 @@ class OctoBotAPI:
     def get_global_config(self) -> dict:
         return self._octobot.config
 
-    def get_startup_config(self) -> object:
+    def get_startup_config(self):
         return self._octobot.get_startup_config(constants.CONFIG_KEY)
 
-    def get_edited_config(self, dict_only=True) -> object:
+    def get_edited_config(self, dict_only=True):
         return self._octobot.get_edited_config(constants.CONFIG_KEY, dict_only=dict_only)
 
-    def get_startup_tentacles_config(self) -> object:
+    def get_startup_tentacles_config(self):
         return self._octobot.get_startup_config(constants.TENTACLES_SETUP_CONFIG_KEY)
 
-    def get_edited_tentacles_config(self) -> object:
+    def get_edited_tentacles_config(self):
         return self._octobot.get_edited_config(constants.TENTACLES_SETUP_CONFIG_KEY)
 
     def set_edited_tentacles_config(self, config):
         self._octobot.set_edited_config(constants.TENTACLES_SETUP_CONFIG_KEY, config)
 
-    def get_trading_mode(self) -> object:
+    def get_trading_mode(self):
         return self._octobot.get_trading_mode()
 
-    def get_tentacles_setup_config(self) -> object:
+    def get_tentacles_setup_config(self):
         return self._octobot.tentacles_setup_config
 
     def get_start_time(self) -> float:

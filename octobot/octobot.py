@@ -141,42 +141,51 @@ class OctoBot:
             service_api.create_notification(f"{constants.PROJECT_NAME} {constants.LONG_VERSION} is starting ...",
                                             markdown_format=enums.MarkdownFormat.ITALIC))
         self._init_metadata_run_task = asyncio.create_task(self._store_run_metadata_when_available())
-        # await self._custom()
+        await self._custom()
 
     async def _custom(self):
         try:
             import octobot.api as bot_module_api
             import tentacles.Services.Interfaces.web_interface_strategy_designer_plugin as strategy_designer_plugin
             import octobot_tentacles_manager.api as tentacles_manager_api
+            import octobot_commons.enums as commons_enums
             temp_independent_backtesting = bot_module_api.create_independent_backtesting(
                 self.octobot_api.get_edited_config(), None, [])
             optimizer_config = await bot_module_api.initialize_independent_backtesting_config(temp_independent_backtesting)
             config = strategy_designer_plugin.StrategyDesignerPlugin.get_strategy_design_config(default_name=None) \
                 .get("strategy_design_optimizer", {}).get("inputs", {})
+            optimizer_settings = bot_module_api.create_strategy_optimizer_settings({
+                commons_enums.OptimizerConfig.OPTIMIZER_CONFIG.value: config,
+            })
             optimizer = bot_module_api.create_design_strategy_optimizer(
                 trading_api.get_activated_trading_mode(self.octobot_api.get_edited_tentacles_config()),
+                optimizer_settings,
                 optimizer_config,
                 self.octobot_api.get_edited_tentacles_config(),
-                config)
-            optimizer_ids = await optimizer.get_queued_optimizer_ids()
-            data_files = ["ExchangeBotSnapshotWithHistoryCollector_bybit_BTCUSDT_USDT_15m.data"]
+            )
             tentacles_manager_api.import_user_tentacles_config_folder(self.octobot_api.get_edited_tentacles_config())
-            return await optimizer.resume(data_files, optimizer_ids, False,
-                                          start_timestamp=1661990400.0,
-                                          end_timestamp=1667347200.000,
-                                          empty_the_queue=False,
-                                          required_idle_cores=0,
-                                          notify_when_complete=True,
-                                          enable_automated_optimization=True,
-                                          optimization_iterations_count=10,
-                                          optimization_run_per_generations=8,
-                                          optimization_initial_optimization_run_count=8,
-                                          optimization_within_boundaries=True,
-                                          optimization_target_fitness_score=None,)
+            optimizer_settings = bot_module_api.create_strategy_optimizer_settings({
+                commons_enums.OptimizerConfig.DATA_FILES.value:
+                    ["ExchangeBotSnapshotWithHistoryCollector_bybit_BTCUSDT_USDT_15m.data"],
+                commons_enums.OptimizerConfig.OPTIMIZER_CONFIG.value: optimizer_config,
+                commons_enums.OptimizerConfig.OPTIMIZER_IDS.value: await optimizer.get_queued_optimizer_ids(),
+                commons_enums.OptimizerConfig.RANDOMLY_CHOSE_RUNS.value: False,
+                commons_enums.OptimizerConfig.START_TIMESTAMP.value: 1661990400,
+                commons_enums.OptimizerConfig.END_TIMESTAMP.value: 1667347200,
+                commons_enums.OptimizerConfig.IDLE_CORES.value: 0,
+                commons_enums.OptimizerConfig.NOTIFY_WHEN_COMPLETE.value: True,
+                commons_enums.OptimizerConfig.MODE.value: commons_enums.OptimizerModes.GENETIC.value,
+                commons_enums.OptimizerConfig.EMPTY_THE_QUEUE.value: False,
+                commons_enums.OptimizerConfig.DEFAULT_GENERATIONS_COUNT.value: 10,
+                commons_enums.OptimizerConfig.STAY_WITHIN_BOUNDARIES.value: False,
+                commons_enums.OptimizerConfig.INITIAL_GENERATION_COUNT.value: 8,
+                commons_enums.OptimizerConfig.DEFAULT_RUN_PER_GENERATION.value: 8,
+                commons_enums.OptimizerConfig.TARGET_FITNESS_SCORE.value: None,
+            })
+            return await optimizer.resume(optimizer_settings)
         except Exception as e:
             self.logger.exception(e, True, e)
             print(e)
-
 
     async def _wait_for_run_data_init(self, exchange_managers, timeout):
         for exchange_manager in exchange_managers:
