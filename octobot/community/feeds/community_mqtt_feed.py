@@ -123,17 +123,26 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
         return f"{channel_type.value}/{identifier}"
 
     async def _on_message(self, client, topic, payload, qos, properties):
-        uncompressed_payload = zlib.decompress(payload).decode()
-        self.logger.debug(f"Received message, client_id: {client._client_id}, topic: {topic}, "
-                          f"uncompressed payload: {uncompressed_payload}, QOS: {qos}, properties: {properties}")
-        parsed_message = json.loads(uncompressed_payload)
+        try:
+            uncompressed_payload = zlib.decompress(payload).decode()
+            self.logger.debug(f"Received message, client_id: {client._client_id}, topic: {topic}, "
+                              f"uncompressed payload: {uncompressed_payload}, QOS: {qos}, properties: {properties}")
+            parsed_message = json.loads(uncompressed_payload)
+        except Exception as err:
+            self.logger.exception(err, True, f"Unexpected error when reading message: {err}")
+            return
+        await self._process_message(topic, parsed_message)
+
+    async def _process_message(self, topic, parsed_message):
         try:
             self._ensure_supported(parsed_message)
             if self._should_process(parsed_message):
                 for callback in self._get_callbacks(topic):
                     await callback(parsed_message)
-        except commons_errors.UnsupportedError as e:
-            self.logger.error(f"Unsupported message: {e}")
+        except commons_errors.UnsupportedError as err:
+            self.logger.error(f"Unsupported message: {err}")
+        except Exception as err:
+            self.logger.exception(err, True, f"Unexpected error when processing message: {err}")
 
     def _should_process(self, parsed_message):
         if parsed_message[commons_enums.CommunityFeedAttrs.ID.value] in self._processed_messages:
