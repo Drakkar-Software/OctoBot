@@ -91,6 +91,7 @@ class IndependentBacktesting:
         try:
             # create stopped_event here only to be sure to create it in the same loop as the one of the
             # backtesting run
+            self.logger.debug("Starting backtesting")
             if self.stop_when_finished:
                 self.stopped_event = asyncio.Event()
             if not self.enable_logs:
