@@ -1,0 +1,32 @@
+{
+	"folders": [
+		{
+			"path": "../../OctoBot-Backtesting"
+		},
+		{
+			"path": "../../OctoBot-Commons"
+		},
+		{
+			"path": "../../OctoBot-evaluators"
+		},
+		{
+			"path": "../../Async-Channel"
+		},
+		{
+			"path": "../../OctoBot-Services"
+		},
+		{
+			"path": "../../OctoBot-Tentacles-Manager"
+		},
+		{
+			"path": "../../OctoBot-Trading"
+		},
+		{
+			"path": "../../trading-backend"
+		},
+		{
+			"path": ".."
+		}
+	],
+	"settings": {}
+}

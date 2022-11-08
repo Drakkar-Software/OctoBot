@@ -1,0 +1,14 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+
+        {
+            "name": "Start OctoBot",
+            "type": "python",
+            "request": "launch",
+            "program": "start.py",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        }
+    ]
+}

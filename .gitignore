@@ -100,7 +100,6 @@ ENV/
 .mypy_cache/
 
 # IDE
-.vscode/
 .idea
 .gitpod.yml
 
