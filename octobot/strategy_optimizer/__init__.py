@@ -38,6 +38,9 @@ from octobot.strategy_optimizer.optimizer_settings import (
 from octobot.strategy_optimizer.scored_run_result import (
     ScoredRunResult,
 )
+from octobot.strategy_optimizer.optimizer_constraint import (
+    OptimizerConstraint,
+)
 from octobot.strategy_optimizer.strategy_design_optimizer import (
     StrategyDesignOptimizer,
 )
@@ -49,6 +52,11 @@ __all__ = [
     "TestSuiteResult",
     "TestSuiteResultSummary",
     "StrategyOptimizer",
+    "FitnessParameter",
+    "OptimizerFilter",
+    "OptimizerSettings",
+    "ScoredRunResult",
+    "OptimizerConstraint",
     "StrategyDesignOptimizer",
     "StrategyTestSuite",
 ]

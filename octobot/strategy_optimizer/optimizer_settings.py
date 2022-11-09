@@ -19,6 +19,7 @@ import octobot_commons.enums as commons_enums
 import octobot_commons.constants as commons_constants
 import octobot.strategy_optimizer.fitness_parameter as fitness_parameter
 import octobot.strategy_optimizer.optimizer_filter as optimizer_filter
+import octobot.strategy_optimizer.optimizer_constraint as optimizer_constraint
 
 
 class OptimizerSettings:
@@ -66,6 +67,10 @@ class OptimizerSettings:
             settings_dict.get(commons_enums.OptimizerConfig.DEFAULT_OPTIMIZER_FILTERS.value,
                               self.get_default_optimizer_filters())
         )
+        self.constraints_by_key = self.parse_optimizer_constraint(
+            settings_dict.get(commons_enums.OptimizerConfig.DEFAULT_OPTIMIZER_CONSTRAINTS.value,
+                              self.get_default_optimizer_constraints())
+        )
         self.mutation_percent = float(settings_dict.get(
             commons_enums.OptimizerConfig.DEFAULT_MUTATION_PERCENT.value,
             commons_constants.OPTIMIZER_DEFAULT_MUTATION_PERCENT))
@@ -84,6 +89,12 @@ class OptimizerSettings:
         self.target_fitness_score = settings_dict.get(commons_enums.OptimizerConfig.TARGET_FITNESS_SCORE.value)
         self.stay_within_boundaries = settings_dict.get(commons_enums.OptimizerConfig.STAY_WITHIN_BOUNDARIES.value,
                                                         False)
+
+    def get_constraint(self, constraint_key):
+        try:
+            return self.constraints_by_key[constraint_key]
+        except KeyError:
+            return None
 
     def parse_fitness_parameters(self, parameters):
         return [
@@ -138,3 +149,15 @@ class OptimizerSettings:
                 optimizer_filter.OptimizerFilter.OPERATOR_KEY: commons_enums.LogicalOperators.LOWER_THAN.value,
             },
         ]
+
+    def parse_optimizer_constraint(self, constaints):
+        return {
+            element.name: element
+            for element in (
+                optimizer_constraint.OptimizerConstraint.from_dict(element)
+                for element in constaints
+            )
+        }
+
+    def get_default_optimizer_constraints(self):
+        return []

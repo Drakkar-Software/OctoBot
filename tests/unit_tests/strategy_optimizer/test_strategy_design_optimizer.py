@@ -134,6 +134,7 @@ async def test_resume_genetic_mode(optimizer_inputs):
         commons_enums.OptimizerConfig.INITIAL_GENERATION_COUNT.value: 8,
         commons_enums.OptimizerConfig.DEFAULT_RUN_PER_GENERATION.value: 8,
         commons_enums.OptimizerConfig.TARGET_FITNESS_SCORE.value: None,
+        commons_enums.OptimizerConfig.DEFAULT_OPTIMIZER_CONSTRAINTS.value: MOCKED_OPTIMIZER_CONSTRAINTS,
     })
     with mock.patch.object(strategy_optimizer.StrategyDesignOptimizer, "_get_total_nb_runs",
                           mock.AsyncMock(return_value=5)) as _get_total_nb_runs_mock, \
@@ -186,6 +187,14 @@ def _get_mocked_ui_config():
                     strategy_optimizer.StrategyDesignOptimizer.CONFIG_MAX: 15,
                     strategy_optimizer.StrategyDesignOptimizer.CONFIG_MIN: 3,
                     strategy_optimizer.StrategyDesignOptimizer.CONFIG_STEP: 2
+                }
+            ),
+            _get_optimizer_user_input_config(
+                Evaluator.RSIMomentumEvaluator, "constrained_risk", True,
+                {
+                    strategy_optimizer.StrategyDesignOptimizer.CONFIG_MAX: 2,
+                    strategy_optimizer.StrategyDesignOptimizer.CONFIG_MIN: 1,
+                    strategy_optimizer.StrategyDesignOptimizer.CONFIG_STEP: 1
                 }
             ),
             _get_optimizer_user_input_config(
@@ -267,9 +276,10 @@ def _get_mocked_run_ui(ui_name, tentacle, value):
     }
 
 
-def _get_mocked_run(period_length, time_frame):
+def _get_mocked_run(period_length, constrained_risk, time_frame):
     return (
         _get_mocked_run_ui("period_length", Evaluator.RSIMomentumEvaluator, period_length),
+        _get_mocked_run_ui("constrained_risk", Evaluator.RSIMomentumEvaluator, constrained_risk),
         _get_mocked_run_ui(evaluators_constants.STRATEGIES_REQUIRED_TIME_FRAME,
                            Strategies.SimpleStrategyEvaluator,
                            [time_frame.value]),
@@ -279,20 +289,21 @@ def _get_mocked_run(period_length, time_frame):
 
 
 MOCKED_RUNS = [
-    _get_mocked_run(period_length_val, time_frame_val)
+    _get_mocked_run(period_length_val, constrained_risk_val, time_frame_val)
     for period_length_val in (5, 7, 9, 11, 13)
+    for constrained_risk_val in (1, 2)
     for time_frame_val in (commons_enums.TimeFrames.FIVE_MINUTES,
                            commons_enums.TimeFrames.ONE_HOUR,
                            commons_enums.TimeFrames.ONE_DAY)
 ]
 
 EXPECTED_RUNS_FROM_MOCK = {
-    index + 3: val  # index + 3 as the first 2 runs have been filtered
+    index + 6: val  # index + 6 as the first 5 runs have been filtered
     for index, val in enumerate(MOCKED_RUNS)
 }
 
 
-def _get_mocked_run_result(period_length_val, time_frame_val):
+def _get_mocked_run_result(period_length_val, constrained_risk_val, time_frame_val):
     gains = period_length_val * commons_enums.TimeFramesMinutes[time_frame_val]
     r2 = period_length_val / commons_enums.TimeFramesMinutes[time_frame_val]
     trades = commons_enums.TimeFramesMinutes[time_frame_val]
@@ -307,15 +318,31 @@ def _get_mocked_run_result(period_length_val, time_frame_val):
             },
             Evaluator.RSIMomentumEvaluator.get_name(): {
                 "period_length": period_length_val,
+                "constrained_risk": constrained_risk_val,
             }
         }
     }
 
 
 RUNS_RESULTS_FROM_MOCK = [
-    _get_mocked_run_result(period_length_val, time_frame_val)
+    _get_mocked_run_result(period_length_val, constrained_risk_val, time_frame_val)
     for period_length_val in (5, 7, 9, 11, 13)
+    for constrained_risk_val in (1, 2)
     for time_frame_val in (commons_enums.TimeFrames.FIVE_MINUTES,
                            commons_enums.TimeFrames.ONE_HOUR,
                            commons_enums.TimeFrames.ONE_DAY)
+]
+
+
+def _get_constraint(name, min_val, max_val, stay_within_boundaries):
+    return {
+        strategy_optimizer.OptimizerConstraint.NAME_KEY: name,
+        strategy_optimizer.OptimizerConstraint.MIN_VAL_KEY: min_val,
+        strategy_optimizer.OptimizerConstraint.MAX_VAL_KEY: max_val,
+        strategy_optimizer.OptimizerConstraint.STAY_WITHIN_BOUNDARIES_KEY: stay_within_boundaries,
+    }
+
+
+MOCKED_OPTIMIZER_CONSTRAINTS = [
+    _get_constraint(_get_ui_identifier(Evaluator.RSIMomentumEvaluator, "constrained_risk"), 1, 3, False)
 ]

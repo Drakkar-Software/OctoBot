@@ -739,18 +739,24 @@ class StrategyDesignOptimizer:
     def _mutate_element(self, optimizer_settings, ui_element, mutation_intensity):
         ui_config, _ = self._get_ui_config(ui_element)
         ui_type = self._get_config_type(ui_config)
+        ui_constraint = optimizer_settings.get_constraint(ui_element[self.CONFIG_KEY])
         if ui_type is ConfigTypes.NUMBER:
             # mutate numbers
             min_val, max_val, step = self._get_number_config(ui_config)
+            stay_within_boundaries = optimizer_settings.stay_within_boundaries
+            if ui_constraint is not None:
+                stay_within_boundaries = ui_constraint.stay_within_boundaries
+                min_val = ui_constraint.min_val
+                max_val = ui_constraint.max_val
             min_val = decimal.Decimal(str(min_val))
             max_val = decimal.Decimal(str(max_val))
             mutation_max_delta = (max_val - min_val) * optimizer_settings.max_mutation_number_multiplier \
-                                 * mutation_intensity
+                * mutation_intensity
             # use exponential multiplier to get more often results around 1 and use the max delta more often
             exp_random_multiplier = decimal.Decimal(math.sqrt(random.random()))
             new_value = decimal.Decimal(str(ui_element[self.CONFIG_VALUE])) + \
                         (mutation_max_delta * exp_random_multiplier)
-            if optimizer_settings.stay_within_boundaries:
+            if stay_within_boundaries:
                 if new_value < min_val:
                     new_value = min_val
                 elif new_value > max_val:
