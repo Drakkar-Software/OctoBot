@@ -130,6 +130,7 @@ class StrategyDesignOptimizer:
         }
 
     async def multi_processed_optimize(self, optimizer_settings, run_data_by_optimizer_id=None):
+        success = True
         optimizer_ids = optimizer_settings.optimizer_ids or [optimizer_settings.optimizer_id]
         run_data_by_optimizer_id = run_data_by_optimizer_id or {}
         self.is_computing = True
@@ -170,6 +171,7 @@ class StrategyDesignOptimizer:
                             run_queue.cancel_join_thread()
         except Exception as e:
             self.logger.exception(e, True, f"Error when running optimizer processes: {e}")
+            success = False
         finally:
             if optimizer_settings.notify_when_complete:
                 await self._send_optimizer_finished_notification()
@@ -177,6 +179,7 @@ class StrategyDesignOptimizer:
             self.is_computing = False
             self.is_finished = True
         self.logger.info(f"Optimizer runs complete in {time.time() - global_t0} seconds.")
+        return success
 
     async def _run_multi_processed_optimizer(self, optimizer_settings,
                                              lock, shared_keep_running, shared_run_time,
@@ -448,9 +451,9 @@ class StrategyDesignOptimizer:
     async def resume(self, optimizer_settings: optimizer_settings_import.OptimizerSettings):
         self.total_nb_runs = await self._get_total_nb_runs(optimizer_settings.optimizer_ids)
         if optimizer_settings.optimizer_mode == commons_enums.OptimizerModes.GENETIC.value:
-            await self._launch_automated_optimization(optimizer_settings)
+            return await self._launch_automated_optimization(optimizer_settings)
         elif optimizer_settings.optimizer_mode == commons_enums.OptimizerModes.NORMAL.value:
-            await self.multi_processed_optimize(optimizer_settings)
+            return await self.multi_processed_optimize(optimizer_settings)
         else:
             raise NotImplementedError(f"Unknown optimizer mode: {optimizer_settings.optimizer_mode}")
 
@@ -468,10 +471,11 @@ class StrategyDesignOptimizer:
         generation_run_data = \
             await self._generate_first_generation_run_data(optimizer_id, optimizer_settings.initial_generation_count)
         already_run_index = len(generation_run_data)
+        success = True
         try:
             for generation_id in range(optimizer_settings.generations_count):
                 # 1. run current generation
-                await self.multi_processed_optimize(
+                if not await self.multi_processed_optimize(
                     optimizer_settings,
                     run_data_by_optimizer_id={
                         optimizer_id: {
@@ -480,7 +484,8 @@ class StrategyDesignOptimizer:
                             if index <= already_run_index
                         }
                     },
-                )
+                ):
+                    raise Exception("Unexpected error when running optimizer")
                 # 2. score results (fitness function)
                 all_run_results = await self._get_all_finished_run_results(optimizer_id)
                 self._format_user_inputs_names(all_run_results)
@@ -513,9 +518,11 @@ class StrategyDesignOptimizer:
             pass
         except Exception as e:
             self.logger.exception(e, True, "Unexpected error when running optimizer: {e}")
+            success = False
         self.logger.info("Optimizer complete")
         if notify_when_complete:
             await self._send_optimizer_finished_notification()
+        return success
 
     def _format_user_inputs_names(self, run_results):
         for run_result in run_results:
@@ -692,12 +699,9 @@ class StrategyDesignOptimizer:
         for parent_1_ui_data, parent_2_ui_data in zip(parent_1.optimizer_run_data, parent_2.optimizer_run_data):
             child_ui_data_element = copy.deepcopy(parent_1_ui_data)
             ui_config, _ = self._get_ui_config(child_ui_data_element)
-            min_val, _, step = self._get_number_config(ui_config)
             child_ui_data_element[self.CONFIG_VALUE] = self._get_child_value(
                 parent_1_ui_data,
                 parent_2_ui_data,
-                min_val,
-                step,
                 ui_config
             )
             child_ui_data_elements.append(child_ui_data_element)
@@ -746,7 +750,7 @@ class StrategyDesignOptimizer:
             mutated_value = type(ui_element[self.CONFIG_VALUE])(new_value)
             ui_element[self.CONFIG_VALUE] = mutated_value
 
-    def _get_child_value(self, parent_1_ui, parent_2_ui, min_val, step, ui_config):
+    def _get_child_value(self, parent_1_ui, parent_2_ui, ui_config):
         value_1 = parent_1_ui[self.CONFIG_VALUE]
         value_2 = parent_2_ui[self.CONFIG_VALUE]
         if type(value_1) != type(value_2):
@@ -756,6 +760,7 @@ class StrategyDesignOptimizer:
             # on options and booleans, don't generate values, use a parent value
             return value_1 if random.randint(0, 1) == 1 else value_2
         if ui_type is ConfigTypes.NUMBER:
+            min_val, _, step = self._get_number_config(ui_config)
             # on numbers, generate a value between parents taking step into account
             child_value = (decimal.Decimal(str(value_1)) + decimal.Decimal(str(value_2))) / decimal.Decimal(2)
             # ensure step is taken into account
@@ -1081,7 +1086,9 @@ class StrategyDesignOptimizer:
         values = []
         try:
             if config_element[self.CONFIG_ENABLED]:
-                if config_element[self.CONFIG_TYPE] in (ConfigTypes.OPTIONS, ConfigTypes.BOOLEAN):
+                if config_element[self.CONFIG_TYPE] is ConfigTypes.OPTIONS:
+                    values = [[value] for value in config_element[self.CONFIG_VALUE][self.CONFIG_VALUE]]
+                if config_element[self.CONFIG_TYPE] is ConfigTypes.BOOLEAN:
                     values = config_element[self.CONFIG_VALUE][self.CONFIG_VALUE]
                 if config_element[self.CONFIG_TYPE] is ConfigTypes.NUMBER:
                     config = config_element[self.CONFIG_VALUE][self.CONFIG_VALUE]
@@ -1136,8 +1143,6 @@ class StrategyDesignOptimizer:
                    ui_element[self.CONFIG_KEY]
         except KeyError:
             pass
-        except TypeError:
-            i = 1
         for key, val in self.optimizer_settings.optimizer_config[self.CONFIG_USER_INPUTS].items():
             if self._is_user_input_config(val, ui_element):
                 return val, key
