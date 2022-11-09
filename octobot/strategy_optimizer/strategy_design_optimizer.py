@@ -489,8 +489,19 @@ class StrategyDesignOptimizer:
                 # 2. score results (fitness function)
                 all_run_results = await self._get_all_finished_run_results(optimizer_id)
                 self._format_user_inputs_names(all_run_results)
+                filtered_run_results = [
+                    run_result
+                    for run_result in all_run_results
+                    if not self._is_excluded(run_result, exclude_filters)
+                ]
+                if len(filtered_run_results) < 2:
+                    self.logger.info(f"Not enough runs to generate a next generation after filtering results. "
+                                     f"{len(all_run_results)} results before filters "
+                                     f"and {len(filtered_run_results)} after filters. "
+                                     f"At least 2 results after filters are required to create the next generation.")
+                    raise NoMoreRunError
                 current_generation_results = await self._score_current_generation(generation_run_data,
-                                                                                  all_run_results,
+                                                                                  filtered_run_results,
                                                                                   relevant_fitness_parameters)
                 formatted_results = "\n".join([
                     f"{i + 1} - {run_result.result_str()}"
@@ -502,9 +513,8 @@ class StrategyDesignOptimizer:
                 generation_run_data, already_run_index = await self._create_next_generation(
                     optimizer_settings,
                     current_generation_results,
-                    all_run_results,
-                    generation_id,
-                    exclude_filters
+                    filtered_run_results,
+                    generation_id
                 )
                 # 4. update self.runs_schedule
                 self.runs_schedule = {
@@ -591,9 +601,9 @@ class StrategyDesignOptimizer:
                 return False
         return True
 
-    def _is_excluded(self, run, exclude_filters):
+    def _is_excluded(self, run_result, exclude_filters):
         for exclude_filter in exclude_filters:
-            exclude_filter.load_values(run.full_result)
+            exclude_filter.load_values(run_result)
             if exclude_filter.is_filtered():
                 return True
         return False
@@ -603,8 +613,7 @@ class StrategyDesignOptimizer:
             optimizer_settings,
             current_generation_results,
             all_run_results,
-            generation_id,
-            exclude_filters
+            generation_id
     ):
         crossovers_count = int(optimizer_settings.run_per_generation * optimizer_settings.crossover_percent / 100)
         mutations_count = int(optimizer_settings.run_per_generation * optimizer_settings.mutation_percent / 100)
@@ -614,28 +623,9 @@ class StrategyDesignOptimizer:
             for ui_element in parent.optimizer_run_data:
                 _, ui_element[self.CONFIG_KEY] = self._get_ui_config(ui_element)
         # 1. crossover
-        parents_from_current_generation_results = [
-            run_result
-            for run_result in current_generation_results
-            if not self._is_excluded(run_result, exclude_filters)
-        ]
-        if len(parents_from_current_generation_results) < 2:
-            self.logger.info(f"Not enough runs to generate a next generation after filtering results. "
-                             f"{len(current_generation_results)} results before filters "
-                             f"and {len(parents_from_current_generation_results)} after filters. "
-                             f"At least 2 results after filters are required to create the next generation.")
-            raise NoMoreRunError
-        parents_count = len(parents_from_current_generation_results)
-        left_parent_index = 0
-        parents_delta = 1
-        while left_parent_index < crossovers_count + mutations_count:
-            right_parent_index = left_parent_index + parents_delta
-            left_parent = parents_from_current_generation_results[left_parent_index % parents_count]
-            right_parent = parents_from_current_generation_results[right_parent_index % parents_count]
+        best_parents_pairs = self._get_score_sorted_pairs(current_generation_results)
+        for left_parent, right_parent in best_parents_pairs:
             new_generation.append(self._crossover(left_parent, right_parent))
-            left_parent_index += 1
-            if left_parent_index == parents_count - 1:
-                parents_delta += 1
         self.logger.info(f"Generated {len(new_generation)} new runs based on top previous runs")
         # 2. mutations
         start_mutations_index = crossovers_count
@@ -677,14 +667,33 @@ class StrategyDesignOptimizer:
         # 5. return new generation
         return {i: element for i, element in enumerate(new_generation)}, already_run_index
 
+    def _get_score_sorted_pairs(self, elements):
+        scored_elements = [
+            ((element_1.score + element_2.score) / 2, (element_1, element_2))
+            for element_1, element_2 in itertools.combinations(elements, 2)
+        ]
+        scored_elements.sort(key=lambda x: x[0], reverse=True)    # sort by parents combined score
+        return [
+            scored_element[1]
+            for scored_element in scored_elements
+        ]
+
     def _filter_generation(self, generation, all_run_results):
         # remove invalid configurations according to user defined filters
         # remove already run configurations
-        return [
+        not_ran_elements = [
             element
             for element in generation
             if self._is_run_allowed(element) and not self._is_already_run(element, all_run_results)
         ]
+        # remove duplicated in generation
+        return list(
+            {
+                self.get_run_hash(element): element
+                for element in not_ran_elements
+            }.values()
+        )
+
 
     def _is_already_run(self, element, all_run_results):
         try:
@@ -747,7 +756,7 @@ class StrategyDesignOptimizer:
                 elif new_value > max_val:
                     new_value = max_val
             # apply the right type to the new value
-            mutated_value = type(ui_element[self.CONFIG_VALUE])(new_value)
+            mutated_value = self._get_typed_value(new_value, ui_element[self.CONFIG_VALUE])
             ui_element[self.CONFIG_VALUE] = mutated_value
 
     def _get_child_value(self, parent_1_ui, parent_2_ui, ui_config):
@@ -768,14 +777,23 @@ class StrategyDesignOptimizer:
             decimal_step = decimal.Decimal(str(step))
             normalized_mod = normalized_value % decimal_step
             if normalized_mod == 0:
-                return type(value_1)(child_value)
+                return self._get_typed_value(child_value, value_1)
             # find the closest valid value
             to_add_val = decimal_step - normalized_mod
             if normalized_mod < decimal_step / decimal.Decimal(2):
                 to_add_val = -to_add_val
             # apply the right type to the new value
-            return type(value_1)(child_value + to_add_val)
+            return self._get_typed_value(child_value + to_add_val, value_1)
         raise TypeError(f"unsupported config type: {ui_type}")
+
+    def _get_typed_value(self, initial_value, example_value):
+        target_type = type(example_value)
+        if target_type is int:
+            # round up or down with a 50% chance
+            if random.random() <= 0.5:
+                return math.ceil(initial_value)
+            return math.floor(initial_value)
+        return target_type(initial_value)
 
     async def _generate_first_generation_run_data(self, optimizer_id,
                                                   automated_initial_optimization_run_count):

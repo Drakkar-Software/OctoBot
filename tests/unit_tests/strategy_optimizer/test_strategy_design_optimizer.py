@@ -155,10 +155,10 @@ async def test_resume_genetic_mode(optimizer_inputs):
             tentacles_setup_config,
         )
         assert await optimizer.resume(optimizer_settings) is True
+        _get_total_nb_runs_mock.assert_called_once_with(optimizer_settings.optimizer_ids)
         _generate_first_generation_run_data_mock.assert_awaited_once()
         _send_optimizer_finished_notification_mock.assert_awaited_once()
-        _get_total_nb_runs_mock.assert_called_once_with(optimizer_settings.optimizer_ids)
-        multi_processed_optimize_mock.assert_awaited_once()
+        assert optimizer_settings.generations_count > multi_processed_optimize_mock.call_count > 0
 
 
 def _get_ui_identifier(tentacle, user_input_name):
