@@ -89,10 +89,9 @@ class OptimizerSettings:
                                                         False)
 
     def get_constraint(self, constraint_key):
-        try:
+        if constraint_key in self.constraints_by_key:
             return self.constraints_by_key[constraint_key]
-        except KeyError:
-            return None
+        return None
 
     def parse_fitness_parameters(self, parameters):
         return [
