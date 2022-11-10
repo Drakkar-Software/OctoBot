@@ -166,7 +166,8 @@ async def test_resume_genetic_mode(optimizer_inputs):
         _generate_first_generation_run_data_mock.assert_awaited_once()
         _send_optimizer_finished_notification_mock.assert_awaited_once()
         assert optimizer_settings.generations_count > multi_processed_optimize_mock.call_count > 0
-        assert optimizer_settings.generations_count > _check_target_fitness_mock.call_count > 1
+        # might not be called because of random mutations
+        assert optimizer_settings.generations_count > _check_target_fitness_mock.call_count > 0
 
 
 def fitness_score_checker(_, run_results):

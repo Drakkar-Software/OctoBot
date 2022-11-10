@@ -755,19 +755,19 @@ class StrategyDesignOptimizer:
                 if not ui_constraint.stay_within_boundaries:
                     min_val = ui_constraint.min_val
                     max_val = ui_constraint.max_val
-            min_val = decimal.Decimal(str(min_val))
-            max_val = decimal.Decimal(str(max_val))
-            mutation_max_delta = (max_val - min_val) * optimizer_settings.max_mutation_number_multiplier \
+            d_min_val = decimal.Decimal(str(min_val))
+            d_max_val = decimal.Decimal(str(max_val))
+            mutation_max_delta = (d_max_val - d_min_val) * optimizer_settings.max_mutation_number_multiplier \
                 * mutation_intensity
             # use exponential multiplier to get more often results around 1 and use the max delta more often
             exp_random_multiplier = decimal.Decimal(math.sqrt(random.random()))
             new_value = decimal.Decimal(str(ui_element[self.CONFIG_VALUE])) + \
                         (mutation_max_delta * exp_random_multiplier)
             if stay_within_boundaries:
-                if new_value < min_val:
-                    new_value = min_val
-                elif new_value > max_val:
-                    new_value = max_val
+                if new_value < d_min_val:
+                    new_value = d_min_val
+                elif new_value > d_max_val:
+                    new_value = d_max_val
             # apply the right type to the new value
             target_type = self._get_accurate_number_type(min_val, max_val, step)
             mutated_value = self._get_typed_value(new_value, target_type)
