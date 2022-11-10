@@ -769,7 +769,8 @@ class StrategyDesignOptimizer:
                 elif new_value > max_val:
                     new_value = max_val
             # apply the right type to the new value
-            mutated_value = self._get_typed_value(new_value, ui_element[self.CONFIG_VALUE])
+            target_type = self._get_accurate_number_type(min_val, max_val, step)
+            mutated_value = self._get_typed_value(new_value, target_type)
             ui_element[self.CONFIG_VALUE] = mutated_value
 
     def _get_child_value(self, parent_1_ui, parent_2_ui, ui_config):
@@ -782,25 +783,25 @@ class StrategyDesignOptimizer:
             # on options and booleans, don't generate values, use a parent value
             return value_1 if random.randint(0, 1) == 1 else value_2
         if ui_type is ConfigTypes.NUMBER:
-            min_val, _, step = self._get_number_config(ui_config)
+            min_val, max_val, step = self._get_number_config(ui_config)
             # on numbers, generate a value between parents taking step into account
             child_value = (decimal.Decimal(str(value_1)) + decimal.Decimal(str(value_2))) / decimal.Decimal(2)
             # ensure step is taken into account
             normalized_value = child_value - decimal.Decimal(str(min_val))
             decimal_step = decimal.Decimal(str(step))
             normalized_mod = normalized_value % decimal_step
+            target_type = self._get_accurate_number_type(min_val, max_val, step)
             if normalized_mod == 0:
-                return self._get_typed_value(child_value, value_1)
+                return self._get_typed_value(child_value, target_type)
             # find the closest valid value
             to_add_val = decimal_step - normalized_mod
             if normalized_mod < decimal_step / decimal.Decimal(2):
                 to_add_val = -to_add_val
             # apply the right type to the new value
-            return self._get_typed_value(child_value + to_add_val, value_1)
+            return self._get_typed_value(child_value + to_add_val, target_type)
         raise TypeError(f"unsupported config type: {ui_type}")
 
-    def _get_typed_value(self, initial_value, example_value):
-        target_type = type(example_value)
+    def _get_typed_value(self, initial_value, target_type):
         if target_type is int:
             # round up or down with a 50% chance
             if random.random() <= 0.5:
@@ -1146,11 +1147,14 @@ class StrategyDesignOptimizer:
         d_start = decimal.Decimal(str(start))
         d_stop = decimal.Decimal(str(stop))
         d_step = decimal.Decimal(str(step))
-        return_type = int if all(isinstance(e, int) for e in (start, stop, step)) else float
+        return_type = self._get_accurate_number_type(start, stop, step)
         current = d_start
         while current <= d_stop:
             yield return_type(current)
             current += d_step
+
+    def _get_accurate_number_type(self, *values):
+        return int if all(isinstance(e, int) for e in values) else float
 
     def _get_config_elements(self):
         for key, val in self.optimizer_settings.optimizer_config[self.CONFIG_USER_INPUTS].items():
