@@ -25,22 +25,29 @@ class FitnessParameter:
         self.weight = weight
         self.is_ratio_from_max = is_ratio_from_max
         self.max_ratio_value = None
+        self.min_ratio_value = None
 
     def get_normalized_value(self, raw_value):
-        normalized_value = raw_value * self._get_parameter_normalizer() * self.weight
         if self.is_ratio_from_max:
             # use ratio if relevant
-            return normalized_value / (self.max_ratio_value * self._get_parameter_normalizer()) \
-                if self.max_ratio_value else normalized_value
-        return normalized_value
+            return self._get_value_from_ratio(raw_value) * self.weight
+        return raw_value * self._get_parameter_normalizer() * self.weight
+    
+    def _get_value_from_ratio(self, raw_value):
+        return (
+            raw_value * self._get_parameter_normalizer() if self.max_ratio_value is None
+            else (raw_value - self.min_ratio_value) / (self.max_ratio_value - self.min_ratio_value)
+        )
 
     def _get_parameter_normalizer(self):
         return 0.01 if "%" in self.name else 1
 
-    def update_max_ratio(self, full_result):
+    def update_ratio(self, full_result):
         try:
             if self.max_ratio_value is None or full_result[self.name] > self.max_ratio_value:
                 self.max_ratio_value = full_result[self.name]
+            if self.min_ratio_value is None or full_result[self.name] < self.min_ratio_value:
+                self.min_ratio_value = full_result[self.name]
         except KeyError:
             pass
 

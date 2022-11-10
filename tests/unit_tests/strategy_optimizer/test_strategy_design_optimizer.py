@@ -13,6 +13,8 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
+import math
+
 import pytest
 import pytest_asyncio
 import mock
@@ -149,7 +151,10 @@ async def test_resume_genetic_mode(optimizer_inputs):
                     _get_all_finished_run_results_mock, \
             mock.patch.object(strategy_optimizer.StrategyDesignOptimizer, "_send_optimizer_finished_notification",
                               mock.AsyncMock()) as \
-                    _send_optimizer_finished_notification_mock:
+                    _send_optimizer_finished_notification_mock, \
+            mock.patch.object(strategy_optimizer.StrategyDesignOptimizer, "_check_target_fitness",
+                              mock.Mock(side_effect=fitness_score_checker)) as \
+                    _check_target_fitness_mock:
         optimizer = bot_module_api.create_design_strategy_optimizer(
             trading_mode,
             optimizer_settings,
@@ -161,6 +166,14 @@ async def test_resume_genetic_mode(optimizer_inputs):
         _generate_first_generation_run_data_mock.assert_awaited_once()
         _send_optimizer_finished_notification_mock.assert_awaited_once()
         assert optimizer_settings.generations_count > multi_processed_optimize_mock.call_count > 0
+        assert optimizer_settings.generations_count > _check_target_fitness_mock.call_count > 1
+
+
+def fitness_score_checker(_, run_results):
+    assert run_results
+    for run_result in run_results:
+        if not 0 <= run_result.score <= 1:
+            raise AssertionError(f"Invalid fitness score for: {run_result}")
 
 
 def _get_ui_identifier(tentacle, user_input_name):
@@ -305,8 +318,9 @@ EXPECTED_RUNS_FROM_MOCK = {
 
 
 def _get_mocked_run_result(period_length_val, constrained_risk_val, time_frame_val):
-    gains = period_length_val * commons_enums.TimeFramesMinutes[time_frame_val]
-    r2 = period_length_val / commons_enums.TimeFramesMinutes[time_frame_val]
+    gains = math.pow(-1, period_length_val % 3) * period_length_val * commons_enums.TimeFramesMinutes[time_frame_val] \
+        * 1/3 / 100  # make sure gains are between -100 and 100
+    r2 = period_length_val / commons_enums.TimeFramesMinutes[time_frame_val] / 3  # make sure R2 is between 0 and 1
     trades = commons_enums.TimeFramesMinutes[time_frame_val]
     return {
         commons_enums.BacktestingMetadata.PERCENT_GAINS.value: gains,
