@@ -84,9 +84,6 @@ class OptimizerSettings:
         self.max_mutation_number_multiplier = decimal.Decimal(settings_dict.get(
             enums.OptimizerConfig.DEFAULT_MAX_MUTATION_NUMBER_MULTIPLIER.value,
             constants.OPTIMIZER_DEFAULT_MAX_MUTATION_NUMBER_MULTIPLIER))
-        self.crossover_percent = float(settings_dict.get(
-            enums.OptimizerConfig.DEFAULT_CROSSOVER_PERCENT.value,
-            constants.OPTIMIZER_DEFAULT_CROSSOVER_PERCENT))
         self.target_fitness_score = settings_dict.get(enums.OptimizerConfig.TARGET_FITNESS_SCORE.value)
         self.stay_within_boundaries = settings_dict.get(enums.OptimizerConfig.STAY_WITHIN_BOUNDARIES.value,
                                                         False)

@@ -616,8 +616,8 @@ class StrategyDesignOptimizer:
             all_run_results,
             generation_id
     ):
-        crossovers_count = int(optimizer_settings.run_per_generation * optimizer_settings.crossover_percent / 100)
         mutations_count = int(optimizer_settings.run_per_generation * optimizer_settings.mutation_percent / 100)
+        crossovers_count = int(optimizer_settings.run_per_generation - mutations_count)
         new_generation = []
         # 0. init ui config
         for parent in current_generation_results:
@@ -627,6 +627,10 @@ class StrategyDesignOptimizer:
         best_parents_pairs = self._get_score_sorted_pairs(current_generation_results)
         for left_parent, right_parent in best_parents_pairs:
             new_generation.append(self._crossover(left_parent, right_parent))
+            # avoid duplicate children
+            new_generation = self._remove_duplicate(new_generation)
+            if len(new_generation) >= crossovers_count + mutations_count:
+                break
         self.logger.info(f"Generated {len(new_generation)} new runs based on top previous runs")
         # 2. mutations
         start_mutations_index = crossovers_count
@@ -641,7 +645,7 @@ class StrategyDesignOptimizer:
         self.logger.info(f"Added mutations to {mutations_count} of the generated runs")
         # 3. filter invalid configurations according to filters and already run configurations
         filtered_new_generation = self._filter_generation(new_generation, all_run_results)
-        self.logger.info(f"Filtered already run configurations")
+        self.logger.info(f"Filtered {len(new_generation) - len(filtered_new_generation)} already run configurations")
         if len(filtered_new_generation) == 0:
             # nothing else to run, stop optimization
             self.logger.info(f"No more run to generate")
@@ -655,16 +659,15 @@ class StrategyDesignOptimizer:
             )
             for run in filtered_new_generation
         ])
-        self.logger.info(f"Evaluating new generation:\n{formatted_new_generation}")
+        self.logger.info(f"Evaluating new generation of {len(filtered_new_generation)} elements :"
+                         f"\n{formatted_new_generation}")
         new_generation = filtered_new_generation
-        # 4. fill with parents to retain the same amounts to compare and mutate in next generation
+        # 4. add parents to retain the same amounts to compare and mutate in next generation
         already_run_index = len(new_generation) - 1
-        if len(new_generation) < optimizer_settings.run_per_generation:
-            missing_elements_count = optimizer_settings.run_per_generation - len(new_generation)
-            new_generation += [
-                result.optimizer_run_data
-                for result in current_generation_results[:missing_elements_count]
-            ]
+        new_generation += [
+            result.optimizer_run_data
+            for result in current_generation_results[:optimizer_settings.run_per_generation]
+        ]
         # 5. return new generation
         return {i: element for i, element in enumerate(new_generation)}, already_run_index
 
@@ -688,13 +691,15 @@ class StrategyDesignOptimizer:
             if self._is_run_allowed(element) and not self._is_already_run(element, all_run_results)
         ]
         # remove duplicated in generation
+        return self._remove_duplicate(not_ran_elements)
+
+    def _remove_duplicate(self, run_data_elements):
         return list(
             {
                 self.get_run_hash(element): element
-                for element in not_ran_elements
+                for element in run_data_elements
             }.values()
         )
-
 
     def _is_already_run(self, element, all_run_results):
         try:
