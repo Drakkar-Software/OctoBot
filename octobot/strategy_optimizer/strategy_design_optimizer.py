@@ -34,6 +34,7 @@ import math
 import octobot.strategy_optimizer.scored_run_result as scored_run_result
 import octobot.strategy_optimizer.optimizer_settings as optimizer_settings_import
 import octobot.strategy_optimizer.optimizer_filter as optimizer_filter
+import octobot.enums as enums
 import octobot_commons.optimization_campaign as optimization_campaign
 import octobot_commons.constants as commons_constants
 import octobot_commons.enums as commons_enums
@@ -450,9 +451,9 @@ class StrategyDesignOptimizer:
 
     async def resume(self, optimizer_settings: optimizer_settings_import.OptimizerSettings):
         self.total_nb_runs = await self._get_total_nb_runs(optimizer_settings.optimizer_ids)
-        if optimizer_settings.optimizer_mode == commons_enums.OptimizerModes.GENETIC.value:
+        if optimizer_settings.optimizer_mode == enums.OptimizerModes.GENETIC.value:
             return await self._launch_automated_optimization(optimizer_settings)
-        elif optimizer_settings.optimizer_mode == commons_enums.OptimizerModes.NORMAL.value:
+        elif optimizer_settings.optimizer_mode == enums.OptimizerModes.NORMAL.value:
             return await self.multi_processed_optimize(optimizer_settings)
         else:
             raise NotImplementedError(f"Unknown optimizer mode: {optimizer_settings.optimizer_mode}")

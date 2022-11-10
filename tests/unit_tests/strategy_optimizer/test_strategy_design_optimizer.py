@@ -18,6 +18,7 @@ import pytest_asyncio
 import mock
 
 import octobot.api as bot_module_api
+import octobot.enums as enums
 import octobot.strategy_optimizer as strategy_optimizer
 import octobot_trading.api as trading_api
 import octobot_tentacles_manager.api as tentacles_manager_api
@@ -49,7 +50,7 @@ async def optimizer_inputs():
 async def test_generate_and_save_strategy_optimizer_runs(optimizer_inputs):
     tentacles_setup_config, trading_mode = optimizer_inputs
     optimizer_settings = bot_module_api.create_strategy_optimizer_settings({
-        commons_enums.OptimizerConfig.OPTIMIZER_CONFIG.value: MOCKED_OPTIMIZER_CONFIG,
+        enums.OptimizerConfig.OPTIMIZER_CONFIG.value: MOCKED_OPTIMIZER_CONFIG,
     })
     with mock.patch.object(databases.TinyDBAdaptor, "create_identifier", mock.AsyncMock()) as create_identifier_mock, \
             mock.patch.object(strategy_optimizer.StrategyDesignOptimizer, "_save_run_schedule", mock.AsyncMock()) as \
@@ -70,12 +71,12 @@ async def test_generate_and_save_strategy_optimizer_runs(optimizer_inputs):
 async def test_resume_unknown_mode(optimizer_inputs):
     tentacles_setup_config, trading_mode = optimizer_inputs
     optimizer_settings = bot_module_api.create_strategy_optimizer_settings({
-        commons_enums.OptimizerConfig.OPTIMIZER_CONFIG.value: MOCKED_OPTIMIZER_CONFIG,
-        commons_enums.OptimizerConfig.OPTIMIZER_IDS.value: [1],
-        commons_enums.OptimizerConfig.MODE.value: "plop",
+        enums.OptimizerConfig.OPTIMIZER_CONFIG.value: MOCKED_OPTIMIZER_CONFIG,
+        enums.OptimizerConfig.OPTIMIZER_IDS.value: [1],
+        enums.OptimizerConfig.MODE.value: "plop",
     })
     with mock.patch.object(strategy_optimizer.StrategyDesignOptimizer, "_get_total_nb_runs",
-                          mock.AsyncMock(return_value=5)) as _get_total_nb_runs_mock:
+                           mock.AsyncMock(return_value=5)) as _get_total_nb_runs_mock:
         optimizer = bot_module_api.create_design_strategy_optimizer(
             trading_mode,
             optimizer_settings,
@@ -90,19 +91,19 @@ async def test_resume_unknown_mode(optimizer_inputs):
 async def test_resume_normal_mode(optimizer_inputs):
     tentacles_setup_config, trading_mode = optimizer_inputs
     optimizer_settings = bot_module_api.create_strategy_optimizer_settings({
-        commons_enums.OptimizerConfig.OPTIMIZER_CONFIG.value: MOCKED_OPTIMIZER_CONFIG,
-        commons_enums.OptimizerConfig.DATA_FILES.value: ["data_file"],
-        commons_enums.OptimizerConfig.OPTIMIZER_IDS.value: [1],
-        commons_enums.OptimizerConfig.RANDOMLY_CHOSE_RUNS.value: False,
-        commons_enums.OptimizerConfig.START_TIMESTAMP.value: 1661990400,
-        commons_enums.OptimizerConfig.END_TIMESTAMP.value: 1667347200,
-        commons_enums.OptimizerConfig.IDLE_CORES.value: 5,
-        commons_enums.OptimizerConfig.NOTIFY_WHEN_COMPLETE.value: True,
-        commons_enums.OptimizerConfig.MODE.value: commons_enums.OptimizerModes.NORMAL.value,
-        commons_enums.OptimizerConfig.EMPTY_THE_QUEUE.value: False,
+        enums.OptimizerConfig.OPTIMIZER_CONFIG.value: MOCKED_OPTIMIZER_CONFIG,
+        enums.OptimizerConfig.DATA_FILES.value: ["data_file"],
+        enums.OptimizerConfig.OPTIMIZER_IDS.value: [1],
+        enums.OptimizerConfig.RANDOMLY_CHOSE_RUNS.value: False,
+        enums.OptimizerConfig.START_TIMESTAMP.value: 1661990400,
+        enums.OptimizerConfig.END_TIMESTAMP.value: 1667347200,
+        enums.OptimizerConfig.IDLE_CORES.value: 5,
+        enums.OptimizerConfig.NOTIFY_WHEN_COMPLETE.value: True,
+        enums.OptimizerConfig.MODE.value: enums.OptimizerModes.NORMAL.value,
+        enums.OptimizerConfig.EMPTY_THE_QUEUE.value: False,
     })
     with mock.patch.object(strategy_optimizer.StrategyDesignOptimizer, "_get_total_nb_runs",
-                          mock.AsyncMock(return_value=5)) as _get_total_nb_runs_mock, \
+                           mock.AsyncMock(return_value=5)) as _get_total_nb_runs_mock, \
             mock.patch.object(strategy_optimizer.StrategyDesignOptimizer, "multi_processed_optimize",
                               mock.AsyncMock(return_value=True)) as multi_processed_optimize_mock:
         optimizer = bot_module_api.create_design_strategy_optimizer(
@@ -119,25 +120,25 @@ async def test_resume_normal_mode(optimizer_inputs):
 async def test_resume_genetic_mode(optimizer_inputs):
     tentacles_setup_config, trading_mode = optimizer_inputs
     optimizer_settings = bot_module_api.create_strategy_optimizer_settings({
-        commons_enums.OptimizerConfig.OPTIMIZER_CONFIG.value: MOCKED_OPTIMIZER_CONFIG,
-        commons_enums.OptimizerConfig.DATA_FILES.value: ["data_file"],
-        commons_enums.OptimizerConfig.OPTIMIZER_IDS.value: [1],
-        commons_enums.OptimizerConfig.RANDOMLY_CHOSE_RUNS.value: False,
-        commons_enums.OptimizerConfig.START_TIMESTAMP.value: 1661990400,
-        commons_enums.OptimizerConfig.END_TIMESTAMP.value: 1667347200,
-        commons_enums.OptimizerConfig.IDLE_CORES.value: 0,
-        commons_enums.OptimizerConfig.NOTIFY_WHEN_COMPLETE.value: True,
-        commons_enums.OptimizerConfig.MODE.value: commons_enums.OptimizerModes.GENETIC.value,
-        commons_enums.OptimizerConfig.EMPTY_THE_QUEUE.value: False,
-        commons_enums.OptimizerConfig.DEFAULT_GENERATIONS_COUNT.value: 10,
-        commons_enums.OptimizerConfig.STAY_WITHIN_BOUNDARIES.value: False,
-        commons_enums.OptimizerConfig.INITIAL_GENERATION_COUNT.value: 8,
-        commons_enums.OptimizerConfig.DEFAULT_RUN_PER_GENERATION.value: 8,
-        commons_enums.OptimizerConfig.TARGET_FITNESS_SCORE.value: None,
-        commons_enums.OptimizerConfig.DEFAULT_OPTIMIZER_CONSTRAINTS.value: MOCKED_OPTIMIZER_CONSTRAINTS,
+        enums.OptimizerConfig.OPTIMIZER_CONFIG.value: MOCKED_OPTIMIZER_CONFIG,
+        enums.OptimizerConfig.DATA_FILES.value: ["data_file"],
+        enums.OptimizerConfig.OPTIMIZER_IDS.value: [1],
+        enums.OptimizerConfig.RANDOMLY_CHOSE_RUNS.value: False,
+        enums.OptimizerConfig.START_TIMESTAMP.value: 1661990400,
+        enums.OptimizerConfig.END_TIMESTAMP.value: 1667347200,
+        enums.OptimizerConfig.IDLE_CORES.value: 0,
+        enums.OptimizerConfig.NOTIFY_WHEN_COMPLETE.value: True,
+        enums.OptimizerConfig.MODE.value: enums.OptimizerModes.GENETIC.value,
+        enums.OptimizerConfig.EMPTY_THE_QUEUE.value: False,
+        enums.OptimizerConfig.DEFAULT_GENERATIONS_COUNT.value: 10,
+        enums.OptimizerConfig.STAY_WITHIN_BOUNDARIES.value: False,
+        enums.OptimizerConfig.INITIAL_GENERATION_COUNT.value: 8,
+        enums.OptimizerConfig.DEFAULT_RUN_PER_GENERATION.value: 8,
+        enums.OptimizerConfig.TARGET_FITNESS_SCORE.value: None,
+        enums.OptimizerConfig.DEFAULT_OPTIMIZER_CONSTRAINTS.value: MOCKED_OPTIMIZER_CONSTRAINTS,
     })
     with mock.patch.object(strategy_optimizer.StrategyDesignOptimizer, "_get_total_nb_runs",
-                          mock.AsyncMock(return_value=5)) as _get_total_nb_runs_mock, \
+                           mock.AsyncMock(return_value=5)) as _get_total_nb_runs_mock, \
             mock.patch.object(strategy_optimizer.StrategyDesignOptimizer, "multi_processed_optimize",
                               mock.AsyncMock(return_value=True)) as multi_processed_optimize_mock, \
             mock.patch.object(strategy_optimizer.StrategyDesignOptimizer, "_generate_first_generation_run_data",
