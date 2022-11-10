@@ -10,6 +10,10 @@ fi
 
 # start s3fs if bucket name is provided
 # https://github.com/s3fs-fuse/s3fs-fuse
+# https://www.mankier.com/1/s3fs#Performance_Considerations-Performance_of_S3_requests
+# TODO : 
+# - fix -o use_cache=/tmp
+# - try -o ecs
 if [[ -n "$S3FS_BUCKET_NAME" ]]; then
-   s3fs $S3FS_BUCKET_NAME $S3FS_MOUNT_POINT -o use_cache=/tmp -o iam_role=auto -o allow_other -o umask=000
+   s3fs $S3FS_BUCKET_NAME $S3FS_MOUNT_POINT -o iam_role=auto -o allow_other -o umask=000 -o enable_noobj_cache -o notsup_compat_dir -o multireq_max=50
 fi
