@@ -11,5 +11,5 @@ fi
 # start efs if file system id is provided
 # https://github.com/aws/efs-utils
 if [[ -n "$EFS_FS_ID" ]]; then
-    sudo mount -t efs -o tls,iam $EFS_FS_ID $EFS_MOUNT_POINT
+    mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport $EFS_FS_ID.efs.$EFS_FS_REGION.amazonaws.com:/ $EFS_MOUNT_POINT
 fi
