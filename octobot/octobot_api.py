@@ -53,6 +53,9 @@ class OctoBotAPI:
     def get_tentacles_setup_config(self) -> object:
         return self._octobot.tentacles_setup_config
 
+    def get_startup_messages(self) -> list:
+        return self._octobot.startup_messages
+
     def get_start_time(self) -> float:
         return self._octobot.start_time
 

@@ -25,7 +25,7 @@ def _apply_exchanges_limits(dict_config, logger, limit):
         for exchange, config in dict_config[common_constants.CONFIG_EXCHANGES].items()
         if config.get(common_constants.CONFIG_ENABLED_OPTION, True)
     ]
-    if limit != constants.UNLIMITED_ALLOWED and len(exchanges) > limit:
+    if len(exchanges) > limit:
         enabled_exchanges = []
         for exchange, config in dict_config[common_constants.CONFIG_EXCHANGES].items():
             if config.get(common_constants.CONFIG_ENABLED_OPTION, True):
@@ -34,40 +34,55 @@ def _apply_exchanges_limits(dict_config, logger, limit):
                 else:
                     config[common_constants.CONFIG_ENABLED_OPTION] = False
                     logger.warning("Disabled : " + exchange)
-        logger.error(f"Too many enabled exchanges, maximum allowed is {limit}. Enabled : {enabled_exchanges}")
+        return f"Too many enabled exchanges, maximum allowed is {limit}. Enabled : {', '.join(enabled_exchanges)}"
+    return ""
 
 
 def _apply_symbols_limits(dict_config, logger, limit):
-    if limit != constants.UNLIMITED_ALLOWED:
-        enabled_symbols = []
-        for currency, crypto_currency_data in dict_config[common_constants.CONFIG_CRYPTO_CURRENCIES].items():
-            if crypto_currency_data.get(common_constants.CONFIG_ENABLED_OPTION, True):
-                if len(enabled_symbols) >= limit:
+    enabled_symbols = []
+    has_disabled_symbols = False
+    message = ""
+    for currency, crypto_currency_data in dict_config[common_constants.CONFIG_CRYPTO_CURRENCIES].items():
+        if crypto_currency_data.get(common_constants.CONFIG_ENABLED_OPTION, True):
+            if len(enabled_symbols) >= limit:
+                crypto_currency_data[common_constants.CONFIG_ENABLED_OPTION] = False
+                logger.warning(f"Disabled : {currency}")
+                has_disabled_symbols = True
+                continue
+            updated_symbols = []
+            for symbol in crypto_currency_data[common_constants.CONFIG_CRYPTO_PAIRS]:
+                if symbol == common_constants.CONFIG_SYMBOLS_WILDCARD[0] \
+                        or symbol == common_constants.CONFIG_SYMBOLS_WILDCARD:
                     crypto_currency_data[common_constants.CONFIG_ENABLED_OPTION] = False
-                    logger.warning(f"Disabled : {currency}")
-                    continue
-                updated_symbols = []
-                for symbol in crypto_currency_data[common_constants.CONFIG_CRYPTO_PAIRS]:
-                    if symbol == common_constants.CONFIG_SYMBOLS_WILDCARD[0] \
-                            or symbol == common_constants.CONFIG_SYMBOLS_WILDCARD:
-                        crypto_currency_data[common_constants.CONFIG_ENABLED_OPTION] = False
-                        logger.warning(f"Disabled wildcard symbol for {currency}")
-                        break
+                    message = f"Disabled wildcard symbol for {currency}. "
+                    has_disabled_symbols = True
+                    break
+                else:
+                    if len(enabled_symbols) < limit:
+                        enabled_symbols.append(symbol)
+                        updated_symbols.append(symbol)
                     else:
-                        if len(enabled_symbols) < limit:
-                            enabled_symbols.append(symbol)
-                            updated_symbols.append(symbol)
-                        else:
-                            logger.warning(f"Disabled : {symbol}")
-                crypto_currency_data[common_constants.CONFIG_CRYPTO_PAIRS] = updated_symbols
-        if len(trading_api.get_config_symbols(dict_config, True)) > limit:
-            logger.error(f"Too many trading pairs, maximum allowed is {limit}. Enabled : {enabled_symbols}")
+                        has_disabled_symbols = True
+                        logger.warning(f"Disabled : {symbol}")
+            crypto_currency_data[common_constants.CONFIG_CRYPTO_PAIRS] = updated_symbols
+    if has_disabled_symbols:
+        return f"{message}Too many trading pairs, maximum allowed is {limit}. Enabled : {', '.join(enabled_symbols)}"
+    return message
 
 
-def apply_config_limits(configuration):
+def apply_config_limits(configuration) -> list:
     logger = logging.get_logger("ConfigurationLimits")
+    limit_warning_messages = []
     try:
-        _apply_exchanges_limits(configuration.config, logger, constants.MAX_ALLOWED_EXCHANGES)
-        _apply_symbols_limits(configuration.config, logger, constants.MAX_ALLOWED_SYMBOLS)
+        if constants.MAX_ALLOWED_EXCHANGES != constants.UNLIMITED_ALLOWED:
+            if message := _apply_exchanges_limits(configuration.config, logger, constants.MAX_ALLOWED_EXCHANGES):
+                limit_warning_messages.append(message)
+        if constants.MAX_ALLOWED_SYMBOLS != constants.UNLIMITED_ALLOWED:
+            if message := _apply_symbols_limits(configuration.config, logger, constants.MAX_ALLOWED_SYMBOLS):
+                limit_warning_messages.append(message)
     except Exception as err:
         logger.exception(err, True, f"Error when applying limits: {err}")
+    if limit_warning_messages:
+        for message in limit_warning_messages:
+            logger.error(message)
+    return limit_warning_messages
