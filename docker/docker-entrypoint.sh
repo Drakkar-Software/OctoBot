@@ -11,6 +11,9 @@ python aws.py
 # Mount s3fs
 bash s3fs.sh
 
+# Mount efs
+bash efs.sh
+
 # Start cloudflared tunnel
 bash tunnel.sh
 
