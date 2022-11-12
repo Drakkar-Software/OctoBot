@@ -42,6 +42,7 @@ import octobot.constants as constants
 import octobot.disclaimer as disclaimer
 import octobot.logger as octobot_logger
 import octobot.community as octobot_community
+import octobot.limits as limits
 
 
 def update_config_with_args(starting_args, config: configuration.Configuration, logger):
@@ -230,6 +231,9 @@ def start_octobot(args):
 
         # Keep track of errors if any
         octobot_community.register_error_uploader(constants.ERRORS_POST_ENDPOINT, config)
+
+        # Apply config limits if any
+        limits.apply_config_limits(config)
 
         # create OctoBot instance
         if args.backtesting:
