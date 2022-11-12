@@ -193,6 +193,7 @@ def start_octobot(args):
             return
 
         logger = octobot_logger.init_logger()
+        startup_messages = []
 
         # Version
         logger.info("Version : {0}".format(constants.LONG_VERSION))
@@ -233,7 +234,7 @@ def start_octobot(args):
         octobot_community.register_error_uploader(constants.ERRORS_POST_ENDPOINT, config)
 
         # Apply config limits if any
-        limits.apply_config_limits(config)
+        startup_messages += limits.apply_config_limits(config)
 
         # create OctoBot instance
         if args.backtesting:
@@ -242,7 +243,8 @@ def start_octobot(args):
                                                                 enable_join_timeout=args.enable_backtesting_timeout,
                                                                 enable_logs=not args.no_logs)
         else:
-            bot = octobot_class.OctoBot(config, reset_trading_history=args.reset_trading_history)
+            bot = octobot_class.OctoBot(config, reset_trading_history=args.reset_trading_history,
+                                        startup_messages=startup_messages)
 
         # set global bot instance
         octobot.set_bot(bot)
