@@ -51,11 +51,13 @@ class OctoBot:
     - Load configs
     """
 
-    def __init__(self, config: configuration.Configuration, ignore_config=False, reset_trading_history=False):
+    def __init__(self, config: configuration.Configuration, ignore_config=False,
+                 reset_trading_history=False, startup_messages=None):
         self.start_time = time.time()
         self.config = config.config
         self.ignore_config = ignore_config
         self.reset_trading_history = reset_trading_history
+        self.startup_messages = startup_messages
 
         # tentacle setup configuration
         self.tentacles_setup_config = None
@@ -139,7 +141,13 @@ class OctoBot:
         self.configuration_manager.add_element(constants.TENTACLES_SETUP_CONFIG_KEY, self.tentacles_setup_config)
         await service_api.send_notification(
             service_api.create_notification(f"{constants.PROJECT_NAME} {constants.LONG_VERSION} is starting ...",
-                                            markdown_format=enums.MarkdownFormat.ITALIC))
+                                            markdown_format=enums.MarkdownFormat.ITALIC)
+        )
+        if self.startup_messages:
+            for limit_message in self.startup_messages:
+                await service_api.send_notification(
+                    service_api.create_notification(limit_message)
+                )
         self._init_metadata_run_task = asyncio.create_task(self._store_run_metadata_when_available())
 
     async def _wait_for_run_data_init(self, exchange_managers, timeout):

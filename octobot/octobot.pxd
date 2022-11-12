@@ -30,6 +30,7 @@ cdef class OctoBot:
     cdef public bint reset_trading_history
     cdef public bint initialized
     cdef public bint ignore_config
+    cdef public list startup_messages
 
     cdef public dict tools
     cdef public dict config
