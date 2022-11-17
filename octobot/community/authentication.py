@@ -250,9 +250,9 @@ class CommunityAuthentication(authentication.Authenticator):
             try:
                 await self.select_bot(saved_uuid)
                 return
-            except errors.BotNotFoundError:
+            except errors.BotNotFoundError as e:
                 # proceed to 2.
-                pass
+                self.logger.warning(str(e))
         # 2. fetch all user bots and create one if none, otherwise ask use for which one to use
         await self.load_user_bots()
         if len(self.user_account.get_all_user_bots_raw_data()) == 0:
