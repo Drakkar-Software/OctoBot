@@ -20,6 +20,9 @@ import octobot.community.errors as errors
 class CommunityUserAccount:
     USER_DATA_CONTENT = "content"
     BOT_DEVICE = "device"
+    BOT_DEPLOYMENT = "deployment"
+    BOT_DEPLOYMENT_TYPE = "type"
+    SELF_HOSTED_BOT_DEPLOYMENT_TYPE = "self-hosted"
     NO_SELECTED_BOT_DESC = "No selected bot. Please select a bot to enable your community features."
 
     def __init__(self):
