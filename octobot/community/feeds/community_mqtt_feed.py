@@ -52,6 +52,7 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
         self.mqtt_broker_port = self.MQTT_BROKER_PORT
         self.default_QOS = self.default_QOS
         self.associated_gql_bot_id = None
+        self.subscribed = False
 
         self._mqtt_client: gmqtt.Client = None
         self._valid_auth = True
@@ -99,6 +100,9 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
     def is_connected(self):
         return self._mqtt_client is not None and self._mqtt_client.is_connected
 
+    def is_connected_to_remote_feed(self):
+        return self.subscribed
+
     def can_connect(self):
         return self._valid_auth
 
@@ -137,6 +141,7 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
         try:
             self._ensure_supported(parsed_message)
             if self._should_process(parsed_message):
+                self.update_last_message_time()
                 for callback in self._get_callbacks(topic):
                     await callback(parsed_message)
         except commons_errors.UnsupportedError as err:
@@ -197,6 +202,8 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
 
     def _on_connect(self, client, flags, rc, properties):
         self.logger.info(f"Connected, client_id: {client._client_id}")
+        # There are no subscription when we just connected
+        self.subscribed = False
         # Auto subscribe to known topics (mainly used in case of reconnection)
         self._subscribe(self._subscription_topics)
 
@@ -247,9 +254,11 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
                     self.logger.error(f"Max subscription attempts reached, stopping subscription "
                                       f"to {[s.topic for s in subscriptions]}. Are you subscribing to this "
                                       f"strategy on your OctoBot account ?")
+                    self.subscribed = False
                     return
             else:
                 self._subscription_attempts = 0
+                self.subscribed = True
                 self.logger.info(f"Subscribed, client_id: {client._client_id}, mid {mid}, QOS: {granted_qos}, "
                                  f"properties {properties}")
 
