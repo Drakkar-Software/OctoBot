@@ -13,6 +13,8 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
+import time
+
 import octobot_commons.logging as bot_logging
 
 
@@ -26,6 +28,7 @@ class AbstractFeed:
         self.authenticator = authenticator
         self.feed_callbacks = {}
         self.is_subscribed = False
+        self.last_message_time = None
 
     async def start(self):
         raise NotImplementedError("start is not implemented")
@@ -41,3 +44,9 @@ class AbstractFeed:
 
     def can_connect(self):
         return True
+
+    def is_connected_to_remote_feed(self):
+        raise NotImplementedError("is_connected_to_remote_feed is not implemented")
+
+    def update_last_message_time(self):
+        self.last_message_time = time.time()
