@@ -76,6 +76,17 @@ class CommunityAuthentication(authentication.Authenticator):
         except json.JSONDecodeError:
             return []
 
+    def is_feed_connected(self):
+        return self._community_feed is not None and self._community_feed.is_connected_to_remote_feed()
+
+    def get_feed_last_message_time(self):
+        if self._community_feed is None:
+            return None
+        return self._community_feed.last_message_time
+
+    def get_signal_community_url(self, signal_identifier):
+        return f"{identifiers_provider.IdentifiersProvider.COMMUNITY_URL}/product/{signal_identifier}"
+
     async def update_supports(self):
         self._update_supports(200, self._supports_mock())
         return
