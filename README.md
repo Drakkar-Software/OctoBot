@@ -103,15 +103,14 @@ In short :
 
 ## Exchanges
 [![Binance](../assets/binance-logo.png)](https://octobot.click/gh-binance)
-[![Binance](../assets/ftx-logo.png)](https://octobot.click/gh-ftx)
-[![Binance](../assets/okex-logo.png)](https://octobot.click/gh-okex)
-[![Binance](../assets/gateio-logo.png)](https://octobot.click/gh-gateio)
-[![Binance](../assets/huobi-logo.png)](https://octobot.click/gh-huobi)
+[![Okx](../assets/okex-logo.png)](https://octobot.click/gh-okex)
+[![GateIO](../assets/gateio-logo.png)](https://octobot.click/gh-gateio)
+[![Huobi](../assets/huobi-logo.png)](https://octobot.click/gh-huobi)
 [![Hollaex](../assets/hollaex-logo.png)](https://octobot.click/gh-hollaex)
 [![Coinbase](../assets/coinbasepro-logo.png)](https://pro.coinbase.com)
 [![Kucoin](../assets/kucoin-logo.png)](https://www.kucoin.com)
 [![Bitmex](../assets/bitmex-logo.png)](https://bitmex.com)
-[![Bitmax](../assets/ascendex-logo.png)](https://octobot.click/gh-ascendex)
+[![Ascendex](../assets/ascendex-logo.png)](https://octobot.click/gh-ascendex)
 
 Octobot supports many [exchanges](https://octobot.click/gh-exchanges) thanks to the [ccxt library](https://github.com/ccxt/ccxt). 
 To activate trading on an exchange, just configure OctoBot with your API keys as described [on the exchange documentation](https://www.octobot.online/guides/#exchanges).
