@@ -26,6 +26,7 @@ import octobot_commons.signals as signals
 import octobot_commons.databases as databases
 import octobot_commons.tree as commons_tree
 import octobot_commons.os_clock_sync as os_clock_sync
+import octobot_commons.system_resources_watcher as system_resources_watcher
 
 import octobot_services.api as service_api
 import octobot_trading.api as trading_api
@@ -118,6 +119,7 @@ class OctoBot:
         await logger.init_octobot_chan_logger(self.bot_id)
         await self.create_producers()
         await self.start_producers()
+        await system_resources_watcher.start_system_resources_watcher()
         await self._post_initialize()
 
     async def create_producers(self):
@@ -185,6 +187,7 @@ class OctoBot:
             await self.community_auth.stop()
             await self.service_feed_producer.stop()
             await os_clock_sync.stop_clock_synchronizer()
+            await system_resources_watcher.stop_system_resources_watcher()
             service_api.stop_services()
             await self.interface_producer.stop()
             await databases.close_bot_storage(self.bot_id)
