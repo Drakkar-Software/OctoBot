@@ -76,6 +76,17 @@ class CommunityAuthentication(authentication.Authenticator):
         except json.JSONDecodeError:
             return []
 
+    def is_feed_connected(self):
+        return self._community_feed is not None and self._community_feed.is_connected_to_remote_feed()
+
+    def get_feed_last_message_time(self):
+        if self._community_feed is None:
+            return None
+        return self._community_feed.last_message_time
+
+    def get_signal_community_url(self, signal_identifier):
+        return f"{identifiers_provider.IdentifiersProvider.COMMUNITY_URL}/product/{signal_identifier}"
+
     async def update_supports(self):
         self._update_supports(200, self._supports_mock())
         return
@@ -250,9 +261,9 @@ class CommunityAuthentication(authentication.Authenticator):
             try:
                 await self.select_bot(saved_uuid)
                 return
-            except errors.BotNotFoundError:
+            except errors.BotNotFoundError as e:
                 # proceed to 2.
-                pass
+                self.logger.warning(str(e))
         # 2. fetch all user bots and create one if none, otherwise ask use for which one to use
         await self.load_user_bots()
         if len(self.user_account.get_all_user_bots_raw_data()) == 0:
@@ -279,7 +290,28 @@ class CommunityAuthentication(authentication.Authenticator):
         await self.on_new_bot_select()
 
     async def load_user_bots(self):
-        self.user_account.set_all_user_bots_raw_data(await self._fetch_bots())
+        self.user_account.set_all_user_bots_raw_data(
+            self._get_self_hosted_bots(
+                await self._fetch_bots()
+            )
+        )
+
+    def _get_self_hosted_bots(self, bots):
+        return [
+            bot
+            for bot in bots
+            if self.is_self_hosted(bot)
+        ]
+
+    def is_self_hosted(self, bot):
+        deployment = bot.get(self.user_account.BOT_DEPLOYMENT)
+        if not deployment:
+            return True
+        try:
+            return deployment[self.user_account.BOT_DEPLOYMENT_TYPE] == \
+                   self.user_account.SELF_HOSTED_BOT_DEPLOYMENT_TYPE
+        except KeyError:
+            return True
 
     async def on_new_bot_select(self):
         await self._update_feed_device_uuid_if_necessary()
