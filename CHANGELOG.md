@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [0.4.21] - 2022-11-23
+### Added
+- Order quantity in Trading modes config
+- Copy trading last signal time
+### Updated
+- Improved profile page load time
+### Fixed
+- Errors on clock synchronizer
+- Exchange deletion spreading on profiles
+
 ## [0.4.20] - 2022-11-13
 ### Updated
 - Exceptions handling
