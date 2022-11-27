@@ -29,6 +29,7 @@ import octobot_backtesting.api as backtesting_api
 import octobot_backtesting.importers as importers
 
 import octobot_evaluators.api as evaluator_api
+import octobot_evaluators.constants as evaluator_constants
 
 import octobot_services.api as service_api
 
@@ -52,7 +53,8 @@ class OctoBotBacktesting:
                  start_timestamp=None,
                  end_timestamp=None,
                  enable_logs=True,
-                 enable_storage=True):
+                 enable_storage=True,
+                 run_on_all_available_time_frames=False):
         self.logger = commons_logging.get_logger(self.__class__.__name__)
         self.backtesting_config = backtesting_config
         self.tentacles_setup_config = tentacles_setup_config
@@ -72,6 +74,7 @@ class OctoBotBacktesting:
         self.exchange_type_by_exchange = {}
         self.futures_contract_type = trading_enums.FutureContractType.LINEAR_PERPETUAL
         self.enable_storage = enable_storage
+        self.run_on_all_available_time_frames = run_on_all_available_time_frames
 
     async def initialize_and_run(self):
         self.logger.info(f"Starting on {self.backtesting_files} with {self.symbols_to_create_exchange_classes}")
@@ -85,6 +88,7 @@ class OctoBotBacktesting:
             ),
             False
         )
+        await self._init_backtesting()
         await self._init_evaluators()
         await self._init_service_feeds()
         await self._init_exchanges()
@@ -266,11 +270,18 @@ class OctoBotBacktesting:
                 self.logger.error(f"Failed to start {feed.get_name()}. Evaluators requiring this service feed "
                                   f"might not work properly")
 
-    async def _init_exchanges(self):
+    async def _init_backtesting(self):
         self.backtesting = await backtesting_api.initialize_backtesting(self.backtesting_config,
                                                                         exchange_ids=self.exchange_manager_ids,
                                                                         matrix_id=self.matrix_id,
                                                                         data_files=self.backtesting_files)
+        if self.run_on_all_available_time_frames:
+            self.backtesting_config[evaluator_constants.CONFIG_FORCED_TIME_FRAME] = [
+                tf
+                for tf in self.backtesting.importers[0].time_frames
+            ]
+
+    async def _init_exchanges(self):
         # modify_backtesting_channels before creating exchanges as they require the current backtesting time to
         # initialize
         await backtesting_api.adapt_backtesting_channels(self.backtesting,
