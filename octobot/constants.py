@@ -94,8 +94,10 @@ CONFIG_COMMUNITY_ENVIRONMENT = "environment"
 USE_BETA_EARLY_ACCESS = os_util.parse_boolean_environment_var("USE_BETA_EARLY_ACCESS", "false")
 USER_ACCOUNT_EMAIL = os.getenv("USER_ACCOUNT_EMAIL", "")
 COMMUNITY_BOT_ID = os.getenv("COMMUNITY_BOT_ID", "")
+IS_DEMO = os_util.parse_boolean_environment_var("IS_DEMO", "False")
 IS_CLOUD_ENV = os_util.parse_boolean_environment_var("IS_CLOUD_ENV", "false")
 CAN_INSTALL_TENTACLES = os_util.parse_boolean_environment_var("CAN_INSTALL_TENTACLES", str(not IS_CLOUD_ENV))
+TRACKING_ID = os.getenv("TRACKING_ID", "eoe1stwyun" if IS_DEMO else "eoe06soct7")
 
 OCTOBOT_BINARY_PROJECT_NAME = "OctoBot-Binary"
 
@@ -131,7 +133,7 @@ ENV_TRADING_ENABLE_DEBUG_LOGS = os_util.parse_boolean_environment_var("ENV_TRADI
 # errors
 ERRORS_URL = os.getenv("ERRORS_OCTOBOT_ONLINE_URL", "https://errors.octobot.online/")
 ERRORS_POST_ENDPOINT = f"{ERRORS_URL}errors"
-UPLOAD_ERRORS = os_util.parse_boolean_environment_var("UPLOAD_ERRORS", "True")
+UPLOAD_ERRORS = os_util.parse_boolean_environment_var("UPLOAD_ERRORS", "False")
 DEFAULT_METRICS_ID = "UNSET"
 
 # config types keys
@@ -145,8 +147,6 @@ CONFIG_ACCEPTED_TERMS = "accepted_terms"
 CONFIG_DEBUG_OPTION = "DEV-MODE"
 FORCE_ASYNCIO_DEBUG_OPTION = False
 EXIT_BEFORE_TENTACLES_AUTO_REINSTALL = os_util.parse_boolean_environment_var("EXIT_BEFORE_TENTACLES_AUTO_REINSTALL", "False")
-
-IS_DEMO = os_util.parse_boolean_environment_var("IS_DEMO", "False")
 
 # Files
 # Store the path of the octobot directory from this file since it can change depending on the installation path
