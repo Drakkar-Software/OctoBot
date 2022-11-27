@@ -54,7 +54,8 @@ class IndependentBacktesting:
                  enable_logs=True,
                  stop_when_finished=False,
                  enforce_total_databases_max_size_after_run=True,
-                 enable_storage=True):
+                 enable_storage=True,
+                 run_on_all_available_time_frames=False):
         self.octobot_origin_config = config
         self.tentacles_setup_config = tentacles_setup_config
         self.backtesting_config = {}
@@ -85,7 +86,8 @@ class IndependentBacktesting:
                                                                   start_timestamp=start_timestamp,
                                                                   end_timestamp=end_timestamp,
                                                                   enable_logs=self.enable_logs,
-                                                                  enable_storage=enable_storage)
+                                                                  enable_storage=enable_storage,
+                                                                  run_on_all_available_time_frames=run_on_all_available_time_frames)
 
     async def initialize_and_run(self, log_errors=True):
         try:
