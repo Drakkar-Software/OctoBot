@@ -110,10 +110,10 @@ async def update_or_repair_tentacles_if_necessary(selected_profile_tentacles_set
             selected_profile_tentacles_version = tentacles_manager_api.get_tentacles_installation_version(
                 selected_profile_tentacles_setup_config
             )
-            logger.warning(f"Current imported profile \"{config.profile.name}\" references tentacles in a different "
-                           f"version from the current OctoBot. Referenced version: "
-                           f"{selected_profile_tentacles_version}, current OctoBot version: {constants.VERSION}. "
-                           f"This profile might not work properly.")
+            logger.info(f"Current imported profile \"{config.profile.name}\" references tentacles in a different "
+                        f"version from the current OctoBot. Referenced version: "
+                        f"{selected_profile_tentacles_version}, current OctoBot version: {constants.VERSION}. "
+                        f"Please make sure that this profile works on your OctoBot.")
             # only update tentacles based on local (non imported) profiles tentacles installation version
             local_profile_tentacles_setup_config = _get_first_non_imported_profile_tentacles_setup_config(config)
     if local_profile_tentacles_setup_config is None or \
