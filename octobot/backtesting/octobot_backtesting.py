@@ -88,6 +88,7 @@ class OctoBotBacktesting:
             ),
             False
         )
+        await self._init_matrix()
         await self._init_backtesting()
         await self._init_evaluators()
         await self._init_service_feeds()
@@ -106,7 +107,11 @@ class OctoBotBacktesting:
                     await backtesting_api.stop_importer(importer)
 
     async def stop(self, memory_check=False, should_raise=False):
-        self.logger.info(f"Stopping for {self.backtesting_files} with {self.symbols_to_create_exchange_classes}")
+        symbols_by_exchange = {
+            exchange: [str(s) for s in symbols]
+            for exchange, symbols in self.symbols_to_create_exchange_classes.items()
+        }
+        self.logger.info(f"Stopping for {self.backtesting_files} with {symbols_by_exchange}")
         exchange_managers = []
         try:
             if self.backtesting is None:
@@ -240,8 +245,11 @@ class OctoBotBacktesting:
         )
         self.logger.info(f"Backtesting metadata:\n{json.dumps(metadata, indent=4)}")
 
+    async def _init_matrix(self):
+        self.matrix_id = evaluator_api.create_matrix()
+
     async def _init_evaluators(self):
-        self.matrix_id = await evaluator_api.initialize_evaluators(self.backtesting_config, self.tentacles_setup_config)
+        await evaluator_api.initialize_evaluators(self.backtesting_config, self.tentacles_setup_config)
         await evaluator_api.create_evaluator_channels(self.matrix_id, is_backtesting=True)
 
     async def _init_service_feeds(self):
@@ -271,6 +279,7 @@ class OctoBotBacktesting:
                                   f"might not work properly")
 
     async def _init_backtesting(self):
+        # update matrix id
         self.backtesting = await backtesting_api.initialize_backtesting(self.backtesting_config,
                                                                         exchange_ids=self.exchange_manager_ids,
                                                                         matrix_id=self.matrix_id,

@@ -51,9 +51,7 @@ def init_logger():
         if not os.path.exists(constants.LOGS_FOLDER):
             os.mkdir(constants.LOGS_FOLDER)
         _load_logger_config()
-        # overwrite BOT_CHANNEL_LOGGER to apply global logging configuration
-        global BOT_CHANNEL_LOGGER
-        BOT_CHANNEL_LOGGER = common_logging.get_logger("OctoBot Channel")
+        init_bot_channel_logger()
     except KeyError:
         print(
             "Impossible to start OctoBot: the logging configuration can't be found in '"
@@ -76,6 +74,12 @@ def init_logger():
 
     sys.excepthook = _log_uncaught_exceptions
     return logger
+
+
+def init_bot_channel_logger():
+    # overwrite BOT_CHANNEL_LOGGER to apply global logging configuration
+    global BOT_CHANNEL_LOGGER
+    BOT_CHANNEL_LOGGER = common_logging.get_logger("OctoBot Channel")
 
 
 def _load_logger_config():
