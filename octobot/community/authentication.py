@@ -84,6 +84,16 @@ class CommunityAuthentication(authentication.Authenticator):
             return None
         return self._community_feed.last_message_time
 
+    def get_is_signal_receiver(self):
+        if self._community_feed is None:
+            return False
+        return self._community_feed.is_signal_receiver
+
+    def get_is_signal_emitter(self):
+        if self._community_feed is None:
+            return False
+        return self._community_feed.is_signal_emitter
+
     def get_signal_community_url(self, signal_identifier):
         return f"{identifiers_provider.IdentifiersProvider.COMMUNITY_URL}/product/{signal_identifier}"
 
@@ -349,6 +359,16 @@ class CommunityAuthentication(authentication.Authenticator):
             if self._community_feed.is_connected() or not self._community_feed.can_connect():
                 await self._ensure_bot_device()
                 self._restart_task = asyncio.create_task(self._community_feed.restart())
+
+    async def update_bot_config_and_stats(self, profile_name, profitability):
+        await self.gql_login_if_required()
+        query, variables = graphql_requests.update_bot_config_and_stats_query(
+            self.user_account.gql_bot_id,
+            profile_name,
+            profitability
+        )
+        updated_bot = await self.async_graphql_query(query, "updateOneBot", variables=variables, expected_code=200)
+        self.user_account.set_selected_bot_raw_data(updated_bot)
 
     def logout(self):
         """

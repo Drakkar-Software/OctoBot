@@ -108,6 +108,7 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
         return self._valid_auth
 
     async def register_feed_callback(self, channel_type, callback, identifier=None):
+        self.is_signal_receiver = True
         topic = self._build_topic(channel_type, identifier)
         try:
             self.feed_callbacks[topic].append(callback)
@@ -164,6 +165,7 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
         return True
 
     async def send(self, message, channel_type, identifier, **kwargs):
+        self.is_signal_emitter = True
         if not self._valid_auth:
             self.logger.warning(f"Can't send {channel_type.name}, invalid feed authentication.")
             return

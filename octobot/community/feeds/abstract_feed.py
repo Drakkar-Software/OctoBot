@@ -29,6 +29,8 @@ class AbstractFeed:
         self.feed_callbacks = {}
         self.subscribed = False
         self.last_message_time = None
+        self.is_signal_receiver = False
+        self.is_signal_emitter = False
 
     async def start(self):
         raise NotImplementedError("start is not implemented")
