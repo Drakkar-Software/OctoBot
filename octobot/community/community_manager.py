@@ -151,6 +151,7 @@ class CommunityManager:
                 community_fields.CommunityFields.EVAL_CONFIG.value: self._get_eval_config(),
                 community_fields.CommunityFields.PAIRS.value: self._get_traded_pairs(),
                 community_fields.CommunityFields.EXCHANGES.value: list(trading_api.get_exchange_names()),
+                community_fields.CommunityFields.EXCHANGE_TYPES.value: self._get_exchange_types(),
                 community_fields.CommunityFields.NOTIFICATIONS.value: self._get_notification_types(),
                 community_fields.CommunityFields.TYPE.value: os_util.get_octobot_type(),
                 community_fields.CommunityFields.PLATFORM.value: os_util.get_current_platform(),
@@ -158,9 +159,22 @@ class CommunityManager:
                 community_fields.CommunityFields.PORTFOLIO_VALUE.value: self._get_real_portfolio_value(),
                 community_fields.CommunityFields.PROFITABILITY.value: self._get_profitability(),
                 community_fields.CommunityFields.TRADED_VOLUMES.value: self._get_traded_volumes(),
-                community_fields.CommunityFields.SUPPORTS.value: self._get_supports()
+                community_fields.CommunityFields.SUPPORTS.value: self._get_supports(),
+                community_fields.CommunityFields.SIGNAL_EMITTER.value:
+                    authentication.Authenticator.instance().get_is_signal_emitter(),
+                community_fields.CommunityFields.SIGNAL_RECEIVER.value:
+                    authentication.Authenticator.instance().get_is_signal_receiver(),
+                community_fields.CommunityFields.PROFILE_NAME.value: self.edited_config.profile.name,
+                community_fields.CommunityFields.PROFILE_ID.value: self.edited_config.profile.profile_id,
+                community_fields.CommunityFields.PROFILE_IMPORTED.value: self.edited_config.profile.imported,
             }
         }
+
+    def _get_exchange_types(self):
+        return [
+            trading_api.get_exchange_type(exchange_manager).value
+            for exchange_manager in self.exchange_managers
+        ]
 
     def _get_profitability(self):
         total_origin_values = 0
