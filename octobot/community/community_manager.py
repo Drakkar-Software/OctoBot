@@ -73,11 +73,13 @@ class CommunityManager:
                 await asyncio.sleep(common_constants.TIMER_BEFORE_METRICS_REGISTRATION_SECONDS)
                 self._init_community_config()
                 await self.register_session()
+                await self._update_authenticated_bot()
                 while self.keep_running:
                     # send a keepalive at periodic intervals
                     await asyncio.sleep(common_constants.TIMER_BETWEEN_METRICS_UPTIME_UPDATE)
                     try:
                         await self._update_session()
+                        await self._update_authenticated_bot()
                     except Exception as e:
                         self.logger.debug(f"Exception when handling community data : {e}")
             except asyncio.CancelledError:
@@ -132,6 +134,12 @@ class CommunityManager:
         self.current_config[community_fields.CommunityFields.CURRENT_SESSION.value][
             community_fields.CommunityFields.TRADED_VOLUMES.value] = self._get_traded_volumes()
         await self._post_community_data(common_constants.METRICS_ROUTE_UPTIME, self.current_config, retry_on_error)
+
+    async def _update_authenticated_bot(self):
+        await authentication.Authenticator.instance().update_bot_config_and_stats(
+            self.edited_config.profile.name,
+            self._get_profitability()
+        )
 
     async def _get_current_community_config(self):
         if not self.bot_id:
