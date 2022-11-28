@@ -27,7 +27,7 @@ class AbstractFeed:
         self.should_stop = False
         self.authenticator = authenticator
         self.feed_callbacks = {}
-        self.is_subscribed = False
+        self.subscribed = False
         self.last_message_time = None
 
     async def start(self):
