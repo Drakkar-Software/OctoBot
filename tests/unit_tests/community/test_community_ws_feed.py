@@ -289,12 +289,12 @@ async def test_reconnect(authenticator):
 async def _wait_for_connection_and_subscribe(client):
     t0 = time.time()
     while time.time() - t0 < 5:
-        if client.is_connected() and client.is_subscribed:
+        if client.is_connected() and client.subscribed:
             break
         else:
             await asyncio.sleep(0.05)
     assert client.is_connected()
-    assert client.is_subscribed
+    assert client.subscribed
 
 
 async def _wait_for_receive(wait_cycles=8):
