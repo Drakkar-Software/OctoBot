@@ -44,7 +44,7 @@ class CommunityManager:
     def __init__(self, octobot_api):
         self.octobot_api = octobot_api
         self.edited_config: configuration.Configuration = octobot_api.get_edited_config(dict_only=False)
-        self.enabled = self.edited_config.get_metrics_enabled()
+        self.enabled = constants.IS_CLOUD_ENV or self.edited_config.get_metrics_enabled()
         self.reference_market = trading_api.get_reference_market(self.edited_config.config)
         self.logger = logging.get_logger(self.__class__.__name__)
         self.current_config = None
