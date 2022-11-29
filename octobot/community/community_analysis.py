@@ -20,7 +20,8 @@ import enum
 from datetime import datetime, timedelta
 
 import octobot_commons.logging as logging
-import octobot_commons.constants as constants
+import octobot_commons.constants as commons_constants
+import octobot.constants as constants
 
 import octobot.community.community_fields as community_fields
 
@@ -28,7 +29,7 @@ import octobot.community.community_fields as community_fields
 async def get_current_octobots_stats():
     logger = logging.get_logger("CommunityAnalysis")
     bots_stats = {}
-    bot_metrics_url = f"{constants.METRICS_URL}metrics/community/count/"
+    bot_metrics_url = f"{commons_constants.METRICS_URL}metrics/community/count/"
 
     async def get_stats(url, stats_key):
         try:
@@ -56,7 +57,7 @@ async def get_current_octobots_stats():
 def get_community_metrics():
     logger = logging.get_logger("CommunityAnalysis")
     try:
-        resp = requests.get(f"{constants.METRICS_URL}{constants.METRICS_ROUTE_COMMUNITY}")
+        resp = requests.get(f"{commons_constants.METRICS_URL}{commons_constants.METRICS_ROUTE_COMMUNITY}")
         if resp.status_code != 200:
             logger.error(f"Error when getting community data : error code={resp.status_code}")
         else:
@@ -66,7 +67,7 @@ def get_community_metrics():
 
 
 def can_read_metrics(config):
-    return config.get_metrics_enabled()
+    return constants.IS_CLOUD_ENV or config.get_metrics_enabled()
 
 
 def _format_community_data(json_bot_metrics):
@@ -105,7 +106,7 @@ def _get_count_last_months(json_bot_metrics, months):
     return month_count
 
 
-def _get_top_traded_item(json_bot_metrics, session_key, key, top_count=constants.COMMUNITY_TOPS_COUNT):
+def _get_top_traded_item(json_bot_metrics, session_key, key, top_count=commons_constants.COMMUNITY_TOPS_COUNT):
     last_month_min_timestamp = _get_min_timestamp(30.5)
     all_item_by_occurrence = _count_occurrences(json_bot_metrics, session_key, key, TraderTypes.ALL)
     monthly_real_item_by_occurrence = _count_occurrences(json_bot_metrics, session_key, key,
