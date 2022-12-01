@@ -29,7 +29,8 @@ def create_independent_backtesting(config,
                                    stop_when_finished=False,
                                    enforce_total_databases_max_size_after_run=True,
                                    enable_storage=True,
-                                   run_on_all_available_time_frames=False) \
+                                   run_on_all_available_time_frames=False,
+                                   backtesting_data=None) \
         -> backtesting.IndependentBacktesting:
     return backtesting.IndependentBacktesting(
         config, tentacles_setup_config, data_files,
@@ -43,6 +44,7 @@ def create_independent_backtesting(config,
         enforce_total_databases_max_size_after_run=enforce_total_databases_max_size_after_run,
         enable_storage=enable_storage,
         run_on_all_available_time_frames=run_on_all_available_time_frames,
+        backtesting_data=backtesting_data,
     )
 
 

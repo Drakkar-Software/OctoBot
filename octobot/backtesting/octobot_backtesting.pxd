@@ -14,6 +14,7 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+cimport octobot_backtesting.backtest_data as backtest_data
 
 
 cdef class OctoBotBacktesting:
@@ -30,6 +31,7 @@ cdef class OctoBotBacktesting:
     cdef public list service_feeds
     cdef public dict fees_config
     cdef public list backtesting_files
+    cdef public backtest_data.BacktestData backtesting_data
     cdef public object backtesting
     cdef public bint run_on_common_part_only
     cdef public object start_time
@@ -39,6 +41,7 @@ cdef class OctoBotBacktesting:
     cdef public dict exchange_type_by_exchange
     cdef public object futures_contract_type
     cdef public bint enable_storage
+    cdef public bint run_on_all_available_time_frames
 
     cpdef object memory_leak_checkup(self, list to_check_elements)
     cpdef object check_remaining_objects(self)

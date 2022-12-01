@@ -26,9 +26,13 @@ from octobot.backtesting.independent_backtesting import (
 from octobot.backtesting.octobot_backtesting import (
     OctoBotBacktesting,
 )
+from octobot_backtesting.backtest_data import (
+    BacktestData,
+)
 
 __all__ = [
     "OctoBotBacktesting",
     "IndependentBacktesting",
     "AbstractBacktestingTest",
+    "BacktestData",
 ]
