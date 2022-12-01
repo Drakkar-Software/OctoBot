@@ -121,8 +121,11 @@ def _create_startup_config(logger):
         config.read(should_raise=False)
     else:
         _read_config(config, logger)
-        _ensure_profile(config, logger)
-        _validate_config(config, logger)
+    # handle profiles from env variables
+    commands.download_missing_env_profiles(config)
+    commands.select_forced_profile_if_any(config, logger)
+    _ensure_profile(config, logger)
+    _validate_config(config, logger)
     return config
 
 

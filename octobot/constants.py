@@ -98,6 +98,10 @@ IS_DEMO = os_util.parse_boolean_environment_var("IS_DEMO", "False")
 IS_CLOUD_ENV = os_util.parse_boolean_environment_var("IS_CLOUD_ENV", "false")
 CAN_INSTALL_TENTACLES = os_util.parse_boolean_environment_var("CAN_INSTALL_TENTACLES", str(not IS_CLOUD_ENV))
 TRACKING_ID = os.getenv("TRACKING_ID", "eoe1stwyun" if IS_DEMO else "eoe06soct7")
+# Profiles download urls to import at startup if missing, split by ","
+TO_DOWNLOAD_PROFILES = os.getenv("TO_DOWNLOAD_PROFILES", None)
+# Profiles to force select at startup, identified by profile id, download url or name
+FORCED_PROFILE = os.getenv("FORCED_PROFILE", None)
 
 OCTOBOT_BINARY_PROJECT_NAME = "OctoBot-Binary"
 
