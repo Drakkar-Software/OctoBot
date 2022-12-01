@@ -22,6 +22,7 @@ import signal
 import threading
 
 import octobot_commons.configuration as configuration
+import octobot_commons.profiles as profiles
 import octobot_commons.logging as logging
 
 import octobot_tentacles_manager.api as tentacles_manager_api
@@ -148,6 +149,38 @@ async def install_all_tentacles(tentacles_url=None):
             await tentacles_manager_api.install_all_tentacles(url,
                                                               aiohttp_session=aiohttp_session,
                                                               bot_install_dir=os.getcwd())
+
+
+def download_missing_env_profiles(config):
+    downloaded_profiles = []
+    # dl profiles from env
+    if constants.TO_DOWNLOAD_PROFILES:
+        installed_profiles_urls = set(
+            profile.origin_url
+            for profile in config.profile_by_id.values()
+        )
+        for download_url in constants.TO_DOWNLOAD_PROFILES.split(","):
+            download_url = download_url.strip()
+            if download_url not in installed_profiles_urls:
+                downloaded_profiles.append(
+                    profiles.download_and_install_profile(download_url)
+                )
+    if downloaded_profiles:
+        # reload profiles to load downloaded ones
+        config.load_profiles()
+    return downloaded_profiles
+
+
+def select_forced_profile_if_any(config, logger):
+    if constants.FORCED_PROFILE:
+        for profile in config.profile_by_id.values():
+            if profile.profile_id == constants.FORCED_PROFILE \
+               or profile.origin_url == constants.FORCED_PROFILE \
+               or profile.name == constants.FORCED_PROFILE:
+                logger.info(f"Selecting forced profile {profile.name} (from identified by{constants.FORCED_PROFILE})")
+                config.select_profile(profile.profile_id)
+                return
+        logger.warning(f"Forced profile not found in available profiles ({constants.FORCED_PROFILE})")
 
 
 def _signal_handler(_, __):
