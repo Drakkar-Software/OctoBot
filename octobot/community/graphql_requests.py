@@ -27,12 +27,7 @@ _INNER_BOT_QUERY = """
     }
     deployment {
       _id
-      host
-      region
-      status
-      subscription_id
       type
-      uuid
     }
     user_id
 """
