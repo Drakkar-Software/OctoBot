@@ -217,8 +217,9 @@ class OctoBot:
         has_simulated_trader = trading_api.is_trader_simulator_enabled_in_config(self.config)
         trader_str = "real trader" if has_real_trader else "simulated trader" if has_simulated_trader else "no trader"
         traded_symbols = trading_api.get_config_symbols(self.config, True)
+        symbols_str = ', '.join(set(traded_symbols))
         self.logger.info(f"Starting OctoBot with {trader_str} on {', '.join(exchanges)} "
-                         f"trading {', '.join(set(traded_symbols))} and using bot_id: {self.bot_id}")
+                         f"trading {symbols_str or 'nothing'} and using bot_id: {self.bot_id}")
 
     def get_edited_config(self, config_key, dict_only=True):
         return self.configuration_manager.get_edited_config(config_key, dict_only)
