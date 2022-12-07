@@ -41,6 +41,7 @@ class AbstractAuthenticatedExchangeTester:
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
     ORDER_SIZE = 10  # % of portfolio to include in test orders
     PORTFOLIO_TYPE_FOR_SIZE = trading_constants.CONFIG_PORTFOLIO_FREE
+    CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES = False
     ORDER_PRICE_DIFF = 20  # % of price difference compared to current price for limit and stop orders
     MARKET_FILL_TIMEOUT = 15
     CANCEL_TIMEOUT = 15
@@ -102,11 +103,12 @@ class AbstractAuthenticatedExchangeTester:
         buy_market = await self.create_market_order(current_price, size, trading_enums.TradeOrderSide.BUY)
         self.check_created_market_order(buy_market, size, trading_enums.TradeOrderSide.BUY)
         await self.wait_for_fill(buy_market)
+        sell_size = buy_market.origin_quantity
         post_buy_portfolio = await self.get_portfolio()
         self.check_portfolio_changed(portfolio, post_buy_portfolio, False)
         # sell: reset portfolio
-        sell_market = await self.create_market_order(current_price, size, trading_enums.TradeOrderSide.SELL)
-        self.check_created_market_order(sell_market, size, trading_enums.TradeOrderSide.SELL)
+        sell_market = await self.create_market_order(current_price, sell_size, trading_enums.TradeOrderSide.SELL)
+        self.check_created_market_order(sell_market, sell_size, trading_enums.TradeOrderSide.SELL)
         await self.wait_for_fill(sell_market)
         post_sell_portfolio = await self.get_portfolio()
         self.check_portfolio_changed(post_buy_portfolio, post_sell_portfolio, True)
@@ -253,12 +255,13 @@ class AbstractAuthenticatedExchangeTester:
     def check_parsed_closed_order(self, order: personal_data.Order):
         assert order.symbol
         assert order.timestamp
-        assert order.origin_quantity
         assert order.order_type
         assert order.status
         assert order.fee
         assert order.order_id
         assert order.side
+        if order.status not in (trading_enums.OrderStatus.REJECTED, trading_enums.OrderStatus.CANCELED):
+            assert order.origin_quantity
 
     def check_raw_trades(self, trades):
         self.check_duplicate(trades)
@@ -370,7 +373,9 @@ class AbstractAuthenticatedExchangeTester:
             side=side,
         )
         if push_on_exchange:
-            return await self.exchange_manager.trader.create_order(current_order)
+            current_order = await self.exchange_manager.trader.create_order(current_order)
+        if current_order is None:
+            raise AssertionError("Error when creating order")
         return current_order
 
     def get_order_size(self, portfolio, price, symbol=None, order_size=None):
@@ -431,7 +436,11 @@ class AbstractAuthenticatedExchangeTester:
             assert updated_free_quantity < previous_free_quantity
 
     def _check_order(self, order, size, side):
-        assert order.origin_quantity == size
+        if self.CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES:
+            # actual origin_quantity may vary due to quantity conversion for market orders
+            assert size * decimal.Decimal("0.8") <= order.origin_quantity <= size * decimal.Decimal("1.2")
+        else:
+            assert order.origin_quantity == size
         assert order.side is side
         assert order.is_open()
 
