@@ -25,6 +25,7 @@ class AbstractAuthenticatedFutureExchangeTester(
 ):
     # enter exchange name as a class variable here*
     EXCHANGE_TYPE = trading_enums.ExchangeTypes.FUTURE.value
+    PORTFOLIO_TYPE_FOR_SIZE = trading_constants.CONFIG_PORTFOLIO_TOTAL
 
     async def test_get_empty_linear_and_inverse_positions(self):
         # ensure fetch empty positions
