@@ -40,6 +40,7 @@ class AbstractAuthenticatedExchangeTester:
     SETTLEMENT_CURRENCY = "USDT"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
     ORDER_SIZE = 10  # % of portfolio to include in test orders
+    PORTFOLIO_TYPE_FOR_SIZE = trading_constants.CONFIG_PORTFOLIO_FREE
     ORDER_PRICE_DIFF = 20  # % of price difference compared to current price for limit and stop orders
     MARKET_FILL_TIMEOUT = 15
     CANCEL_TIMEOUT = 15
@@ -235,8 +236,11 @@ class AbstractAuthenticatedExchangeTester:
         return await self.exchange_manager.exchange.get_closed_orders(symbol or self.SYMBOL)
 
     def check_duplicate(self, orders_or_trades):
-        assert len({o[trading_enums.ExchangeConstantsOrderColumns.ID.value] for o in orders_or_trades}) \
-               == len(orders_or_trades)
+        assert len({
+            f"{o[trading_enums.ExchangeConstantsOrderColumns.ID.value]}"
+            f"{o[trading_enums.ExchangeConstantsOrderColumns.TIMESTAMP.value]}"
+            for o in orders_or_trades
+        }) == len(orders_or_trades)
 
     def check_raw_closed_orders(self, closed_orders):
         self.check_duplicate(closed_orders)
@@ -371,7 +375,7 @@ class AbstractAuthenticatedExchangeTester:
 
     def get_order_size(self, portfolio, price, symbol=None, order_size=None):
         order_size = order_size or self.ORDER_SIZE
-        currency_quantity = portfolio[self.SETTLEMENT_CURRENCY][trading_constants.CONFIG_PORTFOLIO_TOTAL] \
+        currency_quantity = portfolio[self.SETTLEMENT_CURRENCY][self.PORTFOLIO_TYPE_FOR_SIZE] \
             * decimal.Decimal(order_size) / trading_constants.ONE_HUNDRED
         symbol = symbols.parse_symbol(symbol or self.SYMBOL)
         if symbol.is_inverse():
@@ -392,7 +396,7 @@ class AbstractAuthenticatedExchangeTester:
         )
 
     async def get_open_orders(self, symbol=None):
-        orders = await self.exchange_manager.exchange.get_open_orders(symbol)
+        orders = await self.exchange_manager.exchange.get_open_orders(symbol or self.SYMBOL)
         self.check_duplicate(orders)
         return orders
 
