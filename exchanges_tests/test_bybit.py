@@ -15,58 +15,52 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import pytest
 
-import octobot_trading.enums as trading_enums
-from exchanges_tests import abstract_authenticated_exchange_tester
+from exchanges_tests import abstract_authenticated_future_exchange_tester
 
 # All test coroutines will be treated as marked.
 pytestmark = pytest.mark.asyncio
 
 
-class TestBybitAuthenticatedExchange(abstract_authenticated_exchange_tester.AbstractAuthenticatedExchangeTester):
+class TestBybitAuthenticatedExchange(
+    abstract_authenticated_future_exchange_tester.AbstractAuthenticatedFutureExchangeTester
+):
     # enter exchange name as a class variable here
     EXCHANGE_NAME = "bybit"
-    EXCHANGE_TYPE = trading_enums.ExchangeTypes.FUTURE.value
     ORDER_CURRENCY = "BTC"
     SETTLEMENT_CURRENCY = "USDT"
-    ORDER_SIZE = 10  # % of portfolio to include in test orders
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}:{SETTLEMENT_CURRENCY}"
+    ORDER_SIZE = 10  # % of portfolio to include in test orders
 
-    async def _test_get_portfolio(self):
-        async with self.local_exchange_manager():
-            self.check_portfolio_content(await self.get_portfolio())
+    async def test_get_portfolio(self):
+        await super().test_get_portfolio()
 
-    async def test_create_limit_orders(self):
-        async with self.local_exchange_manager():
-            position = await self.get_position()
-            portfolio = await self.get_portfolio()
-            symbol_price = await self.get_price()
-            price = self.get_order_price(symbol_price, False)
-            size = self.get_order_size(portfolio, price)
-            open_orders = await self.get_open_orders()
-            buy_limit = await self.create_limit_order(price, size, trading_enums.TradeOrderSide.BUY)
-            # todo add opening state
-            self.check_created_limit_order(buy_limit, price, size, trading_enums.TradeOrderSide.BUY)
-            assert await self.order_in_open_orders(open_orders, buy_limit)
-            await self.cancel_order(buy_limit)
-            # todo add cancelling state
-            assert await self.order_not_in_open_orders(open_orders, buy_limit)
+    async def test_get_my_recent_trades(self):
+        await super().test_get_my_recent_trades()
 
-    async def test_create_market_orders(self):
-        async with self.local_exchange_manager():
-            position = await self.get_position()
-            portfolio = await self.get_portfolio()
-            symbol_price = await self.get_price()
-            price = self.get_order_price(symbol_price, False)
-            size = self.get_order_size(portfolio, price)
-            buy_market = await self.create_market_order(size, trading_enums.TradeOrderSide.BUY)
-            self.check_created_market_order(buy_market, size, trading_enums.TradeOrderSide.BUY)
-            await self.wait_for_filling(buy_market)
-            await self.check_position_changed(position, True)
+    async def test_get_closed_orders(self):
+        await super().test_get_closed_orders()
 
+    async def test_get_empty_linear_and_inverse_positions(self):
+        await super().test_get_empty_linear_and_inverse_positions()
 
+    async def test_create_and_cancel_limit_orders(self):
+        await super().test_create_and_cancel_limit_orders()
 
-    async def test_create_stop_orders(self):
-        pass
+    async def test_create_and_fill_market_orders(self):
+        await super().test_create_and_fill_market_orders()
+
+    async def test_create_and_cancel_stop_orders(self):
+        # pass if not implemented
+        await super().test_create_and_cancel_stop_orders()
+
+    async def test_edit_limit_order(self):
+        # pass if not implemented
+        await super().test_edit_limit_order()
+
+    async def test_edit_stop_order(self):
+        # pass if not implemented
+        await super().test_edit_stop_order()
 
     async def test_create_bundled_orders(self):
-        pass
+        # pass if not implemented
+        await super().test_create_bundled_orders()
