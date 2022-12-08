@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import contextlib
+import decimal
 
 import octobot_trading.enums as trading_enums
 import octobot_trading.constants as trading_constants
@@ -177,3 +178,10 @@ class AbstractAuthenticatedFutureExchangeTester(
             if open_order[trading_enums.ExchangeConstantsOrderColumns.ID.value] == order.order_id:
                 return True
         return False
+
+    def check_theoretical_cost(self, symbol, quantity, price, cost):
+        if symbol.is_inverse():
+            theoretical_cost = quantity * price
+        else:
+            theoretical_cost = quantity
+        assert theoretical_cost * decimal.Decimal("0.8") <= cost <= theoretical_cost * decimal.Decimal("1.2")
