@@ -13,8 +13,6 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
-import decimal
-
 import pytest
 
 from exchanges_tests import abstract_authenticated_exchange_tester
@@ -23,16 +21,16 @@ from exchanges_tests import abstract_authenticated_exchange_tester
 pytestmark = pytest.mark.asyncio
 
 
-class TestBitgetAuthenticatedExchange(
+class TestHollaexAuthenticatedExchange(
     abstract_authenticated_exchange_tester.AbstractAuthenticatedExchangeTester
 ):
     # enter exchange name as a class variable here
-    EXCHANGE_NAME = "bitget"
+    EXCHANGE_NAME = "hollaex"
+    EXCHANGE_TENTACLE_NAME = "hollaex"  # specify EXCHANGE_TENTACLE_NAME as the tentacle class has no capital H
     ORDER_CURRENCY = "BTC"
     SETTLEMENT_CURRENCY = "USDT"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
-    ORDER_SIZE = 40  # % of portfolio to include in test orders
-    CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES = True
+    ORDER_SIZE = 25  # % of portfolio to include in test orders
     IGNORE_ORDER_FEE = True
 
     async def test_get_portfolio(self):

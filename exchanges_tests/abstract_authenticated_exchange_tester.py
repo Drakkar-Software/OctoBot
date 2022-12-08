@@ -43,6 +43,7 @@ class AbstractAuthenticatedExchangeTester:
     PORTFOLIO_TYPE_FOR_SIZE = trading_constants.CONFIG_PORTFOLIO_FREE
     CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES = False
     ORDER_PRICE_DIFF = 20  # % of price difference compared to current price for limit and stop orders
+    IGNORE_ORDER_FEE = False
     MARKET_FILL_TIMEOUT = 15
     CANCEL_TIMEOUT = 15
     EDIT_TIMEOUT = 15
@@ -103,7 +104,7 @@ class AbstractAuthenticatedExchangeTester:
         buy_market = await self.create_market_order(current_price, size, trading_enums.TradeOrderSide.BUY)
         self.check_created_market_order(buy_market, size, trading_enums.TradeOrderSide.BUY)
         await self.wait_for_fill(buy_market)
-        sell_size = buy_market.origin_quantity
+        sell_size = self.get_sell_size_from_buy_order(buy_market)
         post_buy_portfolio = await self.get_portfolio()
         self.check_portfolio_changed(portfolio, post_buy_portfolio, False)
         # sell: reset portfolio
@@ -241,6 +242,7 @@ class AbstractAuthenticatedExchangeTester:
         assert len({
             f"{o[trading_enums.ExchangeConstantsOrderColumns.ID.value]}"
             f"{o[trading_enums.ExchangeConstantsOrderColumns.TIMESTAMP.value]}"
+            f"{o[trading_enums.ExchangeConstantsOrderColumns.AMOUNT.value]}"
             for o in orders_or_trades
         }) == len(orders_or_trades)
 
@@ -257,11 +259,13 @@ class AbstractAuthenticatedExchangeTester:
         assert order.timestamp
         assert order.order_type
         assert order.status
-        assert order.fee
+        if not self.IGNORE_ORDER_FEE:
+            assert order.fee
         assert order.order_id
         assert order.side
         if order.status not in (trading_enums.OrderStatus.REJECTED, trading_enums.OrderStatus.CANCELED):
             assert order.origin_quantity
+            self.check_theoretical_cost(order.origin_quantity, order.origin_price, order.total_cost)
 
     def check_raw_trades(self, trades):
         self.check_duplicate(trades)
@@ -280,6 +284,12 @@ class AbstractAuthenticatedExchangeTester:
         assert trade.fee
         assert trade.origin_order_id
         assert trade.side
+        self.check_theoretical_cost(trade.executed_quantity, trade.executed_price, trade.total_cost)
+
+    def check_theoretical_cost(self, quantity, price, cost):
+        theoretical_cost = quantity * price
+        assert theoretical_cost * decimal.Decimal("0.8") <= cost <= theoretical_cost * decimal.Decimal("1.2")
+
 
     async def get_price(self, symbol=None):
         return decimal.Decimal(str(
@@ -390,6 +400,15 @@ class AbstractAuthenticatedExchangeTester:
         return personal_data.decimal_adapt_quantity(
             self.exchange_manager.exchange.get_market_status(str(symbol)),
             order_quantity
+        )
+
+    def get_sell_size_from_buy_order(self, buy_order):
+        sell_size = buy_order.origin_quantity
+        if buy_order.fee and buy_order.fee[trading_enums.FeePropertyColumns.CURRENCY.value] == self.ORDER_CURRENCY:
+            sell_size = sell_size - buy_order.fee[trading_enums.FeePropertyColumns.COST.value]
+        return personal_data.decimal_adapt_quantity(
+            self.exchange_manager.exchange.get_market_status(str(buy_order.symbol)),
+            sell_size
         )
 
     def get_order_price(self, price, is_above_price, symbol=None, price_diff=None):
