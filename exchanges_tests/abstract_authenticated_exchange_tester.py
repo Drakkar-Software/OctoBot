@@ -265,7 +265,9 @@ class AbstractAuthenticatedExchangeTester:
         assert order.side
         if order.status not in (trading_enums.OrderStatus.REJECTED, trading_enums.OrderStatus.CANCELED):
             assert order.origin_quantity
-            self.check_theoretical_cost(order.origin_quantity, order.origin_price, order.total_cost)
+            self.check_theoretical_cost(
+                symbols.parse_symbol(order.symbol), order.origin_quantity, order.origin_price, order.total_cost
+            )
 
     def check_raw_trades(self, trades):
         self.check_duplicate(trades)
@@ -277,19 +279,21 @@ class AbstractAuthenticatedExchangeTester:
 
     def check_parsed_trade(self, trade: personal_data.Trade):
         assert trade.symbol
-        assert trade.executed_quantity
         assert trade.total_cost
         assert trade.trade_type
         assert trade.status
         assert trade.fee
         assert trade.origin_order_id
         assert trade.side
-        self.check_theoretical_cost(trade.executed_quantity, trade.executed_price, trade.total_cost)
+        if trade.status is not trading_enums.OrderStatus.CANCELED:
+            assert trade.executed_quantity
+            self.check_theoretical_cost(
+                symbols.parse_symbol(trade.symbol), trade.executed_quantity, trade.executed_price, trade.total_cost
+            )
 
-    def check_theoretical_cost(self, quantity, price, cost):
+    def check_theoretical_cost(self, symbol, quantity, price, cost):
         theoretical_cost = quantity * price
         assert theoretical_cost * decimal.Decimal("0.8") <= cost <= theoretical_cost * decimal.Decimal("1.2")
-
 
     async def get_price(self, symbol=None):
         return decimal.Decimal(str(
