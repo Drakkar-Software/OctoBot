@@ -41,9 +41,11 @@ class TestPemexAuthenticatedExchange(
         await super().test_get_closed_orders()
 
     async def test_create_and_cancel_limit_orders(self):
+        # 08 dec 2022: did not run so far, testnet is bugged: order are apparently accepted but never show up
         await super().test_create_and_cancel_limit_orders()
 
     async def test_create_and_fill_market_orders(self):
+        # 08 dec 2022: did not run so far, testnet is bugged: order are apparently accepted but never show up
         await super().test_create_and_fill_market_orders()
 
     async def test_create_and_cancel_stop_orders(self):
