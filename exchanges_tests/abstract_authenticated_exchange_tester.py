@@ -43,7 +43,7 @@ class AbstractAuthenticatedExchangeTester:
     PORTFOLIO_TYPE_FOR_SIZE = trading_constants.CONFIG_PORTFOLIO_FREE
     CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES = False
     ORDER_PRICE_DIFF = 20  # % of price difference compared to current price for limit and stop orders
-    IGNORE_ORDER_FEE = False
+    NO_FEE_ON_GET_CLOSED_ORDERS = False
     MARKET_FILL_TIMEOUT = 15
     CANCEL_TIMEOUT = 15
     EDIT_TIMEOUT = 15
@@ -259,7 +259,9 @@ class AbstractAuthenticatedExchangeTester:
         assert order.timestamp
         assert order.order_type
         assert order.status
-        if not self.IGNORE_ORDER_FEE:
+        if self.NO_FEE_ON_GET_CLOSED_ORDERS:
+            assert order.fee is None
+        else:
             assert order.fee
         assert order.order_id
         assert order.side
