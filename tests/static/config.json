@@ -5,7 +5,7 @@
     "1d"
   ],
   "exchanges": {
-    "binance": {
+    "binanceus": {
       "api-key": "",
       "api-secret": "",
       "web-socket": false
