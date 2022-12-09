@@ -36,7 +36,6 @@ _INNER_BOT_QUERY = """
       _id
       subscription_id
       type
-      uuid
     }
     stats {
         _id
