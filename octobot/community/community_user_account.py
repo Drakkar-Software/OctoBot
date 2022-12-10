@@ -85,7 +85,10 @@ class CommunityUserAccount:
         self._selected_bot_raw_data = selected_bot_raw_data
 
     def set_selected_bot_device_raw_data(self, bot_raw_data_with_device):
-        self._selected_bot_raw_data[self.BOT_DEVICE] = bot_raw_data_with_device[self.BOT_DEVICE]
+        device_data = bot_raw_data_with_device[self.BOT_DEVICE]
+        if device_data is None:
+            raise errors.NoBotDeviceError("No device associated to the select bot")
+        self._selected_bot_raw_data[self.BOT_DEVICE] = device_data
 
     def set_all_user_bots_raw_data(self, all_user_bots_raw_data):
         self._all_user_bots_raw_data = all_user_bots_raw_data
