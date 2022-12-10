@@ -13,9 +13,14 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
+import pytest
 
 import octobot.community.community_analysis as community_analysis
 
 
-def test_get_community_metrics():
-    assert community_analysis.get_community_metrics()
+@pytest.mark.asyncio
+async def test_get_community_metrics():
+    metrics = await community_analysis.get_community_metrics()
+    assert len(metrics) == 9
+    # ensure metrics are not empty
+    assert all(content for content in metrics.values())
