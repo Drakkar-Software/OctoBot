@@ -121,11 +121,17 @@ def _create_startup_config(logger):
         config.read(should_raise=False)
     else:
         _read_config(config, logger)
+        try:
+            _ensure_profile(config)
+            _validate_config(config, logger)
+        except (errors.NoProfileError, errors.ConfigError):
+            # real issue if tentacles exist otherwise continue
+            if os.path.isdir(tentacles_manager_constants.TENTACLES_PATH):
+                raise
     # handle profiles from env variables
     commands.download_missing_env_profiles(config)
-    commands.select_forced_profile_if_any(config, logger)
-    _ensure_profile(config, logger)
-    _validate_config(config, logger)
+    if commands.select_forced_profile_if_any(config, logger):
+        _ensure_profile(config)
     return config
 
 
@@ -140,16 +146,12 @@ def _read_config(config, logger):
         raise errors.ConfigError(e)
 
 
-def _ensure_profile(config, logger):
+def _ensure_profile(config):
     if config.profile is None:
         # no selected profile or profile not found
         try:
             config.select_profile(common_constants.DEFAULT_PROFILE)
         except KeyError:
-            logger.error(f"Missing default profiles. Please make sure that the {config.profiles_path} "
-                         f"folder is accessible. To reinstall default profiles, delete the "
-                         f"'{tentacles_manager_constants.TENTACLES_PATH}' "
-                         f"folder or start OctoBot with the following arguments: tentacles --install --all")
             raise errors.NoProfileError
 
 
@@ -279,7 +281,11 @@ def start_octobot(args):
         os._exit(-1)
 
     except errors.NoProfileError:
-        logger.error("OctoBot can't start without a valid default profile configuration.")
+        logger.error("Missing default profiles. OctoBot can't start without a valid default profile configuration. "
+                     "Please make sure that the {config.profiles_path} "
+                     f"folder is accessible. To reinstall default profiles, delete the "
+                     f"'{tentacles_manager_constants.TENTACLES_PATH}' "
+                     f"folder or start OctoBot with the following arguments: tentacles --install --all")
         os._exit(-1)
 
     except ModuleNotFoundError as e:

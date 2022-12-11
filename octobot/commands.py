@@ -171,7 +171,7 @@ def download_missing_env_profiles(config):
     return downloaded_profiles
 
 
-def select_forced_profile_if_any(config, logger):
+def select_forced_profile_if_any(config, logger) -> bool:
     if constants.FORCED_PROFILE:
         for profile in config.profile_by_id.values():
             if profile.profile_id == constants.FORCED_PROFILE \
@@ -179,8 +179,9 @@ def select_forced_profile_if_any(config, logger):
                or profile.name == constants.FORCED_PROFILE:
                 logger.info(f"Selecting forced profile {profile.name} (from identified by{constants.FORCED_PROFILE})")
                 config.select_profile(profile.profile_id)
-                return
+                return True
         logger.warning(f"Forced profile not found in available profiles ({constants.FORCED_PROFILE})")
+    return False
 
 
 def _signal_handler(_, __):
