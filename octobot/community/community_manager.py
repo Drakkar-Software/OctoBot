@@ -44,7 +44,7 @@ class CommunityManager:
     def __init__(self, octobot_api):
         self.octobot_api = octobot_api
         self.edited_config: configuration.Configuration = octobot_api.get_edited_config(dict_only=False)
-        self.enabled = self.edited_config.get_metrics_enabled()
+        self.enabled = constants.IS_CLOUD_ENV or self.edited_config.get_metrics_enabled()
         self.reference_market = trading_api.get_reference_market(self.edited_config.config)
         self.logger = logging.get_logger(self.__class__.__name__)
         self.current_config = None
@@ -73,11 +73,13 @@ class CommunityManager:
                 await asyncio.sleep(common_constants.TIMER_BEFORE_METRICS_REGISTRATION_SECONDS)
                 self._init_community_config()
                 await self.register_session()
+                await self._update_authenticated_bot()
                 while self.keep_running:
                     # send a keepalive at periodic intervals
                     await asyncio.sleep(common_constants.TIMER_BETWEEN_METRICS_UPTIME_UPDATE)
                     try:
                         await self._update_session()
+                        await self._update_authenticated_bot()
                     except Exception as e:
                         self.logger.debug(f"Exception when handling community data : {e}")
             except asyncio.CancelledError:
@@ -133,6 +135,12 @@ class CommunityManager:
             community_fields.CommunityFields.TRADED_VOLUMES.value] = self._get_traded_volumes()
         await self._post_community_data(common_constants.METRICS_ROUTE_UPTIME, self.current_config, retry_on_error)
 
+    async def _update_authenticated_bot(self):
+        await authentication.Authenticator.instance().update_bot_config_and_stats(
+            self.edited_config.profile.name,
+            self._get_profitability()
+        )
+
     async def _get_current_community_config(self):
         if not self.bot_id:
             await self._init_bot_id()
@@ -151,6 +159,7 @@ class CommunityManager:
                 community_fields.CommunityFields.EVAL_CONFIG.value: self._get_eval_config(),
                 community_fields.CommunityFields.PAIRS.value: self._get_traded_pairs(),
                 community_fields.CommunityFields.EXCHANGES.value: list(trading_api.get_exchange_names()),
+                community_fields.CommunityFields.EXCHANGE_TYPES.value: self._get_exchange_types(),
                 community_fields.CommunityFields.NOTIFICATIONS.value: self._get_notification_types(),
                 community_fields.CommunityFields.TYPE.value: os_util.get_octobot_type(),
                 community_fields.CommunityFields.PLATFORM.value: os_util.get_current_platform(),
@@ -158,9 +167,22 @@ class CommunityManager:
                 community_fields.CommunityFields.PORTFOLIO_VALUE.value: self._get_real_portfolio_value(),
                 community_fields.CommunityFields.PROFITABILITY.value: self._get_profitability(),
                 community_fields.CommunityFields.TRADED_VOLUMES.value: self._get_traded_volumes(),
-                community_fields.CommunityFields.SUPPORTS.value: self._get_supports()
+                community_fields.CommunityFields.SUPPORTS.value: self._get_supports(),
+                community_fields.CommunityFields.SIGNAL_EMITTER.value:
+                    authentication.Authenticator.instance().get_is_signal_emitter(),
+                community_fields.CommunityFields.SIGNAL_RECEIVER.value:
+                    authentication.Authenticator.instance().get_is_signal_receiver(),
+                community_fields.CommunityFields.PROFILE_NAME.value: self.edited_config.profile.name,
+                community_fields.CommunityFields.PROFILE_ID.value: self.edited_config.profile.profile_id,
+                community_fields.CommunityFields.PROFILE_IMPORTED.value: self.edited_config.profile.imported,
             }
         }
+
+    def _get_exchange_types(self):
+        return [
+            trading_api.get_exchange_type(exchange_manager).value
+            for exchange_manager in self.exchange_managers
+        ]
 
     def _get_profitability(self):
         total_origin_values = 0

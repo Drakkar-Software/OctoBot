@@ -32,6 +32,7 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
     MQTT_VERSION = gmqtt.constants.MQTTv311
     MQTT_BROKER_PORT = 1883
     RECONNECT_DELAY = 15
+    RECONNECT_ENSURE_DELAY = 1
     MAX_MESSAGE_ID_CACHE_SIZE = 100
     MAX_SUBSCRIPTION_ATTEMPTS = 5
     DISABLE_RECONNECT_VALUE = -2
@@ -107,6 +108,7 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
         return self._valid_auth
 
     async def register_feed_callback(self, channel_type, callback, identifier=None):
+        self.is_signal_receiver = True
         topic = self._build_topic(channel_type, identifier)
         try:
             self.feed_callbacks[topic].append(callback)
@@ -163,6 +165,7 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
         return True
 
     async def send(self, message, channel_type, identifier, **kwargs):
+        self.is_signal_emitter = True
         if not self._valid_auth:
             self.logger.warning(f"Can't send {channel_type.name}, invalid feed authentication.")
             return
@@ -209,7 +212,10 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
 
     def _try_reconnect_if_necessary(self, client):
         if self._reconnect_task is None or self._reconnect_task.done():
+            self.logger.debug("Trying to reconnect")
             self._reconnect_task = asyncio.create_task(self._reconnect(client))
+        else:
+            self.logger.debug("A reconnect task is already running")
 
     async def _reconnect(self, client):
         try:
@@ -218,17 +224,22 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
             self.logger.debug(f"Ignored error while stopping client: {e}.")
         first_reconnect = True
         while not self.should_stop:
+            delay = 0 if first_reconnect else self.RECONNECT_DELAY
             try:
                 self.logger.info(f"Reconnecting, client_id: {client._client_id}")
                 await self._connect()
-                return
-            except Exception as e:
-                delay = 0 if first_reconnect else self.RECONNECT_DELAY
-                first_reconnect = False
-                self.logger.debug(f"Error while reconnecting: {e}. Trying again in {delay} seconds.")
-                await asyncio.sleep(delay)
+                await asyncio.sleep(self.RECONNECT_ENSURE_DELAY)
+                if self.is_connected():
+                    return
+                error = "failed to connect"
+            except Exception as err:
+                error = err
+            first_reconnect = False
+            self.logger.debug(f"Error while reconnecting: {error}. Trying again in {delay} seconds.")
+            await asyncio.sleep(delay)
 
     def _on_disconnect(self, client, packet, exc=None):
+        self.subscribed = False
         if self._connected_at_least_once:
             self.logger.info(f"Disconnected, client_id: {client._client_id}")
             self._try_reconnect_if_necessary(client)
