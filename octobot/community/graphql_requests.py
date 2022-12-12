@@ -34,7 +34,6 @@ _INNER_BOT_QUERY = """
     }
     deployment {
       _id
-      subscription_id
       type
     }
     stats {
@@ -87,7 +86,7 @@ mutation CreateBotDevice($bot_id: ObjectId) {
 
 def update_bot_config_and_stats_query(bot_id, profile_name, profitability) -> (str, dict):
     return """
-mutation updateOneBot($bot_id: ObjectId, $profile_name: String, $profitability: Float) {
+mutation updateOneBot($bot_id: ObjectId, $profile_name: String, $profitability: Decimal) {
   updateOneBot(
     query: {_id: $bot_id}
     set: {config: {profile: {name: $profile_name}}, stats: {profitability: $profitability}}
@@ -95,4 +94,4 @@ mutation updateOneBot($bot_id: ObjectId, $profile_name: String, $profitability: 
     """ + _INNER_BOT_QUERY + """
   }
 }
-    """, {"bot_id": bot_id, "profile_name": profile_name, "profitability": profitability}
+    """, {"bot_id": bot_id, "profile_name": profile_name, "profitability": str(profitability)}
