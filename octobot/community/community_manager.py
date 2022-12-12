@@ -136,10 +136,13 @@ class CommunityManager:
         await self._post_community_data(common_constants.METRICS_ROUTE_UPTIME, self.current_config, retry_on_error)
 
     async def _update_authenticated_bot(self):
-        await authentication.Authenticator.instance().update_bot_config_and_stats(
-            self.edited_config.profile.name,
-            self._get_profitability()
-        )
+        try:
+            await authentication.Authenticator.instance().update_bot_config_and_stats(
+                self.edited_config.profile.name,
+                self._get_profitability()
+            )
+        except Exception as err:
+            self.logger.debug(f"Exception when pushing config and stats : {err}")
 
     async def _get_current_community_config(self):
         if not self.bot_id:
