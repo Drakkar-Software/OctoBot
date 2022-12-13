@@ -126,7 +126,6 @@ class CommunityAuthentication(authentication.Authenticator):
                 self,
                 constants.COMMUNITY_FEED_DEFAULT_TYPE
             )
-            self._community_feed.associated_gql_bot_id = self.user_account.gql_bot_id
             return True
         return False
 
@@ -324,7 +323,7 @@ class CommunityAuthentication(authentication.Authenticator):
             return True
 
     async def on_new_bot_select(self):
-        await self._update_feed_device_uuid_if_necessary()
+        await self._update_feed_device_uuid_and_restart_feed_if_necessary()
 
     async def _fetch_bots(self):
         query, variables = graphql_requests.select_bots_query()
@@ -345,20 +344,19 @@ class CommunityAuthentication(authentication.Authenticator):
         # issue with createBotDevice not always returning the created device, fetch bot again to fetch device with it
         return await self._fetch_bot(bot_id)
 
-    async def _update_feed_device_uuid_if_necessary(self):
-        if self._community_feed is None:
+    async def _update_feed_device_uuid_and_restart_feed_if_necessary(self):
+        if self._community_feed is None or not self.initialized_event.is_set():
             # only create a new community feed if necessary
             return
-        if self._community_feed.associated_gql_bot_id != self.user_account.gql_bot_id:
-            # only device id changed, need to refresh uuid. Otherwise, it means that no feed was started with a
-            # different uuid, no need to update
-            # reset restart task if running
+        if not (self._community_feed.is_using_bot_device(self.user_account) and self._community_feed.is_connected()):
+            # Need to connect using the new uuid.
+
+            # Reset restart task if running
             if self._restart_task is not None and not self._restart_task.done():
                 self._restart_task.cancel()
                 self._community_feed.remove_device_details()
-            if self._community_feed.is_connected() or not self._community_feed.can_connect():
-                await self._ensure_bot_device()
-                self._restart_task = asyncio.create_task(self._community_feed.restart())
+            await self._ensure_bot_device()
+            self._restart_task = asyncio.create_task(self._community_feed.restart())
 
     async def update_bot_config_and_stats(self, profile_name, profitability):
         await self.gql_login_if_required()
