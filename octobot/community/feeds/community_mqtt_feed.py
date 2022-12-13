@@ -52,7 +52,6 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
         self.mqtt_version = self.MQTT_VERSION
         self.mqtt_broker_port = self.MQTT_BROKER_PORT
         self.default_QOS = self.default_QOS
-        self.associated_gql_bot_id = None
         self.subscribed = False
 
         self._mqtt_client: gmqtt.Client = None
@@ -83,10 +82,17 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
 
     async def restart(self):
         try:
-            await self.stop()
+            if not self.should_stop:
+                await self.stop()
             await self.start()
         except Exception as e:
             self.logger.exception(e, True, f"Error when restarting mqtt feed: {e}")
+
+    def is_using_bot_device(self, user_account):
+        try:
+            return self._device_uuid == user_account.get_selected_bot_device_uuid()
+        except errors.NoBotDeviceError:
+            return False
 
     def _reset(self):
         self._connected_at_least_once = False
@@ -240,12 +246,15 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
 
     def _on_disconnect(self, client, packet, exc=None):
         self.subscribed = False
-        if self._connected_at_least_once:
-            self.logger.info(f"Disconnected, client_id: {client._client_id}")
-            self._try_reconnect_if_necessary(client)
+        if self.should_stop:
+            self.logger.info(f"Disconnected after stop call")
         else:
-            if self._connect_task is not None and not self._connect_task.done():
-                self._connect_task.cancel()
+            if self._connected_at_least_once:
+                self.logger.info(f"Disconnected, client_id: {client._client_id}")
+                self._try_reconnect_if_necessary(client)
+            else:
+                if self._connect_task is not None and not self._connect_task.done():
+                    self._connect_task.cancel()
 
     def _on_subscribe(self, client, mid, qos, properties):
         # from https://github.com/wialon/gmqtt/blob/master/examples/resubscription.py#L28
@@ -305,7 +314,7 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
             self._connected_at_least_once = True
         except asyncio.CancelledError:
             # got cancelled by on_disconnect, can't connect
-            self.logger.error(f"Can't connect to server, please check your device uuid. "
+            self.logger.error(f"Can't connect to server, make sure that your device uuid is valid. "
                               f"Current mqtt uuid is: {self._device_uuid}")
             self._valid_auth = False
 
