@@ -119,7 +119,7 @@ class OctoBot:
         await logger.init_octobot_chan_logger(self.bot_id)
         await self.create_producers()
         await self.start_producers()
-        await system_resources_watcher.start_system_resources_watcher()
+        await self._ensure_watchers()
         await self._post_initialize()
 
     async def create_producers(self):
@@ -204,8 +204,12 @@ class OctoBot:
         self.community_handler = community.CommunityManager(self.octobot_api)
 
     async def _ensure_clock(self):
-        if trading_api.is_trader_enabled_in_config(self.config):
+        if trading_api.is_trader_enabled_in_config(self.config) and constants.ENABLE_CLOCK_SYNCH:
             await os_clock_sync.start_clock_synchronizer()
+
+    async def _ensure_watchers(self):
+        if constants.ENABLE_SYSTEM_WATCHER:
+            await system_resources_watcher.start_system_resources_watcher()
 
     def _log_config(self):
         exchanges = [
