@@ -134,6 +134,10 @@ DEFAULT_TENTACLES_PACKAGE_NAME = "OctoBot-Default-Tentacles"
 LOGS_FOLDER = "logs"
 ENV_TRADING_ENABLE_DEBUG_LOGS = os_util.parse_boolean_environment_var("ENV_TRADING_ENABLE_DEBUG_LOGS", "False")
 
+# system
+ENABLE_CLOCK_SYNCH = os_util.parse_boolean_environment_var("ENABLE_CLOCK_SYNCH", "True")
+ENABLE_SYSTEM_WATCHER = os_util.parse_boolean_environment_var("ENABLE_SYSTEM_WATCHER", "True")
+
 # errors
 ERRORS_URL = os.getenv("ERRORS_OCTOBOT_ONLINE_URL", "https://errors.octobot.online/")
 ERRORS_POST_ENDPOINT = f"{ERRORS_URL}errors"
