@@ -197,7 +197,10 @@ class IndependentBacktesting:
 
     async def _register_available_data(self):
         for data_file in self.backtesting_files:
-            description = await backtesting_data.get_file_description(path.join(self.data_file_path, data_file))
+            data_file_path = data_file
+            if not path.isfile(data_file_path):
+                data_file_path = path.join(self.data_file_path, data_file)
+            description = await backtesting_data.get_file_description(data_file_path)
             if description is None:
                 raise RuntimeError(f"Impossible to start backtesting: missing or invalid data file: {data_file}")
             exchange_name = description[backtesting_enums.DataFormatKeys.EXCHANGE.value]
