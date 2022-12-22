@@ -26,17 +26,41 @@ from octobot.strategy_optimizer.test_suite_result import (
 from octobot.strategy_optimizer.strategy_optimizer import (
     StrategyOptimizer,
 )
+from octobot.strategy_optimizer.fitness_parameter import (
+    FitnessParameter,
+)
+from octobot.strategy_optimizer.optimizer_filter import (
+    OptimizerFilter,
+)
+from octobot.strategy_optimizer.optimizer_settings import (
+    OptimizerSettings,
+)
+from octobot.strategy_optimizer.scored_run_result import (
+    ScoredRunResult,
+)
+from octobot.strategy_optimizer.optimizer_constraint import (
+    OptimizerConstraint,
+)
 from octobot.strategy_optimizer.strategy_design_optimizer import (
     StrategyDesignOptimizer,
 )
 from octobot.strategy_optimizer.strategy_test_suite import (
     StrategyTestSuite,
 )
+from octobot.strategy_optimizer.strategy_design_optimizer_factory import (
+    create_most_advanced_strategy_design_optimizer,
+)
 
 __all__ = [
     "TestSuiteResult",
     "TestSuiteResultSummary",
     "StrategyOptimizer",
+    "FitnessParameter",
+    "OptimizerFilter",
+    "OptimizerSettings",
+    "ScoredRunResult",
+    "OptimizerConstraint",
     "StrategyDesignOptimizer",
     "StrategyTestSuite",
+    "create_most_advanced_strategy_design_optimizer",
 ]

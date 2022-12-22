@@ -13,17 +13,22 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
-from octobot.strategy_optimizer.strategy_optimizer import StrategyOptimizer
-from octobot.strategy_optimizer.strategy_design_optimizer import StrategyDesignOptimizer
+import octobot.strategy_optimizer.strategy_optimizer as strategy_optimizer
+import octobot.strategy_optimizer.strategy_design_optimizer as strategy_design_optimizer
+import octobot.strategy_optimizer.optimizer_settings as optimizer_settings_import
+import octobot.strategy_optimizer.strategy_design_optimizer_factory as strategy_design_optimizer_factory
 
 
-def create_strategy_optimizer(config, tentacles_setup_config, strategy_name) -> StrategyOptimizer:
-    return StrategyOptimizer(config, tentacles_setup_config, strategy_name)
+def create_strategy_optimizer(config, tentacles_setup_config, strategy_name) -> strategy_optimizer.StrategyOptimizer:
+    return strategy_optimizer.StrategyOptimizer(config, tentacles_setup_config, strategy_name)
 
 
-def create_design_strategy_optimizer(trading_mode, config=None, tentacles_setup_config=None,
-                                     optimizer_config=None) -> StrategyDesignOptimizer:
-    return StrategyDesignOptimizer(trading_mode, config, tentacles_setup_config, optimizer_config)
+def create_design_strategy_optimizer(
+        trading_mode, optimizer_settings, config=None, tentacles_setup_config=None
+) -> strategy_design_optimizer.StrategyDesignOptimizer:
+    return strategy_design_optimizer_factory.create_most_advanced_strategy_design_optimizer(
+        trading_mode, config, tentacles_setup_config, optimizer_settings=optimizer_settings
+    )
 
 
 async def initialize_design_strategy_optimizer(strategy_optimizer, is_resuming, is_computing=False):
@@ -36,23 +41,20 @@ async def update_strategy_optimizer_total_runs(optimizer, runs):
         optimizer.total_nb_runs += len(runs)
 
 
-async def generate_and_save_strategy_optimizer_runs(trading_mode, tentacles_setup_config,
-                                                    optimizer_config, optimizer_id, queue_size) -> list:
-    optimizer = StrategyDesignOptimizer(trading_mode, None, tentacles_setup_config,
-                                        optimizer_config, optimizer_id, queue_size)
+async def generate_and_save_strategy_optimizer_runs(trading_mode, tentacles_setup_config, optimizer_settings) -> list:
+    optimizer = create_design_strategy_optimizer(trading_mode, optimizer_settings, None, tentacles_setup_config)
     return await optimizer.generate_and_save_run()
 
 
-async def resume_design_strategy_optimizer(optimizer, data_files, randomly_chose_runs, start_timestamp, end_timestamp,
-                                           required_idle_cores, notify_when_complete=False, optimizer_ids=None):
-    empty_the_queue = optimizer_ids is None  # continue till the queue is empty if no optimizer id is specified
-    optimizer_ids = optimizer_ids or await optimizer.get_queued_optimizer_ids()
-    return await optimizer.resume(data_files, optimizer_ids, randomly_chose_runs,
-                                  start_timestamp=start_timestamp,
-                                  end_timestamp=end_timestamp,
-                                  empty_the_queue=empty_the_queue,
-                                  required_idle_cores=required_idle_cores,
-                                  notify_when_complete=notify_when_complete)
+def create_strategy_optimizer_settings(settings_dict: dict) -> optimizer_settings_import.OptimizerSettings:
+    return optimizer_settings_import.OptimizerSettings(settings_dict)
+
+
+async def resume_design_strategy_optimizer(optimizer, optimizer_settings: optimizer_settings_import.OptimizerSettings):
+    # continue till the queue is empty if no optimizer id is specified
+    optimizer_settings.empty_the_queue = optimizer_settings.optimizer_ids is None
+    optimizer_settings.optimizer_ids = optimizer_settings.optimizer_ids or await optimizer.get_queued_optimizer_ids()
+    return await optimizer.resume(optimizer_settings)
 
 
 def find_optimal_configuration(strategy_optimizer, TAs=None, time_frames=None, risks=None) -> None:
@@ -80,11 +82,11 @@ async def get_optimizer_overall_progress(strategy_optimizer) -> (int, float):
 
 
 async def get_design_strategy_optimizer_queue(trading_mode) -> list:
-    return await StrategyDesignOptimizer.get_run_queue(trading_mode)
+    return await strategy_design_optimizer.StrategyDesignOptimizer.get_run_queue(trading_mode)
 
 
 async def update_design_strategy_optimizer_queue(trading_mode, updated_queue) -> list:
-    return await StrategyDesignOptimizer.update_run_queue(trading_mode, updated_queue)
+    return await strategy_design_optimizer.StrategyDesignOptimizer.update_run_queue(trading_mode, updated_queue)
 
 
 async def is_optimizer_in_progress(strategy_optimizer) -> bool:
