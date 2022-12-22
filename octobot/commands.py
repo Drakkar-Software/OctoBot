@@ -37,6 +37,8 @@ import octobot.configuration_manager as configuration_manager
 COMMANDS_LOGGER_NAME = "Commands"
 IGNORED_COMMAND_WHEN_RESTART = ["-u", "--update"]
 
+GLOBAL_BOT_INSTANCE = None
+
 
 def call_tentacles_manager(command_args):
     octobot_logger.init_logger()
@@ -184,9 +186,14 @@ def select_forced_profile_if_any(config, logger) -> bool:
     return False
 
 
+def set_global_bot_instance(bot_instance):
+    global GLOBAL_BOT_INSTANCE
+    GLOBAL_BOT_INSTANCE = bot_instance
+
+
 def _signal_handler(_, __):
     # run Commands.BOT.stop_threads in thread because can't use the current asyncio loop
-    stopping_thread = threading.Thread(target=octobot.get_bot().task_manager.stop_tasks(),
+    stopping_thread = threading.Thread(target=GLOBAL_BOT_INSTANCE.task_manager.stop_tasks(),
                                        name="Commands signal_handler stop_tasks")
     stopping_thread.start()
     stopping_thread.join()

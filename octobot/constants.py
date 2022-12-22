@@ -21,14 +21,13 @@ import octobot_commons.os_util as os_util
 import octobot_commons.enums
 import octobot.enums
 
-PROJECT_NAME = "OctoBot"
-AUTHOR = "DrakkarSoftware"
-SHORT_VERSION = "0.4.27"  # major.minor.revision
-PATCH_VERSION = ""  # patch : pX
-VERSION_DEV_PHASE = ""  # alpha : a / beta : b / release candidate : rc
-VERSION_PHASE = ""  # XX
-VERSION = f"{SHORT_VERSION}{VERSION_DEV_PHASE}{VERSION_PHASE}"
-LONG_VERSION = f"{SHORT_VERSION}{PATCH_VERSION}{VERSION_DEV_PHASE}{VERSION_PHASE}"
+# make constants visible
+from octobot import (
+    PROJECT_NAME,
+    AUTHOR,
+    VERSION,
+    LONG_VERSION,
+)
 
 # load environment variables from .env file if exists
 DOTENV_PATH = os.getenv("DOTENV_PATH", os.path.curdir)
