@@ -24,12 +24,16 @@ import queue
 import copy
 import asyncio
 import concurrent.futures
+import shutil
 import time
 import numpy
 import logging
 import ctypes
 import random
 
+import octobot.strategy_optimizer.optimizer_settings as optimizer_settings_import
+import octobot.strategy_optimizer.optimizer_filter as optimizer_filter
+import octobot.enums as enums
 import octobot_commons.optimization_campaign as optimization_campaign
 import octobot_commons.constants as commons_constants
 import octobot_commons.enums as commons_enums
@@ -38,7 +42,6 @@ import octobot_commons.logging as commons_logging
 import octobot_commons.multiprocessing_util as multiprocessing_util
 import octobot_commons.databases as databases
 import octobot_commons.dict_util as dict_util
-import octobot_commons.logical_operators as logical_operators
 import octobot_backtesting.errors as backtesting_errors
 import octobot_tentacles_manager.api as tentacles_manager_api
 import octobot_tentacles_manager.constants as tentacles_manager_constants
@@ -58,13 +61,13 @@ class NoMoreRunError(Exception):
 
 
 class StrategyDesignOptimizer:
-    MAX_OPTIMIZER_RUNS = 100000
+    ALLOWED_IN_FACTORY = True
+
     SHARED_KEEP_RUNNING_KEY = "keep_running"
     SHARED_RUN_TIMES_KEY = "run_times"
     SHARED_RUNS_QUEUES_KEY = "runs_queues"
     START_QUEUE_KEY = "start_queue"
     DONE_QUEUE_KEY = "done_queue"
-    DB_UPDATE_PERIOD = 15   # update run database at the end of each period
 
     RUN_SCHEDULE_TABLE = "schedule"
     CONFIG_KEY = "key"
@@ -84,18 +87,18 @@ class StrategyDesignOptimizer:
     CONFIG_DELETED = "deleted"
     CONFIG_DELETE_EVERY_RUN = "delete_every_run"
     CONFIG_ROLE = "role"
+    LAST_CREATED_QUEUE = f"last_created_queue{commons_constants.CONFIG_FILE_EXT}"
+    LAST_CREATED_QUEUE_CONFIG = f"last_created_queue_config{commons_constants.CONFIG_FILE_EXT}"
 
-    def __init__(self, trading_mode, config, tentacles_setup_config, optimizer_config,
-                 optimizer_id=None, queue_size=None):
+    def __init__(self, trading_mode, config, tentacles_setup_config, optimizer_settings=None):
+        self.logger = commons_logging.get_logger(self.__class__.__name__)
         self.config = config
         self.base_tentacles_setup_config = tentacles_setup_config
         self.trading_mode = trading_mode
-        self.optimizer_config = optimizer_config
-        self.optimizer_id = optimizer_id
-        self.queue_size = queue_size
+        self.optimizer_settings: optimizer_settings_import.OptimizerSettings = \
+            optimizer_settings or optimizer_settings_import.OptimizerSettings()
         self.current_backtesting_id = None
         self.runs_schedule = None
-        self.logger = commons_logging.get_logger(self.__class__.__name__)
         self.optimization_campaign_name = optimization_campaign.OptimizationCampaign.get_campaign_name(
             tentacles_setup_config
         )
@@ -104,8 +107,6 @@ class StrategyDesignOptimizer:
         self.is_computing = False
         self.is_finished = False
         self.total_nb_runs = 0
-        self.prioritized_optimizer_ids = []
-        self.empty_the_queue = False
         self.active_processes_count = 0
         self.keep_running = True
         self.process_pool_handle = None
@@ -119,8 +120,9 @@ class StrategyDesignOptimizer:
     def get_name(self):
         return f"{self.trading_mode.get_name()}_{self.__class__.__name__}"
 
-    async def _create_run_queues(self, optimizer_id):
-        run_data, run_data_by_hash = await self._get_optimizer_runs_details_and_hashes(optimizer_id)
+    async def _create_run_queues(self, optimizer_id, run_data):
+        run_data_by_hash = self._get_optimizer_runs_details_and_hashes(run_data) if run_data \
+            else await self._read_optimizer_runs_details_and_hashes(optimizer_id)
         start_queue = multiprocessing.Queue(len(run_data_by_hash))
         done_queue = multiprocessing.Queue(len(run_data_by_hash))
         for run_hash in run_data_by_hash:
@@ -130,36 +132,33 @@ class StrategyDesignOptimizer:
             self.DONE_QUEUE_KEY: done_queue
         }
 
-    async def multi_processed_optimize(self,
-                                       data_files,
-                                       optimizer_ids=None,
-                                       randomly_chose_runs=False,
-                                       start_timestamp=None,
-                                       end_timestamp=None,
-                                       empty_the_queue=False,
-                                       required_idle_cores=0,
-                                       notify_when_complete=False):
-        optimizer_ids = optimizer_ids or [self.optimizer_id]
+    async def multi_processed_optimize(self, optimizer_settings, run_data_by_optimizer_id=None):
+        success = True
+        optimizer_ids = optimizer_settings.optimizer_ids or [optimizer_settings.optimizer_id]
+        run_data_by_optimizer_id = run_data_by_optimizer_id or {}
         self.is_computing = True
         self.is_finished = False
         self.average_run_time = 0
-        self.active_processes_count = multiprocessing.cpu_count() - abs(required_idle_cores)
+        self.active_processes_count = multiprocessing.cpu_count() - abs(optimizer_settings.required_idle_cores)
         self.total_nb_runs = await self._get_total_nb_runs(optimizer_ids)
         global_t0 = time.time()
         lock = multiprocessing.RLock()
         shared_keep_running = multiprocessing.Value(ctypes.c_bool, True)
         shared_run_time = multiprocessing.Array(ctypes.c_float, [0.0 for _ in range(self.active_processes_count)])
         try:
-            async for selected_optimizer_ids in self._all_optimizer_ids(optimizer_ids, empty_the_queue):
+            async for selected_optimizer_ids in self._all_optimizer_ids(optimizer_ids,
+                                                                        optimizer_settings.empty_the_queue):
                 run_queues_by_optimizer_id = {
-                    optimizer_id: await self._create_run_queues(optimizer_id)
+                    optimizer_id: await self._create_run_queues(optimizer_id,
+                                                                run_data_by_optimizer_id.get(optimizer_id))
                     for optimizer_id in selected_optimizer_ids
                 }
                 try:
                     await self._run_multi_processed_optimizer(
-                        lock, required_idle_cores,
-                        shared_keep_running, shared_run_time, run_queues_by_optimizer_id,
-                        data_files, start_timestamp, end_timestamp)
+                        optimizer_settings, lock,
+                        shared_keep_running, shared_run_time,
+                        run_queues_by_optimizer_id
+                    )
                 finally:
                     # properly empty and close queues to avoid underlying thread issues
                     for optimizer_id, run_queues in run_queues_by_optimizer_id.items():
@@ -175,21 +174,19 @@ class StrategyDesignOptimizer:
                             run_queue.cancel_join_thread()
         except Exception as e:
             self.logger.exception(e, True, f"Error when running optimizer processes: {e}")
+            success = False
         finally:
-            if notify_when_complete:
-                await services_api.send_notification(
-                    services_api.create_notification(f"Your strategy optimizer just finished.",
-                                                     sound=services_enums.NotificationSound.FINISHED_PROCESSING,
-                                                     category=services_enums.NotificationCategory.OTHER)
-                )
+            if optimizer_settings.notify_when_complete:
+                await self._send_optimizer_finished_notification()
             self.process_pool_handle = None
             self.is_computing = False
             self.is_finished = True
         self.logger.info(f"Optimizer runs complete in {time.time() - global_t0} seconds.")
+        return success
 
-    async def _run_multi_processed_optimizer(self, lock, required_idle_cores,
-                                             shared_keep_running, shared_run_time, run_queues_by_optimizer_id,
-                                             data_files, start_timestamp, end_timestamp):
+    async def _run_multi_processed_optimizer(self, optimizer_settings,
+                                             lock, shared_keep_running, shared_run_time,
+                                             run_queues_by_optimizer_id):
         with multiprocessing_util.registered_lock_and_shared_elements(
                 commons_enums.MultiprocessingLocks.DBLock.value,
                 lock,
@@ -212,8 +209,8 @@ class StrategyDesignOptimizer:
             self.logger.info(f"Dispatching optimizer backtesting runs into {self.active_processes_count} "
                              f"parallel processes (based on the current computer physical processors).")
             if self.active_processes_count < 1:
-                idle_cores_message = f"Requiring to leave {required_idle_cores} idle core. " \
-                    if required_idle_cores else ""
+                idle_cores_message = f"Requiring to leave {optimizer_settings.required_idle_cores} idle core. " \
+                    if optimizer_settings.required_idle_cores else ""
                 raise RuntimeError(f"{idle_cores_message}At lease one core is required to "
                                    f"start a strategy optimizer. "
                                    f"There are {multiprocessing.cpu_count()} total available cores on this computer.")
@@ -222,10 +219,10 @@ class StrategyDesignOptimizer:
                     asyncio.get_event_loop().run_in_executor(
                         pool,
                         self.find_optimal_configuration_wrapper,
-                        data_files,
+                        optimizer_settings.data_files,
                         index == 0,
-                        start_timestamp,
-                        end_timestamp
+                        optimizer_settings.start_timestamp,
+                        optimizer_settings.end_timestamp
                     )
                 )
             self.process_pool_handle = await asyncio.gather(*coros)
@@ -281,17 +278,21 @@ class StrategyDesignOptimizer:
                 # stopped run: update queue
                 await self._update_runs_from_done_queue(run_queues, optimizer_id)
             raise
-        # let done queue push thread finish
-        # time.sleep(0.1)
 
-    async def _get_optimizer_runs_details_and_hashes(self, optimizer_id):
+    async def _read_optimizer_runs_details_and_hashes(self, optimizer_id):
         async with databases.DBReader.database(self.run_dbs_identifier.get_optimizer_runs_schedule_identifier()) \
                 as reader:
-            run_data = await self._get_run_data_from_db(optimizer_id, reader)
+            run_data = await self._get_run_data(optimizer_id, reader)
+        try:
+            return self._get_optimizer_runs_details_and_hashes(run_data[0][self.CONFIG_RUNS])
+        except IndexError:
+            raise NoMoreRunError
+
+    def _get_optimizer_runs_details_and_hashes(self, run_data):
         if run_data:
-            return run_data, {
+            return {
                 self.get_run_hash(run_details): run_details
-                for run_details in run_data[0][self.CONFIG_RUNS].values()
+                for run_details in run_data.values()
             }
         raise NoMoreRunError
 
@@ -302,21 +303,20 @@ class StrategyDesignOptimizer:
             await self.drop_optimizer_run_from_queue(optimizer_id)
             return
         try:
-            run_data, run_data_by_hash = await self._get_optimizer_runs_details_and_hashes(optimizer_id)
+            run_data_by_hash = await self._read_optimizer_runs_details_and_hashes(optimizer_id)
             t_start = time.time()
             last_db_update_time = t_start
             while self._should_keep_running():
                 await self.run_single_iteration(optimizer_id,
                                                 run_queues,
                                                 run_data_by_hash,
-                                                run_data,
                                                 data_files,
                                                 start_timestamp=start_timestamp,
                                                 end_timestamp=end_timestamp)
                 if self.first_iteration_time == 0:
                     self.first_iteration_time = time.time() - t_start
                     self._register_run_time(self.first_iteration_time)
-                if update_database and time.time() - last_db_update_time > self.DB_UPDATE_PERIOD:
+                if update_database and time.time() - last_db_update_time > self.optimizer_settings.db_update_period:
                     await self._update_runs_from_done_queue(run_queues, optimizer_id)
                     last_db_update_time = time.time()
             if update_database:
@@ -407,17 +407,17 @@ class StrategyDesignOptimizer:
             run_queues_by_optimizer_id = multiprocessing_util.get_shared_element(self.SHARED_RUNS_QUEUES_KEY)
             return sum(run_queues[self.START_QUEUE_KEY].qsize()
                        for optimizer_id, run_queues in run_queues_by_optimizer_id.items()
-                       if optimizer_id in optimizer_ids or self.empty_the_queue)
+                       if optimizer_id in optimizer_ids or self.optimizer_settings.empty_the_queue)
         except KeyError:
             return 0
 
     async def get_overall_progress(self):
-        if self.optimizer_id is None:
+        if self.optimizer_settings.optimizer_id is None:
             remaining_runs = await self._get_remaining_runs_count_from_multi_process_queue(
-                self.prioritized_optimizer_ids)
+                self.optimizer_settings.optimizer_ids)
         else:
             remaining_runs = await self._get_remaining_runs_count_from_multi_process_queue(
-                self.optimizer_id)
+                self.optimizer_settings.optimizer_id)
         if self.is_computing and remaining_runs == 0:
             remaining_runs = 1
         done_runs = self.total_nb_runs - remaining_runs
@@ -434,6 +434,11 @@ class StrategyDesignOptimizer:
     def get_errors_description(self):
         return ""
 
+    async def _get_run_data(self, optimizer_id, reader):
+        if self.runs_schedule:
+            return [self.runs_schedule]
+        return await self._get_run_data_from_db(optimizer_id, reader)
+
     async def _get_run_data_from_db(self, optimizer_id, reader):
         if optimizer_id is None:
             raise RuntimeError("No optimizer id")
@@ -446,35 +451,62 @@ class StrategyDesignOptimizer:
             for run in (await self.get_run_queue(self.trading_mode, self.optimization_campaign_name))
         ]
 
-    async def resume(self, data_files, optimizer_ids, randomly_chose_runs,
-                     start_timestamp=None,
-                     end_timestamp=None,
-                     empty_the_queue=False,
-                     required_idle_cores=0,
-                     notify_when_complete=False):
-        self.empty_the_queue = empty_the_queue
-        self.total_nb_runs = await self._get_total_nb_runs(optimizer_ids)
-        self.prioritized_optimizer_ids = optimizer_ids
-        await self.multi_processed_optimize(data_files,
-                                            optimizer_ids=optimizer_ids,
-                                            randomly_chose_runs=randomly_chose_runs,
-                                            start_timestamp=start_timestamp,
-                                            end_timestamp=end_timestamp,
-                                            empty_the_queue=empty_the_queue,
-                                            required_idle_cores=required_idle_cores,
-                                            notify_when_complete=notify_when_complete)
+    def _get_optimization_func(self, optimizer_settings: optimizer_settings_import.OptimizerSettings):
+        if optimizer_settings.optimizer_mode == enums.OptimizerModes.NORMAL.value:
+            return self.multi_processed_optimize
+        return None
+
+    async def resume(self, optimizer_settings: optimizer_settings_import.OptimizerSettings):
+        self.total_nb_runs = await self._get_total_nb_runs(optimizer_settings.optimizer_ids)
+        if optimizer_func := self._get_optimization_func(optimizer_settings):
+            return await optimizer_func(optimizer_settings)
+        else:
+            raise NotImplementedError(f"Unknown optimizer mode: {optimizer_settings.optimizer_mode}")
+
+    def _get_from_run_results(self, run_data_elements, all_run_results):
+        if all_run_results:
+            yielded_count = 1
+            for run_data_from_runs in reversed(all_run_results):
+                for to_find_run_data in run_data_elements.values():
+                    if self._is_using_these_user_inputs(
+                            run_data_from_runs,
+                            to_find_run_data
+                    ):
+                        yield to_find_run_data, run_data_from_runs
+                        if yielded_count == len(run_data_elements):
+                            return
+                        yielded_count += 1
+
+    def _is_using_these_user_inputs(self, full_run_data, to_find_run_data):
+        full_run_data_user_inputs = full_run_data[commons_enums.BacktestingMetadata.USER_INPUTS.value]
+        for user_input_data in to_find_run_data:
+            try:
+                # todo handle user input with object config
+                if full_run_data_user_inputs[user_input_data[self.CONFIG_TENTACLE][0]] \
+                        [user_input_data[self.CONFIG_USER_INPUT]] != user_input_data[self.CONFIG_VALUE]:
+                    return False
+            except KeyError:
+                return False
+        return True
+
+    async def _send_optimizer_finished_notification(self):
+        await services_api.send_notification(
+            services_api.create_notification(f"Your strategy optimizer just finished.",
+                                             sound=services_enums.NotificationSound.FINISHED_PROCESSING,
+                                             category=services_enums.NotificationCategory.OTHER)
+        )
 
     async def _get_total_nb_runs(self, optimizer_ids):
         full_queue = await self.get_run_queue(self.trading_mode)
-        if self.empty_the_queue:
+        if self.optimizer_settings.empty_the_queue:
             return sum(len(run[self.CONFIG_RUNS]) for run in full_queue)
         return sum(len(run[self.CONFIG_RUNS]) for run in full_queue if run[self.CONFIG_ID] in optimizer_ids)
 
     async def generate_and_save_run(self):
         taken_ids = await self.get_queued_optimizer_ids()
-        self.optimizer_id = await self.run_dbs_identifier.generate_new_optimizer_id(taken_ids) \
-            if self.optimizer_id is None else self.optimizer_id
-        self.run_dbs_identifier.optimizer_id = self.optimizer_id
+        self.optimizer_settings.optimizer_id = await self.run_dbs_identifier.generate_new_optimizer_id(taken_ids) \
+            if self.optimizer_settings.optimizer_id is None else self.optimizer_settings.optimizer_id
+        self.run_dbs_identifier.optimizer_id = self.optimizer_settings.optimizer_id
         await self.run_dbs_identifier.initialize()
         return await self._generate_and_store_backtesting_runs_schedule()
 
@@ -519,7 +551,8 @@ class StrategyDesignOptimizer:
                 db_optimizer_run = []
                 try:
                     db_optimizer_run = \
-                        (await writer_reader.select(cls.RUN_SCHEDULE_TABLE, query.id == updated_queue[cls.CONFIG_ID]))[0]
+                        (await writer_reader.select(cls.RUN_SCHEDULE_TABLE, query.id == updated_queue[cls.CONFIG_ID]))[
+                            0]
                 except json.JSONDecodeError:
                     pass
                 existing_runs = set(
@@ -574,15 +607,12 @@ class StrategyDesignOptimizer:
                                    optimizer_id,
                                    run_queues,
                                    run_data_by_hash,
-                                   run_data,
                                    data_files,
                                    start_timestamp=None,
                                    end_timestamp=None):
-        run_details = selected_run_hash = None
         start_run = False
-        if run_data and run_data[0][self.CONFIG_RUNS]:
-            selected_run_hash, run_details = await self._synchronized_pick_run(run_queues[self.START_QUEUE_KEY],
-                                                                               run_data_by_hash)
+        selected_run_hash, run_details = await self._synchronized_pick_run(run_queues[self.START_QUEUE_KEY],
+                                                                           run_data_by_hash)
         if run_details:
             # start backtesting run ids at 1
             backtesting_run_id = 1
@@ -696,9 +726,11 @@ class StrategyDesignOptimizer:
     async def _generate_and_store_backtesting_runs_schedule(self):
         runs = self._generate_runs()
         await self._save_run_schedule(runs)
+        await self._create_run_schedule_and_config_snapshot()
         return runs
 
-    def _shuffle_and_select_runs(self, runs, select_size=None) -> dict:
+    @staticmethod
+    def shuffle_and_select_runs(runs, select_size=None) -> dict:
         shuffled_runs = list(runs.values())
         random.shuffle(shuffled_runs)
         selected_runs = shuffled_runs if select_size is None else shuffled_runs[:select_size]
@@ -712,7 +744,7 @@ class StrategyDesignOptimizer:
             if self._is_run_allowed(run)
         }
         if runs:
-            shuffled_runs = self._shuffle_and_select_runs(runs, select_size=self.queue_size)
+            shuffled_runs = self.shuffle_and_select_runs(runs, select_size=self.optimizer_settings.queue_size)
             for run in shuffled_runs.values():
                 for run_input in run:
                     # do not store self.CONFIG_KEY
@@ -721,24 +753,14 @@ class StrategyDesignOptimizer:
         raise RuntimeError("No optimizer run to schedule with this configuration")
 
     def _is_run_allowed(self, run):
-        for run_filter_config in self.optimizer_config[self.CONFIG_FILTER_SETTINGS]:
+        for run_filter_config in self.optimizer_settings.optimizer_config[self.CONFIG_FILTER_SETTINGS]:
             if self._is_filtered(run, run_filter_config):
                 return False
         return True
 
     def _is_filtered(self, run, run_filter_config):
-        left_operand, operator, right_operand = self._parse_filter_entry(run, run_filter_config)
-        if not (left_operand and right_operand):
-            return False
-        try:
-            left_operand = decimal.Decimal(left_operand)
-        except decimal.InvalidOperation:
-            left_operand = str(left_operand)
-        try:
-            right_operand = decimal.Decimal(right_operand)
-        except decimal.InvalidOperation:
-            right_operand = str(right_operand)
-        return logical_operators.evaluate_condition(left_operand, right_operand, operator)
+        operator_filter = self._parse_filter_entry(run, run_filter_config)
+        return operator_filter.is_filtered()
 
     def _parse_filter_entry(self, run, run_filter_config):
         user_input_left_operand_key = run_filter_config["user_input_left_operand"][self.CONFIG_VALUE]
@@ -753,7 +775,9 @@ class StrategyDesignOptimizer:
             if user_input[self.CONFIG_KEY] == user_input_right_operand_key:
                 user_input_right_operand = user_input[self.CONFIG_VALUE]
         right_operand = user_input_right_operand if text_right_operand in ("null", "") else text_right_operand
-        return left_operand, operator, right_operand
+        return optimizer_filter.OptimizerFilter(user_input_left_operand_key, user_input_right_operand_key,
+                                                left_operand, right_operand,
+                                                operator)
 
     def _get_config_possible_iterations(self):
         return [
@@ -767,22 +791,22 @@ class StrategyDesignOptimizer:
         values = []
         try:
             if config_element[self.CONFIG_ENABLED]:
-                if config_element[self.CONFIG_TYPE] in (ConfigTypes.OPTIONS, ConfigTypes.BOOLEAN):
+                if config_element[self.CONFIG_TYPE] is ConfigTypes.OPTIONS:
+                    values = [[value] for value in config_element[self.CONFIG_VALUE][self.CONFIG_VALUE]]
+                if config_element[self.CONFIG_TYPE] is ConfigTypes.BOOLEAN:
                     values = config_element[self.CONFIG_VALUE][self.CONFIG_VALUE]
                 if config_element[self.CONFIG_TYPE] is ConfigTypes.NUMBER:
                     config = config_element[self.CONFIG_VALUE][self.CONFIG_VALUE]
-                    addition = 1 if config[self.CONFIG_STEP] > 1 else config[self.CONFIG_STEP]
-                    # Add 1 or step to max to include the max value in generated interval
-                    values = [v.item()
-                              for v in numpy.arange(config[self.CONFIG_MIN],
-                                                    config[self.CONFIG_MAX] + addition,
-                                                    config[self.CONFIG_STEP])
-                              if v.item() <= config[self.CONFIG_MAX]]
+                    values = [v
+                              for v in self._get_all_possible_values(config[self.CONFIG_MIN],
+                                                                     config[self.CONFIG_MAX],
+                                                                     config[self.CONFIG_STEP])
+                              if v <= config[self.CONFIG_MAX]]
             return [
                 {
                     self.CONFIG_USER_INPUT: config_element[self.CONFIG_USER_INPUT],
                     self.CONFIG_TENTACLE: config_element[self.CONFIG_VALUE][self.CONFIG_TENTACLE]
-                        .split(self.CONFIG_NESTED_TENTACLE_SEPARATOR),
+                    .split(self.CONFIG_NESTED_TENTACLE_SEPARATOR),
                     self.CONFIG_VALUE: value,
                     self.CONFIG_KEY: config_element[self.CONFIG_KEY]
                 }
@@ -791,8 +815,23 @@ class StrategyDesignOptimizer:
         except ZeroDivisionError as e:
             raise ZeroDivisionError("Step value has to be greater than 0") from e
 
+    def _get_all_possible_values(self, start, stop, step):
+        # use custom decimal function for precision instead of numpy.arange
+        d_start = decimal.Decimal(str(start))
+        d_stop = decimal.Decimal(str(stop))
+        d_step = decimal.Decimal(str(step))
+        return_type = self.get_accurate_number_type(start, stop, step)
+        current = d_start
+        while current <= d_stop:
+            yield return_type(current)
+            current += d_step
+
+    @staticmethod
+    def get_accurate_number_type(*values):
+        return int if all(isinstance(e, int) for e in values) else float
+
     def _get_config_elements(self):
-        for key, val in self.optimizer_config[self.CONFIG_USER_INPUTS].items():
+        for key, val in self.optimizer_settings.optimizer_config[self.CONFIG_USER_INPUTS].items():
             yield {
                 self.CONFIG_KEY: key,
                 self.CONFIG_ENABLED: val[self.CONFIG_ENABLED],
@@ -819,16 +858,29 @@ class StrategyDesignOptimizer:
                 pass
         return ConfigTypes.UNKNOWN
 
+    async def _create_run_schedule_and_config_snapshot(self):
+        # gives the optimizer folder as no backtesting id is set
+        optimizer_target_identifier = self.run_dbs_identifier.get_backtesting_run_folder()
+        try:
+            shutil.copy(
+                self.run_dbs_identifier.get_optimizer_runs_schedule_identifier(),
+                os.path.join(optimizer_target_identifier, self.LAST_CREATED_QUEUE)
+            )
+            with open(os.path.join(optimizer_target_identifier, self.LAST_CREATED_QUEUE_CONFIG), "w") as fw:
+                json.dump(self.optimizer_settings.optimizer_config, fw)
+        except FileNotFoundError as err:
+            self.logger.debug(f"Skipped run schedule and config save: {err}")
+
     async def _save_run_schedule(self, runs):
         self.runs_schedule = {
             self.CONFIG_RUNS: runs,
-            self.CONFIG_ID: self.optimizer_id
+            self.CONFIG_ID: self.optimizer_settings.optimizer_id
         }
         self.total_nb_runs = len(runs)
         async with databases.DBWriterReader.database(self.run_dbs_identifier.get_optimizer_runs_schedule_identifier(),
                                                      with_lock=True) as writer_reader:
             try:
-                existing_runs = await self._get_run_data_from_db(self.optimizer_id, writer_reader)
+                existing_runs = await self._get_run_data_from_db(self.optimizer_settings.optimizer_id, writer_reader)
                 if existing_runs:
                     merged_runs = {
                         self.get_run_hash(run_data): run_data
@@ -845,7 +897,7 @@ class StrategyDesignOptimizer:
                         for index, details in enumerate(merged_runs.values())
                     }
                     await writer_reader.delete(self.RUN_SCHEDULE_TABLE, (await writer_reader.search()).id ==
-                                               self.optimizer_id)
+                                               self.optimizer_settings.optimizer_id)
                 await writer_reader.log(self.RUN_SCHEDULE_TABLE, self.runs_schedule)
             except json.JSONDecodeError:
                 self.logger.error(f"Invalid data in run schedule, clearing runs.")

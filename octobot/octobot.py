@@ -18,8 +18,8 @@ import time
 import uuid
 import aiohttp
 
-import octobot_commons.enums as enums
 import octobot_commons.constants as commons_constants
+import octobot_commons.enums as commons_enums
 import octobot_commons.logging as logging
 import octobot_commons.configuration as configuration
 import octobot_commons.signals as signals
@@ -143,7 +143,7 @@ class OctoBot:
         self.configuration_manager.add_element(constants.TENTACLES_SETUP_CONFIG_KEY, self.tentacles_setup_config)
         await service_api.send_notification(
             service_api.create_notification(f"{constants.PROJECT_NAME} {constants.LONG_VERSION} is starting ...",
-                                            markdown_format=enums.MarkdownFormat.ITALIC)
+                                            markdown_format=commons_enums.MarkdownFormat.ITALIC)
         )
         if self.startup_messages:
             for limit_message in self.startup_messages:
