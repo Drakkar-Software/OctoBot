@@ -33,7 +33,9 @@ import octobot_tentacles_manager.api as tentacles_manager_api
 import octobot_tentacles_manager.cli as tentacles_manager_cli
 import octobot_tentacles_manager.constants as tentacles_manager_constants
 
-import octobot
+# make tentacles importable
+sys.path.append(os.path.dirname(sys.executable))
+
 import octobot.octobot as octobot_class
 import octobot.commands as commands
 import octobot.configuration_manager as configuration_manager
@@ -252,7 +254,7 @@ def start_octobot(args):
                                         startup_messages=startup_messages)
 
         # set global bot instance
-        octobot.set_bot(bot)
+        commands.set_global_bot_instance(bot)
 
         # Clear community cache
         bot.community_auth.clear_cache()
