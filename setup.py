@@ -16,7 +16,7 @@
 import os
 from setuptools import dist
 
-dist.Distribution().fetch_build_eggs(['Cython==0.29.26'])
+dist.Distribution().fetch_build_eggs(['Cython==0.29.32'])
 
 try:
     from Cython.Distutils import build_ext
