@@ -54,7 +54,8 @@ class OctoBotBacktesting:
                  end_timestamp=None,
                  enable_logs=True,
                  enable_storage=True,
-                 run_on_all_available_time_frames=False):
+                 run_on_all_available_time_frames=False,
+                 backtesting_data=None):
         self.logger = commons_logging.get_logger(self.__class__.__name__)
         self.backtesting_config = backtesting_config
         self.tentacles_setup_config = tentacles_setup_config
@@ -65,6 +66,12 @@ class OctoBotBacktesting:
         self.evaluators = []
         self.service_feeds = []
         self.backtesting_files = backtesting_files
+        self.backtesting_data = backtesting_data
+        if self.backtesting_data is not None:
+            self.backtesting_files = [
+                backtesting_file
+                for backtesting_file in self.backtesting_data.data_files
+            ]
         self.backtesting = None
         self.run_on_common_part_only = run_on_common_part_only
         self.start_time = None
@@ -163,7 +170,8 @@ class OctoBotBacktesting:
                 raise
         finally:
             # call stop_importers in case it has not been called already
-            await self.stop_importers()
+            if self.backtesting_data is None:
+                await self.stop_importers()
 
             if memory_check:
                 to_reference_check = exchange_managers + [self.backtesting]
@@ -279,11 +287,16 @@ class OctoBotBacktesting:
                                   f"might not work properly")
 
     async def _init_backtesting(self):
-        # update matrix id
-        self.backtesting = await backtesting_api.initialize_backtesting(self.backtesting_config,
-                                                                        exchange_ids=self.exchange_manager_ids,
-                                                                        matrix_id=self.matrix_id,
-                                                                        data_files=self.backtesting_files)
+        if self.backtesting_data:
+            self.backtesting_data.reset_cached_indexes()
+        self.backtesting = await backtesting_api.initialize_backtesting(
+            self.backtesting_config,
+            exchange_ids=self.exchange_manager_ids,
+            matrix_id=self.matrix_id,
+            data_files=self.backtesting_files,
+            importers_by_data_file=self.backtesting_data.importers_by_data_file if self.backtesting_data else None,
+            backtest_data=self.backtesting_data
+        )
         if self.run_on_all_available_time_frames:
             self.backtesting_config[evaluator_constants.CONFIG_FORCED_TIME_FRAME] = [
                 tf
