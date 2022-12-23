@@ -16,6 +16,7 @@
 #  License along with this library.
 
 cimport octobot.backtesting.octobot_backtesting as octobot_backtesting
+cimport octobot_backtesting.backtest_data as backtest_data
 
 
 cdef class IndependentBacktesting:
@@ -45,6 +46,7 @@ cdef class IndependentBacktesting:
     cdef public object stopped_event
     cdef public bint enforce_total_databases_max_size_after_run
 
+    cdef public backtest_data.BacktestData backtesting_data
     cdef public octobot_backtesting.OctoBotBacktesting octobot_backtesting
 
     cpdef bint is_in_progress(self)
