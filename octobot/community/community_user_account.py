@@ -20,6 +20,7 @@ import octobot.community.errors as errors
 class CommunityUserAccount:
     USER_DATA_CONTENT = "content"
     BOT_DEVICE = "device"
+    BOT_URLS = "urls"
     BOT_DEPLOYMENT = "deployment"
     BOT_DEPLOYMENT_TYPE = "type"
     SELF_HOSTED_BOT_DEPLOYMENT_TYPE = "self-hosted"
@@ -54,9 +55,25 @@ class CommunityUserAccount:
         return self._all_user_bots_raw_data
 
     def get_selected_bot_raw_data(self, raise_on_missing=False):
-        if raise_on_missing and self._selected_bot_raw_data is None:
-            raise errors.BotError(self.NO_SELECTED_BOT_DESC)
+        if raise_on_missing:
+            self._ensure_selected_bot_data()
         return self._selected_bot_raw_data
+
+    def is_self_hosted(self, bot):
+        deployment = bot.get(self.BOT_DEPLOYMENT)
+        if not deployment:
+            return True
+        try:
+            return deployment[self.BOT_DEPLOYMENT_TYPE] == self.SELF_HOSTED_BOT_DEPLOYMENT_TYPE
+        except KeyError:
+            return True
+
+    def get_bot_deployment_url(self):
+        self._ensure_selected_bot_data()
+        urls = self._selected_bot_raw_data[self.BOT_DEPLOYMENT][self.BOT_URLS]
+        if urls:
+            return urls[0]["url"]
+        raise errors.BotError("No deployment url in selected bot")
 
     def get_selected_bot_device_uuid(self):
         try:
@@ -95,6 +112,10 @@ class CommunityUserAccount:
 
     def _get_user_data_content(self):
         return self._profile_raw_data[self.USER_DATA_CONTENT]
+
+    def _ensure_selected_bot_data(self):
+        if self._selected_bot_raw_data is None:
+            raise errors.BotError(self.NO_SELECTED_BOT_DESC)
 
     def flush_bot_details(self):
         self.gql_bot_id = None
