@@ -16,7 +16,7 @@
 import os
 from setuptools import dist
 
-dist.Distribution().fetch_build_eggs(['Cython==0.29.26'])
+dist.Distribution().fetch_build_eggs(['Cython==0.29.32'])
 
 try:
     from Cython.Distutils import build_ext
@@ -34,7 +34,7 @@ except ImportError:
 
 from setuptools import find_packages
 from setuptools import setup, Extension
-from octobot.constants import PROJECT_NAME, VERSION
+from octobot import PROJECT_NAME, AUTHOR, VERSION
 
 PACKAGES = find_packages(exclude=["tentacles*", "tests", ])
 
@@ -53,7 +53,6 @@ packages_list = [
     "octobot.strategy_optimizer.strategy_test_suite",
     "octobot.strategy_optimizer.test_suite_result",
     "octobot.strategy_optimizer.strategy_optimizer",
-    "octobot.strategy_optimizer.strategy_design_optimizer",
     "octobot.producers.interface_producer",
     "octobot.producers.service_feed_producer",
     "octobot.producers.evaluator_producer",
@@ -86,7 +85,7 @@ setup(
     version=VERSION,
     url='https://github.com/Drakkar-Software/OctoBot',
     license='GPL-3.0',
-    author='Drakkar-Software',
+    author=AUTHOR,
     author_email='drakkar-software@protonmail.com',
     description='Cryptocurrencies alert / trading bot',
     py_modules=['start'],

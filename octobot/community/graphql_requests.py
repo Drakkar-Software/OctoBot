@@ -35,6 +35,9 @@ _INNER_BOT_QUERY = """
     deployment {
       _id
       type
+      urls {
+        url
+      }
     }
     stats {
         _id

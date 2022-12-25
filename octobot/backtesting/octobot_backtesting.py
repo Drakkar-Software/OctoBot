@@ -29,6 +29,7 @@ import octobot_backtesting.api as backtesting_api
 import octobot_backtesting.importers as importers
 
 import octobot_evaluators.api as evaluator_api
+import octobot_evaluators.constants as evaluator_constants
 
 import octobot_services.api as service_api
 
@@ -52,7 +53,9 @@ class OctoBotBacktesting:
                  start_timestamp=None,
                  end_timestamp=None,
                  enable_logs=True,
-                 enable_storage=True):
+                 enable_storage=True,
+                 run_on_all_available_time_frames=False,
+                 backtesting_data=None):
         self.logger = commons_logging.get_logger(self.__class__.__name__)
         self.backtesting_config = backtesting_config
         self.tentacles_setup_config = tentacles_setup_config
@@ -63,6 +66,12 @@ class OctoBotBacktesting:
         self.evaluators = []
         self.service_feeds = []
         self.backtesting_files = backtesting_files
+        self.backtesting_data = backtesting_data
+        if self.backtesting_data is not None:
+            self.backtesting_files = [
+                backtesting_file
+                for backtesting_file in self.backtesting_data.data_files
+            ]
         self.backtesting = None
         self.run_on_common_part_only = run_on_common_part_only
         self.start_time = None
@@ -72,6 +81,7 @@ class OctoBotBacktesting:
         self.exchange_type_by_exchange = {}
         self.futures_contract_type = trading_enums.FutureContractType.LINEAR_PERPETUAL
         self.enable_storage = enable_storage
+        self.run_on_all_available_time_frames = run_on_all_available_time_frames
 
     async def initialize_and_run(self):
         self.logger.info(f"Starting on {self.backtesting_files} with {self.symbols_to_create_exchange_classes}")
@@ -85,6 +95,8 @@ class OctoBotBacktesting:
             ),
             False
         )
+        await self._init_matrix()
+        await self._init_backtesting()
         await self._init_evaluators()
         await self._init_service_feeds()
         await self._init_exchanges()
@@ -102,7 +114,11 @@ class OctoBotBacktesting:
                     await backtesting_api.stop_importer(importer)
 
     async def stop(self, memory_check=False, should_raise=False):
-        self.logger.info(f"Stopping for {self.backtesting_files} with {self.symbols_to_create_exchange_classes}")
+        symbols_by_exchange = {
+            exchange: [str(s) for s in symbols]
+            for exchange, symbols in self.symbols_to_create_exchange_classes.items()
+        }
+        self.logger.info(f"Stopping for {self.backtesting_files} with {symbols_by_exchange}")
         exchange_managers = []
         try:
             if self.backtesting is None:
@@ -154,7 +170,8 @@ class OctoBotBacktesting:
                 raise
         finally:
             # call stop_importers in case it has not been called already
-            await self.stop_importers()
+            if self.backtesting_data is None:
+                await self.stop_importers()
 
             if memory_check:
                 to_reference_check = exchange_managers + [self.backtesting]
@@ -236,8 +253,11 @@ class OctoBotBacktesting:
         )
         self.logger.info(f"Backtesting metadata:\n{json.dumps(metadata, indent=4)}")
 
+    async def _init_matrix(self):
+        self.matrix_id = evaluator_api.create_matrix()
+
     async def _init_evaluators(self):
-        self.matrix_id = await evaluator_api.initialize_evaluators(self.backtesting_config, self.tentacles_setup_config)
+        await evaluator_api.initialize_evaluators(self.backtesting_config, self.tentacles_setup_config)
         await evaluator_api.create_evaluator_channels(self.matrix_id, is_backtesting=True)
 
     async def _init_service_feeds(self):
@@ -266,11 +286,24 @@ class OctoBotBacktesting:
                 self.logger.error(f"Failed to start {feed.get_name()}. Evaluators requiring this service feed "
                                   f"might not work properly")
 
+    async def _init_backtesting(self):
+        if self.backtesting_data:
+            self.backtesting_data.reset_cached_indexes()
+        self.backtesting = await backtesting_api.initialize_backtesting(
+            self.backtesting_config,
+            exchange_ids=self.exchange_manager_ids,
+            matrix_id=self.matrix_id,
+            data_files=self.backtesting_files,
+            importers_by_data_file=self.backtesting_data.importers_by_data_file if self.backtesting_data else None,
+            backtest_data=self.backtesting_data
+        )
+        if self.run_on_all_available_time_frames:
+            self.backtesting_config[evaluator_constants.CONFIG_FORCED_TIME_FRAME] = [
+                tf
+                for tf in self.backtesting.importers[0].time_frames
+            ]
+
     async def _init_exchanges(self):
-        self.backtesting = await backtesting_api.initialize_backtesting(self.backtesting_config,
-                                                                        exchange_ids=self.exchange_manager_ids,
-                                                                        matrix_id=self.matrix_id,
-                                                                        data_files=self.backtesting_files)
         # modify_backtesting_channels before creating exchanges as they require the current backtesting time to
         # initialize
         await backtesting_api.adapt_backtesting_channels(self.backtesting,

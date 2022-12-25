@@ -22,7 +22,6 @@ import octobot.constants as constants
 import octobot_commons.configuration as configuration
 import octobot_commons.constants as common_constants
 import octobot_commons.logging as logging
-import octobot_commons.errors as common_errors
 import octobot_tentacles_manager.constants as tentacles_manager_constants
 
 import octobot_trading.api as trading_api

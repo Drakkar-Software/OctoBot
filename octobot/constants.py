@@ -16,19 +16,19 @@
 import os
 import pathlib
 import dotenv
+import decimal
 
 import octobot_commons.os_util as os_util
 import octobot_commons.enums
 import octobot.enums
 
-PROJECT_NAME = "OctoBot"
-AUTHOR = "DrakkarSoftware"
-SHORT_VERSION = "0.4.27"  # major.minor.revision
-PATCH_VERSION = ""  # patch : pX
-VERSION_DEV_PHASE = ""  # alpha : a / beta : b / release candidate : rc
-VERSION_PHASE = ""  # XX
-VERSION = f"{SHORT_VERSION}{VERSION_DEV_PHASE}{VERSION_PHASE}"
-LONG_VERSION = f"{SHORT_VERSION}{PATCH_VERSION}{VERSION_DEV_PHASE}{VERSION_PHASE}"
+# make constants visible
+from octobot import (
+    PROJECT_NAME,
+    AUTHOR,
+    VERSION,
+    LONG_VERSION,
+)
 
 # load environment variables from .env file if exists
 DOTENV_PATH = os.getenv("DOTENV_PATH", os.path.curdir)
@@ -134,6 +134,10 @@ DEFAULT_TENTACLES_PACKAGE_NAME = "OctoBot-Default-Tentacles"
 LOGS_FOLDER = "logs"
 ENV_TRADING_ENABLE_DEBUG_LOGS = os_util.parse_boolean_environment_var("ENV_TRADING_ENABLE_DEBUG_LOGS", "False")
 
+# system
+ENABLE_CLOCK_SYNCH = os_util.parse_boolean_environment_var("ENABLE_CLOCK_SYNCH", "True")
+ENABLE_SYSTEM_WATCHER = os_util.parse_boolean_environment_var("ENABLE_SYSTEM_WATCHER", "True")
+
 # errors
 ERRORS_URL = os.getenv("ERRORS_OCTOBOT_ONLINE_URL", "https://errors.octobot.online/")
 ERRORS_POST_ENDPOINT = f"{ERRORS_URL}errors"
@@ -171,6 +175,21 @@ LOG_FILE = f"{LOGS_FOLDER}/{PROJECT_NAME}.log"
 OPTIMIZER_FORCE_ASYNCIO_DEBUG_OPTION = False
 OPTIMIZER_DATA_FILES_FOLDER = f"{OCTOBOT_FOLDER}/strategy_optimizer/optimizer_data_files"
 OPTIMIZATION_CAMPAIGN_KEY = "optimization_campaign"
+
+OPTIMIZER_RUNS_FOLDER = "optimizer"
+OPTIMIZER_DEFAULT_RANDOMLY_CHOSE_RUNS = True
+OPTIMIZER_DEFAULT_REQUIRED_IDLE_CORES = 0
+OPTIMIZER_DEFAULT_NOTIFY_WHEN_COMPLETE = False
+OPTIMIZER_DEFAULT_QUEUE_SIZE = 10000
+OPTIMIZER_DEFAULT_MAX_OPTIMIZER_RUNS = 100000
+OPTIMIZER_DEFAULT_GENERATIONS_COUNT = 10
+OPTIMIZER_DEFAULT_INITIAL_GENERATION_COUNT = OPTIMIZER_DEFAULT_GENERATIONS_COUNT
+OPTIMIZER_DEFAULT_RUN_PER_GENERATION = 80
+OPTIMIZER_DEFAULT_MUTATION_PERCENT = 20
+OPTIMIZER_DEFAULT_MAX_MUTATION_PROBABILITY_PERCENT = decimal.Decimal(95)
+OPTIMIZER_DEFAULT_MIN_MUTATION_PROBABILITY_PERCENT = decimal.Decimal(10)
+OPTIMIZER_DEFAULT_MAX_MUTATION_NUMBER_MULTIPLIER = 3
+OPTIMIZER_DEFAULT_DB_UPDATE_PERIOD = 15
 
 # Databases
 DEFAULT_MAX_TOTAL_RUN_DATABASES_SIZE = 1000000000   # 1GB

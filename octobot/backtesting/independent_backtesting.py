@@ -54,7 +54,9 @@ class IndependentBacktesting:
                  enable_logs=True,
                  stop_when_finished=False,
                  enforce_total_databases_max_size_after_run=True,
-                 enable_storage=True):
+                 enable_storage=True,
+                 run_on_all_available_time_frames=False,
+                 backtesting_data=None):
         self.octobot_origin_config = config
         self.tentacles_setup_config = tentacles_setup_config
         self.backtesting_config = {}
@@ -77,6 +79,7 @@ class IndependentBacktesting:
         self.stop_when_finished = stop_when_finished
         self.previous_log_level = commons_logging.get_global_logger_level()
         self.enforce_total_databases_max_size_after_run = enforce_total_databases_max_size_after_run
+        self.backtesting_data = backtesting_data
         self.octobot_backtesting = backtesting.OctoBotBacktesting(self.backtesting_config,
                                                                   self.tentacles_setup_config,
                                                                   self.symbols_to_create_exchange_classes,
@@ -85,7 +88,9 @@ class IndependentBacktesting:
                                                                   start_timestamp=start_timestamp,
                                                                   end_timestamp=end_timestamp,
                                                                   enable_logs=self.enable_logs,
-                                                                  enable_storage=enable_storage)
+                                                                  enable_storage=enable_storage,
+                                                                  run_on_all_available_time_frames=run_on_all_available_time_frames,
+                                                                  backtesting_data=self.backtesting_data)
 
     async def initialize_and_run(self, log_errors=True):
         try:
@@ -192,7 +197,10 @@ class IndependentBacktesting:
 
     async def _register_available_data(self):
         for data_file in self.backtesting_files:
-            description = await backtesting_data.get_file_description(path.join(self.data_file_path, data_file))
+            data_file_path = data_file
+            if not path.isfile(data_file_path):
+                data_file_path = path.join(self.data_file_path, data_file)
+            description = await backtesting_data.get_file_description(data_file_path)
             if description is None:
                 raise RuntimeError(f"Impossible to start backtesting: missing or invalid data file: {data_file}")
             exchange_name = description[backtesting_enums.DataFormatKeys.EXCHANGE.value]

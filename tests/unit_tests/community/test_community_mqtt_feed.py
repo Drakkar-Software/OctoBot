@@ -68,7 +68,7 @@ async def connected_community_feed(authenticator):
                 as get_selected_bot_device_uuid_mock, \
              mock.patch.object(authenticator.user_account, "get_selected_bot_device_name", mock.Mock(return_value=NAME)
                                ) as _get_selected_bot_device_uuid_mock, \
-             mock.patch.object(feed, "_subscribe", mock.AsyncMock()) as _subscribe_mock, \
+             mock.patch.object(feed, "_subscribe", mock.Mock()) as _subscribe_mock, \
              mock.patch.object(gmqtt.Client, "connect", mock.AsyncMock()) as _connect_mock:
             await feed.register_feed_callback(commons_enums.CommunityChannelTypes.SIGNAL, mock.AsyncMock())
             _subscribe_mock.assert_called_once_with((f"{commons_enums.CommunityChannelTypes.SIGNAL.value}/None", ))
@@ -144,7 +144,7 @@ async def test_on_message(connected_community_feed):
 
 
 async def test_send(connected_community_feed):
-    with mock.patch.object(connected_community_feed._mqtt_client, "publish", mock.AsyncMock()) as publish_mock, \
+    with mock.patch.object(connected_community_feed._mqtt_client, "publish", mock.Mock()) as publish_mock, \
          mock.patch.object(uuid, "uuid4", mock.Mock(return_value="uuid41")) as uuid4_mock:
         await connected_community_feed.send("hello", commons_enums.CommunityChannelTypes.SIGNAL, "x")
         publish_mock.assert_called_once_with(

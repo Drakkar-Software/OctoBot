@@ -84,6 +84,9 @@ class CommunityAuthentication(authentication.Authenticator):
             return None
         return self._community_feed.last_message_time
 
+    def get_deployment_url(self):
+        return self.user_account.get_bot_deployment_url()
+
     def get_is_signal_receiver(self):
         if self._community_feed is None:
             return False
@@ -309,18 +312,8 @@ class CommunityAuthentication(authentication.Authenticator):
         return [
             bot
             for bot in bots
-            if self.is_self_hosted(bot)
+            if self.user_account.is_self_hosted(bot)
         ]
-
-    def is_self_hosted(self, bot):
-        deployment = bot.get(self.user_account.BOT_DEPLOYMENT)
-        if not deployment:
-            return True
-        try:
-            return deployment[self.user_account.BOT_DEPLOYMENT_TYPE] == \
-                   self.user_account.SELF_HOSTED_BOT_DEPLOYMENT_TYPE
-        except KeyError:
-            return True
 
     async def on_new_bot_select(self):
         await self._update_feed_device_uuid_and_restart_feed_if_necessary()
