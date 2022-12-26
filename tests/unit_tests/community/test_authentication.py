@@ -59,7 +59,7 @@ async def logged_in_auth():
             json=EMAIL_RETURN, headers={auth.SESSION_HEADER: "hi"}))), \
             mock.patch.object(community.CommunityAuthentication, "update_supports", mock.AsyncMock()), \
             mock.patch.object(community.CommunityAuthentication, "update_selected_bot", mock.AsyncMock()):
-        await auth.login("username", "login")
+        await auth.login("username", "login", password_token="password_token")
         return auth
 
 
@@ -525,10 +525,9 @@ def _test_public_update_supports(auth):
 
 def test_is_initialized(auth):
     assert auth.is_initialized() is False
-    auth._fetch_account_task = mock.Mock()
-    auth._fetch_account_task.done = mock.Mock(return_value=False)
+    auth.initialized_event = asyncio.Event()
     assert auth.is_initialized() is False
-    auth._fetch_account_task.done = mock.Mock(return_value=True)
+    auth.initialized_event.set()
     assert auth.is_initialized() is True
 
 

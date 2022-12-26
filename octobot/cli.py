@@ -25,6 +25,7 @@ import asyncio
 import octobot_commons.os_util as os_util
 import octobot_commons.logging as logging
 import octobot_commons.configuration as configuration
+import octobot_commons.authentication as authentication
 import octobot_commons.constants as common_constants
 import octobot_commons.errors as errors
 
@@ -147,8 +148,12 @@ def _download_and_select_profile(logger, config, to_download_profile_urls, to_se
 
 async def _apply_community_startup_info_to_config(logger, config, community_auth):
     try:
-        if not community_auth.is_initialized():
-            await community_auth.async_init_account()
+        if not community_auth.is_initialized() and constants.USER_ACCOUNT_EMAIL and constants.USER_PASSWORD_TOKEN:
+            await community_auth.login(
+                constants.USER_ACCOUNT_EMAIL, None, password_token=constants.USER_PASSWORD_TOKEN
+            )
+            if not community_auth.is_initialized():
+                await community_auth.async_init_account()
         if not community_auth.is_logged_in():
             return
         startup_info = await community_auth.get_startup_info()
@@ -160,6 +165,8 @@ async def _apply_community_startup_info_to_config(logger, config, community_auth
         )
     except octobot_community.errors.BotError:
         return
+    except authentication.FailedAuthentication as err:
+        logger.error(f"Failed authentication when fetching bot startup info: {err}")
     except Exception as err:
         logger.error(f"Error when fetching community startup info: {err}")
 
