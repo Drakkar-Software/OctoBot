@@ -181,7 +181,7 @@ jobs:
         CIBW_BUILD_VERBOSITY_LINUX: 0
         CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
         CIBW_MANYLINUX_I686_IMAGE: manylinux2014
-#        CIBW_ARCHS_LINUX: 'auto aarch64'
+        CIBW_ARCHS_LINUX: 'auto aarch64'
         CIBW_BEFORE_BUILD_LINUX: >
           python -m pip install --upgrade pip
           pip install  --prefer-binary auditwheel -r dev_requirements.txt -r requirements.txt
