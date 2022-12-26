@@ -293,6 +293,8 @@ def test_post_authenticated(logged_in_auth):
 def test_is_logged_in(auth):
     assert auth.is_logged_in() is False
     auth._auth_token = "1"
+    assert auth.is_logged_in() is False
+    auth.user_account._profile_raw_data = {"hi": 1}
     assert auth.is_logged_in() is True
     auth._auth_token = None
     assert auth.is_logged_in() is False
@@ -323,6 +325,7 @@ def test_ensure_token_validity():
         _try_auto_login_mock.assert_called_once()
     auth = community.CommunityAuthentication(AUTH_URL, None)
     auth._auth_token = "1"
+    auth.user_account._profile_raw_data = {"1": 1}
     with mock.patch.object(auth, "_check_auth", mock.Mock()) as refresh_mock, \
          mock.patch.object(auth, "_try_auto_login", mock.Mock()) as _try_auto_login_mock:
         auth.ensure_token_validity()

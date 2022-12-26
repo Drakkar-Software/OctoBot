@@ -26,11 +26,13 @@ import octobot.constants as constants
 import octobot.community.errors as errors
 import octobot.community.identifiers_provider as identifiers_provider
 import octobot.community.community_supports as community_supports
+import octobot.community.startup_info as startup_info
 import octobot.community.feeds as community_feeds
 import octobot.community.graphql_requests as graphql_requests
 import octobot.community.community_user_account as community_user_account
 import octobot_commons.constants as commons_constants
 import octobot_commons.authentication as authentication
+import octobot_commons.configuration as commons_configuration
 
 
 class CommunityAuthentication(authentication.Authenticator):
@@ -62,6 +64,18 @@ class CommunityAuthentication(authentication.Authenticator):
         self._community_feed = None
         self._login_completed = None
 
+        self._update_sessions_headers()
+
+    @staticmethod
+    def create(configuration: commons_configuration.Configuration):
+        return CommunityAuthentication.instance(
+            identifiers_provider.IdentifiersProvider.BACKEND_AUTH_URL,
+            identifiers_provider.IdentifiersProvider.FEED_URL,
+            config=configuration,
+        )
+
+    def update(self, configuration: commons_configuration.Configuration):
+        self.edited_config = configuration
         self._update_sessions_headers()
 
     def get_logged_in_email(self):
@@ -107,12 +121,26 @@ class CommunityAuthentication(authentication.Authenticator):
         async with self._aiohttp_session.get("supports_url") as resp:
             self._update_supports(resp.status, await resp.json())
 
+    def ensure_async_loop(self):
+        # elements should be bound to the current loop
+        if self._aiohttp_session is not None and self._aiohttp_session.loop is not asyncio.get_event_loop():
+            self._aiohttp_session = None
+        if self.initialized_event is not None and self.initialized_event._loop is not asyncio.get_event_loop():
+            should_set = self.initialized_event.is_set()
+            self.initialized_event = asyncio.Event()
+            if should_set:
+                self.initialized_event.set()
+
     def is_initialized(self):
         return self._fetch_account_task is not None and self._fetch_account_task.done()
 
     def init_account(self):
         self.initialized_event = asyncio.Event()
         self._fetch_account_task = asyncio.create_task(self._auth_and_fetch_account())
+
+    async def async_init_account(self):
+        self.init_account()
+        await self._fetch_account_task
 
     async def _ensure_bot_device(self):
         try:
@@ -308,6 +336,15 @@ class CommunityAuthentication(authentication.Authenticator):
             )
         )
 
+    async def get_startup_info(self):
+        if self.user_account.gql_bot_id is None:
+            raise errors.BotError("No selected bot")
+        return startup_info.StartupInfo.from_dict(
+            await self._fetch_startup_info(
+                self.user_account.gql_bot_id
+            )
+        )
+
     def _get_self_hosted_bots(self, bots):
         return [
             bot
@@ -317,6 +354,10 @@ class CommunityAuthentication(authentication.Authenticator):
 
     async def on_new_bot_select(self):
         await self._update_feed_device_uuid_and_restart_feed_if_necessary()
+
+    async def _fetch_startup_info(self, bot_id):
+        query, variables = graphql_requests.select_startup_info_query(bot_id)
+        return await self.async_graphql_query(query, "getBotStartupInfo", variables=variables, expected_code=200)
 
     async def _fetch_bots(self):
         query, variables = graphql_requests.select_bots_query()
@@ -406,7 +447,7 @@ class CommunityAuthentication(authentication.Authenticator):
         return self._session.post(url, data=data, json=json, **kwargs)
 
     def is_logged_in(self):
-        return bool(self._auth_token)
+        return bool(self._auth_token and self.user_account.has_user_data())
 
     def ensure_token_validity(self):
         if not self.is_logged_in():
@@ -486,7 +527,7 @@ class CommunityAuthentication(authentication.Authenticator):
         self._save_value_in_config(constants.CONFIG_COMMUNITY_BOT_ID, gql_bot_id)
 
     def _get_saved_token(self):
-        return self._get_value_in_config(constants.CONFIG_COMMUNITY_TOKEN)
+        return self._get_value_in_config(constants.CONFIG_COMMUNITY_TOKEN) or constants.COMMUNITY_AUTH_TOKEN
 
     def _get_saved_gql_bot_id(self):
         return constants.COMMUNITY_BOT_ID or self._get_value_in_config(constants.CONFIG_COMMUNITY_BOT_ID)

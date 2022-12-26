@@ -153,16 +153,15 @@ async def install_all_tentacles(tentacles_url=None):
                                                               bot_install_dir=os.getcwd())
 
 
-def download_missing_env_profiles(config):
+def download_missing_env_profiles(config, profile_urls):
     downloaded_profiles = []
     # dl profiles from env
-    if constants.TO_DOWNLOAD_PROFILES:
+    if profile_urls:
         installed_profiles_urls = set(
             profile.origin_url
             for profile in config.profile_by_id.values()
         )
-        for download_url in constants.TO_DOWNLOAD_PROFILES.split(","):
-            download_url = download_url.strip()
+        for download_url in profile_urls:
             if download_url not in installed_profiles_urls:
                 downloaded_profiles.append(
                     profiles.download_and_install_profile(download_url)
@@ -173,16 +172,16 @@ def download_missing_env_profiles(config):
     return downloaded_profiles
 
 
-def select_forced_profile_if_any(config, logger) -> bool:
-    if constants.FORCED_PROFILE:
+def select_forced_profile_if_any(config, forced_profile, logger) -> bool:
+    if forced_profile:
         for profile in config.profile_by_id.values():
-            if profile.profile_id == constants.FORCED_PROFILE \
-               or profile.origin_url == constants.FORCED_PROFILE \
-               or profile.name == constants.FORCED_PROFILE:
-                logger.info(f"Selecting forced profile {profile.name} (from identified by{constants.FORCED_PROFILE})")
+            if profile.profile_id == forced_profile \
+               or profile.origin_url == forced_profile \
+               or profile.name == forced_profile:
+                logger.info(f"Selecting forced profile {profile.name} (from identified by{forced_profile})")
                 config.select_profile(profile.profile_id)
                 return True
-        logger.warning(f"Forced profile not found in available profiles ({constants.FORCED_PROFILE})")
+        logger.warning(f"Forced profile not found in available profiles ({forced_profile})")
     return False
 
 
