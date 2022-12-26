@@ -56,6 +56,7 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
 
         self._mqtt_client: gmqtt.Client = None
         self._valid_auth = True
+        self._disconnected = True
         self._device_uuid: str = None
         self._subscription_attempts = 0
         self._subscription_topics = set()
@@ -99,13 +100,14 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
         self._subscription_attempts = 0
         self._connect_task = None
         self._valid_auth = True
+        self._disconnected = True
 
     async def _stop_mqtt_client(self):
         if self.is_connected():
             await self._mqtt_client.disconnect()
 
     def is_connected(self):
-        return self._mqtt_client is not None and self._mqtt_client.is_connected
+        return self._mqtt_client is not None and self._mqtt_client.is_connected and not self._disconnected
 
     def is_connected_to_remote_feed(self):
         return self.subscribed
@@ -210,6 +212,7 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
             )
 
     def _on_connect(self, client, flags, rc, properties):
+        self._disconnected = False
         self.logger.info(f"Connected, client_id: {client._client_id}")
         # There are no subscription when we just connected
         self.subscribed = False
@@ -225,26 +228,31 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
 
     async def _reconnect(self, client):
         try:
-            await self._stop_mqtt_client()
-        except Exception as e:
-            self.logger.debug(f"Ignored error while stopping client: {e}.")
-        first_reconnect = True
-        while not self.should_stop:
-            delay = 0 if first_reconnect else self.RECONNECT_DELAY
             try:
-                self.logger.info(f"Reconnecting, client_id: {client._client_id}")
-                await self._connect()
-                await asyncio.sleep(self.RECONNECT_ENSURE_DELAY)
-                if self.is_connected():
-                    return
-                error = "failed to connect"
-            except Exception as err:
-                error = err
-            first_reconnect = False
-            self.logger.debug(f"Error while reconnecting: {error}. Trying again in {delay} seconds.")
-            await asyncio.sleep(delay)
+                await self._stop_mqtt_client()
+            except Exception as e:
+                self.logger.debug(f"Ignored error while stopping client: {e}.")
+            first_reconnect = True
+            while not self.should_stop:
+                delay = 0 if first_reconnect else self.RECONNECT_DELAY
+                try:
+                    self.logger.info(f"Reconnecting, client_id: {client._client_id}")
+                    await self._connect()
+                    await asyncio.sleep(self.RECONNECT_ENSURE_DELAY)
+                    if self.is_connected():
+                        self.logger.info(f"Reconnected, client_id: {client._client_id}")
+                        return
+                    error = "failed to connect"
+                except Exception as err:
+                    error = err
+                first_reconnect = False
+                self.logger.debug(f"Error while reconnecting: {error}. Trying again in {delay} seconds.")
+                await asyncio.sleep(delay)
+        finally:
+            self.logger.debug("Reconnect task complete")
 
     def _on_disconnect(self, client, packet, exc=None):
+        self._disconnected = True
         self.subscribed = False
         if self.should_stop:
             self.logger.info(f"Disconnected after stop call")

@@ -163,7 +163,7 @@ class CommunityAuthentication(authentication.Authenticator):
     async def _ensure_init_community_feed(self):
         await self._create_community_feed_if_necessary()
         if not self._community_feed.is_connected() and self._community_feed.can_connect():
-            if self.is_initialized():
+            if self.initialized_event is not None and not self.initialized_event.is_set():
                 await asyncio.wait_for(self.initialized_event.wait(), self.LOGIN_TIMEOUT)
             if not self.is_logged_in():
                 raise authentication.AuthenticationRequired("You need to be authenticated to be able to "
