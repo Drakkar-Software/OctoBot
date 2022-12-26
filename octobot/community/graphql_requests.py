@@ -47,6 +47,21 @@ _INNER_BOT_QUERY = """
 """
 
 
+def select_startup_info_query(bot_id) -> (str, dict):
+    return """
+query getBotStartupInfo($bot_id: String) {
+  getBotStartupInfo(input: {botId: $bot_id}) {
+    subscribedProducts {
+        url
+    }
+    forcedProfileUrl {
+        url
+    }
+  }
+}
+    """, {"bot_id": bot_id}
+
+
 def select_bots_query() -> (str, dict):
     return """
 query SelectBots {  

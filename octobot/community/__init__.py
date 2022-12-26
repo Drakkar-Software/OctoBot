@@ -38,6 +38,7 @@ from octobot.community import authentication
 from octobot.community import community_tentacles_package
 from octobot.community import community_supports
 from octobot.community import community_donation
+from octobot.community import startup_info
 from octobot.community import graphql_requests
 from octobot.community import feeds
 from octobot.community import errors_upload
@@ -62,7 +63,11 @@ from octobot.community.community_supports import (
 from octobot.community.community_donation import (
     CommunityDonation
 )
+from octobot.community.startup_info import (
+    StartupInfo
+)
 from octobot.community.graphql_requests import (
+    select_startup_info_query,
     select_bot_query,
     select_bots_query,
     create_bot_query,
@@ -98,6 +103,8 @@ __all__ = [
     "register_error_uploader",
     "Error",
     "ErrorsUploader",
+    "StartupInfo",
+    "select_startup_info_query",
     "select_bot_query",
     "select_bots_query",
     "create_bot_query",

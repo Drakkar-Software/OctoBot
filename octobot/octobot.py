@@ -52,8 +52,8 @@ class OctoBot:
     - Load configs
     """
 
-    def __init__(self, config: configuration.Configuration, ignore_config=False,
-                 reset_trading_history=False, startup_messages=None):
+    def __init__(self, config: configuration.Configuration, community_authenticator=None,
+                 ignore_config=False, reset_trading_history=False, startup_messages=None):
         self.start_time = time.time()
         self.config = config.config
         self.ignore_config = ignore_config
@@ -76,12 +76,10 @@ class OctoBot:
         # community if enabled
         self.community_handler = None
 
-        # initialize community authentication
-        self.community_auth = community.CommunityAuthentication.instance(
-            community.IdentifiersProvider.BACKEND_AUTH_URL,
-            community.IdentifiersProvider.FEED_URL,
-            config=self.get_edited_config(constants.CONFIG_KEY, dict_only=False),
-        )
+        # use edited config in community authentication
+        community_config = self.get_edited_config(constants.CONFIG_KEY, dict_only=False)
+        self.community_auth = community_authenticator or community.CommunityAuthentication.create(community_config)
+        self.community_auth.update(community_config)
 
         # octobot_api to request the current instance
         self.octobot_api = octobot_api.OctoBotAPI(self)
@@ -112,7 +110,9 @@ class OctoBot:
     async def initialize(self):
         self.stopped = asyncio.Event()
         await self._ensure_clock()
-        self.community_auth.init_account()
+        self.community_auth.ensure_async_loop()
+        if not self.community_auth.is_initialized():
+            self.community_auth.init_account()
         self._log_config()
         await self.initializer.create(True)
         await self._start_tools_tasks()

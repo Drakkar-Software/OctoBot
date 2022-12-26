@@ -96,6 +96,7 @@ async def authenticator():
     community.IdentifiersProvider.use_production()
     auth = community.CommunityAuthentication(None, None)
     auth._auth_token = TOKEN
+    auth.user_account._profile_raw_data = {"1": 1}
     auth.refresh_token = TOKEN
     auth._expire_at = 11
     return auth
