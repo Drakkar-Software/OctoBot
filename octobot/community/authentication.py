@@ -26,11 +26,13 @@ import octobot.constants as constants
 import octobot.community.errors as errors
 import octobot.community.identifiers_provider as identifiers_provider
 import octobot.community.community_supports as community_supports
+import octobot.community.startup_info as startup_info
 import octobot.community.feeds as community_feeds
 import octobot.community.graphql_requests as graphql_requests
 import octobot.community.community_user_account as community_user_account
 import octobot_commons.constants as commons_constants
 import octobot_commons.authentication as authentication
+import octobot_commons.configuration as commons_configuration
 
 
 class CommunityAuthentication(authentication.Authenticator):
@@ -62,6 +64,18 @@ class CommunityAuthentication(authentication.Authenticator):
         self._community_feed = None
         self._login_completed = None
 
+        self._update_sessions_headers()
+
+    @staticmethod
+    def create(configuration: commons_configuration.Configuration):
+        return CommunityAuthentication.instance(
+            identifiers_provider.IdentifiersProvider.BACKEND_AUTH_URL,
+            identifiers_provider.IdentifiersProvider.FEED_URL,
+            config=configuration,
+        )
+
+    def update(self, configuration: commons_configuration.Configuration):
+        self.edited_config = configuration
         self._update_sessions_headers()
 
     def get_logged_in_email(self):
@@ -107,12 +121,26 @@ class CommunityAuthentication(authentication.Authenticator):
         async with self._aiohttp_session.get("supports_url") as resp:
             self._update_supports(resp.status, await resp.json())
 
+    def ensure_async_loop(self):
+        # elements should be bound to the current loop
+        if self._aiohttp_session is not None and self._aiohttp_session.loop is not asyncio.get_event_loop():
+            self._aiohttp_session = None
+        if self.initialized_event is not None and self.initialized_event._loop is not asyncio.get_event_loop():
+            should_set = self.initialized_event.is_set()
+            self.initialized_event = asyncio.Event()
+            if should_set:
+                self.initialized_event.set()
+
     def is_initialized(self):
-        return self._fetch_account_task is not None and self._fetch_account_task.done()
+        return self.initialized_event is not None and self.initialized_event.is_set()
 
     def init_account(self):
         self.initialized_event = asyncio.Event()
         self._fetch_account_task = asyncio.create_task(self._auth_and_fetch_account())
+
+    async def async_init_account(self):
+        self.init_account()
+        await self._fetch_account_task
 
     async def _ensure_bot_device(self):
         try:
@@ -135,7 +163,7 @@ class CommunityAuthentication(authentication.Authenticator):
     async def _ensure_init_community_feed(self):
         await self._create_community_feed_if_necessary()
         if not self._community_feed.is_connected() and self._community_feed.can_connect():
-            if self.initialized_event is not None and not self.initialized_event.is_set():
+            if self.is_initialized():
                 await asyncio.wait_for(self.initialized_event.wait(), self.LOGIN_TIMEOUT)
             if not self.is_logged_in():
                 raise authentication.AuthenticationRequired("You need to be authenticated to be able to "
@@ -244,22 +272,27 @@ class CommunityAuthentication(authentication.Authenticator):
     def must_be_authenticated_through_authenticator(self):
         return constants.IS_CLOUD_ENV
 
-    async def login(self, email, password):
+    async def login(self, email, password, password_token=None):
         self._ensure_email(email)
         self._ensure_community_url()
         self._reset_tokens()
         params = {
             "email": email,
-            "password": password,
         }
+        if password_token:
+            params["password_token"] = password_token
+        else:
+            params["password"] = password
         resp = self._session.post(self.authentication_url, json=params)
         try:
             self._handle_auth_result(resp.status_code, resp.json(), resp.headers)
         except json.JSONDecodeError as e:
             raise authentication.FailedAuthentication(e)
         if self.is_logged_in():
-            await self.update_supports()
-            await self.update_selected_bot()
+            if self.initialized_event is None:
+                self.initialized_event = asyncio.Event()
+            await self._on_authenticated()
+            self.initialized_event.set()
 
     async def update_selected_bot(self):
         self.user_account.flush_bot_details()
@@ -308,6 +341,15 @@ class CommunityAuthentication(authentication.Authenticator):
             )
         )
 
+    async def get_startup_info(self):
+        if self.user_account.gql_bot_id is None:
+            raise errors.BotError("No selected bot")
+        return startup_info.StartupInfo.from_dict(
+            await self._fetch_startup_info(
+                self.user_account.gql_bot_id
+            )
+        )
+
     def _get_self_hosted_bots(self, bots):
         return [
             bot
@@ -317,6 +359,10 @@ class CommunityAuthentication(authentication.Authenticator):
 
     async def on_new_bot_select(self):
         await self._update_feed_device_uuid_and_restart_feed_if_necessary()
+
+    async def _fetch_startup_info(self, bot_id):
+        query, variables = graphql_requests.select_startup_info_query(bot_id)
+        return await self.async_graphql_query(query, "getBotStartupInfo", variables=variables, expected_code=200)
 
     async def _fetch_bots(self):
         query, variables = graphql_requests.select_bots_query()
@@ -406,7 +452,7 @@ class CommunityAuthentication(authentication.Authenticator):
         return self._session.post(url, data=data, json=json, **kwargs)
 
     def is_logged_in(self):
-        return bool(self._auth_token)
+        return bool(self._auth_token and self.user_account.has_user_data())
 
     def ensure_token_validity(self):
         if not self.is_logged_in():
@@ -464,13 +510,16 @@ class CommunityAuthentication(authentication.Authenticator):
             pass
         return community_supports.CommunitySupports.DEFAULT_SUPPORT_ROLE
 
+    async def _on_authenticated(self):
+        await self.update_supports()
+        await self.update_selected_bot()
+
     async def _auth_and_fetch_account(self):
         try:
             await self._async_try_auto_login()
             if not self.is_logged_in():
                 return
-            await self.update_supports()
-            await self.update_selected_bot()
+            await self._on_authenticated()
         except authentication.UnavailableError as e:
             self.logger.exception(e, True, f"Error when fetching community supports, "
                                            f"please check your internet connection.")

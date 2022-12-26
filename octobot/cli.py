@@ -20,10 +20,12 @@ import argparse
 import os
 import sys
 import multiprocessing
+import asyncio
 
 import octobot_commons.os_util as os_util
 import octobot_commons.logging as logging
 import octobot_commons.configuration as configuration
+import octobot_commons.authentication as authentication
 import octobot_commons.constants as common_constants
 import octobot_commons.errors as errors
 
@@ -117,7 +119,8 @@ def _create_configuration():
 def _create_startup_config(logger):
     logger.info("Loading config files...")
     config = _create_configuration()
-    if config.is_config_file_empty_or_missing():
+    is_first_startup = config.is_config_file_empty_or_missing()
+    if is_first_startup:
         logger.info("No configuration found creating default configuration...")
         configuration_manager.init_config()
         config.read(should_raise=False)
@@ -130,11 +133,64 @@ def _create_startup_config(logger):
             # real issue if tentacles exist otherwise continue
             if os.path.isdir(tentacles_manager_constants.TENTACLES_PATH):
                 raise
-    # handle profiles from env variables
-    commands.download_missing_env_profiles(config)
-    if commands.select_forced_profile_if_any(config, logger):
+    return config, is_first_startup
+
+
+def _download_and_select_profile(logger, config, to_download_profile_urls, to_select_profile):
+    if to_download_profile_urls:
+        commands.download_missing_env_profiles(
+            config,
+            to_download_profile_urls
+        )
+    if commands.select_forced_profile_if_any(config, to_select_profile, logger):
         _ensure_profile(config)
-    return config
+
+
+async def _apply_community_startup_info_to_config(logger, config, community_auth):
+    try:
+        if not community_auth.is_initialized() and constants.USER_ACCOUNT_EMAIL and constants.USER_PASSWORD_TOKEN:
+            await community_auth.login(
+                constants.USER_ACCOUNT_EMAIL, None, password_token=constants.USER_PASSWORD_TOKEN
+            )
+            if not community_auth.is_initialized():
+                await community_auth.async_init_account()
+        if not community_auth.is_logged_in():
+            return
+        startup_info = await community_auth.get_startup_info()
+        logger.debug(f"Fetched startup info: {startup_info}")
+        _download_and_select_profile(
+            logger, config,
+            startup_info.get_subscribed_products_urls(),
+            startup_info.get_forced_profile_url()
+        )
+    except octobot_community.errors.BotError:
+        return
+    except authentication.FailedAuthentication as err:
+        logger.error(f"Failed authentication when fetching bot startup info: {err}")
+    except Exception as err:
+        logger.error(f"Error when fetching community startup info: {err}")
+
+
+def _apply_env_variables_to_config(logger, config):
+    _download_and_select_profile(
+        logger, config,
+        [url.strip() for url in constants.TO_DOWNLOAD_PROFILES.split(",")] if constants.TO_DOWNLOAD_PROFILES else [],
+        constants.FORCED_PROFILE
+    )
+
+
+def _handle_forced_startup_config(logger, config, is_first_startup):
+    # switch environments if necessary
+    octobot_community.IdentifiersProvider.use_environment_from_config(config)
+
+    # 1. at first startup, get startup info from community when possible
+    community_auth = octobot_community.CommunityAuthentication.create(config)
+    if is_first_startup:
+        asyncio.run(_apply_community_startup_info_to_config(logger, config, community_auth))
+
+    # 2. handle profiles from env variables
+    _apply_env_variables_to_config(logger, config)
+    return community_auth
 
 
 def _read_config(config, logger):
@@ -208,10 +264,8 @@ def start_octobot(args):
         # Current running environment
         _log_environment(logger)
 
-        # _check_public_announcements(logger)
-
         # load configuration
-        config = _create_startup_config(logger)
+        config, is_first_startup = _create_startup_config(logger)
 
         # check config loading
         if not config.is_loaded():
@@ -225,8 +279,8 @@ def start_octobot(args):
         # add args to config
         update_config_with_args(args, config, logger)
 
-        # switch environments if necessary
-        octobot_community.IdentifiersProvider.use_environment_from_config(config)
+        # patch setup with forced values
+        community_auth = _handle_forced_startup_config(logger, config, is_first_startup)
 
         # show terms
         _log_terms_if_unaccepted(config, logger)
@@ -250,7 +304,8 @@ def start_octobot(args):
                                                                 enable_join_timeout=args.enable_backtesting_timeout,
                                                                 enable_logs=not args.no_logs)
         else:
-            bot = octobot_class.OctoBot(config, reset_trading_history=args.reset_trading_history,
+            bot = octobot_class.OctoBot(config, community_authenticator=community_auth,
+                                        reset_trading_history=args.reset_trading_history,
                                         startup_messages=startup_messages)
 
         # set global bot instance

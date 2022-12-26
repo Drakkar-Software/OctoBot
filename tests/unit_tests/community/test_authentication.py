@@ -59,7 +59,7 @@ async def logged_in_auth():
             json=EMAIL_RETURN, headers={auth.SESSION_HEADER: "hi"}))), \
             mock.patch.object(community.CommunityAuthentication, "update_supports", mock.AsyncMock()), \
             mock.patch.object(community.CommunityAuthentication, "update_selected_bot", mock.AsyncMock()):
-        await auth.login("username", "login")
+        await auth.login("username", "login", password_token="password_token")
         return auth
 
 
@@ -293,6 +293,8 @@ def test_post_authenticated(logged_in_auth):
 def test_is_logged_in(auth):
     assert auth.is_logged_in() is False
     auth._auth_token = "1"
+    assert auth.is_logged_in() is False
+    auth.user_account._profile_raw_data = {"hi": 1}
     assert auth.is_logged_in() is True
     auth._auth_token = None
     assert auth.is_logged_in() is False
@@ -323,6 +325,7 @@ def test_ensure_token_validity():
         _try_auto_login_mock.assert_called_once()
     auth = community.CommunityAuthentication(AUTH_URL, None)
     auth._auth_token = "1"
+    auth.user_account._profile_raw_data = {"1": 1}
     with mock.patch.object(auth, "_check_auth", mock.Mock()) as refresh_mock, \
          mock.patch.object(auth, "_try_auto_login", mock.Mock()) as _try_auto_login_mock:
         auth.ensure_token_validity()
@@ -522,10 +525,9 @@ def _test_public_update_supports(auth):
 
 def test_is_initialized(auth):
     assert auth.is_initialized() is False
-    auth._fetch_account_task = mock.Mock()
-    auth._fetch_account_task.done = mock.Mock(return_value=False)
+    auth.initialized_event = asyncio.Event()
     assert auth.is_initialized() is False
-    auth._fetch_account_task.done = mock.Mock(return_value=True)
+    auth.initialized_event.set()
     assert auth.is_initialized() is True
 
 
