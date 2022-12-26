@@ -93,6 +93,7 @@ CONFIG_COMMUNITY_BOT_ID = "bot_id"
 CONFIG_COMMUNITY_ENVIRONMENT = "environment"
 USE_BETA_EARLY_ACCESS = os_util.parse_boolean_environment_var("USE_BETA_EARLY_ACCESS", "false")
 USER_ACCOUNT_EMAIL = os.getenv("USER_ACCOUNT_EMAIL", "")
+USER_PASSWORD_TOKEN = os.getenv("USER_PASSWORD_TOKEN", None)
 COMMUNITY_BOT_ID = os.getenv("COMMUNITY_BOT_ID", "")
 IS_DEMO = os_util.parse_boolean_environment_var("IS_DEMO", "False")
 IS_CLOUD_ENV = os_util.parse_boolean_environment_var("IS_CLOUD_ENV", "false")
@@ -102,10 +103,6 @@ TRACKING_ID = os.getenv("TRACKING_ID", "eoe1stwyun" if IS_DEMO else "eoe06soct7"
 TO_DOWNLOAD_PROFILES = os.getenv("TO_DOWNLOAD_PROFILES", None)
 # Profiles to force select at startup, identified by profile id, download url or name
 FORCED_PROFILE = os.getenv("FORCED_PROFILE", None)
-_COMMUNITY_AUTH_TOKEN_P1 = os.getenv("COMMUNITY_AUTH_TOKEN_P1", None)
-# Concat of COMMUNITY_AUTH_TOKEN_P1 and COMMUNITY_AUTH_TOKEN_P2 (COMMUNITY_AUTH_TOKEN might be a long variable)
-COMMUNITY_AUTH_TOKEN = f'{_COMMUNITY_AUTH_TOKEN_P1}{os.getenv("COMMUNITY_AUTH_TOKEN_P2", "")}' \
-    if _COMMUNITY_AUTH_TOKEN_P1 else None
 
 OCTOBOT_BINARY_PROJECT_NAME = "OctoBot-Binary"
 
