@@ -161,7 +161,7 @@ def download_missing_env_profiles(config, profile_urls):
             profile.origin_url
             for profile in config.profile_by_id.values()
         )
-        for download_url in profile_urls:
+        for download_url in set(profile_urls):
             if download_url not in installed_profiles_urls:
                 installed_profile = profiles.download_and_install_profile(download_url)
                 if installed_profile is not None:
