@@ -176,12 +176,9 @@ jobs:
         python -m cibuildwheel --output-dir wheelhouse
       env:
         # build for python 3.8
-        CIBW_BUILD: cp38-*
-        CIBW_SKIP: "*-manylinux_i686" # temporary skip i386 wheels
+        CIBW_BUILD: cp38-manylinux_x86_64
         CIBW_BUILD_VERBOSITY_LINUX: 0
-        CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
-        CIBW_MANYLINUX_I686_IMAGE: manylinux2014
-#        CIBW_ARCHS_LINUX: 'auto aarch64'
+        CIBW_ARCHS_LINUX: 'native' # 'aarch64' https://cibuildwheel.readthedocs.io/en/stable/options/#archs
         CIBW_BEFORE_BUILD_LINUX: >
           python -m pip install --upgrade pip
           pip install  --prefer-binary auditwheel -r dev_requirements.txt -r requirements.txt
