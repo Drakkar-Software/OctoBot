@@ -163,9 +163,11 @@ def download_missing_env_profiles(config, profile_urls):
         )
         for download_url in profile_urls:
             if download_url not in installed_profiles_urls:
-                downloaded_profiles.append(
-                    profiles.download_and_install_profile(download_url)
-                )
+                installed_profile = profiles.download_and_install_profile(download_url)
+                if installed_profile is not None:
+                    downloaded_profiles.append(
+                        installed_profile
+                    )
     if downloaded_profiles:
         # reload profiles to load downloaded ones
         config.load_profiles()
