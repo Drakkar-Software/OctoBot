@@ -38,6 +38,7 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
     DISABLE_RECONNECT_VALUE = -2
     DEVICE_CREATE_TIMEOUT = 5 * commons_constants.MINUTE_TO_SECONDS
     DEVICE_CREATION_REFRESH_DELAY = 2
+    CONNECTION_TIMEOUT = 10
 
     # Quality of Service level determines the reliability of the data flow between a client and a message broker.
     # The message may be sent in three ways:
@@ -68,7 +69,16 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
     async def start(self):
         self.should_stop = False
         self._device_uuid = self.authenticator.user_account.get_selected_bot_device_uuid()
-        await self._connect()
+        try:
+            await self._connect()
+            if self.is_connected():
+                self.logger.info("Successful connection request to mqtt device")
+            else:
+                self.logger.info("Failed to connect to mqtt device")
+        except asyncio.TimeoutError as err:
+            self.logger.exception(err, True, f"Timeout when connecting to mqtt device: {err}")
+        except Exception as err:
+            self.logger.exception(err, True, f"Unexpected error when connecting to mqtt device: {err}")
 
     async def stop(self):
         self.logger.debug("Stopping ...")
@@ -86,8 +96,8 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
             if not self.should_stop:
                 await self.stop()
             await self.start()
-        except Exception as e:
-            self.logger.exception(e, True, f"Error when restarting mqtt feed: {e}")
+        except Exception as err:
+            self.logger.exception(err, True, f"{err}")
 
     def is_using_bot_device(self, user_account):
         try:
@@ -232,11 +242,12 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
                 await self._stop_mqtt_client()
             except Exception as e:
                 self.logger.debug(f"Ignored error while stopping client: {e}.")
-            first_reconnect = True
+            attempt = 1
             while not self.should_stop:
-                delay = 0 if first_reconnect else self.RECONNECT_DELAY
+                delay = 0 if attempt == 1 else self.RECONNECT_DELAY
+                error = None
                 try:
-                    self.logger.info(f"Reconnecting, client_id: {client._client_id}")
+                    self.logger.info(f"Reconnecting, client_id: {client._client_id} (attempt {attempt})")
                     await self._connect()
                     await asyncio.sleep(self.RECONNECT_ENSURE_DELAY)
                     if self.is_connected():
@@ -244,8 +255,10 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
                         return
                     error = "failed to connect"
                 except Exception as err:
-                    error = err
-                first_reconnect = False
+                    error = f"{err}"
+                finally:
+                    self.logger.debug(f"Reconnect attempt {attempt} {'succeeded' if error is None else 'failed'}.")
+                    attempt += 1
                 self.logger.debug(f"Error while reconnecting: {error}. Trying again in {delay} seconds.")
                 await asyncio.sleep(delay)
         finally:
@@ -318,13 +331,17 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
             self._mqtt_client.connect(self.feed_url, self.mqtt_broker_port, version=self.MQTT_VERSION)
         )
         try:
-            await self._connect_task
+            await asyncio.wait_for(self._connect_task, self.CONNECTION_TIMEOUT)
             self._connected_at_least_once = True
         except asyncio.CancelledError:
             # got cancelled by on_disconnect, can't connect
             self.logger.error(f"Can't connect to server, make sure that your device uuid is valid. "
                               f"Current mqtt uuid is: {self._device_uuid}")
             self._valid_auth = False
+        except asyncio.TimeoutError as err:
+            message = "Timeout error when trying to connect to mqtt device"
+            self.logger.debug(message)
+            raise asyncio.TimeoutError(message) from err
 
     def _subscribe(self, topics):
         if not topics:
