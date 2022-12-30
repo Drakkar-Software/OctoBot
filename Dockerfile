@@ -1,4 +1,4 @@
-FROM python:3.8-slim-buster AS base
+FROM python:3.10-slim-buster AS base
 
 WORKDIR /
 
@@ -24,7 +24,7 @@ WORKDIR /opt/efs
 RUN git clone https://github.com/aws/efs-utils . \
     && ./build-deb.sh
 
-FROM python:3.8-slim-buster
+FROM python:3.10-slim-buster
 
 ARG TENTACLES_URL_TAG=""
 ENV TENTACLES_URL_TAG=$TENTACLES_URL_TAG
