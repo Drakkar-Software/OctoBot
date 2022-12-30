@@ -73,15 +73,6 @@ def update_config_with_args(starting_args, config: configuration.Configuration, 
         config.config[common_constants.CONFIG_TRADING][common_constants.CONFIG_TRADER_RISK] = starting_args.risk
 
 
-# def _check_public_announcements(logger):
-#     try:
-#         announcement = get_external_resource(EXTERNAL_RESOURCE_PUBLIC_ANNOUNCEMENTS)
-#         if announcement:
-#             logger.info(announcement)
-#     except Exception as e:
-#         logger.warning("Impossible to check announcements: {0}".format(e))
-
-
 def _log_terms_if_unaccepted(config: configuration.Configuration, logger):
     if not config.accepted_terms():
         logger.info("*** Disclaimer ***")
@@ -127,23 +118,13 @@ def _create_startup_config(logger):
     else:
         _read_config(config, logger)
         try:
-            _ensure_profile(config)
+            commands.ensure_profile(config)
             _validate_config(config, logger)
         except (errors.NoProfileError, errors.ConfigError):
             # real issue if tentacles exist otherwise continue
             if os.path.isdir(tentacles_manager_constants.TENTACLES_PATH):
                 raise
     return config, is_first_startup
-
-
-def _download_and_select_profile(logger, config, to_download_profile_urls, to_select_profile):
-    if to_download_profile_urls:
-        commands.download_missing_env_profiles(
-            config,
-            to_download_profile_urls
-        )
-    if commands.select_forced_profile_if_any(config, to_select_profile, logger):
-        _ensure_profile(config)
 
 
 async def _apply_community_startup_info_to_config(logger, config, community_auth):
@@ -158,7 +139,7 @@ async def _apply_community_startup_info_to_config(logger, config, community_auth
             return
         startup_info = await community_auth.get_startup_info()
         logger.debug(f"Fetched startup info: {startup_info}")
-        _download_and_select_profile(
+        commands.download_and_select_profile(
             logger, config,
             startup_info.get_subscribed_products_urls(),
             startup_info.get_forced_profile_url()
@@ -172,7 +153,7 @@ async def _apply_community_startup_info_to_config(logger, config, community_auth
 
 
 def _apply_env_variables_to_config(logger, config):
-    _download_and_select_profile(
+    commands.download_and_select_profile(
         logger, config,
         [url.strip() for url in constants.TO_DOWNLOAD_PROFILES.split(",")] if constants.TO_DOWNLOAD_PROFILES else [],
         constants.FORCED_PROFILE
@@ -202,15 +183,6 @@ def _read_config(config, logger):
         config.read(should_raise=False, fill_missing_fields=True)
     except Exception as e:
         raise errors.ConfigError(e)
-
-
-def _ensure_profile(config):
-    if config.profile is None:
-        # no selected profile or profile not found
-        try:
-            config.select_profile(common_constants.DEFAULT_PROFILE)
-        except KeyError:
-            raise errors.NoProfileError
 
 
 def _validate_config(config, logger):

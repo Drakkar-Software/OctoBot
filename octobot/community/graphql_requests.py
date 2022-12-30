@@ -62,6 +62,18 @@ query getBotStartupInfo($bot_id: String) {
     """, {"bot_id": bot_id}
 
 
+def select_subscribed_profiles_query() -> (str, dict):
+    return """
+query getSubscribedProfiles {
+  getSubscribedProfiles {
+    data {
+        url
+    }
+  }
+}
+    """, {}
+
+
 def select_bots_query() -> (str, dict):
     return """
 query SelectBots {  
