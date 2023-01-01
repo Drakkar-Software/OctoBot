@@ -179,7 +179,7 @@ async def _get_multi_exchange_data(exchange_managers, is_backtesting):
                 values.pop("available", None)
         if exchange_manager.is_future:
             for position in trading_api.get_positions(exchange_manager):
-                exchange_end_portfolio[position.get_currency()]["position"] = float(position.quantity)
+                exchange_end_portfolio[position.get_currency()]["position"] = float(position.single_contract_value * position.size)
         for exchange_portfolio, portfolio in zip((exchange_origin_portfolio, exchange_end_portfolio),
                                                  (origin_portfolio, end_portfolio)):
             for currency, value_dict in exchange_portfolio.items():
