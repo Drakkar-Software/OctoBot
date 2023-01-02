@@ -181,7 +181,7 @@ class AbstractAuthenticatedFutureExchangeTester(
 
     def check_theoretical_cost(self, symbol, quantity, price, cost):
         if symbol.is_inverse():
-            theoretical_cost = quantity * price
-        else:
             theoretical_cost = quantity
+        else:
+            theoretical_cost = quantity * price
         assert theoretical_cost * decimal.Decimal("0.8") <= cost <= theoretical_cost * decimal.Decimal("1.2")
