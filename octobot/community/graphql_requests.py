@@ -1,5 +1,5 @@
 #  This file is part of OctoBot (https://github.com/Drakkar-Software/OctoBot)
-#  Copyright (c) 2022 Drakkar-Software, All rights reserved.
+#  Copyright (c) 2023 Drakkar-Software, All rights reserved.
 #
 #  OctoBot is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
@@ -60,6 +60,18 @@ query getBotStartupInfo($bot_id: String) {
   }
 }
     """, {"bot_id": bot_id}
+
+
+def select_subscribed_profiles_query() -> (str, dict):
+    return """
+query getSubscribedProfiles {
+  getSubscribedProfiles {
+    data {
+        url
+    }
+  }
+}
+    """, {}
 
 
 def select_bots_query() -> (str, dict):

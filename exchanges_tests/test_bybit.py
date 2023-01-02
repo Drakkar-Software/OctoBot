@@ -1,5 +1,5 @@
 #  This file is part of OctoBot (https://github.com/Drakkar-Software/OctoBot)
-#  Copyright (c) 2022 Drakkar-Software, All rights reserved.
+#  Copyright (c) 2023 Drakkar-Software, All rights reserved.
 #
 #  OctoBot is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
@@ -30,15 +30,10 @@ class TestBybitAuthenticatedExchange(
     SETTLEMENT_CURRENCY = "USDT"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}:{SETTLEMENT_CURRENCY}"
     ORDER_SIZE = 10  # % of portfolio to include in test orders
+    OPEN_ORDERS_IN_CLOSED_ORDERS = True
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
-
-    async def test_get_my_recent_trades(self):
-        await super().test_get_my_recent_trades()
-
-    async def test_get_closed_orders(self):
-        await super().test_get_closed_orders()
 
     async def test_get_empty_linear_and_inverse_positions(self):
         await super().test_get_empty_linear_and_inverse_positions()
@@ -48,6 +43,12 @@ class TestBybitAuthenticatedExchange(
 
     async def test_create_and_fill_market_orders(self):
         await super().test_create_and_fill_market_orders()
+
+    async def test_get_my_recent_trades(self):
+        await super().test_get_my_recent_trades()
+
+    async def test_get_closed_orders(self):
+        await super().test_get_closed_orders()
 
     async def test_create_and_cancel_stop_orders(self):
         # pass if not implemented

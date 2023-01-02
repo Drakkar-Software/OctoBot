@@ -1,5 +1,5 @@
 #  This file is part of OctoBot (https://github.com/Drakkar-Software/OctoBot)
-#  Copyright (c) 2022 Drakkar-Software, All rights reserved.
+#  Copyright (c) 2023 Drakkar-Software, All rights reserved.
 #
 #  OctoBot is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
@@ -181,7 +181,7 @@ class AbstractAuthenticatedFutureExchangeTester(
 
     def check_theoretical_cost(self, symbol, quantity, price, cost):
         if symbol.is_inverse():
-            theoretical_cost = quantity * price
-        else:
             theoretical_cost = quantity
+        else:
+            theoretical_cost = quantity * price
         assert theoretical_cost * decimal.Decimal("0.8") <= cost <= theoretical_cost * decimal.Decimal("1.2")

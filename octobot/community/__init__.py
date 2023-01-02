@@ -1,5 +1,5 @@
 #  This file is part of OctoBot (https://github.com/Drakkar-Software/OctoBot)
-#  Copyright (c) 2022 Drakkar-Software, All rights reserved.
+#  Copyright (c) 2023 Drakkar-Software, All rights reserved.
 #
 #  OctoBot is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
@@ -73,6 +73,7 @@ from octobot.community.graphql_requests import (
     create_bot_query,
     create_bot_device_query,
     update_bot_config_and_stats_query,
+    select_subscribed_profiles_query,
 )
 from octobot.community.feeds import (
     AbstractFeed,
@@ -110,6 +111,7 @@ __all__ = [
     "create_bot_query",
     "create_bot_device_query",
     "update_bot_config_and_stats_query",
+    "select_subscribed_profiles_query",
     "AbstractFeed",
     "CommunityWSFeed",
     "CommunityMQTTFeed",

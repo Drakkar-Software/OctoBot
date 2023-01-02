@@ -1,5 +1,5 @@
 #  This file is part of OctoBot (https://github.com/Drakkar-Software/OctoBot)
-#  Copyright (c) 2022 Drakkar-Software, All rights reserved.
+#  Copyright (c) 2023 Drakkar-Software, All rights reserved.
 #
 #  OctoBot is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
@@ -24,6 +24,8 @@ import threading
 import octobot_commons.configuration as configuration
 import octobot_commons.profiles as profiles
 import octobot_commons.logging as logging
+import octobot_commons.constants as commons_constants
+import octobot_commons.errors as commons_errors
 
 import octobot_tentacles_manager.api as tentacles_manager_api
 import octobot_tentacles_manager.cli as tentacles_manager_cli
@@ -153,7 +155,26 @@ async def install_all_tentacles(tentacles_url=None):
                                                               bot_install_dir=os.getcwd())
 
 
-def download_missing_env_profiles(config, profile_urls):
+def ensure_profile(config):
+    if config.profile is None:
+        # no selected profile or profile not found
+        try:
+            config.select_profile(commons_constants.DEFAULT_PROFILE)
+        except KeyError:
+            raise commons_errors.NoProfileError
+
+
+def download_and_select_profile(logger, config, to_download_profile_urls, to_select_profile):
+    if to_download_profile_urls:
+        download_missing_profiles(
+            config,
+            to_download_profile_urls
+        )
+    if select_forced_profile_if_any(config, to_select_profile, logger):
+        ensure_profile(config)
+
+
+def download_missing_profiles(config, profile_urls):
     downloaded_profiles = []
     # dl profiles from env
     if profile_urls:

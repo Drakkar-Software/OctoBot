@@ -1,5 +1,5 @@
 #  This file is part of OctoBot (https://github.com/Drakkar-Software/OctoBot)
-#  Copyright (c) 2022 Drakkar-Software, All rights reserved.
+#  Copyright (c) 2023 Drakkar-Software, All rights reserved.
 #
 #  OctoBot is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
@@ -243,7 +243,7 @@ class CommunityAuthentication(authentication.Authenticator):
                 session.headers.pop(self.GQL_AUTHORIZATION_HEADER)
 
     async def wait_for_login_if_processing(self):
-        if self.user_account.has_user_data() is None and self._login_completed is not None:
+        if self._login_completed is not None:
             # ensure login details have been fetched
             await asyncio.wait_for(self._login_completed.wait(), self.LOGIN_TIMEOUT)
 
@@ -350,6 +350,13 @@ class CommunityAuthentication(authentication.Authenticator):
             )
         )
 
+    async def get_subscribed_profile_urls(self):
+        subscribed_profiles = await self._fetch_subscribed_profiles()
+        return [
+            profile_data["url"]
+            for profile_data in subscribed_profiles["data"]
+        ]
+
     def _get_self_hosted_bots(self, bots):
         return [
             bot
@@ -363,6 +370,10 @@ class CommunityAuthentication(authentication.Authenticator):
     async def _fetch_startup_info(self, bot_id):
         query, variables = graphql_requests.select_startup_info_query(bot_id)
         return await self.async_graphql_query(query, "getBotStartupInfo", variables=variables, expected_code=200)
+
+    async def _fetch_subscribed_profiles(self):
+        query, variables = graphql_requests.select_subscribed_profiles_query()
+        return await self.async_graphql_query(query, "getSubscribedProfiles", variables=variables, expected_code=200)
 
     async def _fetch_bots(self):
         query, variables = graphql_requests.select_bots_query()

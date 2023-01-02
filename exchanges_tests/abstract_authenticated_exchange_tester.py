@@ -1,5 +1,5 @@
 #  This file is part of OctoBot (https://github.com/Drakkar-Software/OctoBot)
-#  Copyright (c) 2022 Drakkar-Software, All rights reserved.
+#  Copyright (c) 2023 Drakkar-Software, All rights reserved.
 #
 #  OctoBot is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
@@ -44,6 +44,7 @@ class AbstractAuthenticatedExchangeTester:
     CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES = False
     ORDER_PRICE_DIFF = 20  # % of price difference compared to current price for limit and stop orders
     NO_FEE_ON_GET_CLOSED_ORDERS = False
+    OPEN_ORDERS_IN_CLOSED_ORDERS = False
     MARKET_FILL_TIMEOUT = 15
     CANCEL_TIMEOUT = 15
     EDIT_TIMEOUT = 15
@@ -58,24 +59,6 @@ class AbstractAuthenticatedExchangeTester:
 
     async def inner_test_get_portfolio(self):
         self.check_portfolio_content(await self.get_portfolio())
-
-    async def test_get_my_recent_trades(self):
-        async with self.local_exchange_manager():
-            await self.inner_test_get_my_recent_trades()
-
-    async def inner_test_get_my_recent_trades(self):
-        trades = await self.get_my_recent_trades()
-        assert trades
-        self.check_raw_trades(trades)
-
-    async def test_get_closed_orders(self):
-        async with self.local_exchange_manager():
-            await self.inner_test_get_closed_orders()
-
-    async def inner_test_get_closed_orders(self):
-        orders = await self.get_closed_orders()
-        assert orders
-        self.check_raw_closed_orders(orders)
 
     async def test_create_and_cancel_limit_orders(self):
         async with self.local_exchange_manager():
@@ -133,6 +116,24 @@ class AbstractAuthenticatedExchangeTester:
         if await self.cancel_order(stop_loss) is trading_enums.OrderStatus.PENDING_CANCEL:
             await self.wait_for_cancel(stop_loss)
         assert await self.order_not_in_open_orders(open_orders, stop_loss)
+
+    async def test_get_my_recent_trades(self):
+        async with self.local_exchange_manager():
+            await self.inner_test_get_my_recent_trades()
+
+    async def inner_test_get_my_recent_trades(self):
+        trades = await self.get_my_recent_trades()
+        assert trades
+        self.check_raw_trades(trades)
+
+    async def test_get_closed_orders(self):
+        async with self.local_exchange_manager():
+            await self.inner_test_get_closed_orders()
+
+    async def inner_test_get_closed_orders(self):
+        orders = await self.get_closed_orders()
+        assert orders
+        self.check_raw_closed_orders(orders)
 
     async def test_edit_limit_order(self):
         # pass if not implemented
@@ -267,6 +268,9 @@ class AbstractAuthenticatedExchangeTester:
         assert order.side
         if order.status not in (trading_enums.OrderStatus.REJECTED, trading_enums.OrderStatus.CANCELED):
             assert order.origin_quantity
+            if self.OPEN_ORDERS_IN_CLOSED_ORDERS and order.status is trading_enums.OrderStatus.OPEN:
+                # when order is open, cost is not full
+                return
             self.check_theoretical_cost(
                 symbols.parse_symbol(order.symbol), order.origin_quantity, order.origin_price, order.total_cost
             )

@@ -1,5 +1,5 @@
 #  This file is part of OctoBot (https://github.com/Drakkar-Software/OctoBot)
-#  Copyright (c) 2022 Drakkar-Software, All rights reserved.
+#  Copyright (c) 2023 Drakkar-Software, All rights reserved.
 #
 #  OctoBot is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
@@ -34,12 +34,6 @@ class TestPemexAuthenticatedExchange(
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
 
-    async def test_get_my_recent_trades(self):
-        await super().test_get_my_recent_trades()
-
-    async def test_get_closed_orders(self):
-        await super().test_get_closed_orders()
-
     async def test_create_and_cancel_limit_orders(self):
         # 08 dec 2022: did not run so far, testnet is bugged: order are apparently accepted but never show up
         await super().test_create_and_cancel_limit_orders()
@@ -47,6 +41,12 @@ class TestPemexAuthenticatedExchange(
     async def test_create_and_fill_market_orders(self):
         # 08 dec 2022: did not run so far, testnet is bugged: order are apparently accepted but never show up
         await super().test_create_and_fill_market_orders()
+
+    async def test_get_my_recent_trades(self):
+        await super().test_get_my_recent_trades()
+
+    async def test_get_closed_orders(self):
+        await super().test_get_closed_orders()
 
     async def test_create_and_cancel_stop_orders(self):
         # pass if not implemented
