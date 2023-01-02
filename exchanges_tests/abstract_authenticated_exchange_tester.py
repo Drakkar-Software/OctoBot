@@ -60,24 +60,6 @@ class AbstractAuthenticatedExchangeTester:
     async def inner_test_get_portfolio(self):
         self.check_portfolio_content(await self.get_portfolio())
 
-    async def test_get_my_recent_trades(self):
-        async with self.local_exchange_manager():
-            await self.inner_test_get_my_recent_trades()
-
-    async def inner_test_get_my_recent_trades(self):
-        trades = await self.get_my_recent_trades()
-        assert trades
-        self.check_raw_trades(trades)
-
-    async def test_get_closed_orders(self):
-        async with self.local_exchange_manager():
-            await self.inner_test_get_closed_orders()
-
-    async def inner_test_get_closed_orders(self):
-        orders = await self.get_closed_orders()
-        assert orders
-        self.check_raw_closed_orders(orders)
-
     async def test_create_and_cancel_limit_orders(self):
         async with self.local_exchange_manager():
             await self.inner_test_create_and_cancel_limit_orders()
@@ -134,6 +116,24 @@ class AbstractAuthenticatedExchangeTester:
         if await self.cancel_order(stop_loss) is trading_enums.OrderStatus.PENDING_CANCEL:
             await self.wait_for_cancel(stop_loss)
         assert await self.order_not_in_open_orders(open_orders, stop_loss)
+
+    async def test_get_my_recent_trades(self):
+        async with self.local_exchange_manager():
+            await self.inner_test_get_my_recent_trades()
+
+    async def inner_test_get_my_recent_trades(self):
+        trades = await self.get_my_recent_trades()
+        assert trades
+        self.check_raw_trades(trades)
+
+    async def test_get_closed_orders(self):
+        async with self.local_exchange_manager():
+            await self.inner_test_get_closed_orders()
+
+    async def inner_test_get_closed_orders(self):
+        orders = await self.get_closed_orders()
+        assert orders
+        self.check_raw_closed_orders(orders)
 
     async def test_edit_limit_order(self):
         # pass if not implemented
