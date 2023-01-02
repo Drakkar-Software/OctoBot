@@ -44,6 +44,7 @@ class AbstractAuthenticatedExchangeTester:
     CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES = False
     ORDER_PRICE_DIFF = 20  # % of price difference compared to current price for limit and stop orders
     NO_FEE_ON_GET_CLOSED_ORDERS = False
+    OPEN_ORDERS_IN_CLOSED_ORDERS = False
     MARKET_FILL_TIMEOUT = 15
     CANCEL_TIMEOUT = 15
     EDIT_TIMEOUT = 15
@@ -267,6 +268,9 @@ class AbstractAuthenticatedExchangeTester:
         assert order.side
         if order.status not in (trading_enums.OrderStatus.REJECTED, trading_enums.OrderStatus.CANCELED):
             assert order.origin_quantity
+            if self.OPEN_ORDERS_IN_CLOSED_ORDERS and order.status is trading_enums.OrderStatus.OPEN:
+                # when order is open, cost is not full
+                return
             self.check_theoretical_cost(
                 symbols.parse_symbol(order.symbol), order.origin_quantity, order.origin_price, order.total_cost
             )
