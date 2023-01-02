@@ -36,17 +36,17 @@ class TestHollaexAuthenticatedExchange(
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
 
-    async def test_get_my_recent_trades(self):
-        await super().test_get_my_recent_trades()
-
-    async def test_get_closed_orders(self):
-        await super().test_get_closed_orders()
-
     async def test_create_and_cancel_limit_orders(self):
         await super().test_create_and_cancel_limit_orders()
 
     async def test_create_and_fill_market_orders(self):
         await super().test_create_and_fill_market_orders()
+
+    async def test_get_my_recent_trades(self):
+        await super().test_get_my_recent_trades()
+
+    async def test_get_closed_orders(self):
+        await super().test_get_closed_orders()
 
     async def test_create_and_cancel_stop_orders(self):
         # pass if not implemented
