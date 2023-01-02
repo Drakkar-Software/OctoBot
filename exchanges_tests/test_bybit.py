@@ -30,6 +30,7 @@ class TestBybitAuthenticatedExchange(
     SETTLEMENT_CURRENCY = "USDT"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}:{SETTLEMENT_CURRENCY}"
     ORDER_SIZE = 10  # % of portfolio to include in test orders
+    OPEN_ORDERS_IN_CLOSED_ORDERS = True
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
