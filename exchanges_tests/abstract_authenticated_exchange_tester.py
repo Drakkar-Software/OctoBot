@@ -250,9 +250,8 @@ class AbstractAuthenticatedExchangeTester:
     def check_raw_closed_orders(self, closed_orders):
         self.check_duplicate(closed_orders)
         for closed_order in closed_orders:
-            clean_order = self.exchange_manager.exchange.clean_order(closed_order)
             self.check_parsed_closed_order(
-                personal_data.create_order_instance_from_raw(self.exchange_manager.trader, clean_order)
+                personal_data.create_order_instance_from_raw(self.exchange_manager.trader, closed_order)
             )
 
     def check_parsed_closed_order(self, order: personal_data.Order):
@@ -278,9 +277,8 @@ class AbstractAuthenticatedExchangeTester:
     def check_raw_trades(self, trades):
         self.check_duplicate(trades)
         for trade in trades:
-            clean_trade = self.exchange_manager.exchange.clean_trade(trade)
             self.check_parsed_trade(
-                personal_data.create_trade_instance_from_raw(self.exchange_manager.trader, clean_trade)
+                personal_data.create_trade_instance_from_raw(self.exchange_manager.trader, trade)
             )
 
     def check_parsed_trade(self, trade: personal_data.Trade):
