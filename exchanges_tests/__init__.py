@@ -16,6 +16,7 @@
 import contextlib
 import os
 import dotenv
+import mock
 
 import trading_backend
 import octobot_commons.constants as commons_constants
@@ -24,13 +25,33 @@ import octobot_commons.os_util as os_util
 import octobot_commons.tests.test_config as test_config
 import octobot_trading.api as trading_api
 import octobot_trading.exchanges as exchanges
+import octobot_trading.constants as trading_constants
 import octobot_trading.enums as enums
 import octobot_trading.errors as errors
+import octobot_trading.exchange_channel as exchange_channel
+import octobot_trading.personal_data as personal_data
 import octobot_tentacles_manager.constants as tentacles_manager_constants
 import tests.test_utils.config as test_utils_config
 
 
 LOADED_EXCHANGE_CREDS_ENV_VARIABLES = False
+
+
+class ExchangeChannelMock:
+    def __init__(self, exchange_manager, name):
+        self.exchange_manager = exchange_manager
+        self.name = name
+
+        self.get_internal_producer = mock.Mock(
+            return_value=mock.Mock(
+                update_order_from_exchange=mock.AsyncMock(),
+                send=mock.AsyncMock(),
+            )
+        )
+        self.get_consumers = mock.Mock(return_value=[mock.Mock()])
+
+    def get_name(self):
+        return self.name
 
 
 @contextlib.asynccontextmanager
@@ -60,6 +81,7 @@ async def get_authenticated_exchange_manager(exchange_name, exchange_tentacle_na
     exchange_manager_instance.exchange_backend = trading_backend.exchange_factory.create_exchange_backend(
         exchange_manager_instance.exchange
     )
+    set_mocked_required_channels(exchange_manager_instance)
     try:
         yield exchange_manager_instance
     except errors.UnreachableExchange as err:
@@ -71,6 +93,13 @@ async def get_authenticated_exchange_manager(exchange_name, exchange_tentacle_na
         trading_api.cancel_ccxt_throttle_task()
         # let updaters gracefully shutdown
         await asyncio_tools.wait_asyncio_next_cycle()
+
+
+def set_mocked_required_channels(exchange_manager):
+    # disable waiting time as order refresh is mocked
+    personal_data.State.PENDING_REFRESH_INTERVAL = 0
+    for channel in (trading_constants.ORDERS_CHANNEL, trading_constants.BALANCE_CHANNEL):
+        exchange_channel.set_chan(ExchangeChannelMock(exchange_manager, channel), channel)
 
 
 def get_tentacles_setup_config_with_exchange(exchange_tentacle_name):
