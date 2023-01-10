@@ -46,6 +46,7 @@ class AbstractAuthenticatedExchangeTester:
     NO_FEE_ON_GET_CLOSED_ORDERS = False
     OPEN_ORDERS_IN_CLOSED_ORDERS = False
     MARKET_FILL_TIMEOUT = 15
+    OPEN_TIMEOUT = 15
     CANCEL_TIMEOUT = 15
     EDIT_TIMEOUT = 15
 
@@ -71,8 +72,7 @@ class AbstractAuthenticatedExchangeTester:
         buy_limit = await self.create_limit_order(price, size, trading_enums.TradeOrderSide.BUY)
         self.check_created_limit_order(buy_limit, price, size, trading_enums.TradeOrderSide.BUY)
         assert await self.order_in_open_orders(open_orders, buy_limit)
-        if await self.cancel_order(buy_limit) is trading_enums.OrderStatus.PENDING_CANCEL:
-            await self.wait_for_cancel(buy_limit)
+        await self.cancel_order(buy_limit)
         assert await self.order_not_in_open_orders(open_orders, buy_limit)
 
     async def test_create_and_fill_market_orders(self):
@@ -113,8 +113,7 @@ class AbstractAuthenticatedExchangeTester:
         stop_loss_from_get_order = await self.get_order(stop_loss.order_id)
         self.check_created_stop_order(stop_loss_from_get_order, price, size, trading_enums.TradeOrderSide.SELL)
         assert await self.order_in_open_orders(open_orders, stop_loss)
-        if await self.cancel_order(stop_loss) is trading_enums.OrderStatus.PENDING_CANCEL:
-            await self.wait_for_cancel(stop_loss)
+        await self.cancel_order(stop_loss)
         assert await self.order_not_in_open_orders(open_orders, stop_loss)
 
     async def test_get_my_recent_trades(self):
@@ -157,8 +156,7 @@ class AbstractAuthenticatedExchangeTester:
         await self.wait_for_edit(sell_limit, edited_size)
         sell_limit = await self.get_order(sell_limit.order_id)
         self.check_created_limit_order(sell_limit, edited_price, edited_size, trading_enums.TradeOrderSide.SELL)
-        if await self.cancel_order(sell_limit) is trading_enums.OrderStatus.PENDING_CANCEL:
-            await self.wait_for_cancel(sell_limit)
+        await self.cancel_order(sell_limit)
         assert await self.order_not_in_open_orders(open_orders, sell_limit)
 
     async def test_edit_stop_order(self):
@@ -184,8 +182,7 @@ class AbstractAuthenticatedExchangeTester:
         await self.wait_for_edit(stop_loss, edited_size)
         stop_loss = await self.get_order(stop_loss.order_id)
         self.check_created_stop_order(stop_loss, edited_price, edited_size, trading_enums.TradeOrderSide.SELL)
-        if await self.cancel_order(stop_loss) is trading_enums.OrderStatus.PENDING_CANCEL:
-            await self.wait_for_cancel(stop_loss)
+        await self.cancel_order(stop_loss)
         assert await self.order_not_in_open_orders(open_orders, stop_loss)
 
     async def test_create_bundled_orders(self):
@@ -212,7 +209,7 @@ class AbstractAuthenticatedExchangeTester:
         params.update(
             await self.exchange_manager.trader.bundle_chained_order_with_uncreated_order(market_order, take_profit)
         )
-        buy_market = await self.exchange_manager.trader.create_order(market_order, params=params)
+        buy_market = await self._create_order_on_exchange(market_order, params=params)
         self.check_created_market_order(buy_market, size, trading_enums.TradeOrderSide.BUY)
         await self.wait_for_fill(buy_market)
         created_orders = [stop_loss, take_profit]
@@ -220,8 +217,7 @@ class AbstractAuthenticatedExchangeTester:
         for fetched_conditional_order in fetched_conditional_orders:
             # ensure stop loss / take profit is fetched in open orders
             # ensure stop loss / take profit cancel is working
-            if await self.cancel_order(fetched_conditional_order) is trading_enums.OrderStatus.PENDING_CANCEL:
-                await self.wait_for_cancel(fetched_conditional_order)
+            await self.cancel_order(fetched_conditional_order)
         for fetched_conditional_order in fetched_conditional_orders:
             assert await self.order_not_in_open_orders(open_orders, fetched_conditional_order)
         # close position
@@ -244,6 +240,7 @@ class AbstractAuthenticatedExchangeTester:
             f"{o[trading_enums.ExchangeConstantsOrderColumns.ID.value]}"
             f"{o[trading_enums.ExchangeConstantsOrderColumns.TIMESTAMP.value]}"
             f"{o[trading_enums.ExchangeConstantsOrderColumns.AMOUNT.value]}"
+            f"{o[trading_enums.ExchangeConstantsOrderColumns.PRICE.value]}"
             for o in orders_or_trades
         }) == len(orders_or_trades)
 
@@ -292,7 +289,8 @@ class AbstractAuthenticatedExchangeTester:
         if trade.status is not trading_enums.OrderStatus.CANCELED:
             assert trade.executed_quantity
             self.check_theoretical_cost(
-                symbols.parse_symbol(trade.symbol), trade.executed_quantity, trade.executed_price, trade.total_cost
+                symbols.parse_symbol(trade.symbol), trade.executed_quantity,
+                trade.executed_price, trade.total_cost
             )
 
     def check_theoretical_cost(self, symbol, quantity, price, cost):
@@ -391,10 +389,17 @@ class AbstractAuthenticatedExchangeTester:
             side=side,
         )
         if push_on_exchange:
-            current_order = await self.exchange_manager.trader.create_order(current_order)
+            current_order = await self._create_order_on_exchange(current_order)
         if current_order is None:
             raise AssertionError("Error when creating order")
         return current_order
+
+    async def _create_order_on_exchange(self, order, params=None):
+        created_order = await self.exchange_manager.trader.create_order(order, params=params, wait_for_creation=False)
+        if created_order.status is trading_enums.OrderStatus.PENDING_CREATION:
+            await self.wait_for_open(created_order)
+            return await self.get_order(created_order.order_id)
+        return created_order
 
     def get_order_size(self, portfolio, price, symbol=None, order_size=None):
         order_size = order_size or self.ORDER_SIZE
@@ -477,8 +482,17 @@ class AbstractAuthenticatedExchangeTester:
                                                                    trading_enums.OrderStatus.CLOSED}
         await self._get_order_until(order, parse_is_filled, self.MARKET_FILL_TIMEOUT)
 
+    def parse_order_is_not_pending(self, raw_order):
+        return personal_data.parse_order_status(raw_order) not in (trading_enums.OrderStatus.UNKNOWN, None)
+
+    async def wait_for_open(self, order):
+        await self._get_order_until(order, self.parse_order_is_not_pending, self.OPEN_TIMEOUT)
+
     async def wait_for_cancel(self, order):
-        await self._get_order_until(order, personal_data.parse_is_cancelled, self.CANCEL_TIMEOUT)
+        return personal_data.create_order_instance_from_raw(
+            self.exchange_manager.trader,
+            await self._get_order_until(order, personal_data.parse_is_cancelled, self.CANCEL_TIMEOUT)
+        )
 
     async def wait_for_edit(self, order, edited_quantity):
         def is_edited(row_order):
@@ -491,7 +505,7 @@ class AbstractAuthenticatedExchangeTester:
         while time.time() - t0 < timeout:
             raw_order = await self.exchange_manager.exchange.get_order(order.order_id, order.symbol)
             if raw_order and validation_func(raw_order):
-                return
+                return raw_order
         raise TimeoutError(f"Order not filled within {timeout}s: {order}")
 
     async def order_in_open_orders(self, previous_open_orders, order):
@@ -530,7 +544,15 @@ class AbstractAuthenticatedExchangeTester:
         return True
 
     async def cancel_order(self, order):
-        return await self.exchange_manager.exchange.cancel_order(order.order_id, order.symbol)
+        cancelled_order = order
+        if not await self.exchange_manager.trader.cancel_order(order, wait_for_cancelling=False):
+            raise AssertionError("cancel_order returned False")
+        if order.status is trading_enums.OrderStatus.PENDING_CANCEL:
+            cancelled_order = await self.wait_for_cancel(order)
+        assert cancelled_order.status is trading_enums.OrderStatus.CANCELED
+        if cancelled_order.state is not None:
+            assert cancelled_order.is_cancelled()
+        return order
 
     def get_config(self):
         return {
