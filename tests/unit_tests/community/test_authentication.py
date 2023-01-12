@@ -424,11 +424,15 @@ async def test_async_auto_login(auth):
 
 
 def test_check_auth(auth):
-    resp_mock = mock.Mock()
-    with mock.patch.object(requests, "post", mock.Mock(return_value=resp_mock)), \
+    mocked_resp = MockedResponse(json=EMAIL_RETURN, headers={auth.SESSION_HEADER: "hi"})
+    
+    @contextlib.contextmanager
+    def get_mock(*_, **__):
+        yield mocked_resp
+    with mock.patch.object(auth._session, "get", get_mock), \
          mock.patch.object(auth, "_handle_auth_result", mock.Mock()) as handle_result_mock:
         auth._check_auth()
-        assert handle_result_mock.called_once_with(resp_mock.status_code, resp_mock.json(), resp_mock.headers)
+        handle_result_mock.assert_called_once_with(mocked_resp.status_code, mocked_resp.json(), mocked_resp.headers)
 
 
 @pytest.mark.asyncio
@@ -445,7 +449,7 @@ async def test_async_check_auth(auth):
     auth._aiohttp_session.get = async_get
     with mock.patch.object(auth, "_handle_auth_result", mock.Mock()) as handle_result_mock:
         await auth._async_check_auth()
-        assert handle_result_mock.called_once_with(resp_mock.status_code, "plop", resp_mock.headers)
+        handle_result_mock.assert_called_once_with(resp_mock.status, "plop", resp_mock.headers)
 
 
 def test_handle_auth_result(auth):
