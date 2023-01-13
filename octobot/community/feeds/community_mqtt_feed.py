@@ -64,7 +64,7 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
         self._reconnect_task = None
         self._connect_task = None
         self._connected_at_least_once = False
-        self._processed_messages = set()
+        self._processed_messages = []
 
     async def start(self):
         self.should_stop = False
@@ -174,7 +174,7 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
             self.logger.debug(f"Ignored already processed message with id: "
                               f"{parsed_message[commons_enums.CommunityFeedAttrs.ID.value]}")
             return False
-        self._processed_messages.add(parsed_message[commons_enums.CommunityFeedAttrs.ID.value])
+        self._processed_messages.append(parsed_message[commons_enums.CommunityFeedAttrs.ID.value])
         if len(self._processed_messages) > self.MAX_MESSAGE_ID_CACHE_SIZE:
             self._processed_messages = [
                 message_id
