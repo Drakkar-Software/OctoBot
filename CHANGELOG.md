@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [0.4.34] - 2023-01-14
+### Added
+- Websockets: support for many more feeds and exchanges
+### Updated
+- Websockets: migrate form cryptofeed to ccxt pro
+- Web interface display speed
+- Coins logo display
+- Mobile display
+
 ## [0.4.33] - 2023-01-02
 ### Added
 - Profile selector
