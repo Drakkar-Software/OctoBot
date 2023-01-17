@@ -81,6 +81,7 @@ async def get_authenticated_exchange_manager(exchange_name, exchange_tentacle_na
     exchange_manager_instance.exchange_backend = trading_backend.exchange_factory.create_exchange_backend(
         exchange_manager_instance.exchange
     )
+    exchange_manager_instance.exchange.__class__.PRINT_DEBUG_LOGS = True
     set_mocked_required_channels(exchange_manager_instance)
     try:
         yield exchange_manager_instance
