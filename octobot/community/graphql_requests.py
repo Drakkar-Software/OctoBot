@@ -47,7 +47,7 @@ _INNER_BOT_QUERY = """
 """
 
 
-def select_startup_info_query(bot_id) -> (str, dict):
+def select_startup_info_query(bot_id) -> (str, dict, str):
     return """
 query getBotStartupInfo($bot_id: String) {
   getBotStartupInfo(input: {botId: $bot_id}) {
@@ -59,10 +59,10 @@ query getBotStartupInfo($bot_id: String) {
     }
   }
 }
-    """, {"bot_id": bot_id}
+    """, {"bot_id": bot_id}, "getBotStartupInfo"
 
 
-def select_subscribed_profiles_query() -> (str, dict):
+def select_subscribed_profiles_query() -> (str, dict, str):
     return """
 query getSubscribedProfiles {
   getSubscribedProfiles {
@@ -71,50 +71,50 @@ query getSubscribedProfiles {
     }
   }
 }
-    """, {}
+    """, {}, "getSubscribedProfiles"
 
 
-def select_bots_query() -> (str, dict):
+def select_bots_query() -> (str, dict, str):
     return """
 query SelectBots {  
     bots {
 """ + _INNER_BOT_QUERY + """
     }
 }
-    """, {}
+    """, {}, "bots"
 
 
-def select_bot_query(bot_id) -> (str, dict):
+def select_bot_query(bot_id) -> (str, dict, str):
     return """
 query SelectBot($_id: ObjectId) {  
     bot (query: {_id: $_id}) {
 """ + _INNER_BOT_QUERY + """
     }
 }
-    """, {"_id": bot_id}
+    """, {"_id": bot_id},  "bot"
 
 
-def create_bot_query(is_self_hosted) -> (str, dict):
+def create_bot_query(is_self_hosted) -> (str, dict, str):
     return """
 mutation CreateBot($isSelfHosted: Boolean) {  
     createBot (input: {isSelfHosted: $isSelfHosted}) {
 """ + _INNER_BOT_QUERY + """
     }
 }
-    """, {"isSelfHosted": is_self_hosted}
+    """, {"isSelfHosted": is_self_hosted}, "createBot"
 
 
-def create_bot_device_query(bot_id) -> (str, dict):
+def create_bot_device_query(bot_id) -> (str, dict, str):
     return """
 mutation CreateBotDevice($bot_id: ObjectId) {
   createBotDevice(input: $bot_id) {
     """ + _INNER_BOT_QUERY + """
   }
 }
-    """, {"bot_id": bot_id}
+    """, {"bot_id": bot_id}, "createBotDevice"
 
 
-def update_bot_config_and_stats_query(bot_id, profile_name, profitability) -> (str, dict):
+def update_bot_config_and_stats_query(bot_id, profile_name, profitability) -> (str, dict, str):
     return """
 mutation updateOneBot($bot_id: ObjectId, $profile_name: String, $profitability: Decimal) {
   updateOneBot(
@@ -124,4 +124,31 @@ mutation updateOneBot($bot_id: ObjectId, $profile_name: String, $profitability: 
     """ + _INNER_BOT_QUERY + """
   }
 }
-    """, {"bot_id": bot_id, "profile_name": profile_name, "profitability": str(profitability)}
+    """, {"bot_id": bot_id, "profile_name": profile_name, "profitability": str(profitability)}, "updateOneBot"
+
+
+def update_bot_trades_query(bot_id, trades) -> (str, dict, str):
+    return """
+mutation updateOneBot($bot_id: ObjectId, $trades: Array) {
+  updateOneBot(
+    query: {_id: $bot_id}
+    set: {trades: $trades}
+  ) {
+    """ + _INNER_BOT_QUERY + """
+  }
+}
+    """, {"bot_id": bot_id, "trades": trades}, "updateOneBot"
+
+
+def update_bot_portfolio_query(bot_id, current_value, initial_value, unit, content, history) -> (str, dict, str):
+    return """
+mutation updateOneBot($bot_id: ObjectId, $current_value: Decimal, $initial_value: Decimal, $unit: String, $content: Array, $history: Array) {
+  updateOneBot(
+    query: {_id: $bot_id}
+    set: {current_value: $current_value, initial_value: $initial_value, unit: $unit, content: $content, history: $history}
+  ) {
+    """ + _INNER_BOT_QUERY + """"
+  }
+}
+    """, {"bot_id": bot_id, "current_value": current_value, "initial_value":
+          initial_value, "unit": unit, "content": content, "history": history}, "updateOneBot"
