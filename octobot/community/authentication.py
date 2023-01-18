@@ -18,6 +18,7 @@ import base64
 import contextlib
 import json
 import time
+import datetime
 
 import requests
 import aiohttp
@@ -39,7 +40,12 @@ def _selected_bot_update(func):
     async def wrapper(*args, **kwargs):
         self = args[0]
         await self.gql_login_if_required()
-        updated_bot = await func(*args, **kwargs)
+        if self._update_bot_lock is None:
+            self._update_bot_lock = asyncio.Lock()
+        async with self._update_bot_lock:
+            self.logger.debug(f"@selected_bot_update: entering {func.__name__}")
+            updated_bot = await func(*args, **kwargs)
+        self.logger.debug(f"@selected_bot_update: exited {func.__name__}")
         self.user_account.set_selected_bot_raw_data(updated_bot)
         return updated_bot
 
@@ -74,6 +80,7 @@ class CommunityAuthentication(authentication.Authenticator):
         self._restart_task = None
         self._community_feed = None
         self._login_completed = None
+        self._update_bot_lock = None
 
         self._update_sessions_headers()
 
@@ -264,7 +271,7 @@ class CommunityAuthentication(authentication.Authenticator):
             return
         try:
             token = self.user_account.get_graph_token()
-        except KeyError as e:
+        except (KeyError, TypeError) as e:
             raise authentication.AuthenticationRequired("Authentication required") from e
         async with self.get_aiohttp_session().post(
                 identifiers_provider.IdentifiersProvider.GQL_AUTH_URL, json={"key": token}
@@ -368,6 +375,61 @@ class CommunityAuthentication(authentication.Authenticator):
             for profile_data in subscribed_profiles["data"]
         ]
 
+    async def update_trades(self, trades: list):
+        """
+        Updates authenticated account trades
+        """
+        if not self.is_logged_in():
+            return
+        try:
+            formatted_trades = [
+                {
+                    "date": self._get_graphql_formatted_time(trade.executed_time),
+                    "exchange": trade.exchange_manager.exchange_name,
+                    "price": str(trade.executed_price),
+                    "quantity": str(trade.executed_quantity),
+                    "symbol": trade.symbol,
+                    "type": trade.trade_type.value,
+                }
+                for trade in trades
+            ]
+            await self._update_bot_trades(formatted_trades)
+        except Exception as err:
+            self.logger.exception(err, True, f"Error when updating community trades {err}")
+
+    async def update_portfolio(self, current_value: dict, initial_value: dict,
+                               unit: str, content: dict, history: dict, price_by_asset: dict):
+        """
+        Updates authenticated account portfolio
+        """
+        if not self.is_logged_in():
+            return
+        try:
+            ref_market_current_value = current_value[unit]
+            ref_market_initial_value = initial_value[unit]
+            formatted_content = [
+                {
+                    "asset": key,
+                    "quantity": str(quantity[commons_constants.PORTFOLIO_TOTAL]),
+                    "value": str(quantity[commons_constants.PORTFOLIO_TOTAL] * float(price_by_asset.get(key, 0))),
+                }
+                for key, quantity in content.items()
+            ]
+            formatted_history = [
+                {
+                    "date": self._get_graphql_formatted_time(timestamp),
+                    "value": str(value[unit])
+                }
+                for timestamp, value in history.items()
+                if unit in value
+            ]
+            await self._update_bot_portfolio(
+                ref_market_current_value, ref_market_initial_value, unit,
+                formatted_content, formatted_history
+            )
+        except Exception as err:
+            self.logger.exception(err, True, f"Error when updating community portfolio {err}")
+
     def _get_self_hosted_bots(self, bots):
         return [
             bot
@@ -423,7 +485,7 @@ class CommunityAuthentication(authentication.Authenticator):
         )
 
     @_selected_bot_update
-    async def update_bot_trades(self, trades):
+    async def _update_bot_trades(self, trades):
         return await self._execute_request(
             graphql_requests.update_bot_trades_query,
             self.user_account.gql_bot_id,
@@ -431,7 +493,7 @@ class CommunityAuthentication(authentication.Authenticator):
         )
 
     @_selected_bot_update
-    async def update_bot_portfolio(self, current_value, initial_value, unit, content, history):
+    async def _update_bot_portfolio(self, current_value, initial_value, unit, content, history):
         return await self._execute_request(
             graphql_requests.update_bot_portfolio_query,
             self.user_account.gql_bot_id,
@@ -701,3 +763,7 @@ class CommunityAuthentication(authentication.Authenticator):
     @staticmethod
     def _get_encoded_community_token():
         return base64.encodebytes(identifiers_provider.IdentifiersProvider.BACKEND_PUBLIC_TOKEN.encode()).decode().strip()
+
+    @staticmethod
+    def _get_graphql_formatted_time(timestamp):
+        return f"{datetime.datetime.utcfromtimestamp(timestamp).isoformat('T')}Z"
