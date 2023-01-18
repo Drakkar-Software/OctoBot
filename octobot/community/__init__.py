@@ -74,6 +74,8 @@ from octobot.community.graphql_requests import (
     create_bot_device_query,
     update_bot_config_and_stats_query,
     select_subscribed_profiles_query,
+    update_bot_trades_query,
+    update_bot_portfolio_query,
 )
 from octobot.community.feeds import (
     AbstractFeed,
@@ -112,6 +114,8 @@ __all__ = [
     "create_bot_device_query",
     "update_bot_config_and_stats_query",
     "select_subscribed_profiles_query",
+    "update_bot_trades_query",
+    "update_bot_portfolio_query",
     "AbstractFeed",
     "CommunityWSFeed",
     "CommunityMQTTFeed",

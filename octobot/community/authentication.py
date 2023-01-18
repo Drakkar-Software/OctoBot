@@ -35,6 +35,17 @@ import octobot_commons.authentication as authentication
 import octobot_commons.configuration as commons_configuration
 
 
+def _selected_bot_update(func):
+    async def wrapper(*args, **kwargs):
+        self = args[0]
+        await self.gql_login_if_required()
+        updated_bot = await func(*args, **kwargs)
+        self.user_account.set_selected_bot_raw_data(updated_bot)
+        return updated_bot
+
+    return wrapper
+
+
 class CommunityAuthentication(authentication.Authenticator):
     """
     Authentication utility
@@ -368,29 +379,23 @@ class CommunityAuthentication(authentication.Authenticator):
         await self._update_feed_device_uuid_and_restart_feed_if_necessary()
 
     async def _fetch_startup_info(self, bot_id):
-        query, variables = graphql_requests.select_startup_info_query(bot_id)
-        return await self.async_graphql_query(query, "getBotStartupInfo", variables=variables, expected_code=200)
+        return await self._execute_request(graphql_requests.select_startup_info_query, bot_id)
 
     async def _fetch_subscribed_profiles(self):
-        query, variables = graphql_requests.select_subscribed_profiles_query()
-        return await self.async_graphql_query(query, "getSubscribedProfiles", variables=variables, expected_code=200)
+        return await self._execute_request(graphql_requests.select_subscribed_profiles_query)
 
     async def _fetch_bots(self):
-        query, variables = graphql_requests.select_bots_query()
-        return await self.async_graphql_query(query, "bots", variables=variables, expected_code=200)
+        return await self._execute_request(graphql_requests.select_bots_query)
 
     async def _fetch_bot(self, bot_id):
-        query, variables = graphql_requests.select_bot_query(bot_id)
-        return await self.async_graphql_query(query, "bot", variables=variables, expected_code=200)
+        return await self._execute_request(graphql_requests.select_bot_query, bot_id)
 
     async def create_new_bot(self):
         await self.gql_login_if_required()
-        query, variables = graphql_requests.create_bot_query(not constants.IS_CLOUD_ENV)
-        return await self.async_graphql_query(query, "createBot", variables=variables, expected_code=200)
+        return await self._execute_request(graphql_requests.create_bot_query, not constants.IS_CLOUD_ENV)
 
     async def _create_new_bot_device(self, bot_id):
-        query, variables = graphql_requests.create_bot_device_query(bot_id)
-        await self.async_graphql_query(query, "createBotDevice", variables=variables, expected_code=200)
+        await self._execute_request(graphql_requests.create_bot_device_query, bot_id)
         # issue with createBotDevice not always returning the created device, fetch bot again to fetch device with it
         return await self._fetch_bot(bot_id)
 
@@ -408,15 +413,34 @@ class CommunityAuthentication(authentication.Authenticator):
             await self._ensure_bot_device()
             self._restart_task = asyncio.create_task(self._community_feed.restart())
 
+    @_selected_bot_update
     async def update_bot_config_and_stats(self, profile_name, profitability):
-        await self.gql_login_if_required()
-        query, variables = graphql_requests.update_bot_config_and_stats_query(
+        return await self._execute_request(
+            graphql_requests.update_bot_config_and_stats_query,
             self.user_account.gql_bot_id,
             profile_name,
             profitability
         )
-        updated_bot = await self.async_graphql_query(query, "updateOneBot", variables=variables, expected_code=200)
-        self.user_account.set_selected_bot_raw_data(updated_bot)
+
+    @_selected_bot_update
+    async def update_bot_trades(self, trades):
+        return await self._execute_request(
+            graphql_requests.update_bot_trades_query,
+            self.user_account.gql_bot_id,
+            trades
+        )
+
+    @_selected_bot_update
+    async def update_bot_portfolio(self, current_value, initial_value, unit, content, history):
+        return await self._execute_request(
+            graphql_requests.update_bot_portfolio_query,
+            self.user_account.gql_bot_id,
+            current_value, initial_value, unit, content, history
+        )
+
+    async def _execute_request(self, request_factory, *args, **kwargs):
+        query, variables, query_name = request_factory(*args, **kwargs)
+        return await self.async_graphql_query(query, query_name, variables=variables, expected_code=200)
 
     def logout(self):
         """
