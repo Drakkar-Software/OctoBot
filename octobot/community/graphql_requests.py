@@ -129,7 +129,7 @@ mutation updateOneBot($bot_id: ObjectId, $profile_name: String, $profitability: 
 
 def update_bot_trades_query(bot_id, trades) -> (str, dict, str):
     return """
-mutation updateOneBot($bot_id: ObjectId, $trades: Array) {
+mutation updateOneBot($bot_id: ObjectId, $trades: [BotTradeUpdateInput]) {
   updateOneBot(
     query: {_id: $bot_id}
     set: {trades: $trades}
@@ -142,13 +142,13 @@ mutation updateOneBot($bot_id: ObjectId, $trades: Array) {
 
 def update_bot_portfolio_query(bot_id, current_value, initial_value, unit, content, history) -> (str, dict, str):
     return """
-mutation updateOneBot($bot_id: ObjectId, $current_value: Decimal, $initial_value: Decimal, $unit: String, $content: Array, $history: Array) {
+mutation updateOneBot($bot_id: ObjectId, $current_value: Decimal, $initial_value: Decimal, $unit: String, $content: [BotPortfolioContentUpdateInput], $history: [BotPortfolioHistoryUpdateInput]) {
   updateOneBot(
     query: {_id: $bot_id}
-    set: {current_value: $current_value, initial_value: $initial_value, unit: $unit, content: $content, history: $history}
+    set: {portfolio: {current_value: $current_value, initial_value: $initial_value, unit: $unit, content: $content, history: $history}}
   ) {
-    """ + _INNER_BOT_QUERY + """"
+    """ + _INNER_BOT_QUERY + """
   }
 }
-    """, {"bot_id": bot_id, "current_value": current_value, "initial_value":
-          initial_value, "unit": unit, "content": content, "history": history}, "updateOneBot"
+    """, {"bot_id": bot_id, "current_value": str(current_value), "initial_value": str(initial_value),
+          "unit": unit, "content": content, "history": history}, "updateOneBot"
