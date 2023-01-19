@@ -246,7 +246,7 @@ class CommunityWSFeed(abstract_feed.AbstractFeed):
             raise authentication.AuthenticationRequired("OctoBot Community authentication is required to "
                                                         "use community trading signals")
         self.websocket_connection = await websockets.connect(self.feed_url,
-                                                             extra_headers=self.authenticator.get_headers(),
+                                                             extra_headers=self.authenticator.get_backend_headers(),
                                                              ping_interval=None)
         await self._subscribe()
         self.logger.info("Connected to community feed")

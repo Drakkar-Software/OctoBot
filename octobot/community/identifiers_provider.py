@@ -20,22 +20,24 @@ import octobot_commons.configuration as configuration
 
 
 class IdentifiersProvider:
-    ENABLED_ENVIRONMENT = None
-    COMMUNITY_URL = None
-    FEED_URL = None
-    BACKEND_API_URL = None
-    BACKEND_AUTH_URL = None
-    BACKEND_PUBLIC_TOKEN = None
-    MONGO_REALM_URL = None
-    MONGO_APP_ID = None
-    GQL_AUTH_URL = None
-    GQL_BACKEND_API_URL = None
+    ENABLED_ENVIRONMENT: str = None
+    COMMUNITY_URL: str = None
+    FEED_URL: str = None
+    BACKEND_API_URL: str = None
+    BACKEND_REGISTER_URL: str = None
+    BACKEND_AUTH_URL: str = None
+    BACKEND_PUBLIC_TOKEN: str = None
+    MONGO_REALM_URL: str = None
+    MONGO_APP_ID: str = None
+    GQL_AUTH_URL: str = None
+    GQL_BACKEND_API_URL: str = None
 
     @staticmethod
     def use_production():
         IdentifiersProvider.COMMUNITY_URL = constants.OCTOBOT_COMMUNITY_URL
         IdentifiersProvider.FEED_URL = constants.OCTOBOT_COMMUNITY_FEED_URL
         IdentifiersProvider.BACKEND_API_URL = constants.COMMUNITY_BACKEND_API_URL
+        IdentifiersProvider.BACKEND_REGISTER_URL = constants.COMMUNITY_BACKEND_REGISTER_URL
         IdentifiersProvider.BACKEND_AUTH_URL = constants.COMMUNITY_BACKEND_AUTH_URL
         IdentifiersProvider.BACKEND_PUBLIC_TOKEN = constants.COMMUNITY_BACKEND_PUBLIC_TOKEN
         IdentifiersProvider.MONGO_REALM_URL = constants.COMMUNITY_MONGO_REALM_URL
@@ -49,6 +51,7 @@ class IdentifiersProvider:
         IdentifiersProvider.COMMUNITY_URL = constants.STAGING_OCTOBOT_COMMUNITY_URL
         IdentifiersProvider.FEED_URL = constants.STAGING_OCTOBOT_COMMUNITY_FEED_URL
         IdentifiersProvider.BACKEND_API_URL = constants.STAGING_COMMUNITY_BACKEND_API_URL
+        IdentifiersProvider.BACKEND_REGISTER_URL = constants.STAGING_COMMUNITY_BACKEND_REGISTER_URL
         IdentifiersProvider.BACKEND_AUTH_URL = constants.STAGING_COMMUNITY_BACKEND_AUTH_URL
         IdentifiersProvider.BACKEND_PUBLIC_TOKEN = constants.STAGING_COMMUNITY_BACKEND_PUBLIC_TOKEN
         IdentifiersProvider.MONGO_REALM_URL = constants.STAGING_COMMUNITY_MONGO_REALM_URL
