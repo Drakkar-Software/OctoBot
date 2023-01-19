@@ -1,4 +1,4 @@
-# OctoBot [0.4.34](https://octobot.click/gh-changelog)
+# OctoBot [0.4.35](https://octobot.click/gh-changelog)
 [![PyPI](https://img.shields.io/pypi/v/OctoBot.svg)](https://octobot.click/gh-pypi)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/e07fb190156d4efb8e7d07aaa5eff2e1)](https://app.codacy.com/gh/Drakkar-Software/OctoBot?utm_source=github.com&utm_medium=referral&utm_content=Drakkar-Software/OctoBot&utm_campaign=Badge_Grade_Dashboard)[![Downloads](https://pepy.tech/badge/octobot/month)](https://pepy.tech/project/octobot)
 [![Dockerhub](https://img.shields.io/docker/pulls/drakkarsoftware/octobot.svg)](https://octobot.click/gh-dockerhub)
@@ -50,6 +50,11 @@ Octobot's main feature is **evolution** : you can [install](https://www.octobot.
 ## Installation
 OctoBot's installation is **very simple**... because it is **very documented** ! See the [installation guides](https://www.octobot.online/guides/#installation) for more info.
 
+#### One click deployment
+Register to OctoBot Cloud to deploy your OctoBot in the cloud. No installation required.
+
+[![Deploy to OctoBot Cloud](https://dabuttonfactory.com/button.png?t=Deploy+now&f=Roboto-Bold&ts=18&tc=fff&hp=20&vp=15&c=11&bgt=unicolored&bgc=422afb)](https://octobot.click/gh-deploy)
+
 #### [With executable](https://www.octobot.info/installation/with-binary)
 Follow the [2 steps installation guide](https://www.octobot.online/executable_installation/) 
 
@@ -89,15 +94,6 @@ cd OctoBot
 python3 -m pip install -Ur requirements.txt
 python3 start.py
 ```
-
-#### One click deployment
-Follow the [Digital Ocean installation guide](https://octobot.click/gh-do-install) 
-
-In short :
-
-[![Deploy to DO](https://mp-assets1.sfo2.digitaloceanspaces.com/deploy-to-do/do-btn-blue.svg)](https://octobot.click/gh-do-deploy)
-
-- Get 60-day free Digital Ocean hosting by registering with [OctoBot referral link](https://m.do.co/c/40c9737100b1).
 
 ## Exchanges
 [![Binance](../assets/binance-logo.png)](https://octobot.click/gh-binance)

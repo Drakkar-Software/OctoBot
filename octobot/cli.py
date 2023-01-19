@@ -283,9 +283,6 @@ def start_octobot(args):
         # set global bot instance
         commands.set_global_bot_instance(bot)
 
-        # Clear community cache
-        bot.community_auth.clear_cache()
-
         if args.identifier:
             # set community identifier
             bot.community_auth.identifier = args.identifier[0]
