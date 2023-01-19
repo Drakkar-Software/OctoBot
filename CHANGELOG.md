@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [0.4.35] - 2023-01-19
+### Added
+- WebInterface: OctoBot cloud register form
+### Updated
+- Websockets: ccxt version
+### Fixed
+- Websockets: kline error
+
 ## [0.4.34] - 2023-01-14
 ### Added
 - Websockets: support for many more feeds and exchanges
