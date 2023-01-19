@@ -57,15 +57,16 @@ class CommunityAuthentication(authentication.Authenticator):
     Authentication utility
     """
     ALLOWED_TIME_DELAY = 1 * commons_constants.MINUTE_TO_SECONDS
+    NEW_ACCOUNT_INITIALIZE_TIMEOUT = 1 * commons_constants.MINUTE_TO_SECONDS
     LOGIN_TIMEOUT = 20
     BOT_NOT_FOUND_RETRY_DELAY = 1
     AUTHORIZATION_HEADER = "authorization"
     SESSION_HEADER = "X-Session"
     GQL_AUTHORIZATION_HEADER = "Authorization"
 
-    def __init__(self, authentication_url, feed_url, config=None):
+    def __init__(self, feed_url, config=None):
         super().__init__()
-        self.authentication_url = authentication_url
+        self.authentication_url = identifiers_provider.IdentifiersProvider.BACKEND_AUTH_URL
         self.feed_url = feed_url
         self.edited_config = config
         self.initialized_event = None
@@ -73,9 +74,9 @@ class CommunityAuthentication(authentication.Authenticator):
         self.user_account = community_user_account.CommunityUserAccount()
         self._community_token = self._get_encoded_community_token()
         self._auth_token = None
-        self._session = requests.Session()
-        self._aiohttp_session = None
-        self._cache = {}
+        self._backend_session = requests.Session()
+        self._aiohttp_gql_session = None
+        self._aiohttp_backend_session = None
         self._fetch_account_task = None
         self._restart_task = None
         self._community_feed = None
@@ -87,7 +88,6 @@ class CommunityAuthentication(authentication.Authenticator):
     @staticmethod
     def create(configuration: commons_configuration.Configuration):
         return CommunityAuthentication.instance(
-            identifiers_provider.IdentifiersProvider.BACKEND_AUTH_URL,
             identifiers_provider.IdentifiersProvider.FEED_URL,
             config=configuration,
         )
@@ -136,13 +136,15 @@ class CommunityAuthentication(authentication.Authenticator):
         self._update_supports(200, self._supports_mock())
         return
         # TODO use real support fetch when implemented
-        async with self._aiohttp_session.get("supports_url") as resp:
+        async with self._aiohttp_gql_session.get("supports_url") as resp:
             self._update_supports(resp.status, await resp.json())
 
     def ensure_async_loop(self):
         # elements should be bound to the current loop
-        if self._aiohttp_session is not None and self._aiohttp_session.loop is not asyncio.get_event_loop():
-            self._aiohttp_session = None
+        if self._aiohttp_gql_session is not None and self._aiohttp_gql_session.loop is not asyncio.get_event_loop():
+            self._aiohttp_gql_session = None
+        if self._aiohttp_backend_session is not None and self._aiohttp_backend_session.loop is not asyncio.get_event_loop():
+            self._aiohttp_backend_session = None
         if self.initialized_event is not None and self.initialized_event._loop is not asyncio.get_event_loop():
             should_set = self.initialized_event.is_set()
             self.initialized_event = asyncio.Event()
@@ -248,17 +250,15 @@ class CommunityAuthentication(authentication.Authenticator):
     @contextlib.asynccontextmanager
     async def _authenticated_qgl_session(self):
         await self.gql_login_if_required()
-        session = self.get_aiohttp_session()
+        session = self.get_gql_aiohttp_session()
         try:
-            session.headers[self.GQL_AUTHORIZATION_HEADER] = f"Bearer {self.user_account.gql_access_token}"
             yield session
         except authentication.AuthenticationRequired:
             # reset token to force re-login
             self.user_account.gql_access_token = None
+            if CommunityAuthentication.GQL_AUTHORIZATION_HEADER in session.headers:
+                session.headers.pop(CommunityAuthentication.GQL_AUTHORIZATION_HEADER)
             raise
-        finally:
-            if self.GQL_AUTHORIZATION_HEADER in session.headers:
-                session.headers.pop(self.GQL_AUTHORIZATION_HEADER)
 
     async def wait_for_login_if_processing(self):
         if self._login_completed is not None:
@@ -280,12 +280,13 @@ class CommunityAuthentication(authentication.Authenticator):
             if resp.status == 200:
                 self.user_account.gql_access_token = json_resp["access_token"]
                 self.user_account.gql_user_id = json_resp["user_id"]
+                self._update_sessions_headers()
             else:
                 raise authentication.FailedAuthentication(f"Failed to authenticate to graphql server: "
                                                           f"status: {resp.status}, data: {json_resp}")
 
     def can_authenticate(self):
-        return "todo" not in self.authentication_url
+        return "todo" not in self.authentication_url    # pylint: disable=E1135
 
     def must_be_authenticated_through_authenticator(self):
         return constants.IS_CLOUD_ENV
@@ -301,7 +302,7 @@ class CommunityAuthentication(authentication.Authenticator):
             params["password_token"] = password_token
         else:
             params["password"] = password
-        resp = self._session.post(self.authentication_url, json=params)
+        resp = self._backend_session.post(self.authentication_url, json=params)
         try:
             self._handle_auth_result(resp.status_code, resp.json(), resp.headers)
         except json.JSONDecodeError as e:
@@ -311,6 +312,51 @@ class CommunityAuthentication(authentication.Authenticator):
                 self.initialized_event = asyncio.Event()
             await self._on_authenticated()
             self.initialized_event.set()
+
+    async def register(self, email, password):
+        if self.must_be_authenticated_through_authenticator():
+            raise authentication.AuthenticationError("Creating a new account is not authorized on this environment.")
+        # always logout before creating a new account
+        self.logout()
+        self._ensure_community_url()
+        params = {
+            "email": email,
+            "password": password,
+        }
+        async with self.get_aiohttp_session().post(
+                identifiers_provider.IdentifiersProvider.BACKEND_REGISTER_URL, json=params
+        ) as resp:
+            try:
+                self._handle_register_result(resp.status, await resp.json(), resp.headers)
+            except json.JSONDecodeError as e:
+                raise authentication.FailedAuthentication(e)
+        if self.is_logged_in():
+            await self._on_register()
+
+    async def _on_register(self):
+        if self.initialized_event is None:
+            self.initialized_event = asyncio.Event()
+        t0 = time.time()
+        try:
+            while not self._is_new_account_fully_initialized() \
+                    and time.time() - t0 < self.NEW_ACCOUNT_INITIALIZE_TIMEOUT:
+                await self._async_check_auth()
+        finally:
+            if self._is_new_account_fully_initialized():
+                self.logger.debug(f"New account has been fully initialized, now processing authenticated checkups")
+                await self._on_authenticated()
+                self.logger.debug(f"Authenticated checkups complete")
+            else:
+                self.logger.error(f"New account has not been fully initialized")
+            self.initialized_event.set()
+
+    def _is_new_account_fully_initialized(self):
+        # required elements to be fully initialized
+        try:
+            self.user_account.get_graph_token()
+        except (KeyError, TypeError):
+            return False
+        return True
 
     async def update_selected_bot(self):
         self.user_account.flush_bot_details()
@@ -510,7 +556,6 @@ class CommunityAuthentication(authentication.Authenticator):
         Warning: also call stop_feeds if feeds have to be stopped (not done here to keep method sync)
         """
         self._reset_tokens()
-        self.clear_cache()
         self.remove_login_detail()
         for task in (self._restart_task, self._fetch_account_task):
             if task is not None and not task.done():
@@ -522,31 +567,6 @@ class CommunityAuthentication(authentication.Authenticator):
     async def stop_feeds(self):
         if self._community_feed is not None and self._community_feed.is_connected():
             await self._community_feed.stop()
-
-    def clear_cache(self):
-        self._cache = {}
-
-    @authentication.authenticated
-    def get(self, url, params=None, allow_cache=False, **kwargs):
-        if allow_cache:
-            if url not in self._cache:
-                self._cache[url] = self._session.get(url, params=params, **kwargs)
-            return self._cache[url]
-        else:
-            return self._session.get(url, params=params, **kwargs)
-
-    @authentication.authenticated
-    def download(self, url, target_file, params=None, **kwargs):
-        with self._session.get(url, stream=True, params=params, **kwargs) as r:
-            r.raise_for_status()
-            with open(target_file, 'wb') as f:
-                for chunk in r.iter_content(chunk_size=8192):
-                    f.write(chunk)
-        return target_file
-
-    @authentication.authenticated
-    def post(self, url, data=None, json=None, **kwargs):
-        return self._session.post(url, data=data, json=json, **kwargs)
 
     def is_logged_in(self):
         return bool(self._auth_token and self.user_account.has_user_data())
@@ -566,10 +586,16 @@ class CommunityAuthentication(authentication.Authenticator):
         self.logger.debug("Removed community login data")
 
     def get_aiohttp_session(self):
-        if self._aiohttp_session is None:
-            self._aiohttp_session = aiohttp.ClientSession()
+        if self._aiohttp_backend_session is None:
+            self._aiohttp_backend_session = aiohttp.ClientSession()
             self._update_sessions_headers()
-        return self._aiohttp_session
+        return self._aiohttp_backend_session
+
+    def get_gql_aiohttp_session(self):
+        if self._aiohttp_gql_session is None:
+            self._aiohttp_gql_session = aiohttp.ClientSession()
+            self._update_sessions_headers()
+        return self._aiohttp_gql_session
 
     async def stop(self):
         self.logger.debug("Stopping ...")
@@ -578,8 +604,10 @@ class CommunityAuthentication(authentication.Authenticator):
             self._fetch_account_task.cancel()
         if self._restart_task is not None and not self._restart_task.done():
             self._restart_task.cancel()
-        if self._aiohttp_session is not None:
-            await self._aiohttp_session.close()
+        if self._aiohttp_backend_session is not None:
+            await self._aiohttp_backend_session.close()
+        if self._aiohttp_gql_session is not None:
+            await self._aiohttp_gql_session.close()
         self.logger.debug("Stopped")
 
     def _update_supports(self, resp_status, json_data):
@@ -694,7 +722,7 @@ class CommunityAuthentication(authentication.Authenticator):
 
     def _check_auth(self):
         with self._auth_context():
-            with self._session.get(f"{identifiers_provider.IdentifiersProvider.BACKEND_API_URL}/account") as resp:
+            with self._backend_session.get(f"{identifiers_provider.IdentifiersProvider.BACKEND_API_URL}/account") as resp:
                 self._handle_auth_result(resp.status_code, resp.json(), resp.headers)
 
     async def _async_check_auth(self):
@@ -739,13 +767,33 @@ class CommunityAuthentication(authentication.Authenticator):
                                                               f"re-login to your community account")
         raise authentication.AuthenticationError(f"Error code: {status_code}")
 
-    def _update_sessions_headers(self):
-        headers = self.get_headers()
-        self._session.headers.update(headers)
-        if self._aiohttp_session is not None:
-            self._aiohttp_session.headers.update(headers)
+    def _handle_register_result(self, status_code, json_resp, reps_headers):
+        if status_code == 200 and json_resp is not None:
+            if "id" in json_resp:
+                # successfully created account
+                if new_token := reps_headers.get(self.SESSION_HEADER):
+                    self._auth_token = new_token
+                    self._save_login_token(self._auth_token)
+                    self._update_sessions_headers()
+                self.user_account.set_profile_raw_data(json_resp)
+                return
+            # error on create account
+            error_messages = [
+                f"{field}: {details['message']}"
+                for field, details in json_resp.items()
+            ]
+            raise authentication.AuthenticationError(", ".join(error_messages))
+        raise authentication.AuthenticationError(f"Unexpected error when creating account: code: {status_code} ({json_resp})")
 
-    def get_headers(self):
+    def _update_sessions_headers(self):
+        backend_headers = self.get_backend_headers()
+        self._backend_session.headers.update(backend_headers)
+        if self._aiohttp_backend_session is not None:
+            self._aiohttp_backend_session.headers.update(backend_headers)
+        if self._aiohttp_gql_session is not None:
+            self._aiohttp_gql_session.headers.update(self.get_gql_headers())
+
+    def get_backend_headers(self):
         headers = {
             CommunityAuthentication.AUTHORIZATION_HEADER: f"Basic {self._community_token}",
         }
@@ -753,12 +801,20 @@ class CommunityAuthentication(authentication.Authenticator):
             headers[CommunityAuthentication.SESSION_HEADER] = self._auth_token
         return headers
 
+    def get_gql_headers(self):
+        headers = {}
+        if self.user_account.gql_access_token is not None:
+            headers[CommunityAuthentication.GQL_AUTHORIZATION_HEADER] = f"Bearer {self.user_account.gql_access_token}"
+        return headers
+
     def _reset_tokens(self):
         self._auth_token = None
         self.user_account.flush()
-        self._session.headers.pop(CommunityAuthentication.SESSION_HEADER, None)
-        if self._aiohttp_session is not None:
-            self._aiohttp_session.headers.pop(CommunityAuthentication.SESSION_HEADER, None)
+        self._backend_session.headers.pop(CommunityAuthentication.SESSION_HEADER, None)
+        if self._aiohttp_backend_session is not None:
+            self._aiohttp_backend_session.headers.pop(CommunityAuthentication.SESSION_HEADER, None)
+        if self._aiohttp_gql_session is not None:
+            self._aiohttp_gql_session.headers.pop(CommunityAuthentication.GQL_AUTHORIZATION_HEADER, None)
 
     @staticmethod
     def _get_encoded_community_token():
