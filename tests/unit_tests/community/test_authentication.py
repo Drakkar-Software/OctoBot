@@ -55,7 +55,7 @@ class MockedResponse:
 async def logged_in_auth():
     community.IdentifiersProvider.use_production()
     auth = community.CommunityAuthentication(AUTH_URL, None)
-    with mock.patch.object(auth._session, "post", mock.Mock(return_value=MockedResponse(
+    with mock.patch.object(auth._backend_session, "post", mock.Mock(return_value=MockedResponse(
             json=EMAIL_RETURN, headers={auth.SESSION_HEADER: "hi"}))), \
             mock.patch.object(community.CommunityAuthentication, "update_supports", mock.AsyncMock()), \
             mock.patch.object(community.CommunityAuthentication, "update_selected_bot", mock.AsyncMock()):
@@ -85,7 +85,7 @@ async def test_login(auth):
     with mock.patch.object(community.CommunityAuthentication, "_reset_tokens", mock.Mock()) as reset_mock, \
             mock.patch.object(community.CommunityAuthentication, "_handle_auth_result", mock.Mock()) \
             as auth_res_mock, \
-            mock.patch.object(auth._session, "post", mock.Mock(return_value=resp_mock)) as post_mock, \
+            mock.patch.object(auth._backend_session, "post", mock.Mock(return_value=resp_mock)) as post_mock, \
             mock.patch.object(community.CommunityAuthentication, "update_supports", mock.AsyncMock()) \
             as update_supports_mock, \
             mock.patch.object(community.CommunityAuthentication, "update_selected_bot", mock.AsyncMock()) \
@@ -106,63 +106,67 @@ async def test_login(auth):
 
 def test_logout(auth):
     with mock.patch.object(community.CommunityAuthentication, "_reset_tokens", mock.Mock()) as reset_mock, \
-         mock.patch.object(community.CommunityAuthentication, "clear_cache", mock.Mock()) as clear_cache_mock, \
          mock.patch.object(community.CommunityAuthentication, "remove_login_detail", mock.Mock()) as remove_mock:
         auth.logout()
         reset_mock.assert_called_once()
-        clear_cache_mock.assert_called_once()
         remove_mock.assert_called_once()
-
-
-def test_clear_cache(auth):
-    auth._cache["1"] = 1
-    auth.clear_cache()
-    assert auth._cache == {}
 
 
 def test_reset_tokens(auth):
     auth._auth_token = "1"
-    auth._session.headers[community.CommunityAuthentication.AUTHORIZATION_HEADER] = "1"
-    auth._session.headers[community.CommunityAuthentication.SESSION_HEADER] = "2"
+    auth._backend_session.headers[community.CommunityAuthentication.AUTHORIZATION_HEADER] = "1"
+    auth._backend_session.headers[community.CommunityAuthentication.SESSION_HEADER] = "2"
     auth._reset_tokens()
     assert auth._auth_token is None
-    assert community.CommunityAuthentication.AUTHORIZATION_HEADER in auth._session.headers
-    assert community.CommunityAuthentication.SESSION_HEADER not in auth._session.headers
+    assert community.CommunityAuthentication.AUTHORIZATION_HEADER in auth._backend_session.headers
+    assert community.CommunityAuthentication.SESSION_HEADER not in auth._backend_session.headers
 
 
 @pytest.mark.asyncio
 async def test_update_sessions_headers(auth):
     auth._auth_token = "1"
-    headers_mock = {
+    backend_headers_mock = {
         community.CommunityAuthentication.AUTHORIZATION_HEADER: f"Basic {auth._auth_token}",
         community.CommunityAuthentication.SESSION_HEADER: "4"
     }
-    with mock.patch.object(community.CommunityAuthentication, "get_headers", mock.Mock(return_value=headers_mock)) \
-         as get_headers_mock:
-        auth._session.headers[community.CommunityAuthentication.SESSION_HEADER] = "3"
-        assert community.CommunityAuthentication.AUTHORIZATION_HEADER in auth._session.headers
+    gql_headers_mock = {
+        community.CommunityAuthentication.GQL_AUTHORIZATION_HEADER: f"Bearer {auth._auth_token}"
+    }
+    auth._aiohttp_backend_session = aiohttp.ClientSession()
+    with mock.patch.object(community.CommunityAuthentication, "get_backend_headers",
+                           mock.Mock(return_value=backend_headers_mock)) as get_backend_headers_mock, \
+            mock.patch.object(community.CommunityAuthentication, "get_gql_headers",
+                              mock.Mock(return_value=gql_headers_mock)) as get_gql_headers_mock:
+        auth._backend_session.headers[community.CommunityAuthentication.SESSION_HEADER] = "3"
+        assert community.CommunityAuthentication.AUTHORIZATION_HEADER in auth._backend_session.headers
         auth._update_sessions_headers()
-        get_headers_mock.assert_called_once()
-        assert auth._session.headers[community.CommunityAuthentication.AUTHORIZATION_HEADER] == \
+        get_backend_headers_mock.assert_called_once()
+        get_gql_headers_mock.assert_not_called()
+        assert auth._backend_session.headers[community.CommunityAuthentication.AUTHORIZATION_HEADER] == \
                f"Basic {auth._auth_token}"
-        assert auth._session.headers[community.CommunityAuthentication.SESSION_HEADER] == "4"
-        assert auth._aiohttp_session is None
-        auth._aiohttp_session = aiohttp.ClientSession()
+        assert auth._backend_session.headers[community.CommunityAuthentication.SESSION_HEADER] == "4"
+        assert auth._aiohttp_backend_session.headers[community.CommunityAuthentication.AUTHORIZATION_HEADER] == \
+               f"Basic {auth._auth_token}"
+        assert auth._aiohttp_backend_session.headers[community.CommunityAuthentication.SESSION_HEADER] == "4"
+        assert auth._aiohttp_gql_session is None
+        auth._aiohttp_gql_session = aiohttp.ClientSession()
         auth._update_sessions_headers()
-        assert auth._aiohttp_session.headers[community.CommunityAuthentication.AUTHORIZATION_HEADER] == \
-               f"Basic {auth._auth_token}"
-        assert auth._aiohttp_session.headers[community.CommunityAuthentication.SESSION_HEADER] == "4"
-        await auth._aiohttp_session.close()
+        get_gql_headers_mock.assert_called_once()
+        assert auth._aiohttp_gql_session.headers[community.CommunityAuthentication.AUTHORIZATION_HEADER] == \
+               f"Bearer {auth._auth_token}"
+        assert community.CommunityAuthentication.SESSION_HEADER not in auth._aiohttp_gql_session.headers
+        await auth._aiohttp_gql_session.close()
+        await auth._aiohttp_backend_session.close()
 
 
 @pytest.mark.asyncio
 async def test_get_headers(auth):
     auth._community_token = "1"
-    assert auth.get_headers() == {
+    assert auth.get_backend_headers() == {
         community.CommunityAuthentication.AUTHORIZATION_HEADER: f"Basic {auth._community_token}"
     }
     auth._auth_token = "2"
-    assert auth.get_headers() == {
+    assert auth.get_backend_headers() == {
         community.CommunityAuthentication.AUTHORIZATION_HEADER: f"Basic {auth._community_token}",
         community.CommunityAuthentication.SESSION_HEADER: auth._auth_token
     }
@@ -183,25 +187,38 @@ def test_can_authenticate(auth):
     assert auth.can_authenticate() is False
 
 
-def test_get_unauthenticated(auth):
-    with pytest.raises(authentication.AuthenticationRequired):
-        auth.get("url")
-
-
 @pytest.mark.asyncio
 async def test_get_aiohttp_session(auth):
-    assert auth._aiohttp_session is None
+    assert auth._aiohttp_backend_session is None
     with mock.patch.object(auth, "_update_sessions_headers", mock.Mock()) as \
          _update_sessions_headers_mock:
         auth.get_aiohttp_session()
         _update_sessions_headers_mock.assert_called_once()
         _update_sessions_headers_mock.reset_mock()
-        auth._aiohttp_session = None
+        auth._aiohttp_backend_session = None
         session = auth.get_aiohttp_session()
-        assert isinstance(auth._aiohttp_session, aiohttp.ClientSession)
+        assert isinstance(auth._aiohttp_backend_session, aiohttp.ClientSession)
         _update_sessions_headers_mock.assert_called_once()
-        assert auth._aiohttp_session is session
+        assert auth._aiohttp_backend_session is session
         session_2 = auth.get_aiohttp_session()
+        assert session_2 is session
+        await session.close()
+
+
+@pytest.mark.asyncio
+async def test_get_aiohttp_gql_session(auth):
+    assert auth._aiohttp_gql_session is None
+    with mock.patch.object(auth, "_update_sessions_headers", mock.Mock()) as \
+         _update_sessions_headers_mock:
+        auth.get_gql_aiohttp_session()
+        _update_sessions_headers_mock.assert_called_once()
+        _update_sessions_headers_mock.reset_mock()
+        auth._aiohttp_gql_session = None
+        session = auth.get_gql_aiohttp_session()
+        assert isinstance(auth._aiohttp_gql_session, aiohttp.ClientSession)
+        _update_sessions_headers_mock.assert_called_once()
+        assert auth._aiohttp_gql_session is session
+        session_2 = auth.get_gql_aiohttp_session()
         assert session_2 is session
         await session.close()
 
@@ -214,80 +231,6 @@ def test_ensure_community_url(auth):
     with mock.patch.object(auth, "can_authenticate", mock.Mock(return_value=True)) as can_authenticate_mock:
         auth._ensure_community_url()
         can_authenticate_mock.assert_called_once()
-
-
-def test_get_authenticated(logged_in_auth):
-    with mock.patch.object(logged_in_auth._session, "get", mock.Mock(return_value="plop")) as requests_get_mock:
-        assert logged_in_auth.get("") == "plop"
-        requests_get_mock.assert_called_with("", params=None)
-        assert logged_in_auth.get("", params={"1": 1}, t=1) == "plop"
-        requests_get_mock.assert_called_with("", params={"1": 1}, t=1)
-
-
-def test_get_authenticated_with_cache(logged_in_auth):
-    with mock.patch.object(logged_in_auth._session, "get", mock.Mock(return_value="plop")) as requests_get_mock:
-        # with 1 cached request
-        assert logged_in_auth.get("", allow_cache=True) == "plop"
-        requests_get_mock.assert_called_once()
-        assert logged_in_auth._cache[""] == "plop"
-        for _ in range(10):
-            # uses cached value, does not make a new request
-            assert logged_in_auth.get("", allow_cache=True) == "plop"
-        requests_get_mock.assert_called_once()
-        requests_get_mock.reset_mock()
-
-        # with 2 cached requests
-        assert logged_in_auth.get("1", allow_cache=True) == "plop"
-        requests_get_mock.assert_called_once()
-        assert logged_in_auth._cache[""] == "plop"
-        assert logged_in_auth._cache["1"] == "plop"
-        for _ in range(10):
-            # uses cached value, does not make a new request
-            assert logged_in_auth.get("", allow_cache=True) == "plop"
-            assert logged_in_auth.get("1", allow_cache=True) == "plop"
-        requests_get_mock.assert_called_once()
-        requests_get_mock.reset_mock()
-
-        assert logged_in_auth.get("", allow_cache=False) == "plop"
-        requests_get_mock.assert_called_once()
-        requests_get_mock.reset_mock()
-
-        # without cache allowed but available cache
-        assert all(c in logged_in_auth._cache for c in ("", "1"))
-        assert logged_in_auth.get("", allow_cache=False) == "plop"
-        requests_get_mock.assert_called_once()
-        requests_get_mock.reset_mock()
-        assert logged_in_auth.get("1", allow_cache=False) == "plop"
-        requests_get_mock.assert_called_once()
-
-        # set cache
-        logged_in_auth.clear_cache()
-        assert logged_in_auth._cache == {}
-        assert logged_in_auth.get("", allow_cache=True) == "plop"
-        assert logged_in_auth.get("1", allow_cache=True) == "plop"
-        assert all(c in logged_in_auth._cache for c in ("", "1"))
-        requests_get_mock.reset_mock()
-        for _ in range(10):
-            # uses cached value, does not make a new request
-            assert logged_in_auth.get("", allow_cache=True) == "plop"
-            assert logged_in_auth.get("1", allow_cache=True) == "plop"
-        requests_get_mock.assert_not_called()
-        requests_get_mock.reset_mock()
-
-
-def test_post_unauthenticated(auth):
-    with pytest.raises(authentication.AuthenticationRequired):
-        auth.post("url")
-
-
-def test_post_authenticated(logged_in_auth):
-    with mock.patch.object(logged_in_auth._session, "post", mock.Mock(return_value="plop")) as requests_post_mock:
-        assert logged_in_auth.post("") == "plop"
-        requests_post_mock.assert_called_with("", data=None, json=None)
-        assert logged_in_auth.post("", data={"1": 1}, t=1) == "plop"
-        requests_post_mock.assert_called_with("", data={"1": 1}, json=None, t=1)
-        assert logged_in_auth.post("", json={"1": 1}) == "plop"
-        requests_post_mock.assert_called_with("", data=None, json={"1": 1})
 
 
 def test_is_logged_in(auth):
@@ -429,7 +372,7 @@ def test_check_auth(auth):
     @contextlib.contextmanager
     def get_mock(*_, **__):
         yield mocked_resp
-    with mock.patch.object(auth._session, "get", get_mock), \
+    with mock.patch.object(auth._backend_session, "get", get_mock), \
          mock.patch.object(auth, "_handle_auth_result", mock.Mock()) as handle_result_mock:
         auth._check_auth()
         handle_result_mock.assert_called_once_with(mocked_resp.status_code, mocked_resp.json(), mocked_resp.headers)
@@ -437,7 +380,7 @@ def test_check_auth(auth):
 
 @pytest.mark.asyncio
 async def test_async_check_auth(auth):
-    auth._aiohttp_session = mock.AsyncMock()
+    auth._aiohttp_backend_session = mock.AsyncMock()
     resp_mock = mock.AsyncMock()
     resp_mock.status = 200
     resp_mock.json = mock.AsyncMock(return_value="plop")
@@ -446,7 +389,7 @@ async def test_async_check_auth(auth):
     @contextlib.asynccontextmanager
     async def async_get(*_, **__):
         yield resp_mock
-    auth._aiohttp_session.get = async_get
+    auth._aiohttp_backend_session.get = async_get
     with mock.patch.object(auth, "_handle_auth_result", mock.Mock()) as handle_result_mock:
         await auth._async_check_auth()
         handle_result_mock.assert_called_once_with(resp_mock.status, "plop", resp_mock.headers)
@@ -507,8 +450,8 @@ async def _test_auth_and_fetch_supports(auth):
             async def async_get(*_, **__):
                 yield resp_mock
 
-            auth._aiohttp_session = mock.AsyncMock()
-            auth._aiohttp_session.get = async_get
+            auth._aiohttp_gql_session = mock.AsyncMock()
+            auth._aiohttp_gql_session.get = async_get
             auth.initialized_event = asyncio.Event()
             await auth._auth_and_fetch_account()
             _async_try_auto_login_mock.assert_called_once()
@@ -553,8 +496,10 @@ async def test_stop(auth):
     auth._fetch_account_task.done = mock.Mock(return_value=True)
     auth._restart_task = mock.Mock()
     auth._restart_task.cancel = mock.Mock()
-    auth._aiohttp_session = mock.Mock()
-    auth._aiohttp_session.close = mock.AsyncMock()
+    auth._aiohttp_gql_session = mock.Mock()
+    auth._aiohttp_gql_session.close = mock.AsyncMock()
+    auth._aiohttp_backend_session = mock.Mock()
+    auth._aiohttp_backend_session.close = mock.AsyncMock()
     with mock.patch.object(auth, "stop_feeds", mock.AsyncMock()) as stop_feeds_mock, \
          mock.patch.object(auth._restart_task, "done", mock.Mock(return_value=True)) as done_mock:
         await auth.stop()
@@ -562,7 +507,8 @@ async def test_stop(auth):
         done_mock.assert_called_once()
         auth._fetch_account_task.cancel.assert_not_called()
         auth._restart_task.cancel.assert_not_called()
-        auth._aiohttp_session.close.reset_mock()
+        auth._aiohttp_gql_session.close.reset_mock()
+        auth._aiohttp_backend_session.close.reset_mock()
     auth._fetch_account_task.done = mock.Mock(return_value=False)
     with mock.patch.object(auth, "stop_feeds", mock.AsyncMock(side_effect=auth.stop_feeds)) as stop_feeds_mock, \
          mock.patch.object(auth._restart_task, "done", mock.Mock(return_value=False)) as done_mock:
@@ -571,9 +517,11 @@ async def test_stop(auth):
         done_mock.assert_called_once()
         auth._fetch_account_task.cancel.assert_called_once()
         auth._restart_task.cancel.assert_called_once()
-        auth._aiohttp_session.close.assert_called_once()
+        auth._aiohttp_gql_session.close.assert_called_once()
+        auth._aiohttp_backend_session.close.assert_called_once()
 
-        auth._aiohttp_session = None
+        auth._aiohttp_gql_session = None
+        auth._aiohttp_backend_session = None
         auth._fetch_account_task.cancel.reset_mock()
         auth._restart_task.cancel.reset_mock()
         await auth.stop()
