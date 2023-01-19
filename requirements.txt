@@ -1,5 +1,5 @@
 # Setup requirements
-cython==0.29.32
+cython==0.29.33
 
 # Drakkar-Software requirements
 OctoBot-Commons==1.8.4
