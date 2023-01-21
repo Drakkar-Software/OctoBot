@@ -571,6 +571,9 @@ class CommunityAuthentication(authentication.Authenticator):
     def is_logged_in(self):
         return bool(self._auth_token and self.user_account.has_user_data())
 
+    def has_login_info(self):
+        return bool(self._get_saved_token())
+
     def ensure_token_validity(self):
         if not self.is_logged_in():
             # try to login with saved token if available
