@@ -2,7 +2,7 @@ FROM python:3.8-slim-buster AS base
 
 # requires git to install requirements with git+https
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends build-essential git gcc libffi-dev libssl-dev libxml2-dev libxslt1-dev libxslt-dev libjpeg62-turbo-dev zlib1g-dev \
+    && apt-get install -y --no-install-recommends build-essential git gcc binutils libffi-dev libssl-dev libxml2-dev libxslt1-dev libxslt-dev libjpeg62-turbo-dev zlib1g-dev \
     && python -m venv /opt/venv
 
 # skip cryptography rust compilation (required for armv7 builds)
@@ -17,6 +17,11 @@ RUN pip install -U setuptools wheel pip>=20.0.0 \
     && pip install --prefer-binary -r requirements.txt \
     && python setup.py install
 
+# build amazon-efs-utils
+RUN git clone https://github.com/aws/efs-utils /opt/efs \
+    && cd /opt/efs \
+    && ./build-deb.sh
+
 FROM python:3.8-slim-buster
 
 ARG TENTACLES_URL_TAG=""
@@ -26,6 +31,9 @@ WORKDIR /octobot
 
 # Import python dependencies
 COPY --from=base /opt/venv /opt/venv
+
+# Import built dependencies
+COPY --from=base /opt/efs/build /opt/efs/build
 
 # Add default config files
 COPY octobot/config /octobot/octobot/config
@@ -45,6 +53,8 @@ RUN apt-get update \
     && echo 'deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared buster main' | tee /etc/apt/sources.list.d/cloudflared.list \
     && apt-get update \ 
     && apt-get install -y --no-install-recommends curl cloudflared s3fs nfs-common libxslt-dev libxcb-xinput0 libjpeg62-turbo-dev zlib1g-dev libblas-dev liblapack-dev libatlas-base-dev libopenjp2-7 libtiff-dev \
+    && apt-get -y install /opt/efs/build/amazon-efs-utils*deb \
+    && rm -rf /opt/efs \
     && rm -rf /var/lib/apt/lists/* \
     && ln -s /opt/venv/bin/OctoBot OctoBot # Make sure we use the virtualenv \
     && chmod +x docker-entrypoint.sh
