@@ -1,5 +1,7 @@
 FROM python:3.8-slim-buster AS base
 
+WORKDIR /
+
 # requires git to install requirements with git+https
 RUN apt-get update \
     && apt-get install -y --no-install-recommends build-essential git gcc binutils libffi-dev libssl-dev libxml2-dev libxslt1-dev libxslt-dev libjpeg62-turbo-dev zlib1g-dev \
@@ -13,13 +15,13 @@ ENV PATH="/opt/venv/bin:$PATH"
 
 COPY . .
 RUN pip install -U setuptools wheel pip>=20.0.0 \
-    && pip install Cython==0.29.21 \
-    && pip install --prefer-binary -r requirements.txt \
+    && pip install --no-cache-dir Cython==0.29.21 \
+    && pip install --no-cache-dir --prefer-binary -r requirements.txt \
     && python setup.py install
 
 # build amazon-efs-utils
-RUN git clone https://github.com/aws/efs-utils /opt/efs \
-    && cd /opt/efs \
+WORKDIR /opt/efs
+RUN git clone https://github.com/aws/efs-utils . \
     && ./build-deb.sh
 
 FROM python:3.8-slim-buster
@@ -53,7 +55,7 @@ RUN apt-get update \
     && echo 'deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared buster main' | tee /etc/apt/sources.list.d/cloudflared.list \
     && apt-get update \ 
     && apt-get install -y --no-install-recommends curl cloudflared s3fs nfs-common libxslt-dev libxcb-xinput0 libjpeg62-turbo-dev zlib1g-dev libblas-dev liblapack-dev libatlas-base-dev libopenjp2-7 libtiff-dev \
-    && apt-get -y install /opt/efs/build/amazon-efs-utils*deb \
+    && apt-get -y install --no-install-recommends /opt/efs/build/amazon-efs-utils*deb \
     && rm -rf /opt/efs \
     && rm -rf /var/lib/apt/lists/* \
     && ln -s /opt/venv/bin/OctoBot OctoBot # Make sure we use the virtualenv \
