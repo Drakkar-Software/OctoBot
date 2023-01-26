@@ -27,6 +27,9 @@ class AbstractAuthenticatedFutureExchangeTester(
     # enter exchange name as a class variable here*
     EXCHANGE_TYPE = trading_enums.ExchangeTypes.FUTURE.value
     PORTFOLIO_TYPE_FOR_SIZE = trading_constants.CONFIG_PORTFOLIO_TOTAL
+    REQUIRES_SYMBOLS_TO_GET_POSITIONS = False
+    INVERSE_SYMBOL = None
+    MIN_PORTFOLIO_SIZE = 2  # ensure fetching currency for linear and inverse
 
     async def test_get_empty_linear_and_inverse_positions(self):
         # ensure fetch empty positions
@@ -35,12 +38,19 @@ class AbstractAuthenticatedFutureExchangeTester(
 
     async def inner_test_get_empty_linear_and_inverse_positions(self):
         positions = await self.get_positions()
+        self._check_position_content(positions)
         for contract_type in (trading_enums.FutureContractType.LINEAR_PERPETUAL,
                               trading_enums.FutureContractType.INVERSE_PERPETUAL):
             if not self.has_empty_position(self.get_filtered_positions(positions, contract_type)):
                 empty_position_symbol = self.get_other_position_symbol(positions, contract_type)
                 empty_position = await self.get_position(empty_position_symbol)
                 assert self.is_position_empty(empty_position)
+
+    def _check_position_content(self, positions):
+        for position in positions:
+            assert position[trading_enums.ExchangeConstantsPositionColumns.SYMBOL.value]
+            # should not be 0 in octobot
+            assert position[trading_enums.ExchangeConstantsPositionColumns.LEVERAGE.value] > 0
 
     async def inner_test_create_and_fill_market_orders(self):
         portfolio = await self.get_portfolio()
@@ -78,7 +88,12 @@ class AbstractAuthenticatedFutureExchangeTester(
         return await self.exchange_manager.exchange.get_position(symbol or self.SYMBOL)
 
     async def get_positions(self):
-        return await self.exchange_manager.exchange.get_positions()
+        symbols = None
+        if self.REQUIRES_SYMBOLS_TO_GET_POSITIONS:
+            if self.INVERSE_SYMBOL is None:
+                raise AssertionError(f"INVERSE_SYMBOL is required")
+            symbols = [self.SYMBOL, self.INVERSE_SYMBOL]
+        return await self.exchange_manager.exchange.get_positions(symbols=symbols)
 
     @contextlib.asynccontextmanager
     async def required_empty_position(self):
@@ -111,6 +126,8 @@ class AbstractAuthenticatedFutureExchangeTester(
 
     async def create_order(self, price, current_price, size, side, order_type,
                            symbol=None, push_on_exchange=True):
+        if not size:
+            raise AssertionError(f"Size in required to create an order, provided size is {size}")
         # contracts are required to create orders
         await self.load_contract(symbol)
         return await super().create_order(
@@ -185,3 +202,6 @@ class AbstractAuthenticatedFutureExchangeTester(
         else:
             theoretical_cost = quantity * price
         assert theoretical_cost * decimal.Decimal("0.8") <= cost <= theoretical_cost * decimal.Decimal("1.2")
+
+    def _get_all_symbols(self):
+        return [self.SYMBOL, self.INVERSE_SYMBOL]
