@@ -34,6 +34,7 @@ tentacles_manager_api.reload_tentacle_info()
 class AbstractAuthenticatedExchangeTester:
     # enter exchange name as a class variable here
     EXCHANGE_NAME = None
+    CREDENTIALS_EXCHANGE_NAME = None
     EXCHANGE_TENTACLE_NAME = None
     EXCHANGE_TYPE = trading_enums.ExchangeTypes.SPOT.value
     ORDER_CURRENCY = "BTC"
@@ -49,6 +50,7 @@ class AbstractAuthenticatedExchangeTester:
     OPEN_TIMEOUT = 15
     CANCEL_TIMEOUT = 15
     EDIT_TIMEOUT = 15
+    MIN_PORTFOLIO_SIZE = 1
 
     # Implement all "test_[name]" methods, call super() to run the test, pass to ignore it.
     # Override the "inner_test_[name]" method to override a test content.
@@ -308,15 +310,19 @@ class AbstractAuthenticatedExchangeTester:
     async def local_exchange_manager(self):
         try:
             exchange_tentacle_name = self.EXCHANGE_TENTACLE_NAME or self.EXCHANGE_NAME.capitalize()
-            async with get_authenticated_exchange_manager(self.EXCHANGE_NAME, exchange_tentacle_name,
-                                                          self.get_config()) as exchange_manager:
+            async with get_authenticated_exchange_manager(
+                    self.EXCHANGE_NAME,
+                    exchange_tentacle_name,
+                    self.get_config(),
+                    credentials_exchange_name=self.CREDENTIALS_EXCHANGE_NAME or self.EXCHANGE_NAME
+            ) as exchange_manager:
                 self.exchange_manager = exchange_manager
                 yield
         finally:
             self.exchange_manager = None
 
     def check_portfolio_content(self, portfolio):
-        assert len(portfolio) > 0
+        assert len(portfolio) >= self.MIN_PORTFOLIO_SIZE
         at_least_one_value = False
         for asset, values in portfolio.items():
             assert all(
@@ -560,5 +566,13 @@ class AbstractAuthenticatedExchangeTester:
                 self.EXCHANGE_NAME: {
                     constants.CONFIG_EXCHANGE_TYPE: self.EXCHANGE_TYPE
                 }
+            },
+            constants.CONFIG_CRYPTO_CURRENCIES: {
+                "test-crypto": {
+                    constants.CONFIG_CRYPTO_PAIRS: self._get_all_symbols()
+                }
             }
         }
+
+    def _get_all_symbols(self):
+        return [self.SYMBOL]
