@@ -33,6 +33,7 @@ from octobot.automation.implementations import (
     NoCondition,
     PeriodicCheck,
     ProfitabilityThreshold,
+    PriceThreshold,
 )
 
 
@@ -54,5 +55,6 @@ __all__ = [
     "NoCondition",
     "PeriodicCheck",
     "ProfitabilityThreshold",
+    "PriceThreshold",
     "Automation",
 ]
