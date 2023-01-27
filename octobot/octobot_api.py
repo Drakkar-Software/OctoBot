@@ -16,6 +16,7 @@
 import octobot.constants as constants
 import octobot.commands as commands
 import octobot_commons.constants as commons_constants
+import octobot.automation as automation
 
 
 class OctoBotAPI:
@@ -67,6 +68,9 @@ class OctoBotAPI:
 
     def get_aiohttp_session(self) -> object:
         return self._octobot.get_aiohttp_session()
+
+    def get_automation(self) -> automation.Automation:
+        return self._octobot.automation
 
     def run_in_main_asyncio_loop(self, coroutine, log_exceptions=True,
                                  timeout=commons_constants.DEFAULT_FUTURE_TIMEOUT):
