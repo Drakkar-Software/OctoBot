@@ -41,6 +41,7 @@ import octobot.octobot_api as octobot_api
 import octobot.initializer as initializer
 import octobot.producers as producers
 import octobot.storage as storage
+import octobot.automation as automation
 
 """Main OctoBot class:
 - Create all indicators and thread for each cryptocurrencies in config """
@@ -92,6 +93,9 @@ class OctoBot:
 
         # Logger
         self.logger = logging.get_logger(self.__class__.__name__)
+
+        # automations
+        self.automation = None
 
         # Initialize octobot main tools
         self.initializer = initializer.Initializer(self)
@@ -151,6 +155,8 @@ class OctoBot:
                     service_api.create_notification(limit_message)
                 )
         self._init_metadata_run_task = asyncio.create_task(self._store_run_metadata_when_available())
+        self.automation = automation.Automation(self.bot_id, self.tentacles_setup_config)
+        await self.automation.initialize()
 
     async def _wait_for_run_data_init(self, exchange_managers, timeout):
         for exchange_manager in exchange_managers:
@@ -191,6 +197,7 @@ class OctoBot:
             service_api.stop_services()
             await self.interface_producer.stop()
             await databases.close_bot_storage(self.bot_id)
+            await self.automation.stop()
 
         finally:
             self.stopped.set()
