@@ -15,31 +15,27 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import asyncio
 import decimal
-import time
-import sortedcontainers
 
 import async_channel.enums as channel_enums
 import octobot_commons.enums as commons_enums
-import octobot_commons.constants as commons_constants
 import octobot_commons.configuration as configuration
 import octobot_commons.channels_name as channels_name
 import octobot.automation.bases.abstract_trigger_event as abstract_trigger_event
 import octobot_trading.exchange_channel as exchanges_channel
 import octobot_trading.api as trading_api
-import octobot_trading.constants as trading_constants
 
 
-class ProfitabilityThreshold(abstract_trigger_event.AbstractTriggerEvent):
-    PERCENT_CHANGE = "percent_change"
-    TIME_PERIOD = "time_period"
+class PriceThreshold(abstract_trigger_event.AbstractTriggerEvent):
+    TARGET_PRICE = "target_price"
+    SYMBOL = "symbol"
     TRIGGER_ONLY_ONCE = "trigger_only_once"
 
     def __init__(self):
         super().__init__()
         self.waiter_task = None
-        self.percent_change = None
-        self.time_period = None
-        self.profitability_by_time = None
+        self.symbol = None
+        self.target_price = None
+        self.last_price = None
         self.trigger_event = asyncio.Event()
         self.registered_consumer = False
         self.consumers = []
@@ -49,43 +45,32 @@ class ProfitabilityThreshold(abstract_trigger_event.AbstractTriggerEvent):
         for exchange_id in trading_api.get_exchange_ids():
             self.consumers.append(
                 await exchanges_channel.get_chan(
-                    channels_name.OctoBotTradingChannelsName.BALANCE_PROFITABILITY_CHANNEL.value,
+                    channels_name.OctoBotTradingChannelsName.MARK_PRICE_CHANNEL.value,
                     exchange_id
                 ).new_consumer(
-                    self.balance_profitability_callback,
-                    priority_level=channel_enums.ChannelConsumerPriorityLevels.MEDIUM.value
+                    self.mark_price_callback,
+                    priority_level=channel_enums.ChannelConsumerPriorityLevels.MEDIUM.value,
+                    symbol=self.symbol
                 )
             )
 
-    async def balance_profitability_callback(
-            self,
-            exchange: str,
-            exchange_id: str,
-            profitability,
-            profitability_percent,
-            market_profitability_percent,
-            initial_portfolio_current_profitability,
+    async def mark_price_callback(
+            self, exchange: str, exchange_id: str, cryptocurrency: str, symbol: str, mark_price
     ):
         if self.should_stop:
             # do not go any further if the action has been stopped
             return
-        self._update_profitability_by_time(profitability_percent)
-        self._check_threshold(profitability_percent)
+        self._check_threshold(mark_price)
+        self._update_last_price(mark_price)
 
-    def _update_profitability_by_time(self, profitability_percent):
-        self.profitability_by_time[int(time.time())] = profitability_percent
-        current_time = time.time()
-        for profitability_time in list(self.profitability_by_time):
-            if profitability_time - current_time > self.time_period:
-                self.profitability_by_time.pop(profitability_time)
+    def _update_last_price(self, mark_price):
+        self.last_price = mark_price
 
-    def _check_threshold(self, profitability_percent):
-        oldest_compared_profitability = next(iter(self.profitability_by_time.values()))
-        if trading_constants.ZERO < self.percent_change <= profitability_percent - oldest_compared_profitability:
-            # profitability_percent reached or when above self.percent_change
-            self.trigger_event.set()
-        if trading_constants.ZERO > self.percent_change >= profitability_percent - oldest_compared_profitability:
-            # profitability_percent reached or when bellow self.percent_change
+    def _check_threshold(self, mark_price):
+        if self.last_price is None:
+            return
+        if mark_price >= self.target_price > self.last_price or mark_price <= self.target_price < self.last_price:
+            # mark_price crossed self.target_price threshold
             self.trigger_event.set()
 
     async def stop(self):
@@ -107,21 +92,18 @@ class ProfitabilityThreshold(abstract_trigger_event.AbstractTriggerEvent):
 
     @staticmethod
     def get_description() -> str:
-        return "Will trigger when profitability reaches the given % change on the given time window. " \
-               "Example: a Percent change of 10 will trigger the automation if your OctoBot profitability " \
-               "changes from 0 to 10 or from 30 to 40."
+        return "Will trigger when the price of the given symbol crosses the given price."
 
     def get_user_inputs(self, UI: configuration.UserInputFactory, inputs: dict, step_name: str) -> dict:
         return {
-            self.PERCENT_CHANGE: UI.user_input(
-                self.PERCENT_CHANGE, commons_enums.UserInputTypes.FLOAT, 35, inputs,
-                title="Percent change: minimum change of % profitability to trigger the automation. "
-                      "Can be negative to trigger on losses.",
+            self.SYMBOL: UI.user_input(
+                self.SYMBOL, commons_enums.UserInputTypes.TEXT, "BTC/USDT", inputs,
+                title="Symbol: symbol to watch price on. Example: ETH/BTC, BTC/USDT:USDT",
                 parent_input_name=step_name,
             ),
-            self.TIME_PERIOD: UI.user_input(
-                self.TIME_PERIOD, commons_enums.UserInputTypes.FLOAT, 300, inputs,
-                title="Time period: maximum time to consider to compute profitability changes. In minutes.",
+            self.TARGET_PRICE: UI.user_input(
+                self.TARGET_PRICE, commons_enums.UserInputTypes.FLOAT, 300, inputs,
+                title="Target price: price triggering the event.",
                 parent_input_name=step_name,
             ),
             self.TRIGGER_ONLY_ONCE: UI.user_input(
@@ -134,7 +116,7 @@ class ProfitabilityThreshold(abstract_trigger_event.AbstractTriggerEvent):
 
     def apply_config(self, config):
         self.trigger_event.clear()
-        self.profitability_by_time = sortedcontainers.SortedDict()
-        self.percent_change = decimal.Decimal(str(config[self.PERCENT_CHANGE]))
-        self.time_period = config[self.TIME_PERIOD] * commons_constants.MINUTE_TO_SECONDS
+        self.last_price = None
+        self.symbol = config[self.SYMBOL]
+        self.target_price = decimal.Decimal(str(config[self.TARGET_PRICE]))
         self.trigger_only_once = config[self.TRIGGER_ONLY_ONCE]
