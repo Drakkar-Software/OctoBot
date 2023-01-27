@@ -34,6 +34,7 @@ from octobot.automation.implementations import trigger_events
 from octobot.automation.implementations.trigger_events import (
     PeriodicCheck,
     ProfitabilityThreshold,
+    PriceThreshold,
 )
 
 __all__ = [
@@ -44,4 +45,5 @@ __all__ = [
     "NoCondition",
     "PeriodicCheck",
     "ProfitabilityThreshold",
+    "PriceThreshold",
 ]

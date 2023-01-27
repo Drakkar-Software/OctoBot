@@ -37,7 +37,9 @@ class SendNotification(abstract_action.AbstractAction):
 
     @staticmethod
     def get_description() -> str:
-        return "Sends the configured message."
+        return f"Sends the configured message. " \
+               f"Configure notification channels in the 'Accounts' tab. " \
+               f"The notification type is '{services_enums.NotificationCategory.OTHER.value.capitalize()}'."
 
     def get_user_inputs(self, UI: configuration.UserInputFactory, inputs: dict, step_name: str) -> dict:
         return {

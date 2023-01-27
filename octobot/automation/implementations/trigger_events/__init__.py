@@ -22,8 +22,13 @@ from octobot.automation.implementations.trigger_events import profitability_thre
 from octobot.automation.implementations.trigger_events.profitability_threshold import (
     ProfitabilityThreshold,
 )
+from octobot.automation.implementations.trigger_events import price_threshold
+from octobot.automation.implementations.trigger_events.price_threshold import (
+    PriceThreshold,
+)
 
 __all__ = [
     "PeriodicCheck",
     "ProfitabilityThreshold",
+    "PriceThreshold",
 ]

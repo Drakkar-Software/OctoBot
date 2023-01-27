@@ -39,7 +39,9 @@ class AutomationDetails:
 
 class Automation(tentacles_management.AbstractTentacle):
     USER_INPUT_TENTACLE_TYPE = common_enums.UserInputTentacleTypes.AUTOMATION
+    AUTOMATION = "automation"
     AUTOMATIONS = "automations"
+    AUTOMATIONS_COUNT = "automations_count"
     TRIGGER_EVENT = "trigger_event"
     CONDITIONS = "conditions"
     ACTIONS = "actions"
@@ -102,7 +104,8 @@ class Automation(tentacles_management.AbstractTentacle):
             self.tentacles_setup_config,
             self.__class__,
             {
-                self.AUTOMATIONS: []
+                self.AUTOMATIONS_COUNT: 0,
+                self.AUTOMATIONS: {}
             }
         )
 
@@ -135,65 +138,79 @@ class Automation(tentacles_management.AbstractTentacle):
         """
         self.automation_details = []
         all_events, all_conditions, all_actions = self.get_all_steps()
-        # register trigger events
-        automations = self.UI.user_input(self.AUTOMATIONS, common_enums.UserInputTypes.OBJECT_ARRAY,
-                                         self.automations_config.get(self.AUTOMATIONS, []), inputs,
-                                         item_title="Automation",
-                                         other_schema_values={"minItems": 0, "uniqueItems": True},
-                                         title="Add or remove automations.")
-        array_indexes = [0] if automations else None
-        event = self.UI.user_input(self.TRIGGER_EVENT, common_enums.UserInputTypes.OPTIONS,
-                                   None, inputs,
-                                   options=list(all_events),
-                                   array_indexes=array_indexes,
-                                   parent_input_name=self.AUTOMATIONS,
-                                   title="The trigger for this automation.")
-        if event:
-            self._apply_user_inputs([event], all_events, inputs)
-        # register conditions
-        conditions = self.UI.user_input(self.CONDITIONS, common_enums.UserInputTypes.MULTIPLE_OPTIONS,
-                                        [conditions_impl.NoCondition.get_name()], inputs,
-                                        options=list(all_conditions),
-                                        array_indexes=array_indexes,
-                                        parent_input_name=self.AUTOMATIONS,
-                                        title="Conditions for this automation.")
-        self._apply_user_inputs(conditions, all_conditions, inputs)
-        # register actions
-        actions = self.UI.user_input(self.ACTIONS, common_enums.UserInputTypes.MULTIPLE_OPTIONS,
-                                     [], inputs,
-                                     options=list(all_actions),
-                                     array_indexes=array_indexes,
-                                     parent_input_name=self.AUTOMATIONS,
-                                     title="Actions for this automation.")
-        self._apply_user_inputs(actions, all_actions, inputs)
+        automations_count = self.UI.user_input(self.AUTOMATIONS_COUNT, common_enums.UserInputTypes.INT,
+                                               self.automations_config.get(self.AUTOMATIONS_COUNT, 0), inputs,
+                                               min_val=0,
+                                               title="Number of automations (save to update).")
+        if not automations_count:
+            return
+        automations = self.UI.user_input(self.AUTOMATIONS, common_enums.UserInputTypes.OBJECT,
+                                         self.automations_config.get(self.AUTOMATIONS, {}), inputs,
+                                         title="Automations")
+        for index in range(1, automations_count + 1):
+            automation_id = f"{index}"
+            # register trigger events
+            self.UI.user_input(automation_id, common_enums.UserInputTypes.OBJECT,
+                               automations.get(automation_id, {}), inputs,
+                               parent_input_name=self.AUTOMATIONS,
+                               title=f"Automation {index}")
+            event = self.UI.user_input(self.TRIGGER_EVENT, common_enums.UserInputTypes.OPTIONS,
+                                       None, inputs,
+                                       options=list(all_events),
+                                       parent_input_name=automation_id,
+                                       title="The trigger for this automation.")
+            if event:
+                self._apply_user_inputs([event], all_events, inputs, automation_id)
+            # register conditions
+            conditions = self.UI.user_input(self.CONDITIONS, common_enums.UserInputTypes.MULTIPLE_OPTIONS,
+                                            [conditions_impl.NoCondition.get_name()], inputs,
+                                            options=list(all_conditions),
+                                            parent_input_name=automation_id,
+                                            title="Conditions for this automation.")
+            self._apply_user_inputs(conditions, all_conditions, inputs, automation_id)
+            # register actions
+            actions = self.UI.user_input(self.ACTIONS, common_enums.UserInputTypes.MULTIPLE_OPTIONS,
+                                         [], inputs,
+                                         options=list(all_actions),
+                                         parent_input_name=automation_id,
+                                         title="Actions for this automation.")
+            self._apply_user_inputs(actions, all_actions, inputs, automation_id)
 
-    def _apply_user_inputs(self, step_names, step_classes_by_name: dict, inputs):
+    def _apply_user_inputs(self, step_names, step_classes_by_name: dict, inputs, automation_id):
         for step_name in step_names:
-            self._apply_step_user_inputs(step_name, step_classes_by_name[step_name], inputs)
+            self._apply_step_user_inputs(step_name, step_classes_by_name[step_name], inputs, automation_id)
 
-    def _apply_step_user_inputs(self, step_name, step_class, inputs):
+    def _apply_step_user_inputs(self, step_name, step_class, inputs, automation_id):
         step = step_class()
         user_inputs = step.get_user_inputs(self.UI, inputs, step_name)
         if user_inputs:
             self.UI.user_input(
                 step_name, common_enums.UserInputTypes.OBJECT,
                 user_inputs, inputs,
-                parent_input_name=self.AUTOMATIONS,
+                parent_input_name=automation_id,
                 array_indexes=[0],
                 title=f"{step_name} configuration"
             )
 
+    def _is_valid_automation_config(self, automation_config):
+        return automation_config.get(self.TRIGGER_EVENT) is not None
+
     def _create_automation_details(self):
         all_events, all_conditions, all_actions = self.get_all_steps()
-        for automations_config in self.automations_config[self.AUTOMATIONS]:
-            event = self._create_step(automations_config, automations_config[self.TRIGGER_EVENT], all_events)
+        automations_count = self.automations_config.get(self.AUTOMATIONS_COUNT, 0)
+        for automation_id, automation_config in self.automations_config.get(self.AUTOMATIONS, {}).items():
+            if int(automation_id) > automations_count:
+                return
+            if not self._is_valid_automation_config(automation_config):
+                continue
+            event = self._create_step(automation_config, automation_config[self.TRIGGER_EVENT], all_events)
             conditions = [
-                self._create_step(automations_config, condition, all_conditions)
-                for condition in automations_config[self.CONDITIONS]
+                self._create_step(automation_config, condition, all_conditions)
+                for condition in automation_config[self.CONDITIONS]
             ]
             actions = [
-                self._create_step(automations_config, action, all_actions)
-                for action in automations_config[self.ACTIONS]
+                self._create_step(automation_config, action, all_actions)
+                for action in automation_config[self.ACTIONS]
             ]
             self.automation_details.append(AutomationDetails(event, conditions, actions))
 
