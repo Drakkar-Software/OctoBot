@@ -25,7 +25,8 @@ class AutomationStep:
     def get_name(cls):
         return cls.__name__
 
-    def get_description(self) -> str:
+    @staticmethod
+    def get_description() -> str:
         raise NotImplementedError
 
     def get_user_inputs(self, UI: configuration.UserInputFactory, inputs: dict, step_name: str) -> dict:

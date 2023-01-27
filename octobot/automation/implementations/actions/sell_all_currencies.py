@@ -13,17 +13,24 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
+import asyncio
+
 import octobot_commons.configuration as configuration
-import octobot.automation.bases.abstract_condition as abstract_condition
+import octobot_trading.api as trading_api
+import octobot.automation.bases.abstract_action as abstract_action
 
 
-class NoCondition(abstract_condition.AbstractCondition):
-    async def evaluate(self) -> bool:
-        return True
+class SellAllCurrencies(abstract_action.AbstractAction):
+    async def process(self):
+        exchange_managers = trading_api.get_exchange_managers_from_exchange_ids(trading_api.get_exchange_ids())
+        await asyncio.gather(*(
+            trading_api.sell_all_everything_for_reference_market(exchange_manager)
+            for exchange_manager in exchange_managers
+        ))
 
     @staticmethod
     def get_description() -> str:
-        return "Is always passing."
+        return "Market sell each currency for the reference market on each exchange."
 
     def get_user_inputs(self, UI: configuration.UserInputFactory, inputs: dict, step_name: str) -> dict:
         return {}

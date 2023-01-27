@@ -22,6 +22,8 @@ class AbstractTriggerEvent(automation_step.AutomationStep, abc.ABC):
     def __init__(self):
         super(AbstractTriggerEvent, self).__init__()
         self.should_stop = False
+        self.trigger_only_once = False
+        self._triggered_already = False
 
     async def stop(self):
         self.should_stop = True
@@ -35,8 +37,10 @@ class AbstractTriggerEvent(automation_step.AutomationStep, abc.ABC):
             async for event in self.next_event():
                 # triggered when an event occurs
         """
-        while not self.should_stop:
+        self._triggered_already = False
+        while not self.should_stop and not (self.trigger_only_once and self._triggered_already):
             yield await self._get_next_event()
+            self._triggered_already = True
 
 
 
