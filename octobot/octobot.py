@@ -155,8 +155,6 @@ class OctoBot:
                     service_api.create_notification(limit_message)
                 )
         self._init_metadata_run_task = asyncio.create_task(self._store_run_metadata_when_available())
-        self.automation = automation.Automation(self.bot_id, self.tentacles_setup_config)
-        await self.automation.initialize()
 
     async def _wait_for_run_data_init(self, exchange_managers, timeout):
         for exchange_manager in exchange_managers:
@@ -178,6 +176,9 @@ class OctoBot:
             trading_api.get_exchange_manager_from_exchange_id(exchange_manager_id)
             for exchange_manager_id in self.exchange_producer.exchange_manager_ids
         ]
+        # start automations now that everything started
+        self.automation = automation.Automation(self.bot_id, self.tentacles_setup_config)
+        await self.automation.initialize()
         await self._wait_for_run_data_init(exchange_managers, run_metadata_init_timeout)
         await storage.clear_run_metadata(self.bot_id)
         await storage.store_run_metadata(self.bot_id, exchange_managers, self.start_time)

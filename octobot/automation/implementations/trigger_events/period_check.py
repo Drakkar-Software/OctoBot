@@ -39,7 +39,8 @@ class PeriodicCheck(abstract_trigger_event.AbstractTriggerEvent):
         self.waiter_task = asyncio.create_task(asyncio.sleep(self.waiting_time))
         await self.waiter_task
 
-    def get_description(self) -> str:
+    @staticmethod
+    def get_description() -> str:
         return "Will trigger periodically, at the specified update period."
 
     def get_user_inputs(self, UI: configuration.UserInputFactory, inputs: dict, step_name: str) -> dict:

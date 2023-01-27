@@ -13,21 +13,25 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
-import octobot_commons.configuration as configuration
-import octobot.automation.bases.abstract_condition as abstract_condition
+import octobot_commons.constants as commons_constants
+import octobot_services.interfaces.util as interfaces_util
+import octobot.automation.implementations.actions.cancel_open_orders as cancel_open_orders
 
 
-class NoCondition(abstract_condition.AbstractCondition):
-    async def evaluate(self) -> bool:
-        return True
+class StopTrading(cancel_open_orders.CancelOpenOrders):
+    PROFILE_ID = commons_constants.DEFAULT_PROFILE  # non trading profile
+
+    async def process(self):
+        # cancel all open orders
+        await super().process()
+        # select non trading profile
+        config = interfaces_util.get_edited_config(dict_only=False)
+        config.select_profile(self.PROFILE_ID)
+        config.save()
+        # reboot
+        interfaces_util.get_bot_api().restart_bot()
 
     @staticmethod
     def get_description() -> str:
-        return "Is always passing."
-
-    def get_user_inputs(self, UI: configuration.UserInputFactory, inputs: dict, step_name: str) -> dict:
-        return {}
-
-    def apply_config(self, config):
-        # no config
-        pass
+        return "Cancel all OctoBot-managed open orders on each exchange, switch to the Non-Trading profile " \
+               "and restart OctoBot."

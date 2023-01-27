@@ -15,11 +15,25 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
 from octobot.automation.implementations.actions import send_notification
-
 from octobot.automation.implementations.actions.send_notification import (
     SendNotification,
+)
+from octobot.automation.implementations.actions import cancel_open_orders
+from octobot.automation.implementations.actions.cancel_open_orders import (
+    CancelOpenOrders,
+)
+from octobot.automation.implementations.actions import sell_all_currencies
+from octobot.automation.implementations.actions.sell_all_currencies import (
+    SellAllCurrencies,
+)
+from octobot.automation.implementations.actions import stop_trading
+from octobot.automation.implementations.actions.stop_trading import (
+    StopTrading,
 )
 
 __all__ = [
     "SendNotification",
+    "CancelOpenOrders",
+    "SellAllCurrencies",
+    "StopTrading",
 ]

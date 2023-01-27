@@ -18,6 +18,9 @@ from octobot.automation.implementations import actions
 
 from octobot.automation.implementations.actions import (
     SendNotification,
+    CancelOpenOrders,
+    SellAllCurrencies,
+    StopTrading,
 )
 
 from octobot.automation.implementations import conditions
@@ -30,10 +33,15 @@ from octobot.automation.implementations import trigger_events
 
 from octobot.automation.implementations.trigger_events import (
     PeriodicCheck,
+    ProfitabilityThreshold,
 )
 
 __all__ = [
     "SendNotification",
+    "CancelOpenOrders",
+    "SellAllCurrencies",
+    "StopTrading",
     "NoCondition",
     "PeriodicCheck",
+    "ProfitabilityThreshold",
 ]

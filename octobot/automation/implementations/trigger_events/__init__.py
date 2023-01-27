@@ -15,11 +15,15 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
 from octobot.automation.implementations.trigger_events import period_check
-
 from octobot.automation.implementations.trigger_events.period_check import (
     PeriodicCheck,
+)
+from octobot.automation.implementations.trigger_events import profitability_threshold
+from octobot.automation.implementations.trigger_events.profitability_threshold import (
+    ProfitabilityThreshold,
 )
 
 __all__ = [
     "PeriodicCheck",
+    "ProfitabilityThreshold",
 ]

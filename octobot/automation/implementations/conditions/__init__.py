@@ -15,7 +15,6 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
 from octobot.automation.implementations.conditions import no_condition
-
 from octobot.automation.implementations.conditions.no_condition import (
     NoCondition,
 )
