@@ -35,8 +35,9 @@ class SendNotification(abstract_action.AbstractAction):
             )
         )
 
-    def get_description(self) -> str:
-        return "Sends the configured message"
+    @staticmethod
+    def get_description() -> str:
+        return "Sends the configured message."
 
     def get_user_inputs(self, UI: configuration.UserInputFactory, inputs: dict, step_name: str) -> dict:
         return {

@@ -22,6 +22,7 @@ import octobot_tentacles_manager.api as tentacles_manager_api
 import octobot.automation.bases.abstract_trigger_event as abstract_trigger_event
 import octobot.automation.bases.abstract_condition as abstract_condition
 import octobot.automation.bases.abstract_action as abstract_action
+import octobot.automation.implementations.conditions as conditions_impl
 
 
 class AutomationDetails:
@@ -96,6 +97,15 @@ class Automation(tentacles_management.AbstractTentacle):
                 if not task.done():
                     task.cancel()
 
+    def reset_config(self):
+        tentacles_manager_api.update_tentacle_config(
+            self.tentacles_setup_config,
+            self.__class__,
+            {
+                self.AUTOMATIONS: []
+            }
+        )
+
     @classmethod
     def create_local_instance(cls, config, tentacles_setup_config, tentacle_config):
         return cls(None, tentacles_setup_config, automations_config=tentacle_config)
@@ -126,24 +136,25 @@ class Automation(tentacles_management.AbstractTentacle):
         self.automation_details = []
         all_events, all_conditions, all_actions = self.get_all_steps()
         # register trigger events
-        self.UI.user_input(self.AUTOMATIONS, common_enums.UserInputTypes.OBJECT_ARRAY,
-                           self.automations_config.get(self.AUTOMATIONS, []), inputs,
-                           item_title="Automation",
-                           other_schema_values={"minItems": 0, "uniqueItems": True},
-                           title="Add or remove automations.")
+        automations = self.UI.user_input(self.AUTOMATIONS, common_enums.UserInputTypes.OBJECT_ARRAY,
+                                         self.automations_config.get(self.AUTOMATIONS, []), inputs,
+                                         item_title="Automation",
+                                         other_schema_values={"minItems": 0, "uniqueItems": True},
+                                         title="Add or remove automations.")
+        array_indexes = [0] if automations else None
         event = self.UI.user_input(self.TRIGGER_EVENT, common_enums.UserInputTypes.OPTIONS,
                                    None, inputs,
                                    options=list(all_events),
-                                   array_indexes=[0],
+                                   array_indexes=array_indexes,
                                    parent_input_name=self.AUTOMATIONS,
                                    title="The trigger for this automation.")
         if event:
             self._apply_user_inputs([event], all_events, inputs)
         # register conditions
         conditions = self.UI.user_input(self.CONDITIONS, common_enums.UserInputTypes.MULTIPLE_OPTIONS,
-                                        [], inputs,
+                                        [conditions_impl.NoCondition.get_name()], inputs,
                                         options=list(all_conditions),
-                                        array_indexes=[0],
+                                        array_indexes=array_indexes,
                                         parent_input_name=self.AUTOMATIONS,
                                         title="Conditions for this automation.")
         self._apply_user_inputs(conditions, all_conditions, inputs)
@@ -151,7 +162,7 @@ class Automation(tentacles_management.AbstractTentacle):
         actions = self.UI.user_input(self.ACTIONS, common_enums.UserInputTypes.MULTIPLE_OPTIONS,
                                      [], inputs,
                                      options=list(all_actions),
-                                     array_indexes=[0],
+                                     array_indexes=array_indexes,
                                      parent_input_name=self.AUTOMATIONS,
                                      title="Actions for this automation.")
         self._apply_user_inputs(actions, all_actions, inputs)
