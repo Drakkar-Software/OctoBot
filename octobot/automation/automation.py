@@ -22,7 +22,12 @@ import octobot_tentacles_manager.api as tentacles_manager_api
 import octobot.automation.bases.abstract_trigger_event as abstract_trigger_event
 import octobot.automation.bases.abstract_condition as abstract_condition
 import octobot.automation.bases.abstract_action as abstract_action
-import tentacles.Automation.conditions as conditions_impl
+try:
+    import tentacles.Automation.conditions as conditions_impl
+    import tentacles.Automation.actions as actions_impl
+except ImportError:
+    # should pass when starting automations
+    pass
 
 
 class AutomationDetails:
@@ -141,7 +146,7 @@ class Automation(tentacles_management.AbstractTentacle):
         automations_count = self.UI.user_input(self.AUTOMATIONS_COUNT, common_enums.UserInputTypes.INT,
                                                self.automations_config.get(self.AUTOMATIONS_COUNT, 0), inputs,
                                                min_val=0,
-                                               title="Number of automations (save to update).")
+                                               title="Number of automations.")
         if not automations_count:
             return
         automations = self.UI.user_input(self.AUTOMATIONS, common_enums.UserInputTypes.OBJECT,
@@ -170,7 +175,7 @@ class Automation(tentacles_management.AbstractTentacle):
             self._apply_user_inputs(conditions, all_conditions, inputs, automation_id)
             # register actions
             actions = self.UI.user_input(self.ACTIONS, common_enums.UserInputTypes.MULTIPLE_OPTIONS,
-                                         [], inputs,
+                                         [actions_impl.SendNotification.get_name()], inputs,
                                          options=list(all_actions),
                                          parent_input_name=automation_id,
                                          title="Actions for this automation.")
