@@ -322,6 +322,9 @@ class CommunityAuthentication(authentication.Authenticator):
         params = {
             "email": email,
             "password": password,
+            "metadata": {
+                "hasRegisteredFromSelfHosted": True,
+            }
         }
         async with self.get_aiohttp_session().post(
                 identifiers_provider.IdentifiersProvider.BACKEND_REGISTER_URL, json=params
