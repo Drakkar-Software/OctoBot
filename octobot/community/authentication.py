@@ -116,6 +116,9 @@ class CommunityAuthentication(authentication.Authenticator):
             return None
         return self._community_feed.last_message_time
 
+    def has_filled_form(self, form_id):
+        return form_id in self.user_account.get_filled_forms_ids()
+
     def get_deployment_url(self):
         return self.user_account.get_bot_deployment_url()
 
@@ -322,7 +325,7 @@ class CommunityAuthentication(authentication.Authenticator):
         params = {
             "email": email,
             "password": password,
-            "metadata": {
+            community_user_account.CommunityUserAccount.METADATA: {
                 "hasRegisteredFromSelfHosted": True,
             }
         }
