@@ -199,7 +199,8 @@ class OctoBot:
             service_api.stop_services()
             await self.interface_producer.stop()
             await databases.close_bot_storage(self.bot_id)
-            await self.automation.stop()
+            if self.automation is not None:
+                await self.automation.stop()
 
         finally:
             self.stopped.set()
