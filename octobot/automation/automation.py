@@ -22,7 +22,7 @@ import octobot_tentacles_manager.api as tentacles_manager_api
 import octobot.automation.bases.abstract_trigger_event as abstract_trigger_event
 import octobot.automation.bases.abstract_condition as abstract_condition
 import octobot.automation.bases.abstract_action as abstract_action
-import octobot.automation.implementations.conditions as conditions_impl
+import tentacles.Automation.conditions as conditions_impl
 
 
 class AutomationDetails:
