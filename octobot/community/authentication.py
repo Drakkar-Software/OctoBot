@@ -117,7 +117,23 @@ class CommunityAuthentication(authentication.Authenticator):
         return self._community_feed.last_message_time
 
     def has_filled_form(self, form_id):
+        if not self.user_account.has_user_data():
+            raise authentication.AuthenticationRequired()
         return form_id in self.user_account.get_filled_forms_ids()
+
+    async def register_filled_form(self, form_id):
+        if self.has_filled_form(form_id):
+            return
+        updated_filled_forms = self.user_account.get_filled_forms_ids()
+        updated_filled_forms.append(form_id)
+        await self._update_account_metadata({
+            self.user_account.FILLED_FORMS: updated_filled_forms
+        })
+
+    def get_user_id(self):
+        if not self.user_account.has_user_data():
+            raise authentication.AuthenticationRequired()
+        return self.user_account.get_user_id()
 
     def get_deployment_url(self):
         return self.user_account.get_bot_deployment_url()
@@ -330,7 +346,7 @@ class CommunityAuthentication(authentication.Authenticator):
             }
         }
         async with self.get_aiohttp_session().post(
-                identifiers_provider.IdentifiersProvider.BACKEND_REGISTER_URL, json=params
+                identifiers_provider.IdentifiersProvider.BACKEND_ACCOUNT_URL, json=params
         ) as resp:
             try:
                 self._handle_register_result(resp.status, await resp.json(), resp.headers)
@@ -338,6 +354,15 @@ class CommunityAuthentication(authentication.Authenticator):
                 raise authentication.FailedAuthentication(e)
         if self.is_logged_in():
             await self._on_register()
+
+    async def _update_account_metadata(self, metadata_update):
+        params = {
+            community_user_account.CommunityUserAccount.METADATA: metadata_update
+        }
+        async with self.get_aiohttp_session().put(
+                identifiers_provider.IdentifiersProvider.BACKEND_ACCOUNT_URL, json=params
+        ) as resp:
+            self._handle_account_update_result(resp.status, await resp.json(), resp.headers)
 
     async def _on_register(self):
         if self.initialized_event is None:
@@ -731,7 +756,7 @@ class CommunityAuthentication(authentication.Authenticator):
 
     def _check_auth(self):
         with self._auth_context():
-            with self._backend_session.get(f"{identifiers_provider.IdentifiersProvider.BACKEND_API_URL}/account") as resp:
+            with self._backend_session.get(identifiers_provider.IdentifiersProvider.BACKEND_ACCOUNT_URL) as resp:
                 self._handle_auth_result(resp.status_code, resp.json(), resp.headers)
 
     async def _async_check_auth(self):
@@ -740,7 +765,7 @@ class CommunityAuthentication(authentication.Authenticator):
         self._login_completed.clear()
         with self._auth_context():
             async with self.get_aiohttp_session().get(
-                    f"{identifiers_provider.IdentifiersProvider.BACKEND_API_URL}/account"
+                    identifiers_provider.IdentifiersProvider.BACKEND_ACCOUNT_URL
             ) as resp:
                 try:
                     self._handle_auth_result(resp.status, await resp.json(), resp.headers)
@@ -793,6 +818,20 @@ class CommunityAuthentication(authentication.Authenticator):
             ]
             raise authentication.AuthenticationError(", ".join(error_messages))
         raise authentication.AuthenticationError(f"Unexpected error when creating account: code: {status_code} ({json_resp})")
+
+    def _handle_account_update_result(self, status_code, json_resp, reps_headers):
+        if status_code == 200 and json_resp is not None:
+            if "id" in json_resp:
+                # successfully updated account
+                self.user_account.set_profile_raw_data(json_resp)
+                return
+            # error on update account
+            error_messages = [
+                f"{field}: {details['message']}"
+                for field, details in json_resp.items()
+            ]
+            raise authentication.AccountUpdateError(", ".join(error_messages))
+        raise authentication.AccountUpdateError(f"Unexpected error when updating account: code: {status_code} ({json_resp})")
 
     def _update_sessions_headers(self):
         backend_headers = self.get_backend_headers()
