@@ -24,19 +24,6 @@ from octobot.automation.bases import (
 )
 
 
-from octobot.automation import implementations
-from octobot.automation.implementations import (
-    CancelOpenOrders,
-    SellAllCurrencies,
-    StopTrading,
-    SendNotification,
-    NoCondition,
-    PeriodicCheck,
-    ProfitabilityThreshold,
-    PriceThreshold,
-)
-
-
 from octobot.automation import automation
 from octobot.automation.automation import (
     Automation,
@@ -48,13 +35,5 @@ __all__ = [
     "AbstractCondition",
     "AbstractTriggerEvent",
     "AutomationStep",
-    "SendNotification",
-    "CancelOpenOrders",
-    "SellAllCurrencies",
-    "StopTrading",
-    "NoCondition",
-    "PeriodicCheck",
-    "ProfitabilityThreshold",
-    "PriceThreshold",
     "Automation",
 ]
