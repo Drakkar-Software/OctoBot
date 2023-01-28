@@ -24,6 +24,7 @@ class CommunityUserAccount:
     BOT_DEPLOYMENT = "deployment"
     BOT_DEPLOYMENT_TYPE = "type"
     SELF_HOSTED_BOT_DEPLOYMENT_TYPE = "self-hosted"
+    METADATA = "metadata"
     NO_SELECTED_BOT_DESC = "No selected bot. Please select a bot to enable your community features."
 
     def __init__(self):
@@ -50,6 +51,9 @@ class CommunityUserAccount:
 
     def get_has_donated(self):
         return self._get_user_data_content()["has_donated"]
+
+    def get_filled_forms_ids(self):
+        return self._get_user_data_metadata().get("filledForms", [])
 
     def get_all_user_bots_raw_data(self):
         return self._all_user_bots_raw_data
@@ -112,6 +116,9 @@ class CommunityUserAccount:
 
     def _get_user_data_content(self):
         return self._profile_raw_data[self.USER_DATA_CONTENT]
+
+    def _get_user_data_metadata(self):
+        return self._profile_raw_data.get(self.METADATA, {})
 
     def _ensure_selected_bot_data(self):
         if self._selected_bot_raw_data is None:

@@ -53,6 +53,7 @@ COMPILED_TENTACLE_CATEGORY = "extra"
 OCTOBOT_DONATION_URL = "https://forms.gle/Bagagc7dyjJGDT1t9"
 OCTOBOT_FEEDBACK_FORM_URL = "https://goo.gl/forms/vspraniXPY7rvtKN2"
 OCTOBOT_BETA_PROGRAM_FORM_URL = "https://octobot.click/docs-join-beta"
+AUTOMATION_FEEDBACK_FORM_ID = ""
 
 COMMUNITY_FEED_CURRENT_MINIMUM_VERSION = "1.0.0"
 COMMUNITY_FEED_DEFAULT_TYPE = octobot.enums.CommunityFeedType.MQTTFeed
