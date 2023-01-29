@@ -22,12 +22,6 @@ import octobot_tentacles_manager.api as tentacles_manager_api
 import octobot.automation.bases.abstract_trigger_event as abstract_trigger_event
 import octobot.automation.bases.abstract_condition as abstract_condition
 import octobot.automation.bases.abstract_action as abstract_action
-try:
-    import tentacles.Automation.conditions as conditions_impl
-    import tentacles.Automation.actions as actions_impl
-except ImportError:
-    # should pass when starting automations
-    pass
 
 
 class AutomationDetails:
@@ -136,6 +130,14 @@ class Automation(tentacles_management.AbstractTentacle):
         }
         return all_events, all_conditions, all_actions
 
+    def _get_default_steps(self):
+        import tentacles.Automation.trigger_events as trigger_events_impl
+        import tentacles.Automation.conditions as conditions_impl
+        import tentacles.Automation.actions as actions_impl
+        return trigger_events_impl.PeriodicCheck.get_name(), \
+               [conditions_impl.NoCondition.get_name()], \
+               [actions_impl.SendNotification.get_name()]
+
     def init_user_inputs(self, inputs: dict) -> None:
         """
         Called right before starting the tentacle, should define all the tentacle's user inputs unless
@@ -152,6 +154,7 @@ class Automation(tentacles_management.AbstractTentacle):
         automations = self.UI.user_input(self.AUTOMATIONS, common_enums.UserInputTypes.OBJECT,
                                          self.automations_config.get(self.AUTOMATIONS, {}), inputs,
                                          title="Automations")
+        default_event, default_conditions, default_actions = self._get_default_steps()
         for index in range(1, automations_count + 1):
             automation_id = f"{index}"
             # register trigger events
@@ -160,7 +163,7 @@ class Automation(tentacles_management.AbstractTentacle):
                                parent_input_name=self.AUTOMATIONS,
                                title=f"Automation {index}")
             event = self.UI.user_input(self.TRIGGER_EVENT, common_enums.UserInputTypes.OPTIONS,
-                                       None, inputs,
+                                       default_event, inputs,
                                        options=list(all_events),
                                        parent_input_name=automation_id,
                                        title="The trigger for this automation.")
@@ -168,14 +171,14 @@ class Automation(tentacles_management.AbstractTentacle):
                 self._apply_user_inputs([event], all_events, inputs, automation_id)
             # register conditions
             conditions = self.UI.user_input(self.CONDITIONS, common_enums.UserInputTypes.MULTIPLE_OPTIONS,
-                                            [conditions_impl.NoCondition.get_name()], inputs,
+                                            default_conditions, inputs,
                                             options=list(all_conditions),
                                             parent_input_name=automation_id,
                                             title="Conditions for this automation.")
             self._apply_user_inputs(conditions, all_conditions, inputs, automation_id)
             # register actions
             actions = self.UI.user_input(self.ACTIONS, common_enums.UserInputTypes.MULTIPLE_OPTIONS,
-                                         [actions_impl.SendNotification.get_name()], inputs,
+                                         default_actions, inputs,
                                          options=list(all_actions),
                                          parent_input_name=automation_id,
                                          title="Actions for this automation.")
