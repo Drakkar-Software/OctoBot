@@ -25,6 +25,7 @@ import tests.functional_tests.automations as test_automations
 
 @pytest.fixture
 def automation():
+    import tentacles
     tentacles_manager_api.reload_tentacle_info()
     return octobot.automation.Automation("bot_id", config.load_test_tentacles_config())
 
