@@ -14,7 +14,33 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
-PROJECT_NAME = "OctoBot"
-AUTHOR = "Drakkar-Software"
-VERSION = "0.4.36"  # major.minor.revision
-LONG_VERSION = f"{VERSION}"
+from octobot.automation.bases import abstract_action
+
+from octobot.automation.bases.abstract_action import (
+    AbstractAction,
+)
+
+from octobot.automation.bases import abstract_condition
+
+from octobot.automation.bases.abstract_condition import (
+    AbstractCondition,
+)
+
+from octobot.automation.bases import abstract_trigger_event
+
+from octobot.automation.bases.abstract_trigger_event import (
+    AbstractTriggerEvent,
+)
+
+from octobot.automation.bases import automation_step
+
+from octobot.automation.bases.automation_step import (
+    AutomationStep,
+)
+
+__all__ = [
+    "AbstractAction",
+    "AbstractCondition",
+    "AbstractTriggerEvent",
+    "AutomationStep",
+]

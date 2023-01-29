@@ -13,8 +13,24 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
+import octobot_commons.logging as logging
+import octobot_commons.configuration as configuration
 
-PROJECT_NAME = "OctoBot"
-AUTHOR = "Drakkar-Software"
-VERSION = "0.4.36"  # major.minor.revision
-LONG_VERSION = f"{VERSION}"
+
+class AutomationStep:
+    def __init__(self):
+        self.logger = logging.get_logger(self.get_name())
+
+    @classmethod
+    def get_name(cls):
+        return cls.__name__
+
+    @staticmethod
+    def get_description() -> str:
+        raise NotImplementedError
+
+    def get_user_inputs(self, UI: configuration.UserInputFactory, inputs: dict, step_name: str) -> dict:
+        raise NotImplementedError
+
+    def apply_config(self, config):
+        raise NotImplementedError

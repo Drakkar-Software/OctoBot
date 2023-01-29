@@ -13,8 +13,11 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
+import abc
 
-PROJECT_NAME = "OctoBot"
-AUTHOR = "Drakkar-Software"
-VERSION = "0.4.36"  # major.minor.revision
-LONG_VERSION = f"{VERSION}"
+import octobot.automation.bases.automation_step as automation_step
+
+
+class AbstractAction(automation_step.AutomationStep, abc.ABC):
+    async def process(self):
+        raise NotImplementedError

@@ -55,13 +55,17 @@ class ExchangeChannelMock:
 
 
 @contextlib.asynccontextmanager
-async def get_authenticated_exchange_manager(exchange_name, exchange_tentacle_name, config=None):
+async def get_authenticated_exchange_manager(exchange_name, exchange_tentacle_name, config=None,
+                                             credentials_exchange_name=None):
+    credentials_exchange_name = credentials_exchange_name or exchange_name
     _load_exchange_creds_env_variables_if_necessary()
     config = {**test_config.load_test_config(), **config} if config else test_config.load_test_config()
     if exchange_name not in config[commons_constants.CONFIG_EXCHANGES]:
         config[commons_constants.CONFIG_EXCHANGES][exchange_name] = {}
-    config[commons_constants.CONFIG_EXCHANGES][exchange_name].update(_get_exchange_auth_details(exchange_name))
-    config_exchange_type = config[commons_constants.CONFIG_EXCHANGES][exchange_name].get(
+    config[commons_constants.CONFIG_EXCHANGES][exchange_name].update(_get_exchange_auth_details(
+        credentials_exchange_name
+    ))
+    exchange_type = config[commons_constants.CONFIG_EXCHANGES][exchange_name].get(
         commons_constants.CONFIG_EXCHANGE_TYPE, exchanges.get_default_exchange_type(exchange_name))
     exchange_builder = trading_api.create_exchange_builder(config, exchange_name) \
         .has_matrix("") \
@@ -70,7 +74,7 @@ async def get_authenticated_exchange_manager(exchange_name, exchange_tentacle_na
         .is_real() \
         .is_checking_credentials(False) \
         .is_sandboxed(_get_exchange_is_sandboxed(exchange_name)) \
-        .is_using_exchange_type(config_exchange_type) \
+        .is_using_exchange_type(exchange_type) \
         .enable_storage(False) \
         .disable_trading_mode() \
         .is_exchange_only()
