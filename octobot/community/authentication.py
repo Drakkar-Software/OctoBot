@@ -492,14 +492,20 @@ class CommunityAuthentication(authentication.Authenticator):
                 }
                 for key, quantity in content.items()
             ]
-            formatted_history = [
-                {
-                    "date": self._get_graphql_formatted_time(timestamp),
-                    "value": str(value[unit])
-                }
-                for timestamp, value in history.items()
-                if unit in value
-            ]
+            formatted_history = []
+            try:
+                formatted_history = [
+                    {
+                        "date": self._get_graphql_formatted_time(timestamp),
+                        "value": str(value[unit])
+                    }
+                    for timestamp, value in history.items()
+                    if unit in value
+                ]
+            except KeyError:
+                pass
+            if not formatted_history:
+                return
             await self._update_bot_portfolio(
                 ref_market_current_value, ref_market_initial_value, unit,
                 formatted_content, formatted_history
