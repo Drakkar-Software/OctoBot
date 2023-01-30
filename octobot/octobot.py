@@ -250,7 +250,7 @@ class OctoBot:
                 next(iter(self.exchange_producer.exchange_manager_ids))
             )
             return trading_api.get_trading_modes(first_exchange_manager)[0]
-        except StopIteration:
+        except (StopIteration, IndexError):
             return None
 
     def run_in_main_asyncio_loop(self, coroutine, log_exceptions=True,
