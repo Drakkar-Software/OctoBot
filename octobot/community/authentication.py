@@ -82,6 +82,7 @@ class CommunityAuthentication(authentication.Authenticator):
         self._community_feed = None
         self._login_completed = None
         self._update_bot_lock = None
+        self._startup_info = None
 
         self._update_sessions_headers()
 
@@ -437,13 +438,15 @@ class CommunityAuthentication(authentication.Authenticator):
         )
 
     async def get_startup_info(self):
-        if self.user_account.gql_bot_id is None:
-            raise errors.BotError("No selected bot")
-        return startup_info.StartupInfo.from_dict(
-            await self._fetch_startup_info(
-                self.user_account.gql_bot_id
+        if self._startup_info is None:
+            if self.user_account.gql_bot_id is None:
+                raise errors.BotError("No selected bot")
+            self._startup_info = startup_info.StartupInfo.from_dict(
+                await self._fetch_startup_info(
+                    self.user_account.gql_bot_id
+                )
             )
-        )
+        return self._startup_info
 
     async def get_subscribed_profile_urls(self):
         subscribed_profiles = await self._fetch_subscribed_profiles()
