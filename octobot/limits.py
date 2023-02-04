@@ -13,12 +13,20 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
+import time
+import math
+
 import octobot.constants as constants
 import octobot_commons.constants as common_constants
+import octobot_commons.enums as common_enums
 import octobot_commons.logging as logging
 import octobot_commons.time_frame_manager as time_frame_manager
 import octobot_tentacles_manager.api as tentacles_manager_api
 import octobot_evaluators.api as evaluators_api
+
+
+class ReachedLimitError(Exception):
+    pass
 
 
 def _apply_exchanges_limits(dict_config, logger, limit):
@@ -145,3 +153,35 @@ def apply_config_limits(configuration) -> list:
         for message in limit_warning_messages:
             logger.error(message)
     return limit_warning_messages
+
+
+def _check_max_backtesting_setting(setting_name, limit, values):
+    if values and limit != constants.UNLIMITED_ALLOWED and len(values) > limit:
+        raise ReachedLimitError(
+            f"The maximum allowed simultaneous backtesting {setting_name} for your selected plan is {limit}"
+        )
+
+
+def _check_max_backtesting_candles_count(time_frames, start_timestamp, end_timestamp):
+    time_frames = time_frames or [tf for tf in common_enums.TimeFrames]
+    _check_max_backtesting_setting("time frames using custom duration", constants.MAX_ALLOWED_TIME_FRAMES, time_frames)
+    if start_timestamp is None or constants.MAX_ALLOWED_BACKTESTING_CANDLES_HISTORY == constants.UNLIMITED_ALLOWED:
+        return
+    if end_timestamp is None:
+        end_timestamp = time.time()
+    shortest_time_frame = time_frame_manager.sort_time_frames(time_frames)[0]
+    time_frame_seconds = common_enums.TimeFramesMinutes[shortest_time_frame] * common_constants.MINUTE_TO_SECONDS
+    candles_count = math.floor((end_timestamp - start_timestamp) / time_frame_seconds)
+    if candles_count > constants.MAX_ALLOWED_BACKTESTING_CANDLES_HISTORY:
+        raise ReachedLimitError(
+            f"For this plan, the maximum allowed backtesting candles per time frame "
+            f"is {constants.MAX_ALLOWED_BACKTESTING_CANDLES_HISTORY}. "
+            f"With the selected backtesting duration, the {shortest_time_frame.value} time frame would "
+            f"cover {candles_count} candles. Please select other time frames or reduce the backtesting duration."
+        )
+
+
+def ensure_backtesting_limits(exchanges, symbols, time_frames, start_timestamp, end_timestamp) -> None:
+    _check_max_backtesting_setting("exchanges", constants.MAX_ALLOWED_EXCHANGES, exchanges)
+    _check_max_backtesting_setting("trading pairs", constants.MAX_ALLOWED_SYMBOLS, symbols)
+    _check_max_backtesting_candles_count(time_frames, start_timestamp, end_timestamp)
