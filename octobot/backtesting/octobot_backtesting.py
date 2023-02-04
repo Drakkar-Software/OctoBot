@@ -40,6 +40,7 @@ import octobot_trading.enums as trading_enums
 
 import octobot.logger as logger
 import octobot.storage as storage
+import octobot.limits as limits
 import octobot.databases_util as databases_util
 
 
@@ -82,6 +83,7 @@ class OctoBotBacktesting:
         self.futures_contract_type = trading_enums.FutureContractType.LINEAR_PERPETUAL
         self.enable_storage = enable_storage
         self.run_on_all_available_time_frames = run_on_all_available_time_frames
+        self._has_started = False
 
     async def initialize_and_run(self):
         self.logger.info(f"Starting on {self.backtesting_files} with {self.symbols_to_create_exchange_classes}")
@@ -100,11 +102,13 @@ class OctoBotBacktesting:
         await self._init_evaluators()
         await self._init_service_feeds()
         await self._init_exchanges()
+        self._ensure_limits()
         await self._create_evaluators()
         await self._create_service_feeds()
         await backtesting_api.start_backtesting(self.backtesting)
         if logger.BOT_CHANNEL_LOGGER is not None and self.enable_logs:
             await self.start_loggers()
+        self._has_started = True
 
     async def stop_importers(self):
         if self.backtesting is not None:
@@ -125,7 +129,7 @@ class OctoBotBacktesting:
                 self.logger.warning("No backtesting to stop, there was probably an issue when starting the backtesting")
             else:
                 exchange_managers = trading_api.get_exchange_managers_from_exchange_ids(self.exchange_manager_ids)
-                if exchange_managers and self.enable_storage:
+                if exchange_managers and self.enable_storage and self._has_started:
                     try:
                         for exchange_manager in exchange_managers:
                             await trading_api.store_history_in_run_storage(exchange_manager)
@@ -266,6 +270,18 @@ class OctoBotBacktesting:
                                                                        self.bot_id)
         self.service_feeds = [service_feed_factory.create_service_feed(feed)
                               for feed in service_feed_factory.get_available_service_feeds(True)]
+
+    def _ensure_limits(self):
+        for exchange_id in self.exchange_manager_ids:
+            exchange_configuration = trading_api.get_exchange_configuration_from_exchange_id(exchange_id)
+            time_frames = exchange_configuration.available_required_time_frames
+            symbols = exchange_configuration.symbols
+            start_time, end_time = trading_api.get_exchange_backtesting_time_window(
+                trading_api.get_exchange_manager_from_exchange_id(exchange_id)
+            )
+            limits.ensure_backtesting_limits(
+                self.symbols_to_create_exchange_classes.keys(), symbols, time_frames, start_time, end_time
+            )
 
     async def _create_evaluators(self):
         for exchange_id in self.exchange_manager_ids:
