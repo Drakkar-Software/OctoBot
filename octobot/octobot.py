@@ -151,6 +151,7 @@ class OctoBot:
         )
         if self.startup_messages:
             for limit_message in self.startup_messages:
+                self.logger.info(f"Startup message: {limit_message}")
                 await service_api.send_notification(
                     service_api.create_notification(limit_message)
                 )
