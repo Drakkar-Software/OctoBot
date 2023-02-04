@@ -41,6 +41,8 @@ import octobot_trading.enums as trading_enums
 import octobot.logger as logger
 import octobot.storage as storage
 import octobot.limits as limits
+import octobot.constants as constants
+import octobot.errors as errors
 import octobot.databases_util as databases_util
 
 
@@ -86,6 +88,8 @@ class OctoBotBacktesting:
         self._has_started = False
 
     async def initialize_and_run(self):
+        if not constants.ENABLE_BACKTESTING:
+            raise errors.DisabledError("Backtesting is disabled")
         self.logger.info(f"Starting on {self.backtesting_files} with {self.symbols_to_create_exchange_classes}")
         self.start_time = time.time()
         await commons_databases.init_bot_storage(
