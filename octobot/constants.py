@@ -116,6 +116,8 @@ MAX_ALLOWED_SYMBOLS = int(os.getenv("MAX_ALLOWED_SYMBOLS", str(UNLIMITED_ALLOWED
 MAX_ALLOWED_TIME_FRAMES = int(os.getenv("MAX_ALLOWED_TIME_FRAMES", str(UNLIMITED_ALLOWED)))
 MAX_ALLOWED_BACKTESTING_CANDLES_HISTORY = int(os.getenv("MAX_ALLOWED_BACKTESTING_CANDLES_HISTORY",
                                                         str(UNLIMITED_ALLOWED)))
+ENABLE_AUTOMATIONS = os_util.parse_boolean_environment_var("ENABLE_AUTOMATIONS", "True")
+ENABLE_BACKTESTING = os_util.parse_boolean_environment_var("ENABLE_BACKTESTING", "True")
 
 # tentacles
 ENV_TENTACLES_URL = "TENTACLES_URL"

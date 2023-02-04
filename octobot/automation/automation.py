@@ -22,6 +22,8 @@ import octobot_tentacles_manager.api as tentacles_manager_api
 import octobot.automation.bases.abstract_trigger_event as abstract_trigger_event
 import octobot.automation.bases.abstract_condition as abstract_condition
 import octobot.automation.bases.abstract_action as abstract_action
+import octobot.constants as constants
+import octobot.errors as errors
 
 
 class AutomationDetails:
@@ -61,7 +63,10 @@ class Automation(tentacles_management.AbstractTentacle):
         """
         Triggers producers and consumers creation
         """
-        await self.restart()
+        if constants.ENABLE_AUTOMATIONS:
+            await self.restart()
+        else:
+            self.logger.info("Automations are disabled")
 
     @classmethod
     async def get_raw_config_and_user_inputs(
@@ -76,6 +81,8 @@ class Automation(tentacles_management.AbstractTentacle):
         return tentacle_config, list(user_input.to_dict() for user_input in user_inputs.values())
 
     async def restart(self):
+        if not constants.ENABLE_AUTOMATIONS:
+            raise errors.DisabledError("Automations are disabled")
         await self.stop()
         self.automations_config = tentacles_manager_api.get_tentacle_config(self.tentacles_setup_config,
                                                                             self.__class__)
