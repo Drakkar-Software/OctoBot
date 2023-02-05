@@ -48,7 +48,7 @@ COPY docker/* /octobot/
 # 4. Finish env setup
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl \
+    && apt-get install -y --no-install-recommends curl ntp \
     && mkdir -p /usr/share/keyrings \
     && chmod 0755 /usr/share/keyrings \
     && curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg | tee /usr/share/keyrings/cloudflare-main.gpg >/dev/null \ 
