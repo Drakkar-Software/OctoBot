@@ -14,7 +14,5 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
-PROJECT_NAME = "OctoBot"
-AUTHOR = "Drakkar-Software"
-VERSION = "0.4.37"  # major.minor.revision
-LONG_VERSION = f"{VERSION}"
+class DisabledError(Exception):
+    pass

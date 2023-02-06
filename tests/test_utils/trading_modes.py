@@ -13,8 +13,9 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
+import asyncio
 
-PROJECT_NAME = "OctoBot"
-AUTHOR = "Drakkar-Software"
-VERSION = "0.4.37"  # major.minor.revision
-LONG_VERSION = f"{VERSION}"
+
+def set_ready_to_start(trading_mode_producer):
+    trading_mode_producer._is_ready_to_trade = asyncio.Event()
+    trading_mode_producer._is_ready_to_trade.set()

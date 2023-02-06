@@ -93,7 +93,9 @@ def _disable_interface_from_param(interface_identifier, param_value, logger):
 
 def _log_environment(logger):
     try:
-        logger.debug(f"Running on {os_util.get_current_platform()} with {os_util.get_octobot_type()}")
+        bot_type = "cloud" if constants.IS_CLOUD_ENV else "self-hosted"
+        logger.debug(f"Running {bot_type} OctoBot on {os_util.get_current_platform()} "
+                     f"with {os_util.get_octobot_type()}")
     except Exception as e:
         logger.error(f"Impossible to identify the current running environment: {e}")
 

@@ -18,6 +18,9 @@ from octobot.community import errors
 from octobot.community.errors import (
     RequestError,
     StatusCodeRequestError,
+    BotError,
+    BotNotFoundError,
+    NoBotDeviceError,
 )
 from octobot.community import identifiers_provider
 from octobot.community.identifiers_provider import (
@@ -92,6 +95,9 @@ from octobot.community.errors_upload import (
 __all__ = [
     "RequestError",
     "StatusCodeRequestError",
+    "BotError",
+    "BotNotFoundError",
+    "NoBotDeviceError",
     "IdentifiersProvider",
     "CommunityUserAccount",
     "CommunityFields",

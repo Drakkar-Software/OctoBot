@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import abc
+import time
 
 import octobot.automation.bases.automation_step as automation_step
 
@@ -23,7 +24,8 @@ class AbstractTriggerEvent(automation_step.AutomationStep, abc.ABC):
         super(AbstractTriggerEvent, self).__init__()
         self.should_stop = False
         self.trigger_only_once = False
-        self._triggered_already = False
+        self.max_trigger_frequency = 0
+        self._last_trigger_time = 0
 
     async def stop(self):
         self.should_stop = True
@@ -37,10 +39,10 @@ class AbstractTriggerEvent(automation_step.AutomationStep, abc.ABC):
             async for event in self.next_event():
                 # triggered when an event occurs
         """
-        self._triggered_already = False
-        while not self.should_stop and not (self.trigger_only_once and self._triggered_already):
-            yield await self._get_next_event()
-            self._triggered_already = True
-
-
-
+        self._last_trigger_time = 0
+        while not self.should_stop and not (self.trigger_only_once and self._last_trigger_time != 0):
+            new_event = await self._get_next_event()
+            trigger_time = time.time()
+            if not self.max_trigger_frequency or (trigger_time - self._last_trigger_time > self.max_trigger_frequency):
+                yield new_event
+                self._last_trigger_time = time.time()
