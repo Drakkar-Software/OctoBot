@@ -23,6 +23,7 @@ import octobot_commons.logging as logging
 import octobot_commons.time_frame_manager as time_frame_manager
 import octobot_tentacles_manager.api as tentacles_manager_api
 import octobot_evaluators.api as evaluators_api
+import octobot_trading.api as trading_api
 
 
 class ReachedLimitError(Exception):
@@ -30,12 +31,7 @@ class ReachedLimitError(Exception):
 
 
 def _apply_exchanges_limits(dict_config, logger, limit):
-    exchanges = [
-        f"{exchange}[{config.get(common_constants.CONFIG_EXCHANGE_TYPE, common_constants.CONFIG_EXCHANGE_SPOT)}]"
-        for exchange, config in dict_config[common_constants.CONFIG_EXCHANGES].items()
-        if config.get(common_constants.CONFIG_ENABLED_OPTION, True)
-    ]
-    if len(exchanges) > limit:
+    if len(trading_api.get_enabled_exchanges_names(dict_config)) > limit:
         enabled_exchanges = []
         for exchange, config in dict_config[common_constants.CONFIG_EXCHANGES].items():
             if config.get(common_constants.CONFIG_ENABLED_OPTION, True):
