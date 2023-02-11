@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [0.4.38] - 2023-02-12
+### Added
+- Trades and portfolio history through OctoBot sessions
+- Grid trading default configuration for any pair
+### Fixed
+- Kucoin rate limit issues
+- Portfolio synchronization issues
+- Daily trading: only place stop loss when reducing the position size 
+
 ## [0.4.37] - 2023-02-06
 ### Added
 - Configurations: add limits
