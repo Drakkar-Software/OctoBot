@@ -39,11 +39,9 @@ class ExchangeProducer(octobot_channel.OctoBotChannelProducer):
     async def start(self):
         self.to_create_exchanges_count = 0
         self.created_all_exchanges.clear()
-        for exchange_name in self.octobot.config[common_constants.CONFIG_EXCHANGES]:
-            if self.octobot.config[common_constants.CONFIG_EXCHANGES][exchange_name].get(
-                    common_constants.CONFIG_ENABLED_OPTION, True):
-                await self.create_exchange(exchange_name, self.backtesting)
-                self.to_create_exchanges_count += 1
+        for exchange_name in trading_api.get_enabled_exchanges_names(self.octobot.config):
+            await self.create_exchange(exchange_name, self.backtesting)
+            self.to_create_exchanges_count += 1
 
     def register_created_exchange_id(self, exchange_id):
         self.exchange_manager_ids.append(exchange_id)

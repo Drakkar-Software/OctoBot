@@ -24,6 +24,7 @@ class IdentifiersProvider:
     COMMUNITY_URL: str = None
     FEED_URL: str = None
     BACKEND_API_URL: str = None
+    FRONTEND_PASSWORD_RECOVER_URL: str = None
     BACKEND_ACCOUNT_URL: str = None
     BACKEND_AUTH_URL: str = None
     BACKEND_PUBLIC_TOKEN: str = None
@@ -37,6 +38,7 @@ class IdentifiersProvider:
         IdentifiersProvider.COMMUNITY_URL = constants.OCTOBOT_COMMUNITY_URL
         IdentifiersProvider.FEED_URL = constants.OCTOBOT_COMMUNITY_FEED_URL
         IdentifiersProvider.BACKEND_API_URL = constants.COMMUNITY_BACKEND_API_URL
+        IdentifiersProvider.FRONTEND_PASSWORD_RECOVER_URL = constants.OCTOBOT_COMMUNITY_RECOVER_PASSWORD_URL
         IdentifiersProvider.BACKEND_ACCOUNT_URL = constants.COMMUNITY_BACKEND_ACCOUNT_URL
         IdentifiersProvider.BACKEND_AUTH_URL = constants.COMMUNITY_BACKEND_AUTH_URL
         IdentifiersProvider.BACKEND_PUBLIC_TOKEN = constants.COMMUNITY_BACKEND_PUBLIC_TOKEN
@@ -51,6 +53,7 @@ class IdentifiersProvider:
         IdentifiersProvider.COMMUNITY_URL = constants.STAGING_OCTOBOT_COMMUNITY_URL
         IdentifiersProvider.FEED_URL = constants.STAGING_OCTOBOT_COMMUNITY_FEED_URL
         IdentifiersProvider.BACKEND_API_URL = constants.STAGING_COMMUNITY_BACKEND_API_URL
+        IdentifiersProvider.FRONTEND_PASSWORD_RECOVER_URL = constants.STAGING_COMMUNITY_RECOVER_PASSWORD_URL
         IdentifiersProvider.BACKEND_ACCOUNT_URL = constants.STAGING_COMMUNITY_BACKEND_ACCOUNT_URL
         IdentifiersProvider.BACKEND_AUTH_URL = constants.STAGING_COMMUNITY_BACKEND_AUTH_URL
         IdentifiersProvider.BACKEND_PUBLIC_TOKEN = constants.STAGING_COMMUNITY_BACKEND_PUBLIC_TOKEN
