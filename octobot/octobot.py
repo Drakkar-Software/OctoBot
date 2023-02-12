@@ -220,7 +220,10 @@ class OctoBot:
 
     async def _ensure_watchers(self):
         if constants.ENABLE_SYSTEM_WATCHER:
-            await system_resources_watcher.start_system_resources_watcher()
+            await system_resources_watcher.start_system_resources_watcher(
+                constants.DUMP_USED_RESOURCES,
+                constants.USED_RESOURCES_OUTPUT
+            )
 
     def _log_config(self):
         exchanges = [
