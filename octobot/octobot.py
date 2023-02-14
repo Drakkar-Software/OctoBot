@@ -174,16 +174,25 @@ class OctoBot:
     async def _store_run_metadata_when_available(self):
         run_metadata_init_timeout = 5 * commons_constants.MINUTE_TO_SECONDS
         # first wait for all exchanges to be created
-        await asyncio.wait_for(self.exchange_producer.created_all_exchanges.wait(), run_metadata_init_timeout)
+        try:
+            await asyncio.wait_for(self.exchange_producer.created_all_exchanges.wait(), run_metadata_init_timeout)
+        except asyncio.TimeoutError:
+            pass
         exchange_managers = [
             trading_api.get_exchange_manager_from_exchange_id(exchange_manager_id)
             for exchange_manager_id in self.exchange_producer.exchange_manager_ids
         ]
         # start automations now that everything started
         await self.automation.initialize()
-        await self._wait_for_run_data_init(exchange_managers, run_metadata_init_timeout)
-        await storage.clear_run_metadata(self.bot_id)
-        await storage.store_run_metadata(self.bot_id, exchange_managers, self.start_time)
+        try:
+            await self._wait_for_run_data_init(exchange_managers, run_metadata_init_timeout)
+        except asyncio.TimeoutError:
+            pass
+        try:
+            await storage.clear_run_metadata(self.bot_id)
+            await storage.store_run_metadata(self.bot_id, exchange_managers, self.start_time)
+        except Exception as err:
+            self.logger.exception(err, True, f"Error when storing live matadata: {err}")
 
     async def stop(self):
         try:

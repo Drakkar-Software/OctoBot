@@ -168,7 +168,11 @@ async def _get_multi_exchange_data(exchange_managers, is_backtesting):
     origin_portfolio = {}
     end_portfolio = {}
     for exchange_manager in exchange_managers:
-        exchange_origin_portfolio = trading_api.get_origin_portfolio(exchange_manager, as_decimal=False)
+        try:
+            exchange_origin_portfolio = trading_api.get_origin_portfolio(exchange_manager, as_decimal=False)
+        except AttributeError:
+            # no initialized portfolio on this exchange
+            continue
         exchange_end_portfolio = trading_api.get_portfolio(exchange_manager, as_decimal=False)
         for portfolio in (exchange_origin_portfolio, exchange_end_portfolio):
             for values in portfolio.values():
