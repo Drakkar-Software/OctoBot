@@ -261,14 +261,17 @@ class IndependentBacktesting:
             min_timeframe = time_frame_manager.find_min_time_frame(trading_api.get_watched_timeframes(exchange_manager))
             exchange_name = trading_api.get_exchange_name(exchange_manager)
             for symbol in self.symbols_to_create_exchange_classes[exchange_name]:
-                market_delta = self._get_market_delta(symbol, exchange_manager, min_timeframe)
-                report[SYMBOL_REPORT].append({symbol.symbol_str: market_delta * 100})
-                report[CHART_IDENTIFIERS].append({
-                    "symbol": symbol.symbol_str,
-                    "exchange_id": exchange_id,
-                    "exchange_name": exchange_name,
-                    "time_frame": min_timeframe.value
-                })
+                try:
+                    market_delta = self._get_market_delta(symbol, exchange_manager, min_timeframe)
+                    report[SYMBOL_REPORT].append({symbol.symbol_str: market_delta * 100})
+                    report[CHART_IDENTIFIERS].append({
+                        "symbol": symbol.symbol_str,
+                        "exchange_id": exchange_id,
+                        "exchange_name": exchange_name,
+                        "time_frame": min_timeframe.value
+                    })
+                except KeyError:
+                    self.logger.debug(f"No price data for {symbol} on {min_timeframe}")
             profitabilities[exchange_name] = float(profitability)
             market_average_profitabilities[exchange_name] = float(market_average_profitability)
             starting_portfolios[exchange_name] = trading_api.get_origin_portfolio(exchange_manager, as_decimal=False)
