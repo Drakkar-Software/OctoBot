@@ -713,7 +713,10 @@ class CommunityAuthentication(authentication.Authenticator):
             if constants.CONFIG_COMMUNITY not in self.edited_config.config:
                 self.edited_config.config[constants.CONFIG_COMMUNITY] = {}
             self.edited_config.config[constants.CONFIG_COMMUNITY][key] = value
-            self.edited_config.save()
+            try:
+                self.edited_config.save()
+            except Exception as err:
+                self.logger.exception(err, True, f"Error when saving configuration {err}")
 
     def _get_value_in_config(self, key):
         if self.edited_config is not None:

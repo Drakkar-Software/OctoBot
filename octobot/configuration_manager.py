@@ -16,12 +16,12 @@
 import copy
 import os
 import shutil
-import json
 
 import octobot.constants as constants
 import octobot_commons.configuration as configuration
 import octobot_commons.constants as common_constants
 import octobot_commons.logging as logging
+import octobot_commons.json_util as json_util
 import octobot_tentacles_manager.constants as tentacles_manager_constants
 
 import octobot_trading.api as trading_api
@@ -136,8 +136,7 @@ def set_default_profile(config, from_default_config_file=constants.DEFAULT_CONFI
     :param from_default_config_file: the config file containing the default profile id to use
     :return: None
     """
-    with open(from_default_config_file, "r") as default_config_file:
-        default_config = json.loads(default_config_file.read())
+    default_config = json_util.read_file(from_default_config_file)
     default_profile_id = default_config.get(common_constants.CONFIG_PROFILE)
     config.select_profile(default_profile_id)
     config.save()
