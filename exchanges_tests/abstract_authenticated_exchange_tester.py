@@ -51,6 +51,7 @@ class AbstractAuthenticatedExchangeTester:
     CANCEL_TIMEOUT = 15
     EDIT_TIMEOUT = 15
     MIN_PORTFOLIO_SIZE = 1
+    DUPLICATE_TRADES_RATIO = 0
 
     # Implement all "test_[name]" methods, call super() to run the test, pass to ignore it.
     # Override the "inner_test_[name]" method to override a test content.
@@ -238,13 +239,13 @@ class AbstractAuthenticatedExchangeTester:
         return await self.exchange_manager.exchange.get_closed_orders(symbol or self.SYMBOL)
 
     def check_duplicate(self, orders_or_trades):
-        assert len({
+        assert len(orders_or_trades) * (1 - self.DUPLICATE_TRADES_RATIO) <= len({
             f"{o[trading_enums.ExchangeConstantsOrderColumns.ID.value]}"
             f"{o[trading_enums.ExchangeConstantsOrderColumns.TIMESTAMP.value]}"
             f"{o[trading_enums.ExchangeConstantsOrderColumns.AMOUNT.value]}"
             f"{o[trading_enums.ExchangeConstantsOrderColumns.PRICE.value]}"
             for o in orders_or_trades
-        }) == len(orders_or_trades)
+        }) <= len(orders_or_trades)
 
     def check_raw_closed_orders(self, closed_orders):
         self.check_duplicate(closed_orders)
@@ -402,6 +403,8 @@ class AbstractAuthenticatedExchangeTester:
 
     async def _create_order_on_exchange(self, order, params=None):
         created_order = await self.exchange_manager.trader.create_order(order, params=params, wait_for_creation=False)
+        if created_order is None:
+            raise AssertionError(f"Created order is None. input order: {order}, params: {params}")
         if created_order.status is trading_enums.OrderStatus.PENDING_CREATION:
             await self.wait_for_open(created_order)
             return await self.get_order(created_order.order_id)
@@ -512,7 +515,7 @@ class AbstractAuthenticatedExchangeTester:
             raw_order = await self.exchange_manager.exchange.get_order(order.order_id, order.symbol)
             if raw_order and validation_func(raw_order):
                 return raw_order
-        raise TimeoutError(f"Order not filled within {timeout}s: {order}")
+        raise TimeoutError(f"Order not filled/cancelled within {timeout}s: {order}")
 
     async def order_in_open_orders(self, previous_open_orders, order):
         open_orders = await self.get_open_orders()
