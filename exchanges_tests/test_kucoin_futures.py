@@ -34,12 +34,16 @@ class TestKucoinFuturesAuthenticatedExchange(
     ORDER_SIZE = 60  # % of portfolio to include in test orders
     REQUIRES_SYMBOLS_TO_GET_POSITIONS = True
     SUPPORTS_GET_LEVERAGE = False
+    SUPPORTS_SET_LEVERAGE = False
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
 
     async def test_get_empty_linear_and_inverse_positions(self):
         await super().test_get_empty_linear_and_inverse_positions()
+
+    async def test_get_and_set_leverage(self):
+        await super().test_get_and_set_leverage()
 
     async def test_create_and_cancel_limit_orders(self):
         await super().test_create_and_cancel_limit_orders()
