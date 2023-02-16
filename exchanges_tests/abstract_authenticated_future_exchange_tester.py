@@ -31,6 +31,7 @@ class AbstractAuthenticatedFutureExchangeTester(
     INVERSE_SYMBOL = None
     MIN_PORTFOLIO_SIZE = 2  # ensure fetching currency for linear and inverse
     SUPPORTS_GET_LEVERAGE = True
+    SUPPORTS_SET_LEVERAGE = True
 
     async def test_get_empty_linear_and_inverse_positions(self):
         # ensure fetch empty positions
@@ -61,8 +62,11 @@ class AbstractAuthenticatedFutureExchangeTester(
 
     async def inner_test_get_and_set_leverage(self):
         origin_leverage = await self.get_leverage_form_position()
+        assert origin_leverage != trading_constants.ZERO
         if self.SUPPORTS_GET_LEVERAGE:
             assert origin_leverage == await self.get_leverage()
+        if not self.SUPPORTS_SET_LEVERAGE:
+            return
         new_leverage = origin_leverage + 1
         await self.set_leverage(new_leverage)
         await self._check_leverage(new_leverage)
@@ -255,4 +259,8 @@ class AbstractAuthenticatedFutureExchangeTester(
         assert theoretical_cost * decimal.Decimal("0.8") <= cost <= theoretical_cost * decimal.Decimal("1.2")
 
     def _get_all_symbols(self):
-        return [self.SYMBOL, self.INVERSE_SYMBOL]
+        return [
+            symbol
+            for symbol in (self.SYMBOL, self.INVERSE_SYMBOL)
+            if symbol
+        ]
