@@ -120,6 +120,7 @@ MAX_ALLOWED_BACKTESTING_CANDLES_HISTORY = int(os.getenv("MAX_ALLOWED_BACKTESTING
                                                         str(UNLIMITED_ALLOWED)))
 ENABLE_AUTOMATIONS = os_util.parse_boolean_environment_var("ENABLE_AUTOMATIONS", "True")
 ENABLE_BACKTESTING = os_util.parse_boolean_environment_var("ENABLE_BACKTESTING", "True")
+ENABLE_ADVANCED_INTERFACE = os_util.parse_boolean_environment_var("ENABLE_ADVANCED_INTERFACE", "True")
 
 # tentacles
 ENV_TENTACLES_URL = "TENTACLES_URL"
