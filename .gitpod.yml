@@ -7,7 +7,7 @@ tasks:
     command: |
       python3 start.py
 ports:
-  - port: 3000
+  - port: 5001
     onOpen: open-preview
     name: OctoBot
 github:
