@@ -55,6 +55,18 @@ Register to OctoBot Cloud to deploy your OctoBot in the cloud. No installation r
 
 [![Deploy to OctoBot Cloud](https://dabuttonfactory.com/button.png?t=Deploy+now&f=Roboto-Bold&ts=18&tc=fff&hp=20&vp=15&c=11&bgt=unicolored&bgc=422afb)](https://octobot.click/gh-deploy)
 
+## ☁️ Contribute/Try on the Cloud 
+Try OctoBot on the cloud while also having the ability to develop and make changes to your code via a single click **Anytime-Anywhere**!
+
+[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://github.com/Drakkar-Software/OctoBot)
+
+Start **designing and customizing your community** management system by opening the **already setup and ready to code developer environment** using Gitpod!
+
+Some *Recommendations* while using **Gitpod**:
+
+- Download the [gitpod browser extension](https://www.gitpod.io/docs/configure/user-settings/browser-extension) to start working on any branch,issue or PR via a single click in under a minute!
+- To enjoy *BLAZINGLY FAST* startup times while developing on your forked branches, consider [enabling prebuilds by installing Gitpod's GitHub App](https://www.gitpod.io/docs/configure/projects/prebuilds/#configuring-prebuilds-manually)
+
 #### [With executable](https://www.octobot.info/installation/with-binary)
 Follow the [2 steps installation guide](https://www.octobot.online/executable_installation/) 
 
