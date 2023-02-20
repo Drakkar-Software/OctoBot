@@ -30,6 +30,7 @@ class AbstractAuthenticatedFutureExchangeTester(
     REQUIRES_SYMBOLS_TO_GET_POSITIONS = False
     INVERSE_SYMBOL = None
     MIN_PORTFOLIO_SIZE = 2  # ensure fetching currency for linear and inverse
+    SUPPORTS_GET_LEVERAGE = True
 
     async def test_get_empty_linear_and_inverse_positions(self):
         # ensure fetch empty positions
@@ -38,19 +39,58 @@ class AbstractAuthenticatedFutureExchangeTester(
 
     async def inner_test_get_empty_linear_and_inverse_positions(self):
         positions = await self.get_positions()
-        self._check_position_content(positions)
+        self._check_positions_content(positions)
+        position = await self.get_position(self.SYMBOL)
+        self._check_position_content(position, self.SYMBOL)
         for contract_type in (trading_enums.FutureContractType.LINEAR_PERPETUAL,
                               trading_enums.FutureContractType.INVERSE_PERPETUAL):
             if not self.has_empty_position(self.get_filtered_positions(positions, contract_type)):
                 empty_position_symbol = self.get_other_position_symbol(positions, contract_type)
                 empty_position = await self.get_position(empty_position_symbol)
+                if empty_position is None:
+                    raise AssertionError(
+                        f"Fetched empty position should never be None as a "
+                        f"symbol ({empty_position_symbol}) parameter is given"
+                    )
                 assert self.is_position_empty(empty_position)
 
-    def _check_position_content(self, positions):
+    async def test_get_and_set_leverage(self):
+        # ensure set_leverage works
+        async with self.local_exchange_manager():
+            await self.inner_test_get_and_set_leverage()
+
+    async def inner_test_get_and_set_leverage(self):
+        origin_leverage = await self.get_leverage_form_position()
+        if self.SUPPORTS_GET_LEVERAGE:
+            assert origin_leverage == await self.get_leverage()
+        new_leverage = origin_leverage + 1
+        await self.set_leverage(new_leverage)
+        await self._check_leverage(new_leverage)
+        # change leverage back to origin value
+        await self.set_leverage(origin_leverage)
+        await self._check_leverage(origin_leverage)
+
+    async def _check_leverage(self, expected_value, symbol=None):
+        leverage_value = await self.get_leverage_form_position(symbol=symbol)
+        assert expected_value == leverage_value
+        if self.SUPPORTS_GET_LEVERAGE:
+            assert expected_value == await self.get_leverage(symbol=symbol)
+
+    def _check_positions_content(self, positions):
         for position in positions:
+            self._check_position_content(position, None)
+
+    def _check_position_content(self, position, symbol):
+        if symbol:
+            assert position[trading_enums.ExchangeConstantsPositionColumns.SYMBOL.value] == symbol
+        else:
             assert position[trading_enums.ExchangeConstantsPositionColumns.SYMBOL.value]
-            # should not be 0 in octobot
-            assert position[trading_enums.ExchangeConstantsPositionColumns.LEVERAGE.value] > 0
+        leverage = position[trading_enums.ExchangeConstantsPositionColumns.LEVERAGE.value]
+        assert isinstance(leverage, decimal.Decimal)
+        # should not be 0 in octobot
+        assert leverage > 0
+        assert position[trading_enums.ExchangeConstantsPositionColumns.MARGIN_TYPE.value] is not None
+        assert position[trading_enums.ExchangeConstantsPositionColumns.POSITION_MODE.value] is not None
 
     async def inner_test_create_and_fill_market_orders(self):
         portfolio = await self.get_portfolio()
@@ -94,6 +134,17 @@ class AbstractAuthenticatedFutureExchangeTester(
                 raise AssertionError(f"INVERSE_SYMBOL is required")
             symbols = [self.SYMBOL, self.INVERSE_SYMBOL]
         return await self.exchange_manager.exchange.get_positions(symbols=symbols)
+
+    async def get_leverage_form_position(self, symbol=None):
+        position = await self.get_position(symbol=symbol)
+        return position[trading_enums.ExchangeConstantsPositionColumns.LEVERAGE.value]
+
+    async def get_leverage(self, symbol=None):
+        leverage = await self.exchange_manager.exchange.get_symbol_leverage(symbol or self.SYMBOL)
+        return leverage[trading_enums.ExchangeConstantsLeveragePropertyColumns.LEVERAGE.value]
+
+    async def set_leverage(self, leverage, symbol=None):
+        return await self.exchange_manager.exchange.set_symbol_leverage(symbol or self.SYMBOL, float(leverage))
 
     @contextlib.asynccontextmanager
     async def required_empty_position(self):
@@ -168,7 +219,7 @@ class AbstractAuthenticatedFutureExchangeTester(
             for position in positions_blacklist
         )
         for symbol in self.exchange_manager.exchange.connector.client.markets:
-            if symbol in ignored_symbols:
+            if symbol in ignored_symbols or self.exchange_manager.exchange.is_expirable_symbol(symbol):
                 continue
             if contract_type is trading_enums.FutureContractType.INVERSE_PERPETUAL \
                and self.exchange_manager.exchange.is_inverse_symbol(symbol):
