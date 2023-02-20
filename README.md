@@ -17,18 +17,6 @@
 
 ![Web Interface](../assets/web-interface.gif)
 
-## ☁️ Contribute on the Cloud 
-Start developing and make changes to your code via a single click Anytime-Anywhere!
-
-
-[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://github.com/Drakkar-Software/OctoBot)
-
-Start **designing and customizing your community** management system by opening the **already setup and ready to code developer environment** using Gitpod!
-
-Some *Recommendations* while using **Gitpod**:
-
-- Download the [gitpod browser extension](https://www.gitpod.io/docs/configure/user-settings/browser-extension) to start working on any branch,issue or PR via a single click in under a minute!
-- To enjoy *BLAZINGLY FAST* startup times while developing on your forked branches, consider [enabling prebuilds by installing Gitpod's GitHub App](https://www.gitpod.io/docs/configure/projects/prebuilds/#configuring-prebuilds-manually)
 
 
 ## Description
@@ -124,6 +112,20 @@ python3 start.py
 
 Octobot supports many [exchanges](https://octobot.click/gh-exchanges) thanks to the [ccxt library](https://github.com/ccxt/ccxt). 
 To activate trading on an exchange, just configure OctoBot with your API keys as described [on the exchange documentation](https://www.octobot.online/guides/#exchanges).
+
+## ☁️ Contribute on the Cloud 
+Start developing and make changes to your code via a single click Anytime-Anywhere!
+
+
+[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://github.com/Drakkar-Software/OctoBot)
+
+Start **designing and customizing your community** management system by opening the **already setup and ready to code developer environment** using Gitpod!
+
+Some *Recommendations* while using **Gitpod**:
+
+- Download the [gitpod browser extension](https://www.gitpod.io/docs/configure/user-settings/browser-extension) to start working on any branch,issue or PR via a single click in under a minute!
+- To enjoy *BLAZINGLY FAST* startup times while developing on your forked branches, consider [enabling prebuilds by installing Gitpod's GitHub App](https://www.gitpod.io/docs/configure/projects/prebuilds/#configuring-prebuilds-manually)
+
 
 ## Disclaimer
 Do not risk money which you are afraid to lose. USE THE SOFTWARE AT YOUR OWN RISK. THE AUTHORS 
