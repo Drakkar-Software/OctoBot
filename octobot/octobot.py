@@ -189,10 +189,13 @@ class OctoBot:
         except asyncio.TimeoutError:
             pass
         try:
-            await storage.clear_run_metadata(self.bot_id)
-            await storage.store_run_metadata(self.bot_id, exchange_managers, self.start_time)
+            if exchange_managers:
+                await storage.clear_run_metadata(self.bot_id)
+                await storage.store_run_metadata(self.bot_id, exchange_managers, self.start_time)
+            else:
+                self.logger.debug("Skipping run metadata update: no available exchange manager")
         except Exception as err:
-            self.logger.exception(err, True, f"Error when storing live matadata: {err}")
+            self.logger.exception(err, True, f"Error when storing live metadata: {err}")
 
     async def stop(self):
         try:
@@ -245,7 +248,8 @@ class OctoBot:
         trader_str = "real trader" if has_real_trader else "simulated trader" if has_simulated_trader else "no trader"
         traded_symbols = trading_api.get_config_symbols(self.config, True)
         symbols_str = ', '.join(set(traded_symbols))
-        self.logger.info(f"Starting OctoBot with {trader_str} on {', '.join(exchanges)} "
+        self.logger.info(f"Starting OctoBot with {trader_str} on "
+                         f"{', '.join(exchanges) if exchanges else 'no exchange'} "
                          f"trading {symbols_str or 'nothing'} and using bot_id: {self.bot_id}")
 
     def get_edited_config(self, config_key, dict_only=True):
