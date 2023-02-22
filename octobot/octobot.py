@@ -181,6 +181,9 @@ class OctoBot:
         exchange_managers = [
             trading_api.get_exchange_manager_from_exchange_id(exchange_manager_id)
             for exchange_manager_id in self.exchange_producer.exchange_manager_ids
+            if trading_api.is_trader_existing_and_enabled(
+                trading_api.get_exchange_manager_from_exchange_id(exchange_manager_id)
+            )
         ]
         # start automations now that everything started
         await self.automation.initialize()
