@@ -21,7 +21,7 @@ from exchanges_tests import abstract_authenticated_future_exchange_tester
 pytestmark = pytest.mark.asyncio
 
 
-class TestBybitAuthenticatedExchange(
+class TestBybitFuturesAuthenticatedExchange(
     abstract_authenticated_future_exchange_tester.AbstractAuthenticatedFutureExchangeTester
 ):
     # enter exchange name as a class variable here
@@ -29,7 +29,10 @@ class TestBybitAuthenticatedExchange(
     ORDER_CURRENCY = "BTC"
     SETTLEMENT_CURRENCY = "USDT"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}:{SETTLEMENT_CURRENCY}"
+    INVERSE_SYMBOL = f"{ORDER_CURRENCY}/USD:{ORDER_CURRENCY}"
     ORDER_SIZE = 10  # % of portfolio to include in test orders
+    OPEN_TIMEOUT = 20    # larger for bybit testnet
+    CANCEL_TIMEOUT = 20  # larger for bybit testnet
     OPEN_ORDERS_IN_CLOSED_ORDERS = True
     SUPPORTS_GET_LEVERAGE = False
 
@@ -38,6 +41,9 @@ class TestBybitAuthenticatedExchange(
 
     async def test_get_empty_linear_and_inverse_positions(self):
         await super().test_get_empty_linear_and_inverse_positions()
+
+    async def test_get_and_set_margin_type(self):
+        await super().test_get_and_set_margin_type()
 
     async def test_get_and_set_leverage(self):
         await super().test_get_and_set_leverage()
@@ -66,6 +72,8 @@ class TestBybitAuthenticatedExchange(
         # pass if not implemented
         await super().test_edit_stop_order()
 
-    async def test_create_bundled_orders(self):
-        # pass if not implemented
-        await super().test_create_bundled_orders()
+    async def test_create_single_bundled_orders(self):
+        await super().test_create_single_bundled_orders()
+
+    async def test_create_double_bundled_orders(self):
+        await super().test_create_double_bundled_orders()

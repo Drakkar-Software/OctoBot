@@ -58,6 +58,10 @@ class TestOKXAuthenticatedExchange(
         # pass if not implemented
         pass
 
-    async def test_create_bundled_orders(self):
+    async def test_create_single_bundled_orders(self):
+        # pass if not implemented
+        pass
+
+    async def test_create_double_bundled_orders(self):
         # pass if not implemented
         pass

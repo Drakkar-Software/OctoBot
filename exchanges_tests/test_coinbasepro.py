@@ -24,6 +24,8 @@ pytestmark = pytest.mark.asyncio
 class TestCoinbaseproAuthenticatedExchange(
     abstract_authenticated_exchange_tester.AbstractAuthenticatedExchangeTester
 ):
+    # BROKEN: waiting for ccxt update on coinbase advanced
+
     # enter exchange name as a class variable here
     EXCHANGE_NAME = "coinbasepro"
     EXCHANGE_TENTACLE_NAME = "CoinbasePro"
@@ -59,6 +61,10 @@ class TestCoinbaseproAuthenticatedExchange(
         # pass if not implemented
         pass
 
-    async def test_create_bundled_orders(self):
+    async def test_create_single_bundled_orders(self):
+        # pass if not implemented
+        pass
+
+    async def test_create_double_bundled_orders(self):
         # pass if not implemented
         pass

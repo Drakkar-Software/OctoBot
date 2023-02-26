@@ -31,12 +31,17 @@ class TestOKXFuturesAuthenticatedExchange(
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}:{SETTLEMENT_CURRENCY}"
     INVERSE_SYMBOL = f"{ORDER_CURRENCY}/USD:{ORDER_CURRENCY}"
     ORDER_SIZE = 50  # % of portfolio to include in test orders
+    SUPPORTS_EMPTY_POSITION_SET_MARGIN_TYPE = False
+    SUPPORTS_DOUBLE_BUNDLED_ORDERS = False
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
 
     async def test_get_empty_linear_and_inverse_positions(self):
         await super().test_get_empty_linear_and_inverse_positions()
+
+    async def test_get_and_set_margin_type(self):
+        await super().test_get_and_set_margin_type()
 
     async def test_get_and_set_leverage(self):
         await super().test_get_and_set_leverage()
@@ -64,7 +69,8 @@ class TestOKXFuturesAuthenticatedExchange(
         # pass if not implemented
         pass
 
-    # todo figure out if possible
-    async def test_create_bundled_orders(self):
-        # pass if not implemented
-        pass
+    async def test_create_single_bundled_orders(self):
+        await super().test_create_single_bundled_orders()
+
+    async def test_create_double_bundled_orders(self):
+        await super().test_create_double_bundled_orders()

@@ -35,7 +35,6 @@ class TestPemexAuthenticatedExchange(
         await super().test_get_portfolio()
 
     async def test_create_and_cancel_limit_orders(self):
-        # 08 dec 2022: did not run so far, testnet is bugged: order are apparently accepted but never show up
         await super().test_create_and_cancel_limit_orders()
 
     async def test_create_and_fill_market_orders(self):
@@ -60,6 +59,10 @@ class TestPemexAuthenticatedExchange(
         # pass if not implemented
         pass
 
-    async def test_create_bundled_orders(self):
+    async def test_create_single_bundled_orders(self):
+        # pass if not implemented
+        pass
+
+    async def test_create_double_bundled_orders(self):
         # pass if not implemented
         pass
