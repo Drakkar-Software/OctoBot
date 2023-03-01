@@ -40,9 +40,7 @@ def _selected_bot_update(func):
     async def wrapper(*args, **kwargs):
         self = args[0]
         await self.gql_login_if_required()
-        if self._update_bot_lock is None:
-            self._update_bot_lock = asyncio.Lock()
-        async with self._update_bot_lock:
+        async with self._get_update_bot_lock():
             self.logger.debug(f"@selected_bot_update: entering {func.__name__}")
             updated_bot = await func(*args, **kwargs)
         self.logger.debug(f"@selected_bot_update: exited {func.__name__}")
@@ -108,6 +106,11 @@ class CommunityAuthentication(authentication.Authenticator):
             return []
         except json.JSONDecodeError:
             return []
+
+    def _get_update_bot_lock(self):
+        if self._update_bot_lock is None:
+            self._update_bot_lock = asyncio.Lock()
+        return self._update_bot_lock
 
     def is_feed_connected(self):
         return self._community_feed is not None and self._community_feed.is_connected_to_remote_feed()
@@ -439,8 +442,7 @@ class CommunityAuthentication(authentication.Authenticator):
 
     async def get_startup_info(self):
         if self._startup_info is None:
-            if self.user_account.gql_bot_id is None:
-                raise errors.BotError("No selected bot")
+            self.user_account.ensure_selected_bot_id()
             self._startup_info = startup_info.StartupInfo.from_dict(
                 await self._fetch_startup_info(
                     self.user_account.gql_bot_id
@@ -455,11 +457,14 @@ class CommunityAuthentication(authentication.Authenticator):
             for profile_data in subscribed_profiles["data"]
         ]
 
-    async def update_trades(self, trades: list):
+    def is_logged_in_and_has_selected_bot(self):
+        return self.is_logged_in() and self.user_account.gql_bot_id is not None
+
+    async def update_trades(self, trades: list, reset: bool):
         """
         Updates authenticated account trades
         """
-        if not self.is_logged_in():
+        if not self.is_logged_in_and_has_selected_bot():
             return
         try:
             formatted_trades = [
@@ -473,16 +478,20 @@ class CommunityAuthentication(authentication.Authenticator):
                 }
                 for trade in trades
             ]
-            await self._update_bot_trades(formatted_trades)
+            if reset:
+                await self._set_bot_trades(formatted_trades)
+            else:
+                await self._add_to_bot_trades(formatted_trades)
         except Exception as err:
             self.logger.exception(err, True, f"Error when updating community trades {err}")
 
     async def update_portfolio(self, current_value: dict, initial_value: dict,
-                               unit: str, content: dict, history: dict, price_by_asset: dict):
+                               unit: str, content: dict, history: dict, price_by_asset: dict,
+                               reset: bool):
         """
         Updates authenticated account portfolio
         """
-        if not self.is_logged_in():
+        if not self.is_logged_in_and_has_selected_bot():
             return
         try:
             ref_market_current_value = current_value[unit]
@@ -503,16 +512,18 @@ class CommunityAuthentication(authentication.Authenticator):
                         "value": str(value[unit])
                     }
                     for timestamp, value in history.items()
-                    if unit in value
+                    if unit in value and value[unit]    # skip missing a 0 values
                 ]
             except KeyError:
                 pass
-            if not formatted_history:
-                return
-            await self._update_bot_portfolio(
-                ref_market_current_value, ref_market_initial_value, unit,
-                formatted_content, formatted_history
-            )
+            if reset:
+                await self._set_bot_portfolio(
+                    ref_market_current_value, ref_market_initial_value, unit, formatted_content, formatted_history
+                )
+            else:
+                await self._update_bot_historical_portfolio(
+                    ref_market_current_value, formatted_content, formatted_history
+                )
         except Exception as err:
             self.logger.exception(err, True, f"Error when updating community portfolio {err}")
 
@@ -571,20 +582,38 @@ class CommunityAuthentication(authentication.Authenticator):
         )
 
     @_selected_bot_update
-    async def _update_bot_trades(self, trades):
+    async def _set_bot_trades(self, trades):
         return await self._execute_request(
             graphql_requests.update_bot_trades_query,
             self.user_account.gql_bot_id,
             trades
         )
 
+    async def _add_to_bot_trades(self, trades):
+        await self.gql_login_if_required()
+        async with self._get_update_bot_lock():
+            return await self._execute_request(
+                graphql_requests.upsert_bot_trades_query,
+                self.user_account.gql_bot_id,
+                trades
+            )
+
     @_selected_bot_update
-    async def _update_bot_portfolio(self, current_value, initial_value, unit, content, history):
+    async def _set_bot_portfolio(self, current_value, initial_value, unit, content, history):
         return await self._execute_request(
             graphql_requests.update_bot_portfolio_query,
             self.user_account.gql_bot_id,
             current_value, initial_value, unit, content, history
         )
+
+    async def _update_bot_historical_portfolio(self, current_value, content, history):
+        await self.gql_login_if_required()
+        async with self._get_update_bot_lock():
+            return await self._execute_request(
+                graphql_requests.upsert_historical_bot_portfolio_query,
+                self.user_account.gql_bot_id,
+                current_value, content, history
+            )
 
     async def _execute_request(self, request_factory, *args, **kwargs):
         query, variables, query_name = request_factory(*args, **kwargs)
@@ -775,14 +804,17 @@ class CommunityAuthentication(authentication.Authenticator):
         if self._login_completed is None:
             self._login_completed = asyncio.Event()
         self._login_completed.clear()
-        with self._auth_context():
-            async with self.get_aiohttp_session().get(
-                    identifiers_provider.IdentifiersProvider.BACKEND_ACCOUNT_URL
-            ) as resp:
-                try:
-                    self._handle_auth_result(resp.status, await resp.json(), resp.headers)
-                finally:
-                    self._login_completed.set()
+        try:
+            with self._auth_context():
+                async with self.get_aiohttp_session().get(
+                        identifiers_provider.IdentifiersProvider.BACKEND_ACCOUNT_URL
+                ) as resp:
+                    try:
+                        self._handle_auth_result(resp.status, await resp.json(), resp.headers)
+                    finally:
+                        self._login_completed.set()
+        except Exception as e:
+            self.logger.exception(e)
 
     def _ensure_email(self, email):
         if constants.USER_ACCOUNT_EMAIL and email != constants.USER_ACCOUNT_EMAIL:
