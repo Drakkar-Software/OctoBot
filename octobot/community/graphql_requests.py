@@ -140,6 +140,16 @@ mutation updateOneBot($bot_id: ObjectId, $trades: [BotTradeUpdateInput]) {
     """, {"bot_id": bot_id, "trades": trades}, "updateOneBot"
 
 
+def upsert_bot_trades_query(bot_id, trades) -> (str, dict, str):
+    return """
+mutation upsertBotTrades($bot_id: String, $trades: [BotTradesUpsertInputTrade]) {
+  upsertBotTrades(input: {bot_id: $bot_id, trades: $trades}){
+    status
+  }
+}
+    """, {"bot_id": bot_id, "trades": trades}, "upsertBotTrades"
+
+
 def update_bot_portfolio_query(bot_id, current_value, initial_value, unit, content, history) -> (str, dict, str):
     return """
 mutation updateOneBot($bot_id: ObjectId, $current_value: Decimal, $initial_value: Decimal, $unit: String, $content: [BotPortfolioContentUpdateInput], $history: [BotPortfolioHistoryUpdateInput]) {
@@ -152,3 +162,14 @@ mutation updateOneBot($bot_id: ObjectId, $current_value: Decimal, $initial_value
 }
     """, {"bot_id": bot_id, "current_value": str(current_value), "initial_value": str(initial_value),
           "unit": unit, "content": content, "history": history}, "updateOneBot"
+
+
+def upsert_historical_bot_portfolio_query(bot_id, current_value, content, history) -> (str, dict, str):
+    return """
+mutation upsertBotPortfolio($bot_id: String, $current_value: Decimal, $content: [BotPortfolioUpsertInputContent], $history: [BotPortfolioUpsertInputHistory]) {
+  upsertBotPortfolio(input: {bot_id: $bot_id, current_value: $current_value, content: $content, history: $history}){
+    status
+  }
+}
+    """, {"bot_id": bot_id, "current_value": str(current_value), "content": content, "history": history}, "upsertBotPortfolio"
+
