@@ -71,7 +71,9 @@ class TaskManager:
         self.loop_forever_thread = threading.Thread(target=self.run_bot_in_thread, args=(coroutine,),
                                                     name=f"OctoBot Main Thread")
         self.loop_forever_thread.start()
-        self.loop_forever_thread.join()
+        if sys.version_info.minor >= 9:
+            # only required for python 3.9 +
+            self.loop_forever_thread.join()
 
     def stop_tasks(self, stop_octobot=True):
         self.logger.info("Stopping tasks...")
