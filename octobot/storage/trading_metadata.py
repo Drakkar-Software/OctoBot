@@ -163,10 +163,11 @@ async def _get_multi_exchange_data(exchange_managers, is_backtesting):
             for exchange_manager in exchange_managers
         )
     else:
-        start_time = exchange_managers[0].exchange.get_exchange_current_time()
+        start_time = trades[0].creation_time if trades else exchange_managers[0].exchange.get_exchange_current_time()
         end_time = -1
     origin_portfolio = {}
     end_portfolio = {}
+    # handle live origin_portfolio
     for exchange_manager in exchange_managers:
         try:
             exchange_origin_portfolio = trading_api.get_origin_portfolio(exchange_manager, as_decimal=False)
@@ -241,8 +242,10 @@ async def _get_single_exchange_data(exchange_manager, trading_mode, run_start_ti
     backtesting_only_metadata = {
         common_enums.BacktestingMetadata.ID.value: run_dbs_identifier.backtesting_id,
         common_enums.BacktestingMetadata.OPTIMIZATION_CAMPAIGN.value: run_dbs_identifier.optimization_campaign_name,
-        common_enums.BacktestingMetadata.USER_INPUTS.value: formatted_user_inputs,
-    } if is_backtesting else {}
+            common_enums.BacktestingMetadata.USER_INPUTS.value: formatted_user_inputs,
+    } if is_backtesting else {
+        common_enums.BacktestingMetadata.ID.value: run_dbs_identifier.live_id,
+        }
     return {
         **backtesting_only_metadata,
         **{
