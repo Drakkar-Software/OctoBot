@@ -128,6 +128,10 @@ class CommunityUserAccount:
         if self._selected_bot_raw_data is None:
             raise errors.BotError(self.NO_SELECTED_BOT_DESC)
 
+    def ensure_selected_bot_id(self):
+        if self.gql_bot_id is None:
+            raise errors.BotError("No selected bot")
+
     def flush_bot_details(self):
         self.gql_bot_id = None
         self._selected_bot_raw_data = None

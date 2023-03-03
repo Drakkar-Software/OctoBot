@@ -1,0 +1,23 @@
+
+tasks:
+  - name: Initialize OctoBot
+    init: |
+      cd OctoBot
+      python3 -m pip install -Ur requirements.txt
+    command: |
+      python3 start.py
+ports:
+  - port: 5001
+    onOpen: open-preview
+    name: OctoBot
+github:
+  prebuilds:
+    master: true
+    branches: true
+    pullRequests: true
+    pullRequestsFromForks: true
+    addCheck: true
+    addComment: true
+    addBadge: true
+
+

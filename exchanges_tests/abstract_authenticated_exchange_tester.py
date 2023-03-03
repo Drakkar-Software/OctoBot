@@ -51,6 +51,8 @@ class AbstractAuthenticatedExchangeTester:
     CANCEL_TIMEOUT = 15
     EDIT_TIMEOUT = 15
     MIN_PORTFOLIO_SIZE = 1
+    DUPLICATE_TRADES_RATIO = 0
+    SUPPORTS_DOUBLE_BUNDLED_ORDERS = True
 
     # Implement all "test_[name]" methods, call super() to run the test, pass to ignore it.
     # Override the "inner_test_[name]" method to override a test content.
@@ -68,10 +70,16 @@ class AbstractAuthenticatedExchangeTester:
             await self.inner_test_create_and_cancel_limit_orders()
 
     async def inner_test_create_and_cancel_limit_orders(self):
+        symbol = None
         price = self.get_order_price(await self.get_price(), False)
         size = self.get_order_size(await self.get_portfolio(), price)
         open_orders = await self.get_open_orders()
-        buy_limit = await self.create_limit_order(price, size, trading_enums.TradeOrderSide.BUY)
+        # DEBUG tools, uncomment to create specific orders
+        # price = decimal.Decimal("0.047445")
+        # size = decimal.Decimal("4619")
+        # symbol = "OM/USDT"
+        # end debug tools
+        buy_limit = await self.create_limit_order(price, size, trading_enums.TradeOrderSide.BUY, symbol=symbol)
         self.check_created_limit_order(buy_limit, price, size, trading_enums.TradeOrderSide.BUY)
         assert await self.order_in_open_orders(open_orders, buy_limit)
         await self.cancel_order(buy_limit)
@@ -88,16 +96,19 @@ class AbstractAuthenticatedExchangeTester:
         size = self.get_order_size(portfolio, price)
         buy_market = await self.create_market_order(current_price, size, trading_enums.TradeOrderSide.BUY)
         self.check_created_market_order(buy_market, size, trading_enums.TradeOrderSide.BUY)
-        await self.wait_for_fill(buy_market)
-        sell_size = self.get_sell_size_from_buy_order(buy_market)
-        post_buy_portfolio = await self.get_portfolio()
-        self.check_portfolio_changed(portfolio, post_buy_portfolio, False)
-        # sell: reset portfolio
-        sell_market = await self.create_market_order(current_price, sell_size, trading_enums.TradeOrderSide.SELL)
-        self.check_created_market_order(sell_market, sell_size, trading_enums.TradeOrderSide.SELL)
-        await self.wait_for_fill(sell_market)
-        post_sell_portfolio = await self.get_portfolio()
-        self.check_portfolio_changed(post_buy_portfolio, post_sell_portfolio, True)
+        post_buy_portfolio = {}
+        try:
+            await self.wait_for_fill(buy_market)
+            post_buy_portfolio = await self.get_portfolio()
+            self.check_portfolio_changed(portfolio, post_buy_portfolio, False)
+        finally:
+            sell_size = self.get_sell_size_from_buy_order(buy_market)
+            # sell: reset portfolio
+            sell_market = await self.create_market_order(current_price, sell_size, trading_enums.TradeOrderSide.SELL)
+            self.check_created_market_order(sell_market, sell_size, trading_enums.TradeOrderSide.SELL)
+            await self.wait_for_fill(sell_market)
+            post_sell_portfolio = await self.get_portfolio()
+            self.check_portfolio_changed(post_buy_portfolio, post_sell_portfolio, True)
 
     async def test_create_and_cancel_stop_orders(self):
         # pass if not implemented
@@ -187,46 +198,165 @@ class AbstractAuthenticatedExchangeTester:
         await self.cancel_order(stop_loss)
         assert await self.order_not_in_open_orders(open_orders, stop_loss)
 
-    async def test_create_bundled_orders(self):
+    async def test_create_single_bundled_orders(self):
         # pass if not implemented
         async with self.local_exchange_manager():
-            await self.inner_test_create_bundled_orders()
+            await self.inner_test_create_single_bundled_orders()
 
-    async def inner_test_create_bundled_orders(self):
+    async def inner_test_create_single_bundled_orders(self):
+        await self._test_untriggered_single_bundled_orders()
+        await self._test_triggered_simple_bundled_orders()
+
+    async def test_create_double_bundled_orders(self):
+        # pass if not implemented
+        async with self.local_exchange_manager():
+            await self.inner_test_create_double_bundled_orders()
+
+    async def inner_test_create_double_bundled_orders(self):
+        await self._test_untriggered_double_bundled_orders()
+        await self._test_triggered_double_bundled_orders()
+
+    async def _test_untriggered_single_bundled_orders(self):
+        # tests uncreated bundled orders (remain bound to initial order but initial order does not get filled)
         current_price = await self.get_price()
+        stop_loss, _ = await self._get_bundled_orders_stop_take_profit(current_price)
+        size = stop_loss.origin_quantity
+        open_orders = await self.get_open_orders()
+
+        price = personal_data.decimal_adapt_price(
+            self.exchange_manager.exchange.get_market_status(self.SYMBOL),
+            stop_loss.origin_price * decimal.Decimal(f"{1 + self.ORDER_PRICE_DIFF/2/100}")
+        )
+        limit_order = await self.create_limit_order(price, size,
+                                                    trading_enums.TradeOrderSide.BUY,
+                                                    push_on_exchange=False)
+        params = await self.bundle_orders(limit_order, stop_loss)
+        limit_order = await self._create_order_on_exchange(limit_order, params=params)
+        self.check_created_limit_order(limit_order, price, size, trading_enums.TradeOrderSide.BUY)
+        # stop and take profit are bundled but not created as long as the initial order is not filled
+        additionally_fetched_orders = await self.get_similar_orders_in_open_orders(open_orders, [limit_order])
+        assert len(additionally_fetched_orders) == 1  # only created limit_order
+        await self.cancel_order(limit_order)
+        # limit_order no more in open orders, stop and take profits are not created
+        assert len(await self.get_open_orders()) == len(open_orders)
+
+    async def _test_untriggered_double_bundled_orders(self):
+        # tests uncreated bundled orders (remain bound to initial order but initial order does not get filled)
+        current_price = await self.get_price()
+        stop_loss, take_profit = await self._get_bundled_orders_stop_take_profit(current_price)
+        size = stop_loss.origin_quantity
+        open_orders = await self.get_open_orders()
+
+        price = personal_data.decimal_adapt_price(
+            self.exchange_manager.exchange.get_market_status(self.SYMBOL),
+            stop_loss.origin_price * decimal.Decimal(f"{1 + self.ORDER_PRICE_DIFF/2/100}")
+        )
+        limit_order = await self.create_limit_order(price, size,
+                                                    trading_enums.TradeOrderSide.BUY,
+                                                    push_on_exchange=False)
+        params = await self.bundle_orders(limit_order, stop_loss, take_profit=take_profit)
+        if not self.SUPPORTS_DOUBLE_BUNDLED_ORDERS:
+            await self._create_order_on_exchange(limit_order, params=params, expected_creation_error=True)
+            return
+        limit_order = await self._create_order_on_exchange(limit_order, params=params)
+        self.check_created_limit_order(limit_order, price, size, trading_enums.TradeOrderSide.BUY)
+        # stop and take profit are bundled but not created as long as the initial order is not filled
+        additionally_fetched_orders = await self.get_similar_orders_in_open_orders(open_orders, [limit_order])
+        assert len(additionally_fetched_orders) == 1  # only created limit_order
+        await self.cancel_order(limit_order)
+        # limit_order no more in open orders, stop and take profits are not created
+        assert len(await self.get_open_orders()) == len(open_orders)
+
+    async def _test_triggered_simple_bundled_orders(self):
+        #  tests bundled stop loss into open position order
+        current_price = await self.get_price()
+        stop_loss, _ = await self._get_bundled_orders_stop_take_profit(current_price)
+        size = stop_loss.origin_quantity
+        open_orders = await self.get_open_orders()
+        # created bundled orders
+        market_order = await self.create_market_order(current_price, size,
+                                                      trading_enums.TradeOrderSide.BUY,
+                                                      push_on_exchange=False)
+        params = await self.bundle_orders(market_order, stop_loss)
+        buy_market = await self._create_order_on_exchange(market_order, params=params)
+        self.check_created_market_order(buy_market, size, trading_enums.TradeOrderSide.BUY)
+        try:
+            await self.wait_for_fill(buy_market)
+            created_orders = [stop_loss]
+            fetched_conditional_orders = await self.get_similar_orders_in_open_orders(open_orders, created_orders)
+            for fetched_conditional_order in fetched_conditional_orders:
+                # ensure stop loss / take profit is fetched in open orders
+                # ensure stop loss / take profit cancel is working
+                await self.cancel_order(fetched_conditional_order)
+            for fetched_conditional_order in fetched_conditional_orders:
+                assert await self.order_not_in_open_orders(open_orders, fetched_conditional_order)
+        finally:
+            # close position
+            sell_market = await self.create_market_order(current_price, size,
+                                                         trading_enums.TradeOrderSide.SELL)
+            self.check_created_market_order(sell_market, size, trading_enums.TradeOrderSide.SELL)
+            await self.wait_for_fill(sell_market)
+
+    async def _test_triggered_double_bundled_orders(self):
+        #  tests bundled stop loss and take profits into open position order
+        current_price = await self.get_price()
+        stop_loss, take_profit = await self._get_bundled_orders_stop_take_profit(current_price)
+        size = stop_loss.origin_quantity
+        open_orders = await self.get_open_orders()
+        # created bundled orders
+        market_order = await self.create_market_order(current_price, size,
+                                                      trading_enums.TradeOrderSide.BUY,
+                                                      push_on_exchange=False)
+        params = await self.bundle_orders(market_order, stop_loss, take_profit=take_profit)
+        if not self.SUPPORTS_DOUBLE_BUNDLED_ORDERS:
+            await self._create_order_on_exchange(market_order, params=params, expected_creation_error=True)
+            return
+        buy_market = await self._create_order_on_exchange(market_order, params=params)
+        self.check_created_market_order(buy_market, size, trading_enums.TradeOrderSide.BUY)
+        try:
+            await self.wait_for_fill(buy_market)
+            created_orders = [stop_loss, take_profit]
+            fetched_conditional_orders = await self.get_similar_orders_in_open_orders(open_orders, created_orders)
+            for fetched_conditional_order in fetched_conditional_orders:
+                # ensure stop loss / take profit is fetched in open orders
+                # ensure stop loss / take profit cancel is working
+                await self.cancel_order(fetched_conditional_order)
+            for fetched_conditional_order in fetched_conditional_orders:
+                assert await self.order_not_in_open_orders(open_orders, fetched_conditional_order)
+        finally:
+            # close position
+            sell_market = await self.create_market_order(current_price, size,
+                                                         trading_enums.TradeOrderSide.SELL)
+            self.check_created_market_order(sell_market, size, trading_enums.TradeOrderSide.SELL)
+            await self.wait_for_fill(sell_market)
+
+    async def bundle_orders(self, initial_order, stop_loss, take_profit=None):
+        # bundle stop loss and take profits into open position order
+        params = await self.exchange_manager.trader.bundle_chained_order_with_uncreated_order(initial_order, stop_loss)
+        # # consider stop loss in param
+        stop_loss_included_params_len = len(params)
+        assert stop_loss_included_params_len > 0
+        if take_profit:
+            params.update(
+                await self.exchange_manager.trader.bundle_chained_order_with_uncreated_order(initial_order, take_profit)
+            )
+            # consider take profit in param
+            assert len(params) > stop_loss_included_params_len
+        return params
+
+    async def _get_bundled_orders_stop_take_profit(self, current_price):
         stop_loss_price = self.get_order_price(current_price, False)
         take_profit_price = self.get_order_price(current_price, True)
         size = self.get_order_size(await self.get_portfolio(), stop_loss_price)
-        open_orders = await self.get_open_orders()
         stop_loss = await self.create_market_stop_loss_order(current_price, stop_loss_price, size,
                                                              trading_enums.TradeOrderSide.SELL,
                                                              push_on_exchange=False)
         take_profit = await self.create_order(take_profit_price, current_price, size, trading_enums.TradeOrderSide.SELL,
                                               trading_enums.TraderOrderType.TAKE_PROFIT, push_on_exchange=False)
-        market_order = await self.create_market_order(current_price, size,
-                                                      trading_enums.TradeOrderSide.BUY,
-                                                      push_on_exchange=False)
-        # bundle stop loss and take profits into open position order
-        params = await self.exchange_manager.trader.bundle_chained_order_with_uncreated_order(market_order, stop_loss)
-        params.update(
-            await self.exchange_manager.trader.bundle_chained_order_with_uncreated_order(market_order, take_profit)
+        return (
+            stop_loss,
+            take_profit,
         )
-        buy_market = await self._create_order_on_exchange(market_order, params=params)
-        self.check_created_market_order(buy_market, size, trading_enums.TradeOrderSide.BUY)
-        await self.wait_for_fill(buy_market)
-        created_orders = [stop_loss, take_profit]
-        fetched_conditional_orders = await self.get_similar_orders_in_open_orders(open_orders, created_orders)
-        for fetched_conditional_order in fetched_conditional_orders:
-            # ensure stop loss / take profit is fetched in open orders
-            # ensure stop loss / take profit cancel is working
-            await self.cancel_order(fetched_conditional_order)
-        for fetched_conditional_order in fetched_conditional_orders:
-            assert await self.order_not_in_open_orders(open_orders, fetched_conditional_order)
-        # close position
-        sell_market = await self.create_market_order(current_price, size,
-                                                     trading_enums.TradeOrderSide.SELL)
-        self.check_created_market_order(sell_market, size, trading_enums.TradeOrderSide.SELL)
-        await self.wait_for_fill(sell_market)
 
     async def get_portfolio(self):
         return await self.exchange_manager.exchange.get_balance()
@@ -238,13 +368,13 @@ class AbstractAuthenticatedExchangeTester:
         return await self.exchange_manager.exchange.get_closed_orders(symbol or self.SYMBOL)
 
     def check_duplicate(self, orders_or_trades):
-        assert len({
+        assert len(orders_or_trades) * (1 - self.DUPLICATE_TRADES_RATIO) <= len({
             f"{o[trading_enums.ExchangeConstantsOrderColumns.ID.value]}"
             f"{o[trading_enums.ExchangeConstantsOrderColumns.TIMESTAMP.value]}"
             f"{o[trading_enums.ExchangeConstantsOrderColumns.AMOUNT.value]}"
             f"{o[trading_enums.ExchangeConstantsOrderColumns.PRICE.value]}"
             for o in orders_or_trades
-        }) == len(orders_or_trades)
+        }) <= len(orders_or_trades)
 
     def check_raw_closed_orders(self, closed_orders):
         self.check_duplicate(closed_orders)
@@ -257,6 +387,7 @@ class AbstractAuthenticatedExchangeTester:
         assert order.symbol
         assert order.timestamp
         assert order.order_type
+        assert order.order_type is not trading_enums.TraderOrderType.UNKNOWN.value
         assert order.status
         if self.NO_FEE_ON_GET_CLOSED_ORDERS:
             assert order.fee is None
@@ -284,6 +415,8 @@ class AbstractAuthenticatedExchangeTester:
         assert trade.symbol
         assert trade.total_cost
         assert trade.trade_type
+        assert trade.trade_type is not trading_enums.TraderOrderType.UNKNOWN
+        assert trade.exchange_trade_type is not trading_enums.TradeOrderType.UNKNOWN
         assert trade.status
         assert trade.fee
         assert trade.origin_order_id
@@ -400,8 +533,16 @@ class AbstractAuthenticatedExchangeTester:
             raise AssertionError("Error when creating order")
         return current_order
 
-    async def _create_order_on_exchange(self, order, params=None):
+    async def _create_order_on_exchange(self, order, params=None, expected_creation_error=False):
         created_order = await self.exchange_manager.trader.create_order(order, params=params, wait_for_creation=False)
+        if expected_creation_error:
+            if created_order is None:
+                return None  # expected
+            raise AssertionError(
+                f"Created order is not None while expected_creation_error is True. The order was created on exchange"
+            )
+        if created_order is None:
+            raise AssertionError(f"Created order is None. input order: {order}, params: {params}")
         if created_order.status is trading_enums.OrderStatus.PENDING_CREATION:
             await self.wait_for_open(created_order)
             return await self.get_order(created_order.order_id)
@@ -512,7 +653,7 @@ class AbstractAuthenticatedExchangeTester:
             raw_order = await self.exchange_manager.exchange.get_order(order.order_id, order.symbol)
             if raw_order and validation_func(raw_order):
                 return raw_order
-        raise TimeoutError(f"Order not filled within {timeout}s: {order}")
+        raise TimeoutError(f"Order not filled/cancelled within {timeout}s: {order}")
 
     async def order_in_open_orders(self, previous_open_orders, order):
         open_orders = await self.get_open_orders()

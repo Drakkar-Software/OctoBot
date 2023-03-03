@@ -24,8 +24,8 @@ class StartupInfo:
         self.forced_profile = forced_profile
         self.subscribed_products = subscribed_products
 
-    def get_forced_profile_url(self) -> list:
-        return self.forced_profile[self.URL]
+    def get_forced_profile_url(self) -> str:
+        return self.forced_profile.get(self.URL, None)
 
     def get_subscribed_products_urls(self) -> list:
         return [
@@ -36,8 +36,8 @@ class StartupInfo:
     @staticmethod
     def from_dict(data):
         return StartupInfo(
-            data[StartupInfo.FORCED_PROFILE_URL],
-            data[StartupInfo.SUBSCRIBED_PRODUCTS]
+            data.get(StartupInfo.FORCED_PROFILE_URL, {}) or {},
+            data.get(StartupInfo.SUBSCRIBED_PRODUCTS, []) or []
         )
 
     def __str__(self):

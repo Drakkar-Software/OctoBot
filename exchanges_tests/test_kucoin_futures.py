@@ -32,13 +32,20 @@ class TestKucoinFuturesAuthenticatedExchange(
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}:{SETTLEMENT_CURRENCY}"
     INVERSE_SYMBOL = f"{ORDER_CURRENCY}/USD:{ORDER_CURRENCY}"
     ORDER_SIZE = 60  # % of portfolio to include in test orders
-    REQUIRES_SYMBOLS_TO_GET_POSITIONS = True
+    SUPPORTS_GET_LEVERAGE = False
+    SUPPORTS_SET_LEVERAGE = False
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
 
     async def test_get_empty_linear_and_inverse_positions(self):
         await super().test_get_empty_linear_and_inverse_positions()
+
+    async def test_get_and_set_margin_type(self):
+        await super().test_get_and_set_margin_type()
+
+    async def test_get_and_set_leverage(self):
+        await super().test_get_and_set_leverage()
 
     async def test_create_and_cancel_limit_orders(self):
         await super().test_create_and_cancel_limit_orders()
@@ -66,7 +73,12 @@ class TestKucoinFuturesAuthenticatedExchange(
         # no exchange API to edit a live order
         pass
 
-    async def test_create_bundled_orders(self):
+    async def test_create_single_bundled_orders(self):
+        # pass if not implemented
+        # no exchange API to bind secondary orders when creating a new order
+        pass
+
+    async def test_create_double_bundled_orders(self):
         # pass if not implemented
         # no exchange API to bind secondary orders when creating a new order
         pass

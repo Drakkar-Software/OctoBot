@@ -30,6 +30,7 @@ class TestBinanceAuthenticatedExchange(
     SETTLEMENT_CURRENCY = "BUSD"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
     ORDER_SIZE = 50  # % of portfolio to include in test orders
+    DUPLICATE_TRADES_RATIO = 0.1   # allow 10% duplicate in trades (due to trade id set to order id)
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
@@ -58,6 +59,10 @@ class TestBinanceAuthenticatedExchange(
         # pass if not implemented
         pass
 
-    async def test_create_bundled_orders(self):
+    async def test_create_single_bundled_orders(self):
+        # pass if not implemented
+        pass
+
+    async def test_create_double_bundled_orders(self):
         # pass if not implemented
         pass

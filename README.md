@@ -1,4 +1,4 @@
-# OctoBot [0.4.40](https://octobot.click/gh-changelog)
+# OctoBot [0.4.41](https://octobot.click/gh-changelog)
 [![PyPI](https://img.shields.io/pypi/v/OctoBot.svg)](https://octobot.click/gh-pypi)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/e07fb190156d4efb8e7d07aaa5eff2e1)](https://app.codacy.com/gh/Drakkar-Software/OctoBot?utm_source=github.com&utm_medium=referral&utm_content=Drakkar-Software/OctoBot&utm_campaign=Badge_Grade_Dashboard)[![Downloads](https://pepy.tech/badge/octobot/month)](https://pepy.tech/project/octobot)
 [![Dockerhub](https://img.shields.io/docker/pulls/drakkarsoftware/octobot.svg)](https://octobot.click/gh-dockerhub)
@@ -16,6 +16,9 @@
 </p>
 
 ![Web Interface](../assets/web-interface.gif)
+
+
+
 ## Description
 [Octobot](https://www.octobot.online/) is a powerful, fully modular open-source cryptocurrency trading robot.
 
@@ -54,6 +57,7 @@ OctoBot's installation is **very simple**... because it is **very documented** !
 Register to OctoBot Cloud to deploy your OctoBot in the cloud. No installation required.
 
 [![Deploy to OctoBot Cloud](https://dabuttonfactory.com/button.png?t=Deploy+now&f=Roboto-Bold&ts=18&tc=fff&hp=20&vp=15&c=11&bgt=unicolored&bgc=422afb)](https://octobot.click/gh-deploy)
+
 
 #### [With executable](https://www.octobot.info/installation/with-binary)
 Follow the [2 steps installation guide](https://www.octobot.online/executable_installation/) 
@@ -108,6 +112,11 @@ python3 start.py
 
 Octobot supports many [exchanges](https://octobot.click/gh-exchanges) thanks to the [ccxt library](https://github.com/ccxt/ccxt). 
 To activate trading on an exchange, just configure OctoBot with your API keys as described [on the exchange documentation](https://www.octobot.online/guides/#exchanges).
+
+## Contribute from a browser IDE 
+Make changes and contribute to OctoBot in a single click with an **already setup and ready to code developer environment** using Gitpod !
+
+[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/Drakkar-Software/OctoBot)
 
 ## Disclaimer
 Do not risk money which you are afraid to lose. USE THE SOFTWARE AT YOUR OWN RISK. THE AUTHORS 
