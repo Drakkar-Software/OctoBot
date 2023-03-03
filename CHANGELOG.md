@@ -6,6 +6,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [0.4.41] - 2023-03-03
+### Added
+- Trades PNL history for supported trading mode
+- Support for OKX futures
+- Support for market orders in Dip Analyser
+### Updated
+- Revamped the trading tab of the web interface
+- Reduced required RAM for long-lasting instances
+- Optimized disc read/write operations when browsing the web interface
+### Fixed
+- Orders synchronization and cancel issues
+- Future trading positions synchronization issues
+- Order creation issues related to order minimum and maximum amounts
+
 ## [0.4.40] - 2023-02-17
 ### Fixed
 - Historical portfolio reset 
