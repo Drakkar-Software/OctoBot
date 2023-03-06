@@ -525,7 +525,8 @@ class CommunityAuthentication(authentication.Authenticator):
                     ref_market_current_value, formatted_content, formatted_history
                 )
         except Exception as err:
-            self.logger.exception(err, True, f"Error when updating community portfolio {err}")
+            self.logger.exception(err, False, None)
+            self.logger.debug(f"Error when updating community portfolio {err}")
 
     def _get_self_hosted_bots(self, bots):
         return [
