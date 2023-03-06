@@ -47,8 +47,8 @@ async def store_backtesting_run_metadata(exchange_managers, start_time, user_inp
     run_metadata = await _get_trading_metadata(exchange_managers, start_time, user_inputs, run_dbs_identifier, True)
     # use local database as a lock is required
     async with commons_databases.DBWriter.database(
-         run_dbs_identifier.get_backtesting_metadata_identifier(),
-         with_lock=True) as writer:
+            run_dbs_identifier.get_backtesting_metadata_identifier(),
+            with_lock=True) as writer:
         await writer.log(common_enums.DBTables.METADATA.value, run_metadata)
     return run_metadata
 
@@ -109,6 +109,7 @@ async def _get_multi_exchange_data(exchange_managers, is_backtesting):
             }
             for symbol, contract in trading_api.get_pair_contracts(exchange_manager).items()
             if symbol in trading_api.get_trading_pairs(exchange_manager)
+            and trading_api.is_handled_contract(contract)
         }
         for exchange_manager in exchange_managers
         if exchange_manager.is_future and hasattr(exchange_manager.exchange, "pair_contracts")
@@ -220,7 +221,8 @@ async def _get_multi_exchange_data(exchange_managers, is_backtesting):
     }
 
 
-async def _get_single_exchange_data(exchange_manager, trading_mode, run_start_time, user_inputs, run_dbs_identifier, is_backtesting):
+async def _get_single_exchange_data(exchange_manager, trading_mode, run_start_time, user_inputs, run_dbs_identifier,
+                                    is_backtesting):
     exchange_type = trading_enums.ExchangeTypes.FUTURE.value if exchange_manager.is_future \
         else trading_enums.ExchangeTypes.SPOT.value
     if user_inputs is None:
