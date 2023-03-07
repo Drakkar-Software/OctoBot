@@ -33,8 +33,8 @@ class OctoBotAPI:
     def get_global_config(self) -> dict:
         return self._octobot.config
 
-    def get_startup_config(self):
-        return self._octobot.get_startup_config(constants.CONFIG_KEY)
+    def get_startup_config(self, dict_only=True):
+        return self._octobot.get_startup_config(constants.CONFIG_KEY, dict_only=dict_only)
 
     def get_edited_config(self, dict_only=True):
         return self._octobot.get_edited_config(constants.CONFIG_KEY, dict_only=dict_only)

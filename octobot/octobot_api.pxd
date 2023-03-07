@@ -25,7 +25,7 @@ cdef class OctoBotAPI:
     cpdef object get_startup_tentacles_config(self)
     cpdef object get_edited_tentacles_config(self)
     cpdef void set_edited_tentacles_config(self, object config)
-    cpdef object get_startup_config(self)
+    cpdef object get_startup_config(self, bint dict_only=*)
     cpdef object get_edited_config(self, bint dict_only=*)
     cpdef void set_edited_tentacles_config(self, object config)
     cpdef object get_trading_mode(self)
