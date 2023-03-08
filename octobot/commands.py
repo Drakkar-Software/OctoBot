@@ -184,7 +184,7 @@ def download_missing_profiles(config, profile_urls):
         )
         for download_url in set(profile_urls):
             if download_url not in installed_profiles_urls:
-                installed_profile = profiles.download_and_install_profile(download_url)
+                installed_profile = profiles.download_and_install_profile(download_url, constants.PROFILE_FILE_SCHEMA)
                 if installed_profile is not None:
                     downloaded_profiles.append(
                         installed_profile

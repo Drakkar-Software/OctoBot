@@ -2,7 +2,7 @@
 cython==0.29.32
 
 # Drakkar-Software requirements
-OctoBot-Commons==1.8.12
+OctoBot-Commons==1.8.13
 OctoBot-Trading==2.3.24
 OctoBot-Evaluators==1.8.3
 OctoBot-Tentacles-Manager==2.8.4
