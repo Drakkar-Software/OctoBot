@@ -10,11 +10,17 @@
         "name": {
           "type": "string"
         },
+        "imported": {
+          "type": "boolean"
+        },
         "description": {
-          "type": "string"
+          "type": ["string", "null"]
         },
         "avatar": {
-          "type": "string"
+          "type": ["string", "null"]
+        },
+        "origin_url": {
+          "type": ["string", "null"]
         },
         "read_only": {
           "type": "boolean"
@@ -29,6 +35,7 @@
           "patternProperties": {
             "^.*$": {
               "type": "object",
+              "additionalProperties":false,
               "properties": {
                 "enabled": {
                   "type": "boolean"
@@ -59,6 +66,7 @@
           "patternProperties": {
             "^.*$": {
               "type": "object",
+              "additionalProperties":false,
               "properties": {
                 "enabled": {
                   "type": "boolean"
@@ -75,6 +83,7 @@
         },
         "trader": {
           "type": "object",
+          "additionalProperties":false,
           "properties": {
             "enabled": {
               "type": "boolean"
@@ -89,12 +98,14 @@
         },
         "trader-simulator": {
           "type": "object",
+          "additionalProperties":false,
           "properties": {
             "enabled": {
               "type": "boolean"
             },
             "fees": {
               "type": "object",
+              "additionalProperties":false,
               "properties": {
                 "maker": {
                   "type": "number",
@@ -114,6 +125,7 @@
             },
             "starting-portfolio": {
               "type": "object",
+              "additionalProperties":false,
               "patternProperties": {
                 "^.*$": {
                   "type": "number",
@@ -130,6 +142,7 @@
         },
         "trading": {
           "type": "object",
+          "additionalProperties":false,
           "properties": {
             "reference-market": {
               "type": "string"
