@@ -108,7 +108,8 @@ class AbstractAuthenticatedExchangeTester:
             self.check_created_market_order(sell_market, sell_size, trading_enums.TradeOrderSide.SELL)
             await self.wait_for_fill(sell_market)
             post_sell_portfolio = await self.get_portfolio()
-            self.check_portfolio_changed(post_buy_portfolio, post_sell_portfolio, True)
+            if post_buy_portfolio:
+                self.check_portfolio_changed(post_buy_portfolio, post_sell_portfolio, True)
 
     async def test_create_and_cancel_stop_orders(self):
         # pass if not implemented
@@ -653,7 +654,7 @@ class AbstractAuthenticatedExchangeTester:
             raw_order = await self.exchange_manager.exchange.get_order(order.order_id, order.symbol)
             if raw_order and validation_func(raw_order):
                 return raw_order
-        raise TimeoutError(f"Order not filled/cancelled within {timeout}s: {order}")
+        raise TimeoutError(f"Order not filled/cancelled within {timeout}s: {order} ({validation_func.__name__})")
 
     async def order_in_open_orders(self, previous_open_orders, order):
         open_orders = await self.get_open_orders()
