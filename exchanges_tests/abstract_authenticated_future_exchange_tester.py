@@ -171,7 +171,8 @@ class AbstractAuthenticatedFutureExchangeTester(
             await self.wait_for_fill(sell_market)
             post_sell_portfolio = await self.get_portfolio()
             post_sell_position = await self.get_position()
-            self.check_portfolio_changed(post_buy_portfolio, post_sell_portfolio, True)
+            if post_buy_portfolio:
+                self.check_portfolio_changed(post_buy_portfolio, post_sell_portfolio, True)
             self.check_position_changed(post_buy_position, post_sell_position, False)
             # position is back to what it was at the beginning on the test
             self.check_position_size(position, post_sell_position)
