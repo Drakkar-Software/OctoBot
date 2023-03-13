@@ -98,7 +98,8 @@ class AbstractAuthenticatedExchangeTester:
         self.check_created_market_order(buy_market, size, trading_enums.TradeOrderSide.BUY)
         post_buy_portfolio = {}
         try:
-            await self.wait_for_fill(buy_market)
+            filled_order = await self.wait_for_fill(buy_market)
+            self.check_raw_closed_orders([filled_order])
             post_buy_portfolio = await self.get_portfolio()
             self.check_portfolio_changed(portfolio, post_buy_portfolio, False)
         finally:
@@ -394,6 +395,17 @@ class AbstractAuthenticatedExchangeTester:
             assert order.fee is None
         else:
             assert order.fee
+            assert isinstance(order.fee[trading_enums.FeePropertyColumns.COST.value], decimal.Decimal)
+            has_paid_fees = order.fee[trading_enums.FeePropertyColumns.COST.value] > trading_constants.ZERO
+            if has_paid_fees:
+                assert order.fee[trading_enums.FeePropertyColumns.EXCHANGE_ORIGINAL_COST.value] is not None
+            else:
+                assert trading_enums.FeePropertyColumns.EXCHANGE_ORIGINAL_COST.value in order.fee
+            if has_paid_fees:
+                assert order.fee[trading_enums.FeePropertyColumns.CURRENCY.value] is not None
+            else:
+                assert trading_enums.FeePropertyColumns.CURRENCY.value in order.fee
+            assert order.fee[trading_enums.FeePropertyColumns.IS_FROM_EXCHANGE.value] is True
         assert order.order_id
         assert order.side
         if order.status not in (trading_enums.OrderStatus.REJECTED, trading_enums.OrderStatus.CANCELED):
@@ -628,7 +640,7 @@ class AbstractAuthenticatedExchangeTester:
         def parse_is_filled(raw_order):
             return personal_data.parse_order_status(raw_order) in {trading_enums.OrderStatus.FILLED,
                                                                    trading_enums.OrderStatus.CLOSED}
-        await self._get_order_until(order, parse_is_filled, self.MARKET_FILL_TIMEOUT)
+        return await self._get_order_until(order, parse_is_filled, self.MARKET_FILL_TIMEOUT)
 
     def parse_order_is_not_pending(self, raw_order):
         return personal_data.parse_order_status(raw_order) not in (trading_enums.OrderStatus.UNKNOWN, None)
