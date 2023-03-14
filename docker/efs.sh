@@ -19,4 +19,5 @@ fi
 # https://github.com/aws/efs-utils
 if [[ -n "$EFS_FS_ID" && -n "$EFS_FS_MOUNTPOINT_ID" ]]; then
     mount -t efs -o tls,iam,accesspoint=$EFS_FS_MOUNTPOINT_ID $EFS_FS_ID:/ $EFS_USER_MOUNT_POINT
+    amazon-efs-mount-watchdog &
 fi
