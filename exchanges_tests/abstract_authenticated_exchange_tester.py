@@ -17,10 +17,14 @@ import contextlib
 import decimal
 import time
 
+import pytest
+
 import octobot_commons.constants as constants
 import octobot_commons.symbols as symbols
+import octobot_trading.errors as trading_errors
 import octobot_trading.enums as trading_enums
 import octobot_trading.constants as trading_constants
+import octobot_trading.exchanges as trading_exchanges
 import octobot_trading.personal_data as personal_data
 import octobot_trading.personal_data.orders as personal_data_orders
 import octobot_tentacles_manager.api as tentacles_manager_api
@@ -44,7 +48,8 @@ class AbstractAuthenticatedExchangeTester:
     PORTFOLIO_TYPE_FOR_SIZE = trading_constants.CONFIG_PORTFOLIO_FREE
     CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES = False
     ORDER_PRICE_DIFF = 20  # % of price difference compared to current price for limit and stop orders
-    NO_FEE_ON_GET_CLOSED_ORDERS = False
+    EXPECT_MISSING_ORDER_FEES_DUE_TO_ORDERS_TOO_OLD_FOR_RECENT_TRADES = False   # when recent trades are limited and
+    # closed orders fees are taken from recent trades
     OPEN_ORDERS_IN_CLOSED_ORDERS = False
     MARKET_FILL_TIMEOUT = 15
     OPEN_TIMEOUT = 15
@@ -99,6 +104,9 @@ class AbstractAuthenticatedExchangeTester:
         post_buy_portfolio = {}
         try:
             filled_order = await self.wait_for_fill(buy_market)
+            await self.check_require_order_fees_from_trades(
+                filled_order[trading_enums.ExchangeConstantsOrderColumns.ID.value]
+            )
             self.check_raw_closed_orders([filled_order])
             post_buy_portfolio = await self.get_portfolio()
             self.check_portfolio_changed(portfolio, post_buy_portfolio, False)
@@ -111,6 +119,17 @@ class AbstractAuthenticatedExchangeTester:
             post_sell_portfolio = await self.get_portfolio()
             if post_buy_portfolio:
                 self.check_portfolio_changed(post_buy_portfolio, post_sell_portfolio, True)
+
+    async def check_require_order_fees_from_trades(self, filled_order_id, symbol=None):
+        symbol = symbol or self.SYMBOL
+        order_with_fees = await self.exchange_manager.exchange.get_order(filled_order_id, symbol)
+        assert not trading_exchanges.is_missing_trading_fees(order_with_fees)
+        order_maybe_without_fees = \
+            await self.exchange_manager.exchange.connector.get_order(filled_order_id, symbol=symbol)
+        if self.exchange_manager.exchange.REQUIRE_ORDER_FEES_FROM_TRADES:
+            assert trading_exchanges.is_missing_trading_fees(order_maybe_without_fees)
+        else:
+            assert not trading_exchanges.is_missing_trading_fees(order_maybe_without_fees)
 
     async def test_create_and_cancel_stop_orders(self):
         # pass if not implemented
@@ -145,6 +164,7 @@ class AbstractAuthenticatedExchangeTester:
             await self.inner_test_get_closed_orders()
 
     async def inner_test_get_closed_orders(self):
+        await self.check_require_closed_orders_from_recent_trades()
         orders = await self.get_closed_orders()
         assert orders
         self.check_raw_closed_orders(orders)
@@ -369,6 +389,11 @@ class AbstractAuthenticatedExchangeTester:
     async def get_closed_orders(self, symbol=None):
         return await self.exchange_manager.exchange.get_closed_orders(symbol or self.SYMBOL)
 
+    async def check_require_closed_orders_from_recent_trades(self, symbol=None):
+        if self.exchange_manager.exchange.REQUIRE_CLOSED_ORDERS_FROM_RECENT_TRADES:
+            with pytest.raises(trading_errors.NotSupported):
+                await self.exchange_manager.exchange.connector.get_closed_orders(symbol=symbol or self.SYMBOL)
+
     def check_duplicate(self, orders_or_trades):
         assert len(orders_or_trades) * (1 - self.DUPLICATE_TRADES_RATIO) <= len({
             f"{o[trading_enums.ExchangeConstantsOrderColumns.ID.value]}"
@@ -380,20 +405,27 @@ class AbstractAuthenticatedExchangeTester:
 
     def check_raw_closed_orders(self, closed_orders):
         self.check_duplicate(closed_orders)
+        incomplete_fees_orders = []
+        allow_incomplete_fees = len(closed_orders) > 1
         for closed_order in closed_orders:
             self.check_parsed_closed_order(
-                personal_data.create_order_instance_from_raw(self.exchange_manager.trader, closed_order)
+                personal_data.create_order_instance_from_raw(self.exchange_manager.trader, closed_order),
+                incomplete_fees_orders,
+                allow_incomplete_fees
             )
+        if allow_incomplete_fees and incomplete_fees_orders:
+            # at least 2 orders have fees (the 2 recent market orders from market orders tests)
+            assert len(closed_orders) - len(incomplete_fees_orders) >= 2
 
-    def check_parsed_closed_order(self, order: personal_data.Order):
+    def check_parsed_closed_order(
+            self, order: personal_data.Order, incomplete_fee_orders: list, allow_incomplete_fees: bool
+    ):
         assert order.symbol
         assert order.timestamp
         assert order.order_type
         assert order.order_type is not trading_enums.TraderOrderType.UNKNOWN.value
         assert order.status
-        if self.NO_FEE_ON_GET_CLOSED_ORDERS:
-            assert order.fee is None
-        else:
+        try:
             assert order.fee
             assert isinstance(order.fee[trading_enums.FeePropertyColumns.COST.value], decimal.Decimal)
             has_paid_fees = order.fee[trading_enums.FeePropertyColumns.COST.value] > trading_constants.ZERO
@@ -406,6 +438,11 @@ class AbstractAuthenticatedExchangeTester:
             else:
                 assert trading_enums.FeePropertyColumns.CURRENCY.value in order.fee
             assert order.fee[trading_enums.FeePropertyColumns.IS_FROM_EXCHANGE.value] is True
+        except AssertionError:
+            if allow_incomplete_fees and self.EXPECT_MISSING_ORDER_FEES_DUE_TO_ORDERS_TOO_OLD_FOR_RECENT_TRADES:
+                incomplete_fee_orders.append(order)
+            else:
+                raise
         assert order.order_id
         assert order.side
         if order.status not in (trading_enums.OrderStatus.REJECTED, trading_enums.OrderStatus.CANCELED):

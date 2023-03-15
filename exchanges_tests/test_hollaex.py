@@ -31,7 +31,8 @@ class TestHollaexAuthenticatedExchange(
     SETTLEMENT_CURRENCY = "USDT"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
     ORDER_SIZE = 25  # % of portfolio to include in test orders
-    NO_FEE_ON_GET_CLOSED_ORDERS = True
+    EXPECT_MISSING_ORDER_FEES_DUE_TO_ORDERS_TOO_OLD_FOR_RECENT_TRADES = True   # when recent trades are limited and
+    # closed orders fees are taken from recent trades
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
