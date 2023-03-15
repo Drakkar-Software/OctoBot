@@ -33,7 +33,8 @@ class TestBybitAuthenticatedExchange(
     OPEN_TIMEOUT = 20    # larger for bybit testnet
     CANCEL_TIMEOUT = 20  # larger for bybit testnet
     CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES = True
-    NO_FEE_ON_GET_CLOSED_ORDERS = True
+    EXPECT_MISSING_ORDER_FEES_DUE_TO_ORDERS_TOO_OLD_FOR_RECENT_TRADES = True   # when recent trades are limited and
+    # closed orders fees are taken from recent trades
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
