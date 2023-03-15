@@ -68,12 +68,16 @@ class TaskManager:
         self.logger.debug("Stopped OctoBot main loop")
 
     def run_forever(self, coroutine):
-        self.loop_forever_thread = threading.Thread(target=self.run_bot_in_thread, args=(coroutine,),
-                                                    name=f"OctoBot Main Thread")
-        self.loop_forever_thread.start()
-        if sys.version_info.minor >= 9:
-            # only required for python 3.9 +
-            self.loop_forever_thread.join()
+        if constants.RUN_IN_MAIN_THREAD:
+            self.run_bot_in_thread(coroutine)
+        else:
+            self.loop_forever_thread = threading.Thread(
+                target=self.run_bot_in_thread, args=(coroutine,),
+                name="OctoBot Main Thread")
+            self.loop_forever_thread.start()
+            if sys.version_info.minor >= 9:
+                # only required for python 3.9 +
+                self.loop_forever_thread.join()
 
     def stop_tasks(self, stop_octobot=True):
         self.logger.info("Stopping tasks...")
