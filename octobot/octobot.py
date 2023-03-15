@@ -212,7 +212,7 @@ class OctoBot:
             await self.service_feed_producer.stop()
             await os_clock_sync.stop_clock_synchronizer()
             await system_resources_watcher.stop_system_resources_watcher()
-            service_api.stop_services()
+            await service_api.stop_services()
             await self.interface_producer.stop()
             await databases.close_bot_storage(self.bot_id)
             if self.automation is not None:
