@@ -33,7 +33,6 @@ class TestBitgetAuthenticatedExchange(
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
     ORDER_SIZE = 40  # % of portfolio to include in test orders
     CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES = True
-    NO_FEE_ON_GET_CLOSED_ORDERS = True
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
