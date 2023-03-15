@@ -109,6 +109,7 @@ TRACKING_ID = os.getenv("TRACKING_ID", "eoe1stwyun" if IS_DEMO else "eoe06soct7"
 TO_DOWNLOAD_PROFILES = os.getenv("TO_DOWNLOAD_PROFILES", None)
 # Profiles to force select at startup, identified by profile id, download url or name
 FORCED_PROFILE = os.getenv("FORCED_PROFILE", None)
+RUN_IN_MAIN_THREAD = os.getenv("RUN_IN_MAIN_THREAD", False)
 
 OCTOBOT_BINARY_PROJECT_NAME = "OctoBot-Binary"
 
