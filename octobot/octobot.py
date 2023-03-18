@@ -212,7 +212,7 @@ class OctoBot:
             await self.service_feed_producer.stop()
             await os_clock_sync.stop_clock_synchronizer()
             await system_resources_watcher.stop_system_resources_watcher()
-            service_api.stop_services()
+            await service_api.stop_services()
             await self.interface_producer.stop()
             await databases.close_bot_storage(self.bot_id)
             if self.automation is not None:
@@ -242,8 +242,9 @@ class OctoBot:
 
     def _log_config(self):
         exchanges = [
-            f"{exchange}[{config.get(commons_constants.CONFIG_EXCHANGE_TYPE, commons_constants.CONFIG_EXCHANGE_SPOT)}]"
-            for exchange, config in self.config[commons_constants.CONFIG_EXCHANGES].items()
+            f"{exchange}" \
+            f"[{config.get(commons_constants.CONFIG_EXCHANGE_TYPE, trading_api.get_default_exchange_type(exchange))}]"
+            for exchange, config in self.config.get(commons_constants.CONFIG_EXCHANGES, {}).items()
             if config.get(commons_constants.CONFIG_ENABLED_OPTION, True)
         ]
         has_real_trader = trading_api.is_trader_enabled_in_config(self.config)

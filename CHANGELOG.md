@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [0.4.42] - 2023-03-18
+### Added
+- Crypto.com spot trading support
+- Bybit spot trading support
+- Order storage: in real trading, stop loss, tags, groups and chained orders are saved between sessions
+### Updated
+- Improve portfolio valuation
+- Improve PNL display
+- Telegram library to async version for better performances
+### Fixed
+- PNL on real trading
+- Price limit computation in order creation
+
 ## [0.4.41] - 2023-03-03
 ### Added
 - Trades PNL history for supported trading mode

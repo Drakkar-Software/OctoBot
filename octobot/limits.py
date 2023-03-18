@@ -33,7 +33,7 @@ class ReachedLimitError(Exception):
 def _apply_exchanges_limits(dict_config, logger, limit):
     if len(trading_api.get_enabled_exchanges_names(dict_config)) > limit:
         enabled_exchanges = []
-        for exchange, config in dict_config[common_constants.CONFIG_EXCHANGES].items():
+        for exchange, config in dict_config.get(common_constants.CONFIG_EXCHANGES, {}).items():
             if config.get(common_constants.CONFIG_ENABLED_OPTION, True):
                 if len(enabled_exchanges) < limit:
                     enabled_exchanges.append(exchange)
@@ -49,7 +49,7 @@ def _apply_symbols_limits(dict_config, logger, limit):
     enabled_symbols = []
     has_disabled_symbols = False
     message = ""
-    for currency, crypto_currency_data in dict_config[common_constants.CONFIG_CRYPTO_CURRENCIES].items():
+    for currency, crypto_currency_data in dict_config.get(common_constants.CONFIG_CRYPTO_CURRENCIES, {}).items():
         if crypto_currency_data.get(common_constants.CONFIG_ENABLED_OPTION, True):
             if len(enabled_symbols) >= limit:
                 crypto_currency_data[common_constants.CONFIG_ENABLED_OPTION] = False
@@ -57,7 +57,7 @@ def _apply_symbols_limits(dict_config, logger, limit):
                 has_disabled_symbols = True
                 continue
             updated_symbols = []
-            for symbol in crypto_currency_data[common_constants.CONFIG_CRYPTO_PAIRS]:
+            for symbol in crypto_currency_data.get(common_constants.CONFIG_CRYPTO_PAIRS, []):
                 if symbol == common_constants.CONFIG_SYMBOLS_WILDCARD[0] \
                         or symbol == common_constants.CONFIG_SYMBOLS_WILDCARD:
                     crypto_currency_data[common_constants.CONFIG_ENABLED_OPTION] = False

@@ -13,8 +13,6 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
-import decimal
-
 import pytest
 
 from exchanges_tests import abstract_authenticated_exchange_tester
@@ -23,16 +21,20 @@ from exchanges_tests import abstract_authenticated_exchange_tester
 pytestmark = pytest.mark.asyncio
 
 
-class TestBitgetAuthenticatedExchange(
+class TestBybitAuthenticatedExchange(
     abstract_authenticated_exchange_tester.AbstractAuthenticatedExchangeTester
 ):
     # enter exchange name as a class variable here
-    EXCHANGE_NAME = "bitget"
+    EXCHANGE_NAME = "bybit"
     ORDER_CURRENCY = "BTC"
     SETTLEMENT_CURRENCY = "USDT"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
-    ORDER_SIZE = 40  # % of portfolio to include in test orders
+    ORDER_SIZE = 10  # % of portfolio to include in test orders
+    OPEN_TIMEOUT = 20    # larger for bybit testnet
+    CANCEL_TIMEOUT = 20  # larger for bybit testnet
     CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES = True
+    EXPECT_MISSING_ORDER_FEES_DUE_TO_ORDERS_TOO_OLD_FOR_RECENT_TRADES = True   # when recent trades are limited and
+    # closed orders fees are taken from recent trades
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
@@ -51,7 +53,7 @@ class TestBitgetAuthenticatedExchange(
 
     async def test_create_and_cancel_stop_orders(self):
         # pass if not implemented
-        pass
+        await super().test_create_and_cancel_stop_orders()
 
     async def test_edit_limit_order(self):
         # pass if not implemented

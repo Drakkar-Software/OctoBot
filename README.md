@@ -1,4 +1,4 @@
-# OctoBot [0.4.41](https://octobot.click/gh-changelog)
+# OctoBot [0.4.42](https://octobot.click/gh-changelog)
 [![PyPI](https://img.shields.io/pypi/v/OctoBot.svg)](https://octobot.click/gh-pypi)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/e07fb190156d4efb8e7d07aaa5eff2e1)](https://app.codacy.com/gh/Drakkar-Software/OctoBot?utm_source=github.com&utm_medium=referral&utm_content=Drakkar-Software/OctoBot&utm_campaign=Badge_Grade_Dashboard)[![Downloads](https://pepy.tech/badge/octobot/month)](https://pepy.tech/project/octobot)
 [![Dockerhub](https://img.shields.io/docker/pulls/drakkarsoftware/octobot.svg)](https://octobot.click/gh-dockerhub)
@@ -54,7 +54,7 @@ Octobot's main feature is **evolution** : you can [install](https://www.octobot.
 OctoBot's installation is **very simple**... because it is **very documented** ! See the [installation guides](https://www.octobot.online/guides/#installation) for more info.
 
 #### One click deployment
-Register to OctoBot Cloud to deploy your OctoBot in the cloud. No installation required.
+Deploy your OctoBot on the OctoBot Cloud. No installation is required and your OctoBot will always be online and reachable.
 
 [![Deploy to OctoBot Cloud](https://dabuttonfactory.com/button.png?t=Deploy+now&f=Roboto-Bold&ts=18&tc=fff&hp=20&vp=15&c=11&bgt=unicolored&bgc=422afb)](https://octobot.click/gh-deploy)
 

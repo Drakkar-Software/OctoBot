@@ -30,7 +30,7 @@ class Error:
         self.metrics_id: str = metrics_id
         self.type: str = self.error.__class__.__name__ if self.error else ""
         self.stacktrace: list = traceback.format_exception(
-            etype=type(self.error), value=self.error, tb=self.error.__traceback__
+            type(self.error), value=self.error, tb=self.error.__traceback__
         )[1:] if self.error and isinstance(self.error, Exception) else []
 
     def to_dict(self) -> dict:

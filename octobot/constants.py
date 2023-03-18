@@ -41,6 +41,7 @@ EXCHANGES_DOCS_URL = os.getenv("DOCS_OCTOBOT_ONLINE_URL", "https://exchanges.oct
 DEVELOPER_DOCS_URL = os.getenv("DOCS_OCTOBOT_ONLINE_URL", "https://developer.octobot.info/")
 OCTOBOT_ONLINE = os.getenv("TENTACLES_OCTOBOT_ONLINE_URL", "https://static.octobot.online")
 OCTOBOT_FEEDBACK = os.getenv("FEEDBACK_OCTOBOT_ONLINE_URL", "https://feedback.octobot.online/")
+OCTOBOT_CLOUD_URL = os.getenv("OCTOBOT_CLOUD_URL", "https://octobot.cloud/")
 TENTACLES_REPOSITORY = "tentacles"
 BETA_TENTACLES_REPOSITORY = "dev-tentacles"
 OFFICIALS = "officials"
@@ -108,6 +109,7 @@ TRACKING_ID = os.getenv("TRACKING_ID", "eoe1stwyun" if IS_DEMO else "eoe06soct7"
 TO_DOWNLOAD_PROFILES = os.getenv("TO_DOWNLOAD_PROFILES", None)
 # Profiles to force select at startup, identified by profile id, download url or name
 FORCED_PROFILE = os.getenv("FORCED_PROFILE", None)
+RUN_IN_MAIN_THREAD = os.getenv("RUN_IN_MAIN_THREAD", False)
 
 OCTOBOT_BINARY_PROJECT_NAME = "OctoBot-Binary"
 
@@ -121,6 +123,7 @@ MAX_ALLOWED_BACKTESTING_CANDLES_HISTORY = int(os.getenv("MAX_ALLOWED_BACKTESTING
 ENABLE_AUTOMATIONS = os_util.parse_boolean_environment_var("ENABLE_AUTOMATIONS", "True")
 ENABLE_BACKTESTING = os_util.parse_boolean_environment_var("ENABLE_BACKTESTING", "True")
 ENABLE_ADVANCED_INTERFACE = os_util.parse_boolean_environment_var("ENABLE_ADVANCED_INTERFACE", "True")
+ENABLE_STRATEGY_OPTIMIZER = os_util.parse_boolean_environment_var("ENABLE_STRATEGY_OPTIMIZER", "True")
 
 # tentacles
 ENV_TENTACLES_URL = "TENTACLES_URL"
