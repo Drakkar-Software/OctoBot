@@ -24,6 +24,7 @@ import octobot_commons.logging as commons_logging
 import octobot_commons.configuration as commons_configuration
 import octobot_commons.databases as commons_databases
 import octobot_commons.constants as commons_constants
+import octobot_commons.asyncio_tools as asyncio_tools
 
 import octobot_backtesting.api as backtesting_api
 import octobot_backtesting.importers as importers
@@ -180,7 +181,8 @@ class OctoBotBacktesting:
             # call stop_importers in case it has not been called already
             if self.backtesting_data is None:
                 await self.stop_importers()
-
+            # let cancelled backtesting tasks complete before returning
+            await asyncio_tools.wait_asyncio_next_cycle()
             if memory_check:
                 to_reference_check = exchange_managers + [self.backtesting]
                 # Call at the next loop iteration to first let coroutines get cancelled
