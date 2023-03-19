@@ -524,6 +524,8 @@ class CommunityAuthentication(authentication.Authenticator):
                 await self._update_bot_historical_portfolio(
                     ref_market_current_value, formatted_content, formatted_history
                 )
+        except KeyError as err:
+            self.logger.debug(f"Error when updating community portfolio {err} (missing reference market value)")
         except Exception as err:
             self.logger.exception(err, False, None)
             self.logger.debug(f"Error when updating community portfolio {err}")
