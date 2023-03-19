@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [0.4.43] - 2023-03-19
+### Fixed
+- [Profiles] profiles update error management
+- [Portfolio] origin portfolio valuation issues
+
 ## [0.4.42] - 2023-03-18
 ### Added
 - Crypto.com spot trading support
