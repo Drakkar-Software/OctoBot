@@ -194,7 +194,7 @@ class OctoBot:
         try:
             if exchange_managers:
                 await storage.clear_run_metadata(self.bot_id)
-                await storage.store_run_metadata(self.bot_id, exchange_managers, self.start_time)
+                await storage.store_run_metadata(self.bot_id, exchange_managers, self.start_time, flush=True)
             else:
                 self.logger.debug("Skipping run metadata update: no available exchange manager")
         except Exception as err:
