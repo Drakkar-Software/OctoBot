@@ -43,6 +43,7 @@ cdef class IndependentBacktesting:
 
     cdef public object post_backtesting_task
     cdef public object previous_log_level
+    cdef public object previous_handlers_log_level
     cdef public object stopped_event
     cdef public bint enforce_total_databases_max_size_after_run
 
