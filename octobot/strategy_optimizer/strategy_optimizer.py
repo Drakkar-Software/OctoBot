@@ -91,6 +91,7 @@ class StrategyOptimizer:
             self.sorted_results_through_all_time_frame = []
 
             previous_log_level = common_logging.get_global_logger_level()
+            previous_log_level_per_handler = common_logging.get_logger_level_per_handler()
 
             try:
                 self.all_TAs = self._get_all_TA() if TAs is None else TAs
@@ -118,7 +119,10 @@ class StrategyOptimizer:
                 self._find_optimal_configuration_using_results()
             finally:
                 self.current_test_suite = None
-                common_logging.set_global_logger_level(previous_log_level)
+                common_logging.set_global_logger_level(
+                    previous_log_level,
+                    handler_levels=previous_log_level_per_handler,
+                )
                 self.is_computing = False
                 self.is_finished = True
                 self.logger.info(f"{self.get_name()} finished computation.")
