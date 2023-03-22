@@ -325,10 +325,10 @@ class IndependentBacktesting:
         starting_portfolio_value = trading_api.get_origin_portfolio_value(exchange_manager)
 
         self.logger.info(f"[End portfolio]      value {round(end_portfolio_value, 5)} {reference_market} "
-                         f"Holdings: {pretty_printer.global_portfolio_pretty_print(end_portfolio, ' | ')}")
+                         f"Holdings: {pretty_printer.global_portfolio_pretty_print(end_portfolio, separator=' | ')}")
 
         self.logger.info(f"[Starting portfolio] value {round(starting_portfolio_value, 5)} {reference_market} "
-                         f"Holdings: {pretty_printer.global_portfolio_pretty_print(starting_portfolio, ' | ')}")
+                         f"Holdings: {pretty_printer.global_portfolio_pretty_print(starting_portfolio, separator=' | ')}")
 
         self.logger.info(f"Global market profitability (vs {reference_market}) : "
                          f"{market_average_profitability}% | Octobot : {profitability}%")
