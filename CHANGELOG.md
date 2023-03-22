@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [0.4.45] - 2023-03-23
+### Added
+- [Trades] value in reference market
+- [PNL] detailed fees
+### Updated
+- [Telegram] increased timeout delay
+- [Telegram] bot portfolio holdings in reference market (thank you, @Max)
+### Fixed
+- [Orders] initially fetched orders issues 
+
 ## [0.4.44] - 2023-03-20
 ### Fixed
 - [Community] portfolio update issues
