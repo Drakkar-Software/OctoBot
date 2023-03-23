@@ -31,7 +31,7 @@ async def clear_run_metadata(bot_id):
     await run_db.delete(common_enums.DBTables.METADATA.value, None)
 
 
-async def store_run_metadata(bot_id, exchange_managers, start_time, user_inputs=None) -> dict:
+async def store_run_metadata(bot_id, exchange_managers, start_time, user_inputs=None, flush=False) -> dict:
     run_db = commons_databases.RunDatabasesProvider.instance().get_run_db(bot_id)
     user_inputs = user_inputs or await commons_configuration.get_user_inputs(run_db)
     run_dbs_identifier = commons_databases.RunDatabasesProvider.instance().get_run_databases_identifier(bot_id)
@@ -40,6 +40,8 @@ async def store_run_metadata(bot_id, exchange_managers, start_time, user_inputs=
         common_enums.DBTables.METADATA.value,
         metadata
     )
+    if flush:
+        await run_db.flush()
     return metadata
 
 

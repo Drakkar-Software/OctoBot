@@ -78,6 +78,7 @@ class IndependentBacktesting:
         self.enable_logs = enable_logs
         self.stop_when_finished = stop_when_finished
         self.previous_log_level = commons_logging.get_global_logger_level()
+        self.previous_handlers_log_level = commons_logging.get_logger_level_per_handler()
         self.enforce_total_databases_max_size_after_run = enforce_total_databases_max_size_after_run
         self.backtesting_data = backtesting_data
         self.octobot_backtesting = backtesting.OctoBotBacktesting(self.backtesting_config,
@@ -137,7 +138,10 @@ class IndependentBacktesting:
             if self.stopped_event is not None:
                 self.stopped_event.set()
             if not self.enable_logs:
-                commons_logging.set_global_logger_level(self.previous_log_level)
+                commons_logging.set_global_logger_level(
+                    self.previous_log_level,
+                    handler_levels=self.previous_handlers_log_level
+                )
 
     def is_in_progress(self):
         if self.octobot_backtesting.backtesting:
@@ -321,10 +325,10 @@ class IndependentBacktesting:
         starting_portfolio_value = trading_api.get_origin_portfolio_value(exchange_manager)
 
         self.logger.info(f"[End portfolio]      value {round(end_portfolio_value, 5)} {reference_market} "
-                         f"Holdings: {pretty_printer.global_portfolio_pretty_print(end_portfolio, ' | ')}")
+                         f"Holdings: {pretty_printer.global_portfolio_pretty_print(end_portfolio, separator=' | ')}")
 
         self.logger.info(f"[Starting portfolio] value {round(starting_portfolio_value, 5)} {reference_market} "
-                         f"Holdings: {pretty_printer.global_portfolio_pretty_print(starting_portfolio, ' | ')}")
+                         f"Holdings: {pretty_printer.global_portfolio_pretty_print(starting_portfolio, separator=' | ')}")
 
         self.logger.info(f"Global market profitability (vs {reference_market}) : "
                          f"{market_average_profitability}% | Octobot : {profitability}%")
