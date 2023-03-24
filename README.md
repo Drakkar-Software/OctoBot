@@ -1,16 +1,18 @@
 # OctoBot [0.4.45](https://octobot.click/gh-changelog)
-[![PyPI](https://img.shields.io/pypi/v/OctoBot.svg)](https://octobot.click/gh-pypi)
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/e07fb190156d4efb8e7d07aaa5eff2e1)](https://app.codacy.com/gh/Drakkar-Software/OctoBot?utm_source=github.com&utm_medium=referral&utm_content=Drakkar-Software/OctoBot&utm_campaign=Badge_Grade_Dashboard)[![Downloads](https://pepy.tech/badge/octobot/month)](https://pepy.tech/project/octobot)
-[![Dockerhub](https://img.shields.io/docker/pulls/drakkarsoftware/octobot.svg)](https://octobot.click/gh-dockerhub)
+[![PyPI](https://img.shields.io/pypi/v/OctoBot.svg?logo=pypi)](https://octobot.click/gh-pypi)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/e07fb190156d4efb8e7d07aaa5eff2e1)](https://app.codacy.com/gh/Drakkar-Software/OctoBot?utm_source=github.com&utm_medium=referral&utm_content=Drakkar-Software/OctoBot&utm_campaign=Badge_Grade_Dashboard)
+[![Downloads](https://pepy.tech/badge/octobot/month)](https://pepy.tech/project/octobot)
+[![Dockerhub](https://img.shields.io/docker/pulls/drakkarsoftware/octobot.svg?logo=docker)](https://octobot.click/gh-dockerhub)
 [![OctoBot-CI](https://github.com/Drakkar-Software/OctoBot/workflows/OctoBot-CI/badge.svg)](https://github.com/Drakkar-Software/OctoBot/actions)
 [![UptimeRobot](https://img.shields.io/uptimerobot/ratio/30/m786447893-903b482e5158c8b6483760e8)](https://octobot.click/gh-status)
 
 #### Octobot Community
-[![Active OctoBot](https://img.shields.io/badge/dynamic/json.svg?&url=https://metrics.octobot.online/metrics/community/count/0/-1/0&query=$.total&color=green&label=OctoBots%20online%20this%20month)]()
-[![Telegram Chat](https://img.shields.io/badge/telegram-chat-green.svg)](https://octobot.click/gh-telegram)
-[![Discord](https://img.shields.io/discord/530629985661222912.svg?logo=discord)](https://octobot.click/gh-discord)
-[![Telegram News](https://img.shields.io/badge/telegram-news-blue.svg)](https://t.me/OctoBot_Project)
-[![Twitter](https://img.shields.io/twitter/follow/DrakkarsOctobot.svg?label=Follow&style=social)](https://octobot.click/gh-twitter)
+[![Active OctoBot](https://img.shields.io/badge/dynamic/json.svg?&url=https://metrics.octobot.online/metrics/community/count/0/-1/0&query=$.total&color=green&label=OctoBots%20this%20month)]()
+[![Telegram Chat](https://img.shields.io/badge/telegram-chat-green.svg?logo=telegram&label=Telegram)](https://octobot.click/gh-telegram)
+[![Discord](https://img.shields.io/discord/530629985661222912.svg?logo=discord&label=Discord)](https://octobot.click/gh-discord)
+[![Telegram News](https://img.shields.io/badge/telegram-news-blue.svg?logo=telegram&label=Telegram)](https://t.me/OctoBot_Project)
+[![Twitter](https://img.shields.io/twitter/follow/DrakkarsOctobot.svg?label=twitter&style=social)](https://octobot.click/gh-twitter)
+[![YouTube](https://img.shields.io/youtube/channel/views/UC2YAaBeWY8y_Olqs79b_X8A?label=youtube&style=social)](https://octobot.click/gh-youtube)
 <p align="center">
 <img src="../assets/OctoBot-icon-only.svg" alt="Octobot Logo" height="400" width="400">
 </p>
@@ -56,7 +58,7 @@ OctoBot's installation is **very simple**... because it is **very documented** !
 #### One click deployment
 Deploy your OctoBot on the OctoBot Cloud. No installation is required and your OctoBot will always be online and reachable.
 
-[![Deploy to OctoBot Cloud](https://dabuttonfactory.com/button.png?t=Deploy+now&f=Roboto-Bold&ts=18&tc=fff&hp=20&vp=15&c=11&bgt=unicolored&bgc=422afb)](https://octobot.click/gh-deploy)
+[![Telegram News](https://img.shields.io/static/v1?label=Deploy&message=now&color=007bff&style=for-the-badge)](https://octobot.click/gh-deploy)
 
 
 #### [With executable](https://www.octobot.info/installation/with-binary)
