@@ -22,6 +22,12 @@
         "origin_url": {
           "type": ["string", "null"]
         },
+        "complexity": {
+          "type": "number"
+        },
+        "risk": {
+          "type": "number"
+        },
         "read_only": {
           "type": "boolean"
         }
