@@ -21,18 +21,16 @@ from exchanges_tests import abstract_authenticated_exchange_tester
 pytestmark = pytest.mark.asyncio
 
 
-class TestCoinbaseproAuthenticatedExchange(
+class TestCoinbaseAuthenticatedExchange(
     abstract_authenticated_exchange_tester.AbstractAuthenticatedExchangeTester
 ):
-    # BROKEN: waiting for ccxt update on coinbase advanced
-
     # enter exchange name as a class variable here
-    EXCHANGE_NAME = "coinbasepro"
-    EXCHANGE_TENTACLE_NAME = "CoinbasePro"
-    ORDER_CURRENCY = "BTC"
-    SETTLEMENT_CURRENCY = "USD"
+    EXCHANGE_NAME = "coinbase"
+    ORDER_CURRENCY = "ADA"
+    SETTLEMENT_CURRENCY = "BTC"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
-    ORDER_SIZE = 50  # % of portfolio to include in test orders
+    ORDER_SIZE = 20  # % of portfolio to include in test orders
+    CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES = True
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
