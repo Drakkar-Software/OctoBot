@@ -100,9 +100,9 @@ class AbstractAuthenticatedExchangeTester:
         price = self.get_order_price(current_price, False)
         size = self.get_order_size(portfolio, price)
         buy_market = await self.create_market_order(current_price, size, trading_enums.TradeOrderSide.BUY)
-        self.check_created_market_order(buy_market, size, trading_enums.TradeOrderSide.BUY)
         post_buy_portfolio = {}
         try:
+            self.check_created_market_order(buy_market, size, trading_enums.TradeOrderSide.BUY)
             filled_order = await self.wait_for_fill(buy_market)
             await self.check_require_order_fees_from_trades(
                 filled_order[trading_enums.ExchangeConstantsOrderColumns.ID.value]
@@ -568,6 +568,8 @@ class AbstractAuthenticatedExchangeTester:
 
     async def create_order(self, price, current_price, size, side, order_type,
                            symbol=None, push_on_exchange=True):
+        if size == trading_constants.ZERO:
+            raise AssertionError(f"Trying to create and order with a size of {size}")
         current_order = personal_data.create_order_instance(
             self.exchange_manager.trader,
             order_type=order_type,
