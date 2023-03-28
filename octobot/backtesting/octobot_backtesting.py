@@ -223,6 +223,8 @@ class OctoBotBacktesting:
             exchanges.ExchangeSimulator: exchanges_count,
             exchange_data.OHLCVUpdaterSimulator: exchanges_count
         }
+        # trigger garbage collector to get a fresh memory picture
+        gc.collect()
         for obj in gc.get_objects():
             if isinstance(obj, to_watch_objects):
                 if isinstance(obj, exchanges.ExchangeManager) and not obj.is_initialized:
@@ -235,6 +237,7 @@ class OctoBotBacktesting:
 
         for obj, max_ref in expected_max_objects_references.items():
             if objects_references[obj][0] > max_ref:
+                o = objects_references[obj][1][0]
                 objects_leak_errors.append(_get_remaining_object_error(obj,
                                                                        max_ref,
                                                                        objects_references[obj]))
