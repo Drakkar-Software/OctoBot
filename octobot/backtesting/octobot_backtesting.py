@@ -237,7 +237,6 @@ class OctoBotBacktesting:
 
         for obj, max_ref in expected_max_objects_references.items():
             if objects_references[obj][0] > max_ref:
-                o = objects_references[obj][1][0]
                 objects_leak_errors.append(_get_remaining_object_error(obj,
                                                                        max_ref,
                                                                        objects_references[obj]))
