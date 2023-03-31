@@ -38,6 +38,7 @@ cdef class IndependentBacktesting:
     cdef public dict symbols_to_create_exchange_classes
     cdef public double risk
     cdef public dict starting_portfolio
+    cdef public dict input_portfolio
     cdef public dict fees_config
     cdef public bint stopped
 

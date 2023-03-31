@@ -51,6 +51,7 @@ class IndependentBacktesting:
                  join_backtesting_timeout=backtesting_constants.BACKTESTING_DEFAULT_JOIN_TIMEOUT,
                  start_timestamp=None,
                  end_timestamp=None,
+                 portfolio=None,
                  enable_logs=True,
                  stop_when_finished=False,
                  enforce_total_databases_max_size_after_run=True,
@@ -66,6 +67,7 @@ class IndependentBacktesting:
         self.symbols_to_create_exchange_classes = {}
         self.risk = 0.1
         self.starting_portfolio = {}
+        self.input_portfolio = portfolio
         self.fees_config = {}
         self.forced_time_frames = []
         self.optimizer_id = None
@@ -216,8 +218,10 @@ class IndependentBacktesting:
     def _init_default_config_values(self):
         self.risk = copy.deepcopy(self.octobot_origin_config[common_constants.CONFIG_TRADING][
                                       common_constants.CONFIG_TRADER_RISK])
-        self.starting_portfolio = copy.deepcopy(self.octobot_origin_config[common_constants.CONFIG_SIMULATOR][
-                                                    common_constants.CONFIG_STARTING_PORTFOLIO])
+        self.starting_portfolio = copy.deepcopy(
+            self.input_portfolio or
+            self.octobot_origin_config[common_constants.CONFIG_SIMULATOR][common_constants.CONFIG_STARTING_PORTFOLIO]
+        )
         self.fees_config = copy.deepcopy(self.octobot_origin_config[common_constants.CONFIG_SIMULATOR][
                                              common_constants.CONFIG_SIMULATOR_FEES])
         if evaluator_constants.CONFIG_FORCED_TIME_FRAME in self.octobot_origin_config:
