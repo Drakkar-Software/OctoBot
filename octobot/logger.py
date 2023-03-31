@@ -314,13 +314,13 @@ async def orders_callback(
         cryptocurrency: str,
         symbol: str,
         order: dict,
-        is_new: bool,
+        update_type: str,
         is_from_bot: bool,
 ):
     order_string = f"ORDERS : EXCHANGE = {exchange} || SYMBOL = {symbol} || " \
                    f"{pretty_printer.open_order_pretty_printer(exchange, order)} || " \
                    f"status = {order.get(trading_enums.ExchangeConstantsOrderColumns.STATUS.value, None)} || " \
-                   f"CREATED = {is_new} || FROM_BOT = {is_from_bot}"
+                   f"UPDATE_TYPE = {update_type} || FROM_BOT = {is_from_bot}"
     BOT_CHANNEL_LOGGER.debug(order_string)
 
 
