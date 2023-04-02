@@ -6,6 +6,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [0.4.47] - 2023-04-02
+### Added
+- [Evaluators] ChatGPT evaluator
+- [Exchanges] Restore Coinbase support
+- [Profiles] Risk and complexity
+### Updated
+- [WebInterface] Improve candle charts display. Special thanks to Tim !
+- [Services] Telegram, flask, reddit and other connectors versions
+### Fixed
+- [OKX] create order issues
+- [WebInterface] Fix unexpected client disconnections
+- [PNL] invalid trades PNL related issues
+
+
 ## [0.4.46] - 2023-03-24
 ### Updated
 - [Telegram] portfolio display
