@@ -223,6 +223,8 @@ class OctoBotBacktesting:
             exchanges.ExchangeSimulator: exchanges_count,
             exchange_data.OHLCVUpdaterSimulator: exchanges_count
         }
+        # trigger garbage collector to get a fresh memory picture
+        gc.collect()
         for obj in gc.get_objects():
             if isinstance(obj, to_watch_objects):
                 if isinstance(obj, exchanges.ExchangeManager) and not obj.is_initialized:
