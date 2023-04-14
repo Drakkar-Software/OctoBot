@@ -32,6 +32,7 @@ cdef class OctoBotBacktesting:
     cdef public dict fees_config
     cdef public list backtesting_files
     cdef public backtest_data.BacktestData backtesting_data
+    cdef public str name
     cdef public object backtesting
     cdef public bint run_on_common_part_only
     cdef public object start_time
