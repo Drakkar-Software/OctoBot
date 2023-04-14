@@ -53,6 +53,7 @@ class IndependentBacktesting:
                  end_timestamp=None,
                  enable_logs=True,
                  stop_when_finished=False,
+                 name=None,
                  enforce_total_databases_max_size_after_run=True,
                  enable_storage=True,
                  run_on_all_available_time_frames=False,
@@ -91,7 +92,8 @@ class IndependentBacktesting:
                                                                   enable_logs=self.enable_logs,
                                                                   enable_storage=enable_storage,
                                                                   run_on_all_available_time_frames=run_on_all_available_time_frames,
-                                                                  backtesting_data=self.backtesting_data)
+                                                                  backtesting_data=self.backtesting_data,
+                                                                  name=name)
 
     async def initialize_and_run(self, log_errors=True):
         try:
@@ -102,6 +104,7 @@ class IndependentBacktesting:
                 self.stopped_event = asyncio.Event()
             if not self.enable_logs:
                 commons_logging.set_global_logger_level(logging.ERROR)
+            commons_logging.reset_backtesting_errors()
             await self.initialize_config()
             await self._generate_backtesting_id_if_missing()
             self._add_crypto_currencies_config()
@@ -162,7 +165,6 @@ class IndependentBacktesting:
             return 0
 
     def _post_backtesting_start(self):
-        commons_logging.reset_backtesting_errors()
         commons_logging.set_error_publication_enabled(False)
         self.post_backtesting_task = asyncio.create_task(self._register_post_backtesting_end_callback())
 

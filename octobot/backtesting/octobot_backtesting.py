@@ -59,7 +59,8 @@ class OctoBotBacktesting:
                  enable_logs=True,
                  enable_storage=True,
                  run_on_all_available_time_frames=False,
-                 backtesting_data=None):
+                 backtesting_data=None,
+                 name=None):
         self.logger = commons_logging.get_logger(self.__class__.__name__)
         self.backtesting_config = backtesting_config
         self.tentacles_setup_config = tentacles_setup_config
@@ -71,6 +72,7 @@ class OctoBotBacktesting:
         self.service_feeds = []
         self.backtesting_files = backtesting_files
         self.backtesting_data = backtesting_data
+        self.name = name
         if self.backtesting_data is not None:
             self.backtesting_files = [
                 backtesting_file
@@ -262,6 +264,7 @@ class OctoBotBacktesting:
             self.start_time,
             user_inputs,
             commons_databases.RunDatabasesProvider.instance().get_run_databases_identifier(self.bot_id),
+            self.name
         )
         self.logger.info(f"Backtesting metadata:\n{json.dumps(metadata, indent=4)}")
 
