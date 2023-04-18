@@ -6,6 +6,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [0.4.48] - 2023-04-18
+### Added
+- [WebInterface] Add filters to PNL tab.
+- [TradingViewTradingMode] Handle on position open take profit and stop loss.
+- [DCATradingMode] Add price and order type config.
+- [Hollaex] Possibility to disable websocket in Hollaex exchanges.
+### Updated
+- [Telegram] Improve portfolio display. Special thanks to Tim !
+- [Websockets] Handle partially supported time frames
+- [Trading Modes] Improve impossible error creation messages
+- [WebInterface] Mobile charts display.
+### Fixed
+- [Websockets] logs spam
+- [Databases] Handle incorrect db files format
+- [PNL] invalid trades PNL related issues
+- [WebInterface] Portfolio display on smaller screens.
+
 ## [0.4.47] - 2023-04-02
 ### Added
 - [Evaluators] ChatGPT evaluator
