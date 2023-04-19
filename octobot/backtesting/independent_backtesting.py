@@ -51,9 +51,9 @@ class IndependentBacktesting:
                  join_backtesting_timeout=backtesting_constants.BACKTESTING_DEFAULT_JOIN_TIMEOUT,
                  start_timestamp=None,
                  end_timestamp=None,
-                 portfolio=None,
                  enable_logs=True,
                  stop_when_finished=False,
+                 name=None,
                  enforce_total_databases_max_size_after_run=True,
                  enable_storage=True,
                  run_on_all_available_time_frames=False,
@@ -67,7 +67,6 @@ class IndependentBacktesting:
         self.symbols_to_create_exchange_classes = {}
         self.risk = 0.1
         self.starting_portfolio = {}
-        self.input_portfolio = portfolio
         self.fees_config = {}
         self.forced_time_frames = []
         self.optimizer_id = None
@@ -93,7 +92,8 @@ class IndependentBacktesting:
                                                                   enable_logs=self.enable_logs,
                                                                   enable_storage=enable_storage,
                                                                   run_on_all_available_time_frames=run_on_all_available_time_frames,
-                                                                  backtesting_data=self.backtesting_data)
+                                                                  backtesting_data=self.backtesting_data,
+                                                                  name=name)
 
     async def initialize_and_run(self, log_errors=True):
         try:
@@ -104,6 +104,7 @@ class IndependentBacktesting:
                 self.stopped_event = asyncio.Event()
             if not self.enable_logs:
                 commons_logging.set_global_logger_level(logging.ERROR)
+            commons_logging.reset_backtesting_errors()
             await self.initialize_config()
             await self._generate_backtesting_id_if_missing()
             self._add_crypto_currencies_config()
@@ -164,7 +165,6 @@ class IndependentBacktesting:
             return 0
 
     def _post_backtesting_start(self):
-        commons_logging.reset_backtesting_errors()
         commons_logging.set_error_publication_enabled(False)
         self.post_backtesting_task = asyncio.create_task(self._register_post_backtesting_end_callback())
 
@@ -219,7 +219,6 @@ class IndependentBacktesting:
         self.risk = copy.deepcopy(self.octobot_origin_config[common_constants.CONFIG_TRADING][
                                       common_constants.CONFIG_TRADER_RISK])
         self.starting_portfolio = copy.deepcopy(
-            self.input_portfolio or
             self.octobot_origin_config[common_constants.CONFIG_SIMULATOR][common_constants.CONFIG_STARTING_PORTFOLIO]
         )
         self.fees_config = copy.deepcopy(self.octobot_origin_config[common_constants.CONFIG_SIMULATOR][

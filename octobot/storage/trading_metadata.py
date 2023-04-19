@@ -35,7 +35,7 @@ async def store_run_metadata(bot_id, exchange_managers, start_time, user_inputs=
     run_db = commons_databases.RunDatabasesProvider.instance().get_run_db(bot_id)
     user_inputs = user_inputs or await commons_configuration.get_user_inputs(run_db)
     run_dbs_identifier = commons_databases.RunDatabasesProvider.instance().get_run_databases_identifier(bot_id)
-    metadata = await _get_trading_metadata(exchange_managers, start_time, user_inputs, run_dbs_identifier, False)
+    metadata = await _get_trading_metadata(exchange_managers, start_time, user_inputs, run_dbs_identifier, False, None)
     await run_db.log(
         common_enums.DBTables.METADATA.value,
         metadata
@@ -45,8 +45,8 @@ async def store_run_metadata(bot_id, exchange_managers, start_time, user_inputs=
     return metadata
 
 
-async def store_backtesting_run_metadata(exchange_managers, start_time, user_inputs, run_dbs_identifier) -> dict:
-    run_metadata = await _get_trading_metadata(exchange_managers, start_time, user_inputs, run_dbs_identifier, True)
+async def store_backtesting_run_metadata(exchange_managers, start_time, user_inputs, run_dbs_identifier, name) -> dict:
+    run_metadata = await _get_trading_metadata(exchange_managers, start_time, user_inputs, run_dbs_identifier, True, name)
     # use local database as a lock is required
     async with commons_databases.DBWriter.database(
             run_dbs_identifier.get_backtesting_metadata_identifier(),
@@ -55,7 +55,7 @@ async def store_backtesting_run_metadata(exchange_managers, start_time, user_inp
     return run_metadata
 
 
-async def _get_trading_metadata(exchange_managers, run_start_time, user_inputs, run_dbs_identifier, is_backtesting) \
+async def _get_trading_metadata(exchange_managers, run_start_time, user_inputs, run_dbs_identifier, is_backtesting, name) \
         -> dict:
     trading_mode = trading_api.get_trading_modes(exchange_managers[0])[0]
     multi_exchanges_data = await _get_multi_exchange_data(exchange_managers, is_backtesting)
@@ -65,7 +65,8 @@ async def _get_trading_metadata(exchange_managers, run_start_time, user_inputs, 
         run_start_time,
         user_inputs,
         run_dbs_identifier,
-        is_backtesting
+        is_backtesting,
+        name
     )
     return {
         **single_exchange_data,
@@ -224,7 +225,7 @@ async def _get_multi_exchange_data(exchange_managers, is_backtesting):
 
 
 async def _get_single_exchange_data(exchange_manager, trading_mode, run_start_time, user_inputs, run_dbs_identifier,
-                                    is_backtesting):
+                                    is_backtesting, name):
     exchange_type = trading_enums.ExchangeTypes.FUTURE.value if exchange_manager.is_future \
         else trading_enums.ExchangeTypes.SPOT.value
     if user_inputs is None:
@@ -251,7 +252,7 @@ async def _get_single_exchange_data(exchange_manager, trading_mode, run_start_ti
         **backtesting_only_metadata,
         **{
             common_enums.BacktestingMetadata.TIMESTAMP.value: run_start_time,
-            common_enums.BacktestingMetadata.NAME.value: trading_mode.get_name(),
+            common_enums.BacktestingMetadata.NAME.value: name or trading_mode.get_name(),
             common_enums.BacktestingMetadata.LEVERAGE.value: leverage,
             common_enums.DBRows.TRADING_TYPE.value: exchange_type,
             common_enums.DBRows.REFERENCE_MARKET.value: trading_api.get_reference_market(exchange_manager.config),
