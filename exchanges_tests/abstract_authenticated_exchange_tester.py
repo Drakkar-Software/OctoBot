@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
+import asyncio
 import contextlib
 import decimal
 import time
@@ -50,6 +51,7 @@ class AbstractAuthenticatedExchangeTester:
     ORDER_PRICE_DIFF = 20  # % of price difference compared to current price for limit and stop orders
     EXPECT_MISSING_ORDER_FEES_DUE_TO_ORDERS_TOO_OLD_FOR_RECENT_TRADES = False   # when recent trades are limited and
     # closed orders fees are taken from recent trades
+    EXPECT_POSSIBLE_ORDER_NOT_FOUND_ON_INSTANTLY_FILLED_ORDERS = False
     OPEN_ORDERS_IN_CLOSED_ORDERS = False
     MARKET_FILL_TIMEOUT = 15
     OPEN_TIMEOUT = 15
@@ -679,32 +681,52 @@ class AbstractAuthenticatedExchangeTester:
         def parse_is_filled(raw_order):
             return personal_data.parse_order_status(raw_order) in {trading_enums.OrderStatus.FILLED,
                                                                    trading_enums.OrderStatus.CLOSED}
-        return await self._get_order_until(order, parse_is_filled, self.MARKET_FILL_TIMEOUT)
+        return await self._get_order_until(order, parse_is_filled, self.MARKET_FILL_TIMEOUT, True)
 
     def parse_order_is_not_pending(self, raw_order):
         return personal_data.parse_order_status(raw_order) not in (trading_enums.OrderStatus.UNKNOWN, None)
 
     async def wait_for_open(self, order):
-        await self._get_order_until(order, self.parse_order_is_not_pending, self.OPEN_TIMEOUT)
+        can_order_be_instantly_filled = isinstance(order, personal_data.MarketOrder)
+        await self._get_order_until(
+            order, self.parse_order_is_not_pending, self.OPEN_TIMEOUT, can_order_be_instantly_filled
+        )
 
     async def wait_for_cancel(self, order):
         return personal_data.create_order_instance_from_raw(
             self.exchange_manager.trader,
-            await self._get_order_until(order, personal_data.parse_is_cancelled, self.CANCEL_TIMEOUT)
+            await self._get_order_until(order, personal_data.parse_is_cancelled, self.CANCEL_TIMEOUT, False)
         )
 
     async def wait_for_edit(self, order, edited_quantity):
         def is_edited(row_order):
             return decimal.Decimal(str(row_order[trading_enums.ExchangeConstantsOrderColumns.AMOUNT.value])) \
                    == edited_quantity
-        await self._get_order_until(order, is_edited, self.EDIT_TIMEOUT)
+        await self._get_order_until(order, is_edited, self.EDIT_TIMEOUT, False)
 
-    async def _get_order_until(self, order, validation_func, timeout):
+    async def _get_order_until(self, order, validation_func, timeout, can_order_be_instantly_filled):
+        allow_not_found_order_on_exchange = \
+            can_order_be_instantly_filled \
+            and self.exchange_manager.exchange.EXPECT_POSSIBLE_ORDER_NOT_FOUND_ON_INSTANTLY_FILLED_ORDERS
         t0 = time.time()
         while time.time() - t0 < timeout:
             raw_order = await self.exchange_manager.exchange.get_order(order.order_id, order.symbol)
+            if raw_order is None:
+                print(f"{self.exchange_manager.exchange_name} {order.order_type} {validation_func.__name__} "
+                      f"Order not found after {time.time() - t0} seconds. Order: [{order}]. Raw order: [{raw_order}]")
+                if not allow_not_found_order_on_exchange:
+                    raise AssertionError(
+                        f"exchange.get_order() returned None, which means order is not found on exchange. "
+                        f"This should not happen as "
+                        f"self.exchange_manager.exchange.EXPECT_POSSIBLE_ORDER_NOT_FOUND_ON_INSTANTLY_FILLED_ORDERS is "
+                        f"{self.exchange_manager.exchange.EXPECT_POSSIBLE_ORDER_NOT_FOUND_ON_INSTANTLY_FILLED_ORDERS}"
+                        f"and can_order_be_instantly_filled is {can_order_be_instantly_filled}"
+                    )
             if raw_order and validation_func(raw_order):
+                print(f"{self.exchange_manager.exchange_name} {order.order_type} {validation_func.__name__} "
+                      f"True after {time.time() - t0} seconds. Order: [{order}]. Raw order: [{raw_order}]")
                 return raw_order
+            await asyncio.sleep(1)
         raise TimeoutError(f"Order not filled/cancelled within {timeout}s: {order} ({validation_func.__name__})")
 
     async def order_in_open_orders(self, previous_open_orders, order):
