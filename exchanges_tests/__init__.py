@@ -42,9 +42,13 @@ class ExchangeChannelMock:
         self.exchange_manager = exchange_manager
         self.name = name
 
+        def _clear_pending_state(order, *args, **kwargs):
+            if order.is_pending_creation():
+                order.state = personal_data.OpenOrderState(order, True)
+
         self.get_internal_producer = mock.Mock(
             return_value=mock.Mock(
-                update_order_from_exchange=mock.AsyncMock(),
+                update_order_from_exchange=mock.AsyncMock(side_effect=_clear_pending_state),
                 send=mock.AsyncMock(),
             )
         )
