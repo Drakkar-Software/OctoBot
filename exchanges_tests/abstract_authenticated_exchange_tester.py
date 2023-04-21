@@ -51,7 +51,7 @@ class AbstractAuthenticatedExchangeTester:
     ORDER_PRICE_DIFF = 20  # % of price difference compared to current price for limit and stop orders
     EXPECT_MISSING_ORDER_FEES_DUE_TO_ORDERS_TOO_OLD_FOR_RECENT_TRADES = False   # when recent trades are limited and
     # closed orders fees are taken from recent trades
-    EXPECT_POSSIBLE_ORDER_NOT_FOUND_ON_INSTANTLY_FILLED_ORDERS = False
+    EXPECT_POSSIBLE_ORDER_NOT_FOUND_DURING_ORDER_CREATION = False
     OPEN_ORDERS_IN_CLOSED_ORDERS = False
     MARKET_FILL_TIMEOUT = 15
     OPEN_TIMEOUT = 15
@@ -80,12 +80,21 @@ class AbstractAuthenticatedExchangeTester:
         symbol = None
         price = self.get_order_price(await self.get_price(), False)
         size = self.get_order_size(await self.get_portfolio(), price)
+        # # DEBUG tools, uncomment to create specific orders
+        # symbol = "ALGO/BUSD"
+        # market_status = self.exchange_manager.exchange.get_market_status(symbol)
+        # precision = market_status[trading_enums.ExchangeConstantsMarketStatusColumns.PRECISION.value]
+        # limits = market_status[trading_enums.ExchangeConstantsMarketStatusColumns.LIMITS.value]
+        # price = personal_data.decimal_adapt_price(
+        #     market_status,
+        #     decimal.Decimal("0.1810")
+        # )
+        # size = personal_data.decimal_adapt_quantity(
+        #     market_status,
+        #     decimal.Decimal("7")
+        # )
+        # # end debug tools
         open_orders = await self.get_open_orders()
-        # DEBUG tools, uncomment to create specific orders
-        # price = decimal.Decimal("0.047445")
-        # size = decimal.Decimal("4619")
-        # symbol = "OM/USDT"
-        # end debug tools
         buy_limit = await self.create_limit_order(price, size, trading_enums.TradeOrderSide.BUY, symbol=symbol)
         self.check_created_limit_order(buy_limit, price, size, trading_enums.TradeOrderSide.BUY)
         assert await self.order_in_open_orders(open_orders, buy_limit)
@@ -687,10 +696,7 @@ class AbstractAuthenticatedExchangeTester:
         return personal_data.parse_order_status(raw_order) not in (trading_enums.OrderStatus.UNKNOWN, None)
 
     async def wait_for_open(self, order):
-        can_order_be_instantly_filled = isinstance(order, personal_data.MarketOrder)
-        await self._get_order_until(
-            order, self.parse_order_is_not_pending, self.OPEN_TIMEOUT, can_order_be_instantly_filled
-        )
+        await self._get_order_until(order, self.parse_order_is_not_pending, self.OPEN_TIMEOUT, True)
 
     async def wait_for_cancel(self, order):
         return personal_data.create_order_instance_from_raw(
@@ -704,10 +710,10 @@ class AbstractAuthenticatedExchangeTester:
                    == edited_quantity
         await self._get_order_until(order, is_edited, self.EDIT_TIMEOUT, False)
 
-    async def _get_order_until(self, order, validation_func, timeout, can_order_be_instantly_filled):
+    async def _get_order_until(self, order, validation_func, timeout, can_order_be_not_found_on_exchange):
         allow_not_found_order_on_exchange = \
-            can_order_be_instantly_filled \
-            and self.exchange_manager.exchange.EXPECT_POSSIBLE_ORDER_NOT_FOUND_ON_INSTANTLY_FILLED_ORDERS
+            can_order_be_not_found_on_exchange \
+            and self.exchange_manager.exchange.EXPECT_POSSIBLE_ORDER_NOT_FOUND_DURING_ORDER_CREATION
         t0 = time.time()
         while time.time() - t0 < timeout:
             raw_order = await self.exchange_manager.exchange.get_order(order.order_id, order.symbol)
@@ -718,9 +724,9 @@ class AbstractAuthenticatedExchangeTester:
                     raise AssertionError(
                         f"exchange.get_order() returned None, which means order is not found on exchange. "
                         f"This should not happen as "
-                        f"self.exchange_manager.exchange.EXPECT_POSSIBLE_ORDER_NOT_FOUND_ON_INSTANTLY_FILLED_ORDERS is "
-                        f"{self.exchange_manager.exchange.EXPECT_POSSIBLE_ORDER_NOT_FOUND_ON_INSTANTLY_FILLED_ORDERS}"
-                        f"and can_order_be_instantly_filled is {can_order_be_instantly_filled}"
+                        f"self.exchange_manager.exchange.EXPECT_POSSIBLE_ORDER_NOT_FOUND_DURING_ORDER_CREATION is "
+                        f"{self.exchange_manager.exchange.EXPECT_POSSIBLE_ORDER_NOT_FOUND_DURING_ORDER_CREATION} "
+                        f"and can_order_be_not_found_on_exchange is {can_order_be_not_found_on_exchange}"
                     )
             if raw_order and validation_func(raw_order):
                 print(f"{self.exchange_manager.exchange_name} {order.order_type} {validation_func.__name__} "
