@@ -21,7 +21,7 @@ from exchanges_tests import abstract_authenticated_exchange_tester
 pytestmark = pytest.mark.asyncio
 
 
-class _TestCryptoComAuthenticatedExchange(
+class TestCryptoComAuthenticatedExchange(
     abstract_authenticated_exchange_tester.AbstractAuthenticatedExchangeTester
 ):
     # enter exchange name as a class variable here
