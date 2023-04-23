@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [0.4.49] - 2023-04-23
+### Updated
+- [CCXT] Update to ccxt 3.0.74
+- [Websockets] Reduce unordered candles warnings
+### Fixed
+- [Coinbase] Trading simulator mode and data collector 
+- [Binance] Order creation issues 
+- [Bybit] Order creation issues 
+- [Telegram] set risk command
+- [TradingView] remove warning on empty line
+
 ## [0.4.48] - 2023-04-18
 ### Added
 - [WebInterface] Add filters to PNL tab.
