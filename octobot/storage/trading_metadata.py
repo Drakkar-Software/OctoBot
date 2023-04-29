@@ -19,11 +19,13 @@ import numpy
 import octobot_commons.enums as common_enums
 import octobot_commons.databases as commons_databases
 import octobot_commons.configuration as commons_configuration
+import octobot_commons.time_frame_manager as time_frame_manager
 
 import octobot_backtesting.api as backtesting_api
 
 import octobot_trading.api as trading_api
 import octobot_trading.enums as trading_enums
+import octobot.backtesting as backtesting
 
 
 async def clear_run_metadata(bot_id):
@@ -99,6 +101,18 @@ async def _get_multi_exchange_data(exchange_managers, is_backtesting):
         float(trading_api.get_profitability_stats(exchange_manager)[1])
         for exchange_manager in exchange_managers
     ))
+    markets_profitability = {}
+    if is_backtesting:
+        min_tf = time_frame_manager.find_min_time_frame(time_frames)
+        for exchange_manager in exchange_managers:
+            for symbol in trading_api.get_trading_pairs(exchange_manager):
+                if symbol is markets_profitability:
+                    continue
+                try:
+                    markets_profitability[symbol] = \
+                        backtesting.IndependentBacktesting.get_market_delta(symbol, exchange_manager, min_tf)
+                except Exception:
+                    pass
     exchange_names = [
         trading_api.get_exchange_name(exchange_manager)
         for exchange_manager in exchange_managers
@@ -204,6 +218,8 @@ async def _get_multi_exchange_data(exchange_managers, is_backtesting):
         **{
             common_enums.BacktestingMetadata.GAINS.value: round(float(profitability), 8),
             common_enums.BacktestingMetadata.PERCENT_GAINS.value: round(float(profitability_percent), 3),
+            common_enums.BacktestingMetadata.MARKETS_PROFITABILITY.value:
+                {c: f"{round(float(v) * 100, 2)}%" for c, v in markets_profitability.items()},
             common_enums.BacktestingMetadata.END_PORTFOLIO.value: str(end_portfolio),
             common_enums.BacktestingMetadata.START_PORTFOLIO.value: str(origin_portfolio),
             common_enums.BacktestingMetadata.WIN_RATE.value: win_rate,
