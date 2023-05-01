@@ -17,6 +17,7 @@ import math
 import numpy
 
 import octobot_commons.enums as common_enums
+import octobot_commons.constants as commons_constants
 import octobot_commons.databases as commons_databases
 import octobot_commons.configuration as commons_configuration
 import octobot_commons.time_frame_manager as time_frame_manager
@@ -219,7 +220,15 @@ def _get_portfolio(exchange_managers):
                 values.pop("available", None)
         if exchange_manager.is_future:
             for position in trading_api.get_positions(exchange_manager):
-                exchange_end_portfolio[position.get_currency()]["position"] = float(position.quantity)
+                try:
+                    exchange_end_portfolio[position.get_currency()]["position"] = float(position.quantity)
+                except KeyError:
+                    exchange_end_portfolio[position.get_currency()] = {
+                        commons_constants.PORTFOLIO_AVAILABLE: 0,
+                        commons_constants.PORTFOLIO_TOTAL: 0,
+                        "position": float(position.quantity),
+                    }
+
         for exchange_portfolio, portfolio in zip((exchange_origin_portfolio, exchange_end_portfolio),
                                                  (origin_portfolio, end_portfolio)):
             for currency, value_dict in exchange_portfolio.items():
