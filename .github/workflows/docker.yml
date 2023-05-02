@@ -49,7 +49,7 @@ jobs:
         id: wait-for-tentacles
         with:
           token: ${{ secrets.AUTH_TOKEN }}
-          checkName: "ubuntu-latest - Python 3.10 - upload tentacles"
+          checkName: "ubuntu-latest - Python 3.10 - Upload"
           ref: ${{ github.ref }}
           repo: OctoBot-Tentacles
           timeoutSeconds: 3600
