@@ -86,7 +86,7 @@ And then open [https://octobot.localhost](https://octobot.localhost).
 
 In short :
 ```
-pip install OctoBot>=0.4.1
+pip install OctoBot
 Octobot
 ```
 
