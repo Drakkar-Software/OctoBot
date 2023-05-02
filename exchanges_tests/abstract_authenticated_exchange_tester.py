@@ -365,13 +365,17 @@ class AbstractAuthenticatedExchangeTester:
 
     async def bundle_orders(self, initial_order, stop_loss, take_profit=None):
         # bundle stop loss and take profits into open position order
-        params = await self.exchange_manager.trader.bundle_chained_order_with_uncreated_order(initial_order, stop_loss)
+        params = await self.exchange_manager.trader.bundle_chained_order_with_uncreated_order(
+            initial_order, stop_loss, False
+        )
         # # consider stop loss in param
         stop_loss_included_params_len = len(params)
         assert stop_loss_included_params_len > 0
         if take_profit:
             params.update(
-                await self.exchange_manager.trader.bundle_chained_order_with_uncreated_order(initial_order, take_profit)
+                await self.exchange_manager.trader.bundle_chained_order_with_uncreated_order(
+                    initial_order, take_profit, False
+                )
             )
             # consider take profit in param
             assert len(params) > stop_loss_included_params_len
