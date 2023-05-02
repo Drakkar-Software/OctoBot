@@ -95,7 +95,8 @@ def _log_environment(logger):
     try:
         bot_type = "cloud" if constants.IS_CLOUD_ENV else "self-hosted"
         logger.debug(f"Running {bot_type} OctoBot on {os_util.get_current_platform()} "
-                     f"with {os_util.get_octobot_type()}")
+                     f"with {os_util.get_octobot_type()} "
+                     f"[Python {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}]")
     except Exception as e:
         logger.error(f"Impossible to identify the current running environment: {e}")
 
