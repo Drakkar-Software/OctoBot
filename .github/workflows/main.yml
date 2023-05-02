@@ -33,13 +33,12 @@ jobs:
 
   tests:
     needs: lint
-    name: ${{ matrix.os }}${{ matrix.arch }} - Python 3.10 - ${{ matrix.type }} - tests
+    name: ${{ matrix.os }}${{ matrix.arch }} - Python 3.10 - tests
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ macos-latest, windows-latest, ubuntu-latest ]
         arch: [ x64 ]
-        type: [sources, cython]
 
     steps:
     - uses: actions/checkout@v3
@@ -104,32 +103,15 @@ jobs:
         }
       shell: powershell
 
-    - name: Compile project
-      env:
-        DISABLE_SENTRY: True
-      if: matrix.type == 'cython'
-      run: |
-        python setup.py install
-
-    - name: Pytests
-      if: matrix.type == 'cython'
-      env:
-        CYTHON_IGNORE: true
-        DISABLE_SENTRY: True
-      run: |
-        pytest --cov=. --cov-config=.coveragerc --durations=0 -rw tests
-        pytest --durations=0 -rw --ignore=tentacles/Trading/Exchange tentacles
-
     - name: Pytests
       env:
         DISABLE_SENTRY: True
-      if: matrix.type != 'cython'
       run: |
         pytest --cov=. --cov-config=.coveragerc --durations=0 -rw tests
         pytest --durations=0 -rw --ignore=tentacles/Trading/Exchange tentacles
 
     - name: Publish coverage
-      if: matrix.type == 'sources' && github.event_name == 'push'
+      if: github.event_name == 'push'
       run: coveralls --service=github
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
