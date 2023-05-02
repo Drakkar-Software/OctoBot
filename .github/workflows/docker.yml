@@ -13,7 +13,7 @@ jobs:
     name: ubuntu-latest - Docker - lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Run hadolint
         uses: reviewdog/action-hadolint@v1
@@ -27,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Set Environment Variables
         run: |
@@ -49,7 +49,7 @@ jobs:
         id: wait-for-tentacles
         with:
           token: ${{ secrets.AUTH_TOKEN }}
-          checkName: "ubuntu-latest - Python 3.8 - upload tentacles"
+          checkName: "ubuntu-latest - Python 3.10 - upload tentacles"
           ref: ${{ github.ref }}
           repo: OctoBot-Tentacles
           timeoutSeconds: 3600
