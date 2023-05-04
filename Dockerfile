@@ -1,4 +1,4 @@
-FROM python:3.8-slim-buster AS base
+FROM python:3.10-slim-buster AS base
 
 WORKDIR /
 
@@ -15,7 +15,6 @@ ENV PATH="/opt/venv/bin:$PATH"
 
 COPY . .
 RUN pip install -U setuptools wheel pip>=20.0.0 \
-    && pip install --no-cache-dir Cython==0.29.21 \
     && pip install --no-cache-dir --prefer-binary -r requirements.txt \
     && python setup.py install
 
@@ -24,7 +23,7 @@ WORKDIR /opt/efs
 RUN git clone https://github.com/aws/efs-utils . \
     && ./build-deb.sh
 
-FROM python:3.8-slim-buster
+FROM python:3.10-slim-buster
 
 ARG TENTACLES_URL_TAG=""
 ENV TENTACLES_URL_TAG=$TENTACLES_URL_TAG
