@@ -10,15 +10,20 @@ on:
 
 jobs:
   lint:
-    name: ubuntu-latest - Python 3.10 - lint
-    runs-on: ubuntu-latest
+    name: ${{ matrix.os }}${{ matrix.arch }} - Python ${{ matrix.version }} - lint
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest ]
+        arch: [ x64 ]
+        version: [ "3.10.x" ]
     steps:
     - uses: actions/checkout@v3
-    - name: Set up Python 3.10
+    - name: Set up Python ${{ matrix.version }}
       uses: actions/setup-python@v4
       with:
-        python-version: '3.10.x'
-        architecture: 'x64'
+        python-version: ${{ matrix.version }}
+        architecture: ${{ matrix.arch }}
 
     - name: Install dependencies
       run: pip install wheel && pip install --prefer-binary -r dev_requirements.txt -r requirements.txt
@@ -33,19 +38,20 @@ jobs:
 
   tests:
     needs: lint
-    name: ${{ matrix.os }}${{ matrix.arch }} - Python 3.10 - tests
+    name: ${{ matrix.os }}${{ matrix.arch }} - Python ${{ matrix.version }} - tests
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ macos-latest, windows-latest, ubuntu-latest ]
         arch: [ x64 ]
+        version: [ "3.8.x", "3.9.x", "3.10.x" ]
 
     steps:
     - uses: actions/checkout@v3
-    - name: Set up Python 3.10
+    - name: Set up Python ${{ matrix.version }}
       uses: actions/setup-python@v4
       with:
-        python-version: '3.10.x'
+        python-version: ${{ matrix.version }}
         architecture: ${{ matrix.arch }}
 
     - name: Wait for tentacles
@@ -116,79 +122,25 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  build_wheels:
-    needs: tests
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
-    name: ${{ matrix.os }}-${{ matrix.arch }} - Python 3.10 - deploy
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ ubuntu-latest, macos-latest, windows-latest ]
-        arch: [ x64 ]
-    steps:
-    - uses: actions/checkout@v3
-
-    - name: Set up Python 3.10
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.10.x'
-        architecture: ${{ matrix.arch }}
-
-    - name: Install dependencies
-      if: matrix.os != 'ubuntu-latest'
-      run: pip install wheel && pip install --prefer-binary -r dev_requirements.txt -r requirements.txt
-
-    - name: Build wheel
-      if: matrix.os != 'ubuntu-latest'
-      run: python setup.py bdist_wheel
-
-    - name: Install cibuildwheel
-      if: matrix.os == 'ubuntu-latest'
-      run: pip install cibuildwheel twine
-
-    - name: set up qemu
-      if: matrix.os == 'ubuntu-latest'
-      uses: docker/setup-qemu-action@v1
-      with:
-        platforms: arm64
-
-    - name: Build wheels
-      if: matrix.os == 'ubuntu-latest'
-      run: |
-        python -m cibuildwheel --output-dir wheelhouse
-      env:
-        # build for python 3.10
-        CIBW_BUILD: cp38-manylinux_x86_64
-        CIBW_BUILD_VERBOSITY_LINUX: 0
-        CIBW_ARCHS_LINUX: 'native' # 'aarch64' https://cibuildwheel.readthedocs.io/en/stable/options/#archs
-        CIBW_BEFORE_BUILD_LINUX: >
-          python -m pip install --upgrade pip
-          pip install  --prefer-binary auditwheel -r dev_requirements.txt -r requirements.txt
-        CIBW_BEFORE_ALL_LINUX: >
-          yum install -y libffi libffi-devel openssl-devel wget unzip blas-devel lapack-devel libxml2-devel libxslt-devel
-
-    - name: Publish package
-      if: matrix.os == 'ubuntu-latest'
-      run: |
-        python -m twine upload --repository-url ${{ secrets.PYPI_OFFICIAL_UPLOAD_URL }} -u ${{ secrets.PYPI_USERNAME }} -p ${{ secrets.PYPI_PASSWORD }} --skip-existing wheelhouse/*
-
-    - name: Publish package
-      if: matrix.os != 'ubuntu-latest'
-      run: |
-        python -m twine upload --repository-url ${{ secrets.PYPI_OFFICIAL_UPLOAD_URL }} -u ${{ secrets.PYPI_USERNAME }} -p ${{ secrets.PYPI_PASSWORD }} --skip-existing dist/*
-
   build_sdist:
     needs: tests
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
-    name: Source distribution - Python 3.10 - deploy
-    runs-on: ubuntu-latest
+    name: Source distribution - Python ${{ matrix.version }} - Deploy
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ macos-latest, windows-latest, ubuntu-latest ]
+        arch: [ x64 ]
+        version: [ "3.10.x" ]
+
     steps:
       - uses: actions/checkout@v3
 
-      - name: Set up Python 3.10
+      - name: Set up Python ${{ matrix.version }}
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10.x'
+          python-version: ${{ matrix.version }}
+          architecture: ${{ matrix.arch }}
 
       - name: Install dependencies
         run: pip install --prefer-binary -r dev_requirements.txt -r requirements.txt
@@ -200,33 +152,12 @@ jobs:
         run: |
           python -m twine upload --repository-url ${{ secrets.PYPI_OFFICIAL_UPLOAD_URL }} -u ${{ secrets.PYPI_USERNAME }} -p ${{ secrets.PYPI_PASSWORD }} --skip-existing dist/*
 
-  done:
-    name: Done
-    runs-on: ubuntu-latest
-    needs:
-      - lint
-      - tests
-      - build_wheels
-      - build_sdist
-
-    steps:
-      - name: Job completed
-        run: ls
-
   notify:
-    name: Notify
-    runs-on: ubuntu-latest
+    if: ${{ failure() }}
     needs:
       - lint
       - tests
-      - build_wheels
       - build_sdist
-      - done
-    if: ${{ failure() }}
-
-    steps:
-      - name: Notify discord
-        uses: sarisia/actions-status-discord@v1
-        with:
-          status: Failure
-          webhook: ${{ secrets.DISCORD_GITHUB_WEBHOOK }}
+    uses: Drakkar-Software/.github/.github/workflows/failure_notify_workflow.yml@master
+    secrets:
+      DISCORD_GITHUB_WEBHOOK: ${{ secrets.DISCORD_GITHUB_WEBHOOK }}
