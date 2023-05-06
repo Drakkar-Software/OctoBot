@@ -17,13 +17,16 @@ import math
 import numpy
 
 import octobot_commons.enums as common_enums
+import octobot_commons.constants as commons_constants
 import octobot_commons.databases as commons_databases
 import octobot_commons.configuration as commons_configuration
+import octobot_commons.time_frame_manager as time_frame_manager
 
 import octobot_backtesting.api as backtesting_api
 
 import octobot_trading.api as trading_api
 import octobot_trading.enums as trading_enums
+import octobot.backtesting as backtesting
 
 
 async def clear_run_metadata(bot_id):
@@ -99,24 +102,12 @@ async def _get_multi_exchange_data(exchange_managers, is_backtesting):
         float(trading_api.get_profitability_stats(exchange_manager)[1])
         for exchange_manager in exchange_managers
     ))
+    markets_profitability = _get_markets_profitability(exchange_managers, time_frames) if is_backtesting else {}
     exchange_names = [
         trading_api.get_exchange_name(exchange_manager)
         for exchange_manager in exchange_managers
     ]
-    future_contracts_by_exchange = {
-        trading_api.get_exchange_name(exchange_manager): {
-            symbol: {
-                "contract_type": contract.contract_type.value,
-                "position_mode": contract.position_mode.value,
-                "margin_type": contract.margin_type.value
-            }
-            for symbol, contract in trading_api.get_pair_contracts(exchange_manager).items()
-            if symbol in trading_api.get_trading_pairs(exchange_manager)
-            and trading_api.is_handled_contract(contract)
-        }
-        for exchange_manager in exchange_managers
-        if exchange_manager.is_future and hasattr(exchange_manager.exchange, "pair_contracts")
-    }
+    future_contracts_by_exchange = _get_future_contracts_by_exchange(exchange_managers)
     trades = [
         trade
         for exchange_manager in exchange_managers
@@ -136,23 +127,8 @@ async def _get_multi_exchange_data(exchange_managers, is_backtesting):
         float(trading_api.get_draw_down(exchange_manager))
         for exchange_manager in exchange_managers
     )), 3)
-    try:
-        r_sq_end_balance = numpy.average([
-            await trading_api.get_coefficient_of_determination(
-                exchange_manager,
-                use_high_instead_of_end_balance=False
-            )
-            for exchange_manager in exchange_managers
-        ])
-    except KeyError:
-        r_sq_end_balance = None
-    try:
-        r_sq_max_balance = numpy.average([
-            await trading_api.get_coefficient_of_determination(exchange_manager)
-            for exchange_manager in exchange_managers
-        ])
-    except KeyError:
-        r_sq_max_balance = None
+    r_sq_end_balance = await _get_coefficient_of_determination(exchange_managers, False)
+    r_sq_max_balance = await _get_coefficient_of_determination(exchange_managers, True)
     duration = round(max(
         backtesting_api.get_backtesting_duration(exchange_manager.exchange.backtesting)
         for exchange_manager in exchange_managers
@@ -169,32 +145,7 @@ async def _get_multi_exchange_data(exchange_managers, is_backtesting):
     else:
         start_time = exchange_managers[0].exchange.get_exchange_current_time()
         end_time = -1
-    origin_portfolio = {}
-    end_portfolio = {}
-    for exchange_manager in exchange_managers:
-        try:
-            exchange_origin_portfolio = trading_api.get_origin_portfolio(exchange_manager, as_decimal=False)
-        except AttributeError:
-            # no initialized portfolio on this exchange
-            continue
-        exchange_end_portfolio = trading_api.get_portfolio(exchange_manager, as_decimal=False)
-        for portfolio in (exchange_origin_portfolio, exchange_end_portfolio):
-            for values in portfolio.values():
-                values.pop("available", None)
-        if exchange_manager.is_future:
-            for position in trading_api.get_positions(exchange_manager):
-                exchange_end_portfolio[position.get_currency()]["position"] = float(position.quantity)
-        for exchange_portfolio, portfolio in zip((exchange_origin_portfolio, exchange_end_portfolio),
-                                                 (origin_portfolio, end_portfolio)):
-            for currency, value_dict in exchange_portfolio.items():
-                try:
-                    pf_value = portfolio[currency]
-                except KeyError:
-                    pf_value = {}
-                    portfolio[currency] = pf_value
-                for key, value in value_dict.items():
-                    pf_value[key] = pf_value.get(key, 0) + value
-
+    origin_portfolio, end_portfolio = _get_portfolio(exchange_managers)
     backtesting_only_metadata = {
         common_enums.BacktestingMetadata.DURATION.value: duration,
         common_enums.BacktestingMetadata.BACKTESTING_FILES.value: data_files,
@@ -204,6 +155,8 @@ async def _get_multi_exchange_data(exchange_managers, is_backtesting):
         **{
             common_enums.BacktestingMetadata.GAINS.value: round(float(profitability), 8),
             common_enums.BacktestingMetadata.PERCENT_GAINS.value: round(float(profitability_percent), 3),
+            common_enums.BacktestingMetadata.MARKETS_PROFITABILITY.value:
+                {c: f"{round(float(v) * 100, 2)}%" for c, v in markets_profitability.items()},
             common_enums.BacktestingMetadata.END_PORTFOLIO.value: str(end_portfolio),
             common_enums.BacktestingMetadata.START_PORTFOLIO.value: str(origin_portfolio),
             common_enums.BacktestingMetadata.WIN_RATE.value: win_rate,
@@ -221,6 +174,88 @@ async def _get_multi_exchange_data(exchange_managers, is_backtesting):
             common_enums.DBRows.END_TIME.value: end_time,
             common_enums.DBRows.FUTURE_CONTRACTS.value: future_contracts_by_exchange,
         }
+    }
+
+
+async def _get_coefficient_of_determination(exchange_managers, use_high_instead_of_end_balance):
+    try:
+        return numpy.average([
+            await trading_api.get_coefficient_of_determination(
+                exchange_manager,
+                use_high_instead_of_end_balance=use_high_instead_of_end_balance
+            )
+            for exchange_manager in exchange_managers
+        ])
+    except KeyError:
+        return None
+
+
+def _get_markets_profitability(exchange_managers, time_frames):
+    markets_profitability = {}
+    min_tf = time_frame_manager.find_min_time_frame(time_frames)
+    for exchange_manager in exchange_managers:
+        for symbol in trading_api.get_trading_pairs(exchange_manager):
+            if symbol is markets_profitability:
+                continue
+            try:
+                markets_profitability[symbol] = \
+                    backtesting.IndependentBacktesting.get_market_delta(symbol, exchange_manager, min_tf)
+            except Exception:
+                pass
+    return markets_profitability
+
+
+def _get_portfolio(exchange_managers):
+    origin_portfolio = {}
+    end_portfolio = {}
+    for exchange_manager in exchange_managers:
+        try:
+            exchange_origin_portfolio = trading_api.get_origin_portfolio(exchange_manager, as_decimal=False)
+        except AttributeError:
+            # no initialized portfolio on this exchange
+            continue
+        exchange_end_portfolio = trading_api.get_portfolio(exchange_manager, as_decimal=False)
+        for portfolio in (exchange_origin_portfolio, exchange_end_portfolio):
+            for values in portfolio.values():
+                values.pop("available", None)
+        if exchange_manager.is_future:
+            for position in trading_api.get_positions(exchange_manager):
+                try:
+                    exchange_end_portfolio[position.get_currency()]["position"] = float(position.quantity)
+                except KeyError:
+                    exchange_end_portfolio[position.get_currency()] = {
+                        commons_constants.PORTFOLIO_AVAILABLE: 0,
+                        commons_constants.PORTFOLIO_TOTAL: 0,
+                        "position": float(position.quantity),
+                    }
+
+        for exchange_portfolio, portfolio in zip((exchange_origin_portfolio, exchange_end_portfolio),
+                                                 (origin_portfolio, end_portfolio)):
+            for currency, value_dict in exchange_portfolio.items():
+                try:
+                    pf_value = portfolio[currency]
+                except KeyError:
+                    pf_value = {}
+                    portfolio[currency] = pf_value
+                for key, value in value_dict.items():
+                    pf_value[key] = pf_value.get(key, 0) + value
+    return origin_portfolio, end_portfolio
+
+
+def _get_future_contracts_by_exchange(exchange_managers):
+    return {
+        trading_api.get_exchange_name(exchange_manager): {
+            symbol: {
+                "contract_type": contract.contract_type.value,
+                "position_mode": contract.position_mode.value,
+                "margin_type": contract.margin_type.value
+            }
+            for symbol, contract in trading_api.get_pair_contracts(exchange_manager).items()
+            if symbol in trading_api.get_trading_pairs(exchange_manager)
+            and trading_api.is_handled_contract(contract)
+        }
+        for exchange_manager in exchange_managers
+        if exchange_manager.is_future and hasattr(exchange_manager.exchange, "pair_contracts")
     }
 
 

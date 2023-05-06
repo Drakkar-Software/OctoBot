@@ -187,11 +187,12 @@ class IndependentBacktesting:
                 self.logger.exception(e, True, f"Error when enforcing max run databases size: {e}")
 
     @staticmethod
-    def _get_market_delta(symbol, exchange_manager, min_timeframe):
-        market_data = trading_api.get_symbol_historical_candles(
-            trading_api.get_symbol_data(exchange_manager, str(symbol)), min_timeframe)
-        market_begin = market_data[enums.PriceIndexes.IND_PRICE_CLOSE.value][0]
-        market_end = market_data[enums.PriceIndexes.IND_PRICE_CLOSE.value][-1]
+    def get_market_delta(symbol, exchange_manager, min_timeframe):
+        market_data = trading_api.get_symbol_close_candles(
+            trading_api.get_symbol_data(exchange_manager, str(symbol)), min_timeframe
+        )
+        market_begin = market_data[0]
+        market_end = market_data[-1]
 
         if market_begin and market_end and market_begin > 0:
             market_delta = market_end / market_begin - 1 if market_end >= market_begin \
@@ -269,7 +270,7 @@ class IndependentBacktesting:
             exchange_name = trading_api.get_exchange_name(exchange_manager)
             for symbol in self.symbols_to_create_exchange_classes[exchange_name]:
                 try:
-                    market_delta = self._get_market_delta(symbol, exchange_manager, min_timeframe)
+                    market_delta = self.get_market_delta(symbol, exchange_manager, min_timeframe)
                     report[SYMBOL_REPORT].append({symbol.symbol_str: market_delta * 100})
                     report[CHART_IDENTIFIERS].append({
                         "symbol": symbol.symbol_str,
@@ -316,7 +317,7 @@ class IndependentBacktesting:
         self.logger.info(f"\n{trades_history_string}")
 
     def _log_symbol_report(self, symbol, exchange_manager, min_time_frame):
-        market_delta = self._get_market_delta(symbol, exchange_manager, min_time_frame)
+        market_delta = self.get_market_delta(symbol, exchange_manager, min_time_frame)
         self.logger.info(f"{symbol.symbol_str} Profitability : {market_delta * 100}%")
 
     def _log_global_report(self, exchange_manager):
