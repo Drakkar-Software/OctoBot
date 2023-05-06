@@ -6,6 +6,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [0.4.50] - 2023-05-06
+### Added
+- [DailyTradingMode] Target profit mode
+- [WebInterface] Backtesting trades
+- [Python] Support for 3.9 and 3.10. 3.10 is now the recommended version for OctoBot
+### Updated
+- Removed Cython
+- Improved overall speed thanks to python 3.10 optimizations
+- [Coinbase] Fix trading simulator issues
+- [Bybit] Made time sync errors much less frequent
+- [WebInterface] Improved spot and futures symbols selector
+- [Websockets] Improved global stability
+### Fixed
+- [Websockets] KeyError
+- [Portfolio] Attribute error
+
 ## [0.4.49] - 2023-04-23
 ### Updated
 - [CCXT] Update to ccxt 3.0.74
