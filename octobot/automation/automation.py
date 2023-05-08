@@ -193,7 +193,10 @@ class Automation(tentacles_management.AbstractTentacle):
 
     def _apply_user_inputs(self, step_names, step_classes_by_name: dict, inputs, automation_id):
         for step_name in step_names:
-            self._apply_step_user_inputs(step_name, step_classes_by_name[step_name], inputs, automation_id)
+            try:
+                self._apply_step_user_inputs(step_name, step_classes_by_name[step_name], inputs, automation_id)
+            except KeyError:
+                self.logger.exception(f"Automation step not found: {step_name} (ignored)")
 
     def _apply_step_user_inputs(self, step_name, step_class, inputs, automation_id):
         step = step_class()
