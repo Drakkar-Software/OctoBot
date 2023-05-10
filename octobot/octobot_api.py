@@ -72,6 +72,11 @@ class OctoBotAPI:
     def get_automation(self) -> automation.Automation:
         return self._octobot.automation
 
+    def get_interface(self, interface_class):
+        for interface in self._octobot.interface_producer.interfaces:
+            if isinstance(interface, interface_class):
+                return interface
+
     def run_in_main_asyncio_loop(self, coroutine, log_exceptions=True,
                                  timeout=commons_constants.DEFAULT_FUTURE_TIMEOUT):
         return self._octobot.run_in_main_asyncio_loop(coroutine, log_exceptions=log_exceptions, timeout=timeout)
