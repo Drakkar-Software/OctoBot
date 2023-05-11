@@ -266,7 +266,7 @@ class IndependentBacktesting:
         for exchange_id in self.octobot_backtesting.exchange_manager_ids:
             exchange_manager = trading_api.get_exchange_manager_from_exchange_id(exchange_id)
             _, profitability, _, market_average_profitability, _ = trading_api.get_profitability_stats(exchange_manager)
-            min_timeframe = time_frame_manager.find_min_time_frame(trading_api.get_watched_timeframes(exchange_manager))
+            min_timeframe = time_frame_manager.find_min_time_frame(trading_api.get_trading_timeframes(exchange_manager))
             exchange_name = trading_api.get_exchange_name(exchange_manager)
             for symbol in self.symbols_to_create_exchange_classes[exchange_name]:
                 try:
@@ -276,7 +276,9 @@ class IndependentBacktesting:
                         "symbol": symbol.symbol_str,
                         "exchange_id": exchange_id,
                         "exchange_name": exchange_name,
-                        "time_frame": min_timeframe.value
+                        "time_frames": list(reversed(
+                            [tf.value for tf in trading_api.get_watched_timeframes(exchange_manager)]
+                        ))
                     })
                 except KeyError:
                     self.logger.debug(f"No price data for {symbol} on {min_timeframe}")
@@ -304,7 +306,7 @@ class IndependentBacktesting:
             self._log_trades_history(exchange_manager, exchange_name)
 
             self.logger.info(f" ========= Prices evolution on {exchange_name} =========")
-            min_timeframe = time_frame_manager.find_min_time_frame(trading_api.get_watched_timeframes(exchange_manager))
+            min_timeframe = time_frame_manager.find_min_time_frame(trading_api.get_trading_timeframes(exchange_manager))
             for symbol in self.symbols_to_create_exchange_classes[exchange_name]:
                 self._log_symbol_report(symbol, exchange_manager, min_timeframe)
 
