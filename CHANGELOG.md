@@ -9,11 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.4.50] - 2023-05-06
 ### Added
 - [DailyTradingMode] Target profit mode
-- [WebInterface] Backtesting trades
+- [ArbitrageTradingMode] Allow to disable short or long arbitrages 
+- [WebInterface] Backtesting trades table
+- [WebInterface] Open orders display on charts
+- [WebInterface] Time frame selector on charts
 - [Python] Support for 3.9 and 3.10. 3.10 is now the recommended version for OctoBot
 ### Updated
 - Removed Cython
 - Improved overall speed thanks to python 3.10 optimizations
+- [Trading Modes] allow order quantity in quote amount
 - [Coinbase] Fix trading simulator issues
 - [Bybit] Made time sync errors much less frequent
 - [WebInterface] Improved spot and futures symbols selector
