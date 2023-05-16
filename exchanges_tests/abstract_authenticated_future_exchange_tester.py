@@ -310,7 +310,7 @@ class AbstractAuthenticatedFutureExchangeTester(
         open_orders = await self.get_open_orders()
         assert len(open_orders) == len(previous_open_orders) + 1
         for open_order in open_orders:
-            if open_order[trading_enums.ExchangeConstantsOrderColumns.ID.value] == order.order_id:
+            if open_order[trading_enums.ExchangeConstantsOrderColumns.EXCHANGE_ID.value] == order.exchange_order_id:
                 return True
         return False
 
