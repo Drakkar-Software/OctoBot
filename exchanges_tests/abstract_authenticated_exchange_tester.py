@@ -116,7 +116,7 @@ class AbstractAuthenticatedExchangeTester:
             self.check_created_market_order(buy_market, size, trading_enums.TradeOrderSide.BUY)
             filled_order = await self.wait_for_fill(buy_market)
             await self.check_require_order_fees_from_trades(
-                filled_order[trading_enums.ExchangeConstantsOrderColumns.ID.value]
+                filled_order[trading_enums.ExchangeConstantsOrderColumns.EXCHANGE_ID.value]
             )
             self.check_raw_closed_orders([filled_order])
             post_buy_portfolio = await self.get_portfolio()
@@ -155,7 +155,7 @@ class AbstractAuthenticatedExchangeTester:
         stop_loss = await self.create_market_stop_loss_order(current_price, price, size,
                                                              trading_enums.TradeOrderSide.SELL)
         self.check_created_stop_order(stop_loss, price, size, trading_enums.TradeOrderSide.SELL)
-        stop_loss_from_get_order = await self.get_order(stop_loss.order_id)
+        stop_loss_from_get_order = await self.get_order(stop_loss.exchange_order_id)
         self.check_created_stop_order(stop_loss_from_get_order, price, size, trading_enums.TradeOrderSide.SELL)
         assert await self.order_in_open_orders(open_orders, stop_loss)
         await self.cancel_order(stop_loss)
@@ -200,7 +200,7 @@ class AbstractAuthenticatedExchangeTester:
                               edited_price=edited_price,
                               edited_quantity=edited_size)
         await self.wait_for_edit(sell_limit, edited_size)
-        sell_limit = await self.get_order(sell_limit.order_id)
+        sell_limit = await self.get_order(sell_limit.exchange_order_id)
         self.check_created_limit_order(sell_limit, edited_price, edited_size, trading_enums.TradeOrderSide.SELL)
         await self.cancel_order(sell_limit)
         assert await self.order_not_in_open_orders(open_orders, sell_limit)
@@ -226,7 +226,7 @@ class AbstractAuthenticatedExchangeTester:
                               edited_stop_price=edited_price,
                               edited_quantity=edited_size)
         await self.wait_for_edit(stop_loss, edited_size)
-        stop_loss = await self.get_order(stop_loss.order_id)
+        stop_loss = await self.get_order(stop_loss.exchange_order_id)
         self.check_created_stop_order(stop_loss, edited_price, edited_size, trading_enums.TradeOrderSide.SELL)
         await self.cancel_order(stop_loss)
         assert await self.order_not_in_open_orders(open_orders, stop_loss)
@@ -411,7 +411,7 @@ class AbstractAuthenticatedExchangeTester:
 
     def check_duplicate(self, orders_or_trades):
         assert len(orders_or_trades) * (1 - self.DUPLICATE_TRADES_RATIO) <= len({
-            f"{o[trading_enums.ExchangeConstantsOrderColumns.ID.value]}"
+            f"{o[trading_enums.ExchangeConstantsOrderColumns.EXCHANGE_ID.value]}"
             f"{o[trading_enums.ExchangeConstantsOrderColumns.TIMESTAMP.value]}"
             f"{o[trading_enums.ExchangeConstantsOrderColumns.AMOUNT.value]}"
             f"{o[trading_enums.ExchangeConstantsOrderColumns.PRICE.value]}"
@@ -459,6 +459,7 @@ class AbstractAuthenticatedExchangeTester:
             else:
                 raise
         assert order.order_id
+        assert order.exchange_order_id
         assert order.side
         if order.status not in (trading_enums.OrderStatus.REJECTED, trading_enums.OrderStatus.CANCELED):
             assert order.origin_quantity
@@ -485,6 +486,7 @@ class AbstractAuthenticatedExchangeTester:
         assert trade.status
         assert trade.fee
         assert trade.origin_order_id
+        assert trade.exchange_order_id
         assert trade.side
         if trade.status is not trading_enums.OrderStatus.CANCELED:
             assert trade.executed_quantity
@@ -535,10 +537,10 @@ class AbstractAuthenticatedExchangeTester:
                 at_least_one_value = True
         assert at_least_one_value
 
-    async def get_order(self, order_id, symbol=None):
+    async def get_order(self, exchange_order_id, symbol=None):
         return personal_data.create_order_instance_from_raw(
             self.exchange_manager.trader,
-            await self.exchange_manager.exchange.get_order(order_id, symbol or self.SYMBOL)
+            await self.exchange_manager.exchange.get_order(exchange_order_id, symbol or self.SYMBOL)
         )
 
     async def edit_order(self, order,
@@ -547,8 +549,9 @@ class AbstractAuthenticatedExchangeTester:
                          edited_stop_price: decimal.Decimal = None,
                          edited_current_price: decimal.Decimal = None,
                          params: dict = None):
+        print(f"editing order: edited_quantity {edited_quantity} edited_price {edited_price} (current order: {order})")
         edited_order = await self.exchange_manager.exchange.edit_order(
-            order.order_id,
+            order.exchange_order_id,
             order.order_type,
             order.symbol,
             quantity=order.origin_quantity if edited_quantity is None else edited_quantity,
@@ -612,7 +615,7 @@ class AbstractAuthenticatedExchangeTester:
             raise AssertionError(f"Created order is None. input order: {order}, params: {params}")
         if created_order.status is trading_enums.OrderStatus.PENDING_CREATION:
             await self.wait_for_open(created_order)
-            return await self.get_order(created_order.order_id)
+            return await self.get_order(created_order.exchange_order_id)
         return created_order
 
     def get_order_size(self, portfolio, price, symbol=None, order_size=None):
@@ -720,7 +723,7 @@ class AbstractAuthenticatedExchangeTester:
             and self.exchange_manager.exchange.EXPECT_POSSIBLE_ORDER_NOT_FOUND_DURING_ORDER_CREATION
         t0 = time.time()
         while time.time() - t0 < timeout:
-            raw_order = await self.exchange_manager.exchange.get_order(order.order_id, order.symbol)
+            raw_order = await self.exchange_manager.exchange.get_order(order.exchange_order_id, order.symbol)
             if raw_order is None:
                 print(f"{self.exchange_manager.exchange_name} {order.order_type} {validation_func.__name__} "
                       f"Order not found after {time.time() - t0} seconds. Order: [{order}]. Raw order: [{raw_order}]")
@@ -743,7 +746,7 @@ class AbstractAuthenticatedExchangeTester:
         open_orders = await self.get_open_orders()
         assert len(open_orders) == len(previous_open_orders) + 1
         for open_order in open_orders:
-            if open_order[trading_enums.ExchangeConstantsOrderColumns.ID.value] == order.order_id:
+            if open_order[trading_enums.ExchangeConstantsOrderColumns.EXCHANGE_ID.value] == order.exchange_order_id:
                 return True
         return False
 
@@ -770,7 +773,7 @@ class AbstractAuthenticatedExchangeTester:
         open_orders = await self.get_open_orders()
         assert len(open_orders) == len(previous_open_orders)
         for open_order in open_orders:
-            if open_order[trading_enums.ExchangeConstantsOrderColumns.ID.value] == order.order_id:
+            if open_order[trading_enums.ExchangeConstantsOrderColumns.EXCHANGE_ID.value] == order.exchange_order_id:
                 return False
         return True
 
