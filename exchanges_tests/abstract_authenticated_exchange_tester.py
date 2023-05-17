@@ -60,6 +60,8 @@ class AbstractAuthenticatedExchangeTester:
     MIN_PORTFOLIO_SIZE = 1
     DUPLICATE_TRADES_RATIO = 0
     SUPPORTS_DOUBLE_BUNDLED_ORDERS = True
+    # set true when cancelling any bundled order on exchange would automatically cancel the other(s)
+    CANCEL_DOUBLE_BUNDLED_ORDERS_TOGETHER = True
 
     # Implement all "test_[name]" methods, call super() to run the test, pass to ignore it.
     # Override the "inner_test_[name]" method to override a test content.
@@ -131,12 +133,12 @@ class AbstractAuthenticatedExchangeTester:
             if post_buy_portfolio:
                 self.check_portfolio_changed(post_buy_portfolio, post_sell_portfolio, True)
 
-    async def check_require_order_fees_from_trades(self, filled_order_id, symbol=None):
+    async def check_require_order_fees_from_trades(self, filled_exchange_order_id, symbol=None):
         symbol = symbol or self.SYMBOL
-        order_with_fees = await self.exchange_manager.exchange.get_order(filled_order_id, symbol)
+        order_with_fees = await self.exchange_manager.exchange.get_order(filled_exchange_order_id, symbol)
         assert not trading_exchanges.is_missing_trading_fees(order_with_fees)
         order_maybe_without_fees = \
-            await self.exchange_manager.exchange.connector.get_order(filled_order_id, symbol=symbol)
+            await self.exchange_manager.exchange.connector.get_order(filled_exchange_order_id, symbol=symbol)
         if self.exchange_manager.exchange.REQUIRE_ORDER_FEES_FROM_TRADES:
             assert trading_exchanges.is_missing_trading_fees(order_maybe_without_fees)
         else:
@@ -350,10 +352,13 @@ class AbstractAuthenticatedExchangeTester:
             await self.wait_for_fill(buy_market)
             created_orders = [stop_loss, take_profit]
             fetched_conditional_orders = await self.get_similar_orders_in_open_orders(open_orders, created_orders)
-            for fetched_conditional_order in fetched_conditional_orders:
+            orders_to_cancel = fetched_conditional_orders[0:1] \
+                if self.CANCEL_DOUBLE_BUNDLED_ORDERS_TOGETHER else fetched_conditional_orders
+            for fetched_conditional_order in orders_to_cancel:
                 # ensure stop loss / take profit is fetched in open orders
                 # ensure stop loss / take profit cancel is working
                 await self.cancel_order(fetched_conditional_order)
+            # always ensure that all orders have been cancelled
             for fetched_conditional_order in fetched_conditional_orders:
                 assert await self.order_not_in_open_orders(open_orders, fetched_conditional_order)
         finally:
