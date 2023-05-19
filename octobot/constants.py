@@ -75,6 +75,9 @@ COMMUNITY_GQL_BACKEND_API_URL = os.getenv(
     "COMMUNITY_GQL_BACKEND_API_URL",
     f"https://realm.mongodb.com/api/client/v2.0/app/{COMMUNITY_MONGO_APP_ID}/graphql"
 )
+COMMUNITY_BACKEND_URL = "https://qyiytzoofyeovfdhmqae.supabase.co"
+COMMUNITY_BACKEND_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF5aXl0em9vZnllb3ZmZGhtcWFlIiwicm9sZSI6ImFub24iLCJpYXQiOjE2ODIyODEzMjIsImV4cCI6MTk5Nzg1NzMyMn0.r9XRnxoZ0yDtXv-gUnLbUs4ap1eLiA0zpxun1QvKm-I"
+
 
 # staging env SHOULD ONLY BE USED THROUGH CommunityIdentifiersProvider
 STAGING_OCTOBOT_COMMUNITY_URL = os.getenv("COMMUNITY_SERVER_URL", "https://beta.octobot.cloud/")
@@ -93,6 +96,10 @@ STAGING_COMMUNITY_GQL_BACKEND_API_URL = os.getenv(
     "COMMUNITY_GQL_BACKEND_API_URL",
     f"https://realm.mongodb.com/api/client/v2.0/app/{STAGING_COMMUNITY_MONGO_APP_ID}/graphql"
 )
+STAGING_COMMUNITY_BACKEND_URL = "https://qyiytzoofyeovfdhmqae.supabase.co"
+STAGING_COMMUNITY_BACKEND_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF5aXl0em9vZnllb3ZmZGhtcWFlIiwicm9sZSI6ImFub24iLCJpYXQiOjE2ODIyODEzMjIsImV4cCI6MTk5Nzg1NzMyMn0.r9XRnxoZ0yDtXv-gUnLbUs4ap1eLiA0zpxun1QvKm-I"
+
+
 
 CONFIG_COMMUNITY = "community"
 CONFIG_COMMUNITY_TOKEN = "token"
