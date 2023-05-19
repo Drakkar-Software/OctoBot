@@ -26,11 +26,11 @@ import aiohttp
 import octobot.constants as constants
 import octobot.community.errors as errors
 import octobot.community.identifiers_provider as identifiers_provider
-import octobot.community.community_supports as community_supports
-import octobot.community.startup_info as startup_info
+import octobot.community.models.community_supports as community_supports
+import octobot.community.models.startup_info as startup_info
 import octobot.community.feeds as community_feeds
 import octobot.community.graphql_requests as graphql_requests
-import octobot.community.community_user_account as community_user_account
+import octobot.community.models.community_user_account as community_user_account
 import octobot_commons.constants as commons_constants
 import octobot_commons.authentication as authentication
 import octobot_commons.configuration as commons_configuration
