@@ -22,26 +22,19 @@ from octobot.community.errors import (
     BotNotFoundError,
     NoBotDeviceError,
 )
-from octobot.community import identifiers_provider
-from octobot.community.identifiers_provider import (
-    IdentifiersProvider,
-)
-from octobot.community import community_user_account
-from octobot.community.community_user_account import (
+from octobot.community import models
+from octobot.community.models import (
     CommunityUserAccount,
-)
-from octobot.community import community_fields
-from octobot.community.community_fields import (
     CommunityFields,
+    CommunityTentaclesPackage,
+    CommunitySupports,
+    CommunityDonation,
+    StartupInfo,
 )
 
 from octobot.community import community_analysis
 from octobot.community import community_manager
 from octobot.community import authentication
-from octobot.community import community_tentacles_package
-from octobot.community import community_supports
-from octobot.community import community_donation
-from octobot.community import startup_info
 from octobot.community import graphql_requests
 from octobot.community import feeds
 from octobot.community import errors_upload
@@ -56,18 +49,6 @@ from octobot.community.community_manager import (
 )
 from octobot.community.authentication import (
     CommunityAuthentication,
-)
-from octobot.community.community_tentacles_package import (
-    CommunityTentaclesPackage
-)
-from octobot.community.community_supports import (
-    CommunitySupports
-)
-from octobot.community.community_donation import (
-    CommunityDonation
-)
-from octobot.community.startup_info import (
-    StartupInfo
 )
 from octobot.community.graphql_requests import (
     select_startup_info_query,
@@ -92,6 +73,9 @@ from octobot.community.errors_upload import (
     register_error_uploader,
     Error,
     ErrorsUploader,
+)
+from octobot.community.identifiers_provider import (
+    IdentifiersProvider,
 )
 
 __all__ = [
