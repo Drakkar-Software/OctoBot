@@ -30,7 +30,7 @@ class CommunityUserAccount:
 
     def __init__(self):
         self.gql_user_id = None
-        self.gql_bot_id = None
+        self.bot_id = None
         self.gql_access_token = None
         self.supports = community_supports.CommunitySupports()
 
@@ -103,6 +103,12 @@ class CommunityUserAccount:
     def get_bot_name_or_id(bot):
         return bot["name"] or CommunityUserAccount.get_bot_id(bot)
 
+    def get_selected_bot_current_portfolio_id(self):
+        return self._selected_bot_raw_data["current_portfolio_id"]
+
+    def get_selected_bot_current_config_id(self):
+        return self._selected_bot_raw_data["current_config_id"]
+
     def set_profile_raw_data(self, profile_raw_data):
         self._profile_raw_data = profile_raw_data
 
@@ -129,11 +135,11 @@ class CommunityUserAccount:
             raise errors.BotError(self.NO_SELECTED_BOT_DESC)
 
     def ensure_selected_bot_id(self):
-        if self.gql_bot_id is None:
+        if self.bot_id is None:
             raise errors.BotError("No selected bot")
 
     def flush_bot_details(self):
-        self.gql_bot_id = None
+        self.bot_id = None
         self._selected_bot_raw_data = None
         self._all_user_bots_raw_data = []
 
