@@ -37,7 +37,7 @@ async def authenticated_client_1_with_temp_bot():
     async with _authenticated_client(*_get_backend_client_creds(1)) as client:
         bot_id = None
         try:
-            bot = await client.create_bot()
+            bot = await client.create_bot(supabase_backend_enums.DeploymentTypes.SELF_HOSTED)
             bot_id = bot[supabase_backend_enums.BotKeys.ID.value]
             yield client, bot_id
         finally:
@@ -67,6 +67,20 @@ async def _delete_bot(client, bot_id):
         await client.table("bot_configs").delete().eq(
             supabase_backend_enums.ConfigKeys.ID.value, config_id
         ).execute()
+
+    async def _delete_deployment(deployment_id):
+        await client.table("bot_deployments").delete().eq(
+            supabase_backend_enums.BotDeploymentKeys.ID.value, deployment_id
+        ).execute()
+    bot = await client.fetch_bot(bot_id)
+    if deployment_id := bot[supabase_backend_enums.BotKeys.CURRENT_DEPLOYMENT_ID.value]:
+        # cleanup deployments
+        # remove deployment foreign key
+        await client.update_bot(
+            bot_id,
+            {supabase_backend_enums.BotKeys.CURRENT_DEPLOYMENT_ID.value: None}
+        )
+        await _delete_deployment(deployment_id)
     # cleanup trades
     await client.reset_trades(bot_id)
     portfolios = await client.fetch_portfolios(bot_id)

@@ -19,6 +19,7 @@ import gotrue.errors
 import supabase.lib.client_options
 
 import octobot_commons.authentication as authentication
+import octobot.constants as constants
 import octobot.community.errors as errors
 import octobot.community.supabase_backend.enums as enums
 import octobot.community.supabase_backend.supabase_client as supabase_client
@@ -81,27 +82,63 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
     async def get_user(self) -> dict:
         return (await self._get_user()).dict()
 
+    def sync_get_user(self) -> dict:
+        return self.auth.get_user().user.dict()
+
     async def fetch_bot(self, bot_id) -> dict:
         try:
-            return (await self.table("bots").select("*").eq(
+            return (await self.table("bots").select("*,bot_deployment:bot_deployments(*)").eq(
                 enums.BotKeys.ID.value, bot_id
             ).execute()).data[0]
         except IndexError:
             raise errors.BotNotFoundError(bot_id)
 
     async def fetch_bots(self) -> list:
-        return (await self.table("bots").select("*").execute()).data
+        return (await self.table("bots").select("*,bot_deployment:bot_deployments(*)").execute()).data
 
-    async def create_bot(self) -> dict:
-        return (await self.table("bots").insert(
-            {enums.BotKeys.USER_ID.value: (await self._get_user()).id}
+    async def create_bot(self, deployment_type: enums.DeploymentTypes) -> dict:
+        created_bot = (await self.table("bots").insert({
+            enums.BotKeys.USER_ID.value: (await self._get_user()).id
+        }).execute()).data[0]
+        bot_id = created_bot[enums.BotKeys.ID.value]
+        created_deployment = await self._create_deployment(
+            deployment_type, bot_id, constants.VERSION
+        )
+        await self.table("bots").update({
+            enums.BotKeys.CURRENT_DEPLOYMENT_ID.value: created_deployment[enums.BotDeploymentKeys.ID.value],
+        }).eq(
+            enums.BotDeploymentKeys.ID.value, bot_id
+        ).execute()
+        # fetch bot to fetch embed elements (like deployments)
+        return await self.fetch_bot(bot_id)
+
+    async def _create_deployment(self, deployment_type, bot_id, version):
+        return (await self.table("bot_deployments").insert({
+            enums.BotDeploymentKeys.TYPE.value: deployment_type.value,
+            enums.BotDeploymentKeys.VERSION.value: version,
+            enums.BotDeploymentKeys.BOT_ID.value: bot_id,
+        }).execute()).data[0]
+
+    async def update_bot(self, bot_id, bot_update) -> dict:
+        await self.table("bots").update(bot_update).eq(enums.BotKeys.ID.value, bot_id).execute()
+        # fetch bot to fetch embed elements (like deployments)
+        return await self.fetch_bot(bot_id)
+
+    async def update_deployment(self, deployment_id, deployment_update) -> dict:
+        return (await self.table("bot_deployments").update(deployment_update).eq(
+            enums.BotDeploymentKeys.ID.value, deployment_id
         ).execute()).data[0]
-
-    async def update_bot(self, bot_id, bot_update) -> list:
-        return (await self.table("bots").update(bot_update).eq(enums.BotKeys.ID.value, bot_id).execute()).data
 
     async def delete_bot(self, bot_id) -> list:
         return (await self.table("bots").delete().eq(enums.BotKeys.ID.value, bot_id).execute()).data
+
+    async def fetch_deployment_url(self, deployment_url_id) -> dict:
+        try:
+            return (await self.table("bot_deployment_urls").select("*").eq(
+                enums.BotDeploymentURLKeys.ID.value, deployment_url_id
+            ).execute()).data[0]
+        except IndexError:
+            raise errors.BotDeploymentNotFoundError(deployment_url_id)
 
     async def fetch_startup_info(self, bot_id) -> dict:
         return json.loads(
@@ -125,8 +162,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
 
     async def upsert_trades(self, trades) -> list:
         return (await self.table("bot_trades").upsert(
-            trades, on_conflict=
-            f"{enums.TradeKeys.TRADE_ID.value},{enums.TradeKeys.TIME.value}"
+            trades, on_conflict=f"{enums.TradeKeys.TRADE_ID.value},{enums.TradeKeys.TIME.value}"
         ).execute()).data
 
     async def fetch_configs(self, bot_id) -> list:
