@@ -17,6 +17,8 @@ import gotrue.errors
 import datetime
 import supabase.lib.client_options
 import octobot_commons.authentication as authentication
+import octobot.community.errors as errors
+import octobot.community.supabase_backend.enums as enums
 import octobot.community.supabase_backend.supabase_client as supabase_client
 import octobot.community.supabase_backend.configuration_storage as configuration_storage
 
@@ -77,14 +79,27 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
     def get_user(self) -> dict:
         return self._get_user().dict()
 
-    async def fetch_bot(self, bot_id):
-        return (await self.table("bots").select("*").eq("id", bot_id).execute()).data
+    async def fetch_bot(self, bot_id) -> dict:
+        try:
+            return (await self.table("bots").select("*").eq(
+                enums.BotKeys.ID.value, bot_id
+            ).execute()).data[0]
+        except IndexError:
+            raise errors.BotNotFoundError(bot_id)
 
     async def fetch_bots(self) -> list:
         return (await self.table("bots").select("*").execute()).data
 
-    async def create_bot(self):
-        return (await self.table("bots").insert({"user_id": self._get_user().id}).execute()).data
+    async def create_bot(self) -> dict:
+        return (await self.table("bots").insert(
+            {enums.BotKeys.USER_ID.value: self._get_user().id}
+        ).execute()).data[0]
+
+    async def update_bot(self, bot_id, bot_update) -> list:
+        return (await self.table("bots").update(bot_update).eq(enums.BotKeys.ID.value, bot_id).execute()).data
+
+    async def delete_bot(self, bot_id) -> list:
+        return (await self.table("bots").delete().eq(enums.BotKeys.ID.value, bot_id).execute()).data
 
     async def fetch_startup_info(self, bot_id) -> dict:
         return await self.postgres_functions().invoke("get_startup_info", {"body": {"bot_id": bot_id}})["data"]
@@ -92,42 +107,82 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
     async def fetch_subscribed_products_urls(self) -> dict:
         return await self.postgres_functions().invoke("get_subscribed_products_urls", {})["data"]
 
-    async def reset_trades(self):
-        await self.table("bot_trades").delete().execute()
+    async def fetch_trades(self, bot_id) -> list:
+        return (await self.table("bot_trades").select("*").eq(
+            enums.TradeKeys.BOT_ID.value, bot_id
+        ).execute()).data
 
-    async def upsert_trades(self, trades):
-        return await self.table("bot_trades").upsert(
-            trades, on_conflict="trade_id,time"
-        ).execute()
+    async def reset_trades(self, bot_id):
+        return (await self.table("bot_trades").delete().eq(
+            enums.TradeKeys.BOT_ID.value, bot_id
+        ).execute()).data
 
-    async def update_config(self, config, config_id):
+    async def upsert_trades(self, trades) -> list:
+        return (await self.table("bot_trades").upsert(
+            trades, on_conflict=
+            f"{enums.TradeKeys.TRADE_ID.value},{enums.TradeKeys.TIME.value}"
+        ).execute()).data
+
+    async def fetch_configs(self, bot_id) -> list:
         # use a new current portfolio for the given bot
-        await self.table("bot_configs").update(config).eq("id", config_id).execute()
+        return (await self.table("bot_configs").select("*").eq(
+            enums.ConfigKeys.BOT_ID.value, bot_id
+        ).execute()).data
 
-    async def reset_config(self, new_config):
+    async def update_config(self, config) -> list:
         # use a new current portfolio for the given bot
-        bot_id = new_config["bot_id"]
+        return (await self.table("bot_configs").update(config).eq(
+            enums.ConfigKeys.ID.value, config[enums.ConfigKeys.ID.value]
+        ).execute()).data
+
+    async def switch_config(self, new_config) -> dict:
+        # use a new current portfolio for the given bot
+        bot_id = new_config[enums.ConfigKeys.BOT_ID.value]
         inserted_config = (await self.table("bot_configs").insert(new_config).execute()).data[0]
-        await self.table("bots").update({"current_config_id": inserted_config["id"]}).eq("id", bot_id).execute()
+        await self.table("bots").update(
+            {enums.BotKeys.CURRENT_CONFIG_ID.value: inserted_config[enums.ConfigKeys.ID.value]}
+        ).eq(enums.BotKeys.ID.value, bot_id).execute()
+        return inserted_config
 
-    async def update_portfolio(self, portfolio):
-        # use a new current portfolio for the given bot
-        await self.table("bot_portfolios").update(portfolio).eq("id", portfolio["id"]).execute()
+    async def fetch_portfolios(self, bot_id) -> list:
+        return (await self.table("bot_portfolios").select("*").eq(
+            enums.PortfolioKeys.BOT_ID.value, bot_id
+        ).execute()).data
 
-    async def reset_portfolio(self, new_portfolio):
+    async def update_portfolio(self, portfolio) -> list:
         # use a new current portfolio for the given bot
-        bot_id = new_portfolio["bot_id"]
+        return (await self.table("bot_portfolios").update(portfolio).eq(
+            enums.PortfolioKeys.ID.value, portfolio[enums.PortfolioKeys.ID.value]
+        ).execute()).data
+
+    async def switch_portfolio(self, new_portfolio) -> dict:
+        # use a new current portfolio for the given bot
+        bot_id = new_portfolio[enums.PortfolioKeys.BOT_ID.value]
         inserted_portfolio = (await self.table("bot_portfolios").insert(new_portfolio).execute()).data[0]
-        await self.table("bots").update({"current_portfolio_id": inserted_portfolio["id"]}).eq("id", bot_id).execute()
+        await self.update_bot(
+            bot_id,
+            {enums.BotKeys.CURRENT_PORTFOLIO_ID.value: inserted_portfolio[enums.PortfolioKeys.ID.value]}
+        )
+        return inserted_portfolio
 
-    async def upsert_portfolio_history(self, portfolio_histories):
-        return await self.table("bot_portfolio_histories").upsert(
-            portfolio_histories, on_conflict="portfolio_id,time"
-        ).execute()
+    async def fetch_portfolio_history(self, portfolio_id) -> list:
+        return (await self.table("bot_portfolio_histories").select("*").eq(
+            enums.PortfolioHistoryKeys.PORTFOLIO_ID.value, portfolio_id
+        ).execute()).data
+
+    async def upsert_portfolio_history(self, portfolio_histories) -> list:
+        return (await self.table("bot_portfolio_histories").upsert(
+            portfolio_histories,
+            on_conflict=f"{enums.PortfolioHistoryKeys.TIME.value},{enums.PortfolioHistoryKeys.PORTFOLIO_ID.value}"
+        ).execute()).data
 
     @staticmethod
     def get_formatted_time(timestamp):
-        return f"{datetime.datetime.utcfromtimestamp(timestamp).isoformat('T')}Z"
+        # remove trailing 0 to be consistent with database
+        str_time = f"{datetime.datetime.utcfromtimestamp(timestamp).isoformat('T')}".rstrip("0")
+        if str_time.endswith("."):
+            str_time = f"{str_time}0"
+        return str_time
 
     def _get_user(self) -> gotrue.User:
         return self.auth.get_user().user
