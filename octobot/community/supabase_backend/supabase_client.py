@@ -15,6 +15,7 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import typing
 import gotrue
+import gotrue.errors
 import postgrest
 import supabase.lib.client_options
 import octobot.community.supabase_backend.postgres_functions as postgres_functions
@@ -98,4 +99,7 @@ class AuthenticatedAsyncSupabaseClient(supabase.Client):
     def _get_auth_session(self):
         if self.auth is None:
             return None
-        return self.auth.get_session()
+        try:
+            return self.auth.get_session()
+        except gotrue.errors.AuthError:
+            return None

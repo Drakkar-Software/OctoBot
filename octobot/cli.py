@@ -144,8 +144,8 @@ async def _apply_community_startup_info_to_config(logger, config, community_auth
         logger.debug(f"Fetched startup info: {startup_info}")
         commands.download_and_select_profile(
             logger, config,
-            startup_info.get_subscribed_products_urls(),
-            startup_info.get_forced_profile_url()
+            startup_info.subscribed_products_urls,
+            startup_info.forced_profile_url
         )
     except octobot_community.errors.BotError:
         return
