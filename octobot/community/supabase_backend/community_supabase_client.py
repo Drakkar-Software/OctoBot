@@ -13,9 +13,11 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
-import gotrue.errors
 import datetime
+import json
+import gotrue.errors
 import supabase.lib.client_options
+
 import octobot_commons.authentication as authentication
 import octobot.community.errors as errors
 import octobot.community.supabase_backend.enums as enums
@@ -37,7 +39,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         options.storage = storage   # use configuration storage
         super().__init__(supabase_url, supabase_key, options=options)
 
-    def sign_in(self, email: str, password: str) -> None:
+    async def sign_in(self, email: str, password: str) -> None:
         try:
             self.auth.sign_in_with_password({
                 "email": email,
@@ -46,7 +48,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         except gotrue.errors.AuthApiError as err:
             raise authentication.FailedAuthentication(err) from err
 
-    def sign_up(self, email: str, password: str) -> None:
+    async def sign_up(self, email: str, password: str) -> None:
         self.auth.sign_up({
             "email": email,
             "password": password,
@@ -71,13 +73,13 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
     def has_login_info(self) -> bool:
         return self.auth._storage.get_item(self.auth._storage_key) is not None
 
-    def update_metadata(self, metadata_update):
-        self.auth.update_user({
+    async def update_metadata(self, metadata_update) -> dict:
+        return self.auth.update_user({
             "data": metadata_update
-        })
+        }).user.dict()
 
-    def get_user(self) -> dict:
-        return self._get_user().dict()
+    async def get_user(self) -> dict:
+        return (await self._get_user()).dict()
 
     async def fetch_bot(self, bot_id) -> dict:
         try:
@@ -92,7 +94,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
 
     async def create_bot(self) -> dict:
         return (await self.table("bots").insert(
-            {enums.BotKeys.USER_ID.value: self._get_user().id}
+            {enums.BotKeys.USER_ID.value: (await self._get_user()).id}
         ).execute()).data[0]
 
     async def update_bot(self, bot_id, bot_update) -> list:
@@ -102,10 +104,14 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         return (await self.table("bots").delete().eq(enums.BotKeys.ID.value, bot_id).execute()).data
 
     async def fetch_startup_info(self, bot_id) -> dict:
-        return await self.postgres_functions().invoke("get_startup_info", {"body": {"bot_id": bot_id}})["data"]
+        return json.loads(
+            (await self.postgres_functions().invoke("get_startup_info", {"body": {"bot_id": bot_id}}))["data"]
+        )[0]
 
-    async def fetch_subscribed_products_urls(self) -> dict:
-        return await self.postgres_functions().invoke("get_subscribed_products_urls", {})["data"]
+    async def fetch_subscribed_products_urls(self) -> list:
+        return json.loads(
+            (await self.postgres_functions().invoke("get_subscribed_products_urls", {}))["data"]
+        ) or []
 
     async def fetch_trades(self, bot_id) -> list:
         return (await self.table("bot_trades").select("*").eq(
@@ -177,12 +183,15 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         ).execute()).data
 
     @staticmethod
-    def get_formatted_time(timestamp):
-        # remove trailing 0 to be consistent with database
-        str_time = f"{datetime.datetime.utcfromtimestamp(timestamp).isoformat('T')}".rstrip("0")
-        if str_time.endswith("."):
-            str_time = f"{str_time}0"
-        return str_time
+    def get_formatted_time(timestamp: float) -> str:
+        return datetime.datetime.utcfromtimestamp(timestamp).isoformat('T')
 
-    def _get_user(self) -> gotrue.User:
+    @staticmethod
+    def get_parsed_time(str_time: str) -> datetime.datetime:
+        try:
+            return datetime.datetime.strptime(str_time, "%Y-%m-%dT%H:%M:%S")
+        except ValueError:
+            return datetime.datetime.strptime(str_time, "%Y-%m-%dT%H:%M:%S.%f")
+
+    async def _get_user(self) -> gotrue.User:
         return self.auth.get_user().user

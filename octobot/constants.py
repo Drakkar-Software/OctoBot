@@ -75,8 +75,8 @@ COMMUNITY_GQL_BACKEND_API_URL = os.getenv(
     "COMMUNITY_GQL_BACKEND_API_URL",
     f"https://realm.mongodb.com/api/client/v2.0/app/{COMMUNITY_MONGO_APP_ID}/graphql"
 )
-COMMUNITY_BACKEND_URL = "https://qyiytzoofyeovfdhmqae.supabase.co"
-COMMUNITY_BACKEND_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF5aXl0em9vZnllb3ZmZGhtcWFlIiwicm9sZSI6ImFub24iLCJpYXQiOjE2ODIyODEzMjIsImV4cCI6MTk5Nzg1NzMyMn0.r9XRnxoZ0yDtXv-gUnLbUs4ap1eLiA0zpxun1QvKm-I"
+COMMUNITY_BACKEND_URL = "https://chenhfiuhhgsuxsqzsno.supabase.co"
+COMMUNITY_BACKEND_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNoZW5oZml1aGhnc3V4c3F6c25vIiwicm9sZSI6ImFub24iLCJpYXQiOjE2ODQ1OTA1MzEsImV4cCI6MjAwMDE2NjUzMX0.uxpmiQuMR6qz93mfnGPy6L65l31EFZCjq3B84V_olrE"
 
 
 # staging env SHOULD ONLY BE USED THROUGH CommunityIdentifiersProvider
@@ -96,8 +96,8 @@ STAGING_COMMUNITY_GQL_BACKEND_API_URL = os.getenv(
     "COMMUNITY_GQL_BACKEND_API_URL",
     f"https://realm.mongodb.com/api/client/v2.0/app/{STAGING_COMMUNITY_MONGO_APP_ID}/graphql"
 )
-STAGING_COMMUNITY_BACKEND_URL = "https://qyiytzoofyeovfdhmqae.supabase.co"
-STAGING_COMMUNITY_BACKEND_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF5aXl0em9vZnllb3ZmZGhtcWFlIiwicm9sZSI6ImFub24iLCJpYXQiOjE2ODIyODEzMjIsImV4cCI6MTk5Nzg1NzMyMn0.r9XRnxoZ0yDtXv-gUnLbUs4ap1eLiA0zpxun1QvKm-I"
+STAGING_COMMUNITY_BACKEND_URL = "https://chenhfiuhhgsuxsqzsno.supabase.co"
+STAGING_COMMUNITY_BACKEND_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNoZW5oZml1aGhnc3V4c3F6c25vIiwicm9sZSI6ImFub24iLCJpYXQiOjE2ODQ1OTA1MzEsImV4cCI6MjAwMDE2NjUzMX0.uxpmiQuMR6qz93mfnGPy6L65l31EFZCjq3B84V_olrE"
 
 
 
