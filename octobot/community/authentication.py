@@ -30,6 +30,7 @@ import octobot.community.models.community_supports as community_supports
 import octobot.community.models.startup_info as startup_info
 import octobot.community.models.community_user_account as community_user_account
 import octobot.community.supabase_backend as supabase_backend
+import octobot.community.supabase_backend.enums as backend_enums
 import octobot.community.feeds as community_feeds
 import octobot.community.graphql_requests as graphql_requests
 import octobot_commons.constants as commons_constants
@@ -428,14 +429,14 @@ class CommunityAuthentication(authentication.Authenticator):
         try:
             formatted_trades = [
                 {
-                    "bot_id": self.user_account.bot_id,
-                    "time": self.supabase_client.get_formatted_time(trade.executed_time),
-                    "trade_id": trade.trade_id,
-                    "exchange": trade.exchange_manager.exchange_name,
-                    "price": trade.executed_price,
-                    "quantity": trade.executed_quantity,
-                    "symbol": trade.symbol,
-                    "type": trade.trade_type.value,
+                    backend_enums.TradeKeys.BOT_ID.value: self.user_account.bot_id,
+                    backend_enums.TradeKeys.TIME.value: self.supabase_client.get_formatted_time(trade.executed_time),
+                    backend_enums.TradeKeys.TRADE_ID.value: trade.trade_id,
+                    backend_enums.TradeKeys.EXCHANGE.value: trade.exchange_manager.exchange_name,
+                    backend_enums.TradeKeys.PRICE.value: trade.executed_price,
+                    backend_enums.TradeKeys.QUANTITY.value: trade.executed_quantity,
+                    backend_enums.TradeKeys.SYMBOL.value: trade.symbol,
+                    backend_enums.TradeKeys.TYPE.value: trade.trade_type.value,
                 }
                 for trade in trades
             ]
@@ -459,29 +460,34 @@ class CommunityAuthentication(authentication.Authenticator):
             ref_market_initial_value = initial_value[unit]
             formatted_content = [
                 {
-                    "asset": key,
-                    "quantity": str(quantity[commons_constants.PORTFOLIO_TOTAL]),
-                    "value": str(quantity[commons_constants.PORTFOLIO_TOTAL] * float(price_by_asset.get(key, 0))),
+                    backend_enums.PortfolioAssetKeys.ASSET.value: key,
+                    backend_enums.PortfolioAssetKeys.QUANTITY.value: quantity[commons_constants.PORTFOLIO_TOTAL],
+                    backend_enums.PortfolioAssetKeys.VALUE.value:
+                        quantity[commons_constants.PORTFOLIO_TOTAL] * float(price_by_asset.get(key, 0)),
                 }
                 for key, quantity in content.items()
             ]
             formatted_portfolio = {
-                "content": formatted_content,
-                "current_value": ref_market_current_value,
-                "initial_value": ref_market_initial_value,
-                "unit": unit,
-                "bot_id": self.user_account.bot_id,
+                backend_enums.PortfolioKeys.CONTENT.value: formatted_content,
+                backend_enums.PortfolioKeys.CURRENT_VALUE.value: ref_market_current_value,
+                backend_enums.PortfolioKeys.INITIAL_VALUE.value: ref_market_initial_value,
+                backend_enums.PortfolioKeys.UNIT.value: unit,
+                backend_enums.PortfolioKeys.BOT_ID.value: self.user_account.bot_id,
             }
             if reset or self.user_account.get_selected_bot_current_portfolio_id() is None:
-                await self.supabase_client.reset_portfolio(formatted_portfolio)
+                await self.supabase_client.switch_portfolio(formatted_portfolio)
                 await self._refresh_selected_bot()
+
+            formatted_portfolio[backend_enums.PortfolioKeys.ID.value] = \
+                self.user_account.get_selected_bot_current_portfolio_id()
             formatted_histories = []
             try:
                 formatted_histories = [
                     {
-                        "time": self.supabase_client.get_formatted_time(timestamp),
-                        "portfolio_id": self.user_account.get_selected_bot_current_portfolio_id(),
-                        "value": str(value[unit])
+                        backend_enums.PortfolioHistoryKeys.TIME.value: self.supabase_client.get_formatted_time(timestamp),
+                        backend_enums.PortfolioHistoryKeys.PORTFOLIO_ID.value:
+                            self.user_account.get_selected_bot_current_portfolio_id(),
+                        backend_enums.PortfolioHistoryKeys.VALUE.value: str(value[unit])
                     }
                     for timestamp, value in history.items()
                     if unit in value and value[unit]    # skip missing a 0 values
@@ -534,19 +540,18 @@ class CommunityAuthentication(authentication.Authenticator):
 
     async def update_bot_config_and_stats(self, profile_name, profitability, reset=False):
         formatted_config = {
-            "current": {
-                "profile_name": profile_name,
-                "profitability": str(profitability)
+            backend_enums.ConfigKeys.CURRENT.value: {
+                backend_enums.CurrentConfigKeys.PROFILE_NAME.value: profile_name,
+                backend_enums.CurrentConfigKeys.PROFITABILITY.value: str(profitability)
             },
-            "bot_id": self.user_account.bot_id,
+            backend_enums.ConfigKeys.BOT_ID.value: self.user_account.bot_id,
         }
         if reset or self.user_account.get_selected_bot_current_config_id() is None:
-            await self.supabase_client.reset_config(formatted_config)
+            await self.supabase_client.switch_config(formatted_config)
             await self._refresh_selected_bot()
         else:
-            await self.supabase_client.update_config(
-                formatted_config, self.user_account.get_selected_bot_current_config_id()
-            )
+            formatted_config[backend_enums.ConfigKeys.ID.value] = self.user_account.get_selected_bot_current_config_id()
+            await self.supabase_client.update_config(formatted_config)
 
     async def _execute_request(self, request_factory, *args, **kwargs):
         query, variables, query_name = request_factory(*args, **kwargs)
