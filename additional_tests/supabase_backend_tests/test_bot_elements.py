@@ -60,6 +60,14 @@ async def test_create_update_and_fetch_bot(authenticated_client_1, authenticated
     assert len(bots) == len(existing_bots)
 
 
+async def test_fetch_startup_info(authenticated_client_1_with_temp_bot):
+    authenticated_client_1, bot_id = authenticated_client_1_with_temp_bot
+    startup_info = await authenticated_client_1.fetch_startup_info(bot_id)
+    parsed_info = community.StartupInfo.from_dict(startup_info)
+    assert parsed_info.forced_profile_url is None
+    assert parsed_info.subscribed_products_urls == []
+
+
 async def test_upsert_and_reset_trades(authenticated_client_1_with_temp_bot, authenticated_client_2):
     authenticated_client_1, bot_id = authenticated_client_1_with_temp_bot
     # bot just created, no trade yet
@@ -123,6 +131,10 @@ async def test_switch_and_update_portfolio(authenticated_client_1_with_temp_bot,
            created_portfolio[supabase_backend_enums.PortfolioKeys.ID.value]
     assert updated_bot == await authenticated_client_1.fetch_bot(bot_id)
     assert_are_same_elements([portfolio], [created_portfolio])
+    assert all(
+        attribute.value in created_portfolio
+        for attribute in supabase_backend_enums.PortfolioKeys
+    )
 
     created_portfolios = await authenticated_client_1.fetch_portfolios(bot_id)
     assert len(created_portfolios) == 1
@@ -154,6 +166,31 @@ async def test_switch_and_update_portfolio(authenticated_client_1_with_temp_bot,
     assert await authenticated_client_2.fetch_portfolios(bot_id) == []
 
 
+async def test_upsert_portfolio_history(authenticated_client_1_with_temp_bot, authenticated_client_2):
+    authenticated_client_1, bot_id = authenticated_client_1_with_temp_bot
+    seed = round(time.time())
+    portfolio = portfolio_mock(seed, bot_id)
+    created_portfolio = await authenticated_client_1.switch_portfolio(portfolio)
+    portfolio_id = created_portfolio[supabase_backend_enums.PortfolioKeys.ID.value]
+
+    history = portfolio_histories_mock(seed, portfolio_id)
+    created_history = await authenticated_client_1.upsert_portfolio_history(history)
+    assert_are_same_elements(history, created_history)
+    assert all(
+        attribute.value in history
+        for history in created_history
+        for attribute in supabase_backend_enums.PortfolioHistoryKeys
+    )
+
+    seed = round(time.time()) + 10
+    full_history = history + portfolio_histories_mock(seed, portfolio_id)
+    upserted_history = await authenticated_client_1.upsert_portfolio_history(full_history)
+    assert_are_same_elements(full_history, upserted_history)
+
+    assert upserted_history == await authenticated_client_1.fetch_portfolio_history(portfolio_id)
+    assert await authenticated_client_2.fetch_portfolio_history(portfolio_id) == []
+
+
 async def test_switch_and_update_config(authenticated_client_1_with_temp_bot, authenticated_client_2):
     authenticated_client_1, bot_id = authenticated_client_1_with_temp_bot
     # bot just created, no config yet
@@ -170,6 +207,10 @@ async def test_switch_and_update_config(authenticated_client_1_with_temp_bot, au
            created_config[supabase_backend_enums.ConfigKeys.ID.value]
     assert updated_bot == await authenticated_client_1.fetch_bot(bot_id)
     assert_are_same_elements([config], [created_config])
+    assert all(
+        attribute.value in created_config
+        for attribute in supabase_backend_enums.ConfigKeys
+    )
 
     created_configs = await authenticated_client_1.fetch_configs(bot_id)
     assert len(created_configs) == 1
@@ -209,10 +250,26 @@ def assert_are_same_elements(local, fetched):
         }
         for i, element in enumerate(local)
         for key in element
-        if (str(element[key]) != str(fetched[i][key]) if isinstance(element[key], (dict, list))
-            else element[key] != fetched[i][key])
+        if not _equal(element, fetched[i], key)
     ]
     assert differences == []
+
+
+def _equal(d_1, d_2, key):
+    if isinstance(d_1[key], dict):
+        return all(
+            _equal(d_1[key], d_2[key], sub_key)
+            for sub_key in d_1[key]
+        )
+    if isinstance(d_1[key], list):
+        return all(
+            _equal(d_1[key], d_2[key], sub_key)
+            for sub_key in range(len(d_1[key]))
+        )
+    if key == "time":
+        return community.CommunitySupabaseClient.get_parsed_time(d_1[key]) == \
+            community.CommunitySupabaseClient.get_parsed_time(d_2[key])
+    return d_1[key] == d_2[key]
 
 
 def config_mock(seed, bot_id):
@@ -241,7 +298,7 @@ def trades_mock(seed, bot_id):
         for i in range(2)
     ]
 
-def portfolio_histories_mock(portfolio_id, seed):
+def portfolio_histories_mock(seed, portfolio_id):
     return [
         {
             supabase_backend_enums.PortfolioHistoryKeys.TIME.value:

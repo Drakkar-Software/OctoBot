@@ -331,8 +331,8 @@ class CommunityAuthentication(authentication.Authenticator):
         if password_token:
             raise NotImplemented("todo")    #todo
             params["password_token"] = password_token
-        self.supabase_client.sign_in(email, password)
-        self._on_account_updated()
+        await self.supabase_client.sign_in(email, password)
+        await self._on_account_updated()
         if self.is_logged_in():
             if self.initialized_event is None:
                 self.initialized_event = asyncio.Event()
@@ -345,8 +345,8 @@ class CommunityAuthentication(authentication.Authenticator):
         # always logout before creating a new account
         self.logout()
         self._ensure_community_url()
-        self.supabase_client.sign_up(email, password)
-        self._on_account_updated()
+        await self.supabase_client.sign_up(email, password)
+        await self._on_account_updated()
         if self.is_logged_in():
             await self._on_register()
 
@@ -357,8 +357,8 @@ class CommunityAuthentication(authentication.Authenticator):
         self.initialized_event.set()
 
     async def _update_account_metadata(self, metadata_update):
-        self.supabase_client.update_metadata(metadata_update)
-        self._on_account_updated()
+        await self.supabase_client.update_metadata(metadata_update)
+        await self._on_account_updated()
 
     async def update_selected_bot(self):
         self.user_account.flush_bot_details()
@@ -441,7 +441,7 @@ class CommunityAuthentication(authentication.Authenticator):
                 for trade in trades
             ]
             if reset:
-                await self.supabase_client.reset_trades()
+                await self.supabase_client.reset_trades(self.user_account.bot_id)
             if formatted_trades:
                 await self.supabase_client.upsert_trades(formatted_trades)
         except Exception as err:
@@ -515,7 +515,7 @@ class CommunityAuthentication(authentication.Authenticator):
         ]
 
     async def on_new_bot_select(self):
-        return # todo
+        raise NotImplemented("todo")
         await self._update_feed_device_uuid_and_restart_feed_if_necessary()
 
 
@@ -689,8 +689,8 @@ class CommunityAuthentication(authentication.Authenticator):
         if not self.can_authenticate():
             raise authentication.UnavailableError("Community url required")
 
-    def _on_account_updated(self):
-        self.user_account.set_profile_raw_data(self.supabase_client.get_user())
+    async def _on_account_updated(self):
+        self.user_account.set_profile_raw_data(await self.supabase_client.get_user())
 
     def _reset_tokens(self):
         self._auth_token = None

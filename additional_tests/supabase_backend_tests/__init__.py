@@ -109,7 +109,7 @@ async def _authenticated_client(email, password):
             backend_key,
             community.SyncConfigurationStorage(config)
         )
-        supabase_client.sign_in(email, password)
+        await supabase_client.sign_in(email, password)
         yield supabase_client
     finally:
         if supabase_client:

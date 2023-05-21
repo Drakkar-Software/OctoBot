@@ -15,6 +15,7 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import octobot.community.models.community_supports as community_supports
 import octobot.community.errors as errors
+import octobot.community.supabase_backend.enums as backend_enums
 
 
 class CommunityUserAccount:
@@ -45,16 +46,17 @@ class CommunityUserAccount:
         return self._selected_bot_raw_data is not None
 
     def get_email(self):
-        return self._profile_raw_data["email"]
+        return self._profile_raw_data[backend_enums.UserKeys.EMAIL.value]
 
     def get_user_id(self):
-        return self._profile_raw_data["id"]
+        return self._profile_raw_data[backend_enums.UserKeys.ID.value]
 
     def get_graph_token(self):
+        raise NotImplemented
         return self._get_user_data_content()["graph_token"]
 
     def get_has_donated(self):
-        return self._get_user_data_content()["has_donated"]
+        return self._get_user_data_metadata().get("has_donated", False)
 
     def get_filled_forms_ids(self):
         return self._get_user_data_metadata().get(self.FILLED_FORMS, [])
@@ -68,6 +70,7 @@ class CommunityUserAccount:
         return self._selected_bot_raw_data
 
     def is_self_hosted(self, bot):
+        raise NotImplemented
         deployment = bot.get(self.BOT_DEPLOYMENT)
         if not deployment:
             return True
@@ -77,6 +80,7 @@ class CommunityUserAccount:
             return True
 
     def get_bot_deployment_url(self):
+        raise NotImplemented
         self._ensure_selected_bot_data()
         urls = self._selected_bot_raw_data[self.BOT_DEPLOYMENT][self.BOT_URLS]
         if urls:
@@ -84,12 +88,14 @@ class CommunityUserAccount:
         raise errors.BotError("No deployment url in selected bot")
 
     def get_selected_bot_device_uuid(self):
+        raise NotImplemented
         try:
             return self.get_selected_bot_raw_data(raise_on_missing=True).get(self.BOT_DEVICE, {}).get("uuid", None)
         except AttributeError:
             raise errors.NoBotDeviceError("No device associated to the select bot")
 
     def get_selected_bot_device_name(self):
+        raise NotImplemented
         try:
             return self.get_selected_bot_raw_data(raise_on_missing=True).get(self.BOT_DEVICE, {}).get("name", None)
         except AttributeError:
@@ -97,17 +103,17 @@ class CommunityUserAccount:
 
     @staticmethod
     def get_bot_id(bot):
-        return bot["_id"]
+        return bot[backend_enums.BotKeys.ID.value]
 
     @staticmethod
     def get_bot_name_or_id(bot):
-        return bot["name"] or CommunityUserAccount.get_bot_id(bot)
+        return bot[backend_enums.BotKeys.NAME.value]
 
     def get_selected_bot_current_portfolio_id(self):
-        return self._selected_bot_raw_data["current_portfolio_id"]
+        return self._selected_bot_raw_data[backend_enums.BotKeys.CURRENT_PORTFOLIO_ID.value]
 
     def get_selected_bot_current_config_id(self):
-        return self._selected_bot_raw_data["current_config_id"]
+        return self._selected_bot_raw_data[backend_enums.BotKeys.CURRENT_CONFIG_ID.value]
 
     def set_profile_raw_data(self, profile_raw_data):
         self._profile_raw_data = profile_raw_data
@@ -128,7 +134,7 @@ class CommunityUserAccount:
         return self._profile_raw_data[self.USER_DATA_CONTENT]
 
     def _get_user_data_metadata(self):
-        return self._profile_raw_data.get(self.METADATA, {})
+        return self._profile_raw_data.get(backend_enums.UserKeys.USER_METADATA.value, {})
 
     def _ensure_selected_bot_data(self):
         if self._selected_bot_raw_data is None:

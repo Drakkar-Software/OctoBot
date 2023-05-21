@@ -72,3 +72,10 @@ class ConfigKeys(enum.Enum):
 class CurrentConfigKeys(enum.Enum):
     PROFILE_NAME = "profile_name"
     PROFITABILITY = "profitability"
+
+
+class UserKeys(enum.Enum):
+    ID = "id"
+    EMAIL = "email"
+    USER_METADATA = "user_metadata"
+    LAST_SIGN_IN_AT = "last_sign_in_at"
