@@ -31,7 +31,7 @@ async def test_create_update_and_fetch_bot(authenticated_client_1, authenticated
     existing_bots = await authenticated_client_1.fetch_bots()
     other_client_bots = await authenticated_client_2.fetch_bots()
 
-    bot = await authenticated_client_1.create_bot()
+    bot = await authenticated_client_1.create_bot(supabase_backend_enums.DeploymentTypes.SELF_HOSTED)
     assert all(
         attribute.value in bot
         for attribute in supabase_backend_enums.BotKeys
@@ -43,8 +43,11 @@ async def test_create_update_and_fetch_bot(authenticated_client_1, authenticated
     with pytest.raises(errors.BotNotFoundError):
         assert await authenticated_client_2.fetch_bot(created_bot_id) is None
 
-    bot["name"] = "super plop"
-    updated_bot = (await authenticated_client_1.update_bot(created_bot_id, bot))[0]
+    bot_update = {
+        "name": "super plop"
+    }
+    bot.update(bot_update)
+    updated_bot = (await authenticated_client_1.update_bot(created_bot_id, bot_update))
     assert updated_bot == bot
 
     fetched_bots = await authenticated_client_1.fetch_bots()
@@ -55,9 +58,68 @@ async def test_create_update_and_fetch_bot(authenticated_client_1, authenticated
     assert created_bot_id not in [b[supabase_backend_enums.BotKeys.ID.value] for b in client_2_fetched_bots]
     assert len(client_2_fetched_bots) == len(other_client_bots)
 
-    assert await authenticated_client_1.delete_bot(created_bot_id) == [bot]
+    assert (await authenticated_client_1.delete_bot(created_bot_id))[0][supabase_backend_enums.BotKeys.ID.value] \
+           == created_bot_id
     bots = await authenticated_client_1.fetch_bots()
     assert len(bots) == len(existing_bots)
+
+
+async def test_fetch_deployment_and_deployment_data(authenticated_client_1, authenticated_client_2):
+    bot = await authenticated_client_1.create_bot(supabase_backend_enums.DeploymentTypes.SELF_HOSTED)
+    deployment = bot[community.CommunityUserAccount.BOT_DEPLOYMENT]
+    assert all(
+        attribute.value in deployment
+        for attribute in supabase_backend_enums.BotDeploymentKeys
+    )
+    deployment_id = deployment[supabase_backend_enums.BotDeploymentKeys.ID.value]
+
+    async def _create_deployment_url(client):
+        deployment_url_data = {
+            supabase_backend_enums.BotDeploymentURLKeys.URL.value: "plop.fr",
+            supabase_backend_enums.BotDeploymentURLKeys.DEPLOYMENT_ID.value: deployment_id
+        }
+        created_deployment_url = (
+            await client.table("bot_deployment_urls").insert(deployment_url_data).execute()
+        ).data[0]
+        await client.update_deployment(deployment_id, {
+            supabase_backend_enums.BotDeploymentKeys.CURRENT_URL_ID.value:
+                created_deployment_url[supabase_backend_enums.BotDeploymentURLKeys.ID.value]
+        })
+        return created_deployment_url
+
+    deployment_url_id = (await _create_deployment_url(authenticated_client_1))[
+        supabase_backend_enums.BotDeploymentURLKeys.ID.value
+    ]
+    try:
+        deployment_url = await authenticated_client_1.fetch_deployment_url(deployment_url_id)
+        assert all(
+            attribute.value in deployment_url
+            for attribute in supabase_backend_enums.BotDeploymentURLKeys
+        )
+
+        # ensure authenticated_client_2 can't access deployments
+        with pytest.raises(errors.BotDeploymentNotFoundError):
+            await authenticated_client_2.fetch_deployment_url(deployment_url_id)
+
+        async def _fetch_deployment(client, to_fetch_deployment_id):
+            return (await client.table("bot_deployments").select("*").eq(
+                supabase_backend_enums.BotDeploymentKeys.ID.value, to_fetch_deployment_id
+            ).execute()).data[0]
+
+        assert (await _fetch_deployment(authenticated_client_1, deployment_id))[
+            supabase_backend_enums.BotDeploymentKeys.CURRENT_URL_ID.value
+        ] == deployment_url_id
+        with pytest.raises(IndexError):
+            await _fetch_deployment(authenticated_client_2, deployment_id)
+    finally:
+        async def _delete_deployment_url(client):
+            await client.update_deployment(deployment_id, {
+                supabase_backend_enums.BotDeploymentKeys.CURRENT_URL_ID.value: None
+            })
+            await client.table("bot_deployment_urls").delete().eq(
+                supabase_backend_enums.BotDeploymentURLKeys.ID.value, deployment_url_id
+            ).execute()
+        await _delete_deployment_url(authenticated_client_1)
 
 
 async def test_fetch_startup_info(authenticated_client_1_with_temp_bot):

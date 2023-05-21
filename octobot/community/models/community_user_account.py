@@ -22,9 +22,8 @@ class CommunityUserAccount:
     USER_DATA_CONTENT = "content"
     BOT_DEVICE = "device"
     BOT_URLS = "urls"
-    BOT_DEPLOYMENT = "deployment"
+    BOT_DEPLOYMENT = "bot_deployment"
     BOT_DEPLOYMENT_TYPE = "type"
-    SELF_HOSTED_BOT_DEPLOYMENT_TYPE = "self-hosted"
     METADATA = "metadata"
     FILLED_FORMS = "filledForms"
     NO_SELECTED_BOT_DESC = "No selected bot. Please select a bot to enable your community features."
@@ -70,22 +69,17 @@ class CommunityUserAccount:
         return self._selected_bot_raw_data
 
     def is_self_hosted(self, bot):
-        raise NotImplemented
-        deployment = bot.get(self.BOT_DEPLOYMENT)
-        if not deployment:
-            return True
-        try:
-            return deployment[self.BOT_DEPLOYMENT_TYPE] == self.SELF_HOSTED_BOT_DEPLOYMENT_TYPE
-        except KeyError:
-            return True
+        return self._get_bot_deployment(bot).get(
+            backend_enums.BotDeploymentKeys.TYPE.value, backend_enums.DeploymentTypes.SELF_HOSTED.value
+        ) == backend_enums.DeploymentTypes.SELF_HOSTED.value
 
-    def get_bot_deployment_url(self):
-        raise NotImplemented
-        self._ensure_selected_bot_data()
-        urls = self._selected_bot_raw_data[self.BOT_DEPLOYMENT][self.BOT_URLS]
-        if urls:
-            return urls[0]["url"]
-        raise errors.BotError("No deployment url in selected bot")
+    def get_selected_bot_deployment_id(self):
+        return self._get_bot_deployment(self._selected_bot_raw_data)[
+            backend_enums.BotDeploymentKeys.ID.value
+        ]
+
+    def get_bot_deployment_url(self, deployment_url_data):
+        return deployment_url_data[backend_enums.BotDeploymentURLKeys.URL.value]
 
     def get_selected_bot_device_uuid(self):
         raise NotImplemented
@@ -135,6 +129,9 @@ class CommunityUserAccount:
 
     def _get_user_data_metadata(self):
         return self._profile_raw_data.get(backend_enums.UserKeys.USER_METADATA.value, {})
+
+    def _get_bot_deployment(self, bot):
+        return bot.get(self.BOT_DEPLOYMENT, {})
 
     def _ensure_selected_bot_data(self):
         if self._selected_bot_raw_data is None:

@@ -149,8 +149,12 @@ class CommunityAuthentication(authentication.Authenticator):
             raise authentication.AuthenticationRequired()
         return self.user_account.get_user_id()
 
-    def get_deployment_url(self):
-        return self.user_account.get_bot_deployment_url()
+    async def get_deployment_url(self):
+        # todo check
+        deployment_url_data = await self.supabase_client.fetch_deployment_url(
+            self.user_account.get_selected_bot_deployment_id()
+        )
+        return self.user_account.get_bot_deployment_url(deployment_url_data)
 
     def get_is_signal_receiver(self):
         if self._community_feed is None:
@@ -380,10 +384,15 @@ class CommunityAuthentication(authentication.Authenticator):
         if len(self.user_account.get_all_user_bots_raw_data()) == 0:
             await self.select_bot(
                 self.user_account.get_bot_id(
-                    await self.supabase_client.create_bot()
+                    await self.create_new_bot()
                 )
             )
         # more than one possible bot, can't auto-select one
+
+    async def create_new_bot(self):
+        deployment_type = backend_enums.DeploymentTypes.CLOUD if constants.IS_CLOUD_ENV \
+            else backend_enums.DeploymentTypes.SELF_HOSTED
+        return await self.supabase_client.create_bot(deployment_type)
 
     async def select_bot(self, bot_id):
         fetched_bot = await self.supabase_client.fetch_bot(bot_id)
@@ -433,8 +442,8 @@ class CommunityAuthentication(authentication.Authenticator):
                     backend_enums.TradeKeys.TIME.value: self.supabase_client.get_formatted_time(trade.executed_time),
                     backend_enums.TradeKeys.TRADE_ID.value: trade.trade_id,
                     backend_enums.TradeKeys.EXCHANGE.value: trade.exchange_manager.exchange_name,
-                    backend_enums.TradeKeys.PRICE.value: trade.executed_price,
-                    backend_enums.TradeKeys.QUANTITY.value: trade.executed_quantity,
+                    backend_enums.TradeKeys.PRICE.value: float(trade.executed_price),
+                    backend_enums.TradeKeys.QUANTITY.value: float(trade.executed_quantity),
                     backend_enums.TradeKeys.SYMBOL.value: trade.symbol,
                     backend_enums.TradeKeys.TYPE.value: trade.trade_type.value,
                 }
@@ -461,9 +470,9 @@ class CommunityAuthentication(authentication.Authenticator):
             formatted_content = [
                 {
                     backend_enums.PortfolioAssetKeys.ASSET.value: key,
-                    backend_enums.PortfolioAssetKeys.QUANTITY.value: quantity[commons_constants.PORTFOLIO_TOTAL],
+                    backend_enums.PortfolioAssetKeys.QUANTITY.value: float(quantity[commons_constants.PORTFOLIO_TOTAL]),
                     backend_enums.PortfolioAssetKeys.VALUE.value:
-                        quantity[commons_constants.PORTFOLIO_TOTAL] * float(price_by_asset.get(key, 0)),
+                        float(quantity[commons_constants.PORTFOLIO_TOTAL]) * float(price_by_asset.get(key, 0)),
                 }
                 for key, quantity in content.items()
             ]
@@ -515,7 +524,7 @@ class CommunityAuthentication(authentication.Authenticator):
         ]
 
     async def on_new_bot_select(self):
-        raise NotImplemented("todo")
+        return
         await self._update_feed_device_uuid_and_restart_feed_if_necessary()
 
 
@@ -581,13 +590,6 @@ class CommunityAuthentication(authentication.Authenticator):
 
     def has_login_info(self):
         return self.supabase_client.has_login_info()
-
-    def ensure_token_validity(self):
-        # will try to reconnect with saved session
-        if not self.is_logged_in():
-            self._auto_login()
-            # still logged in: raise
-            raise authentication.AuthenticationRequired()
 
     def remove_login_detail(self):
         self.user_account.flush()
@@ -673,6 +675,7 @@ class CommunityAuthentication(authentication.Authenticator):
     def _auth_handler(self):
         try:
             yield
+            self._sync_on_account_updated()
         except authentication.FailedAuthentication as e:
             self.logger.warning(f"Invalid authentication details, please re-authenticate. {e}")
             self.logout()
@@ -691,6 +694,9 @@ class CommunityAuthentication(authentication.Authenticator):
 
     async def _on_account_updated(self):
         self.user_account.set_profile_raw_data(await self.supabase_client.get_user())
+
+    def _sync_on_account_updated(self):
+        self.user_account.set_profile_raw_data(self.supabase_client.sync_get_user())
 
     def _reset_tokens(self):
         self._auth_token = None

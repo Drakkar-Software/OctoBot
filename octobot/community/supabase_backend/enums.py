@@ -22,11 +22,33 @@ class BotKeys(enum.Enum):
     NAME = "name"
     USER_ID = "user_id"
     CURRENT_PORTFOLIO_ID = "current_portfolio_id"
-    DEPLOYMENT_ID = "deployment_id"
+    CURRENT_DEPLOYMENT_ID = "current_deployment_id"
     PROFITABILITY = "profitability"
     CURRENT_CONFIG_ID = "current_config_id"
     LAST_TRADE_TIME = "last_trade_time"
     METADATA = "metadata"
+
+
+class BotDeploymentKeys(enum.Enum):
+    ID = "id"
+    CREATED_AT = "created_at"
+    NAME = "name"
+    VERSION = "version"
+    BOT_ID = "bot_id"
+    CURRENT_HOSTING_ID = "current_hosting_id"
+    PRODUCT_ID = "product_id"
+    CURRENT_STORAGE_ID = "current_storage_id"
+    SUBSCRIPTION_ID = "subscription_id"
+    CURRENT_URL_ID = "current_url_id"
+    TYPE = "type"
+
+
+class BotDeploymentURLKeys(enum.Enum):
+    ID = "id"
+    CREATED_AT = "created_at"
+    REGION = "region"
+    DEPLOYMENT_ID = "deployment_id"
+    URL = "url"
 
 
 class TradeKeys(enum.Enum):
@@ -79,3 +101,8 @@ class UserKeys(enum.Enum):
     EMAIL = "email"
     USER_METADATA = "user_metadata"
     LAST_SIGN_IN_AT = "last_sign_in_at"
+
+
+class DeploymentTypes(enum.Enum):
+    SELF_HOSTED = "self_hosted"
+    CLOUD = "cloud"

@@ -32,5 +32,9 @@ class BotNotFoundError(BotError):
     pass
 
 
+class BotDeploymentNotFoundError(BotError):
+    pass
+
+
 class NoBotDeviceError(BotError):
     pass
