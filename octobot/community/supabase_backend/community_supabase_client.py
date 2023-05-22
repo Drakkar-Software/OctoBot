@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
+import asyncio
 import datetime
 import json
 import gotrue.errors
@@ -38,32 +39,41 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         options: supabase.lib.client_options.ClientOptions = supabase.lib.client_options.ClientOptions(),
     ):
         options.storage = storage   # use configuration storage
+        self.event_loop = None
         super().__init__(supabase_url, supabase_key, options=options)
 
     async def sign_in(self, email: str, password: str) -> None:
         try:
+            self.event_loop = asyncio.get_event_loop()
             self.auth.sign_in_with_password({
                 "email": email,
                 "password": password,
             })
         except gotrue.errors.AuthApiError as err:
+            if "email" in str(err).lower():
+                raise errors.EmailValidationRequiredError(err) from err
             raise authentication.FailedAuthentication(err) from err
 
     async def sign_up(self, email: str, password: str) -> None:
-        self.auth.sign_up({
-            "email": email,
-            "password": password,
-            "options": {
-                "data": {
-                    "hasRegisteredFromSelfHosted": True
+        try:
+            self.event_loop = asyncio.get_event_loop()
+            self.auth.sign_up({
+                "email": email,
+                "password": password,
+                "options": {
+                    "data": {
+                        "hasRegisteredFromSelfHosted": True
+                    }
                 }
-            }
-        })
+            })
+        except gotrue.errors.AuthApiError as err:
+            raise authentication.AuthenticationError(err) from err
 
     def sign_out(self) -> None:
         self.auth.sign_out()
 
     def restore_session(self):
+        self.event_loop = asyncio.get_event_loop()
         self.auth.initialize_from_storage()
         if not self.is_signed_in():
             raise authentication.FailedAuthentication()
@@ -80,7 +90,12 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         }).user.dict()
 
     async def get_user(self) -> dict:
-        return (await self._get_user()).dict()
+        try:
+            return (await self._get_user()).dict()
+        except gotrue.errors.AuthApiError as err:
+            if "missing" in str(err):
+                raise errors.EmailValidationRequiredError(err) from err
+            raise authentication.AuthenticationError(err) from err
 
     def sync_get_user(self) -> dict:
         return self.auth.get_user().user.dict()
@@ -138,7 +153,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
                 enums.BotDeploymentURLKeys.ID.value, deployment_url_id
             ).execute()).data[0]
         except IndexError:
-            raise errors.BotDeploymentNotFoundError(deployment_url_id)
+            raise errors.BotDeploymentURLNotFoundError(deployment_url_id)
 
     async def fetch_startup_info(self, bot_id) -> dict:
         return json.loads(

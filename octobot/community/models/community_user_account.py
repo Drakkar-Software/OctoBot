@@ -131,6 +131,8 @@ class CommunityUserAccount:
         return self._profile_raw_data.get(backend_enums.UserKeys.USER_METADATA.value, {})
 
     def _get_bot_deployment(self, bot):
+        if bot is None:
+            raise errors.BotError(self.NO_SELECTED_BOT_DESC)
         return bot.get(self.BOT_DEPLOYMENT, {})
 
     def _ensure_selected_bot_data(self):

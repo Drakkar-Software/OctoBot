@@ -127,7 +127,7 @@ async def _authenticated_client(email, password):
         yield supabase_client
     finally:
         if supabase_client:
-            supabase_client.close()
+            await supabase_client.close()
 
 
 def _load_backend_creds_env_variables_if_necessary():
