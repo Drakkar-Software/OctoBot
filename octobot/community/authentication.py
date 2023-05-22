@@ -69,11 +69,7 @@ class CommunityAuthentication(authentication.Authenticator):
         self.feed_url = feed_url
         self.initialized_event = None
         self.configuration_storage = supabase_backend.SyncConfigurationStorage(config)
-        self.supabase_client = supabase_backend.CommunitySupabaseClient(
-            identifiers_provider.IdentifiersProvider.BACKEND_URL,
-            identifiers_provider.IdentifiersProvider.BACKEND_KEY,
-            self.configuration_storage
-        )
+        self.supabase_client = self._create_client()
         self.user_account = community_user_account.CommunityUserAccount()
 
         self._login_completed = None
@@ -102,7 +98,6 @@ class CommunityAuthentication(authentication.Authenticator):
 
     def update(self, configuration: commons_configuration.Configuration):
         self.configuration_storage.configuration = configuration
-        self._auto_login()
 
     def get_logged_in_email(self):
         if self.user_account.has_user_data():
@@ -142,7 +137,6 @@ class CommunityAuthentication(authentication.Authenticator):
         await self._update_account_metadata({
             self.user_account.FILLED_FORMS: updated_filled_forms
         })
-        #todo
 
     def get_user_id(self):
         if not self.user_account.has_user_data():
@@ -150,7 +144,6 @@ class CommunityAuthentication(authentication.Authenticator):
         return self.user_account.get_user_id()
 
     async def get_deployment_url(self):
-        # todo check
         deployment_url_data = await self.supabase_client.fetch_deployment_url(
             self.user_account.get_selected_bot_deployment_id()
         )
@@ -176,24 +169,30 @@ class CommunityAuthentication(authentication.Authenticator):
         async with self._aiohttp_gql_session.get("supports_url") as resp:
             self._update_supports(resp.status, await resp.json())
 
-    def ensure_async_loop(self):
+    def _create_client(self):
+        return supabase_backend.CommunitySupabaseClient(
+            identifiers_provider.IdentifiersProvider.BACKEND_URL,
+            identifiers_provider.IdentifiersProvider.BACKEND_KEY,
+            self.configuration_storage
+        )
+
+    async def _ensure_async_loop(self):
         # elements should be bound to the current loop
-        if self._aiohttp_gql_session is not None and self._aiohttp_gql_session.loop is not asyncio.get_event_loop():
-            self._aiohttp_gql_session = None
-        if self._aiohttp_backend_session is not None and self._aiohttp_backend_session.loop is not asyncio.get_event_loop():
-            self._aiohttp_backend_session = None
-        if self.initialized_event is not None and self.initialized_event._loop is not asyncio.get_event_loop():
-            should_set = self.initialized_event.is_set()
-            self.initialized_event = asyncio.Event()
-            if should_set:
-                self.initialized_event.set()
+        if not self.is_using_the_current_loop():
+            # changed event loop: restart client
+            await self.supabase_client.close()
+            self.user_account.flush()
+            self.supabase_client = self._create_client()
+
+    def is_using_the_current_loop(self):
+        return self.supabase_client.event_loop is None \
+            or self.supabase_client.event_loop is asyncio.get_event_loop()
 
     def is_initialized(self):
         return self.initialized_event is not None and self.initialized_event.is_set()
 
     def init_account(self):
-        self.initialized_event = asyncio.Event()
-        self._fetch_account_task = asyncio.create_task(self._auth_and_fetch_account())
+        self._fetch_account_task = asyncio.create_task(self._initialize_account())
 
     async def async_init_account(self):
         self.init_account()
@@ -338,10 +337,7 @@ class CommunityAuthentication(authentication.Authenticator):
         await self.supabase_client.sign_in(email, password)
         await self._on_account_updated()
         if self.is_logged_in():
-            if self.initialized_event is None:
-                self.initialized_event = asyncio.Event()
-            await self._on_authenticated()
-            self.initialized_event.set()
+            await self.on_signed_in()
 
     async def register(self, email, password):
         if self.must_be_authenticated_through_authenticator():
@@ -352,13 +348,11 @@ class CommunityAuthentication(authentication.Authenticator):
         await self.supabase_client.sign_up(email, password)
         await self._on_account_updated()
         if self.is_logged_in():
-            await self._on_register()
+            await self.on_signed_in()
 
-    async def _on_register(self):
-        if self.initialized_event is None:
-            self.initialized_event = asyncio.Event()
-        await self._on_authenticated()
-        self.initialized_event.set()
+    async def on_signed_in(self):
+        self.logger.info(f"Signed in as {self.get_logged_in_email()}")
+        await self._initialize_account()
 
     async def _update_account_metadata(self, metadata_update):
         await self.supabase_client.update_metadata(metadata_update)
@@ -406,14 +400,13 @@ class CommunityAuthentication(authentication.Authenticator):
         await self.on_new_bot_select()
 
     async def load_user_bots(self):
-        # todo filter by deployment type
         self.user_account.set_all_user_bots_raw_data(
             self._get_self_hosted_bots(
                 await self.supabase_client.fetch_bots()
             )
         )
 
-    async def get_startup_info(self):   #todo
+    async def get_startup_info(self):
         if self._startup_info is None:
             self.user_account.ensure_selected_bot_id()
             self._startup_info = startup_info.StartupInfo.from_dict(
@@ -551,7 +544,7 @@ class CommunityAuthentication(authentication.Authenticator):
         formatted_config = {
             backend_enums.ConfigKeys.CURRENT.value: {
                 backend_enums.CurrentConfigKeys.PROFILE_NAME.value: profile_name,
-                backend_enums.CurrentConfigKeys.PROFITABILITY.value: str(profitability)
+                backend_enums.CurrentConfigKeys.PROFITABILITY.value: float(profitability)
             },
             backend_enums.ConfigKeys.BOT_ID.value: self.user_account.bot_id,
         }
@@ -574,10 +567,10 @@ class CommunityAuthentication(authentication.Authenticator):
         self.supabase_client.sign_out()
         self._reset_tokens()
         self.remove_login_detail()
-        for task in (self._restart_task, self._fetch_account_task):
+        for task in (self._restart_task,):
             if task is not None and not task.done():
                 task.cancel()
-        self._restart_task = self._fetch_account_task = None
+        self._restart_task = None
         if self._community_feed is not None:
             self._community_feed.remove_device_details()
 
@@ -632,15 +625,15 @@ class CommunityAuthentication(authentication.Authenticator):
             pass
         return community_supports.CommunitySupports.DEFAULT_SUPPORT_ROLE
 
-    async def _on_authenticated(self):
-        await self.update_supports()
-        await self.update_selected_bot()
-
-    async def _auth_and_fetch_account(self):
+    async def _initialize_account(self):
         try:
-            if not self.is_logged_in():
+            await self._ensure_async_loop()
+            self.initialized_event = asyncio.Event()
+            if not (self.is_logged_in() or await self._restore_previous_session()):
                 return
-            await self._on_authenticated()
+            await self.update_supports()
+            await self.update_selected_bot()
+            self.logger.debug(f"Fetched account data")
         except authentication.UnavailableError as e:
             self.logger.exception(e, True, f"Error when fetching community supports, "
                                            f"please check your internet connection.")
@@ -667,15 +660,18 @@ class CommunityAuthentication(authentication.Authenticator):
     def _get_value_in_config(self, key):
         return self.configuration_storage.get_item(key)
 
-    def _auto_login(self):
-        with self._auth_handler():
+    async def _restore_previous_session(self):
+        async with self._auth_handler():
+            # will raise on failure
             self.supabase_client.restore_session()
+            await self._on_account_updated()
+            self.logger.info(f"Signed in as {self.get_logged_in_email()}")
+        return self.is_logged_in()
 
-    @contextlib.contextmanager
-    def _auth_handler(self):
+    @contextlib.asynccontextmanager
+    async def _auth_handler(self):
         try:
             yield
-            self._sync_on_account_updated()
         except authentication.FailedAuthentication as e:
             self.logger.warning(f"Invalid authentication details, please re-authenticate. {e}")
             self.logout()
@@ -694,9 +690,6 @@ class CommunityAuthentication(authentication.Authenticator):
 
     async def _on_account_updated(self):
         self.user_account.set_profile_raw_data(await self.supabase_client.get_user())
-
-    def _sync_on_account_updated(self):
-        self.user_account.set_profile_raw_data(self.supabase_client.sync_get_user())
 
     def _reset_tokens(self):
         self._auth_token = None
