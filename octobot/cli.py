@@ -133,9 +133,12 @@ def _create_startup_config(logger):
 async def _apply_community_startup_info_to_config(logger, config, community_auth):
     try:
         if not community_auth.is_initialized() and constants.USER_ACCOUNT_EMAIL and constants.USER_PASSWORD_TOKEN:
-            await community_auth.login(
-                constants.USER_ACCOUNT_EMAIL, None, password_token=constants.USER_PASSWORD_TOKEN
-            )
+            try:
+                await community_auth.login(
+                    constants.USER_ACCOUNT_EMAIL, None, password_token=constants.USER_PASSWORD_TOKEN
+                )
+            except authentication.AuthenticationError as err:
+                logger.debug(f"Password token auth failure ({err}). Trying with saved session.")
             if not community_auth.is_initialized():
                 await community_auth.async_init_account()
         if not community_auth.is_logged_in():
