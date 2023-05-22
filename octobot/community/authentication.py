@@ -332,9 +332,9 @@ class CommunityAuthentication(authentication.Authenticator):
         self._ensure_community_url()
         self._reset_tokens()
         if password_token:
-            raise NotImplemented("todo")    #todo
-            params["password_token"] = password_token
-        await self.supabase_client.sign_in(email, password)
+            await self.supabase_client.sign_in_with_otp_token(password_token)
+        else:
+            await self.supabase_client.sign_in(email, password)
         await self._on_account_updated()
         if self.is_logged_in():
             await self.on_signed_in()
@@ -390,8 +390,6 @@ class CommunityAuthentication(authentication.Authenticator):
 
     async def select_bot(self, bot_id):
         fetched_bot = await self.supabase_client.fetch_bot(bot_id)
-        if fetched_bot is None:
-            raise errors.BotNotFoundError(f"Can't find bot with id: {bot_id}")
         self.user_account.set_selected_bot_raw_data(fetched_bot)
         bot_name = self.user_account.get_bot_name_or_id(self.user_account.get_selected_bot_raw_data())
         self.logger.debug(f"Selected bot '{bot_name}'")
@@ -670,10 +668,12 @@ class CommunityAuthentication(authentication.Authenticator):
 
     @contextlib.asynccontextmanager
     async def _auth_handler(self):
+        should_warn = self.has_login_info()
         try:
             yield
         except authentication.FailedAuthentication as e:
-            self.logger.warning(f"Invalid authentication details, please re-authenticate. {e}")
+            if should_warn:
+                self.logger.warning(f"Invalid authentication details, please re-authenticate. {e}")
             self.logout()
         except authentication.UnavailableError:
             raise
