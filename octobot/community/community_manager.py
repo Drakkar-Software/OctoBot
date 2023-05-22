@@ -137,10 +137,11 @@ class CommunityManager:
 
     async def _update_authenticated_bot(self):
         try:
-            await authentication.Authenticator.instance().update_bot_config_and_stats(
-                self.edited_config.profile.name,
-                self._get_profitability()
-            )
+            if authentication.Authenticator.instance().is_logged_in():
+                await authentication.Authenticator.instance().update_bot_config_and_stats(
+                    self.edited_config.profile.name,
+                    self._get_profitability()
+                )
         except Exception as err:
             self.logger.debug(f"Exception when pushing config and stats : {err}")
 

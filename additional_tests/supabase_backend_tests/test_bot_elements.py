@@ -98,7 +98,7 @@ async def test_fetch_deployment_and_deployment_data(authenticated_client_1, auth
         )
 
         # ensure authenticated_client_2 can't access deployments
-        with pytest.raises(errors.BotDeploymentNotFoundError):
+        with pytest.raises(errors.BotDeploymentURLNotFoundError):
             await authenticated_client_2.fetch_deployment_url(deployment_url_id)
 
         async def _fetch_deployment(client, to_fetch_deployment_id):

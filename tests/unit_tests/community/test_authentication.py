@@ -333,19 +333,19 @@ async def test_async_try_auto_login(auth):
 
 def test_auto_login(auth):
     with mock.patch.object(auth, "_check_auth", mock.Mock()) as _check_auth_mock:
-        auth._auto_login()
+        auth._restore_previous_session()
         _check_auth_mock.assert_called_once()
     with mock.patch.object(auth, "_check_auth", mock.Mock(side_effect=authentication.FailedAuthentication())) as \
             _refresh_auth_mock, \
          mock.patch.object(auth, "logout", mock.Mock()) as logout_mock:
-        auth._auto_login()
+        auth._restore_previous_session()
         _check_auth_mock.assert_called_once()
         logout_mock.assert_called_once()
     with mock.patch.object(auth, "_check_auth", mock.Mock(side_effect=Exception())) as \
             _check_auth_mock, \
          mock.patch.object(auth, "logout", mock.Mock()) as logout_mock, \
          mock.patch.object(auth, "logger", mock.Mock()) as logger_mock:
-        auth._auto_login()
+        auth._restore_previous_session()
         _check_auth_mock.assert_called_once()
         logger_mock.exception.assert_called_once()
         logout_mock.assert_not_called()
@@ -435,7 +435,7 @@ async def _test_auth_and_fetch_supports(auth):
     with mock.patch.object(auth, "_async_try_auto_login", mock.AsyncMock()) as _async_try_auto_login_mock:
         with mock.patch.object(auth, "is_logged_in", mock.Mock(return_value=False)) as is_logged_in_mock:
             auth.initialized_event = asyncio.Event()
-            await auth._auth_and_fetch_account()
+            await auth._initialize_account()
             _async_try_auto_login_mock.assert_called_once()
             is_logged_in_mock.assert_called_once()
             assert auth.initialized_event.is_set()
@@ -453,7 +453,7 @@ async def _test_auth_and_fetch_supports(auth):
             auth._aiohttp_gql_session = mock.AsyncMock()
             auth._aiohttp_gql_session.get = async_get
             auth.initialized_event = asyncio.Event()
-            await auth._auth_and_fetch_account()
+            await auth._initialize_account()
             _async_try_auto_login_mock.assert_called_once()
             is_logged_in_mock.assert_called_once()
             _update_supports_mock.assert_called_once_with(200, "plop")

@@ -66,11 +66,16 @@ class AuthenticatedAsyncSupabaseClient(supabase.Client):
         """
         return self.from_(table_name)
 
-    def close(self):
+    async def close(self):
         # timer has to be stopped, there is no public stop api
         if self.auth._refresh_token_timer:
             self.auth._refresh_token_timer.cancel()
             self.auth._refresh_token_timer = None
+        try:
+            await self.postgrest.aclose()
+        except RuntimeError:
+            # happens when the event loop is closed already
+            pass
 
     def postgres_functions(self):
         return postgres_functions.PostgresFunctions(self.supabase_url, self._get_auth_headers())

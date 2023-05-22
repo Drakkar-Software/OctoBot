@@ -32,7 +32,11 @@ class BotNotFoundError(BotError):
     pass
 
 
-class BotDeploymentNotFoundError(BotError):
+class BotDeploymentURLNotFoundError(BotError):
+    pass
+
+
+class EmailValidationRequiredError(commons_authentication.AuthenticationError):
     pass
 
 

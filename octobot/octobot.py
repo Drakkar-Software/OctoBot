@@ -114,8 +114,7 @@ class OctoBot:
     async def initialize(self):
         self.stopped = asyncio.Event()
         await self._ensure_clock()
-        self.community_auth.ensure_async_loop()
-        if not self.community_auth.is_initialized():
+        if not (self.community_auth.is_initialized() and self.community_auth.is_using_the_current_loop()):
             self.community_auth.init_account()
         self._log_config()
         await self.initializer.create(True)
