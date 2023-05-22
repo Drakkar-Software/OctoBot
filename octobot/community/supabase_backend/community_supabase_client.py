@@ -80,6 +80,9 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             raise authentication.FailedAuthentication()
 
     async def sign_in_with_otp_token(self, token):
+        self.event_loop = asyncio.get_event_loop()
+        # restore saved session in case otp token fails
+        saved_session = self.auth._storage.get_item(self.auth._storage_key)
         try:
             url = f"{self.auth_url}/verify?token={token}&type=magiclink"
             async with aiohttp.ClientSession() as client:
@@ -88,13 +91,15 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
                     resp.headers["Location"].replace("#access_token", "?access_token").replace("#error", "?error")
                 )
         except gotrue.errors.AuthImplicitGrantRedirectError as err:
+            if saved_session:
+                self.auth._storage.set_item(self.auth._storage_key, saved_session)
             raise authentication.AuthenticationError(err) from err
 
     def is_signed_in(self) -> bool:
         return self.auth.get_session() is not None
 
     def has_login_info(self) -> bool:
-        return self.auth._storage.get_item(self.auth._storage_key) is not None
+        return bool(self.auth._storage.get_item(self.auth._storage_key))
 
     async def update_metadata(self, metadata_update) -> dict:
         return self.auth.update_user({
@@ -118,7 +123,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
                 enums.BotKeys.ID.value, bot_id
             ).execute()).data[0]
         except IndexError:
-            raise errors.BotNotFoundError(bot_id)
+            raise errors.BotNotFoundError(f"Can't find bot with id: {bot_id}")
 
     async def fetch_bots(self) -> list:
         return (await self.table("bots").select("*,bot_deployment:bot_deployments(*)").execute()).data

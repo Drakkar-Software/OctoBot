@@ -79,12 +79,18 @@ async def test_sign_in_with_otp_token(authenticated_client_1, skip_if_no_service
             backend_key,
             community.SyncConfigurationStorage(config)
         )
-
+        saved_session = "saved_session"
+        supabase_client.auth._storage.set_item(supabase_client.auth._storage_key, saved_session)
         # wrong token
         with pytest.raises(authentication.AuthenticationError):
             await supabase_client.sign_in_with_otp_token("1234")
+        # save session has not been removed
+        assert supabase_client.auth._storage.get_item(supabase_client.auth._storage_key) == saved_session
 
         await supabase_client.sign_in_with_otp_token(token)
+        # save session has been updated
+        updated_session = supabase_client.auth._storage.get_item(supabase_client.auth._storage_key)
+        assert updated_session != saved_session
 
         # ensure new supabase_client is bound to the same user as the previous client
         user = await supabase_client.get_user()
@@ -93,6 +99,7 @@ async def test_sign_in_with_otp_token(authenticated_client_1, skip_if_no_service
         # already consumed token
         with pytest.raises(authentication.AuthenticationError):
             await supabase_client.sign_in_with_otp_token(token)
+        assert supabase_client.auth._storage.get_item(supabase_client.auth._storage_key) == updated_session
     finally:
         if supabase_client:
             await supabase_client.close()
