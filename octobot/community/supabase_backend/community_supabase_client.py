@@ -16,6 +16,7 @@
 import asyncio
 import datetime
 import json
+import aiohttp
 import gotrue.errors
 import supabase.lib.client_options
 
@@ -77,6 +78,17 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         self.auth.initialize_from_storage()
         if not self.is_signed_in():
             raise authentication.FailedAuthentication()
+
+    async def sign_in_with_otp_token(self, token):
+        try:
+            url = f"{self.auth_url}/verify?token={token}&type=magiclink"
+            async with aiohttp.ClientSession() as client:
+                resp = await client.get(url, allow_redirects=False)
+                self.auth.initialize_from_url(
+                    resp.headers["Location"].replace("#access_token", "?access_token").replace("#error", "?error")
+                )
+        except gotrue.errors.AuthImplicitGrantRedirectError as err:
+            raise authentication.AuthenticationError(err) from err
 
     def is_signed_in(self) -> bool:
         return self.auth.get_session() is not None
