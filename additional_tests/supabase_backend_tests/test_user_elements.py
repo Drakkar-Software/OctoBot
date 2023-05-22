@@ -16,11 +16,13 @@
 import time
 import pytest
 
+import octobot_commons.configuration as commons_configuration
+import octobot_commons.authentication as authentication
 import octobot.community as community
 import octobot.community.errors as errors
 import octobot.community.supabase_backend.enums as supabase_backend_enums
 from additional_tests.supabase_backend_tests import authenticated_client_1, authenticated_client_2, \
-    authenticated_client_1_with_temp_bot
+    admin_client, get_backend_api_creds, skip_if_no_service_key
 
 
 # All test coroutines will be treated as marked.
@@ -58,3 +60,39 @@ async def test_update_metadata(authenticated_client_1):
 
 async def test_fetch_subscribed_products_urls(authenticated_client_1):
     assert await authenticated_client_1.fetch_subscribed_products_urls() == []
+
+
+async def test_sign_in_with_otp_token(authenticated_client_1, skip_if_no_service_key, admin_client):
+    # generate OTP token
+    user = await authenticated_client_1.get_user()
+    res = admin_client.auth.admin.generate_link({"email": user["email"], "type": "magiclink"})
+    token = res.properties.hashed_token
+
+    # create new client
+    backend_url, backend_key = get_backend_api_creds()
+    config = commons_configuration.Configuration("", "")
+    config.config = {}
+    supabase_client = None
+    try:
+        supabase_client = community.CommunitySupabaseClient(
+            backend_url,
+            backend_key,
+            community.SyncConfigurationStorage(config)
+        )
+
+        # wrong token
+        with pytest.raises(authentication.AuthenticationError):
+            await supabase_client.sign_in_with_otp_token("1234")
+
+        await supabase_client.sign_in_with_otp_token(token)
+
+        # ensure new supabase_client is bound to the same user as the previous client
+        user = await supabase_client.get_user()
+        assert user == await authenticated_client_1.get_user()
+
+        # already consumed token
+        with pytest.raises(authentication.AuthenticationError):
+            await supabase_client.sign_in_with_otp_token(token)
+    finally:
+        if supabase_client:
+            await supabase_client.close()

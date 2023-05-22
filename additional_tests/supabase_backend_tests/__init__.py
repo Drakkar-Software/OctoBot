@@ -17,6 +17,7 @@ import contextlib
 import os
 import dotenv
 import pytest_asyncio
+import pytest
 
 import octobot.community as community
 import octobot.community.supabase_backend.enums as supabase_backend_enums
@@ -49,6 +50,18 @@ async def authenticated_client_1_with_temp_bot():
 async def authenticated_client_2():
     async with _authenticated_client(*_get_backend_client_creds(2)) as client:
         yield client
+
+
+@pytest_asyncio.fixture
+async def admin_client():
+    async with _authenticated_client(None, None, _get_backend_service_key()) as client:
+        yield client
+
+
+@pytest.fixture
+def skip_if_no_service_key(request):
+    if _get_backend_service_key() is None:
+        pytest.skip(reason=f"Disabled {request.node.name} [SUPABASE_BACKEND_SERVICE_KEY is not set]")
 
 
 async def _delete_bot(client, bot_id):
@@ -112,18 +125,19 @@ async def _delete_bot(client, bot_id):
 
 
 @contextlib.asynccontextmanager
-async def _authenticated_client(email, password):
+async def _authenticated_client(email, password, admin_key=None):
     config = commons_configuration.Configuration("", "")
     config.config = {}
-    backend_url, backend_key = _get_backend_api_creds()
+    backend_url, backend_key = get_backend_api_creds()
     supabase_client = None
     try:
         supabase_client = community.CommunitySupabaseClient(
             backend_url,
-            backend_key,
+            admin_key or backend_key,
             community.SyncConfigurationStorage(config)
         )
-        await supabase_client.sign_in(email, password)
+        if admin_key is None:
+            await supabase_client.sign_in(email, password)
         yield supabase_client
     finally:
         if supabase_client:
@@ -139,13 +153,17 @@ def _load_backend_creds_env_variables_if_necessary():
         LOADED_BACKEND_CREDS_ENV_VARIABLES = True
 
 
-def _get_backend_api_creds():
+def get_backend_api_creds():
     return os.getenv("SUPABASE_BACKEND_URL"), os.getenv("SUPABASE_BACKEND_KEY")
 
 
 def _get_backend_client_creds(identifier):
     return os.getenv(f"SUPABASE_BACKEND_CLIENT_{identifier}_EMAIL"), \
         os.getenv(f"SUPABASE_BACKEND_CLIENT_{identifier}_PASSWORD")
+
+
+def _get_backend_service_key():
+    return os.getenv(f"SUPABASE_BACKEND_SERVICE_KEY")
 
 
 _load_backend_creds_env_variables_if_necessary()
