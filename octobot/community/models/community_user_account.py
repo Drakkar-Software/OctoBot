@@ -1,3 +1,4 @@
+# pylint: disable=E0711, E0702
 #  This file is part of OctoBot (https://github.com/Drakkar-Software/OctoBot)
 #  Copyright (c) 2023 Drakkar-Software, All rights reserved.
 #

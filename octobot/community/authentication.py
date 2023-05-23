@@ -229,8 +229,10 @@ class CommunityAuthentication(authentication.Authenticator):
             await asyncio.wait_for(self._login_completed.wait(), self.LOGIN_TIMEOUT)
 
     def can_authenticate(self):
-        return identifiers_provider.IdentifiersProvider.BACKEND_URL \
+        return bool(
+            identifiers_provider.IdentifiersProvider.BACKEND_URL
             and identifiers_provider.IdentifiersProvider.BACKEND_KEY
+        )
 
     def must_be_authenticated_through_authenticator(self):
         return constants.IS_CLOUD_ENV

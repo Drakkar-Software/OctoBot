@@ -103,6 +103,7 @@ class AuthenticatedAsyncSupabaseClient(supabase.Client):
 
     def _get_auth_session(self):
         if self.auth is None:
+            # return None when no use is signed in
             return None
         try:
             return self.auth.get_session()
