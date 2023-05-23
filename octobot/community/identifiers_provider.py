@@ -22,51 +22,27 @@ import octobot_commons.configuration as configuration
 class IdentifiersProvider:
     ENABLED_ENVIRONMENT: str = None
     COMMUNITY_URL: str = None
-    FEED_URL: str = None
-    BACKEND_API_URL: str = None # to remove
     FRONTEND_PASSWORD_RECOVER_URL: str = None
+    FEED_URL: str = None
     BACKEND_URL: str = None
     BACKEND_KEY: str = None
-    BACKEND_ACCOUNT_URL: str = None # to remove
-    BACKEND_AUTH_URL: str = None    # to remove
-    BACKEND_PUBLIC_TOKEN: str = None    # to remove
-    MONGO_REALM_URL: str = None # to remove
-    MONGO_APP_ID: str = None    # to remove
-    GQL_AUTH_URL: str = None    # to remove
-    GQL_BACKEND_API_URL: str = None # to remove
 
     @staticmethod
     def use_production():
         IdentifiersProvider.COMMUNITY_URL = constants.OCTOBOT_COMMUNITY_URL
-        IdentifiersProvider.FEED_URL = constants.OCTOBOT_COMMUNITY_FEED_URL
-        IdentifiersProvider.BACKEND_API_URL = constants.COMMUNITY_BACKEND_API_URL
         IdentifiersProvider.FRONTEND_PASSWORD_RECOVER_URL = constants.OCTOBOT_COMMUNITY_RECOVER_PASSWORD_URL
+        IdentifiersProvider.FEED_URL = constants.OCTOBOT_COMMUNITY_FEED_URL
         IdentifiersProvider.BACKEND_URL = constants.COMMUNITY_BACKEND_URL
         IdentifiersProvider.BACKEND_KEY = constants.COMMUNITY_BACKEND_KEY
-        IdentifiersProvider.BACKEND_ACCOUNT_URL = constants.COMMUNITY_BACKEND_ACCOUNT_URL
-        IdentifiersProvider.BACKEND_AUTH_URL = constants.COMMUNITY_BACKEND_AUTH_URL
-        IdentifiersProvider.BACKEND_PUBLIC_TOKEN = constants.COMMUNITY_BACKEND_PUBLIC_TOKEN
-        IdentifiersProvider.MONGO_REALM_URL = constants.COMMUNITY_MONGO_REALM_URL
-        IdentifiersProvider.MONGO_APP_ID = constants.COMMUNITY_MONGO_APP_ID
-        IdentifiersProvider.GQL_AUTH_URL = constants.COMMUNITY_GQL_AUTH_URL
-        IdentifiersProvider.GQL_BACKEND_API_URL = constants.COMMUNITY_GQL_BACKEND_API_URL
         IdentifiersProvider._register_environment(enums.CommunityEnvironments.Production)
 
     @staticmethod
     def use_staging():
         IdentifiersProvider.COMMUNITY_URL = constants.STAGING_OCTOBOT_COMMUNITY_URL
-        IdentifiersProvider.FEED_URL = constants.STAGING_OCTOBOT_COMMUNITY_FEED_URL
-        IdentifiersProvider.BACKEND_API_URL = constants.STAGING_COMMUNITY_BACKEND_API_URL
         IdentifiersProvider.FRONTEND_PASSWORD_RECOVER_URL = constants.STAGING_COMMUNITY_RECOVER_PASSWORD_URL
+        IdentifiersProvider.FEED_URL = constants.STAGING_OCTOBOT_COMMUNITY_FEED_URL
         IdentifiersProvider.BACKEND_URL = constants.STAGING_COMMUNITY_BACKEND_URL
         IdentifiersProvider.BACKEND_KEY = constants.STAGING_COMMUNITY_BACKEND_KEY
-        IdentifiersProvider.BACKEND_ACCOUNT_URL = constants.STAGING_COMMUNITY_BACKEND_ACCOUNT_URL
-        IdentifiersProvider.BACKEND_AUTH_URL = constants.STAGING_COMMUNITY_BACKEND_AUTH_URL
-        IdentifiersProvider.BACKEND_PUBLIC_TOKEN = constants.STAGING_COMMUNITY_BACKEND_PUBLIC_TOKEN
-        IdentifiersProvider.MONGO_REALM_URL = constants.STAGING_COMMUNITY_MONGO_REALM_URL
-        IdentifiersProvider.MONGO_APP_ID = constants.STAGING_COMMUNITY_MONGO_APP_ID
-        IdentifiersProvider.GQL_AUTH_URL = constants.STAGING_COMMUNITY_GQL_AUTH_URL
-        IdentifiersProvider.GQL_BACKEND_API_URL = constants.STAGING_COMMUNITY_GQL_BACKEND_API_URL
         IdentifiersProvider._register_environment(enums.CommunityEnvironments.Staging)
 
     @staticmethod
