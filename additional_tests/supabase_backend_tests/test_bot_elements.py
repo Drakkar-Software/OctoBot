@@ -13,12 +13,17 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
+import decimal
 import time
+import mock
 import pytest
 
+import octobot_commons.constants as commons_constants
 import octobot.community as community
 import octobot.community.errors as errors
+import octobot.community.models as models
 import octobot.community.supabase_backend.enums as supabase_backend_enums
+import octobot_trading.enums
 from additional_tests.supabase_backend_tests import authenticated_client_1, authenticated_client_2, \
     authenticated_client_1_with_temp_bot
 
@@ -335,62 +340,43 @@ def _equal(d_1, d_2, key):
 
 
 def config_mock(seed, bot_id):
-    return {
-        supabase_backend_enums.ConfigKeys.CURRENT.value: {
-            supabase_backend_enums.CurrentConfigKeys.PROFILE_NAME.value: str(seed) + "profile",
-            supabase_backend_enums.CurrentConfigKeys.PROFITABILITY.value: seed
-        },
-        supabase_backend_enums.ConfigKeys.BOT_ID.value: bot_id,
-    }
+    return models.format_bot_config_and_stats(
+        str(seed) + "profile", seed, bot_id
+    )
 
 
 def trades_mock(seed, bot_id):
-    return [
-        {
-            supabase_backend_enums.TradeKeys.BOT_ID.value: bot_id,
-            supabase_backend_enums.TradeKeys.TRADE_ID.value: str(round((seed+ i) % 10) * 101),
-            supabase_backend_enums.TradeKeys.TIME.value:
-                community.CommunitySupabaseClient.get_formatted_time(seed + i),
-            supabase_backend_enums.TradeKeys.EXCHANGE.value: "binance",
-            supabase_backend_enums.TradeKeys.PRICE.value: round((seed+ i) % 10) * 100,
-            supabase_backend_enums.TradeKeys.QUANTITY.value: round((seed+ i) % 3) * 100,
-            supabase_backend_enums.TradeKeys.SYMBOL.value: "BTC/USDT",
-            supabase_backend_enums.TradeKeys.TYPE.value: "SELL_LIMIT" if int(seed + i) % 2 == 0 else "BUY_LIMIT",
-        }
+    trades = [
+        mock.Mock(
+            trade_id=str(round((seed + i) % 10) * 101),
+            executed_time=seed + i,
+            exchange_manager=mock.Mock(exchange_name="binance"),
+            executed_price=round((seed + i) % 10) * 100,
+            executed_quantity=round((seed + i) % 3) * 100,
+            symbol="BTC/USDT",
+            trade_type=octobot_trading.enums.TraderOrderType.SELL_LIMIT if int(seed + i) % 2 == 0
+            else octobot_trading.enums.TraderOrderType.BUY_MARKET,
+        )
         for i in range(2)
     ]
+    return models.format_trades(trades, bot_id)
+
 
 def portfolio_histories_mock(seed, portfolio_id):
-    return [
-        {
-            supabase_backend_enums.PortfolioHistoryKeys.TIME.value:
-                community.CommunitySupabaseClient.get_formatted_time(seed + i),
-            supabase_backend_enums.PortfolioHistoryKeys.PORTFOLIO_ID.value: portfolio_id,
-            supabase_backend_enums.PortfolioHistoryKeys.VALUE.value: round((seed + i) % 10) * 101,
-        }
-        for i in range(2)
-    ]
+    return models.format_portfolio_history(
+        {seed + i: {"USDT": round((seed + i) % 10) * 101} for i in range(2)},
+        "USDT",
+        portfolio_id
+    )
+
 
 def portfolio_mock(seed, bot_id):
-    i = 1
-
-    def pf_content(asset, val, quant):
-        return {
-            supabase_backend_enums.PortfolioAssetKeys.ASSET.value: asset,
-            supabase_backend_enums.PortfolioAssetKeys.VALUE.value: round(val),
-            supabase_backend_enums.PortfolioAssetKeys.QUANTITY.value: round(quant),
-        }
-    return {
-        supabase_backend_enums.PortfolioKeys.CONTENT.value: [
-            pf_content(a, v, q)
-            for (a, v, q) in
-            (
-                ("plop", (seed + i % 10) * 101, (seed + i % 10) * 1111),
-                ("BTC", (seed + i % 10) * 33, (seed + i % 10) / 3333)
-            )
-        ],
-        supabase_backend_enums.PortfolioKeys.CURRENT_VALUE.value: round((seed + i) % 10) * 100,
-        supabase_backend_enums.PortfolioKeys.INITIAL_VALUE.value: round((seed + i) % 10) * 45,
-        supabase_backend_enums.PortfolioKeys.UNIT.value: "USDT",
-        supabase_backend_enums.PortfolioKeys.BOT_ID.value: bot_id,
-    }
+    return models.format_portfolio(
+        {"USDT": round(seed % 10) * 100},
+        {"USDT": round(seed % 10) * 45},
+        "USDT",
+        {"plop": {commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("12.2")},
+         "BTC": {commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("0.32")}},
+        {"plop": 1, "BTC": 12},
+        bot_id
+    )

@@ -143,6 +143,14 @@ class CommunityUserAccount:
         if self.bot_id is None:
             raise errors.BotError("No selected bot")
 
+    def get_support_role(self):
+        try:
+            if self.get_has_donated():
+                return community_supports.CommunitySupports.OCTOBOT_DONOR_ROLE
+        except KeyError:
+            pass
+        return community_supports.CommunitySupports.DEFAULT_SUPPORT_ROLE
+
     def flush_bot_details(self):
         self.bot_id = None
         self._selected_bot_raw_data = None

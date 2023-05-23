@@ -16,6 +16,7 @@
 import octobot.enums
 import octobot.community.feeds.community_ws_feed as community_ws_feed
 import octobot.community.feeds.community_mqtt_feed as community_mqtt_feed
+import octobot.community.feeds.community_supabase_feed as community_supabase_feed
 
 
 def community_feed_factory(feed_url: str, authenticator, feed_type: octobot.enums.CommunityFeedType):
@@ -23,4 +24,6 @@ def community_feed_factory(feed_url: str, authenticator, feed_type: octobot.enum
         return community_ws_feed.CommunityWSFeed(feed_url, authenticator)
     if feed_type is octobot.enums.CommunityFeedType.MQTTFeed:
         return community_mqtt_feed.CommunityMQTTFeed(feed_url, authenticator)
+    if feed_type is octobot.enums.CommunityFeedType.SupabaseFeed:
+        return community_supabase_feed.CommunitySupabaseFeed(feed_url, authenticator)
     raise NotImplementedError(f"Unsupported feed type: {feed_type}")

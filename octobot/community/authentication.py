@@ -14,14 +14,8 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import asyncio
-import base64
 import contextlib
 import json
-import time
-import datetime
-
-import requests
-import aiohttp
 
 import octobot.constants as constants
 import octobot.community.errors as errors
@@ -29,26 +23,27 @@ import octobot.community.identifiers_provider as identifiers_provider
 import octobot.community.models.community_supports as community_supports
 import octobot.community.models.startup_info as startup_info
 import octobot.community.models.community_user_account as community_user_account
+import octobot.community.models.formatters as formatters
 import octobot.community.supabase_backend as supabase_backend
 import octobot.community.supabase_backend.enums as backend_enums
 import octobot.community.feeds as community_feeds
-import octobot.community.graphql_requests as graphql_requests
 import octobot_commons.constants as commons_constants
 import octobot_commons.authentication as authentication
 import octobot_commons.configuration as commons_configuration
 
 
-def _selected_bot_update(func):
+def _bot_data_update(func):
     async def wrapper(*args, **kwargs):
         self = args[0]
-        await self.gql_login_if_required()
-        async with self._get_update_bot_lock():
-            self.logger.debug(f"@selected_bot_update: entering {func.__name__}")
-            updated_bot = await func(*args, **kwargs)
-        self.logger.debug(f"@selected_bot_update: exited {func.__name__}")
-        self.user_account.set_selected_bot_raw_data(updated_bot)
-        return updated_bot
-
+        if not self.is_logged_in_and_has_selected_bot():
+            self.logger.debug(f"Skipping {func.__name__} update: no user selected bot.")
+            return
+        try:
+            return await func(*args, **kwargs)
+        except Exception as err:
+            self.logger.exception(err, True, f"Error when calling {func.__name__} {err}")
+        finally:
+            self.logger.debug(f"bot_data_update: {func.__name__} completed.")
     return wrapper
 
 
@@ -67,27 +62,17 @@ class CommunityAuthentication(authentication.Authenticator):
     def __init__(self, feed_url, config=None):
         super().__init__()
         self.feed_url = feed_url
-        self.initialized_event = None
         self.configuration_storage = supabase_backend.SyncConfigurationStorage(config)
         self.supabase_client = self._create_client()
         self.user_account = community_user_account.CommunityUserAccount()
+        self._community_feed = None
 
+        self.initialized_event = None
         self._login_completed = None
-        self._update_bot_lock = None
         self._startup_info = None
 
-        # todo remove
-        self.authentication_url = identifiers_provider.IdentifiersProvider.BACKEND_AUTH_URL
-        self._auth_token = None
-        self._backend_session = requests.Session()
-        self._aiohttp_gql_session = None
-        self._aiohttp_backend_session = None
         self._fetch_account_task = None
         self._restart_task = None
-        self._community_feed = None
-        # end remove
-
-        # self._update_sessions_headers()
 
     @staticmethod
     def create(configuration: commons_configuration.Configuration):
@@ -110,11 +95,6 @@ class CommunityAuthentication(authentication.Authenticator):
             return []
         except json.JSONDecodeError:
             return []
-
-    def _get_update_bot_lock(self):
-        if self._update_bot_lock is None:
-            self._update_bot_lock = asyncio.Lock()
-        return self._update_bot_lock
 
     def is_feed_connected(self):
         return self._community_feed is not None and self._community_feed.is_connected_to_remote_feed()
@@ -160,14 +140,20 @@ class CommunityAuthentication(authentication.Authenticator):
         return self._community_feed.is_signal_emitter
 
     def get_signal_community_url(self, signal_identifier):
+        # todo
         return f"{identifiers_provider.IdentifiersProvider.COMMUNITY_URL}/product/{signal_identifier}"
 
     async def update_supports(self):
-        self._update_supports(200, self._supports_mock())
-        return
+        def _supports_mock():
+            return {
+                "data": {
+                    "attributes": {
+                        "support_role": self.user_account.get_support_role()
+                    }
+                }
+            }
+        self._update_supports(200, _supports_mock())
         # TODO use real support fetch when implemented
-        async with self._aiohttp_gql_session.get("supports_url") as resp:
-            self._update_supports(resp.status, await resp.json())
 
     def _create_client(self):
         return supabase_backend.CommunitySupabaseClient(
@@ -179,6 +165,11 @@ class CommunityAuthentication(authentication.Authenticator):
     async def _ensure_async_loop(self):
         # elements should be bound to the current loop
         if not self.is_using_the_current_loop():
+            if self._login_completed is not None:
+                should_set = self._login_completed.is_set()
+                self._login_completed = asyncio.Event()
+                if should_set:
+                    self._login_completed.set()
             # changed event loop: restart client
             await self.supabase_client.close()
             self.user_account.flush()
@@ -198,14 +189,6 @@ class CommunityAuthentication(authentication.Authenticator):
         self.init_account()
         await self._fetch_account_task
 
-    async def _ensure_bot_device(self):
-        try:
-            self.user_account.get_selected_bot_device_uuid()
-        except errors.NoBotDeviceError:
-            bot_id = self.user_account.get_bot_id(self.user_account.get_selected_bot_raw_data())
-            self.logger.info(f"Creating a bot device for current bot with id: {bot_id} (no associated bot device)")
-            self.user_account.set_selected_bot_device_raw_data(await self._create_new_bot_device(bot_id))
-
     async def _create_community_feed_if_necessary(self) -> bool:
         if self._community_feed is None:
             self._community_feed = community_feeds.community_feed_factory(
@@ -224,7 +207,6 @@ class CommunityAuthentication(authentication.Authenticator):
             if not self.is_logged_in():
                 raise authentication.AuthenticationRequired("You need to be authenticated to be able to "
                                                             "connect to signals")
-            await self._ensure_bot_device()
             await self._community_feed.start()
 
     async def register_feed_callback(self, channel_type, callback, identifier=None):
@@ -241,88 +223,14 @@ class CommunityAuthentication(authentication.Authenticator):
         await self._ensure_init_community_feed()
         await self._community_feed.send(message, channel_type, identifier)
 
-    @staticmethod
-    def _build_gql_request_body(query, variables, operation_name):
-        request_body = {
-            "query": query
-        }
-        if variables is not None:
-            request_body["variables"] = variables
-        if operation_name is not None:
-            request_body["operationName"] = operation_name
-        return request_body
-
-    async def async_graphql_query(self, query, query_name, variables=None, operation_name=None,
-                                  expected_code=None, allow_retry_on_expired_token=True):
-        try:
-            async with self._authenticated_qgl_session() as session:
-                t0 = time.time()
-                self.logger.debug(f"starting {query_name} graphql query")
-                resp = await session.post(
-                    f"{identifiers_provider.IdentifiersProvider.GQL_BACKEND_API_URL}",
-                    json=self._build_gql_request_body(query, variables, operation_name)
-                )
-                self.logger.debug(f"graphql query {query_name} done in {time.time() - t0} seconds")
-                if resp.status == 401:
-                    # access token expired
-                    raise authentication.AuthenticationRequired
-                json_resp = await resp.json()
-                if errs := json_resp.get("errors"):
-                    raise errors.RequestError(f"Error when running graphql query [{query_name}]: "
-                                              f"{errs[0].get('message', errs)}")
-                if expected_code is None or resp.status == expected_code:
-                    return json_resp["data"][query_name]
-                raise errors.StatusCodeRequestError(
-                    f"Wrong status code running graphql query [{query_name}]: expected {expected_code}, "
-                    f"got: {resp.status}. Text: {await resp.text()}")
-        except authentication.AuthenticationRequired:
-            if allow_retry_on_expired_token:
-                return await self.async_graphql_query(
-                    query, query_name, variables=variables, operation_name=operation_name,
-                    expected_code=expected_code, allow_retry_on_expired_token=False)
-            else:
-                raise
-
-    @contextlib.asynccontextmanager
-    async def _authenticated_qgl_session(self):
-        await self.gql_login_if_required()
-        session = self.get_gql_aiohttp_session()
-        try:
-            yield session
-        except authentication.AuthenticationRequired:
-            # reset token to force re-login
-            self.user_account.gql_access_token = None
-            if CommunityAuthentication.GQL_AUTHORIZATION_HEADER in session.headers:
-                session.headers.pop(CommunityAuthentication.GQL_AUTHORIZATION_HEADER)
-            raise
-
     async def wait_for_login_if_processing(self):
-        if self._login_completed is not None:
+        if self._login_completed is not None and not self._login_completed.is_set():
             # ensure login details have been fetched
             await asyncio.wait_for(self._login_completed.wait(), self.LOGIN_TIMEOUT)
 
-    async def gql_login_if_required(self):
-        await self.wait_for_login_if_processing()
-        if self.user_account.gql_access_token is not None:
-            return
-        try:
-            token = self.user_account.get_graph_token()
-        except (KeyError, TypeError) as e:
-            raise authentication.AuthenticationRequired("Authentication required") from e
-        async with self.get_aiohttp_session().post(
-                identifiers_provider.IdentifiersProvider.GQL_AUTH_URL, json={"key": token}
-        ) as resp:
-            json_resp = await resp.json()
-            if resp.status == 200:
-                self.user_account.gql_access_token = json_resp["access_token"]
-                self.user_account.gql_user_id = json_resp["user_id"]
-                self._update_sessions_headers()
-            else:
-                raise authentication.FailedAuthentication(f"Failed to authenticate to graphql server: "
-                                                          f"status: {resp.status}, data: {json_resp}")
-
     def can_authenticate(self):
-        return "todo" not in self.authentication_url    # pylint: disable=E1135
+        return identifiers_provider.IdentifiersProvider.BACKEND_URL \
+            and identifiers_provider.IdentifiersProvider.BACKEND_KEY
 
     def must_be_authenticated_through_authenticator(self):
         return constants.IS_CLOUD_ENV
@@ -331,11 +239,12 @@ class CommunityAuthentication(authentication.Authenticator):
         self._ensure_email(email)
         self._ensure_community_url()
         self._reset_tokens()
-        if password_token:
-            await self.supabase_client.sign_in_with_otp_token(password_token)
-        else:
-            await self.supabase_client.sign_in(email, password)
-        await self._on_account_updated()
+        with self._login_process():
+            if password_token:
+                await self.supabase_client.sign_in_with_otp_token(password_token)
+            else:
+                await self.supabase_client.sign_in(email, password)
+            await self._on_account_updated()
         if self.is_logged_in():
             await self.on_signed_in()
 
@@ -345,8 +254,9 @@ class CommunityAuthentication(authentication.Authenticator):
         # always logout before creating a new account
         self.logout()
         self._ensure_community_url()
-        await self.supabase_client.sign_up(email, password)
-        await self._on_account_updated()
+        with self._login_process():
+            await self.supabase_client.sign_up(email, password)
+            await self._on_account_updated()
         if self.is_logged_in():
             await self.on_signed_in()
 
@@ -420,88 +330,6 @@ class CommunityAuthentication(authentication.Authenticator):
     def is_logged_in_and_has_selected_bot(self):
         return self.is_logged_in() and self.user_account.bot_id is not None
 
-    async def update_trades(self, trades: list, reset: bool):
-        """
-        Updates authenticated account trades
-        """
-        if not self.is_logged_in_and_has_selected_bot():
-            return
-        try:
-            formatted_trades = [
-                {
-                    backend_enums.TradeKeys.BOT_ID.value: self.user_account.bot_id,
-                    backend_enums.TradeKeys.TIME.value: self.supabase_client.get_formatted_time(trade.executed_time),
-                    backend_enums.TradeKeys.TRADE_ID.value: trade.trade_id,
-                    backend_enums.TradeKeys.EXCHANGE.value: trade.exchange_manager.exchange_name,
-                    backend_enums.TradeKeys.PRICE.value: float(trade.executed_price),
-                    backend_enums.TradeKeys.QUANTITY.value: float(trade.executed_quantity),
-                    backend_enums.TradeKeys.SYMBOL.value: trade.symbol,
-                    backend_enums.TradeKeys.TYPE.value: trade.trade_type.value,
-                }
-                for trade in trades
-            ]
-            if reset:
-                await self.supabase_client.reset_trades(self.user_account.bot_id)
-            if formatted_trades:
-                await self.supabase_client.upsert_trades(formatted_trades)
-        except Exception as err:
-            self.logger.exception(err, True, f"Error when updating community trades {err}")
-
-    async def update_portfolio(self, current_value: dict, initial_value: dict,
-                               unit: str, content: dict, history: dict, price_by_asset: dict,
-                               reset: bool):
-        """
-        Updates authenticated account portfolio
-        """
-        if not self.is_logged_in_and_has_selected_bot():
-            return
-        try:
-            ref_market_current_value = current_value[unit]
-            ref_market_initial_value = initial_value[unit]
-            formatted_content = [
-                {
-                    backend_enums.PortfolioAssetKeys.ASSET.value: key,
-                    backend_enums.PortfolioAssetKeys.QUANTITY.value: float(quantity[commons_constants.PORTFOLIO_TOTAL]),
-                    backend_enums.PortfolioAssetKeys.VALUE.value:
-                        float(quantity[commons_constants.PORTFOLIO_TOTAL]) * float(price_by_asset.get(key, 0)),
-                }
-                for key, quantity in content.items()
-            ]
-            formatted_portfolio = {
-                backend_enums.PortfolioKeys.CONTENT.value: formatted_content,
-                backend_enums.PortfolioKeys.CURRENT_VALUE.value: ref_market_current_value,
-                backend_enums.PortfolioKeys.INITIAL_VALUE.value: ref_market_initial_value,
-                backend_enums.PortfolioKeys.UNIT.value: unit,
-                backend_enums.PortfolioKeys.BOT_ID.value: self.user_account.bot_id,
-            }
-            if reset or self.user_account.get_selected_bot_current_portfolio_id() is None:
-                await self.supabase_client.switch_portfolio(formatted_portfolio)
-                await self._refresh_selected_bot()
-
-            formatted_portfolio[backend_enums.PortfolioKeys.ID.value] = \
-                self.user_account.get_selected_bot_current_portfolio_id()
-            formatted_histories = []
-            try:
-                formatted_histories = [
-                    {
-                        backend_enums.PortfolioHistoryKeys.TIME.value: self.supabase_client.get_formatted_time(timestamp),
-                        backend_enums.PortfolioHistoryKeys.PORTFOLIO_ID.value:
-                            self.user_account.get_selected_bot_current_portfolio_id(),
-                        backend_enums.PortfolioHistoryKeys.VALUE.value: str(value[unit])
-                    }
-                    for timestamp, value in history.items()
-                    if unit in value and value[unit]    # skip missing a 0 values
-                ]
-            except KeyError:
-                pass
-            await self.supabase_client.update_portfolio(formatted_portfolio)
-            await self.supabase_client.upsert_portfolio_history(formatted_histories)
-        except KeyError as err:
-            self.logger.debug(f"Error when updating community portfolio {err} (missing reference market value)")
-        except Exception as err:
-            self.logger.exception(err, False, None)
-            self.logger.debug(f"Error when updating community portfolio {err}")
-
     async def _refresh_selected_bot(self):
         self.user_account.set_selected_bot_raw_data(
             await self.supabase_client.fetch_bot(self.user_account.bot_id)
@@ -515,47 +343,19 @@ class CommunityAuthentication(authentication.Authenticator):
         ]
 
     async def on_new_bot_select(self):
-        return
-        await self._update_feed_device_uuid_and_restart_feed_if_necessary()
+        await self._update_feed_and_restart_feed_if_necessary()
 
-
-    async def _create_new_bot_device(self, bot_id):
-        await self._execute_request(graphql_requests.create_bot_device_query, bot_id)
-        # issue with createBotDevice not always returning the created device, fetch bot again to fetch device with it
-
-    async def _update_feed_device_uuid_and_restart_feed_if_necessary(self):
-        raise NotImplemented("todo")
+    async def _update_feed_and_restart_feed_if_necessary(self):
         if self._community_feed is None or not self.initialized_event.is_set():
             # only create a new community feed if necessary
             return
-        if not (self._community_feed.is_using_bot_device(self.user_account) and self._community_feed.is_connected()):
-            # Need to connect using the new uuid.
-
+        if not (self._community_feed.is_up_to_date_with_account(self.user_account)
+                and self._community_feed.is_connected()):
             # Reset restart task if running
             if self._restart_task is not None and not self._restart_task.done():
                 self._restart_task.cancel()
                 self._community_feed.remove_device_details()
-            await self._ensure_bot_device()
             self._restart_task = asyncio.create_task(self._community_feed.restart())
-
-    async def update_bot_config_and_stats(self, profile_name, profitability, reset=False):
-        formatted_config = {
-            backend_enums.ConfigKeys.CURRENT.value: {
-                backend_enums.CurrentConfigKeys.PROFILE_NAME.value: profile_name,
-                backend_enums.CurrentConfigKeys.PROFITABILITY.value: float(profitability)
-            },
-            backend_enums.ConfigKeys.BOT_ID.value: self.user_account.bot_id,
-        }
-        if reset or self.user_account.get_selected_bot_current_config_id() is None:
-            await self.supabase_client.switch_config(formatted_config)
-            await self._refresh_selected_bot()
-        else:
-            formatted_config[backend_enums.ConfigKeys.ID.value] = self.user_account.get_selected_bot_current_config_id()
-            await self.supabase_client.update_config(formatted_config)
-
-    async def _execute_request(self, request_factory, *args, **kwargs):
-        query, variables, query_name = request_factory(*args, **kwargs)
-        return await self.async_graphql_query(query, query_name, variables=variables, expected_code=200)
 
     def logout(self):
         """
@@ -584,7 +384,7 @@ class CommunityAuthentication(authentication.Authenticator):
 
     def remove_login_detail(self):
         self.user_account.flush()
-        self._save_login_token("")
+        self._reset_login_token()
         self._save_bot_id("")
         self.logger.debug("Removed community login data")
 
@@ -595,7 +395,7 @@ class CommunityAuthentication(authentication.Authenticator):
             self._fetch_account_task.cancel()
         if self._restart_task is not None and not self._restart_task.done():
             self._restart_task.cancel()
-        self.supabase_client.close()
+        await self.supabase_client.close()
         self.logger.debug("Stopped")
 
     def _update_supports(self, resp_status, json_data):
@@ -606,22 +406,16 @@ class CommunityAuthentication(authentication.Authenticator):
             self.logger.error(f"Error when fetching community support, "
                               f"error code: {resp_status}")
 
-    def _supports_mock(self):
-        return {
-            "data": {
-                "attributes": {
-                    "support_role": self._get_support_role()
-                }
-            }
-        }
-
-    def _get_support_role(self):
+    @contextlib.contextmanager
+    def _login_process(self):
         try:
-            if self.user_account.get_has_donated():
-                return community_supports.CommunitySupports.OCTOBOT_DONOR_ROLE
-        except KeyError:
-            pass
-        return community_supports.CommunitySupports.DEFAULT_SUPPORT_ROLE
+            if self._login_completed is None:
+                self._login_completed = asyncio.Event()
+            self._login_completed.clear()
+            yield
+        finally:
+            if not self._login_completed.is_set():
+                self._login_completed.set()
 
     async def _initialize_account(self):
         try:
@@ -629,6 +423,7 @@ class CommunityAuthentication(authentication.Authenticator):
             self.initialized_event = asyncio.Event()
             if not (self.is_logged_in() or await self._restore_previous_session()):
                 return
+            self._login_completed.set()
             await self.update_supports()
             await self.update_selected_bot()
             self.logger.debug(f"Fetched account data")
@@ -640,14 +435,12 @@ class CommunityAuthentication(authentication.Authenticator):
         finally:
             self.initialized_event.set()
 
-    def _save_login_token(self, value):
-        self._save_value_in_config(constants.CONFIG_COMMUNITY_TOKEN, value)
+    def _reset_login_token(self):
+        if self.supabase_client is not None:
+            self._save_value_in_config(self.supabase_client.auth._storage_key, "")
 
     def _save_bot_id(self, bot_id):
         self._save_value_in_config(constants.CONFIG_COMMUNITY_BOT_ID, bot_id)
-
-    def _get_saved_token(self):
-        return self._get_value_in_config(constants.CONFIG_COMMUNITY_TOKEN)
 
     def _get_saved_bot_id(self):
         return constants.COMMUNITY_BOT_ID or self._get_value_in_config(constants.CONFIG_COMMUNITY_BOT_ID)
@@ -659,11 +452,12 @@ class CommunityAuthentication(authentication.Authenticator):
         return self.configuration_storage.get_item(key)
 
     async def _restore_previous_session(self):
-        async with self._auth_handler():
-            # will raise on failure
-            self.supabase_client.restore_session()
-            await self._on_account_updated()
-            self.logger.info(f"Signed in as {self.get_logged_in_email()}")
+        with self._login_process():
+            async with self._auth_handler():
+                # will raise on failure
+                self.supabase_client.restore_session()
+                await self._on_account_updated()
+                self.logger.info(f"Signed in as {self.get_logged_in_email()}")
         return self.is_logged_in()
 
     @contextlib.asynccontextmanager
@@ -692,5 +486,52 @@ class CommunityAuthentication(authentication.Authenticator):
         self.user_account.set_profile_raw_data(await self.supabase_client.get_user())
 
     def _reset_tokens(self):
-        self._auth_token = None
         self.user_account.flush()
+
+    @_bot_data_update
+    async def update_trades(self, trades: list, reset: bool):
+        """
+        Updates authenticated account trades
+        """
+        if reset:
+            await self.supabase_client.reset_trades(self.user_account.bot_id)
+        if formatted_trades := formatters.format_trades(trades, self.user_account.bot_id):
+            await self.supabase_client.upsert_trades(formatted_trades)
+
+    @_bot_data_update
+    async def update_portfolio(self, current_value: dict, initial_value: dict,
+                               unit: str, content: dict, history: dict, price_by_asset: dict,
+                               reset: bool):
+        """
+        Updates authenticated account portfolio
+        """
+        try:
+            formatted_portfolio = formatters.format_portfolio(
+                current_value, initial_value, unit, content, price_by_asset, self.user_account.bot_id
+            )
+            if reset or self.user_account.get_selected_bot_current_portfolio_id() is None:
+                await self.supabase_client.switch_portfolio(formatted_portfolio)
+                await self._refresh_selected_bot()
+
+            formatted_portfolio[backend_enums.PortfolioKeys.ID.value] = \
+                self.user_account.get_selected_bot_current_portfolio_id()
+            await self.supabase_client.update_portfolio(formatted_portfolio)
+            if formatted_histories := formatters.format_portfolio_history(
+                    history, unit, self.user_account.get_selected_bot_current_portfolio_id()
+            ):
+                await self.supabase_client.upsert_portfolio_history(formatted_histories)
+        except KeyError as err:
+            self.logger.debug(f"Error when updating community portfolio {err} (missing reference market value)")
+
+    @_bot_data_update
+    async def update_bot_config_and_stats(self, profile_name, profitability, reset=False):
+        formatted_config = formatters.format_bot_config_and_stats(
+            profile_name, profitability, self.user_account.bot_id
+        )
+        if reset or self.user_account.get_selected_bot_current_config_id() is None:
+            await self.supabase_client.switch_config(formatted_config)
+            await self._refresh_selected_bot()
+        else:
+            formatted_config[
+                backend_enums.ConfigKeys.ID.value] = self.user_account.get_selected_bot_current_config_id()
+            await self.supabase_client.update_config(formatted_config)

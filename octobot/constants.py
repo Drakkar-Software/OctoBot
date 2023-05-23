@@ -58,23 +58,14 @@ AUTOMATION_FEEDBACK_FORM_ID = "n9NKMV"
 WELCOME_FEEDBACK_FORM_ID = os.getenv("WELCOME_FEEDBACK_FORM_ID", None)
 
 COMMUNITY_FEED_CURRENT_MINIMUM_VERSION = "1.0.0"
-COMMUNITY_FEED_DEFAULT_TYPE = octobot.enums.CommunityFeedType.MQTTFeed
+COMMUNITY_FEED_DEFAULT_TYPE = octobot.enums.CommunityFeedType.SupabaseFeed
 
 # production env SHOULD ONLY BE USED THROUGH CommunityIdentifiersProvider
 OCTOBOT_COMMUNITY_URL = os.getenv("COMMUNITY_SERVER_URL", "https://www.octobot.cloud")
 OCTOBOT_COMMUNITY_FEED_URL = os.getenv("OCTOBOT_COMMUNITY_MQTT_URL", "iot.fr-par.scw.cloud")
 COMMUNITY_BACKEND_API_URL = os.getenv("COMMUNITY_BACKEND_API_URL", "https://astro-lab.swell.store/api")
 OCTOBOT_COMMUNITY_RECOVER_PASSWORD_URL = f"{OCTOBOT_COMMUNITY_URL}/auth/forgot-password"
-COMMUNITY_BACKEND_ACCOUNT_URL = f"{COMMUNITY_BACKEND_API_URL}/account"
-COMMUNITY_BACKEND_AUTH_URL = f"{COMMUNITY_BACKEND_ACCOUNT_URL}/login"
-COMMUNITY_BACKEND_PUBLIC_TOKEN = os.getenv("COMMUNITY_BACKEND_PUBLIC_TOKEN", "pk_bw3xUzAtCRyy0HcgKkuY8vQha5qN5Amd")
-COMMUNITY_MONGO_REALM_URL = os.getenv("COMMUNITY_MONGO_REALM_URL", "https://realm.mongodb.com/api/client/v2.0")
-COMMUNITY_MONGO_APP_ID = os.getenv("COMMUNITY_MONGO_APP_ID", "astrolab-uprcv")
-COMMUNITY_GQL_AUTH_URL = f"{COMMUNITY_MONGO_REALM_URL}/app/{COMMUNITY_MONGO_APP_ID}/auth/providers/api-key/login"
-COMMUNITY_GQL_BACKEND_API_URL = os.getenv(
-    "COMMUNITY_GQL_BACKEND_API_URL",
-    f"https://realm.mongodb.com/api/client/v2.0/app/{COMMUNITY_MONGO_APP_ID}/graphql"
-)
+# todo use real production db
 COMMUNITY_BACKEND_URL = "https://kfgrdlxlryvmhdkbrarr.supabase.co"
 COMMUNITY_BACKEND_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtmZ3JkbHhscnl2bWhka2JyYXJyIiwicm9sZSI6ImFub24iLCJpYXQiOjE2ODQ2ODcwMTksImV4cCI6MjAwMDI2MzAxOX0.UH0g1ZDr9kDQMkGWxxy29lLjDEIPlSeU_f2GjwFFfGE"
 
@@ -84,25 +75,13 @@ STAGING_OCTOBOT_COMMUNITY_URL = os.getenv("COMMUNITY_SERVER_URL", "https://beta.
 STAGING_OCTOBOT_COMMUNITY_FEED_URL = os.getenv("OCTOBOT_COMMUNITY_MQTT_URL", "iot.fr-par.scw.cloud")
 STAGING_COMMUNITY_BACKEND_API_URL = os.getenv("COMMUNITY_BACKEND_API_URL", "https://astro-lab-staging.swell.store/api")
 STAGING_COMMUNITY_RECOVER_PASSWORD_URL = f"{STAGING_OCTOBOT_COMMUNITY_URL}/auth/forgot-password"
-STAGING_COMMUNITY_BACKEND_ACCOUNT_URL = f"{STAGING_COMMUNITY_BACKEND_API_URL}/account"
-STAGING_COMMUNITY_BACKEND_AUTH_URL = f"{STAGING_COMMUNITY_BACKEND_ACCOUNT_URL}/login"
-STAGING_COMMUNITY_BACKEND_PUBLIC_TOKEN = os.getenv("COMMUNITY_BACKEND_PUBLIC_TOKEN",
-                                                   "pk_akVFLvtDFvZlmTVyJwz9Z1N0TQQlycOh")
-STAGING_COMMUNITY_MONGO_REALM_URL = os.getenv("COMMUNITY_MONGO_REALM_URL", "https://realm.mongodb.com/api/client/v2.0")
-STAGING_COMMUNITY_MONGO_APP_ID = os.getenv("COMMUNITY_MONGO_APP_ID", "astrolab-fsuua")
-STAGING_COMMUNITY_GQL_AUTH_URL = f"{STAGING_COMMUNITY_MONGO_REALM_URL}/app/{STAGING_COMMUNITY_MONGO_APP_ID}/" \
-                                 f"auth/providers/api-key/login"
-STAGING_COMMUNITY_GQL_BACKEND_API_URL = os.getenv(
-    "COMMUNITY_GQL_BACKEND_API_URL",
-    f"https://realm.mongodb.com/api/client/v2.0/app/{STAGING_COMMUNITY_MONGO_APP_ID}/graphql"
-)
+# todo use real staging db
 STAGING_COMMUNITY_BACKEND_URL = "https://kfgrdlxlryvmhdkbrarr.supabase.co"
 STAGING_COMMUNITY_BACKEND_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtmZ3JkbHhscnl2bWhka2JyYXJyIiwicm9sZSI6ImFub24iLCJpYXQiOjE2ODQ2ODcwMTksImV4cCI6MjAwMDI2MzAxOX0.UH0g1ZDr9kDQMkGWxxy29lLjDEIPlSeU_f2GjwFFfGE"
 
 
 
 CONFIG_COMMUNITY = "community"
-CONFIG_COMMUNITY_TOKEN = "token"
 CONFIG_COMMUNITY_BOT_ID = "bot_id"
 CONFIG_COMMUNITY_ENVIRONMENT = "environment"
 USE_BETA_EARLY_ACCESS = os_util.parse_boolean_environment_var("USE_BETA_EARLY_ACCESS", "false")
