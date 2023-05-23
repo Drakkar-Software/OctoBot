@@ -99,7 +99,7 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
         except Exception as err:
             self.logger.exception(err, True, f"{err}")
 
-    def is_using_bot_device(self, user_account):
+    def is_up_to_date_with_account(self, user_account):
         try:
             return self._device_uuid == user_account.get_selected_bot_device_uuid()
         except errors.NoBotDeviceError:

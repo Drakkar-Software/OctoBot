@@ -26,6 +26,10 @@ from octobot.community.feeds import community_mqtt_feed
 from octobot.community.feeds.community_mqtt_feed import (
     CommunityMQTTFeed,
 )
+from octobot.community.feeds import community_supabase_feed
+from octobot.community.feeds.community_supabase_feed import (
+    CommunitySupabaseFeed,
+)
 from octobot.community.feeds import feed_factory
 from octobot.community.feeds.feed_factory import (
     community_feed_factory,
@@ -35,5 +39,6 @@ __all__ = [
     "AbstractFeed",
     "CommunityWSFeed",
     "CommunityMQTTFeed",
+    "CommunitySupabaseFeed",
     "community_feed_factory",
 ]

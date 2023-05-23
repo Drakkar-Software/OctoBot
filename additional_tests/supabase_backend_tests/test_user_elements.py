@@ -19,7 +19,6 @@ import pytest
 import octobot_commons.configuration as commons_configuration
 import octobot_commons.authentication as authentication
 import octobot.community as community
-import octobot.community.errors as errors
 import octobot.community.supabase_backend.enums as supabase_backend_enums
 from additional_tests.supabase_backend_tests import authenticated_client_1, authenticated_client_2, \
     admin_client, get_backend_api_creds, skip_if_no_service_key
