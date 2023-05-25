@@ -62,13 +62,13 @@ Deploy your OctoBot on the OctoBot Cloud. No installation is required and your O
 
 
 #### [With executable](https://www.octobot.info/installation/with-binary)
-Follow the [2 steps installation guide](https://www.octobot.online/executable_installation/) 
+Follow the [2 steps installation guide](https://www.octobot.online/local_installation/) 
 
 In short:
 - Use the latest release on the [release page](https://github.com/Drakkar-Software/OctoBot/releases/latest)
 
 #### [With Docker](https://www.octobot.info/installation/with-docker)
-Follow the [docker installation guide](https://www.octobot.online/docker_installation/) 
+Follow the [docker installation guide](https://www.octobot.online/local_installation/) 
 
 In short :
 ```
