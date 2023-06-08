@@ -17,7 +17,7 @@ import decimal
 
 import pytest
 
-from exchanges_tests import abstract_authenticated_exchange_tester
+from additional_tests.exchanges_tests import abstract_authenticated_exchange_tester
 
 # All test coroutines will be treated as marked.
 pytestmark = pytest.mark.asyncio
