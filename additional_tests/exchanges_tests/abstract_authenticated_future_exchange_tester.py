@@ -20,7 +20,7 @@ import pytest
 import octobot_trading.enums as trading_enums
 import octobot_trading.constants as trading_constants
 import octobot_trading.errors as trading_errors
-from exchanges_tests import abstract_authenticated_exchange_tester
+from additional_tests.exchanges_tests import abstract_authenticated_exchange_tester
 
 
 class AbstractAuthenticatedFutureExchangeTester(

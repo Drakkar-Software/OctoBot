@@ -29,7 +29,7 @@ import octobot_trading.exchanges as trading_exchanges
 import octobot_trading.personal_data as personal_data
 import octobot_trading.personal_data.orders as personal_data_orders
 import octobot_tentacles_manager.api as tentacles_manager_api
-from exchanges_tests import get_authenticated_exchange_manager
+from additional_tests.exchanges_tests import get_authenticated_exchange_manager
 
 # always import and load tentacles
 import tentacles
