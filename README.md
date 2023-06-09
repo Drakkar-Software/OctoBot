@@ -1,4 +1,4 @@
-# OctoBot [0.4.50](https://octobot.click/gh-changelog)
+# OctoBot [0.4.51](https://octobot.click/gh-changelog)
 [![PyPI](https://img.shields.io/pypi/v/OctoBot.svg?logo=pypi)](https://octobot.click/gh-pypi)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/e07fb190156d4efb8e7d07aaa5eff2e1)](https://app.codacy.com/gh/Drakkar-Software/OctoBot?utm_source=github.com&utm_medium=referral&utm_content=Drakkar-Software/OctoBot&utm_campaign=Badge_Grade_Dashboard)
 [![Downloads](https://pepy.tech/badge/octobot/month)](https://pepy.tech/project/octobot)
@@ -62,13 +62,13 @@ Deploy your OctoBot on the OctoBot Cloud. No installation is required and your O
 
 
 #### [With executable](https://www.octobot.info/installation/with-binary)
-Follow the [2 steps installation guide](https://www.octobot.online/executable_installation/) 
+Follow the [2 steps installation guide](https://www.octobot.online/local_installation/) 
 
 In short:
 - Use the latest release on the [release page](https://github.com/Drakkar-Software/OctoBot/releases/latest)
 
 #### [With Docker](https://www.octobot.info/installation/with-docker)
-Follow the [docker installation guide](https://www.octobot.online/docker_installation/) 
+Follow the [docker installation guide](https://www.octobot.online/local_installation/) 
 
 In short :
 ```

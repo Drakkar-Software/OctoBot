@@ -141,8 +141,13 @@ ENV_COMPILED_TENTACLES_PACKAGES_TYPE = "COMPILED_TENTACLES_PACKAGES_TYPE"
 ENV_TENTACLE_CATEGORY = "TENTACLE_CATEGORY"
 ENV_COMPILED_TENTACLES_SUBCATEGORY = "COMPILED_TENTACLES_SUBCATEGORY"
 TENTACLES_REQUIRED_VERSION = f"{os.getenv(ENV_TENTACLES_URL_TAG, LONG_VERSION)}"
+# VERSION_PLACEHOLDER will be replaced by the current OctoBot version in ADDITIONAL_TENTACLES_PACKAGE_URL
+# ADDITIONAL_TENTACLES_PACKAGE_URL can contain multiple urls separated by a ","
 ADDITIONAL_TENTACLES_PACKAGE_URL = os.getenv("ADDITIONAL_TENTACLES_PACKAGE_URL", None)
-# url ending example: 	tentacles/officials/packages/full/base/latest/any_platform.zip
+# url example: 	https://plop.fr/tentacles/123/latest/any_platform.zip
+# url example: 	https://plop.fr/tentacles/.../VERSION_PLACEHOLDER/any_platform.zip,https://plop.fr/any_platform.zip
+VERSION_PLACEHOLDER = "VERSION_PLACEHOLDER"
+URL_SEPARATOR = ","
 
 DEFAULT_TENTACLES_PACKAGE_NAME = "OctoBot-Default-Tentacles"
 

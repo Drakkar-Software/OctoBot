@@ -31,8 +31,9 @@ class TestBybitFuturesAuthenticatedExchange(
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}:{SETTLEMENT_CURRENCY}"
     INVERSE_SYMBOL = f"{ORDER_CURRENCY}/USD:{ORDER_CURRENCY}"
     ORDER_SIZE = 10  # % of portfolio to include in test orders
-    OPEN_TIMEOUT = 20    # larger for bybit testnet
-    CANCEL_TIMEOUT = 20  # larger for bybit testnet
+    OPEN_TIMEOUT = 25    # larger for bybit testnet
+    CANCEL_TIMEOUT = 25  # larger for bybit testnet
+    EDIT_TIMEOUT = 25    # larger for bybit testnet
     OPEN_ORDERS_IN_CLOSED_ORDERS = True
     SUPPORTS_GET_LEVERAGE = False
 
