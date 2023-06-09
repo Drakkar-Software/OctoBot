@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [0.4.51] - 2023-06-09
+### Updated
+- [WebInterface] improve market status
+- [WebInterface] add configuration tips
+### Fixed
+- [Orders] orders synchronisation issues
+- [Display] tentacles configuration display
+- [Display] time frame related display
+
 ## [0.4.50] - 2023-05-06
 ### Added
 - [DailyTradingMode] Target profit mode
