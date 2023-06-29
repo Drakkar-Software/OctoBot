@@ -83,7 +83,7 @@ class AbstractAuthenticatedFutureExchangeTester(
         async with self.local_exchange_manager():
             await self.inner_test_get_and_set_margin_type(allow_empty_position=True)
 
-    async def inner_test_get_and_set_margin_type(self, allow_empty_position=False, symbol=None):
+    async def inner_test_get_and_set_margin_type(self, allow_empty_position=False, symbol=None, has_open_position=False):
         contract = await self.init_and_get_contract(symbol=symbol)
         origin_margin_type = contract.margin_type
         origin_leverage = contract.current_leverage
@@ -96,16 +96,23 @@ class AbstractAuthenticatedFutureExchangeTester(
             with pytest.raises(trading_errors.NotSupported):
                 await self.set_margin_type(new_margin_type, symbol=symbol)
             return
-        await self.set_margin_type(new_margin_type, symbol=symbol)
-        position = await self.get_position(symbol=symbol)
-        if allow_empty_position and (
-            position[trading_enums.ExchangeConstantsPositionColumns.SIZE.value] != trading_constants.ZERO
-            or self.SUPPORTS_EMPTY_POSITION_SET_MARGIN_TYPE
+        if not has_open_position or (
+            has_open_position and self.exchange_manager.exchange.SUPPORTS_SET_MARGIN_TYPE_ON_OPEN_POSITIONS
         ):
-            # did not change leverage
-            await self._check_margin_type_and_leverage(new_margin_type, origin_leverage, symbol=symbol)
-        # restore margin type
-        await self.set_margin_type(origin_margin_type, symbol=symbol)
+            await self.set_margin_type(new_margin_type, symbol=symbol)
+            position = await self.get_position(symbol=symbol)
+            if allow_empty_position and (
+                position[trading_enums.ExchangeConstantsPositionColumns.SIZE.value] != trading_constants.ZERO
+                or self.SUPPORTS_EMPTY_POSITION_SET_MARGIN_TYPE
+            ):
+                # did not change leverage
+                await self._check_margin_type_and_leverage(new_margin_type, origin_leverage, symbol=symbol)
+            # restore margin type
+            await self.set_margin_type(origin_margin_type, symbol=symbol)
+        else:
+            # has_open_position and not self.exchange_manager.exchange.SUPPORTS_SET_MARGIN_TYPE_ON_OPEN_POSITIONS
+            with pytest.raises(trading_errors.NotSupported):
+                await self.set_margin_type(new_margin_type, symbol=symbol)
         # did not change leverage
         await self._check_margin_type_and_leverage(origin_margin_type, origin_leverage, symbol=symbol)
 
@@ -163,7 +170,8 @@ class AbstractAuthenticatedFutureExchangeTester(
             post_order_positions = await self.get_positions()
             self.check_position_in_positions(pre_order_positions + post_order_positions)
             # now that position is open, test margin type update
-            await self.inner_test_get_and_set_margin_type()
+            await self.inner_test_get_and_set_margin_type(has_open_position=True)
+
         finally:
             # sell: reset portfolio & position
             sell_market = await self.create_market_order(current_price, size, trading_enums.TradeOrderSide.SELL)
