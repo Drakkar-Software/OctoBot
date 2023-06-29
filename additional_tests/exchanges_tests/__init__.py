@@ -77,7 +77,7 @@ async def get_authenticated_exchange_manager(exchange_name, exchange_tentacle_na
         .set_bot_id("") \
         .is_real() \
         .is_checking_credentials(False) \
-        .is_sandboxed(_get_exchange_is_sandboxed(exchange_name)) \
+        .is_sandboxed(_get_exchange_is_sandboxed(credentials_exchange_name)) \
         .is_using_exchange_type(exchange_type) \
         .enable_storage(False) \
         .disable_trading_mode() \
