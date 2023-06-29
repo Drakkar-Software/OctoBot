@@ -147,6 +147,14 @@ class AbstractAuthenticatedFutureExchangeTester(
         if position_mode is not None:
             assert position[trading_enums.ExchangeConstantsPositionColumns.POSITION_MODE.value] is position_mode
 
+    async def inner_test_create_and_cancel_limit_orders(self, symbol=None, settlement_currency=None):
+        # test with linear symbol
+        # await super().inner_test_create_and_cancel_limit_orders()
+        # test with inverse symbol
+        await super().inner_test_create_and_cancel_limit_orders(
+            symbol=self.INVERSE_SYMBOL, settlement_currency=self.ORDER_CURRENCY
+        )
+
     async def inner_test_create_and_fill_market_orders(self):
         portfolio = await self.get_portfolio()
         position = await self.get_position()
@@ -184,6 +192,17 @@ class AbstractAuthenticatedFutureExchangeTester(
             self.check_position_changed(post_buy_position, post_sell_position, False)
             # position is back to what it was at the beginning on the test
             self.check_position_size(position, post_sell_position)
+
+    def get_order_size(self, portfolio, price, symbol=None, order_size=None, settlement_currency=None):
+        symbol = symbol or self.SYMBOL
+        size = super().get_order_size(
+            portfolio, price, symbol=symbol, order_size=order_size, settlement_currency=settlement_currency
+        )
+        # size in contracts: offset to closest contract
+        contract_size = self.exchange_manager.exchange.connector.get_contract_size(symbol)
+        if contract_size > 1:
+            return size - size % contract_size
+        return size
 
     async def get_position(self, symbol=None):
         return await self.exchange_manager.exchange.get_position(symbol or self.SYMBOL)
@@ -314,8 +333,8 @@ class AbstractAuthenticatedFutureExchangeTester(
                 return True
         raise AssertionError(f"Can't find position for symbol: {symbol}")
 
-    async def order_in_open_orders(self, previous_open_orders, order):
-        open_orders = await self.get_open_orders()
+    async def order_in_open_orders(self, previous_open_orders, order, symbol=None):
+        open_orders = await self.get_open_orders(symbol=symbol)
         assert len(open_orders) == len(previous_open_orders) + 1
         for open_order in open_orders:
             if open_order[trading_enums.ExchangeConstantsOrderColumns.EXCHANGE_ID.value] == order.exchange_order_id:
