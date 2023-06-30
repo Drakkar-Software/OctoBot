@@ -53,6 +53,7 @@ class AbstractAuthenticatedExchangeTester:
     # closed orders fees are taken from recent trades
     EXPECT_POSSIBLE_ORDER_NOT_FOUND_DURING_ORDER_CREATION = False
     OPEN_ORDERS_IN_CLOSED_ORDERS = False
+    CANCELLED_ORDERS_IN_CLOSED_ORDERS = False
     MARKET_FILL_TIMEOUT = 15
     OPEN_TIMEOUT = 15
     CANCEL_TIMEOUT = 15
@@ -121,6 +122,11 @@ class AbstractAuthenticatedExchangeTester:
         try:
             self.check_created_market_order(buy_market, size, trading_enums.TradeOrderSide.BUY)
             filled_order = await self.wait_for_fill(buy_market)
+            parsed_filled_order = personal_data.create_order_instance_from_raw(
+                self.exchange_manager.trader,
+                filled_order
+            )
+            self._check_order(parsed_filled_order, size, trading_enums.TradeOrderSide.BUY)
             await self.check_require_order_fees_from_trades(
                 filled_order[trading_enums.ExchangeConstantsOrderColumns.EXCHANGE_ID.value]
             )
@@ -461,7 +467,11 @@ class AbstractAuthenticatedExchangeTester:
                 assert order.fee[trading_enums.FeePropertyColumns.CURRENCY.value] is not None
             else:
                 assert trading_enums.FeePropertyColumns.CURRENCY.value in order.fee
-            assert order.fee[trading_enums.FeePropertyColumns.IS_FROM_EXCHANGE.value] is True
+            if self.CANCELLED_ORDERS_IN_CLOSED_ORDERS:
+                # might have been manually added for consistency
+                assert order.fee[trading_enums.FeePropertyColumns.IS_FROM_EXCHANGE.value] in (True, False)
+            else:
+                assert order.fee[trading_enums.FeePropertyColumns.IS_FROM_EXCHANGE.value] is True
         except AssertionError:
             if allow_incomplete_fees and self.EXPECT_MISSING_ORDER_FEES_DUE_TO_ORDERS_TOO_OLD_FOR_RECENT_TRADES:
                 incomplete_fee_orders.append(order)
