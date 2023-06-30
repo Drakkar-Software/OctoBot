@@ -149,7 +149,7 @@ class AbstractAuthenticatedFutureExchangeTester(
 
     async def inner_test_create_and_cancel_limit_orders(self, symbol=None, settlement_currency=None):
         # test with linear symbol
-        # await super().inner_test_create_and_cancel_limit_orders()
+        await super().inner_test_create_and_cancel_limit_orders()
         # test with inverse symbol
         await super().inner_test_create_and_cancel_limit_orders(
             symbol=self.INVERSE_SYMBOL, settlement_currency=self.ORDER_CURRENCY
@@ -254,7 +254,8 @@ class AbstractAuthenticatedFutureExchangeTester(
 
     async def enable_partial_take_profits_and_stop_loss(self, mode, symbol=None):
         await self.exchange_manager.exchange.set_symbol_partial_take_profit_stop_loss(
-            symbol or self.SYMBOL, False, trading_enums.TakeProfitStopLossMode.PARTIAL)
+            symbol or self.SYMBOL, False, trading_enums.TakeProfitStopLossMode.PARTIAL
+        )
 
     async def create_market_stop_loss_order(self, current_price, stop_price, size, side, symbol=None,
                                             push_on_exchange=True):
