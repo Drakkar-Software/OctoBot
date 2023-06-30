@@ -81,7 +81,7 @@ class AbstractAuthenticatedExchangeTester:
     async def inner_test_create_and_cancel_limit_orders(self, symbol=None, settlement_currency=None):
         symbol = symbol or self.SYMBOL
         settlement_currency = settlement_currency or self.SETTLEMENT_CURRENCY
-        price = self.get_order_price(await self.get_price(), False, symbol=symbol)
+        price = self.get_order_price(await self.get_price(symbol=symbol), False, symbol=symbol)
         size = self.get_order_size(
             await self.get_portfolio(), price, symbol=symbol, settlement_currency=settlement_currency
         )
