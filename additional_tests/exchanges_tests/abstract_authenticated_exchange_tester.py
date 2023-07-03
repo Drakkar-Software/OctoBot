@@ -225,14 +225,14 @@ class AbstractAuthenticatedExchangeTester:
     async def inner_test_edit_stop_order(self):
         current_price = await self.get_price()
         portfolio = await self.get_portfolio()
-        price = self.get_order_price(current_price, True)
+        price = self.get_order_price(current_price, False)
         size = self.get_order_size(portfolio, price)
         open_orders = await self.get_open_orders()
         stop_loss = await self.create_market_stop_loss_order(current_price, price, size,
                                                              trading_enums.TradeOrderSide.SELL)
         self.check_created_stop_order(stop_loss, price, size, trading_enums.TradeOrderSide.SELL)
         assert await self.order_in_open_orders(open_orders, stop_loss)
-        edited_price = self.get_order_price(current_price, True, price_diff=2*self.ORDER_PRICE_DIFF)
+        edited_price = self.get_order_price(current_price, False, price_diff=2*self.ORDER_PRICE_DIFF)
         edited_size = self.get_order_size(portfolio, price, order_size=2*self.ORDER_SIZE)
         await self.edit_order(stop_loss,
                               edited_stop_price=edited_price,
