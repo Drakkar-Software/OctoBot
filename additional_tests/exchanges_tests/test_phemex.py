@@ -15,26 +15,21 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import pytest
 
-from exchanges_tests import abstract_authenticated_exchange_tester
+from additional_tests.exchanges_tests import abstract_authenticated_exchange_tester
 
 # All test coroutines will be treated as marked.
 pytestmark = pytest.mark.asyncio
 
 
-class TestBybitAuthenticatedExchange(
+class TestPemexAuthenticatedExchange(
     abstract_authenticated_exchange_tester.AbstractAuthenticatedExchangeTester
 ):
     # enter exchange name as a class variable here
-    EXCHANGE_NAME = "bybit"
+    EXCHANGE_NAME = "phemex"
     ORDER_CURRENCY = "BTC"
     SETTLEMENT_CURRENCY = "USDT"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
     ORDER_SIZE = 10  # % of portfolio to include in test orders
-    OPEN_TIMEOUT = 20    # larger for bybit testnet
-    CANCEL_TIMEOUT = 20  # larger for bybit testnet
-    CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES = True
-    EXPECT_MISSING_ORDER_FEES_DUE_TO_ORDERS_TOO_OLD_FOR_RECENT_TRADES = True   # when recent trades are limited and
-    # closed orders fees are taken from recent trades
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
@@ -43,6 +38,7 @@ class TestBybitAuthenticatedExchange(
         await super().test_create_and_cancel_limit_orders()
 
     async def test_create_and_fill_market_orders(self):
+        # 08 dec 2022: did not run so far, testnet is bugged: order are apparently accepted but never show up
         await super().test_create_and_fill_market_orders()
 
     async def test_get_my_recent_trades(self):
@@ -53,7 +49,7 @@ class TestBybitAuthenticatedExchange(
 
     async def test_create_and_cancel_stop_orders(self):
         # pass if not implemented
-        await super().test_create_and_cancel_stop_orders()
+        pass
 
     async def test_edit_limit_order(self):
         # pass if not implemented

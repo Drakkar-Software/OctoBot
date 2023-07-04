@@ -15,22 +15,21 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import pytest
 
-from exchanges_tests import abstract_authenticated_exchange_tester
+from additional_tests.exchanges_tests import abstract_authenticated_exchange_tester
 
 # All test coroutines will be treated as marked.
 pytestmark = pytest.mark.asyncio
 
 
-class TestCoinbaseAuthenticatedExchange(
+class TestAscendexAuthenticatedExchange(
     abstract_authenticated_exchange_tester.AbstractAuthenticatedExchangeTester
 ):
     # enter exchange name as a class variable here
-    EXCHANGE_NAME = "coinbase"
-    ORDER_CURRENCY = "ADA"
-    SETTLEMENT_CURRENCY = "BTC"
+    EXCHANGE_NAME = "ascendex"
+    ORDER_CURRENCY = "BTC"
+    SETTLEMENT_CURRENCY = "USDT"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
-    ORDER_SIZE = 20  # % of portfolio to include in test orders
-    CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES = True
+    ORDER_SIZE = 30  # % of portfolio to include in test orders
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()

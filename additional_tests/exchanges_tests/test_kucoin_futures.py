@@ -15,30 +15,42 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import pytest
 
-from exchanges_tests import abstract_authenticated_exchange_tester
+from additional_tests.exchanges_tests import abstract_authenticated_future_exchange_tester
 
 # All test coroutines will be treated as marked.
 pytestmark = pytest.mark.asyncio
 
 
-class TestPemexAuthenticatedExchange(
-    abstract_authenticated_exchange_tester.AbstractAuthenticatedExchangeTester
+class TestKucoinFuturesAuthenticatedExchange(
+    abstract_authenticated_future_exchange_tester.AbstractAuthenticatedFutureExchangeTester
 ):
     # enter exchange name as a class variable here
-    EXCHANGE_NAME = "phemex"
+    EXCHANGE_NAME = "kucoin"
+    CREDENTIALS_EXCHANGE_NAME = "KUCOIN_FUTURES"
     ORDER_CURRENCY = "BTC"
     SETTLEMENT_CURRENCY = "USDT"
-    SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
-    ORDER_SIZE = 10  # % of portfolio to include in test orders
+    SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}:{SETTLEMENT_CURRENCY}"
+    INVERSE_SYMBOL = f"{ORDER_CURRENCY}/USD:{ORDER_CURRENCY}"
+    ORDER_SIZE = 60  # % of portfolio to include in test orders
+    SUPPORTS_GET_LEVERAGE = False
+    SUPPORTS_SET_LEVERAGE = False
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
+
+    async def test_get_empty_linear_and_inverse_positions(self):
+        await super().test_get_empty_linear_and_inverse_positions()
+
+    async def test_get_and_set_margin_type(self):
+        await super().test_get_and_set_margin_type()
+
+    async def test_get_and_set_leverage(self):
+        await super().test_get_and_set_leverage()
 
     async def test_create_and_cancel_limit_orders(self):
         await super().test_create_and_cancel_limit_orders()
 
     async def test_create_and_fill_market_orders(self):
-        # 08 dec 2022: did not run so far, testnet is bugged: order are apparently accepted but never show up
         await super().test_create_and_fill_market_orders()
 
     async def test_get_my_recent_trades(self):
@@ -49,20 +61,24 @@ class TestPemexAuthenticatedExchange(
 
     async def test_create_and_cancel_stop_orders(self):
         # pass if not implemented
-        pass
+        await super().test_create_and_cancel_stop_orders()
 
     async def test_edit_limit_order(self):
         # pass if not implemented
+        # no exchange API to edit a live order
         pass
 
     async def test_edit_stop_order(self):
         # pass if not implemented
+        # no exchange API to edit a live order
         pass
 
     async def test_create_single_bundled_orders(self):
         # pass if not implemented
+        # no exchange API to bind secondary orders when creating a new order
         pass
 
     async def test_create_double_bundled_orders(self):
         # pass if not implemented
+        # no exchange API to bind secondary orders when creating a new order
         pass

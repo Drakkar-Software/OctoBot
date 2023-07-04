@@ -15,22 +15,24 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import pytest
 
-from exchanges_tests import abstract_authenticated_exchange_tester
+from additional_tests.exchanges_tests import abstract_authenticated_exchange_tester
 
 # All test coroutines will be treated as marked.
 pytestmark = pytest.mark.asyncio
 
 
-class TestHollaexAuthenticatedExchange(
+class TestBybitAuthenticatedExchange(
     abstract_authenticated_exchange_tester.AbstractAuthenticatedExchangeTester
 ):
     # enter exchange name as a class variable here
-    EXCHANGE_NAME = "hollaex"
-    EXCHANGE_TENTACLE_NAME = "hollaex"  # specify EXCHANGE_TENTACLE_NAME as the tentacle class has no capital H
-    ORDER_CURRENCY = "ETH"
-    SETTLEMENT_CURRENCY = "BTC"
+    EXCHANGE_NAME = "bybit"
+    ORDER_CURRENCY = "BTC"
+    SETTLEMENT_CURRENCY = "USDT"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
-    ORDER_SIZE = 25  # % of portfolio to include in test orders
+    ORDER_SIZE = 10  # % of portfolio to include in test orders
+    OPEN_TIMEOUT = 20    # larger for bybit testnet
+    CANCEL_TIMEOUT = 20  # larger for bybit testnet
+    CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES = True
     EXPECT_MISSING_ORDER_FEES_DUE_TO_ORDERS_TOO_OLD_FOR_RECENT_TRADES = True   # when recent trades are limited and
     # closed orders fees are taken from recent trades
 
@@ -51,7 +53,7 @@ class TestHollaexAuthenticatedExchange(
 
     async def test_create_and_cancel_stop_orders(self):
         # pass if not implemented
-        pass
+        await super().test_create_and_cancel_stop_orders()
 
     async def test_edit_limit_order(self):
         # pass if not implemented

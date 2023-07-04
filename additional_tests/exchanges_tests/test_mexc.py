@@ -15,39 +15,27 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import pytest
 
-from exchanges_tests import abstract_authenticated_future_exchange_tester
+from additional_tests.exchanges_tests import abstract_authenticated_exchange_tester
 
 # All test coroutines will be treated as marked.
 pytestmark = pytest.mark.asyncio
 
 
-class TestBybitFuturesAuthenticatedExchange(
-    abstract_authenticated_future_exchange_tester.AbstractAuthenticatedFutureExchangeTester
+class TestMEXCAuthenticatedExchange(
+    abstract_authenticated_exchange_tester.AbstractAuthenticatedExchangeTester
 ):
     # enter exchange name as a class variable here
-    EXCHANGE_NAME = "bybit"
-    ORDER_CURRENCY = "BTC"
+    EXCHANGE_NAME = "mexc"
+    EXCHANGE_TENTACLE_NAME = "MEXC"
+    ORDER_CURRENCY = "MX"  # {"code":10007,"msg":"symbol not support api"} when trading BTC/USDT or ETH/USDT
     SETTLEMENT_CURRENCY = "USDT"
-    SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}:{SETTLEMENT_CURRENCY}"
-    INVERSE_SYMBOL = f"{ORDER_CURRENCY}/USD:{ORDER_CURRENCY}"
-    ORDER_SIZE = 10  # % of portfolio to include in test orders
-    OPEN_TIMEOUT = 25    # larger for bybit testnet
-    CANCEL_TIMEOUT = 25  # larger for bybit testnet
-    EDIT_TIMEOUT = 25    # larger for bybit testnet
-    OPEN_ORDERS_IN_CLOSED_ORDERS = True
-    SUPPORTS_GET_LEVERAGE = False
+    SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
+    ORDER_SIZE = 30  # % of portfolio to include in test orders
+    CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES = True
+    CANCELLED_ORDERS_IN_CLOSED_ORDERS = True
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
-
-    async def test_get_empty_linear_and_inverse_positions(self):
-        await super().test_get_empty_linear_and_inverse_positions()
-
-    async def test_get_and_set_margin_type(self):
-        await super().test_get_and_set_margin_type()
-
-    async def test_get_and_set_leverage(self):
-        await super().test_get_and_set_leverage()
 
     async def test_create_and_cancel_limit_orders(self):
         await super().test_create_and_cancel_limit_orders()
@@ -63,18 +51,20 @@ class TestBybitFuturesAuthenticatedExchange(
 
     async def test_create_and_cancel_stop_orders(self):
         # pass if not implemented
-        await super().test_create_and_cancel_stop_orders()
+        pass
 
     async def test_edit_limit_order(self):
         # pass if not implemented
-        await super().test_edit_limit_order()
+        pass
 
     async def test_edit_stop_order(self):
         # pass if not implemented
-        await super().test_edit_stop_order()
+        pass
 
     async def test_create_single_bundled_orders(self):
-        await super().test_create_single_bundled_orders()
+        # pass if not implemented
+        pass
 
     async def test_create_double_bundled_orders(self):
-        await super().test_create_double_bundled_orders()
+        # pass if not implemented
+        pass

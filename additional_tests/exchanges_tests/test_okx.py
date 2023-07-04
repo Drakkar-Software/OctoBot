@@ -13,26 +13,23 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
-import decimal
-
 import pytest
 
-from exchanges_tests import abstract_authenticated_exchange_tester
+from additional_tests.exchanges_tests import abstract_authenticated_exchange_tester
 
 # All test coroutines will be treated as marked.
 pytestmark = pytest.mark.asyncio
 
 
-class TestBitgetAuthenticatedExchange(
+class TestOKXAuthenticatedExchange(
     abstract_authenticated_exchange_tester.AbstractAuthenticatedExchangeTester
 ):
     # enter exchange name as a class variable here
-    EXCHANGE_NAME = "bitget"
+    EXCHANGE_NAME = "okx"
     ORDER_CURRENCY = "BTC"
     SETTLEMENT_CURRENCY = "USDT"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
-    ORDER_SIZE = 40  # % of portfolio to include in test orders
-    CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES = True
+    ORDER_SIZE = 50  # % of portfolio to include in test orders
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
@@ -47,9 +44,7 @@ class TestBitgetAuthenticatedExchange(
         await super().test_get_my_recent_trades()
 
     async def test_get_closed_orders(self):
-        # broken in ccxt 3.0.74 because of return self.safe_value(data, 'orderList', []) (no 'orderList' key)
-        with pytest.raises(AssertionError):
-            await super().test_get_closed_orders()
+        await super().test_get_closed_orders()
 
     async def test_create_and_cancel_stop_orders(self):
         # pass if not implemented

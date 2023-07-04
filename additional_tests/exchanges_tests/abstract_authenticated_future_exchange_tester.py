@@ -20,7 +20,7 @@ import pytest
 import octobot_trading.enums as trading_enums
 import octobot_trading.constants as trading_constants
 import octobot_trading.errors as trading_errors
-from exchanges_tests import abstract_authenticated_exchange_tester
+from additional_tests.exchanges_tests import abstract_authenticated_exchange_tester
 
 
 class AbstractAuthenticatedFutureExchangeTester(
@@ -83,7 +83,7 @@ class AbstractAuthenticatedFutureExchangeTester(
         async with self.local_exchange_manager():
             await self.inner_test_get_and_set_margin_type(allow_empty_position=True)
 
-    async def inner_test_get_and_set_margin_type(self, allow_empty_position=False, symbol=None):
+    async def inner_test_get_and_set_margin_type(self, allow_empty_position=False, symbol=None, has_open_position=False):
         contract = await self.init_and_get_contract(symbol=symbol)
         origin_margin_type = contract.margin_type
         origin_leverage = contract.current_leverage
@@ -96,16 +96,23 @@ class AbstractAuthenticatedFutureExchangeTester(
             with pytest.raises(trading_errors.NotSupported):
                 await self.set_margin_type(new_margin_type, symbol=symbol)
             return
-        await self.set_margin_type(new_margin_type, symbol=symbol)
-        position = await self.get_position(symbol=symbol)
-        if allow_empty_position and (
-            position[trading_enums.ExchangeConstantsPositionColumns.SIZE.value] != trading_constants.ZERO
-            or self.SUPPORTS_EMPTY_POSITION_SET_MARGIN_TYPE
+        if not has_open_position or (
+            has_open_position and self.exchange_manager.exchange.SUPPORTS_SET_MARGIN_TYPE_ON_OPEN_POSITIONS
         ):
-            # did not change leverage
-            await self._check_margin_type_and_leverage(new_margin_type, origin_leverage, symbol=symbol)
-        # restore margin type
-        await self.set_margin_type(origin_margin_type, symbol=symbol)
+            await self.set_margin_type(new_margin_type, symbol=symbol)
+            position = await self.get_position(symbol=symbol)
+            if allow_empty_position and (
+                position[trading_enums.ExchangeConstantsPositionColumns.SIZE.value] != trading_constants.ZERO
+                or self.SUPPORTS_EMPTY_POSITION_SET_MARGIN_TYPE
+            ):
+                # did not change leverage
+                await self._check_margin_type_and_leverage(new_margin_type, origin_leverage, symbol=symbol)
+            # restore margin type
+            await self.set_margin_type(origin_margin_type, symbol=symbol)
+        else:
+            # has_open_position and not self.exchange_manager.exchange.SUPPORTS_SET_MARGIN_TYPE_ON_OPEN_POSITIONS
+            with pytest.raises(trading_errors.NotSupported):
+                await self.set_margin_type(new_margin_type, symbol=symbol)
         # did not change leverage
         await self._check_margin_type_and_leverage(origin_margin_type, origin_leverage, symbol=symbol)
 
@@ -140,6 +147,14 @@ class AbstractAuthenticatedFutureExchangeTester(
         if position_mode is not None:
             assert position[trading_enums.ExchangeConstantsPositionColumns.POSITION_MODE.value] is position_mode
 
+    async def inner_test_create_and_cancel_limit_orders(self, symbol=None, settlement_currency=None):
+        # test with linear symbol
+        await super().inner_test_create_and_cancel_limit_orders()
+        # test with inverse symbol
+        await super().inner_test_create_and_cancel_limit_orders(
+            symbol=self.INVERSE_SYMBOL, settlement_currency=self.ORDER_CURRENCY
+        )
+
     async def inner_test_create_and_fill_market_orders(self):
         portfolio = await self.get_portfolio()
         position = await self.get_position()
@@ -163,7 +178,8 @@ class AbstractAuthenticatedFutureExchangeTester(
             post_order_positions = await self.get_positions()
             self.check_position_in_positions(pre_order_positions + post_order_positions)
             # now that position is open, test margin type update
-            await self.inner_test_get_and_set_margin_type()
+            await self.inner_test_get_and_set_margin_type(has_open_position=True)
+
         finally:
             # sell: reset portfolio & position
             sell_market = await self.create_market_order(current_price, size, trading_enums.TradeOrderSide.SELL)
@@ -176,6 +192,17 @@ class AbstractAuthenticatedFutureExchangeTester(
             self.check_position_changed(post_buy_position, post_sell_position, False)
             # position is back to what it was at the beginning on the test
             self.check_position_size(position, post_sell_position)
+
+    def get_order_size(self, portfolio, price, symbol=None, order_size=None, settlement_currency=None):
+        symbol = symbol or self.SYMBOL
+        size = super().get_order_size(
+            portfolio, price, symbol=symbol, order_size=order_size, settlement_currency=settlement_currency
+        )
+        # size in contracts: offset to closest contract
+        contract_size = self.exchange_manager.exchange.connector.get_contract_size(symbol)
+        if contract_size > 1:
+            return size - size % contract_size
+        return size
 
     async def get_position(self, symbol=None):
         return await self.exchange_manager.exchange.get_position(symbol or self.SYMBOL)
@@ -227,7 +254,8 @@ class AbstractAuthenticatedFutureExchangeTester(
 
     async def enable_partial_take_profits_and_stop_loss(self, mode, symbol=None):
         await self.exchange_manager.exchange.set_symbol_partial_take_profit_stop_loss(
-            symbol or self.SYMBOL, False, trading_enums.TakeProfitStopLossMode.PARTIAL)
+            symbol or self.SYMBOL, False, trading_enums.TakeProfitStopLossMode.PARTIAL
+        )
 
     async def create_market_stop_loss_order(self, current_price, stop_price, size, side, symbol=None,
                                             push_on_exchange=True):
@@ -306,8 +334,8 @@ class AbstractAuthenticatedFutureExchangeTester(
                 return True
         raise AssertionError(f"Can't find position for symbol: {symbol}")
 
-    async def order_in_open_orders(self, previous_open_orders, order):
-        open_orders = await self.get_open_orders()
+    async def order_in_open_orders(self, previous_open_orders, order, symbol=None):
+        open_orders = await self.get_open_orders(symbol=symbol)
         assert len(open_orders) == len(previous_open_orders) + 1
         for open_order in open_orders:
             if open_order[trading_enums.ExchangeConstantsOrderColumns.EXCHANGE_ID.value] == order.exchange_order_id:
