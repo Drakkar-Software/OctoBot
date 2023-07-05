@@ -53,6 +53,12 @@ async def authenticated_client_2():
 
 
 @pytest_asyncio.fixture
+async def authenticated_client_3():
+    async with _authenticated_client(*_get_backend_client_creds(3)) as client:
+        yield client
+
+
+@pytest_asyncio.fixture
 async def admin_client():
     async with _authenticated_client(None, None, _get_backend_service_key()) as client:
         yield client

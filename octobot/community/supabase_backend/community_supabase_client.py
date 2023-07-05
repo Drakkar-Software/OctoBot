@@ -16,6 +16,8 @@
 import asyncio
 import datetime
 import json
+import time
+
 import aiohttp
 import gotrue.errors
 import supabase.lib.client_options
@@ -249,6 +251,13 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             portfolio_histories,
             on_conflict=f"{enums.PortfolioHistoryKeys.TIME.value},{enums.PortfolioHistoryKeys.PORTFOLIO_ID.value}"
         ).execute()).data
+
+    async def send_signal(self, product_id: str, signal: str):
+        return (await self.table("signals").insert({
+            enums.SignalKeys.TIME.value: self.get_formatted_time(time.time()),
+            enums.SignalKeys.PRODUCT_ID.value: product_id,
+            enums.SignalKeys.SIGNAL.value: signal,
+        }).execute()).data[0]
 
     @staticmethod
     def get_formatted_time(timestamp: float) -> str:
