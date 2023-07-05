@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [0.4.52] - 2023-07-05
+### Added
+- [Exchanges] Support Binance futures
+- [Exchanges] Crypto.com, Kucoin and MEXC as partner exchanges
+- [Orders] Stop loss full support on futures exchanges
+### Updated
+- [Futures] Improved futures trading related error messages
+- [WebInterface] improved configuration tips
+### Fixed
+- [Futures] Futures trading positions synchronisation issues
+- [Orders] Trading signals related issues
+- [Evaluators] Configuration related time frames issues
+
 ## [0.4.51] - 2023-06-09
 ### Updated
 - [WebInterface] improve market status
