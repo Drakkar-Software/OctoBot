@@ -19,6 +19,7 @@ import gotrue.errors
 import postgrest
 import supabase.lib.client_options
 import octobot.community.supabase_backend.postgres_functions as postgres_functions
+import octobot.community.supabase_backend.supabase_realtime_client as supabase_realtime_client
 
 
 class AuthenticatedAsyncSupabaseClient(supabase.Client):
@@ -27,6 +28,7 @@ class AuthenticatedAsyncSupabaseClient(supabase.Client):
     - authenticated calls
     - database functions calls
     - auth token refresh
+    - realtime client
     There should not be OctoBot specific code here
     """
     def __init__(
@@ -38,6 +40,10 @@ class AuthenticatedAsyncSupabaseClient(supabase.Client):
         self.auth: gotrue.SyncGoTrueClient = None
         self.postgrest: postgrest.AsyncPostgrestClient = None
         super().__init__(supabase_url, supabase_key, options=options)
+        self.realtime: supabase_realtime_client.AuthenticatedSupabaseRealtimeClient = self._init_realtime_client(
+            self.realtime_url,
+            self.supabase_key,
+        )
         # update postgres authentication upon auth state change
         self.auth.on_auth_state_change(self._use_auth_session)
 
@@ -56,6 +62,12 @@ class AuthenticatedAsyncSupabaseClient(supabase.Client):
         )
         client.auth(token=supabase_key)
         return client
+
+    @staticmethod
+    def _init_realtime_client(
+        realtime_url: str, supabase_key: str
+    ) -> supabase_realtime_client.AuthenticatedSupabaseRealtimeClient:
+        return supabase_realtime_client.AuthenticatedSupabaseRealtimeClient(realtime_url, supabase_key)
 
     def table(self, table_name: str) -> postgrest.AsyncRequestBuilder:  # typing override
         """Perform a table operation.
@@ -76,6 +88,7 @@ class AuthenticatedAsyncSupabaseClient(supabase.Client):
         except RuntimeError:
             # happens when the event loop is closed already
             pass
+        await self.realtime.close()
 
     def postgres_functions(self):
         return postgres_functions.PostgresFunctions(self.supabase_url, self._get_auth_headers())
@@ -89,6 +102,7 @@ class AuthenticatedAsyncSupabaseClient(supabase.Client):
             session = self._get_auth_session()
             if session is not None:
                 self.postgrest.auth(session.access_token)
+            self.realtime.set_auth(session.access_token if session else None)
 
     def _get_auth_headers(self):
         """Helper method to get auth headers."""
