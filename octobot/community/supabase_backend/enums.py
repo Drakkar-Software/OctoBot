@@ -51,6 +51,13 @@ class BotDeploymentURLKeys(enum.Enum):
     URL = "url"
 
 
+class SignalKeys(enum.Enum):
+    ID = "id"
+    TIME = "time"
+    PRODUCT_ID = "product_id"
+    SIGNAL = "signal"
+
+
 class TradeKeys(enum.Enum):
     ID = "id"
     TRADE_ID = "trade_id"
