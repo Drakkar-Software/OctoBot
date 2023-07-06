@@ -38,6 +38,7 @@ class AuthenticatedSupabaseRealtimeClient:
         )
         self.channels = []
         self.access_token = None
+        self.update_auth_tasks = []
 
     async def channel(self, schema: str, table_name: str) \
             -> supabase_realtime_channel.AuthenticatedSupabaseRealtimeChannel:
@@ -50,21 +51,38 @@ class AuthenticatedSupabaseRealtimeClient:
     def set_auth(self, access_token):
         # similar to https://github.com/supabase/realtime-js/blob/master/src/RealtimeClient.ts#L273
         self.access_token = access_token
-        send_coros = []
+        channel_auth_update_coros = []
         for channels in self.socket.channels.values():
             for channel in channels:
                 channel.update_auth_payload(self._get_auth_payload_update())
                 if channel.joined_once and channel.is_joined():
-                    send_coros.append(channel.auth())
-        if send_coros:
-            asyncio.create_task(asyncio.wait_for(asyncio.gather(*send_coros), self.AUTH_TIMEOUT))
+                    channel_auth_update_coros.append(channel.auth())
+        if access_token is None:
+            # access_token is None: no user is signed in
+            if not self.socket.closed:
+                # close open realtime clients when user signs out
+                self.update_auth_tasks.append(
+                    asyncio.create_task(self.close())
+                )
+        elif channel_auth_update_coros:
+            # user is signed in: can update channel auth
+            self.update_auth_tasks.append(
+                asyncio.create_task(self.on_successful_auth(self.socket.closed, channel_auth_update_coros))
+            )
+
+    async def on_successful_auth(self, should_reopen, coros):
+        if should_reopen:
+            # connection might have been closed in a previous sign-out
+            await self._ensure_connection()
+        await asyncio.gather(*coros)
 
     def _get_auth_payload_update(self):
-        return {'access_token': self.access_token or self.supabase_key}
+        return {'access_token': self.access_token}
 
     async def close(self):
         await self.socket.close()
+        self.update_auth_tasks.clear()
 
     async def _ensure_connection(self):
-        if not self.socket.connected:
+        if (not self.socket.connected) or self.socket.closed:
             await self.socket.aconnect()

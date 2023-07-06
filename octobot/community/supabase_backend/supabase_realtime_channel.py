@@ -50,7 +50,7 @@ class AuthenticatedSupabaseRealtimeChannel(realtime.Channel):
         self.state: CHANNEL_STATES = CHANNEL_STATES.CLOSED
         self.logger = logging.get_logger(self.__class__.__name__)
 
-    async def subscribe(self, callback=None) -> None:
+    async def subscribe(self, callback=None, system_callback=None) -> None:
         """
         fix of async def realtime.Channel._join(self) -> None:
         adds self.join_payload handling (required for auth on join)
@@ -60,6 +60,8 @@ class AuthenticatedSupabaseRealtimeChannel(realtime.Channel):
         """
         if callback:
             self.socket.register_subscribe_callback(self.topic, callback)
+        if system_callback:
+            self.socket.register_system_callback(self.topic, system_callback)
         join_req = dict(topic=self.topic, event="phx_join", payload=self._get_join_payload(), ref=self._get_ref())
         try:
             self.state = CHANNEL_STATES.JOINING
