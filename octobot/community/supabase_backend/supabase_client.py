@@ -100,9 +100,10 @@ class AuthenticatedAsyncSupabaseClient(supabase.Client):
             "TOKEN_REFRESHED"
         ):
             session = self._get_auth_session()
-            if session is not None:
-                self.postgrest.auth(session.access_token)
-            self.realtime.set_auth(session.access_token if session else None)
+            auth_token = session.access_token if session else None
+            if auth_token:
+                self.postgrest.auth(auth_token)
+            self.realtime.set_auth(auth_token)
 
     def _get_auth_headers(self):
         """Helper method to get auth headers."""

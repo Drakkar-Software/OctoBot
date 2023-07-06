@@ -37,9 +37,11 @@ class AuthenticatedSupabaseRealtimeSocket(realtime.Socket):
         """
         super().__init__(url, auto_reconnect=auto_reconnect, params=params, hb_interval=hb_interval)
         self.logger = logging.get_logger(self.__class__.__name__)
-        self.is_closed = False
+        self.closed = True
         self.pending_subscribe_callbacks = {}
+        self.system_callbacks = {}
         self.listen_task = None
+        self.ws_connection = None
 
     def set_channel(self, schema: str, table_name: str) -> supabase_realtime_channel.AuthenticatedSupabaseRealtimeChannel:
         topic = (
@@ -59,6 +61,12 @@ class AuthenticatedSupabaseRealtimeSocket(realtime.Socket):
         else:
             self.pending_subscribe_callbacks[topic].append(callback)
 
+    def register_system_callback(self, topic, callback):
+        if topic not in self.system_callbacks:
+            self.system_callbacks[topic] = [callback]
+        else:
+            self.system_callbacks[topic].append(callback)
+
     async def _listen(self) -> None:
         """
         local override to handle errors and async callbacks and methods
@@ -76,19 +84,24 @@ class AuthenticatedSupabaseRealtimeSocket(realtime.Socket):
                         await subscribe_cb(self.get_subscribe_result(msg), msg)
                     continue
 
+                if msg.event == 'system':
+                    for system_cb in self.system_callbacks.get(msg.topic, []):
+                        await system_cb(msg)
+                    continue
+
                 for channel in self.channels.get(msg.topic, []):
                     for cl in channel.listeners:
                         if cl.event in ["*", msg.event]:
                             await cl.callback(msg.payload)
             except websockets.exceptions.ConnectionClosed as err:
-                if self.is_closed:
+                if self.closed:
                     break
                 if self.auto_reconnect:
                     self.logger.info("The realtime connection with server closed, trying to reconnect...")
                     await self.aconnect()
                     for topic, channels in self.channels.items():
                         for channel in channels:
-                            await channel.ajoin()
+                            await channel.subscribe()
                 else:
                     self.logger.exception(err, True, f"The realtime connection with the server closed. ({err})")
                     break
@@ -109,7 +122,12 @@ class AuthenticatedSupabaseRealtimeSocket(realtime.Socket):
             self.logger.exception(err, True, f"Unexpected exception in listen loop: {err}")
 
     async def aconnect(self):
+        self.closed = False
         ws_connection = await websockets.connect(f"{self.url}?apikey={self.params['apikey']}")   #todo improve
+        if self.closed:
+            # was closed while connecting, don't keep this connection
+            await ws_connection.close()
+            return
         if ws_connection.open:
             self.ws_connection = ws_connection
             self.connected = True
@@ -118,7 +136,12 @@ class AuthenticatedSupabaseRealtimeSocket(realtime.Socket):
             raise authentication.AuthenticationError("Realtime connection failed.")
 
     async def close(self):
-        self.is_closed = True
+        self.closed = True
         if self.listen_task and not self.listen_task.done():
             self.listen_task.cancel()
-        await self.ws_connection.close()
+        if self.ws_connection:
+            await self.ws_connection.close()
+        for channels in self.channels.values():
+            for channel in channels:
+                channel.state = supabase_realtime_channel.CHANNEL_STATES.CLOSED
+        self.connected = False
