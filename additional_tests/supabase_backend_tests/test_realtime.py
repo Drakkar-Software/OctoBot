@@ -13,12 +13,16 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
+import time
+
 import mock
 import pytest
 import asyncio
 
 from additional_tests.supabase_backend_tests import authenticated_client_1, authenticated_client_2, \
-    authenticated_client_3, _get_backend_client_creds
+    authenticated_client_3, get_backend_client_creds, sandboxed_insert
+import octobot.community.supabase_backend.enums as enums
+import octobot.community.supabase_backend.community_supabase_client as community_supabase_client
 
 
 # All test coroutines will be treated as marked.
@@ -28,13 +32,13 @@ PRODUCT_ID = "02ced004-f84b-408c-b863-7920fb1c2a28"
 SIGNAL = '{"topic": "moonmoon", "content": {"action": "create", "symbol": "BTC/USDT:USDT", "exchange": "bybit", "exchange_type": "spot", "side": "buy", "type": "buy_market", "quantity": 0.004, "target_amount": "5.356892%", "target_position": null, "updated_target_amount": null, "updated_target_position": null, "limit_price": 1001.69, "updated_limit_price": 0.0, "stop_price": 0.0, "updated_stop_price": 0.0, "current": 1000.69, "updated_current_price": 0.0, "reduce_only": false, "post_only": false, "group_id": null, "group_type": null, "tag": "managed_order long entry (id: 143968020)", "order_id": "adc24701-573b-40dd-b6c9-3666cd22f33e", "bundled_with": null, "chained_to": null, "additional_orders": [{"action": "create", "symbol": "BTC/USDT:USDT", "exchange": "bybit", "exchange_type": "spot", "side": "sell", "type": "sell_limit", "quantity": 0.004, "target_amount": "5.3574085830652285%", "target_position": 0, "updated_target_amount": null, "updated_target_position": null, "limit_price": 1010.69, "updated_limit_price": 0.0, "stop_price": 0.0, "updated_stop_price": 0.0, "current": 1000.69, "updated_current_price": 0.0, "reduce_only": true, "post_only": false, "group_id": "46a0b2de-5b8f-4a39-89a0-137504f83dfc", "group_type": "BalancedTakeProfitAndStopOrderGroup", "tag": "managed_order long exit (id: 143968020)", "order_id": "5705d395-f970-45d9-9ba8-f63da17f17b2", "bundled_with": null, "chained_to": "adc24701-573b-40dd-b6c9-3666cd22f33e", "additional_orders": [{"action": "create", "symbol": "BTC/USDT:USDT", "exchange": "bybit", "exchange_type": "spot", "side": "sell", "type": "stop_loss", "quantity": 0.004, "target_amount": "5.356892%", "target_position": 0, "updated_target_amount": null, "updated_target_position": null, "limit_price": 9990.0, "updated_limit_price": 0.0, "stop_price": 0.0, "updated_stop_price": 0.0, "current": 1000.69, "updated_current_price": 0.0, "reduce_only": true, "post_only": false, "group_id": "46a0b2de-5b8f-4a39-89a0-137504f83dfc", "group_type": "BalancedTakeProfitAndStopOrderGroup", "tag": "managed_order long exit (id: 143968020)", "order_id": "5ad2a999-5ac2-47f0-9b69-c75a36f3858a", "bundled_with": "adc24701-573b-40dd-b6c9-3666cd22f33e", "chained_to": "adc24701-573b-40dd-b6c9-3666cd22f33e", "additional_orders": [], "associated_order_ids": null, "update_with_triggering_order_fees": false}], "associated_order_ids": null, "update_with_triggering_order_fees": true}], "associated_order_ids": null, "update_with_triggering_order_fees": true}}'
 
 SIGNALS_TABLE = "signals"
-SECONDARY_TABLE = "todos2"
+SECONDARY_TABLE = "todos2"  # any random table that all authenticated users can listen to
 SECONDARY_TABLE_INSERT_CONTENT = {"task": "hello !!!"}
 
 VERBOSE = True
 
 
-async def test_listen_one_chan(authenticated_client_1, authenticated_client_2, authenticated_client_3):
+async def test_listen_one_chan(authenticated_client_1, authenticated_client_2, authenticated_client_3, sandboxed_insert):
     subscribed = {}
     insert_received = {}
     await asyncio.gather(*(
@@ -52,7 +56,7 @@ async def test_listen_one_chan(authenticated_client_1, authenticated_client_2, a
         if not subscribed_event.event.is_set()
     ))
     _print("all subscribed")
-    await authenticated_client_1.send_signal(PRODUCT_ID, SIGNAL)
+    await _send_signal(sandboxed_insert, PRODUCT_ID, SIGNAL)
     _print("signal sent")
     await asyncio.gather(*(
         asyncio.wait_for(received.event.wait(), timeout)
@@ -68,8 +72,7 @@ async def test_listen_one_chan(authenticated_client_1, authenticated_client_2, a
             received.mock.assert_called_once()
             assert received.mock.call_args[0][0]["new"]["signal"] == SIGNAL
 
-
-async def test_listen_two_chans(authenticated_client_1, authenticated_client_2, authenticated_client_3):
+async def test_listen_two_chans(authenticated_client_1, authenticated_client_2, authenticated_client_3, sandboxed_insert):
     subscribed_cb_1 = {}
     subscribed_cb_2 = {}
     insert_received_cb_1 = {}
@@ -109,8 +112,8 @@ async def test_listen_two_chans(authenticated_client_1, authenticated_client_2, 
         if not subscribed_event.event.is_set()
     ))
     _print("all subscribed")
-    await authenticated_client_1.send_signal(PRODUCT_ID, SIGNAL)
-    await _insert_in_other_table(authenticated_client_1)
+    await _send_signal(sandboxed_insert, PRODUCT_ID, SIGNAL)
+    await _insert_in_other_table(sandboxed_insert)
     _print("signal sent")
     await asyncio.gather(*(
         asyncio.wait_for(received.event.wait(), timeout)
@@ -140,16 +143,16 @@ async def test_listen_two_chans(authenticated_client_1, authenticated_client_2, 
             assert new_received[key] == val
 
 
-async def test_listen_late_signin_then_signout(authenticated_client_1, authenticated_client_2):
+async def test_listen_late_signin_then_signout(authenticated_client_1, sandboxed_insert):
     sign_out_timeout = 5
     _print("signing out")
-    await _full_realtime_sign_out(authenticated_client_2, sign_out_timeout)
+    await _full_realtime_sign_out(authenticated_client_1, sign_out_timeout)
     _print("sign_out done")
     system_received = {}
     subscribed = {}
     insert_received = {}
     await _start_client(
-        authenticated_client_2, "g.dsm          ", insert_received, subscribed,
+        authenticated_client_1, "g.dsm          ", insert_received, subscribed,
         system_received_by_identifier=system_received
     )
     received_mock = next(iter(insert_received.values()))
@@ -162,7 +165,7 @@ async def test_listen_late_signin_then_signout(authenticated_client_1, authentic
     _print("sending not expected signals")
     for _ in range(5):
         # send 5 signals. As authenticated_client_1 is not authenticated, it does not receive signals
-        await authenticated_client_1.send_signal(PRODUCT_ID, SIGNAL)
+        await _send_signal(sandboxed_insert, PRODUCT_ID, SIGNAL)
         await asyncio.sleep(0.1)
     receive_timeout = 1
     with pytest.raises(asyncio.TimeoutError):
@@ -171,7 +174,7 @@ async def test_listen_late_signin_then_signout(authenticated_client_1, authentic
     _print("signin")
     system_received_mock.event.clear()
     system_received_mock.mock.reset_mock()
-    await _full_realtime_sign_in(authenticated_client_2, 2, sign_out_timeout)
+    await _full_realtime_sign_in(authenticated_client_1, 2, sign_out_timeout)
     _print("signin done")
     # wait for system resp (auth result)
     if not system_received_mock.event.is_set():
@@ -180,12 +183,12 @@ async def test_listen_late_signin_then_signout(authenticated_client_1, authentic
     _print("subscribed")
     assert not received_mock.event.is_set()
     _print("sending expected signal")
-    await authenticated_client_1.send_signal(PRODUCT_ID, SIGNAL)
+    await _send_signal(sandboxed_insert, PRODUCT_ID, SIGNAL)
     if not received_mock.event.is_set():
         await asyncio.wait_for(received_mock.event.wait(), 3)
     assert received_mock.mock.call_args[0][0]["new"]["signal"] == SIGNAL
     _print("sign_out")
-    await _full_realtime_sign_out(authenticated_client_2, sign_out_timeout)
+    await _full_realtime_sign_out(authenticated_client_1, sign_out_timeout)
     # wait for system resp (auth result)
     if not system_received_mock.event.is_set():
         await asyncio.wait_for(system_received_mock.event.wait(), timeout)
@@ -194,7 +197,7 @@ async def test_listen_late_signin_then_signout(authenticated_client_1, authentic
     _print("sending not expected signals")
     for _ in range(5):
         # send 5 signals. As authenticated_client_1 is not authenticated, it does not receive signals
-        await authenticated_client_1.send_signal(PRODUCT_ID, SIGNAL)
+        await _send_signal(sandboxed_insert, PRODUCT_ID, SIGNAL)
         await asyncio.sleep(0.1)
     receive_timeout = 0.5
     with pytest.raises(asyncio.TimeoutError):
@@ -251,7 +254,7 @@ async def _full_realtime_sign_out(client, timeout):
 
 
 async def _full_realtime_sign_in(client, cred_id, timeout):
-    await client.sign_in(*_get_backend_client_creds(cred_id))
+    await client.sign_in(*get_backend_client_creds(cred_id))
 
     def _all_chan_joined():
         for channels in client.realtime.socket.channels.values():
@@ -273,8 +276,16 @@ async def _full_realtime_sign_in(client, cred_id, timeout):
     await asyncio.wait_for(wait_for_fully_signed_in(), timeout)
 
 
-async def _insert_in_other_table(client, table=SECONDARY_TABLE, content=SECONDARY_TABLE_INSERT_CONTENT):
-    return (await client.table(table).insert(content).execute()).data[0]
+async def _insert_in_other_table(sandboxed_insert, table=SECONDARY_TABLE, content=SECONDARY_TABLE_INSERT_CONTENT):
+    return await sandboxed_insert.insert(table, content)
+
+
+async def _send_signal(sandboxed_insert, product_id: str, signal: str):
+    return await sandboxed_insert.insert("signals", {
+        enums.SignalKeys.TIME.value: community_supabase_client.CommunitySupabaseClient.get_formatted_time(time.time()),
+        enums.SignalKeys.PRODUCT_ID.value: product_id,
+        enums.SignalKeys.SIGNAL.value: signal,
+    })
 
 
 class EventMockedCallback:

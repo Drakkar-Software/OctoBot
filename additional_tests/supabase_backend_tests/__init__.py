@@ -16,6 +16,7 @@
 import contextlib
 import os
 import dotenv
+import mock
 import pytest_asyncio
 import pytest
 
@@ -29,13 +30,13 @@ LOADED_BACKEND_CREDS_ENV_VARIABLES = False
 
 @pytest_asyncio.fixture
 async def authenticated_client_1():
-    async with _authenticated_client(*_get_backend_client_creds(1)) as client:
+    async with _authenticated_client(*get_backend_client_creds(1)) as client:
         yield client
 
 
 @pytest_asyncio.fixture
 async def authenticated_client_1_with_temp_bot():
-    async with _authenticated_client(*_get_backend_client_creds(1)) as client:
+    async with _authenticated_client(*get_backend_client_creds(1)) as client:
         bot_id = None
         try:
             bot = await client.create_bot(supabase_backend_enums.DeploymentTypes.SELF_HOSTED)
@@ -48,13 +49,13 @@ async def authenticated_client_1_with_temp_bot():
 
 @pytest_asyncio.fixture
 async def authenticated_client_2():
-    async with _authenticated_client(*_get_backend_client_creds(2)) as client:
+    async with _authenticated_client(*get_backend_client_creds(2)) as client:
         yield client
 
 
 @pytest_asyncio.fixture
 async def authenticated_client_3():
-    async with _authenticated_client(*_get_backend_client_creds(3)) as client:
+    async with _authenticated_client(*get_backend_client_creds(3)) as client:
         yield client
 
 
@@ -150,6 +151,26 @@ async def _authenticated_client(email, password, admin_key=None):
             await supabase_client.close()
 
 
+@pytest_asyncio.fixture
+async def sandboxed_insert():
+    to_delete = {}
+    async with _authenticated_client(None, None, _get_backend_service_key()) as admin_client:
+        async def _sandboxed_insert(_table, _content):
+            if _table not in to_delete:
+                to_delete[_table] = []
+            inserted = (await admin_client.table(_table).insert(_content).execute()).data[0]
+            to_delete[_table].append(inserted)
+            return inserted
+        try:
+            yield mock.AsyncMock(insert=_sandboxed_insert)
+        finally:
+            for table, rows in to_delete.items():
+                await admin_client.table(table).delete().in_(
+                    "id", [row["id"] for row in rows]
+                ).execute()
+
+
+
 def _load_backend_creds_env_variables_if_necessary():
     global LOADED_BACKEND_CREDS_ENV_VARIABLES
     if not LOADED_BACKEND_CREDS_ENV_VARIABLES:
@@ -163,7 +184,7 @@ def get_backend_api_creds():
     return os.getenv("SUPABASE_BACKEND_URL"), os.getenv("SUPABASE_BACKEND_KEY")
 
 
-def _get_backend_client_creds(identifier):
+def get_backend_client_creds(identifier):
     return os.getenv(f"SUPABASE_BACKEND_CLIENT_{identifier}_EMAIL"), \
         os.getenv(f"SUPABASE_BACKEND_CLIENT_{identifier}_PASSWORD")
 
