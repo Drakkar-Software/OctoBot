@@ -23,11 +23,13 @@ import octobot.community.identifiers_provider as identifiers_provider
 import octobot.community.models.community_supports as community_supports
 import octobot.community.models.startup_info as startup_info
 import octobot.community.models.community_user_account as community_user_account
+import octobot.community.models.community_public_data as community_public_data
 import octobot.community.models.formatters as formatters
 import octobot.community.supabase_backend as supabase_backend
 import octobot.community.supabase_backend.enums as backend_enums
 import octobot.community.feeds as community_feeds
 import octobot_commons.constants as commons_constants
+import octobot_commons.enums as commons_enums
 import octobot_commons.authentication as authentication
 import octobot_commons.configuration as commons_configuration
 
@@ -65,6 +67,7 @@ class CommunityAuthentication(authentication.Authenticator):
         self.configuration_storage = supabase_backend.SyncConfigurationStorage(config)
         self.supabase_client = self._create_client()
         self.user_account = community_user_account.CommunityUserAccount()
+        self.public_data = community_public_data.CommunityPublicData()
         self._community_feed = None
 
         self.initialized_event = None
@@ -72,7 +75,6 @@ class CommunityAuthentication(authentication.Authenticator):
         self._startup_info = None
 
         self._fetch_account_task = None
-        self._restart_task = None
 
     @staticmethod
     def create(configuration: commons_configuration.Configuration):
@@ -140,8 +142,11 @@ class CommunityAuthentication(authentication.Authenticator):
         return self._community_feed.is_signal_emitter
 
     def get_signal_community_url(self, signal_identifier):
-        # todo
-        return f"{identifiers_provider.IdentifiersProvider.COMMUNITY_URL}/product/{signal_identifier}"
+        try:
+            slug = self.public_data.get_product_slug(signal_identifier)
+            return f"{identifiers_provider.IdentifiersProvider.COMMUNITY_URL}/product/{slug}"
+        except KeyError:
+            return identifiers_provider.IdentifiersProvider.COMMUNITY_URL
 
     async def update_supports(self):
         def _supports_mock():
@@ -204,12 +209,9 @@ class CommunityAuthentication(authentication.Authenticator):
         if not self._community_feed.is_connected() and self._community_feed.can_connect():
             if self.initialized_event is not None and not self.initialized_event.is_set():
                 await asyncio.wait_for(self.initialized_event.wait(), self.LOGIN_TIMEOUT)
-            if not self.is_logged_in():
-                raise authentication.AuthenticationRequired("You need to be authenticated to be able to "
-                                                            "connect to signals")
-            await self._community_feed.start()
+        await self._community_feed.start()
 
-    async def register_feed_callback(self, channel_type, callback, identifier=None):
+    async def register_feed_callback(self, channel_type: commons_enums.CommunityChannelTypes, callback, identifier=None):
         try:
             await self._ensure_init_community_feed()
             await self._community_feed.register_feed_callback(channel_type, callback, identifier=identifier)
@@ -345,19 +347,7 @@ class CommunityAuthentication(authentication.Authenticator):
         ]
 
     async def on_new_bot_select(self):
-        await self._update_feed_and_restart_feed_if_necessary()
-
-    async def _update_feed_and_restart_feed_if_necessary(self):
-        if self._community_feed is None or not self.initialized_event.is_set():
-            # only create a new community feed if necessary
-            return
-        if not (self._community_feed.is_up_to_date_with_account(self.user_account)
-                and self._community_feed.is_connected()):
-            # Reset restart task if running
-            if self._restart_task is not None and not self._restart_task.done():
-                self._restart_task.cancel()
-                self._community_feed.remove_device_details()
-            self._restart_task = asyncio.create_task(self._community_feed.restart())
+        pass
 
     def logout(self):
         """
@@ -367,16 +357,8 @@ class CommunityAuthentication(authentication.Authenticator):
         self.supabase_client.sign_out()
         self._reset_tokens()
         self.remove_login_detail()
-        for task in (self._restart_task,):
-            if task is not None and not task.done():
-                task.cancel()
-        self._restart_task = None
         if self._community_feed is not None:
             self._community_feed.remove_device_details()
-
-    async def stop_feeds(self):
-        if self._community_feed is not None and self._community_feed.is_connected():
-            await self._community_feed.stop()
 
     def is_logged_in(self):
         return bool(self.supabase_client.is_signed_in() and self.user_account.has_user_data())
@@ -392,11 +374,8 @@ class CommunityAuthentication(authentication.Authenticator):
 
     async def stop(self):
         self.logger.debug("Stopping ...")
-        await self.stop_feeds()
         if self._fetch_account_task is not None and not self._fetch_account_task.done():
             self._fetch_account_task.cancel()
-        if self._restart_task is not None and not self._restart_task.done():
-            self._restart_task.cancel()
         await self.supabase_client.close()
         self.logger.debug("Stopped")
 
@@ -426,9 +405,11 @@ class CommunityAuthentication(authentication.Authenticator):
             if not (self.is_logged_in() or await self._restore_previous_session()):
                 return
             self._login_completed.set()
+            await self._ensure_init_community_feed()
             await self.update_supports()
             await self.update_selected_bot()
             self.logger.debug(f"Fetched account data")
+            await self.init_public_data()
         except authentication.UnavailableError as e:
             self.logger.exception(e, True, f"Error when fetching community supports, "
                                            f"please check your internet connection.")
@@ -436,6 +417,10 @@ class CommunityAuthentication(authentication.Authenticator):
             self.logger.exception(e, True, f"Error when fetching community supports: {e}({e.__class__.__name__})")
         finally:
             self.initialized_event.set()
+
+    async def init_public_data(self, reset=False):
+        if reset or not self.public_data.products.fetched:
+            self.public_data.set_products(await self.supabase_client.fetch_products())
 
     def _reset_login_token(self):
         if self.supabase_client is not None:
