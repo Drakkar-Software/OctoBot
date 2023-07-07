@@ -15,12 +15,12 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import asyncio
 import json
+
 import websockets
 import websockets.exceptions
 import realtime
 
 import octobot_commons.logging as logging
-import octobot_commons.authentication as authentication
 import octobot.community.supabase_backend.supabase_realtime_channel as supabase_realtime_channel
 
 
@@ -74,37 +74,59 @@ class AuthenticatedSupabaseRealtimeSocket(realtime.Socket):
         An infinite loop that keeps listening.
         :return: None
         """
-        while True:
-            try:
-                msg = await self.ws_connection.recv()
-                msg = realtime.Message(**json.loads(msg))
-
-                if msg.event == realtime.ChannelEvents.reply:
-                    for subscribe_cb in self.pending_subscribe_callbacks.get(msg.topic, []):
-                        await subscribe_cb(self.get_subscribe_result(msg), msg)
-                    continue
-
-                if msg.event == 'system':
-                    for system_cb in self.system_callbacks.get(msg.topic, []):
-                        await system_cb(msg)
-                    continue
-
-                for channel in self.channels.get(msg.topic, []):
-                    for cl in channel.listeners:
-                        if cl.event in ["*", msg.event]:
-                            await cl.callback(msg.payload)
-            except websockets.exceptions.ConnectionClosed as err:
-                if self.closed:
-                    break
-                if self.auto_reconnect:
+        try:
+            reconnect_delay = 0
+            while True:
+                try:
+                    msg = await self.ws_connection.recv()
+                    # success as a message is received: reset reconnect delay
+                    reconnect_delay = 0
+                    await self._on_message(msg)
+                except websockets.exceptions.ConnectionClosed as err:
+                    if self.closed or not self.auto_reconnect:
+                        # should not try to reconnect, exit loop iteration
+                        self.logger.exception(err, True, f"Realtime connection closed.")
+                        break
+                    # not closed and should reconnect: try to reconnect
                     self.logger.info("The realtime connection with server closed, trying to reconnect...")
-                    await self.aconnect()
-                    for topic, channels in self.channels.items():
+                    if not await self.aconnect():
+                        # reconnect failed, retry in next loop (ConnectionClosed will be raised again)
+                        # exponential reconnect delay, caped at 60 seconds
+                        reconnect_delay = min((reconnect_delay + 1) * 2, 60)
+                        self.logger.info(f"Realtime reconnect failed. Next attempt in {reconnect_delay} seconds.")
+                        await asyncio.sleep(reconnect_delay)
+                        continue
+                    # reconnect success: resubscribe and listen again in next loop iteration
+                    for channels in self.channels.values():
                         for channel in channels:
                             await channel.subscribe()
-                else:
-                    self.logger.exception(err, True, f"The realtime connection with the server closed. ({err})")
-                    break
+        except Exception as err:
+            self.logger.exception(err, True, f"Unexpected error when listening to  realtime message: {err}")
+            raise
+
+    async def _on_message(self, text_msg):
+        try:
+            msg = realtime.Message(**json.loads(text_msg))
+
+            if msg.event == realtime.ChannelEvents.reply:
+                for subscribe_cb in self.pending_subscribe_callbacks.get(msg.topic, []):
+                    await subscribe_cb(self.get_subscribe_result(msg), msg)
+                # skip next callbacks
+                return
+
+            if msg.event == 'system':
+                for system_cb in self.system_callbacks.get(msg.topic, []):
+                    await system_cb(msg)
+                # skip next callbacks
+                return
+
+            for channel in self.channels.get(msg.topic, []):
+                for cl in channel.listeners:
+                    if cl.event in ["*", msg.event]:
+                        await cl.callback(msg.payload)
+        except Exception as err:
+            self.logger.exception(err, True, f"Error when processing realtime message: {err}")
+            raise
 
     def get_subscribe_result(self, message: realtime.Message):
         # inspired from https://github.com/supabase/realtime-js/blob/master/src/RealtimeChannel.ts#L220
@@ -122,26 +144,37 @@ class AuthenticatedSupabaseRealtimeSocket(realtime.Socket):
             self.logger.exception(err, True, f"Unexpected exception in listen loop: {err}")
 
     async def aconnect(self):
-        self.closed = False
-        ws_connection = await websockets.connect(f"{self.url}?apikey={self.params['apikey']}")   #todo improve
-        if self.closed:
-            # was closed while connecting, don't keep this connection
-            await ws_connection.close()
-            return
-        if ws_connection.open:
-            self.ws_connection = ws_connection
-            self.connected = True
-            self.listen_task = asyncio.create_task(self.alisten())
-        else:
-            raise authentication.AuthenticationError("Realtime connection failed.")
+        try:
+            await self._close_ws_connection_if_any()
+            self.closed = False
+            ws_connection = await websockets.connect(f"{self.url}?apikey={self.params['apikey']}")   #todo improve
+            if self.closed:
+                # was closed while connecting, don't keep this connection
+                await ws_connection.close()
+                return
+            if ws_connection.open:
+                self.logger.info("Realtime socket connected")
+                self.ws_connection = ws_connection
+                self.connected = True
+                if self.listen_task is None or self.listen_task.done():
+                    self.listen_task = asyncio.create_task(self.alisten())
+                return True
+        except (OSError, OSError, asyncio.TimeoutError, websockets.exceptions.InvalidHandshake) as err:
+            self.logger.exception(err, True, f"Error when connecting to realtime websocket: {err}")
+        except Exception as err:
+            self.logger.exception(err, True, f"Unexpected error when connecting to realtime websocket: {err}")
+        return False
 
     async def close(self):
         self.closed = True
         if self.listen_task and not self.listen_task.done():
             self.listen_task.cancel()
-        if self.ws_connection:
-            await self.ws_connection.close()
+        await self._close_ws_connection_if_any()
         for channels in self.channels.values():
             for channel in channels:
                 channel.state = supabase_realtime_channel.CHANNEL_STATES.CLOSED
         self.connected = False
+
+    async def _close_ws_connection_if_any(self):
+        if self.ws_connection is not None:
+            await self.ws_connection.close()
