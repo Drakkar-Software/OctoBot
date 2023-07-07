@@ -19,9 +19,14 @@ import json
 import websockets
 import websockets.exceptions
 import realtime
+import logging
 
-import octobot_commons.logging as logging
+import octobot_commons.logging as commons_logging
 import octobot.community.supabase_backend.supabase_realtime_channel as supabase_realtime_channel
+
+
+# disable websockets logger
+logging.getLogger("websockets.client").setLevel(logging.WARNING)
 
 
 class AuthenticatedSupabaseRealtimeSocket(realtime.Socket):
@@ -36,7 +41,7 @@ class AuthenticatedSupabaseRealtimeSocket(realtime.Socket):
         :param hb_interval: WS connection is kept alive by sending a heartbeat message. Optional, defaults to 5.
         """
         super().__init__(url, auto_reconnect=auto_reconnect, params=params, hb_interval=hb_interval)
-        self.logger = logging.get_logger(self.__class__.__name__)
+        self.logger = commons_logging.get_logger(self.__class__.__name__)
         self.closed = True
         self.pending_subscribe_callbacks = {}
         self.system_callbacks = {}
@@ -166,6 +171,7 @@ class AuthenticatedSupabaseRealtimeSocket(realtime.Socket):
         return False
 
     async def close(self):
+        self.logger.debug("closing realtime connection")
         self.closed = True
         if self.listen_task and not self.listen_task.done():
             self.listen_task.cancel()

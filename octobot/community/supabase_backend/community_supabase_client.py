@@ -179,6 +179,9 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             (await self.postgres_functions().invoke("get_startup_info", {"body": {"bot_id": bot_id}}))["data"]
         )[0]
 
+    async def fetch_products(self) -> list:
+        return (await self.table("products").select("*").execute()).data
+
     async def fetch_subscribed_products_urls(self) -> list:
         return json.loads(
             (await self.postgres_functions().invoke("get_subscribed_products_urls", {}))["data"]
@@ -252,12 +255,21 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             on_conflict=f"{enums.PortfolioHistoryKeys.TIME.value},{enums.PortfolioHistoryKeys.PORTFOLIO_ID.value}"
         ).execute()).data
 
-    async def send_signal(self, product_id: str, signal: str):
-        return (await self.table("signals").insert({
+    async def send_signal(self, table, product_id: str, signal: str):
+        return (await self.table(table).insert({
             enums.SignalKeys.TIME.value: self.get_formatted_time(time.time()),
             enums.SignalKeys.PRODUCT_ID.value: product_id,
             enums.SignalKeys.SIGNAL.value: signal,
         }).execute()).data[0]
+
+    def get_subscribed_channel_tables(self) -> set:
+        return set(
+            channel.table_name
+            for channel in self.realtime.channels
+        )
+
+    def is_realtime_connected(self) -> bool:
+        return self.realtime.socket and self.realtime.socket.connected and not self.realtime.socket.closed
 
     @staticmethod
     def get_formatted_time(timestamp: float) -> str:
