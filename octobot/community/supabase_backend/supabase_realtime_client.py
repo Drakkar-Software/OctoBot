@@ -67,10 +67,14 @@ class AuthenticatedSupabaseRealtimeClient:
         elif channel_auth_update_coros:
             # user is signed in: can update channel auth
             self.update_auth_tasks.append(
-                asyncio.create_task(self.on_successful_auth(self.socket.closed, channel_auth_update_coros))
+                asyncio.create_task(self._on_successful_auth(self.socket.closed, channel_auth_update_coros))
             )
 
-    async def on_successful_auth(self, should_reopen, coros):
+    async def close(self):
+        await self.socket.close()
+        self.update_auth_tasks.clear()
+
+    async def _on_successful_auth(self, should_reopen, coros):
         if should_reopen:
             # connection might have been closed in a previous sign-out
             await self._ensure_connection()
@@ -78,10 +82,6 @@ class AuthenticatedSupabaseRealtimeClient:
 
     def _get_auth_payload_update(self):
         return {'access_token': self.access_token}
-
-    async def close(self):
-        await self.socket.close()
-        self.update_auth_tasks.clear()
 
     async def _ensure_connection(self):
         if (not self.socket.connected) or self.socket.closed:

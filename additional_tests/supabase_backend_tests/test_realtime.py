@@ -18,11 +18,13 @@ import time
 import mock
 import pytest
 import asyncio
+import websockets.exceptions
 
 from additional_tests.supabase_backend_tests import authenticated_client_1, authenticated_client_2, \
     authenticated_client_3, get_backend_client_creds, sandboxed_insert
 import octobot.community.supabase_backend.enums as enums
 import octobot.community.supabase_backend.community_supabase_client as community_supabase_client
+import octobot.community.supabase_backend.supabase_realtime_client as supabase_realtime_client
 
 
 # All test coroutines will be treated as marked.
@@ -38,11 +40,23 @@ SECONDARY_TABLE_INSERT_CONTENT = {"task": "hello !!!"}
 VERBOSE = True
 
 
+async def test_not_listen(authenticated_client_1):
+    assert isinstance(authenticated_client_1.realtime, supabase_realtime_client.AuthenticatedSupabaseRealtimeClient)
+    # access_token is passed and is a real user auth token (not the anon supabase_key)
+    assert len(authenticated_client_1.realtime.access_token) > len(authenticated_client_1.supabase_key)
+    # ensure no connection is created as long as subscribe is not called
+    assert authenticated_client_1.realtime.channels == []
+    assert authenticated_client_1.realtime.socket.closed is True
+    assert authenticated_client_1.realtime.socket.connected is False
+    assert authenticated_client_1.realtime.socket.ws_connection is None
+
+
 async def test_listen_one_chan(authenticated_client_1, authenticated_client_2, authenticated_client_3, sandboxed_insert):
     subscribed = {}
     insert_received = {}
+    system_received = {}
     await asyncio.gather(*(
-        _start_client(client, identifier, insert_received, subscribed)
+        _start_client(client, identifier, insert_received, subscribed, system_received)
         for client, identifier in (
             (authenticated_client_1, "g.dsm          "),
             (authenticated_client_2, "guillaumemdsm  "),
@@ -54,6 +68,11 @@ async def test_listen_one_chan(authenticated_client_1, authenticated_client_2, a
         asyncio.wait_for(subscribed_event.event.wait(), timeout)
         for subscribed_event in subscribed.values()
         if not subscribed_event.event.is_set()
+    ))
+    await asyncio.gather(*(
+        asyncio.wait_for(system.event.wait(), timeout)
+        for system in system_received.values()
+        if not system.event.is_set()
     ))
     _print("all subscribed")
     await _send_signal(sandboxed_insert, PRODUCT_ID, SIGNAL)
@@ -77,10 +96,11 @@ async def test_listen_two_chans(authenticated_client_1, authenticated_client_2, 
     subscribed_cb_2 = {}
     insert_received_cb_1 = {}
     insert_received_cb_2 = {}
+    system_received = {}
 
     async def start_client_dual_cb(client, identifier):
         verbose = True
-        await _start_client(client, identifier, insert_received_cb_1, subscribed_cb_1)
+        await _start_client(client, identifier, insert_received_cb_1, subscribed_cb_1, system_received)
 
         async def _insert_cb_2(message):
             if verbose:
@@ -106,10 +126,16 @@ async def test_listen_two_chans(authenticated_client_1, authenticated_client_2, 
         )
     ))
     timeout = 10
+
     await asyncio.gather(*(
         asyncio.wait_for(subscribed_event.event.wait(), timeout)
         for subscribed_event in list(subscribed_cb_1.values()) + list(subscribed_cb_2.values())
         if not subscribed_event.event.is_set()
+    ))
+    await asyncio.gather(*(
+        asyncio.wait_for(system.event.wait(), timeout)
+        for system in system_received.values()
+        if not system.event.is_set()
     ))
     _print("all subscribed")
     await _send_signal(sandboxed_insert, PRODUCT_ID, SIGNAL)
@@ -152,8 +178,7 @@ async def test_listen_late_signin_then_signout(authenticated_client_1, sandboxed
     subscribed = {}
     insert_received = {}
     await _start_client(
-        authenticated_client_1, "g.dsm          ", insert_received, subscribed,
-        system_received_by_identifier=system_received
+        authenticated_client_1, "g.dsm          ", insert_received, subscribed, system_received,
     )
     received_mock = next(iter(insert_received.values()))
     subscribed_mock = next(iter(subscribed.values()))
@@ -205,9 +230,86 @@ async def test_listen_late_signin_then_signout(authenticated_client_1, sandboxed
     _print("signal not received (ok)")
 
 
+async def test_reconnect(authenticated_client_1, sandboxed_insert):
+    subscribed = {}
+    insert_received = {}
+    system_received = {}
+    await _start_client(authenticated_client_1, "g.dsm          ", insert_received, subscribed, system_received)
+    subscribed_mock = next(iter(subscribed.values()))
+    received_mock = next(iter(insert_received.values()))
+    system_received_mock = next(iter(system_received.values()))
+    timeout = 10
+    await asyncio.wait_for(subscribed_mock.event.wait(), timeout)
+    if not system_received_mock.event.is_set():
+        await asyncio.wait_for(system_received_mock.event.wait(), timeout)
+        assert system_received_mock.mock.call_args[0][0].payload["status"] == "ok"
+    _print("all subscribed")
+    await _send_signal(sandboxed_insert, PRODUCT_ID, SIGNAL)
+    _print("signal sent")
+    await asyncio.wait_for(received_mock.event.wait(), timeout)
+    _print("signal received")
+    _print("now disconnect")
+    enable_disconnect = []
+
+    async def call_and_raise(msg):
+        await origin_method(msg)
+        if enable_disconnect:
+            enable_disconnect.clear()
+            raise websockets.exceptions.ConnectionClosed(None, None)
+
+    origin_method = authenticated_client_1.realtime.socket._on_message
+    with mock.patch.object(
+        authenticated_client_1.realtime.socket, "_on_message",
+        mock.AsyncMock(side_effect=call_and_raise)
+    ) as _on_message_mock:
+        conn_1 = authenticated_client_1.realtime.socket.ws_connection
+        assert conn_1.open
+        received_mock.event.clear()
+        subscribed_mock.event.clear()
+        system_received_mock.event.clear()
+        # trigger _on_message_mock to raise websockets.exceptions.ConnectionClosed and trigger reconnect
+        enable_disconnect.append(True)
+        await _send_signal(sandboxed_insert, PRODUCT_ID, SIGNAL)
+        _print("signal sent")
+        await asyncio.wait_for(received_mock.event.wait(), timeout)
+        _on_message_mock.assert_awaited_once()
+        _print("received signal")
+        _print("waiting for subscribe (done after reconnect)")
+        await asyncio.wait_for(subscribed_mock.event.wait(), timeout)
+        await asyncio.wait_for(system_received_mock.event.wait(), timeout)
+        assert conn_1.closed
+        _print("previous connection closed")
+        conn_2 = authenticated_client_1.realtime.socket.ws_connection
+        assert conn_2 is not conn_1
+
+        # re disconnect
+        assert conn_2.open
+        _print("new connection open")
+        received_mock.event.clear()
+        subscribed_mock.event.clear()
+        system_received_mock.event.clear()
+        _on_message_mock.reset_mock()
+        # trigger _on_message_mock to raise websockets.exceptions.ConnectionClosed and trigger reconnect
+        enable_disconnect.append(True)
+        await _send_signal(sandboxed_insert, PRODUCT_ID, SIGNAL)
+        _print("signal sent")
+        await asyncio.wait_for(received_mock.event.wait(), timeout)
+        _on_message_mock.assert_awaited_once()
+        _print("received signal")
+        _print("waiting for subscribe (done after reconnect)")
+        await asyncio.wait_for(subscribed_mock.event.wait(), timeout)
+        await asyncio.wait_for(system_received_mock.event.wait(), timeout)
+        assert conn_2.closed
+        _print("previous connection closed")
+        conn_3 = authenticated_client_1.realtime.socket.ws_connection
+        assert conn_2 is not conn_3
+        assert conn_3.open
+        _print("new connection open")
+
+
 async def _start_client(
     client, identifier,
-    on_callback_by_identifier, subscribed_callback_by_identifier, system_received_by_identifier=None,
+    on_callback_by_identifier, subscribed_callback_by_identifier, system_received_by_identifier,
     schema="public", table=SIGNALS_TABLE, event="INSERT"
 ):
     assert client.realtime.socket.ws_connection is None  # ensure connection has not yet been created
@@ -227,14 +329,11 @@ async def _start_client(
         system_received_by_identifier[identifier].event.set()
         system_received_by_identifier[identifier].mock(message)
 
-    system_callback = None
-    if system_received_by_identifier is not None:
-        system_received_by_identifier[identifier] = EventMockedCallback()
-        system_callback = system_cb
+    system_received_by_identifier[identifier] = EventMockedCallback()
     on_callback_by_identifier[identifier] = EventMockedCallback()
     subscribed_callback_by_identifier[identifier] = EventMockedCallback()
     channel = await client.realtime.channel(schema, table)
-    await channel.on(event, insert_cb).subscribe(subscribe_cb, system_callback=system_callback)
+    await channel.on(event, insert_cb).subscribe(subscribe_cb, system_callback=system_cb)
 
 
 def _print(*args):
