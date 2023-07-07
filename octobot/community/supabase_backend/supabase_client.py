@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
+import asyncio
 import typing
 import gotrue
 import gotrue.errors
@@ -36,6 +37,7 @@ class AuthenticatedAsyncSupabaseClient(supabase.Client):
         supabase_url: str,
         supabase_key: str,
         options: supabase.lib.client_options.ClientOptions = supabase.lib.client_options.ClientOptions(),
+        loop=None,
     ):
         self.auth: gotrue.SyncGoTrueClient = None
         self.postgrest: postgrest.AsyncPostgrestClient = None
@@ -46,6 +48,7 @@ class AuthenticatedAsyncSupabaseClient(supabase.Client):
         )
         # update postgres authentication upon auth state change
         self.auth.on_auth_state_change(self._use_auth_session)
+        self.event_loop = None
 
     @staticmethod
     def _init_postgrest_client(
@@ -103,7 +106,7 @@ class AuthenticatedAsyncSupabaseClient(supabase.Client):
             auth_token = session.access_token if session else None
             if auth_token:
                 self.postgrest.auth(auth_token)
-            self.realtime.set_auth(auth_token)
+            self.realtime.set_auth(auth_token, self.event_loop)
 
     def _get_auth_headers(self):
         """Helper method to get auth headers."""

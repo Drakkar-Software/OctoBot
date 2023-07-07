@@ -48,26 +48,28 @@ class AuthenticatedSupabaseRealtimeClient:
         self.channels.append(chan)
         return chan
 
-    def set_auth(self, access_token):
+    def set_auth(self, access_token, loop=None):
         # similar to https://github.com/supabase/realtime-js/blob/master/src/RealtimeClient.ts#L273
         self.access_token = access_token
+        loop = loop or asyncio.get_running_loop()
+        if access_token is None:
+            # access_token is None: no user is signed in
+            if not self.socket.closed:
+                # close open realtime clients when user signs out
+                self.update_auth_tasks.append(
+                    loop.create_task(self.close())
+                )
+            return
         channel_auth_update_coros = []
         for channels in self.socket.channels.values():
             for channel in channels:
                 channel.update_auth_payload(self._get_auth_payload_update())
                 if channel.joined_once and channel.is_joined():
                     channel_auth_update_coros.append(channel.auth())
-        if access_token is None:
-            # access_token is None: no user is signed in
-            if not self.socket.closed:
-                # close open realtime clients when user signs out
-                self.update_auth_tasks.append(
-                    asyncio.create_task(self.close())
-                )
-        elif channel_auth_update_coros:
+        if channel_auth_update_coros:
             # user is signed in: can update channel auth
             self.update_auth_tasks.append(
-                asyncio.create_task(self._on_successful_auth(self.socket.closed, channel_auth_update_coros))
+                loop.create_task(self._on_successful_auth(self.socket.closed, channel_auth_update_coros))
             )
 
     async def close(self):

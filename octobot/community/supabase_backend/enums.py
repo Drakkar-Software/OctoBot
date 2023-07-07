@@ -58,6 +58,21 @@ class SignalKeys(enum.Enum):
     SIGNAL = "signal"
 
 
+class ProductKeys(enum.Enum):
+    ID = "id"
+    CREATED_AT = "created_at"
+    CONTENT = "content"
+    UPDATED_AT = "updated_at"
+    SLUG = "slug"
+    CURRENT_VERSION_ID = "current_version_id"
+    AUTHOR_ID = "author_id"
+    LOGO_URL = "logo_url"
+    DOWNLOAD_URL = "download_url"
+    CATEGORY_ID= "category_id"
+    ATTRIBUTES= "attributes"
+    METADATA = "metadata"
+
+
 class TradeKeys(enum.Enum):
     ID = "id"
     TRADE_ID = "trade_id"
