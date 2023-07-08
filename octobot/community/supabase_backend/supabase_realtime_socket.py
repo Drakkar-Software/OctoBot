@@ -15,7 +15,7 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import asyncio
 import json
-
+import urllib.parse
 import websockets
 import websockets.exceptions
 import realtime
@@ -102,12 +102,21 @@ class AuthenticatedSupabaseRealtimeSocket(realtime.Socket):
                         await asyncio.sleep(reconnect_delay)
                         continue
                     # reconnect success: resubscribe and listen again in next loop iteration
-                    for channels in self.channels.values():
-                        for channel in channels:
-                            await channel.subscribe()
+                    await self.subscribe_channels()
         except Exception as err:
             self.logger.exception(err, True, f"Unexpected error when listening to  realtime message: {err}")
             raise
+
+    async def subscribe_channels(self):
+        for channels in self.channels.values():
+            for channel in channels:
+                if not (channel.is_joined() or channel.is_joining()):
+                    await channel.subscribe()
+
+    def _set_closed_channel_states(self):
+        for channels in self.channels.values():
+            for channel in channels:
+                channel.state = supabase_realtime_channel.CHANNEL_STATES.CLOSED
 
     async def _on_message(self, text_msg):
         try:
@@ -152,7 +161,7 @@ class AuthenticatedSupabaseRealtimeSocket(realtime.Socket):
         try:
             await self._close_ws_connection_if_any()
             self.closed = False
-            ws_connection = await websockets.connect(f"{self.url}?apikey={self.params['apikey']}")   #todo improve
+            ws_connection = await websockets.connect(f"{self.url}?{urllib.parse.urlencode(self.params)}")
             if self.closed:
                 # was closed while connecting, don't keep this connection
                 await ws_connection.close()
@@ -175,12 +184,10 @@ class AuthenticatedSupabaseRealtimeSocket(realtime.Socket):
         self.closed = True
         if self.listen_task and not self.listen_task.done():
             self.listen_task.cancel()
-        await self._close_ws_connection_if_any()
-        for channels in self.channels.values():
-            for channel in channels:
-                channel.state = supabase_realtime_channel.CHANNEL_STATES.CLOSED
         self.connected = False
+        await self._close_ws_connection_if_any()
 
     async def _close_ws_connection_if_any(self):
         if self.ws_connection is not None:
+            self._set_closed_channel_states()
             await self.ws_connection.close()
