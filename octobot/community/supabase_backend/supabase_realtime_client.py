@@ -60,27 +60,29 @@ class AuthenticatedSupabaseRealtimeClient:
                     loop.create_task(self.close())
                 )
             return
+        # access_token is not None: use is authenticated
         channel_auth_update_coros = []
         for channels in self.socket.channels.values():
             for channel in channels:
                 channel.update_auth_payload(self._get_auth_payload_update())
+                # channel already connected (joined), auth into channel if necessary
                 if channel.joined_once and channel.is_joined():
                     channel_auth_update_coros.append(channel.auth())
-        if channel_auth_update_coros:
-            # user is signed in: can update channel auth
-            self.update_auth_tasks.append(
-                loop.create_task(self._on_successful_auth(self.socket.closed, channel_auth_update_coros))
-            )
+        # user is signed in: can update channel auth
+        self.update_auth_tasks.append(
+            loop.create_task(self._on_successful_auth(self.socket.closed, channel_auth_update_coros))
+        )
 
     async def close(self):
         await self.socket.close()
         self.update_auth_tasks.clear()
 
     async def _on_successful_auth(self, should_reopen, coros):
-        if should_reopen:
+        if should_reopen and self.socket.channels:
             # connection might have been closed in a previous sign-out
             await self._ensure_connection()
-        await asyncio.gather(*coros)
+        if coros:
+            await asyncio.gather(*coros)
 
     def _get_auth_payload_update(self):
         return {'access_token': self.access_token}
@@ -88,3 +90,4 @@ class AuthenticatedSupabaseRealtimeClient:
     async def _ensure_connection(self):
         if (not self.socket.connected) or self.socket.closed:
             await self.socket.aconnect()
+            await self.socket.subscribe_channels()
