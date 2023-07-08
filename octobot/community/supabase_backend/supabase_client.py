@@ -96,6 +96,11 @@ class AuthenticatedAsyncSupabaseClient(supabase.Client):
     def postgres_functions(self):
         return postgres_functions.PostgresFunctions(self.supabase_url, self._get_auth_headers())
 
+    def remove_session_details(self):
+        self.auth._remove_session()
+        self.auth._notify_all_subscribers("SIGNED_OUT", None)
+
+
     def _use_auth_session(self, event: gotrue.AuthChangeEvent, _):
         if event in (
             "SIGNED_IN",

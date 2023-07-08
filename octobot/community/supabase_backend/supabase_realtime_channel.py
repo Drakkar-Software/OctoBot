@@ -130,6 +130,9 @@ class AuthenticatedSupabaseRealtimeChannel(realtime.Channel):
     def is_joined(self):
         return self.state is CHANNEL_STATES.JOINED
 
+    def is_joining(self):
+        return self.state is CHANNEL_STATES.JOINING
+
     def _get_ref(self):
         # see https://github.com/supabase/realtime-js/blob/master/src/RealtimeClient.ts#L290
         return None  # implement if necessary
