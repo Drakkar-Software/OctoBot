@@ -131,7 +131,7 @@ class CommunitySupabaseFeed(abstract_feed.AbstractFeed):
             return
         self.logger.info(f"Sending signal on identifier: {identifier}, message: {message}")
         await self.authenticator.supabase_client.send_signal(
-            self.SIGNALS_TABLE,
+            self._get_table(channel_type),
             identifier,
             self._build_message(channel_type, message)
         )
