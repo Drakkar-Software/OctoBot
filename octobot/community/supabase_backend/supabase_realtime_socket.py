@@ -17,7 +17,6 @@ import asyncio
 import json
 import urllib.parse
 import websockets
-import websockets.exceptions
 import realtime
 import logging
 
@@ -40,7 +39,15 @@ class AuthenticatedSupabaseRealtimeSocket(realtime.Socket):
         :param params: Optional parameters for connection.
         :param hb_interval: WS connection is kept alive by sending a heartbeat message. Optional, defaults to 5.
         """
-        super().__init__(url, auto_reconnect=auto_reconnect, params=params, hb_interval=hb_interval)
+        # local override of super().__init__() to avoid python 3.8 incompatibility
+        self.url = url
+        self.channels = {}
+        self.connected = False
+        self.params = params
+        self.hb_interval = hb_interval
+        self.kept_alive = False
+        self.auto_reconnect = auto_reconnect
+
         self.logger = commons_logging.get_logger(self.__class__.__name__)
         self.closed = True
         self.pending_subscribe_callbacks = {}
@@ -57,7 +64,10 @@ class AuthenticatedSupabaseRealtimeSocket(realtime.Socket):
         chan = supabase_realtime_channel.AuthenticatedSupabaseRealtimeChannel(
             self, topic, schema, table_name, self.params
         )
-        self.channels[topic].append(chan)
+        try:
+            self.channels[topic].append(chan)
+        except KeyError:
+            self.channels[topic] = [chan]
         return chan
 
     def register_subscribe_callback(self, topic, callback):
@@ -87,7 +97,7 @@ class AuthenticatedSupabaseRealtimeSocket(realtime.Socket):
                     # success as a message is received: reset reconnect delay
                     reconnect_delay = 0
                     await self._on_message(msg)
-                except websockets.exceptions.ConnectionClosed as err:
+                except websockets.ConnectionClosed as err:  # pylint: disable=no-member
                     if self.closed or not self.auto_reconnect:
                         # should not try to reconnect, exit loop iteration
                         self.logger.exception(err, True, f"Realtime connection closed.")
@@ -161,7 +171,7 @@ class AuthenticatedSupabaseRealtimeSocket(realtime.Socket):
         try:
             await self._close_ws_connection_if_any()
             self.closed = False
-            ws_connection = await websockets.connect(f"{self.url}?{urllib.parse.urlencode(self.params)}")
+            ws_connection = await websockets.connect(f"{self.url}?{urllib.parse.urlencode(self.params)}")  # pylint: disable=no-member
             if self.closed:
                 # was closed while connecting, don't keep this connection
                 await ws_connection.close()
