@@ -18,7 +18,7 @@ import time
 import mock
 import pytest
 import asyncio
-import websockets.exceptions
+import websockets
 
 from additional_tests.supabase_backend_tests import authenticated_client_1, authenticated_client_2, \
     authenticated_client_3, get_backend_client_creds, sandboxed_insert
@@ -255,7 +255,7 @@ async def test_reconnect(authenticated_client_1, sandboxed_insert):
         await origin_method(msg)
         if enable_disconnect:
             enable_disconnect.clear()
-            raise websockets.exceptions.ConnectionClosed(None, None)
+            raise websockets.ConnectionClosed(None, None)
 
     origin_method = authenticated_client_1.realtime.socket._on_message
     with mock.patch.object(
@@ -267,7 +267,7 @@ async def test_reconnect(authenticated_client_1, sandboxed_insert):
         received_mock.event.clear()
         subscribed_mock.event.clear()
         system_received_mock.event.clear()
-        # trigger _on_message_mock to raise websockets.exceptions.ConnectionClosed and trigger reconnect
+        # trigger _on_message_mock to raise websockets.ConnectionClosed and trigger reconnect
         enable_disconnect.append(True)
         await _send_signal(sandboxed_insert, PRODUCT_ID, SIGNAL)
         _print("signal sent")
@@ -289,7 +289,7 @@ async def test_reconnect(authenticated_client_1, sandboxed_insert):
         subscribed_mock.event.clear()
         system_received_mock.event.clear()
         _on_message_mock.reset_mock()
-        # trigger _on_message_mock to raise websockets.exceptions.ConnectionClosed and trigger reconnect
+        # trigger _on_message_mock to raise websockets.ConnectionClosed and trigger reconnect
         enable_disconnect.append(True)
         await _send_signal(sandboxed_insert, PRODUCT_ID, SIGNAL)
         _print("signal sent")
