@@ -127,13 +127,6 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
     def sync_get_user(self) -> dict:
         return self.auth.get_user().user.dict()
 
-    async def fetch_profile_data(self, bot_id: str) -> commons_profiles.ProfileData:
-        return commons_profiles.ProfileData.from_dict(
-            (await self.table("bot_configs").select("profile_data").eq(
-                enums.ConfigKeys.BOT_ID.value, bot_id
-            ).execute()).data[0]
-        )
-
     async def fetch_bot(self, bot_id) -> dict:
         try:
             return (await self.table("bots").select("*,bot_deployment:bot_deployments(*)").eq(
@@ -216,6 +209,32 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         return (await self.table("bot_trades").upsert(
             trades, on_conflict=f"{enums.TradeKeys.TRADE_ID.value},{enums.TradeKeys.TIME.value}"
         ).execute()).data
+
+    # todo test
+    async def fetch_orders(self, bot_id) -> list:
+        return (await self.table("bot_orders").select("*").eq(
+            enums.OrderKeys.BOT_ID.value, bot_id
+        ).execute()).data
+
+    # todo test
+    async def reset_orders(self, bot_id):
+        return (await self.table("bot_orders").delete().eq(
+            enums.OrderKeys.BOT_ID.value, bot_id
+        ).execute()).data
+
+    # todo test
+    async def upsert_orders(self, trades) -> list:
+        return (await self.table("bot_orders").upsert(
+            trades, on_conflict=f"{enums.OrderKeys.ORDER_ID.value},{enums.OrderKeys.TIME.value}"
+        ).execute()).data
+
+    # todo test
+    async def fetch_profile_data(self, bot_id: str) -> commons_profiles.ProfileData:
+        return commons_profiles.ProfileData.from_dict(
+            (await self.table("bot_configs").select("profile_data").eq(
+                enums.ConfigKeys.BOT_ID.value, bot_id
+            ).execute()).data[0]
+        )
 
     async def fetch_configs(self, bot_id) -> list:
         # use a new current portfolio for the given bot
