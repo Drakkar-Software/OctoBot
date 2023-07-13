@@ -487,6 +487,16 @@ class CommunityAuthentication(authentication.Authenticator):
             await self.supabase_client.upsert_trades(formatted_trades)
 
     @_bot_data_update
+    async def update_orders(self, orders: list, exchange_name: str, reset: bool):
+        """
+        Updates authenticated account orders
+        """
+        if reset:
+            await self.supabase_client.reset_orders(self.user_account.bot_id)
+        if formatted_orders := formatters.format_orders(orders, exchange_name, self.user_account.bot_id):
+            await self.supabase_client.upsert_orders(formatted_orders)
+
+    @_bot_data_update
     async def update_portfolio(self, current_value: dict, initial_value: dict,
                                unit: str, content: dict, history: dict, price_by_asset: dict,
                                reset: bool):
