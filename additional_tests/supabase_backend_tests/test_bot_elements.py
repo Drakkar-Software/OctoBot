@@ -347,19 +347,19 @@ def config_mock(seed, bot_id):
 
 def trades_mock(seed, bot_id):
     trades = [
-        mock.Mock(
-            trade_id=str(round((seed + i) % 10) * 101),
-            executed_time=seed + i,
-            exchange_manager=mock.Mock(exchange_name="binance"),
-            executed_price=round((seed + i) % 10) * 100,
-            executed_quantity=round((seed + i) % 3) * 100,
-            symbol="BTC/USDT",
-            trade_type=octobot_trading.enums.TraderOrderType.SELL_LIMIT if int(seed + i) % 2 == 0
-            else octobot_trading.enums.TraderOrderType.BUY_MARKET,
-        )
+        {
+            octobot_trading.enums.ExchangeConstantsOrderColumns.ID.value: str(round((seed + i) % 10) * 101),
+            octobot_trading.enums.ExchangeConstantsOrderColumns.TIMESTAMP.value: seed + i,
+            octobot_trading.enums.ExchangeConstantsOrderColumns.PRICE.value: round((seed + i) % 10) * 100,
+            octobot_trading.enums.ExchangeConstantsOrderColumns.AMOUNT.value: round((seed + i) % 3) * 100,
+            octobot_trading.enums.ExchangeConstantsOrderColumns.SYMBOL.value: "BTC/USDT",
+            octobot_trading.enums.ExchangeConstantsOrderColumns.TYPE.value:
+                octobot_trading.enums.TraderOrderType.SELL_LIMIT.value if int(seed + i) % 2 == 0
+                else octobot_trading.enums.TraderOrderType.BUY_MARKET.value
+        }
         for i in range(2)
     ]
-    return models.format_trades(trades, bot_id)
+    return models.format_trades(trades, "binance", bot_id)
 
 
 def portfolio_histories_mock(seed, portfolio_id):
