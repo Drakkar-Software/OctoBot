@@ -335,7 +335,7 @@ class AbstractAuthenticatedFutureExchangeTester(
         raise AssertionError(f"Can't find position for symbol: {symbol}")
 
     async def order_in_open_orders(self, previous_open_orders, order, symbol=None):
-        open_orders = await self.get_open_orders(symbol=symbol)
+        open_orders = await self.get_open_orders(self.get_exchange_data(symbol=symbol))
         assert len(open_orders) == len(previous_open_orders) + 1
         for open_order in open_orders:
             if open_order[trading_enums.ExchangeConstantsOrderColumns.EXCHANGE_ID.value] == order.exchange_order_id:
