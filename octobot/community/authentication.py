@@ -239,7 +239,7 @@ class CommunityAuthentication(authentication.Authenticator):
     def must_be_authenticated_through_authenticator(self):
         return constants.IS_CLOUD_ENV
 
-    async def login(self, email, password, password_token=None):
+    async def login(self, email, password, password_token=None, minimal=False):
         self._ensure_email(email)
         self._ensure_community_url()
         self._reset_tokens()
@@ -250,7 +250,7 @@ class CommunityAuthentication(authentication.Authenticator):
                 await self.supabase_client.sign_in(email, password)
             await self._on_account_updated()
         if self.is_logged_in():
-            await self.on_signed_in()
+            await self.on_signed_in(minimal=minimal)
 
     async def register(self, email, password):
         if self.must_be_authenticated_through_authenticator():
@@ -264,9 +264,9 @@ class CommunityAuthentication(authentication.Authenticator):
         if self.is_logged_in():
             await self.on_signed_in()
 
-    async def on_signed_in(self):
+    async def on_signed_in(self, minimal=False):
         self.logger.info(f"Signed in as {self.get_logged_in_email()}")
-        await self._initialize_account()
+        await self._initialize_account(minimal=minimal)
 
     async def _update_account_metadata(self, metadata_update):
         await self.supabase_client.update_metadata(metadata_update)
@@ -398,18 +398,19 @@ class CommunityAuthentication(authentication.Authenticator):
             if not self._login_completed.is_set():
                 self._login_completed.set()
 
-    async def _initialize_account(self):
+    async def _initialize_account(self, minimal=False):
         try:
             await self._ensure_async_loop()
             self.initialized_event = asyncio.Event()
             if not (self.is_logged_in() or await self._restore_previous_session()):
                 return
             self._login_completed.set()
-            await self._ensure_init_community_feed()
-            await self.update_supports()
-            await self.update_selected_bot()
-            self.logger.debug(f"Fetched account data")
-            await self.init_public_data()
+            if not minimal:
+                await self._ensure_init_community_feed()
+                await self.update_supports()
+                await self.update_selected_bot()
+                self.logger.debug(f"Fetched account data")
+                await self.init_public_data()
         except authentication.UnavailableError as e:
             self.logger.exception(e, True, f"Error when fetching community supports, "
                                            f"please check your internet connection.")
@@ -476,13 +477,13 @@ class CommunityAuthentication(authentication.Authenticator):
         self.user_account.flush()
 
     @_bot_data_update
-    async def update_trades(self, trades: list, reset: bool):
+    async def update_trades(self, trades: list, exchange_name: str, reset: bool):
         """
         Updates authenticated account trades
         """
         if reset:
             await self.supabase_client.reset_trades(self.user_account.bot_id)
-        if formatted_trades := formatters.format_trades(trades, self.user_account.bot_id):
+        if formatted_trades := formatters.format_trades(trades, exchange_name, self.user_account.bot_id):
             await self.supabase_client.upsert_trades(formatted_trades)
 
     @_bot_data_update
