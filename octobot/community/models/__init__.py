@@ -42,6 +42,7 @@ from octobot.community.models.startup_info import (
 )
 from octobot.community.models.formatters import (
     format_trades,
+    format_orders,
     format_portfolio,
     format_portfolio_history,
     format_bot_config_and_stats,
@@ -58,6 +59,7 @@ __all__ = [
     "CommunityDonation",
     "StartupInfo",
     "format_trades",
+    "format_orders",
     "format_portfolio",
     "format_portfolio_history",
     "format_bot_config_and_stats",

@@ -85,6 +85,30 @@ class TradeKeys(enum.Enum):
     TYPE = "type"
 
 
+class OrderKeys(enum.Enum):
+    ID = "id"
+    ORDER_ID = "order_id"
+    EXCHANGE_ORDER_ID = "exchange_order_id"
+    BOT_ID = "bot_id"
+    EXCHANGE = "exchange"
+    SYMBOL = "symbol"
+    PRICE = "price"
+    TIME = "time"
+    TYPE = "type"
+    SIDE = "side"
+    QUANTITY = "quantity"
+    REDUCE_ONLY = "reduce_only"
+    TAG = "tag"
+    SELF_MANAGED = "self_managed"
+    # order metadata
+    EXCHANGE_CREATION_PARAMS = "ecp"
+    ENTRIES = "e"
+    GROUP_ID = "group_id"
+    GROUP_TYPE = "group_type"
+    CHAINED_ORDERS = "chained_orders"
+    UPDATE_WITH_TRIGGERING_ORDER_FEES = "utf"
+
+
 class PortfolioKeys(enum.Enum):
     ID = "id"
     BOT_ID = "bot_id"

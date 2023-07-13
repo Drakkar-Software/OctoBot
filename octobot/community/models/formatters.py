@@ -16,22 +16,74 @@
 import octobot.community.supabase_backend.enums as backend_enums
 import octobot.community.supabase_backend as supabase_backend
 import octobot_commons.constants as commons_constants
+import octobot_trading.enums as trading_enums
+import octobot_trading.constants as trading_constants
 
 
-def format_trades(trades, bot_id) -> list:
+def format_trades(trades: list, exchange_name: str, bot_id: str) -> list:
     return [
         {
             backend_enums.TradeKeys.BOT_ID.value: bot_id,
-            backend_enums.TradeKeys.TRADE_ID.value: trade.trade_id,
-            backend_enums.TradeKeys.TIME.value:
-                supabase_backend.CommunitySupabaseClient.get_formatted_time(trade.executed_time),
-            backend_enums.TradeKeys.EXCHANGE.value: trade.exchange_manager.exchange_name,
-            backend_enums.TradeKeys.PRICE.value: float(trade.executed_price),
-            backend_enums.TradeKeys.QUANTITY.value: float(trade.executed_quantity),
-            backend_enums.TradeKeys.SYMBOL.value: trade.symbol,
-            backend_enums.TradeKeys.TYPE.value: trade.trade_type.value,
+            backend_enums.TradeKeys.TRADE_ID.value: trade[trading_enums.ExchangeConstantsOrderColumns.ID.value],
+            backend_enums.TradeKeys.TIME.value: supabase_backend.CommunitySupabaseClient.get_formatted_time(
+                trade[trading_enums.ExchangeConstantsOrderColumns.TIMESTAMP.value]
+            ),
+            backend_enums.TradeKeys.EXCHANGE.value: exchange_name,
+            backend_enums.TradeKeys.PRICE.value: float(trade[trading_enums.ExchangeConstantsOrderColumns.PRICE.value]),
+            backend_enums.TradeKeys.QUANTITY.value:
+                float(trade[trading_enums.ExchangeConstantsOrderColumns.AMOUNT.value]),
+            backend_enums.TradeKeys.SYMBOL.value: trade[trading_enums.ExchangeConstantsOrderColumns.SYMBOL.value],
+            backend_enums.TradeKeys.TYPE.value: trade[trading_enums.ExchangeConstantsOrderColumns.TYPE.value],
         }
         for trade in trades
+    ]
+
+
+def format_orders(orders: list, exchange_name: str, bot_id: str) -> list:
+    return [
+        {
+            backend_enums.OrderKeys.ORDER_ID: storage_order[trading_constants.STORAGE_ORIGIN_VALUE][
+                trading_enums.ExchangeConstantsOrderColumns.ID.value
+            ],
+            backend_enums.OrderKeys.EXCHANGE_ORDER_ID:
+                storage_order[trading_constants.STORAGE_ORIGIN_VALUE][
+                    trading_enums.ExchangeConstantsOrderColumns.EXCHANGE_ID.value],
+            backend_enums.OrderKeys.BOT_ID: bot_id,
+            backend_enums.OrderKeys.EXCHANGE: exchange_name,
+            backend_enums.OrderKeys.SYMBOL: storage_order[trading_constants.STORAGE_ORIGIN_VALUE][
+                trading_enums.ExchangeConstantsOrderColumns.SYMBOL.value],
+            backend_enums.OrderKeys.PRICE: storage_order[trading_constants.STORAGE_ORIGIN_VALUE][
+                trading_enums.ExchangeConstantsOrderColumns.PRICE.value],
+            backend_enums.OrderKeys.TIME: storage_order[trading_constants.STORAGE_ORIGIN_VALUE][
+                trading_enums.ExchangeConstantsOrderColumns.TIMESTAMP.value],
+            backend_enums.OrderKeys.TYPE: storage_order[trading_constants.STORAGE_ORIGIN_VALUE][
+                trading_enums.ExchangeConstantsOrderColumns.TYPE.value],
+            backend_enums.OrderKeys.SIDE: storage_order[trading_constants.STORAGE_ORIGIN_VALUE][
+                trading_enums.ExchangeConstantsOrderColumns.SIDE.value],
+            backend_enums.OrderKeys.QUANTITY: storage_order[trading_constants.STORAGE_ORIGIN_VALUE][
+                trading_enums.ExchangeConstantsOrderColumns.AMOUNT.value],
+            backend_enums.OrderKeys.REDUCE_ONLY: storage_order[trading_constants.STORAGE_ORIGIN_VALUE][
+                trading_enums.ExchangeConstantsOrderColumns.REDUCE_ONLY.value],
+            backend_enums.OrderKeys.TAG: storage_order[trading_constants.STORAGE_ORIGIN_VALUE][
+                trading_enums.ExchangeConstantsOrderColumns.TAG.value],
+            backend_enums.OrderKeys.SELF_MANAGED: storage_order[trading_constants.STORAGE_ORIGIN_VALUE][
+                trading_enums.ExchangeConstantsOrderColumns.SELF_MANAGED.value],
+            # order metadata
+            backend_enums.OrderKeys.EXCHANGE_CREATION_PARAMS:
+                storage_order[trading_enums.StoredOrdersAttr.EXCHANGE_CREATION_PARAMS.value],
+            backend_enums.OrderKeys.ENTRIES:
+                storage_order[trading_enums.StoredOrdersAttr.ENTRIES.value],
+            backend_enums.OrderKeys.GROUP_ID:
+                storage_order[trading_enums.StoredOrdersAttr.GROUP_ID.value],
+            backend_enums.OrderKeys.GROUP_TYPE:
+                storage_order[trading_enums.StoredOrdersAttr.GROUP_TYPE.value],
+            backend_enums.OrderKeys.CHAINED_ORDERS:
+                storage_order[trading_enums.StoredOrdersAttr.CHAINED_ORDERS.value],
+            backend_enums.OrderKeys.UPDATE_WITH_TRIGGERING_ORDER_FEES:
+                storage_order[trading_enums.StoredOrdersAttr.UPDATE_WITH_TRIGGERING_ORDER_FEES.value],
+
+        }
+        for storage_order in orders
     ]
 
 
