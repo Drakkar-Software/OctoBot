@@ -24,6 +24,7 @@ import supabase.lib.client_options
 
 import octobot_commons.authentication as authentication
 import octobot_commons.logging as logging
+import octobot_commons.profiles as commons_profiles
 import octobot.constants as constants
 import octobot.community.errors as errors
 import octobot.community.supabase_backend.enums as enums
@@ -125,6 +126,13 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
 
     def sync_get_user(self) -> dict:
         return self.auth.get_user().user.dict()
+
+    async def fetch_profile_data(self, bot_id: str) -> commons_profiles.ProfileData:
+        return commons_profiles.ProfileData.from_dict(
+            (await self.table("bot_configs").select("profile_data").eq(
+                enums.ConfigKeys.BOT_ID.value, bot_id
+            ).execute()).data[0]
+        )
 
     async def fetch_bot(self, bot_id) -> dict:
         try:
