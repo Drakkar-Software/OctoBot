@@ -332,7 +332,7 @@ class CommunityAuthentication(authentication.Authenticator):
         return await self.supabase_client.fetch_subscribed_products_urls()
 
     def is_logged_in_and_has_selected_bot(self):
-        return self.is_logged_in() and self.user_account.bot_id is not None
+        return (self.supabase_client.is_admin or self.is_logged_in()) and self.user_account.bot_id is not None
 
     async def _refresh_selected_bot(self):
         self.user_account.set_selected_bot_raw_data(
