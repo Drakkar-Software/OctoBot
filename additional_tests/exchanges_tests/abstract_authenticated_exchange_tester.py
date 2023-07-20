@@ -414,7 +414,7 @@ class AbstractAuthenticatedExchangeTester:
         )
 
     async def get_portfolio(self):
-        return await exchanges_test_tools.get_portfolio(self.exchange_manager)
+        return await exchanges_test_tools.get_portfolio(self.exchange_manager, as_float=False)
 
     async def get_my_recent_trades(self, exchange_data=None):
         exchange_data = exchange_data or self.get_exchange_data()
@@ -628,7 +628,7 @@ class AbstractAuthenticatedExchangeTester:
 
     async def _create_order_on_exchange(self, order, params=None, expected_creation_error=False):
         # uncomment to bypass self.exchange_manager.trader
-        # created_order_dicts = await exchanges_test_tools.create_orders(
+        # created_orders = await exchanges_test_tools.create_orders(
         #     self.exchange_manager,
         #     self.get_exchange_data(order.symbol),
         #     [order.to_dict()]
@@ -852,7 +852,7 @@ class AbstractAuthenticatedExchangeTester:
             exchange_details={"name": self.exchange_manager.exchange_name},
             markets=[
                 {
-                    "id": s, "symbol": s, "limits": {}, "precision": {}, "time_frame": "1h",
+                    "id": s, "symbol": s, "info": {}, "time_frame": "1h",
                     "close": [0], "open": [0], "high": [0], "low": [0], "volume": [0], "time": [0]  # todo
                 }
                 for s in _symbols
