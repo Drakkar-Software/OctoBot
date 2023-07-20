@@ -46,6 +46,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         options.storage = storage   # use configuration storage
         self.event_loop = None
         super().__init__(supabase_url, supabase_key, options=options)
+        self.is_admin = False
 
     async def sign_in(self, email: str, password: str) -> None:
         try:
@@ -129,7 +130,8 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
 
     async def fetch_bot(self, bot_id) -> dict:
         try:
-            return (await self.table("bots").select("*,bot_deployment:bot_deployments(*)").eq(
+            # https://postgrest.org/en/stable/references/api/resource_embedding.html#hint-disambiguation
+            return (await self.table("bots").select("*,bot_deployment:bot_deployments!bots_current_deployment_id_fkey(*)").eq(
                 enums.BotKeys.ID.value, bot_id
             ).execute()).data[0]
         except IndexError:
@@ -229,12 +231,14 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         ).execute()).data
 
     # todo test
-    async def fetch_profile_data(self, bot_id: str) -> commons_profiles.ProfileData:
-        return commons_profiles.ProfileData.from_dict(
-            (await self.table("bot_configs").select("profile_data").eq(
-                enums.ConfigKeys.BOT_ID.value, bot_id
-            ).execute()).data[0]
-        )
+    async def fetch_profile_data(self, profile_id: str) -> commons_profiles.ProfileData:
+        bot_config = (await self.table("bot_configs").select("*").eq(
+            enums.ConfigKeys.ID.value, profile_id
+        ).execute()).data[0]
+        profile_data = commons_profiles.ProfileData.from_dict(bot_config[enums.ConfigKeys.CURRENT.value])
+        # ensure bot id is up to date
+        profile_data.profile_details.bot_id = bot_config[enums.ConfigKeys.BOT_ID.value]
+        return profile_data
 
     async def fetch_configs(self, bot_id) -> list:
         # use a new current portfolio for the given bot

@@ -83,9 +83,11 @@ class TradeKeys(enum.Enum):
     QUANTITY = "quantity"
     SYMBOL = "symbol"
     TYPE = "type"
+    METADATA = "metadata"
 
 
 class OrderKeys(enum.Enum):
+    # todo use same as TradeKeys ?
     ID = "id"
     ORDER_ID = "order_id"
     EXCHANGE_ORDER_ID = "exchange_order_id"
