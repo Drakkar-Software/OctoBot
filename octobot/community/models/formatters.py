@@ -18,11 +18,28 @@ import octobot.community.supabase_backend as supabase_backend
 import octobot_commons.constants as commons_constants
 import octobot_trading.enums as trading_enums
 import octobot_trading.constants as trading_constants
+import octobot_trading.personal_data as trading_personal_data
 
 
 def format_trades(trades: list, exchange_name: str, bot_id: str) -> list:
     return [
-        {
+        _format_trade(trade, exchange_name, bot_id)
+        for trade in trades
+    ]
+
+
+def _format_trade(trade: dict, exchange_name: str, bot_id: str):
+    trade_type = trade[trading_enums.ExchangeConstantsOrderColumns.TYPE.value]
+    try:
+        trade_type = trading_personal_data.parse_order_type(trade)[1].value
+    except (Exception):
+        # use default trade_type
+        pass
+    metadata = {
+        trading_enums.ExchangeConstantsOrderColumns.ENTRIES.value:
+            trade[trading_enums.ExchangeConstantsOrderColumns.ENTRIES.value]
+    }
+    return {
             backend_enums.TradeKeys.BOT_ID.value: bot_id,
             backend_enums.TradeKeys.TRADE_ID.value: trade[trading_enums.ExchangeConstantsOrderColumns.ID.value],
             backend_enums.TradeKeys.TIME.value: supabase_backend.CommunitySupabaseClient.get_formatted_time(
@@ -33,10 +50,9 @@ def format_trades(trades: list, exchange_name: str, bot_id: str) -> list:
             backend_enums.TradeKeys.QUANTITY.value:
                 float(trade[trading_enums.ExchangeConstantsOrderColumns.AMOUNT.value]),
             backend_enums.TradeKeys.SYMBOL.value: trade[trading_enums.ExchangeConstantsOrderColumns.SYMBOL.value],
-            backend_enums.TradeKeys.TYPE.value: trade[trading_enums.ExchangeConstantsOrderColumns.TYPE.value],
+            backend_enums.TradeKeys.TYPE.value:  trade_type,
+            backend_enums.TradeKeys.METADATA.value: metadata
         }
-        for trade in trades
-    ]
 
 
 def format_orders(orders: list, exchange_name: str, bot_id: str) -> list:
