@@ -41,6 +41,7 @@ class ExchangeChannelMock:
     def __init__(self, exchange_manager, name):
         self.exchange_manager = exchange_manager
         self.name = name
+        self.consumers = []
 
         def _clear_pending_state(order, *args, **kwargs):
             if order.is_pending_creation():
@@ -53,6 +54,8 @@ class ExchangeChannelMock:
             )
         )
         self.get_consumers = mock.Mock(return_value=[mock.Mock()])
+        self.stop = mock.AsyncMock()
+        self.flush = mock.Mock()
 
     def get_name(self):
         return self.name
