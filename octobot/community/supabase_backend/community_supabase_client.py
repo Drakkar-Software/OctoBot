@@ -230,7 +230,6 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             trades, on_conflict=f"{enums.OrderKeys.ORDER_ID.value},{enums.OrderKeys.TIME.value}"
         ).execute()).data
 
-    # todo test
     async def fetch_profile_data(self, profile_id: str) -> commons_profiles.ProfileData:
         bot_config = (await self.table("bot_configs").select("*").eq(
             enums.ConfigKeys.ID.value, profile_id
