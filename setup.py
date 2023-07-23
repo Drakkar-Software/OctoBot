@@ -29,7 +29,7 @@ def ignore_git_requirements(requirements):
 
 
 REQUIRED = ignore_git_requirements(open('requirements.txt').readlines())
-REQUIRES_PYTHON = '>=3.8'
+REQUIRES_PYTHON = '>=3.9'
 
 setup(
     name=PROJECT_NAME,
@@ -62,6 +62,7 @@ setup(
         'Operating System :: MacOS :: MacOS X',
         'Operating System :: Microsoft :: Windows',
         'Operating System :: POSIX',
-        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
     ],
 )
