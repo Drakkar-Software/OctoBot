@@ -190,7 +190,8 @@ class AuthenticatedSupabaseRealtimeSocket(realtime.Socket):
         return False
 
     async def close(self):
-        self.logger.debug("closing realtime connection")
+        if not self.closed:
+            self.logger.debug("closing realtime connection")
         self.closed = True
         if self.listen_task and not self.listen_task.done():
             self.listen_task.cancel()
