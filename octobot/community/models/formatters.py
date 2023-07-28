@@ -86,17 +86,17 @@ def format_orders(orders: list, exchange_name: str, bot_id: str) -> list:
                 trading_enums.ExchangeConstantsOrderColumns.SELF_MANAGED.value],
             # order metadata
             backend_enums.OrderKeys.EXCHANGE_CREATION_PARAMS:
-                storage_order[trading_enums.StoredOrdersAttr.EXCHANGE_CREATION_PARAMS.value],
+                storage_order.get(trading_enums.StoredOrdersAttr.EXCHANGE_CREATION_PARAMS.value, {}),
             backend_enums.OrderKeys.ENTRIES:
-                storage_order[trading_enums.StoredOrdersAttr.ENTRIES.value],
+                storage_order.get(trading_enums.StoredOrdersAttr.ENTRIES.value, None),
             backend_enums.OrderKeys.GROUP_ID:
-                storage_order[trading_enums.StoredOrdersAttr.GROUP_ID.value],
+                storage_order.get(trading_enums.StoredOrdersAttr.GROUP_ID.value, None),
             backend_enums.OrderKeys.GROUP_TYPE:
-                storage_order[trading_enums.StoredOrdersAttr.GROUP_TYPE.value],
+                storage_order.get(trading_enums.StoredOrdersAttr.GROUP_TYPE.value, None),
             backend_enums.OrderKeys.CHAINED_ORDERS:
-                storage_order[trading_enums.StoredOrdersAttr.CHAINED_ORDERS.value],
+                storage_order.get(trading_enums.StoredOrdersAttr.CHAINED_ORDERS.value, []),
             backend_enums.OrderKeys.UPDATE_WITH_TRIGGERING_ORDER_FEES:
-                storage_order[trading_enums.StoredOrdersAttr.UPDATE_WITH_TRIGGERING_ORDER_FEES.value],
+                storage_order.get(trading_enums.StoredOrdersAttr.UPDATE_WITH_TRIGGERING_ORDER_FEES.value, False),
 
         }
         for storage_order in orders
