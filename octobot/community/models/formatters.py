@@ -41,7 +41,8 @@ def _format_trade(trade: dict, exchange_name: str, bot_id: str):
     }
     return {
             backend_enums.TradeKeys.BOT_ID.value: bot_id,
-            backend_enums.TradeKeys.TRADE_ID.value: trade[trading_enums.ExchangeConstantsOrderColumns.ID.value],
+            backend_enums.TradeKeys.TRADE_ID.value: trade[trading_enums.ExchangeConstantsOrderColumns.EXCHANGE_ID.value]
+            or trade[trading_enums.ExchangeConstantsOrderColumns.ID.value],
             backend_enums.TradeKeys.TIME.value: supabase_backend.CommunitySupabaseClient.get_formatted_time(
                 trade[trading_enums.ExchangeConstantsOrderColumns.TIMESTAMP.value]
             ),
