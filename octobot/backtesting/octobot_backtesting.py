@@ -193,6 +193,7 @@ class OctoBotBacktesting:
             self.backtesting = None
 
     def memory_leak_checkup(self, to_check_elements):
+        gc.collect()
         self.logger.debug(f"Memory leak checking {[e.__class__.__name__ for e in to_check_elements]}")
         memory_leak_errors = []
         for i in range(len(to_check_elements)):
