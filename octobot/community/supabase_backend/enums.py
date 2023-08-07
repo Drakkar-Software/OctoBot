@@ -116,6 +116,7 @@ class PortfolioKeys(enum.Enum):
     BOT_ID = "bot_id"
     CURRENT_VALUE = "current_value"
     INITIAL_VALUE = "initial_value"
+    PROFITABILITY = "profitability"
     UNIT = "unit"
     CONTENT = "content"
 
@@ -138,11 +139,6 @@ class BotConfigKeys(enum.Enum):
     PRODUCT_CONFIG_ID = "product_config_id"
     EXCHANGES = "exchanges"
     OPTIONS = "options"
-
-
-class CurrentConfigKeys(enum.Enum):
-    PROFILE_NAME = "profile_name"
-    PROFITABILITY = "profitability"
 
 
 class UserKeys(enum.Enum):
