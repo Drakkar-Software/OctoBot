@@ -147,9 +147,9 @@ def format_portfolio_history(history: dict, unit: str, portfolio_id: str) -> lis
 
 def format_bot_config_and_stats(profile_name, profitability, bot_id):
     return {
-        backend_enums.ConfigKeys.CURRENT.value: {
+        backend_enums.BotConfigKeys.CURRENT.value: {
             backend_enums.CurrentConfigKeys.PROFILE_NAME.value: profile_name,
             backend_enums.CurrentConfigKeys.PROFITABILITY.value: float(profitability)
         },
-        backend_enums.ConfigKeys.BOT_ID.value: bot_id,
+        backend_enums.BotConfigKeys.BOT_ID.value: bot_id,
     }

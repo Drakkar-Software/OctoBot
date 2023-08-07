@@ -24,6 +24,7 @@ pytestmark = pytest.mark.asyncio
 class TestHuobiAuthenticatedExchange(
     abstract_authenticated_exchange_tester.AbstractAuthenticatedExchangeTester
 ):
+    # PASSED the 6th of aug 2023
     # enter exchange name as a class variable here
     EXCHANGE_NAME = "huobi"
     ORDER_CURRENCY = "BTC"
