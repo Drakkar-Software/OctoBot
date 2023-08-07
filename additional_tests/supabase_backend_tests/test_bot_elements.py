@@ -339,12 +339,6 @@ def _equal(d_1, d_2, key):
     return d_1[key] == d_2[key]
 
 
-def config_mock(seed, bot_id):
-    return models.format_bot_config_and_stats(
-        str(seed) + "profile", seed, bot_id
-    )
-
-
 def trades_mock(seed, bot_id):
     trades = [
         {
@@ -374,6 +368,7 @@ def portfolio_mock(seed, bot_id):
     return models.format_portfolio(
         {"USDT": round(seed % 10) * 100},
         {"USDT": round(seed % 10) * 45},
+        1.2,
         "USDT",
         {"plop": {commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("12.2")},
          "BTC": {commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("0.32")}},

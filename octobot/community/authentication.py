@@ -497,7 +497,7 @@ class CommunityAuthentication(authentication.Authenticator):
             await self.supabase_client.upsert_orders(formatted_orders)
 
     @_bot_data_update
-    async def update_portfolio(self, current_value: dict, initial_value: dict,
+    async def update_portfolio(self, current_value: dict, initial_value: dict, profitability: float,
                                unit: str, content: dict, history: dict, price_by_asset: dict,
                                reset: bool):
         """
@@ -505,7 +505,7 @@ class CommunityAuthentication(authentication.Authenticator):
         """
         try:
             formatted_portfolio = formatters.format_portfolio(
-                current_value, initial_value, unit, content, price_by_asset, self.user_account.bot_id
+                current_value, initial_value, profitability, unit, content, price_by_asset, self.user_account.bot_id
             )
             if reset or self.user_account.get_selected_bot_current_portfolio_id() is None:
                 await self.supabase_client.switch_portfolio(formatted_portfolio)
@@ -515,21 +515,17 @@ class CommunityAuthentication(authentication.Authenticator):
                 self.user_account.get_selected_bot_current_portfolio_id()
             await self.supabase_client.update_portfolio(formatted_portfolio)
             if formatted_histories := formatters.format_portfolio_history(
-                    history, unit, self.user_account.get_selected_bot_current_portfolio_id()
+                history, unit, self.user_account.get_selected_bot_current_portfolio_id()
             ):
                 await self.supabase_client.upsert_portfolio_history(formatted_histories)
         except KeyError as err:
             self.logger.debug(f"Error when updating community portfolio {err} (missing reference market value)")
 
     @_bot_data_update
-    async def update_bot_config_and_stats(self, profile_name, profitability, reset=False):
-        formatted_config = formatters.format_bot_config_and_stats(
-            profile_name, profitability, self.user_account.bot_id
-        )
-        if reset or self.user_account.get_selected_bot_current_config_id() is None:
-            await self.supabase_client.switch_config(formatted_config)
+    async def update_bot_config_and_stats(self, profitability):
+        formatted_portfolio = formatters.format_portfolio_with_profitability(profitability)
+        if self.user_account.get_selected_bot_current_portfolio_id() is None:
             await self._refresh_selected_bot()
-        else:
-            formatted_config[
-                backend_enums.BotConfigKeys.ID.value] = self.user_account.get_selected_bot_current_config_id()
-            await self.supabase_client.update_config(formatted_config)
+        formatted_portfolio[backend_enums.PortfolioKeys.ID.value] = \
+            self.user_account.get_selected_bot_current_portfolio_id()
+        await self.supabase_client.update_portfolio(formatted_portfolio)
