@@ -134,7 +134,7 @@ class CommunityUserAccount:
     def _get_bot_deployment(self, bot):
         if bot is None:
             raise errors.BotError(self.NO_SELECTED_BOT_DESC)
-        return bot.get(self.BOT_DEPLOYMENT, {})
+        return bot.get(self.BOT_DEPLOYMENT) or {}
 
     def _ensure_selected_bot_data(self):
         if self._selected_bot_raw_data is None:

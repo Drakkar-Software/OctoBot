@@ -271,12 +271,12 @@ async def test_switch_and_update_config(authenticated_client_1_with_temp_bot, au
     created_config = await authenticated_client_1.switch_config(config)
     updated_bot = await authenticated_client_1.fetch_bot(bot_id)
     assert updated_bot[supabase_backend_enums.BotKeys.CURRENT_CONFIG_ID.value] == \
-           created_config[supabase_backend_enums.ConfigKeys.ID.value]
+           created_config[supabase_backend_enums.BotConfigKeys.ID.value]
     assert updated_bot == await authenticated_client_1.fetch_bot(bot_id)
     assert_are_same_elements([config], [created_config])
     assert all(
         attribute.value in created_config
-        for attribute in supabase_backend_enums.ConfigKeys
+        for attribute in supabase_backend_enums.BotConfigKeys
     )
 
     created_configs = await authenticated_client_1.fetch_configs(bot_id)
@@ -288,17 +288,17 @@ async def test_switch_and_update_config(authenticated_client_1_with_temp_bot, au
     created_config = await authenticated_client_1.switch_config(config_2)
     updated_bot = await authenticated_client_1.fetch_bot(bot_id)
     assert updated_bot[supabase_backend_enums.BotKeys.CURRENT_CONFIG_ID.value] == \
-           created_config[supabase_backend_enums.ConfigKeys.ID.value]
+           created_config[supabase_backend_enums.BotConfigKeys.ID.value]
 
     created_configs = await authenticated_client_1.fetch_configs(bot_id)
     assert len(created_configs) == 2
     assert_are_same_elements([config], created_configs[0:1])
     assert_are_same_elements([config_2], created_configs[1:])
 
-    config_2[supabase_backend_enums.ConfigKeys.CURRENT.value][
+    config_2[supabase_backend_enums.BotConfigKeys.CURRENT.value][
         supabase_backend_enums.CurrentConfigKeys.PROFITABILITY.value] = 1
-    config_2[supabase_backend_enums.ConfigKeys.ID.value] = \
-        created_configs[1][supabase_backend_enums.ConfigKeys.ID.value]
+    config_2[supabase_backend_enums.BotConfigKeys.ID.value] = \
+        created_configs[1][supabase_backend_enums.BotConfigKeys.ID.value]
     updated_config = (await authenticated_client_1.update_config(config_2))
     assert_are_same_elements([config_2], updated_config)
 

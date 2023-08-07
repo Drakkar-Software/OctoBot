@@ -231,32 +231,38 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         ).execute()).data
 
     async def fetch_profile_data(self, profile_id: str) -> commons_profiles.ProfileData:
-        bot_config = (await self.table("bot_configs").select("*").eq(
-            enums.ConfigKeys.ID.value, profile_id
-        ).execute()).data[0]
-        profile_data = commons_profiles.ProfileData.from_dict(bot_config[enums.ConfigKeys.CURRENT.value])
+        bot_config = (await self.table("bot_configs").select(
+            "bot_id, options, exchanges, product_config:product_configs(config, version)"
+        ).eq(enums.BotConfigKeys.ID.value, profile_id).execute()).data[0]
+        profile_data = commons_profiles.ProfileData.from_dict(bot_config["product_config"]["config"])
+        profile_data.profile_details.version = bot_config["product_config"]["version"]
+        profile_data.exchanges = [
+            commons_profiles.ExchangeData(**exchange_data)
+            for exchange_data in bot_config[enums.BotConfigKeys.EXCHANGES.value]
+        ] if bot_config[enums.BotConfigKeys.EXCHANGES.value] else []
+        profile_data.options = commons_profiles.OptionsData(**bot_config[enums.BotConfigKeys.OPTIONS.value])
         # ensure bot id is up to date
-        profile_data.profile_details.bot_id = bot_config[enums.ConfigKeys.BOT_ID.value]
+        profile_data.profile_details.bot_id = bot_config[enums.BotConfigKeys.BOT_ID.value]
         return profile_data
 
     async def fetch_configs(self, bot_id) -> list:
         # use a new current portfolio for the given bot
         return (await self.table("bot_configs").select("*").eq(
-            enums.ConfigKeys.BOT_ID.value, bot_id
+            enums.BotConfigKeys.BOT_ID.value, bot_id
         ).execute()).data
 
     async def update_config(self, config) -> list:
         # use a new current portfolio for the given bot
         return (await self.table("bot_configs").update(config).eq(
-            enums.ConfigKeys.ID.value, config[enums.ConfigKeys.ID.value]
+            enums.BotConfigKeys.ID.value, config[enums.BotConfigKeys.ID.value]
         ).execute()).data
 
     async def switch_config(self, new_config) -> dict:
         # use a new current portfolio for the given bot
-        bot_id = new_config[enums.ConfigKeys.BOT_ID.value]
+        bot_id = new_config[enums.BotConfigKeys.BOT_ID.value]
         inserted_config = (await self.table("bot_configs").insert(new_config).execute()).data[0]
         await self.table("bots").update(
-            {enums.BotKeys.CURRENT_CONFIG_ID.value: inserted_config[enums.ConfigKeys.ID.value]}
+            {enums.BotKeys.CURRENT_CONFIG_ID.value: inserted_config[enums.BotConfigKeys.ID.value]}
         ).eq(enums.BotKeys.ID.value, bot_id).execute()
         return inserted_config
 

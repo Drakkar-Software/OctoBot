@@ -531,5 +531,5 @@ class CommunityAuthentication(authentication.Authenticator):
             await self._refresh_selected_bot()
         else:
             formatted_config[
-                backend_enums.ConfigKeys.ID.value] = self.user_account.get_selected_bot_current_config_id()
+                backend_enums.BotConfigKeys.ID.value] = self.user_account.get_selected_bot_current_config_id()
             await self.supabase_client.update_config(formatted_config)

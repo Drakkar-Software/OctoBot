@@ -132,11 +132,12 @@ class PortfolioAssetKeys(enum.Enum):
     QUANTITY = "quantity"
 
 
-class ConfigKeys(enum.Enum):
+class BotConfigKeys(enum.Enum):
     ID = "id"
     BOT_ID = "bot_id"
-    CREATED_AT = "created_at"
-    CURRENT = "current"
+    PRODUCT_CONFIG_ID = "product_config_id"
+    EXCHANGES = "exchanges"
+    OPTIONS = "options"
 
 
 class CurrentConfigKeys(enum.Enum):

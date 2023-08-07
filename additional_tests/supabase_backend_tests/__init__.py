@@ -85,7 +85,7 @@ async def _delete_bot(client, bot_id):
 
     async def _delete_config(config_id):
         await client.table("bot_configs").delete().eq(
-            supabase_backend_enums.ConfigKeys.ID.value, config_id
+            supabase_backend_enums.BotConfigKeys.ID.value, config_id
         ).execute()
 
     async def _delete_deployment(deployment_id):
@@ -124,7 +124,7 @@ async def _delete_bot(client, bot_id):
             {supabase_backend_enums.BotKeys.CURRENT_CONFIG_ID.value: None}
         )
         for config in configs:
-            to_del_config_id = config[supabase_backend_enums.ConfigKeys.ID.value]
+            to_del_config_id = config[supabase_backend_enums.BotConfigKeys.ID.value]
             await _delete_config(to_del_config_id)
     # delete bot
     deleted_bot = (await client.delete_bot(bot_id))[0]
