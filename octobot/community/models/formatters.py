@@ -105,9 +105,9 @@ def format_orders(orders: list, exchange_name: str, bot_id: str) -> list:
 
 
 def format_portfolio(
-        current_value: dict, initial_value: dict,
-        unit: str, content: dict, price_by_asset: dict,
-        bot_id: str
+    current_value: dict, initial_value: dict, profitability: float,
+    unit: str, content: dict, price_by_asset: dict,
+    bot_id: str
 ) -> dict:
     ref_market_current_value = current_value[unit]
     ref_market_initial_value = initial_value[unit]
@@ -120,12 +120,20 @@ def format_portfolio(
         }
         for key, quantity in content.items()
     ]
+
     return {
         backend_enums.PortfolioKeys.CONTENT.value: formatted_content,
         backend_enums.PortfolioKeys.CURRENT_VALUE.value: ref_market_current_value,
         backend_enums.PortfolioKeys.INITIAL_VALUE.value: ref_market_initial_value,
+        backend_enums.PortfolioKeys.PROFITABILITY.value: float(profitability),
         backend_enums.PortfolioKeys.UNIT.value: unit,
         backend_enums.PortfolioKeys.BOT_ID.value: bot_id,
+    }
+
+
+def format_portfolio_with_profitability(profitability) -> dict:
+    return {
+        backend_enums.PortfolioKeys.PROFITABILITY.value: float(profitability)
     }
 
 
@@ -143,13 +151,3 @@ def format_portfolio_history(history: dict, unit: str, portfolio_id: str) -> lis
         ]
     except KeyError:
         return []
-
-
-def format_bot_config_and_stats(profile_name, profitability, bot_id):
-    return {
-        backend_enums.BotConfigKeys.CURRENT.value: {
-            backend_enums.CurrentConfigKeys.PROFILE_NAME.value: profile_name,
-            backend_enums.CurrentConfigKeys.PROFITABILITY.value: float(profitability)
-        },
-        backend_enums.BotConfigKeys.BOT_ID.value: bot_id,
-    }
