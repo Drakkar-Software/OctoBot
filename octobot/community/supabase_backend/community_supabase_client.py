@@ -230,10 +230,12 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             trades, on_conflict=f"{enums.OrderKeys.ORDER_ID.value},{enums.OrderKeys.TIME.value}"
         ).execute()).data
 
-    async def fetch_profile_data(self, profile_id: str) -> commons_profiles.ProfileData:
+    async def fetch_bot_profile_data(self, bot_config_id: str) -> commons_profiles.ProfileData:
+        if not bot_config_id:
+            raise errors.MissingBotConfigError(f"bot_config_id is '{bot_config_id}'")
         bot_config = (await self.table("bot_configs").select(
             "bot_id, options, exchanges, product_config:product_configs(config, version)"
-        ).eq(enums.BotConfigKeys.ID.value, profile_id).execute()).data[0]
+        ).eq(enums.BotConfigKeys.ID.value, bot_config_id).execute()).data[0]
         profile_data = commons_profiles.ProfileData.from_dict(bot_config["product_config"]["config"])
         profile_data.profile_details.version = bot_config["product_config"]["version"]
         profile_data.exchanges = [
@@ -241,8 +243,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             for exchange_data in bot_config[enums.BotConfigKeys.EXCHANGES.value]
         ] if bot_config[enums.BotConfigKeys.EXCHANGES.value] else []
         profile_data.options = commons_profiles.OptionsData(**bot_config[enums.BotConfigKeys.OPTIONS.value])
-        # ensure bot id is up to date
-        profile_data.profile_details.bot_id = bot_config[enums.BotConfigKeys.BOT_ID.value]
+        profile_data.profile_details.id = bot_config_id
         return profile_data
 
     async def fetch_configs(self, bot_id) -> list:
