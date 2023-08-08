@@ -36,6 +36,10 @@ class BotDeploymentURLNotFoundError(BotError):
     pass
 
 
+class MissingBotConfigError(BotError):
+    pass
+
+
 class EmailValidationRequiredError(commons_authentication.AuthenticationError):
     pass
 
