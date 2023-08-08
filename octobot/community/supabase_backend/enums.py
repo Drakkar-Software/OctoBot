@@ -41,6 +41,9 @@ class BotDeploymentKeys(enum.Enum):
     SUBSCRIPTION_ID = "subscription_id"
     CURRENT_URL_ID = "current_url_id"
     TYPE = "type"
+    STATUS = "status"
+    ERROR_STATUS = "error_status"
+    DESIRED_STATUS = "desired_status"
 
 
 class BotDeploymentURLKeys(enum.Enum):
@@ -49,6 +52,22 @@ class BotDeploymentURLKeys(enum.Enum):
     REGION = "region"
     DEPLOYMENT_ID = "deployment_id"
     URL = "url"
+
+
+class BotDeploymentStatus(enum.Enum):
+    CREATED = 'created'
+    UPDATED = "updated"
+    RUNNING = "running"
+    STOPPED = "stopped"
+    PENDING = "pending"
+    UNKNOWN = "unknown"
+
+
+class BotDeploymentErrorsStatuses(enum.Enum):
+    NO_ERROR = None
+    INTERNAL_SERVER_ERROR = "internal_server_error"
+    INVALID_CONFIG = "invalid_config"
+    MISSING_CONFIG = "missing_config"
 
 
 class SignalKeys(enum.Enum):
