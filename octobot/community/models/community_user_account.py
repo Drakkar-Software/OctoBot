@@ -79,6 +79,13 @@ class CommunityUserAccount:
             backend_enums.BotDeploymentKeys.ID.value
         ]
 
+    def get_bot_deployment_status(self) -> (str, str):
+        deployment = self._get_bot_deployment(self._selected_bot_raw_data)
+        return (
+            deployment[backend_enums.BotDeploymentKeys.STATUS.value],
+            deployment[backend_enums.BotDeploymentKeys.DESIRED_STATUS.value]
+        )
+
     def get_bot_deployment_url(self, deployment_url_data):
         return deployment_url_data[backend_enums.BotDeploymentURLKeys.URL.value]
 
