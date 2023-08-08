@@ -334,7 +334,7 @@ class CommunityAuthentication(authentication.Authenticator):
     def is_logged_in_and_has_selected_bot(self):
         return (self.supabase_client.is_admin or self.is_logged_in()) and self.user_account.bot_id is not None
 
-    async def _refresh_selected_bot(self):
+    async def refresh_selected_bot(self):
         self.user_account.set_selected_bot_raw_data(
             await self.supabase_client.fetch_bot(self.user_account.bot_id)
         )
@@ -509,7 +509,7 @@ class CommunityAuthentication(authentication.Authenticator):
             )
             if reset or self.user_account.get_selected_bot_current_portfolio_id() is None:
                 await self.supabase_client.switch_portfolio(formatted_portfolio)
-                await self._refresh_selected_bot()
+                await self.refresh_selected_bot()
 
             formatted_portfolio[backend_enums.PortfolioKeys.ID.value] = \
                 self.user_account.get_selected_bot_current_portfolio_id()
@@ -525,7 +525,7 @@ class CommunityAuthentication(authentication.Authenticator):
     async def update_bot_config_and_stats(self, profitability):
         formatted_portfolio = formatters.format_portfolio_with_profitability(profitability)
         if self.user_account.get_selected_bot_current_portfolio_id() is None:
-            await self._refresh_selected_bot()
+            await self.refresh_selected_bot()
         formatted_portfolio[backend_enums.PortfolioKeys.ID.value] = \
             self.user_account.get_selected_bot_current_portfolio_id()
         await self.supabase_client.update_portfolio(formatted_portfolio)
