@@ -242,7 +242,8 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             commons_profiles.ExchangeData(**exchange_data)
             for exchange_data in bot_config[enums.BotConfigKeys.EXCHANGES.value]
         ] if bot_config[enums.BotConfigKeys.EXCHANGES.value] else []
-        profile_data.options = commons_profiles.OptionsData(**bot_config[enums.BotConfigKeys.OPTIONS.value])
+        if options := bot_config.get(enums.BotConfigKeys.OPTIONS.value):
+            profile_data.options = commons_profiles.OptionsData(**options)
         profile_data.profile_details.id = bot_config_id
         return profile_data
 
