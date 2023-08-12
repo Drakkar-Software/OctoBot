@@ -57,7 +57,8 @@ class IndependentBacktesting:
                  enforce_total_databases_max_size_after_run=True,
                  enable_storage=True,
                  run_on_all_available_time_frames=False,
-                 backtesting_data=None):
+                 backtesting_data=None,
+                 config_by_tentacle=None):
         self.octobot_origin_config = config
         self.tentacles_setup_config = tentacles_setup_config
         self.backtesting_config = {}
@@ -93,7 +94,8 @@ class IndependentBacktesting:
                                                                   enable_storage=enable_storage,
                                                                   run_on_all_available_time_frames=run_on_all_available_time_frames,
                                                                   backtesting_data=self.backtesting_data,
-                                                                  name=name)
+                                                                  name=name,
+                                                                  config_by_tentacle=config_by_tentacle)
 
     async def initialize_and_run(self, log_errors=True):
         try:
@@ -203,18 +205,19 @@ class IndependentBacktesting:
         return market_delta
 
     async def _register_available_data(self):
-        for data_file in self.backtesting_files:
-            data_file_path = data_file
-            if not path.isfile(data_file_path):
-                data_file_path = path.join(self.data_file_path, data_file)
-            description = await backtesting_data.get_file_description(data_file_path)
-            if description is None:
-                raise RuntimeError(f"Impossible to start backtesting: missing or invalid data file: {data_file}")
-            exchange_name = description[backtesting_enums.DataFormatKeys.EXCHANGE.value]
-            if exchange_name not in self.symbols_to_create_exchange_classes:
-                self.symbols_to_create_exchange_classes[exchange_name] = []
-            for symbol in description[backtesting_enums.DataFormatKeys.SYMBOLS.value]:
-                self.symbols_to_create_exchange_classes[exchange_name].append(symbol_util.parse_symbol(symbol))
+        if not self.symbols_to_create_exchange_classes:
+            for data_file in self.backtesting_files:
+                data_file_path = data_file
+                if not path.isfile(data_file_path):
+                    data_file_path = path.join(self.data_file_path, data_file)
+                description = await backtesting_data.get_file_description(data_file_path)
+                if description is None:
+                    raise RuntimeError(f"Impossible to start backtesting: missing or invalid data file: {data_file}")
+                exchange_name = description[backtesting_enums.DataFormatKeys.EXCHANGE.value]
+                if exchange_name not in self.symbols_to_create_exchange_classes:
+                    self.symbols_to_create_exchange_classes[exchange_name] = []
+                for symbol in description[backtesting_enums.DataFormatKeys.SYMBOLS.value]:
+                    self.symbols_to_create_exchange_classes[exchange_name].append(symbol_util.parse_symbol(symbol))
 
     def _init_default_config_values(self):
         self.risk = copy.deepcopy(self.octobot_origin_config[common_constants.CONFIG_TRADING][
@@ -302,7 +305,9 @@ class IndependentBacktesting:
         for exchange_id in self.octobot_backtesting.exchange_manager_ids:
             exchange_manager = trading_api.get_exchange_manager_from_exchange_id(exchange_id)
             exchange_name = trading_api.get_exchange_name(exchange_manager)
-            self.logger.info(f" ========= Trades on {exchange_name} =========")
+            self.logger.info(
+                f" ========= {len(trading_api.get_trade_history(exchange_manager))} Trades on {exchange_name} ========="
+            )
             self._log_trades_history(exchange_manager, exchange_name)
 
             self.logger.info(f" ========= Prices evolution on {exchange_name} =========")
