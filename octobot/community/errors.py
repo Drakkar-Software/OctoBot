@@ -40,6 +40,10 @@ class MissingBotConfigError(BotError):
     pass
 
 
+class MissingProductConfigError(BotError):
+    pass
+
+
 class EmailValidationRequiredError(commons_authentication.AuthenticationError):
     pass
 

@@ -14,7 +14,10 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import asyncio
+import contextlib
 import typing
+import storage3
+import storage3.constants
 import gotrue
 import gotrue.errors
 import postgrest
@@ -39,6 +42,7 @@ class AuthenticatedAsyncSupabaseClient(supabase.Client):
         options: supabase.lib.client_options.ClientOptions = supabase.lib.client_options.ClientOptions(),
         loop=None,
     ):
+        self.options = options
         self.auth: gotrue.SyncGoTrueClient = None
         self.postgrest: postgrest.AsyncPostgrestClient = None
         super().__init__(supabase_url, supabase_key, options=options)
@@ -72,6 +76,14 @@ class AuthenticatedAsyncSupabaseClient(supabase.Client):
     ) -> supabase_realtime_client.AuthenticatedSupabaseRealtimeClient:
         return supabase_realtime_client.AuthenticatedSupabaseRealtimeClient(realtime_url, supabase_key)
 
+    @staticmethod
+    def _init_storage_client(
+        storage_url: str,
+        headers: typing.Dict[str, str],
+        storage_client_timeout: int = storage3.constants.DEFAULT_TIMEOUT,
+    ) -> storage3.AsyncStorageClient:
+        return storage3.AsyncStorageClient(storage_url, headers, storage_client_timeout)
+
     def table(self, table_name: str) -> postgrest.AsyncRequestBuilder:  # typing override
         """Perform a table operation.
 
@@ -80,6 +92,22 @@ class AuthenticatedAsyncSupabaseClient(supabase.Client):
         Alternatively you can use the `.from_()` method.
         """
         return self.from_(table_name)
+
+    @contextlib.asynccontextmanager
+    async def other_postgres_client(self, schema):
+        other_postgres: postgrest.AsyncPostgrestClient = None
+        try:
+            other_postgres = AuthenticatedAsyncSupabaseClient._init_postgrest_client(
+                rest_url=self.rest_url,
+                supabase_key=self.supabase_key,
+                headers=self.options.headers,
+                schema=schema,
+                timeout=self.options.postgrest_client_timeout,
+            )
+            yield other_postgres
+        finally:
+            if other_postgres is not None:
+                await other_postgres.aclose()
 
     async def close(self):
         # timer has to be stopped, there is no public stop api
@@ -100,7 +128,6 @@ class AuthenticatedAsyncSupabaseClient(supabase.Client):
         self.auth._remove_session()
         self.auth._notify_all_subscribers("SIGNED_OUT", None)
 
-
     def _use_auth_session(self, event: gotrue.AuthChangeEvent, _):
         if event in (
             "SIGNED_IN",
@@ -112,6 +139,9 @@ class AuthenticatedAsyncSupabaseClient(supabase.Client):
             if auth_token:
                 self.postgrest.auth(auth_token)
             self.realtime.set_auth(auth_token, self.event_loop)
+            # todo uncomment when storage client has to be used by authenticated users instead of anon
+            # await self.storage.aclose()
+            # self._init_storage_client(self.storage_url, self._get_auth_headers())
 
     def _get_auth_headers(self):
         """Helper method to get auth headers."""

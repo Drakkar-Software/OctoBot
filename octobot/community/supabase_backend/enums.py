@@ -90,6 +90,9 @@ class ProductKeys(enum.Enum):
     CATEGORY_ID= "category_id"
     ATTRIBUTES= "attributes"
     METADATA = "metadata"
+    PARENT_ID="parent_id"
+    VISIBILITY="visibility"
+    CURRENT_RESULT_ID="current_result_id"
 
 
 class TradeKeys(enum.Enum):
@@ -158,6 +161,13 @@ class BotConfigKeys(enum.Enum):
     PRODUCT_CONFIG_ID = "product_config_id"
     EXCHANGES = "exchanges"
     OPTIONS = "options"
+
+
+class ProfileConfigKeys(enum.Enum):
+    ID = "id"
+    PRODUCT_CONFIG_ID = "product_id"
+    VERSION = "version"
+    CONFIG = "config"
 
 
 class UserKeys(enum.Enum):
