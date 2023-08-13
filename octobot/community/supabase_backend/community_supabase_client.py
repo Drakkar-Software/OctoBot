@@ -17,6 +17,7 @@ import asyncio
 import datetime
 import json
 import time
+import typing
 
 import aiohttp
 import gotrue.errors
@@ -236,8 +237,10 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         bot_config = (await self.table("bot_configs").select(
             "bot_id, options, exchanges, product_config:product_configs(config, version)"
         ).eq(enums.BotConfigKeys.ID.value, bot_config_id).execute()).data[0]
-        profile_data = commons_profiles.ProfileData.from_dict(bot_config["product_config"]["config"])
-        profile_data.profile_details.version = bot_config["product_config"]["version"]
+        profile_data = commons_profiles.ProfileData.from_dict(
+            bot_config["product_config"][enums.ProfileConfigKeys.CONFIG.value]
+        )
+        profile_data.profile_details.version = bot_config["product_config"][enums.ProfileConfigKeys.VERSION.value]
         profile_data.exchanges = [
             commons_profiles.ExchangeData(**exchange_data)
             for exchange_data in bot_config[enums.BotConfigKeys.EXCHANGES.value]
@@ -245,6 +248,21 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         if options := bot_config.get(enums.BotConfigKeys.OPTIONS.value):
             profile_data.options = commons_profiles.OptionsData(**options)
         profile_data.profile_details.id = bot_config_id
+        return profile_data
+
+    async def fetch_product_config(self, product_id: str) -> commons_profiles.ProfileData:
+        if not product_id:
+            raise errors.MissingProductConfigError(f"product_id is '{product_id}'")
+        try:
+            product = (await self.table("products").select(
+                "product_config:product_configs!current_config_id(config, version)"
+            ).eq(enums.ProductKeys.ID.value, product_id).execute()).data[0]
+        except IndexError:
+            raise errors.MissingProductConfigError(f"product_id is '{product_id}'")
+        profile_data = commons_profiles.ProfileData.from_dict(
+            product["product_config"][enums.ProfileConfigKeys.CONFIG.value]
+        )
+        profile_data.profile_details.version = product["product_config"][enums.ProfileConfigKeys.VERSION.value]
         return profile_data
 
     async def fetch_configs(self, bot_id) -> list:
@@ -299,6 +317,26 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             portfolio_histories,
             on_conflict=f"{enums.PortfolioHistoryKeys.TIME.value},{enums.PortfolioHistoryKeys.PORTFOLIO_ID.value}"
         ).execute()).data
+
+    async def get_asset_id(self, bucket_id: str, asset_name: str) -> str:
+        """
+        Not implemented for authenticated users
+        """
+        async with self.other_postgres_client("storage") as client:
+            return (await client.from_("objects").select("*")
+                .eq(
+                    "bucket_id", bucket_id
+                ).eq(
+                    "name", asset_name
+                ).execute()
+            ).data[0]["id"]
+
+    async def upload_asset(self, bucket_name: str, asset_name: str, content: typing.Union[str, bytes],) -> str:
+        """
+        Not implemented for authenticated users
+        """
+        result = await self.storage.from_(bucket_name).upload(asset_name, content)
+        return asset_name
 
     async def send_signal(self, table, product_id: str, signal: str):
         return (await self.table(table).insert({
