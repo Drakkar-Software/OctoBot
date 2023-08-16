@@ -131,7 +131,7 @@ class OctoBotBacktesting:
             exchange: [str(s) for s in symbols]
             for exchange, symbols in self.symbols_to_create_exchange_classes.items()
         }
-        self.logger.info(f"Stopping for {self.backtesting_files} with {symbols_by_exchange}")
+        self.logger.debug(f"Stopping for {self.backtesting_files} with {symbols_by_exchange}")
         exchange_managers = []
         try:
             if self.backtesting is None:
