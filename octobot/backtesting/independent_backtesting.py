@@ -344,7 +344,7 @@ class IndependentBacktesting:
         self.logger.info(f"Global market profitability (vs {reference_market}) : "
                          f"{market_average_profitability}% | Octobot : {profitability}%")
 
-        self.logger.info(
+        self.logger.debug(
             f"Simulation lasted "
             f"{round(backtesting_api.get_backtesting_duration(self.octobot_backtesting.backtesting), 3)} sec")
 
