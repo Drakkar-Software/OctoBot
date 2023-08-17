@@ -264,7 +264,8 @@ def start_octobot(args):
         _load_or_create_tentacles(config, logger)
 
         # patch setup with forced values
-        community_auth = _handle_forced_startup_config(logger, config, is_first_startup)
+        if not args.backtesting:
+            community_auth = _handle_forced_startup_config(logger, config, is_first_startup)
 
         # Can now perform config health check (some checks require a loaded profile)
         configuration_manager.config_health_check(config, args.backtesting)
