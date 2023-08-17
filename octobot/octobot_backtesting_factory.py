@@ -27,7 +27,7 @@ class OctoBotBacktestingFactory(octobot_class.OctoBot):
                  run_on_common_part_only=True,
                  enable_join_timeout=True,
                  enable_logs=True):
-        super().__init__(config)
+        super().__init__(config, community_authenticator=_BacktestingCommunityAuthenticator())
         self.independent_backtesting = None
         self.log_report = log_report
         self.run_on_common_part_only = run_on_common_part_only
@@ -57,3 +57,20 @@ class OctoBotBacktestingFactory(octobot_class.OctoBot):
             self.logger.exception(e, True, f"Error when starting backtesting: {e.__class__.__name__}")
         finally:
             self.task_manager.stop_tasks(stop_octobot=False)
+
+
+class _BacktestingCommunityAuthenticator:
+    """
+    Used as a community mock in backtesting bots
+    """
+    def update(self, *args):
+        pass
+
+    def is_initialized(self):
+        return True
+
+    def is_using_the_current_loop(self):
+        return True
+
+    async def stop(self):
+        pass
