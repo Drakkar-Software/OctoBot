@@ -34,7 +34,8 @@ import octobot.community.models.community_user_account as community_user_account
 import octobot_commons.constants as commons_constants
 import octobot_commons.authentication as authentication
 import octobot_commons.configuration as commons_configuration
-
+import octobot_trading.enums as trading_enums
+import octobot_trading.personal_data as trading_personal_data
 
 def _selected_bot_update(func):
     async def wrapper(*args, **kwargs):
@@ -460,21 +461,29 @@ class CommunityAuthentication(authentication.Authenticator):
     def is_logged_in_and_has_selected_bot(self):
         return self.is_logged_in() and self.user_account.gql_bot_id is not None
 
-    async def update_trades(self, trades: list, reset: bool):
+    async def update_trades(self, trades: list, exchange_name: str, reset: bool):
         """
         Updates authenticated account trades
         """
-        if not self.is_logged_in_and_has_selected_bot():
+        if not constants.UPLOAD_TRADING_STATS or not self.is_logged_in_and_has_selected_bot():
             return
         try:
+            def _get_trade_type(trade):
+                trade_type = trade[trading_enums.ExchangeConstantsOrderColumns.TYPE.value]
+                try:
+                    trade_type = trading_personal_data.parse_order_type(trade)[1].value
+                except Exception:
+                    # use default trade_type
+                    pass
+                return trade_type
             formatted_trades = [
                 {
-                    "date": self._get_graphql_formatted_time(trade.executed_time),
-                    "exchange": trade.exchange_manager.exchange_name,
-                    "price": str(trade.executed_price),
-                    "quantity": str(trade.executed_quantity),
-                    "symbol": trade.symbol,
-                    "type": trade.trade_type.value,
+                    "date": self._get_graphql_formatted_time(trade[trading_enums.ExchangeConstantsOrderColumns.TIMESTAMP.value]),
+                    "exchange": exchange_name,
+                    "price": str(float(trade[trading_enums.ExchangeConstantsOrderColumns.PRICE.value])),
+                    "quantity": str(float(trade[trading_enums.ExchangeConstantsOrderColumns.AMOUNT.value])),
+                    "symbol": trade[trading_enums.ExchangeConstantsOrderColumns.SYMBOL.value],
+                    "type": _get_trade_type(trade),
                 }
                 for trade in trades
             ]
@@ -485,13 +494,21 @@ class CommunityAuthentication(authentication.Authenticator):
         except Exception as err:
             self.logger.exception(err, True, f"Error when updating community trades {err}")
 
-    async def update_portfolio(self, current_value: dict, initial_value: dict,
-                               unit: str, content: dict, history: dict, price_by_asset: dict,
-                               reset: bool):
+    async def update_portfolio(
+        self,
+        current_value: dict,
+        initial_value: dict,
+        profitability: float,
+        unit: str,
+        content: dict,
+        history: dict,
+        price_by_asset: dict,
+        reset: bool,
+    ):
         """
         Updates authenticated account portfolio
         """
-        if not self.is_logged_in_and_has_selected_bot():
+        if not constants.UPLOAD_TRADING_STATS or not self.is_logged_in_and_has_selected_bot():
             return
         try:
             ref_market_current_value = current_value[unit]
@@ -577,6 +594,8 @@ class CommunityAuthentication(authentication.Authenticator):
 
     @_selected_bot_update
     async def update_bot_config_and_stats(self, profile_name, profitability):
+        if not constants.UPLOAD_TRADING_STATS:
+            return 
         return await self._execute_request(
             graphql_requests.update_bot_config_and_stats_query,
             self.user_account.gql_bot_id,

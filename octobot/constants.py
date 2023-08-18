@@ -94,6 +94,8 @@ STAGING_COMMUNITY_GQL_BACKEND_API_URL = os.getenv(
     f"https://realm.mongodb.com/api/client/v2.0/app/{STAGING_COMMUNITY_MONGO_APP_ID}/graphql"
 )
 
+UPLOAD_TRADING_STATS = os_util.parse_boolean_environment_var("UPLOAD_TRADING_STATS", "false")
+
 CONFIG_COMMUNITY = "community"
 CONFIG_COMMUNITY_TOKEN = "token"
 CONFIG_COMMUNITY_BOT_ID = "bot_id"
