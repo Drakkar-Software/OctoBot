@@ -32,5 +32,9 @@ class BotNotFoundError(BotError):
     pass
 
 
+class EmailValidationRequiredError(commons_authentication.AuthenticationError):
+    pass
+
+
 class NoBotDeviceError(BotError):
     pass

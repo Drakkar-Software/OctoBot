@@ -137,10 +137,11 @@ class CommunityManager:
 
     async def _update_authenticated_bot(self):
         try:
-            await authentication.Authenticator.instance().update_bot_config_and_stats(
-                self.edited_config.profile.name,
-                self._get_profitability()
-            )
+            if authentication.Authenticator.instance().is_logged_in():
+                await authentication.Authenticator.instance().update_bot_config_and_stats(
+                    self.edited_config.profile.name,
+                    self._get_profitability()
+                )
         except Exception as err:
             self.logger.debug(f"Exception when pushing config and stats : {err}")
 
@@ -194,7 +195,7 @@ class CommunityManager:
         for exchange_manager in self.exchange_managers:
             profitability, _, _, _, _ = trading_api.get_profitability_stats(exchange_manager)
             total_profitability += float(profitability)
-            total_origin_values += float(trading_api.get_current_portfolio_value(exchange_manager))
+            total_origin_values += float(trading_api.get_origin_portfolio_value(exchange_manager))
 
         return total_profitability * 100 / total_origin_values if total_origin_values > 0 else 0
 
