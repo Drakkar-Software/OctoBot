@@ -60,10 +60,12 @@ class OctoBotBacktesting:
                  enable_storage=True,
                  run_on_all_available_time_frames=False,
                  backtesting_data=None,
-                 name=None):
+                 name=None,
+                 config_by_tentacle=None):
         self.logger = commons_logging.get_logger(self.__class__.__name__)
         self.backtesting_config = backtesting_config
         self.tentacles_setup_config = tentacles_setup_config
+        self.config_by_tentacle: dict = config_by_tentacle
         self.bot_id = str(uuid.uuid4())
         self.matrix_id = ""
         self.exchange_manager_ids = []
@@ -129,7 +131,7 @@ class OctoBotBacktesting:
             exchange: [str(s) for s in symbols]
             for exchange, symbols in self.symbols_to_create_exchange_classes.items()
         }
-        self.logger.info(f"Stopping for {self.backtesting_files} with {symbols_by_exchange}")
+        self.logger.debug(f"Stopping for {self.backtesting_files} with {symbols_by_exchange}")
         exchange_managers = []
         try:
             if self.backtesting is None:
@@ -193,6 +195,7 @@ class OctoBotBacktesting:
             self.backtesting = None
 
     def memory_leak_checkup(self, to_check_elements):
+        gc.collect()
         self.logger.debug(f"Memory leak checking {[e.__class__.__name__ for e in to_check_elements]}")
         memory_leak_errors = []
         for i in range(len(to_check_elements)):
@@ -273,6 +276,11 @@ class OctoBotBacktesting:
 
     async def _init_evaluators(self):
         await evaluator_api.initialize_evaluators(self.backtesting_config, self.tentacles_setup_config)
+        if (not self.backtesting_config[commons_constants.CONFIG_TIME_FRAME]) and \
+           evaluator_constants.CONFIG_FORCED_TIME_FRAME in self.backtesting_config:
+            self.backtesting_config[commons_constants.CONFIG_TIME_FRAME] = self.backtesting_config[
+                evaluator_constants.CONFIG_FORCED_TIME_FRAME
+            ]
         await evaluator_api.create_evaluator_channels(self.matrix_id, is_backtesting=True)
 
     async def _init_service_feeds(self):
@@ -305,7 +313,9 @@ class OctoBotBacktesting:
                 symbols_by_crypto_currencies=exchange_configuration.symbols_by_crypto_currencies,
                 symbols=exchange_configuration.symbols,
                 time_frames=exchange_configuration.available_required_time_frames,
-                real_time_time_frames=exchange_configuration.real_time_time_frames)
+                real_time_time_frames=exchange_configuration.real_time_time_frames,
+                config_by_evaluator=self.config_by_tentacle,
+            )
 
     async def _create_service_feeds(self):
         for feed in self.service_feeds:
@@ -346,6 +356,8 @@ class OctoBotBacktesting:
             exchange_builder = trading_api.create_exchange_builder(self.backtesting_config, exchange_class_string) \
                 .has_matrix(self.matrix_id) \
                 .use_tentacles_setup_config(self.tentacles_setup_config) \
+                .use_trading_config_by_trading_mode(self.config_by_tentacle) \
+                .has_forced_markets(self.backtesting_data.forced_markets if self.backtesting_data else None) \
                 .set_bot_id(self.bot_id) \
                 .is_simulated() \
                 .is_rest_only() \
