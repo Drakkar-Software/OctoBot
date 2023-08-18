@@ -19,11 +19,11 @@ import enum
 
 class BotKeys(enum.Enum):
     ID = "id"
+    CREATED_AT = "created_at"
     NAME = "name"
     USER_ID = "user_id"
     CURRENT_PORTFOLIO_ID = "current_portfolio_id"
     CURRENT_DEPLOYMENT_ID = "current_deployment_id"
-    PROFITABILITY = "profitability"
     CURRENT_CONFIG_ID = "current_config_id"
     LAST_TRADE_TIME = "last_trade_time"
     METADATA = "metadata"
@@ -38,12 +38,13 @@ class BotDeploymentKeys(enum.Enum):
     CURRENT_HOSTING_ID = "current_hosting_id"
     PRODUCT_ID = "product_id"
     CURRENT_STORAGE_ID = "current_storage_id"
-    SUBSCRIPTION_ID = "subscription_id"
+    SUBSCRIPTION_ID = "product_subscription_id"
     CURRENT_URL_ID = "current_url_id"
-    TYPE = "type"
     STATUS = "status"
-    ERROR_STATUS = "error_status"
     DESIRED_STATUS = "desired_status"
+    TYPE = "type"
+    METADATA = "metadata"
+    ERROR_STATUS = "error_status"
 
 
 class BotDeploymentURLKeys(enum.Enum):

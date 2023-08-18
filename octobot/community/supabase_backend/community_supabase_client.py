@@ -271,21 +271,6 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             enums.BotConfigKeys.BOT_ID.value, bot_id
         ).execute()).data
 
-    async def update_config(self, config) -> list:
-        # use a new current portfolio for the given bot
-        return (await self.table("bot_configs").update(config).eq(
-            enums.BotConfigKeys.ID.value, config[enums.BotConfigKeys.ID.value]
-        ).execute()).data
-
-    async def switch_config(self, new_config) -> dict:
-        # use a new current portfolio for the given bot
-        bot_id = new_config[enums.BotConfigKeys.BOT_ID.value]
-        inserted_config = (await self.table("bot_configs").insert(new_config).execute()).data[0]
-        await self.table("bots").update(
-            {enums.BotKeys.CURRENT_CONFIG_ID.value: inserted_config[enums.BotConfigKeys.ID.value]}
-        ).eq(enums.BotKeys.ID.value, bot_id).execute()
-        return inserted_config
-
     async def fetch_portfolios(self, bot_id) -> list:
         return (await self.table("bot_portfolios").select("*").eq(
             enums.PortfolioKeys.BOT_ID.value, bot_id

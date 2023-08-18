@@ -26,6 +26,7 @@ import octobot_commons.configuration as commons_configuration
 
 
 LOADED_BACKEND_CREDS_ENV_VARIABLES = False
+VERBOSE = False
 
 
 @pytest_asyncio.fixture
@@ -41,10 +42,11 @@ async def authenticated_client_1_with_temp_bot():
         try:
             bot = await client.create_bot(supabase_backend_enums.DeploymentTypes.SELF_HOSTED)
             bot_id = bot[supabase_backend_enums.BotKeys.ID.value]
+            _print(f"created bot {bot[supabase_backend_enums.BotKeys.NAME.value]} (id: {bot_id})")
             yield client, bot_id
         finally:
             if bot_id is not None:
-                await _delete_bot(client, bot_id)
+                await delete_bot(client, bot_id)
 
 
 @pytest_asyncio.fixture
@@ -71,7 +73,7 @@ def skip_if_no_service_key(request):
         pytest.skip(reason=f"Disabled {request.node.name} [SUPABASE_BACKEND_SERVICE_KEY is not set]")
 
 
-async def _delete_bot(client, bot_id):
+async def delete_bot(client, bot_id):
 
     async def _delete_portfolio_histories(portfolio_id):
         await client.table("bot_portfolio_histories").delete().eq(
@@ -128,7 +130,9 @@ async def _delete_bot(client, bot_id):
             await _delete_config(to_del_config_id)
     # delete bot
     deleted_bot = (await client.delete_bot(bot_id))[0]
+    _print(f"deleted bot (id: {bot_id})")
     assert deleted_bot[supabase_backend_enums.BotKeys.ID.value] == bot_id
+    return deleted_bot
 
 
 @contextlib.asynccontextmanager
@@ -191,6 +195,11 @@ def get_backend_client_creds(identifier):
 
 def _get_backend_service_key():
     return os.getenv(f"SUPABASE_BACKEND_SERVICE_KEY")
+
+
+def _print(message):
+    if VERBOSE:
+        print(message)
 
 
 _load_backend_creds_env_variables_if_necessary()
