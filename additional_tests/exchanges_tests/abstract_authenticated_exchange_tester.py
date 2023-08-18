@@ -28,6 +28,8 @@ import octobot_trading.constants as trading_constants
 import octobot_trading.exchanges as trading_exchanges
 import octobot_trading.personal_data as personal_data
 import octobot_trading.personal_data.orders as personal_data_orders
+import octobot_trading.util.test_tools.exchanges_test_tools as exchanges_test_tools
+import octobot_trading.util.test_tools.exchange_data as exchange_data_import
 import octobot_tentacles_manager.api as tentacles_manager_api
 from additional_tests.exchanges_tests import get_authenticated_exchange_manager
 
@@ -81,6 +83,7 @@ class AbstractAuthenticatedExchangeTester:
 
     async def inner_test_create_and_cancel_limit_orders(self, symbol=None, settlement_currency=None):
         symbol = symbol or self.SYMBOL
+        exchange_data = self.get_exchange_data(symbol=symbol)
         settlement_currency = settlement_currency or self.SETTLEMENT_CURRENCY
         price = self.get_order_price(await self.get_price(symbol=symbol), False, symbol=symbol)
         size = self.get_order_size(
@@ -100,7 +103,7 @@ class AbstractAuthenticatedExchangeTester:
         #     decimal.Decimal("7")
         # )
         # # end debug tools
-        open_orders = await self.get_open_orders(symbol=symbol)
+        open_orders = await self.get_open_orders(exchange_data)
         buy_limit = await self.create_limit_order(price, size, trading_enums.TradeOrderSide.BUY, symbol=symbol)
         self.check_created_limit_order(buy_limit, price, size, trading_enums.TradeOrderSide.BUY)
         assert await self.order_in_open_orders(open_orders, buy_limit, symbol=symbol)
@@ -411,10 +414,11 @@ class AbstractAuthenticatedExchangeTester:
         )
 
     async def get_portfolio(self):
-        return await self.exchange_manager.exchange.get_balance()
+        return await exchanges_test_tools.get_portfolio(self.exchange_manager, as_float=False)
 
-    async def get_my_recent_trades(self, symbol=None):
-        return await self.exchange_manager.exchange.get_my_recent_trades(symbol or self.SYMBOL)
+    async def get_my_recent_trades(self, exchange_data=None):
+        exchange_data = exchange_data or self.get_exchange_data()
+        return await exchanges_test_tools.get_trades(self.exchange_manager, exchange_data)
 
     async def get_closed_orders(self, symbol=None):
         return await self.exchange_manager.exchange.get_closed_orders(symbol or self.SYMBOL)
@@ -623,6 +627,17 @@ class AbstractAuthenticatedExchangeTester:
         return current_order
 
     async def _create_order_on_exchange(self, order, params=None, expected_creation_error=False):
+        # uncomment to bypass self.exchange_manager.trader
+        # created_orders = await exchanges_test_tools.create_orders(
+        #     self.exchange_manager,
+        #     self.get_exchange_data(order.symbol),
+        #     [order.to_dict()]
+        # )
+        # created_order = personal_data_orders.create_order_instance_from_raw(
+        #     self.exchange_manager.trader,
+        #     created_order_dicts[0][trading_constants.STORAGE_ORIGIN_VALUE],
+        #     force_open_or_pending_creation=False,
+        # )
         created_order = await self.exchange_manager.trader.create_order(order, params=params, wait_for_creation=False)
         if expected_creation_error:
             if created_order is None:
@@ -669,8 +684,9 @@ class AbstractAuthenticatedExchangeTester:
             price * (decimal.Decimal(str(multiplier)))
         )
 
-    async def get_open_orders(self, symbol=None):
-        orders = await self.exchange_manager.exchange.get_open_orders(symbol or self.SYMBOL)
+    async def get_open_orders(self, exchange_data=None):
+        exchange_data = exchange_data or self.get_exchange_data()
+        orders = await exchanges_test_tools.get_open_orders(self.exchange_manager, exchange_data)
         self.check_duplicate(orders)
         return orders
 
@@ -767,7 +783,7 @@ class AbstractAuthenticatedExchangeTester:
         self.check_created_limit_order(fetched_order, order.origin_price, order.origin_quantity, order.side)
 
     async def order_in_open_orders(self, previous_open_orders, order, symbol=None):
-        open_orders = await self.get_open_orders(symbol=symbol)
+        open_orders = await self.get_open_orders(self.get_exchange_data(symbol=symbol))
         assert len(open_orders) == len(previous_open_orders) + 1
         for open_order in open_orders:
             if open_order[trading_enums.ExchangeConstantsOrderColumns.EXCHANGE_ID.value] == order.exchange_order_id:
@@ -794,7 +810,7 @@ class AbstractAuthenticatedExchangeTester:
         raise AssertionError(f"Can't find any order similar to {orders}. Found: {found_orders}")
 
     async def order_not_in_open_orders(self, previous_open_orders, order, symbol=None):
-        open_orders = await self.get_open_orders(symbol=symbol)
+        open_orders = await self.get_open_orders(self.get_exchange_data(symbol=symbol))
         assert len(open_orders) == len(previous_open_orders)
         for open_order in open_orders:
             if open_order[trading_enums.ExchangeConstantsOrderColumns.EXCHANGE_ID.value] == order.exchange_order_id:
@@ -828,3 +844,17 @@ class AbstractAuthenticatedExchangeTester:
 
     def _get_all_symbols(self):
         return [self.SYMBOL]
+
+    def get_exchange_data(self, symbol=None, all_symbols=None) -> exchange_data_import.ExchangeData:
+        _symbols = all_symbols or [symbol or self.SYMBOL]
+        return exchange_data_import.ExchangeData(
+            auth_details={},
+            exchange_details={"name": self.exchange_manager.exchange_name},
+            markets=[
+                {
+                    "id": s, "symbol": s, "info": {}, "time_frame": "1h",
+                    "close": [0], "open": [0], "high": [0], "low": [0], "volume": [0], "time": [0]  # todo
+                }
+                for s in _symbols
+            ]
+        )

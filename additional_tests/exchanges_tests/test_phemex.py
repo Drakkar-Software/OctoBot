@@ -21,6 +21,8 @@ from additional_tests.exchanges_tests import abstract_authenticated_exchange_tes
 pytestmark = pytest.mark.asyncio
 
 
+# 17/08/23 (untested with ccxt 4.0.65:
+# ccxt.base.errors.ExchangeError: phemex {"msg":"Please try again later","code":10500}?
 class TestPemexAuthenticatedExchange(
     abstract_authenticated_exchange_tester.AbstractAuthenticatedExchangeTester
 ):
