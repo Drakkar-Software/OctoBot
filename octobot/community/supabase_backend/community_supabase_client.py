@@ -18,19 +18,24 @@ import datetime
 import json
 import time
 import typing
+import logging
 
 import aiohttp
 import gotrue.errors
 import supabase.lib.client_options
 
 import octobot_commons.authentication as authentication
-import octobot_commons.logging as logging
+import octobot_commons.logging as commons_logging
 import octobot_commons.profiles as commons_profiles
 import octobot.constants as constants
 import octobot.community.errors as errors
 import octobot.community.supabase_backend.enums as enums
 import octobot.community.supabase_backend.supabase_client as supabase_client
 import octobot.community.supabase_backend.configuration_storage as configuration_storage
+
+
+# disable httpx info logs as it logs every request
+commons_logging.set_logging_level(["httpx"], logging.WARNING)
 
 
 class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
@@ -105,7 +110,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         try:
             return self.auth.get_session() is not None
         except gotrue.errors.AuthApiError as err:
-            logging.get_logger(self.__class__.__name__).info(f"Authentication error: {err}")
+            commons_logging.get_logger(self.__class__.__name__).info(f"Authentication error: {err}")
             # remove invalid session from
             self.remove_session_details()
             return False
