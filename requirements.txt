@@ -20,10 +20,3 @@ setuptools<65.6 # Added because the distutils.log.Log class was removed in setup
 # Community
 websockets
 gmqtt==0.6.11
-
-# Supabase
-supabase==1.0.3  # Supabase client
-gotrue           # Supabase authennticated API (required by supabase and enforced to allow direct import)
-supafunc         # Supabase functions calls (required by supabase and enforced to allow direct import)
-postgrest        # Supabase posgres calls (required by supabase and enforced to allow direct import)
-realtime         # Supabase realtime lib (required by supabase and enforced to allow direct import)
