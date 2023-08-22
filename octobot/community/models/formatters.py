@@ -29,12 +29,6 @@ def format_trades(trades: list, exchange_name: str, bot_id: str) -> list:
 
 
 def _format_trade(trade: dict, exchange_name: str, bot_id: str):
-    trade_type = trade[trading_enums.ExchangeConstantsOrderColumns.TYPE.value]
-    try:
-        trade_type = trading_personal_data.parse_order_type(trade)[1].value
-    except (Exception):
-        # use default trade_type
-        pass
     metadata = {
         trading_enums.ExchangeConstantsOrderColumns.ENTRIES.value:
             trade[trading_enums.ExchangeConstantsOrderColumns.ENTRIES.value]
@@ -51,57 +45,38 @@ def _format_trade(trade: dict, exchange_name: str, bot_id: str):
             backend_enums.TradeKeys.QUANTITY.value:
                 float(trade[trading_enums.ExchangeConstantsOrderColumns.AMOUNT.value]),
             backend_enums.TradeKeys.SYMBOL.value: trade[trading_enums.ExchangeConstantsOrderColumns.SYMBOL.value],
-            backend_enums.TradeKeys.TYPE.value:  trade_type,
+            backend_enums.TradeKeys.TYPE.value: _get_order_type(trade),
             backend_enums.TradeKeys.METADATA.value: metadata
         }
 
 
-def format_orders(orders: list, exchange_name: str, bot_id: str) -> list:
+def format_orders(orders: list, exchange_name: str) -> list:
     return [
         {
-            backend_enums.OrderKeys.ORDER_ID: storage_order[trading_constants.STORAGE_ORIGIN_VALUE][
-                trading_enums.ExchangeConstantsOrderColumns.ID.value
-            ],
-            backend_enums.OrderKeys.EXCHANGE_ORDER_ID:
-                storage_order[trading_constants.STORAGE_ORIGIN_VALUE][
-                    trading_enums.ExchangeConstantsOrderColumns.EXCHANGE_ID.value],
-            backend_enums.OrderKeys.BOT_ID: bot_id,
-            backend_enums.OrderKeys.EXCHANGE: exchange_name,
-            backend_enums.OrderKeys.SYMBOL: storage_order[trading_constants.STORAGE_ORIGIN_VALUE][
+            backend_enums.OrderKeys.EXCHANGE.value: exchange_name,
+            backend_enums.OrderKeys.SYMBOL.value: storage_order[trading_constants.STORAGE_ORIGIN_VALUE][
                 trading_enums.ExchangeConstantsOrderColumns.SYMBOL.value],
-            backend_enums.OrderKeys.PRICE: storage_order[trading_constants.STORAGE_ORIGIN_VALUE][
+            backend_enums.OrderKeys.PRICE.value: storage_order[trading_constants.STORAGE_ORIGIN_VALUE][
                 trading_enums.ExchangeConstantsOrderColumns.PRICE.value],
-            backend_enums.OrderKeys.TIME: storage_order[trading_constants.STORAGE_ORIGIN_VALUE][
+            backend_enums.OrderKeys.TIME.value: storage_order[trading_constants.STORAGE_ORIGIN_VALUE][
                 trading_enums.ExchangeConstantsOrderColumns.TIMESTAMP.value],
-            backend_enums.OrderKeys.TYPE: storage_order[trading_constants.STORAGE_ORIGIN_VALUE][
-                trading_enums.ExchangeConstantsOrderColumns.TYPE.value],
-            backend_enums.OrderKeys.SIDE: storage_order[trading_constants.STORAGE_ORIGIN_VALUE][
-                trading_enums.ExchangeConstantsOrderColumns.SIDE.value],
-            backend_enums.OrderKeys.QUANTITY: storage_order[trading_constants.STORAGE_ORIGIN_VALUE][
+            backend_enums.OrderKeys.TYPE.value: _get_order_type(
+                storage_order[trading_constants.STORAGE_ORIGIN_VALUE]
+            ),
+            backend_enums.OrderKeys.QUANTITY.value: storage_order[trading_constants.STORAGE_ORIGIN_VALUE][
                 trading_enums.ExchangeConstantsOrderColumns.AMOUNT.value],
-            backend_enums.OrderKeys.REDUCE_ONLY: storage_order[trading_constants.STORAGE_ORIGIN_VALUE][
-                trading_enums.ExchangeConstantsOrderColumns.REDUCE_ONLY.value],
-            backend_enums.OrderKeys.TAG: storage_order[trading_constants.STORAGE_ORIGIN_VALUE][
-                trading_enums.ExchangeConstantsOrderColumns.TAG.value],
-            backend_enums.OrderKeys.SELF_MANAGED: storage_order[trading_constants.STORAGE_ORIGIN_VALUE][
-                trading_enums.ExchangeConstantsOrderColumns.SELF_MANAGED.value],
-            # order metadata
-            backend_enums.OrderKeys.EXCHANGE_CREATION_PARAMS:
-                storage_order.get(trading_enums.StoredOrdersAttr.EXCHANGE_CREATION_PARAMS.value, {}),
-            backend_enums.OrderKeys.ENTRIES:
-                storage_order.get(trading_enums.StoredOrdersAttr.ENTRIES.value, None),
-            backend_enums.OrderKeys.GROUP_ID:
-                storage_order.get(trading_enums.StoredOrdersAttr.GROUP_ID.value, None),
-            backend_enums.OrderKeys.GROUP_TYPE:
-                storage_order.get(trading_enums.StoredOrdersAttr.GROUP_TYPE.value, None),
-            backend_enums.OrderKeys.CHAINED_ORDERS:
-                storage_order.get(trading_enums.StoredOrdersAttr.CHAINED_ORDERS.value, []),
-            backend_enums.OrderKeys.UPDATE_WITH_TRIGGERING_ORDER_FEES:
-                storage_order.get(trading_enums.StoredOrdersAttr.UPDATE_WITH_TRIGGERING_ORDER_FEES.value, False),
-
         }
         for storage_order in orders
     ]
+
+
+def _get_order_type(order_or_trade):
+    order_type = order_or_trade[trading_enums.ExchangeConstantsOrderColumns.TYPE.value]
+    try:
+        return trading_personal_data.parse_order_type(order_or_trade)[1].value
+    except Exception:
+        # use default trade_type
+        return order_type
 
 
 def format_portfolio(
