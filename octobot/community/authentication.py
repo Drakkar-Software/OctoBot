@@ -37,6 +37,14 @@ import octobot_commons.configuration as commons_configuration
 import octobot_trading.enums as trading_enums
 import octobot_trading.personal_data as trading_personal_data
 
+import octobot_commons.logging as commons_logging
+import logging
+
+
+# disable httpx info logs as it logs every request
+commons_logging.set_logging_level(["httpx"], logging.WARNING)
+
+
 def _selected_bot_update(func):
     async def wrapper(*args, **kwargs):
         self = args[0]
