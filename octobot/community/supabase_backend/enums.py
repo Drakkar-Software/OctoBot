@@ -27,6 +27,7 @@ class BotKeys(enum.Enum):
     CURRENT_CONFIG_ID = "current_config_id"
     LAST_TRADE_TIME = "last_trade_time"
     METADATA = "metadata"
+    ORDERS = "orders"
 
 
 class BotDeploymentKeys(enum.Enum):
@@ -110,28 +111,12 @@ class TradeKeys(enum.Enum):
 
 
 class OrderKeys(enum.Enum):
-    # todo use same as TradeKeys ?
-    ID = "id"
-    ORDER_ID = "order_id"
-    EXCHANGE_ORDER_ID = "exchange_order_id"
-    BOT_ID = "bot_id"
-    EXCHANGE = "exchange"
-    SYMBOL = "symbol"
-    PRICE = "price"
     TIME = "time"
-    TYPE = "type"
-    SIDE = "side"
+    EXCHANGE = "exchange"
+    PRICE = "price"
     QUANTITY = "quantity"
-    REDUCE_ONLY = "reduce_only"
-    TAG = "tag"
-    SELF_MANAGED = "self_managed"
-    # order metadata
-    EXCHANGE_CREATION_PARAMS = "ecp"
-    ENTRIES = "e"
-    GROUP_ID = "group_id"
-    GROUP_TYPE = "group_type"
-    CHAINED_ORDERS = "chained_orders"
-    UPDATE_WITH_TRIGGERING_ORDER_FEES = "utf"
+    SYMBOL = "symbol"
+    TYPE = "type"
 
 
 class PortfolioKeys(enum.Enum):
