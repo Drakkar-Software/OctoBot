@@ -213,28 +213,18 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             enums.TradeKeys.BOT_ID.value, bot_id
         ).execute()).data
 
-    async def upsert_trades(self, trades) -> list:
+    async def upsert_trades(self, formatted_trades) -> list:
         return (await self.table("bot_trades").upsert(
-            trades, on_conflict=f"{enums.TradeKeys.TRADE_ID.value},{enums.TradeKeys.TIME.value}"
+            formatted_trades, on_conflict=f"{enums.TradeKeys.TRADE_ID.value},{enums.TradeKeys.TIME.value}"
         ).execute()).data
 
-    # todo test
-    async def fetch_orders(self, bot_id) -> list:
-        return (await self.table("bot_orders").select("*").eq(
-            enums.OrderKeys.BOT_ID.value, bot_id
-        ).execute()).data
-
-    # todo test
-    async def reset_orders(self, bot_id):
-        return (await self.table("bot_orders").delete().eq(
-            enums.OrderKeys.BOT_ID.value, bot_id
-        ).execute()).data
-
-    # todo test
-    async def upsert_orders(self, trades) -> list:
-        return (await self.table("bot_orders").upsert(
-            trades, on_conflict=f"{enums.OrderKeys.ORDER_ID.value},{enums.OrderKeys.TIME.value}"
-        ).execute()).data
+    async def update_bot_orders(self, bot_id, formatted_orders) -> dict:
+        bot_update = {
+            enums.BotKeys.ORDERS.value: formatted_orders
+        }
+        return await self.update_bot(
+            bot_id, bot_update
+        )
 
     async def fetch_bot_profile_data(self, bot_config_id: str) -> commons_profiles.ProfileData:
         if not bot_config_id:
