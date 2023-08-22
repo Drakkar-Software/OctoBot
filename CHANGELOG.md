@@ -6,6 +6,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [0.4.53] - 2023-08-22
+### Added
+- [Smart DCA] Revamp the DCA trading mode to handle evaluators, scaled entries and exits
+- [GridTrading] Support funds reallocation
+- [TradingModes] s% and t% quantity types to trade % of portfolio traded assets
+- [WebInterface] Notification history
+- [WebInterface] Advanced tips
+- [BingX] Trading simulator
+### Updated
+- [WebInterface] Now check trading permission when adding exchange keys
+### Fixed
+- [WebInterface] Orders display issues
+- [WebInterface] Currencies import issues
+- [Binance] Fix futures API
+- [Kucoin] Fix API and websocket
+- [Orders] Chained orders restore
+- [Backtesting] Fix fees computation on very small trades
+- [Storage] Fix corrupted file issues
+
 ## [0.4.52] - 2023-07-05
 ### Added
 - [Exchanges] Support Binance futures
