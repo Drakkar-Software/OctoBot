@@ -77,7 +77,7 @@ try:
                         sentry_sdk.utils.logger.error(
                             "Unexpected status code: %s (body: %s)",
                             response.status,
-                            response.data,
+                            await response.text(),
                         )
                         self.on_dropped_event("status_{}".format(response.status))
                         record_loss("network_error")
@@ -175,7 +175,7 @@ try:
             hub = self.hub_cls.current
 
             async def send_event_wrapper() -> None:
-                with hub:
+                with hub:    # pylint: disable=not-context-manager
                     with sentry_sdk.utils.capture_internal_exceptions():
                         await self._async_send_event(event)
                         self._flush_client_reports()
@@ -189,9 +189,8 @@ try:
         ) -> None:
             hub = self.hub_cls.current
 
-            async def send_envelope_wrapper():
-                # type: () -> None
-                with hub:
+            async def send_envelope_wrapper() -> None:
+                with hub:    # pylint: disable=not-context-manager
                     with sentry_sdk.utils.capture_internal_exceptions():
                         await self._async_send_envelope(envelope)
                         self._flush_client_reports()
