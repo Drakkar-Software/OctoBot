@@ -30,6 +30,13 @@ class BotKeys(enum.Enum):
     ORDERS = "orders"
 
 
+class ProductsSubscriptionsKeys(enum.Enum):
+    ID = "id"
+    CREATED_AT = "created_at"
+    STATUS = "status"
+    DESIRED_STATUS = "desired_status"
+
+
 class BotDeploymentKeys(enum.Enum):
     ID = "id"
     CREATED_AT = "created_at"
@@ -63,6 +70,11 @@ class BotDeploymentStatus(enum.Enum):
     STOPPED = "stopped"
     PENDING = "pending"
     UNKNOWN = "unknown"
+
+
+class ProductSubscriptionDesiredStatus(enum.Enum):
+    ACTIVE = 'active'
+    CANCELED = "canceled"
 
 
 class BotDeploymentErrorsStatuses(enum.Enum):
