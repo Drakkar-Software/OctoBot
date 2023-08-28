@@ -203,6 +203,13 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             (await self.postgres_functions().invoke("get_subscribed_products_urls", {}))["data"]
         ) or []
 
+    async def fetch_bot_products_subscription(self, bot_deployment_id: str) -> dict:
+        return (await self.table("bot_deployments").select(
+            "products_subscription:products_subscriptions!product_subscription_id(id, status, desired_status)"
+        ).eq(
+            enums.BotDeploymentKeys.ID.value, bot_deployment_id
+        ).execute()).data[0]["products_subscription"]
+
     async def fetch_trades(self, bot_id) -> list:
         return (await self.table("bot_trades").select("*").eq(
             enums.TradeKeys.BOT_ID.value, bot_id
