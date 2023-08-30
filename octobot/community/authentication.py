@@ -41,8 +41,12 @@ import octobot_commons.logging as commons_logging
 import logging
 
 
+_INTERNAL_LOGGERS = [
+    "httpx", "httpx._client",
+    "httpcore.http11", "httpcore.http2", "httpcore.proxy", "httpcore.socks", "httpcore.connection"
+]
 # disable httpx info logs as it logs every request
-commons_logging.set_logging_level(["httpx"], logging.WARNING)
+commons_logging.set_logging_level(_INTERNAL_LOGGERS, logging.WARNING)
 
 
 def _selected_bot_update(func):
