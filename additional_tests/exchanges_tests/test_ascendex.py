@@ -30,6 +30,7 @@ class TestAscendexAuthenticatedExchange(
     SETTLEMENT_CURRENCY = "USDT"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
     ORDER_SIZE = 30  # % of portfolio to include in test orders
+    IGNORE_EXCHANGE_TRADE_ID = True
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()

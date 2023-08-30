@@ -65,6 +65,7 @@ class AbstractAuthenticatedExchangeTester:
     SUPPORTS_DOUBLE_BUNDLED_ORDERS = True
     # set true when cancelling any bundled order on exchange would automatically cancel the other(s)
     CANCEL_DOUBLE_BUNDLED_ORDERS_TOGETHER = True
+    IGNORE_EXCHANGE_TRADE_ID = False    # set True when trade.exchange_trade_id can't be set
 
     # Implement all "test_[name]" methods, call super() to run the test, pass to ignore it.
     # Override the "inner_test_[name]" method to override a test content.
@@ -431,6 +432,7 @@ class AbstractAuthenticatedExchangeTester:
     def check_duplicate(self, orders_or_trades):
         assert len(orders_or_trades) * (1 - self.DUPLICATE_TRADES_RATIO) <= len({
             f"{o[trading_enums.ExchangeConstantsOrderColumns.EXCHANGE_ID.value]}"
+            f"{o[trading_enums.ExchangeConstantsOrderColumns.EXCHANGE_TRADE_ID.value]}"
             f"{o[trading_enums.ExchangeConstantsOrderColumns.TIMESTAMP.value]}"
             f"{o[trading_enums.ExchangeConstantsOrderColumns.AMOUNT.value]}"
             f"{o[trading_enums.ExchangeConstantsOrderColumns.PRICE.value]}"
@@ -510,6 +512,10 @@ class AbstractAuthenticatedExchangeTester:
         assert trade.fee
         assert trade.origin_order_id
         assert trade.exchange_order_id
+        if self.IGNORE_EXCHANGE_TRADE_ID:
+            assert trade.exchange_trade_id is None
+        else:
+            assert trade.exchange_trade_id
         assert trade.side
         if trade.status is not trading_enums.OrderStatus.CANCELED:
             assert trade.executed_quantity
