@@ -33,6 +33,7 @@ class TestHollaexAuthenticatedExchange(
     ORDER_SIZE = 50  # % of portfolio to include in test orders
     EXPECT_MISSING_ORDER_FEES_DUE_TO_ORDERS_TOO_OLD_FOR_RECENT_TRADES = True   # when recent trades are limited and
     # closed orders fees are taken from recent trades
+    IGNORE_EXCHANGE_TRADE_ID = True
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
