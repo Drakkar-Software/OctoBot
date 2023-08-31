@@ -6,6 +6,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [0.4.54] - 2023-08-31
+### Added
+- [Kucoin] API Key permissions checks
+- [OKX] API Key permissions checks
+### Updated
+- [GridTrading] Improve quantity computation using recent trades 
+- [Orders] Display permission error when missing trading permissions in API Key 
+- [TradingView] Quantity documentation 
+- [Logging] Reduce httpx requests logs 
+### Fixed
+- [TradingView] Webhook error 
+### Removed
+- [Python] Removed support for 3.9. 3.10 is now the required Python version
+
 ## [0.4.53] - 2023-08-22
 ### Added
 - [Smart DCA] Revamp the DCA trading mode to handle evaluators, scaled entries and exits
