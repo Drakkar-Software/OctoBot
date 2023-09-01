@@ -56,6 +56,7 @@ class AbstractAuthenticatedExchangeTester:
     EXPECT_POSSIBLE_ORDER_NOT_FOUND_DURING_ORDER_CREATION = False
     OPEN_ORDERS_IN_CLOSED_ORDERS = False
     CANCELLED_ORDERS_IN_CLOSED_ORDERS = False
+    RECENT_TRADES_UPDATE_TIMEOUT = 15
     MARKET_FILL_TIMEOUT = 15
     OPEN_TIMEOUT = 15
     CANCEL_TIMEOUT = 15
@@ -119,7 +120,7 @@ class AbstractAuthenticatedExchangeTester:
     async def inner_test_create_and_fill_market_orders(self):
         portfolio = await self.get_portfolio()
         current_price = await self.get_price()
-        price = self.get_order_price(current_price, False)
+        price = self.get_order_price(current_price, False, price_diff=0)
         size = self.get_order_size(portfolio, price)
         buy_market = await self.create_market_order(current_price, size, trading_enums.TradeOrderSide.BUY)
         post_buy_portfolio = {}
@@ -131,6 +132,7 @@ class AbstractAuthenticatedExchangeTester:
                 filled_order
             )
             self._check_order(parsed_filled_order, size, trading_enums.TradeOrderSide.BUY)
+            await self.wait_for_order_exchange_id_in_trades(parsed_filled_order.exchange_order_id)
             await self.check_require_order_fees_from_trades(
                 filled_order[trading_enums.ExchangeConstantsOrderColumns.EXCHANGE_ID.value]
             )
@@ -432,7 +434,7 @@ class AbstractAuthenticatedExchangeTester:
     def check_duplicate(self, orders_or_trades):
         assert len(orders_or_trades) * (1 - self.DUPLICATE_TRADES_RATIO) <= len({
             f"{o[trading_enums.ExchangeConstantsOrderColumns.EXCHANGE_ID.value]}"
-            f"{o[trading_enums.ExchangeConstantsOrderColumns.EXCHANGE_TRADE_ID.value]}"
+            f"{o.get(trading_enums.ExchangeConstantsOrderColumns.EXCHANGE_TRADE_ID.value)}"
             f"{o[trading_enums.ExchangeConstantsOrderColumns.TIMESTAMP.value]}"
             f"{o[trading_enums.ExchangeConstantsOrderColumns.AMOUNT.value]}"
             f"{o[trading_enums.ExchangeConstantsOrderColumns.PRICE.value]}"
@@ -683,7 +685,7 @@ class AbstractAuthenticatedExchangeTester:
         )
 
     def get_order_price(self, price, is_above_price, symbol=None, price_diff=None):
-        price_diff = price_diff or self.ORDER_PRICE_DIFF
+        price_diff = self.ORDER_PRICE_DIFF if price_diff is None else price_diff
         multiplier = 1 + price_diff / 100 if is_above_price else 1 - price_diff / 100
         return personal_data.decimal_adapt_price(
             self.exchange_manager.exchange.get_market_status(symbol or self.SYMBOL),
@@ -735,6 +737,40 @@ class AbstractAuthenticatedExchangeTester:
         assert order.side is side
         assert order.is_open()
 
+    async def wait_for_order_exchange_id_in_trades(self, order_exchange_id):
+        if self.IGNORE_EXCHANGE_TRADE_ID:
+            return True, ""
+
+        def check_order_exchange_id_in_trades(trades):
+            trades_exchange_ids = [
+                trade[trading_enums.ExchangeConstantsOrderColumns.EXCHANGE_ID.value]
+                for trade in trades
+            ]
+            if order_exchange_id in trades_exchange_ids:
+                return True, ""
+            return False, f"{order_exchange_id} is not in recent trades exchange ids ({trades_exchange_ids})"
+        return await self._get_recent_trades_until(check_order_exchange_id_in_trades, self.RECENT_TRADES_UPDATE_TIMEOUT)
+
+    async def _get_recent_trades_until(self, validation_func, timeout):
+        t0 = time.time()
+        message = ""
+        recent_trades = []
+        iterations = 0
+        while time.time() - t0 < timeout:
+            recent_trades = await self.get_my_recent_trades()
+            iterations += 1
+            if recent_trades:
+                found, message = validation_func(recent_trades)
+                if found:
+                    print(f"{self.exchange_manager.exchange_name} {validation_func.__name__} "
+                          f"True after {time.time() - t0} seconds ({iterations} iterations).")
+                    return recent_trades
+            await asyncio.sleep(1)
+        raise TimeoutError(
+            f"Trade not found within {timeout}s and {len(recent_trades)} trades: ({validation_func.__name__}), "
+            f"message: {message}"
+        )
+
     async def wait_for_fill(self, order):
         def parse_is_filled(raw_order):
             return personal_data.parse_order_status(raw_order) in {trading_enums.OrderStatus.FILLED,
@@ -764,8 +800,10 @@ class AbstractAuthenticatedExchangeTester:
             can_order_be_not_found_on_exchange \
             and self.exchange_manager.exchange.EXPECT_POSSIBLE_ORDER_NOT_FOUND_DURING_ORDER_CREATION
         t0 = time.time()
+        iterations = 0
         while time.time() - t0 < timeout:
             raw_order = await self.exchange_manager.exchange.get_order(order.exchange_order_id, order.symbol)
+            iterations += 1
             if raw_order is None:
                 print(f"{self.exchange_manager.exchange_name} {order.order_type} {validation_func.__name__} "
                       f"Order not found after {time.time() - t0} seconds. Order: [{order}]. Raw order: [{raw_order}]")
@@ -777,9 +815,10 @@ class AbstractAuthenticatedExchangeTester:
                         f"{self.exchange_manager.exchange.EXPECT_POSSIBLE_ORDER_NOT_FOUND_DURING_ORDER_CREATION} "
                         f"and can_order_be_not_found_on_exchange is {can_order_be_not_found_on_exchange}"
                     )
-            if raw_order and validation_func(raw_order):
+            elif raw_order and validation_func(raw_order):
                 print(f"{self.exchange_manager.exchange_name} {order.order_type} {validation_func.__name__} "
-                      f"True after {time.time() - t0} seconds. Order: [{order}]. Raw order: [{raw_order}]")
+                      f"True after {time.time() - t0} seconds and {iterations} iterations. "
+                      f"Order: [{order}]. Raw order: [{raw_order}]")
                 return raw_order
             await asyncio.sleep(1)
         raise TimeoutError(f"Order not filled/cancelled within {timeout}s: {order} ({validation_func.__name__})")
