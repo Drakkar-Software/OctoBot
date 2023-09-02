@@ -98,6 +98,7 @@ class ProductKeys(enum.Enum):
     UPDATED_AT = "updated_at"
     SLUG = "slug"
     CURRENT_VERSION_ID = "current_version_id"
+    CURRENT_CONFIG_ID = "current_config_id"
     AUTHOR_ID = "author_id"
     LOGO_URL = "logo_url"
     DOWNLOAD_URL = "download_url"
@@ -178,3 +179,7 @@ class UserKeys(enum.Enum):
 class DeploymentTypes(enum.Enum):
     SELF_HOSTED = "self_hosted"
     CLOUD = "cloud"
+
+
+class SQLValues(enum.Enum):
+    NULL = "null"
