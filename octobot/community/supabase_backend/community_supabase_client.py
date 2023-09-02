@@ -354,7 +354,11 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         try:
             return datetime.datetime.strptime(str_time, "%Y-%m-%dT%H:%M:%S")
         except ValueError:
-            return datetime.datetime.strptime(str_time, "%Y-%m-%dT%H:%M:%S.%f")
+            try:
+                return datetime.datetime.strptime(str_time, "%Y-%m-%dT%H:%M:%S.%f")
+            except ValueError:
+                # last chance, try using iso format (ex: 2011-11-04T00:05:23.283+04:00)
+                return datetime.datetime.fromisoformat(str_time)
 
     async def _get_user(self) -> gotrue.User:
         return self.auth.get_user().user
