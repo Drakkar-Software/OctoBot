@@ -332,7 +332,8 @@ class OctoBotBacktesting:
             matrix_id=self.matrix_id,
             data_files=self.backtesting_files,
             importers_by_data_file=self.backtesting_data.importers_by_data_file if self.backtesting_data else None,
-            backtest_data=self.backtesting_data
+            backtest_data=self.backtesting_data,
+            bot_id=self.bot_id,
         )
         if self.run_on_all_available_time_frames:
             self.backtesting_config[evaluator_constants.CONFIG_FORCED_TIME_FRAME] = [
