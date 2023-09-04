@@ -45,6 +45,9 @@ def _format_trade(trade: dict, exchange_name: str, bot_id: str):
             backend_enums.TradeKeys.QUANTITY.value:
                 float(trade[trading_enums.ExchangeConstantsOrderColumns.AMOUNT.value]),
             backend_enums.TradeKeys.SYMBOL.value: trade[trading_enums.ExchangeConstantsOrderColumns.SYMBOL.value],
+            backend_enums.TradeKeys.VOLUME.value: float(
+                trade.get(trading_enums.ExchangeConstantsOrderColumns.VOLUME.value, 0)
+            ),
             backend_enums.TradeKeys.TYPE.value: _get_order_type(trade),
             backend_enums.TradeKeys.METADATA.value: metadata
         }

@@ -120,6 +120,7 @@ class TradeKeys(enum.Enum):
     QUANTITY = "quantity"
     SYMBOL = "symbol"
     TYPE = "type"
+    VOLUME = "volume"
     METADATA = "metadata"
 
 
