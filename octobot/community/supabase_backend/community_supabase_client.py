@@ -358,7 +358,16 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
                 return datetime.datetime.strptime(str_time, "%Y-%m-%dT%H:%M:%S.%f")
             except ValueError:
                 # last chance, try using iso format (ex: 2011-11-04T00:05:23.283+04:00)
-                return datetime.datetime.fromisoformat(str_time)
+                try:
+                    return datetime.datetime.fromisoformat(str_time)
+                except ValueError:
+                    # sometimes fractional seconds are not supported, ex:
+                    # '2023-09-04T00:01:31.06381+00:00'
+                    if "." in str_time and "+" in str_time:
+                        without_ms_time = str_time[0:str_time.rindex(".")] + str_time[str_time.rindex("+"):]
+                        # convert to '2023-09-04T00:01:31+00:00'
+                        return datetime.datetime.fromisoformat(without_ms_time)
+                    raise
 
     async def _get_user(self) -> gotrue.User:
         return self.auth.get_user().user
