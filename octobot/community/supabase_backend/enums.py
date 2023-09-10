@@ -81,6 +81,7 @@ class BotDeploymentErrorsStatuses(enum.Enum):
     NO_ERROR = None
     INTERNAL_SERVER_ERROR = "internal_server_error"
     INVALID_CONFIG = "invalid_config"
+    INVALID_EXCHANGE_CREDENTIALS = "invalid_exchange_credentials"
     MISSING_CONFIG = "missing_config"
 
 
