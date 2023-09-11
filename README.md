@@ -38,20 +38,18 @@ We are looking forward to receiving your feedback on our new OctoBot based syste
 [Octobot](https://www.octobot.online/) is a powerful open-source cryptocurrency trading robot.
 
 OctoBot is highly customizable using its configuration and tentacles system.  
-You can build your own bot using the infinite [configuration](https://www.octobot.online/guides/#trading_modes) possibilities such as  
-**technical analysis**, **social media processing** or even **external statistics management** like google trends.  
+You can build your own bot using the infinite [configuration](https://www.octobot.online/guides/#trading_modes) possibilities such as  **technical analysis**, **social media processing** or even **external statistics management** like google trends.  
   
-OctoBot is **AI ready**: Python being the main language for OctoBot, it's easy to integrate machine-learning libraries such as [Tensorflow](https://github.com/tensorflow/tensorflow) or  
-any other libraries and take advantage of all the available data and create a very powerful trading strategy.  
+OctoBot is **AI ready**: Python being the main language for OctoBot, it's easy to integrate machine-learning libraries such as [Tensorflow](https://github.com/tensorflow/tensorflow) or any other libraries and take advantage of all the available data and create a very powerful trading strategy.  
   
 Octobot's main feature is **evolution**, you can : 
-- share your configurations with other octobot users 
-- [install](https://www.octobot.info/advanced_usage/tentacle-manager), [modify](https://developer.octobot.info/tentacles/tentacle-development) and even [create](https://developer.octobot.info/tentacles/tentacle-development) new tentacles to build your ideal cryptocurrency trading robot
-- [contribute](https://developer.octobot.info/installation/developer-installation/octobot-developer-installation) to improve OctoBot core repositories and tentacles
+- Share your configurations with other octobot users.
+- [Install](https://www.octobot.info/advanced_usage/tentacle-manager), [modify](https://developer.octobot.info/tentacles/tentacle-development) and even [create](https://developer.octobot.info/tentacles/tentacle-development) new tentacles to build your ideal cryptocurrency trading robot.
+- [Contribute](https://developer.octobot.info/installation/developer-installation/octobot-developer-installation) to improve OctoBot core repositories and tentacles.
 
 ## Installation  
 OctoBot's installation is **very simple**, you can either:
-- [Deploy your OctoBot on OctoBot Cloud](https://octobot.cloud/). With OctoBot Cloud, experience hassle-free installation, updates, and maintenance - leave it all to us! It will also benefit from cloud only features.
+- [Deploy your OctoBot on OctoBot Cloud](https://octobot.cloud/). With OctoBot Cloud, experience hassle-free installation, updates, and maintenance - leave it all to us! Your robot will also benefit from cloud only features.
 - [Download and install](https://www.octobot.info/installation/local-installation) OctoBot on your computer or server and enjoy all features for free.
 - Install OctoBot [using docker](https://www.octobot.info/installation/local-installation#option-2-with-docker).
 
