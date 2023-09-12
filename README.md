@@ -12,12 +12,14 @@
 [![Telegram News](https://img.shields.io/badge/telegram-news-blue.svg?logo=telegram&label=Telegram)](https://t.me/OctoBot_Project)
 [![Twitter](https://img.shields.io/twitter/follow/DrakkarsOctobot.svg?label=twitter&style=social)](https://octobot.click/gh-twitter)
 [![YouTube](https://img.shields.io/youtube/channel/views/UC2YAaBeWY8y_Olqs79b_X8A?label=youtube&style=social)](https://octobot.click/gh-youtube)
+
 <p align="center">
-<img src="../assets/illustration.png" alt="Octobot illustration">
+  <img src="../assets/illustration.png" alt="Octobot illustration">
 </p>
 
-![Web Interface](../assets/web-interface.gif)
-
+<p align="center">
+  <img src="../assets/ReadMeIntro.gif" alt="Intro" />
+</p>
 
 ## Launch of the new OctoBot Cloud beta
 The OctoBot team is proud to announce the launch of the beta phase of [the new octobot.cloud](https://beta.octobot.cloud/?utm_source=github&utm_medium=dk&utm_campaign=beta_annoucements&utm_content=readme)
