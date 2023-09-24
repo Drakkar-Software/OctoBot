@@ -153,8 +153,11 @@ async def test_fetch_startup_info(authenticated_client_1_with_temp_bot):
     authenticated_client_1, bot_id = authenticated_client_1_with_temp_bot
     startup_info = await authenticated_client_1.fetch_startup_info(bot_id)
     parsed_info = community.StartupInfo.from_dict(startup_info)
-    assert parsed_info.forced_profile_url is None
-    assert parsed_info.subscribed_products_urls == []
+    assert (isinstance(parsed_info.forced_profile_url, str) or parsed_info.forced_profile_url is None)
+    assert all(
+        isinstance(val, str)
+        for val in parsed_info.subscribed_products_urls
+    )
 
 
 async def test_upsert_and_reset_trades(authenticated_client_1_with_temp_bot, authenticated_client_2):

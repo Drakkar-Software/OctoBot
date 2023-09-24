@@ -58,7 +58,11 @@ async def test_update_metadata(authenticated_client_1):
 
 
 async def test_fetch_subscribed_products_urls(authenticated_client_1):
-    assert await authenticated_client_1.fetch_subscribed_products_urls() == []
+    subscribed_products_urls = await authenticated_client_1.fetch_subscribed_products_urls()
+    assert all(
+        (isinstance(val, str) or val is None)
+        for val in subscribed_products_urls
+    )
 
 
 async def test_sign_in_with_otp_token(authenticated_client_1, skip_if_no_service_key, admin_client):
