@@ -27,7 +27,11 @@ class StartupInfo:
     def from_dict(data):
         return StartupInfo(
             data.get(StartupInfo.FORCED_PROFILE_URL),
-            data.get(StartupInfo.SUBSCRIBED_PRODUCTS_URLS, []) or []
+            [
+                url
+                for url in data.get(StartupInfo.SUBSCRIBED_PRODUCTS_URLS, []) or []
+                if url  # skip unset urls
+            ]
         )
 
     def __str__(self):
