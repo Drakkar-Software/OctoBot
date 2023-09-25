@@ -21,11 +21,11 @@
   <img src="../assets/ReadMeIntro.gif" alt="Intro" />
 </p>
 
-## Launch of the new OctoBot Cloud beta
-The OctoBot team is proud to announce the launch of the beta phase of [the new octobot.cloud](https://beta.octobot.cloud/?utm_source=github&utm_medium=dk&utm_campaign=beta_annoucements&utm_content=readme)
+## Launch of the new OctoBot Cloud
+The OctoBot team is proud to announce the launch of the [new octobot.cloud](https://octobot.cloud/?utm_source=github&utm_medium=dk&utm_campaign=production_annoucements&utm_content=readme)
 where 90% of trading strategies can be automated **in a very easy way** and **for free**.
 
-[![try beta now](https://img.shields.io/static/v1?label=Try%20the%20new%20OctoBot%20cloud&message=now&color=007bff&style=for-the-badge)](https://beta.octobot.cloud/?utm_source=github&utm_medium=dk&utm_campaign=beta_annoucements&utm_content=readme_button)
+[![try octobot cloud now](https://img.shields.io/static/v1?label=Try%20the%20new%20OctoBot%20cloud&message=now&color=007bff&style=for-the-badge)](https://octobot.cloud/?utm_source=github&utm_medium=dk&utm_campaign=production_annoucements&utm_content=readme_button)
 
 We are looking forward to receiving your feedback on our new OctoBot based system.
 
