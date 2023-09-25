@@ -23,7 +23,6 @@ class IdentifiersProvider:
     ENABLED_ENVIRONMENT: str = None
     COMMUNITY_URL: str = None
     FRONTEND_PASSWORD_RECOVER_URL: str = None
-    FEED_URL: str = None
     BACKEND_URL: str = None
     BACKEND_KEY: str = None
 
@@ -31,7 +30,6 @@ class IdentifiersProvider:
     def use_production():
         IdentifiersProvider.COMMUNITY_URL = constants.OCTOBOT_COMMUNITY_URL
         IdentifiersProvider.FRONTEND_PASSWORD_RECOVER_URL = constants.OCTOBOT_COMMUNITY_RECOVER_PASSWORD_URL
-        IdentifiersProvider.FEED_URL = constants.OCTOBOT_COMMUNITY_FEED_URL
         IdentifiersProvider.BACKEND_URL = constants.COMMUNITY_BACKEND_URL
         IdentifiersProvider.BACKEND_KEY = constants.COMMUNITY_BACKEND_KEY
         IdentifiersProvider._register_environment(enums.CommunityEnvironments.Production)
@@ -40,7 +38,6 @@ class IdentifiersProvider:
     def use_staging():
         IdentifiersProvider.COMMUNITY_URL = constants.STAGING_OCTOBOT_COMMUNITY_URL
         IdentifiersProvider.FRONTEND_PASSWORD_RECOVER_URL = constants.STAGING_COMMUNITY_RECOVER_PASSWORD_URL
-        IdentifiersProvider.FEED_URL = constants.STAGING_OCTOBOT_COMMUNITY_FEED_URL
         IdentifiersProvider.BACKEND_URL = constants.STAGING_COMMUNITY_BACKEND_URL
         IdentifiersProvider.BACKEND_KEY = constants.STAGING_COMMUNITY_BACKEND_KEY
         IdentifiersProvider._register_environment(enums.CommunityEnvironments.Staging)
