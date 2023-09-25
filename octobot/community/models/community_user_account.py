@@ -1,3 +1,4 @@
+# pylint: disable=E0711, E0702
 #  This file is part of OctoBot (https://github.com/Drakkar-Software/OctoBot)
 #  Copyright (c) 2023 Drakkar-Software, All rights reserved.
 #
@@ -15,22 +16,22 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import octobot.community.models.community_supports as community_supports
 import octobot.community.errors as errors
+import octobot.community.supabase_backend.enums as backend_enums
 
 
 class CommunityUserAccount:
     USER_DATA_CONTENT = "content"
     BOT_DEVICE = "device"
     BOT_URLS = "urls"
-    BOT_DEPLOYMENT = "deployment"
+    BOT_DEPLOYMENT = "bot_deployment"
     BOT_DEPLOYMENT_TYPE = "type"
-    SELF_HOSTED_BOT_DEPLOYMENT_TYPE = "self-hosted"
     METADATA = "metadata"
     FILLED_FORMS = "filledForms"
     NO_SELECTED_BOT_DESC = "No selected bot. Please select a bot to enable your community features."
 
     def __init__(self):
         self.gql_user_id = None
-        self.gql_bot_id = None
+        self.bot_id = None
         self.gql_access_token = None
         self.supports = community_supports.CommunitySupports()
 
@@ -45,16 +46,17 @@ class CommunityUserAccount:
         return self._selected_bot_raw_data is not None
 
     def get_email(self):
-        return self._profile_raw_data["email"]
+        return self._profile_raw_data[backend_enums.UserKeys.EMAIL.value]
 
     def get_user_id(self):
-        return self._profile_raw_data["id"]
+        return self._profile_raw_data[backend_enums.UserKeys.ID.value]
 
     def get_graph_token(self):
+        raise NotImplemented
         return self._get_user_data_content()["graph_token"]
 
     def get_has_donated(self):
-        return self._get_user_data_content()["has_donated"]
+        return self._get_user_data_metadata().get("has_donated", False)
 
     def get_filled_forms_ids(self):
         return self._get_user_data_metadata().get(self.FILLED_FORMS, [])
@@ -68,28 +70,34 @@ class CommunityUserAccount:
         return self._selected_bot_raw_data
 
     def is_self_hosted(self, bot):
-        deployment = bot.get(self.BOT_DEPLOYMENT)
-        if not deployment:
-            return True
-        try:
-            return deployment[self.BOT_DEPLOYMENT_TYPE] == self.SELF_HOSTED_BOT_DEPLOYMENT_TYPE
-        except KeyError:
-            return True
+        return self._get_bot_deployment(bot).get(
+            backend_enums.BotDeploymentKeys.TYPE.value, backend_enums.DeploymentTypes.SELF_HOSTED.value
+        ) == backend_enums.DeploymentTypes.SELF_HOSTED.value
 
-    def get_bot_deployment_url(self):
-        self._ensure_selected_bot_data()
-        urls = self._selected_bot_raw_data[self.BOT_DEPLOYMENT][self.BOT_URLS]
-        if urls:
-            return urls[0]["url"]
-        raise errors.BotError("No deployment url in selected bot")
+    def get_selected_bot_deployment_id(self):
+        return self._get_bot_deployment(self._selected_bot_raw_data)[
+            backend_enums.BotDeploymentKeys.ID.value
+        ]
+
+    def get_bot_deployment_status(self) -> (str, str):
+        deployment = self._get_bot_deployment(self._selected_bot_raw_data)
+        return (
+            deployment[backend_enums.BotDeploymentKeys.STATUS.value],
+            deployment[backend_enums.BotDeploymentKeys.DESIRED_STATUS.value]
+        )
+
+    def get_bot_deployment_url(self, deployment_url_data):
+        return deployment_url_data[backend_enums.BotDeploymentURLKeys.URL.value]
 
     def get_selected_bot_device_uuid(self):
+        raise NotImplemented
         try:
             return self.get_selected_bot_raw_data(raise_on_missing=True).get(self.BOT_DEVICE, {}).get("uuid", None)
         except AttributeError:
             raise errors.NoBotDeviceError("No device associated to the select bot")
 
     def get_selected_bot_device_name(self):
+        raise NotImplemented
         try:
             return self.get_selected_bot_raw_data(raise_on_missing=True).get(self.BOT_DEVICE, {}).get("name", None)
         except AttributeError:
@@ -97,11 +105,17 @@ class CommunityUserAccount:
 
     @staticmethod
     def get_bot_id(bot):
-        return bot["_id"]
+        return bot[backend_enums.BotKeys.ID.value]
 
     @staticmethod
     def get_bot_name_or_id(bot):
-        return bot["name"] or CommunityUserAccount.get_bot_id(bot)
+        return bot[backend_enums.BotKeys.NAME.value]
+
+    def get_selected_bot_current_portfolio_id(self):
+        return self._selected_bot_raw_data[backend_enums.BotKeys.CURRENT_PORTFOLIO_ID.value]
+
+    def get_selected_bot_current_config_id(self):
+        return self._selected_bot_raw_data[backend_enums.BotKeys.CURRENT_CONFIG_ID.value]
 
     def set_profile_raw_data(self, profile_raw_data):
         self._profile_raw_data = profile_raw_data
@@ -122,18 +136,31 @@ class CommunityUserAccount:
         return self._profile_raw_data[self.USER_DATA_CONTENT]
 
     def _get_user_data_metadata(self):
-        return self._profile_raw_data.get(self.METADATA, {})
+        return self._profile_raw_data.get(backend_enums.UserKeys.USER_METADATA.value, {})
+
+    def _get_bot_deployment(self, bot):
+        if bot is None:
+            raise errors.BotError(self.NO_SELECTED_BOT_DESC)
+        return bot.get(self.BOT_DEPLOYMENT) or {}
 
     def _ensure_selected_bot_data(self):
         if self._selected_bot_raw_data is None:
             raise errors.BotError(self.NO_SELECTED_BOT_DESC)
 
     def ensure_selected_bot_id(self):
-        if self.gql_bot_id is None:
+        if self.bot_id is None:
             raise errors.BotError("No selected bot")
 
+    def get_support_role(self):
+        try:
+            if self.get_has_donated():
+                return community_supports.CommunitySupports.OCTOBOT_DONOR_ROLE
+        except KeyError:
+            pass
+        return community_supports.CommunitySupports.DEFAULT_SUPPORT_ROLE
+
     def flush_bot_details(self):
-        self.gql_bot_id = None
+        self.bot_id = None
         self._selected_bot_raw_data = None
         self._all_user_bots_raw_data = []
 

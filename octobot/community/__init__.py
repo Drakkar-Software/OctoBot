@@ -31,6 +31,13 @@ from octobot.community.models import (
     CommunityDonation,
     StartupInfo,
 )
+from octobot.community.supabase_backend import (
+    PostgresFunctions,
+    SyncConfigurationStorage,
+    ASyncConfigurationStorage,
+    AuthenticatedAsyncSupabaseClient,
+    CommunitySupabaseClient,
+)
 
 from octobot.community import community_analysis
 from octobot.community import community_manager
@@ -99,6 +106,11 @@ __all__ = [
     "Error",
     "ErrorsUploader",
     "StartupInfo",
+    "PostgresFunctions",
+    "SyncConfigurationStorage",
+    "ASyncConfigurationStorage",
+    "AuthenticatedAsyncSupabaseClient",
+    "CommunitySupabaseClient",
     "select_startup_info_query",
     "select_bot_query",
     "select_bots_query",

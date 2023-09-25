@@ -19,10 +19,10 @@
     "community": {
       "type": "object",
       "properties": {
-        "device_id": {
+        "bot_id": {
           "type": "string"
         },
-        "token": {
+        "supabase.auth.token": {
           "type": "string"
         },
         "environment": {

@@ -21,9 +21,11 @@ from additional_tests.exchanges_tests import abstract_authenticated_exchange_tes
 pytestmark = pytest.mark.asyncio
 
 
-class TestHuobiAuthenticatedExchange(
+# 17/08/23 (untested with ccxt 4.0.65:
+class _TestHuobiAuthenticatedExchange(
     abstract_authenticated_exchange_tester.AbstractAuthenticatedExchangeTester
 ):
+    # PASSED the 6th of aug 2023
     # enter exchange name as a class variable here
     EXCHANGE_NAME = "huobi"
     ORDER_CURRENCY = "BTC"

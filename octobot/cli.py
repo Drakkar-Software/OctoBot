@@ -133,9 +133,12 @@ def _create_startup_config(logger):
 async def _apply_community_startup_info_to_config(logger, config, community_auth):
     try:
         if not community_auth.is_initialized() and constants.USER_ACCOUNT_EMAIL and constants.USER_PASSWORD_TOKEN:
-            await community_auth.login(
-                constants.USER_ACCOUNT_EMAIL, None, password_token=constants.USER_PASSWORD_TOKEN
-            )
+            try:
+                await community_auth.login(
+                    constants.USER_ACCOUNT_EMAIL, None, password_token=constants.USER_PASSWORD_TOKEN
+                )
+            except authentication.AuthenticationError as err:
+                logger.debug(f"Password token auth failure ({err}). Trying with saved session.")
             if not community_auth.is_initialized():
                 await community_auth.async_init_account()
         if not community_auth.is_logged_in():
@@ -144,8 +147,8 @@ async def _apply_community_startup_info_to_config(logger, config, community_auth
         logger.debug(f"Fetched startup info: {startup_info}")
         commands.download_and_select_profile(
             logger, config,
-            startup_info.get_subscribed_products_urls(),
-            startup_info.get_forced_profile_url()
+            startup_info.subscribed_products_urls,
+            startup_info.forced_profile_url
         )
     except octobot_community.errors.BotError:
         return
@@ -261,7 +264,8 @@ def start_octobot(args):
         _load_or_create_tentacles(config, logger)
 
         # patch setup with forced values
-        community_auth = _handle_forced_startup_config(logger, config, is_first_startup)
+        if not args.backtesting:
+            community_auth = _handle_forced_startup_config(logger, config, is_first_startup)
 
         # Can now perform config health check (some checks require a loaded profile)
         configuration_manager.config_health_check(config, args.backtesting)

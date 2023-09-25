@@ -1,12 +1,12 @@
 # Drakkar-Software requirements
-OctoBot-Commons==1.9.5
-OctoBot-Trading==2.4.8
-OctoBot-Evaluators==1.9.0
-OctoBot-Tentacles-Manager==2.9.1
-OctoBot-Services==1.6.0
-OctoBot-Backtesting==1.9.0
-Async-Channel==2.2.0
-trading-backend==1.2.5
+OctoBot-Commons==1.9.23
+OctoBot-Trading==2.4.29
+OctoBot-Evaluators==1.9.1
+OctoBot-Tentacles-Manager==2.9.5
+OctoBot-Services==1.6.2
+OctoBot-Backtesting==1.9.2
+Async-Channel==2.2.1
+trading-backend==1.2.9
 
 ## Others
 colorlog==4.7.2
@@ -21,9 +21,9 @@ setuptools<65.6 # Added because the distutils.log.Log class was removed in setup
 websockets
 gmqtt==0.6.11
 
-# Supabase
-supabase==1.0.3  # Supabase client
-gotrue           # Supabase authennticated API (required by supabase and enforced to allow direct import)
-supafunc         # Supabase functions calls (required by supabase and enforced to allow direct import)
-postgrest        # Supabase posgres calls (required by supabase and enforced to allow direct import)
-realtime         # Supabase realtime lib (required by supabase and enforced to allow direct import)
+# Supabase  ensure supabase_backend_tests keep passing when updating any of those
+supabase==1.0.4   # Supabase client
+gotrue==1.0.3     # Supabase authennticated API (required by supabase and enforced to allow direct import)
+supafunc==0.2.3   # Supabase functions calls (required by supabase and enforced to allow direct import)
+postgrest==0.10.8 # Supabase posgres calls (required by supabase and enforced to allow direct import)
+realtime==1.0.0   # Supabase realtime lib (required by supabase and enforced to allow direct import)

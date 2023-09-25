@@ -48,7 +48,16 @@ class AbstractFeed:
         return True
 
     def is_connected_to_remote_feed(self):
-        raise NotImplementedError("is_connected_to_remote_feed is not implemented")
+        return False
 
     def update_last_message_time(self):
         self.last_message_time = time.time()
+
+    def is_up_to_date_with_account(self, user_account):
+        return True
+
+    def is_connected(self):
+        return False
+
+    def remove_device_details(self):
+        pass

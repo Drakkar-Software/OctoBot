@@ -13,8 +13,23 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
+import dataclasses
+import octobot.community.supabase_backend.enums as enums
 
-PROJECT_NAME = "OctoBot"
-AUTHOR = "Drakkar-Software"
-VERSION = "0.4.54"  # major.minor.revision
-LONG_VERSION = f"{VERSION}"
+
+class CommunityPublicData:
+    def __init__(self):
+        self.products = _DataElement({}, False)
+
+    def set_products(self, products):
+        self.products.value = {product[enums.ProductKeys.ID.value]: product for product in products}
+        self.products.fetched = True
+
+    def get_product_slug(self, product_id):
+        return self.products.value[product_id][enums.ProductKeys.SLUG.value]
+
+
+@dataclasses.dataclass
+class _DataElement:
+    value: any
+    fetched: bool

@@ -33,14 +33,14 @@ We are looking forward to receiving your feedback on our new OctoBot based syste
 <p align="middle">
   <a href="../assets/dashboard.png"><img src="../assets/dashboard.png" height="414" alt="Web interface"></a>  
   &nbsp;&nbsp;&nbsp;&nbsp;    
-  <a href="https://www.octobot.online/guides/#telegram"><img src="../assets/telegram-interface.png" height="414" alt="Telegram interface"></a>  
+  <a href="https://www.octobot.info/interfaces/telegram-interface"><img src="../assets/telegram-interface.png" height="414" alt="Telegram interface"></a>  
 </p>
 
 
 [Octobot](https://www.octobot.online/) is a powerful open-source cryptocurrency trading robot.
 
 OctoBot is highly customizable using its configuration and tentacles system.  
-You can build your own bot using the infinite [configuration](https://www.octobot.online/guides/#trading_modes) possibilities such as  **technical analysis**, **social media processing** or even **external statistics management** like google trends.  
+You can build your own bot using the infinite [configuration](https://www.octobot.info/configuration/profile-configuration) possibilities such as  **technical analysis**, **social media processing** or even **external statistics management** like google trends.  
   
 OctoBot is **AI ready**: Python being the main language for OctoBot, it's easy to integrate machine-learning libraries such as [Tensorflow](https://github.com/tensorflow/tensorflow) or any other libraries and take advantage of all the available data and create a very powerful trading strategy.  
   
@@ -73,7 +73,7 @@ OctoBot's installation is **very simple**, you can either:
 [![Ascendex](../assets/ascendex-logo.png)](https://octobot.click/gh-ascendex)
 
 Octobot supports many [exchanges](https://octobot.click/gh-exchanges) thanks to the [ccxt library](https://github.com/ccxt/ccxt). 
-To activate trading on an exchange, just configure OctoBot with your API keys as described [on the exchange documentation](https://www.octobot.online/guides/#exchanges).
+To activate trading on an exchange, just configure OctoBot with your API keys as described [on the exchange documentation](https://www.octobot.info/configuration/exchanges).
 
 
 ### Paper trading

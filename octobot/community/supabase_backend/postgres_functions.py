@@ -13,8 +13,15 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
+import typing
+import supafunc.functions_client
 
-PROJECT_NAME = "OctoBot"
-AUTHOR = "Drakkar-Software"
-VERSION = "0.4.54"  # major.minor.revision
-LONG_VERSION = f"{VERSION}"
+
+class PostgresFunctions(supafunc.functions_client.FunctionsClient):
+    """
+    Allow to use database functions
+    There should not be OctoBot specific code here
+    """
+    def __init__(self, supabase_url: str, headers: typing.Dict):
+        postgres_func_url = f"{supabase_url}/rest/v1/rpc"
+        super().__init__(postgres_func_url, headers)
