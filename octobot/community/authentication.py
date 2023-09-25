@@ -79,7 +79,7 @@ class CommunityAuthentication(authentication.Authenticator):
     @staticmethod
     def create(configuration: commons_configuration.Configuration):
         return CommunityAuthentication.instance(
-            identifiers_provider.IdentifiersProvider.FEED_URL,
+            None,
             config=configuration,
         )
 
