@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [0.4.55] - 2023-09-26
+### Updated
+- [Community] Migrate to the updated octobot.cloud. Full details on https://blog.octobot.online/introducing-the-new-octobot-cloud
+- [Logs] Improve debug logs
+### Fixed
+- [GridTrading] Mirror order rebalance issues 
+- [DCA & Dip Analyser] Sell order split issues 
+
 ## [0.4.54] - 2023-08-31
 ### Added
 - [Kucoin] API Key permissions checks
