@@ -144,7 +144,7 @@ class CommunityAuthentication(authentication.Authenticator):
     def get_signal_community_url(self, signal_identifier):
         try:
             slug = self.public_data.get_product_slug(signal_identifier)
-            return f"{identifiers_provider.IdentifiersProvider.COMMUNITY_URL}/product/{slug}"
+            return f"{identifiers_provider.IdentifiersProvider.COMMUNITY_URL}/strategies/{slug}"
         except KeyError:
             return identifiers_provider.IdentifiersProvider.COMMUNITY_URL
 
