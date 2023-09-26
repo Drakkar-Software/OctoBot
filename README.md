@@ -1,4 +1,4 @@
-# OctoBot [0.4.54](https://octobot.click/gh-changelog)
+# OctoBot [1.0.0](https://octobot.click/gh-changelog)
 [![PyPI](https://img.shields.io/pypi/v/OctoBot.svg?logo=pypi)](https://octobot.click/gh-pypi)
 [![Downloads](https://pepy.tech/badge/octobot/month)](https://pepy.tech/project/octobot)
 [![Dockerhub](https://img.shields.io/docker/pulls/drakkarsoftware/octobot.svg?logo=docker)](https://octobot.click/gh-dockerhub)
@@ -21,8 +21,8 @@
   <img src="../assets/ReadMeIntro.gif" alt="Intro" />
 </p>
 
-## Launch of the new OctoBot Cloud
-The OctoBot team is proud to announce the launch of the [new octobot.cloud](https://octobot.cloud/?utm_source=github&utm_medium=dk&utm_campaign=production_annoucements&utm_content=readme)
+## Launch of the new OctoBot cloud
+The OctoBot team is proud to announce the launch of the [new octobot.cloud](https://octobot.cloud/?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=readme)
 where 90% of trading strategies can be automated **in a very easy way** and **for free**.
 
 [![try octobot cloud now](https://img.shields.io/static/v1?label=Try%20the%20new%20OctoBot%20cloud&message=now&color=007bff&style=for-the-badge)](https://octobot.cloud/?utm_source=github&utm_medium=dk&utm_campaign=production_annoucements&utm_content=readme_button)
@@ -51,7 +51,7 @@ Octobot's main feature is **evolution**, you can :
 
 ## Installation  
 OctoBot's installation is **very simple**, you can either:
-- [Deploy your OctoBot on OctoBot Cloud](https://octobot.cloud/). With OctoBot Cloud, experience hassle-free installation, updates, and maintenance - leave it all to us! Your robot will also benefit from cloud only features.
+- [Deploy your OctoBot on OctoBot Cloud](https://octobot.cloud/?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=readme_deploy_on_cloud). With OctoBot cloud, experience hassle-free installation, updates, and maintenance - leave it all to us! Your robot will also benefit from cloud only features.
 - [Download and install](https://www.octobot.info/installation/local-installation) OctoBot on your computer or server and enjoy all features for free.
 - Install OctoBot [using docker](https://www.octobot.info/installation/local-installation#option-2-with-docker).
 
