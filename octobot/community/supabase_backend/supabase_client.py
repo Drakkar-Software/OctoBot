@@ -13,7 +13,6 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
-import asyncio
 import contextlib
 import typing
 import storage3
@@ -22,6 +21,7 @@ import gotrue
 import gotrue.errors
 import postgrest
 import supabase.lib.client_options
+
 import octobot.community.supabase_backend.postgres_functions as postgres_functions
 import octobot.community.supabase_backend.supabase_realtime_client as supabase_realtime_client
 
@@ -35,6 +35,7 @@ class AuthenticatedAsyncSupabaseClient(supabase.Client):
     - realtime client
     There should not be OctoBot specific code here
     """
+    REQUEST_TIMEOUT = 20    # default timeout is 5 which is sometimes not enough
     def __init__(
         self,
         supabase_url: str,
@@ -43,6 +44,7 @@ class AuthenticatedAsyncSupabaseClient(supabase.Client):
         loop=None,
     ):
         self.options = options
+        self.options.postgrest_client_timeout = self.REQUEST_TIMEOUT
         self.auth: gotrue.SyncGoTrueClient = None
         self.postgrest: postgrest.AsyncPostgrestClient = None
         super().__init__(supabase_url, supabase_key, options=options)

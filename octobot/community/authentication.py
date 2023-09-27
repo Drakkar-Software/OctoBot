@@ -32,6 +32,7 @@ import octobot_commons.constants as commons_constants
 import octobot_commons.enums as commons_enums
 import octobot_commons.authentication as authentication
 import octobot_commons.configuration as commons_configuration
+import octobot_trading.enums as trading_enums
 
 
 def _bot_data_update(func):
@@ -41,6 +42,7 @@ def _bot_data_update(func):
             self.logger.debug(f"Skipping {func.__name__} update: no user selected bot.")
             return
         try:
+            self.logger.debug(f"bot_data_update: {func.__name__} initiated.")
             return await func(*args, **kwargs)
         except Exception as err:
             self.logger.exception(err, True, f"Error when calling {func.__name__} {err}")
@@ -56,6 +58,7 @@ class CommunityAuthentication(authentication.Authenticator):
     ALLOWED_TIME_DELAY = 1 * commons_constants.MINUTE_TO_SECONDS
     NEW_ACCOUNT_INITIALIZE_TIMEOUT = 1 * commons_constants.MINUTE_TO_SECONDS
     LOGIN_TIMEOUT = 20
+    MAX_UPLOADED_TRADES_COUNT = 100
     BOT_NOT_FOUND_RETRY_DELAY = 1
     AUTHORIZATION_HEADER = "authorization"
     SESSION_HEADER = "X-Session"
@@ -489,7 +492,14 @@ class CommunityAuthentication(authentication.Authenticator):
         """
         if reset:
             await self.supabase_client.reset_trades(self.user_account.bot_id)
-        if formatted_trades := formatters.format_trades(trades, exchange_name, self.user_account.bot_id):
+        trades_to_upload = trades if len(trades) <= self.MAX_UPLOADED_TRADES_COUNT else (
+            sorted(
+                trades,
+                key=lambda x: x[trading_enums.ExchangeConstantsOrderColumns.TIMESTAMP.value],
+                reverse=True
+            )[:self.MAX_UPLOADED_TRADES_COUNT]
+        )
+        if formatted_trades := formatters.format_trades(trades_to_upload, exchange_name, self.user_account.bot_id):
             await self.supabase_client.upsert_trades(formatted_trades)
 
     @_bot_data_update
