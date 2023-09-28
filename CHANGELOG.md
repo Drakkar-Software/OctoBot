@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [1.0.1] - 2023-09-28
+### Fixed
+- [Community] OctoBot account connection timeout error 
+
 ## [1.0.0] - 2023-09-26
 ### Updated
 - [Community] Migrate to the updated octobot.cloud. Full details on https://blog.octobot.online/introducing-the-new-octobot-cloud
