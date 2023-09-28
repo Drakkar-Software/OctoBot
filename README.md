@@ -1,4 +1,4 @@
-# OctoBot [1.0.0](https://octobot.click/gh-changelog)
+# OctoBot [1.0.1](https://octobot.click/gh-changelog)
 [![PyPI](https://img.shields.io/pypi/v/OctoBot.svg?logo=pypi)](https://octobot.click/gh-pypi)
 [![Downloads](https://pepy.tech/badge/octobot/month)](https://pepy.tech/project/octobot)
 [![Dockerhub](https://img.shields.io/docker/pulls/drakkarsoftware/octobot.svg?logo=docker)](https://octobot.click/gh-dockerhub)
