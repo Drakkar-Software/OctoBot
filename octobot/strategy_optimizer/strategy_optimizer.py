@@ -22,6 +22,7 @@ import octobot_commons.data_util as data_util
 import octobot_commons.tentacles_management as tentacles_management
 import octobot_commons.logging as common_logging
 import octobot_commons.constants as commons_constants
+import octobot_commons.errors as commons_errors
 
 import octobot.constants as constants
 import octobot.strategy_optimizer as strategy_optimizer
@@ -53,6 +54,10 @@ class StrategyOptimizer:
         self.config = config
         self.tentacles_setup_config = copy.deepcopy(tentacles_setup_config)
         self.trading_mode = trading_modes.get_activated_trading_mode(tentacles_setup_config)
+        if self.trading_mode.get_name() not in self._get_compatible_trading_modes():
+            raise commons_errors.ConfigTradingError(
+                f"{self.trading_mode.get_name()} is not supported trading mode for the {self.get_name()}"
+            )
         self.strategy_class = tentacles_management.get_class_from_string(
             strategy_name, evaluators.StrategyEvaluator,
             tentacles_Evaluator.Strategies, tentacles_management.evaluator_parent_inspection)
@@ -334,3 +339,8 @@ class StrategyOptimizer:
                 in tentacles_manager_api.get_tentacles_activation(self.tentacles_setup_config)[
                     tentacles_manager_constants.TENTACLES_EVALUATOR_PATH].items()
                 if activated and StrategyOptimizer._is_relevant_evaluation_config(evaluator)]
+
+    def _get_compatible_trading_modes(self):
+        # Lazy import of tentacles to let tentacles manager handle imports
+        import tentacles.Trading.Mode as modes
+        return [modes.DailyTradingMode.get_name()]
