@@ -53,6 +53,12 @@ class BotDeploymentKeys(enum.Enum):
     TYPE = "type"
     METADATA = "metadata"
     ERROR_STATUS = "error_status"
+    ACTIVITIES = "activities"
+
+
+class BotDeploymentActivitiesKeys(enum.Enum):
+    LAST_ACTIVITY = "last_activity"
+    NEXT_ACTIVITY = "next_activity"
 
 
 class BotDeploymentURLKeys(enum.Enum):
