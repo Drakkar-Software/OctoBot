@@ -241,11 +241,24 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         if not bot_config_id:
             raise errors.MissingBotConfigError(f"bot_config_id is '{bot_config_id}'")
         bot_config = (await self.table("bot_configs").select(
-            "bot_id, options, exchanges, product_config:product_configs(config, version)"
+            "bot_id, "
+            "options, "
+            "exchanges, "
+            "product_config:product_configs("
+            "   config, "
+            "   version, "
+            "   product:products!product_id(attributes)"
+            ")"
         ).eq(enums.BotConfigKeys.ID.value, bot_config_id).execute()).data[0]
         profile_data = commons_profiles.ProfileData.from_dict(
             bot_config["product_config"][enums.ProfileConfigKeys.CONFIG.value]
         )
+        profile_data.trading.minimal_funds = [
+            commons_profiles.MinimalFund.from_dict(minimal_fund)
+            for minimal_fund in bot_config["product_config"]["product"][
+                enums.ProductKeys.ATTRIBUTES.value
+            ].get("minimal_funds", [])
+        ] if bot_config[enums.BotConfigKeys.EXCHANGES.value] else []
         profile_data.profile_details.version = bot_config["product_config"][enums.ProfileConfigKeys.VERSION.value]
         profile_data.exchanges = [
             commons_profiles.ExchangeData.from_dict(exchange_data)
