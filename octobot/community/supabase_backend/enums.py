@@ -53,6 +53,12 @@ class BotDeploymentKeys(enum.Enum):
     TYPE = "type"
     METADATA = "metadata"
     ERROR_STATUS = "error_status"
+    ACTIVITIES = "activities"
+
+
+class BotDeploymentActivitiesKeys(enum.Enum):
+    LAST_ACTIVITY = "last_activity"
+    NEXT_ACTIVITY = "next_activity"
 
 
 class BotDeploymentURLKeys(enum.Enum):
@@ -83,7 +89,14 @@ class BotDeploymentErrorsStatuses(enum.Enum):
     INVALID_CONFIG = "invalid_config"
     INVALID_EXCHANGE_CREDENTIALS = "invalid_exchange_credentials"
     ALREADY_USED_EXCHANGE_ACCOUNT = "already_used_exchange_account"
+    MISSING_MINIMAL_FUNDS = "missing_minimal_funds"
     MISSING_CONFIG = "missing_config"
+
+
+class ExchangeAccountStatuses(enum.Enum):
+    NO_STATUS = None
+    PENDING_PORTFOLIO_REFRESH = "pending_portfolio_refresh"
+    NO_PENDING_ACTION = "no_pending_action"
 
 
 class SignalKeys(enum.Enum):
@@ -104,12 +117,12 @@ class ProductKeys(enum.Enum):
     AUTHOR_ID = "author_id"
     LOGO_URL = "logo_url"
     DOWNLOAD_URL = "download_url"
-    CATEGORY_ID= "category_id"
-    ATTRIBUTES= "attributes"
+    CATEGORY_ID = "category_id"
+    ATTRIBUTES = "attributes"
     METADATA = "metadata"
-    PARENT_ID="parent_id"
-    VISIBILITY="visibility"
-    CURRENT_RESULT_ID="current_result_id"
+    PARENT_ID = "parent_id"
+    VISIBILITY = "visibility"
+    CURRENT_RESULT_ID = "current_result_id"
 
 
 class TradeKeys(enum.Enum):
