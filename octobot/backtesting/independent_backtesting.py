@@ -43,22 +43,26 @@ import octobot.storage as storage
 
 
 class IndependentBacktesting:
-    def __init__(self, config,
-                 tentacles_setup_config,
-                 backtesting_files,
-                 data_file_path=backtesting_constants.BACKTESTING_FILE_PATH,
-                 run_on_common_part_only=True,
-                 join_backtesting_timeout=backtesting_constants.BACKTESTING_DEFAULT_JOIN_TIMEOUT,
-                 start_timestamp=None,
-                 end_timestamp=None,
-                 enable_logs=True,
-                 stop_when_finished=False,
-                 name=None,
-                 enforce_total_databases_max_size_after_run=True,
-                 enable_storage=True,
-                 run_on_all_available_time_frames=False,
-                 backtesting_data=None,
-                 config_by_tentacle=None):
+    def __init__(
+        self,
+        config,
+        tentacles_setup_config,
+        backtesting_files,
+        data_file_path=backtesting_constants.BACKTESTING_FILE_PATH,
+        run_on_common_part_only=True,
+        join_backtesting_timeout=backtesting_constants.BACKTESTING_DEFAULT_JOIN_TIMEOUT,
+        start_timestamp=None,
+        end_timestamp=None,
+        enable_logs=True,
+        stop_when_finished=False,
+        name=None,
+        enforce_total_databases_max_size_after_run=True,
+        enable_storage=True,
+        run_on_all_available_time_frames=False,
+        backtesting_data=None,
+        config_by_tentacle=None,
+        services_config=None,
+    ):
         self.octobot_origin_config = config
         self.tentacles_setup_config = tentacles_setup_config
         self.backtesting_config = {}
@@ -83,19 +87,22 @@ class IndependentBacktesting:
         self.previous_handlers_log_level = commons_logging.get_logger_level_per_handler()
         self.enforce_total_databases_max_size_after_run = enforce_total_databases_max_size_after_run
         self.backtesting_data = backtesting_data
-        self.octobot_backtesting = backtesting.OctoBotBacktesting(self.backtesting_config,
-                                                                  self.tentacles_setup_config,
-                                                                  self.symbols_to_create_exchange_classes,
-                                                                  self.backtesting_files,
-                                                                  run_on_common_part_only,
-                                                                  start_timestamp=start_timestamp,
-                                                                  end_timestamp=end_timestamp,
-                                                                  enable_logs=self.enable_logs,
-                                                                  enable_storage=enable_storage,
-                                                                  run_on_all_available_time_frames=run_on_all_available_time_frames,
-                                                                  backtesting_data=self.backtesting_data,
-                                                                  name=name,
-                                                                  config_by_tentacle=config_by_tentacle)
+        self.octobot_backtesting = backtesting.OctoBotBacktesting(
+            self.backtesting_config,
+            self.tentacles_setup_config,
+            self.symbols_to_create_exchange_classes,
+            self.backtesting_files,
+            run_on_common_part_only,
+            start_timestamp=start_timestamp,
+            end_timestamp=end_timestamp,
+            enable_logs=self.enable_logs,
+            enable_storage=enable_storage,
+            run_on_all_available_time_frames=run_on_all_available_time_frames,
+            backtesting_data=self.backtesting_data,
+            name=name,
+            config_by_tentacle=config_by_tentacle,
+            services_config=services_config,
+        )
 
     async def initialize_and_run(self, log_errors=True):
         try:
@@ -133,6 +140,9 @@ class IndependentBacktesting:
     async def join_backtesting_updater(self, timeout=None):
         if self.octobot_backtesting.backtesting is not None:
             await asyncio.wait_for(self.octobot_backtesting.backtesting.time_updater.finished_event.wait(), timeout)
+
+    async def clear_fetched_data(self):
+        await self.octobot_backtesting.clear_fetched_data()
 
     async def stop(self, memory_check=False, should_raise=False):
         try:

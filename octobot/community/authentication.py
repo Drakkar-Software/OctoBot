@@ -134,6 +134,19 @@ class CommunityAuthentication(authentication.Authenticator):
         )
         return self.user_account.get_bot_deployment_url(deployment_url_data)
 
+    async def get_gpt_signal(
+        self, exchange: str, symbol: str, time_frame: commons_enums.TimeFrames, candle_open_time: float, version: str
+    ) -> str:
+        return await self.supabase_client.fetch_gpt_signal(exchange, symbol, time_frame, candle_open_time, version)
+
+    async def get_gpt_signals_history(
+        self, exchange: str, symbol: str, time_frame: commons_enums.TimeFrames,
+        first_open_time: float, last_open_time: float, version: str
+    ) -> dict:
+        return await self.supabase_client.fetch_gpt_signals_history(
+            exchange, symbol, time_frame, first_open_time, last_open_time, version
+        )
+
     def get_is_signal_receiver(self):
         if self._community_feed is None:
             return False

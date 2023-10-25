@@ -17,23 +17,25 @@ import octobot.backtesting as backtesting
 import octobot_backtesting.constants as constants
 
 
-def create_independent_backtesting(config,
-                                   tentacles_setup_config,
-                                   data_files,
-                                   data_file_path=constants.BACKTESTING_FILE_PATH,
-                                   join_backtesting_timeout=constants.BACKTESTING_DEFAULT_JOIN_TIMEOUT,
-                                   run_on_common_part_only=True,
-                                   start_timestamp=None,
-                                   end_timestamp=None,
-                                   enable_logs=True,
-                                   stop_when_finished=False,
-                                   name=None,
-                                   enforce_total_databases_max_size_after_run=True,
-                                   enable_storage=True,
-                                   run_on_all_available_time_frames=False,
-                                   backtesting_data=None,
-                                   config_by_tentacle=None) \
-        -> backtesting.IndependentBacktesting:
+def create_independent_backtesting(
+    config,
+    tentacles_setup_config,
+    data_files,
+    data_file_path=constants.BACKTESTING_FILE_PATH,
+    join_backtesting_timeout=constants.BACKTESTING_DEFAULT_JOIN_TIMEOUT,
+    run_on_common_part_only=True,
+    start_timestamp=None,
+    end_timestamp=None,
+    enable_logs=True,
+    stop_when_finished=False,
+    name=None,
+    enforce_total_databases_max_size_after_run=True,
+    enable_storage=True,
+    run_on_all_available_time_frames=False,
+    backtesting_data=None,
+    config_by_tentacle=None,
+    services_config=None
+) -> backtesting.IndependentBacktesting:
     return backtesting.IndependentBacktesting(
         config, tentacles_setup_config, data_files,
         data_file_path,
@@ -48,7 +50,8 @@ def create_independent_backtesting(config,
         enable_storage=enable_storage,
         run_on_all_available_time_frames=run_on_all_available_time_frames,
         backtesting_data=backtesting_data,
-        config_by_tentacle=config_by_tentacle
+        config_by_tentacle=config_by_tentacle,
+        services_config=services_config,
     )
 
 
@@ -62,6 +65,10 @@ async def join_independent_backtesting(independent_backtesting, timeout=constant
 
 async def initialize_independent_backtesting_config(independent_backtesting) -> dict:
     return await independent_backtesting.initialize_config()
+
+
+async def clear_backtesting_fetched_data(independent_backtesting):
+    await independent_backtesting.clear_fetched_data()
 
 
 async def stop_independent_backtesting(independent_backtesting, memory_check=False, should_raise=False) -> None:

@@ -24,6 +24,8 @@ import octobot_commons.logging as commons_logging
 import octobot_commons.configuration as commons_configuration
 import octobot_commons.databases as commons_databases
 import octobot_commons.constants as commons_constants
+import octobot_commons.enums as commons_enums
+import octobot_commons.list_util as list_util
 import octobot_commons.asyncio_tools as asyncio_tools
 
 import octobot_backtesting.api as backtesting_api
@@ -48,20 +50,23 @@ import octobot.databases_util as databases_util
 
 
 class OctoBotBacktesting:
-
-    def __init__(self, backtesting_config,
-                 tentacles_setup_config,
-                 symbols_to_create_exchange_classes,
-                 backtesting_files,
-                 run_on_common_part_only,
-                 start_timestamp=None,
-                 end_timestamp=None,
-                 enable_logs=True,
-                 enable_storage=True,
-                 run_on_all_available_time_frames=False,
-                 backtesting_data=None,
-                 name=None,
-                 config_by_tentacle=None):
+    def __init__(
+        self,
+        backtesting_config,
+        tentacles_setup_config,
+        symbols_to_create_exchange_classes,
+        backtesting_files,
+        run_on_common_part_only,
+        start_timestamp=None,
+        end_timestamp=None,
+        enable_logs=True,
+        enable_storage=True,
+        run_on_all_available_time_frames=False,
+        backtesting_data=None,
+        name=None,
+        config_by_tentacle=None,
+        services_config=None,
+    ):
         self.logger = commons_logging.get_logger(self.__class__.__name__)
         self.backtesting_config = backtesting_config
         self.tentacles_setup_config = tentacles_setup_config
@@ -91,6 +96,8 @@ class OctoBotBacktesting:
         self.enable_storage = enable_storage
         self.run_on_all_available_time_frames = run_on_all_available_time_frames
         self._has_started = False
+        self.has_fetched_data = False
+        self.services_config = services_config
 
     async def initialize_and_run(self):
         if not constants.ENABLE_BACKTESTING:
@@ -110,9 +117,13 @@ class OctoBotBacktesting:
         await self._init_backtesting()
         await self._init_evaluators()
         await self._init_service_feeds()
+        min_timestamp, max_timestamp = await self._configure_backtesting_time_window()
         await self._init_exchanges()
         self._ensure_limits()
         await self._create_evaluators()
+        await self._fetch_backtesting_extra_data_if_any(
+            min_timestamp, max_timestamp
+        )
         await self._create_service_feeds()
         await backtesting_api.start_backtesting(self.backtesting)
         if logger.BOT_CHANNEL_LOGGER is not None and self.enable_logs:
@@ -275,7 +286,9 @@ class OctoBotBacktesting:
         self.matrix_id = evaluator_api.create_matrix()
 
     async def _init_evaluators(self):
-        await evaluator_api.initialize_evaluators(self.backtesting_config, self.tentacles_setup_config)
+        await evaluator_api.initialize_evaluators(
+            self.backtesting_config, self.tentacles_setup_config, config_by_evaluator=self.config_by_tentacle
+        )
         if (not self.backtesting_config[commons_constants.CONFIG_TIME_FRAME]) and \
            evaluator_constants.CONFIG_FORCED_TIME_FRAME in self.backtesting_config:
             self.backtesting_config[commons_constants.CONFIG_TIME_FRAME] = self.backtesting_config[
@@ -341,16 +354,61 @@ class OctoBotBacktesting:
                 for tf in self.backtesting.importers[0].time_frames
             ]
 
-    async def _init_exchanges(self):
+    async def _configure_backtesting_time_window(self):
         # modify_backtesting_channels before creating exchanges as they require the current backtesting time to
         # initialize
-        await backtesting_api.adapt_backtesting_channels(self.backtesting,
-                                                         self.backtesting_config,
-                                                         importers.ExchangeDataImporter,
-                                                         run_on_common_part_only=self.run_on_common_part_only,
-                                                         start_timestamp=self.start_timestamp,
-                                                         end_timestamp=self.end_timestamp)
+        min_timestamp, max_timestamp = await backtesting_api.adapt_backtesting_channels(
+            self.backtesting,
+            self.backtesting_config,
+            importers.ExchangeDataImporter,
+            run_on_common_part_only=self.run_on_common_part_only,
+            start_timestamp=self.start_timestamp,
+            end_timestamp=self.end_timestamp
+        )
+        return min_timestamp, max_timestamp
 
+    async def _fetch_backtesting_extra_data_if_any(
+        self, min_timestamp: float, max_timestamp: float
+    ):
+        if not self.evaluators:
+            return
+        handled_classes = set()
+        coros = []
+        for evaluator in list_util.flatten_list(self.evaluators):
+            if evaluator and evaluator.get_name() not in handled_classes:
+                if evaluator.get_signals_history_type() == commons_enums.SignalHistoryTypes.GPT:
+                    coros.append(self._fetch_gpt_history(evaluator, min_timestamp, max_timestamp))
+                handled_classes.add(evaluator.get_name())
+        if coros:
+            self.has_fetched_data = True
+            await asyncio.gather(*coros)
+
+    async def _fetch_gpt_history(self, evaluator, min_timestamp: float, max_timestamp: float):
+        # prevent circular import
+        import tentacles.Services.Services_bases.gpt_service as gpt_service
+        service = await service_api.get_service(gpt_service.GPTService, True, self.services_config)
+        version = evaluator.get_version()
+        for exchange_id in self.exchange_manager_ids:
+            exchange_configuration = trading_api.get_exchange_configuration_from_exchange_id(exchange_id)
+            exchange_name = trading_api.get_exchange_name(
+                trading_api.get_exchange_manager_from_exchange_id(exchange_id)
+            )
+            await service.fetch_gpt_history(
+                exchange_name,
+                [str(symbol) for symbol in self.symbols_to_create_exchange_classes.get(exchange_name, [])],
+                exchange_configuration.available_required_time_frames,
+                version,
+                min_timestamp,
+                max_timestamp
+            )
+
+    async def clear_fetched_data(self):
+        if self.has_fetched_data:
+            # prevent circular import
+            import tentacles.Services.Services_bases.gpt_service as gpt_service
+            (await service_api.get_service(gpt_service.GPTService, True, self.services_config)).clear_signal_history()
+
+    async def _init_exchanges(self):
         for exchange_class_string in self.symbols_to_create_exchange_classes.keys():
             is_future = self.exchange_type_by_exchange[exchange_class_string] == \
                         commons_constants.CONFIG_EXCHANGE_FUTURE
