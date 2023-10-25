@@ -346,22 +346,71 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         self, exchange: str, symbol: str, time_frame: commons_enums.TimeFrames,
         first_open_time: float, last_open_time: float
     ) -> list:
-        total_candles_count = (last_open_time - first_open_time) // (
-            commons_enums.TimeFramesMinutes[time_frame] * commons_constants.MINUTE_TO_SECONDS
+        historical_candles = await self._fetch_paginated_signals_history(
+            "temp_ohlcv_history",
+            "timestamp, open, high, low, close, volume",
+            {
+                "exchange_internal_name": exchange,
+                "symbol": symbol,
+                "time_frame": time_frame.value,
+            },
+            commons_enums.TimeFramesMinutes[time_frame] * commons_constants.MINUTE_TO_SECONDS,
+            first_open_time,
+            last_open_time
         )
+        return self._format_ohlcvs(historical_candles)
+
+    async def fetch_gpt_signal(
+        self, exchange: str, symbol: str, time_frame: commons_enums.TimeFrames, timestamp: float, version: str
+    ) -> str:
+        signals = (
+            await self.table("temp_chatgpt_signals").select("signal").match(
+                {
+                    "timestamp": timestamp,
+                    "exchange_internal_name": exchange,
+                    "symbol": symbol,
+                    "time_frame": time_frame.value,
+                    "metadata->>version": version,
+                },
+            ).execute()
+        ).data
+        if signals:
+            return signals[0]["content"]
+        return ""
+
+    async def fetch_gpt_signals_history(
+        self, exchange: str, symbol: str, time_frame: commons_enums.TimeFrames,
+        first_open_time: float, last_open_time: float, version: str
+    ) -> dict:
+        historical_signals = await self._fetch_paginated_signals_history(
+            "temp_chatgpt_signals",
+            "timestamp, signal",
+            {
+                "exchange_internal_name": exchange,
+                "symbol": symbol,
+                "time_frame": time_frame.value,
+                "metadata->>version": version,
+            },
+            commons_enums.TimeFramesMinutes[time_frame] * commons_constants.MINUTE_TO_SECONDS,
+            first_open_time,
+            last_open_time
+        )
+        return self._format_gpt_signals(historical_signals)
+
+    async def _fetch_paginated_signals_history(
+        self, table_name: str, select: str, matcher: dict,
+        time_interval: float, first_open_time: float, last_open_time: float
+    ) -> list:
+        total_elements_count = (last_open_time - first_open_time) // time_interval
         offset = 0
         max_size = 0
-        total_candles = []
+        total_elements = []
         max_requests_count = 100
         request_count = 0
         while request_count < max_requests_count:
             request = (
-                self.table("temp_ohlcv_history").select("*")
-                .match({
-                    "exchange_internal_name": exchange,
-                    "symbol": symbol,
-                    "time_frame": time_frame.value,
-                }).gte(
+                self.table(table_name).select(select)
+                .match(matcher).gte(
                     "timestamp", self.get_formatted_time(first_open_time)
                 ).lte(
                     "timestamp", self.get_formatted_time(last_open_time)
@@ -371,21 +420,28 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             )
             if offset:
                 request = request.range(offset, offset+max_size)
-            fetched_candles = (await request.execute()).data
-            total_candles += fetched_candles
-            if len(fetched_candles) < max_size or (max_size == 0 and len(fetched_candles) == total_candles_count):
+            fetched_elements = (await request.execute()).data
+            total_elements += fetched_elements
+            if len(fetched_elements) < max_size or (max_size == 0 and len(fetched_elements) == total_elements_count):
                 # fetched everything
                 break
-            offset += len(fetched_candles)
+            offset += len(fetched_elements)
             if max_size == 0:
                 max_size = offset
             request_count += 1
 
         if request_count == max_requests_count:
             commons_logging.get_logger(self.__class__.__name__).info(
-                f"OHLCV fetch error: too many requests ({request_count}), fetched: {len(total_candles)} candles"
+                f"paginated fetch error on {table_name} with matcher: {matcher}: "
+                f"too many requests ({request_count}), fetched: {len(total_elements)} elements"
             )
-        return self._format_ohlcvs(total_candles)
+        return total_elements
+
+    def _format_gpt_signals(self, signals: list):
+        return {
+            signal["timestamp"]: signal["signal"]["content"]
+            for signal in signals
+        }
 
     def _format_ohlcvs(self, ohlcvs: list):
         # uses PriceIndexes order
