@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import contextlib
+import copy
 import typing
 import storage3
 import storage3.constants
@@ -61,8 +62,8 @@ class AuthenticatedAsyncSupabaseClient(supabase.Client):
         rest_url: str,
         supabase_key: str,
         headers: typing.Dict[str, str],
-        schema: str,
         timeout,    # skip typing to avoid httpx import
+        schema: str = "public",
     ) -> postgrest.AsyncPostgrestClient:
         """Private helper for creating an instance of the Postgrest client."""
         # Override to use postgrest.AsyncPostgrestClient and allow async requests
@@ -96,20 +97,32 @@ class AuthenticatedAsyncSupabaseClient(supabase.Client):
         return self.from_(table_name)
 
     @contextlib.asynccontextmanager
-    async def other_postgres_client(self, schema):
-        other_postgres: postgrest.AsyncPostgrestClient = None
+    async def other_postgres_client(self, supabase_url: str = None, supabase_key: str = None, schema: str = "public"):
+        other_postgres = None
         try:
-            other_postgres = AuthenticatedAsyncSupabaseClient._init_postgrest_client(
-                rest_url=self.rest_url,
-                supabase_key=self.supabase_key,
-                headers=self.options.headers,
-                schema=schema,
-                timeout=self.options.postgrest_client_timeout,
+            other_postgres = await self.init_other_postgrest_client(
+                supabase_url=supabase_url, supabase_key=supabase_key, schema=schema
             )
             yield other_postgres
         finally:
             if other_postgres is not None:
                 await other_postgres.aclose()
+
+    async def init_other_postgrest_client(
+        self, supabase_url: str = None, supabase_key: str = None, schema: str = "public"
+    ) -> postgrest.AsyncPostgrestClient:
+        supabase_key = supabase_key or self.supabase_key
+        headers = self.options.headers
+        if supabase_key != self.supabase_key:
+            headers = copy.deepcopy(postgrest.constants.DEFAULT_POSTGREST_CLIENT_HEADERS)
+            headers.update(self._format_auth_headers(supabase_key, supabase_key))
+        return AuthenticatedAsyncSupabaseClient._init_postgrest_client(
+            rest_url=f"{supabase_url}/rest/v1" if supabase_url else self.rest_url,
+            supabase_key=supabase_key,
+            headers=headers,
+            timeout=self.options.postgrest_client_timeout,
+            schema=schema,
+        )
 
     async def close(self):
         # timer has to be stopped, there is no public stop api
@@ -148,9 +161,12 @@ class AuthenticatedAsyncSupabaseClient(supabase.Client):
     def _get_auth_headers(self):
         """Helper method to get auth headers."""
         # What's the corresponding method to get the token
+        return self._format_auth_headers(self.supabase_key, self._get_auth_key())
+
+    def _format_auth_headers(self, supabase_key, auth_token):
         return {
-            "apiKey": self.supabase_key,
-            "Authorization": f"Bearer {self._get_auth_key()}",
+            "apiKey": supabase_key,
+            "Authorization": f"Bearer {auth_token}",
         }
 
     def _get_auth_key(self):

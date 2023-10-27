@@ -59,6 +59,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         self.event_loop = None
         super().__init__(supabase_url, supabase_key, options=options)
         self.is_admin = False
+        self.production_anon_client = None
 
     async def sign_in(self, email: str, password: str) -> None:
         try:
@@ -346,7 +347,8 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         self, exchange: str, symbol: str, time_frame: commons_enums.TimeFrames,
         first_open_time: float, last_open_time: float
     ) -> list:
-        historical_candles = await self._fetch_paginated_signals_history(
+        historical_candles = await self._fetch_paginated_history(
+            await self.get_production_anon_client(),
             "temp_ohlcv_history",
             "timestamp, open, high, low, close, volume",
             {
@@ -363,26 +365,25 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
     async def fetch_gpt_signal(
         self, exchange: str, symbol: str, time_frame: commons_enums.TimeFrames, timestamp: float, version: str
     ) -> str:
-        signals = (
-            await self.table("temp_chatgpt_signals").select("signal").match(
-                {
-                    "timestamp": timestamp,
-                    "exchange_internal_name": exchange,
-                    "symbol": symbol,
-                    "time_frame": time_frame.value,
-                    "metadata->>version": version,
-                },
-            ).execute()
-        ).data
+        signals = (await (await self.get_production_anon_client()).table("temp_chatgpt_signals").select("signal").match(
+            {
+                "timestamp": self.get_formatted_time(timestamp),
+                "exchange_internal_name": exchange,
+                "symbol": symbol,
+                "time_frame": time_frame.value,
+                "metadata->>version": version,
+            },
+        ).execute()).data
         if signals:
-            return signals[0]["content"]
+            return signals[0]["signal"]["content"]
         return ""
 
     async def fetch_gpt_signals_history(
         self, exchange: str, symbol: str, time_frame: commons_enums.TimeFrames,
         first_open_time: float, last_open_time: float, version: str
     ) -> dict:
-        historical_signals = await self._fetch_paginated_signals_history(
+        historical_signals = await self._fetch_paginated_history(
+            await self.get_production_anon_client(),
             "temp_chatgpt_signals",
             "timestamp, signal",
             {
@@ -397,8 +398,16 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         )
         return self._format_gpt_signals(historical_signals)
 
-    async def _fetch_paginated_signals_history(
-        self, table_name: str, select: str, matcher: dict,
+    async def get_production_anon_client(self):
+        if self.production_anon_client is None:
+            self.production_anon_client = await self.init_other_postgrest_client(
+                supabase_url=constants.COMMUNITY_PRODUCTION_BACKEND_URL,
+                supabase_key=constants.COMMUNITY_PRODUCTION_BACKEND_KEY,
+            )
+        return self.production_anon_client
+
+    async def _fetch_paginated_history(
+        self, client, table_name: str, select: str, matcher: dict,
         time_interval: float, first_open_time: float, last_open_time: float
     ) -> list:
         total_elements_count = (last_open_time - first_open_time) // time_interval
@@ -409,7 +418,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         request_count = 0
         while request_count < max_requests_count:
             request = (
-                self.table(table_name).select(select)
+                client.table(table_name).select(select)
                 .match(matcher).gte(
                     "timestamp", self.get_formatted_time(first_open_time)
                 ).lte(
@@ -439,7 +448,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
 
     def _format_gpt_signals(self, signals: list):
         return {
-            signal["timestamp"]: signal["signal"]["content"]
+            self.get_parsed_time(signal["timestamp"]).timestamp(): signal["signal"]["content"]
             for signal in signals
         }
 
@@ -525,3 +534,13 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
 
     async def _get_user(self) -> gotrue.User:
         return self.auth.get_user().user
+
+    async def close(self):
+        await super().close()
+        if self.production_anon_client is not None:
+            try:
+                await self.production_anon_client.aclose()
+            except RuntimeError:
+                # happens when the event loop is closed already
+                pass
+            self.production_anon_client = None
