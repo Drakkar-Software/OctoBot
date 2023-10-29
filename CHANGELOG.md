@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.0] - 2023-09-26
 ### Updated
-- [Community] Migrate to the updated octobot.cloud. Full details on https://blog.octobot.online/introducing-the-new-octobot-cloud
+- [Community] Migrate to the updated octobot.cloud. Full details on https://www.octobot.cloud/blog/introducing-the-new-octobot-cloud
 - [Logs] Improve debug logs
 ### Fixed
 - [GridTrading] Mirror order rebalance issues 
