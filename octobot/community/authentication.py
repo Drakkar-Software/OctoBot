@@ -556,6 +556,11 @@ class CommunityAuthentication(authentication.Authenticator):
         formatted_portfolio = formatters.format_portfolio_with_profitability(profitability)
         if self.user_account.get_selected_bot_current_portfolio_id() is None:
             await self.refresh_selected_bot()
-        formatted_portfolio[backend_enums.PortfolioKeys.ID.value] = \
-            self.user_account.get_selected_bot_current_portfolio_id()
-        await self.supabase_client.update_portfolio(formatted_portfolio)
+        if self.user_account.get_selected_bot_current_portfolio_id() is None:
+            self.logger.debug(
+                f"Skipping portfolio update: current bot {self.user_account.bot_id} has no current portfolio_id"
+            )
+        else:
+            formatted_portfolio[backend_enums.PortfolioKeys.ID.value] = \
+                self.user_account.get_selected_bot_current_portfolio_id()
+            await self.supabase_client.update_portfolio(formatted_portfolio)
