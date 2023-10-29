@@ -64,9 +64,11 @@ class CommunityAuthentication(authentication.Authenticator):
     SESSION_HEADER = "X-Session"
     GQL_AUTHORIZATION_HEADER = "Authorization"
 
-    def __init__(self, feed_url, config=None):
+    def __init__(self, feed_url, config=None, backend_url=None, backend_key=None):
         super().__init__()
         self.feed_url = feed_url
+        self.backend_url = backend_url or identifiers_provider.IdentifiersProvider.BACKEND_URL
+        self.backend_key = backend_key or identifiers_provider.IdentifiersProvider.BACKEND_KEY
         self.configuration_storage = supabase_backend.SyncConfigurationStorage(config)
         self.supabase_client = self._create_client()
         self.user_account = community_user_account.CommunityUserAccount()
@@ -80,10 +82,11 @@ class CommunityAuthentication(authentication.Authenticator):
         self._fetch_account_task = None
 
     @staticmethod
-    def create(configuration: commons_configuration.Configuration):
+    def create(configuration: commons_configuration.Configuration, **kwargs):
         return CommunityAuthentication.instance(
             None,
             config=configuration,
+            **kwargs,
         )
 
     def update(self, configuration: commons_configuration.Configuration):
@@ -134,6 +137,19 @@ class CommunityAuthentication(authentication.Authenticator):
         )
         return self.user_account.get_bot_deployment_url(deployment_url_data)
 
+    async def get_gpt_signal(
+        self, exchange: str, symbol: str, time_frame: commons_enums.TimeFrames, candle_open_time: float, version: str
+    ) -> str:
+        return await self.supabase_client.fetch_gpt_signal(exchange, symbol, time_frame, candle_open_time, version)
+
+    async def get_gpt_signals_history(
+        self, exchange: str, symbol: str, time_frame: commons_enums.TimeFrames,
+        first_open_time: float, last_open_time: float, version: str
+    ) -> dict:
+        return await self.supabase_client.fetch_gpt_signals_history(
+            exchange, symbol, time_frame, first_open_time, last_open_time, version
+        )
+
     def get_is_signal_receiver(self):
         if self._community_feed is None:
             return False
@@ -165,8 +181,8 @@ class CommunityAuthentication(authentication.Authenticator):
 
     def _create_client(self):
         return supabase_backend.CommunitySupabaseClient(
-            identifiers_provider.IdentifiersProvider.BACKEND_URL,
-            identifiers_provider.IdentifiersProvider.BACKEND_KEY,
+            self.backend_url,
+            self.backend_key,
             self.configuration_storage
         )
 
@@ -540,6 +556,11 @@ class CommunityAuthentication(authentication.Authenticator):
         formatted_portfolio = formatters.format_portfolio_with_profitability(profitability)
         if self.user_account.get_selected_bot_current_portfolio_id() is None:
             await self.refresh_selected_bot()
-        formatted_portfolio[backend_enums.PortfolioKeys.ID.value] = \
-            self.user_account.get_selected_bot_current_portfolio_id()
-        await self.supabase_client.update_portfolio(formatted_portfolio)
+        if self.user_account.get_selected_bot_current_portfolio_id() is None:
+            self.logger.debug(
+                f"Skipping portfolio update: current bot {self.user_account.bot_id} has no current portfolio_id"
+            )
+        else:
+            formatted_portfolio[backend_enums.PortfolioKeys.ID.value] = \
+                self.user_account.get_selected_bot_current_portfolio_id()
+            await self.supabase_client.update_portfolio(formatted_portfolio)

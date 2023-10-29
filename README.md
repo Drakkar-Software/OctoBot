@@ -1,4 +1,4 @@
-# OctoBot [1.0.1](https://octobot.click/gh-changelog)
+# OctoBot [1.0.2](https://octobot.click/gh-changelog)
 [![PyPI](https://img.shields.io/pypi/v/OctoBot.svg?logo=pypi)](https://octobot.click/gh-pypi)
 [![Downloads](https://pepy.tech/badge/octobot/month)](https://pepy.tech/project/octobot)
 [![Dockerhub](https://img.shields.io/docker/pulls/drakkarsoftware/octobot.svg?logo=docker)](https://octobot.click/gh-dockerhub)
@@ -14,15 +14,15 @@
 [![YouTube](https://img.shields.io/youtube/channel/views/UC2YAaBeWY8y_Olqs79b_X8A?label=youtube&style=social)](https://octobot.click/gh-youtube)
 
 <p align="center">
-  <img src="../assets/illustration.png" alt="Octobot illustration">
+  <img src="../assets/illustration.png" alt="Octobot automating trades of its user while the user is relaxing on his couch">
 </p>
 
 <p align="center">
-  <img src="../assets/ReadMeIntro.gif" alt="Intro" />
+  <img src="../assets/ReadMeIntro.gif" alt="Introduction to OctoBot: choose a strategy, test it, use it and follow your gains" />
 </p>
 
 ## Launch of the new OctoBot cloud
-The OctoBot team is proud to announce the launch of the [new octobot.cloud](https://octobot.cloud/?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=readme)
+The OctoBot team is proud to announce the launch of the [new octobot.cloud](https://octobot.cloud/?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=launch_of_octobot_cloud)
 where 90% of trading strategies can be automated **in a very easy way** and **for free**.
 
 [![try octobot cloud now](https://img.shields.io/static/v1?label=Try%20the%20new%20OctoBot%20cloud&message=now&color=007bff&style=for-the-badge)](https://octobot.cloud/?utm_source=github&utm_medium=dk&utm_campaign=production_annoucements&utm_content=readme_button)
@@ -31,31 +31,35 @@ We are looking forward to receiving your feedback on our new OctoBot based syste
 
 ## What is Octobot  ?
 <p align="middle">
-  <a href="../assets/dashboard.png"><img src="../assets/dashboard.png" height="414" alt="Web interface"></a>  
+  <a href="https://www.octobot.cloud/guides/octobot-interfaces/web?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=readme_what_is_octobot_web">
+    <img src="../assets/dashboard.png" height="414" alt="Follow your profits using OctoBot directly from its web interface">
+  </a>  
   &nbsp;&nbsp;&nbsp;&nbsp;    
-  <a href="https://www.octobot.info/interfaces/telegram-interface"><img src="../assets/telegram-interface.png" height="414" alt="Telegram interface"></a>  
+  <a href="https://www.octobot.cloud/guides/octobot-interfaces/telegram?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=readme_what_is_octobot_telegram">
+    <img src="../assets/telegram-interface.png" height="414" alt="Follow each trade and profits of your OctoBot and send it commands from telegram">
+  </a>  
 </p>
 
 
-[Octobot](https://www.octobot.online/) is a powerful open-source cryptocurrency trading robot.
+[Octobot](https://www.octobot.cloud/?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=readme_what_is_octobot) is a powerful open-source cryptocurrency trading robot.
 
 OctoBot is highly customizable using its configuration and tentacles system.  
-You can build your own bot using the infinite [configuration](https://www.octobot.info/configuration/profile-configuration) possibilities such as  **technical analysis**, **social media processing** or even **external statistics management** like google trends.  
+You can build your own bot using the infinite [configuration](https://www.octobot.cloud/guides/octobot-configuration/profile-configuration?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=configuration) possibilities such as  **technical analysis**, **social media processing** or even **external statistics management** like google trends.  
   
 OctoBot is **AI ready**: Python being the main language for OctoBot, it's easy to integrate machine-learning libraries such as [Tensorflow](https://github.com/tensorflow/tensorflow) or any other libraries and take advantage of all the available data and create a very powerful trading strategy.  
   
 Octobot's main feature is **evolution**, you can : 
 - Share your configurations with other octobot users.
-- [Install](https://www.octobot.info/advanced_usage/tentacle-manager), [modify](https://developer.octobot.info/tentacles/tentacle-development) and even [create](https://developer.octobot.info/tentacles/tentacle-development) new tentacles to build your ideal cryptocurrency trading robot.
-- [Contribute](https://developer.octobot.info/installation/developer-installation/octobot-developer-installation) to improve OctoBot core repositories and tentacles.
+- [Install](https://www.octobot.cloud/guides/octobot-advanced-usage/tentacle-manager?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=install_tentacles), [modify](https://www.octobot.cloud/guides/octobot-tentacles-development/create-a-tentacle?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=modify_tentacles) and even [create](https://www.octobot.cloud/guides/octobot-tentacles-development/create-a-tentacle?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=create_tentacles) new tentacles to build your ideal cryptocurrency trading robot.
+- [Contribute](https://www.octobot.cloud/guides/octobot-developers-environment/setup-your-environment?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=contribute) to improve OctoBot core repositories and tentacles.
 
-Looking for more info ? Check out our Octobot guides at [octobot.info](https://www.octobot.info/?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=readme)
+Looking for more info ? Check out our Octobot guides at [octobot.cloud/guides](https://www.octobot.cloud/guides/?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=checkout_guides)
 
 ## Installation  
 OctoBot's installation is **very simple**, you can either:
 - [Deploy your OctoBot on OctoBot Cloud](https://octobot.cloud/?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=readme_deploy_on_cloud). With OctoBot cloud, experience hassle-free installation, updates, and maintenance - leave it all to us! Your robot will also benefit from cloud only features.
-- [Download and install](https://www.octobot.info/installation/local-installation) OctoBot on your computer or server and enjoy all features for free.
-- Install OctoBot [using docker](https://www.octobot.info/installation/local-installation#option-2-with-docker).
+- [Download and install](https://www.octobot.cloud/guides/octobot-installation/local?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=readme_local_installation) OctoBot on your computer or server and enjoy all features for free.
+- Install OctoBot [using docker](https://www.octobot.cloud/guides/octobot-installation/with-docker?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=readme_docker_installation).
 
     Docker install in one line summary:
     ```
@@ -64,18 +68,18 @@ OctoBot's installation is **very simple**, you can either:
     Your OctoBot will be accessible on [http://localhost](http://localhost).
 
 ## Exchanges
-[![Binance](../assets/binance-logo.png)](https://octobot.click/gh-binance)
-[![Okx](../assets/okex-logo.png)](https://octobot.click/gh-okex)
-[![GateIO](../assets/gateio-logo.png)](https://octobot.click/gh-gateio)
-[![Huobi](../assets/huobi-logo.png)](https://octobot.click/gh-huobi)
-[![Hollaex](../assets/hollaex-logo.png)](https://octobot.click/gh-hollaex)
-[![Coinbase](../assets/coinbasepro-logo.png)](https://pro.coinbase.com)
-[![Kucoin](../assets/kucoin-logo.png)](https://www.kucoin.com)
-[![Bitmex](../assets/bitmex-logo.png)](https://bitmex.com)
-[![Ascendex](../assets/ascendex-logo.png)](https://octobot.click/gh-ascendex)
+[![Binance supported exchange partnership](../assets/binance-logo.png)](https://www.octobot.cloud/guides/octobot-partner-exchanges/binance?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=binance)
+[![Okx supported exchange partnership](../assets/okex-logo.png)](https://www.octobot.cloud/guides/octobot-partner-exchanges/okx?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=okx)
+[![Kucoin supported exchange partnership](../assets/kucoin-logo.png)](https://www.octobot.cloud/guides/octobot-partner-exchanges/kucoin?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=kucoin)
+[![Crypto.com supported exchange partnership](../assets/cryptocom-logo.png)](https://www.octobot.cloud/guides/octobot-partner-exchanges/crypto-com?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=crypto-com)
+[![Huobi supported exchange partnership](../assets/huobi-logo.png)](https://www.octobot.cloud/guides/octobot-partner-exchanges/huobi?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=huobi)
+[![Hollaex supported exchange partnership](../assets/hollaex-logo.png)](https://www.octobot.cloud/guides/octobot-partner-exchanges/hollaex?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=hollaex)
+[![Coinbase supported exchange](../assets/coinbasepro-logo.png)](https://www.octobot.cloud/guides/octobot-supported-exchanges/coinbase?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=coinbase)
+[![GateIO supported exchange partnership](../assets/gateio-logo.png)](https://www.octobot.cloud/guides/octobot-partner-exchanges/gateio?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=gateio)
+[![Ascendex supported exchange partnership](../assets/ascendex-logo.png)](https://www.octobot.cloud/guides/octobot-partner-exchanges/ascendex?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=ascendex)
 
-Octobot supports many [exchanges](https://octobot.click/gh-exchanges) thanks to the [ccxt library](https://github.com/ccxt/ccxt). 
-To activate trading on an exchange, just configure OctoBot with your API keys as described [on the exchange documentation](https://www.octobot.info/configuration/exchanges).
+Octobot supports many [exchanges](https://www.octobot.cloud/guides/exchanges?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=exchanges) thanks to the [ccxt library](https://github.com/ccxt/ccxt). 
+To activate trading on an exchange, just configure OctoBot with your API keys as described [on the exchange setup guides](https://www.octobot.cloud/guides/octobot-configuration/exchanges?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=exchanges_setup_guides).
 
 
 ### Paper trading
@@ -84,20 +88,20 @@ To trade on any exchange, just enable the exchange in your OctoBot. This you to 
 No exchange credential is required.
 
 ### Real trading
-To use your real exchange account with OctoBot, enter your exchange API keys as described [on the exchange documentation](https://octobot.click/gh-exchanges). 
+To use your real exchange account with OctoBot, enter your exchange API keys as described [on the exchange guides](https://www.octobot.cloud/guides/exchanges?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=exchanges_guides). 
 
 ## Testing trading strategies
 
 OctoBot comes with its builtin backtesting engine which enables you to trade with simulated money using historical exchange data.
 
-[![Backtesting report](../assets/backtesting_report.jpg)](https://github.com/Drakkar-Software/OctoBot/blob/assets/backtesting_report.jpg)  
+[![Backtesting report using grid trading on eth btc with 8 percent profit](../assets/backtesting_report.jpg)](https://github.com/Drakkar-Software/OctoBot/blob/assets/backtesting_report.jpg)  
 
 Backtesting will give you accurate insights on the past performance and behavior of strategies using OctoBot.
 
 ## Contribute from a browser IDE 
 Make changes and contribute to OctoBot in a single click with an **already setup and ready to code developer environment** using Gitpod !
 
-[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/Drakkar-Software/OctoBot)
+[![Contribute from Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/Drakkar-Software/OctoBot)
 
 ## Hardware requirements  
 - CPU : 1 Core / 1GHz  
@@ -116,7 +120,7 @@ Please feel free to read the source code and understand the mechanism of this bo
 ## License
 GNU General Public License v3.0 or later.
 
-See [LICENSE](https://octobot.click/gh-license) to see the full text.
+See [GPL-3.0 LICENSE](https://octobot.click/gh-license) to see the full text.
 
 ## Sponsors
 <table>

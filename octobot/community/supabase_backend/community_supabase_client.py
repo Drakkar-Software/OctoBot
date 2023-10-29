@@ -27,6 +27,8 @@ import supabase.lib.client_options
 import octobot_commons.authentication as authentication
 import octobot_commons.logging as commons_logging
 import octobot_commons.profiles as commons_profiles
+import octobot_commons.enums as commons_enums
+import octobot_commons.constants as commons_constants
 import octobot.constants as constants
 import octobot.community.errors as errors
 import octobot.community.supabase_backend.enums as enums
@@ -57,6 +59,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         self.event_loop = None
         super().__init__(supabase_url, supabase_key, options=options)
         self.is_admin = False
+        self.production_anon_client = None
 
     async def sign_in(self, email: str, password: str) -> None:
         try:
@@ -322,6 +325,153 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             on_conflict=f"{enums.PortfolioHistoryKeys.TIME.value},{enums.PortfolioHistoryKeys.PORTFOLIO_ID.value}"
         ).execute()).data
 
+    async def fetch_candles_history_range(
+        self, exchange: str, symbol: str, time_frame: commons_enums.TimeFrames
+    ) -> (typing.Union[float, None], typing.Union[float, None]):
+        min_max = json.loads(
+            (await self.postgres_functions().invoke(
+                "get_ohlcv_range",
+                {"body": {
+                    "exchange_internal_name": exchange,
+                    "symbol": symbol,
+                    "time_frame": time_frame.value,
+                }}
+            ))["data"]
+        )[0]
+        return (
+            self.get_parsed_time(min_max["min_value"]).timestamp() if min_max["min_value"] else None,
+            self.get_parsed_time(min_max["max_value"]).timestamp() if min_max["max_value"] else None,
+        )
+
+    async def fetch_candles_history(
+        self, exchange: str, symbol: str, time_frame: commons_enums.TimeFrames,
+        first_open_time: float, last_open_time: float
+    ) -> list:
+        historical_candles = await self._fetch_paginated_history(
+            await self.get_production_anon_client(),
+            "temp_ohlcv_history",
+            "timestamp, open, high, low, close, volume",
+            {
+                "exchange_internal_name": exchange,
+                "symbol": symbol,
+                "time_frame": time_frame.value,
+            },
+            commons_enums.TimeFramesMinutes[time_frame] * commons_constants.MINUTE_TO_SECONDS,
+            first_open_time,
+            last_open_time
+        )
+        return self._format_ohlcvs(historical_candles)
+
+    async def fetch_gpt_signal(
+        self, exchange: str, symbol: str, time_frame: commons_enums.TimeFrames, timestamp: float, version: str
+    ) -> str:
+        signals = (await (await self.get_production_anon_client()).table("temp_chatgpt_signals").select("signal").match(
+            {
+                "timestamp": self.get_formatted_time(timestamp),
+                "exchange_internal_name": exchange,
+                "symbol": symbol,
+                "time_frame": time_frame.value,
+                "metadata->>version": version,
+            },
+        ).execute()).data
+        if signals:
+            return signals[0]["signal"]["content"]
+        return ""
+
+    async def fetch_gpt_signals_history(
+        self, exchange: str, symbol: str, time_frame: commons_enums.TimeFrames,
+        first_open_time: float, last_open_time: float, version: str
+    ) -> dict:
+        historical_signals = await self._fetch_paginated_history(
+            await self.get_production_anon_client(),
+            "temp_chatgpt_signals",
+            "timestamp, signal",
+            {
+                "exchange_internal_name": exchange,
+                "symbol": symbol,
+                "time_frame": time_frame.value,
+                "metadata->>version": version,
+            },
+            commons_enums.TimeFramesMinutes[time_frame] * commons_constants.MINUTE_TO_SECONDS,
+            first_open_time,
+            last_open_time
+        )
+        return self._format_gpt_signals(historical_signals)
+
+    async def get_production_anon_client(self):
+        if self.production_anon_client is None:
+            self.production_anon_client = await self.init_other_postgrest_client(
+                supabase_url=constants.COMMUNITY_PRODUCTION_BACKEND_URL,
+                supabase_key=constants.COMMUNITY_PRODUCTION_BACKEND_KEY,
+            )
+        return self.production_anon_client
+
+    async def _fetch_paginated_history(
+        self, client, table_name: str, select: str, matcher: dict,
+        time_interval: float, first_open_time: float, last_open_time: float
+    ) -> list:
+        total_elements_count = (last_open_time - first_open_time) // time_interval
+        offset = 0
+        max_size = 0
+        total_elements = []
+        max_requests_count = 100
+        request_count = 0
+        while request_count < max_requests_count:
+            request = (
+                client.table(table_name).select(select)
+                .match(matcher).gte(
+                    "timestamp", self.get_formatted_time(first_open_time)
+                ).lte(
+                    "timestamp", self.get_formatted_time(last_open_time)
+                ).order(
+                    "timestamp", desc=False
+                )
+            )
+            if offset:
+                request = request.range(offset, offset+max_size)
+            fetched_elements = (await request.execute()).data
+            total_elements += fetched_elements
+            if len(fetched_elements) < max_size or (max_size == 0 and len(fetched_elements) == total_elements_count):
+                # fetched everything
+                break
+            offset += len(fetched_elements)
+            if max_size == 0:
+                max_size = offset
+            request_count += 1
+
+        if request_count == max_requests_count:
+            commons_logging.get_logger(self.__class__.__name__).info(
+                f"paginated fetch error on {table_name} with matcher: {matcher}: "
+                f"too many requests ({request_count}), fetched: {len(total_elements)} elements"
+            )
+        return total_elements
+
+    def _format_gpt_signals(self, signals: list):
+        return {
+            self.get_parsed_time(signal["timestamp"]).timestamp(): signal["signal"]["content"]
+            for signal in signals
+        }
+
+    def _format_ohlcvs(self, ohlcvs: list):
+        # uses PriceIndexes order
+        # IND_PRICE_TIME = 0
+        # IND_PRICE_OPEN = 1
+        # IND_PRICE_HIGH = 2
+        # IND_PRICE_LOW = 3
+        # IND_PRICE_CLOSE = 4
+        # IND_PRICE_VOL = 5
+        return [
+            [
+                int(self.get_parsed_time(ohlcv["timestamp"]).timestamp()),
+                ohlcv["open"],
+                ohlcv["high"],
+                ohlcv["low"],
+                ohlcv["close"],
+                ohlcv["volume"],
+            ]
+            for ohlcv in ohlcvs
+        ]
+
     async def get_asset_id(self, bucket_id: str, asset_name: str) -> str:
         """
         Not implemented for authenticated users
@@ -384,3 +534,13 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
 
     async def _get_user(self) -> gotrue.User:
         return self.auth.get_user().user
+
+    async def close(self):
+        await super().close()
+        if self.production_anon_client is not None:
+            try:
+                await self.production_anon_client.aclose()
+            except RuntimeError:
+                # happens when the event loop is closed already
+                pass
+            self.production_anon_client = None

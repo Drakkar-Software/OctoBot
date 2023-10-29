@@ -6,13 +6,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [1.0.2] - 2023-10-29
+### Added
+- [ChatGPT] Backtesting on supported configurations, full list on https://www.octobot.cloud/features/chatgpt-trading 
+- [TradingView] Support cancel orders signal
+- [GridTrading] Optimise initial portfolio command to split funds in an optimized way before starting the trading mode
+- [DCATrading] Option not to cancel previously created orders
+- [DCATrading] Option to always create initial orders at startup when in evaluators mode
+- [Webhook] Support Ngrok custom domains
+### Updated
+- [ChatGPT] Default GPT Trading profile now uses the DCA trading mode 
+- [TradingView] Revamped docs on https://www.octobot.cloud/guides/octobot-interfaces/tradingview
+- [DCATrading] Improved error messages
+- [WebInterface] Do not select duplicated profiles by default
+- [DataCollector] Make errors clearer
+- [Links] Migrate to https://www.octobot.cloud/
+### Fixed
+- [Kucoin] Issue regarding minimal order sizes 
+- [Backtesting] Issue on orders that could being filled on the same candle they were created at 
+- [DCATrading] Time based trigger issues
+- [Grid & Staggered orders] Fix order creation when close to spread
+
 ## [1.0.1] - 2023-09-28
 ### Fixed
 - [Community] OctoBot account connection timeout error 
 
 ## [1.0.0] - 2023-09-26
 ### Updated
-- [Community] Migrate to the updated octobot.cloud. Full details on https://blog.octobot.online/introducing-the-new-octobot-cloud
+- [Community] Migrate to the updated octobot.cloud. Full details on https://www.octobot.cloud/blog/introducing-the-new-octobot-cloud
 - [Logs] Improve debug logs
 ### Fixed
 - [GridTrading] Mirror order rebalance issues 
