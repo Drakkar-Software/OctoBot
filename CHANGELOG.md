@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [1.0.3] - 2023-10-30
+### Fixed
+- [Exchanges] real-time timeframe issue
+
 ## [1.0.2] - 2023-10-29
 ### Added
 - [ChatGPT] Backtesting on supported configurations, full list on https://www.octobot.cloud/features/chatgpt-trading 
