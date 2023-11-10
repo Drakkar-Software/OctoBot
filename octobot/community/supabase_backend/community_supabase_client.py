@@ -431,7 +431,11 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
                 request = request.range(offset, offset+max_size)
             fetched_elements = (await request.execute()).data
             total_elements += fetched_elements
-            if len(fetched_elements) < max_size or (max_size == 0 and len(fetched_elements) == total_elements_count):
+            if(
+                len(fetched_elements) == 0 or
+                len(fetched_elements) < max_size or
+                (max_size == 0 and len(fetched_elements) == total_elements_count)
+            ):
                 # fetched everything
                 break
             offset += len(fetched_elements)
