@@ -25,6 +25,7 @@ def format_trades(trades: list, exchange_name: str, bot_id: str) -> list:
     return [
         _format_trade(trade, exchange_name, bot_id)
         for trade in trades
+        if trade.get(trading_enums.ExchangeConstantsOrderColumns.SYMBOL.value, None)   # ignore incomplete trades
     ]
 
 
@@ -70,6 +71,9 @@ def format_orders(orders: list, exchange_name: str) -> list:
                 trading_enums.ExchangeConstantsOrderColumns.AMOUNT.value],
         }
         for storage_order in orders
+        if storage_order.get(trading_constants.STORAGE_ORIGIN_VALUE, {}).get(
+            trading_enums.ExchangeConstantsOrderColumns.SYMBOL.value, None
+        )   # ignore incomplete orders
     ]
 
 

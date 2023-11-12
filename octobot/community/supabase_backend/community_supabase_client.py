@@ -280,7 +280,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
                 "product_config:product_configs!current_config_id(config, version)"
             ).eq(enums.ProductKeys.ID.value, product_id).execute()).data[0]
         except IndexError:
-            raise errors.MissingProductConfigError(f"product_id is '{product_id}'")
+            raise errors.MissingProductConfigError(f"Missing product_id is '{product_id}'")
         profile_data = commons_profiles.ProfileData.from_dict(
             product["product_config"][enums.ProfileConfigKeys.CONFIG.value]
         )
