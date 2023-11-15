@@ -144,8 +144,10 @@ class OrderKeys(enum.Enum):
     EXCHANGE = "exchange"
     PRICE = "price"
     QUANTITY = "quantity"
+    EXCHANGE_ID = "exchange_id"
     SYMBOL = "symbol"
     TYPE = "type"
+    CHAINED = "chained"
 
 
 class PortfolioKeys(enum.Enum):
@@ -176,6 +178,7 @@ class BotConfigKeys(enum.Enum):
     PRODUCT_CONFIG_ID = "product_config_id"
     EXCHANGES = "exchanges"
     OPTIONS = "options"
+    SIMULATED = "simulated"
 
 
 class ProfileConfigKeys(enum.Enum):
