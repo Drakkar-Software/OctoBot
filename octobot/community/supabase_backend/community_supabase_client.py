@@ -29,8 +29,10 @@ import octobot_commons.logging as commons_logging
 import octobot_commons.profiles as commons_profiles
 import octobot_commons.enums as commons_enums
 import octobot_commons.constants as commons_constants
+import octobot_trading.api as trading_api
 import octobot.constants as constants
 import octobot.community.errors as errors
+import octobot.community.models.formatters as formatters
 import octobot.community.supabase_backend.enums as enums
 import octobot.community.supabase_backend.supabase_client as supabase_client
 import octobot.community.supabase_backend.configuration_storage as configuration_storage
@@ -263,10 +265,30 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             ].get("minimal_funds", [])
         ] if bot_config[enums.BotConfigKeys.EXCHANGES.value] else []
         profile_data.profile_details.version = bot_config["product_config"][enums.ProfileConfigKeys.VERSION.value]
+        profile_data.trader_simulator.enabled = bot_config.get("simulated", False)
+        if profile_data.trader_simulator.enabled:
+            portfolio = (bot_config.get(
+                enums.BotConfigKeys.OPTIONS.value
+            ) or {}).get("portfolio")
+            if trading_api.is_usd_like_coin(profile_data.trading.reference_market):
+                usd_like_asset = profile_data.trading.reference_market
+            else:
+                usd_like_asset = "USDT"  # todo use dynamic value when exchange is not supporting USDT
+            profile_data.trader_simulator.starting_portfolio = formatters.get_adapted_portfolio(
+                usd_like_asset, portfolio
+            )
+        exchanges_config = (
+            # use product config exchanges when no exchange is set in bot_config and when in simulator mode
+            bot_config["product_config"][enums.ProfileConfigKeys.CONFIG.value]["exchanges"]
+            if profile_data.trader_simulator.enabled
+            # otherwise use botconfig exchange id
+            else bot_config[enums.BotConfigKeys.EXCHANGES.value] if bot_config[enums.BotConfigKeys.EXCHANGES.value]
+            else []
+        )
         profile_data.exchanges = [
             commons_profiles.ExchangeData.from_dict(exchange_data)
-            for exchange_data in bot_config[enums.BotConfigKeys.EXCHANGES.value]
-        ] if bot_config[enums.BotConfigKeys.EXCHANGES.value] else []
+            for exchange_data in exchanges_config
+        ]
         if options := bot_config.get(enums.BotConfigKeys.OPTIONS.value):
             profile_data.options = commons_profiles.OptionsData.from_dict(options)
         profile_data.profile_details.id = bot_config_id
