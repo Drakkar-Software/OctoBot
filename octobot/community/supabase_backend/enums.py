@@ -54,6 +54,7 @@ class BotDeploymentKeys(enum.Enum):
     METADATA = "metadata"
     ERROR_STATUS = "error_status"
     ACTIVITIES = "activities"
+    EXPIRATION_TIME = "expiration_time"
 
 
 class BotDeploymentActivitiesKeys(enum.Enum):
@@ -91,6 +92,8 @@ class BotDeploymentErrorsStatuses(enum.Enum):
     ALREADY_USED_EXCHANGE_ACCOUNT = "already_used_exchange_account"
     MISSING_MINIMAL_FUNDS = "missing_minimal_funds"
     MISSING_CONFIG = "missing_config"
+    EXPIRED_BOT = "expired_bot"
+    MAX_SIMULATORS_REACHED = "max_simulators_reached"
 
 
 class ExchangeAccountStatuses(enum.Enum):
