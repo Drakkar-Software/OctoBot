@@ -64,8 +64,8 @@ class CommunityAuthentication(authentication.Authenticator):
     SESSION_HEADER = "X-Session"
     GQL_AUTHORIZATION_HEADER = "Authorization"
 
-    def __init__(self, feed_url, config=None, backend_url=None, backend_key=None):
-        super().__init__()
+    def __init__(self, feed_url, config=None, backend_url=None, backend_key=None, use_as_singleton=True):
+        super().__init__(use_as_singleton=use_as_singleton)
         self.feed_url = feed_url
         self.backend_url = backend_url or identifiers_provider.IdentifiersProvider.BACKEND_URL
         self.backend_key = backend_key or identifiers_provider.IdentifiersProvider.BACKEND_KEY
@@ -363,6 +363,12 @@ class CommunityAuthentication(authentication.Authenticator):
         self.user_account.set_selected_bot_raw_data(
             await self.supabase_client.fetch_bot(self.user_account.bot_id)
         )
+
+    async def refresh_selected_bot_if_unset(self):
+        if not self.user_account.has_selected_bot_data():
+            self.user_account.set_selected_bot_raw_data(
+                await self.supabase_client.fetch_bot(self.user_account.bot_id)
+            )
 
     def _get_self_hosted_bots(self, bots):
         return [
