@@ -249,6 +249,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             "bot_id, "
             "options, "
             "exchanges, "
+            "is_simulated, "
             "product_config:product_configs("
             "   config, "
             "   version, "
@@ -265,7 +266,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             ].get("minimal_funds", [])
         ] if bot_config[enums.BotConfigKeys.EXCHANGES.value] else []
         profile_data.profile_details.version = bot_config["product_config"][enums.ProfileConfigKeys.VERSION.value]
-        profile_data.trader_simulator.enabled = bot_config.get("simulated", False)
+        profile_data.trader_simulator.enabled = bot_config.get("is_simulated", False)
         if profile_data.trader_simulator.enabled:
             portfolio = (bot_config.get(
                 enums.BotConfigKeys.OPTIONS.value
@@ -309,15 +310,20 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         profile_data.profile_details.version = product["product_config"][enums.ProfileConfigKeys.VERSION.value]
         return profile_data
 
-    async def fetch_configs(self, bot_id) -> list:
+    async def fetch_configs(self, bot_id: str) -> list:
         # use a new current portfolio for the given bot
         return (await self.table("bot_configs").select("*").eq(
             enums.BotConfigKeys.BOT_ID.value, bot_id
         ).execute()).data
 
-    async def fetch_portfolios(self, bot_id) -> list:
+    async def fetch_portfolios(self, bot_id: str) -> list:
         return (await self.table("bot_portfolios").select("*").eq(
             enums.PortfolioKeys.BOT_ID.value, bot_id
+        ).execute()).data
+
+    async def fetch_portfolio_from_id(self, portfolio_id: str) -> list:
+        return (await self.table("bot_portfolios").select("*").eq(
+            enums.PortfolioKeys.ID.value, portfolio_id
         ).execute()).data
 
     async def update_portfolio(self, portfolio) -> list:
