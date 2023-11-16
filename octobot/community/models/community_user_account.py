@@ -75,9 +75,7 @@ class CommunityUserAccount:
         ) == backend_enums.DeploymentTypes.SELF_HOSTED.value
 
     def get_selected_bot_deployment_id(self):
-        return self._get_bot_deployment(self._selected_bot_raw_data)[
-            backend_enums.BotDeploymentKeys.ID.value
-        ]
+        return self.get_bot_deployment_value(backend_enums.BotDeploymentKeys.ID)
 
     def get_bot_deployment_status(self) -> (str, str):
         deployment = self._get_bot_deployment(self._selected_bot_raw_data)
@@ -85,6 +83,9 @@ class CommunityUserAccount:
             deployment[backend_enums.BotDeploymentKeys.STATUS.value],
             deployment[backend_enums.BotDeploymentKeys.DESIRED_STATUS.value]
         )
+
+    def get_bot_deployment_value(self, key: backend_enums.BotDeploymentKeys):
+        return self._get_bot_deployment(self._selected_bot_raw_data)[key.value]
 
     def get_bot_deployment_url(self, deployment_url_data):
         return deployment_url_data[backend_enums.BotDeploymentURLKeys.URL.value]
