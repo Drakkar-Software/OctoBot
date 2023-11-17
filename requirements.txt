@@ -27,3 +27,7 @@ gotrue==1.0.3     # Supabase authennticated API (required by supabase and enforc
 supafunc==0.2.3   # Supabase functions calls (required by supabase and enforced to allow direct import)
 postgrest==0.10.8 # Supabase posgres calls (required by supabase and enforced to allow direct import)
 realtime==1.0.0   # Supabase realtime lib (required by supabase and enforced to allow direct import)
+
+# Experimental to prevent httpx.PoolTimeout
+httpcore==0.17.3  # to up to at least 1.0.2 (prevent default version when installing httpx which creates httpx.PoolTimeout)
+anyio==4.0.0      #
