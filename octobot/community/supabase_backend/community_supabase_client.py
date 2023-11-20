@@ -29,16 +29,19 @@ import octobot_commons.logging as commons_logging
 import octobot_commons.profiles as commons_profiles
 import octobot_commons.enums as commons_enums
 import octobot_commons.constants as commons_constants
+import octobot_trading.api as trading_api
 import octobot.constants as constants
 import octobot.community.errors as errors
+import octobot.community.models.formatters as formatters
 import octobot.community.supabase_backend.enums as enums
 import octobot.community.supabase_backend.supabase_client as supabase_client
 import octobot.community.supabase_backend.configuration_storage as configuration_storage
 
 
+# Experimental to prevent httpx.PoolTimeout
 _INTERNAL_LOGGERS = [
-    "httpx", "httpx._client",
-    "httpcore.http11", "httpcore.http2", "httpcore.proxy", "httpcore.socks", "httpcore.connection"
+    # "httpx", "httpx._client",
+    # "httpcore.http11", "httpcore.http2", "httpcore.proxy", "httpcore.socks", "httpcore.connection"
 ]
 # disable httpx info logs as it logs every request
 commons_logging.set_logging_level(_INTERNAL_LOGGERS, logging.WARNING)
@@ -247,6 +250,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             "bot_id, "
             "options, "
             "exchanges, "
+            "is_simulated, "
             "product_config:product_configs("
             "   config, "
             "   version, "
@@ -263,10 +267,30 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             ].get("minimal_funds", [])
         ] if bot_config[enums.BotConfigKeys.EXCHANGES.value] else []
         profile_data.profile_details.version = bot_config["product_config"][enums.ProfileConfigKeys.VERSION.value]
+        profile_data.trader_simulator.enabled = bot_config.get("is_simulated", False)
+        if profile_data.trader_simulator.enabled:
+            portfolio = (bot_config.get(
+                enums.BotConfigKeys.OPTIONS.value
+            ) or {}).get("portfolio")
+            if trading_api.is_usd_like_coin(profile_data.trading.reference_market):
+                usd_like_asset = profile_data.trading.reference_market
+            else:
+                usd_like_asset = "USDT"  # todo use dynamic value when exchange is not supporting USDT
+            profile_data.trader_simulator.starting_portfolio = formatters.get_adapted_portfolio(
+                usd_like_asset, portfolio
+            )
+        exchanges_config = (
+            # use product config exchanges when no exchange is set in bot_config and when in simulator mode
+            bot_config["product_config"][enums.ProfileConfigKeys.CONFIG.value]["exchanges"]
+            if profile_data.trader_simulator.enabled
+            # otherwise use botconfig exchange id
+            else bot_config[enums.BotConfigKeys.EXCHANGES.value] if bot_config[enums.BotConfigKeys.EXCHANGES.value]
+            else []
+        )
         profile_data.exchanges = [
             commons_profiles.ExchangeData.from_dict(exchange_data)
-            for exchange_data in bot_config[enums.BotConfigKeys.EXCHANGES.value]
-        ] if bot_config[enums.BotConfigKeys.EXCHANGES.value] else []
+            for exchange_data in exchanges_config
+        ]
         if options := bot_config.get(enums.BotConfigKeys.OPTIONS.value):
             profile_data.options = commons_profiles.OptionsData.from_dict(options)
         profile_data.profile_details.id = bot_config_id
@@ -280,22 +304,27 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
                 "product_config:product_configs!current_config_id(config, version)"
             ).eq(enums.ProductKeys.ID.value, product_id).execute()).data[0]
         except IndexError:
-            raise errors.MissingProductConfigError(f"product_id is '{product_id}'")
+            raise errors.MissingProductConfigError(f"Missing product_id is '{product_id}'")
         profile_data = commons_profiles.ProfileData.from_dict(
             product["product_config"][enums.ProfileConfigKeys.CONFIG.value]
         )
         profile_data.profile_details.version = product["product_config"][enums.ProfileConfigKeys.VERSION.value]
         return profile_data
 
-    async def fetch_configs(self, bot_id) -> list:
+    async def fetch_configs(self, bot_id: str) -> list:
         # use a new current portfolio for the given bot
         return (await self.table("bot_configs").select("*").eq(
             enums.BotConfigKeys.BOT_ID.value, bot_id
         ).execute()).data
 
-    async def fetch_portfolios(self, bot_id) -> list:
+    async def fetch_portfolios(self, bot_id: str) -> list:
         return (await self.table("bot_portfolios").select("*").eq(
             enums.PortfolioKeys.BOT_ID.value, bot_id
+        ).execute()).data
+
+    async def fetch_portfolio_from_id(self, portfolio_id: str) -> list:
+        return (await self.table("bot_portfolios").select("*").eq(
+            enums.PortfolioKeys.ID.value, portfolio_id
         ).execute()).data
 
     async def update_portfolio(self, portfolio) -> list:

@@ -25,6 +25,7 @@ def format_trades(trades: list, exchange_name: str, bot_id: str) -> list:
     return [
         _format_trade(trade, exchange_name, bot_id)
         for trade in trades
+        if trade.get(trading_enums.ExchangeConstantsOrderColumns.SYMBOL.value, None)   # ignore incomplete trades
     ]
 
 
@@ -68,8 +69,16 @@ def format_orders(orders: list, exchange_name: str) -> list:
             ),
             backend_enums.OrderKeys.QUANTITY.value: storage_order[trading_constants.STORAGE_ORIGIN_VALUE][
                 trading_enums.ExchangeConstantsOrderColumns.AMOUNT.value],
+            backend_enums.OrderKeys.EXCHANGE_ID.value: storage_order[trading_constants.STORAGE_ORIGIN_VALUE][
+                trading_enums.ExchangeConstantsOrderColumns.EXCHANGE_ID.value],
+            backend_enums.OrderKeys.CHAINED.value: format_orders(
+                storage_order.get(trading_enums.StoredOrdersAttr.CHAINED_ORDERS.value, []), exchange_name
+            ) if storage_order.get(trading_enums.StoredOrdersAttr.CHAINED_ORDERS.value, []) else []
         }
         for storage_order in orders
+        if storage_order.get(trading_constants.STORAGE_ORIGIN_VALUE, {}).get(
+            trading_enums.ExchangeConstantsOrderColumns.SYMBOL.value, None
+        )   # ignore incomplete orders
     ]
 
 
@@ -129,3 +138,13 @@ def format_portfolio_history(history: dict, unit: str, portfolio_id: str) -> lis
         ]
     except KeyError:
         return []
+
+
+def get_adapted_portfolio(usd_like_asset, portfolio):
+    formatted = {}
+    for asset in portfolio:
+        currency = asset[backend_enums.PortfolioAssetKeys.ASSET.value]
+        if currency == "USD-like":
+            currency = usd_like_asset
+        formatted[currency] = asset[backend_enums.PortfolioAssetKeys.VALUE.value]
+    return formatted
