@@ -30,6 +30,7 @@ from octobot.community.models import (
     CommunitySupports,
     CommunityDonation,
     StartupInfo,
+    StrategyData,
 )
 from octobot.community.supabase_backend import (
     PostgresFunctions,
@@ -106,6 +107,7 @@ __all__ = [
     "Error",
     "ErrorsUploader",
     "StartupInfo",
+    "StrategyData",
     "PostgresFunctions",
     "SyncConfigurationStorage",
     "ASyncConfigurationStorage",

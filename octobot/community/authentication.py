@@ -25,6 +25,7 @@ import octobot.community.models.startup_info as startup_info
 import octobot.community.models.community_user_account as community_user_account
 import octobot.community.models.community_public_data as community_public_data
 import octobot.community.models.formatters as formatters
+import octobot.community.models.strategy_data as strategy_data
 import octobot.community.supabase_backend as supabase_backend
 import octobot.community.supabase_backend.enums as backend_enums
 import octobot.community.feeds as community_feeds
@@ -103,6 +104,10 @@ class CommunityAuthentication(authentication.Authenticator):
             return []
         except json.JSONDecodeError:
             return []
+
+    async def get_strategies(self, reload=False) -> list[strategy_data.StrategyData]:
+        await self.init_public_data(reset=reload)
+        return self.public_data.get_strategies()
 
     def is_feed_connected(self):
         return self._community_feed is not None and self._community_feed.is_connected_to_remote_feed()

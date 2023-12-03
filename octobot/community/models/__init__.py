@@ -50,6 +50,9 @@ from octobot.community.models.formatters import (
 from octobot.community.models.community_public_data import (
     CommunityPublicData
 )
+from octobot.community.models.strategy_data import (
+    StrategyData
+)
 
 __all__ = [
     "CommunityUserAccount",
@@ -64,4 +67,5 @@ __all__ = [
     "format_portfolio_history",
     "format_portfolio_with_profitability",
     "CommunityPublicData",
+    "StrategyData",
 ]

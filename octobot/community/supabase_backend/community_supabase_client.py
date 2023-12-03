@@ -206,7 +206,16 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         )[0]
 
     async def fetch_products(self) -> list:
-        return (await self.table("products").select("*").execute()).data
+        return (
+            await self.table("products").select(
+                "*,"
+                "category:product_categories!inner(slug, name_translations, type),"
+                "results:product_results!products_current_result_id_fkey("
+                "  profitability,"
+                "  reference_market_profitability"
+                ")"
+            ).execute()
+        ).data
 
     async def fetch_subscribed_products_urls(self) -> list:
         return json.loads(
