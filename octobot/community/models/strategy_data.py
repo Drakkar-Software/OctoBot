@@ -14,7 +14,9 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import dataclasses
+import octobot.community.identifiers_provider as identifiers_provider
 import octobot_commons.dataclasses as commons_dataclasses
+import octobot_commons.enums as commons_enums
 
 
 @dataclasses.dataclass
@@ -22,6 +24,15 @@ class CategoryData(commons_dataclasses.FlexibleDataclass):
     slug: str = ""
     name_translations: dict = dataclasses.field(default_factory=dict)
     type: str = ""
+    metadata: dict = dataclasses.field(default_factory=dict)
+
+    def get_url(self) -> str:
+        if self.metadata:
+            external_links = self.metadata.get("external_link")
+            if external_links:
+                if blog_slug := external_links.get("blog"):
+                    return f"{identifiers_provider.IdentifiersProvider.COMMUNITY_LANDING_URL}/blog/{blog_slug}"
+        return ""
 
 
 @dataclasses.dataclass
@@ -48,3 +59,15 @@ class StrategyData(commons_dataclasses.FlexibleDataclass):
     attributes: dict = dataclasses.field(default_factory=dict)
     visibility: str = ""
     metadata: str = ""
+
+    def get_url(self) -> str:
+        return f"{identifiers_provider.IdentifiersProvider.COMMUNITY_URL}/strategies/{self.slug}"
+
+    def get_risk(self) -> commons_enums.ProfileRisk:
+        risk = self.attributes['risk'].upper()
+        try:
+            # use [] to access by name
+            # https://docs.python.org/3/howto/enum.html#programmatic-access-to-enumeration-members-and-their-attributes
+            return commons_enums.ProfileRisk[risk]
+        except KeyError:
+            return commons_enums.ProfileRisk.MODERATE

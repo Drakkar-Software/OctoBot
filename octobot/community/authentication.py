@@ -33,6 +33,7 @@ import octobot_commons.constants as commons_constants
 import octobot_commons.enums as commons_enums
 import octobot_commons.authentication as authentication
 import octobot_commons.configuration as commons_configuration
+import octobot_commons.profiles as commons_profiles
 import octobot_trading.enums as trading_enums
 
 
@@ -108,6 +109,13 @@ class CommunityAuthentication(authentication.Authenticator):
     async def get_strategies(self, reload=False) -> list[strategy_data.StrategyData]:
         await self.init_public_data(reset=reload)
         return self.public_data.get_strategies()
+
+    async def get_strategy(self, strategy_id, reload=False) -> strategy_data.StrategyData:
+        await self.init_public_data(reset=reload)
+        return self.public_data.get_strategy(strategy_id)
+
+    async def get_strategy_profile_data(self, strategy_id: str) -> commons_profiles.ProfileData:
+        return await self.supabase_client.fetch_product_config(strategy_id)
 
     def is_feed_connected(self):
         return self._community_feed is not None and self._community_feed.is_connected_to_remote_feed()
