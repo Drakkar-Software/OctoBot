@@ -209,12 +209,15 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         return (
             await self.table("products").select(
                 "*,"
-                "category:product_categories!inner(slug, name_translations, type),"
+                "category:product_categories!inner(slug, name_translations, type, metadata),"
                 "results:product_results!products_current_result_id_fkey("
                 "  profitability,"
                 "  reference_market_profitability"
                 ")"
-            ).execute()
+            ).eq(
+                enums.ProductKeys.VISIBILITY.value, "public"
+            )
+            .execute()
         ).data
 
     async def fetch_subscribed_products_urls(self) -> list:
