@@ -32,7 +32,7 @@ class CommunityPublicData:
     def get_product_slug(self, product_id):
         return self.products.value[product_id][enums.ProductKeys.SLUG.value]
 
-    def get_strategies(self) -> list:
+    def get_strategies(self) -> list[strategy_data.StrategyData]:
         return [
             strategy_data.StrategyData.from_dict(strategy_dict)
             for strategy_dict in self.products.value.values()
@@ -42,6 +42,9 @@ class CommunityPublicData:
     def _get_category_type(self, product: dict):
         category = product.get("category") or {}
         return category.get("type")
+
+    def get_strategy(self, strategy_id: str) -> strategy_data.StrategyData:
+        return strategy_data.StrategyData.from_dict(self.products.value[strategy_id])
 
 
 @dataclasses.dataclass
