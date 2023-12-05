@@ -79,6 +79,22 @@ class AbstractAuthenticatedExchangeTester:
     async def inner_test_get_portfolio(self):
         self.check_portfolio_content(await self.get_portfolio())
 
+    def check_portfolio_content(self, portfolio):
+        assert len(portfolio) >= self.MIN_PORTFOLIO_SIZE
+        at_least_one_value = False
+        for asset, values in portfolio.items():
+            assert all(
+                key in values
+                for key in (
+                    trading_constants.CONFIG_PORTFOLIO_FREE,
+                    trading_constants.CONFIG_PORTFOLIO_USED,
+                    trading_constants.CONFIG_PORTFOLIO_TOTAL
+                )
+            )
+            if values[trading_constants.CONFIG_PORTFOLIO_TOTAL] > trading_constants.ZERO:
+                at_least_one_value = True
+        assert at_least_one_value
+
     async def test_create_and_cancel_limit_orders(self):
         async with self.local_exchange_manager():
             await self.inner_test_create_and_cancel_limit_orders()
@@ -551,22 +567,6 @@ class AbstractAuthenticatedExchangeTester:
                 yield
         finally:
             self.exchange_manager = None
-
-    def check_portfolio_content(self, portfolio):
-        assert len(portfolio) >= self.MIN_PORTFOLIO_SIZE
-        at_least_one_value = False
-        for asset, values in portfolio.items():
-            assert all(
-                key in values
-                for key in (
-                    trading_constants.CONFIG_PORTFOLIO_FREE,
-                    trading_constants.CONFIG_PORTFOLIO_USED,
-                    trading_constants.CONFIG_PORTFOLIO_TOTAL
-                )
-            )
-            if values[trading_constants.CONFIG_PORTFOLIO_TOTAL] > trading_constants.ZERO:
-                at_least_one_value = True
-        assert at_least_one_value
 
     async def get_order(self, exchange_order_id, symbol=None):
         return personal_data.create_order_instance_from_raw(

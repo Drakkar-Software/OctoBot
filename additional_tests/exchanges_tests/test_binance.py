@@ -27,7 +27,7 @@ class TestBinanceAuthenticatedExchange(
     # enter exchange name as a class variable here
     EXCHANGE_NAME = "binance"
     ORDER_CURRENCY = "BTC"
-    SETTLEMENT_CURRENCY = "BUSD"
+    SETTLEMENT_CURRENCY = "USDT"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
     ORDER_SIZE = 50  # % of portfolio to include in test orders
     DUPLICATE_TRADES_RATIO = 0.1   # allow 10% duplicate in trades (due to trade id set to order id)

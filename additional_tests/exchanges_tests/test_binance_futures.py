@@ -38,10 +38,6 @@ class TestBinanceFuturesAuthenticatedExchange(
     async def _set_account_types(self, account_types):
         # todo remove this and use both types when exchange-side multi portfolio is enabled
         self.exchange_manager.exchange._futures_account_types = account_types
-        self.exchange_manager.exchange.connector.add_options({
-            "fetchMarkets": self.exchange_manager.exchange._futures_account_types
-        })
-        await self.exchange_manager.exchange.connector.load_symbol_markets(reload=True)
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
