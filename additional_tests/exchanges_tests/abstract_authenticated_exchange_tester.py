@@ -76,6 +76,18 @@ class AbstractAuthenticatedExchangeTester:
         async with self.local_exchange_manager():
             await self.inner_test_get_portfolio()
 
+    async def test_get_portfolio_with_market_filter(self):
+        # ensure market status are already loaded by another exchange manage and filters are applied
+        async with self.local_exchange_manager():
+            # get portfolio with all markets
+            all_markets_portfolio = await self.get_portfolio()
+
+        # now that market status are cached, test with filters
+        async with self.local_exchange_manager(market_filter=self._get_market_filter()):
+            # check portfolio fetched with filtered markets (should be equal to the one with all markets)
+            filtered_markets_portfolio = await self.get_portfolio()
+            assert filtered_markets_portfolio == all_markets_portfolio
+
     async def inner_test_get_portfolio(self):
         self.check_portfolio_content(await self.get_portfolio())
 
@@ -554,14 +566,15 @@ class AbstractAuthenticatedExchangeTester:
         ))
 
     @contextlib.asynccontextmanager
-    async def local_exchange_manager(self):
+    async def local_exchange_manager(self, market_filter=None):
         try:
             exchange_tentacle_name = self.EXCHANGE_TENTACLE_NAME or self.EXCHANGE_NAME.capitalize()
             async with get_authenticated_exchange_manager(
                     self.EXCHANGE_NAME,
                     exchange_tentacle_name,
                     self.get_config(),
-                    credentials_exchange_name=self.CREDENTIALS_EXCHANGE_NAME or self.EXCHANGE_NAME
+                    credentials_exchange_name=self.CREDENTIALS_EXCHANGE_NAME or self.EXCHANGE_NAME,
+                    market_filter=market_filter
             ) as exchange_manager:
                 self.exchange_manager = exchange_manager
                 yield
@@ -903,3 +916,12 @@ class AbstractAuthenticatedExchangeTester:
                 for s in _symbols
             ]
         )
+
+    def _get_market_filter(self):
+        def market_filter(market):
+            return (
+                market[trading_enums.ExchangeConstantsMarketStatusColumns.SYMBOL.value]
+                in (self.SYMBOL, )
+            )
+
+        return market_filter

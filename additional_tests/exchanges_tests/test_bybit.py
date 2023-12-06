@@ -39,6 +39,10 @@ class TestBybitAuthenticatedExchange(
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
 
+    async def test_get_portfolio_with_market_filter(self):
+        # pass if not implemented
+        pass
+
     async def test_create_and_cancel_limit_orders(self):
         await super().test_create_and_cancel_limit_orders()
 
