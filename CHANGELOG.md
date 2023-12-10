@@ -6,6 +6,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [1.0.4] - 2023-12-10
+### Added
+- [Strategies] OctoBot cloud strategies can now be downloaded and used as regular OctoBot profiles 
+- [DailyTradingMode] New "Enable futures position increase" parameter to avoid building on existing positions when trading futures
+- [DCATradingMode] New "Health check" parameter to ensure that no funds remain unsold when using take profits
+- [Exchanges] Bingx spot trading support
+### Updated
+- [CCXT] to version 4.1.82
+- [WebInterface] Improve /profile loading speed
+### Fixed
+- [WebInterface] Fixed outdated currency list in /profile
+- [Ngrok] Fixed configuration issue related to custom domains
+- [Exchanges] Fixed stop loss and take profit issues
+- [Orders & Trading Modes] Multiple rare errors
+
 ## [1.0.3] - 2023-10-30
 ### Fixed
 - [Exchanges] real-time timeframe issue
