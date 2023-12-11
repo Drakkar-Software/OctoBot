@@ -41,10 +41,7 @@ class ResultsData(commons_dataclasses.FlexibleDataclass):
     reference_market_profitability: dict = dataclasses.field(default_factory=dict)
 
     def get_max(self, key):
-        return max(
-            self.profitability.get(key, 0),
-            self.reference_market_profitability.get(key, 0)
-        )
+        return self.reference_market_profitability.get(key, 0)
 
 
 @dataclasses.dataclass
