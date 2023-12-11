@@ -420,19 +420,21 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         return ""
 
     async def fetch_gpt_signals_history(
-        self, exchange: str, symbol: str, time_frame: commons_enums.TimeFrames,
+        self, exchange: typing.Union[str, None], symbol: str, time_frame: commons_enums.TimeFrames,
         first_open_time: float, last_open_time: float, version: str
     ) -> dict:
+        matcher = {
+            "symbol": symbol,
+            "time_frame": time_frame.value,
+            "metadata->>version": version,
+        }
+        if exchange:
+            matcher["exchange_internal_name"] = exchange
         historical_signals = await self._fetch_paginated_history(
             await self.get_production_anon_client(),
             "temp_chatgpt_signals",
             "timestamp, signal",
-            {
-                "exchange_internal_name": exchange,
-                "symbol": symbol,
-                "time_frame": time_frame.value,
-                "metadata->>version": version,
-            },
+            matcher,
             commons_enums.TimeFramesMinutes[time_frame] * commons_constants.MINUTE_TO_SECONDS,
             first_open_time,
             last_open_time
