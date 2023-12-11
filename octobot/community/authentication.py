@@ -16,6 +16,7 @@
 import asyncio
 import contextlib
 import json
+import typing
 
 import octobot.constants as constants
 import octobot.community.errors as errors
@@ -156,7 +157,7 @@ class CommunityAuthentication(authentication.Authenticator):
         return await self.supabase_client.fetch_gpt_signal(exchange, symbol, time_frame, candle_open_time, version)
 
     async def get_gpt_signals_history(
-        self, exchange: str, symbol: str, time_frame: commons_enums.TimeFrames,
+        self, exchange: typing.Union[str, None], symbol: str, time_frame: commons_enums.TimeFrames,
         first_open_time: float, last_open_time: float, version: str
     ) -> dict:
         return await self.supabase_client.fetch_gpt_signals_history(
