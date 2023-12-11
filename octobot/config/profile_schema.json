@@ -30,6 +30,13 @@
         },
         "read_only": {
           "type": "boolean"
+        },
+        "extra_backtesting_time_frames": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
