@@ -87,6 +87,7 @@ class IndependentBacktesting:
         self.previous_handlers_log_level = commons_logging.get_logger_level_per_handler()
         self.enforce_total_databases_max_size_after_run = enforce_total_databases_max_size_after_run
         self.backtesting_data = backtesting_data
+        self.required_extra_timeframes = config.get(common_constants.CONFIG_REQUIRED_EXTRA_TIMEFRAMES, [])
         self.octobot_backtesting = backtesting.OctoBotBacktesting(
             self.backtesting_config,
             self.tentacles_setup_config,
@@ -378,6 +379,7 @@ class IndependentBacktesting:
         self.backtesting_config[common_constants.CONFIG_BACKTESTING_ID] = self.backtesting_id
         if self.forced_time_frames:
             self.backtesting_config[evaluator_constants.CONFIG_FORCED_TIME_FRAME] = self.forced_time_frames
+        self.backtesting_config[common_constants.CONFIG_REQUIRED_EXTRA_TIMEFRAMES] = self.required_extra_timeframes
         self._add_config_default_backtesting_values()
 
     def _init_exchange_type(self):
