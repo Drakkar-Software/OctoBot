@@ -27,13 +27,16 @@ class TestBinanceAuthenticatedExchange(
     # enter exchange name as a class variable here
     EXCHANGE_NAME = "binance"
     ORDER_CURRENCY = "BTC"
-    SETTLEMENT_CURRENCY = "BUSD"
+    SETTLEMENT_CURRENCY = "USDT"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
     ORDER_SIZE = 50  # % of portfolio to include in test orders
     DUPLICATE_TRADES_RATIO = 0.1   # allow 10% duplicate in trades (due to trade id set to order id)
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
+
+    async def test_get_portfolio_with_market_filter(self):
+        await super().test_get_portfolio_with_market_filter()
 
     async def test_create_and_cancel_limit_orders(self):
         await super().test_create_and_cancel_limit_orders()

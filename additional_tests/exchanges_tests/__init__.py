@@ -63,7 +63,7 @@ class ExchangeChannelMock:
 
 @contextlib.asynccontextmanager
 async def get_authenticated_exchange_manager(exchange_name, exchange_tentacle_name, config=None,
-                                             credentials_exchange_name=None):
+                                             credentials_exchange_name=None, market_filter=None):
     credentials_exchange_name = credentials_exchange_name or exchange_name
     _load_exchange_creds_env_variables_if_necessary()
     config = {**test_config.load_test_config(), **config} if config else test_config.load_test_config()
@@ -82,6 +82,7 @@ async def get_authenticated_exchange_manager(exchange_name, exchange_tentacle_na
         .is_checking_credentials(False) \
         .is_sandboxed(_get_exchange_is_sandboxed(credentials_exchange_name)) \
         .is_using_exchange_type(exchange_type) \
+        .use_market_filter(market_filter) \
         .enable_storage(False) \
         .disable_trading_mode() \
         .is_exchange_only()

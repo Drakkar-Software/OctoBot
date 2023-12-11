@@ -206,7 +206,19 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         )[0]
 
     async def fetch_products(self) -> list:
-        return (await self.table("products").select("*").execute()).data
+        return (
+            await self.table("products").select(
+                "*,"
+                "category:product_categories!inner(slug, name_translations, type, metadata),"
+                "results:product_results!products_current_result_id_fkey("
+                "  profitability,"
+                "  reference_market_profitability"
+                ")"
+            ).eq(
+                enums.ProductKeys.VISIBILITY.value, "public"
+            )
+            .execute()
+        ).data
 
     async def fetch_subscribed_products_urls(self) -> list:
         return json.loads(
@@ -304,7 +316,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
                 "product_config:product_configs!current_config_id(config, version)"
             ).eq(enums.ProductKeys.ID.value, product_id).execute()).data[0]
         except IndexError:
-            raise errors.MissingProductConfigError(f"Missing product_id is '{product_id}'")
+            raise errors.MissingProductConfigError(f"Missing product with id '{product_id}'")
         profile_data = commons_profiles.ProfileData.from_dict(
             product["product_config"][enums.ProfileConfigKeys.CONFIG.value]
         )
@@ -397,7 +409,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         signals = (await (await self.get_production_anon_client()).table("temp_chatgpt_signals").select("signal").match(
             {
                 "timestamp": self.get_formatted_time(timestamp),
-                "exchange_internal_name": exchange,
+                # "exchange_internal_name": exchange,
                 "symbol": symbol,
                 "time_frame": time_frame.value,
                 "metadata->>version": version,
