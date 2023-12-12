@@ -36,7 +36,7 @@ class AuthenticatedAsyncSupabaseClient(supabase.Client):
     - realtime client
     There should not be OctoBot specific code here
     """
-    REQUEST_TIMEOUT = 20    # default timeout is 5 which is sometimes not enough
+    REQUEST_TIMEOUT = 30    # default timeout is 5 which is sometimes not enough
     def __init__(
         self,
         supabase_url: str,
