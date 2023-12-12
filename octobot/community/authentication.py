@@ -255,8 +255,9 @@ class CommunityAuthentication(authentication.Authenticator):
         """
         Sends a message
         """
-        await self._ensure_init_community_feed()
-        await self._community_feed.send(message, channel_type, identifier)
+        self.logger.debug("Sending trading signals is disabled for now")
+        # await self._ensure_init_community_feed()
+        # await self._community_feed.send(message, channel_type, identifier)
 
     async def wait_for_login_if_processing(self):
         if self._login_completed is not None and not self._login_completed.is_set():
