@@ -67,6 +67,8 @@ class AbstractAuthenticatedExchangeTester:
     # set true when cancelling any bundled order on exchange would automatically cancel the other(s)
     CANCEL_DOUBLE_BUNDLED_ORDERS_TOGETHER = True
     IGNORE_EXCHANGE_TRADE_ID = False    # set True when trade.exchange_trade_id can't be set
+    MAX_TRADE_USD_VALUE = decimal.Decimal(8000)
+    MIN_TRADE_USD_VALUE = decimal.Decimal("0.1")
 
     # Implement all "test_[name]" methods, call super() to run the test, pass to ignore it.
     # Override the "inner_test_[name]" method to override a test content.
@@ -524,6 +526,8 @@ class AbstractAuthenticatedExchangeTester:
             self.check_theoretical_cost(
                 symbols.parse_symbol(order.symbol), order.origin_quantity, order.origin_price, order.total_cost
             )
+            if "USD" in order.market:
+                assert self.MIN_TRADE_USD_VALUE < order.total_cost < self.MAX_TRADE_USD_VALUE
 
     def check_raw_trades(self, trades):
         self.check_duplicate(trades)
@@ -553,6 +557,8 @@ class AbstractAuthenticatedExchangeTester:
                 symbols.parse_symbol(trade.symbol), trade.executed_quantity,
                 trade.executed_price, trade.total_cost
             )
+            if "USD" in trade.market:
+                assert self.MIN_TRADE_USD_VALUE < trade.total_cost < self.MAX_TRADE_USD_VALUE
 
     def check_theoretical_cost(self, symbol, quantity, price, cost):
         theoretical_cost = quantity * price
