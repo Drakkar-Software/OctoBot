@@ -20,15 +20,12 @@ import aiohttp
 import octobot_commons.logging as logging
 import octobot_commons.constants as commons_constants
 import octobot.constants as constants
+import octobot.community.identifiers_provider as identifiers_provider
 
 
 async def get_current_octobots_stats():
-    bot_metrics_url = f"{commons_constants.METRICS_URL}metrics/community/count/"
-    return await _get_stats({
-        "daily": f"{bot_metrics_url}0/0/-1",
-        "monthly": f"{bot_metrics_url}0/-1/0",
-        "all": f"{bot_metrics_url}0/0/0"
-    })
+    bot_metrics_url = f"{identifiers_provider.IdentifiersProvider.COMMUNITY_API_URL}/stats"
+    return await _get_stats({"total_bots": bot_metrics_url})
 
 
 async def _ensure_closed_sockets():
@@ -50,8 +47,8 @@ async def _get_stats(endpoint_by_key):
                         logger.error(f"Error when getting community status : error code={resp.status}")
                     else:
                         json_resp = await resp.json()
-                        if "total" in json_resp:
-                            bots_stats[stats_key] = json_resp["total"]
+                        if any("total" in key for key in json_resp):
+                            bots_stats[stats_key] = json_resp[stats_key]
                         else:
                             bots_stats[stats_key] = _format_top_elements(json_resp)
         except Exception as e:
@@ -67,6 +64,8 @@ async def _get_stats(endpoint_by_key):
 
 
 async def get_community_metrics():
+    # todo migrate with new metrics
+    return {}
     bot_count_metrics_url = f"{commons_constants.METRICS_URL}metrics/community/count/"
     bot_top_metrics_url = f"{commons_constants.METRICS_URL}metrics/community/top/"
     one_month_time = int(time.time() - 30 * commons_constants.DAYS_TO_SECONDS)

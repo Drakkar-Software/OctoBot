@@ -39,7 +39,7 @@ OCTOBOT_WEBSITE_URL = os.getenv("OCTOBOT_ONLINE_URL", "https://www.octobot.cloud
 OCTOBOT_DOCS_URL = os.getenv("DOCS_OCTOBOT_ONLINE_URL", "https://www.octobot.cloud/guides")
 EXCHANGES_DOCS_URL = os.getenv("DOCS_OCTOBOT_ONLINE_URL", "https://www.octobot.cloud/guides/exchanges/")
 DEVELOPER_DOCS_URL = os.getenv("DOCS_OCTOBOT_ONLINE_URL", "https://www.octobot.cloud/guides/developers/")
-STATIC_OCTOBOT_ONLINE = os.getenv("TENTACLES_OCTOBOT_ONLINE_URL", "https://static.octobot.online")
+OCTOBOT_ONLINE = os.getenv("TENTACLES_OCTOBOT_ONLINE_URL", "octobot.online")
 OCTOBOT_FEEDBACK = os.getenv("FEEDBACK_OCTOBOT_ONLINE_URL", "https://feedback.octobot.cloud/")
 TENTACLES_REPOSITORY = "tentacles"
 BETA_TENTACLES_REPOSITORY = "dev-tentacles"
@@ -62,6 +62,7 @@ COMMUNITY_FEED_DEFAULT_TYPE = octobot.enums.CommunityFeedType.SupabaseFeed
 
 # production env SHOULD ONLY BE USED THROUGH CommunityIdentifiersProvider
 OCTOBOT_COMMUNITY_LANDING_URL = os.getenv("COMMUNITY_SERVER_URL", "https://octobot.cloud")
+OCTOBOT_COMMUNITY_API_URL = os.getenv("COMMUNITY_SERVER_URL", f"{OCTOBOT_COMMUNITY_LANDING_URL}/api/community")
 OCTOBOT_COMMUNITY_URL = os.getenv("COMMUNITY_SERVER_URL", "https://app.octobot.cloud")
 OCTOBOT_COMMUNITY_RECOVER_PASSWORD_URL = OCTOBOT_COMMUNITY_URL
 # default env
@@ -70,6 +71,7 @@ COMMUNITY_BACKEND_KEY = os.getenv("COMMUNITY_BACKEND_KEY", "eyJhbGciOiJIUzI1NiIs
 
 # staging env SHOULD ONLY BE USED THROUGH CommunityIdentifiersProvider
 STAGING_OCTOBOT_COMMUNITY_LANDING_URL = os.getenv("COMMUNITY_SERVER_URL", "https://beta.octobot.cloud")
+STAGING_OCTOBOT_COMMUNITY_API_URL = os.getenv("COMMUNITY_SERVER_URL", f"{STAGING_OCTOBOT_COMMUNITY_LANDING_URL}/api/community")
 STAGING_OCTOBOT_COMMUNITY_URL = os.getenv("COMMUNITY_SERVER_URL", "https://app-beta.octobot.cloud/")
 STAGING_COMMUNITY_RECOVER_PASSWORD_URL = STAGING_OCTOBOT_COMMUNITY_URL
 STAGING_COMMUNITY_BACKEND_URL = os.getenv("COMMUNITY_BACKEND_URL", "https://wmfkgvgzokyzhvxowbyg.supabase.co")
