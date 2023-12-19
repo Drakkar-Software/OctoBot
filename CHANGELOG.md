@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [1.0.5] - 2023-12-19
+### Added
+- [GPTEvaluator] Settings to limit used tokens and disable re-evaluation
+### Updated
+- [WebInterface] Improve home display on smaller screens
+### Fixed
+- [Telegram] Fixed multiple telegram commands issues
+- [TradingViewSignalsTradingMode] Fixed buy orders quantity issues
+- [WebInterface] Fixed logs issues
+- [GoogleTrends] Fixed issues with crypto in multiple words
+- [Exchanges] Rare candles fetch error
+
 ## [1.0.4] - 2023-12-10
 ### Added
 - [Strategies] OctoBot cloud strategies can now be downloaded and used as regular OctoBot profiles 
