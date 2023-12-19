@@ -72,13 +72,13 @@ class CommunityManager:
                 # first ensure this session is not just a configuration test: register after a timer
                 await asyncio.sleep(common_constants.TIMER_BEFORE_METRICS_REGISTRATION_SECONDS)
                 self._init_community_config()
-                await self.register_session()
+                # await self.register_session() # waiting for metrics migration
                 await self._update_authenticated_bot()
                 while self.keep_running:
                     # send a keepalive at periodic intervals
                     await asyncio.sleep(common_constants.TIMER_BETWEEN_METRICS_UPTIME_UPDATE)
                     try:
-                        await self._update_session()
+                        # await self._update_session()  # waiting for metrics migration
                         await self._update_authenticated_bot()
                     except Exception as e:
                         self.logger.debug(f"Exception when handling community data : {e}")
