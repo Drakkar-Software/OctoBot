@@ -154,25 +154,14 @@ def get_default_tentacles_url(version=None):
             if constants.TENTACLES_REQUIRED_VERSION else constants.LONG_VERSION
     return os.getenv(
         constants.ENV_TENTACLES_URL,
-        f"{constants.STATIC_OCTOBOT_ONLINE}/"
-        f"{tentacles_repository}/"
+        f"https://{tentacles_repository}."
+        f"{constants.OCTOBOT_ONLINE}/"
         f"{os.getenv(constants.ENV_TENTACLES_PACKAGES_SOURCE, constants.OFFICIALS)}/"
         f"{os.getenv(constants.ENV_TENTACLES_PACKAGES_TYPE, constants.TENTACLE_PACKAGES)}/"
         f"{os.getenv(constants.ENV_TENTACLE_CATEGORY, constants.TENTACLE_CATEGORY)}/"
         f"{os.getenv(constants.ENV_TENTACLE_PACKAGE_NAME, constants.TENTACLE_PACKAGE_NAME)}/"
         f"{version}/"
         f"{tentacles_manager_constants.ANY_PLATFORM_FILE_NAME}.{tentacles_manager_constants.TENTACLES_PACKAGE_FORMAT}"
-    )
-
-
-def get_default_compiled_tentacles_url():
-    return os.getenv(
-        constants.ENV_COMPILED_TENTACLES_URL,
-        f"{constants.STATIC_OCTOBOT_ONLINE}/{constants.TENTACLES_REPOSITORY}/"
-        f"{os.getenv(constants.ENV_TENTACLES_PACKAGES_SOURCE, constants.OFFICIALS)}/"
-        f"{os.getenv(constants.ENV_COMPILED_TENTACLES_PACKAGES_TYPE, constants.TENTACLE_PACKAGES)}/"
-        f"{os.getenv(constants.ENV_COMPILED_TENTACLES_CATEGORY, constants.COMPILED_TENTACLE_CATEGORY)}/"
-        f"{os.getenv(constants.ENV_COMPILED_TENTACLES_SUBCATEGORY, '')}"
     )
 
 

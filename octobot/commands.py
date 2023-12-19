@@ -46,10 +46,6 @@ def call_tentacles_manager(command_args):
     octobot_logger.init_logger()
     tentacles_urls = [
         configuration_manager.get_default_tentacles_url(),
-        # tentacles_manager_api.get_compiled_tentacles_url(
-        #     constants.DEFAULT_COMPILED_TENTACLES_URL,
-        #     constants.TENTACLES_REQUIRED_VERSION
-        # )
     ]
     sys.exit(tentacles_manager_cli.handle_tentacles_manager_command(command_args,
                                                                     tentacles_urls=tentacles_urls,
