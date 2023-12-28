@@ -6,7 +6,7 @@
 [![UptimeRobot](https://img.shields.io/uptimerobot/ratio/30/m786447893-903b482e5158c8b6483760e8)](https://octobot.click/gh-status)
 
 #### Octobot Community
-[![Active OctoBot](https://img.shields.io/badge/dynamic/json.svg?&url=https://metrics.octobot.online/metrics/community/count/0/-1/0&query=$.total&color=green&label=OctoBots%20this%20month)]()
+[![OctoBot](https://img.shields.io/badge/dynamic/json.svg?&url=https://dev.octobot.cloud/api/community/stats&query=$.total_bots&color=blue&label=Installed%20OctoBots)]()
 [![Telegram Chat](https://img.shields.io/badge/telegram-chat-green.svg?logo=telegram&label=Telegram)](https://octobot.click/gh-telegram)
 [![Discord](https://img.shields.io/discord/530629985661222912.svg?logo=discord&label=Discord)](https://octobot.click/gh-discord)
 [![Telegram News](https://img.shields.io/badge/telegram-news-blue.svg?logo=telegram&label=Telegram)](https://t.me/OctoBot_Project)
