@@ -69,6 +69,7 @@ class AbstractAuthenticatedExchangeTester:
     IGNORE_EXCHANGE_TRADE_ID = False    # set True when trade.exchange_trade_id can't be set
     MAX_TRADE_USD_VALUE = decimal.Decimal(8000)
     MIN_TRADE_USD_VALUE = decimal.Decimal("0.1")
+    IS_ACCOUNT_ID_AVAILABLE = True  # set False when get_account_id is not available and should be checked
 
     # Implement all "test_[name]" methods, call super() to run the test, pass to ignore it.
     # Override the "inner_test_[name]" method to override a test content.
@@ -108,6 +109,19 @@ class AbstractAuthenticatedExchangeTester:
             if values[trading_constants.CONFIG_PORTFOLIO_TOTAL] > trading_constants.ZERO:
                 at_least_one_value = True
         assert at_least_one_value
+
+    async def test_get_account_id(self):
+        async with self.local_exchange_manager():
+            await self.inner_test_get_account_id()
+
+    async def inner_test_get_account_id(self):
+        if self.IS_ACCOUNT_ID_AVAILABLE:
+            account_id = await self.exchange_manager.exchange.get_account_id()
+            assert account_id
+            assert isinstance(account_id, str)
+        else:
+            with pytest.raises(NotImplementedError):
+                await self.exchange_manager.exchange.get_account_id()
 
     async def test_create_and_cancel_limit_orders(self):
         async with self.local_exchange_manager():
