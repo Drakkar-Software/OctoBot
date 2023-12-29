@@ -34,6 +34,7 @@ class TestBinanceFuturesAuthenticatedExchange(
     INVERSE_SYMBOL = f"{ORDER_CURRENCY}/USD:{ORDER_CURRENCY}"
     ORDER_SIZE = 10  # % of portfolio to include in test orders
     DUPLICATE_TRADES_RATIO = 0.1   # allow 10% duplicate in trades (due to trade id set to order id)
+    IS_ACCOUNT_ID_AVAILABLE = False  # set False when get_account_id is not available and should be checked
 
     async def _set_account_types(self, account_types):
         # todo remove this and use both types when exchange-side multi portfolio is enabled
@@ -45,6 +46,9 @@ class TestBinanceFuturesAuthenticatedExchange(
     async def test_get_portfolio_with_market_filter(self):
         # pass if not implemented
         pass
+
+    async def test_get_account_id(self):
+        await super().test_get_account_id()
 
     async def test_get_empty_linear_and_inverse_positions(self):
         await super().test_get_empty_linear_and_inverse_positions()

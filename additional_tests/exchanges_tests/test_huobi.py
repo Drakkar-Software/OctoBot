@@ -41,6 +41,10 @@ class _TestHuobiAuthenticatedExchange(
         # pass if not implemented
         pass
 
+    async def test_get_account_id(self):
+        # pass if not implemented
+        pass
+
     async def test_create_and_cancel_limit_orders(self):
         await super().test_create_and_cancel_limit_orders()
 
