@@ -31,11 +31,11 @@ We are looking forward to receiving your feedback on our new OctoBot based syste
 
 ## What is Octobot  ?
 <p align="middle">
-  <a href="https://www.octobot.cloud/guides/octobot-interfaces/web?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=readme_what_is_octobot_web">
+  <a href="https://www.octobot.cloud/en/guides/octobot-interfaces/web?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=readme_what_is_octobot_web">
     <img src="../assets/dashboard.png" height="414" alt="Follow your profits using OctoBot directly from its web interface">
   </a>  
   &nbsp;&nbsp;&nbsp;&nbsp;    
-  <a href="https://www.octobot.cloud/guides/octobot-interfaces/telegram?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=readme_what_is_octobot_telegram">
+  <a href="https://www.octobot.cloud/en/guides/octobot-interfaces/telegram?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=readme_what_is_octobot_telegram">
     <img src="../assets/telegram-interface.png" height="414" alt="Follow each trade and profits of your OctoBot and send it commands from telegram">
   </a>  
 </p>
@@ -44,22 +44,22 @@ We are looking forward to receiving your feedback on our new OctoBot based syste
 [Octobot](https://www.octobot.cloud/?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=readme_what_is_octobot) is a powerful open-source cryptocurrency trading robot.
 
 OctoBot is highly customizable using its configuration and tentacles system.  
-You can build your own bot using the infinite [configuration](https://www.octobot.cloud/guides/octobot-configuration/profile-configuration?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=configuration) possibilities such as  **technical analysis**, **social media processing** or even **external statistics management** like google trends.  
+You can build your own bot using the infinite [configuration](https://www.octobot.cloud/en/guides/octobot-configuration/profile-configuration?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=configuration) possibilities such as  **technical analysis**, **social media processing** or even **external statistics management** like google trends.  
   
 OctoBot is **AI ready**: Python being the main language for OctoBot, it's easy to integrate machine-learning libraries such as [Tensorflow](https://github.com/tensorflow/tensorflow) or any other libraries and take advantage of all the available data and create a very powerful trading strategy.  
   
 Octobot's main feature is **evolution**, you can : 
 - Share your configurations with other octobot users.
-- [Install](https://www.octobot.cloud/guides/octobot-advanced-usage/tentacle-manager?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=install_tentacles), [modify](https://www.octobot.cloud/guides/octobot-tentacles-development/create-a-tentacle?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=modify_tentacles) and even [create](https://www.octobot.cloud/guides/octobot-tentacles-development/create-a-tentacle?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=create_tentacles) new tentacles to build your ideal cryptocurrency trading robot.
-- [Contribute](https://www.octobot.cloud/guides/octobot-developers-environment/setup-your-environment?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=contribute) to improve OctoBot core repositories and tentacles.
+- [Install](https://www.octobot.cloud/en/guides/octobot-advanced-usage/tentacle-manager?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=install_tentacles), [modify](https://www.octobot.cloud/en/guides/octobot-tentacles-development/create-a-tentacle?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=modify_tentacles) and even [create](https://www.octobot.cloud/en/guides/octobot-tentacles-development/create-a-tentacle?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=create_tentacles) new tentacles to build your ideal cryptocurrency trading robot.
+- [Contribute](https://www.octobot.cloud/en/guides/octobot-developers-environment/setup-your-environment?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=contribute) to improve OctoBot core repositories and tentacles.
 
-Looking for more info ? Check out our Octobot guides at [octobot.cloud/guides](https://www.octobot.cloud/guides/?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=checkout_guides)
+Looking for more info ? Check out our Octobot guides at [octobot.cloud/guides](https://www.octobot.cloud/en/guides/?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=checkout_guides)
 
 ## Installation  
 OctoBot's installation is **very simple**, you can either:
 - [Deploy your OctoBot on OctoBot Cloud](https://octobot.cloud/?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=readme_deploy_on_cloud). With OctoBot cloud, experience hassle-free installation, updates, and maintenance - leave it all to us! Your robot will also benefit from cloud only features.
-- [Download and install](https://www.octobot.cloud/guides/octobot-installation/local?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=readme_local_installation) OctoBot on your computer or server and enjoy all features for free.
-- Install OctoBot [using docker](https://www.octobot.cloud/guides/octobot-installation/with-docker?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=readme_docker_installation).
+- [Download and install](https://www.octobot.cloud/en/guides/octobot-installation/local?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=readme_local_installation) OctoBot on your computer or server and enjoy all features for free.
+- Install OctoBot [using docker](https://www.octobot.cloud/en/guides/octobot-installation/with-docker?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=readme_docker_installation).
 
     Docker install in one line summary:
     ```
@@ -68,18 +68,18 @@ OctoBot's installation is **very simple**, you can either:
     Your OctoBot will be accessible on [http://localhost](http://localhost).
 
 ## Exchanges
-[![Binance supported exchange partnership](../assets/binance-logo.png)](https://www.octobot.cloud/guides/octobot-partner-exchanges/binance?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=binance)
-[![Okx supported exchange partnership](../assets/okex-logo.png)](https://www.octobot.cloud/guides/octobot-partner-exchanges/okx?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=okx)
-[![Kucoin supported exchange partnership](../assets/kucoin-logo.png)](https://www.octobot.cloud/guides/octobot-partner-exchanges/kucoin?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=kucoin)
-[![Crypto.com supported exchange partnership](../assets/cryptocom-logo.png)](https://www.octobot.cloud/guides/octobot-partner-exchanges/crypto-com?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=crypto-com)
-[![Huobi supported exchange partnership](../assets/huobi-logo.png)](https://www.octobot.cloud/guides/octobot-partner-exchanges/huobi?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=huobi)
-[![Hollaex supported exchange partnership](../assets/hollaex-logo.png)](https://www.octobot.cloud/guides/octobot-partner-exchanges/hollaex?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=hollaex)
-[![Coinbase supported exchange](../assets/coinbasepro-logo.png)](https://www.octobot.cloud/guides/octobot-supported-exchanges/coinbase?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=coinbase)
-[![GateIO supported exchange partnership](../assets/gateio-logo.png)](https://www.octobot.cloud/guides/octobot-partner-exchanges/gateio?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=gateio)
-[![Ascendex supported exchange partnership](../assets/ascendex-logo.png)](https://www.octobot.cloud/guides/octobot-partner-exchanges/ascendex?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=ascendex)
+[![Binance supported exchange partnership](../assets/binance-logo.png)](https://www.octobot.cloud/en/guides/octobot-partner-exchanges/binance?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=binance)
+[![Okx supported exchange partnership](../assets/okex-logo.png)](https://www.octobot.cloud/en/guides/octobot-partner-exchanges/okx?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=okx)
+[![Kucoin supported exchange partnership](../assets/kucoin-logo.png)](https://www.octobot.cloud/en/guides/octobot-partner-exchanges/kucoin?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=kucoin)
+[![Crypto.com supported exchange partnership](../assets/cryptocom-logo.png)](https://www.octobot.cloud/en/guides/octobot-partner-exchanges/crypto-com?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=crypto-com)
+[![Huobi supported exchange partnership](../assets/huobi-logo.png)](https://www.octobot.cloud/en/guides/octobot-partner-exchanges/huobi?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=huobi)
+[![Hollaex supported exchange partnership](../assets/hollaex-logo.png)](https://www.octobot.cloud/en/guides/octobot-partner-exchanges/hollaex?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=hollaex)
+[![Coinbase supported exchange](../assets/coinbasepro-logo.png)](https://www.octobot.cloud/en/guides/octobot-supported-exchanges/coinbase?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=coinbase)
+[![GateIO supported exchange partnership](../assets/gateio-logo.png)](https://www.octobot.cloud/en/guides/octobot-partner-exchanges/gateio?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=gateio)
+[![Ascendex supported exchange partnership](../assets/ascendex-logo.png)](https://www.octobot.cloud/en/guides/octobot-partner-exchanges/ascendex?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=ascendex)
 
-Octobot supports many [exchanges](https://www.octobot.cloud/guides/exchanges?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=exchanges) thanks to the [ccxt library](https://github.com/ccxt/ccxt). 
-To activate trading on an exchange, just configure OctoBot with your API keys as described [on the exchange setup guides](https://www.octobot.cloud/guides/octobot-configuration/exchanges?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=exchanges_setup_guides).
+Octobot supports many [exchanges](https://www.octobot.cloud/en/guides/exchanges?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=exchanges) thanks to the [ccxt library](https://github.com/ccxt/ccxt). 
+To activate trading on an exchange, just configure OctoBot with your API keys as described [on the exchange setup guides](https://www.octobot.cloud/en/guides/octobot-configuration/exchanges?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=exchanges_setup_guides).
 
 
 ### Paper trading
@@ -88,7 +88,7 @@ To trade on any exchange, just enable the exchange in your OctoBot. This you to 
 No exchange credential is required.
 
 ### Real trading
-To use your real exchange account with OctoBot, enter your exchange API keys as described [on the exchange guides](https://www.octobot.cloud/guides/exchanges?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=exchanges_guides). 
+To use your real exchange account with OctoBot, enter your exchange API keys as described [on the exchange guides](https://www.octobot.cloud/en/guides/exchanges?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=exchanges_guides). 
 
 ## Testing trading strategies
 

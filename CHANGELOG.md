@@ -47,7 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [Webhook] Support Ngrok custom domains
 ### Updated
 - [ChatGPT] Default GPT Trading profile now uses the DCA trading mode 
-- [TradingView] Revamped docs on https://www.octobot.cloud/guides/octobot-interfaces/tradingview
+- [TradingView] Revamped docs on https://www.octobot.cloud/en/guides/octobot-interfaces/tradingview
 - [DCATrading] Improved error messages
 - [WebInterface] Do not select duplicated profiles by default
 - [DataCollector] Make errors clearer
