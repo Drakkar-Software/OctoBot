@@ -46,9 +46,11 @@ class TestBitgetAuthenticatedExchange(
         pass
 
     async def test_create_and_cancel_limit_orders(self):
+        # KYC needed    8th jan 2024    ccxt 4.2.10
         await super().test_create_and_cancel_limit_orders()
 
     async def test_create_and_fill_market_orders(self):
+        # KYC needed    8th jan 2024    ccxt 4.2.10
         await super().test_create_and_fill_market_orders()
 
     async def test_get_my_recent_trades(self):
