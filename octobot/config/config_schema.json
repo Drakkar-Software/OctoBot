@@ -83,6 +83,9 @@
         "trades": {
           "type": "boolean"
         },
+        "other": {
+          "type": "boolean"
+        },
         "notification-type": {
           "type": "array",
           "items": {
