@@ -9,13 +9,11 @@ Async-Channel==2.2.1
 trading-backend==1.2.12
 
 ## Others
-colorlog==4.7.2
-yarl==1.7.2
-idna<2.9,>=2.5
-requests==2.25.1
-packaging==21.3
-python-dotenv==0.21.0
-setuptools<65.6 # Added because the distutils.log.Log class was removed in setuptools >= 65.6. Should be remove when bumping numpy.
+colorlog==6.8.0
+requests==2.31.0
+packaging==23.2
+python-dotenv==1.0.0
+setuptools==69.0.3
 
 # Community
 websockets
