@@ -21,8 +21,6 @@ from additional_tests.exchanges_tests import abstract_authenticated_exchange_tes
 pytestmark = pytest.mark.asyncio
 
 
-# 17/08/23 (untested with ccxt 4.0.65:
-# ccxt.base.errors.ExchangeError: phemex {"msg":"Please try again later","code":10500}?
 class TestPemexAuthenticatedExchange(
     abstract_authenticated_exchange_tester.AbstractAuthenticatedExchangeTester
 ):
@@ -48,7 +46,6 @@ class TestPemexAuthenticatedExchange(
         await super().test_create_and_cancel_limit_orders()
 
     async def test_create_and_fill_market_orders(self):
-        # 08 dec 2022: did not run so far, testnet is bugged: order are apparently accepted but never show up
         await super().test_create_and_fill_market_orders()
 
     async def test_get_my_recent_trades(self):

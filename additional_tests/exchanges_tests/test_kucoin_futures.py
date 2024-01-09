@@ -31,7 +31,7 @@ class TestKucoinFuturesAuthenticatedExchange(
     SETTLEMENT_CURRENCY = "USDT"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}:{SETTLEMENT_CURRENCY}"
     INVERSE_SYMBOL = f"{ORDER_CURRENCY}/USD:{ORDER_CURRENCY}"
-    ORDER_SIZE = 60  # % of portfolio to include in test orders
+    ORDER_SIZE = 90  # % of portfolio to include in test orders
     SUPPORTS_GET_LEVERAGE = False
     SUPPORTS_SET_LEVERAGE = False
 
