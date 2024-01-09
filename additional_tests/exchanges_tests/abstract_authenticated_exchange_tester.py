@@ -500,7 +500,7 @@ class AbstractAuthenticatedExchangeTester:
             assert len(closed_orders) - len(incomplete_fees_orders) >= 2
 
     def check_parsed_closed_order(
-            self, order: personal_data.Order, incomplete_fee_orders: list, allow_incomplete_fees: bool
+        self, order: personal_data.Order, incomplete_fee_orders: list, allow_incomplete_fees: bool
     ):
         assert order.symbol
         assert order.timestamp
