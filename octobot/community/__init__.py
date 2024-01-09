@@ -74,7 +74,6 @@ from octobot.community.graphql_requests import (
 from octobot.community.feeds import (
     AbstractFeed,
     CommunityWSFeed,
-    CommunityMQTTFeed,
     community_feed_factory,
 )
 from octobot.community.errors_upload import (
@@ -126,6 +125,5 @@ __all__ = [
     "upsert_historical_bot_portfolio_query",
     "AbstractFeed",
     "CommunityWSFeed",
-    "CommunityMQTTFeed",
     "community_feed_factory",
 ]
