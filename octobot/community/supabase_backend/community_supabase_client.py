@@ -154,7 +154,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             raise errors.BotNotFoundError(f"Can't find bot with id: {bot_id}")
 
     async def fetch_bots(self) -> list:
-        return (await self.table("bots").select("*,bot_deployment:bot_deployments!bots_current_deployment_id_fkey(*)").execute()).data
+        return (await self.table("bots").select("*,bot_deployment:bot_deployments!bots_current_deployment_id_fkey!inner(*)").execute()).data
 
     async def create_bot(self, deployment_type: enums.DeploymentTypes) -> dict:
         created_bot = (await self.table("bots").insert({
