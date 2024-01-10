@@ -31,7 +31,7 @@ class CategoryData(commons_dataclasses.FlexibleDataclass):
             external_links = self.metadata.get("external_link")
             if external_links:
                 if blog_slug := external_links.get("blog"):
-                    return f"{identifiers_provider.IdentifiersProvider.COMMUNITY_LANDING_URL}/blog/{blog_slug}"
+                    return f"{identifiers_provider.IdentifiersProvider.COMMUNITY_LANDING_URL}/en/blog/{blog_slug}"
         return ""
 
 
