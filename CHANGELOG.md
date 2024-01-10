@@ -6,6 +6,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [1.0.6] - 2024-01-09
+### Added
+- [TradingModes] Improved documentation and added links to full guides
+- [InstantMAEvaluator] Add trigger threshold to avoid triggering at each price update
+### Updated
+- [CCXT] update to ccxt 4.2.10
+- [ChatGPT] update to openai 1.7.0
+- [DailyTradingMode] Enable futures position increase: add warning
+### Fixed
+- [DailyTradingMode] handle invalid MAX_CURRENCY_RATIO
+- [TradingView] Fix SIGNAL=CANCEL docs typo
+- [Exchanges] MEXC orders synchronization issues
+- [Exchanges] HTX renamed Huobi into HTX
+### Removed
+- [Exchanges] Bittrex
+
 ## [1.0.5] - 2023-12-19
 ### Added
 - [GPTEvaluator] Settings to limit used tokens and disable re-evaluation
@@ -47,7 +63,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [Webhook] Support Ngrok custom domains
 ### Updated
 - [ChatGPT] Default GPT Trading profile now uses the DCA trading mode 
-- [TradingView] Revamped docs on https://www.octobot.cloud/guides/octobot-interfaces/tradingview
+- [TradingView] Revamped docs on https://www.octobot.cloud/en/guides/octobot-interfaces/tradingview
 - [DCATrading] Improved error messages
 - [WebInterface] Do not select duplicated profiles by default
 - [DataCollector] Make errors clearer
