@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [1.0.7] - 2024-01-18
+### Added
+- [CoinEx] Support CoinEx
+### Updated
+- [WebInterface] Show profitability even on backtesting error, special thanks to Phodia for this improvement.
+### Fixed
+- [Exchanges] Websocket reconnection issues
+- [DailyTradingMode] Fix sell amount when shorting in Target Profits mode
+
 ## [1.0.6] - 2024-01-09
 ### Added
 - [TradingModes] Improved documentation and added links to full guides
