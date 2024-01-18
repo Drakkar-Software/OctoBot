@@ -151,10 +151,13 @@ class AbstractAuthenticatedExchangeTester:
         # # end debug tools
         open_orders = await self.get_open_orders(exchange_data)
         buy_limit = await self.create_limit_order(price, size, trading_enums.TradeOrderSide.BUY, symbol=symbol)
-        self.check_created_limit_order(buy_limit, price, size, trading_enums.TradeOrderSide.BUY)
-        assert await self.order_in_open_orders(open_orders, buy_limit, symbol=symbol)
-        await self.check_can_get_order(buy_limit)
-        await self.cancel_order(buy_limit)
+        try:
+            self.check_created_limit_order(buy_limit, price, size, trading_enums.TradeOrderSide.BUY)
+            assert await self.order_in_open_orders(open_orders, buy_limit, symbol=symbol)
+            await self.check_can_get_order(buy_limit)
+        finally:
+            # don't leave buy_limit as open order
+            await self.cancel_order(buy_limit)
         assert await self.order_not_in_open_orders(open_orders, buy_limit, symbol=symbol)
 
     async def test_create_and_fill_market_orders(self):
