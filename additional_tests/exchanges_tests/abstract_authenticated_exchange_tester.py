@@ -30,6 +30,7 @@ import octobot_trading.personal_data as personal_data
 import octobot_trading.personal_data.orders as personal_data_orders
 import octobot_trading.util.test_tools.exchanges_test_tools as exchanges_test_tools
 import octobot_trading.util.test_tools.exchange_data as exchange_data_import
+import trading_backend.enums
 import octobot_tentacles_manager.api as tentacles_manager_api
 from additional_tests.exchanges_tests import get_authenticated_exchange_manager
 
@@ -122,6 +123,17 @@ class AbstractAuthenticatedExchangeTester:
         else:
             with pytest.raises(NotImplementedError):
                 await self.exchange_manager.exchange.get_account_id()
+
+    async def test_get_api_key_permissions(self):
+        async with self.local_exchange_manager():
+            await self.inner_test_get_api_key_permissions()
+
+    async def inner_test_get_api_key_permissions(self):
+        permissions = await self.exchange_manager.exchange_backend._get_api_key_rights()
+        assert len(permissions) > 0
+        assert trading_backend.enums.APIKeyRights.READING in permissions
+        assert trading_backend.enums.APIKeyRights.SPOT_TRADING in permissions
+        assert trading_backend.enums.APIKeyRights.FUTURES_TRADING in permissions
 
     async def test_create_and_cancel_limit_orders(self):
         async with self.local_exchange_manager():

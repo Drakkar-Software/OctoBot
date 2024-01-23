@@ -42,6 +42,10 @@ class TestPemexAuthenticatedExchange(
         # pass if not implemented
         pass
 
+    async def test_get_api_key_permissions(self):
+        # pass if not implemented
+        pass
+
     async def test_create_and_cancel_limit_orders(self):
         await super().test_create_and_cancel_limit_orders()
 
