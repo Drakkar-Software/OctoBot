@@ -43,6 +43,9 @@ class TestKucoinAuthenticatedExchange(
     async def test_get_account_id(self):
         await super().test_get_account_id()
 
+    async def test_get_api_key_permissions(self):
+        await super().test_get_api_key_permissions()
+
     async def test_create_and_fill_market_orders(self):
         await super().test_create_and_fill_market_orders()
 
