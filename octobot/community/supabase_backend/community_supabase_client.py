@@ -284,6 +284,8 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             portfolio = (bot_config.get(
                 enums.BotConfigKeys.OPTIONS.value
             ) or {}).get("portfolio")
+            if not portfolio:
+                raise errors.InvalidBotConfigError("Missing portfolio in bot config")
             if trading_api.is_usd_like_coin(profile_data.trading.reference_market):
                 usd_like_asset = profile_data.trading.reference_market
             else:
