@@ -40,6 +40,10 @@ class MissingBotConfigError(BotError):
     pass
 
 
+class InvalidBotConfigError(BotError):
+    pass
+
+
 class MissingProductConfigError(BotError):
     pass
 
