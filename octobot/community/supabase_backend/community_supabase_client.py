@@ -268,11 +268,14 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             "product_config:product_configs("
             "   config, "
             "   version, "
-            "   product:products!product_id(attributes)"
+            "   product:products!product_id(slug, attributes)"
             ")"
         ).eq(enums.BotConfigKeys.ID.value, bot_config_id).execute()).data[0]
         profile_data = commons_profiles.ProfileData.from_dict(
             bot_config["product_config"][enums.ProfileConfigKeys.CONFIG.value]
+        )
+        profile_data.profile_details.name = bot_config["product_config"].get("product", {}).get(
+            "slug", profile_data.profile_details.name
         )
         profile_data.trading.minimal_funds = [
             commons_profiles.MinimalFund.from_dict(minimal_fund)
