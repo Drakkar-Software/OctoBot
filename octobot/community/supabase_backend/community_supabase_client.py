@@ -33,6 +33,7 @@ import octobot_trading.api as trading_api
 import octobot.constants as constants
 import octobot.community.errors as errors
 import octobot.community.models.formatters as formatters
+import octobot.community.models.community_user_account as community_user_account
 import octobot.community.supabase_backend.enums as enums
 import octobot.community.supabase_backend.supabase_client as supabase_client
 import octobot.community.supabase_backend.configuration_storage as configuration_storage
@@ -84,7 +85,8 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
                 "password": password,
                 "options": {
                     "data": {
-                        "hasRegisteredFromSelfHosted": True
+                        "hasRegisteredFromSelfHosted": True,
+                        community_user_account.CommunityUserAccount.HOSTING_ENABLED: True,
                     }
                 }
             })
