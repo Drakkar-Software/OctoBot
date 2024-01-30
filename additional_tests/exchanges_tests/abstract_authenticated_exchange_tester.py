@@ -581,6 +581,7 @@ class AbstractAuthenticatedExchangeTester:
             assert trade.exchange_trade_id
         assert trade.side
         if trade.status is not trading_enums.OrderStatus.CANCELED:
+            assert trade.executed_time
             assert trade.executed_quantity
             self.check_theoretical_cost(
                 symbols.parse_symbol(trade.symbol), trade.executed_quantity,
