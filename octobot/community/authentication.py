@@ -193,6 +193,11 @@ class CommunityAuthentication(authentication.Authenticator):
         self._update_supports(200, _supports_mock())
         # TODO use real support fetch when implemented
 
+    async def update_is_hosting_enabled(self, enabled: bool):
+        await self._update_account_metadata({
+            self.user_account.HOSTING_ENABLED: enabled
+        })
+
     def _create_client(self):
         return supabase_backend.CommunitySupabaseClient(
             self.backend_url,
@@ -457,6 +462,8 @@ class CommunityAuthentication(authentication.Authenticator):
                 await self.update_selected_bot()
                 self.logger.debug(f"Fetched account data")
                 await self.init_public_data()
+                if not self.user_account.is_hosting_enabled():
+                    await self.update_is_hosting_enabled(True)
         except authentication.UnavailableError as e:
             self.logger.exception(e, True, f"Error when fetching community supports, "
                                            f"please check your internet connection.")
