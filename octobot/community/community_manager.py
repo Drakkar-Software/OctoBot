@@ -219,7 +219,7 @@ class CommunityManager:
             exchange_name = trading_api.get_exchange_name(exchange_manager)
             if self.has_real_trader \
                and trading_api.is_sponsoring(exchange_name) \
-               and trading_api.is_valid_account(exchange_manager):
+               and trading_api.is_broker_enabled(exchange_manager):
                 supporting_exchanges.append(exchange_name)
         supports = authentication.Authenticator.instance().user_account.supports
         return {

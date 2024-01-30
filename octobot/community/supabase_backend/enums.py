@@ -139,6 +139,7 @@ class TradeKeys(enum.Enum):
     SYMBOL = "symbol"
     TYPE = "type"
     VOLUME = "volume"
+    BROKER_APPLIED = "broker_applied"
     METADATA = "metadata"
 
 
