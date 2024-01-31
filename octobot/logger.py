@@ -277,13 +277,18 @@ async def mark_price_callback(
 
 
 def _filter_balance(balance: dict):
-    filtered_balance = {
-        key: values
-        for key, values in balance.items()
-        if values[commons_constants.PORTFOLIO_TOTAL]
-    }
-    removed_count = len(balance) - len(filtered_balance)
-    return trading_api.parse_decimal_portfolio(filtered_balance, False), removed_count
+    if not balance:
+        return balance
+    first_value = next(iter(balance.values()))
+    if isinstance(first_value, dict):
+        filtered_balance = {
+            key: values
+            for key, values in balance.items()
+            if values[commons_constants.PORTFOLIO_TOTAL]
+        }
+        removed_count = len(balance) - len(filtered_balance)
+        return trading_api.parse_decimal_portfolio(filtered_balance, False), removed_count
+    return balance, 0
 
 
 async def balance_callback(exchange: str, exchange_id: str, balance):
