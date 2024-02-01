@@ -16,6 +16,7 @@
 import asyncio
 import contextlib
 import json
+import time
 import typing
 
 import octobot.constants as constants
@@ -592,3 +593,21 @@ class CommunityAuthentication(authentication.Authenticator):
             formatted_portfolio[backend_enums.PortfolioKeys.ID.value] = \
                 self.user_account.get_selected_bot_current_portfolio_id()
             await self.supabase_client.update_portfolio(formatted_portfolio)
+            await self._update_deployment_activity()
+
+    @_bot_data_update
+    async def _update_deployment_activity(self):
+        try:
+            current_time = time.time()
+            await self.supabase_client.update_deployment(
+                self.user_account.get_selected_bot_deployment_id(),
+                self.supabase_client.get_deployment_activity_update(
+                    current_time,
+                    current_time + commons_constants.TIMER_BETWEEN_METRICS_UPTIME_UPDATE,
+                )
+            )
+        except KeyError:
+            self.logger.debug(
+                f"Skipping activity update: current bot {self.user_account.bot_id} has no deployment"
+            )
+

@@ -175,10 +175,15 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         return await self.fetch_bot(bot_id)
 
     async def _create_deployment(self, deployment_type, bot_id, version):
+        current_time = time.time()
         return (await self.table("bot_deployments").insert({
             enums.BotDeploymentKeys.TYPE.value: deployment_type.value,
             enums.BotDeploymentKeys.VERSION.value: version,
             enums.BotDeploymentKeys.BOT_ID.value: bot_id,
+            enums.BotDeploymentKeys.ACTIVITIES.value: self._get_activities_content(
+                current_time,
+                current_time + commons_constants.TIMER_BETWEEN_METRICS_UPTIME_UPDATE
+            )
         }).execute()).data[0]
 
     async def update_bot(self, bot_id, bot_update) -> dict:
@@ -186,10 +191,21 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         # fetch bot to fetch embed elements (like deployments)
         return await self.fetch_bot(bot_id)
 
-    async def update_deployment(self, deployment_id, deployment_update) -> dict:
+    async def update_deployment(self, deployment_id, deployment_update: dict) -> dict:
         return (await self.table("bot_deployments").update(deployment_update).eq(
             enums.BotDeploymentKeys.ID.value, deployment_id
         ).execute()).data[0]
+
+    def get_deployment_activity_update(self, last_activity: float, next_activity: float) -> dict:
+        return {
+            enums.BotDeploymentKeys.ACTIVITIES.value: self._get_activities_content(last_activity, next_activity)
+        }
+
+    def _get_activities_content(self, last_activity: float, next_activity: float):
+        return {
+            enums.BotDeploymentActivitiesKeys.LAST_ACTIVITY.value: self.get_formatted_time(last_activity),
+            enums.BotDeploymentActivitiesKeys.NEXT_ACTIVITY.value: self.get_formatted_time(next_activity)
+        }
 
     async def delete_bot(self, bot_id) -> list:
         return (await self.table("bots").delete().eq(enums.BotKeys.ID.value, bot_id).execute()).data
