@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import asyncio
+import copy
 import datetime
 import json
 import time
@@ -22,6 +23,7 @@ import logging
 
 import aiohttp
 import gotrue.errors
+import postgrest
 import supabase.lib.client_options
 
 import octobot_commons.authentication as authentication
@@ -52,6 +54,8 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
     """
     Octobot Community layer added to supabase_client.AuthenticatedSupabaseClient
     """
+    MAX_PAGINATED_REQUESTS_COUNT = 100
+
     def __init__(
         self,
         supabase_url: str,
@@ -411,7 +415,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         self, exchange: str, symbol: str, time_frame: commons_enums.TimeFrames,
         first_open_time: float, last_open_time: float
     ) -> list:
-        historical_candles = await self._fetch_paginated_history(
+        historical_candles = await self._paginated_fetch_historical_data(
             await self.get_production_anon_client(),
             "temp_ohlcv_history",
             "timestamp, open, high, low, close, volume",
@@ -453,7 +457,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         }
         if exchange:
             matcher["exchange_internal_name"] = exchange
-        historical_signals = await self._fetch_paginated_history(
+        historical_signals = await self._paginated_fetch_historical_data(
             await self.get_production_anon_client(),
             "temp_chatgpt_signals",
             "timestamp, signal",
@@ -472,19 +476,15 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             )
         return self.production_anon_client
 
-    async def _fetch_paginated_history(
+    async def _paginated_fetch_historical_data(
         self, client, table_name: str, select: str, matcher: dict,
         time_interval: float, first_open_time: float, last_open_time: float
     ) -> list:
         total_elements_count = (last_open_time - first_open_time) // time_interval
-        offset = 0
-        max_size = 0
-        total_elements = []
-        max_requests_count = 100
-        request_count = 0
-        while request_count < max_requests_count:
-            request = (
-                client.table(table_name).select(select)
+
+        def request_factory(table: postgrest.AsyncRequestBuilder):
+            return (
+                table.select(select)
                 .match(matcher).gte(
                     "timestamp", self.get_formatted_time(first_open_time)
                 ).lte(
@@ -493,6 +493,24 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
                     "timestamp", desc=False
                 )
             )
+
+        return await self.paginated_fetch(
+            client, table_name, request_factory, total_elements_count=total_elements_count
+        )
+
+    async def paginated_fetch(
+        self,
+        client,
+        table_name: str,
+        request_factory: typing.Callable[[postgrest.AsyncRequestBuilder], postgrest.AsyncSelectRequestBuilder],
+        total_elements_count=None
+    ) -> list:
+        offset = 0
+        max_size = 0
+        total_elements = []
+        request_count = 0
+        while request_count < self.MAX_PAGINATED_REQUESTS_COUNT:
+            request = request_factory(client.table(table_name))
             if offset:
                 request = request.range(offset, offset+max_size)
             fetched_elements = (await request.execute()).data
@@ -500,7 +518,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             if(
                 len(fetched_elements) == 0 or
                 len(fetched_elements) < max_size or
-                (max_size == 0 and len(fetched_elements) == total_elements_count)
+                (total_elements_count and max_size == 0 and len(fetched_elements) == total_elements_count)
             ):
                 # fetched everything
                 break
@@ -509,9 +527,9 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
                 max_size = offset
             request_count += 1
 
-        if request_count == max_requests_count:
+        if request_count == self.MAX_PAGINATED_REQUESTS_COUNT:
             commons_logging.get_logger(self.__class__.__name__).info(
-                f"paginated fetch error on {table_name} with matcher: {matcher}: "
+                f"Paginated fetch error on {table_name} with request_factory: {request_factory.__name__}: "
                 f"too many requests ({request_count}), fetched: {len(total_elements)} elements"
             )
         return total_elements
