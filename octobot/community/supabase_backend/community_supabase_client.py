@@ -255,6 +255,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         ).execute()).data[0]["products_subscription"]
 
     async def fetch_trades(self, bot_id) -> list:
+        # should be paginated to fetch all trades, will fetch the 1000 first ones only
         return (await self.table("bot_trades").select("*").eq(
             enums.TradeKeys.BOT_ID.value, bot_id
         ).execute()).data
