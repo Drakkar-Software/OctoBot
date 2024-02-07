@@ -14,7 +14,6 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import asyncio
-import copy
 import datetime
 import json
 import time
@@ -24,6 +23,7 @@ import logging
 import aiohttp
 import gotrue.errors
 import postgrest
+import postgrest.types
 import supabase.lib.client_options
 
 import octobot_commons.authentication as authentication
@@ -424,7 +424,6 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
                 "symbol": symbol,
                 "time_frame": time_frame.value,
             },
-            commons_enums.TimeFramesMinutes[time_frame] * commons_constants.MINUTE_TO_SECONDS,
             first_open_time,
             last_open_time
         )
@@ -462,7 +461,6 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             "temp_chatgpt_signals",
             "timestamp, signal",
             matcher,
-            commons_enums.TimeFramesMinutes[time_frame] * commons_constants.MINUTE_TO_SECONDS,
             first_open_time,
             last_open_time
         )
@@ -478,13 +476,11 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
 
     async def _paginated_fetch_historical_data(
         self, client, table_name: str, select: str, matcher: dict,
-        time_interval: float, first_open_time: float, last_open_time: float
+        first_open_time: float, last_open_time: float
     ) -> list:
-        total_elements_count = (last_open_time - first_open_time) // time_interval
-
-        def request_factory(table: postgrest.AsyncRequestBuilder):
+        def request_factory(table: postgrest.AsyncRequestBuilder, select_count):
             return (
-                table.select(select)
+                table.select(select, count=select_count)
                 .match(matcher).gte(
                     "timestamp", self.get_formatted_time(first_open_time)
                 ).lte(
@@ -495,36 +491,43 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             )
 
         return await self.paginated_fetch(
-            client, table_name, request_factory, total_elements_count=total_elements_count
+            client, table_name, request_factory
         )
 
     async def paginated_fetch(
         self,
         client,
         table_name: str,
-        request_factory: typing.Callable[[postgrest.AsyncRequestBuilder], postgrest.AsyncSelectRequestBuilder],
-        total_elements_count=None
+        request_factory: typing.Callable[
+            [postgrest.AsyncRequestBuilder, postgrest.types.CountMethod], postgrest.AsyncSelectRequestBuilder
+        ],
     ) -> list:
         offset = 0
-        max_size = 0
+        max_size_per_fetch = 0
         total_elements = []
         request_count = 0
+        total_elements_count = 0
         while request_count < self.MAX_PAGINATED_REQUESTS_COUNT:
-            request = request_factory(client.table(table_name))
+            request = request_factory(
+                client.table(table_name),
+                None if total_elements_count else postgrest.types.CountMethod.exact
+            )
             if offset:
-                request = request.range(offset, offset+max_size)
-            fetched_elements = (await request.execute()).data
+                request = request.range(offset, offset+max_size_per_fetch)
+            result = await request.execute()
+            fetched_elements = result.data
+            total_elements_count = total_elements_count or result.count   # don't change total count within iteration
             total_elements += fetched_elements
             if(
-                len(fetched_elements) == 0 or
-                len(fetched_elements) < max_size or
-                (total_elements_count and max_size == 0 and len(fetched_elements) == total_elements_count)
+                len(fetched_elements) == 0 or   # nothing to fetch
+                len(fetched_elements) < max_size_per_fetch or   # fetched the last elements
+                len(fetched_elements) == total_elements_count   # finished fetching
             ):
                 # fetched everything
                 break
             offset += len(fetched_elements)
-            if max_size == 0:
-                max_size = offset
+            if max_size_per_fetch == 0:
+                max_size_per_fetch = offset
             request_count += 1
 
         if request_count == self.MAX_PAGINATED_REQUESTS_COUNT:
