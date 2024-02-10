@@ -28,6 +28,7 @@ class CommunityUserAccount:
     METADATA = "metadata"
     FILLED_FORMS = "filledForms"
     NO_SELECTED_BOT_DESC = "No selected bot. Please select a bot to enable your community features."
+    HOSTING_ENABLED = "hosting_enabled"
 
     def __init__(self):
         self.gql_user_id = None
@@ -60,6 +61,9 @@ class CommunityUserAccount:
 
     def get_filled_forms_ids(self):
         return self._get_user_data_metadata().get(self.FILLED_FORMS, [])
+
+    def is_hosting_enabled(self):
+        return self._get_user_data_metadata().get(self.HOSTING_ENABLED, False)
 
     def get_all_user_bots_raw_data(self):
         return self._all_user_bots_raw_data

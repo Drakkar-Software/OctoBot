@@ -50,6 +50,10 @@ class TestBinanceFuturesAuthenticatedExchange(
     async def test_get_account_id(self):
         await super().test_get_account_id()
 
+    async def test_get_api_key_permissions(self):
+        # pass if not implemented
+        pass
+
     async def test_get_empty_linear_and_inverse_positions(self):
         await super().test_get_empty_linear_and_inverse_positions()
 

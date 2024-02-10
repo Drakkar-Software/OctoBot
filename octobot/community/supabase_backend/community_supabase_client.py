@@ -22,6 +22,8 @@ import logging
 
 import aiohttp
 import gotrue.errors
+import postgrest
+import postgrest.types
 import supabase.lib.client_options
 
 import octobot_commons.authentication as authentication
@@ -33,6 +35,7 @@ import octobot_trading.api as trading_api
 import octobot.constants as constants
 import octobot.community.errors as errors
 import octobot.community.models.formatters as formatters
+import octobot.community.models.community_user_account as community_user_account
 import octobot.community.supabase_backend.enums as enums
 import octobot.community.supabase_backend.supabase_client as supabase_client
 import octobot.community.supabase_backend.configuration_storage as configuration_storage
@@ -51,6 +54,8 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
     """
     Octobot Community layer added to supabase_client.AuthenticatedSupabaseClient
     """
+    MAX_PAGINATED_REQUESTS_COUNT = 100
+
     def __init__(
         self,
         supabase_url: str,
@@ -84,7 +89,8 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
                 "password": password,
                 "options": {
                     "data": {
-                        "hasRegisteredFromSelfHosted": True
+                        "hasRegisteredFromSelfHosted": True,
+                        community_user_account.CommunityUserAccount.HOSTING_ENABLED: True,
                     }
                 }
             })
@@ -173,10 +179,15 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         return await self.fetch_bot(bot_id)
 
     async def _create_deployment(self, deployment_type, bot_id, version):
+        current_time = time.time()
         return (await self.table("bot_deployments").insert({
             enums.BotDeploymentKeys.TYPE.value: deployment_type.value,
             enums.BotDeploymentKeys.VERSION.value: version,
             enums.BotDeploymentKeys.BOT_ID.value: bot_id,
+            enums.BotDeploymentKeys.ACTIVITIES.value: self._get_activities_content(
+                current_time,
+                current_time + commons_constants.TIMER_BETWEEN_METRICS_UPTIME_UPDATE
+            )
         }).execute()).data[0]
 
     async def update_bot(self, bot_id, bot_update) -> dict:
@@ -184,10 +195,21 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         # fetch bot to fetch embed elements (like deployments)
         return await self.fetch_bot(bot_id)
 
-    async def update_deployment(self, deployment_id, deployment_update) -> dict:
+    async def update_deployment(self, deployment_id, deployment_update: dict) -> dict:
         return (await self.table("bot_deployments").update(deployment_update).eq(
             enums.BotDeploymentKeys.ID.value, deployment_id
         ).execute()).data[0]
+
+    def get_deployment_activity_update(self, last_activity: float, next_activity: float) -> dict:
+        return {
+            enums.BotDeploymentKeys.ACTIVITIES.value: self._get_activities_content(last_activity, next_activity)
+        }
+
+    def _get_activities_content(self, last_activity: float, next_activity: float):
+        return {
+            enums.BotDeploymentActivitiesKeys.LAST_ACTIVITY.value: self.get_formatted_time(last_activity),
+            enums.BotDeploymentActivitiesKeys.NEXT_ACTIVITY.value: self.get_formatted_time(next_activity)
+        }
 
     async def delete_bot(self, bot_id) -> list:
         return (await self.table("bots").delete().eq(enums.BotKeys.ID.value, bot_id).execute()).data
@@ -233,6 +255,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         ).execute()).data[0]["products_subscription"]
 
     async def fetch_trades(self, bot_id) -> list:
+        # should be paginated to fetch all trades, will fetch the 1000 first ones only
         return (await self.table("bot_trades").select("*").eq(
             enums.TradeKeys.BOT_ID.value, bot_id
         ).execute()).data
@@ -266,11 +289,14 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             "product_config:product_configs("
             "   config, "
             "   version, "
-            "   product:products!product_id(attributes)"
+            "   product:products!product_id(slug, attributes)"
             ")"
         ).eq(enums.BotConfigKeys.ID.value, bot_config_id).execute()).data[0]
         profile_data = commons_profiles.ProfileData.from_dict(
             bot_config["product_config"][enums.ProfileConfigKeys.CONFIG.value]
+        )
+        profile_data.profile_details.name = bot_config["product_config"].get("product", {}).get(
+            "slug", profile_data.profile_details.name
         )
         profile_data.trading.minimal_funds = [
             commons_profiles.MinimalFund.from_dict(minimal_fund)
@@ -284,6 +310,8 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             portfolio = (bot_config.get(
                 enums.BotConfigKeys.OPTIONS.value
             ) or {}).get("portfolio")
+            if not portfolio:
+                raise errors.InvalidBotConfigError("Missing portfolio in bot config")
             if trading_api.is_usd_like_coin(profile_data.trading.reference_market):
                 usd_like_asset = profile_data.trading.reference_market
             else:
@@ -388,7 +416,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         self, exchange: str, symbol: str, time_frame: commons_enums.TimeFrames,
         first_open_time: float, last_open_time: float
     ) -> list:
-        historical_candles = await self._fetch_paginated_history(
+        historical_candles = await self._paginated_fetch_historical_data(
             await self.get_production_anon_client(),
             "temp_ohlcv_history",
             "timestamp, open, high, low, close, volume",
@@ -397,7 +425,6 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
                 "symbol": symbol,
                 "time_frame": time_frame.value,
             },
-            commons_enums.TimeFramesMinutes[time_frame] * commons_constants.MINUTE_TO_SECONDS,
             first_open_time,
             last_open_time
         )
@@ -430,12 +457,11 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         }
         if exchange:
             matcher["exchange_internal_name"] = exchange
-        historical_signals = await self._fetch_paginated_history(
+        historical_signals = await self._paginated_fetch_historical_data(
             await self.get_production_anon_client(),
             "temp_chatgpt_signals",
             "timestamp, signal",
             matcher,
-            commons_enums.TimeFramesMinutes[time_frame] * commons_constants.MINUTE_TO_SECONDS,
             first_open_time,
             last_open_time
         )
@@ -449,19 +475,13 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             )
         return self.production_anon_client
 
-    async def _fetch_paginated_history(
+    async def _paginated_fetch_historical_data(
         self, client, table_name: str, select: str, matcher: dict,
-        time_interval: float, first_open_time: float, last_open_time: float
+        first_open_time: float, last_open_time: float
     ) -> list:
-        total_elements_count = (last_open_time - first_open_time) // time_interval
-        offset = 0
-        max_size = 0
-        total_elements = []
-        max_requests_count = 100
-        request_count = 0
-        while request_count < max_requests_count:
-            request = (
-                client.table(table_name).select(select)
+        def request_factory(table: postgrest.AsyncRequestBuilder, select_count):
+            return (
+                table.select(select, count=select_count)
                 .match(matcher).gte(
                     "timestamp", self.get_formatted_time(first_open_time)
                 ).lte(
@@ -470,25 +490,50 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
                     "timestamp", desc=False
                 )
             )
+
+        return await self.paginated_fetch(
+            client, table_name, request_factory
+        )
+
+    async def paginated_fetch(
+        self,
+        client,
+        table_name: str,
+        request_factory: typing.Callable[
+            [postgrest.AsyncRequestBuilder, postgrest.types.CountMethod], postgrest.AsyncSelectRequestBuilder
+        ],
+    ) -> list:
+        offset = 0
+        max_size_per_fetch = 0
+        total_elements = []
+        request_count = 0
+        total_elements_count = 0
+        while request_count < self.MAX_PAGINATED_REQUESTS_COUNT:
+            request = request_factory(
+                client.table(table_name),
+                None if total_elements_count else postgrest.types.CountMethod.exact
+            )
             if offset:
-                request = request.range(offset, offset+max_size)
-            fetched_elements = (await request.execute()).data
+                request = request.range(offset, offset+max_size_per_fetch)
+            result = await request.execute()
+            fetched_elements = result.data
+            total_elements_count = total_elements_count or result.count   # don't change total count within iteration
             total_elements += fetched_elements
             if(
-                len(fetched_elements) == 0 or
-                len(fetched_elements) < max_size or
-                (max_size == 0 and len(fetched_elements) == total_elements_count)
+                len(fetched_elements) == 0 or   # nothing to fetch
+                len(fetched_elements) < max_size_per_fetch or   # fetched the last elements
+                len(fetched_elements) == total_elements_count   # finished fetching
             ):
                 # fetched everything
                 break
             offset += len(fetched_elements)
-            if max_size == 0:
-                max_size = offset
+            if max_size_per_fetch == 0:
+                max_size_per_fetch = offset
             request_count += 1
 
-        if request_count == max_requests_count:
+        if request_count == self.MAX_PAGINATED_REQUESTS_COUNT:
             commons_logging.get_logger(self.__class__.__name__).info(
-                f"paginated fetch error on {table_name} with matcher: {matcher}: "
+                f"Paginated fetch error on {table_name} with request_factory: {request_factory.__name__}: "
                 f"too many requests ({request_count}), fetched: {len(total_elements)} elements"
             )
         return total_elements

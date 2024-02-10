@@ -16,6 +16,7 @@
 import asyncio
 import contextlib
 import json
+import time
 import typing
 
 import octobot.constants as constants
@@ -192,6 +193,11 @@ class CommunityAuthentication(authentication.Authenticator):
             }
         self._update_supports(200, _supports_mock())
         # TODO use real support fetch when implemented
+
+    async def update_is_hosting_enabled(self, enabled: bool):
+        await self._update_account_metadata({
+            self.user_account.HOSTING_ENABLED: enabled
+        })
 
     def _create_client(self):
         return supabase_backend.CommunitySupabaseClient(
@@ -457,6 +463,8 @@ class CommunityAuthentication(authentication.Authenticator):
                 await self.update_selected_bot()
                 self.logger.debug(f"Fetched account data")
                 await self.init_public_data()
+                if not self.user_account.is_hosting_enabled():
+                    await self.update_is_hosting_enabled(True)
         except authentication.UnavailableError as e:
             self.logger.exception(e, True, f"Error when fetching community supports, "
                                            f"please check your internet connection.")
@@ -585,3 +593,21 @@ class CommunityAuthentication(authentication.Authenticator):
             formatted_portfolio[backend_enums.PortfolioKeys.ID.value] = \
                 self.user_account.get_selected_bot_current_portfolio_id()
             await self.supabase_client.update_portfolio(formatted_portfolio)
+            await self._update_deployment_activity()
+
+    @_bot_data_update
+    async def _update_deployment_activity(self):
+        try:
+            current_time = time.time()
+            await self.supabase_client.update_deployment(
+                self.user_account.get_selected_bot_deployment_id(),
+                self.supabase_client.get_deployment_activity_update(
+                    current_time,
+                    current_time + commons_constants.TIMER_BETWEEN_METRICS_UPTIME_UPDATE,
+                )
+            )
+        except KeyError:
+            self.logger.debug(
+                f"Skipping activity update: current bot {self.user_account.bot_id} has no deployment"
+            )
+
