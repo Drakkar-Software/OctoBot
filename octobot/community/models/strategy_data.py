@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import dataclasses
+import octobot.constants as constants
 import octobot.community.identifiers_provider as identifiers_provider
 import octobot_commons.dataclasses as commons_dataclasses
 import octobot_commons.enums as commons_enums
@@ -56,6 +57,9 @@ class StrategyData(commons_dataclasses.FlexibleDataclass):
     attributes: dict = dataclasses.field(default_factory=dict)
     visibility: str = ""
     metadata: str = ""
+
+    def get_name(self, locale, default_locale=constants.DEFAULT_LOCALE):
+        return self.content["name_translations"].get(locale, default_locale)
 
     def get_url(self) -> str:
         return f"{identifiers_provider.IdentifiersProvider.COMMUNITY_URL}/strategies/{self.slug}"
