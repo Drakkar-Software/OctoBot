@@ -399,7 +399,7 @@ class CommunityAuthentication(authentication.Authenticator):
         ]
 
     async def on_new_bot_select(self):
-        pass
+        await self._update_deployment_activity()
 
     def logout(self):
         """
@@ -593,14 +593,18 @@ class CommunityAuthentication(authentication.Authenticator):
             formatted_portfolio[backend_enums.PortfolioKeys.ID.value] = \
                 self.user_account.get_selected_bot_current_portfolio_id()
             await self.supabase_client.update_portfolio(formatted_portfolio)
-            await self._update_deployment_activity()
+        await self._update_deployment_activity()
 
     @_bot_data_update
     async def _update_deployment_activity(self):
         try:
+            deployment_id = self.user_account.get_selected_bot_deployment_id()
+            if not deployment_id:
+                self.logger.debug(f"Missing deployment id to update last deployment activity time.")
+                return
             current_time = time.time()
             await self.supabase_client.update_deployment(
-                self.user_account.get_selected_bot_deployment_id(),
+                deployment_id,
                 self.supabase_client.get_deployment_activity_update(
                     current_time,
                     current_time + commons_constants.TIMER_BETWEEN_METRICS_UPTIME_UPDATE,
