@@ -36,6 +36,7 @@ jobs:
           echo "VERSION=${GITHUB_REF##*/}" >> $GITHUB_ENV
           echo "IMAGE=${OWNER}/${IMG}" >> $GITHUB_ENV
           echo "LATEST=latest" >> $GITHUB_ENV
+          echo "STAGING=staging" >> $GITHUB_ENV
           echo "STABLE=stable" >> $GITHUB_ENV
           echo "TEST=test" >> $GITHUB_ENV
           echo "SHA=${GITHUB_SHA}" >> $GITHUB_ENV
@@ -143,6 +144,20 @@ jobs:
           tags: ${{ env.IMAGE }}:${{ env.LATEST }}
           build-args: |
             TENTACLES_URL_TAG=${{ env.LATEST }}
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache
+
+      - name: Build and push staging
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        uses: docker/build-push-action@master
+        with:
+          context: .
+          builder: ${{ steps.buildx.outputs.name }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ env.IMAGE }}:${{ env.STAGING }}
+          build-args: |
+            TENTACLES_URL_TAG=${{ env.STABLE }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache
 
