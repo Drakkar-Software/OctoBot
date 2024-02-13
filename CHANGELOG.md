@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [1.0.8] - 2024-02-14
+### Added
+- [TradingView] Support standalone stop loss and order tags
+### Updated
+- [Tentacles] Improved docs
+- [WebInterface] Fix exchange credentials check when using futures accounts
+- [Exchanges] Increase base maximum candles count and make it customizable via env variable
+- [Links] octobot.cloud links
+### Fixed
+- [Exchanges] Remove log spam on invalid credentials
+- [Cloud strategies] Fix cloud strategies download
+
 ## [1.0.7] - 2024-01-18
 ### Added
 - [CoinEx] Support CoinEx
