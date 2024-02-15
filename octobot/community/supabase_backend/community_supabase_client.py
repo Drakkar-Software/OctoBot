@@ -98,7 +98,10 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             raise authentication.AuthenticationError(err) from err
 
     def sign_out(self) -> None:
-        self.auth.sign_out()
+        try:
+            self.auth.sign_out()
+        except gotrue.errors.AuthApiError:
+            pass
 
     def restore_session(self):
         self.event_loop = asyncio.get_event_loop()
