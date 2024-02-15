@@ -129,4 +129,8 @@ If you are an institutional interested by a white label solution, a commercial l
 <td>Special thanks to <a href="https://www.chatwoot.com/" target="_blank">Chatwoot</a> for providing their customer engagement platform.</td>
 <td><a href="https://github.com/chatwoot/chatwoot" target="_blank"><p align="center"><img src="https://raw.githubusercontent.com/chatwoot/chatwoot/develop/public/brand-assets/logo.svg" width="500px"></p></a></td>
 </tr>
+<tr>
+<td>Special thanks to <a href="https://www.scaleway.com" target="_blank">Scaleway</a> for hosting OctoBot's cloud services.</td>
+<td><a href="https://www.scaleway.com" target="_blank"><p align="center"><img src="https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/scaleway.svg" width="500px"></p></a></td>
+</tr>
 </table>
