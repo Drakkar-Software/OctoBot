@@ -341,6 +341,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             raise errors.MissingProductConfigError(f"product_id is '{product_id}'")
         try:
             product = (await self.table("products").select(
+                "slug, "
                 "product_config:product_configs!current_config_id(config, version)"
             ).eq(enums.ProductKeys.ID.value, product_id).execute()).data[0]
         except IndexError:
@@ -348,6 +349,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         profile_data = commons_profiles.ProfileData.from_dict(
             product["product_config"][enums.ProfileConfigKeys.CONFIG.value]
         )
+        profile_data.profile_details.name = product["slug"]
         profile_data.profile_details.version = product["product_config"][enums.ProfileConfigKeys.VERSION.value]
         return profile_data
 
