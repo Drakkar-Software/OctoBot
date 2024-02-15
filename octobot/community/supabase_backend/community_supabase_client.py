@@ -140,18 +140,19 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
     async def update_metadata(self, metadata_update) -> dict:
         return self.auth.update_user({
             "data": metadata_update
-        }).user.dict()
+        }).user.model_dump()
 
     async def get_user(self) -> dict:
         try:
-            return (await self._get_user()).dict()
+            user = await self._get_user()
+            return user.model_dump()
         except gotrue.errors.AuthApiError as err:
             if "missing" in str(err):
                 raise errors.EmailValidationRequiredError(err) from err
-            raise authentication.AuthenticationError(err) from err
+            raise authentication.AuthenticationError("Please re-login to your OctoBot account") from err
 
     def sync_get_user(self) -> dict:
-        return self.auth.get_user().user.dict()
+        return self.auth.get_user().user.model_dump()
 
     async def fetch_bot(self, bot_id) -> dict:
         try:
