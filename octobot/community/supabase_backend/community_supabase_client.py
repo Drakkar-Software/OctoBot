@@ -397,20 +397,27 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
     async def fetch_candles_history_range(
         self, exchange: str, symbol: str, time_frame: commons_enums.TimeFrames
     ) -> (typing.Union[float, None], typing.Union[float, None]):
-        min_max = json.loads(
-            (await self.postgres_functions().invoke(
-                "get_ohlcv_range",
-                {"body": {
-                    "exchange_internal_name": exchange,
-                    "symbol": symbol,
-                    "time_frame": time_frame.value,
-                }}
-            ))["data"]
-        )[0]
-        return (
-            self.get_parsed_time(min_max["min_value"]).timestamp() if min_max["min_value"] else None,
-            self.get_parsed_time(min_max["max_value"]).timestamp() if min_max["max_value"] else None,
-        )
+        params = {
+            "exchange_internal_name": exchange,
+            "symbol": symbol,
+            "time_frame": time_frame.value,
+        }
+        range_return = (await self.postgres_functions().invoke(
+            "get_ohlcv_range",
+            {"body": params}
+        ))["data"]
+        try:
+            min_max = json.loads(range_return)[0]
+            return (
+                self.get_parsed_time(min_max["min_value"]).timestamp() if min_max["min_value"] else None,
+                self.get_parsed_time(min_max["max_value"]).timestamp() if min_max["max_value"] else None,
+            )
+        except TypeError as err:
+            commons_logging.get_logger(self.__class__.__name__).exception(
+                err, True, f"Error when fetching candle history range using get_ohlcv_range for {params}: "
+                           f"returned value {range_return}, error: {err} ({err.__class__.__name__})"
+            )
+            raise
 
     async def fetch_candles_history(
         self, exchange: str, symbol: str, time_frame: commons_enums.TimeFrames,
