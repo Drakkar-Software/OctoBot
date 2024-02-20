@@ -102,6 +102,11 @@ class ExchangeAccountStatuses(enum.Enum):
     NO_PENDING_ACTION = "no_pending_action"
 
 
+class ExchangeKeys(enum.Enum):
+    ID = "id"
+    INTERNAL_NAME = "internal_name"
+
+
 class SignalKeys(enum.Enum):
     ID = "id"
     TIME = "time"
