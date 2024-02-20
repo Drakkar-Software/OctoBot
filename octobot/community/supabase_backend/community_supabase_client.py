@@ -323,14 +323,29 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             profile_data.trader_simulator.starting_portfolio = formatters.get_adapted_portfolio(
                 usd_like_asset, portfolio
             )
-        exchanges_config = (
-            # use product config exchanges when no exchange is set in bot_config and when in simulator mode
-            bot_config["product_config"][enums.ProfileConfigKeys.CONFIG.value]["exchanges"]
-            if profile_data.trader_simulator.enabled
-            # otherwise use botconfig exchange id
-            else bot_config[enums.BotConfigKeys.EXCHANGES.value] if bot_config[enums.BotConfigKeys.EXCHANGES.value]
-            else []
-        )
+        if profile_data.trader_simulator.enabled:
+            # attempt 1: set exchange using exchange_id when set in bot_config
+            exchange_ids = [
+                config["exchange_id"]
+                for config in bot_config["exchanges"]
+                if config.get("exchange_id", None)
+            ]
+            if exchange_ids:
+                exchanges = await self.fetch_exchanges(exchange_ids)
+                exchanges_config = [
+                    {enums.ExchangeKeys.INTERNAL_NAME.value: exchange[enums.ExchangeKeys.INTERNAL_NAME.value]}
+                    for exchange in exchanges
+                ]
+            else:
+                # attempt 2: fallback to exchange_internal_name in product config
+                exchanges_config = bot_config["product_config"][enums.ProfileConfigKeys.CONFIG.value]["exchanges"]
+        else:
+            # real trading: use bot_config and its exchange_credential_id
+            exchanges_config = (
+                bot_config[enums.BotConfigKeys.EXCHANGES.value]
+                if bot_config[enums.BotConfigKeys.EXCHANGES.value]
+                else []
+            )
         profile_data.exchanges = [
             commons_profiles.ExchangeData.from_dict(exchange_data)
             for exchange_data in exchanges_config
@@ -339,6 +354,12 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             profile_data.options = commons_profiles.OptionsData.from_dict(options)
         profile_data.profile_details.id = bot_config_id
         return profile_data
+
+    async def fetch_exchanges(self, exchange_ids: list) -> list:
+        return (await self.table("exchanges").select(
+            f"{enums.ExchangeKeys.ID.value}, "
+            f"{enums.ExchangeKeys.INTERNAL_NAME.value}"
+        ).in_(enums.ExchangeKeys.ID.value, exchange_ids).execute()).data
 
     async def fetch_product_config(self, product_id: str) -> commons_profiles.ProfileData:
         if not product_id:
