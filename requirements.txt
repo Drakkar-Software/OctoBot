@@ -1,5 +1,5 @@
 # Drakkar-Software requirements
-OctoBot-Commons==1.9.40
+OctoBot-Commons==1.9.41
 OctoBot-Trading==2.4.55
 OctoBot-Evaluators==1.9.4
 OctoBot-Tentacles-Manager==2.9.10
