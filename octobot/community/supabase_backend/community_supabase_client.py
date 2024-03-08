@@ -55,6 +55,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
     Octobot Community layer added to supabase_client.AuthenticatedSupabaseClient
     """
     MAX_PAGINATED_REQUESTS_COUNT = 100
+    MAX_UUID_PER_COMMUNITY_REQUEST_FILTERS = 150
 
     def __init__(
         self,
