@@ -618,10 +618,9 @@ class AbstractAuthenticatedExchangeTester:
             self.exchange_manager = None
 
     async def get_order(self, exchange_order_id, symbol=None):
-        return personal_data.create_order_instance_from_raw(
-            self.exchange_manager.trader,
-            await self.exchange_manager.exchange.get_order(exchange_order_id, symbol or self.SYMBOL)
-        )
+        order = await self.exchange_manager.exchange.get_order(exchange_order_id, symbol or self.SYMBOL)
+        self._check_fetched_order_dicts([order])
+        return personal_data.create_order_instance_from_raw(self.exchange_manager.trader, order)
 
     async def edit_order(self, order,
                          edited_quantity: decimal.Decimal = None,
@@ -745,7 +744,16 @@ class AbstractAuthenticatedExchangeTester:
         exchange_data = exchange_data or self.get_exchange_data()
         orders = await exchanges_test_tools.get_open_orders(self.exchange_manager, exchange_data)
         self.check_duplicate(orders)
+        self._check_fetched_order_dicts(orders)
         return orders
+
+    def _check_fetched_order_dicts(self, orders: list[dict]):
+        for order in orders:
+            # unknown orders should not happen
+            assert order[trading_enums.ExchangeConstantsOrderColumns.TYPE.value] != \
+                   trading_enums.TradeOrderType.UNKNOWN.value
+            # unexpected statuses should not happen: ensure status can be parsed
+            trading_enums.OrderStatus(order[trading_enums.ExchangeConstantsOrderColumns.STATUS.value])
 
     def check_created_limit_order(self, order, price, size, side):
         self._check_order(order, size, side)
