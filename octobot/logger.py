@@ -278,7 +278,7 @@ async def mark_price_callback(
 
 def _filter_balance(balance: dict):
     if not balance:
-        return balance
+        return balance, 0
     first_value = next(iter(balance.values()))
     if isinstance(first_value, dict):
         filtered_balance = {
