@@ -24,6 +24,7 @@ pytestmark = pytest.mark.asyncio
 class TestOKXFuturesAuthenticatedExchange(
     abstract_authenticated_future_exchange_tester.AbstractAuthenticatedFutureExchangeTester
 ):
+    # can't test due to test account region issues
     # enter exchange name as a class variable here
     EXCHANGE_NAME = "okx"
     ORDER_CURRENCY = "DOT"  # use DOT/USDT as contract size is much smaller, allowing to trade with smaller amounts
