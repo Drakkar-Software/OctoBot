@@ -38,8 +38,7 @@ class TestMEXCAuthenticatedExchange(
         await super().test_get_portfolio()
 
     async def test_get_portfolio_with_market_filter(self):
-        # pass if not implemented
-        pass
+        await super().test_get_portfolio_with_market_filter()
 
     async def test_get_account_id(self):
         # pass if not implemented
