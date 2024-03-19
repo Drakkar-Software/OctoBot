@@ -1,0 +1,42 @@
+version: "3"
+
+services:
+  octobot:
+    image: drakkarsoftware/octobot:stable
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.octobot.rule=Host("${HOST:-octobot.localhost}")
+      - traefik.http.services.octobot.loadbalancer.server.port=${PORT:-5001}
+      - traefik.http.routers.octobot.tls=true
+    volumes:
+       - ./logs:/octobot/logs
+       - ./backtesting:/octobot/backtesting
+       - ./tentacles:/octobot/tentacles
+       - ./user:/octobot/user
+    expose:
+       - ${PORT:-5001}
+    restart: always
+
+  traefik:
+    image: traefik:v2.10
+    restart: always
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+      - "--entrypoints.web.http.redirections.entrypoint.permanent=true"
+      - "--entrypoints.websecure.address=:443"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+  
+  watchtower:
+    image: containrrr/watchtower
+    restart: always
+    command: --cleanup --include-restarting
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
