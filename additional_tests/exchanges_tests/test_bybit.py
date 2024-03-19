@@ -30,8 +30,8 @@ class TestBybitAuthenticatedExchange(
     SETTLEMENT_CURRENCY = "USDT"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
     ORDER_SIZE = 10  # % of portfolio to include in test orders
-    OPEN_TIMEOUT = 20    # larger for bybit testnet
-    CANCEL_TIMEOUT = 20  # larger for bybit testnet
+    OPEN_TIMEOUT = 30    # larger for bybit testnet
+    CANCEL_TIMEOUT = 30  # larger for bybit testnet
     CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES = True
     EXPECT_MISSING_ORDER_FEES_DUE_TO_ORDERS_TOO_OLD_FOR_RECENT_TRADES = True   # when recent trades are limited and
     # closed orders fees are taken from recent trades
