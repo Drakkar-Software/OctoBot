@@ -55,6 +55,7 @@ class TestBinanceFuturesAuthenticatedExchange(
         pass
 
     async def test_get_empty_linear_and_inverse_positions(self):
+        # todo ensure parse_account_positions override is still identical to origin when updating ccxt
         await super().test_get_empty_linear_and_inverse_positions()
 
     async def inner_test_get_empty_linear_and_inverse_positions(self):
