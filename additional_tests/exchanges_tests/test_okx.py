@@ -24,6 +24,7 @@ pytestmark = pytest.mark.asyncio
 class TestOKXAuthenticatedExchange(
     abstract_authenticated_exchange_tester.AbstractAuthenticatedExchangeTester
 ):
+    # can't test due to test account region issues
     # enter exchange name as a class variable here
     EXCHANGE_NAME = "okx"
     ORDER_CURRENCY = "BTC"
