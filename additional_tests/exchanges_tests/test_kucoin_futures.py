@@ -27,7 +27,7 @@ class TestKucoinFuturesAuthenticatedExchange(
     # enter exchange name as a class variable here
     EXCHANGE_NAME = "kucoin"
     CREDENTIALS_EXCHANGE_NAME = "KUCOIN_FUTURES"
-    ORDER_CURRENCY = "BTC"
+    ORDER_CURRENCY = "ETH"  # ETH to allow for smaller orders
     SETTLEMENT_CURRENCY = "USDT"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}:{SETTLEMENT_CURRENCY}"
     INVERSE_SYMBOL = f"{ORDER_CURRENCY}/USD:{ORDER_CURRENCY}"

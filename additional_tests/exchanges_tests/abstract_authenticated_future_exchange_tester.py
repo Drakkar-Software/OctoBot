@@ -15,6 +15,7 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import contextlib
 import decimal
+import ccxt
 import pytest
 
 import octobot_trading.enums as trading_enums
@@ -91,7 +92,7 @@ class AbstractAuthenticatedFutureExchangeTester(
             if origin_margin_type is trading_enums.MarginType.ISOLATED else trading_enums.MarginType.ISOLATED
         if not self.exchange_manager.exchange.SUPPORTS_SET_MARGIN_TYPE:
             assert origin_margin_type in (trading_enums.MarginType.ISOLATED, trading_enums.MarginType.CROSS)
-            with pytest.raises(AttributeError):
+            with pytest.raises(ccxt.NotSupported):
                 await self.exchange_manager.exchange.connector.set_symbol_margin_type(symbol, True)
             with pytest.raises(trading_errors.NotSupported):
                 await self.set_margin_type(new_margin_type, symbol=symbol)
@@ -189,7 +190,8 @@ class AbstractAuthenticatedFutureExchangeTester(
             post_sell_position = await self.get_position()
             if post_buy_portfolio:
                 self.check_portfolio_changed(post_buy_portfolio, post_sell_portfolio, True)
-            self.check_position_changed(post_buy_position, post_sell_position, False)
+            if post_buy_position is not None:
+                self.check_position_changed(post_buy_position, post_sell_position, False)
             # position is back to what it was at the beginning on the test
             self.check_position_size(position, post_sell_position)
 
