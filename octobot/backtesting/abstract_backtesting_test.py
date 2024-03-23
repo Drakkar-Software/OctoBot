@@ -100,6 +100,10 @@ DATA_FILES = {
     "2020ADA/BTC": path.join(TEST_DATA_FILES_FOLDER, "ExchangeHistoryDataCollector_1588110698.1060486.data")
 }
 
+MULTI_ASSETS_DATA_FILE = path.join(
+    constants.OPTIMIZER_DATA_FILES_FOLDER, "ExchangeHistoryDataCollector_1711122002.311132.data"
+)
+
 EXTENDED_DATA_FILES = {
     "ADA/BTC": path.join(constants.OPTIMIZER_DATA_FILES_FOLDER,
                          "AbstractExchangeHistoryCollector_1581775117.1713624.data"),
