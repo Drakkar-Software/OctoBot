@@ -40,7 +40,7 @@ import octobot_trading.enums as trading_enums
 
 
 def _bot_data_update(func):
-    async def wrapper(*args, **kwargs):
+    async def wrapper(*args, raise_errors=False, **kwargs):
         self = args[0]
         if not self.is_logged_in_and_has_selected_bot():
             self.logger.debug(f"Skipping {func.__name__} update: no user selected bot.")
@@ -49,6 +49,8 @@ def _bot_data_update(func):
             self.logger.debug(f"bot_data_update: {func.__name__} initiated.")
             return await func(*args, **kwargs)
         except Exception as err:
+            if raise_errors:
+                raise err
             self.logger.exception(err, True, f"Error when calling {func.__name__} {err}")
         finally:
             self.logger.debug(f"bot_data_update: {func.__name__} completed.")
