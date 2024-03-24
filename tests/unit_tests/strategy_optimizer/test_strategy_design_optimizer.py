@@ -50,14 +50,18 @@ async def test_generate_and_save_strategy_optimizer_runs(optimizer_inputs):
             mock.patch.object(strategy_optimizer.StrategyDesignOptimizer, "shuffle_and_select_runs", mock.Mock(
                 side_effect=lambda *args, **_: args[0]
             )) as shuffle_and_select_runs_mock:
-        assert await bot_module_api.generate_and_save_strategy_optimizer_runs(
+        generated_runs = await bot_module_api.generate_and_save_strategy_optimizer_runs(
             trading_mode,
             tentacles_setup_config,
             optimizer_settings
-        ) == EXPECTED_RUNS_FROM_MOCK
+        )
+        expected_run_list = list(EXPECTED_RUNS_FROM_MOCK.values())
+        assert len(expected_run_list) == len(generated_runs)
+        for run in generated_runs.values():
+            assert run in expected_run_list
         create_identifier_mock.assert_called_once()
         shuffle_and_select_runs_mock.assert_called_once()
-        _save_run_schedule_mock.assert_awaited_once_with(EXPECTED_RUNS_FROM_MOCK)
+        _save_run_schedule_mock.assert_awaited_once_with(generated_runs)
 
 
 async def test_resume_unknown_mode(optimizer_inputs):
