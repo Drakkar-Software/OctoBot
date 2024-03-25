@@ -733,7 +733,9 @@ class StrategyDesignOptimizer:
     def shuffle_and_select_runs(runs, select_size=None) -> dict:
         shuffled_runs = list(runs.values())
         random.shuffle(shuffled_runs)
-        selected_runs = shuffled_runs if select_size is None else shuffled_runs[:select_size]
+        selected_runs = (shuffled_runs 
+                         if (select_size is None or select_size <= len(shuffled_runs)) 
+                         else shuffled_runs[:select_size])
         return {i: run for i, run in enumerate(selected_runs)}
 
     def _generate_runs(self):
