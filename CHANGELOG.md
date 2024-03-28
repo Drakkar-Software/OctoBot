@@ -6,6 +6,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [1.0.9] - 2024-04-02
+### Added
+- [IndexTradingMode] Add the Index Trading Mode enabling to follow custom indexes
+- [TradingViewTradingMode] Add quote and offsets from the current price
+- [DCATradingMode] Add max holding ratio to cap the maximum exposure to an asset
+### Updated
+- [CCXT] Update to CCXT 4.2.77
+### Fixed
+- [ChainedOrders] Fix chained orders quantity computation when handling fees
+- [ChainedOrders] Fix chained orders backtesting fill price to adapt to current candles
+- [Coinbase] Fix order fetch issues
+- [Kucoin] Fix a rare order creation issue
+- [MEXC] Fix order cancel issues
+
 ## [1.0.8] - 2024-02-14
 ### Added
 - [TradingView] Support standalone stop loss and order tags
