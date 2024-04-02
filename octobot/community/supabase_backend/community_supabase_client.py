@@ -241,9 +241,10 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
                 "  profitability,"
                 "  reference_market_profitability"
                 ")"
-            ).eq(
-                enums.ProductKeys.VISIBILITY.value, "public"
-            )
+            ).match({
+                enums.ProductKeys.VISIBILITY.value: "public",
+                "category.type": "profile",
+            })
             .execute()
         ).data
 
