@@ -71,6 +71,7 @@ class AbstractAuthenticatedExchangeTester:
     MAX_TRADE_USD_VALUE = decimal.Decimal(8000)
     MIN_TRADE_USD_VALUE = decimal.Decimal("0.1")
     IS_ACCOUNT_ID_AVAILABLE = True  # set False when get_account_id is not available and should be checked
+    EXPECTED_GENERATED_ACCOUNT_ID = False   # set True when account_id can't be fetch and a generated account id is used
 
     # Implement all "test_[name]" methods, call super() to run the test, pass to ignore it.
     # Override the "inner_test_[name]" method to override a test content.
@@ -120,6 +121,10 @@ class AbstractAuthenticatedExchangeTester:
             account_id = await self.exchange_manager.exchange.get_account_id()
             assert account_id
             assert isinstance(account_id, str)
+            if self.EXPECTED_GENERATED_ACCOUNT_ID:
+                assert account_id in (trading_constants.DEFAULT_ACCOUNT_ID, trading_constants.DEFAULT_SUBACCOUNT_ID)
+            else:
+                assert account_id not in (trading_constants.DEFAULT_ACCOUNT_ID, trading_constants.DEFAULT_SUBACCOUNT_ID)
         else:
             with pytest.raises(NotImplementedError):
                 await self.exchange_manager.exchange.get_account_id()

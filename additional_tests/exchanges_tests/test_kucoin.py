@@ -30,6 +30,7 @@ class TestKucoinAuthenticatedExchange(
     SETTLEMENT_CURRENCY = "USDT"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
     ORDER_SIZE = 50  # % of portfolio to include in test orders
+    EXPECTED_GENERATED_ACCOUNT_ID = True
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
