@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
+import logging
 import typing
 import asyncio
 import aiohttp
@@ -81,7 +82,8 @@ try:
                         )
                         self.on_dropped_event("status_{}".format(response.status))
                         record_loss("network_error")
-            except Exception:
+            except BaseException as err:
+                logging.getLogger(self.__class__.__name__).warning(f"Sentry post error: {err} {err.__class__.__name__}")
                 self.on_dropped_event("network")
                 record_loss("network_error")
                 raise
