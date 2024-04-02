@@ -50,9 +50,9 @@ Looking for more info ? Check out our Octobot guides at [octobot.cloud/en/guides
 
 ## Installation  
 OctoBot's installation is **very simple**, you can either:
-- [Deploy your OctoBot on OctoBot Cloud](https://octobot.cloud/trading-bot?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=readme_deploy_on_cloud). With OctoBot cloud, experience hassle-free installation, updates, and maintenance - leave it all to us! Your robot will also benefit from cloud only features.
-- [Download and install](https://www.octobot.cloud/en/guides/octobot-installation/local?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=readme_local_installation) OctoBot on your computer or server and enjoy all features for free.
-- Install OctoBot [using docker](https://www.octobot.cloud/en/guides/octobot-installation/with-docker?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=readme_docker_installation).
+- [Deploy your OctoBot on the cloud using DigitalOcean](https://octobot.cloud/en/guides/octobot-installation/cloud-install-octobot-on-digitalocean?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=readme_deploy_on_cloud) and have your OctoBot automating your strategies 24/7.
+- [Download and install](https://www.octobot.cloud/en/guides/octobot-installation/install-octobot-on-your-computer?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=readme_local_installation) OctoBot on your computer or server.
+- Install OctoBot [using docker](https://www.octobot.cloud/en/guides/octobot-installation/install-octobot-with-docker-video?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=readme_docker_installation).
 
     Docker install in one line summary:
     ```
