@@ -172,6 +172,10 @@ class AbstractAuthenticatedExchangeTester:
             self.check_created_limit_order(buy_limit, price, size, trading_enums.TradeOrderSide.BUY)
             assert await self.order_in_open_orders(open_orders, buy_limit, symbol=symbol)
             await self.check_can_get_order(buy_limit)
+            # assert free portfolio amount is smaller than total amount
+            balance = await self.get_portfolio()
+            assert balance[settlement_currency][trading_constants.CONFIG_PORTFOLIO_FREE] < \
+                   balance[settlement_currency][trading_constants.CONFIG_PORTFOLIO_TOTAL]
         finally:
             # don't leave buy_limit as open order
             await self.cancel_order(buy_limit)
