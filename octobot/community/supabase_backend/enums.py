@@ -89,6 +89,7 @@ class BotDeploymentErrorsStatuses(enum.Enum):
     INTERNAL_SERVER_ERROR = "internal_server_error"
     INVALID_CONFIG = "invalid_config"
     INVALID_EXCHANGE_CREDENTIALS = "invalid_exchange_credentials"
+    INCOMPATIBLE_USER_EXCHANGE_ACCOUNT_WITH_CONFIG = "incompatible_user_exchange_account_with_config"
     ALREADY_USED_EXCHANGE_ACCOUNT = "already_used_exchange_account"
     MISSING_MINIMAL_FUNDS = "missing_minimal_funds"
     MISSING_CONFIG = "missing_config"
