@@ -284,7 +284,7 @@ def _filter_balance(balance: dict):
         filtered_balance = {
             key: values
             for key, values in balance.items()
-            if values[commons_constants.PORTFOLIO_TOTAL]
+            if values.get(commons_constants.PORTFOLIO_TOTAL)
         }
         removed_count = len(balance) - len(filtered_balance)
         return trading_api.parse_decimal_portfolio(filtered_balance, False), removed_count
