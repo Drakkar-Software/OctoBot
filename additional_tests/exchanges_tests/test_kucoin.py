@@ -31,6 +31,7 @@ class TestKucoinAuthenticatedExchange(
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
     ORDER_SIZE = 50  # % of portfolio to include in test orders
     EXPECTED_GENERATED_ACCOUNT_ID = True
+    VALID_ORDER_ID = "6617e84c5c1e0000083c71f7"
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
@@ -46,6 +47,9 @@ class TestKucoinAuthenticatedExchange(
 
     async def test_get_api_key_permissions(self):
         await super().test_get_api_key_permissions()
+
+    async def test_get_not_found_order(self):
+        await super().test_get_not_found_order()
 
     async def test_create_and_fill_market_orders(self):
         await super().test_create_and_fill_market_orders()

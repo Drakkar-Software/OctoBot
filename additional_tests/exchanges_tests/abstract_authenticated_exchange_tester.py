@@ -48,6 +48,7 @@ class AbstractAuthenticatedExchangeTester:
     ORDER_CURRENCY = "BTC"
     SETTLEMENT_CURRENCY = "USDT"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
+    VALID_ORDER_ID = "8bb80a81-27f7-4415-aa50-911ea46d841c"
     ORDER_SIZE = 10  # % of portfolio to include in test orders
     PORTFOLIO_TYPE_FOR_SIZE = trading_constants.CONFIG_PORTFOLIO_FREE
     CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES = False
@@ -139,6 +140,15 @@ class AbstractAuthenticatedExchangeTester:
         assert trading_backend.enums.APIKeyRights.READING in permissions
         assert trading_backend.enums.APIKeyRights.SPOT_TRADING in permissions
         assert trading_backend.enums.APIKeyRights.FUTURES_TRADING in permissions
+
+    async def test_get_not_found_order(self):
+        async with self.local_exchange_manager():
+            await self.inner_test_get_not_found_order()
+
+    async def inner_test_get_not_found_order(self):
+        # Ensures that get_order() returns None when an order is not found, should not raise an error
+        non_existing_order = await self.exchange_manager.exchange.get_order(self.VALID_ORDER_ID, self.SYMBOL)
+        assert non_existing_order is None
 
     async def test_create_and_cancel_limit_orders(self):
         async with self.local_exchange_manager():
@@ -696,13 +706,10 @@ class AbstractAuthenticatedExchangeTester:
         # created_orders = await exchanges_test_tools.create_orders(
         #     self.exchange_manager,
         #     self.get_exchange_data(order.symbol),
-        #     [order.to_dict()]
+        #     [order.to_dict()],
+        #     self.OPEN_TIMEOUT
         # )
-        # created_order = personal_data_orders.create_order_instance_from_raw(
-        #     self.exchange_manager.trader,
-        #     created_order_dicts[0][trading_constants.STORAGE_ORIGIN_VALUE],
-        #     force_open_or_pending_creation=False,
-        # )
+        # created_order = created_orders[0]
         created_order = await self.exchange_manager.trader.create_order(order, params=params, wait_for_creation=False)
         if expected_creation_error:
             if created_order is None:
