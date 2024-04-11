@@ -31,6 +31,7 @@ class TestCryptoComAuthenticatedExchange(
     SETTLEMENT_CURRENCY = "USDT"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
     ORDER_SIZE = 20  # % of portfolio to include in test orders
+    VALID_ORDER_ID = "1777764898965454848"  #todo
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
@@ -46,6 +47,9 @@ class TestCryptoComAuthenticatedExchange(
     async def test_get_api_key_permissions(self):
         # pass if not implemented
         pass
+
+    async def test_get_not_found_order(self):
+        await super().test_get_not_found_order()
 
     async def test_create_and_cancel_limit_orders(self):
         await super().test_create_and_cancel_limit_orders()

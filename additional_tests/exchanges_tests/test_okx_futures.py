@@ -24,7 +24,7 @@ pytestmark = pytest.mark.asyncio
 class TestOKXFuturesAuthenticatedExchange(
     abstract_authenticated_future_exchange_tester.AbstractAuthenticatedFutureExchangeTester
 ):
-    # 19/03/24: can't test due to test account region issues
+    # 19/03/24: can't test order creation due to test account region issues
     # enter exchange name as a class variable here
     EXCHANGE_NAME = "okx"
     ORDER_CURRENCY = "DOT"  # use DOT/USDT as contract size is much smaller, allowing to trade with smaller amounts
@@ -34,6 +34,7 @@ class TestOKXFuturesAuthenticatedExchange(
     ORDER_SIZE = 50  # % of portfolio to include in test orders
     SUPPORTS_EMPTY_POSITION_SET_MARGIN_TYPE = False
     SUPPORTS_DOUBLE_BUNDLED_ORDERS = False
+    VALID_ORDER_ID = "698652818181726221"
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
@@ -47,6 +48,9 @@ class TestOKXFuturesAuthenticatedExchange(
 
     async def test_get_api_key_permissions(self):
         await super().test_get_api_key_permissions()
+
+    async def test_get_not_found_order(self):
+        await super().test_get_not_found_order()
 
     async def test_get_empty_linear_and_inverse_positions(self):
         await super().test_get_empty_linear_and_inverse_positions()

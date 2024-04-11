@@ -24,13 +24,14 @@ pytestmark = pytest.mark.asyncio
 class TestOKXAuthenticatedExchange(
     abstract_authenticated_exchange_tester.AbstractAuthenticatedExchangeTester
 ):
-    # 19/03/24: can't test due to test account region issues
+    # 19/03/24: can't test order creation due to test account region issues
     # enter exchange name as a class variable here
     EXCHANGE_NAME = "okx"
     ORDER_CURRENCY = "BTC"
     SETTLEMENT_CURRENCY = "USDT"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
     ORDER_SIZE = 50  # % of portfolio to include in test orders
+    VALID_ORDER_ID = "698652818181726221"
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
@@ -46,6 +47,9 @@ class TestOKXAuthenticatedExchange(
 
     async def test_get_api_key_permissions(self):
         await super().test_get_api_key_permissions()
+
+    async def test_get_not_found_order(self):
+        await super().test_get_not_found_order()
 
     async def test_create_and_fill_market_orders(self):
         await super().test_create_and_fill_market_orders()

@@ -31,6 +31,7 @@ class TestBinanceAuthenticatedExchange(
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
     ORDER_SIZE = 50  # % of portfolio to include in test orders
     DUPLICATE_TRADES_RATIO = 0.1   # allow 10% duplicate in trades (due to trade id set to order id)
+    VALID_ORDER_ID = "26408108410"
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
@@ -43,6 +44,9 @@ class TestBinanceAuthenticatedExchange(
 
     async def test_get_api_key_permissions(self):
         await super().test_get_api_key_permissions()
+
+    async def test_get_not_found_order(self):
+        await super().test_get_not_found_order()
 
     async def test_create_and_cancel_limit_orders(self):
         await super().test_create_and_cancel_limit_orders()
