@@ -29,8 +29,9 @@ class TestCoinbaseAuthenticatedExchange(
     ORDER_CURRENCY = "ADA"
     SETTLEMENT_CURRENCY = "BTC"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
-    ORDER_SIZE = 20  # % of portfolio to include in test orders
+    ORDER_SIZE = 5  # % of portfolio to include in test orders
     CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES = True
+    VALID_ORDER_ID = "8bb80a81-27f7-4415-aa50-911ea46d841c"
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
@@ -43,6 +44,9 @@ class TestCoinbaseAuthenticatedExchange(
 
     async def test_get_api_key_permissions(self):
         await super().test_get_api_key_permissions()
+
+    async def test_get_not_found_order(self):
+        await super().test_get_not_found_order()
 
     async def test_create_and_cancel_limit_orders(self):
         await super().test_create_and_cancel_limit_orders()

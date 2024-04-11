@@ -33,6 +33,7 @@ class TestBitgetAuthenticatedExchange(
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
     ORDER_SIZE = 40  # % of portfolio to include in test orders
     CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES = True
+    VALID_ORDER_ID = "1777764898965454848"
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
@@ -49,12 +50,13 @@ class TestBitgetAuthenticatedExchange(
         # pass if not implemented
         pass
 
+    async def test_get_not_found_order(self):
+        await super().test_get_not_found_order()
+
     async def test_create_and_cancel_limit_orders(self):
-        # KYC needed    8th jan 2024    ccxt 4.2.10
         await super().test_create_and_cancel_limit_orders()
 
     async def test_create_and_fill_market_orders(self):
-        # KYC needed    8th jan 2024    ccxt 4.2.10
         await super().test_create_and_fill_market_orders()
 
     async def test_get_my_recent_trades(self):
