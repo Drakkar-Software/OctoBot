@@ -34,6 +34,7 @@ class TestKucoinFuturesAuthenticatedExchange(
     ORDER_SIZE = 90  # % of portfolio to include in test orders
     SUPPORTS_GET_LEVERAGE = False
     SUPPORTS_SET_LEVERAGE = False
+    VALID_ORDER_ID = "6617e84c5c1e0000083c71f7"
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
@@ -47,6 +48,9 @@ class TestKucoinFuturesAuthenticatedExchange(
 
     async def test_get_api_key_permissions(self):
         await super().test_get_api_key_permissions()
+
+    async def test_get_not_found_order(self):
+        await super().test_get_not_found_order()
 
     async def test_get_empty_linear_and_inverse_positions(self):
         await super().test_get_empty_linear_and_inverse_positions()
