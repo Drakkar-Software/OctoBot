@@ -19,8 +19,9 @@ RUN pip install -U setuptools wheel pip>=20.0.0 \
     && python setup.py install
 
 # build amazon-efs-utils
+# use v1.36.0 to avoid rust compiler requirement
 WORKDIR /opt/efs
-RUN git clone https://github.com/aws/efs-utils . \
+RUN git clone https://github.com/aws/efs-utils --branch v1.36.0 . \
     && ./build-deb.sh
 
 FROM python:3.10-slim-buster
