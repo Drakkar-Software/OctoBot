@@ -31,7 +31,7 @@ class TestCryptoComAuthenticatedExchange(
     SETTLEMENT_CURRENCY = "USDT"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
     ORDER_SIZE = 20  # % of portfolio to include in test orders
-    VALID_ORDER_ID = "1777764898965454848"  #todo
+    VALID_ORDER_ID = "1777764898965454848"
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
