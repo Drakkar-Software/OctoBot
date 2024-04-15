@@ -32,6 +32,7 @@ class TestBingxAuthenticatedExchange(
     ORDER_SIZE = 50  # % of portfolio to include in test orders
     CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES = True
     IGNORE_EXCHANGE_TRADE_ID = True
+    USE_ORDER_OPERATION_TO_CHECK_API_KEY_RIGHTS = True
     VALID_ORDER_ID = "1777764898965454838"
 
     async def test_get_portfolio(self):
