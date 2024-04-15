@@ -18,6 +18,7 @@ import contextlib
 import decimal
 import time
 
+import mock
 import pytest
 
 import octobot_commons.constants as constants
@@ -73,6 +74,9 @@ class AbstractAuthenticatedExchangeTester:
     MIN_TRADE_USD_VALUE = decimal.Decimal("0.1")
     IS_ACCOUNT_ID_AVAILABLE = True  # set False when get_account_id is not available and should be checked
     EXPECTED_GENERATED_ACCOUNT_ID = False   # set True when account_id can't be fetch and a generated account id is used
+    USE_ORDER_OPERATION_TO_CHECK_API_KEY_RIGHTS = False    # set True when api key rights can't be checked using a
+    # dedicated api and have to be checked by sending an order operation
+    EXPECTED_INVALID_ORDERS_QUANTITY = []   # orders with known invalid quantity exchange order id    (usually legacy)
 
     # Implement all "test_[name]" methods, call super() to run the test, pass to ignore it.
     # Override the "inner_test_[name]" method to override a test content.
@@ -135,11 +139,22 @@ class AbstractAuthenticatedExchangeTester:
             await self.inner_test_get_api_key_permissions()
 
     async def inner_test_get_api_key_permissions(self):
-        permissions = await self.exchange_manager.exchange_backend._get_api_key_rights()
-        assert len(permissions) > 0
-        assert trading_backend.enums.APIKeyRights.READING in permissions
-        assert trading_backend.enums.APIKeyRights.SPOT_TRADING in permissions
-        assert trading_backend.enums.APIKeyRights.FUTURES_TRADING in permissions
+        origin_get_api_key_rights_using_order = self.exchange_manager.exchange_backend._get_api_key_rights_using_order
+        with mock.patch.object(
+            self.exchange_manager.exchange_backend,
+            "_get_api_key_rights_using_order", mock.AsyncMock(side_effect=origin_get_api_key_rights_using_order)
+        ) as _get_api_key_rights_using_order_mock:
+            permissions = await self.exchange_manager.exchange_backend._get_api_key_rights()
+            assert len(permissions) > 0
+            assert trading_backend.enums.APIKeyRights.READING in permissions
+            assert trading_backend.enums.APIKeyRights.SPOT_TRADING in permissions
+            assert trading_backend.enums.APIKeyRights.FUTURES_TRADING in permissions
+            if self.USE_ORDER_OPERATION_TO_CHECK_API_KEY_RIGHTS:
+                # failed ? did not use _get_api_key_rights_using_order while expected
+                _get_api_key_rights_using_order_mock.assert_called_once()
+            else:
+                # failed ? used _get_api_key_rights_using_order when not expected
+                _get_api_key_rights_using_order_mock.assert_not_called()
 
     async def test_get_not_found_order(self):
         async with self.local_exchange_manager():
@@ -495,7 +510,7 @@ class AbstractAuthenticatedExchangeTester:
         )
 
     async def get_portfolio(self):
-        return await exchanges_test_tools.get_portfolio(self.exchange_manager, as_float=False)
+        return await exchanges_test_tools.get_portfolio(self.exchange_manager, as_float=False, clear_empty=False)
 
     async def get_my_recent_trades(self, exchange_data=None):
         exchange_data = exchange_data or self.get_exchange_data()
@@ -571,9 +586,17 @@ class AbstractAuthenticatedExchangeTester:
             if self.OPEN_ORDERS_IN_CLOSED_ORDERS and order.status is trading_enums.OrderStatus.OPEN:
                 # when order is open, cost is not full
                 return
-            self.check_theoretical_cost(
-                symbols.parse_symbol(order.symbol), order.origin_quantity, order.origin_price, order.total_cost
-            )
+            if order.exchange_order_id in self.EXPECTED_INVALID_ORDERS_QUANTITY:
+                with pytest.raises(AssertionError):
+                    self.check_theoretical_cost(
+                        symbols.parse_symbol(order.symbol), order.origin_quantity,
+                        order.origin_price, order.total_cost
+                    )
+            else:
+                self.check_theoretical_cost(
+                    symbols.parse_symbol(order.symbol), order.origin_quantity,
+                    order.origin_price, order.total_cost
+                )
             if "USD" in order.market:
                 assert self.MIN_TRADE_USD_VALUE < order.total_cost < self.MAX_TRADE_USD_VALUE
 
