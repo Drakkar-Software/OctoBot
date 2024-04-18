@@ -1,4 +1,4 @@
-# OctoBot [1.0.8](https://octobot.click/gh-changelog)
+# OctoBot [1.0.9](https://octobot.click/gh-changelog)
 [![PyPI](https://img.shields.io/pypi/v/OctoBot.svg?logo=pypi)](https://octobot.click/gh-pypi)
 [![Downloads](https://pepy.tech/badge/octobot/month)](https://pepy.tech/project/octobot)
 [![Dockerhub](https://img.shields.io/docker/pulls/drakkarsoftware/octobot.svg?logo=docker)](https://octobot.click/gh-dockerhub)
@@ -48,12 +48,17 @@ Octobot's main feature is **evolution**, you can :
 
 Looking for more info ? Check out our Octobot guides at [octobot.cloud/en/guides/octobot](https://www.octobot.cloud/en/guides/octobot?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=checkout_guides)
 
-## Installation  
-OctoBot's installation is **very simple**, you can either:
+## Installation
+### One click deployment using DigitalOcean
+OctoBot can be easily launched on the cloud from the [DigitalOcean Marketplace](https://digitalocean.pxf.io/octobot-app).
+
+[![Deploy on DO](https://mp-assets1.sfo2.digitaloceanspaces.com/deploy-to-do/do-btn-blue.svg)](https://digitalocean.pxf.io/start-octobot)
+
+### Manual installations
+To install OctoBot, you can either:
 - [Deploy your OctoBot on the cloud using DigitalOcean](https://octobot.cloud/en/guides/octobot-installation/cloud-install-octobot-on-digitalocean?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=readme_deploy_on_cloud) and have your OctoBot automating your strategies 24/7.
 - [Download and install](https://www.octobot.cloud/en/guides/octobot-installation/install-octobot-on-your-computer?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=readme_local_installation) OctoBot on your computer or server.
 - Install OctoBot [using docker](https://www.octobot.cloud/en/guides/octobot-installation/install-octobot-with-docker-video?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=readme_docker_installation).
-
     Docker install in one line summary:
     ```
     docker run -itd --name OctoBot -p 80:5001 -v $(pwd)/user:/octobot/user -v $(pwd)/tentacles:/octobot/tentacles -v $(pwd)/logs:/octobot/logs drakkarsoftware/octobot:stable
@@ -82,6 +87,24 @@ No exchange credential is required.
 
 ### Real trading
 To use your real exchange account with OctoBot, enter your exchange API keys as described [on the exchange guides](https://www.octobot.cloud/en/guides/exchanges?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=exchanges_guides). 
+
+## Follow your investments
+
+You can follow your OctoBots portfolio, orders, trades and historical performance from your phone with our [Android application](https://play.google.com/store/apps/details?id=com.drakkarsoftware.octobotapp). You can also install the [web application](https://mobile.octobot.cloud/?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=follow_your_investments) to have the same experience on any smartphone or computer.
+
+<p align="middle">
+<a href='https://play.google.com/store/apps/details?id=com.drakkarsoftware.octobotapp'><img alt='Get it on Google Play' src='https://play.google.com/intl/en_us/badges/images/generic/en_badge_web_generic.png' height="50px"/></a>
+</p>
+
+<p align="middle">
+  <a href="https://mobile.octobot.cloud/?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=follow_your_investments_image">
+    <img src="../assets/mobile/bots-en.png" height="414" alt="Follow your bots from your mobile">
+  </a>  
+  &nbsp;&nbsp;&nbsp;&nbsp;    
+  <a href="https://mobile.octobot.cloud/?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=follow_your_investments_image">
+    <img src="../assets/mobile/bot-view-pf-en.png" height="414" alt="Follow each trade and profits of your OctoBot from your mobile">
+  </a>  
+</p>
 
 ## Testing trading strategies
 
