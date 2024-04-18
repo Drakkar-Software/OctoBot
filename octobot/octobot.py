@@ -16,7 +16,6 @@
 import asyncio
 import time
 import uuid
-import aiohttp
 
 import octobot_commons.constants as commons_constants
 import octobot_commons.enums as commons_enums
@@ -27,6 +26,7 @@ import octobot_commons.databases as databases
 import octobot_commons.tree as commons_tree
 import octobot_commons.os_clock_sync as os_clock_sync
 import octobot_commons.system_resources_watcher as system_resources_watcher
+import octobot_commons.aiohttp_util as aiohttp_util
 
 import octobot_services.api as service_api
 import octobot_trading.api as trading_api
@@ -222,6 +222,7 @@ class OctoBot:
             self.logger.info("Stopped, now shutting down.")
 
     async def _start_tools_tasks(self):
+        await self._init_aiohttp_session()
         self._init_community()
         await self.task_manager.start_tools_tasks()
 
@@ -280,7 +281,11 @@ class OctoBot:
     def set_watcher(self, watcher):
         self.task_manager.watcher = watcher
 
-    def get_aiohttp_session(self):
+    async def _init_aiohttp_session(self):
         if self._aiohttp_session is None:
-            self._aiohttp_session = aiohttp.ClientSession()
+            self._aiohttp_session = await aiohttp_util.get_ssl_fallback_aiohttp_client_session(
+                commons_constants.KNOWN_POTENTIALLY_SSL_FAILED_REQUIRED_URL
+            )
+
+    def get_aiohttp_session(self):
         return self._aiohttp_session

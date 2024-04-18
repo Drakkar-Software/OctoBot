@@ -26,11 +26,11 @@ import octobot_commons.profiles as profiles
 import octobot_commons.logging as logging
 import octobot_commons.constants as commons_constants
 import octobot_commons.errors as commons_errors
+import octobot_commons.aiohttp_util as aiohttp_util
 
 import octobot_tentacles_manager.api as tentacles_manager_api
 import octobot_tentacles_manager.cli as tentacles_manager_cli
 
-import octobot
 import octobot.api.strategy_optimizer as strategy_optimizer_api
 import octobot.logger as octobot_logger
 import octobot.constants as constants
@@ -142,7 +142,9 @@ async def install_or_update_tentacles(config):
 async def install_all_tentacles(tentacles_url=None):
     if tentacles_url is None:
         tentacles_url = configuration_manager.get_default_tentacles_url()
-    async with aiohttp.ClientSession() as aiohttp_session:
+    async with aiohttp_util.ssl_fallback_aiohttp_client_session(
+        commons_constants.KNOWN_POTENTIALLY_SSL_FAILED_REQUIRED_URL
+    ) as aiohttp_session:
         for url in [tentacles_url] + (
                 constants.ADDITIONAL_TENTACLES_PACKAGE_URL.split(constants.URL_SEPARATOR)
                 if constants.ADDITIONAL_TENTACLES_PACKAGE_URL else []
