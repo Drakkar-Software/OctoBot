@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [1.0.10] - 2024-04-19
+### Fixed
+- [Tentacles download] Fix a rare issue related to SSL certificates when downloading tentacles
+- [DeathAndGoldenCrossEvaluator] Now only trigger right after crosses
+
 ## [1.0.9] - 2024-04-18
 ### Added
 - [DigitalOcean] Added in marketplace and handle one click deployment
