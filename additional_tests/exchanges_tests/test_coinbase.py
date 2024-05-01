@@ -32,6 +32,7 @@ class TestCoinbaseAuthenticatedExchange(
     ORDER_SIZE = 5  # % of portfolio to include in test orders
     CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES = True
     VALID_ORDER_ID = "8bb80a81-27f7-4415-aa50-911ea46d841c"
+    USE_ORDER_OPERATION_TO_CHECK_API_KEY_RIGHTS = True    # set True when api key rights can't be checked using a
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
