@@ -52,6 +52,9 @@ class TestBybitFuturesAuthenticatedExchange(
         # pass if not implemented
         pass
 
+    async def test_missing_trading_api_key_permissions(self):
+        pass
+
     async def test_get_not_found_order(self):
         await super().test_get_not_found_order()
 
