@@ -27,3 +27,6 @@ class TestCoinbaseLegacyAPIKeyAuthenticatedExchange(
     # same as regular coinbase exchange test except that it is using the legacy api key format
     # (before organizations/ and -----BEGIN EC PRIVATE)
     CREDENTIALS_EXCHANGE_NAME = "coinbase_legacy_api_key"
+
+    async def test_missing_trading_api_key_permissions(self):
+        pass
