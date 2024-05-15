@@ -41,8 +41,22 @@ class ResultsData(commons_dataclasses.FlexibleDataclass):
     profitability: dict = dataclasses.field(default_factory=dict)
     reference_market_profitability: dict = dataclasses.field(default_factory=dict)
 
-    def get_max(self, key):
-        return self.reference_market_profitability.get(key, 0)
+    def _get_max(self):
+        if not self.reference_market_profitability:
+            return 0, "1m"
+        max_unit = next(iter(self.reference_market_profitability))
+        max_value = self.reference_market_profitability[max_unit]
+        for unit, value in self.reference_market_profitability.items():
+            if value > max_value:
+                max_unit = unit
+                max_value = value
+        return max_value, max_unit
+
+    def get_max_value(self):
+        return self._get_max()[0]
+
+    def get_max_unit(self):
+        return self._get_max()[1]
 
 
 @dataclasses.dataclass
