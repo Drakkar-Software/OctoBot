@@ -156,6 +156,20 @@ class AbstractAuthenticatedExchangeTester:
                 # failed ? used _get_api_key_rights_using_order when not expected
                 _get_api_key_rights_using_order_mock.assert_not_called()
 
+    async def test_missing_trading_api_key_permissions(self):
+        async with self.local_exchange_manager(identifiers_suffix="_READONLY"):
+            await self.inner_test_missing_trading_api_key_permissions()
+
+    async def inner_test_missing_trading_api_key_permissions(self):
+        permissions = await self.exchange_manager.exchange_backend._get_api_key_rights()
+        # ensure reading permission only are returned
+        assert permissions == [trading_backend.enums.APIKeyRights.READING]
+        # ensure order operations returns a permission error
+        with pytest.raises(trading_errors.AuthenticationError) as err:
+            await self.inner_test_create_and_cancel_limit_orders()
+        # ensure AuthenticationError is raised when creating order
+        assert "inner_test_create_and_cancel_limit_orders#create_limit_order" in str(err)
+
     async def test_get_not_found_order(self):
         async with self.local_exchange_manager():
             await self.inner_test_get_not_found_order()
@@ -192,7 +206,12 @@ class AbstractAuthenticatedExchangeTester:
         # )
         # # end debug tools
         open_orders = await self.get_open_orders(exchange_data)
-        buy_limit = await self.create_limit_order(price, size, trading_enums.TradeOrderSide.BUY, symbol=symbol)
+        try:
+            buy_limit = await self.create_limit_order(price, size, trading_enums.TradeOrderSide.BUY, symbol=symbol)
+        except trading_errors.AuthenticationError as err:
+            raise trading_errors.AuthenticationError(
+                f"inner_test_create_and_cancel_limit_orders#create_limit_order {err}"
+            ) from err
         try:
             self.check_created_limit_order(buy_limit, price, size, trading_enums.TradeOrderSide.BUY)
             assert await self.order_in_open_orders(open_orders, buy_limit, symbol=symbol)
@@ -644,14 +663,17 @@ class AbstractAuthenticatedExchangeTester:
         ))
 
     @contextlib.asynccontextmanager
-    async def local_exchange_manager(self, market_filter=None):
+    async def local_exchange_manager(self, market_filter=None, identifiers_suffix=None):
         try:
             exchange_tentacle_name = self.EXCHANGE_TENTACLE_NAME or self.EXCHANGE_NAME.capitalize()
+            credentials_exchange_name = self.CREDENTIALS_EXCHANGE_NAME or self.EXCHANGE_NAME
+            if identifiers_suffix:
+                credentials_exchange_name = f"{credentials_exchange_name}{identifiers_suffix}"
             async with get_authenticated_exchange_manager(
                     self.EXCHANGE_NAME,
                     exchange_tentacle_name,
                     self.get_config(),
-                    credentials_exchange_name=self.CREDENTIALS_EXCHANGE_NAME or self.EXCHANGE_NAME,
+                    credentials_exchange_name=credentials_exchange_name,
                     market_filter=market_filter
             ) as exchange_manager:
                 self.exchange_manager = exchange_manager
