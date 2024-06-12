@@ -58,6 +58,3 @@ class AbstractFeed:
 
     def is_connected(self):
         return False
-
-    def remove_device_details(self):
-        pass
