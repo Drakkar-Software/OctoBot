@@ -18,6 +18,7 @@ setuptools==69.0.3
 
 # Community
 websockets
+gmqtt==0.6.11
 
 # Supabase  ensure supabase_backend_tests keep passing when updating any of those
 supabase==1.0.4   # Supabase client
