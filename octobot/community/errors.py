@@ -54,3 +54,7 @@ class EmailValidationRequiredError(commons_authentication.AuthenticationError):
 
 class NoBotDeviceError(BotError):
     pass
+
+
+class ExtensionRequiredError(Exception):
+    pass

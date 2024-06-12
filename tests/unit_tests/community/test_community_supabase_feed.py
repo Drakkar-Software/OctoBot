@@ -20,9 +20,11 @@ import uuid
 import json
 
 import octobot.community as community
+import octobot.community.feeds as community_feeds
 import octobot.community.supabase_backend.enums as supabase_enums
 import octobot_commons.authentication as commons_authentication
 import octobot.constants as constants
+import octobot.enums as enums
 import octobot_commons.enums as commons_enums
 
 # All test coroutines will be treated as marked.
@@ -43,11 +45,11 @@ def _build_message(value, identifier):
 @pytest_asyncio.fixture
 async def authenticated_feed():
     community.IdentifiersProvider.use_production()
-    authenticator = community.CommunityAuthentication(AUTH_URL, None)
+    authenticator = community.CommunityAuthentication(None)
     try:
         channel_mock = mock.Mock()
-        channel_mock.on=mock.Mock(return_value=channel_mock)
-        channel_mock.subscribe=mock.AsyncMock(return_value=channel_mock)
+        channel_mock.on = mock.Mock(return_value=channel_mock)
+        channel_mock.subscribe = mock.AsyncMock(return_value=channel_mock)
 
         realtime_mock = mock.Mock(
             channel=mock.AsyncMock(return_value=channel_mock)
@@ -61,7 +63,17 @@ async def authenticated_feed():
             realtime=realtime_mock,
             send_signal=mock.AsyncMock()
         )
-        await authenticator._create_community_feed_if_necessary()
+        origin_community_feed_factory = community_feeds.community_feed_factory
+
+        def _community_feed_factory(self, *args):
+            return origin_community_feed_factory(self, enums.CommunityFeedType.SupabaseFeed)
+
+        with mock.patch.object(
+            community_feeds, "community_feed_factory", mock.Mock(side_effect=_community_feed_factory)
+        ) as community_feed_factory:
+            await authenticator._create_community_feed_if_necessary()
+            community_feed_factory.assert_called_once()
+
         yield authenticator._community_feed
     finally:
         await authenticator.stop()

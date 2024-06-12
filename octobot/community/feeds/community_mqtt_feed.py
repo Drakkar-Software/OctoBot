@@ -13,10 +13,10 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
-import uuid
+import logging
+import typing
 import gmqtt
 import json
-import zlib
 import asyncio
 import packaging.version as packaging_version
 
@@ -26,6 +26,10 @@ import octobot_commons.constants as commons_constants
 import octobot.community.errors as errors
 import octobot.community.feeds.abstract_feed as abstract_feed
 import octobot.constants as constants
+
+
+def _disable_gmqtt_info_loggers():
+    logging.getLogger("gmqtt.client").setLevel(logging.WARNING)
 
 
 class CommunityMQTTFeed(abstract_feed.AbstractFeed):
@@ -55,10 +59,9 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
         self.default_QOS = self.default_QOS
         self.subscribed = False
 
-        self._mqtt_client: gmqtt.Client = None
+        self._mqtt_client: typing.Optional[gmqtt.Client] = None
         self._valid_auth = True
         self._disconnected = True
-        self._device_uuid: str = None
         self._subscription_attempts = 0
         self._subscription_topics = set()
         self._reconnect_task = None
@@ -68,7 +71,6 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
 
     async def start(self):
         self.should_stop = False
-        self._device_uuid = self.authenticator.user_account.get_selected_bot_device_uuid()
         try:
             await self._connect()
             if self.is_connected():
@@ -98,12 +100,6 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
             await self.start()
         except Exception as err:
             self.logger.exception(err, True, f"{err}")
-
-    def is_up_to_date_with_account(self, user_account):
-        try:
-            return self._device_uuid == user_account.get_selected_bot_device_uuid()
-        except errors.NoBotDeviceError:
-            return False
 
     def _reset(self):
         self._connected_at_least_once = False
@@ -139,19 +135,15 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
             else:
                 self.logger.error(f"Can't subscribe to {channel_type.name} feed, invalid authentication")
 
-    def remove_device_details(self):
-        self._device_uuid = None
-
     @staticmethod
     def _build_topic(channel_type, identifier):
         return f"{channel_type.value}/{identifier}"
 
     async def _on_message(self, client, topic, payload, qos, properties):
         try:
-            uncompressed_payload = zlib.decompress(payload).decode()
-            self.logger.debug(f"Received message, client_id: {client._client_id}, topic: {topic}, "
-                              f"uncompressed payload: {uncompressed_payload}, QOS: {qos}, properties: {properties}")
-            parsed_message = json.loads(uncompressed_payload)
+            self.logger.debug(f"Received message, client_id: {self._get_username(client)}, topic: {topic}, "
+                              f"payload: {payload}, QOS: {qos}, properties: {properties}")
+            parsed_message = json.loads(payload)
         except Exception as err:
             self.logger.exception(err, True, f"Unexpected error when reading message: {err}")
             return
@@ -170,10 +162,14 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
             self.logger.exception(err, True, f"Unexpected error when processing message: {err}")
 
     def _should_process(self, parsed_message):
-        if parsed_message[commons_enums.CommunityFeedAttrs.ID.value] in self._processed_messages:
-            self.logger.debug(f"Ignored already processed message with id: "
-                              f"{parsed_message[commons_enums.CommunityFeedAttrs.ID.value]}")
-            return False
+        try:
+            if parsed_message[commons_enums.CommunityFeedAttrs.ID.value] in self._processed_messages:
+                self.logger.debug(f"Ignored already processed message with id: "
+                                  f"{parsed_message[commons_enums.CommunityFeedAttrs.ID.value]}")
+                return False
+        except KeyError:
+            # missing commons_enums.CommunityFeedAttrs.ID.value: can't check if message was already processed
+            return True
         self._processed_messages.append(parsed_message[commons_enums.CommunityFeedAttrs.ID.value])
         if len(self._processed_messages) > self.MAX_MESSAGE_ID_CACHE_SIZE:
             self._processed_messages = [
@@ -183,17 +179,7 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
         return True
 
     async def send(self, message, channel_type, identifier, **kwargs):
-        self.is_signal_emitter = True
-        if not self._valid_auth:
-            self.logger.warning(f"Can't send {channel_type.name}, invalid feed authentication.")
-            return
-        topic = self._build_topic(channel_type, identifier)
-        self.logger.info(f"Sending message on topic: {topic}, message: {message}")
-        self._mqtt_client.publish(
-            self._build_topic(channel_type, identifier),
-            self._build_message(channel_type, message),
-            qos=self.default_QOS
-        )
+        raise NotImplementedError("Sending is not implemented")
 
     def _get_callbacks(self, topic):
         for callback in self.feed_callbacks.get(topic, ()):
@@ -201,18 +187,6 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
 
     def _get_channel_type(self, message):
         return commons_enums.CommunityChannelTypes(message[commons_enums.CommunityFeedAttrs.CHANNEL_TYPE.value])
-
-    def _build_message(self, channel_type, message):
-        if message:
-            return zlib.compress(
-                json.dumps({
-                    commons_enums.CommunityFeedAttrs.CHANNEL_TYPE.value: channel_type.value,
-                    commons_enums.CommunityFeedAttrs.VERSION.value: constants.COMMUNITY_FEED_CURRENT_MINIMUM_VERSION,
-                    commons_enums.CommunityFeedAttrs.VALUE.value: message,
-                    commons_enums.CommunityFeedAttrs.ID.value: str(uuid.uuid4()),  # assign unique id to each message
-                }).encode()
-            )
-        return {}
 
     def _ensure_supported(self, parsed_message):
         if packaging_version.Version(parsed_message[commons_enums.CommunityFeedAttrs.VERSION.value]) \
@@ -223,7 +197,7 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
 
     def _on_connect(self, client, flags, rc, properties):
         self._disconnected = False
-        self.logger.info(f"Connected, client_id: {client._client_id}")
+        self.logger.info(f"Connected, client_id: {self._get_username(client)}")
         # There are no subscription when we just connected
         self.subscribed = False
         # Auto subscribe to known topics (mainly used in case of reconnection)
@@ -247,13 +221,17 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
                 delay = 0 if attempt == 1 else self.RECONNECT_DELAY
                 error = None
                 try:
-                    self.logger.info(f"Reconnecting, client_id: {client._client_id} (attempt {attempt})")
+                    self.logger.info(f"Reconnecting, client_id: {self._get_username(client)} (attempt {attempt})")
                     await self._connect()
                     await asyncio.sleep(self.RECONNECT_ENSURE_DELAY)
                     if self.is_connected():
-                        self.logger.info(f"Reconnected, client_id: {client._client_id}")
+                        self.logger.info(f"Reconnected, client_id: {self._get_username(client)}")
                         return
                     error = "failed to connect"
+                except errors.NoBotDeviceError as err:
+                    error = f"{err}"
+                    # propagate this error
+                    raise
                 except Exception as err:
                     error = f"{err}"
                 finally:
@@ -271,7 +249,7 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
             self.logger.info(f"Disconnected after stop call")
         else:
             if self._connected_at_least_once:
-                self.logger.info(f"Disconnected, client_id: {client._client_id}")
+                self.logger.info(f"Disconnected, client_id: {self._get_username(client)}")
                 self._try_reconnect_if_necessary(client)
             else:
                 if self._connect_task is not None and not self._connect_task.done():
@@ -283,10 +261,10 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
         # particular mid (from one subscription request)
         subscriptions = client.get_subscriptions_by_mid(mid)
         for subscription, granted_qos in zip(subscriptions, qos):
-            # in case of bad suback code, we can resend  subscription
+            # in case of bad suback code, we can resend subscription
             if granted_qos >= gmqtt.constants.SubAckReasonCode.UNSPECIFIED_ERROR.value:
                 self.logger.warning(f"Retrying subscribe to {[s.topic for s in subscriptions]}, "
-                                    f"client_id: {client._client_id}, mid: {mid}, "
+                                    f"client_id: {self._get_username(client)}, mid: {mid}, "
                                     f"reason code: {granted_qos}, properties {properties}")
                 if self._subscription_attempts < self.MAX_SUBSCRIPTION_ATTEMPTS * len(subscriptions):
                     self._subscription_attempts += 1
@@ -300,8 +278,10 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
             else:
                 self._subscription_attempts = 0
                 self.subscribed = True
-                self.logger.info(f"Subscribed, client_id: {client._client_id}, mid {mid}, QOS: {granted_qos}, "
-                                 f"properties {properties}")
+                self.logger.info(
+                    f"Subscribed to {subscription.topic}, client_id: {self._get_username(client)}, mid {mid}, "
+                    f"QOS: {granted_qos}, properties {properties}"
+                )
 
     def _register_callbacks(self, client):
         client.on_connect = self._on_connect
@@ -312,21 +292,30 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
     def _update_client_config(self, client):
         default_config = gmqtt.constants.DEFAULT_CONFIG
         # prevent default auto-reconnect as it loop infinitely on windows long disconnections
+        # todo check if still the case
         default_config.update({
             'reconnect_retries': self.DISABLE_RECONNECT_VALUE,
         })
         client.set_config(default_config)
 
+    def _get_client_uuid(self) -> str:
+        return self._get_username(self._mqtt_client)
+
+    @staticmethod
+    def _get_username(client: gmqtt.Client) -> str:
+        return client._username.decode()
+
     async def _connect(self):
-        if self._device_uuid is None:
+        device_uuid = self.authenticator.get_saved_mqtt_device_uuid()
+        if device_uuid is None:
             self._valid_auth = False
             raise errors.BotError("mqtt device uuid is None, impossible to connect client")
+        _disable_gmqtt_info_loggers()
         self._mqtt_client = gmqtt.Client(self.__class__.__name__)
         self._update_client_config(self._mqtt_client)
         self._register_callbacks(self._mqtt_client)
-        self._mqtt_client.set_auth_credentials(self._device_uuid, None)
-        self.logger.debug(f"Connecting client using device "
-                          f"'{self.authenticator.user_account.get_selected_bot_device_name()}'")
+        self._mqtt_client.set_auth_credentials(device_uuid, None)
+        self.logger.debug(f"Connecting client using device with id: {device_uuid}")
         self._connect_task = asyncio.create_task(
             self._mqtt_client.connect(self.feed_url, self.mqtt_broker_port, version=self.MQTT_VERSION)
         )
@@ -335,8 +324,8 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
             self._connected_at_least_once = True
         except asyncio.CancelledError:
             # got cancelled by on_disconnect, can't connect
-            self.logger.error(f"Can't connect to server, make sure that your device uuid is valid. "
-                              f"Current mqtt uuid is: {self._device_uuid}")
+            self.logger.error(f"Can't connect to server, your device uuid might be invalid. "
+                              f"Current mqtt uuid is: {device_uuid}")
             self._valid_auth = False
         except asyncio.TimeoutError as err:
             message = "Timeout error when trying to connect to mqtt device"
