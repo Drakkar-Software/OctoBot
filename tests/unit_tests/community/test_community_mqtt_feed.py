@@ -16,9 +16,7 @@
 import pytest
 import pytest_asyncio
 import mock
-import uuid
 import json
-import zlib
 import gmqtt
 
 import octobot.community as community
@@ -34,18 +32,12 @@ NAME = "name_a"
 
 
 def _build_message(value, identifier):
-    return {
+    return json.dumps({
         commons_enums.CommunityFeedAttrs.CHANNEL_TYPE.value: commons_enums.CommunityChannelTypes.SIGNAL.value,
         commons_enums.CommunityFeedAttrs.VERSION.value: constants.COMMUNITY_FEED_CURRENT_MINIMUM_VERSION,
         commons_enums.CommunityFeedAttrs.VALUE.value: value,
         commons_enums.CommunityFeedAttrs.ID.value: identifier,
-    }
-
-
-def _zipped_message(value):
-    return zlib.compress(
-        json.dumps(value).encode()
-    )
+    }).encode()
 
 
 @pytest_asyncio.fixture
@@ -64,10 +56,8 @@ async def connected_community_feed(authenticator):
     try:
         feed = community.CommunityMQTTFeed(FEED_URL, authenticator)
         feed.INIT_TIMEOUT = 1
-        with mock.patch.object(authenticator.user_account, "get_selected_bot_device_uuid", mock.Mock(return_value=TOKEN)) \
+        with mock.patch.object(authenticator, "get_saved_mqtt_device_uuid", mock.Mock(return_value=TOKEN)) \
                 as get_selected_bot_device_uuid_mock, \
-             mock.patch.object(authenticator.user_account, "get_selected_bot_device_name", mock.Mock(return_value=NAME)
-                               ) as _get_selected_bot_device_uuid_mock, \
              mock.patch.object(feed, "_subscribe", mock.Mock()) as _subscribe_mock, \
              mock.patch.object(gmqtt.Client, "connect", mock.AsyncMock()) as _connect_mock:
             await feed.register_feed_callback(commons_enums.CommunityChannelTypes.SIGNAL, mock.AsyncMock())
@@ -128,33 +118,19 @@ async def test_on_message(connected_community_feed):
 
     message = _build_message("hello", "1")
     # from topic
-    await connected_community_feed._on_message(client, "other_topic", _zipped_message(message), 1, {})
+    await connected_community_feed._on_message(client, "other_topic", message, 1, {})
     assert all(cb.assert_not_called() is None for cb in connected_community_feed.feed_callbacks["topic"])
 
     message = _build_message("hello", "2")
     # call callbacks
-    await connected_community_feed._on_message(client, topic, _zipped_message(message), 1, {})
-    assert all(cb.assert_called_once_with(message) is None for cb in connected_community_feed.feed_callbacks["topic"])
+    await connected_community_feed._on_message(client, topic, message, 1, {})
+    assert all(
+        cb.assert_called_once_with(json.loads(message)) is None
+        for cb in connected_community_feed.feed_callbacks["topic"]
+    )
 
     # already processed message
     connected_community_feed.feed_callbacks["topic"][0].reset_mock()
     connected_community_feed.feed_callbacks["topic"][1].reset_mock()
-    await connected_community_feed._on_message(client, topic, _zipped_message(message), 1, {})
+    await connected_community_feed._on_message(client, topic, message, 1, {})
     assert all(cb.assert_not_called() is None for cb in connected_community_feed.feed_callbacks["topic"])
-
-
-async def test_send(connected_community_feed):
-    with mock.patch.object(connected_community_feed._mqtt_client, "publish", mock.Mock()) as publish_mock, \
-         mock.patch.object(uuid, "uuid4", mock.Mock(return_value="uuid41")) as uuid4_mock:
-        await connected_community_feed.send("hello", commons_enums.CommunityChannelTypes.SIGNAL, "x")
-        publish_mock.assert_called_once_with(
-            f"{commons_enums.CommunityChannelTypes.SIGNAL.value}/x",
-            zlib.compress(json.dumps({
-                commons_enums.CommunityFeedAttrs.CHANNEL_TYPE.value: commons_enums.CommunityChannelTypes.SIGNAL.value,
-                commons_enums.CommunityFeedAttrs.VERSION.value: constants.COMMUNITY_FEED_CURRENT_MINIMUM_VERSION,
-                commons_enums.CommunityFeedAttrs.VALUE.value: "hello",
-                commons_enums.CommunityFeedAttrs.ID.value: "uuid41",  # assign unique id to each message
-            }).encode()),
-            qos=connected_community_feed.default_QOS
-        )
-        uuid4_mock.assert_called_once()
