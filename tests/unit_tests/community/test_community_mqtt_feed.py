@@ -43,7 +43,7 @@ def _build_message(value, identifier):
 @pytest_asyncio.fixture
 async def authenticator():
     community.IdentifiersProvider.use_production()
-    auth = community.CommunityAuthentication(None, None)
+    auth = community.CommunityAuthentication()
     auth._auth_token = TOKEN
     auth.refresh_token = TOKEN
     auth._expire_at = 11
