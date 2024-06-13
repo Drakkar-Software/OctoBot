@@ -94,7 +94,7 @@ async def community_echo_server():
 @pytest_asyncio.fixture
 async def authenticator():
     community.IdentifiersProvider.use_production()
-    auth = community.CommunityAuthentication(None, None)
+    auth = community.CommunityAuthentication()
     auth.user_account._profile_raw_data = {"1": 1}
     auth.is_logged_in = mock.Mock(return_value=True)
     auth.get_backend_headers = mock.Mock(return_value={})
