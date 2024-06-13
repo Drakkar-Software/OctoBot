@@ -424,14 +424,15 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         ).execute()).data
 
     async def fetch_candles_history_range(
-        self, exchange: str, symbol: str, time_frame: commons_enums.TimeFrames
+        self, exchange: str, symbol: str, time_frame: commons_enums.TimeFrames, use_production_db: bool
     ) -> (typing.Union[float, None], typing.Union[float, None]):
         params = {
             "exchange_internal_name": exchange,
             "symbol": symbol,
             "time_frame": time_frame.value,
         }
-        range_return = (await self.postgres_functions().invoke(
+        db_functions = self.production_anon_postgres_functions() if use_production_db else self.postgres_functions()
+        range_return = (await db_functions.invoke(
             "get_ohlcv_range",
             {"body": params}
         ))["data"]
@@ -510,6 +511,14 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
                 supabase_key=constants.COMMUNITY_PRODUCTION_BACKEND_KEY,
             )
         return self.production_anon_client
+
+    def _get_production_anon_auth_headers(self):
+        return self._get_anon_auth_headers(constants.COMMUNITY_PRODUCTION_BACKEND_KEY)
+
+    def production_anon_postgres_functions(self):
+        return self.postgres_functions(
+            url=constants.COMMUNITY_PRODUCTION_BACKEND_URL, auth_headers=self._get_production_anon_auth_headers()
+        )
 
     async def _paginated_fetch_historical_data(
         self, client, table_name: str, select: str, matcher: dict,
