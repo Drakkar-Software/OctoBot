@@ -40,7 +40,7 @@ import octobot_trading.enums as trading_enums
 
 
 def _bot_data_update(func):
-    async def wrapper(*args, raise_errors=False, **kwargs):
+    async def bot_data_update_wrapper(*args, raise_errors=False, **kwargs):
         self = args[0]
         if not self.is_logged_in_and_has_selected_bot():
             self.logger.debug(f"Skipping {func.__name__} update: no user selected bot.")
@@ -54,7 +54,7 @@ def _bot_data_update(func):
             self.logger.exception(err, True, f"Error when calling {func.__name__} {err}")
         finally:
             self.logger.debug(f"bot_data_update: {func.__name__} completed.")
-    return wrapper
+    return bot_data_update_wrapper
 
 
 class CommunityAuthentication(authentication.Authenticator):
