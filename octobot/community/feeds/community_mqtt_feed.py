@@ -189,10 +189,15 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
         return commons_enums.CommunityChannelTypes(message[commons_enums.CommunityFeedAttrs.CHANNEL_TYPE.value])
 
     def _ensure_supported(self, parsed_message):
-        if packaging_version.Version(parsed_message[commons_enums.CommunityFeedAttrs.VERSION.value]) \
-                < packaging_version.Version(constants.COMMUNITY_FEED_CURRENT_MINIMUM_VERSION):
+        if not (
+            packaging_version.Version(constants.COMMUNITY_FEED_CURRENT_MINIMUM_VERSION)
+            <= packaging_version.Version(parsed_message[commons_enums.CommunityFeedAttrs.VERSION.value])
+            < packaging_version.Version(constants.COMMUNITY_FEED_CURRENT_EXCLUDED_MAXIMUM_VERSION)
+        ):
             raise commons_errors.UnsupportedError(
-                f"Minimum version: {constants.COMMUNITY_FEED_CURRENT_MINIMUM_VERSION}"
+                f"Incompatible message version: found {parsed_message[commons_enums.CommunityFeedAttrs.VERSION.value]} "
+                f"Required [{constants.COMMUNITY_FEED_CURRENT_MINIMUM_VERSION} : "
+                f"{constants.COMMUNITY_FEED_CURRENT_EXCLUDED_MAXIMUM_VERSION}["
             )
 
     def _on_connect(self, client, flags, rc, properties):
