@@ -6,7 +6,7 @@ OctoBot-Tentacles-Manager==2.9.11
 OctoBot-Services==1.6.14
 OctoBot-Backtesting==1.9.7
 Async-Channel==2.2.1
-trading-backend==1.2.23
+trading-backend==1.2.24
 
 ## Others
 colorlog==6.8.0
