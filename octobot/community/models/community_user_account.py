@@ -14,6 +14,8 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
+import typing
+
 import octobot.community.models.community_supports as community_supports
 import octobot.community.errors as errors
 import octobot.community.supabase_backend.enums as backend_enums
@@ -22,18 +24,13 @@ import octobot.community.supabase_backend.enums as backend_enums
 class CommunityUserAccount:
     USER_DATA_CONTENT = "content"
     BOT_DEVICE = "device"
-    BOT_URLS = "urls"
     BOT_DEPLOYMENT = "bot_deployment"
-    BOT_DEPLOYMENT_TYPE = "type"
-    METADATA = "metadata"
     FILLED_FORMS = "filledForms"
     NO_SELECTED_BOT_DESC = "No selected bot. Please select a bot to enable your community features."
     HOSTING_ENABLED = "hosting_enabled"
 
     def __init__(self):
-        self.gql_user_id = None
         self.bot_id = None
-        self.gql_access_token = None
         self.supports = community_supports.CommunitySupports()
 
         self._profile_raw_data = None
@@ -51,10 +48,6 @@ class CommunityUserAccount:
 
     def get_user_id(self):
         return self._profile_raw_data[backend_enums.UserKeys.ID.value]
-
-    def get_graph_token(self):
-        raise NotImplemented
-        return self._get_user_data_content()["graph_token"]
 
     def get_has_donated(self):
         return self._get_user_data_metadata().get("has_donated", False)
@@ -93,20 +86,6 @@ class CommunityUserAccount:
 
     def get_bot_deployment_url(self, deployment_url_data):
         return deployment_url_data[backend_enums.BotDeploymentURLKeys.URL.value]
-
-    def get_selected_bot_device_uuid(self):
-        raise NotImplemented
-        try:
-            return self.get_selected_bot_raw_data(raise_on_missing=True).get(self.BOT_DEVICE, {}).get("uuid", None)
-        except AttributeError:
-            raise errors.NoBotDeviceError("No device associated to the select bot")
-
-    def get_selected_bot_device_name(self):
-        raise NotImplemented
-        try:
-            return self.get_selected_bot_raw_data(raise_on_missing=True).get(self.BOT_DEVICE, {}).get("name", None)
-        except AttributeError:
-            raise errors.NoBotDeviceError("No device associated to the select bot")
 
     @staticmethod
     def get_bot_id(bot):
@@ -170,8 +149,6 @@ class CommunityUserAccount:
         self._all_user_bots_raw_data = []
 
     def flush(self):
-        self.gql_user_id = None
-        self.gql_access_token = None
         self.supports = community_supports.CommunitySupports()
         self._profile_raw_data = None
         self.flush_bot_details()

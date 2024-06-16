@@ -1,12 +1,12 @@
 # Drakkar-Software requirements
-OctoBot-Commons==1.9.46
+OctoBot-Commons==1.9.47
 OctoBot-Trading==2.4.87
 OctoBot-Evaluators==1.9.5
 OctoBot-Tentacles-Manager==2.9.11
-OctoBot-Services==1.6.13
+OctoBot-Services==1.6.14
 OctoBot-Backtesting==1.9.7
 Async-Channel==2.2.1
-trading-backend==1.2.23
+trading-backend==1.2.24
 
 ## Others
 colorlog==6.8.0
@@ -18,6 +18,7 @@ setuptools==69.0.3
 
 # Community
 websockets
+gmqtt==0.6.16
 
 # Supabase  ensure supabase_backend_tests keep passing when updating any of those
 supabase==1.0.4   # Supabase client

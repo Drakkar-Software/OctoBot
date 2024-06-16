@@ -40,7 +40,7 @@ import octobot_trading.enums as trading_enums
 
 
 def _bot_data_update(func):
-    async def wrapper(*args, raise_errors=False, **kwargs):
+    async def bot_data_update_wrapper(*args, raise_errors=False, **kwargs):
         self = args[0]
         if not self.is_logged_in_and_has_selected_bot():
             self.logger.debug(f"Skipping {func.__name__} update: no user selected bot.")
@@ -54,7 +54,7 @@ def _bot_data_update(func):
             self.logger.exception(err, True, f"Error when calling {func.__name__} {err}")
         finally:
             self.logger.debug(f"bot_data_update: {func.__name__} completed.")
-    return wrapper
+    return bot_data_update_wrapper
 
 
 class CommunityAuthentication(authentication.Authenticator):
@@ -70,9 +70,8 @@ class CommunityAuthentication(authentication.Authenticator):
     SESSION_HEADER = "X-Session"
     GQL_AUTHORIZATION_HEADER = "Authorization"
 
-    def __init__(self, feed_url, config=None, backend_url=None, backend_key=None, use_as_singleton=True):
+    def __init__(self, config=None, backend_url=None, backend_key=None, use_as_singleton=True):
         super().__init__(use_as_singleton=use_as_singleton)
-        self.feed_url = feed_url
         self.backend_url = backend_url or identifiers_provider.IdentifiersProvider.BACKEND_URL
         self.backend_key = backend_key or identifiers_provider.IdentifiersProvider.BACKEND_KEY
         self.configuration_storage = supabase_backend.SyncConfigurationStorage(config)
@@ -90,7 +89,6 @@ class CommunityAuthentication(authentication.Authenticator):
     @staticmethod
     def create(configuration: commons_configuration.Configuration, **kwargs):
         return CommunityAuthentication.instance(
-            None,
             config=configuration,
             **kwargs,
         )
@@ -237,8 +235,8 @@ class CommunityAuthentication(authentication.Authenticator):
 
     async def _create_community_feed_if_necessary(self) -> bool:
         if self._community_feed is None:
+            # ensure mqtt_device_uuid is set
             self._community_feed = community_feeds.community_feed_factory(
-                self.feed_url,
                 self,
                 constants.COMMUNITY_FEED_DEFAULT_TYPE
             )
@@ -263,9 +261,7 @@ class CommunityAuthentication(authentication.Authenticator):
         """
         Sends a message
         """
-        self.logger.debug("Sending trading signals is disabled for now")
-        # await self._ensure_init_community_feed()
-        # await self._community_feed.send(message, channel_type, identifier)
+        self.logger.debug("Sending is disabled.")
 
     async def wait_for_login_if_processing(self):
         if self._login_completed is not None and not self._login_completed.is_set():
@@ -411,8 +407,6 @@ class CommunityAuthentication(authentication.Authenticator):
         self.supabase_client.sign_out()
         self._reset_tokens()
         self.remove_login_detail()
-        if self._community_feed is not None:
-            self._community_feed.remove_device_details()
 
     def is_logged_in(self):
         return bool(self.supabase_client.is_signed_in() and self.user_account.has_user_data())
@@ -431,6 +425,8 @@ class CommunityAuthentication(authentication.Authenticator):
         if self._fetch_account_task is not None and not self._fetch_account_task.done():
             self._fetch_account_task.cancel()
         await self.supabase_client.close()
+        if self._community_feed:
+            await self._community_feed.stop()
         self.logger.debug("Stopped")
 
     def _update_supports(self, resp_status, json_data):
@@ -482,6 +478,14 @@ class CommunityAuthentication(authentication.Authenticator):
     def _reset_login_token(self):
         if self.supabase_client is not None:
             self._save_value_in_config(self.supabase_client.auth._storage_key, "")
+
+    def save_mqtt_device_uuid(self, mqtt_uuid):
+        self._save_value_in_config(constants.CONFIG_COMMUNITY_MQTT_UUID, mqtt_uuid)
+
+    def get_saved_mqtt_device_uuid(self):
+        if mqtt_uuid := self._get_value_in_config(constants.CONFIG_COMMUNITY_MQTT_UUID):
+            return mqtt_uuid
+        raise errors.NoBotDeviceError("No MQTT device ID has been set")
 
     def _save_bot_id(self, bot_id):
         self._save_value_in_config(constants.CONFIG_COMMUNITY_BOT_ID, bot_id)

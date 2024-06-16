@@ -56,9 +56,15 @@ OCTOBOT_FEEDBACK_FORM_URL = "https://goo.gl/forms/vspraniXPY7rvtKN2"
 OCTOBOT_BETA_PROGRAM_FORM_URL = "https://octobot.click/docs-join-beta"
 AUTOMATION_FEEDBACK_FORM_ID = "n9NKMV"
 WELCOME_FEEDBACK_FORM_ID = os.getenv("WELCOME_FEEDBACK_FORM_ID", None)
+OCTOBOT_EXTENSION_PACKAGE_1_NAME = "Advanced OctoBot extension"
 
 COMMUNITY_FEED_CURRENT_MINIMUM_VERSION = "1.0.0"
-COMMUNITY_FEED_DEFAULT_TYPE = octobot.enums.CommunityFeedType.SupabaseFeed
+COMMUNITY_FEED_CURRENT_EXCLUDED_MAXIMUM_VERSION = "2.0.0"
+COMMUNITY_FEED_DEFAULT_TYPE = octobot.enums.CommunityFeedType.MQTTFeed
+COMMUNITY_FEED_URL = os.getenv("COMMUNITY_FEED_URL", "iot.fr-par.scw.cloud")
+COMMUNITY_TRADINGVIEW_WEBHOOK_BASE_URL = os.getenv(
+    "COMMUNITY_TRADINGVIEW_WEBHOOK_BASE_URL", "https://webhook.octobot.cloud/tradingview"
+)
 
 # production env SHOULD ONLY BE USED THROUGH CommunityIdentifiersProvider
 OCTOBOT_COMMUNITY_LANDING_URL = os.getenv("COMMUNITY_SERVER_URL", "https://octobot.cloud")
@@ -83,6 +89,7 @@ COMMUNITY_PRODUCTION_BACKEND_KEY = os.getenv("COMMUNITY_PRODUCTION_BACKEND_KEY",
 
 CONFIG_COMMUNITY = "community"
 CONFIG_COMMUNITY_BOT_ID = "bot_id"
+CONFIG_COMMUNITY_MQTT_UUID = "mqtt_uuid"
 CONFIG_COMMUNITY_ENVIRONMENT = "environment"
 USE_BETA_EARLY_ACCESS = os_util.parse_boolean_environment_var("USE_BETA_EARLY_ACCESS", "false")
 USER_ACCOUNT_EMAIL = os.getenv("USER_ACCOUNT_EMAIL", "")

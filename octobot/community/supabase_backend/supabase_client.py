@@ -136,8 +136,8 @@ class AuthenticatedAsyncSupabaseClient(supabase.Client):
             pass
         await self.realtime.close()
 
-    def postgres_functions(self):
-        return postgres_functions.PostgresFunctions(self.supabase_url, self._get_auth_headers())
+    def postgres_functions(self, url=None, auth_headers=None):
+        return postgres_functions.PostgresFunctions(url or self.supabase_url, auth_headers or self._get_auth_headers())
 
     def remove_session_details(self):
         self.auth._remove_session()
@@ -158,9 +158,12 @@ class AuthenticatedAsyncSupabaseClient(supabase.Client):
             # await self.storage.aclose()
             # self._init_storage_client(self.storage_url, self._get_auth_headers())
 
+    def _get_anon_auth_headers(self, supabase_key):
+        """Helper method to get anon auth headers."""
+        return self._format_auth_headers(supabase_key, supabase_key)
+
     def _get_auth_headers(self):
         """Helper method to get auth headers."""
-        # What's the corresponding method to get the token
         return self._format_auth_headers(self.supabase_key, self._get_auth_key())
 
     def _format_auth_headers(self, supabase_key, auth_token):

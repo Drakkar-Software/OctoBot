@@ -14,16 +14,18 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import octobot.enums
+import octobot.constants
 import octobot.community.feeds.community_ws_feed as community_ws_feed
+import octobot.community.feeds.community_mqtt_feed as community_mqtt_feed
 import octobot.community.feeds.community_supabase_feed as community_supabase_feed
 
 
-def community_feed_factory(feed_url: str, authenticator, feed_type: octobot.enums.CommunityFeedType):
+def community_feed_factory(authenticator, feed_type: octobot.enums.CommunityFeedType):
+    feed_url = octobot.constants.COMMUNITY_FEED_URL
     if feed_type is octobot.enums.CommunityFeedType.WebsocketFeed:
         return community_ws_feed.CommunityWSFeed(feed_url, authenticator)
-    # disabled
-    # if feed_type is octobot.enums.CommunityFeedType.MQTTFeed:
-    #     return community_mqtt_feed.CommunityMQTTFeed(feed_url, authenticator)
+    if feed_type is octobot.enums.CommunityFeedType.MQTTFeed:
+        return community_mqtt_feed.CommunityMQTTFeed(feed_url, authenticator)
     if feed_type is octobot.enums.CommunityFeedType.SupabaseFeed:
         return community_supabase_feed.CommunitySupabaseFeed(feed_url, authenticator)
     raise NotImplementedError(f"Unsupported feed type: {feed_type}")

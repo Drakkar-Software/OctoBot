@@ -54,7 +54,7 @@ class MockedResponse:
 @pytest.fixture
 def auth():
     community.IdentifiersProvider.use_production()
-    authenticator = community.CommunityAuthentication(AUTH_URL, None)
+    authenticator = community.CommunityAuthentication()
     authenticator.supabase_client = mock.Mock(
         sign_in=mock.AsyncMock(),
         sign_in_with_otp_token=mock.AsyncMock(),
@@ -75,8 +75,8 @@ async def logged_in_auth(auth):
 def test_constructor():
     with mock.patch.object(community.CommunityAuthentication, "login", mock.Mock()) as login_mock:
         community.IdentifiersProvider.use_production()
-        community.CommunityAuthentication(AUTH_URL, None)
-        auth = community.CommunityAuthentication(AUTH_URL, None)
+        community.CommunityAuthentication()
+        auth = community.CommunityAuthentication()
         login_mock.assert_not_called()
         assert not auth.user_account.supports.is_supporting()
         assert auth.initialized_event is None
