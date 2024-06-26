@@ -253,7 +253,7 @@ def test_init_account(auth):
     with mock.patch.object(asyncio, "create_task", mock.Mock(return_value="task")) as create_task_mock, \
             mock.patch.object(auth, "_initialize_account", mock.Mock(return_value="coro")) \
             as _auth_and_fetch_account_mock:
-        auth.init_account()
+        auth.init_account(True)
         create_task_mock.assert_called_once_with("coro")
         _auth_and_fetch_account_mock.assert_called_once()
         assert auth._fetch_account_task == "task"

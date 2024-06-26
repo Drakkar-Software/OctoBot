@@ -31,6 +31,7 @@ import octobot.community.models.strategy_data as strategy_data
 import octobot.community.supabase_backend as supabase_backend
 import octobot.community.supabase_backend.enums as backend_enums
 import octobot.community.feeds as community_feeds
+import octobot.community.tentacles_packages as community_tentacles_packages
 import octobot_commons.constants as commons_constants
 import octobot_commons.enums as commons_enums
 import octobot_commons.authentication as authentication
@@ -72,12 +73,14 @@ class CommunityAuthentication(authentication.Authenticator):
 
     def __init__(self, config=None, backend_url=None, backend_key=None, use_as_singleton=True):
         super().__init__(use_as_singleton=use_as_singleton)
+        self.config = config
         self.backend_url = backend_url or identifiers_provider.IdentifiersProvider.BACKEND_URL
         self.backend_key = backend_key or identifiers_provider.IdentifiersProvider.BACKEND_KEY
-        self.configuration_storage = supabase_backend.SyncConfigurationStorage(config)
+        self.configuration_storage = supabase_backend.SyncConfigurationStorage(self.config)
         self.supabase_client = self._create_client()
         self.user_account = community_user_account.CommunityUserAccount()
         self.public_data = community_public_data.CommunityPublicData()
+        self.successfully_fetched_tentacles_package_urls = False
         self._community_feed = None
 
         self.initialized_event = None
@@ -226,11 +229,11 @@ class CommunityAuthentication(authentication.Authenticator):
     def is_initialized(self):
         return self.initialized_event is not None and self.initialized_event.is_set()
 
-    def init_account(self):
-        self._fetch_account_task = asyncio.create_task(self._initialize_account())
+    def init_account(self, fetch_private_data):
+        self._fetch_account_task = asyncio.create_task(self._initialize_account(fetch_private_data=fetch_private_data))
 
-    async def async_init_account(self):
-        self.init_account()
+    async def async_init_account(self, fetch_private_data):
+        self.init_account(fetch_private_data)
         await self._fetch_account_task
 
     async def _create_community_feed_if_necessary(self) -> bool:
@@ -375,6 +378,12 @@ class CommunityAuthentication(authentication.Authenticator):
             self.user_account.get_selected_bot_deployment_id()
         )
 
+    def get_owned_packages(self) -> list[str]:
+        return self.user_account.owned_packages
+
+    def has_owned_packages_to_install(self) -> bool:
+        return self.user_account.has_pending_packages_to_install
+
     def is_logged_in_and_has_selected_bot(self):
         return (self.supabase_client.is_admin or self.is_logged_in()) and self.user_account.bot_id is not None
 
@@ -448,7 +457,7 @@ class CommunityAuthentication(authentication.Authenticator):
             if not self._login_completed.is_set():
                 self._login_completed.set()
 
-    async def _initialize_account(self, minimal=False):
+    async def _initialize_account(self, minimal=False, fetch_private_data=True):
         try:
             await self._ensure_async_loop()
             self.initialized_event = asyncio.Event()
@@ -456,31 +465,124 @@ class CommunityAuthentication(authentication.Authenticator):
                 return
             self._login_completed.set()
             if not minimal:
-                await self._ensure_init_community_feed()
-                await self.update_supports()
-                await self.update_selected_bot()
-                self.logger.debug(f"Fetched account data")
-                await self.init_public_data()
-                if not self.user_account.is_hosting_enabled():
-                    await self.update_is_hosting_enabled(True)
+                await self._init_community_data(fetch_private_data)
+                if self._community_feed and self._community_feed.has_registered_feed():
+                    await self._ensure_init_community_feed()
         except authentication.UnavailableError as e:
-            self.logger.exception(e, True, f"Error when fetching community supports, "
+            self.logger.exception(e, True, f"Error when fetching community data, "
                                            f"please check your internet connection.")
         except Exception as e:
             self.logger.exception(e, True, f"Error when fetching community supports: {e}({e.__class__.__name__})")
         finally:
             self.initialized_event.set()
 
+    async def _init_community_data(self, fetch_private_data):
+        coros = [
+            self.update_supports(),
+            self.init_public_data(),
+        ]
+        if fetch_private_data:
+            coros.append(self.update_selected_bot())
+            coros.append(self.fetch_private_data())
+        if not self.user_account.is_hosting_enabled():
+            coros.append(self.update_is_hosting_enabled(True))
+        await asyncio.gather(*coros)
+
     async def init_public_data(self, reset=False):
         if reset or not self.public_data.products.fetched:
             self.public_data.set_products(await self.supabase_client.fetch_products())
+
+    async def fetch_private_data(self, reset=False):
+        try:
+            mqtt_uuid = None
+            try:
+                mqtt_uuid = self.get_saved_mqtt_device_uuid()
+            except errors.NoBotDeviceError:
+                pass
+            if reset or (not self.user_account.community_package_urls or not mqtt_uuid):
+                self.successfully_fetched_tentacles_package_urls = False
+                packages, package_urls, fetched_mqtt_uuid = await self._fetch_package_urls(mqtt_uuid)
+                self.successfully_fetched_tentacles_package_urls = True
+                self.user_account.owned_packages = packages
+                self.save_installed_package_urls(package_urls)
+                has_tentacles_to_install = \
+                    await community_tentacles_packages.has_tentacles_to_install_and_uninstall_tentacles_if_necessary(
+                        self
+                    )
+                if has_tentacles_to_install:
+                    # tentacles are not installed, save the fact that some are pending
+                    self.user_account.has_pending_packages_to_install = True
+                if fetched_mqtt_uuid and fetched_mqtt_uuid != mqtt_uuid:
+                    self.save_mqtt_device_uuid(fetched_mqtt_uuid)
+        except Exception as err:
+            self.logger.exception(err, True, f"Error when fetching package urls: {err}")
+
+    async def _fetch_package_urls(self, mqtt_uuid: typing.Optional[str]) -> (list[str], str):
+        resp = await self.supabase_client.http_get(
+            constants.COMMUNITY_EXTENSIONS_CHECK_ENDPOINT,
+            headers={
+                "Content-Type": "application/json",
+                "X-Auth-Token": constants.COMMUNITY_EXTENSIONS_CHECK_ENDPOINT_KEY
+            },
+            params={"mqtt_id": mqtt_uuid} if mqtt_uuid else {},
+            timeout=constants.COMMUNITY_FETCH_TIMEOUT
+        )
+        resp.raise_for_status()
+        json_resp = json.loads(resp.json().get("message", {}))
+        if not json_resp:
+            return None, None, None
+        packages = [
+            package
+            for package in json_resp["paid_package_slugs"]
+            if package
+        ]
+        urls = [
+            url
+            for url in json_resp["package_urls"]
+            if url
+        ]
+        mqtt_id = json_resp["mqtt_id"]
+        return packages, urls, mqtt_id
+
+    async def fetch_checkout_url(self, payment_method, redirect_url):
+        try:
+            resp = await self.supabase_client.http_post(
+                constants.COMMUNITY_EXTENSIONS_CHECK_ENDPOINT,
+                json={
+                    "payment_method": payment_method,
+                    "success_url": redirect_url,
+                },
+                headers={
+                    "Content-Type": "application/json",
+                    "X-Auth-Token": constants.COMMUNITY_EXTENSIONS_CHECK_ENDPOINT_KEY
+                },
+                timeout=constants.COMMUNITY_FETCH_TIMEOUT
+            )
+            resp.raise_for_status()
+            json_resp = json.loads(resp.json().get("message", {}))
+            if not json_resp:
+                # valid error code but no content: user already has this product
+                return None
+            return json_resp["checkout_url"]
+        except Exception as err:
+            self.logger.exception(err, True, f"Error when fetching checkout url: {err}")
+            raise
+
+    def was_connected_with_remote_packages(self):
+        return self.configuration_storage.has_remote_packages()
 
     def _reset_login_token(self):
         if self.supabase_client is not None:
             self._save_value_in_config(self.supabase_client.auth._storage_key, "")
 
+    def save_installed_package_urls(self, package_urls: list[str]):
+        self._save_value_in_config(constants.CONFIG_COMMUNITY_PACKAGE_URLS, package_urls)
+
     def save_mqtt_device_uuid(self, mqtt_uuid):
         self._save_value_in_config(constants.CONFIG_COMMUNITY_MQTT_UUID, mqtt_uuid)
+
+    def get_saved_package_urls(self) -> list[str]:
+        return self._get_value_in_config(constants.CONFIG_COMMUNITY_PACKAGE_URLS) or []
 
     def get_saved_mqtt_device_uuid(self):
         if mqtt_uuid := self._get_value_in_config(constants.CONFIG_COMMUNITY_MQTT_UUID):

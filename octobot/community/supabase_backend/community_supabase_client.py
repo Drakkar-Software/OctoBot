@@ -19,6 +19,7 @@ import json
 import time
 import typing
 import logging
+import httpx
 
 import aiohttp
 import gotrue.errors
@@ -644,6 +645,22 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
 
     def is_realtime_connected(self) -> bool:
         return self.realtime.socket and self.realtime.socket.connected and not self.realtime.socket.closed
+
+    async def http_get(self, url: str, *args, params=None, headers=None, **kwargs) -> httpx.Response:
+        """
+        Perform http get using the current supabase auth token
+        """
+        return await self.postgrest.session.get(url, *args, params=params, headers=headers, **kwargs)
+
+    async def http_post(
+        self, url: str, *args, data=None, files=None, json=None, params=None, headers=None, **kwargs
+    ) -> httpx.Response:
+        """
+        Perform http get using the current supabase auth token
+        """
+        return await self.postgrest.session.post(
+            url, *args, data=data, files=files, json=json, params=params, headers=headers, **kwargs
+        )
 
     @staticmethod
     def get_formatted_time(timestamp: float) -> str:
