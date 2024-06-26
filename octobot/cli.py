@@ -132,17 +132,6 @@ def _create_startup_config(logger):
 
 async def _apply_community_startup_info_to_config(logger, config, community_auth):
     try:
-        if not community_auth.is_initialized() and constants.USER_ACCOUNT_EMAIL and constants.USER_PASSWORD_TOKEN:
-            try:
-                await community_auth.login(
-                    constants.USER_ACCOUNT_EMAIL, None, password_token=constants.USER_PASSWORD_TOKEN
-                )
-            except authentication.AuthenticationError as err:
-                logger.debug(f"Password token auth failure ({err}). Trying with saved session.")
-            if not community_auth.is_initialized():
-                await community_auth.async_init_account()
-        if not community_auth.is_logged_in():
-            return
         startup_info = await community_auth.get_startup_info()
         logger.debug(f"Fetched startup info: {startup_info}")
         commands.download_and_select_profile(
@@ -166,18 +155,42 @@ def _apply_env_variables_to_config(logger, config):
     )
 
 
-def _handle_forced_startup_config(logger, config, is_first_startup):
+async def _get_authenticated_community_if_possible(config, logger):
     # switch environments if necessary
     octobot_community.IdentifiersProvider.use_environment_from_config(config)
-
-    # 1. at first startup, get startup info from community when possible
     community_auth = octobot_community.CommunityAuthentication.create(config)
-    if is_first_startup:
-        asyncio.run(_apply_community_startup_info_to_config(logger, config, community_auth))
+    try:
+        if not community_auth.is_initialized():
+            if constants.IS_CLOUD_ENV and constants.USER_ACCOUNT_EMAIL and constants.USER_PASSWORD_TOKEN:
+                try:
+                    await community_auth.login(
+                        constants.USER_ACCOUNT_EMAIL, None, password_token=constants.USER_PASSWORD_TOKEN
+                    )
+                except authentication.AuthenticationError as err:
+                    logger.debug(f"Password token auth failure ({err}). Trying with saved session.")
+            if not community_auth.is_initialized():
+                # try with saved credentials if any
+                has_tentacles = tentacles_manager_api.is_tentacles_architecture_valid()
+                # When no tentacles, fetch private data. Otherwise fetch it later on in bot init
+                await community_auth.async_init_account(fetch_private_data=not has_tentacles)
+    except authentication.FailedAuthentication as err:
+        logger.error(f"Failed authentication when initializing community authenticator: {err}")
+    except Exception as err:
+        logger.error(f"Error when initializing community authenticator: {err}")
+    return community_auth
+
+
+async def _async_load_community_data(community_auth, config, logger, is_first_startup):
+    if constants.IS_CLOUD_ENV and is_first_startup:
+        # auto config
+        await _apply_community_startup_info_to_config(logger, config, community_auth)
+
+
+def _apply_forced_configs(community_auth, logger, config, is_first_startup):
+    asyncio.run(_async_load_community_data(community_auth, config, logger, is_first_startup))
 
     # 2. handle profiles from env variables
     _apply_env_variables_to_config(logger, config)
-    return community_auth
 
 
 def _read_config(config, logger):
@@ -208,21 +221,21 @@ def _repair_with_default_profile(config, logger):
     config.load_profiles_if_possible_and_necessary()
 
 
-def _load_or_create_tentacles(config, logger):
+def _load_or_create_tentacles(community_auth, config, logger):
     # add tentacles folder to Python path
     sys.path.append(os.path.realpath(os.getcwd()))
 
-    # when tentacles folder already exists
     if os.path.isfile(tentacles_manager_constants.USER_REFERENCE_TENTACLE_CONFIG_FILE_PATH):
+        # when tentacles folder already exists
         config.load_profiles_if_possible_and_necessary()
         tentacles_setup_config = tentacles_manager_api.get_tentacles_setup_config(
             config.get_tentacles_config_path()
         )
-        commands.run_update_or_repair_tentacles_if_necessary(config, tentacles_setup_config)
+        commands.run_update_or_repair_tentacles_if_necessary(community_auth, config, tentacles_setup_config)
     else:
         # when no tentacles folder has been found
         logger.info("OctoBot tentacles can't be found. Installing default tentacles ...")
-        commands.run_tentacles_install_or_update(config)
+        commands.run_tentacles_install_or_update(community_auth, config)
         config.load_profiles_if_possible_and_necessary()
 
 
@@ -260,11 +273,16 @@ def start_octobot(args):
         # show terms
         _log_terms_if_unaccepted(config, logger)
 
+        community_auth = None if args.backtesting else asyncio.run(
+            _get_authenticated_community_if_possible(config, logger)
+        )
+
         # tries to load, install or repair tentacles
-        _load_or_create_tentacles(config, logger)
+        _load_or_create_tentacles(community_auth, config, logger)
 
         # patch setup with forced values
-        community_auth = None if args.backtesting else _handle_forced_startup_config(logger, config, is_first_startup)
+        if not args.backtesting:
+            _apply_forced_configs(community_auth, logger, config, is_first_startup)
 
         # Can now perform config health check (some checks require a loaded profile)
         configuration_manager.config_health_check(config, args.backtesting)
