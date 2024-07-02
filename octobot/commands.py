@@ -177,8 +177,7 @@ async def install_all_tentacles(
         for url in (base_urls if not only_additional else []) + (additional_tentacles_package_urls or []):
             if url is None:
                 continue
-            if constants.VERSION_PLACEHOLDER in url:
-                url = url.replace(constants.VERSION_PLACEHOLDER, constants.LONG_VERSION)
+            url = community_tentacles_packages.adapt_url_to_bot_version(url)
             await tentacles_manager_api.install_all_tentacles(url,
                                                               aiohttp_session=aiohttp_session,
                                                               bot_install_dir=os.getcwd())

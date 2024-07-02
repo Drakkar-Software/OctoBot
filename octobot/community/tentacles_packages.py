@@ -29,17 +29,26 @@ async def has_tentacles_to_install_and_uninstall_tentacles_if_necessary(communit
     return bool(to_install)
 
 
+def adapt_url_to_bot_version(package_url: str) -> str:
+    if constants.VERSION_PLACEHOLDER in package_url:
+        package_url = package_url.replace(constants.VERSION_PLACEHOLDER, constants.LONG_VERSION)
+    return package_url
+
+
 def get_to_install_and_remove_tentacles(
     community_auth, selected_profile_tentacles_setup_config
 ):
     installed_community_package_urls = [
-        package_url
+        adapt_url_to_bot_version(package_url)
         for package_url in tentacles_manager_api.get_all_installed_package_urls(
             selected_profile_tentacles_setup_config
         )
         if is_community_tentacle_url(package_url)
     ]
-    additional_tentacles_package_urls = community_auth.get_saved_package_urls() if community_auth.is_logged_in() else []
+    additional_tentacles_package_urls = [
+        adapt_url_to_bot_version(package_url)
+        for package_url in community_auth.get_saved_package_urls()
+    ] if community_auth.is_logged_in() else []
     was_connected_with_remote_packages = community_auth.was_connected_with_remote_packages()
 
     # do not remove tentacles:
