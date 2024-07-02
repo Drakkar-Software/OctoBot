@@ -43,7 +43,7 @@ async def _get_stats(endpoint_by_key):
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get(url) as resp:
-                    if resp.status != 200:
+                    if resp.status > 299:
                         logger.error(f"Error when getting community status : error code={resp.status}")
                     else:
                         json_resp = await resp.json()

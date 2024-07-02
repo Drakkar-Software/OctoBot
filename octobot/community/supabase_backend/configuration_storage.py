@@ -36,6 +36,13 @@ class SyncConfigurationStorage(gotrue.SyncSupportedStorage):
     def remove_item(self, key: str) -> None:
         self._save_value_in_config(key, "")
 
+    def has_remote_packages(self) -> bool:
+        return bool(
+            self.configuration.config.get(octobot.constants.CONFIG_COMMUNITY, {}).get(
+                octobot.constants.CONFIG_COMMUNITY_PACKAGE_URLS
+            )
+        )
+
     def _save_value_in_config(self, key, value):
         if self.configuration is not None:
             if octobot.constants.CONFIG_COMMUNITY not in self.configuration.config:
