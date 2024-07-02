@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import asyncio
+import base64
 import datetime
 import json
 import time
@@ -650,16 +651,20 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         """
         Perform http get using the current supabase auth token
         """
+        params = params or {}
+        params["access_token"] = params.get("access_token", base64.b64encode(self._get_auth_key().encode()).decode())
         return await self.postgrest.session.get(url, *args, params=params, headers=headers, **kwargs)
 
     async def http_post(
-        self, url: str, *args, data=None, files=None, json=None, params=None, headers=None, **kwargs
+        self, url: str, *args, json=None, params=None, headers=None, **kwargs
     ) -> httpx.Response:
         """
         Perform http get using the current supabase auth token
         """
+        json_body = json or {}
+        json_body["access_token"] = json_body.get("access_token", self._get_auth_key())
         return await self.postgrest.session.post(
-            url, *args, data=data, files=files, json=json, params=params, headers=headers, **kwargs
+            url, *args, json=json_body, params=params, headers=headers, **kwargs
         )
 
     @staticmethod
