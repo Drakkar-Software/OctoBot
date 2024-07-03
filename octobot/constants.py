@@ -115,6 +115,7 @@ TO_DOWNLOAD_PROFILES = os.getenv("TO_DOWNLOAD_PROFILES", None)
 # Profiles to force select at startup, identified by profile id, download url or name
 FORCED_PROFILE = os.getenv("FORCED_PROFILE", None)
 RUN_IN_MAIN_THREAD = os.getenv("RUN_IN_MAIN_THREAD", False)
+PROFILE_UPDATE_RESTART_MIN = float(os.getenv("PROFILE_UPDATE_RESTART_MIN", 5))
 
 OCTOBOT_BINARY_PROJECT_NAME = "OctoBot-Binary"
 

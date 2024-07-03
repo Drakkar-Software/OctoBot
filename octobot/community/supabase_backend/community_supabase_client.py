@@ -234,7 +234,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             (await self.postgres_functions().invoke("get_startup_info", {"body": {"bot_id": bot_id}}))["data"]
         )[0]
 
-    async def fetch_products(self) -> list:
+    async def fetch_products(self, category_types: list[str]) -> list:
         return (
             await self.table("products").select(
                 "*,"
@@ -243,10 +243,9 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
                 "  profitability,"
                 "  reference_market_profitability"
                 ")"
-            ).match({
-                enums.ProductKeys.VISIBILITY.value: "public",
-                "category.type": "profile",
-            })
+            ).eq(
+                enums.ProductKeys.VISIBILITY.value, "public"
+            ).in_("category.type", category_types)
             .execute()
         ).data
 
@@ -365,14 +364,17 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             f"{enums.ExchangeKeys.INTERNAL_NAME.value}"
         ).in_(enums.ExchangeKeys.ID.value, exchange_ids).execute()).data
 
-    async def fetch_product_config(self, product_id: str) -> commons_profiles.ProfileData:
-        if not product_id:
+    async def fetch_product_config(self, product_id: str, product_slug: str = None) -> commons_profiles.ProfileData:
+        if not product_id and not product_slug:
             raise errors.MissingProductConfigError(f"product_id is '{product_id}'")
         try:
-            product = (await self.table("products").select(
+            query = self.table("products").select(
                 "slug, "
                 "product_config:product_configs!current_config_id(config, version)"
-            ).eq(enums.ProductKeys.ID.value, product_id).execute()).data[0]
+            )
+            query = query.eq(enums.ProductKeys.SLUG.value, product_slug) if product_slug \
+                else query.eq(enums.ProductKeys.ID.value, product_id)
+            product = (await query.execute()).data[0]
         except IndexError:
             raise errors.MissingProductConfigError(f"Missing product with id '{product_id}'")
         profile_data = commons_profiles.ProfileData.from_dict(
