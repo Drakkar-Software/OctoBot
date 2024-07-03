@@ -85,6 +85,7 @@ class CommunityAuthentication(authentication.Authenticator):
 
         self.initialized_event = None
         self._login_completed = None
+        self._fetched_private_data = None
         self._startup_info = None
 
         self._fetch_account_task = None
@@ -119,8 +120,10 @@ class CommunityAuthentication(authentication.Authenticator):
         await self.init_public_data(reset=reload)
         return self.public_data.get_strategy(strategy_id)
 
-    async def get_strategy_profile_data(self, strategy_id: str) -> commons_profiles.ProfileData:
-        return await self.supabase_client.fetch_product_config(strategy_id)
+    async def get_strategy_profile_data(
+        self, strategy_id: str, product_slug: str = None
+    ) -> commons_profiles.ProfileData:
+        return await self.supabase_client.fetch_product_config(strategy_id, product_slug=product_slug)
 
     def is_feed_connected(self):
         return self._community_feed is not None and self._community_feed.is_connected_to_remote_feed()
@@ -217,6 +220,11 @@ class CommunityAuthentication(authentication.Authenticator):
                 self._login_completed = asyncio.Event()
                 if should_set:
                     self._login_completed.set()
+            if self._fetched_private_data is not None:
+                should_set = self._fetched_private_data.is_set()
+                self._fetched_private_data = asyncio.Event()
+                if should_set:
+                    self._fetched_private_data.set()
             # changed event loop: restart client
             await self.supabase_client.close()
             self.user_account.flush()
@@ -230,6 +238,8 @@ class CommunityAuthentication(authentication.Authenticator):
         return self.initialized_event is not None and self.initialized_event.is_set()
 
     def init_account(self, fetch_private_data):
+        if fetch_private_data and self._fetched_private_data is None:
+            self._fetched_private_data = asyncio.Event()
         self._fetch_account_task = asyncio.create_task(self._initialize_account(fetch_private_data=fetch_private_data))
 
     async def async_init_account(self, fetch_private_data):
@@ -270,6 +280,12 @@ class CommunityAuthentication(authentication.Authenticator):
         if self._login_completed is not None and not self._login_completed.is_set():
             # ensure login details have been fetched
             await asyncio.wait_for(self._login_completed.wait(), self.LOGIN_TIMEOUT)
+
+    async def wait_for_private_data_fetch_if_processing(self):
+        await self.wait_for_login_if_processing()
+        if self.is_logged_in() and self._fetched_private_data is not None and not self._fetched_private_data.is_set():
+            # ensure login details have been fetched
+            await asyncio.wait_for(self._fetched_private_data.wait(), constants.COMMUNITY_FETCH_TIMEOUT)
 
     def can_authenticate(self):
         return bool(
@@ -381,6 +397,9 @@ class CommunityAuthentication(authentication.Authenticator):
     def get_owned_packages(self) -> list[str]:
         return self.user_account.owned_packages
 
+    def has_open_source_package(self) -> bool:
+        return bool(self.get_owned_packages())
+
     def has_owned_packages_to_install(self) -> bool:
         return self.user_account.has_pending_packages_to_install
 
@@ -490,7 +509,13 @@ class CommunityAuthentication(authentication.Authenticator):
 
     async def init_public_data(self, reset=False):
         if reset or not self.public_data.products.fetched:
-            self.public_data.set_products(await self.supabase_client.fetch_products())
+            await self._refresh_products()
+
+    async def _refresh_products(self):
+        category_types = ["profile"]
+        if self.has_open_source_package():
+            category_types.append("index")
+        self.public_data.set_products(await self.supabase_client.fetch_products(category_types))
 
     async def fetch_private_data(self, reset=False):
         try:
@@ -516,6 +541,11 @@ class CommunityAuthentication(authentication.Authenticator):
                     self.save_mqtt_device_uuid(fetched_mqtt_uuid)
         except Exception as err:
             self.logger.exception(err, True, f"Error when fetching package urls: {err}")
+        finally:
+            self._fetched_private_data.set()
+        if self.has_open_source_package():
+            # fetch indexes as well
+            await self._refresh_products()
 
     async def _fetch_package_urls(self, mqtt_uuid: typing.Optional[str]) -> (list[str], str):
         resp = await self.supabase_client.http_get(
