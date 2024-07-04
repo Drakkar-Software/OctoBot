@@ -45,7 +45,6 @@ class Updater:
         raise NotImplementedError("update_impl is not implemented")
 
     async def update_tentacles(self):
-        # todo test
         authenticator = authentication.Authenticator.instance()
         additional_tentacles_package_urls = authenticator.get_saved_package_urls()
         await commands.install_all_tentacles(

@@ -50,7 +50,34 @@ _INTERNAL_LOGGERS = [
 ]
 # disable httpx info logs as it logs every request
 commons_logging.set_logging_level(_INTERNAL_LOGGERS, logging.WARNING)
+HTTP_RETRY_COUNT = 5
 
+
+def _httpx_retrier(f):
+    async def httpx_retrier_wrapper(*args, **kwargs):
+        resp = None
+        for i in range(0, HTTP_RETRY_COUNT):
+            error = None
+            try:
+                resp: httpx.Response = await f(*args, **kwargs)
+                if resp.status_code == 502:
+                    # waking up, retry
+                    error = "bad gateway"
+                else:
+                    return resp
+            except httpx.ReadTimeout as err:
+                error = err
+            # retry
+            commons_logging.get_logger(__name__).debug(
+                f"Error on {f.__name__}(args={args[1:]}) "
+                f"request, retrying now. Attempt {i+1} / {HTTP_RETRY_COUNT} ({error})."
+            )
+        # no more attempts
+        if resp:
+            resp.raise_for_status()
+        else:
+            raise errors.RequestError(f"Failed to execute {f.__name__}(args={args[1:]} kwargs={kwargs})")
+    return httpx_retrier_wrapper
 
 class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
     """
@@ -649,6 +676,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
     def is_realtime_connected(self) -> bool:
         return self.realtime.socket and self.realtime.socket.connected and not self.realtime.socket.closed
 
+    @_httpx_retrier
     async def http_get(self, url: str, *args, params=None, headers=None, **kwargs) -> httpx.Response:
         """
         Perform http get using the current supabase auth token
@@ -657,6 +685,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         params["access_token"] = params.get("access_token", base64.b64encode(self._get_auth_key().encode()).decode())
         return await self.postgrest.session.get(url, *args, params=params, headers=headers, **kwargs)
 
+    @_httpx_retrier
     async def http_post(
         self, url: str, *args, json=None, params=None, headers=None, **kwargs
     ) -> httpx.Response:

@@ -536,11 +536,12 @@ class CommunityAuthentication(authentication.Authenticator):
                     )
                 if has_tentacles_to_install:
                     # tentacles are not installed, save the fact that some are pending
+                    self.logger.info(f"New tentacles are available for installation")
                     self.user_account.has_pending_packages_to_install = True
                 if fetched_mqtt_uuid and fetched_mqtt_uuid != mqtt_uuid:
                     self.save_mqtt_device_uuid(fetched_mqtt_uuid)
         except Exception as err:
-            self.logger.exception(err, True, f"Error when fetching package urls: {err}")
+            self.logger.exception(err, True, f"Unexpected error when fetching package urls: {err}")
         finally:
             self._fetched_private_data.set()
         if self.has_open_source_package():
