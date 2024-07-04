@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import octobot.constants as constants
+import octobot_commons.logging as logging
 import octobot_tentacles_manager.api as tentacles_manager_api
 
 
@@ -25,6 +26,10 @@ async def has_tentacles_to_install_and_uninstall_tentacles_if_necessary(communit
         community_auth, tentacles_setup_config
     )
     if to_remove_tentacles:
+        logging.get_logger(__name__).debug(
+            f"Uninstalling {len(to_remove_tentacles)} tentacles: those are not available to the current OctoBot. "
+            f"Tentacles: {to_remove_tentacles}"
+        )
         await uninstall_tentacles(to_remove_tentacles)
     return bool(to_install)
 
