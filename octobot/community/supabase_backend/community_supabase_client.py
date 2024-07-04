@@ -75,6 +75,7 @@ def _httpx_retrier(f):
         # no more attempts
         if resp:
             resp.raise_for_status()
+            return resp
         else:
             raise errors.RequestError(f"Failed to execute {f.__name__}(args={args[1:]} kwargs={kwargs})")
     return httpx_retrier_wrapper
