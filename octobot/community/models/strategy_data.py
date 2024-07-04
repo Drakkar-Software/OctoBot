@@ -100,11 +100,12 @@ class StrategyData(commons_dataclasses.FlexibleDataclass):
         return self.content["name_translations"].get(locale, default_locale)
 
     def get_url(self) -> str:
-        path = FORCED_URL_PATH_BY_SLUG.get(self.category.slug, f"strategies/{self.slug}")
-        return f"{identifiers_provider.IdentifiersProvider.COMMUNITY_LANDING_URL}/{path}"
+        if path := FORCED_URL_PATH_BY_SLUG.get(self.category.slug):
+            return f"{identifiers_provider.IdentifiersProvider.COMMUNITY_LANDING_URL}/{path}"
+        return f"{identifiers_provider.IdentifiersProvider.COMMUNITY_URL}/strategies/{self.slug}"
 
     def get_product_url(self) -> str:
-        return f"{identifiers_provider.IdentifiersProvider.COMMUNITY_LANDING_URL}/strategies/{self.slug}"
+        return f"{identifiers_provider.IdentifiersProvider.COMMUNITY_URL}/strategies/{self.slug}"
 
     def get_risk(self) -> commons_enums.ProfileRisk:
         risk = self.attributes['risk'].upper()
