@@ -22,7 +22,7 @@ async def has_tentacles_to_install_and_uninstall_tentacles_if_necessary(communit
     tentacles_setup_config = tentacles_manager_api.get_tentacles_setup_config(
         community_auth.config.get_tentacles_config_path()
     )
-    to_install, to_remove_tentacles = get_to_install_and_remove_tentacles(
+    to_install, to_remove_tentacles, force_refresh_tentacles_setup_config = get_to_install_and_remove_tentacles(
         community_auth, tentacles_setup_config
     )
     if to_remove_tentacles:
@@ -31,6 +31,8 @@ async def has_tentacles_to_install_and_uninstall_tentacles_if_necessary(communit
             f"Tentacles: {to_remove_tentacles}"
         )
         await uninstall_tentacles(to_remove_tentacles)
+    elif force_refresh_tentacles_setup_config:
+        refresh_tentacles_setup_config()
     return bool(to_install)
 
 
@@ -82,6 +84,10 @@ def get_to_install_and_remove_tentacles(
         )
         for installed_package in installed_packages:
             to_remove_tentacles += tentacles_manager_api.get_tentacles_from_package_name(installed_package)
+    force_refresh_tentacles_setup_config = False
+    if to_remove_urls and not to_remove_tentacles:
+        # True when no tentacle to uninstall but still registered tentacles should be refreshed
+        force_refresh_tentacles_setup_config = True
 
     # install missing
     to_install_urls = [
@@ -89,11 +95,15 @@ def get_to_install_and_remove_tentacles(
         for package_url in additional_tentacles_package_urls
         if package_url not in installed_community_package_urls
     ]
-    return list(set(to_install_urls)), list(set(to_remove_tentacles))
+    return list(set(to_install_urls)), list(set(to_remove_tentacles)), force_refresh_tentacles_setup_config
 
 
 def is_community_tentacle_url(url: str) -> bool:
     return constants.COMMUNITY_EXTENSIONS_PACKAGES_IDENTIFIER in url
+
+
+def refresh_tentacles_setup_config():
+    tentacles_manager_api.refresh_all_tentacles_setup_configs()
 
 
 async def uninstall_tentacles(tentacles: list[str]):

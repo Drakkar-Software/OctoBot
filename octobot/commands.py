@@ -125,11 +125,14 @@ async def update_or_repair_tentacles_if_necessary(community_auth, selected_profi
             # only update tentacles based on local (non imported) profiles tentacles installation version
             local_profile_tentacles_setup_config = _get_first_non_imported_profile_tentacles_setup_config(config)
 
-    to_install_urls, to_remove_tentacles = community_tentacles_packages.get_to_install_and_remove_tentacles(
-        community_auth, selected_profile_tentacles_setup_config
-    )
+    to_install_urls, to_remove_tentacles, force_refresh_tentacles_setup_config = \
+        community_tentacles_packages.get_to_install_and_remove_tentacles(
+            community_auth, selected_profile_tentacles_setup_config
+        )
     if to_remove_tentacles:
         await community_tentacles_packages.uninstall_tentacles(to_remove_tentacles)
+    elif force_refresh_tentacles_setup_config:
+        community_tentacles_packages.refresh_tentacles_setup_config()
 
     # await install_or_update_tentacles(config, additional_tentacles_package_urls)    #TMPPP
     if local_profile_tentacles_setup_config is None or \

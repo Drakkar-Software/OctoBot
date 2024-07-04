@@ -558,7 +558,6 @@ class CommunityAuthentication(authentication.Authenticator):
             params={"mqtt_id": mqtt_uuid} if mqtt_uuid else {},
             timeout=constants.COMMUNITY_FETCH_TIMEOUT
         )
-        # status 502 = waking up
         resp.raise_for_status()
         json_resp = json.loads(resp.json().get("message", {}))
         if not json_resp:
