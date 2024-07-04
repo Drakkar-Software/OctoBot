@@ -2,7 +2,7 @@
 OctoBot-Commons==1.9.49
 OctoBot-Trading==2.4.89
 OctoBot-Evaluators==1.9.5
-OctoBot-Tentacles-Manager==2.9.14
+OctoBot-Tentacles-Manager==2.9.15
 OctoBot-Services==1.6.15
 OctoBot-Backtesting==1.9.7
 Async-Channel==2.2.1
