@@ -398,7 +398,10 @@ class CommunityAuthentication(authentication.Authenticator):
         return self.user_account.owned_packages
 
     def has_open_source_package(self) -> bool:
-        return bool(self.get_owned_packages())
+        return (
+            bool(self.get_owned_packages())
+            or (not self.is_logged_in() and self.was_connected_with_remote_packages())
+        )
 
     def has_owned_packages_to_install(self) -> bool:
         return self.user_account.has_pending_packages_to_install
