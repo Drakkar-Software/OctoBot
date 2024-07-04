@@ -66,7 +66,7 @@ def _httpx_retrier(f):
                 else:
                     return resp
             except httpx.ReadTimeout as err:
-                error = err
+                error = f"{err} ({err.__class__.__name__})"
             # retry
             commons_logging.get_logger(__name__).debug(
                 f"Error on {f.__name__}(args={args[1:]}) "
