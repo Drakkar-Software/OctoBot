@@ -114,7 +114,7 @@ class CommunityAuthentication(authentication.Authenticator):
 
     async def get_strategies(self, reload=False) -> list[strategy_data.StrategyData]:
         await self.init_public_data(reset=reload)
-        return self.public_data.get_strategies()
+        return self.public_data.get_strategies(self._get_compatible_strategy_categories())
 
     async def get_strategy(self, strategy_id, reload=False) -> strategy_data.StrategyData:
         await self.init_public_data(reset=reload)
@@ -515,10 +515,15 @@ class CommunityAuthentication(authentication.Authenticator):
             await self._refresh_products()
 
     async def _refresh_products(self):
+        self.public_data.set_products(
+            await self.supabase_client.fetch_products(self._get_compatible_strategy_categories())
+        )
+
+    def _get_compatible_strategy_categories(self) -> list[str]:
         category_types = ["profile"]
         if self.has_open_source_package():
             category_types.append("index")
-        self.public_data.set_products(await self.supabase_client.fetch_products(category_types))
+        return category_types
 
     async def fetch_private_data(self, reset=False):
         try:
