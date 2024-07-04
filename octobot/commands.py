@@ -182,10 +182,14 @@ async def install_all_tentacles(
         for url in (base_urls if not only_additional else []) + (additional_tentacles_package_urls or []):
             if url is None:
                 continue
+            hide_url = url in additional_tentacles_package_urls
             url = community_tentacles_packages.adapt_url_to_bot_version(url)
-            await tentacles_manager_api.install_all_tentacles(url,
-                                                              aiohttp_session=aiohttp_session,
-                                                              bot_install_dir=os.getcwd())
+            await tentacles_manager_api.install_all_tentacles(
+                url,
+                aiohttp_session=aiohttp_session,
+                bot_install_dir=os.getcwd(),
+                hide_url=hide_url,
+            )
 
 
 def ensure_profile(config):
