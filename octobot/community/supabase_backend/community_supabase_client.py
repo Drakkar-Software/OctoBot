@@ -64,6 +64,10 @@ def _httpx_retrier(f):
                     # waking up, retry
                     error = "bad gateway"
                 else:
+                    if i > 0:
+                        commons_logging.get_logger(__name__).debug(
+                            f"{f.__name__}(args={args[1:]}) succeeded after {i+1} attempts"
+                        )
                     return resp
             except httpx.ReadTimeout as err:
                 error = f"{err} ({err.__class__.__name__})"
