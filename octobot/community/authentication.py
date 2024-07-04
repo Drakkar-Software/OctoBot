@@ -285,7 +285,10 @@ class CommunityAuthentication(authentication.Authenticator):
         await self.wait_for_login_if_processing()
         if self.is_logged_in() and self._fetched_private_data is not None and not self._fetched_private_data.is_set():
             # ensure login details have been fetched
-            await asyncio.wait_for(self._fetched_private_data.wait(), constants.COMMUNITY_FETCH_TIMEOUT)
+            await asyncio.wait_for(
+                self._fetched_private_data.wait(),
+                supabase_backend.HTTP_RETRY_COUNT * constants.COMMUNITY_FETCH_TIMEOUT
+            )
 
     def can_authenticate(self):
         return bool(
