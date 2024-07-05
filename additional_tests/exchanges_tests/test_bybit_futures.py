@@ -36,6 +36,7 @@ class TestBybitFuturesAuthenticatedExchange(
     EDIT_TIMEOUT = 25    # larger for bybit testnet
     OPEN_ORDERS_IN_CLOSED_ORDERS = True
     SUPPORTS_GET_LEVERAGE = False
+    EXPECT_FETCH_ORDER_TO_BE_AVAILABLE = False
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()

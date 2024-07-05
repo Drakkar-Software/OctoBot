@@ -92,7 +92,7 @@ class AbstractAuthenticatedFutureExchangeTester(
             if origin_margin_type is trading_enums.MarginType.ISOLATED else trading_enums.MarginType.ISOLATED
         if not self.exchange_manager.exchange.SUPPORTS_SET_MARGIN_TYPE:
             assert origin_margin_type in (trading_enums.MarginType.ISOLATED, trading_enums.MarginType.CROSS)
-            with pytest.raises(ccxt.NotSupported):
+            with pytest.raises(trading_errors.NotSupported):
                 await self.exchange_manager.exchange.connector.set_symbol_margin_type(symbol, True)
             with pytest.raises(trading_errors.NotSupported):
                 await self.set_margin_type(new_margin_type, symbol=symbol)

@@ -27,8 +27,8 @@ class TestMEXCAuthenticatedExchange(
     # enter exchange name as a class variable here
     EXCHANGE_NAME = "mexc"
     EXCHANGE_TENTACLE_NAME = "MEXC"
-    ORDER_CURRENCY = "MX"  # {"code":10007,"msg":"symbol not support api"} when trading BTC/USDT or ETH/USDT
-    SETTLEMENT_CURRENCY = "USDT"
+    ORDER_CURRENCY = "BTC"
+    SETTLEMENT_CURRENCY = "USDC"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
     ORDER_SIZE = 30  # % of portfolio to include in test orders
     CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES = True
