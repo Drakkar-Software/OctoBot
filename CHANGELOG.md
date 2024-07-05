@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [2.0.0] - 2024-07-05
+### Added
+- [Extension]: New OctoBot extension to profit from the Strategy designer, secure TradingView webhooks and automatically updated crypto baskets
+- [WebInterface] Light & dark mode
+- [Webhook] Support OctoBot cloud powered webhooks as ngrok alternative
+### Updated
+- [WebInterface] Complete refresh of the UI
+- [CCXT] update to ccxt 4.3.56
+### Fixed
+- [Coinbase] rate limit issue
+- [Exchanges] permissions check issues
+- [Orders] fix requests retry issues
+
 ## [1.0.10] - 2024-04-19
 ### Fixed
 - [Tentacles download] Fix a rare issue related to SSL certificates when downloading tentacles

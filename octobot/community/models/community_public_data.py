@@ -18,9 +18,6 @@ import octobot.community.supabase_backend.enums as enums
 import octobot.community.models.strategy_data as strategy_data
 
 
-STRATEGY_CATEGORY_TYPE = "profile"
-
-
 class CommunityPublicData:
     def __init__(self):
         self.products = _DataElement({}, False)
@@ -32,11 +29,11 @@ class CommunityPublicData:
     def get_product_slug(self, product_id):
         return self.products.value[product_id][enums.ProductKeys.SLUG.value]
 
-    def get_strategies(self) -> list[strategy_data.StrategyData]:
+    def get_strategies(self, strategy_categories) -> list[strategy_data.StrategyData]:
         return [
             strategy_data.StrategyData.from_dict(strategy_dict)
             for strategy_dict in self.products.value.values()
-            if self._get_category_type(strategy_dict) == STRATEGY_CATEGORY_TYPE
+            if self._get_category_type(strategy_dict) in strategy_categories
         ]
 
     def _get_category_type(self, product: dict):

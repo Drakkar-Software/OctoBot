@@ -32,6 +32,9 @@ class CommunityUserAccount:
     def __init__(self):
         self.bot_id = None
         self.supports = community_supports.CommunitySupports()
+        self.community_package_urls: list[str] = []
+        self.owned_packages: list[str] = []
+        self.has_pending_packages_to_install = False
 
         self._profile_raw_data = None
         self._selected_bot_raw_data = None

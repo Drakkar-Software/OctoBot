@@ -15,7 +15,8 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
 import os
-import aiohttp
+import typing
+
 import sys
 import asyncio
 import signal
@@ -34,6 +35,7 @@ import octobot_tentacles_manager.cli as tentacles_manager_cli
 import octobot.api.strategy_optimizer as strategy_optimizer_api
 import octobot.logger as octobot_logger
 import octobot.constants as constants
+import octobot.community.tentacles_packages as community_tentacles_packages
 import octobot.configuration_manager as configuration_manager
 
 COMMANDS_LOGGER_NAME = "Commands"
@@ -77,13 +79,18 @@ def start_strategy_optimizer(config, commands):
         strategy_optimizer_api.print_optimizer_report(optimizer)
 
 
-def run_tentacles_install_or_update(config):
+def run_tentacles_install_or_update(community_auth, config):
     _check_tentacles_install_exit()
-    asyncio.run(install_or_update_tentacles(config))
+    asyncio.run(_install_or_update_tentacles(community_auth, config))
 
 
-def run_update_or_repair_tentacles_if_necessary(config, tentacles_setup_config):
-    asyncio.run(update_or_repair_tentacles_if_necessary(tentacles_setup_config, config))
+async def _install_or_update_tentacles(community_auth, config):
+    additional_tentacles_package_urls = community_auth.get_saved_package_urls()
+    await install_or_update_tentacles(config, additional_tentacles_package_urls, False)
+
+
+def run_update_or_repair_tentacles_if_necessary(community_auth, config, tentacles_setup_config):
+    asyncio.run(update_or_repair_tentacles_if_necessary(community_auth, tentacles_setup_config, config))
 
 
 def _check_tentacles_install_exit():
@@ -102,7 +109,7 @@ def _get_first_non_imported_profile_tentacles_setup_config(config):
         return None
 
 
-async def update_or_repair_tentacles_if_necessary(selected_profile_tentacles_setup_config, config):
+async def update_or_repair_tentacles_if_necessary(community_auth, selected_profile_tentacles_setup_config, config):
     local_profile_tentacles_setup_config = selected_profile_tentacles_setup_config
     logger = logging.get_logger(COMMANDS_LOGGER_NAME)
     if config.profile.imported:
@@ -117,45 +124,72 @@ async def update_or_repair_tentacles_if_necessary(selected_profile_tentacles_set
                         f"Please make sure that this profile works on your OctoBot.")
             # only update tentacles based on local (non imported) profiles tentacles installation version
             local_profile_tentacles_setup_config = _get_first_non_imported_profile_tentacles_setup_config(config)
+
+    to_install_urls, to_remove_tentacles, force_refresh_tentacles_setup_config = \
+        community_tentacles_packages.get_to_install_and_remove_tentacles(
+            community_auth, selected_profile_tentacles_setup_config
+        )
+    if to_remove_tentacles:
+        await community_tentacles_packages.uninstall_tentacles(to_remove_tentacles)
+    elif force_refresh_tentacles_setup_config:
+        community_tentacles_packages.refresh_tentacles_setup_config()
+
+    # await install_or_update_tentacles(config, additional_tentacles_package_urls)    #TMPPP
     if local_profile_tentacles_setup_config is None or \
             not tentacles_manager_api.are_tentacles_up_to_date(local_profile_tentacles_setup_config, constants.VERSION):
         logger.info("OctoBot tentacles are not up to date. Updating tentacles...")
         _check_tentacles_install_exit()
-        if await install_or_update_tentacles(config):
+        if await install_or_update_tentacles(config, to_install_urls, False):
             logger.info("OctoBot tentacles are now up to date.")
-    elif tentacles_manager_api.load_tentacles(verbose=True):
-        logger.debug("OctoBot tentacles are up to date.")
     else:
-        logger.info("OctoBot tentacles are damaged. Installing default tentacles ...")
-        _check_tentacles_install_exit()
-        await install_or_update_tentacles(config)
+        if to_install_urls:
+            logger.debug("Installing new tentacles.")
+            # install additional tentacles only when tentacles arch is valid. Install all tentacles otherwise
+            only_additional = tentacles_manager_api.is_tentacles_architecture_valid()
+            await install_or_update_tentacles(config, to_install_urls, only_additional)
+        if tentacles_manager_api.load_tentacles(verbose=True):
+            logger.debug("OctoBot tentacles are up to date.")
+        else:
+            logger.info("OctoBot tentacles are damaged. Installing default tentacles only ...")
+            _check_tentacles_install_exit()
+            await install_or_update_tentacles(config, [], False)
 
 
-async def install_or_update_tentacles(config):
-    await install_all_tentacles()
+async def install_or_update_tentacles(
+    config, additional_tentacles_package_urls: typing.Optional[list], only_additional: bool
+):
+    await install_all_tentacles(
+        additional_tentacles_package_urls=additional_tentacles_package_urls, only_additional=only_additional
+    )
     # reload profiles
     config.load_profiles()
     # reload tentacles
     return tentacles_manager_api.load_tentacles(verbose=True)
 
 
-async def install_all_tentacles(tentacles_url=None):
+async def install_all_tentacles(
+    tentacles_url=None, additional_tentacles_package_urls: typing.Optional[list] = None, only_additional: bool = False
+):
     if tentacles_url is None:
         tentacles_url = configuration_manager.get_default_tentacles_url()
     async with aiohttp_util.ssl_fallback_aiohttp_client_session(
         commons_constants.KNOWN_POTENTIALLY_SSL_FAILED_REQUIRED_URL
     ) as aiohttp_session:
-        for url in [tentacles_url] + (
-                constants.ADDITIONAL_TENTACLES_PACKAGE_URL.split(constants.URL_SEPARATOR)
-                if constants.ADDITIONAL_TENTACLES_PACKAGE_URL else []
-        ):
+        base_urls = [tentacles_url] + (
+            constants.ADDITIONAL_TENTACLES_PACKAGE_URL.split(constants.URL_SEPARATOR)
+            if constants.ADDITIONAL_TENTACLES_PACKAGE_URL else []
+        )
+        for url in (base_urls if not only_additional else []) + (additional_tentacles_package_urls or []):
             if url is None:
                 continue
-            if constants.VERSION_PLACEHOLDER in url:
-                url = url.replace(constants.VERSION_PLACEHOLDER, constants.LONG_VERSION)
-            await tentacles_manager_api.install_all_tentacles(url,
-                                                              aiohttp_session=aiohttp_session,
-                                                              bot_install_dir=os.getcwd())
+            hide_url = url in additional_tentacles_package_urls
+            url = community_tentacles_packages.adapt_url_to_bot_version(url)
+            await tentacles_manager_api.install_all_tentacles(
+                url,
+                aiohttp_session=aiohttp_session,
+                bot_install_dir=os.getcwd(),
+                hide_url=hide_url,
+            )
 
 
 def ensure_profile(config):

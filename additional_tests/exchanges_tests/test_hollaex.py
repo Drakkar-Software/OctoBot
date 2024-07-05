@@ -27,7 +27,7 @@ class TestHollaexAuthenticatedExchange(
     # enter exchange name as a class variable here
     EXCHANGE_NAME = "hollaex"
     EXCHANGE_TENTACLE_NAME = "hollaex"  # specify EXCHANGE_TENTACLE_NAME as the tentacle class has no capital H
-    ORDER_CURRENCY = "XHT"
+    ORDER_CURRENCY = "ETH"
     SETTLEMENT_CURRENCY = "USDT"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
     ORDER_SIZE = 50  # % of portfolio to include in test orders

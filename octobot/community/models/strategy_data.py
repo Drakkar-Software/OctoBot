@@ -20,6 +20,20 @@ import octobot_commons.dataclasses as commons_dataclasses
 import octobot_commons.enums as commons_enums
 
 
+CATEGORY_NAME_TRANSLATIONS_BY_SLUG = {
+    "coingecko-index": {"en": "Crypto Basket"}
+}
+FORCED_URL_PATH_BY_SLUG = {
+    "coingecko-index": "features/crypto-basket",
+}
+DEFAULT_LOGO_NAME_BY_SLUG = {
+    "coingecko-index": "crypto-basket.png",
+}
+AUTO_UPDATED_CATEGORIES = ["coingecko-index"]
+DEFAULT_LOGO_NAME = "default_strategy.png"
+EXTENSION_CATEGORIES = ["coingecko-index"]
+
+
 @dataclasses.dataclass
 class CategoryData(commons_dataclasses.FlexibleDataclass):
     slug: str = ""
@@ -33,8 +47,18 @@ class CategoryData(commons_dataclasses.FlexibleDataclass):
             if external_links:
                 if blog_slug := external_links.get("blog"):
                     return f"{identifiers_provider.IdentifiersProvider.COMMUNITY_LANDING_URL}/en/blog/{blog_slug}"
+                if features_slug := external_links.get("features"):
+                    return f"{identifiers_provider.IdentifiersProvider.COMMUNITY_LANDING_URL}/features/{features_slug}"
         return ""
 
+    def get_default_logo_url(self) -> str:
+        return DEFAULT_LOGO_NAME_BY_SLUG.get(self.slug, DEFAULT_LOGO_NAME)
+
+    def get_name(self, locale, default_locale=constants.DEFAULT_LOCALE):
+        return CATEGORY_NAME_TRANSLATIONS_BY_SLUG.get(self.slug, self.name_translations).get(locale, default_locale)
+
+    def is_auto_updated(self) -> bool:
+        return self.slug in AUTO_UPDATED_CATEGORIES
 
 @dataclasses.dataclass
 class ResultsData(commons_dataclasses.FlexibleDataclass):
@@ -76,6 +100,11 @@ class StrategyData(commons_dataclasses.FlexibleDataclass):
         return self.content["name_translations"].get(locale, default_locale)
 
     def get_url(self) -> str:
+        if path := FORCED_URL_PATH_BY_SLUG.get(self.category.slug):
+            return f"{identifiers_provider.IdentifiersProvider.COMMUNITY_LANDING_URL}/{path}"
+        return f"{identifiers_provider.IdentifiersProvider.COMMUNITY_URL}/strategies/{self.slug}"
+
+    def get_product_url(self) -> str:
         return f"{identifiers_provider.IdentifiersProvider.COMMUNITY_URL}/strategies/{self.slug}"
 
     def get_risk(self) -> commons_enums.ProfileRisk:
@@ -86,3 +115,14 @@ class StrategyData(commons_dataclasses.FlexibleDataclass):
             return commons_enums.ProfileRisk[risk]
         except KeyError:
             return commons_enums.ProfileRisk.MODERATE
+
+    def get_logo_url(self, prefix: str) -> str:
+        if self.logo_url:
+            return self.logo_url
+        return f"{prefix}{self.category.get_default_logo_url()}"
+
+    def is_auto_updated(self) -> bool:
+        return self.category.is_auto_updated()
+
+    def is_extension_only(self) -> bool:
+        return self.category.slug in EXTENSION_CATEGORIES

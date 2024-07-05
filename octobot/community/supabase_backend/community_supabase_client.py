@@ -14,11 +14,13 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import asyncio
+import base64
 import datetime
 import json
 import time
 import typing
 import logging
+import httpx
 
 import aiohttp
 import gotrue.errors
@@ -48,7 +50,39 @@ _INTERNAL_LOGGERS = [
 ]
 # disable httpx info logs as it logs every request
 commons_logging.set_logging_level(_INTERNAL_LOGGERS, logging.WARNING)
+HTTP_RETRY_COUNT = 5
 
+
+def _httpx_retrier(f):
+    async def httpx_retrier_wrapper(*args, **kwargs):
+        resp = None
+        for i in range(0, HTTP_RETRY_COUNT):
+            error = None
+            try:
+                resp: httpx.Response = await f(*args, **kwargs)
+                if resp.status_code == 502:
+                    # waking up, retry
+                    error = "bad gateway"
+                else:
+                    if i > 0:
+                        commons_logging.get_logger(__name__).debug(
+                            f"{f.__name__}(args={args[1:]}) succeeded after {i+1} attempts"
+                        )
+                    return resp
+            except httpx.ReadTimeout as err:
+                error = f"{err} ({err.__class__.__name__})"
+            # retry
+            commons_logging.get_logger(__name__).debug(
+                f"Error on {f.__name__}(args={args[1:]}) "
+                f"request, retrying now. Attempt {i+1} / {HTTP_RETRY_COUNT} ({error})."
+            )
+        # no more attempts
+        if resp:
+            resp.raise_for_status()
+            return resp
+        else:
+            raise errors.RequestError(f"Failed to execute {f.__name__}(args={args[1:]} kwargs={kwargs})")
+    return httpx_retrier_wrapper
 
 class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
     """
@@ -232,7 +266,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             (await self.postgres_functions().invoke("get_startup_info", {"body": {"bot_id": bot_id}}))["data"]
         )[0]
 
-    async def fetch_products(self) -> list:
+    async def fetch_products(self, category_types: list[str]) -> list:
         return (
             await self.table("products").select(
                 "*,"
@@ -241,10 +275,9 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
                 "  profitability,"
                 "  reference_market_profitability"
                 ")"
-            ).match({
-                enums.ProductKeys.VISIBILITY.value: "public",
-                "category.type": "profile",
-            })
+            ).eq(
+                enums.ProductKeys.VISIBILITY.value, "public"
+            ).in_("category.type", category_types)
             .execute()
         ).data
 
@@ -363,14 +396,17 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             f"{enums.ExchangeKeys.INTERNAL_NAME.value}"
         ).in_(enums.ExchangeKeys.ID.value, exchange_ids).execute()).data
 
-    async def fetch_product_config(self, product_id: str) -> commons_profiles.ProfileData:
-        if not product_id:
+    async def fetch_product_config(self, product_id: str, product_slug: str = None) -> commons_profiles.ProfileData:
+        if not product_id and not product_slug:
             raise errors.MissingProductConfigError(f"product_id is '{product_id}'")
         try:
-            product = (await self.table("products").select(
+            query = self.table("products").select(
                 "slug, "
                 "product_config:product_configs!current_config_id(config, version)"
-            ).eq(enums.ProductKeys.ID.value, product_id).execute()).data[0]
+            )
+            query = query.eq(enums.ProductKeys.SLUG.value, product_slug) if product_slug \
+                else query.eq(enums.ProductKeys.ID.value, product_id)
+            product = (await query.execute()).data[0]
         except IndexError:
             raise errors.MissingProductConfigError(f"Missing product with id '{product_id}'")
         profile_data = commons_profiles.ProfileData.from_dict(
@@ -644,6 +680,28 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
 
     def is_realtime_connected(self) -> bool:
         return self.realtime.socket and self.realtime.socket.connected and not self.realtime.socket.closed
+
+    @_httpx_retrier
+    async def http_get(self, url: str, *args, params=None, headers=None, **kwargs) -> httpx.Response:
+        """
+        Perform http get using the current supabase auth token
+        """
+        params = params or {}
+        params["access_token"] = params.get("access_token", base64.b64encode(self._get_auth_key().encode()).decode())
+        return await self.postgrest.session.get(url, *args, params=params, headers=headers, **kwargs)
+
+    @_httpx_retrier
+    async def http_post(
+        self, url: str, *args, json=None, params=None, headers=None, **kwargs
+    ) -> httpx.Response:
+        """
+        Perform http get using the current supabase auth token
+        """
+        json_body = json or {}
+        json_body["access_token"] = json_body.get("access_token", self._get_auth_key())
+        return await self.postgrest.session.post(
+            url, *args, json=json_body, params=params, headers=headers, **kwargs
+        )
 
     @staticmethod
     def get_formatted_time(timestamp: float) -> str:

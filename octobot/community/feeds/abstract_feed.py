@@ -32,6 +32,9 @@ class AbstractFeed:
         self.is_signal_receiver = False
         self.is_signal_emitter = False
 
+    def has_registered_feed(self) -> bool:
+        return bool(self.feed_callbacks)
+
     async def start(self):
         raise NotImplementedError("start is not implemented")
 

@@ -27,6 +27,7 @@ import octobot_commons.tree as commons_tree
 import octobot_commons.os_clock_sync as os_clock_sync
 import octobot_commons.system_resources_watcher as system_resources_watcher
 import octobot_commons.aiohttp_util as aiohttp_util
+import octobot_commons.profiles as profiles
 
 import octobot_services.api as service_api
 import octobot_trading.api as trading_api
@@ -115,7 +116,7 @@ class OctoBot:
         self.stopped = asyncio.Event()
         await self._ensure_clock()
         if not (self.community_auth.is_initialized() and self.community_auth.is_using_the_current_loop()):
-            self.community_auth.init_account()
+            self.community_auth.init_account(True)
         self._log_config()
         await self.initializer.create(True)
         await self._start_tools_tasks()
@@ -157,6 +158,7 @@ class OctoBot:
 
         self.automation = automation.Automation(self.bot_id, self.tentacles_setup_config)
         self._init_metadata_run_task = asyncio.create_task(self._store_run_metadata_when_available())
+        await self._init_profile_synchronizer()
 
     async def _wait_for_run_data_init(self, exchange_managers, timeout):
         for exchange_manager in exchange_managers:
@@ -209,6 +211,7 @@ class OctoBot:
             await self.exchange_producer.stop()
             await self.community_auth.stop()
             await self.service_feed_producer.stop()
+            await profiles.stop_profile_synchronizer()
             await os_clock_sync.stop_clock_synchronizer()
             await system_resources_watcher.stop_system_resources_watcher()
             await service_api.stop_services()
@@ -232,6 +235,28 @@ class OctoBot:
     async def _ensure_clock(self):
         if trading_api.is_trader_enabled_in_config(self.config) and constants.ENABLE_CLOCK_SYNCH:
             await os_clock_sync.start_clock_synchronizer()
+
+    async def _init_profile_synchronizer(self):
+        await profiles.start_profile_synchronizer(
+            self.get_edited_config(constants.CONFIG_KEY, dict_only=False),
+            self._on_profile_update
+        )
+
+    async def delayed_restart(self, delay):
+        await asyncio.sleep(delay)
+        self.octobot_api.restart_bot()
+
+    async def _on_profile_update(self, profile_name: str):
+        await service_api.send_notification(
+            service_api.create_notification(
+                f"{constants.PROJECT_NAME} will restart in {constants.PROFILE_UPDATE_RESTART_MIN} minutes "
+                f"to apply the {profile_name} profile update.",
+                markdown_format=commons_enums.MarkdownFormat.ITALIC
+            )
+        )
+        asyncio.create_task(self.delayed_restart(
+            constants.PROFILE_UPDATE_RESTART_MIN * commons_constants.MINUTE_TO_SECONDS
+        ))
 
     async def _ensure_watchers(self):
         if constants.ENABLE_SYSTEM_WATCHER:
