@@ -56,6 +56,12 @@ def get_to_install_and_remove_tentacles(
         adapt_url_to_bot_version(package_url)
         for package_url in community_auth.get_saved_package_urls()
     ] if community_auth.is_logged_in() else []
+    to_keep_tentacles = set(
+        additional_tentacles_package_urls + [
+            adapt_url_to_bot_version(package_url)
+            for package_url in get_env_variable_tentacles_urls()
+        ] + get_env_variable_tentacles_urls()
+    )
     was_connected_with_remote_packages = community_auth.was_connected_with_remote_packages()
 
     # do not remove tentacles:
@@ -72,7 +78,7 @@ def get_to_install_and_remove_tentacles(
     to_remove_urls = [
         package_url
         for package_url in installed_community_package_urls
-        if package_url not in additional_tentacles_package_urls
+        if package_url not in to_keep_tentacles
     ] if can_remove_tentacles else []
     if to_remove_urls:
         tentacles_manager_api.reload_tentacle_info()
@@ -96,6 +102,11 @@ def get_to_install_and_remove_tentacles(
         if package_url not in installed_community_package_urls
     ]
     return list(set(to_install_urls)), list(set(to_remove_tentacles)), force_refresh_tentacles_setup_config
+
+
+def get_env_variable_tentacles_urls() -> list[str]:
+    return constants.ADDITIONAL_TENTACLES_PACKAGE_URL.split(constants.URL_SEPARATOR) \
+        if constants.ADDITIONAL_TENTACLES_PACKAGE_URL else []
 
 
 def is_community_tentacle_url(url: str) -> bool:

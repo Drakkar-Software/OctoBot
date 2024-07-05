@@ -134,7 +134,6 @@ async def update_or_repair_tentacles_if_necessary(community_auth, selected_profi
     elif force_refresh_tentacles_setup_config:
         community_tentacles_packages.refresh_tentacles_setup_config()
 
-    # await install_or_update_tentacles(config, additional_tentacles_package_urls)    #TMPPP
     if local_profile_tentacles_setup_config is None or \
             not tentacles_manager_api.are_tentacles_up_to_date(local_profile_tentacles_setup_config, constants.VERSION):
         logger.info("OctoBot tentacles are not up to date. Updating tentacles...")
@@ -175,11 +174,14 @@ async def install_all_tentacles(
     async with aiohttp_util.ssl_fallback_aiohttp_client_session(
         commons_constants.KNOWN_POTENTIALLY_SSL_FAILED_REQUIRED_URL
     ) as aiohttp_session:
-        base_urls = [tentacles_url] + (
-            constants.ADDITIONAL_TENTACLES_PACKAGE_URL.split(constants.URL_SEPARATOR)
-            if constants.ADDITIONAL_TENTACLES_PACKAGE_URL else []
-        )
-        for url in (base_urls if not only_additional else []) + (additional_tentacles_package_urls or []):
+        base_urls = [tentacles_url] + community_tentacles_packages.get_env_variable_tentacles_urls()
+        # avoid duplicates
+        additional_urls = [
+            url
+            for url in (additional_tentacles_package_urls or [])
+            if url not in base_urls
+        ]
+        for url in (base_urls if not only_additional else []) + additional_urls:
             if url is None:
                 continue
             hide_url = url in additional_tentacles_package_urls
