@@ -59,6 +59,7 @@ class AbstractAuthenticatedExchangeTester:
     EXPECT_POSSIBLE_ORDER_NOT_FOUND_DURING_ORDER_CREATION = False
     OPEN_ORDERS_IN_CLOSED_ORDERS = False
     CANCELLED_ORDERS_IN_CLOSED_ORDERS = False
+    EXPECT_FETCH_ORDER_TO_BE_AVAILABLE = True
     RECENT_TRADES_UPDATE_TIMEOUT = 15
     MARKET_FILL_TIMEOUT = 15
     OPEN_TIMEOUT = 15
@@ -682,6 +683,8 @@ class AbstractAuthenticatedExchangeTester:
             self.exchange_manager = None
 
     async def get_order(self, exchange_order_id, symbol=None):
+        assert self.exchange_manager.exchange.connector.client.has["fetchOrder"] is \
+               self.EXPECT_FETCH_ORDER_TO_BE_AVAILABLE
         order = await self.exchange_manager.exchange.get_order(exchange_order_id, symbol or self.SYMBOL)
         self._check_fetched_order_dicts([order])
         return personal_data.create_order_instance_from_raw(self.exchange_manager.trader, order)

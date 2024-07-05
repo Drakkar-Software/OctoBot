@@ -35,6 +35,7 @@ class TestBybitAuthenticatedExchange(
     CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES = True
     EXPECT_MISSING_ORDER_FEES_DUE_TO_ORDERS_TOO_OLD_FOR_RECENT_TRADES = True   # when recent trades are limited and
     # closed orders fees are taken from recent trades
+    EXPECT_FETCH_ORDER_TO_BE_AVAILABLE = False
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
