@@ -506,8 +506,9 @@ class CommunityAuthentication(authentication.Authenticator):
             self.update_supports(),
             self.init_public_data(),
         ]
-        if fetch_private_data:
+        if constants.IS_CLOUD_ENV or fetch_private_data:
             coros.append(self.update_selected_bot())
+        if fetch_private_data:
             coros.append(self.fetch_private_data())
         if not self.user_account.is_hosting_enabled():
             coros.append(self.update_is_hosting_enabled(True))
