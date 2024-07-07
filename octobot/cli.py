@@ -171,8 +171,9 @@ async def _get_authenticated_community_if_possible(config, logger):
             if not community_auth.is_initialized():
                 # try with saved credentials if any
                 has_tentacles = tentacles_manager_api.is_tentacles_architecture_valid()
-                # When no tentacles, fetch private data. Otherwise fetch it later on in bot init
-                await community_auth.async_init_account(fetch_private_data=not has_tentacles)
+                # When no tentacles or in cloud, fetch private data. Otherwise fetch it later on in bot init
+                fetch_private_data = not has_tentacles or constants.IS_CLOUD_ENV
+                await community_auth.async_init_account(fetch_private_data=fetch_private_data)
     except authentication.FailedAuthentication as err:
         logger.error(f"Failed authentication when initializing community authenticator: {err}")
     except Exception as err:

@@ -555,12 +555,15 @@ class CommunityAuthentication(authentication.Authenticator):
         except Exception as err:
             self.logger.exception(err, True, f"Unexpected error when fetching package urls: {err}")
         finally:
+            if self._fetched_private_data is None:
+                self._fetched_private_data = asyncio.Event()
             self._fetched_private_data.set()
         if self.has_open_source_package():
             # fetch indexes as well
             await self._refresh_products()
 
     async def _fetch_package_urls(self, mqtt_uuid: typing.Optional[str]) -> (list[str], str):
+        self.logger.debug(f"Fetching package")
         resp = await self.supabase_client.http_get(
             constants.COMMUNITY_EXTENSIONS_CHECK_ENDPOINT,
             headers={
@@ -570,6 +573,7 @@ class CommunityAuthentication(authentication.Authenticator):
             params={"mqtt_id": mqtt_uuid} if mqtt_uuid else {},
             timeout=constants.COMMUNITY_FETCH_TIMEOUT
         )
+        self.logger.debug("Fetched package")
         resp.raise_for_status()
         json_resp = json.loads(resp.json().get("message", {}))
         if not json_resp:
