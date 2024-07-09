@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [2.0.1] - 2024-07-09
+### Updated
+- [WebInterface] Add contact on extension page
+- [WebInterface] improve display
+### Fixed
+- [WebInterface] display issues
+
 ## [2.0.0] - 2024-07-05
 ### Added
 - [Extension]: New OctoBot extension to profit from the Strategy designer, secure TradingView webhooks and automatically updated crypto baskets
