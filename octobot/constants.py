@@ -53,7 +53,7 @@ DEFAULT_LOCALE = "en"
 
 OCTOBOT_DONATION_URL = "https://forms.gle/Bagagc7dyjJGDT1t9"
 OCTOBOT_FEEDBACK_FORM_URL = "https://goo.gl/forms/vspraniXPY7rvtKN2"
-OCTOBOT_BETA_PROGRAM_FORM_URL = "https://octobot.click/docs-join-beta"
+OCTOBOT_BETA_PROGRAM_FORM_URL = "https://click.octobot.cloud/docs-join-beta"
 AUTOMATION_FEEDBACK_FORM_ID = "n9NKMV"
 WELCOME_FEEDBACK_FORM_ID = os.getenv("WELCOME_FEEDBACK_FORM_ID", None)
 OCTOBOT_EXTENSION_PACKAGE_1_NAME = "Premium OctoBot extension"
