@@ -30,26 +30,18 @@
 </p>
 
 ## What is Octobot  ?
-<p align="middle">
-  <a href="https://www.octobot.cloud/en/guides/octobot-interfaces/web?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=readme_what_is_octobot_web">
-    <img src="../assets/dashboard.png" height="414" alt="Follow your profits using OctoBot directly from its web interface">
-  </a>  
-  &nbsp;&nbsp;&nbsp;&nbsp;    
-  <a href="https://www.octobot.cloud/en/guides/octobot-interfaces/telegram?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=readme_what_is_octobot_telegram">
-    <img src="../assets/telegram-interface.png" height="414" alt="Follow each trade and profits of your OctoBot and send it commands from telegram">
-  </a>  
-</p>
+
+[![OctoBot - Open Source Crypto Trading Bot Video](https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/meet_octobot_preview.png)](https://www.youtube.com/watch?v=TJUU62e1jR8)
 
 [Octobot](https://www.octobot.cloud/trading-bot?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=readme_what_is_octobot) is a powerful open-source cryptocurrency trading robot.
 
 OctoBot is highly customizable using its configuration and tentacles system.  
-You can build your own bot using the infinite [configuration](https://www.octobot.cloud/en/guides/octobot-configuration/profile-configuration?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=configuration) possibilities such as  **technical analysis**, **social media processing** or even **external statistics management** like google trends.  
-  
-  
+You can build your own bot using the infinite [configuration](https://www.octobot.cloud/en/guides/octobot-configuration/profile-configuration?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=configuration) possibilities such as  **technical analysis**, **social media processing** or even **external statistics management** like google trends.
+
 Octobot's main feature is **evolution**, you can : 
 - Create, backtest and optimize your unique trading strategy from scratch or using the existing [strategy bases](https://www.octobot.cloud/en/guides/octobot-trading-modes/trading-modes?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=strategy-bases).
-- Use Technical indicator (TA), artificial intelligence, [ChatGPT predictions](https://www.octobot.cloud/en/blog/trading-using-chat-gpt?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=chatgpt), [TradingView automations](https://www.octobot.cloud/en/guides/octobot-interfaces/tradingview?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=trading-view) to automate your strategies.
-- Trade any crypto on SPOT and Futures markets on more than [12 supported exchanges](https://www.octobot.cloud/en/guides/exchanges?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=exchanges).
+- Use Technical indicator (TA), artificial intelligence, [ChatGPT predictions](https://www.octobot.cloud/en/blog/trading-using-chat-gpt?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=chatgpt), [TradingView automations](https://www.octobot.cloud/en/guides/octobot-interfaces/tradingview?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=trading-view) or [crypto baskets](https://octobot.cloud/features/crypto-basket?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=crypto-baskets) to automate your strategies.
+- Trade any crypto on SPOT and Futures markets on more than [15 supported exchanges](https://www.octobot.cloud/en/guides/exchanges?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=exchanges).
 - [Install](https://www.octobot.cloud/en/guides/octobot-advanced-usage/tentacle-manager?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=install_tentacles), [modify](https://www.octobot.cloud/en/guides/octobot-tentacles-development/create-a-tentacle?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=modify_tentacles) and even [create](https://www.octobot.cloud/en/guides/octobot-tentacles-development/create-a-tentacle?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=create_tentacles) new tentacles to build your ideal cryptocurrency trading robot.
 - [Contribute](https://www.octobot.cloud/en/guides/octobot-developers-environment/setup-your-environment?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=contribute) to improve OctoBot core repositories and tentacles.
 
