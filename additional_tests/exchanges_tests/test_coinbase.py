@@ -33,6 +33,7 @@ class TestCoinbaseAuthenticatedExchange(
     CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES = True
     VALID_ORDER_ID = "8bb80a81-27f7-4415-aa50-911ea46d841c"
     USE_ORDER_OPERATION_TO_CHECK_API_KEY_RIGHTS = True    # set True when api key rights can't be checked using a
+    EXPECT_MISSING_FEE_IN_CANCELLED_ORDERS = False
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
@@ -63,6 +64,9 @@ class TestCoinbaseAuthenticatedExchange(
 
     async def test_get_closed_orders(self):
         await super().test_get_closed_orders()
+
+    async def test_get_cancelled_orders(self):
+        await super().test_get_cancelled_orders()
 
     async def test_create_and_cancel_stop_orders(self):
         # pass if not implemented

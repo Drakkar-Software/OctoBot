@@ -31,6 +31,7 @@ class TestAscendexAuthenticatedExchange(
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
     ORDER_SIZE = 30  # % of portfolio to include in test orders
     IGNORE_EXCHANGE_TRADE_ID = True
+    EXPECT_MISSING_FEE_IN_CANCELLED_ORDERS = False
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
@@ -64,6 +65,9 @@ class TestAscendexAuthenticatedExchange(
 
     async def test_get_closed_orders(self):
         await super().test_get_closed_orders()
+
+    async def test_get_cancelled_orders(self):
+        await super().test_get_cancelled_orders()
 
     async def test_create_and_cancel_stop_orders(self):
         # pass if not implemented

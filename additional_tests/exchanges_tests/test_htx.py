@@ -32,6 +32,7 @@ class TestHTXAuthenticatedExchange(
     ORDER_SIZE = 50  # % of portfolio to include in test orders
     CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES = True
     VALID_ORDER_ID = "1777764898965454848"
+    EXPECT_MISSING_FEE_IN_CANCELLED_ORDERS = False
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
@@ -65,6 +66,9 @@ class TestHTXAuthenticatedExchange(
 
     async def test_get_closed_orders(self):
         await super().test_get_closed_orders()
+
+    async def test_get_cancelled_orders(self):
+        await super().test_get_cancelled_orders()
 
     async def test_create_and_cancel_stop_orders(self):
         # pass if not implemented

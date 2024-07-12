@@ -70,6 +70,9 @@ class TestBybitAuthenticatedExchange(
     async def test_get_closed_orders(self):
         await super().test_get_closed_orders()
 
+    async def test_get_cancelled_orders(self):
+        await super().test_get_cancelled_orders()
+
     async def test_create_and_cancel_stop_orders(self):
         # pass if not implemented
         await super().test_create_and_cancel_stop_orders()

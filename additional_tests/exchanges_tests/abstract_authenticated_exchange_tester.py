@@ -56,6 +56,7 @@ class AbstractAuthenticatedExchangeTester:
     ORDER_PRICE_DIFF = 20  # % of price difference compared to current price for limit and stop orders
     EXPECT_MISSING_ORDER_FEES_DUE_TO_ORDERS_TOO_OLD_FOR_RECENT_TRADES = False   # when recent trades are limited and
     # closed orders fees are taken from recent trades
+    EXPECT_MISSING_FEE_IN_CANCELLED_ORDERS = True  # when get_cancelled_orders returns None in fee
     EXPECT_POSSIBLE_ORDER_NOT_FOUND_DURING_ORDER_CREATION = False
     OPEN_ORDERS_IN_CLOSED_ORDERS = False
     CANCELLED_ORDERS_IN_CLOSED_ORDERS = False
@@ -63,6 +64,8 @@ class AbstractAuthenticatedExchangeTester:
     RECENT_TRADES_UPDATE_TIMEOUT = 15
     MARKET_FILL_TIMEOUT = 15
     OPEN_TIMEOUT = 15
+    # if >0: retry fetching open/cancelled orders when created/cancelled orders are not synchronised instantly
+    ORDER_IN_OPEN_AND_CANCELLED_ORDERS_TIMEOUT = 10
     CANCEL_TIMEOUT = 15
     EDIT_TIMEOUT = 15
     MIN_PORTFOLIO_SIZE = 1
@@ -207,6 +210,7 @@ class AbstractAuthenticatedExchangeTester:
         # )
         # # end debug tools
         open_orders = await self.get_open_orders(exchange_data)
+        cancelled_orders = await self.get_cancelled_orders(exchange_data)
         try:
             buy_limit = await self.create_limit_order(price, size, trading_enums.TradeOrderSide.BUY, symbol=symbol)
         except trading_errors.AuthenticationError as err:
@@ -225,6 +229,7 @@ class AbstractAuthenticatedExchangeTester:
             # don't leave buy_limit as open order
             await self.cancel_order(buy_limit)
         assert await self.order_not_in_open_orders(open_orders, buy_limit, symbol=symbol)
+        assert await self.order_in_cancelled_orders(cancelled_orders, buy_limit, symbol=symbol)
 
     async def test_create_and_fill_market_orders(self):
         async with self.local_exchange_manager():
@@ -310,6 +315,22 @@ class AbstractAuthenticatedExchangeTester:
         orders = await self.get_closed_orders()
         assert orders
         self.check_raw_closed_orders(orders)
+
+    async def test_get_cancelled_orders(self):
+        async with self.local_exchange_manager():
+            await self.inner_test_get_cancelled_orders()
+
+    async def inner_test_get_cancelled_orders(self):
+        if not self.exchange_manager.exchange.SUPPORT_FETCHING_CANCELLED_ORDERS:
+            assert not self.exchange_manager.exchange.connector.client.has["fetchCanceledOrders"]
+            # use get_closed order, no cancelled order is returned
+            assert await self.exchange_manager.exchange.connector.get_cancelled_orders(self.SYMBOL) == []
+            with pytest.raises(trading_errors.NotSupported):
+                await self.get_cancelled_orders(force_fetch=True)
+            return
+        orders = await self.get_cancelled_orders()
+        assert orders
+        self.check_raw_cancelled_orders(orders)
 
     async def test_edit_limit_order(self):
         # pass if not implemented
@@ -539,6 +560,13 @@ class AbstractAuthenticatedExchangeTester:
     async def get_closed_orders(self, symbol=None):
         return await self.exchange_manager.exchange.get_closed_orders(symbol or self.SYMBOL)
 
+    async def get_cancelled_orders(self, exchange_data=None, force_fetch=False):
+        if not force_fetch and not self.exchange_manager.exchange.SUPPORT_FETCHING_CANCELLED_ORDERS:
+            # skipped
+            return []
+        exchange_data = exchange_data or self.get_exchange_data()
+        return await exchanges_test_tools.get_cancelled_orders(self.exchange_manager, exchange_data)
+
     async def check_require_closed_orders_from_recent_trades(self, symbol=None):
         if self.exchange_manager.exchange.REQUIRE_CLOSED_ORDERS_FROM_RECENT_TRADES:
             with pytest.raises(trading_errors.NotSupported):
@@ -568,6 +596,20 @@ class AbstractAuthenticatedExchangeTester:
             # at least 2 orders have fees (the 2 recent market orders from market orders tests)
             assert len(closed_orders) - len(incomplete_fees_orders) >= 2
 
+    def check_raw_cancelled_orders(self, cancelled_orders):
+        self.check_duplicate(cancelled_orders)
+        incomplete_fees_orders = []
+        allow_incomplete_fees = False
+        for cancelled_order in cancelled_orders:
+            assert cancelled_order[trading_enums.ExchangeConstantsOrderColumns.STATUS.value] \
+                   == trading_enums.OrderStatus.CANCELED.value
+            self.check_parsed_closed_order(
+                personal_data.create_order_instance_from_raw(self.exchange_manager.trader, cancelled_order),
+                incomplete_fees_orders,
+                allow_incomplete_fees
+            )
+        assert not incomplete_fees_orders
+
     def check_parsed_closed_order(
         self, order: personal_data.Order, incomplete_fee_orders: list, allow_incomplete_fees: bool
     ):
@@ -576,28 +618,31 @@ class AbstractAuthenticatedExchangeTester:
         assert order.order_type
         assert order.order_type is not trading_enums.TraderOrderType.UNKNOWN.value
         assert order.status
-        try:
-            assert order.fee
-            assert isinstance(order.fee[trading_enums.FeePropertyColumns.COST.value], decimal.Decimal)
-            has_paid_fees = order.fee[trading_enums.FeePropertyColumns.COST.value] > trading_constants.ZERO
-            if has_paid_fees:
-                assert order.fee[trading_enums.FeePropertyColumns.EXCHANGE_ORIGINAL_COST.value] is not None
-            else:
-                assert trading_enums.FeePropertyColumns.EXCHANGE_ORIGINAL_COST.value in order.fee
-            if has_paid_fees:
-                assert order.fee[trading_enums.FeePropertyColumns.CURRENCY.value] is not None
-            else:
-                assert trading_enums.FeePropertyColumns.CURRENCY.value in order.fee
-            if self.CANCELLED_ORDERS_IN_CLOSED_ORDERS:
-                # might have been manually added for consistency
-                assert order.fee[trading_enums.FeePropertyColumns.IS_FROM_EXCHANGE.value] in (True, False)
-            else:
-                assert order.fee[trading_enums.FeePropertyColumns.IS_FROM_EXCHANGE.value] is True
-        except AssertionError:
-            if allow_incomplete_fees and self.EXPECT_MISSING_ORDER_FEES_DUE_TO_ORDERS_TOO_OLD_FOR_RECENT_TRADES:
-                incomplete_fee_orders.append(order)
-            else:
-                raise
+        if self.EXPECT_MISSING_FEE_IN_CANCELLED_ORDERS:
+            assert order.fee is None
+        else:
+            try:
+                assert order.fee
+                assert isinstance(order.fee[trading_enums.FeePropertyColumns.COST.value], decimal.Decimal)
+                has_paid_fees = order.fee[trading_enums.FeePropertyColumns.COST.value] > trading_constants.ZERO
+                if has_paid_fees:
+                    assert order.fee[trading_enums.FeePropertyColumns.EXCHANGE_ORIGINAL_COST.value] is not None
+                else:
+                    assert trading_enums.FeePropertyColumns.EXCHANGE_ORIGINAL_COST.value in order.fee
+                if has_paid_fees:
+                    assert order.fee[trading_enums.FeePropertyColumns.CURRENCY.value] is not None
+                else:
+                    assert trading_enums.FeePropertyColumns.CURRENCY.value in order.fee
+                if self.CANCELLED_ORDERS_IN_CLOSED_ORDERS:
+                    # might have been manually added for consistency
+                    assert order.fee[trading_enums.FeePropertyColumns.IS_FROM_EXCHANGE.value] in (True, False)
+                else:
+                    assert order.fee[trading_enums.FeePropertyColumns.IS_FROM_EXCHANGE.value] is True
+            except AssertionError:
+                if allow_incomplete_fees and self.EXPECT_MISSING_ORDER_FEES_DUE_TO_ORDERS_TOO_OLD_FOR_RECENT_TRADES:
+                    incomplete_fee_orders.append(order)
+                else:
+                    raise
         assert order.order_id
         assert order.exchange_order_id
         assert order.side
@@ -821,7 +866,7 @@ class AbstractAuthenticatedExchangeTester:
 
     def check_created_limit_order(self, order, price, size, side):
         self._check_order(order, size, side)
-        assert order.origin_price == price
+        assert order.origin_price == price, f"{order.origin_price} != {price}"
         expected_type = personal_data.BuyLimitOrder \
             if side is trading_enums.TradeOrderSide.BUY else personal_data.SellLimitOrder
         assert isinstance(order, expected_type)
@@ -948,12 +993,58 @@ class AbstractAuthenticatedExchangeTester:
         fetched_order = await self.get_order(order.exchange_order_id, order.symbol)
         self.check_created_limit_order(fetched_order, order.origin_price, order.origin_quantity, order.side)
 
-    async def order_in_open_orders(self, previous_open_orders, order, symbol=None):
-        open_orders = await self.get_open_orders(self.get_exchange_data(symbol=symbol))
-        assert len(open_orders) == len(previous_open_orders) + 1
-        for open_order in open_orders:
-            if open_order[trading_enums.ExchangeConstantsOrderColumns.EXCHANGE_ID.value] == order.exchange_order_id:
+    async def order_in_fetched_orders(self, method, previous_orders, order, symbol=None, check_presence=True):
+        t0 = time.time()
+        iterations = 0
+        while time.time() - t0 < self.ORDER_IN_OPEN_AND_CANCELLED_ORDERS_TIMEOUT or iterations == 0:
+            iterations += 1
+            delay_allowed = self.exchange_manager.exchange.CAN_HAVE_DELAYED_OPEN_ORDERS if \
+                method is self.get_open_orders else self.exchange_manager.exchange.CAN_HAVE_DELAYED_CANCELLED_ORDERS
+            if iterations > 1 and not delay_allowed:
+                raise AssertionError(
+                    f"{self.exchange_manager.exchange_name} is not expecting to have missing {method.__name__} "
+                    f"on first iteration"
+                )
+            fetched_orders = await method(self.get_exchange_data(symbol=symbol))
+            found_order = False
+            for fetched_order in fetched_orders:
+                if check_presence:
+                    if (
+                        fetched_order[trading_enums.ExchangeConstantsOrderColumns.EXCHANGE_ID.value]
+                            == order.exchange_order_id
+                    ):
+                        print(f"=> {self.exchange_manager.exchange_name} {order.order_type} Order found in {len(fetched_orders)} "
+                              f"{method.__name__} after after {time.time() - t0} seconds and {iterations} iterations. "
+                              f"Order: [{order}].")
+                        assert len(fetched_orders) == len(previous_orders) + 1
+                        return True
+                else:
+                    # check order not in open orders
+                    if(
+                        fetched_order[trading_enums.ExchangeConstantsOrderColumns.EXCHANGE_ID.value]
+                            == order.exchange_order_id
+                    ):
+                        print(f"{self.exchange_manager.exchange_name} {order.order_type} "
+                              f"Order still found in {len(fetched_orders)} {method.__name__} after {time.time() - t0} seconds "
+                              f"and {iterations} iterations. Order: [{order}]")
+                        # order found, do not continue
+                        found_order = True
+                        break
+            if check_presence:
+                print(f"{self.exchange_manager.exchange_name} {order.order_type} "
+                      f"Order sill not found in {len(fetched_orders)} {method.__name__} after {time.time() - t0} seconds "
+                      f"and {iterations} iterations. Order: [{order}]")
+            elif not found_order:
+                print(f"=> {self.exchange_manager.exchange_name} {order.order_type} Order not found"
+                      f" in {len(fetched_orders)} {method.__name__} after after {time.time() - t0} seconds "
+                      f"and {iterations} iterations. "
+                      f"Order: [{order}].")
+                assert len(fetched_orders) == max(len(previous_orders) - 1, 0)
+                # order not found
                 return True
+            await asyncio.sleep(1)
+        print(f"Order {'not' if check_presence else 'still'} "
+              f"found in {method.__name__} within {self.ORDER_IN_OPEN_AND_CANCELLED_ORDERS_TIMEOUT}s: {order}")
         return False
 
     async def get_similar_orders_in_open_orders(self, previous_open_orders, orders):
@@ -975,13 +1066,23 @@ class AbstractAuthenticatedExchangeTester:
             return found_orders
         raise AssertionError(f"Can't find any order similar to {orders}. Found: {found_orders}")
 
+    async def order_in_open_orders(self, previous_open_orders, order, symbol=None):
+        return await self.order_in_fetched_orders(
+            self.get_open_orders, previous_open_orders, order, symbol, check_presence=True
+        )
+
     async def order_not_in_open_orders(self, previous_open_orders, order, symbol=None):
-        open_orders = await self.get_open_orders(self.get_exchange_data(symbol=symbol))
-        assert len(open_orders) == len(previous_open_orders)
-        for open_order in open_orders:
-            if open_order[trading_enums.ExchangeConstantsOrderColumns.EXCHANGE_ID.value] == order.exchange_order_id:
-                return False
-        return True
+        return await self.order_in_fetched_orders(
+            self.get_open_orders, previous_open_orders, order, symbol, check_presence=False
+        )
+
+    async def order_in_cancelled_orders(self, previous_cancelled_orders, order, symbol=None):
+        if not self.exchange_manager.exchange.SUPPORT_FETCHING_CANCELLED_ORDERS:
+            # skipped
+            return True
+        return await self.order_in_fetched_orders(
+            self.get_cancelled_orders, previous_cancelled_orders, order, symbol, check_presence=True
+        )
 
     async def cancel_order(self, order):
         cancelled_order = order
