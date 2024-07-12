@@ -34,9 +34,11 @@ class TestBybitFuturesAuthenticatedExchange(
     OPEN_TIMEOUT = 25    # larger for bybit testnet
     CANCEL_TIMEOUT = 25  # larger for bybit testnet
     EDIT_TIMEOUT = 25    # larger for bybit testnet
+    ORDER_IN_OPEN_AND_CANCELLED_ORDERS_TIMEOUT = 25    # larger for bybit testnet
     OPEN_ORDERS_IN_CLOSED_ORDERS = True
     SUPPORTS_GET_LEVERAGE = False
     EXPECT_FETCH_ORDER_TO_BE_AVAILABLE = False
+    EXPECT_MISSING_FEE_IN_CANCELLED_ORDERS = False
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
@@ -79,6 +81,9 @@ class TestBybitFuturesAuthenticatedExchange(
 
     async def test_get_closed_orders(self):
         await super().test_get_closed_orders()
+
+    async def test_get_cancelled_orders(self):
+        await super().test_get_cancelled_orders()
 
     async def test_create_and_cancel_stop_orders(self):
         # pass if not implemented
