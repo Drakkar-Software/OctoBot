@@ -33,6 +33,8 @@ class TestBingxAuthenticatedExchange(
     CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES = True
     IGNORE_EXCHANGE_TRADE_ID = True
     USE_ORDER_OPERATION_TO_CHECK_API_KEY_RIGHTS = True
+    EXPECT_MISSING_FEE_IN_CANCELLED_ORDERS = False
+
     VALID_ORDER_ID = "1777764898965454838"
 
     async def test_get_portfolio(self):
@@ -64,6 +66,9 @@ class TestBingxAuthenticatedExchange(
 
     async def test_get_closed_orders(self):
         await super().test_get_closed_orders()
+
+    async def test_get_cancelled_orders(self):
+        await super().test_get_cancelled_orders()
 
     async def test_create_and_cancel_stop_orders(self):
         # pass if not implemented
