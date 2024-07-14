@@ -593,6 +593,7 @@ class CommunityAuthentication(authentication.Authenticator):
 
     async def fetch_checkout_url(self, payment_method, redirect_url):
         try:
+            self.logger.debug(f"Fetching {payment_method} checkout url")
             resp = await self.supabase_client.http_post(
                 constants.COMMUNITY_EXTENSIONS_CHECK_ENDPOINT,
                 json={
@@ -610,7 +611,13 @@ class CommunityAuthentication(authentication.Authenticator):
             if not json_resp:
                 # valid error code but no content: user already has this product
                 return None
-            return json_resp["checkout_url"]
+            url = json_resp["checkout_url"]
+            self.logger.info(
+                f"Here is your {constants.OCTOBOT_EXTENSION_PACKAGE_1_NAME} checkout url {url} "
+                f"paste it into a web browser to proceed to payment if your browser did to automatically "
+                f"redirected to it."
+            )
+            return url
         except Exception as err:
             self.logger.exception(err, True, f"Error when fetching checkout url: {err}")
             raise
