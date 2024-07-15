@@ -1016,7 +1016,9 @@ class AbstractAuthenticatedExchangeTester:
                         print(f"=> {self.exchange_manager.exchange_name} {order.order_type} Order found in {len(fetched_orders)} "
                               f"{method.__name__} after after {time.time() - t0} seconds and {iterations} iterations. "
                               f"Order: [{order}].")
-                        assert len(fetched_orders) == len(previous_orders) + 1
+                        # use in as exchanges can have a max amount of fetched elements
+                        assert len(fetched_orders) in (len(previous_orders), len(previous_orders) + 1), \
+                            f"{len(fetched_orders)} not in {len(previous_orders), len(previous_orders) + 1}"
                         return True
                 else:
                     # check order not in open orders
@@ -1039,7 +1041,7 @@ class AbstractAuthenticatedExchangeTester:
                       f" in {len(fetched_orders)} {method.__name__} after after {time.time() - t0} seconds "
                       f"and {iterations} iterations. "
                       f"Order: [{order}].")
-                assert len(fetched_orders) == max(len(previous_orders) - 1, 0)
+                assert len(fetched_orders) <= len(previous_orders), f"{len(fetched_orders)} !<= {len(previous_orders)}"
                 # order not found
                 return True
             await asyncio.sleep(1)
