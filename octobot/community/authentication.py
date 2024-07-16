@@ -716,6 +716,7 @@ class CommunityAuthentication(authentication.Authenticator):
         """
         formatted_orders = formatters.format_orders(orders, exchange_name)
         await self.supabase_client.update_bot_orders(self.user_account.bot_id, formatted_orders)
+        self.logger.info(f"Bot orders updated: using {len(orders)} orders")
 
     @_bot_data_update
     async def update_portfolio(self, current_value: dict, initial_value: dict, profitability: float,
@@ -729,16 +730,24 @@ class CommunityAuthentication(authentication.Authenticator):
                 current_value, initial_value, profitability, unit, content, price_by_asset, self.user_account.bot_id
             )
             if reset or self.user_account.get_selected_bot_current_portfolio_id() is None:
+                self.logger.info(f"Switching bot portfolio")
                 await self.supabase_client.switch_portfolio(formatted_portfolio)
                 await self.refresh_selected_bot()
 
             formatted_portfolio[backend_enums.PortfolioKeys.ID.value] = \
                 self.user_account.get_selected_bot_current_portfolio_id()
             await self.supabase_client.update_portfolio(formatted_portfolio)
+            self.logger.info(
+                f"Bot portfolio [{formatted_portfolio[backend_enums.PortfolioKeys.ID.value]}] "
+                f"updated with content: {formatted_portfolio[backend_enums.PortfolioKeys.CONTENT.value]}"
+            )
             if formatted_histories := formatters.format_portfolio_history(
                 history, unit, self.user_account.get_selected_bot_current_portfolio_id()
             ):
                 await self.supabase_client.upsert_portfolio_history(formatted_histories)
+                self.logger.info(
+                    f"Bot portfolio [{formatted_portfolio[backend_enums.PortfolioKeys.ID.value]}] history updated"
+                )
         except KeyError as err:
             self.logger.debug(f"Error when updating community portfolio {err} (missing reference market value)")
 
