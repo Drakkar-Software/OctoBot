@@ -35,7 +35,7 @@ class TestBingxAuthenticatedExchange(
     USE_ORDER_OPERATION_TO_CHECK_API_KEY_RIGHTS = True
     EXPECT_MISSING_FEE_IN_CANCELLED_ORDERS = False
 
-    VALID_ORDER_ID = "1777764898965454838"
+    VALID_ORDER_ID = "1812980957928929280"
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
