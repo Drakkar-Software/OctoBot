@@ -195,6 +195,7 @@ class AbstractAuthenticatedExchangeTester:
         size = self.get_order_size(
             await self.get_portfolio(), price, symbol=symbol, settlement_currency=settlement_currency
         )
+        self.check_order_size_and_price(size, price)
         # # DEBUG tools, uncomment to create specific orders
         # symbol = "BTC/USD:BTC"
         # market_status = self.exchange_manager.exchange.get_market_status(symbol)
@@ -831,6 +832,23 @@ class AbstractAuthenticatedExchangeTester:
             self.exchange_manager.exchange.get_market_status(str(symbol)),
             order_quantity
         )
+
+    def check_order_size_and_price(self, size, price, symbol=None):
+        market_status = self.exchange_manager.exchange.get_market_status(str(symbol or self.SYMBOL))
+        precision_amount = market_status[
+            trading_enums.ExchangeConstantsMarketStatusColumns.PRECISION.value
+        ].get(trading_enums.ExchangeConstantsMarketStatusColumns.PRECISION_AMOUNT.value, 0)
+        assert 0 <= precision_amount < 10   # is really the number of digits
+        assert int(precision_amount) == precision_amount    # is an int
+        precision_price = market_status[
+            trading_enums.ExchangeConstantsMarketStatusColumns.PRECISION.value
+        ].get(trading_enums.ExchangeConstantsMarketStatusColumns.PRECISION_PRICE.value, 0)
+        assert 0 < precision_price < 10   # is really the number of digits
+        assert int(precision_price) == precision_price    # is an int
+
+        assert personal_data_orders.decimal_trunc_with_n_decimal_digits(size, precision_amount) == size
+        assert personal_data_orders.decimal_trunc_with_n_decimal_digits(price, precision_price) == price
+
 
     def get_sell_size_from_buy_order(self, buy_order):
         sell_size = buy_order.origin_quantity
