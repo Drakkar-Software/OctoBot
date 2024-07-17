@@ -262,6 +262,7 @@ class OctoBot:
         if constants.ENABLE_SYSTEM_WATCHER:
             await system_resources_watcher.start_system_resources_watcher(
                 constants.DUMP_USED_RESOURCES,
+                constants.WATCH_RAM,
                 constants.USED_RESOURCES_OUTPUT
             )
 

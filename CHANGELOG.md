@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [2.0.2] - 2024-07-17
+### Updated
+- [WebInterface] Improve light & dark themes display
+### Fixed
+- [WebInterface] Fix extension checkout
+- [RAM] Reduce required RAM when loading a large amount of trades
+- [BingX] Fix order sizing issues
+
 ## [2.0.1] - 2024-07-09
 ### Updated
 - [WebInterface] Add contact on extension page

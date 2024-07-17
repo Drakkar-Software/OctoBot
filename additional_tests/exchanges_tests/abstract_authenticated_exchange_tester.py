@@ -195,6 +195,7 @@ class AbstractAuthenticatedExchangeTester:
         size = self.get_order_size(
             await self.get_portfolio(), price, symbol=symbol, settlement_currency=settlement_currency
         )
+        self.check_order_size_and_price(size, price)
         # # DEBUG tools, uncomment to create specific orders
         # symbol = "BTC/USD:BTC"
         # market_status = self.exchange_manager.exchange.get_market_status(symbol)
@@ -832,6 +833,23 @@ class AbstractAuthenticatedExchangeTester:
             order_quantity
         )
 
+    def check_order_size_and_price(self, size, price, symbol=None):
+        market_status = self.exchange_manager.exchange.get_market_status(str(symbol or self.SYMBOL))
+        precision_amount = market_status[
+            trading_enums.ExchangeConstantsMarketStatusColumns.PRECISION.value
+        ].get(trading_enums.ExchangeConstantsMarketStatusColumns.PRECISION_AMOUNT.value, 0)
+        assert 0 <= precision_amount < 10   # is really the number of digits
+        assert int(precision_amount) == precision_amount    # is an int
+        precision_price = market_status[
+            trading_enums.ExchangeConstantsMarketStatusColumns.PRECISION.value
+        ].get(trading_enums.ExchangeConstantsMarketStatusColumns.PRECISION_PRICE.value, 0)
+        assert 0 < precision_price < 10   # is really the number of digits
+        assert int(precision_price) == precision_price    # is an int
+
+        assert personal_data_orders.decimal_trunc_with_n_decimal_digits(size, precision_amount) == size
+        assert personal_data_orders.decimal_trunc_with_n_decimal_digits(price, precision_price) == price
+
+
     def get_sell_size_from_buy_order(self, buy_order):
         sell_size = buy_order.origin_quantity
         if buy_order.fee and buy_order.fee[trading_enums.FeePropertyColumns.CURRENCY.value] == self.ORDER_CURRENCY:
@@ -1016,7 +1034,9 @@ class AbstractAuthenticatedExchangeTester:
                         print(f"=> {self.exchange_manager.exchange_name} {order.order_type} Order found in {len(fetched_orders)} "
                               f"{method.__name__} after after {time.time() - t0} seconds and {iterations} iterations. "
                               f"Order: [{order}].")
-                        assert len(fetched_orders) == len(previous_orders) + 1
+                        # use in as exchanges can have a max amount of fetched elements
+                        assert len(fetched_orders) in (len(previous_orders), len(previous_orders) + 1), \
+                            f"{len(fetched_orders)} not in {len(previous_orders), len(previous_orders) + 1}"
                         return True
                 else:
                     # check order not in open orders
@@ -1039,7 +1059,7 @@ class AbstractAuthenticatedExchangeTester:
                       f" in {len(fetched_orders)} {method.__name__} after after {time.time() - t0} seconds "
                       f"and {iterations} iterations. "
                       f"Order: [{order}].")
-                assert len(fetched_orders) == max(len(previous_orders) - 1, 0)
+                assert len(fetched_orders) <= len(previous_orders), f"{len(fetched_orders)} !<= {len(previous_orders)}"
                 # order not found
                 return True
             await asyncio.sleep(1)
