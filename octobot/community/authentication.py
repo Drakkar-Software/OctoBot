@@ -427,7 +427,7 @@ class CommunityAuthentication(authentication.Authenticator):
         return [
             bot
             for bot in bots
-            if self.user_account.is_self_hosted(bot)
+            if self.user_account.is_self_hosted(bot) and not self.user_account.is_archived(bot)
         ]
 
     async def on_new_bot_select(self):

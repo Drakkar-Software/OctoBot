@@ -77,6 +77,7 @@ class BotDeploymentStatus(enum.Enum):
     STOPPED = "stopped"
     PENDING = "pending"
     UNKNOWN = "unknown"
+    ARCHIVED = "archived"
 
 
 class ProductSubscriptionDesiredStatus(enum.Enum):

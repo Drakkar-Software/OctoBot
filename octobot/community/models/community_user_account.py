@@ -74,6 +74,11 @@ class CommunityUserAccount:
             backend_enums.BotDeploymentKeys.TYPE.value, backend_enums.DeploymentTypes.SELF_HOSTED.value
         ) == backend_enums.DeploymentTypes.SELF_HOSTED.value
 
+    def is_archived(self, bot):
+        return self._get_bot_deployment(bot).get(
+            backend_enums.BotDeploymentKeys.STATUS.value
+        ) == backend_enums.BotDeploymentStatus.ARCHIVED.value
+
     def get_selected_bot_deployment_id(self):
         return self.get_bot_deployment_value(backend_enums.BotDeploymentKeys.ID)
 
