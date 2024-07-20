@@ -56,10 +56,6 @@ class BinaryUpdater(updater_class.Updater):
         return self._parse_latest_version(await self._get_latest_release_data())
 
     async def update_impl(self) -> bool:
-        # TODO fix binary updater to use release endpoint (assents can't be downloaded from gh directly)
-        self.logger.error(f"Please manually update your OctoBot executable from this page: "
-                          f"{self._get_latest_release_url(False)}")
-        return False
         new_binary_file = await self._download_binary()
         if new_binary_file is not None:
             self._give_execution_rights(new_binary_file)
@@ -73,10 +69,11 @@ class BinaryUpdater(updater_class.Updater):
 
     async def _get_latest_release_data(self):
         try:
-            async with aiohttp.ClientSession().get(self._get_latest_release_url(True)) as resp:
-                text = await resp.text()
-                if resp.status == 200:
-                    return json.loads(text)
+            async with aiohttp.ClientSession() as session:
+                async with session.get(self._get_latest_release_url(True)) as resp:
+                    text = await resp.text()
+                    if resp.status == 200:
+                        return json.loads(text)
             return None
         except Exception as e:
             self.logger.debug(f"Error when fetching latest binary data : {e}")
@@ -137,10 +134,11 @@ class BinaryUpdater(updater_class.Updater):
             return None
         self.logger.info(f"Start downloading OctoBot update at {new_binary_file_url}")
         async with aiofiles.open(new_binary_file, 'wb+') as downloaded_file:
-            await aiohttp_util.download_stream_file(output_file=downloaded_file,
-                                                    file_url=new_binary_file_url,
-                                                    aiohttp_session=aiohttp.ClientSession(),
-                                                    is_aiofiles_output_file=True)
+            async with aiohttp.ClientSession() as session:
+                await aiohttp_util.download_stream_file(output_file=downloaded_file,
+                                                        file_url=new_binary_file_url,
+                                                        aiohttp_session=session,
+                                                        is_aiofiles_output_file=True)
         self.logger.info(f"OctoBot update downloaded successfully")
         return new_binary_file
 

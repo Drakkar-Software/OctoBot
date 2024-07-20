@@ -23,7 +23,7 @@ async def has_tentacles_to_install_and_uninstall_tentacles_if_necessary(communit
         community_auth.config.get_tentacles_config_path()
     )
     to_install, to_remove_tentacles, force_refresh_tentacles_setup_config = get_to_install_and_remove_tentacles(
-        community_auth, tentacles_setup_config
+        community_auth, tentacles_setup_config, constants.LONG_VERSION
     )
     if to_remove_tentacles:
         logging.get_logger(__name__).debug(
@@ -36,29 +36,29 @@ async def has_tentacles_to_install_and_uninstall_tentacles_if_necessary(communit
     return bool(to_install)
 
 
-def adapt_url_to_bot_version(package_url: str) -> str:
+def adapt_url_to_bot_version(package_url: str, bot_version: str) -> str:
     if constants.VERSION_PLACEHOLDER in package_url:
-        package_url = package_url.replace(constants.VERSION_PLACEHOLDER, constants.LONG_VERSION)
+        package_url = package_url.replace(constants.VERSION_PLACEHOLDER, bot_version)
     return package_url
 
 
 def get_to_install_and_remove_tentacles(
-    community_auth, selected_profile_tentacles_setup_config
+    community_auth, selected_profile_tentacles_setup_config, bot_version: str
 ):
     installed_community_package_urls = [
-        adapt_url_to_bot_version(package_url)
+        adapt_url_to_bot_version(package_url, bot_version)
         for package_url in tentacles_manager_api.get_all_installed_package_urls(
             selected_profile_tentacles_setup_config
         )
         if is_community_tentacle_url(package_url)
     ]
     additional_tentacles_package_urls = [
-        adapt_url_to_bot_version(package_url)
+        adapt_url_to_bot_version(package_url, bot_version)
         for package_url in community_auth.get_saved_package_urls()
     ] if community_auth.is_logged_in() else []
     to_keep_tentacles = set(
         additional_tentacles_package_urls + [
-            adapt_url_to_bot_version(package_url)
+            adapt_url_to_bot_version(package_url, bot_version)
             for package_url in get_env_variable_tentacles_urls()
         ] + get_env_variable_tentacles_urls()
     )
