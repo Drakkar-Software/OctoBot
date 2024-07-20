@@ -45,11 +45,13 @@ class Updater:
         raise NotImplementedError("update_impl is not implemented")
 
     async def update_tentacles(self):
+        bot_version = await self.get_latest_version()
         authenticator = authentication.Authenticator.instance()
         additional_tentacles_package_urls = authenticator.get_saved_package_urls()
         await commands.install_all_tentacles(
-            tentacles_url=configuration_manager.get_default_tentacles_url(version=await self.get_latest_version()),
-            additional_tentacles_package_urls=additional_tentacles_package_urls
+            tentacles_url=configuration_manager.get_default_tentacles_url(version=bot_version),
+            additional_tentacles_package_urls=additional_tentacles_package_urls,
+            bot_version=bot_version
         )
 
     async def post_update(self):
