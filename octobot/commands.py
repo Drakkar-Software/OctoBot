@@ -128,7 +128,7 @@ async def update_or_repair_tentacles_if_necessary(community_auth, selected_profi
     to_install_urls, to_remove_tentacles, force_refresh_tentacles_setup_config = \
         community_tentacles_packages.get_to_install_and_remove_tentacles(
             community_auth, selected_profile_tentacles_setup_config, constants.LONG_VERSION
-        )
+        ) if community_auth else ([], [], False)
     if to_remove_tentacles:
         await community_tentacles_packages.uninstall_tentacles(to_remove_tentacles)
     elif force_refresh_tentacles_setup_config:
