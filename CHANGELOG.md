@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [2.0.3] - 2024-08-03
+### Added
+- [IndexTradingMode]: Default profile, intra-day, real time update option and custom content
+### Updated
+- [Trades] Greatly increase maximum trades in history
+- [Updaters] Restore binary updater
+- [WebInterface] Improve candlesticks display
+- [WebInterface] Improve dark theme UI
+### Fixed
+- [WebInterface] Ignore archived bots in community tab
+- [Kucoin] Websocket issues when using more than 100 feeds
+- [Notifications] Now display real trades PNL or no PNL at all
+
 ## [2.0.2] - 2024-07-17
 ### Updated
 - [WebInterface] Improve light & dark themes display
