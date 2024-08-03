@@ -12,15 +12,6 @@
 [![Twitter](https://img.shields.io/twitter/follow/DrakkarsOctobot.svg?label=twitter&style=social)](https://x.com/DrakkarsOctoBot)
 [![YouTube](https://img.shields.io/youtube/channel/views/UC2YAaBeWY8y_Olqs79b_X8A?label=youtube&style=social)](https://www.youtube.com/@octobot1134)
 
-## 🎉 OctoBot is launching on Product Hunt on July 10th
-
-<p align="center">
-    <a href="https://www.producthunt.com/posts/octobot-open-source?embed=true&utm_source=badge-featured&utm_medium=badge&utm_souce=badge-octobot&#0045;open&#0045;source" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=463219&theme=light" alt="OctoBot&#0032;open&#0032;source - Your&#0032;open&#0032;source&#0032;investment&#0032;strategy&#0032;builder | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
-</p>
-<p align="center">
-    👆 Follow the launch to get your exclusive discount!
-</p>
-
 <p align="center">
   <img src="../assets/illustration.png" alt="Octobot automating trades of its user while the user is relaxing on his couch">
 </p>
@@ -67,15 +58,7 @@ To install OctoBot, you can either:
     Your OctoBot will be accessible on [http://localhost](http://localhost).
 
 ## Exchanges
-[![Binance supported exchange partnership](../assets/binance-logo.png)](https://www.octobot.cloud/en/guides/octobot-partner-exchanges/binance?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=binance)
-[![Okx supported exchange partnership](../assets/okex-logo.png)](https://www.octobot.cloud/en/guides/octobot-partner-exchanges/okx?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=okx)
-[![Kucoin supported exchange partnership](../assets/kucoin-logo.png)](https://www.octobot.cloud/en/guides/octobot-partner-exchanges/kucoin?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=kucoin)
-[![Crypto.com supported exchange partnership](../assets/cryptocom-logo.png)](https://www.octobot.cloud/en/guides/octobot-partner-exchanges/crypto-com?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=crypto-com)
-[![Huobi supported exchange partnership](../assets/huobi-logo.png)](https://www.octobot.cloud/en/guides/octobot-partner-exchanges/huobi?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=huobi)
-[![Hollaex supported exchange partnership](../assets/hollaex-logo.png)](https://www.octobot.cloud/en/guides/octobot-partner-exchanges/hollaex?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=hollaex)
-[![Coinbase supported exchange](../assets/coinbasepro-logo.png)](https://www.octobot.cloud/en/guides/octobot-supported-exchanges/coinbase?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=coinbase)
-[![GateIO supported exchange partnership](../assets/gateio-logo.png)](https://www.octobot.cloud/en/guides/octobot-partner-exchanges/gateio?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=gateio)
-[![Ascendex supported exchange partnership](../assets/ascendex-logo.png)](https://www.octobot.cloud/en/guides/octobot-partner-exchanges/ascendex?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=ascendex)
+[![All OctoBot supported exchanges](../assets/exchange_logo.png)](https://www.octobot.cloud/en/guides/exchanges?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=binance)
 
 Octobot supports many [exchanges](https://www.octobot.cloud/en/guides/exchanges?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=exchanges) thanks to the [ccxt library](https://github.com/ccxt/ccxt). 
 To activate trading on an exchange, just configure OctoBot with your API keys as described [on the exchange setup guides](https://www.octobot.cloud/en/guides/octobot-configuration/exchanges?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=exchanges_setup_guides).
