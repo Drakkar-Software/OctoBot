@@ -26,6 +26,9 @@ import octobot_commons.constants as commons_constants
 import octobot.constants as constants
 
 
+ASYNC_IGNORED_ERROR_MESSAGES = ["'message': 'Unclosed client session'"]
+
+
 class TaskManager:
     """TaskManager class:
         - Create, manage and stop octobot tasks
@@ -136,11 +139,19 @@ class TaskManager:
     def _loop_exception_handler(self, loop, context):
         loop_str = "bot main async" if loop is self.async_loop else {loop}
         message = f"Error in {loop_str} loop: {context}"
+        function = self.logger.debug if self._should_use_debug_for_message(message) else self.logger.warning
         exception = context.get('exception')
         if exception is not None:
             formatted_traceback = "\n".join(traceback.format_tb(exception.__traceback__))
             message = f"{message}:\n{formatted_traceback}"
-        self.logger.warning(message)
+        function(message)
+
+    @staticmethod
+    def _should_use_debug_for_message(message: str) -> bool:
+        for ignored_message in ASYNC_IGNORED_ERROR_MESSAGES:
+            if ignored_message in message:
+                return True
+        return False
 
     def _create_new_asyncio_main_loop(self):
         self.async_loop = asyncio.new_event_loop()
