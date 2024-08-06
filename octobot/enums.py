@@ -39,6 +39,8 @@ class OptimizerConfig(enum.Enum):
     DATA_FILES = "data_files"
     OPTIMIZER_CONFIG = "optimizer_config"
     EXCHANGE_TYPE = "exchange_type"
+    EXCHANGE_IDS = "exchange_ids"
+    EXCHANGE_ID = "exchange_id"
     QUEUE_SIZE = "queue_size"
     EMPTY_THE_QUEUE = "empty_the_queue"
     START_TIMESTAMP = "start_timestamp"
