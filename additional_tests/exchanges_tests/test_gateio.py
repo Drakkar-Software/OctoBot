@@ -21,17 +21,17 @@ from additional_tests.exchanges_tests import abstract_authenticated_exchange_tes
 pytestmark = pytest.mark.asyncio
 
 
-class TestOKXAuthenticatedExchange(
+class TestGateIOAuthenticatedExchange(
     abstract_authenticated_exchange_tester.AbstractAuthenticatedExchangeTester
 ):
-    # 19/03/24: can't test order creation due to test account region issues
     # enter exchange name as a class variable here
-    EXCHANGE_NAME = "okx"
+    EXCHANGE_NAME = "gateio"
+    EXCHANGE_TENTACLE_NAME = "GateIO"
     ORDER_CURRENCY = "BTC"
     SETTLEMENT_CURRENCY = "USDT"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
-    ORDER_SIZE = 50  # % of portfolio to include in test orders
-    VALID_ORDER_ID = "698652818181726221"
+    ORDER_SIZE = 40  # % of portfolio to include in test orders
+    VALID_ORDER_ID = "1777764898965454848"
     CHECK_EMPTY_ACCOUNT = True  # set True when the account to check has no funds. Warning: does not check order
     # parse/create/fill/cancel or portfolio & trades parsing
 
@@ -41,20 +41,22 @@ class TestOKXAuthenticatedExchange(
     async def test_get_portfolio_with_market_filter(self):
         await super().test_get_portfolio_with_market_filter()
 
-    async def test_create_and_cancel_limit_orders(self):
-        await super().test_create_and_cancel_limit_orders()
-
     async def test_get_account_id(self):
-        await super().test_get_account_id()
+        # pass if not implemented
+        pass
 
     async def test_get_api_key_permissions(self):
-        await super().test_get_api_key_permissions()
+        # pass if not implemented
+        pass
 
     async def test_missing_trading_api_key_permissions(self):
         pass
 
     async def test_get_not_found_order(self):
         await super().test_get_not_found_order()
+
+    async def test_create_and_cancel_limit_orders(self):
+        await super().test_create_and_cancel_limit_orders()
 
     async def test_create_and_fill_market_orders(self):
         await super().test_create_and_fill_market_orders()
