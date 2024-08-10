@@ -81,6 +81,8 @@ class AbstractAuthenticatedExchangeTester:
     USE_ORDER_OPERATION_TO_CHECK_API_KEY_RIGHTS = False    # set True when api key rights can't be checked using a
     # dedicated api and have to be checked by sending an order operation
     EXPECTED_INVALID_ORDERS_QUANTITY = []   # orders with known invalid quantity exchange order id    (usually legacy)
+    CHECK_EMPTY_ACCOUNT = True  # set True when the account to check has no funds. Warning: does not check order
+    # parse/create/fill/cancel or portfolio & trades parsing
 
     # Implement all "test_[name]" methods, call super() to run the test, pass to ignore it.
     # Override the "inner_test_[name]" method to override a test content.
@@ -106,6 +108,9 @@ class AbstractAuthenticatedExchangeTester:
         self.check_portfolio_content(await self.get_portfolio())
 
     def check_portfolio_content(self, portfolio):
+        if self.CHECK_EMPTY_ACCOUNT:
+            assert portfolio == {}
+            return
         assert len(portfolio) >= self.MIN_PORTFOLIO_SIZE
         at_least_one_value = False
         for asset, values in portfolio.items():
@@ -212,6 +217,11 @@ class AbstractAuthenticatedExchangeTester:
         # # end debug tools
         open_orders = await self.get_open_orders(exchange_data)
         cancelled_orders = await self.get_cancelled_orders(exchange_data)
+        if self.CHECK_EMPTY_ACCOUNT:
+            assert size == trading_constants.ZERO
+            assert open_orders == []
+            assert cancelled_orders == []
+            return
         try:
             buy_limit = await self.create_limit_order(price, size, trading_enums.TradeOrderSide.BUY, symbol=symbol)
         except trading_errors.AuthenticationError as err:
@@ -241,6 +251,9 @@ class AbstractAuthenticatedExchangeTester:
         current_price = await self.get_price()
         price = self.get_order_price(current_price, False, price_diff=0)
         size = self.get_order_size(portfolio, price)
+        if self.CHECK_EMPTY_ACCOUNT:
+            assert size == trading_constants.ZERO
+            return
         buy_market = await self.create_market_order(current_price, size, trading_enums.TradeOrderSide.BUY)
         post_buy_portfolio = {}
         try:
@@ -304,6 +317,9 @@ class AbstractAuthenticatedExchangeTester:
 
     async def inner_test_get_my_recent_trades(self):
         trades = await self.get_my_recent_trades()
+        if self.CHECK_EMPTY_ACCOUNT:
+            assert trades == []
+            return
         assert trades
         self.check_raw_trades(trades)
 
@@ -314,6 +330,9 @@ class AbstractAuthenticatedExchangeTester:
     async def inner_test_get_closed_orders(self):
         await self.check_require_closed_orders_from_recent_trades()
         orders = await self.get_closed_orders()
+        if self.CHECK_EMPTY_ACCOUNT:
+            assert orders == []
+            return
         assert orders
         self.check_raw_closed_orders(orders)
 
@@ -330,6 +349,9 @@ class AbstractAuthenticatedExchangeTester:
                 await self.get_cancelled_orders(force_fetch=True)
             return
         orders = await self.get_cancelled_orders()
+        if self.CHECK_EMPTY_ACCOUNT:
+            assert orders == []
+            return
         assert orders
         self.check_raw_cancelled_orders(orders)
 
@@ -819,6 +841,8 @@ class AbstractAuthenticatedExchangeTester:
         return created_order
 
     def get_order_size(self, portfolio, price, symbol=None, order_size=None, settlement_currency=None):
+        if self.CHECK_EMPTY_ACCOUNT:
+            return trading_constants.ZERO
         order_size = order_size or self.ORDER_SIZE
         settlement_currency = settlement_currency or self.SETTLEMENT_CURRENCY
         currency_quantity = portfolio[settlement_currency][self.PORTFOLIO_TYPE_FOR_SIZE] \
