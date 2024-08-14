@@ -60,9 +60,9 @@ def _httpx_retrier(f):
             error = None
             try:
                 resp: httpx.Response = await f(*args, **kwargs)
-                if resp.status_code == 502:
-                    # waking up, retry
-                    error = "bad gateway"
+                if resp.status_code in (502, 503):
+                    # waking up or SLA issue, retry
+                    error = f"{resp.status_code} error {resp.reason_phrase}"
                 else:
                     if i > 0:
                         commons_logging.get_logger(__name__).debug(
