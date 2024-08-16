@@ -81,7 +81,7 @@ class AbstractAuthenticatedExchangeTester:
     USE_ORDER_OPERATION_TO_CHECK_API_KEY_RIGHTS = False    # set True when api key rights can't be checked using a
     # dedicated api and have to be checked by sending an order operation
     EXPECTED_INVALID_ORDERS_QUANTITY = []   # orders with known invalid quantity exchange order id    (usually legacy)
-    CHECK_EMPTY_ACCOUNT = True  # set True when the account to check has no funds. Warning: does not check order
+    CHECK_EMPTY_ACCOUNT = False  # set True when the account to check has no funds. Warning: does not check order
     # parse/create/fill/cancel or portfolio & trades parsing
 
     # Implement all "test_[name]" methods, call super() to run the test, pass to ignore it.
