@@ -25,6 +25,7 @@ import asyncio
 import octobot_commons.os_util as os_util
 import octobot_commons.logging as logging
 import octobot_commons.configuration as configuration
+import octobot_commons.profiles as profiles
 import octobot_commons.authentication as authentication
 import octobot_commons.constants as common_constants
 import octobot_commons.errors as errors
@@ -46,6 +47,7 @@ import octobot.constants as constants
 import octobot.disclaimer as disclaimer
 import octobot.logger as octobot_logger
 import octobot.community as octobot_community
+import octobot.community.errors
 import octobot.limits as limits
 
 
@@ -147,6 +149,31 @@ async def _apply_community_startup_info_to_config(logger, config, community_auth
         logger.error(f"Error when fetching community startup info: {err}")
 
 
+async def _apply_db_bot_config(logger, config, community_auth) -> bool:
+    try:
+        # async loop may have changed if community_auth was already used before
+        await community_auth.ensure_async_loop()
+        profile_data = await community_auth.supabase_client.fetch_bot_tentacles_data_based_config(constants.COMMUNITY_BOT_ID)
+        profile = await profiles.import_profile_data_as_profile(
+            profile_data,
+            constants.PROFILE_FILE_SCHEMA,
+            None,
+            name=profile_data.profile_details.name,
+            auto_update=False
+        )
+        config.load_profiles()
+    except octobot.community.errors.MissingBotConfigError:
+        raise errors.RemoteConfigError(
+            f"COMMUNITY_BOT_ID env variable is required to apply bot config. "
+            f"COMMUNITY_BOT_ID={constants.COMMUNITY_BOT_ID}"
+        )
+    except Exception as err:
+        raise errors.RemoteConfigError(
+            f"Error when fetching {constants.COMMUNITY_BOT_ID} bot configuration: {err} ({err.__class__.__name__})"
+        )
+    return commands.select_forced_profile_if_any(config, profile.profile_id, logger)
+
+
 def _apply_env_variables_to_config(logger, config):
     commands.download_and_select_profile(
         logger, config,
@@ -184,7 +211,10 @@ async def _get_authenticated_community_if_possible(config, logger):
 async def _async_load_community_data(community_auth, config, logger, is_first_startup):
     if constants.IS_CLOUD_ENV and is_first_startup:
         # auto config
-        await _apply_community_startup_info_to_config(logger, config, community_auth)
+        if constants.USE_FETCHED_BOT_CONFIG:
+            await _apply_db_bot_config(logger, config, community_auth)
+        else:
+            await _apply_community_startup_info_to_config(logger, config, community_auth)
 
 
 def _apply_forced_configs(community_auth, logger, config, is_first_startup):
@@ -325,9 +355,13 @@ def start_octobot(args):
 
         commands.run_bot(bot, logger)
 
-    except errors.ConfigError as e:
+    except errors.RemoteConfigError as err:
+        logger.exception(err, False, "Error when fetchig bot configuration: " + str(err))
+        os._exit(-1)
+
+    except errors.ConfigError as err:
         logger.error("OctoBot can't start without a valid " + common_constants.CONFIG_FILE
-                     + " configuration file.\nError: " + str(e) + "\nYou can use " +
+                     + " configuration file.\nError: " + str(err) + "\nYou can use " +
                      constants.DEFAULT_CONFIG_FILE + " as an example to fix it.")
         os._exit(-1)
 
@@ -339,12 +373,12 @@ def start_octobot(args):
                      f"folder or start OctoBot with the following arguments: tentacles --install --all")
         os._exit(-1)
 
-    except ModuleNotFoundError as e:
-        if 'tentacles' in str(e):
+    except ModuleNotFoundError as err:
+        if 'tentacles' in str(err):
             logger.error("Impossible to start OctoBot, tentacles are missing.\nTo install tentacles, "
                          "please use the following command:\nstart.py tentacles --install --all")
         else:
-            logger.exception(e)
+            logger.exception(err)
         os._exit(-1)
 
     except errors.ConfigEvaluatorError:
