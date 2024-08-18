@@ -212,7 +212,7 @@ class CommunityAuthentication(authentication.Authenticator):
             self.configuration_storage
         )
 
-    async def _ensure_async_loop(self):
+    async def ensure_async_loop(self):
         # elements should be bound to the current loop
         if not self.is_using_the_current_loop():
             if self._login_completed is not None:
@@ -484,7 +484,7 @@ class CommunityAuthentication(authentication.Authenticator):
 
     async def _initialize_account(self, minimal=False, fetch_private_data=True):
         try:
-            await self._ensure_async_loop()
+            await self.ensure_async_loop()
             self.initialized_event = asyncio.Event()
             if not (self.is_logged_in() or await self._restore_previous_session()):
                 return

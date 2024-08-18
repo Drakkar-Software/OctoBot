@@ -21,6 +21,7 @@ import time
 import typing
 import logging
 import httpx
+import uuid
 
 import aiohttp
 import gotrue.errors
@@ -31,6 +32,7 @@ import supabase.lib.client_options
 import octobot_commons.authentication as authentication
 import octobot_commons.logging as commons_logging
 import octobot_commons.profiles as commons_profiles
+import octobot_commons.profiles.profile_data as commons_profile_data
 import octobot_commons.enums as commons_enums
 import octobot_commons.constants as commons_constants
 import octobot_trading.api as trading_api
@@ -317,6 +319,42 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             bot_id, bot_update
         )
 
+    async def fetch_bot_tentacles_data_based_config(self, bot_id: str) -> commons_profiles.ProfileData:
+        if not bot_id:
+            raise errors.MissingBotConfigError(f"bot_id is '{bot_id}'")
+        commons_logging.get_logger(__name__).debug(f"Fetching {bot_id} bot config")
+        bot_config = (await self.table("bots").select(
+            "id,"
+            "name, "
+            "bot_config:bot_configs!current_config_id("
+                "id, "
+                "options, "
+                "exchanges, "
+                "is_simulated"
+            ")"
+        ).eq(enums.BotKeys.ID.value, bot_id).execute()).data[0]
+        bot_name = bot_config["name"]
+        # generic options
+        profile_data = commons_profiles.ProfileData(
+            commons_profile_data.ProfileDetailsData(
+                name=f"{bot_name}_fetched_config",
+                id=str(uuid.uuid4()),
+                bot_id=bot_id,
+            ),
+            [],
+            commons_profile_data.TradingData(commons_constants.USD_LIKE_COINS[0])
+        )
+        # apply specific options
+        self._apply_options_based_config(profile_data, bot_config["bot_config"])
+        return profile_data
+
+    def _apply_options_based_config(self, profile_data: commons_profiles.ProfileData, bot_config: dict):
+        if tentacles_data := [
+            commons_profile_data.TentaclesData.from_dict(td)
+            for td in bot_config[enums.BotConfigKeys.OPTIONS.value].get("tentacles", [])
+        ]:
+            commons_profiles.TentaclesProfileDataTranslator(profile_data).translate(tentacles_data, bot_config)
+
     async def fetch_bot_profile_data(self, bot_config_id: str) -> commons_profiles.ProfileData:
         if not bot_config_id:
             raise errors.MissingBotConfigError(f"bot_config_id is '{bot_config_id}'")
@@ -344,7 +382,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             ].get("minimal_funds", [])
         ] if bot_config[enums.BotConfigKeys.EXCHANGES.value] else []
         profile_data.profile_details.version = bot_config["product_config"][enums.ProfileConfigKeys.VERSION.value]
-        profile_data.trader_simulator.enabled = bot_config.get("is_simulated", False)
+        profile_data.trader_simulator.enabled = bot_config.get(enums.BotConfigKeys.IS_SIMULATED.value, False)
         if profile_data.trader_simulator.enabled:
             portfolio = (bot_config.get(
                 enums.BotConfigKeys.OPTIONS.value
@@ -354,7 +392,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             if trading_api.is_usd_like_coin(profile_data.trading.reference_market):
                 usd_like_asset = profile_data.trading.reference_market
             else:
-                usd_like_asset = "USDT"  # todo use dynamic value when exchange is not supporting USDT
+                usd_like_asset = commons_constants.USD_LIKE_COINS[0]   # todo use dynamic value when exchange is not supporting USDT
             profile_data.trader_simulator.starting_portfolio = formatters.get_adapted_portfolio(
                 usd_like_asset, portfolio
             )
