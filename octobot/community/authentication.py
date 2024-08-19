@@ -212,6 +212,12 @@ class CommunityAuthentication(authentication.Authenticator):
             self.configuration_storage
         )
 
+    async def _re_create_client(self):
+        self.supabase_client = self._create_client()
+        self.logger.debug(f"Refreshing user session")
+        self.supabase_client.event_loop = asyncio.get_event_loop()
+        await self.supabase_client.refresh_session()
+
     async def ensure_async_loop(self):
         # elements should be bound to the current loop
         if not self.is_using_the_current_loop():
@@ -228,7 +234,7 @@ class CommunityAuthentication(authentication.Authenticator):
             # changed event loop: restart client
             await self.supabase_client.aclose()
             self.user_account.flush()
-            self.supabase_client = self._create_client()
+            await self._re_create_client()
 
     def is_using_the_current_loop(self):
         return self.supabase_client.event_loop is None \
@@ -493,6 +499,8 @@ class CommunityAuthentication(authentication.Authenticator):
                 await self._init_community_data(fetch_private_data)
                 if self._community_feed and self._community_feed.has_registered_feed():
                     await self._ensure_init_community_feed()
+        except authentication.AuthenticationError as err:
+            self.logger.info(f"Login aborted: no authenticated session: {err}")
         except authentication.UnavailableError as e:
             self.logger.exception(e, True, f"Error when fetching community data, "
                                            f"please check your internet connection.")
