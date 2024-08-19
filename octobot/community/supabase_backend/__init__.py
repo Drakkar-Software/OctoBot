@@ -14,10 +14,6 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
-from octobot.community.supabase_backend import postgres_functions
-from octobot.community.supabase_backend.postgres_functions import (
-    PostgresFunctions,
-)
 from octobot.community.supabase_backend import configuration_storage
 from octobot.community.supabase_backend.configuration_storage import (
     SyncConfigurationStorage,
@@ -34,7 +30,6 @@ from octobot.community.supabase_backend.community_supabase_client import (
 )
 
 __all__ = [
-    "PostgresFunctions",
     "SyncConfigurationStorage",
     "ASyncConfigurationStorage",
     "AuthenticatedAsyncSupabaseClient",

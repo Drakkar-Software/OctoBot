@@ -21,7 +21,7 @@ import octobot_commons.authentication as authentication
 import octobot.community as community
 import octobot.community.supabase_backend.enums as supabase_backend_enums
 from additional_tests.supabase_backend_tests import authenticated_client_1, authenticated_client_2, \
-    admin_client, get_backend_api_creds, skip_if_no_service_key
+    admin_client, anon_client, get_backend_api_creds, skip_if_no_service_key
 
 
 # All test coroutines will be treated as marked.
@@ -34,6 +34,14 @@ async def test_get_user(authenticated_client_1):
         attribute.value in user
         for attribute in supabase_backend_enums.UserKeys
     )
+
+
+async def test_get_auth_key(authenticated_client_1, anon_client):
+    user_auth_key = authenticated_client_1._get_auth_key()
+    assert user_auth_key != authenticated_client_1.supabase_key
+
+    anon_auth_key = anon_client._get_auth_key()
+    assert anon_auth_key == anon_client.supabase_key
 
 
 async def test_update_metadata(authenticated_client_1):
@@ -68,7 +76,7 @@ async def test_fetch_subscribed_products_urls(authenticated_client_1):
 async def test_sign_in_with_otp_token(authenticated_client_1, skip_if_no_service_key, admin_client):
     # generate OTP token
     user = await authenticated_client_1.get_user()
-    res = admin_client.auth.admin.generate_link({"email": user["email"], "type": "magiclink"})
+    res = await admin_client.auth.admin.generate_link({"email": user["email"], "type": "magiclink"})
     token = res.properties.hashed_token
 
     # create new client
@@ -80,19 +88,19 @@ async def test_sign_in_with_otp_token(authenticated_client_1, skip_if_no_service
         supabase_client = community.CommunitySupabaseClient(
             backend_url,
             backend_key,
-            community.SyncConfigurationStorage(config)
+            community.ASyncConfigurationStorage(config)
         )
         saved_session = "saved_session"
-        supabase_client.auth._storage.set_item(supabase_client.auth._storage_key, saved_session)
+        await supabase_client.auth._storage.set_item(supabase_client.auth._storage_key, saved_session)
         # wrong token
         with pytest.raises(authentication.AuthenticationError):
             await supabase_client.sign_in_with_otp_token("1234")
         # save session has not been removed
-        assert supabase_client.auth._storage.get_item(supabase_client.auth._storage_key) == saved_session
+        assert await supabase_client.auth._storage.get_item(supabase_client.auth._storage_key) == saved_session
 
         await supabase_client.sign_in_with_otp_token(token)
         # save session has been updated
-        updated_session = supabase_client.auth._storage.get_item(supabase_client.auth._storage_key)
+        updated_session = await supabase_client.auth._storage.get_item(supabase_client.auth._storage_key)
         assert updated_session != saved_session
 
         # ensure new supabase_client is bound to the same user as the previous client
@@ -102,7 +110,7 @@ async def test_sign_in_with_otp_token(authenticated_client_1, skip_if_no_service
         # already consumed token
         with pytest.raises(authentication.AuthenticationError):
             await supabase_client.sign_in_with_otp_token(token)
-        assert supabase_client.auth._storage.get_item(supabase_client.auth._storage_key) == updated_session
+        assert await supabase_client.auth._storage.get_item(supabase_client.auth._storage_key) == updated_session
     finally:
         if supabase_client:
-            await supabase_client.close()
+            await supabase_client.aclose()
