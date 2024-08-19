@@ -156,10 +156,15 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         if not self.is_signed_in():
             raise authentication.FailedAuthentication()
 
+    async def refresh_session(self):
+        try:
+            await self.auth.refresh_session()
+        except gotrue.errors.AuthError as err:
+            raise authentication.AuthenticationError(err) from err
+
     async def sign_in_with_otp_token(self, token):
         self.event_loop = asyncio.get_event_loop()
         # restore saved session in case otp token fails
-        # todo
         saved_session = await self.auth._storage.get_item(self.auth._storage_key)
         try:
             url = f"{self.auth_url}/verify?token={token}&type=magiclink"
@@ -334,7 +339,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
 
     async def fetch_bot_tentacles_data_based_config(self, bot_id: str) -> commons_profiles.ProfileData:
         if not bot_id:
-            raise errors.MissingBotConfigError(f"bot_id is '{bot_id}'")
+            raise errors.BotNotFoundError(f"bot_id is '{bot_id}'")
         commons_logging.get_logger(__name__).debug(f"Fetching {bot_id} bot config")
         try:
             bot_config = (await self.table("bots").select(
