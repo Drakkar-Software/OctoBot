@@ -613,8 +613,7 @@ class AbstractAuthenticatedExchangeTester:
             self.check_parsed_closed_order(
                 personal_data.create_order_instance_from_raw(self.exchange_manager.trader, closed_order),
                 incomplete_fees_orders,
-                allow_incomplete_fees,
-                False
+                allow_incomplete_fees
             )
         if allow_incomplete_fees and incomplete_fees_orders:
             # at least 2 orders have fees (the 2 recent market orders from market orders tests)
@@ -630,21 +629,22 @@ class AbstractAuthenticatedExchangeTester:
             self.check_parsed_closed_order(
                 personal_data.create_order_instance_from_raw(self.exchange_manager.trader, cancelled_order),
                 incomplete_fees_orders,
-                allow_incomplete_fees,
-                True
+                allow_incomplete_fees
             )
         assert not incomplete_fees_orders
 
     def check_parsed_closed_order(
         self, order: personal_data.Order, incomplete_fee_orders: list,
-        allow_incomplete_fees: bool, are_cancelled_orders: bool
+        allow_incomplete_fees: bool
     ):
         assert order.symbol
         assert order.timestamp
         assert order.order_type
         assert order.order_type is not trading_enums.TraderOrderType.UNKNOWN.value
         assert order.status
-        if are_cancelled_orders and self.EXPECT_MISSING_FEE_IN_CANCELLED_ORDERS:
+        if (
+            order.status == trading_enums.OrderStatus.CANCELED and self.EXPECT_MISSING_FEE_IN_CANCELLED_ORDERS
+        ):
             assert order.fee is None
         else:
             try:
