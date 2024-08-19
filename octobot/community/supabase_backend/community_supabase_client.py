@@ -336,16 +336,19 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         if not bot_id:
             raise errors.MissingBotConfigError(f"bot_id is '{bot_id}'")
         commons_logging.get_logger(__name__).debug(f"Fetching {bot_id} bot config")
-        bot_config = (await self.table("bots").select(
-            "id,"
-            "name, "
-            "bot_config:bot_configs!current_config_id("
-                "id, "
-                "options, "
-                "exchanges, "
-                "is_simulated"
-            ")"
-        ).eq(enums.BotKeys.ID.value, bot_id).execute()).data[0]
+        try:
+            bot_config = (await self.table("bots").select(
+                "id,"
+                "name, "
+                "bot_config:bot_configs!current_config_id!inner("
+                    "id, "
+                    "options, "
+                    "exchanges, "
+                    "is_simulated"
+                ")"
+            ).eq(enums.BotKeys.ID.value, bot_id).execute()).data[0]
+        except IndexError:
+            raise errors.MissingBotConfigError(f"No bot config for bot with bot_id: '{bot_id}'")
         bot_name = bot_config["name"]
         # generic options
         profile_data = commons_profiles.ProfileData(
