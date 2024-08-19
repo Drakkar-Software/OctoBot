@@ -162,11 +162,13 @@ async def _apply_db_bot_config(logger, config, community_auth) -> bool:
             auto_update=False
         )
         config.load_profiles()
-    except octobot.community.errors.MissingBotConfigError:
+    except octobot.community.errors.BotNotFoundError:
         raise errors.RemoteConfigError(
             f"COMMUNITY_BOT_ID env variable is required to apply bot config. "
             f"COMMUNITY_BOT_ID={constants.COMMUNITY_BOT_ID}"
         )
+    except octobot.community.errors.MissingBotConfigError:
+        raise
     except Exception as err:
         raise errors.RemoteConfigError(
             f"Error when fetching {constants.COMMUNITY_BOT_ID} bot configuration: {err} ({err.__class__.__name__})"
@@ -201,6 +203,8 @@ async def _get_authenticated_community_if_possible(config, logger):
                 # When no tentacles or in cloud, fetch private data. Otherwise fetch it later on in bot init
                 fetch_private_data = not has_tentacles or constants.IS_CLOUD_ENV
                 await community_auth.async_init_account(fetch_private_data=fetch_private_data)
+        if not community_auth.is_logged_in():
+            logger.info("No authenticated community account")
     except authentication.FailedAuthentication as err:
         logger.error(f"Failed authentication when initializing community authenticator: {err}")
     except Exception as err:
@@ -210,6 +214,10 @@ async def _get_authenticated_community_if_possible(config, logger):
 
 async def _async_load_community_data(community_auth, config, logger, is_first_startup):
     if constants.IS_CLOUD_ENV and is_first_startup:
+        if not community_auth.is_logged_in():
+            raise authentication.FailedAuthentication(
+                "Impossible to load community data without an authenticated user account"
+            )
         # auto config
         if constants.USE_FETCHED_BOT_CONFIG:
             await _apply_db_bot_config(logger, config, community_auth)
@@ -356,7 +364,7 @@ def start_octobot(args):
         commands.run_bot(bot, logger)
 
     except errors.RemoteConfigError as err:
-        logger.exception(err, False, "Error when fetchig bot configuration: " + str(err))
+        logger.exception(err)
         os._exit(-1)
 
     except errors.ConfigError as err:
