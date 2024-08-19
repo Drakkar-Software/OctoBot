@@ -16,7 +16,6 @@
 import asyncio
 import base64
 import datetime
-import json
 import time
 import typing
 import logging
@@ -25,9 +24,10 @@ import uuid
 
 import aiohttp
 import gotrue.errors
+import gotrue.types
 import postgrest
 import postgrest.types
-import supabase.lib.client_options
+import supabase
 
 import octobot_commons.authentication as authentication
 import octobot_commons.logging as commons_logging
@@ -92,36 +92,41 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
     """
     MAX_PAGINATED_REQUESTS_COUNT = 100
     MAX_UUID_PER_COMMUNITY_REQUEST_FILTERS = 150
+    REQUEST_TIMEOUT = 30
 
     def __init__(
         self,
         supabase_url: str,
         supabase_key: str,
-        storage: configuration_storage.SyncConfigurationStorage,
-        options: supabase.lib.client_options.ClientOptions = supabase.lib.client_options.ClientOptions(),
+        storage: configuration_storage.ASyncConfigurationStorage,
+        options: supabase.AClientOptions = None,
     ):
+        options = options or supabase.AClientOptions()
         options.storage = storage   # use configuration storage
+        options.postgrest_client_timeout = self.REQUEST_TIMEOUT
         self.event_loop = None
         super().__init__(supabase_url, supabase_key, options=options)
         self.is_admin = False
         self.production_anon_client = None
+        self._authenticated = False
 
     async def sign_in(self, email: str, password: str) -> None:
         try:
             self.event_loop = asyncio.get_event_loop()
-            self.auth.sign_in_with_password({
+            await self.auth.sign_in_with_password({
                 "email": email,
                 "password": password,
             })
         except gotrue.errors.AuthApiError as err:
             if "email" in str(err).lower():
+                # AuthApiError('Email not confirmed')
                 raise errors.EmailValidationRequiredError(err) from err
             raise authentication.FailedAuthentication(err) from err
 
     async def sign_up(self, email: str, password: str) -> None:
         try:
             self.event_loop = asyncio.get_event_loop()
-            self.auth.sign_up({
+            resp = await self.auth.sign_up({
                 "email": email,
                 "password": password,
                 "options": {
@@ -131,53 +136,63 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
                     }
                 }
             })
-        except gotrue.errors.AuthApiError as err:
+            if self._requires_email_validation(resp.user):
+                raise errors.EmailValidationRequiredError()
+        except gotrue.errors.AuthError as err:
             raise authentication.AuthenticationError(err) from err
 
-    def sign_out(self) -> None:
+    async def sign_out(self, options: gotrue.types.SignOutOptions) -> None:
         try:
-            self.auth.sign_out()
+            await self.auth.sign_out(options)
         except gotrue.errors.AuthApiError:
             pass
 
-    def restore_session(self):
+    def _requires_email_validation(self, user: gotrue.types.User) -> bool:
+        return user.app_metadata.get("provider") == "email" and user.confirmed_at is None
+
+    async def restore_session(self):
         self.event_loop = asyncio.get_event_loop()
-        self.auth.initialize_from_storage()
+        await self.auth.initialize_from_storage()
         if not self.is_signed_in():
             raise authentication.FailedAuthentication()
 
     async def sign_in_with_otp_token(self, token):
         self.event_loop = asyncio.get_event_loop()
         # restore saved session in case otp token fails
-        saved_session = self.auth._storage.get_item(self.auth._storage_key)
+        # todo
+        saved_session = await self.auth._storage.get_item(self.auth._storage_key)
         try:
             url = f"{self.auth_url}/verify?token={token}&type=magiclink"
             async with aiohttp.ClientSession() as client:
                 resp = await client.get(url, allow_redirects=False)
-                self.auth.initialize_from_url(
-                    resp.headers["Location"].replace("#access_token", "?access_token").replace("#error", "?error")
+                await self.auth.initialize_from_url(
+                    resp.headers["Location"]
+                    .replace("#access_token", "?access_token")
+                    .replace("#error", "?error")
                 )
         except gotrue.errors.AuthImplicitGrantRedirectError as err:
             if saved_session:
-                self.auth._storage.set_item(self.auth._storage_key, saved_session)
+                await self.auth._storage.set_item(self.auth._storage_key, saved_session)
             raise authentication.AuthenticationError(err) from err
 
     def is_signed_in(self) -> bool:
-        try:
-            return self.auth.get_session() is not None
-        except gotrue.errors.AuthApiError as err:
-            commons_logging.get_logger(self.__class__.__name__).info(f"Authentication error: {err}")
-            # remove invalid session from
-            self.remove_session_details()
-            return False
+        # is signed in when a user auth key is set
+        return self._get_auth_key() != self.supabase_key
 
-    def has_login_info(self) -> bool:
-        return bool(self.auth._storage.get_item(self.auth._storage_key))
+    def get_in_saved_session(self) -> typing.Union[gotrue.types.Session, None]:
+        return self.auth._get_valid_session(
+            self.auth._storage.sync_storage.get_item(self.auth._storage_key)
+        )
+
+    async def has_login_info(self) -> bool:
+        return bool(await self.auth._storage.get_item(self.auth._storage_key))
 
     async def update_metadata(self, metadata_update) -> dict:
-        return self.auth.update_user({
-            "data": metadata_update
-        }).user.model_dump()
+        return (
+            await self.auth.update_user({
+                "data": metadata_update
+            })
+        ).user.model_dump()
 
     async def get_user(self) -> dict:
         try:
@@ -186,7 +201,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         except gotrue.errors.AuthApiError as err:
             if "missing" in str(err):
                 raise errors.EmailValidationRequiredError(err) from err
-            raise authentication.AuthenticationError("Please re-login to your OctoBot account") from err
+            raise authentication.AuthenticationError(f"Please re-login to your OctoBot account: {err}") from err
 
     def sync_get_user(self) -> dict:
         return self.auth.get_user().user.model_dump()
@@ -264,9 +279,8 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             raise errors.BotDeploymentURLNotFoundError(deployment_url_id)
 
     async def fetch_startup_info(self, bot_id) -> dict:
-        return json.loads(
-            (await self.postgres_functions().invoke("get_startup_info", {"body": {"bot_id": bot_id}}))["data"]
-        )[0]
+        resp = await self.rpc("get_startup_info", {"bot_id": bot_id}).execute()
+        return resp.data[0]
 
     async def fetch_products(self, category_types: list[str]) -> list:
         return (
@@ -284,9 +298,8 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         ).data
 
     async def fetch_subscribed_products_urls(self) -> list:
-        return json.loads(
-            (await self.postgres_functions().invoke("get_subscribed_products_urls", {}))["data"]
-        ) or []
+        resp = await self.rpc("get_subscribed_products_urls").execute()
+        return resp.data or []
 
     async def fetch_bot_products_subscription(self, bot_deployment_id: str) -> dict:
         return (await self.table("bot_deployments").select(
@@ -505,13 +518,13 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             "symbol": symbol,
             "time_frame": time_frame.value,
         }
-        db_functions = self.production_anon_postgres_functions() if use_production_db else self.postgres_functions()
-        range_return = (await db_functions.invoke(
+        db_rpc = (await self.production_anon_rpc()) if use_production_db else self.rpc
+        range_return = (await db_rpc(
             "get_ohlcv_range",
-            {"body": params}
-        ))["data"]
+            params
+        ).execute()).data
         try:
-            min_max = json.loads(range_return)[0]
+            min_max = range_return[0]
             return (
                 self.get_parsed_time(min_max["min_value"]).timestamp() if min_max["min_value"] else None,
                 self.get_parsed_time(min_max["max_value"]).timestamp() if min_max["max_value"] else None,
@@ -586,13 +599,11 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             )
         return self.production_anon_client
 
-    def _get_production_anon_auth_headers(self):
-        return self._get_anon_auth_headers(constants.COMMUNITY_PRODUCTION_BACKEND_KEY)
+    # def _get_production_anon_auth_headers(self):
+    #     return self._get_anon_auth_headers(constants.COMMUNITY_PRODUCTION_BACKEND_KEY)
 
-    def production_anon_postgres_functions(self):
-        return self.postgres_functions(
-            url=constants.COMMUNITY_PRODUCTION_BACKEND_URL, auth_headers=self._get_production_anon_auth_headers()
-        )
+    async def production_anon_rpc(self):
+        return (await self.get_production_anon_client()).rpc
 
     async def _paginated_fetch_historical_data(
         self, client, table_name: str, select: str, matcher: dict,
@@ -683,25 +694,45 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             for ohlcv in ohlcvs
         ]
 
-    async def get_asset_id(self, bucket_id: str, asset_name: str) -> str:
-        """
-        Not implemented for authenticated users
-        """
-        async with self.other_postgres_client("storage") as client:
-            return (await client.from_("objects").select("*")
-                .eq(
-                    "bucket_id", bucket_id
-                ).eq(
-                    "name", asset_name
-                ).execute()
-            ).data[0]["id"]
+    # async def get_asset_id(self, bucket_id: str, asset_name: str) -> str:
+    #     """
+    #     Not implemented for authenticated users
+    #     """
+    #     # possible with new version ?
+    #     return (await self.storage.from_("objects").select("*")
+    #         .eq(
+    #             "bucket_id", bucket_id
+    #         ).eq(
+    #             "name", asset_name
+    #         ).execute()
+    #     ).data[0]["id"]
+    #     # async with self.other_postgres_client("storage") as client:
+    #     #     return (await client.from_("objects").select("*")
+    #     #         .eq(
+    #     #             "bucket_id", bucket_id
+    #     #         ).eq(
+    #     #             "name", asset_name
+    #     #         ).execute()
+    #     #     ).data[0]["id"]
 
     async def upload_asset(self, bucket_name: str, asset_name: str, content: typing.Union[str, bytes],) -> str:
         """
         Not implemented for authenticated users
         """
         result = await self.storage.from_(bucket_name).upload(asset_name, content)
-        return asset_name
+        return result.json()["Id"]
+
+    async def list_assets(self, bucket_name: str) -> list[dict[str, str]]:
+        """
+        Not implemented for authenticated users
+        """
+        return await self.storage.from_(bucket_name).list()
+
+    async def remove_asset(self, bucket_name: str, asset_name: str) -> None:
+        """
+        Not implemented for authenticated users
+        """
+        await self.storage.from_(bucket_name).remove(asset_name)
 
     async def send_signal(self, table, product_id: str, signal: str):
         return (await self.table(table).insert({
@@ -717,7 +748,12 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         )
 
     def is_realtime_connected(self) -> bool:
-        return self.realtime.socket and self.realtime.socket.connected and not self.realtime.socket.closed
+        return self.realtime.is_connected
+
+    def _get_auth_key(self):
+        if session := self.get_in_saved_session():
+            return session.access_token
+        return self.supabase_key
 
     @_httpx_retrier
     async def http_get(self, url: str, *args, params=None, headers=None, **kwargs) -> httpx.Response:
@@ -766,10 +802,12 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
                     raise
 
     async def _get_user(self) -> gotrue.User:
-        return self.auth.get_user().user
+        if user := await self.auth.get_user():
+            return user.user
+        raise authentication.AuthenticationError("Please login to your OctoBot account")
 
-    async def close(self):
-        await super().close()
+    async def aclose(self):
+        await super().aclose()
         if self.production_anon_client is not None:
             try:
                 await self.production_anon_client.aclose()

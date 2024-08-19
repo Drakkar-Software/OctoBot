@@ -3,14 +3,14 @@ OctoBot-Commons==1.9.52
 OctoBot-Trading==2.4.98
 OctoBot-Evaluators==1.9.5
 OctoBot-Tentacles-Manager==2.9.15
-OctoBot-Services==1.6.16
+OctoBot-Services==1.6.17
 OctoBot-Backtesting==1.9.7
 Async-Channel==2.2.1
 trading-backend==1.2.26
 
 ## Others
 colorlog==6.8.0
-requests==2.31.0
+requests==2.32.3
 urllib3 # required by requests, used in imports: make sure it's always available
 packaging==23.2
 python-dotenv==1.0.0
@@ -21,16 +21,12 @@ websockets
 gmqtt==0.6.16
 
 # Supabase  ensure supabase_backend_tests keep passing when updating any of those
-supabase==1.0.4   # Supabase client
-gotrue==1.0.3     # Supabase authennticated API (required by supabase and enforced to allow direct import)
-supafunc==0.2.3   # Supabase functions calls (required by supabase and enforced to allow direct import)
-postgrest==0.10.8 # Supabase posgres calls (required by supabase and enforced to allow direct import)
-realtime==1.0.0   # Supabase realtime lib (required by supabase and enforced to allow direct import)
+supabase==2.7.1   # Supabase client
+gotrue     # Supabase authenticated API (required by supabase and enforced to allow direct import)
+postgrest  # Supabase posgres calls (required by supabase and enforced to allow direct import)
 
 # async http requests
-# avoid v3.10.0 as it is failing CI (<class 'RuntimeError'>: aiodns needs a SelectorEventLoop on Windows. See more: https://github.com/saghul/aiodns/issues/86)
-aiohttp==3.9.5
-
-# Experimental to prevent httpx.PoolTimeout
-httpcore==0.17.3  # to up to at least 1.0.2 (prevent default version when installing httpx which creates httpx.PoolTimeout)
-anyio==4.0.0      #
+aiohttp==3.10.4
+# updating to aiodns==3.2.0 is incompatible (and failing CI)
+# raises RuntimeError: aiodns needs a SelectorEventLoop on Windows. See more: https://github.com/saghul/aiodns/issues/86
+aiodns==3.1.1   # used by aiohttp

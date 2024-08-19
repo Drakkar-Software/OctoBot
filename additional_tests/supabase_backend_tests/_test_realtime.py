@@ -24,7 +24,6 @@ from additional_tests.supabase_backend_tests import authenticated_client_1, auth
     authenticated_client_3, get_backend_client_creds, sandboxed_insert
 import octobot.community.supabase_backend.enums as enums
 import octobot.community.supabase_backend.community_supabase_client as community_supabase_client
-import octobot.community.supabase_backend.supabase_realtime_client as supabase_realtime_client
 
 
 # All test coroutines will be treated as marked.
@@ -40,15 +39,7 @@ SECONDARY_TABLE_INSERT_CONTENT = {"task": "hello !!!"}
 VERBOSE = True
 
 
-async def test_not_listen(authenticated_client_1):
-    assert isinstance(authenticated_client_1.realtime, supabase_realtime_client.AuthenticatedSupabaseRealtimeClient)
-    # access_token is passed and is a real user auth token (not the anon supabase_key)
-    assert len(authenticated_client_1.realtime.access_token) > len(authenticated_client_1.supabase_key)
-    # ensure no connection is created as long as subscribe is not called
-    assert authenticated_client_1.realtime.channels == []
-    assert authenticated_client_1.realtime.socket.closed is True
-    assert authenticated_client_1.realtime.socket.connected is False
-    assert authenticated_client_1.realtime.socket.ws_connection is None
+# DISABLED UNTIL REALTIME IS USED AGAIN
 
 
 async def test_listen_one_chan(authenticated_client_1, authenticated_client_2, authenticated_client_3, sandboxed_insert):

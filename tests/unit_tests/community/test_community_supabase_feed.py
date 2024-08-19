@@ -57,9 +57,9 @@ async def authenticated_feed():
         authenticator.supabase_client = mock.Mock(
             sign_in=mock.AsyncMock(),
             sign_in_with_otp_token=mock.AsyncMock(),
-            sign_out=mock.Mock(),
+            sign_out=mock.AsyncMock(),
             auth=mock.Mock(_storage_key="_storage_key"),
-            close=mock.AsyncMock(),
+            aclose=mock.AsyncMock(),
             realtime=realtime_mock,
             send_signal=mock.AsyncMock()
         )

@@ -160,7 +160,7 @@ async def test_fetch_startup_info(authenticated_client_1_with_temp_bot):
     )
 
 
-async def test_upsert_and_reset_trades(authenticated_client_1_with_temp_bot, authenticated_client_2):
+async def test_upsert_and_reset_trades(authenticated_client_1_with_temp_bot, authenticated_client_2):   #todo
     authenticated_client_1, bot_id = authenticated_client_1_with_temp_bot
     # bot just created, no trade yet
     existing_trades = await authenticated_client_1.fetch_trades(bot_id)
@@ -308,8 +308,9 @@ def _equal(d_1, d_2, key):
             for sub_key in range(len(d_1[key]))
         )
     if key == "time":
-        return community.CommunitySupabaseClient.get_parsed_time(d_1[key]) == \
-            community.CommunitySupabaseClient.get_parsed_time(d_2[key])
+        t1 = community.CommunitySupabaseClient.get_parsed_time(d_1[key].split("+0")[0])
+        t2 = community.CommunitySupabaseClient.get_parsed_time(d_2[key].split("+0")[0])
+        return t1 == t2
     return d_1[key] == d_2[key]
 
 
@@ -325,6 +326,7 @@ def trades_mock(seed, bot_id):
                 octobot_trading.enums.TraderOrderType.SELL_LIMIT.value if int(seed + i) % 2 == 0
                 else octobot_trading.enums.TraderOrderType.BUY_MARKET.value,
             octobot_trading.enums.ExchangeConstantsOrderColumns.ENTRIES.value: ["entry_id"],
+            octobot_trading.enums.ExchangeConstantsOrderColumns.BROKER_APPLIED.value: True,
         }
         for i in range(2)
     ]
