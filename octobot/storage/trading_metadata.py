@@ -17,6 +17,7 @@ import math
 import numpy
 
 import octobot_commons.enums as common_enums
+import octobot_commons.logging as commons_logging
 import octobot_commons.constants as commons_constants
 import octobot_commons.databases as commons_databases
 import octobot_commons.configuration as commons_configuration
@@ -60,7 +61,15 @@ async def store_backtesting_run_metadata(exchange_managers, start_time, user_inp
 
 async def _get_trading_metadata(exchange_managers, run_start_time, user_inputs, run_dbs_identifier, is_backtesting, name) \
         -> dict:
-    trading_mode = trading_api.get_trading_modes(exchange_managers[0])[0]
+    try:
+        trading_mode = trading_api.get_trading_modes(exchange_managers[0])[0]
+    except IndexError:
+        import tentacles.Trading.Mode
+        commons_logging.get_logger(__name__).debug(
+            f"Using {tentacles.Trading.Mode.BlankTradingMode.get_name()} as a fallback for metadata as "
+            f"no trading mode is selected"
+        )
+        trading_mode = tentacles.Trading.Mode.BlankTradingMode(exchange_managers[0].config, exchange_managers[0])
     multi_exchanges_data = await _get_multi_exchange_data(exchange_managers, is_backtesting)
     single_exchange_data = await _get_single_exchange_data(
         exchange_managers[0],
