@@ -718,13 +718,15 @@ class CommunityAuthentication(authentication.Authenticator):
             await self.supabase_client.upsert_trades(formatted_trades)
 
     @_bot_data_update
-    async def update_orders(self, orders: list, exchange_name: str):
+    async def update_orders(self, orders_by_exchange: dict[str, list]):
         """
         Updates authenticated account orders
         """
-        formatted_orders = formatters.format_orders(orders, exchange_name)
+        formatted_orders = []
+        for exchange_name, orders in orders_by_exchange.items():
+            formatted_orders += formatters.format_orders(orders, exchange_name)
         await self.supabase_client.update_bot_orders(self.user_account.bot_id, formatted_orders)
-        self.logger.info(f"Bot orders updated: using {len(orders)} orders")
+        self.logger.info(f"Bot orders updated: using {len(formatted_orders)} orders")
 
     @_bot_data_update
     async def update_portfolio(self, current_value: dict, initial_value: dict, profitability: float,
