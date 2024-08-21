@@ -14,21 +14,13 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
-from octobot.community.errors_upload import initializer
-from octobot.community.errors_upload.initializer import (
-    register_error_uploader,
-)
-from octobot.community.errors_upload import error_model
-from octobot.community.errors_upload.error_model import (
-    Error,
-)
-from octobot.community.errors_upload import errors_uploader
-from octobot.community.errors_upload.errors_uploader import (
-    ErrorsUploader,
+from octobot.community.errors_upload import sentry_tracker
+from octobot.community.errors_upload.sentry_tracker import (
+    init_sentry_tracker,
+    flush_tracker,
 )
 
 __all__ = [
-    "register_error_uploader",
-    "Error",
-    "ErrorsUploader",
+    "init_sentry_tracker",
+    "flush_tracker",
 ]
