@@ -20,259 +20,229 @@ import aiohttp
 import io
 import gzip
 
-try:
-    import sentry_sdk
-    import sentry_sdk.consts
-    import sentry_sdk.utils
-    import sentry_sdk.envelope
-    import sentry_sdk.transport
-    import sentry_sdk._types
+import sentry_sdk
+import sentry_sdk.consts
+import sentry_sdk.utils
+import sentry_sdk.envelope
+import sentry_sdk.transport
+import sentry_sdk.types
 
-    class SentryAiohttpTransport(sentry_sdk.HttpTransport):
-        def __init__(
-            self, options: typing.Dict[str, typing.Any]
-        ):
-            super().__init__(options)
-            # use custom async worker instead of default sentry thread worker
-            # does not support proxies, at least for now
-            self._worker = AiohttpWorker(queue_size=options["transport_queue_size"])
 
-        async def _async_send_request(
-            self,
-            body,  # type: bytes
-            headers,  # type: typing.Dict[str, str]
-            endpoint_type="store",  # type: sentry_sdk._types.EndpointType
-            envelope=None,  # type: typing.Optional[sentry_sdk.envelope.Envelope]
-        ) -> None:
+class SentryAiohttpTransport(sentry_sdk.HttpTransport):
+    def __init__(
+        self, options: typing.Dict[str, typing.Any]
+    ):
+        super().__init__(options)
+        # use custom async worker instead of default sentry thread worker
+        # does not support proxies, at least for now
+        self._worker = AiohttpWorker(queue_size=options["transport_queue_size"])
 
-            def record_loss(reason: str) -> None:
-                if envelope is None:
-                    self.record_lost_event(reason, data_category="error")
-                else:
-                    for item in envelope.items:
-                        self.record_lost_event(reason, item=item)
+    async def _async_send_request(
+        self,
+        body,  # type: bytes
+        headers,  # type: typing.Dict[str, str]
+        endpoint_type="store",  # type: sentry_sdk.consts.EndpointType
+        envelope=None,  # type: typing.Optional[sentry_sdk.envelope.Envelope]
+    ) -> None:
 
-            headers.update(
-                {
-                    "User-Agent": str(self._auth.client),
-                    "X-Sentry-Auth": str(self._auth.to_header()),
-                }
-            )
-            try:
-                async with self._worker.session.post(
-                    str(self._auth.get_api_url(endpoint_type)),
-                    data=body,
-                    headers=headers,
-                ) as response:
-                    self._update_rate_limits(response)
+        def record_loss(reason: str) -> None:
+            if envelope is None:
+                self.record_lost_event(reason, data_category="error")
+            else:
+                for item in envelope.items:
+                    self.record_lost_event(reason, item=item)
 
-                    if response.status == 429:
-                        # if we hit a 429.  Something was rate limited but we already
-                        # acted on this in `self._update_rate_limits`.  Note that we
-                        # do not want to record event loss here as we will have recorded
-                        # an outcome in relay already.
-                        self.on_dropped_event("status_429")
-                        pass
+        headers.update(
+            {
+                "User-Agent": str(self._auth.client),
+                "X-Sentry-Auth": str(self._auth.to_header()),
+            }
+        )
+        try:
+            async with self._worker.session.post(
+                str(self._auth.get_api_url(endpoint_type)),
+                data=body,
+                headers=headers,
+            ) as response:
+                self._update_rate_limits(response)
 
-                    elif response.status >= 300 or response.status < 200:
-                        sentry_sdk.utils.logger.error(
-                            "Unexpected status code: %s (body: %s)",
-                            response.status,
-                            await response.text(),
-                        )
-                        self.on_dropped_event("status_{}".format(response.status))
-                        record_loss("network_error")
-            except BaseException as err:
-                logging.getLogger(self.__class__.__name__).warning(f"Sentry post error: {err} {err.__class__.__name__}")
-                self.on_dropped_event("network")
-                record_loss("network_error")
-                raise
+                if response.status == 429:
+                    # if we hit a 429.  Something was rate limited but we already
+                    # acted on this in `self._update_rate_limits`.  Note that we
+                    # do not want to record event loss here as we will have recorded
+                    # an outcome in relay already.
+                    self.on_dropped_event("status_429")
+                    pass
 
-        async def _async_send_event(
-            self, event  # type: sentry_sdk._types.Event
-        ) -> None:
+                elif response.status >= 300 or response.status < 200:
+                    sentry_sdk.utils.logger.error(
+                        "Unexpected status code: %s (body: %s)",
+                        response.status,
+                        await response.text(),
+                    )
+                    self.on_dropped_event("status_{}".format(response.status))
+                    record_loss("network_error")
+        except BaseException as err:
+            logging.getLogger(self.__class__.__name__).warning(f"Sentry post error: {err} {err.__class__.__name__}")
+            self.on_dropped_event("network")
+            record_loss("network_error")
+            raise
 
-            if self._check_disabled("error"):
-                self.on_dropped_event("self_rate_limits")
-                self.record_lost_event("ratelimit_backoff", data_category="error")
-                return None
+    async def _async_send_envelope(
+        self, envelope: sentry_sdk.envelope.Envelope
+    ) -> None:
+        """
+        Async version of super()._send_envelope
+        """
 
-            body = io.BytesIO()
-            with gzip.GzipFile(fileobj=body, mode="w") as f:
-                f.write(sentry_sdk.utils.json_dumps(event))
+        # remove all items from the envelope which are over quota
+        new_items = []
+        for item in envelope.items:
+            if self._check_disabled(item.data_category):
+                if item.data_category in ("transaction", "error", "default", "statsd"):
+                    self.on_dropped_event("self_rate_limits")
+                self.record_lost_event("ratelimit_backoff", item=item)
+            else:
+                new_items.append(item)
 
-            assert self.parsed_dsn is not None
-            sentry_sdk.utils.logger.debug(
-                "Sending event, type:%s level:%s event_id:%s project:%s host:%s"
-                % (
-                    event.get("type") or "null",
-                    event.get("level") or "null",
-                    event.get("event_id") or "null",
-                    self.parsed_dsn.project_id,
-                    self.parsed_dsn.host,
-                )
-            )
-            await self._async_send_request(
-                body.getvalue(),
-                headers={"Content-Type": "application/json", "Content-Encoding": "gzip"},
-            )
+        # Since we're modifying the envelope here make a copy so that others
+        # that hold references do not see their envelope modified.
+        envelope = sentry_sdk.envelope.Envelope(headers=envelope.headers, items=new_items)
+
+        if not envelope.items:
             return None
 
-        async def _async_send_envelope(
-            self, envelope: sentry_sdk.envelope.Envelope
-        ) -> None:
+        # since we're already in the business of sending out an envelope here
+        # check if we have one pending for the stats session envelopes so we
+        # can attach it to this enveloped scheduled for sending.  This will
+        # currently typically attach the client report to the most recent
+        # session update.
+        client_report_item = self._fetch_pending_client_report(interval=30)
+        if client_report_item is not None:
+            envelope.items.append(client_report_item)
 
-            # remove all items from the envelope which are over quota
-            new_items = []
-            for item in envelope.items:
-                if self._check_disabled(item.data_category):
-                    if item.data_category in ("transaction", "error", "default"):
-                        self.on_dropped_event("self_rate_limits")
-                    self.record_lost_event("ratelimit_backoff", item=item)
-                else:
-                    new_items.append(item)
-
-            # Since we're modifying the envelope here make a copy so that others
-            # that hold references do not see their envelope modified.
-            envelope = sentry_sdk.envelope.Envelope(headers=envelope.headers, items=new_items)
-
-            if not envelope.items:
-                return None
-
-            # since we're already in the business of sending out an envelope here
-            # check if we have one pending for the stats session envelopes so we
-            # can attach it to this enveloped scheduled for sending.  This will
-            # currently typically attach the client report to the most recent
-            # session update.
-            client_report_item = self._fetch_pending_client_report(interval=30)
-            if client_report_item is not None:
-                envelope.items.append(client_report_item)
-
-            body = io.BytesIO()
-            with gzip.GzipFile(fileobj=body, mode="w") as f:
+        body = io.BytesIO()
+        if self._compresslevel == 0:
+            envelope.serialize_into(body)
+        else:
+            with gzip.GzipFile(
+                fileobj=body, mode="w", compresslevel=self._compresslevel
+            ) as f:
                 envelope.serialize_into(f)
 
-            assert self.parsed_dsn is not None
-            sentry_sdk.utils.logger.debug(
-                "Sending envelope [%s] project:%s host:%s",
-                envelope.description,
-                self.parsed_dsn.project_id,
-                self.parsed_dsn.host,
-            )
+        assert self.parsed_dsn is not None
+        sentry_sdk.utils.logger.debug(
+            "Sending envelope [%s] project:%s host:%s",
+            envelope.description,
+            self.parsed_dsn.project_id,
+            self.parsed_dsn.host,
+        )
 
-            await self._async_send_request(
-                body.getvalue(),
-                headers={
-                    "Content-Type": "application/x-sentry-envelope",
-                    "Content-Encoding": "gzip",
-                },
-                endpoint_type="envelope",
-                envelope=envelope,
-            )
-            return None
+        headers = {
+            "Content-Type": "application/x-sentry-envelope",
+        }
+        if self._compresslevel > 0:
+            headers["Content-Encoding"] = "gzip"
 
-        def capture_event(
-            self, event  # type: sentry_sdk._types.Event
-        ) -> None:
-            hub = self.hub_cls.current
+        await self._async_send_request(
+            body.getvalue(),
+            headers=headers,
+            endpoint_type=sentry_sdk.consts.EndpointType.ENVELOPE,
+            envelope=envelope,
+        )
+        return None
 
-            async def send_event_wrapper() -> None:
-                with hub:    # pylint: disable=not-context-manager
-                    with sentry_sdk.utils.capture_internal_exceptions():
-                        await self._async_send_event(event)
-                        self._flush_client_reports()
+    def capture_event(
+        self, event  # type: sentry_sdk.types.Event
+    ) -> None:
+        """
+        DEPRECATED: Please use capture_envelope instead.
+        """
+        return super().capture_event(event)
 
-            if not self._worker.submit(send_event_wrapper):
-                self.on_dropped_event("full_queue")
-                self.record_lost_event("queue_overflow", data_category="error")
+    def capture_envelope(
+        self, envelope: sentry_sdk.envelope.Envelope
+    ) -> None:
+        hub = self.hub_cls.current
 
-        def capture_envelope(
-            self, envelope: sentry_sdk.envelope.Envelope
-        ) -> None:
-            hub = self.hub_cls.current
+        async def send_envelope_wrapper() -> None:
+            with hub:    # pylint: disable=not-context-manager
+                with sentry_sdk.utils.capture_internal_exceptions():
+                    await self._async_send_envelope(envelope)
+                    self._flush_client_reports()
 
-            async def send_envelope_wrapper() -> None:
-                with hub:    # pylint: disable=not-context-manager
-                    with sentry_sdk.utils.capture_internal_exceptions():
-                        await self._async_send_envelope(envelope)
-                        self._flush_client_reports()
+        if not self._worker.submit(send_envelope_wrapper):
+            self.on_dropped_event("full_queue")
+            for item in envelope.items:
+                self.record_lost_event("queue_overflow", item=item)
 
-            if not self._worker.submit(send_envelope_wrapper):
-                self.on_dropped_event("full_queue")
-                for item in envelope.items:
-                    self.record_lost_event("queue_overflow", item=item)
+    async def async_kill(self):
+        await self._worker.async_kill()
 
-        async def async_kill(self):
-            await self._worker.async_kill()
+class AiohttpWorker:
+    def __init__(self, queue_size=sentry_sdk.consts.DEFAULT_QUEUE_SIZE):
+        self.session = None
+        self.call_tasks = []
+        self._queue_size = queue_size
+        self._kill_task = None
+        self._stopped = False
 
-    class AiohttpWorker:
-        def __init__(self, queue_size=sentry_sdk.consts.DEFAULT_QUEUE_SIZE):
-            self.session = None
-            self.call_tasks = []
-            self._queue_size = queue_size
-            self._kill_task = None
-            self._stopped = False
-
-        @property
-        def is_alive(self) -> bool:
-            if self.session is None or self.session.closed:
-                return False
-            # session is not closed
-            # no pending kill task
-            if self._kill_task is None or self._kill_task.done():
-                return not self.session.closed
-            # pending kill task, will stop
+    @property
+    def is_alive(self) -> bool:
+        if self.session is None or self.session.closed:
             return False
+        # session is not closed
+        # no pending kill task
+        if self._kill_task is None or self._kill_task.done():
+            return not self.session.closed
+        # pending kill task, will stop
+        return False
 
-        def _ensure_session(self) -> None:
-            if not self.is_alive:
-                self.start()
+    def _ensure_session(self) -> None:
+        if not self.is_alive:
+            self.start()
 
-        def start(self) -> None:
-            if self._kill_task and not self._kill_task.done():
-                self._kill_task.cancel()
-            self.session = aiohttp.ClientSession()
+    def start(self) -> None:
+        if self._kill_task and not self._kill_task.done():
+            self._kill_task.cancel()
+        self.session = aiohttp.ClientSession()
 
-        def kill(self) -> None:
-            for task in self.call_tasks:
-                if not task.done():
-                    task.cancel()
-            self.call_tasks = []
-            if self.is_alive:
-                self._kill_task = asyncio.create_task(self.session.close())
+    def kill(self) -> None:
+        for task in self.call_tasks:
+            if not task.done():
+                task.cancel()
+        self.call_tasks = []
+        if self.is_alive:
+            self._kill_task = asyncio.create_task(self.session.close())
 
-        async def async_kill(self):
-            self._stopped = type
-            self.kill()
-            if self._kill_task and not self._kill_task.done():
-                await self._kill_task
+    async def async_kill(self):
+        self._stopped = type
+        self.kill()
+        if self._kill_task and not self._kill_task.done():
+            await self._kill_task
 
-        def full(self) -> bool:
-            return len(self.call_tasks) > self._queue_size
+    def full(self) -> bool:
+        return len(self.call_tasks) > self._queue_size
 
-        def flush(self, timeout: float, callback=None) -> None:
-            sentry_sdk.utils.logger.debug("background worker got flush request")
-            sentry_sdk.utils.logger.debug("background worker flush ignored")
+    def flush(self, timeout: float, callback=None) -> None:
+        sentry_sdk.utils.logger.debug("background worker got flush request")
+        sentry_sdk.utils.logger.debug("background worker flush ignored")
 
-        async def _async_call(self, callback):
-            try:
-                await callback()
-            finally:
-                if asyncio.current_task() in self.call_tasks:
-                    self.call_tasks.remove(asyncio.current_task())
+    async def _async_call(self, callback):
+        try:
+            await callback()
+        finally:
+            if asyncio.current_task() in self.call_tasks:
+                self.call_tasks.remove(asyncio.current_task())
 
-        def _schedule_async_send(self, callback):
-            self.call_tasks.append(asyncio.create_task(self._async_call(callback)))
+    def _schedule_async_send(self, callback):
+        self.call_tasks.append(asyncio.create_task(self._async_call(callback)))
 
-        def submit(self, callback) -> bool:
-            if self._stopped:
-                return False
-            self._ensure_session()
-            if self.full():
-                return False
-            self._schedule_async_send(callback)
-            return True
-
-except ImportError:
-    # do not force sentry_sdk requirement
-    pass
+    def submit(self, callback) -> bool:
+        if self._stopped:
+            return False
+        self._ensure_session()
+        if self.full():
+            return False
+        self._schedule_async_send(callback)
+        return True

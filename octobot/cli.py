@@ -13,14 +13,13 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
-
-import packaging.version as packaging_version
-
+import time
 import argparse
 import os
 import sys
 import multiprocessing
 import asyncio
+import packaging.version as packaging_version
 
 import octobot_commons.os_util as os_util
 import octobot_commons.logging as logging
@@ -294,6 +293,8 @@ def start_octobot(args):
         # Current running environment
         _log_environment(logger)
 
+        octobot_community.init_sentry_tracker()
+
         # load configuration
         config, is_first_startup = _create_startup_config(logger)
 
@@ -325,9 +326,6 @@ def start_octobot(args):
 
         # Can now perform config health check (some checks require a loaded profile)
         configuration_manager.config_health_check(config, args.backtesting)
-
-        # Keep track of errors if any
-        octobot_community.register_error_uploader(constants.ERRORS_POST_ENDPOINT, config)
 
         # Apply config limits if any
         startup_messages += limits.apply_config_limits(config)
@@ -362,16 +360,16 @@ def start_octobot(args):
         _disable_interface_from_param("web", args.no_web, logger)
 
         commands.run_bot(bot, logger)
-
+        force_error_exit = False
     except errors.RemoteConfigError as err:
         logger.exception(err)
-        os._exit(-1)
+        force_error_exit = True
 
     except errors.ConfigError as err:
         logger.error("OctoBot can't start without a valid " + common_constants.CONFIG_FILE
                      + " configuration file.\nError: " + str(err) + "\nYou can use " +
                      constants.DEFAULT_CONFIG_FILE + " as an example to fix it.")
-        os._exit(-1)
+        force_error_exit = True
 
     except errors.NoProfileError:
         logger.error("Missing default profiles. OctoBot can't start without a valid default profile configuration. "
@@ -379,7 +377,7 @@ def start_octobot(args):
                      f"folder is accessible. To reinstall default profiles, delete the "
                      f"'{tentacles_manager_constants.TENTACLES_PATH}' "
                      f"folder or start OctoBot with the following arguments: tentacles --install --all")
-        os._exit(-1)
+        force_error_exit = True
 
     except ModuleNotFoundError as err:
         if 'tentacles' in str(err):
@@ -387,18 +385,21 @@ def start_octobot(args):
                          "please use the following command:\nstart.py tentacles --install --all")
         else:
             logger.exception(err)
-        os._exit(-1)
+        force_error_exit = True
 
     except errors.ConfigEvaluatorError:
         logger.error("OctoBot can't start without a valid  configuration file.\n"
                      "This file is generated on tentacle "
                      "installation using the following command:\nstart.py tentacles --install --all")
-        os._exit(-1)
+        force_error_exit = True
 
     except errors.ConfigTradingError:
         logger.error("OctoBot can't start without a valid configuration file.\n"
                      "This file is generated on tentacle "
                      "installation using the following command:\nstart.py tentacles --install --all")
+        force_error_exit = True
+    if force_error_exit:
+        octobot_community.flush_tracker()
         os._exit(-1)
 
 
