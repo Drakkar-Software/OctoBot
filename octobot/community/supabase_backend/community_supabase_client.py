@@ -62,9 +62,12 @@ def _httpx_retrier(f):
             error = None
             try:
                 resp: httpx.Response = await f(*args, **kwargs)
-                if resp.status_code in (502, 503):
+                if resp.status_code in (502, 503, 520):
                     # waking up or SLA issue, retry
                     error = f"{resp.status_code} error {resp.reason_phrase}"
+                    commons_logging.get_logger(__name__).debug(
+                        f"{f.__name__}(args={args[1:]}) failed with {error} after {i+1} attempts, retrying."
+                    )
                 else:
                     if i > 0:
                         commons_logging.get_logger(__name__).debug(
