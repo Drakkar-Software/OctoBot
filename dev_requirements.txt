@@ -16,5 +16,3 @@ wheel
 pur
 
 pylint
-
-sentry-sdk==1.29.2
