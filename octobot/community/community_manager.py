@@ -70,7 +70,10 @@ class CommunityManager:
         if self.enabled:
             try:
                 # first ensure this session is not just a configuration test: register after a timer
-                await asyncio.sleep(common_constants.TIMER_BEFORE_METRICS_REGISTRATION_SECONDS)
+                await asyncio.sleep(
+                    common_constants.TIMER_BETWEEN_METRICS_UPTIME_UPDATE
+                    if constants.IS_CLOUD_ENV else common_constants.TIMER_BEFORE_METRICS_REGISTRATION_SECONDS
+                )
                 self._init_community_config()
                 # await self.register_session() # waiting for metrics migration
                 await self._update_authenticated_bot()
