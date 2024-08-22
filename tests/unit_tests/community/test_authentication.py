@@ -27,6 +27,9 @@ import octobot.constants as constants
 import octobot_commons.authentication as authentication
 import octobot_commons.configuration
 
+# All test coroutines will be treated as marked.
+pytestmark = pytest.mark.asyncio
+
 AUTH_URL = "https://oh.fake/auth"
 AUTH_RETURN = {
     "access_token": "1",
@@ -58,9 +61,9 @@ def auth():
     authenticator.supabase_client = mock.Mock(
         sign_in=mock.AsyncMock(),
         sign_in_with_otp_token=mock.AsyncMock(),
-        sign_out=mock.Mock(),
+        sign_out=mock.AsyncMock(),
         auth=mock.Mock(_storage_key="_storage_key"),
-        close=mock.AsyncMock(),
+        aclose=mock.AsyncMock(),
     )
     return authenticator
 
@@ -110,10 +113,10 @@ async def test_login(auth):
         auth.supabase_client.sign_in.assert_not_called()
         auth.supabase_client.sign_in_with_otp_token.assert_awaited_once_with("password_t")
 
-def test_logout(auth):
+async def test_logout(auth):
     with mock.patch.object(community.CommunityAuthentication, "_reset_tokens", mock.Mock()) as reset_mock, \
          mock.patch.object(community.CommunityAuthentication, "remove_login_detail", mock.Mock()) as remove_mock:
-        auth.logout()
+        await auth.logout()
         reset_mock.assert_called_once()
         remove_mock.assert_called_once()
         auth.supabase_client.sign_out.assert_called_once()
@@ -161,21 +164,25 @@ def test_remove_login_detail(auth):
 
 def test_reset_login_token(auth):
     with mock.patch.object(octobot_commons.configuration.Configuration, "save", mock.Mock()) as save_mock:
-        auth.configuration_storage.configuration = octobot_commons.configuration.Configuration("", "")
-        auth.configuration_storage.configuration.config = {
+        auth.configuration_storage.set_configuration(
+            octobot_commons.configuration.Configuration("", "")
+        )
+        auth.configuration_storage.sync_storage._configuration.config = {
             constants.CONFIG_COMMUNITY: {
                 "_storage_key": "plop"
             }
         }
         auth._reset_login_token()
-        assert auth.configuration_storage.configuration.config[constants.CONFIG_COMMUNITY]["_storage_key"] == ""
+        assert auth.configuration_storage.sync_storage._configuration.config[constants.CONFIG_COMMUNITY]["_storage_key"] == ""
         save_mock.assert_called_once_with()
 
 
 def test_get_saved_bot_id(auth):
     assert auth._get_saved_bot_id() is None
-    auth.configuration_storage.configuration = octobot_commons.configuration.Configuration("", "")
-    auth.configuration_storage.configuration.config = {
+    auth.configuration_storage.set_configuration(
+        octobot_commons.configuration.Configuration("", "")
+    )
+    auth.configuration_storage.sync_storage._configuration.config = {
         constants.CONFIG_COMMUNITY: {
             constants.CONFIG_COMMUNITY_BOT_ID: "bid"
         }
@@ -265,17 +272,17 @@ async def test_stop(auth):
     auth._fetch_account_task.cancel = mock.Mock()
     auth._fetch_account_task.done = mock.Mock(return_value=True)
     await auth.stop()
-    auth.supabase_client.close.assert_awaited_once()
-    auth.supabase_client.close.reset_mock()
+    auth.supabase_client.aclose.assert_awaited_once()
+    auth.supabase_client.aclose.reset_mock()
     auth._fetch_account_task.cancel.assert_not_called()
     auth._fetch_account_task.done = mock.Mock(return_value=False)
 
     await auth.stop()
-    auth.supabase_client.close.assert_awaited_once()
+    auth.supabase_client.aclose.assert_awaited_once()
     auth._fetch_account_task.cancel.assert_called_once()
 
-    auth.supabase_client.close.reset_mock()
+    auth.supabase_client.aclose.reset_mock()
     auth._fetch_account_task.cancel.reset_mock()
     await auth.stop()
-    auth.supabase_client.close.assert_awaited_once()
+    auth.supabase_client.aclose.assert_awaited_once()
     auth._fetch_account_task.cancel.assert_called_once()

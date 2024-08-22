@@ -97,6 +97,8 @@ STAGING_COMMUNITY_BACKEND_KEY = os.getenv("COMMUNITY_BACKEND_KEY", "eyJhbGciOiJI
 COMMUNITY_PRODUCTION_BACKEND_URL = os.getenv("COMMUNITY_PRODUCTION_BACKEND_URL", COMMUNITY_BACKEND_URL)
 COMMUNITY_PRODUCTION_BACKEND_KEY = os.getenv("COMMUNITY_PRODUCTION_BACKEND_KEY", COMMUNITY_BACKEND_KEY)
 
+ERROR_TRACKER_DSN = os.getenv("ERROR_TRACKER_DSN")
+
 CONFIG_COMMUNITY = "community"
 CONFIG_COMMUNITY_BOT_ID = "bot_id"
 CONFIG_COMMUNITY_MQTT_UUID = "mqtt_uuid"
@@ -108,6 +110,7 @@ USER_PASSWORD_TOKEN = os.getenv("USER_PASSWORD_TOKEN", None)
 COMMUNITY_BOT_ID = os.getenv("COMMUNITY_BOT_ID", "")
 IS_DEMO = os_util.parse_boolean_environment_var("IS_DEMO", "False")
 IS_CLOUD_ENV = os_util.parse_boolean_environment_var("IS_CLOUD_ENV", "false")
+USE_FETCHED_BOT_CONFIG = os_util.parse_boolean_environment_var("USE_FETCHED_BOT_CONFIG", "false")
 CAN_INSTALL_TENTACLES = os_util.parse_boolean_environment_var("CAN_INSTALL_TENTACLES", str(not IS_CLOUD_ENV))
 TRACKING_ID = os.getenv("TRACKING_ID", "eoe1stwyun" if IS_DEMO else "eoe06soct7" if IS_CLOUD_ENV else "f726lk9q59")
 PH_TRACKING_ID = os.getenv("PH_TRACKING_ID", "phc_VydQbPkMXoNhgd0xJde4hUgbWGlEJ3aaLrSu5sudFdJ")

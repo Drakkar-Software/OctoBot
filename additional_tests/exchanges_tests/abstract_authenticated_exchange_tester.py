@@ -81,7 +81,7 @@ class AbstractAuthenticatedExchangeTester:
     USE_ORDER_OPERATION_TO_CHECK_API_KEY_RIGHTS = False    # set True when api key rights can't be checked using a
     # dedicated api and have to be checked by sending an order operation
     EXPECTED_INVALID_ORDERS_QUANTITY = []   # orders with known invalid quantity exchange order id    (usually legacy)
-    CHECK_EMPTY_ACCOUNT = True  # set True when the account to check has no funds. Warning: does not check order
+    CHECK_EMPTY_ACCOUNT = False  # set True when the account to check has no funds. Warning: does not check order
     # parse/create/fill/cancel or portfolio & trades parsing
 
     # Implement all "test_[name]" methods, call super() to run the test, pass to ignore it.
@@ -634,14 +634,17 @@ class AbstractAuthenticatedExchangeTester:
         assert not incomplete_fees_orders
 
     def check_parsed_closed_order(
-        self, order: personal_data.Order, incomplete_fee_orders: list, allow_incomplete_fees: bool
+        self, order: personal_data.Order, incomplete_fee_orders: list,
+        allow_incomplete_fees: bool
     ):
         assert order.symbol
         assert order.timestamp
         assert order.order_type
         assert order.order_type is not trading_enums.TraderOrderType.UNKNOWN.value
         assert order.status
-        if self.EXPECT_MISSING_FEE_IN_CANCELLED_ORDERS:
+        if (
+            order.status == trading_enums.OrderStatus.CANCELED and self.EXPECT_MISSING_FEE_IN_CANCELLED_ORDERS
+        ):
             assert order.fee is None
         else:
             try:

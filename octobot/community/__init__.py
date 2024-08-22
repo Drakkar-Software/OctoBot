@@ -33,7 +33,6 @@ from octobot.community.models import (
     StrategyData,
 )
 from octobot.community.supabase_backend import (
-    PostgresFunctions,
     SyncConfigurationStorage,
     ASyncConfigurationStorage,
     AuthenticatedAsyncSupabaseClient,
@@ -78,9 +77,8 @@ from octobot.community.feeds import (
     community_feed_factory,
 )
 from octobot.community.errors_upload import (
-    register_error_uploader,
-    Error,
-    ErrorsUploader,
+    init_sentry_tracker,
+    flush_tracker,
 )
 from octobot.community.identifiers_provider import (
     IdentifiersProvider,
@@ -103,12 +101,10 @@ __all__ = [
     "CommunityTentaclesPackage",
     "CommunitySupports",
     "CommunityDonation",
-    "register_error_uploader",
-    "Error",
-    "ErrorsUploader",
+    "init_sentry_tracker",
+    "flush_tracker",
     "StartupInfo",
     "StrategyData",
-    "PostgresFunctions",
     "SyncConfigurationStorage",
     "ASyncConfigurationStorage",
     "AuthenticatedAsyncSupabaseClient",

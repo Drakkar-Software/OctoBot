@@ -25,7 +25,10 @@ class SyncConfigurationStorage(gotrue.SyncSupportedStorage):
     Used by gotrue client to save authenticated user session
     """
     def __init__(self, configuration: octobot_commons.configuration.Configuration):
-        self.configuration: octobot_commons.configuration.Configuration = configuration
+        self._configuration: octobot_commons.configuration.Configuration = configuration
+
+    def set_configuration(self, configuration: octobot_commons.configuration.Configuration):
+        self._configuration = configuration
 
     def get_item(self, key: str) -> typing.Optional[str]:
         return self._get_value_in_config(key)
@@ -38,27 +41,27 @@ class SyncConfigurationStorage(gotrue.SyncSupportedStorage):
 
     def has_remote_packages(self) -> bool:
         return bool(
-            self.configuration.config.get(octobot.constants.CONFIG_COMMUNITY, {}).get(
+            self._configuration.config.get(octobot.constants.CONFIG_COMMUNITY, {}).get(
                 octobot.constants.CONFIG_COMMUNITY_PACKAGE_URLS
             )
         )
 
     def _save_value_in_config(self, key, value):
-        if self.configuration is not None:
-            if octobot.constants.CONFIG_COMMUNITY not in self.configuration.config:
-                self.configuration.config[octobot.constants.CONFIG_COMMUNITY] = {}
-            self.configuration.config[octobot.constants.CONFIG_COMMUNITY][key] = value
+        if self._configuration is not None:
+            if octobot.constants.CONFIG_COMMUNITY not in self._configuration.config:
+                self._configuration.config[octobot.constants.CONFIG_COMMUNITY] = {}
+            self._configuration.config[octobot.constants.CONFIG_COMMUNITY][key] = value
             try:
-                self.configuration.save()
+                self._configuration.save()
             except Exception as err:
                 octobot_commons.logging.get_logger(self.__class__.__name__).exception(
                     err, True, f"Error when saving configuration {err}"
                 )
 
     def _get_value_in_config(self, key):
-        if self.configuration is not None:
+        if self._configuration is not None:
             try:
-                return self.configuration.config[octobot.constants.CONFIG_COMMUNITY][key]
+                return self._configuration.config[octobot.constants.CONFIG_COMMUNITY][key]
             except KeyError:
                 return ""
         return None
@@ -68,6 +71,9 @@ class ASyncConfigurationStorage(gotrue.AsyncSupportedStorage):
     def __init__(self, configuration: octobot_commons.configuration.Configuration):
         self.sync_storage: SyncConfigurationStorage = SyncConfigurationStorage(configuration)
 
+    def set_configuration(self, configuration: octobot_commons.configuration.Configuration):
+        self.sync_storage.set_configuration(configuration)
+
     async def get_item(self, key: str) -> typing.Optional[str]:
         return self.sync_storage.get_item(key)
 
@@ -76,3 +82,6 @@ class ASyncConfigurationStorage(gotrue.AsyncSupportedStorage):
 
     async def remove_item(self, key: str) -> None:
         self.sync_storage.remove_item(key)
+
+    def has_remote_packages(self) -> bool:
+        return self.sync_storage.has_remote_packages()

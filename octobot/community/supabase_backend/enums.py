@@ -190,7 +190,7 @@ class BotConfigKeys(enum.Enum):
     PRODUCT_CONFIG_ID = "product_config_id"
     EXCHANGES = "exchanges"
     OPTIONS = "options"
-    SIMULATED = "simulated"
+    IS_SIMULATED = "is_simulated"
 
 
 class ProfileConfigKeys(enum.Enum):

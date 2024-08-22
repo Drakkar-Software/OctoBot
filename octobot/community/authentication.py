@@ -76,7 +76,7 @@ class CommunityAuthentication(authentication.Authenticator):
         self.config = config
         self.backend_url = backend_url or identifiers_provider.IdentifiersProvider.BACKEND_URL
         self.backend_key = backend_key or identifiers_provider.IdentifiersProvider.BACKEND_KEY
-        self.configuration_storage = supabase_backend.SyncConfigurationStorage(self.config)
+        self.configuration_storage = supabase_backend.ASyncConfigurationStorage(self.config)
         self.supabase_client = self._create_client()
         self.user_account = community_user_account.CommunityUserAccount()
         self.public_data = community_public_data.CommunityPublicData()
@@ -98,7 +98,7 @@ class CommunityAuthentication(authentication.Authenticator):
         )
 
     def update(self, configuration: commons_configuration.Configuration):
-        self.configuration_storage.configuration = configuration
+        self.configuration_storage.set_configuration(configuration)
 
     def get_logged_in_email(self):
         if self.user_account.has_user_data():
@@ -212,7 +212,13 @@ class CommunityAuthentication(authentication.Authenticator):
             self.configuration_storage
         )
 
-    async def _ensure_async_loop(self):
+    async def _re_create_client(self):
+        self.supabase_client = self._create_client()
+        self.logger.debug(f"Refreshing user session")
+        self.supabase_client.event_loop = asyncio.get_event_loop()
+        await self.supabase_client.refresh_session()
+
+    async def ensure_async_loop(self):
         # elements should be bound to the current loop
         if not self.is_using_the_current_loop():
             if self._login_completed is not None:
@@ -226,9 +232,9 @@ class CommunityAuthentication(authentication.Authenticator):
                 if should_set:
                     self._fetched_private_data.set()
             # changed event loop: restart client
-            await self.supabase_client.close()
+            await self.supabase_client.aclose()
             self.user_account.flush()
-            self.supabase_client = self._create_client()
+            await self._re_create_client()
 
     def is_using_the_current_loop(self):
         return self.supabase_client.event_loop is None \
@@ -316,7 +322,7 @@ class CommunityAuthentication(authentication.Authenticator):
         if self.must_be_authenticated_through_authenticator():
             raise authentication.AuthenticationError("Creating a new account is not authorized on this environment.")
         # always logout before creating a new account
-        self.logout()
+        await self.logout()
         self._ensure_community_url()
         with self._login_process():
             await self.supabase_client.sign_up(email, password)
@@ -433,20 +439,20 @@ class CommunityAuthentication(authentication.Authenticator):
     async def on_new_bot_select(self):
         await self._update_deployment_activity()
 
-    def logout(self):
+    async def logout(self):
         """
         logout and remove saved auth details
         Warning: also call stop_feeds if feeds have to be stopped (not done here to keep method sync)
         """
-        self.supabase_client.sign_out()
+        await self.supabase_client.sign_out({"scope": "local"})
         self._reset_tokens()
         self.remove_login_detail()
 
     def is_logged_in(self):
         return bool(self.supabase_client.is_signed_in() and self.user_account.has_user_data())
 
-    def has_login_info(self):
-        return self.supabase_client.has_login_info()
+    async def has_login_info(self):
+        return await self.supabase_client.has_login_info()
 
     def remove_login_detail(self):
         self.user_account.flush()
@@ -458,7 +464,7 @@ class CommunityAuthentication(authentication.Authenticator):
         self.logger.debug("Stopping ...")
         if self._fetch_account_task is not None and not self._fetch_account_task.done():
             self._fetch_account_task.cancel()
-        await self.supabase_client.close()
+        await self.supabase_client.aclose()
         if self._community_feed:
             await self._community_feed.stop()
         self.logger.debug("Stopped")
@@ -484,7 +490,7 @@ class CommunityAuthentication(authentication.Authenticator):
 
     async def _initialize_account(self, minimal=False, fetch_private_data=True):
         try:
-            await self._ensure_async_loop()
+            await self.ensure_async_loop()
             self.initialized_event = asyncio.Event()
             if not (self.is_logged_in() or await self._restore_previous_session()):
                 return
@@ -493,6 +499,8 @@ class CommunityAuthentication(authentication.Authenticator):
                 await self._init_community_data(fetch_private_data)
                 if self._community_feed and self._community_feed.has_registered_feed():
                     await self._ensure_init_community_feed()
+        except authentication.AuthenticationError as err:
+            self.logger.info(f"Login aborted: no authenticated session: {err}")
         except authentication.UnavailableError as e:
             self.logger.exception(e, True, f"Error when fetching community data, "
                                            f"please check your internet connection.")
@@ -650,29 +658,29 @@ class CommunityAuthentication(authentication.Authenticator):
         return constants.COMMUNITY_BOT_ID or self._get_value_in_config(constants.CONFIG_COMMUNITY_BOT_ID)
 
     def _save_value_in_config(self, key, value):
-        self.configuration_storage.set_item(key, value)
+        self.configuration_storage.sync_storage.set_item(key, value)
 
     def _get_value_in_config(self, key):
-        return self.configuration_storage.get_item(key)
+        return self.configuration_storage.sync_storage.get_item(key)
 
     async def _restore_previous_session(self):
         with self._login_process():
             async with self._auth_handler():
                 # will raise on failure
-                self.supabase_client.restore_session()
+                await self.supabase_client.restore_session()
                 await self._on_account_updated()
                 self.logger.info(f"Signed in as {self.get_logged_in_email()}")
         return self.is_logged_in()
 
     @contextlib.asynccontextmanager
     async def _auth_handler(self):
-        should_warn = self.has_login_info()
+        should_warn = await self.has_login_info()
         try:
             yield
         except authentication.FailedAuthentication as e:
             if should_warn:
                 self.logger.warning(f"Invalid authentication details, please re-authenticate. {e}")
-            self.logout()
+            await self.logout()
         except authentication.UnavailableError:
             raise
         except Exception as e:
@@ -710,13 +718,15 @@ class CommunityAuthentication(authentication.Authenticator):
             await self.supabase_client.upsert_trades(formatted_trades)
 
     @_bot_data_update
-    async def update_orders(self, orders: list, exchange_name: str):
+    async def update_orders(self, orders_by_exchange: dict[str, list]):
         """
         Updates authenticated account orders
         """
-        formatted_orders = formatters.format_orders(orders, exchange_name)
+        formatted_orders = []
+        for exchange_name, orders in orders_by_exchange.items():
+            formatted_orders += formatters.format_orders(orders, exchange_name)
         await self.supabase_client.update_bot_orders(self.user_account.bot_id, formatted_orders)
-        self.logger.info(f"Bot orders updated: using {len(orders)} orders")
+        self.logger.info(f"Bot orders updated: using {len(formatted_orders)} orders")
 
     @_bot_data_update
     async def update_portfolio(self, current_value: dict, initial_value: dict, profitability: float,

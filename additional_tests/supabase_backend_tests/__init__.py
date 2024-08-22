@@ -30,6 +30,12 @@ VERBOSE = False
 
 
 @pytest_asyncio.fixture
+async def anon_client():
+    async with _anon_client() as client:
+        yield client
+
+
+@pytest_asyncio.fixture
 async def authenticated_client_1():
     async with _authenticated_client(*get_backend_client_creds(1)) as client:
         yield client
@@ -145,14 +151,32 @@ async def _authenticated_client(email, password, admin_key=None):
         supabase_client = community.CommunitySupabaseClient(
             backend_url,
             admin_key or backend_key,
-            community.SyncConfigurationStorage(config)
+            community.ASyncConfigurationStorage(config)
         )
         if admin_key is None:
             await supabase_client.sign_in(email, password)
         yield supabase_client
     finally:
         if supabase_client:
-            await supabase_client.close()
+            await supabase_client.aclose()
+
+
+@contextlib.asynccontextmanager
+async def _anon_client():
+    config = commons_configuration.Configuration("", "")
+    config.config = {}
+    backend_url, backend_key = get_backend_api_creds()
+    supabase_client = None
+    try:
+        supabase_client = community.CommunitySupabaseClient(
+            backend_url,
+            backend_key,
+            community.ASyncConfigurationStorage(config)
+        )
+        yield supabase_client
+    finally:
+        if supabase_client:
+            await supabase_client.aclose()
 
 
 @pytest_asyncio.fixture
