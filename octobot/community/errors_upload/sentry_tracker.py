@@ -26,9 +26,9 @@ def init_sentry_tracker():
     """
     Will upload errors to octobot.constants.ERROR_TRACKER_DSN if its value is set
     """
-    logger = octobot_commons.logging.get_logger(__name__)
+    logger = octobot_commons.logging.get_logger("sentry_tracker")
     if not octobot.constants.ERROR_TRACKER_DSN:
-        logger.debug(f"Skipping error tracker: error tracker dsn is '{octobot.constants.ERROR_TRACKER_DSN}'")
+        logger.debug(f"Error tracker disabled")
         return
     environment = "cloud" if octobot.constants.IS_CLOUD_ENV else "self hosted"
     app_name = f"{octobot.constants.PROJECT_NAME} open source"
@@ -72,7 +72,7 @@ def init_sentry_tracker():
 def flush_tracker():
     if octobot.constants.ERROR_TRACKER_DSN:
         delay = 2
-        octobot_commons.logging.get_logger(__name__).info(f"Flushing trackers: shutting down in {delay} seconds ...")
+        octobot_commons.logging.get_logger("sentry_tracker").info(f"Flushing trackers: shutting down in {delay} seconds ...")
         sentry_sdk.flush()
         # let trackers upload errors
         time.sleep(delay)
