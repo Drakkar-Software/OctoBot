@@ -6,6 +6,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [2.0.4] - 2024-08-25
+### Added
+- [BitMart] The BitMart exchange is now officially supported
+- [GridTrading] Fund redispatch delay config
+### Updated
+- [WebInterface] Improve portfolio history display and make it more flexible
+- [Webhook] Make error messages easier to understand
+- [CCXT] update to ccxt 4.3.85
+- [Community] Fix community authentication related issues
+### Fixed
+- [GridTrading] Fixed grid reset issues when funds redispatch is enabled
+- [MEXC] Fixed MEXC traded pairs fetching issues
+- [OKX] Fixed leveraging parsing issues
+- [WebInterface] Fixed order cancel UI issues
+- [Configuration] Fixed recovery file related iss
+
 ## [2.0.3] - 2024-08-03
 ### Added
 - [IndexTradingMode]: Default profile, intra-day, real time update option and custom content
