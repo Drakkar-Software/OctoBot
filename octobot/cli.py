@@ -13,7 +13,6 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
-import time
 import argparse
 import os
 import sys
@@ -189,13 +188,23 @@ async def _get_authenticated_community_if_possible(config, logger):
     community_auth = octobot_community.CommunityAuthentication.create(config)
     try:
         if not community_auth.is_initialized():
-            if constants.IS_CLOUD_ENV and constants.USER_ACCOUNT_EMAIL and constants.USER_PASSWORD_TOKEN:
-                try:
-                    await community_auth.login(
-                        constants.USER_ACCOUNT_EMAIL, None, password_token=constants.USER_PASSWORD_TOKEN
-                    )
-                except authentication.AuthenticationError as err:
-                    logger.debug(f"Password token auth failure ({err}). Trying with saved session.")
+            if constants.IS_CLOUD_ENV:
+                if constants.USER_ACCOUNT_EMAIL and constants.USER_AUTH_KEY:
+                    try:
+                        logger.debug("Attempting auth key authentication")
+                        await community_auth.login(
+                            constants.USER_ACCOUNT_EMAIL, None, auth_key=constants.USER_AUTH_KEY
+                        )
+                    except authentication.AuthenticationError as err:
+                        logger.debug(f"Auth key auth failure ({err}). Trying other methods if available.")
+                if constants.USER_ACCOUNT_EMAIL and constants.USER_PASSWORD_TOKEN:
+                    try:
+                        logger.debug("Attempting password token authentication")
+                        await community_auth.login(
+                            constants.USER_ACCOUNT_EMAIL, None, password_token=constants.USER_PASSWORD_TOKEN
+                        )
+                    except authentication.AuthenticationError as err:
+                        logger.debug(f"Password token auth failure ({err}). Trying with saved session.")
             if not community_auth.is_initialized():
                 # try with saved credentials if any
                 has_tentacles = tentacles_manager_api.is_tentacles_architecture_valid()
