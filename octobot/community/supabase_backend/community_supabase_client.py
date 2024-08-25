@@ -21,6 +21,7 @@ import typing
 import logging
 import httpx
 import uuid
+import json
 
 import aiohttp
 import gotrue.errors
@@ -211,8 +212,22 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
                 raise errors.EmailValidationRequiredError(err) from err
             raise authentication.AuthenticationError(f"Please re-login to your OctoBot account: {err}") from err
 
-    def sync_get_user(self) -> dict:
-        return self.auth.get_user().user.model_dump()
+    async def get_otp_with_auth_key(self, user_email: str, auth_key: str) -> str:
+        try:
+            resp = await self.functions.invoke(
+                "create-auth-token",
+                {
+                    "headers": {
+                        "User-Auth-Token": auth_key
+                    },
+                    "body": {
+                        "user_email": user_email
+                    },
+                }
+            )
+            return json.loads(resp)["token"]
+        except Exception:
+            raise authentication.AuthenticationError(f"Invalid auth key authentication details")
 
     async def fetch_bot(self, bot_id) -> dict:
         try:
