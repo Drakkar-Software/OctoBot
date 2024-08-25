@@ -21,7 +21,8 @@ import octobot_commons.authentication as authentication
 import octobot.community as community
 import octobot.community.supabase_backend.enums as supabase_backend_enums
 from additional_tests.supabase_backend_tests import authenticated_client_1, authenticated_client_2, \
-    admin_client, anon_client, get_backend_api_creds, skip_if_no_service_key
+    admin_client, anon_client, get_backend_api_creds, skip_if_no_service_key, get_backend_client_creds, \
+    get_backend_client_auth_key
 
 
 # All test coroutines will be treated as marked.
@@ -106,6 +107,53 @@ async def test_sign_in_with_otp_token(authenticated_client_1, skip_if_no_service
         # ensure new supabase_client is bound to the same user as the previous client
         user = await supabase_client.get_user()
         assert user == await authenticated_client_1.get_user()
+
+        # already consumed token
+        with pytest.raises(authentication.AuthenticationError):
+            await supabase_client.sign_in_with_otp_token(token)
+        assert await supabase_client.auth._storage.get_item(supabase_client.auth._storage_key) == updated_session
+    finally:
+        if supabase_client:
+            await supabase_client.aclose()
+
+
+async def test_sign_in_with_auth_token():
+    # create new client
+    backend_url, backend_key = get_backend_api_creds()
+    email, _ = get_backend_client_creds(1)
+
+    config = commons_configuration.Configuration("", "")
+    config.config = {}
+    supabase_client = None
+    try:
+        supabase_client = community.CommunitySupabaseClient(
+            backend_url,
+            backend_key,
+            community.ASyncConfigurationStorage(config)
+        )
+        saved_session = "saved_session"
+        await supabase_client.auth._storage.set_item(supabase_client.auth._storage_key, saved_session)
+        # wrong configs
+        with pytest.raises(authentication.AuthenticationError):
+            await supabase_client.get_otp_with_auth_key("", "")
+        with pytest.raises(authentication.AuthenticationError):
+            await supabase_client.get_otp_with_auth_key(None, "")
+        with pytest.raises(authentication.AuthenticationError):
+            await supabase_client.get_otp_with_auth_key(email, None)
+        with pytest.raises(authentication.AuthenticationError):
+            await supabase_client.get_otp_with_auth_key(email, "1234")
+        assert await supabase_client.auth._storage.get_item(supabase_client.auth._storage_key) == saved_session
+        token = await supabase_client.get_otp_with_auth_key(email, get_backend_client_auth_key(1))
+        # ensure token is valid
+
+        await supabase_client.sign_in_with_otp_token(token)
+        # save session has been updated
+        updated_session = await supabase_client.auth._storage.get_item(supabase_client.auth._storage_key)
+        assert updated_session != saved_session
+
+        # ensure new supabase_client is bound to the same user as the previous client
+        user = await supabase_client.get_user()
+        assert user[supabase_backend_enums.UserKeys.EMAIL.value] == email
 
         # already consumed token
         with pytest.raises(authentication.AuthenticationError):
