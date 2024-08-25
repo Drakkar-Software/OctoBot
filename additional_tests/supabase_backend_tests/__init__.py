@@ -217,6 +217,10 @@ def get_backend_client_creds(identifier):
         os.getenv(f"SUPABASE_BACKEND_CLIENT_{identifier}_PASSWORD")
 
 
+def get_backend_client_auth_key(identifier):
+    return os.getenv(f"SUPABASE_BACKEND_CLIENT_{identifier}_AUTH_KEY")
+
+
 def _get_backend_service_key():
     return os.getenv(f"SUPABASE_BACKEND_SERVICE_KEY")
 

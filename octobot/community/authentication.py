@@ -81,6 +81,7 @@ class CommunityAuthentication(authentication.Authenticator):
         self.user_account = community_user_account.CommunityUserAccount()
         self.public_data = community_public_data.CommunityPublicData()
         self.successfully_fetched_tentacles_package_urls = False
+        self.silent_auth = False
         self._community_feed = None
 
         self.initialized_event = None
@@ -305,11 +306,20 @@ class CommunityAuthentication(authentication.Authenticator):
     def must_be_authenticated_through_authenticator(self):
         return constants.IS_CLOUD_ENV
 
-    async def login(self, email, password, password_token=None, minimal=False):
+    async def login(
+        self,
+        email: str,
+        password: typing.Optional[str],
+        password_token: typing.Optional[str] = None,
+        auth_key: typing.Optional[str] = None,
+        minimal: bool = False
+    ):
         self._ensure_email(email)
         self._ensure_community_url()
         self._reset_tokens()
         with self._login_process():
+            if auth_key and not password_token:
+                password_token = await self.supabase_client.get_otp_with_auth_key(email, auth_key)
             if password_token:
                 await self.supabase_client.sign_in_with_otp_token(password_token)
             else:
@@ -331,7 +341,8 @@ class CommunityAuthentication(authentication.Authenticator):
             await self.on_signed_in()
 
     async def on_signed_in(self, minimal=False):
-        self.logger.info(f"Signed in as {self.get_logged_in_email()}")
+        if not self.silent_auth:
+            self.logger.info(f"Signed in as {self.get_logged_in_email()}")
         await self._initialize_account(minimal=minimal)
 
     async def _update_account_metadata(self, metadata_update):
@@ -669,7 +680,8 @@ class CommunityAuthentication(authentication.Authenticator):
                 # will raise on failure
                 await self.supabase_client.restore_session()
                 await self._on_account_updated()
-                self.logger.info(f"Signed in as {self.get_logged_in_email()}")
+                if not self.silent_auth:
+                    self.logger.info(f"Signed in as {self.get_logged_in_email()}")
         return self.is_logged_in()
 
     @contextlib.asynccontextmanager
