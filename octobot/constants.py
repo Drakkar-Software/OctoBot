@@ -163,6 +163,7 @@ DEFAULT_TENTACLES_PACKAGE_NAME = "OctoBot-Default-Tentacles"
 
 # logs
 LOGS_FOLDER = "logs"
+FORCED_LOG_LEVEL = os.getenv("FORCED_LOG_LEVEL", "")
 ENV_TRADING_ENABLE_DEBUG_LOGS = os_util.parse_boolean_environment_var("ENV_TRADING_ENABLE_DEBUG_LOGS", "False")
 
 # system
