@@ -196,7 +196,7 @@ async def _get_authenticated_community_if_possible(config, logger):
                             constants.USER_ACCOUNT_EMAIL, None, auth_key=constants.USER_AUTH_KEY
                         )
                     except authentication.AuthenticationError as err:
-                        logger.debug(f"Auth key auth failure ({err}). Trying other methods if available.")
+                        logger.info(f"Auth key auth failure ({err}). Trying other methods if available.")
                 if constants.USER_ACCOUNT_EMAIL and constants.USER_PASSWORD_TOKEN:
                     try:
                         logger.debug("Attempting password token authentication")
@@ -204,7 +204,7 @@ async def _get_authenticated_community_if_possible(config, logger):
                             constants.USER_ACCOUNT_EMAIL, None, password_token=constants.USER_PASSWORD_TOKEN
                         )
                     except authentication.AuthenticationError as err:
-                        logger.debug(f"Password token auth failure ({err}). Trying with saved session.")
+                        logger.info(f"Password token auth failure ({err}). Trying with saved session.")
             if not community_auth.is_initialized():
                 # try with saved credentials if any
                 has_tentacles = tentacles_manager_api.is_tentacles_architecture_valid()
