@@ -14,10 +14,10 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import logging
+import logging.config as config
 import os
 import shutil
 import traceback
-import logging.config as config
 
 import sys
 import async_channel.channels as channel_instances
@@ -91,6 +91,11 @@ def _load_logger_config():
                 os.mkdir(commons_constants.USER_FOLDER)
             shutil.copyfile(constants.LOGGING_CONFIG_FILE, configuration_manager.get_user_local_config_file())
         config.fileConfig(configuration_manager.get_user_local_config_file())
+        if constants.FORCED_LOG_LEVEL:
+            logging.getLogger("Logging Configuration").info(
+                f"Applying forced logging level {constants.FORCED_LOG_LEVEL}"
+            )
+            common_logging.set_global_logger_level(constants.FORCED_LOG_LEVEL)
     except Exception as ex:
         config.fileConfig(constants.LOGGING_CONFIG_FILE)
         logging.getLogger("Logging Configuration").warning(f"Impossible to initialize local logging configuration file,"
