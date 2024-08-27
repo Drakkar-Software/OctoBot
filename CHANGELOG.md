@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [2.0.5] - 2024-08-27
+### Fixed
+- [Portfolio] Fixed ZeroDivisionError issues
+- [Grid] Fixed Auto-dispatch interval display issues
+- [Evaluators] Log warning on outdated evaluation push
+
 ## [2.0.4] - 2024-08-25
 ### Added
 - [BitMart] The BitMart exchange is now officially supported
@@ -20,7 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [MEXC] Fixed MEXC traded pairs fetching issues
 - [OKX] Fixed leveraging parsing issues
 - [WebInterface] Fixed order cancel UI issues
-- [Configuration] Fixed recovery file related iss
+- [Configuration] Fixed recovery file related issues
 
 ## [2.0.3] - 2024-08-03
 ### Added
