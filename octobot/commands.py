@@ -241,7 +241,7 @@ def select_forced_profile_if_any(config, forced_profile, logger) -> bool:
             if profile.profile_id == forced_profile \
                or profile.origin_url == forced_profile \
                or profile.name == forced_profile:
-                logger.info(f"Selecting forced profile {profile.name} (from identified by{forced_profile})")
+                logger.info(f"Selecting forced profile {profile.name} (identified by {forced_profile})")
                 config.select_profile(profile.profile_id)
                 return True
         logger.warning(f"Forced profile not found in available profiles ({forced_profile})")
