@@ -555,7 +555,9 @@ class CommunityAuthentication(authentication.Authenticator):
                 mqtt_uuid = self.get_saved_mqtt_device_uuid()
             except errors.NoBotDeviceError:
                 pass
-            if reset or (not self.user_account.community_package_urls or not mqtt_uuid):
+            if constants.DISABLE_COMMUNITY_EXTENSIONS_CHECK:
+                self.logger.info("Community extension check is disabled")
+            elif reset or (not self.user_account.community_package_urls or not mqtt_uuid):
                 self.successfully_fetched_tentacles_package_urls = False
                 packages, package_urls, fetched_mqtt_uuid = await self._fetch_package_urls(mqtt_uuid)
                 self.successfully_fetched_tentacles_package_urls = True
