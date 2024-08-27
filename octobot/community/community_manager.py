@@ -195,11 +195,12 @@ class CommunityManager:
         total_profitability = 0
 
         for exchange_manager in self.exchange_managers:
-            profitability, _, _, _, _ = trading_api.get_profitability_stats(exchange_manager)
-            total_profitability += float(profitability)
-            total_origin_values += float(trading_api.get_origin_portfolio_value(exchange_manager))
+            if trading_api.is_exchange_trading(exchange_manager):
+                profitability, _, _, _, _ = trading_api.get_profitability_stats(exchange_manager)
+                total_profitability += float(profitability)
+                total_origin_values += float(trading_api.get_origin_portfolio_value(exchange_manager))
 
-        return total_profitability * 100 / total_origin_values if total_origin_values > 0 else 0
+        return (total_profitability * 100 / total_origin_values) if total_origin_values > 0 else 0
 
     def _get_traded_volumes(self):
         volume_by_currency = {}
