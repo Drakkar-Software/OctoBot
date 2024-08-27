@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - [Portfolio] Fixed ZeroDivisionError issues
 - [Grid] Fixed Auto-dispatch interval display issues
+- [Evaluators] Log warning on outdated evaluation push
 
 ## [2.0.4] - 2024-08-25
 ### Added
