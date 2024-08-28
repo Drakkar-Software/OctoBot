@@ -218,6 +218,7 @@ class CommunityAuthentication(authentication.Authenticator):
         self.logger.debug(f"Refreshing user session")
         self.supabase_client.event_loop = asyncio.get_event_loop()
         await self.supabase_client.refresh_session()
+        await self._on_account_updated()
 
     async def ensure_async_loop(self):
         # elements should be bound to the current loop
@@ -547,6 +548,13 @@ class CommunityAuthentication(authentication.Authenticator):
         if self.has_open_source_package():
             category_types.append("index")
         return category_types
+
+    async def fetch_bot_tentacles_data_based_config(
+        self, bot_id: str, auth_key: typing.Optional[str]
+    ) -> (commons_profiles.ProfileData, list[commons_profiles.ExchangeAuthData]):
+        return await self.supabase_client.fetch_bot_tentacles_data_based_config(
+            bot_id, self, auth_key
+        )
 
     async def fetch_private_data(self, reset=False):
         try:
