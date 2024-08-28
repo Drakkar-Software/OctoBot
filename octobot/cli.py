@@ -164,8 +164,9 @@ async def _apply_db_bot_config(logger, config, community_auth) -> bool:
             force_simulator=False,
         )
         for auth_data_element in auth_data:
-            if auth_data_element.apply_to_exchange_config(config):
-                logger.info(f"Applying {auth_data_element.internal_name} exchange auth details")
+            logger.info(f"Applying {auth_data_element.internal_name} exchange auth details")
+            auth_data_element.apply_to_exchange_config(config)
+
         config.load_profiles()
     except octobot.community.errors.BotNotFoundError:
         raise errors.RemoteConfigError(
