@@ -151,14 +151,21 @@ async def _apply_db_bot_config(logger, config, community_auth) -> bool:
     try:
         # async loop may have changed if community_auth was already used before
         await community_auth.ensure_async_loop()
-        profile_data = await community_auth.supabase_client.fetch_bot_tentacles_data_based_config(constants.COMMUNITY_BOT_ID)
+        profile_data, auth_data = await community_auth.fetch_bot_tentacles_data_based_config(
+            constants.COMMUNITY_BOT_ID,
+            constants.USER_AUTH_KEY,
+        )
         profile = await profiles.import_profile_data_as_profile(
             profile_data,
             constants.PROFILE_FILE_SCHEMA,
             None,
             name=profile_data.profile_details.name,
-            auto_update=False
+            auto_update=False,
+            force_simulator=False,
         )
+        for auth_data_element in auth_data:
+            if auth_data_element.apply_to_exchange_config(config):
+                logger.info(f"Applying {auth_data_element.internal_name} exchange auth details")
         config.load_profiles()
     except octobot.community.errors.BotNotFoundError:
         raise errors.RemoteConfigError(

@@ -355,7 +355,9 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             bot_id, bot_update
         )
 
-    async def fetch_bot_tentacles_data_based_config(self, bot_id: str) -> commons_profiles.ProfileData:
+    async def fetch_bot_tentacles_data_based_config(
+        self, bot_id: str, authenticator, auth_key: typing.Optional[str]
+    ) -> (commons_profiles.ProfileData, list[commons_profiles.ExchangeAuthData]):
         if not bot_id:
             raise errors.BotNotFoundError(f"bot_id is '{bot_id}'")
         commons_logging.get_logger(__name__).debug(f"Fetching {bot_id} bot config")
@@ -383,16 +385,26 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             [],
             commons_profile_data.TradingData(commons_constants.USD_LIKE_COINS[0])
         )
+        auth_data = []
         # apply specific options
-        self._apply_options_based_config(profile_data, bot_config["bot_config"])
-        return profile_data
+        await self._apply_options_based_config(
+            profile_data, auth_data, bot_config["bot_config"], authenticator, auth_key
+        )
+        return profile_data, auth_data
 
-    def _apply_options_based_config(self, profile_data: commons_profiles.ProfileData, bot_config: dict):
+
+    async def _apply_options_based_config(
+        self, profile_data: commons_profiles.ProfileData,
+        auth_data: list[commons_profiles.ExchangeAuthData], bot_config: dict,
+        authenticator, auth_key: typing.Optional[str]
+    ):
         if tentacles_data := [
             commons_profile_data.TentaclesData.from_dict(td)
             for td in bot_config[enums.BotConfigKeys.OPTIONS.value].get("tentacles", [])
         ]:
-            commons_profiles.TentaclesProfileDataTranslator(profile_data).translate(tentacles_data, bot_config)
+            await commons_profiles.TentaclesProfileDataTranslator(profile_data, auth_data).translate(
+                tentacles_data, bot_config, authenticator, auth_key
+            )
 
     async def fetch_bot_profile_data(self, bot_config_id: str) -> commons_profiles.ProfileData:
         if not bot_config_id:
