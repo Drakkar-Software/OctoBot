@@ -143,6 +143,17 @@ class AbstractAuthenticatedExchangeTester:
             with pytest.raises(NotImplementedError):
                 await self.exchange_manager.exchange.get_account_id()
 
+    async def test_invalid_api_key_error(self):
+        with pytest.raises(trading_errors.AuthenticationError):
+            created_exchange = mock.Mock()
+            async with self.local_exchange_manager(use_invalid_creds=True):
+                created_exchange()
+                # should fail
+                await self.get_portfolio()
+                raise AssertionError("Did not raise")
+            # ensure self.local_exchange_manager did not raise
+            created_exchange.assert_called_once()
+
     async def test_get_api_key_permissions(self):
         async with self.local_exchange_manager():
             await self.inner_test_get_api_key_permissions()
@@ -735,7 +746,7 @@ class AbstractAuthenticatedExchangeTester:
         ))
 
     @contextlib.asynccontextmanager
-    async def local_exchange_manager(self, market_filter=None, identifiers_suffix=None):
+    async def local_exchange_manager(self, market_filter=None, identifiers_suffix=None, use_invalid_creds=False):
         try:
             exchange_tentacle_name = self.EXCHANGE_TENTACLE_NAME or self.EXCHANGE_NAME.capitalize()
             credentials_exchange_name = self.CREDENTIALS_EXCHANGE_NAME or self.EXCHANGE_NAME
@@ -746,7 +757,8 @@ class AbstractAuthenticatedExchangeTester:
                     exchange_tentacle_name,
                     self.get_config(),
                     credentials_exchange_name=credentials_exchange_name,
-                    market_filter=market_filter
+                    market_filter=market_filter,
+                    use_invalid_creds=use_invalid_creds,
             ) as exchange_manager:
                 self.exchange_manager = exchange_manager
                 yield
