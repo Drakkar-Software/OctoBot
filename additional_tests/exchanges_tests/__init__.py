@@ -22,6 +22,7 @@ import trading_backend
 import octobot_commons.constants as commons_constants
 import octobot_commons.asyncio_tools as asyncio_tools
 import octobot_commons.os_util as os_util
+import octobot_commons.configuration as configuration
 import octobot_commons.tests.test_config as test_config
 import octobot_trading.api as trading_api
 import octobot_trading.exchanges as exchanges
@@ -61,15 +62,18 @@ class ExchangeChannelMock:
 
 
 @contextlib.asynccontextmanager
-async def get_authenticated_exchange_manager(exchange_name, exchange_tentacle_name, config=None,
-                                             credentials_exchange_name=None, market_filter=None):
+async def get_authenticated_exchange_manager(
+    exchange_name, exchange_tentacle_name, config=None,
+    credentials_exchange_name=None, market_filter=None,
+    use_invalid_creds=False
+):
     credentials_exchange_name = credentials_exchange_name or exchange_name
     _load_exchange_creds_env_variables_if_necessary()
     config = {**test_config.load_test_config(), **config} if config else test_config.load_test_config()
     if exchange_name not in config[commons_constants.CONFIG_EXCHANGES]:
         config[commons_constants.CONFIG_EXCHANGES][exchange_name] = {}
     config[commons_constants.CONFIG_EXCHANGES][exchange_name].update(_get_exchange_auth_details(
-        credentials_exchange_name
+        credentials_exchange_name, use_invalid_creds
     ))
     exchange_type = config[commons_constants.CONFIG_EXCHANGES][exchange_name].get(
         commons_constants.CONFIG_EXCHANGE_TYPE, exchanges.get_default_exchange_type(exchange_name))
@@ -129,15 +133,35 @@ def _load_exchange_creds_env_variables_if_necessary():
         LOADED_EXCHANGE_CREDS_ENV_VARIABLES = True
 
 
-def _get_exchange_auth_details(exchange_name):
-    return {
+def _get_exchange_auth_details(exchange_name, use_invalid_creds):
+    config = {
         commons_constants.CONFIG_EXCHANGE_KEY:
             _get_exchange_credential_from_env(exchange_name, commons_constants.CONFIG_EXCHANGE_KEY),
-        commons_constants.CONFIG_EXCHANGE_SECRET:
-            _get_exchange_credential_from_env(exchange_name, commons_constants.CONFIG_EXCHANGE_SECRET),
+        commons_constants.CONFIG_EXCHANGE_SECRET: _get_exchange_credential_from_env(
+            exchange_name, commons_constants.CONFIG_EXCHANGE_SECRET
+        ),
         commons_constants.CONFIG_EXCHANGE_PASSWORD:
             _get_exchange_credential_from_env(exchange_name, commons_constants.CONFIG_EXCHANGE_PASSWORD),
     }
+    if use_invalid_creds:
+        _invalidate(config)
+    return config
+
+
+def _invalidate(exchange_config: dict):
+    # try to invalidate key while returning a "plausible" value to avoid signature / parsing issues
+    decoded = configuration.decrypt_element_if_possible(
+        commons_constants.CONFIG_EXCHANGE_KEY, exchange_config, None
+    )
+    updated_decoded = decoded
+    for numb in range(9):
+        if str(numb) in decoded:
+            number_index = decoded.index(str(numb))
+            updated_decoded = f"{decoded[:number_index]}{numb + 1}{decoded[number_index+1:]}"
+            break
+    if updated_decoded == decoded:
+        raise ValueError("No number to invalid api key")
+    exchange_config[commons_constants.CONFIG_EXCHANGE_KEY] = configuration.encrypt(updated_decoded).decode()
 
 
 def _get_exchange_credential_from_env(exchange_name, cred_suffix):

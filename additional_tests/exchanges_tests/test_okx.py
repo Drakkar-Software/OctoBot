@@ -47,6 +47,9 @@ class TestOKXAuthenticatedExchange(
     async def test_get_account_id(self):
         await super().test_get_account_id()
 
+    async def test_invalid_api_key_error(self):
+        await super().test_invalid_api_key_error()
+
     async def test_get_api_key_permissions(self):
         await super().test_get_api_key_permissions()
 
