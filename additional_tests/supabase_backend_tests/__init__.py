@@ -221,6 +221,10 @@ def get_backend_client_auth_key(identifier):
     return os.getenv(f"SUPABASE_BACKEND_CLIENT_{identifier}_AUTH_KEY")
 
 
+def get_backend_client_expired_jwt_token(identifier):
+    return os.getenv(f"SUPABASE_BACKEND_CLIENT_{identifier}_EXPIRED_JWT_TOKEN")
+
+
 def _get_backend_service_key():
     return os.getenv(f"SUPABASE_BACKEND_SERVICE_KEY")
 
