@@ -14,15 +14,20 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import time
+
+import mock
+import postgrest
 import pytest
 
 import octobot_commons.configuration as commons_configuration
 import octobot_commons.authentication as authentication
 import octobot.community as community
+import octobot.community.supabase_backend as supabase_backend
+import octobot.community.errors as community_errors
 import octobot.community.supabase_backend.enums as supabase_backend_enums
 from additional_tests.supabase_backend_tests import authenticated_client_1, authenticated_client_2, \
     admin_client, anon_client, get_backend_api_creds, skip_if_no_service_key, get_backend_client_creds, \
-    get_backend_client_auth_key
+    get_backend_client_auth_key, get_backend_client_expired_jwt_token
 
 
 # All test coroutines will be treated as marked.
@@ -162,3 +167,34 @@ async def test_sign_in_with_auth_token():
     finally:
         if supabase_client:
             await supabase_client.aclose()
+
+
+async def test_expired_jwt_token(authenticated_client_1):
+    initial_email = (await authenticated_client_1.get_user())[supabase_backend_enums.UserKeys.EMAIL.value]
+
+    # refreshing session is working
+    await authenticated_client_1.refresh_session()
+    # does not raise
+    bots = await authenticated_client_1.fetch_bots()
+    assert (await authenticated_client_1.get_user())[supabase_backend_enums.UserKeys.EMAIL.value] == initial_email
+
+    # use expired jwt token
+    expired_jwt_token = get_backend_client_expired_jwt_token(1)
+
+    # simulate auth using this token
+    session = mock.Mock(access_token=expired_jwt_token)
+    authenticated_client_1._listen_to_auth_events(
+       "SIGNED_IN", session
+    )
+
+    # now raising "APIError: JWT expired"
+    with pytest.raises(postgrest.APIError):
+        await authenticated_client_1.fetch_bots()
+
+    # now raising "APIError: JWT expired" which is converted into community_errors.SessionTokenExpiredError
+    with pytest.raises(community_errors.SessionTokenExpiredError):
+        with supabase_backend.error_describer():
+            await authenticated_client_1.fetch_bots()
+
+
+

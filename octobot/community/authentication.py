@@ -40,7 +40,31 @@ import octobot_commons.profiles as commons_profiles
 import octobot_trading.enums as trading_enums
 
 
+def expired_session_retrier(func):
+    async def expired_session_retrier_wrapper(*args, **kwargs):
+        self = args[0]
+        try:
+            with supabase_backend.error_describer():
+                return await func(*args, **kwargs)
+        except errors.SessionTokenExpiredError:
+            try:
+                with supabase_backend.error_describer():
+                    self.logger.info(f"Expired session, trying to refresh token.")
+                    await self.supabase_client.refresh_session()
+                    return await func(*args, **kwargs)
+            except errors.SessionTokenExpiredError as err:
+                if await self.auto_reauthenticate():
+                    self.logger.error(
+                        f"Impossible to use default refresh token, using saved auth details instead."
+                    )
+                    return await func(*args, **kwargs)
+                # can't refresh token: logout
+                self.logger.warning(f"Expired session, please re-authenticate. {err}")
+                await self.logout()
+    return expired_session_retrier_wrapper
+
 def _bot_data_update(func):
+    @expired_session_retrier
     async def bot_data_update_wrapper(*args, raise_errors=False, **kwargs):
         self = args[0]
         if not self.is_logged_in_and_has_selected_bot():
@@ -49,6 +73,9 @@ def _bot_data_update(func):
         try:
             self.logger.debug(f"bot_data_update: {func.__name__} initiated.")
             return await func(*args, **kwargs)
+        except errors.SessionTokenExpiredError:
+            # requried by expired_session_retrier
+            raise
         except Exception as err:
             if raise_errors:
                 raise err
@@ -328,6 +355,15 @@ class CommunityAuthentication(authentication.Authenticator):
             await self._on_account_updated()
         if self.is_logged_in():
             await self.on_signed_in(minimal=minimal)
+
+    async def auto_reauthenticate(self) -> bool:
+        if constants.IS_CLOUD_ENV and constants.USER_ACCOUNT_EMAIL and constants.USER_AUTH_KEY:
+            self.logger.debug("Attempting auth key authentication")
+            await self.login(
+                constants.USER_ACCOUNT_EMAIL, None, auth_key=constants.USER_AUTH_KEY
+            )
+            return self.is_logged_in()
+        return False
 
     async def register(self, email, password):
         if self.must_be_authenticated_through_authenticator():

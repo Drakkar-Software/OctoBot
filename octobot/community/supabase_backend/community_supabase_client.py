@@ -22,8 +22,9 @@ import logging
 import httpx
 import uuid
 import json
-
+import contextlib
 import aiohttp
+
 import gotrue.errors
 import gotrue.types
 import postgrest
@@ -54,6 +55,16 @@ _INTERNAL_LOGGERS = [
 # disable httpx info logs as it logs every request
 commons_logging.set_logging_level(_INTERNAL_LOGGERS, logging.WARNING)
 HTTP_RETRY_COUNT = 5
+
+
+@contextlib.contextmanager
+def error_describer():
+    try:
+        yield
+    except postgrest.APIError as err:
+        if "jwt expired" in str(err).lower():
+            raise errors.SessionTokenExpiredError(err) from err
+        raise
 
 
 def _httpx_retrier(f):
@@ -160,9 +171,9 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         if not self.is_signed_in():
             raise authentication.FailedAuthentication()
 
-    async def refresh_session(self):
+    async def refresh_session(self, refresh_token: typing.Union[str, None] = None):
         try:
-            await self.auth.refresh_session()
+            await self.auth.refresh_session(refresh_token=refresh_token)
         except gotrue.errors.AuthError as err:
             raise authentication.AuthenticationError(err) from err
 
