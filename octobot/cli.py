@@ -197,15 +197,13 @@ async def _get_authenticated_community_if_possible(config, logger):
     try:
         if not community_auth.is_initialized():
             if constants.IS_CLOUD_ENV:
-                if constants.USER_ACCOUNT_EMAIL and constants.USER_AUTH_KEY:
-                    try:
-                        logger.debug("Attempting auth key authentication")
-                        await community_auth.login(
-                            constants.USER_ACCOUNT_EMAIL, None, auth_key=constants.USER_AUTH_KEY
-                        )
-                    except authentication.AuthenticationError as err:
-                        logger.info(f"Auth key auth failure ({err}). Trying other methods if available.")
-                if constants.USER_ACCOUNT_EMAIL and constants.USER_PASSWORD_TOKEN:
+                authenticated = False
+                try:
+                    logger.debug("Attempting auth key authentication")
+                    authenticated = await community_auth.auto_reauthenticate()
+                except authentication.AuthenticationError as err:
+                    logger.info(f"Auth key auth failure ({err}). Trying other methods if available.")
+                if not authenticated and constants.USER_ACCOUNT_EMAIL and constants.USER_PASSWORD_TOKEN:
                     try:
                         logger.debug("Attempting password token authentication")
                         await community_auth.login(
