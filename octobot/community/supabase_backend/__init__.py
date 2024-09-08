@@ -25,6 +25,7 @@ from octobot.community.supabase_backend.supabase_client import (
 )
 from octobot.community.supabase_backend import community_supabase_client
 from octobot.community.supabase_backend.community_supabase_client import (
+    error_describer,
     CommunitySupabaseClient,
     HTTP_RETRY_COUNT,
 )
@@ -33,6 +34,7 @@ __all__ = [
     "SyncConfigurationStorage",
     "ASyncConfigurationStorage",
     "AuthenticatedAsyncSupabaseClient",
+    "error_describer",
     "CommunitySupabaseClient",
     "HTTP_RETRY_COUNT",
 ]
