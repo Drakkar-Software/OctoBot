@@ -40,6 +40,11 @@ Octobot's main feature is **evolution**, you can :
 
 Looking for more info ? Check out our Octobot guides at [octobot.cloud/en/guides/octobot](https://www.octobot.cloud/en/guides/octobot?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=checkout_guides)
 
+## Current event
+![bitmart octobot trade to earn banner](https://news-images.s3.fr-par.scw.cloud/bitmart-octobot-trade-to-earn-banner.png)
+Join the BitMart & OctoBot partnership celebration
+
+
 ## Installation
 ### One click deployment using DigitalOcean
 OctoBot can be easily launched on the cloud from the [DigitalOcean Marketplace](https://digitalocean.pxf.io/octobot-app).
