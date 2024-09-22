@@ -28,33 +28,33 @@ class TestHollaexAuthenticatedExchange(
     EXCHANGE_NAME = "hollaex"
     EXCHANGE_TENTACLE_NAME = "hollaex"  # specify EXCHANGE_TENTACLE_NAME as the tentacle class has no capital H
     ORDER_CURRENCY = "ETH"
+    EXPECT_BALANCE_FILTER_BY_MARKET_STATUS = True  # set true when using filtered market status also filters
+    # fetched balance assets
     SETTLEMENT_CURRENCY = "USDT"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
     ORDER_SIZE = 50  # % of portfolio to include in test orders
     EXPECT_MISSING_ORDER_FEES_DUE_TO_ORDERS_TOO_OLD_FOR_RECENT_TRADES = True   # when recent trades are limited and
     # closed orders fees are taken from recent trades
     IGNORE_EXCHANGE_TRADE_ID = True
+    USE_ORDER_OPERATION_TO_CHECK_API_KEY_RIGHTS = True
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
 
     async def test_get_portfolio_with_market_filter(self):
-        # pass if not implemented
-        pass
+        await super().test_get_portfolio_with_market_filter()
 
     async def test_get_account_id(self):
-        # pass if not implemented
-        pass
+        await super().test_get_account_id()
 
     async def test_invalid_api_key_error(self):
         await super().test_invalid_api_key_error()
 
     async def test_get_api_key_permissions(self):
-        # pass if not implemented
-        pass
+        await super().test_get_api_key_permissions()
 
     async def test_missing_trading_api_key_permissions(self):
-        pass
+        await super().test_missing_trading_api_key_permissions()
 
     async def test_get_not_found_order(self):
         await super().test_get_not_found_order()

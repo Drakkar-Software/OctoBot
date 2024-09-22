@@ -69,6 +69,8 @@ class AbstractAuthenticatedExchangeTester:
     CANCEL_TIMEOUT = 15
     EDIT_TIMEOUT = 15
     MIN_PORTFOLIO_SIZE = 1
+    EXPECT_BALANCE_FILTER_BY_MARKET_STATUS = False  # set true when using filtered market status also filters
+    # fetched balance assets
     DUPLICATE_TRADES_RATIO = 0
     SUPPORTS_DOUBLE_BUNDLED_ORDERS = True
     # set true when cancelling any bundled order on exchange would automatically cancel the other(s)
@@ -102,7 +104,14 @@ class AbstractAuthenticatedExchangeTester:
         async with self.local_exchange_manager(market_filter=self._get_market_filter()):
             # check portfolio fetched with filtered markets (should be equal to the one with all markets)
             filtered_markets_portfolio = await self.get_portfolio()
-            assert filtered_markets_portfolio == all_markets_portfolio
+            if self.EXPECT_BALANCE_FILTER_BY_MARKET_STATUS:
+                assert filtered_markets_portfolio == {
+                    key: val
+                    for key, val in all_markets_portfolio.items()
+                    if key in symbols.parse_symbol(self.SYMBOL).base_and_quote()
+                }
+            else:
+                assert filtered_markets_portfolio == all_markets_portfolio
 
     async def inner_test_get_portfolio(self):
         self.check_portfolio_content(await self.get_portfolio())
