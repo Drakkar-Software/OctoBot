@@ -179,6 +179,9 @@ ERRORS_URL = os.getenv("ERRORS_OCTOBOT_ONLINE_URL", "https://errors.octobot.onli
 ERRORS_POST_ENDPOINT = f"{ERRORS_URL}errors"
 UPLOAD_ERRORS = os_util.parse_boolean_environment_var("UPLOAD_ERRORS", "False")
 DEFAULT_METRICS_ID = "UNSET"
+CLOUD_FIRST_METRICS_UPDATE_TIME = float(
+    os.getenv("CLOUD_FIRST_METRICS_UPDATE_TIME", 5)
+)
 
 # config types keys
 CONFIG_KEY = "config"
