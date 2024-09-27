@@ -58,20 +58,17 @@ class CommunityManager:
         # these attributes will be set at the last moment to ensure relevance and let time for everything to startup
         self.has_real_trader = None
         self.has_simulator = None
-        self.exchange_managers = None
 
     def _init_community_config(self):
         self.has_real_trader = trading_api.is_trader_enabled_in_config(self.edited_config.config)
         self.has_simulator = trading_api.is_trader_simulator_enabled_in_config(self.edited_config.config)
-        self.exchange_managers = trading_api.get_exchange_managers_from_exchange_ids(
-            self.octobot_api.get_exchange_manager_ids())
 
     async def start_community_task(self):
         if self.enabled:
             try:
                 # first ensure this session is not just a configuration test: register after a timer
                 await asyncio.sleep(
-                    common_constants.TIMER_BETWEEN_METRICS_UPTIME_UPDATE
+                    constants.CLOUD_FIRST_METRICS_UPDATE_TIME
                     if constants.IS_CLOUD_ENV else common_constants.TIMER_BEFORE_METRICS_REGISTRATION_SECONDS
                 )
                 self._init_community_config()
@@ -187,14 +184,14 @@ class CommunityManager:
     def _get_exchange_types(self):
         return [
             trading_api.get_exchange_type(exchange_manager).value
-            for exchange_manager in self.exchange_managers
+            for exchange_manager in self._get_exchange_managers()
         ]
 
     def _get_profitability(self):
         total_origin_values = 0
         total_profitability = 0
 
-        for exchange_manager in self.exchange_managers:
+        for exchange_manager in self._get_exchange_managers():
             if trading_api.is_exchange_trading(exchange_manager):
                 profitability, _, _, _, _ = trading_api.get_profitability_stats(exchange_manager)
                 total_profitability += float(profitability)
@@ -206,7 +203,7 @@ class CommunityManager:
         volume_by_currency = {}
         if self.has_real_trader:
             trades = []
-            for exchange_manager in self.exchange_managers:
+            for exchange_manager in self._get_exchange_managers():
                 trades += trading_api.get_trade_history(exchange_manager, since=self.octobot_api.get_start_time())
             for trade in trades:
                 # cost is in quote currency for a traded pair
@@ -219,7 +216,7 @@ class CommunityManager:
 
     def _get_supports(self):
         supporting_exchanges = []
-        for exchange_manager in self.exchange_managers:
+        for exchange_manager in self._get_exchange_managers():
             exchange_name = trading_api.get_exchange_name(exchange_manager)
             if self.has_real_trader \
                and trading_api.is_sponsoring(exchange_name) \
@@ -235,7 +232,7 @@ class CommunityManager:
     def _get_real_portfolio_value(self):
         if self.has_real_trader:
             total_value = 0
-            for exchange_manager in self.exchange_managers:
+            for exchange_manager in self._get_exchange_managers():
                 current_value = trading_api.get_current_portfolio_value(exchange_manager)
                 # current_value might be 0 if no trades have been made / canceled => use origin value
                 if current_value == 0:
@@ -247,7 +244,7 @@ class CommunityManager:
 
     def _get_traded_pairs(self):
         pairs = set()
-        for exchange_manager in self.exchange_managers:
+        for exchange_manager in self._get_exchange_managers():
             pairs = pairs.union(trading_api.get_trading_pairs(exchange_manager))
         return list(pairs)
 
@@ -322,3 +319,8 @@ class CommunityManager:
                 self.logger.debug(f"Impossible to send community data : "
                                   f"status code: {resp.status}, "
                                   f"text: {await resp.text()}")
+
+    def _get_exchange_managers(self):
+        return trading_api.get_exchange_managers_from_exchange_ids(
+            self.octobot_api.get_exchange_manager_ids()
+        )
