@@ -594,6 +594,9 @@ class CommunityAuthentication(authentication.Authenticator):
 
     async def fetch_private_data(self, reset=False):
         try:
+            if not self.is_logged_in():
+                self.logger.info(f"Can't fetch private data: no authenticated user")
+                return
             mqtt_uuid = None
             try:
                 mqtt_uuid = self.get_saved_mqtt_device_uuid()
