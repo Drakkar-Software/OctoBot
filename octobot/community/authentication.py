@@ -631,55 +631,35 @@ class CommunityAuthentication(authentication.Authenticator):
             await self._refresh_products()
 
     async def _fetch_package_urls(self, mqtt_uuid: typing.Optional[str]) -> (list[str], str):
-        self.logger.debug(f"Fetching package")
-        resp = await self.supabase_client.http_get(
-            constants.COMMUNITY_EXTENSIONS_CHECK_ENDPOINT,
-            headers={
-                "Content-Type": "application/json",
-                "X-Auth-Token": constants.COMMUNITY_EXTENSIONS_CHECK_ENDPOINT_KEY
-            },
-            params={"mqtt_id": mqtt_uuid} if mqtt_uuid else {},
-            timeout=constants.COMMUNITY_FETCH_TIMEOUT
-        )
-        self.logger.debug("Fetched package")
-        resp.raise_for_status()
-        json_resp = json.loads(resp.json().get("message", {}))
-        if not json_resp:
+        self.logger.debug(f"Fetching extension package details")
+        extensions_details = await self.supabase_client.fetch_extensions(mqtt_uuid)
+        self.logger.debug("Fetched extension package details")
+        if not extensions_details:
             return None, None, None
         packages = [
             package
-            for package in json_resp["paid_package_slugs"]
+            for package in extensions_details["paid_package_slugs"]
             if package
         ]
         urls = [
             url
-            for url in json_resp["package_urls"]
+            for url in extensions_details["package_urls"]
             if url
         ]
-        mqtt_id = json_resp["mqtt_id"]
+        mqtt_id = extensions_details["mqtt_id"]
         return packages, urls, mqtt_id
 
-    async def fetch_checkout_url(self, payment_method, redirect_url):
+    async def fetch_checkout_url(self, payment_method: str, redirect_url: str):
         try:
+            if not self.is_logged_in():
+                self.logger.info(f"Can't fetch checkout url: no authenticated user")
+                return None
             self.logger.debug(f"Fetching {payment_method} checkout url")
-            resp = await self.supabase_client.http_post(
-                constants.COMMUNITY_EXTENSIONS_CHECK_ENDPOINT,
-                json={
-                    "payment_method": payment_method,
-                    "success_url": redirect_url,
-                },
-                headers={
-                    "Content-Type": "application/json",
-                    "X-Auth-Token": constants.COMMUNITY_EXTENSIONS_CHECK_ENDPOINT_KEY
-                },
-                timeout=constants.COMMUNITY_FETCH_TIMEOUT
-            )
-            resp.raise_for_status()
-            json_resp = json.loads(resp.json().get("message", {}))
-            if not json_resp:
+            url_details = await self.supabase_client.fetch_checkout_url(payment_method, redirect_url)
+            if not url_details:
                 # valid error code but no content: user already has this product
                 return None
-            url = json_resp["checkout_url"]
+            url = url_details["checkout_url"]
             self.logger.info(
                 f"Here is your {constants.OCTOBOT_EXTENSION_PACKAGE_1_NAME} checkout url {url} "
                 f"paste it into a web browser to proceed to payment if your browser did to automatically "

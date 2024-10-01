@@ -240,6 +240,31 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         except Exception:
             raise authentication.AuthenticationError(f"Invalid auth key authentication details")
 
+    async def fetch_extensions(self, mqtt_uuid: typing.Optional[str]) -> dict:
+        resp = await self.functions.invoke(
+            "os-paid-package-api",
+            {
+                "body": {
+                    "action": "get_extension_details",
+                    "mqtt_id": mqtt_uuid
+                },
+            }
+        )
+        return json.loads(json.loads(resp)["message"])
+
+    async def fetch_checkout_url(self, payment_method: str, redirect_url: str) -> dict:
+        resp = await self.functions.invoke(
+            "os-paid-package-api",
+            {
+                "body": {
+                    "action": "get_checkout_url",
+                    "payment_method": payment_method,
+                    "success_url": redirect_url,
+                },
+            }
+        )
+        return json.loads(json.loads(resp)["message"])
+
     async def fetch_bot(self, bot_id) -> dict:
         try:
             # https://postgrest.org/en/stable/references/api/resource_embedding.html#hint-disambiguation
