@@ -14,7 +14,9 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import time
+import typing
 
+import octobot.enums as enums
 import octobot_commons.logging as bot_logging
 
 
@@ -35,7 +37,7 @@ class AbstractFeed:
     def has_registered_feed(self) -> bool:
         return bool(self.feed_callbacks)
 
-    async def start(self):
+    async def start(self, stop_on_cfg_action: typing.Optional[enums.CommunityConfigurationActions]):
         raise NotImplementedError("start is not implemented")
 
     async def stop(self):
