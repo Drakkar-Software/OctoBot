@@ -103,6 +103,7 @@ ERROR_TRACKER_DSN = os.getenv("ERROR_TRACKER_DSN")
 CONFIG_COMMUNITY = "community"
 CONFIG_COMMUNITY_BOT_ID = "bot_id"
 CONFIG_COMMUNITY_MQTT_UUID = "mqtt_uuid"
+CONFIG_COMMUNITY_TRADINGVIEW_EMAIL = "tradingview_email"
 CONFIG_COMMUNITY_PACKAGE_URLS = "package_urls"
 CONFIG_COMMUNITY_ENVIRONMENT = "environment"
 USE_BETA_EARLY_ACCESS = os_util.parse_boolean_environment_var("USE_BETA_EARLY_ACCESS", "false")

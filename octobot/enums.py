@@ -27,6 +27,10 @@ class CommunityEnvironments(enum.Enum):
     Production = "Production"
 
 
+class CommunityConfigurationActions(enum.Enum):
+    EMAIL_CONFIRM_CODE = "email_confirm_code"
+
+
 class OptimizerModes(enum.Enum):
     NORMAL = "normal"
     GENETIC = "genetic"
