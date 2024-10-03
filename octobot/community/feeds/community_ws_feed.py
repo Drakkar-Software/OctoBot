@@ -15,7 +15,7 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import random
 import time
-
+import typing
 import websockets
 import asyncio
 import enum
@@ -26,6 +26,7 @@ import octobot_commons.errors as commons_errors
 import octobot_commons.enums as commons_enums
 import octobot_commons.authentication as authentication
 import octobot.constants as constants
+import octobot.enums as enums
 import octobot.community.feeds.abstract_feed as abstract_feed
 import octobot.community.identifiers_provider as identifiers_provider
 
@@ -55,7 +56,7 @@ class CommunityWSFeed(abstract_feed.AbstractFeed):
         self._reconnect_attempts = 0
         self._last_ping_time = None
 
-    async def start(self):
+    async def start(self, stop_on_cfg_action: typing.Optional[enums.CommunityConfigurationActions]):
         await self._ensure_connection()
         if self.consumer_task is None or self.consumer_task.done():
             self.consumer_task = asyncio.create_task(self.start_consumer())
