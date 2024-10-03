@@ -141,7 +141,7 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
         {
             "u": "ABCCD            "v": "1.0.0",
 -D11 ...",
-            "s": '{"action": "email_confirm_code", "code_email": "hello 123-1232"}',
+            "s": {"action": "email_confirm_code", "code_email": "hello 123-1232"},
         }
         """
         parsed_message = data[commons_enums.CommunityFeedAttrs.VALUE.value]
