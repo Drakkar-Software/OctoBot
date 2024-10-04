@@ -101,14 +101,6 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
         self._reset()
         self.logger.debug("Stopped")
 
-    async def restart(self):
-        try:
-            if not self.should_stop:
-                await self.stop()
-            await self.start()
-        except Exception as err:
-            self.logger.exception(err, True, f"{err}")
-
     def _reset(self):
         self._connected_at_least_once = False
         self._stop_on_cfg_action = None
@@ -128,12 +120,15 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
         return set(self._default_callbacks_by_subscription_topic)
 
     def _build_default_callbacks_by_subscription_topic(self) -> dict:
-        return {
-            self._build_topic(
-                commons_enums.CommunityChannelTypes.CONFIGURATION,
-                self.authenticator.get_saved_mqtt_device_uuid()
-            ): [self._config_feed_callback, ]
-        }
+        try:
+            return {
+                self._build_topic(
+                    commons_enums.CommunityChannelTypes.CONFIGURATION,
+                    self.authenticator.get_saved_mqtt_device_uuid()
+                ): [self._config_feed_callback, ]
+            }
+        except errors.NoBotDeviceError:
+            return {}
 
     async def _config_feed_callback(self, data: dict):
         """
