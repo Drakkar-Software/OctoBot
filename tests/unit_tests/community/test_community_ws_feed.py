@@ -127,7 +127,7 @@ async def connected_community_feed(authenticator):
                 as _fetch_stream_identifier_mock:
             await feed.register_feed_callback(commons_enums.CommunityChannelTypes.SIGNAL, mock.AsyncMock())
             _fetch_stream_identifier_mock.assert_called_once_with(None)
-            await feed.start()
+            await feed.start(None)
             yield feed
     finally:
         if feed is not None:
@@ -217,7 +217,7 @@ async def test_reconnect(authenticator):
         client = community.CommunityWSFeed(f"ws://{HOST}:{PORT}", authenticator)
         client.RECONNECT_DELAY = 0
         await client.register_feed_callback(commons_enums.CommunityChannelTypes.SIGNAL, client_handler)
-        await client.start()
+        await client.start(None)
 
         # 1. ensure client is both receiving and sending messages
         client_handler.assert_not_called()

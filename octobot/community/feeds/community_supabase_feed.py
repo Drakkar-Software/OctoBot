@@ -25,7 +25,7 @@ import octobot_commons.errors as commons_errors
 import octobot.community.supabase_backend.enums as enums
 import octobot.community.feeds.abstract_feed as abstract_feed
 import octobot.constants as constants
-import octobot.enums as enums
+import octobot.enums
 
 
 class CommunitySupabaseFeed(abstract_feed.AbstractFeed):
@@ -78,7 +78,7 @@ class CommunitySupabaseFeed(abstract_feed.AbstractFeed):
         except Exception as err:
             self.logger.exception(err, True, f"Unexpected error when processing message: {err}")
 
-    async def start(self, stop_on_cfg_action: typing.Optional[enums.CommunityConfigurationActions]):
+    async def start(self, stop_on_cfg_action: typing.Optional[octobot.enums.CommunityConfigurationActions]):
         # handled in supabase client directly, just ensure no subscriptions are pending
         for table in self.feed_callbacks:
             await self._subscribe_to_table_if_necessary(table)
