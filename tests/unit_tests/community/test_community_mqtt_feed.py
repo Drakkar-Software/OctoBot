@@ -62,8 +62,8 @@ async def connected_community_feed(authenticator):
              mock.patch.object(gmqtt.Client, "connect", mock.AsyncMock()) as _connect_mock:
             await feed.register_feed_callback(commons_enums.CommunityChannelTypes.SIGNAL, mock.AsyncMock())
             _subscribe_mock.assert_called_once_with((f"{commons_enums.CommunityChannelTypes.SIGNAL.value}/None", ))
-            await feed.start()
-            get_selected_bot_device_uuid_mock.assert_called_once()
+            await feed.start(None)
+            assert get_selected_bot_device_uuid_mock.call_count == 2
             _connect_mock.assert_called_once_with(FEED_URL, feed.mqtt_broker_port, version=feed.MQTT_VERSION)
             yield feed
     finally:

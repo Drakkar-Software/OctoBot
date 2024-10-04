@@ -88,13 +88,13 @@ async def test_start_and_connect(authenticated_feed):
         # without feed_callbacks
         with mock.patch.object(authenticated_feed.authenticator.supabase_client, "get_subscribed_channel_tables",
                                mock.Mock(return_value=[])) as get_subscribed_channel_tables_mock:
-            await authenticated_feed.start()
+            await authenticated_feed.start(None)
             is_logged_in_mock.assert_not_called()
             _subscribe_to_table_mock.assert_not_called()
             get_subscribed_channel_tables_mock.assert_not_called()
             # with feed_callbacks
             authenticated_feed.feed_callbacks = {"signals": None, "plopplop":None}
-            await authenticated_feed.start()
+            await authenticated_feed.start(None)
             assert is_logged_in_mock.call_count == 2
             # no sub channel: call _subscribe_to_table
             assert _subscribe_to_table_mock.call_count == 2
@@ -106,7 +106,7 @@ async def test_start_and_connect(authenticated_feed):
         with mock.patch.object(authenticated_feed.authenticator.supabase_client, "get_subscribed_channel_tables",
                                mock.Mock(return_value=["signals"])) as get_subscribed_channel_tables_mock:
             # sub channel on signals: call _subscribe_to_table just for plopplop
-            await authenticated_feed.start()
+            await authenticated_feed.start(None)
             is_logged_in_mock.assert_called_once()
             # no sub channel: call _subscribe_to_table
             _subscribe_to_table_mock.assert_called_with("plopplop")
@@ -120,7 +120,7 @@ async def test_start_and_connect(authenticated_feed):
         with mock.patch.object(authenticated_feed.authenticator.supabase_client, "get_subscribed_channel_tables",
                                mock.Mock(return_value=["plop"])), \
              mock.patch.object(authenticated_feed.authenticator, "is_logged_in", mock.Mock(return_value=False)):
-                await authenticated_feed.start()
+                await authenticated_feed.start(None)
 
 async def test_connection(authenticated_feed):
     with mock.patch.object(authenticated_feed.authenticator, "is_logged_in", mock.Mock(return_value=True)) \
