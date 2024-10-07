@@ -522,10 +522,23 @@ class CommunityAuthentication(authentication.Authenticator):
     def remove_login_detail(self):
         self.user_account.flush()
         self._reset_login_token()
+        # force user to (re)select a bot
+        self._save_bot_id("")
+        # mqtt feed can't connect as long as the user is not authenticated: don't display unusable email address
+        self.save_tradingview_email("")
+        self.logger.debug("Removed community login data")
+
+    def clear_bot_scoped_config(self):
+        """
+        Clears all bot local data including mqtt id, which will trigger a new mqtt device creation.
+        Warning: should only be called in rare cases, mostly to avoid multi connection on the same mqtt
+        device
+        """
         self._save_bot_id("")
         self.save_tradingview_email("")
-        self.save_mqtt_device_uuid("")
-        self.logger.debug("Removed community login data")
+        # also reset mqtt id to force a new mqtt id creation
+        self._save_mqtt_device_uuid("")
+
 
     async def stop(self):
         self.logger.debug("Stopping ...")
@@ -640,7 +653,7 @@ class CommunityAuthentication(authentication.Authenticator):
                     self.logger.info(f"New tentacles are available for installation")
                     self.user_account.has_pending_packages_to_install = True
                 if fetched_mqtt_uuid and fetched_mqtt_uuid != mqtt_uuid:
-                    self.save_mqtt_device_uuid(fetched_mqtt_uuid)
+                    self._save_mqtt_device_uuid(fetched_mqtt_uuid)
                 if tradingview_email and tradingview_email != self.get_saved_tradingview_email():
                     self.save_tradingview_email(tradingview_email)
         except Exception as err:
@@ -707,7 +720,7 @@ class CommunityAuthentication(authentication.Authenticator):
     def save_tradingview_email(self, tradingview_email: str):
         self._save_value_in_config(constants.CONFIG_COMMUNITY_TRADINGVIEW_EMAIL, tradingview_email)
 
-    def save_mqtt_device_uuid(self, mqtt_uuid: str):
+    def _save_mqtt_device_uuid(self, mqtt_uuid: str):
         self._save_value_in_config(constants.CONFIG_COMMUNITY_MQTT_UUID, mqtt_uuid)
 
     def get_saved_package_urls(self) -> list[str]:
