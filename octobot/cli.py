@@ -194,6 +194,7 @@ async def _get_authenticated_community_if_possible(config, logger):
     # switch environments if necessary
     octobot_community.IdentifiersProvider.use_environment_from_config(config)
     community_auth = octobot_community.CommunityAuthentication.create(config)
+    community_auth.clear_local_data_if_necessary()
     try:
         if not community_auth.is_initialized():
             if constants.IS_CLOUD_ENV:

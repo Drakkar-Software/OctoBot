@@ -26,6 +26,7 @@ import octobot_commons.constants as commons_constants
 import octobot.community.errors as errors
 import octobot.community.feeds.abstract_feed as abstract_feed
 import octobot.constants as constants
+import octobot.enums as enums
 
 
 def _disable_gmqtt_info_loggers():
@@ -69,12 +70,19 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
         self._connected_at_least_once = False
         self._processed_messages = []
 
-    async def start(self):
+        self._default_callbacks_by_subscription_topic = self._build_default_callbacks_by_subscription_topic()
+        self._stop_on_cfg_action: typing.Optional[enums.CommunityConfigurationActions] = None
+
+    async def start(self, stop_on_cfg_action: typing.Optional[enums.CommunityConfigurationActions]):
+        if self.is_connected():
+            self.logger.info("Already connected")
+            return
         self.should_stop = False
         try:
             await self._connect()
             if self.is_connected():
                 self.logger.info("Successful connection request to mqtt device")
+                self._stop_on_cfg_action = stop_on_cfg_action
             else:
                 self.logger.info("Failed to connect to mqtt device")
         except asyncio.TimeoutError as err:
@@ -93,16 +101,9 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
         self._reset()
         self.logger.debug("Stopped")
 
-    async def restart(self):
-        try:
-            if not self.should_stop:
-                await self.stop()
-            await self.start()
-        except Exception as err:
-            self.logger.exception(err, True, f"{err}")
-
     def _reset(self):
         self._connected_at_least_once = False
+        self._stop_on_cfg_action = None
         self._subscription_attempts = 0
         self._connect_task = None
         self._valid_auth = True
@@ -111,6 +112,45 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
     async def _stop_mqtt_client(self):
         if self.is_connected():
             await self._mqtt_client.disconnect()
+
+    def _get_default_subscription_topics(self) -> set:
+        """
+        topics that are always to be subscribed
+        """
+        return set(self._default_callbacks_by_subscription_topic)
+
+    def _build_default_callbacks_by_subscription_topic(self) -> dict:
+        try:
+            return {
+                self._build_topic(
+                    commons_enums.CommunityChannelTypes.CONFIGURATION,
+                    self.authenticator.get_saved_mqtt_device_uuid()
+                ): [self._config_feed_callback, ]
+            }
+        except errors.NoBotDeviceError:
+            return {}
+
+    async def _config_feed_callback(self, data: dict):
+        """
+        format:
+        {
+            "u": "ABCCD            "v": "1.0.0",
+-D11 ...",
+            "s": {"action": "email_confirm_code", "code_email": "hello 123-1232"},
+        }
+        """
+        parsed_message = data[commons_enums.CommunityFeedAttrs.VALUE.value]
+        action = parsed_message["action"]
+        if action == enums.CommunityConfigurationActions.EMAIL_CONFIRM_CODE.value:
+            email_body = parsed_message["code_email"]
+            self.logger.info(f"Received email address confirm code:\n{email_body}")
+            self.authenticator.user_account.last_email_address_confirm_code_email_content = email_body
+            self.authenticator.save_tradingview_email_confirmed(True)
+        else:
+            self.logger.error(f"Unknown cfg message action: {action=}")
+        if action and self._stop_on_cfg_action and self._stop_on_cfg_action.value == action:
+            self.logger.info(f"Stopping after expected {action} configuration action.")
+            await self.stop()
 
     def is_connected(self):
         return self._mqtt_client is not None and self._mqtt_client.is_connected and not self._disconnected
@@ -182,8 +222,11 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
         raise NotImplementedError("Sending is not implemented")
 
     def _get_callbacks(self, topic):
-        for callback in self.feed_callbacks.get(topic, ()):
+        for callback in self._get_feed_callbacks(topic):
             yield callback
+
+    def _get_feed_callbacks(self, topic) -> list:
+        return self._default_callbacks_by_subscription_topic.get(topic, []) + self.feed_callbacks.get(topic, [])
 
     def _get_channel_type(self, message):
         return commons_enums.CommunityChannelTypes(message[commons_enums.CommunityFeedAttrs.CHANNEL_TYPE.value])
@@ -206,7 +249,7 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
         # There are no subscription when we just connected
         self.subscribed = False
         # Auto subscribe to known topics (mainly used in case of reconnection)
-        self._subscribe(self._subscription_topics)
+        self._subscribe(self._subscription_topics.union(self._get_default_subscription_topics()))
 
     def _try_reconnect_if_necessary(self, client):
         if self._reconnect_task is None or self._reconnect_task.done():
@@ -312,6 +355,8 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
 
     async def _connect(self):
         device_uuid = self.authenticator.get_saved_mqtt_device_uuid()
+        # ensure _default_callbacks_by_subscription_topic is up to date
+        self._default_callbacks_by_subscription_topic = self._build_default_callbacks_by_subscription_topic()
         if device_uuid is None:
             self._valid_auth = False
             raise errors.BotError("mqtt device uuid is None, impossible to connect client")
