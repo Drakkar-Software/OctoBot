@@ -544,6 +544,8 @@ class CommunityAuthentication(authentication.Authenticator):
         self.save_tradingview_email("")
         # also reset mqtt id to force a new mqtt id creation
         self._save_mqtt_device_uuid("")
+        # will force reconfiguring the next email
+        self.save_tradingview_email_confirmed(False)
 
     def clear_local_data_if_necessary(self):
         if constants.IS_CLOUD_ENV:
@@ -744,6 +746,9 @@ class CommunityAuthentication(authentication.Authenticator):
     def save_tradingview_email(self, tradingview_email: str):
         self._save_value_in_config(constants.CONFIG_COMMUNITY_TRADINGVIEW_EMAIL, tradingview_email)
 
+    def save_tradingview_email_confirmed(self, confirmed: bool):
+        self._save_value_in_config(constants.CONFIG_COMMUNITY_TRADINGVIEW_EMAIL_CONFIRMED, confirmed)
+
     def _save_mqtt_device_uuid(self, mqtt_uuid: str):
         self._save_value_in_config(constants.CONFIG_COMMUNITY_MQTT_UUID, mqtt_uuid)
 
@@ -763,6 +768,9 @@ class CommunityAuthentication(authentication.Authenticator):
 
     def get_saved_tradingview_email(self) -> str:
         return self._get_value_in_config(constants.CONFIG_COMMUNITY_TRADINGVIEW_EMAIL)
+
+    def is_tradingview_email_confirmed(self) -> bool:
+        return self._get_value_in_config(constants.CONFIG_COMMUNITY_TRADINGVIEW_EMAIL_CONFIRMED) is True
 
     def _save_bot_id(self, bot_id):
         self._save_value_in_config(constants.CONFIG_COMMUNITY_BOT_ID, bot_id)
