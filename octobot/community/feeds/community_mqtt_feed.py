@@ -145,6 +145,7 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
             email_body = parsed_message["code_email"]
             self.logger.info(f"Received email address confirm code:\n{email_body}")
             self.authenticator.user_account.last_email_address_confirm_code_email_content = email_body
+            self.authenticator.save_tradingview_email_confirmed(True)
         else:
             self.logger.error(f"Unknown cfg message action: {action=}")
         if action and self._stop_on_cfg_action and self._stop_on_cfg_action.value == action:
