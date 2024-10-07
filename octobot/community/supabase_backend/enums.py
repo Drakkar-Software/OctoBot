@@ -55,6 +55,7 @@ class BotDeploymentKeys(enum.Enum):
     ERROR_STATUS = "error_status"
     ACTIVITIES = "activities"
     EXPIRATION_TIME = "expiration_time"
+    STOPPED_AT = "stopped_at"
 
 
 class BotDeploymentActivitiesKeys(enum.Enum):
