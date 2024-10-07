@@ -18,6 +18,8 @@ import contextlib
 import json
 import time
 import typing
+import hashlib
+import os
 
 import octobot.constants as constants
 import octobot.enums as enums
@@ -528,17 +530,39 @@ class CommunityAuthentication(authentication.Authenticator):
         self.save_tradingview_email("")
         self.logger.debug("Removed community login data")
 
-    def clear_bot_scoped_config(self):
+    def _clear_bot_scoped_config(self):
         """
         Clears all bot local data including mqtt id, which will trigger a new mqtt device creation.
         Warning: should only be called in rare cases, mostly to avoid multi connection on the same mqtt
         device
         """
+        self.logger.info(
+            "Clearing bot local scoped config data. Your TradingView alert email address "
+            "and webhook url will be different on this bot."
+        )
         self._save_bot_id("")
         self.save_tradingview_email("")
         # also reset mqtt id to force a new mqtt id creation
         self._save_mqtt_device_uuid("")
 
+    def clear_local_data_if_necessary(self):
+        if constants.IS_CLOUD_ENV:
+            # disabled on cloud environments
+            return
+        previous_local_identifier = self._get_saved_bot_scoped_data_identifier()
+        current_local_identifier = self._get_bot_scoped_data_identifier()
+        if not previous_local_identifier:
+            self._save_bot_scoped_data_identifier(current_local_identifier)
+            # nothing to clear
+            return
+        if current_local_identifier != previous_local_identifier:
+            self._clear_bot_scoped_config()
+            self._save_bot_scoped_data_identifier(current_local_identifier)
+
+    def _get_bot_scoped_data_identifier(self) -> str:
+        # identifier is based on the path to the local bot to ensure the same data are not re-used
+        # when copy/pasting a bot config to another bot
+        return hashlib.sha256(os.getcwd().encode()).hexdigest()
 
     async def stop(self):
         self.logger.debug("Stopping ...")
@@ -723,6 +747,9 @@ class CommunityAuthentication(authentication.Authenticator):
     def _save_mqtt_device_uuid(self, mqtt_uuid: str):
         self._save_value_in_config(constants.CONFIG_COMMUNITY_MQTT_UUID, mqtt_uuid)
 
+    def _save_bot_scoped_data_identifier(self, identifier: str):
+        self._save_value_in_config(constants.CONFIG_COMMUNITY_LOCAL_DATA_IDENTIFIER, identifier)
+
     def get_saved_package_urls(self) -> list[str]:
         return self._get_value_in_config(constants.CONFIG_COMMUNITY_PACKAGE_URLS) or []
 
@@ -730,6 +757,9 @@ class CommunityAuthentication(authentication.Authenticator):
         if mqtt_uuid := self._get_value_in_config(constants.CONFIG_COMMUNITY_MQTT_UUID):
             return mqtt_uuid
         raise errors.NoBotDeviceError("No MQTT device ID has been set")
+
+    def _get_saved_bot_scoped_data_identifier(self) -> str:
+        return self._get_value_in_config(constants.CONFIG_COMMUNITY_LOCAL_DATA_IDENTIFIER)
 
     def get_saved_tradingview_email(self) -> str:
         return self._get_value_in_config(constants.CONFIG_COMMUNITY_TRADINGVIEW_EMAIL)
