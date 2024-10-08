@@ -6,6 +6,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [2.0.6] - 2024-10-08
+### Added
+- [TradingView] Support email TradingView alerts
+### Updated
+- [TradingView] Improve webhook display
+- [WebInterface] Improve account 
+- [HollaEx] Improve global support 
+### Fixed
+- [Orders] Fixed synchronization issues
+- [Storage] Fixed order storage issues
+- [Exchanges] Retry market status fetch when failing for timeout
+- [Credentials] Handle exchange credentials with leading/ending white spaces and newlines
+- [Extension] Fixed extension check and checkout session issues 
+- [Exchanges] Fixed rare invalid key error misinterpretation
+- [WebInterface] Fix notifications related web interface performance issues 
+- [WebInterface] Fix fetch_upgrade_version performance issues 
+- [Evaluators] Remove irrelevant warning on real-time evaluators global update
+
 ## [2.0.5] - 2024-08-27
 ### Fixed
 - [Portfolio] Fixed ZeroDivisionError issues
