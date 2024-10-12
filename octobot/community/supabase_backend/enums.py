@@ -109,6 +109,8 @@ class ExchangeAccountStatuses(enum.Enum):
 class ExchangeKeys(enum.Enum):
     ID = "id"
     INTERNAL_NAME = "internal_name"
+    EXCHANGE_CREDENTIAL_ID = "exchange_credential_id"
+    EXCHANGE_ID = "exchange_id"
 
 
 class SignalKeys(enum.Enum):
