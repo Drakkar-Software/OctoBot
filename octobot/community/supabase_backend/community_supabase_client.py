@@ -449,14 +449,17 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         if profile_data.trader_simulator.enabled:
             # attempt 1: set exchange using exchange_id when set in bot_config
             exchange_ids = [
-                config["exchange_id"]
+                config[enums.ExchangeKeys.EXCHANGE_ID.value]
                 for config in bot_config["exchanges"]
-                if config.get("exchange_id", None)
+                if config.get(enums.ExchangeKeys.EXCHANGE_ID.value, None)
             ]
             if exchange_ids:
                 exchanges = await self.fetch_exchanges(exchange_ids)
                 exchanges_config = [
-                    {enums.ExchangeKeys.INTERNAL_NAME.value: exchange[enums.ExchangeKeys.INTERNAL_NAME.value]}
+                    {
+                        enums.ExchangeKeys.INTERNAL_NAME.value: exchange[enums.ExchangeKeys.INTERNAL_NAME.value],
+                        enums.ExchangeKeys.EXCHANGE_ID.value: exchange[enums.ExchangeKeys.ID.value],
+                    }
                     for exchange in exchanges
                 ]
             else:
