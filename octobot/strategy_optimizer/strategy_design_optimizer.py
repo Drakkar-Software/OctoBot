@@ -53,6 +53,7 @@ class ConfigTypes(enum.Enum):
     NUMBER = "number"
     BOOLEAN = "boolean"
     OPTIONS = "options"
+    MULTIPLE_OPTIONS = "multiple-options"
     UNKNOWN = "unknown"
 
 
@@ -75,6 +76,7 @@ class StrategyDesignOptimizer:
     CONFIG_USER_INPUTS = "user_inputs"
     CONFIG_FILTER_SETTINGS = "filters_settings"
     CONFIG_VALUE = "value"
+    CONFIG_TYPE = "type"
     CONFIG_TENTACLE = "tentacle"
     CONFIG_NESTED_TENTACLE_SEPARATOR = "_------_"
     CONFIG_TYPE = "type"
@@ -791,8 +793,13 @@ class StrategyDesignOptimizer:
         values = []
         try:
             if config_element[self.CONFIG_ENABLED]:
+                if config_element[self.CONFIG_TYPE] is ConfigTypes.MULTIPLE_OPTIONS:
+                    self._generate_possible_multiple_options_values(
+                    possible_values=values,
+                    config_element_values=config_element[self.CONFIG_VALUE][self.CONFIG_VALUE],
+                    )
                 if config_element[self.CONFIG_TYPE] is ConfigTypes.OPTIONS:
-                    values = [[value] for value in config_element[self.CONFIG_VALUE][self.CONFIG_VALUE]]
+                    values = [value for value in config_element[self.CONFIG_VALUE][self.CONFIG_VALUE]]
                 if config_element[self.CONFIG_TYPE] is ConfigTypes.BOOLEAN:
                     values = config_element[self.CONFIG_VALUE][self.CONFIG_VALUE]
                 if config_element[self.CONFIG_TYPE] is ConfigTypes.NUMBER:
@@ -825,7 +832,26 @@ class StrategyDesignOptimizer:
         while current <= d_stop:
             yield return_type(current)
             current += d_step
-
+            
+    def _generate_possible_multiple_options_values(
+        self,
+        possible_values: list,
+        config_element_values,
+        parent_values: list = [],
+    ):
+        for combineable_value in config_element_values:
+            if combineable_value not in parent_values:
+                new_parent_values = parent_values + [combineable_value]
+                # sort to check uniqueness 
+                new_parent_values.sort()
+                if new_parent_values not in possible_values:
+                    possible_values.append(new_parent_values)
+                self._generate_possible_multiple_options_values(
+                    possible_values,
+                    config_element_values,
+                    new_parent_values,
+                )
+                
     @staticmethod
     def get_accurate_number_type(*values):
         return int if all(isinstance(e, int) for e in values) else float
@@ -841,6 +867,9 @@ class StrategyDesignOptimizer:
             }
 
     def _get_config_type(self, value):
+        config_type = value.get(self.CONFIG_TYPE)
+        if config_type:
+            return ConfigTypes(config_type)
         config_values = value[self.CONFIG_VALUE]
         if isinstance(config_values, list):
             if not config_values:
