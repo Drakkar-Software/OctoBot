@@ -99,7 +99,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             if "email" in str(err).lower():
                 # AuthApiError('Email not confirmed')
                 raise errors.EmailValidationRequiredError(err) from err
-            raise authentication.FailedAuthentication(err) from err
+            raise authentication.FailedAuthentication(f"Community auth error: {err}") from err
 
     async def sign_up(self, email: str, password: str) -> None:
         try:
@@ -117,7 +117,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             if self._requires_email_validation(resp.user):
                 raise errors.EmailValidationRequiredError()
         except gotrue.errors.AuthError as err:
-            raise authentication.AuthenticationError(err) from err
+            raise authentication.AuthenticationError(f"Community auth error: {err}") from err
 
     async def sign_out(self, options: gotrue.types.SignOutOptions) -> None:
         try:
@@ -132,13 +132,13 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         self.event_loop = asyncio.get_event_loop()
         await self.auth.initialize_from_storage()
         if not self.is_signed_in():
-            raise authentication.FailedAuthentication()
+            raise authentication.FailedAuthentication(f"Community auth error: restoring session failed")
 
     async def refresh_session(self, refresh_token: typing.Union[str, None] = None):
         try:
             await self.auth.refresh_session(refresh_token=refresh_token)
         except gotrue.errors.AuthError as err:
-            raise authentication.AuthenticationError(err) from err
+            raise authentication.AuthenticationError(f"Community auth error: {err}") from err
 
     async def sign_in_with_otp_token(self, token):
         self.event_loop = asyncio.get_event_loop()
@@ -156,7 +156,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         except gotrue.errors.AuthImplicitGrantRedirectError as err:
             if saved_session:
                 await self.auth._storage.set_item(self.auth._storage_key, saved_session)
-            raise authentication.AuthenticationError(err) from err
+            raise authentication.AuthenticationError(f"Community auth error: {err}") from err
 
     def is_signed_in(self) -> bool:
         # is signed in when a user auth key is set
@@ -201,7 +201,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             )
             return json.loads(resp)["token"]
         except Exception:
-            raise authentication.AuthenticationError(f"Invalid auth key authentication details")
+            raise authentication.AuthenticationError(f"Community auth error: invalid auth key authentication details")
 
     async def fetch_extensions(self, mqtt_uuid: typing.Optional[str]) -> dict:
         resp = await self.functions.invoke(
@@ -449,14 +449,17 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         if profile_data.trader_simulator.enabled:
             # attempt 1: set exchange using exchange_id when set in bot_config
             exchange_ids = [
-                config["exchange_id"]
+                config[enums.ExchangeKeys.EXCHANGE_ID.value]
                 for config in bot_config["exchanges"]
-                if config.get("exchange_id", None)
+                if config.get(enums.ExchangeKeys.EXCHANGE_ID.value, None)
             ]
             if exchange_ids:
                 exchanges = await self.fetch_exchanges(exchange_ids)
                 exchanges_config = [
-                    {enums.ExchangeKeys.INTERNAL_NAME.value: exchange[enums.ExchangeKeys.INTERNAL_NAME.value]}
+                    {
+                        enums.ExchangeKeys.INTERNAL_NAME.value: exchange[enums.ExchangeKeys.INTERNAL_NAME.value],
+                        enums.ExchangeKeys.EXCHANGE_ID.value: exchange[enums.ExchangeKeys.ID.value],
+                    }
                     for exchange in exchanges
                 ]
             else:
