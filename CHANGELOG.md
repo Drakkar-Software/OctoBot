@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [2.0.7] - 2024-10-26
+### Added
+- [TradingView] Support multiple take profits
+- [TradingView] Support ";" as a parameter separator
+- [GPTService] Support custom base_url to use other LLMs than OpenAI's
+- [Exchanges] Support http and https proxies
+### Updated
+- [TradingView] Update web interface docs
+### Fixed
+- [Exchanges] Auth error loop
+- [WebInterface] Fix markdown code display in dark mode
+
 ## [2.0.6] - 2024-10-08
 ### Added
 - [TradingView] Support email TradingView alerts
