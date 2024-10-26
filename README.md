@@ -1,4 +1,4 @@
-# OctoBot [2.0.6](https://github.com/Drakkar-Software/OctoBot/blob/master/CHANGELOG.md)
+# OctoBot [2.0.7](https://github.com/Drakkar-Software/OctoBot/blob/master/CHANGELOG.md)
 [![PyPI](https://img.shields.io/pypi/v/OctoBot.svg?logo=pypi)](https://pypi.org/project/OctoBot)
 [![Downloads](https://pepy.tech/badge/octobot/month)](https://pepy.tech/project/octobot)
 [![Dockerhub](https://img.shields.io/docker/pulls/drakkarsoftware/octobot.svg?logo=docker)](https://hub.docker.com/r/drakkarsoftware/octobot)
@@ -39,11 +39,6 @@ Octobot's main feature is **evolution**, you can :
 [OctoBot is AI ready](https://www.octobot.cloud/features/ai-trading-bot?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=ai-ready): Python being the main language for OctoBot, it's easy to integrate machine-learning libraries such as [Tensorflow](https://github.com/tensorflow/tensorflow) or any other libraries and take advantage of all the available data and create a very powerful trading strategy.
 
 Looking for more info ? Check out our Octobot guides at [octobot.cloud/en/guides/octobot](https://www.octobot.cloud/en/guides/octobot?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=checkout_guides)
-
-## Current event
-![bitmart octobot trade to earn banner](https://news-images.s3.fr-par.scw.cloud/bitmart-octobot-trade-to-earn-banner.png)
-Join the BitMart & OctoBot partnership celebration
-
 
 ## Installation
 ### One click deployment using DigitalOcean
