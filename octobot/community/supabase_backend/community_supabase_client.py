@@ -446,46 +446,107 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             profile_data.trader_simulator.starting_portfolio = formatters.get_adapted_portfolio(
                 usd_like_asset, portfolio
             )
-        if profile_data.trader_simulator.enabled:
-            # attempt 1: set exchange using exchange_id when set in bot_config
-            exchange_ids = [
-                config[enums.ExchangeKeys.EXCHANGE_ID.value]
-                for config in bot_config["exchanges"]
-                if config.get(enums.ExchangeKeys.EXCHANGE_ID.value, None)
-            ]
-            if exchange_ids:
-                exchanges = await self.fetch_exchanges(exchange_ids)
-                exchanges_config = [
-                    {
-                        enums.ExchangeKeys.INTERNAL_NAME.value: exchange[enums.ExchangeKeys.INTERNAL_NAME.value],
-                        enums.ExchangeKeys.EXCHANGE_ID.value: exchange[enums.ExchangeKeys.ID.value],
-                    }
-                    for exchange in exchanges
-                ]
-            else:
-                # attempt 2: fallback to exchange_internal_name in product config
-                exchanges_config = bot_config["product_config"][enums.ProfileConfigKeys.CONFIG.value]["exchanges"]
-        else:
-            # real trading: use bot_config and its exchange_credential_id
-            exchanges_config = (
-                bot_config[enums.BotConfigKeys.EXCHANGES.value]
-                if bot_config[enums.BotConfigKeys.EXCHANGES.value]
-                else []
-            )
-        profile_data.exchanges = [
-            commons_profiles.ExchangeData.from_dict(exchange_data)
-            for exchange_data in exchanges_config
-        ]
+        profile_data.profile_details.id = bot_config_id
+
+        profile_data.exchanges = await self._fetch_full_exchange_configs(bot_config, profile_data)
         if options := bot_config.get(enums.BotConfigKeys.OPTIONS.value):
             profile_data.options = commons_profiles.OptionsData.from_dict(options)
-        profile_data.profile_details.id = bot_config_id
         return profile_data
 
-    async def fetch_exchanges(self, exchange_ids: list) -> list:
-        return (await self.table("exchanges").select(
+    async def _fetch_full_exchange_configs(
+        self, bot_config: dict, profile_data: commons_profiles.ProfileData
+    ) -> list[commons_profiles.ExchangeData]:
+
+        # ensure all required exchange info are available
+        # check 1: update exchange using exchange_id when set in bot_config
+        exchanges_configs = []
+        incomplete_exchange_config_by_id = {
+            config[enums.ExchangeKeys.EXCHANGE_ID.value]: config
+            for config in (bot_config.get(enums.BotConfigKeys.EXCHANGES.value) or [])
+            if (
+                config.get(enums.ExchangeKeys.EXCHANGE_ID.value, None)
+                and not config.get(enums.ExchangeKeys.INTERNAL_NAME.value, None)
+            )
+        }
+        if incomplete_exchange_config_by_id:
+            fetched_exchanges = await self.fetch_exchanges(list(incomplete_exchange_config_by_id))
+            exchanges_configs += [
+                {
+                    **incomplete_exchange_config_by_id[exchange[enums.ExchangeKeys.ID.value]],
+                    **{
+                        enums.ExchangeKeys.INTERNAL_NAME.value: exchange[enums.ExchangeKeys.INTERNAL_NAME.value],
+                    }
+                }
+                for exchange in fetched_exchanges
+            ]
+        # check 2: set exchange using credentials_id when set in bot_config
+        incomplete_exchange_config_by_credentials_id = {
+            config[enums.ExchangeKeys.EXCHANGE_CREDENTIAL_ID.value]: config
+            for config in (bot_config.get(enums.BotConfigKeys.EXCHANGES.value) or [])
+            if (
+                config.get(enums.ExchangeKeys.EXCHANGE_CREDENTIAL_ID.value, None)
+                and not config.get(enums.ExchangeKeys.EXCHANGE_ID.value, None)
+            )
+        }
+        if incomplete_exchange_config_by_credentials_id:
+            exchanges_by_credential_ids = await self.fetch_exchanges_by_credential_ids(
+                list(incomplete_exchange_config_by_credentials_id)
+            )
+            exchanges_configs += [
+                {
+                    **incomplete_exchange_config_by_credentials_id[credentials_id],
+                    **{
+                        enums.ExchangeKeys.EXCHANGE_ID.value: exchange[enums.ExchangeKeys.ID.value],
+                        enums.ExchangeKeys.INTERNAL_NAME.value: exchange[enums.ExchangeKeys.INTERNAL_NAME.value],
+                    }
+                }
+                for credentials_id, exchange in exchanges_by_credential_ids.items()
+            ]
+        if not exchanges_configs:
+            if profile_data.trader_simulator.enabled:
+                # last attempt (simulator only): use exchange details from product config
+                product_exchanges_configs = bot_config["product_config"][enums.ProfileConfigKeys.CONFIG.value][
+                    "exchanges"
+                ]
+                internal_names = [
+                    exchanges_config[enums.ExchangeKeys.INTERNAL_NAME.value]
+                    for exchanges_config in product_exchanges_configs
+                ]
+                fetched_exchanges = await self.fetch_exchanges([], internal_names=internal_names)
+                exchanges_configs += [
+                    {
+                        enums.ExchangeKeys.EXCHANGE_ID.value: exchange[enums.ExchangeKeys.ID.value],
+                        enums.ExchangeKeys.INTERNAL_NAME.value: exchange[enums.ExchangeKeys.INTERNAL_NAME.value],
+                    }
+                    for exchange in fetched_exchanges
+                ]
+            else:
+                commons_logging.get_logger(self.__class__.__name__).error(
+                    f"Impossible to fetch exchange details for profile with bot id: {profile_data.profile_details.id}"
+                )
+        return [
+            commons_profiles.ExchangeData.from_dict(exchange_data)
+            for exchange_data in exchanges_configs
+        ]
+
+    async def fetch_exchanges(self, exchange_ids: list, internal_names: typing.Optional[list] = None) -> list:
+        select = self.table("exchanges").select(
             f"{enums.ExchangeKeys.ID.value}, "
             f"{enums.ExchangeKeys.INTERNAL_NAME.value}"
-        ).in_(enums.ExchangeKeys.ID.value, exchange_ids).execute()).data
+        )
+        if internal_names:
+            return (await select.in_(enums.ExchangeKeys.INTERNAL_NAME.value, internal_names).execute()).data
+        return (await select.in_(enums.ExchangeKeys.ID.value, exchange_ids).execute()).data
+
+    async def fetch_exchanges_by_credential_ids(self, exchange_credential_ids: list) -> dict:
+        exchanges = (await self.table("exchange_credentials").select(
+            "id,"
+            "exchange:exchanges(id, internal_name)"
+        ).in_("id", exchange_credential_ids).execute()).data
+        return {
+            exchange["id"]: exchange["exchange"]
+            for exchange in exchanges
+        }
 
     async def fetch_product_config(self, product_id: str, product_slug: str = None) -> commons_profiles.ProfileData:
         if not product_id and not product_slug:
