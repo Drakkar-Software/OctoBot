@@ -21,6 +21,7 @@ import octobot.constants as constants
 import octobot.strategy_optimizer.fitness_parameter as fitness_parameter
 import octobot.strategy_optimizer.optimizer_filter as optimizer_filter
 import octobot.strategy_optimizer.optimizer_constraint as optimizer_constraint
+import octobot_backtesting.constants as backtesting_constants
 
 
 class OptimizerSettings:
@@ -31,7 +32,24 @@ class OptimizerSettings:
         self.optimizer_config = settings_dict.get(enums.OptimizerConfig.OPTIMIZER_CONFIG.value, None)
         self.randomly_chose_runs = settings_dict.get(enums.OptimizerConfig.RANDOMLY_CHOSE_RUNS.value,
                                                      constants.OPTIMIZER_DEFAULT_RANDOMLY_CHOSE_RUNS)
-        self.data_files = settings_dict.get(enums.OptimizerConfig.DATA_FILES.value)
+        self.data_files = settings_dict.get(
+            enums.OptimizerConfig.DATA_FILES.value,
+            [backtesting_constants.CONFIG_CURRENT_BOT_DATA],
+        )
+        if not isinstance(self.data_files, list):
+            self.data_files = [self.data_files]
+        if backtesting_constants.CONFIG_CURRENT_BOT_DATA in self.data_files:
+            self.data_files = [backtesting_constants.CONFIG_CURRENT_BOT_DATA]
+        self.exchange_ids = settings_dict.get(
+            enums.OptimizerConfig.EXCHANGE_IDS.value,
+        )
+        if not self.exchange_ids:
+            self.exchange_ids = [
+                settings_dict.get(enums.OptimizerConfig.EXCHANGE_ID.value)
+            ]
+        self.exchange_type = settings_dict.get(
+            enums.OptimizerConfig.EXCHANGE_TYPE.value
+        )
         self.start_timestamp = settings_dict.get(enums.OptimizerConfig.START_TIMESTAMP.value, None)
         self.end_timestamp = settings_dict.get(enums.OptimizerConfig.END_TIMESTAMP.value, None)
         self.required_idle_cores = int(settings_dict.get(enums.OptimizerConfig.IDLE_CORES.value,
