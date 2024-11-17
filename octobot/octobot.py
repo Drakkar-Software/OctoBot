@@ -117,8 +117,8 @@ class OctoBot:
         await self._ensure_clock()
         if not (self.community_auth.is_initialized() and self.community_auth.is_using_the_current_loop()):
             self.community_auth.init_account(True)
-        self._log_config()
         await self.initializer.create(True)
+        self._log_config()
         await self._start_tools_tasks()
         await logger.init_octobot_chan_logger(self.bot_id)
         await self.create_producers()
@@ -278,9 +278,11 @@ class OctoBot:
         trader_str = "real trader" if has_real_trader else "simulated trader" if has_simulated_trader else "no trader"
         traded_symbols = trading_api.get_config_symbols(self.config, True)
         symbols_str = ', '.join(set(traded_symbols))
+        trading_mode = trading_api.get_activated_trading_mode(self.tentacles_setup_config)
+        trading_mode_str = trading_mode.get_name() if trading_mode else "no trading mode"
         self.logger.info(f"Starting OctoBot with {trader_str} on "
                          f"{', '.join(exchanges) if exchanges else 'no exchange'} "
-                         f"trading {symbols_str or 'nothing'} and using bot_id: {self.bot_id}")
+                         f"trading {symbols_str or 'nothing'} with {trading_mode_str} and using bot_id: {self.bot_id}")
 
     def get_edited_config(self, config_key, dict_only=True):
         return self.configuration_manager.get_edited_config(config_key, dict_only)
