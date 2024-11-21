@@ -354,6 +354,14 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             bot_id, bot_update
         )
 
+    async def update_bot_positions(self, bot_id, formatted_positions) -> dict:
+        bot_update = {
+            enums.BotKeys.POSITIONS.value: formatted_positions
+        }
+        return await self.update_bot(
+            bot_id, bot_update
+        )
+
     async def fetch_bot_tentacles_data_based_config(
         self, bot_id: str, authenticator, auth_key: typing.Optional[str]
     ) -> (commons_profiles.ProfileData, list[commons_profiles.ExchangeAuthData]):

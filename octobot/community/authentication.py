@@ -852,6 +852,17 @@ class CommunityAuthentication(authentication.Authenticator):
         self.logger.info(f"Bot orders updated: using {len(formatted_orders)} orders")
 
     @_bot_data_update
+    async def update_positions(self, positions_by_exchange: dict[str, list]):
+        """
+        Updates authenticated account positions
+        """
+        formatted_positions = []
+        for exchange_name, positions in positions_by_exchange.items():
+            formatted_positions += formatters.format_positions(positions, exchange_name)
+        await self.supabase_client.update_bot_positions(self.user_account.bot_id, formatted_positions)
+        self.logger.info(f"Bot positions updated: using {len(formatted_positions)} positions")
+
+    @_bot_data_update
     async def update_portfolio(self, current_value: dict, initial_value: dict, profitability: float,
                                unit: str, content: dict, history: dict, price_by_asset: dict,
                                reset: bool):
