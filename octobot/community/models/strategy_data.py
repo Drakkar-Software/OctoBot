@@ -71,9 +71,15 @@ class ResultsData(commons_dataclasses.FlexibleDataclass):
         max_unit = next(iter(self.reference_market_profitability))
         max_value = self.reference_market_profitability[max_unit]
         for unit, value in self.reference_market_profitability.items():
+            if value is None:
+                continue
+            if max_value is None:
+                max_value = value
             if value > max_value:
                 max_unit = unit
                 max_value = value
+        if max_value is None:
+            max_value = 0
         return max_value, max_unit
 
     def get_max_value(self):
