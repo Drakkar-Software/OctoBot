@@ -669,6 +669,7 @@ class CommunityAuthentication(authentication.Authenticator):
                 )
                 self.successfully_fetched_tentacles_package_urls = True
                 self.user_account.owned_packages = packages
+                self.logger.debug(f"Account extension packages: {', '.join(packages) if packages else packages}")
                 self.save_installed_package_urls(package_urls)
                 has_tentacles_to_install = \
                     await community_tentacles_packages.has_tentacles_to_install_and_uninstall_tentacles_if_necessary(
