@@ -69,6 +69,7 @@ class AbstractAuthenticatedExchangeTester:
     CANCEL_TIMEOUT = 15
     EDIT_TIMEOUT = 15
     MIN_PORTFOLIO_SIZE = 1
+    EXPECTED_QUOTE_MIN_ORDER_SIZE = 1   # min quote value of orders to create (used to check market status parsing)
     EXPECT_BALANCE_FILTER_BY_MARKET_STATUS = False  # set true when using filtered market status also filters
     # fetched balance assets
     DUPLICATE_TRADES_RATIO = 0
@@ -214,25 +215,36 @@ class AbstractAuthenticatedExchangeTester:
 
     async def inner_test_create_and_cancel_limit_orders(self, symbol=None, settlement_currency=None):
         symbol = symbol or self.SYMBOL
+        # # DEBUG tools p1, uncomment to create specific orders
+        # symbol = "ADA/USDT"
+        # # end debug tools
+        market_status = self.exchange_manager.exchange.get_market_status(symbol)
         exchange_data = self.get_exchange_data(symbol=symbol)
         settlement_currency = settlement_currency or self.SETTLEMENT_CURRENCY
         price = self.get_order_price(await self.get_price(symbol=symbol), False, symbol=symbol)
-        size = self.get_order_size(
+        # 1. try with "normal" order size
+        default_size = self.get_order_size(
             await self.get_portfolio(), price, symbol=symbol, settlement_currency=settlement_currency
         )
-        self.check_order_size_and_price(size, price)
-        # # DEBUG tools, uncomment to create specific orders
-        # symbol = "BTC/USD:BTC"
-        # market_status = self.exchange_manager.exchange.get_market_status(symbol)
+        self.check_order_size_and_price(default_size, price, symbol=symbol, allow_empty_size=self.CHECK_EMPTY_ACCOUNT)
+        # 2. try with minimal order size
+        min_size = personal_data.decimal_adapt_quantity(
+            market_status,
+            # add 25% to min order size to avoid rounding of amount of price ending up just bellow min cost
+            decimal.Decimal(str(self.EXPECTED_QUOTE_MIN_ORDER_SIZE)) * decimal.Decimal("1.25") / price
+        )
+        self.check_order_size_and_price(min_size, price, symbol=symbol, allow_empty_size=False)
+        size = min(min_size, default_size)
+        # # DEBUG tools p2, uncomment to create specific orders
         # precision = market_status[trading_enums.ExchangeConstantsMarketStatusColumns.PRECISION.value]
         # limits = market_status[trading_enums.ExchangeConstantsMarketStatusColumns.LIMITS.value]
         # price = personal_data.decimal_adapt_price(
         #     market_status,
-        #     decimal.Decimal("0.1810")
+        #     decimal.Decimal("0.910")
         # )
         # size = personal_data.decimal_adapt_quantity(
         #     market_status,
-        #     decimal.Decimal("7")
+        #     decimal.Decimal("5.1")
         # )
         # # end debug tools
         open_orders = await self.get_open_orders(exchange_data)
@@ -881,7 +893,7 @@ class AbstractAuthenticatedExchangeTester:
             order_quantity
         )
 
-    def check_order_size_and_price(self, size, price, symbol=None):
+    def check_order_size_and_price(self, size, price, symbol=None, allow_empty_size=False):
         market_status = self.exchange_manager.exchange.get_market_status(str(symbol or self.SYMBOL))
         precision_amount = market_status[
             trading_enums.ExchangeConstantsMarketStatusColumns.PRECISION.value
@@ -896,6 +908,27 @@ class AbstractAuthenticatedExchangeTester:
 
         assert personal_data_orders.decimal_trunc_with_n_decimal_digits(size, precision_amount) == size
         assert personal_data_orders.decimal_trunc_with_n_decimal_digits(price, precision_price) == price
+
+        # also check using decimal_check_and_adapt_order_details_if_necessary,
+        # which is used to create orders in trading modes
+        adapted_details = personal_data.decimal_check_and_adapt_order_details_if_necessary(
+            size,
+            price,
+            market_status
+        )
+        if size == trading_constants.ZERO:
+            if allow_empty_size:
+                # can happen on empty accounts
+                assert adapted_details == []
+            else:
+                raise AssertionError(f"{size=} but {allow_empty_size=}")
+        else:
+            cost = size * price
+            # will fail if order min size checks are invalid
+            assert adapted_details, f"Given size ({size}, cost={cost}) is too small according to parsed exchange rules"
+            for order_quantity, order_price in adapted_details:
+                assert order_quantity == size # size should not change
+                assert order_price == price # price should not change
 
 
     def get_sell_size_from_buy_order(self, buy_order):

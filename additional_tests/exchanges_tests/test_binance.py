@@ -32,6 +32,7 @@ class TestBinanceAuthenticatedExchange(
     ORDER_SIZE = 50  # % of portfolio to include in test orders
     DUPLICATE_TRADES_RATIO = 0.1   # allow 10% duplicate in trades (due to trade id set to order id)
     VALID_ORDER_ID = "26408108410"
+    EXPECTED_QUOTE_MIN_ORDER_SIZE = 5   # min quote value of orders to create (used to check market status parsing)
     EXPECTED_INVALID_ORDERS_QUANTITY = [
         # for some reason these orders from 2021 are broken
         '7457313043',
