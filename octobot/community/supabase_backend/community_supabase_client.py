@@ -532,6 +532,14 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
                 commons_logging.get_logger(self.__class__.__name__).error(
                     f"Impossible to fetch exchange details for profile with bot id: {profile_data.profile_details.id}"
                 )
+        # Register exchange_type if provided, otherwise will use default value.
+        # Multi exchange type configurations are not yet supported
+        exchange_type = (
+            profile_data.exchanges[0].exchange_type if profile_data.exchanges
+            else commons_constants.DEFAULT_EXCHANGE_TYPE
+        )
+        for exchange_data in exchanges_configs:
+            exchange_data[enums.ExchangeKeys.EXCHANGE_TYPE.value] = exchange_type
         return [
             commons_profiles.ExchangeData.from_dict(exchange_data)
             for exchange_data in exchanges_configs
