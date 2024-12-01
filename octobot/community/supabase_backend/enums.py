@@ -112,6 +112,7 @@ class ExchangeKeys(enum.Enum):
     INTERNAL_NAME = "internal_name"
     EXCHANGE_CREDENTIAL_ID = "exchange_credential_id"
     EXCHANGE_ID = "exchange_id"
+    EXCHANGE_TYPE = "exchange_type"
 
 
 class SignalKeys(enum.Enum):
