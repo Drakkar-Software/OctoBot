@@ -857,9 +857,9 @@ class AbstractAuthenticatedExchangeTester:
         # uncomment to bypass self.exchange_manager.trader
         # created_orders = await exchanges_test_tools.create_orders(
         #     self.exchange_manager,
-        #     self.get_exchange_data(order.symbol),
         #     [order.to_dict()],
-        #     self.OPEN_TIMEOUT
+        #     self.OPEN_TIMEOUT,
+        #     {order.symbol: order.created_last_price}
         # )
         # created_order = created_orders[0]
         created_order = await self.exchange_manager.trader.create_order(order, params=params, wait_for_creation=False)
