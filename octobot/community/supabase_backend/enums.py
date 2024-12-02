@@ -113,6 +113,7 @@ class ExchangeKeys(enum.Enum):
     EXCHANGE_CREDENTIAL_ID = "exchange_credential_id"
     EXCHANGE_ID = "exchange_id"
     EXCHANGE_TYPE = "exchange_type"
+    SANDBOXED = "sandboxed"
 
 
 class SignalKeys(enum.Enum):
