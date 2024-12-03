@@ -229,7 +229,7 @@ class AbstractAuthenticatedExchangeTester:
         async with self.local_exchange_manager():
             await self.inner_test_create_and_cancel_limit_orders()
 
-    async def inner_test_create_and_cancel_limit_orders(self, symbol=None, settlement_currency=None):
+    async def inner_test_create_and_cancel_limit_orders(self, symbol=None, settlement_currency=None, margin_type=None):
         symbol = symbol or self.SYMBOL
         # # DEBUG tools p1, uncomment to create specific orders
         # symbol = "ADA/USDT"
@@ -247,7 +247,11 @@ class AbstractAuthenticatedExchangeTester:
         min_size = personal_data.decimal_adapt_quantity(
             market_status,
             # add 25% to min order size to avoid rounding of amount of price ending up just bellow min cost
-            decimal.Decimal(str(self.EXPECTED_QUOTE_MIN_ORDER_SIZE)) * decimal.Decimal("1.25") / price
+            decimal.Decimal(str(self.EXPECTED_QUOTE_MIN_ORDER_SIZE)) * (
+                decimal.Decimal("1.25") if symbols.parse_symbol(symbol).is_spot() else decimal.Decimal("1")
+            ) / (
+                decimal.Decimal("1") if symbols.parse_symbol(symbol).is_inverse() else price
+            )
         )
         self.check_order_size_and_price(min_size, price, symbol=symbol, allow_empty_size=False)
         size = min(min_size, default_size)
