@@ -29,12 +29,13 @@ class TestBinanceFuturesAuthenticatedExchange(
     EXCHANGE_NAME = "binance"
     CREDENTIALS_EXCHANGE_NAME = "BINANCE_FUTURES"
     ORDER_CURRENCY = "BTC"
-    SETTLEMENT_CURRENCY = "USDT"
+    SETTLEMENT_CURRENCY = "USDC"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}:{SETTLEMENT_CURRENCY}"
     INVERSE_SYMBOL = f"{ORDER_CURRENCY}/USD:{ORDER_CURRENCY}"
-    ORDER_SIZE = 10  # % of portfolio to include in test orders
+    ORDER_SIZE = 30  # % of portfolio to include in test orders
     DUPLICATE_TRADES_RATIO = 0.1   # allow 10% duplicate in trades (due to trade id set to order id)
     VALID_ORDER_ID = "26408108410"
+    EXPECTED_QUOTE_MIN_ORDER_SIZE = 200   # min quote value of orders to create (used to check market status parsing)
 
     async def _set_account_types(self, account_types):
         # todo remove this and use both types when exchange-side multi portfolio is enabled
@@ -86,18 +87,23 @@ class TestBinanceFuturesAuthenticatedExchange(
     async def test_create_and_cancel_limit_orders(self):
         await super().test_create_and_cancel_limit_orders()
 
-    async def inner_test_create_and_cancel_limit_orders(self, symbol=None, settlement_currency=None):
+    async def _inner_test_create_and_cancel_limit_orders_for_margin_type(
+        self, symbol=None, settlement_currency=None, margin_type=None
+    ):
         # todo remove this and use both types when exchange-side multi portfolio is enabled
         # test with linear symbol
+        await self._set_account_types(
+            [self.exchange_manager.exchange.LINEAR_TYPE]
+        )
         await abstract_authenticated_exchange_tester.AbstractAuthenticatedExchangeTester\
-            .inner_test_create_and_cancel_limit_orders(self)
+            .inner_test_create_and_cancel_limit_orders(self, margin_type=margin_type)
         # test with inverse symbol
         await self._set_account_types(
             [self.exchange_manager.exchange.INVERSE_TYPE]
         )
         await abstract_authenticated_exchange_tester.AbstractAuthenticatedExchangeTester\
             .inner_test_create_and_cancel_limit_orders(
-                self, symbol=self.INVERSE_SYMBOL, settlement_currency=self.ORDER_CURRENCY
+                self, symbol=self.INVERSE_SYMBOL, settlement_currency=self.ORDER_CURRENCY, margin_type=margin_type
             )
 
     async def test_create_and_fill_market_orders(self):

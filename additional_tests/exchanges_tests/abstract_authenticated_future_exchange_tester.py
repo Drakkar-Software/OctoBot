@@ -42,10 +42,25 @@ class AbstractAuthenticatedFutureExchangeTester(
             await self.inner_test_get_empty_linear_and_inverse_positions()
 
     async def inner_test_get_empty_linear_and_inverse_positions(self):
+        if self.exchange_manager.exchange.SUPPORTS_SET_MARGIN_TYPE:
+            await self.set_margin_type(trading_enums.MarginType.ISOLATED)
+            await self._inner_test_get_empty_linear_and_inverse_positions_for_margin_type(
+                trading_enums.MarginType.ISOLATED
+            )
+            await self.set_margin_type(trading_enums.MarginType.CROSS)
+            await self._inner_test_get_empty_linear_and_inverse_positions_for_margin_type(
+                trading_enums.MarginType.CROSS
+            )
+        else:
+            await self._inner_test_get_empty_linear_and_inverse_positions_for_margin_type(None)
+
+    async def _inner_test_get_empty_linear_and_inverse_positions_for_margin_type(
+        self, margin_type: trading_enums.MarginType
+    ):
         positions = await self.get_positions()
         self._check_positions_content(positions)
         position = await self.get_position(self.SYMBOL)
-        self._check_position_content(position, self.SYMBOL)
+        self._check_position_content(position, self.SYMBOL, margin_type=margin_type)
         for contract_type in (trading_enums.FutureContractType.LINEAR_PERPETUAL,
                               trading_enums.FutureContractType.INVERSE_PERPETUAL):
             if not self.has_empty_position(self.get_filtered_positions(positions, contract_type)):
@@ -134,11 +149,13 @@ class AbstractAuthenticatedFutureExchangeTester(
         for position in positions:
             self._check_position_content(position, None)
 
-    def _check_position_content(self, position, symbol, position_mode=None):
+    def _check_position_content(self, position, symbol, position_mode=None, margin_type=None):
         if symbol:
             assert position[trading_enums.ExchangeConstantsPositionColumns.SYMBOL.value] == symbol
         else:
             assert position[trading_enums.ExchangeConstantsPositionColumns.SYMBOL.value]
+        if margin_type:
+            assert position[trading_enums.ExchangeConstantsPositionColumns.MARGIN_TYPE.value] == margin_type
         leverage = position[trading_enums.ExchangeConstantsPositionColumns.LEVERAGE.value]
         assert isinstance(leverage, decimal.Decimal)
         # should not be 0 in octobot
@@ -149,11 +166,28 @@ class AbstractAuthenticatedFutureExchangeTester(
             assert position[trading_enums.ExchangeConstantsPositionColumns.POSITION_MODE.value] is position_mode
 
     async def inner_test_create_and_cancel_limit_orders(self, symbol=None, settlement_currency=None):
+        if self.exchange_manager.exchange.SUPPORTS_SET_MARGIN_TYPE:
+            await self.set_margin_type(trading_enums.MarginType.ISOLATED)
+            await self._inner_test_create_and_cancel_limit_orders_for_margin_type(
+                symbol=symbol, settlement_currency=settlement_currency, margin_type=trading_enums.MarginType.ISOLATED
+            )
+            await self.set_margin_type(trading_enums.MarginType.CROSS)
+            await self._inner_test_create_and_cancel_limit_orders_for_margin_type(
+                symbol=symbol, settlement_currency=settlement_currency, margin_type=trading_enums.MarginType.CROSS
+            )
+        else:
+            await self._inner_test_create_and_cancel_limit_orders_for_margin_type(
+                symbol=symbol, settlement_currency=settlement_currency, margin_type=None
+            )
+
+    async def _inner_test_create_and_cancel_limit_orders_for_margin_type(
+            self, symbol=None, settlement_currency=None, margin_type=None
+    ):
         # test with linear symbol
-        await super().inner_test_create_and_cancel_limit_orders()
+        await super().inner_test_create_and_cancel_limit_orders(margin_type=margin_type)
         # test with inverse symbol
         await super().inner_test_create_and_cancel_limit_orders(
-            symbol=self.INVERSE_SYMBOL, settlement_currency=self.ORDER_CURRENCY
+            symbol=self.INVERSE_SYMBOL, settlement_currency=self.ORDER_CURRENCY, margin_type=margin_type
         )
 
     async def inner_test_create_and_fill_market_orders(self):

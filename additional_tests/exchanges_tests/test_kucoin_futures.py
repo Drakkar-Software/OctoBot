@@ -73,6 +73,7 @@ class TestKucoinFuturesAuthenticatedExchange(
         await super().test_is_valid_account()
 
     async def test_create_and_cancel_limit_orders(self):
+        # todo test cross position order creation (kucoin param) at next ccxt update (will support set margin type)
         await super().test_create_and_cancel_limit_orders()
 
     async def test_create_and_fill_market_orders(self):
