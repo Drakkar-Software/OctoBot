@@ -86,6 +86,7 @@ class AbstractAuthenticatedExchangeTester:
     EXPECTED_INVALID_ORDERS_QUANTITY = []   # orders with known invalid quantity exchange order id    (usually legacy)
     CHECK_EMPTY_ACCOUNT = False  # set True when the account to check has no funds. Warning: does not check order
     # parse/create/fill/cancel or portfolio & trades parsing
+    IS_BROKER_ENABLED_ACCOUNT = True # set False when this test account can't generate broker fees
 
     # Implement all "test_[name]" methods, call super() to run the test, pass to ignore it.
     # Override the "inner_test_[name]" method to override a test content.
@@ -208,6 +209,21 @@ class AbstractAuthenticatedExchangeTester:
         # Ensures that get_order() returns None when an order is not found, should not raise an error
         non_existing_order = await self.exchange_manager.exchange.get_order(self.VALID_ORDER_ID, self.SYMBOL)
         assert non_existing_order is None
+
+    async def test_is_valid_account(self):
+        async with self.local_exchange_manager():
+            await self.inner_test_is_valid_account()
+
+    async def inner_test_is_valid_account(self):
+        is_compatible, error = await self.exchange_manager.exchange_backend.is_valid_account(
+            always_check_key_rights=True
+        )
+        assert is_compatible is self.IS_BROKER_ENABLED_ACCOUNT
+        if is_compatible:
+            assert error is None
+        else:
+            assert isinstance(error, str)
+            assert len(error) > 0
 
     async def test_create_and_cancel_limit_orders(self):
         async with self.local_exchange_manager():

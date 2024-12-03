@@ -41,6 +41,9 @@ class TestKucoinAuthenticatedExchange(
     async def test_get_portfolio_with_market_filter(self):
         await super().test_get_portfolio_with_market_filter()
 
+    async def test_is_valid_account(self):
+        await super().test_is_valid_account()
+
     async def test_create_and_cancel_limit_orders(self):
         await super().test_create_and_cancel_limit_orders()
 
