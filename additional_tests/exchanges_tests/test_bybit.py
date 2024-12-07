@@ -48,6 +48,9 @@ class TestBybitAuthenticatedExchange(
         # pass if not implemented
         pass
 
+    async def test_is_authenticated_request(self):
+        await super().test_is_authenticated_request()
+
     async def test_invalid_api_key_error(self):
         await super().test_invalid_api_key_error()
 

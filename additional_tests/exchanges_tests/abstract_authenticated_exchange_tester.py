@@ -17,11 +17,13 @@ import asyncio
 import contextlib
 import decimal
 import time
-
+import typing
+import ccxt
 import mock
 import pytest
 
 import octobot_commons.constants as constants
+import octobot_commons.enums as commons_enums
 import octobot_commons.symbols as symbols
 import octobot_trading.errors as trading_errors
 import octobot_trading.enums as trading_enums
@@ -80,6 +82,7 @@ class AbstractAuthenticatedExchangeTester:
     MAX_TRADE_USD_VALUE = decimal.Decimal(8000)
     MIN_TRADE_USD_VALUE = decimal.Decimal("0.1")
     IS_ACCOUNT_ID_AVAILABLE = True  # set False when get_account_id is not available and should be checked
+    IS_AUTHENTICATED_REQUEST_CHECK_AVAILABLE = False    # set True when is_authenticated_request is implemented
     EXPECTED_GENERATED_ACCOUNT_ID = False   # set True when account_id can't be fetch and a generated account id is used
     USE_ORDER_OPERATION_TO_CHECK_API_KEY_RIGHTS = False    # set True when api key rights can't be checked using a
     # dedicated api and have to be checked by sending an order operation
@@ -142,7 +145,7 @@ class AbstractAuthenticatedExchangeTester:
             await self.inner_test_get_account_id()
 
     async def inner_test_get_account_id(self):
-        if self.IS_ACCOUNT_ID_AVAILABLE:
+        if self.IS_AUTHENTICATED_REQUEST_CHECK_AVAILABLE:
             account_id = await self.exchange_manager.exchange.get_account_id()
             assert account_id
             assert isinstance(account_id, str)
@@ -153,6 +156,104 @@ class AbstractAuthenticatedExchangeTester:
         else:
             with pytest.raises(NotImplementedError):
                 await self.exchange_manager.exchange.get_account_id()
+
+    async def test_is_authenticated_request(self):
+        rest_exchange_data = {
+            "calls": [],
+        }
+        def _http_proxy_callback_factory(_exchange_manager):
+            rest_exchange_data["exchange_manager"] = _exchange_manager
+            def proxy_callback(url: str, method: str, headers: dict, body) -> typing.Optional[str]:
+                if not self.IS_AUTHENTICATED_REQUEST_CHECK_AVAILABLE:
+                    return None
+                if "rest_exchange" not in rest_exchange_data:
+                    rest_exchange_data["rest_exchange"] = rest_exchange_data["exchange_manager"].exchange
+                rest_exchange = rest_exchange_data["rest_exchange"]
+                exchange_return_value = rest_exchange.is_authenticated_request(url, method, headers, body)
+                rest_exchange_data["calls"].append(
+                    ((url, method, headers, body), exchange_return_value)
+                )
+                # never return any proxy url: no proxy is set but make sure to register each request call
+                return None
+
+            return proxy_callback
+
+        async with self.local_exchange_manager(http_proxy_callback_factory=_http_proxy_callback_factory):
+            await self.inner_is_authenticated_request(rest_exchange_data)
+
+    async def inner_is_authenticated_request(self, rest_exchange_data):
+        if self.IS_AUTHENTICATED_REQUEST_CHECK_AVAILABLE:
+            latest_call_indexes = [len(rest_exchange_data["calls"])]
+            def get_latest_calls():
+                latest_calls = rest_exchange_data["calls"][latest_call_indexes[-1]:]
+                latest_call_indexes.append(len(rest_exchange_data["calls"]))
+                return latest_calls
+
+            def assert_has_at_least_one_authenticated_call(calls):
+                has_authenticated_call = False
+                for latest_call in calls:
+                    # should be at least 1 authenticated call
+                    if latest_call[1] is True:
+                        has_authenticated_call = True
+                assert has_authenticated_call, f"{calls} should contain at last 1 authenticated call"  # authenticated request
+
+            # 1. test using different values
+            assert self.exchange_manager.exchange.is_authenticated_request("", "", {}, None) is False
+            assert self.exchange_manager.exchange.is_authenticated_request("", "", {}, "") is False
+            assert self.exchange_manager.exchange.is_authenticated_request("", "", {}, b"") is False
+            assert self.exchange_manager.exchange.is_authenticated_request(None, None, None, b"") is False
+
+            # 2. make public requests
+            assert await self.exchange_manager.exchange.get_symbol_prices(
+                self.SYMBOL, commons_enums.TimeFrames.ONE_HOUR
+            )
+            latest_calls = get_latest_calls()
+            for latest_call in latest_calls:
+                assert latest_call[1] is False, f"{latest_call} should be NOT authenticated"  # authenticated request
+            ticker = await self.exchange_manager.exchange.get_price_ticker(self.SYMBOL)
+            assert ticker
+            last_price = ticker[trading_enums.ExchangeConstantsTickersColumns.CLOSE.value]
+            assert rest_exchange_data["calls"][-1][0][0] != latest_calls[-1][0][0]  # assert latest call's url changed
+            latest_calls = get_latest_calls()
+            for latest_call in latest_calls:
+                assert latest_call[1] is False, f"{latest_call} should be NOT authenticated"  # authenticated request
+
+            # 3. make private requests
+            # balance (usually a GET)
+            portfolio = await self.get_portfolio()
+            if self.CHECK_EMPTY_ACCOUNT:
+                assert portfolio == {}
+            else:
+                assert portfolio
+            assert rest_exchange_data["calls"][-1][0][0] != latest_calls[-1][0][0]   # assert latest call's url changed
+            latest_calls = get_latest_calls()
+            assert_has_at_least_one_authenticated_call(latest_calls)
+            # create order (usually a POST)
+            price = decimal.Decimal(str(last_price)) * decimal.Decimal("0.7")
+            amount = self.get_order_size(
+                portfolio, price, symbol=self.SYMBOL, settlement_currency=self.SETTLEMENT_CURRENCY
+            ) * 100000
+            if self.CHECK_EMPTY_ACCOUNT:
+                amount = 10
+            # (amount is too large, creating buy order will fail)
+            with pytest.raises(ccxt.ExchangeError):
+                await self.exchange_manager.exchange.connector.create_limit_buy_order(
+                    self.SYMBOL, amount, price=price, params={}
+                )
+            assert rest_exchange_data["calls"][-1][0][0] != latest_calls[-1][0][0]   # assert latest call's url changed
+            latest_calls = get_latest_calls()
+            assert_has_at_least_one_authenticated_call(latest_calls)
+            # cancel order (usually a DELETE)
+            with pytest.raises(ccxt.BaseError):
+                # use client call directly to avoid any octobot error conversion
+                await self.exchange_manager.exchange.connector.client.cancel_order(self.VALID_ORDER_ID, self.SYMBOL)
+            assert rest_exchange_data["calls"][-1][0][0] != latest_calls[-1][0][0]   # assert latest call's url changed
+            latest_calls = get_latest_calls()
+            assert_has_at_least_one_authenticated_call(latest_calls)
+        else:
+            with pytest.raises(NotImplementedError):
+                self.exchange_manager.exchange.is_authenticated_request("", "", {}, None)
+            await asyncio.sleep(1.5)  # let initial requests finish to be able to stop exchange manager
 
     async def test_invalid_api_key_error(self):
         with pytest.raises(trading_errors.AuthenticationError):
@@ -787,7 +888,9 @@ class AbstractAuthenticatedExchangeTester:
         ))
 
     @contextlib.asynccontextmanager
-    async def local_exchange_manager(self, market_filter=None, identifiers_suffix=None, use_invalid_creds=False):
+    async def local_exchange_manager(
+        self, market_filter=None, identifiers_suffix=None, use_invalid_creds=False, http_proxy_callback_factory=None
+    ):
         try:
             exchange_tentacle_name = self.EXCHANGE_TENTACLE_NAME or self.EXCHANGE_NAME.capitalize()
             credentials_exchange_name = self.CREDENTIALS_EXCHANGE_NAME or self.EXCHANGE_NAME
@@ -800,6 +903,7 @@ class AbstractAuthenticatedExchangeTester:
                     credentials_exchange_name=credentials_exchange_name,
                     market_filter=market_filter,
                     use_invalid_creds=use_invalid_creds,
+                    http_proxy_callback_factory=http_proxy_callback_factory,
             ) as exchange_manager:
                 self.exchange_manager = exchange_manager
                 yield

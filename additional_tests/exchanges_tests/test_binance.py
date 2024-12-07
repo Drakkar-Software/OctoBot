@@ -39,6 +39,8 @@ class TestBinanceAuthenticatedExchange(
         '7457370420',
     ]
     IS_BROKER_ENABLED_ACCOUNT = False
+    IS_AUTHENTICATED_REQUEST_CHECK_AVAILABLE = True    # set True when is_authenticated_request is implemented
+
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
@@ -48,6 +50,9 @@ class TestBinanceAuthenticatedExchange(
 
     async def test_get_account_id(self):
         await super().test_get_account_id()
+
+    async def test_is_authenticated_request(self):
+        await super().test_is_authenticated_request()
 
     async def test_invalid_api_key_error(self):
         await super().test_invalid_api_key_error()
