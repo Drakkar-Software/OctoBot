@@ -47,6 +47,9 @@ class TestHollaexAuthenticatedExchange(
     async def test_get_account_id(self):
         await super().test_get_account_id()
 
+    async def test_is_authenticated_request(self):
+        await super().test_is_authenticated_request()
+
     async def test_invalid_api_key_error(self):
         await super().test_invalid_api_key_error()
 

@@ -34,6 +34,7 @@ class TestBingxAuthenticatedExchange(
     IGNORE_EXCHANGE_TRADE_ID = True
     USE_ORDER_OPERATION_TO_CHECK_API_KEY_RIGHTS = True
     EXPECT_MISSING_FEE_IN_CANCELLED_ORDERS = False
+    IS_AUTHENTICATED_REQUEST_CHECK_AVAILABLE = True    # set True when is_authenticated_request is implemented
 
     VALID_ORDER_ID = "1812980957928929280"
 
@@ -45,6 +46,9 @@ class TestBingxAuthenticatedExchange(
 
     async def test_get_account_id(self):
         await super().test_get_account_id()
+
+    async def test_is_authenticated_request(self):
+        await super().test_is_authenticated_request()
 
     async def test_invalid_api_key_error(self):
         await super().test_invalid_api_key_error()
