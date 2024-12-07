@@ -36,6 +36,7 @@ class TestBinanceFuturesAuthenticatedExchange(
     DUPLICATE_TRADES_RATIO = 0.1   # allow 10% duplicate in trades (due to trade id set to order id)
     VALID_ORDER_ID = "26408108410"
     EXPECTED_QUOTE_MIN_ORDER_SIZE = 200   # min quote value of orders to create (used to check market status parsing)
+    IS_AUTHENTICATED_REQUEST_CHECK_AVAILABLE = True    # set True when is_authenticated_request is implemented
 
     async def _set_account_types(self, account_types):
         # todo remove this and use both types when exchange-side multi portfolio is enabled
@@ -50,6 +51,9 @@ class TestBinanceFuturesAuthenticatedExchange(
 
     async def test_get_account_id(self):
         await super().test_get_account_id()
+
+    async def test_is_authenticated_request(self):
+        await super().test_is_authenticated_request()
 
     async def test_invalid_api_key_error(self):
         await super().test_invalid_api_key_error()

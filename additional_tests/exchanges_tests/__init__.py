@@ -65,7 +65,7 @@ class ExchangeChannelMock:
 async def get_authenticated_exchange_manager(
     exchange_name, exchange_tentacle_name, config=None,
     credentials_exchange_name=None, market_filter=None,
-    use_invalid_creds=False
+    use_invalid_creds=False, http_proxy_callback_factory=None
 ):
     credentials_exchange_name = credentials_exchange_name or exchange_name
     _load_exchange_creds_env_variables_if_necessary()
@@ -89,6 +89,9 @@ async def get_authenticated_exchange_manager(
         .enable_storage(False) \
         .disable_trading_mode() \
         .is_exchange_only()
+    if http_proxy_callback_factory:
+        proxy_callback = http_proxy_callback_factory(exchange_builder.exchange_manager)
+        exchange_builder.set_proxy_config(exchanges.ProxyConfig(http_proxy_callback=proxy_callback))
     exchange_manager_instance = await exchange_builder.build()
     # create trader afterwards to init exchange personal data
     exchange_manager_instance.trader.is_enabled = True
