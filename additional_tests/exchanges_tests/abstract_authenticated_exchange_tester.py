@@ -455,13 +455,23 @@ class AbstractAuthenticatedExchangeTester:
         price = self.get_order_price(current_price, False)
         size = self.get_order_size(await self.get_portfolio(), price)
         open_orders = await self.get_open_orders()
-        stop_loss = await self.create_market_stop_loss_order(current_price, price, size,
-                                                             trading_enums.TradeOrderSide.SELL)
-        self.check_created_stop_order(stop_loss, price, size, trading_enums.TradeOrderSide.SELL)
-        stop_loss_from_get_order = await self.get_order(stop_loss.exchange_order_id, stop_loss.symbol)
-        self.check_created_stop_order(stop_loss_from_get_order, price, size, trading_enums.TradeOrderSide.SELL)
-        assert await self.order_in_open_orders(open_orders, stop_loss)
-        await self.cancel_order(stop_loss)
+        assert self.exchange_manager.exchange.is_supported_order_type(
+            trading_enums.TraderOrderType.STOP_LOSS
+        ) is True
+        stop_loss = await self.create_market_stop_loss_order(
+            current_price, price, size, trading_enums.TradeOrderSide.SELL
+        )
+        try:
+            self.check_created_stop_order(stop_loss, price, size, trading_enums.TradeOrderSide.SELL)
+            stop_loss_from_get_order = await self.get_order(stop_loss.exchange_order_id, stop_loss.symbol)
+            self.check_created_stop_order(stop_loss_from_get_order, price, size, trading_enums.TradeOrderSide.SELL)
+            assert await self.order_in_open_orders(open_orders, stop_loss)
+            ## for manual checks
+            # print(f"Stop loss on {stop_loss.symbol} ok {stop_loss.origin_quantity} at {stop_loss.origin_price}")
+            # await asyncio.sleep(15)
+        finally:
+            # don't leave stop_loss as open order
+            await self.cancel_order(stop_loss)
         assert await self.order_not_in_open_orders(open_orders, stop_loss)
 
     async def test_get_my_recent_trades(self):
@@ -874,7 +884,10 @@ class AbstractAuthenticatedExchangeTester:
                 trade.executed_price, trade.total_cost
             )
             if "USD" in trade.market:
-                assert self.MIN_TRADE_USD_VALUE < trade.total_cost < self.MAX_TRADE_USD_VALUE
+                assert self.MIN_TRADE_USD_VALUE * decimal.Decimal("0.9") < trade.total_cost < self.MAX_TRADE_USD_VALUE, (
+                    f"{self.MIN_TRADE_USD_VALUE * decimal.Decimal('0.9')} < {trade.total_cost} < {self.MAX_TRADE_USD_VALUE} "
+                    f"is FALSE"
+                )
 
     def check_theoretical_cost(self, symbol, quantity, price, cost):
         theoretical_cost = quantity * price
@@ -971,8 +984,10 @@ class AbstractAuthenticatedExchangeTester:
             price=price,
             side=side,
         )
+        assert current_order.is_self_managed() is False # will be a real order: can't be self-managed
         if push_on_exchange:
             current_order = await self._create_order_on_exchange(current_order)
+            assert current_order.is_self_managed() is False # is a real order: can't be self-managed
         if current_order is None:
             raise AssertionError("Error when creating order")
         return current_order
@@ -1102,8 +1117,10 @@ class AbstractAuthenticatedExchangeTester:
 
     def check_created_stop_order(self, order, price, size, side):
         self._check_order(order, size, side)
-        assert order.origin_price == price
+        assert order.origin_price == price, f"{order.origin_price=} != {price=}"
         assert order.side is side
+        assert order.order_type is trading_enums.TraderOrderType.STOP_LOSS
+        assert order.is_self_managed() is False # is real stop loss: NOT self-managed
         expected_type = personal_data.StopLossOrder
         assert isinstance(order, expected_type)
 
