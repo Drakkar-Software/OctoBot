@@ -81,8 +81,7 @@ class TestBingxAuthenticatedExchange(
         await super().test_get_cancelled_orders()
 
     async def test_create_and_cancel_stop_orders(self):
-        # pass if not implemented
-        pass
+        await super().test_create_and_cancel_stop_orders()
 
     async def test_edit_limit_order(self):
         # pass if not implemented
