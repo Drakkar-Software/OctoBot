@@ -34,6 +34,8 @@ class TestCoinbaseAuthenticatedExchange(
     VALID_ORDER_ID = "8bb80a81-27f7-4415-aa50-911ea46d841c"
     USE_ORDER_OPERATION_TO_CHECK_API_KEY_RIGHTS = True    # set True when api key rights can't be checked using a
     EXPECT_MISSING_FEE_IN_CANCELLED_ORDERS = False
+    IS_BROKER_ENABLED_ACCOUNT = False
+    IS_AUTHENTICATED_REQUEST_CHECK_AVAILABLE = True    # set True when is_authenticated_request is implemented
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
@@ -43,6 +45,9 @@ class TestCoinbaseAuthenticatedExchange(
 
     async def test_get_account_id(self):
         await super().test_get_account_id()
+
+    async def test_is_authenticated_request(self):
+        await super().test_is_authenticated_request()
 
     async def test_invalid_api_key_error(self):
         await super().test_invalid_api_key_error()
@@ -55,6 +60,9 @@ class TestCoinbaseAuthenticatedExchange(
 
     async def test_get_not_found_order(self):
         await super().test_get_not_found_order()
+
+    async def test_is_valid_account(self):
+        await super().test_is_valid_account()
 
     async def test_create_and_cancel_limit_orders(self):
         await super().test_create_and_cancel_limit_orders()
@@ -72,8 +80,7 @@ class TestCoinbaseAuthenticatedExchange(
         await super().test_get_cancelled_orders()
 
     async def test_create_and_cancel_stop_orders(self):
-        # pass if not implemented
-        pass
+        await super().test_create_and_cancel_stop_orders()
 
     async def test_edit_limit_order(self):
         # pass if not implemented

@@ -28,6 +28,7 @@ class BotKeys(enum.Enum):
     LAST_TRADE_TIME = "last_trade_time"
     METADATA = "metadata"
     ORDERS = "orders"
+    POSITIONS = "positions"
 
 
 class ProductsSubscriptionsKeys(enum.Enum):
@@ -111,6 +112,8 @@ class ExchangeKeys(enum.Enum):
     INTERNAL_NAME = "internal_name"
     EXCHANGE_CREDENTIAL_ID = "exchange_credential_id"
     EXCHANGE_ID = "exchange_id"
+    EXCHANGE_TYPE = "exchange_type"
+    SANDBOXED = "sandboxed"
 
 
 class SignalKeys(enum.Enum):
@@ -163,6 +166,31 @@ class OrderKeys(enum.Enum):
     SYMBOL = "symbol"
     TYPE = "type"
     CHAINED = "chained"
+
+
+class PositionKeys(enum.Enum):
+    EXCHANGE = "exchange"
+    TIME = "time"
+    POSITION_ID = "position_id"
+    # subset of octobot_trading.enums.ExchangeConstantsPositionColumns
+    SYMBOL = "symbol"
+    ENTRY_PRICE = "entry_price"
+    MARK_PRICE = "mark_price"
+    LIQUIDATION_PRICE = "liquidation_price"
+    UNREALIZED_PNL = "unrealised_pnl"
+    REALISED_PNL = "realised_pnl"
+    QUANTITY = "quantity"
+    SIZE = "size"
+    NOTIONAL = "notional"
+    INITIAL_MARGIN = "initial_margin"
+    AUTO_DEPOSIT_MARGIN = "auto_deposit_margin"
+    COLLATERAL = "collateral"
+    LEVERAGE = "leverage"
+    MARGIN_TYPE = "margin_type"
+    POSITION_MODE = "position_mode"
+    MAINTENANCE_MARGIN_RATE = "maintenance_margin_rate"
+    STATUS = "status"
+    SIDE = "side"
 
 
 class PortfolioKeys(enum.Enum):

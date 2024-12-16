@@ -354,6 +354,14 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             bot_id, bot_update
         )
 
+    async def update_bot_positions(self, bot_id, formatted_positions) -> dict:
+        bot_update = {
+            enums.BotKeys.POSITIONS.value: formatted_positions
+        }
+        return await self.update_bot(
+            bot_id, bot_update
+        )
+
     async def fetch_bot_tentacles_data_based_config(
         self, bot_id: str, authenticator, auth_key: typing.Optional[str]
     ) -> (commons_profiles.ProfileData, list[commons_profiles.ExchangeAuthData]):
@@ -419,9 +427,12 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             "   product:products!product_id(slug, attributes)"
             ")"
         ).eq(enums.BotConfigKeys.ID.value, bot_config_id).execute()).data[0]
-        profile_data = commons_profiles.ProfileData.from_dict(
-            bot_config["product_config"][enums.ProfileConfigKeys.CONFIG.value]
-        )
+        try:
+            profile_data = commons_profiles.ProfileData.from_dict(
+                bot_config["product_config"][enums.ProfileConfigKeys.CONFIG.value]
+            )
+        except (TypeError, KeyError) as err:
+            raise errors.InvalidBotConfigError(f"Missing bot product config: {err} ({err.__class__.__name__})") from err
         profile_data.profile_details.name = bot_config["product_config"].get("product", {}).get(
             "slug", profile_data.profile_details.name
         )
@@ -524,6 +535,14 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
                 commons_logging.get_logger(self.__class__.__name__).error(
                     f"Impossible to fetch exchange details for profile with bot id: {profile_data.profile_details.id}"
                 )
+        # Register exchange_type if provided, otherwise will use default value.
+        # Multi exchange type configurations are not yet supported
+        exchange_type = (
+            profile_data.exchanges[0].exchange_type if profile_data.exchanges
+            else commons_constants.DEFAULT_EXCHANGE_TYPE
+        )
+        for exchange_data in exchanges_configs:
+            exchange_data[enums.ExchangeKeys.EXCHANGE_TYPE.value] = exchange_type
         return [
             commons_profiles.ExchangeData.from_dict(exchange_data)
             for exchange_data in exchanges_configs

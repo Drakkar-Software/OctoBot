@@ -44,6 +44,9 @@ class TestAscendexAuthenticatedExchange(
         # pass if not implemented
         pass
 
+    async def test_is_authenticated_request(self):
+        await super().test_is_authenticated_request()
+
     async def test_invalid_api_key_error(self):
         await super().test_invalid_api_key_error()
 
@@ -56,6 +59,9 @@ class TestAscendexAuthenticatedExchange(
 
     async def test_get_not_found_order(self):
         await super().test_get_not_found_order()
+
+    async def test_is_valid_account(self):
+        await super().test_is_valid_account()
 
     async def test_create_and_cancel_limit_orders(self):
         await super().test_create_and_cancel_limit_orders()

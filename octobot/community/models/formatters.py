@@ -57,6 +57,51 @@ def _format_trade(trade: dict, exchange_name: str, bot_id: str):
         }
 
 
+def format_positions(positions: list, exchange_name: str) -> list:
+    return [
+        {
+            # local changes
+            backend_enums.PositionKeys.EXCHANGE.value: exchange_name,
+            backend_enums.PositionKeys.TIME.value: position[trading_enums.ExchangeConstantsPositionColumns.TIMESTAMP.value],
+            backend_enums.PositionKeys.POSITION_ID.value: position[trading_enums.ExchangeConstantsPositionColumns.ID.value],
+            # from trading positions
+            backend_enums.PositionKeys.SYMBOL.value: position[trading_enums.ExchangeConstantsPositionColumns.SYMBOL.value],
+            backend_enums.PositionKeys.STATUS.value: position[trading_enums.ExchangeConstantsPositionColumns.STATUS.value],
+            backend_enums.PositionKeys.SIDE.value: position[trading_enums.ExchangeConstantsPositionColumns.SIDE.value],
+            backend_enums.PositionKeys.QUANTITY.value: float(position[trading_enums.ExchangeConstantsPositionColumns.QUANTITY.value])
+                if position[trading_enums.ExchangeConstantsPositionColumns.QUANTITY.value] else 0,
+            backend_enums.PositionKeys.SIZE.value: float(position[trading_enums.ExchangeConstantsPositionColumns.SIZE.value])
+                if position[trading_enums.ExchangeConstantsPositionColumns.SIZE.value] else 0,
+            backend_enums.PositionKeys.NOTIONAL.value: float(position[trading_enums.ExchangeConstantsPositionColumns.NOTIONAL.value])
+                if position[trading_enums.ExchangeConstantsPositionColumns.NOTIONAL.value] else 0,
+            backend_enums.PositionKeys.INITIAL_MARGIN.value: float(position[trading_enums.ExchangeConstantsPositionColumns.INITIAL_MARGIN.value])
+                if position[trading_enums.ExchangeConstantsPositionColumns.INITIAL_MARGIN.value] else 0,
+            backend_enums.PositionKeys.AUTO_DEPOSIT_MARGIN.value:
+                position[trading_enums.ExchangeConstantsPositionColumns.AUTO_DEPOSIT_MARGIN.value],
+            backend_enums.PositionKeys.COLLATERAL.value: float(position[trading_enums.ExchangeConstantsPositionColumns.COLLATERAL.value])
+                if position[trading_enums.ExchangeConstantsPositionColumns.COLLATERAL.value] else 0,
+            backend_enums.PositionKeys.LEVERAGE.value: float(position[trading_enums.ExchangeConstantsPositionColumns.LEVERAGE.value])
+                if position[trading_enums.ExchangeConstantsPositionColumns.LEVERAGE.value] else 0,
+            backend_enums.PositionKeys.MARGIN_TYPE.value: position[trading_enums.ExchangeConstantsPositionColumns.MARGIN_TYPE.value],
+            backend_enums.PositionKeys.POSITION_MODE.value: position[trading_enums.ExchangeConstantsPositionColumns.POSITION_MODE.value],
+            backend_enums.PositionKeys.ENTRY_PRICE.value: float(position[trading_enums.ExchangeConstantsPositionColumns.ENTRY_PRICE.value])
+                if position[trading_enums.ExchangeConstantsPositionColumns.ENTRY_PRICE.value] else 0,
+            backend_enums.PositionKeys.MARK_PRICE.value: float(position[trading_enums.ExchangeConstantsPositionColumns.MARK_PRICE.value])
+                if position[trading_enums.ExchangeConstantsPositionColumns.MARK_PRICE.value] else 0,
+            backend_enums.PositionKeys.LIQUIDATION_PRICE.value: float(position[trading_enums.ExchangeConstantsPositionColumns.LIQUIDATION_PRICE.value])
+                if position[trading_enums.ExchangeConstantsPositionColumns.LIQUIDATION_PRICE.value] else 0,
+            backend_enums.PositionKeys.UNREALIZED_PNL.value: float(position[trading_enums.ExchangeConstantsPositionColumns.UNREALIZED_PNL.value])
+                if position[trading_enums.ExchangeConstantsPositionColumns.UNREALIZED_PNL.value] else 0,
+            backend_enums.PositionKeys.REALISED_PNL.value: float(position[trading_enums.ExchangeConstantsPositionColumns.REALISED_PNL.value])
+                if position[trading_enums.ExchangeConstantsPositionColumns.REALISED_PNL.value] else 0,
+            backend_enums.PositionKeys.MAINTENANCE_MARGIN_RATE.value: float(position[trading_enums.ExchangeConstantsPositionColumns.MAINTENANCE_MARGIN_RATE.value])
+                if position[trading_enums.ExchangeConstantsPositionColumns.MAINTENANCE_MARGIN_RATE.value] else 0,
+
+        }
+        for position in positions
+    ]
+
+
 def format_orders(orders: list, exchange_name: str) -> list:
     return [
         {
