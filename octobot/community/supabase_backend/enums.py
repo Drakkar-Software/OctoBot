@@ -170,8 +170,9 @@ class OrderKeys(enum.Enum):
 
 class PositionKeys(enum.Enum):
     EXCHANGE = "exchange"
+    TIME = "time"
+    POSITION_ID = "position_id"
     # subset of octobot_trading.enums.ExchangeConstantsPositionColumns
-    TIMESTAMP = "timestamp"
     SYMBOL = "symbol"
     ENTRY_PRICE = "entry_price"
     MARK_PRICE = "mark_price"

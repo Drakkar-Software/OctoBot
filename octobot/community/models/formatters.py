@@ -60,10 +60,13 @@ def _format_trade(trade: dict, exchange_name: str, bot_id: str):
 def format_positions(positions: list, exchange_name: str) -> list:
     return [
         {
+            # local changes
             backend_enums.PositionKeys.EXCHANGE.value: exchange_name,
+            backend_enums.PositionKeys.TIME.value: position[trading_enums.ExchangeConstantsPositionColumns.TIMESTAMP.value],
+            backend_enums.PositionKeys.POSITION_ID.value: position[trading_enums.ExchangeConstantsPositionColumns.ID.value],
+            # from trading positions
             backend_enums.PositionKeys.SYMBOL.value: position[trading_enums.ExchangeConstantsPositionColumns.SYMBOL.value],
             backend_enums.PositionKeys.STATUS.value: position[trading_enums.ExchangeConstantsPositionColumns.STATUS.value],
-            backend_enums.PositionKeys.TIMESTAMP.value: position[trading_enums.ExchangeConstantsPositionColumns.TIMESTAMP.value],
             backend_enums.PositionKeys.SIDE.value: position[trading_enums.ExchangeConstantsPositionColumns.SIDE.value],
             backend_enums.PositionKeys.QUANTITY.value: float(position[trading_enums.ExchangeConstantsPositionColumns.QUANTITY.value])
                 if position[trading_enums.ExchangeConstantsPositionColumns.QUANTITY.value] else 0,
