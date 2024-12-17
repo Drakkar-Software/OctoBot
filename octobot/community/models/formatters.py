@@ -165,7 +165,11 @@ def get_exchange_type_from_availability(exchange_availability: dict) -> str:
     # 2. try spot
     if exchange_availability.get("spot") == backend_enums.ExchangeSupportValues.SUPPORTED.value:
         return commons_constants.CONFIG_EXCHANGE_SPOT
-    # 3. something went wrong: select spot and log error
+    # 3. try market_making
+    if exchange_availability.get("market_making") == backend_enums.ExchangeSupportValues.SUPPORTED.value:
+        # use SPOT by default, be more accurate later on if necessary
+        return commons_constants.CONFIG_EXCHANGE_SPOT
+    # 4. something went wrong: select spot and log error
     _get_logger().error(
         f"Unknown exchange type from exchange availability: {exchange_availability}. "
         f"Defaulting to {commons_constants.CONFIG_EXCHANGE_SPOT}"
