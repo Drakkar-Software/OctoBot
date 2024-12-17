@@ -114,6 +114,12 @@ class ExchangeKeys(enum.Enum):
     EXCHANGE_ID = "exchange_id"
     EXCHANGE_TYPE = "exchange_type"
     SANDBOXED = "sandboxed"
+    AVAILABILITY = "availability"
+
+
+class ExchangeSupportValues(enum.Enum):
+    SUPPORTED = "supported"
+    UNSUPPORTED = "unsupported"
 
 
 class SignalKeys(enum.Enum):

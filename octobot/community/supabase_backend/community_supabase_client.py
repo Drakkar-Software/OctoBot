@@ -476,7 +476,10 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             for config in (bot_config.get(enums.BotConfigKeys.EXCHANGES.value) or [])
             if (
                 config.get(enums.ExchangeKeys.EXCHANGE_ID.value, None)
-                and not config.get(enums.ExchangeKeys.INTERNAL_NAME.value, None)
+                and not (
+                    config.get(enums.ExchangeKeys.INTERNAL_NAME.value, None)
+                    and config.get(enums.ExchangeKeys.AVAILABILITY.value, None)
+                )
             )
         }
         if incomplete_exchange_config_by_id:
@@ -486,6 +489,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
                     **incomplete_exchange_config_by_id[exchange[enums.ExchangeKeys.ID.value]],
                     **{
                         enums.ExchangeKeys.INTERNAL_NAME.value: exchange[enums.ExchangeKeys.INTERNAL_NAME.value],
+                        enums.ExchangeKeys.AVAILABILITY.value: exchange[enums.ExchangeKeys.AVAILABILITY.value],
                     }
                 }
                 for exchange in fetched_exchanges
@@ -509,6 +513,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
                     **{
                         enums.ExchangeKeys.EXCHANGE_ID.value: exchange[enums.ExchangeKeys.ID.value],
                         enums.ExchangeKeys.INTERNAL_NAME.value: exchange[enums.ExchangeKeys.INTERNAL_NAME.value],
+                        enums.ExchangeKeys.AVAILABILITY.value: exchange[enums.ExchangeKeys.AVAILABILITY.value],
                     }
                 }
                 for credentials_id, exchange in exchanges_by_credential_ids.items()
@@ -528,30 +533,47 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
                     {
                         enums.ExchangeKeys.EXCHANGE_ID.value: exchange[enums.ExchangeKeys.ID.value],
                         enums.ExchangeKeys.INTERNAL_NAME.value: exchange[enums.ExchangeKeys.INTERNAL_NAME.value],
+                        enums.ExchangeKeys.AVAILABILITY.value: exchange[enums.ExchangeKeys.AVAILABILITY.value],
                     }
                     for exchange in fetched_exchanges
+                    # no way to differentiate futures and spot exchanges using internal_names only:
+                    # use spot exchange here by default
+                    if (
+                        formatters.get_exchange_type_from_availability(
+                            exchange.get(enums.ExchangeKeys.AVAILABILITY.value)
+                        )
+                        == commons_constants.CONFIG_EXCHANGE_SPOT
+                    )
                 ]
             else:
                 commons_logging.get_logger(self.__class__.__name__).error(
                     f"Impossible to fetch exchange details for profile with bot id: {profile_data.profile_details.id}"
                 )
-        # Register exchange_type if provided, otherwise will use default value.
-        # Multi exchange type configurations are not yet supported
-        exchange_type = (
-            profile_data.exchanges[0].exchange_type if profile_data.exchanges
-            else commons_constants.DEFAULT_EXCHANGE_TYPE
-        )
+        # Register exchange_type from exchange availability
+        exchange_type = commons_constants.CONFIG_EXCHANGE_SPOT
+        if exchanges_configs:
+            # Multi exchange type configurations are not yet supported
+            exchange_type = formatters.get_exchange_type_from_availability(
+                exchanges_configs[0].get(
+                    enums.ExchangeKeys.AVAILABILITY.value
+                )
+            )
         for exchange_data in exchanges_configs:
             exchange_data[enums.ExchangeKeys.EXCHANGE_TYPE.value] = exchange_type
+            exchange_data[enums.ExchangeKeys.INTERNAL_NAME.value] = formatters.to_bot_exchange_internal_name(
+                exchange_data[enums.ExchangeKeys.INTERNAL_NAME.value]
+            )
         return [
             commons_profiles.ExchangeData.from_dict(exchange_data)
             for exchange_data in exchanges_configs
         ]
 
     async def fetch_exchanges(self, exchange_ids: list, internal_names: typing.Optional[list] = None) -> list:
+        # WARNING: setting internal_names can result in duplicate (futures and spot) exchanges
         select = self.table("exchanges").select(
             f"{enums.ExchangeKeys.ID.value}, "
-            f"{enums.ExchangeKeys.INTERNAL_NAME.value}"
+            f"{enums.ExchangeKeys.INTERNAL_NAME.value}, "
+            f"{enums.ExchangeKeys.AVAILABILITY.value}"
         )
         if internal_names:
             return (await select.in_(enums.ExchangeKeys.INTERNAL_NAME.value, internal_names).execute()).data
@@ -560,7 +582,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
     async def fetch_exchanges_by_credential_ids(self, exchange_credential_ids: list) -> dict:
         exchanges = (await self.table("exchange_credentials").select(
             "id,"
-            "exchange:exchanges(id, internal_name)"
+            f"exchange:exchanges(id, {enums.ExchangeKeys.INTERNAL_NAME.value}, {enums.ExchangeKeys.AVAILABILITY.value})"
         ).in_("id", exchange_credential_ids).execute()).data
         return {
             exchange["id"]: exchange["exchange"]
