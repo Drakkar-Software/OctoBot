@@ -16,9 +16,13 @@
 import octobot.community.supabase_backend.enums as backend_enums
 import octobot.community.supabase_backend as supabase_backend
 import octobot_commons.constants as commons_constants
+import octobot_commons.logging as commons_logging
 import octobot_trading.enums as trading_enums
 import octobot_trading.constants as trading_constants
 import octobot_trading.personal_data as trading_personal_data
+
+
+FUTURES_INTERNAL_NAME_SUFFIX = "_futures"
 
 
 def format_trades(trades: list, exchange_name: str, bot_id: str) -> list:
@@ -139,6 +143,40 @@ def _get_order_type(order_or_trade):
         return order_type
 
 
+def to_community_exchange_internal_name(bot_exchange_internal_name: str, exchange_type: str) -> str:
+    if exchange_type == commons_constants.CONFIG_EXCHANGE_FUTURE:
+        return f"{bot_exchange_internal_name}{FUTURES_INTERNAL_NAME_SUFFIX}"
+    return bot_exchange_internal_name
+
+
+def to_bot_exchange_internal_name(community_exchange_internal_name: str) -> str:
+    if community_exchange_internal_name.endswith(FUTURES_INTERNAL_NAME_SUFFIX):
+        return community_exchange_internal_name[:-len(FUTURES_INTERNAL_NAME_SUFFIX)]
+    return community_exchange_internal_name
+
+
+def get_exchange_type_from_availability(exchange_availability: dict) -> str:
+    if not exchange_availability:
+        # use spot by default
+        return commons_constants.CONFIG_EXCHANGE_SPOT
+    # 1. try futures
+    if exchange_availability.get("futures") == backend_enums.ExchangeSupportValues.SUPPORTED.value:
+        return commons_constants.CONFIG_EXCHANGE_FUTURE
+    # 2. try spot
+    if exchange_availability.get("spot") == backend_enums.ExchangeSupportValues.SUPPORTED.value:
+        return commons_constants.CONFIG_EXCHANGE_SPOT
+    # 3. try market_making
+    if exchange_availability.get("market_making") == backend_enums.ExchangeSupportValues.SUPPORTED.value:
+        # use SPOT by default, be more accurate later on if necessary
+        return commons_constants.CONFIG_EXCHANGE_SPOT
+    # 4. something went wrong: select spot and log error
+    _get_logger().error(
+        f"Unknown exchange type from exchange availability: {exchange_availability}. "
+        f"Defaulting to {commons_constants.CONFIG_EXCHANGE_SPOT}"
+    )
+    return commons_constants.CONFIG_EXCHANGE_SPOT
+
+
 def format_portfolio(
     current_value: dict, initial_value: dict, profitability: float,
     unit: str, content: dict, price_by_asset: dict,
@@ -196,3 +234,7 @@ def get_adapted_portfolio(usd_like_asset, portfolio):
             currency = usd_like_asset
         formatted[currency] = asset[backend_enums.PortfolioAssetKeys.VALUE.value]
     return formatted
+
+
+def _get_logger():
+    return commons_logging.get_logger("CommunityFormatter")
