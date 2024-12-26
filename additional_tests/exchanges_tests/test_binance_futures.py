@@ -28,7 +28,7 @@ class TestBinanceFuturesAuthenticatedExchange(
     # enter exchange name as a class variable here
     EXCHANGE_NAME = "binance"
     CREDENTIALS_EXCHANGE_NAME = "BINANCE_FUTURES"
-    ORDER_CURRENCY = "BTC"
+    ORDER_CURRENCY = "BTC"  # always use a contract that has a size different from 1 unit of the currency
     SETTLEMENT_CURRENCY = "USDC"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}:{SETTLEMENT_CURRENCY}"
     INVERSE_SYMBOL = f"{ORDER_CURRENCY}/USD:{ORDER_CURRENCY}"
