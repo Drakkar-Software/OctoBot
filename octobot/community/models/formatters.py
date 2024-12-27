@@ -155,6 +155,12 @@ def to_bot_exchange_internal_name(community_exchange_internal_name: str) -> str:
     return community_exchange_internal_name
 
 
+def get_exchange_type_from_internal_name(community_exchange_internal_name: str) -> str:
+    if community_exchange_internal_name.endswith(FUTURES_INTERNAL_NAME_SUFFIX):
+        return commons_constants.CONFIG_EXCHANGE_FUTURE
+    return commons_constants.CONFIG_EXCHANGE_SPOT
+
+
 def get_exchange_type_from_availability(exchange_availability: dict) -> str:
     if not exchange_availability:
         # use spot by default
