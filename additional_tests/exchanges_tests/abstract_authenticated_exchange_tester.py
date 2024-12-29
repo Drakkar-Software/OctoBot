@@ -110,13 +110,14 @@ class AbstractAuthenticatedExchangeTester:
             # check portfolio fetched with filtered markets (should be equal to the one with all markets)
             filtered_markets_portfolio = await self.get_portfolio()
             if self.EXPECT_BALANCE_FILTER_BY_MARKET_STATUS:
-                assert filtered_markets_portfolio == {
+                filtered = {
                     key: val
                     for key, val in all_markets_portfolio.items()
                     if key in symbols.parse_symbol(self.SYMBOL).base_and_quote()
                 }
+                assert filtered_markets_portfolio == filtered, f"{filtered_markets_portfolio=} != {filtered=}"
             else:
-                assert filtered_markets_portfolio == all_markets_portfolio
+                assert filtered_markets_portfolio == all_markets_portfolio, f"{filtered_markets_portfolio=} != {all_markets_portfolio=}"
 
     async def inner_test_get_portfolio(self):
         self.check_portfolio_content(await self.get_portfolio())
