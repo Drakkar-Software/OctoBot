@@ -39,13 +39,13 @@ class TestKucoinFuturesAuthenticatedExchange(
     EXPECT_MISSING_FEE_IN_CANCELLED_ORDERS = False
     IS_AUTHENTICATED_REQUEST_CHECK_AVAILABLE = True    # set True when is_authenticated_request is implemented
     EXPECTED_QUOTE_MIN_ORDER_SIZE = 40
+    EXPECT_BALANCE_FILTER_BY_MARKET_STATUS = True
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
 
     async def test_get_portfolio_with_market_filter(self):
-        # pass if not implemented
-        pass
+        await super().test_get_portfolio_with_market_filter()   # can have small variations failing the test when positions are open
 
     async def test_get_account_id(self):
         await super().test_get_account_id()
