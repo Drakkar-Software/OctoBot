@@ -172,6 +172,7 @@ class OrderKeys(enum.Enum):
     SYMBOL = "symbol"
     TYPE = "type"
     CHAINED = "chained"
+    SIDE = "side"
 
 
 class PositionKeys(enum.Enum):
