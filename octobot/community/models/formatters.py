@@ -121,6 +121,8 @@ def format_orders(orders: list, exchange_name: str) -> list:
             ),
             backend_enums.OrderKeys.QUANTITY.value: storage_order[trading_constants.STORAGE_ORIGIN_VALUE][
                 trading_enums.ExchangeConstantsOrderColumns.AMOUNT.value],
+            backend_enums.OrderKeys.SIDE.value: storage_order[trading_constants.STORAGE_ORIGIN_VALUE][
+                trading_enums.ExchangeConstantsOrderColumns.SIDE.value],
             backend_enums.OrderKeys.EXCHANGE_ID.value: storage_order[trading_constants.STORAGE_ORIGIN_VALUE][
                 trading_enums.ExchangeConstantsOrderColumns.EXCHANGE_ID.value],
             backend_enums.OrderKeys.CHAINED.value: format_orders(
@@ -153,6 +155,12 @@ def to_bot_exchange_internal_name(community_exchange_internal_name: str) -> str:
     if community_exchange_internal_name.endswith(FUTURES_INTERNAL_NAME_SUFFIX):
         return community_exchange_internal_name[:-len(FUTURES_INTERNAL_NAME_SUFFIX)]
     return community_exchange_internal_name
+
+
+def get_exchange_type_from_internal_name(community_exchange_internal_name: str) -> str:
+    if community_exchange_internal_name.endswith(FUTURES_INTERNAL_NAME_SUFFIX):
+        return commons_constants.CONFIG_EXCHANGE_FUTURE
+    return commons_constants.CONFIG_EXCHANGE_SPOT
 
 
 def get_exchange_type_from_availability(exchange_availability: dict) -> str:

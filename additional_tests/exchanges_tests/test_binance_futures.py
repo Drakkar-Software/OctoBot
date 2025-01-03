@@ -28,7 +28,7 @@ class TestBinanceFuturesAuthenticatedExchange(
     # enter exchange name as a class variable here
     EXCHANGE_NAME = "binance"
     CREDENTIALS_EXCHANGE_NAME = "BINANCE_FUTURES"
-    ORDER_CURRENCY = "BTC"
+    ORDER_CURRENCY = "BTC"  # always use a contract that has a size different from 1 unit of the currency
     SETTLEMENT_CURRENCY = "USDC"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}:{SETTLEMENT_CURRENCY}"
     INVERSE_SYMBOL = f"{ORDER_CURRENCY}/USD:{ORDER_CURRENCY}"
@@ -46,8 +46,7 @@ class TestBinanceFuturesAuthenticatedExchange(
         await super().test_get_portfolio()
 
     async def test_get_portfolio_with_market_filter(self):
-        # pass if not implemented
-        pass
+        await super().test_get_portfolio_with_market_filter()   # can have small variations failing the test when positions are open
 
     async def test_get_account_id(self):
         await super().test_get_account_id()
@@ -59,8 +58,7 @@ class TestBinanceFuturesAuthenticatedExchange(
         await super().test_invalid_api_key_error()
 
     async def test_get_api_key_permissions(self):
-        # pass if not implemented
-        pass
+        await super().test_get_api_key_permissions()
 
     async def test_missing_trading_api_key_permissions(self):
         pass
