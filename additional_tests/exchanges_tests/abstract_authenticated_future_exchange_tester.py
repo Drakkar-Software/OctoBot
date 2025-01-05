@@ -33,7 +33,6 @@ class AbstractAuthenticatedFutureExchangeTester(
     INVERSE_SYMBOL = None
     MIN_PORTFOLIO_SIZE = 2  # ensure fetching currency for linear and inverse
     SUPPORTS_GET_LEVERAGE = True
-    SUPPORTS_SET_LEVERAGE = True
     SUPPORTS_EMPTY_POSITION_SET_MARGIN_TYPE = True
 
     async def test_get_empty_linear_and_inverse_positions(self):
@@ -85,9 +84,12 @@ class AbstractAuthenticatedFutureExchangeTester(
         assert origin_leverage != trading_constants.ZERO
         if self.SUPPORTS_GET_LEVERAGE:
             assert origin_leverage == await self.get_leverage()
-        if not self.SUPPORTS_SET_LEVERAGE:
-            return
         new_leverage = origin_leverage + 1
+        if not self.exchange_manager.exchange.UPDATE_LEVERAGE_FROM_API:
+            # can't set from api: make sure of that
+            with pytest.raises(trading_errors.NotSupported):
+                await self.exchange_manager.exchange.connector.set_symbol_leverage(self.SYMBOL, float(new_leverage))
+            return
         await self.set_leverage(new_leverage)
         await self._check_margin_type_and_leverage(origin_margin_type, new_leverage)    # did not change margin type
         # change leverage back to origin value
