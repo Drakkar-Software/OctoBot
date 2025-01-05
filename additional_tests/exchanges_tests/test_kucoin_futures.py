@@ -33,7 +33,6 @@ class TestKucoinFuturesAuthenticatedExchange(
     INVERSE_SYMBOL = f"{ORDER_CURRENCY}/USD:{ORDER_CURRENCY}"
     ORDER_SIZE = 5  # % of portfolio to include in test orders
     SUPPORTS_GET_LEVERAGE = False
-    SUPPORTS_SET_LEVERAGE = False
     USE_ORDER_OPERATION_TO_CHECK_API_KEY_RIGHTS = True
     VALID_ORDER_ID = "6617e84c5c1e0000083c71f7"
     EXPECT_MISSING_FEE_IN_CANCELLED_ORDERS = False
