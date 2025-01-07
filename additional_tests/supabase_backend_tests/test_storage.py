@@ -28,14 +28,22 @@ async def test_upload_asset(admin_client):
     asset_name = "test_upload_asset"
     asset_bucket = "product-images"
     await admin_client.remove_asset(asset_bucket, asset_name)   # remove asset if exists
-    uploaded_asset_id = await admin_client.upload_asset(asset_bucket, asset_name, asset_content)
+    uploaded_asset_path = await admin_client.upload_asset(asset_bucket, asset_name, asset_content)
 
     assets = await admin_client.list_assets(asset_bucket)
-    asset_by_id = {
-        asset["id"]: asset
+    asset_by_name = {
+        asset["name"]: asset
         for asset in assets
     }
-    assert uploaded_asset_id in asset_by_id
-    assert asset_by_id[uploaded_asset_id]["name"] == asset_name
+    assert uploaded_asset_path in asset_by_name
+    assert asset_by_name[uploaded_asset_path]["name"] == asset_name
 
     await admin_client.remove_asset(asset_bucket, asset_name)
+
+    assets = await admin_client.list_assets(asset_bucket)
+    asset_by_name = {
+        asset["name"]: asset
+        for asset in assets
+    }
+    # asset is removed
+    assert uploaded_asset_path not in asset_by_name
