@@ -69,8 +69,6 @@ async def connected_community_feed(authenticator):
     finally:
         if feed is not None:
             await feed.stop()
-            if feed._mqtt_client is not None and not feed._mqtt_client._resend_task.done():
-                feed._mqtt_client._resend_task.cancel()
 
 
 async def test_start_and_connect(connected_community_feed):

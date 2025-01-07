@@ -862,7 +862,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         Not implemented for authenticated users
         """
         result = await self.storage.from_(bucket_name).upload(asset_name, content)
-        return result.json()["Id"]
+        return result.path
 
     async def list_assets(self, bucket_name: str) -> list[dict[str, str]]:
         """
@@ -870,11 +870,11 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         """
         return await self.storage.from_(bucket_name).list()
 
-    async def remove_asset(self, bucket_name: str, asset_name: str) -> None:
+    async def remove_asset(self, bucket_name: str, asset_path: str) -> None:
         """
         Not implemented for authenticated users
         """
-        await self.storage.from_(bucket_name).remove(asset_name)
+        await self.storage.from_(bucket_name).remove([asset_path])
 
     async def send_signal(self, table, product_id: str, signal: str):
         return (await self.table(table).insert({
