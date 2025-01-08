@@ -65,6 +65,9 @@ class TestHollaexAuthenticatedExchange(
     async def test_is_valid_account(self):
         await super().test_is_valid_account()
 
+    async def test_get_special_orders(self):
+        await super().test_get_special_orders()
+
     async def test_create_and_cancel_limit_orders(self):
         await super().test_create_and_cancel_limit_orders()
 
