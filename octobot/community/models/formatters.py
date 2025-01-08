@@ -123,6 +123,9 @@ def format_orders(orders: list, exchange_name: str) -> list:
                 trading_enums.ExchangeConstantsOrderColumns.AMOUNT.value],
             backend_enums.OrderKeys.SIDE.value: storage_order[trading_constants.STORAGE_ORIGIN_VALUE][
                 trading_enums.ExchangeConstantsOrderColumns.SIDE.value],
+            backend_enums.OrderKeys.TRIGGER_ABOVE.value: storage_order[trading_constants.STORAGE_ORIGIN_VALUE].get(
+                trading_enums.ExchangeConstantsOrderColumns.TRIGGER_ABOVE.value
+            ),
             backend_enums.OrderKeys.EXCHANGE_ID.value: storage_order[trading_constants.STORAGE_ORIGIN_VALUE][
                 trading_enums.ExchangeConstantsOrderColumns.EXCHANGE_ID.value],
             backend_enums.OrderKeys.CHAINED.value: format_orders(

@@ -173,6 +173,7 @@ class OrderKeys(enum.Enum):
     TYPE = "type"
     CHAINED = "chained"
     SIDE = "side"
+    TRIGGER_ABOVE = "trigger_above"
 
 
 class PositionKeys(enum.Enum):
