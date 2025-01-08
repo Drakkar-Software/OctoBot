@@ -66,6 +66,10 @@ class TestBingxAuthenticatedExchange(
             octobot_trading.enums.TradeOrderType.UNSUPPORTED.value, octobot_trading.enums.TradeOrderSide.SELL.value, None
         ),
     }  # stop loss / take profit and other special order types to be successfully parsed
+    # details of an order that exists but can"t be cancelled
+    UNCANCELLABLE_ORDER_ID_SYMBOL_TYPE: tuple[str, str, octobot_trading.enums.TraderOrderType] = (
+        "1877004292053696512", "TAO/USDT", octobot_trading.enums.TraderOrderType.SELL_LIMIT.value
+    )
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()

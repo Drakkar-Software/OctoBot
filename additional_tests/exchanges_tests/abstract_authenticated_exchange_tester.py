@@ -63,6 +63,8 @@ class AbstractAuthenticatedExchangeTester:
             bool, # trigger above (on higher price than order price)
         )
     ] = {}  # stop loss / take profit and other special order types to be successfully parsed
+    # details of an order that exists but can"t be cancelled
+    UNCANCELLABLE_ORDER_ID_SYMBOL_TYPE: tuple[str, str, trading_enums.TraderOrderType] = None
     ORDER_SIZE = 10  # % of portfolio to include in test orders
     PORTFOLIO_TYPE_FOR_SIZE = trading_constants.CONFIG_PORTFOLIO_FREE
     CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES = False
@@ -384,6 +386,7 @@ class AbstractAuthenticatedExchangeTester:
 
     async def test_create_and_cancel_limit_orders(self):
         async with self.local_exchange_manager():
+            await self.inner_test_cancel_uncancellable_order()
             await self.inner_test_create_and_cancel_limit_orders()
 
     async def inner_test_create_and_cancel_limit_orders(self, symbol=None, settlement_currency=None, margin_type=None):
@@ -450,6 +453,12 @@ class AbstractAuthenticatedExchangeTester:
             await self.cancel_order(buy_limit)
         assert await self.order_not_in_open_orders(open_orders, buy_limit, symbol=symbol)
         assert await self.order_in_cancelled_orders(cancelled_orders, buy_limit, symbol=symbol)
+
+    async def inner_test_cancel_uncancellable_order(self):
+        if self.UNCANCELLABLE_ORDER_ID_SYMBOL_TYPE:
+            order_id, symbol, order_type = self.UNCANCELLABLE_ORDER_ID_SYMBOL_TYPE
+            with pytest.raises(trading_errors.ExchangeOrderCancelError):
+                await self.exchange_manager.exchange.cancel_order(order_id, symbol, order_type)
 
     async def test_create_and_fill_market_orders(self):
         async with self.local_exchange_manager():
