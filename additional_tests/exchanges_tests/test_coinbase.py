@@ -61,6 +61,10 @@ class TestCoinbaseAuthenticatedExchange(
             octobot_trading.enums.TradeOrderType.LIMIT.value, octobot_trading.enums.TradeOrderSide.BUY.value, False
         ),
     }  # stop loss / take profit and other special order types to be successfully parsed
+    # details of an order that exists but can"t be cancelled
+    UNCANCELLABLE_ORDER_ID_SYMBOL_TYPE: tuple[str, str, octobot_trading.enums.TraderOrderType] = (
+        "f4016e50-1f0b-4caa-abe5-1ec00af18be9", "ETH/BTC", octobot_trading.enums.TraderOrderType.BUY_LIMIT.value
+    )
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
