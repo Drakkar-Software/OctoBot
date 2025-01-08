@@ -15,6 +15,7 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import pytest
 
+import octobot_trading.enums
 from additional_tests.exchanges_tests import abstract_authenticated_future_exchange_tester
 
 # All test coroutines will be treated as marked.
@@ -39,6 +40,34 @@ class TestKucoinFuturesAuthenticatedExchange(
     IS_AUTHENTICATED_REQUEST_CHECK_AVAILABLE = True    # set True when is_authenticated_request is implemented
     EXPECTED_QUOTE_MIN_ORDER_SIZE = 40
     EXPECT_BALANCE_FILTER_BY_MARKET_STATUS = True
+
+    SPECIAL_ORDER_TYPES_BY_EXCHANGE_ID: dict[
+        str, (
+            str, # symbol
+            str, # order type key in 'info' dict
+            str, # order type found in 'info' dict
+            str, # parsed trading_enums.TradeOrderType
+            str, # parsed trading_enums.TradeOrderSide
+            bool, # trigger above (on higher price than order price)
+        )
+    ] = {
+        "266424660906831872": (
+            "ETH/USDT:USDT", "type", "market",
+            octobot_trading.enums.TradeOrderType.LIMIT.value, octobot_trading.enums.TradeOrderSide.BUY.value, False
+        ),
+        '266424746172764160': (
+            "ETH/USDT:USDT", "type", "market",
+            octobot_trading.enums.TradeOrderType.STOP_LOSS.value, octobot_trading.enums.TradeOrderSide.SELL.value, False
+        ),
+        '266424798085668865': (
+            "ETH/USDT:USDT", "type", "limit",
+            octobot_trading.enums.TradeOrderType.LIMIT.value, octobot_trading.enums.TradeOrderSide.BUY.value, False
+        ),
+        '266424826044899328': (
+            "ETH/USDT:USDT", "type", "limit",
+            octobot_trading.enums.TradeOrderType.STOP_LOSS.value, octobot_trading.enums.TradeOrderSide.SELL.value, False
+        ),
+    }  # stop loss / take profit and other special order types to be successfully parsed
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
@@ -75,6 +104,9 @@ class TestKucoinFuturesAuthenticatedExchange(
 
     async def test_is_valid_account(self):
         await super().test_is_valid_account()
+
+    async def test_get_special_orders(self):
+        await super().test_get_special_orders()
 
     async def test_create_and_cancel_limit_orders(self):
         # todo test cross position order creation (kucoin param) at next ccxt update (will support set margin type)

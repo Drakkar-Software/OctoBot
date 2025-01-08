@@ -29,6 +29,7 @@ import octobot_trading.errors as trading_errors
 import octobot_trading.enums as trading_enums
 import octobot_trading.constants as trading_constants
 import octobot_trading.exchanges as trading_exchanges
+import octobot_trading.exchanges.connectors.ccxt.constants as ccxt_constants
 import octobot_trading.personal_data as personal_data
 import octobot_trading.personal_data.orders as personal_data_orders
 import octobot_trading.util.test_tools.exchanges_test_tools as exchanges_test_tools
@@ -52,6 +53,16 @@ class AbstractAuthenticatedExchangeTester:
     SETTLEMENT_CURRENCY = "USDT"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
     VALID_ORDER_ID = "8bb80a81-27f7-4415-aa50-911ea46d841c"
+    SPECIAL_ORDER_TYPES_BY_EXCHANGE_ID: dict[
+        str, (
+            str, # symbol
+            str, # order type key in 'info' dict
+            str, # order type found in 'info' dict
+            str, # parsed trading_enums.TradeOrderType
+            str, # parsed trading_enums.TradeOrderSide
+            bool, # trigger above (on higher price than order price)
+        )
+    ] = {}  # stop loss / take profit and other special order types to be successfully parsed
     ORDER_SIZE = 10  # % of portfolio to include in test orders
     PORTFOLIO_TYPE_FOR_SIZE = trading_constants.CONFIG_PORTFOLIO_FREE
     CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES = False
@@ -326,6 +337,50 @@ class AbstractAuthenticatedExchangeTester:
         else:
             assert isinstance(error, str)
             assert len(error) > 0
+
+
+    async def test_get_special_orders(self):
+        if self.SPECIAL_ORDER_TYPES_BY_EXCHANGE_ID:
+            async with self.local_exchange_manager():
+                await self.inner_test_get_special_orders()
+
+    async def inner_test_get_special_orders(self):
+        # open_orders = await self.get_open_orders(_symbols=["TAO/USDT"])
+        # print(open_orders)  # to print special orders when they are open
+        # return
+        for exchange_id, order_details in self.SPECIAL_ORDER_TYPES_BY_EXCHANGE_ID.items():
+            symbol, info_key, info_type, expected_type, expected_side, expected_trigger_above = order_details
+            fetched_order = await self.exchange_manager.exchange.get_order(exchange_id, symbol=symbol)
+            assert fetched_order is not None
+            self._check_fetched_order_dicts([fetched_order])
+            # ensure parsing order doesn't crash
+            parsed = personal_data.create_order_instance_from_raw(self.exchange_manager.trader, fetched_order)
+            assert isinstance(parsed, personal_data.Order)
+
+            assert fetched_order[trading_enums.ExchangeConstantsOrderColumns.SYMBOL.value] == symbol
+            found_type = fetched_order[ccxt_constants.CCXT_INFO][info_key]
+            assert found_type == info_type, f"[{exchange_id}]: {found_type} != {info_type}"
+            parsed_type = fetched_order[trading_enums.ExchangeConstantsOrderColumns.TYPE.value]
+            assert parsed_type == expected_type, f"[{exchange_id}]: {parsed_type} != {expected_type}"
+            assert fetched_order[trading_enums.ExchangeConstantsOrderColumns.SIDE.value] == expected_side
+            if expected_trigger_above is None:
+                assert trading_enums.ExchangeConstantsOrderColumns.TRIGGER_ABOVE.value not in fetched_order
+            else:
+                parsed_trigger_above = fetched_order[trading_enums.ExchangeConstantsOrderColumns.TRIGGER_ABOVE.value]
+                assert parsed_trigger_above == expected_trigger_above, (
+                    f"[{exchange_id}]: {parsed_trigger_above} != {expected_trigger_above}"
+                )
+                if isinstance(parsed, personal_data.LimitOrder):
+                    assert parsed.trigger_above == parsed_trigger_above
+            if expected_type == trading_enums.TradeOrderType.LIMIT.value:
+                assert fetched_order[trading_enums.ExchangeConstantsOrderColumns.PRICE.value] > 0
+            elif expected_type == trading_enums.TradeOrderType.STOP_LOSS.value:
+                assert fetched_order[trading_enums.ExchangeConstantsOrderColumns.STOP_PRICE.value] > 0
+            elif expected_type == trading_enums.TradeOrderType.UNSUPPORTED.value:
+                assert isinstance(parsed, personal_data.UnsupportedOrder)
+            else:
+                # ensure all cases are covered, otherwise there is a problem in order type parsing
+                assert expected_type == trading_enums.TradeOrderType.MARKET
 
     async def test_create_and_cancel_limit_orders(self):
         async with self.local_exchange_manager():
@@ -747,12 +802,12 @@ class AbstractAuthenticatedExchangeTester:
     async def get_closed_orders(self, symbol=None):
         return await self.exchange_manager.exchange.get_closed_orders(symbol or self.SYMBOL)
 
-    async def get_cancelled_orders(self, exchange_data=None, force_fetch=False):
+    async def get_cancelled_orders(self, exchange_data=None, force_fetch=False, _symbols=None):
         if not force_fetch and not self.exchange_manager.exchange.SUPPORT_FETCHING_CANCELLED_ORDERS:
             # skipped
             return []
         exchange_data = exchange_data or self.get_exchange_data()
-        return await exchanges_test_tools.get_cancelled_orders(self.exchange_manager, exchange_data)
+        return await exchanges_test_tools.get_cancelled_orders(self.exchange_manager, exchange_data, symbols=_symbols)
 
     async def check_require_closed_orders_from_recent_trades(self, symbol=None):
         if self.exchange_manager.exchange.REQUIRE_CLOSED_ORDERS_FROM_RECENT_TRADES:
@@ -1088,9 +1143,9 @@ class AbstractAuthenticatedExchangeTester:
             price * (decimal.Decimal(str(multiplier)))
         )
 
-    async def get_open_orders(self, exchange_data=None):
+    async def get_open_orders(self, exchange_data=None, _symbols=None):
         exchange_data = exchange_data or self.get_exchange_data()
-        orders = await exchanges_test_tools.get_open_orders(self.exchange_manager, exchange_data)
+        orders = await exchanges_test_tools.get_open_orders(self.exchange_manager, exchange_data, symbols=_symbols)
         self.check_duplicate(orders)
         self._check_fetched_order_dicts(orders)
         return orders
