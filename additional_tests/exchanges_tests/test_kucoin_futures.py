@@ -68,6 +68,10 @@ class TestKucoinFuturesAuthenticatedExchange(
             octobot_trading.enums.TradeOrderType.STOP_LOSS.value, octobot_trading.enums.TradeOrderSide.SELL.value, False
         ),
     }  # stop loss / take profit and other special order types to be successfully parsed
+    # details of an order that exists but can"t be cancelled
+    UNCANCELLABLE_ORDER_ID_SYMBOL_TYPE: tuple[str, str, octobot_trading.enums.TraderOrderType] = (
+        "266424798085668865", "ETH/USDT:USDT", octobot_trading.enums.TraderOrderType.BUY_LIMIT.value
+    )
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
