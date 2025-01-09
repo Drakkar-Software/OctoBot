@@ -17,8 +17,6 @@ import logging
 import typing
 import asyncio
 import aiohttp
-import io
-import gzip
 
 import sentry_sdk
 import sentry_sdk.consts
@@ -75,7 +73,7 @@ class SentryAiohttpTransport(sentry_sdk.HttpTransport):
                     pass
 
                 elif response.status >= 300 or response.status < 200:
-                    sentry_sdk.utils.logger.error(
+                    logging.getLogger(self.__class__.__name__).warning(
                         "Unexpected status code: %s (body: %s)",
                         response.status,
                         await response.text(),
@@ -121,14 +119,7 @@ class SentryAiohttpTransport(sentry_sdk.HttpTransport):
         if client_report_item is not None:
             envelope.items.append(client_report_item)
 
-        body = io.BytesIO()
-        if self._compresslevel == 0:
-            envelope.serialize_into(body)
-        else:
-            with gzip.GzipFile(
-                fileobj=body, mode="w", compresslevel=self._compresslevel
-            ) as f:
-                envelope.serialize_into(f)
+        content_encoding, body = self._serialize_envelope(envelope)
 
         assert self.parsed_dsn is not None
         sentry_sdk.utils.logger.debug(
@@ -141,8 +132,8 @@ class SentryAiohttpTransport(sentry_sdk.HttpTransport):
         headers = {
             "Content-Type": "application/x-sentry-envelope",
         }
-        if self._compresslevel > 0:
-            headers["Content-Encoding"] = "gzip"
+        if content_encoding:
+            headers["Content-Encoding"] = content_encoding
 
         await self._async_send_request(
             body.getvalue(),
@@ -225,8 +216,7 @@ class AiohttpWorker:
         return len(self.call_tasks) > self._queue_size
 
     def flush(self, timeout: float, callback=None) -> None:
-        sentry_sdk.utils.logger.debug("background worker got flush request")
-        sentry_sdk.utils.logger.debug("background worker flush ignored")
+        sentry_sdk.utils.logger.debug("Custom background worker got flush request, ignored")
 
     async def _async_call(self, callback):
         try:
