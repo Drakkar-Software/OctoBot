@@ -31,6 +31,8 @@ class SentryAiohttpTransport(sentry_sdk.HttpTransport):
         self, options: typing.Dict[str, typing.Any]
     ):
         super().__init__(options)
+        # WARNING: override default "br" value: not supported by Glitchtip yet
+        self._compression_algo = "gzip"
         # use custom async worker instead of default sentry thread worker
         # does not support proxies, at least for now
         self._worker = AiohttpWorker(queue_size=options["transport_queue_size"])
