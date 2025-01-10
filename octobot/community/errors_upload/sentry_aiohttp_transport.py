@@ -156,13 +156,11 @@ class SentryAiohttpTransport(sentry_sdk.HttpTransport):
     def capture_envelope(
         self, envelope: sentry_sdk.envelope.Envelope
     ) -> None:
-        hub = self.hub_cls.current
 
         async def send_envelope_wrapper() -> None:
-            with hub:    # pylint: disable=not-context-manager
-                with sentry_sdk.utils.capture_internal_exceptions():
-                    await self._async_send_envelope(envelope)
-                    self._flush_client_reports()
+            with sentry_sdk.utils.capture_internal_exceptions():
+                await self._async_send_envelope(envelope)
+                self._flush_client_reports()
 
         if not self._worker.submit(send_envelope_wrapper):
             self.on_dropped_event("full_queue")
