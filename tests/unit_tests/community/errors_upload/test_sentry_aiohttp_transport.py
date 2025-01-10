@@ -61,9 +61,6 @@ async def sentry_init():
         SENTRY_CONFIG["enabled"] = False
         if handle and hasattr(handle._client.transport, "async_kill"):
             await handle._client.transport.async_kill()
-        client = sentry_sdk.Hub.current.client
-        if client is not None:
-            client.close(timeout=0)
 
 
 def _mocked_context(return_value):
