@@ -607,6 +607,8 @@ class CommunityAuthentication(authentication.Authenticator):
                     await self._ensure_init_community_feed()
         except authentication.AuthenticationError as err:
             self.logger.info(f"Login aborted: no authenticated session: {err}")
+            if await self.has_login_info():
+                await self.logout()
         except authentication.UnavailableError as e:
             self.logger.exception(e, True, f"Error when fetching community data, "
                                            f"please check your internet connection.")
@@ -803,7 +805,8 @@ class CommunityAuthentication(authentication.Authenticator):
         except authentication.FailedAuthentication as e:
             if should_warn:
                 self.logger.warning(f"Invalid authentication details, please re-authenticate. {e}")
-            await self.logout()
+            if await self.has_login_info():
+                await self.logout()
         except authentication.UnavailableError:
             raise
         except Exception as e:
