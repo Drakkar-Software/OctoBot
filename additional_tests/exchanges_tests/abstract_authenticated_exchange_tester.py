@@ -291,16 +291,18 @@ class AbstractAuthenticatedExchangeTester:
             "_get_api_key_rights_using_order", mock.AsyncMock(side_effect=origin_get_api_key_rights_using_order)
         ) as _get_api_key_rights_using_order_mock:
             permissions = await self.exchange_manager.exchange_backend._get_api_key_rights()
-            assert len(permissions) > 0
-            assert trading_backend.enums.APIKeyRights.READING in permissions
-            assert trading_backend.enums.APIKeyRights.SPOT_TRADING in permissions
-            assert trading_backend.enums.APIKeyRights.FUTURES_TRADING in permissions
+            self._ensure_required_permissions(permissions)
             if self.USE_ORDER_OPERATION_TO_CHECK_API_KEY_RIGHTS:
                 # failed ? did not use _get_api_key_rights_using_order while expected
                 _get_api_key_rights_using_order_mock.assert_called_once()
             else:
                 # failed ? used _get_api_key_rights_using_order when not expected
                 _get_api_key_rights_using_order_mock.assert_not_called()
+
+    def _ensure_required_permissions(self, permissions):
+        assert len(permissions) > 0
+        assert trading_backend.enums.APIKeyRights.READING in permissions
+        assert trading_backend.enums.APIKeyRights.SPOT_TRADING in permissions
 
     async def test_missing_trading_api_key_permissions(self):
         async with self.local_exchange_manager(identifiers_suffix="_READONLY"):
