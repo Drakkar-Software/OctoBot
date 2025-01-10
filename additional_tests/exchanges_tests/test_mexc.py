@@ -34,6 +34,8 @@ class TestMEXCAuthenticatedExchange(
     CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES = True
     CANCELLED_ORDERS_IN_CLOSED_ORDERS = True
     EXPECT_MISSING_FEE_IN_CANCELLED_ORDERS = False
+    IS_ACCOUNT_ID_AVAILABLE = False
+    USE_ORDER_OPERATION_TO_CHECK_API_KEY_RIGHTS = True
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
@@ -42,8 +44,7 @@ class TestMEXCAuthenticatedExchange(
         await super().test_get_portfolio_with_market_filter()
 
     async def test_get_account_id(self):
-        # pass if not implemented
-        pass
+        await super().test_get_account_id()
 
     async def test_is_authenticated_request(self):
         await super().test_is_authenticated_request()
@@ -52,11 +53,10 @@ class TestMEXCAuthenticatedExchange(
         await super().test_invalid_api_key_error()
 
     async def test_get_api_key_permissions(self):
-        # pass if not implemented
-        pass
+        await super().test_get_api_key_permissions()
 
     async def test_missing_trading_api_key_permissions(self):
-        pass
+        await super().test_missing_trading_api_key_permissions()
 
     async def test_get_not_found_order(self):
         await super().test_get_not_found_order()
@@ -83,7 +83,7 @@ class TestMEXCAuthenticatedExchange(
         await super().test_get_cancelled_orders()
 
     async def test_create_and_cancel_stop_orders(self):
-        # pass if not implemented
+        # NOT SUPPORTED by MEXC API (10/01/25)
         pass
 
     async def test_edit_limit_order(self):
