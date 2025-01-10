@@ -23,8 +23,9 @@ class CommunityPublicData:
         self.products = _DataElement({}, False)
 
     def set_products(self, products):
-        self.products.value = {product[enums.ProductKeys.ID.value]: product for product in products}
-        self.products.fetched = True
+        if products:
+            self.products.value = {product[enums.ProductKeys.ID.value]: product for product in products}
+            self.products.fetched = True
 
     def get_product_slug(self, product_id):
         return self.products.value[product_id][enums.ProductKeys.SLUG.value]

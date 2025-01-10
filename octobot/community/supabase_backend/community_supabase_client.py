@@ -122,7 +122,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
     async def sign_out(self, options: gotrue.types.SignOutOptions) -> None:
         try:
             await self.auth.sign_out(options)
-        except gotrue.errors.AuthApiError:
+        except (postgrest.exceptions.APIError, gotrue.errors.AuthApiError):
             pass
 
     def _requires_email_validation(self, user: gotrue.types.User) -> bool:
@@ -137,7 +137,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
     async def refresh_session(self, refresh_token: typing.Union[str, None] = None):
         try:
             await self.auth.refresh_session(refresh_token=refresh_token)
-        except gotrue.errors.AuthError as err:
+        except (postgrest.exceptions.APIError, gotrue.errors.AuthError) as err:
             raise authentication.AuthenticationError(f"Community auth error: {err}") from err
 
     async def sign_in_with_otp_token(self, token):
@@ -229,16 +229,21 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         return json.loads(json.loads(resp)["message"])
 
     async def fetch_bot(self, bot_id) -> dict:
-        try:
-            # https://postgrest.org/en/stable/references/api/resource_embedding.html#hint-disambiguation
-            return (await self.table("bots").select("*,bot_deployment:bot_deployments!bots_current_deployment_id_fkey(*)").eq(
-                enums.BotKeys.ID.value, bot_id
-            ).execute()).data[0]
-        except IndexError:
-            raise errors.BotNotFoundError(f"Can't find bot with id: {bot_id}")
+        with jwt_expired_auth_raiser():
+            try:
+                # https://postgrest.org/en/stable/references/api/resource_embedding.html#hint-disambiguation
+                return (await self.table("bots").select("*,bot_deployment:bot_deployments!bots_current_deployment_id_fkey(*)").eq(
+                    enums.BotKeys.ID.value, bot_id
+                ).execute()).data[0]
+            except IndexError:
+                raise errors.BotNotFoundError(f"Can't find bot with id: {bot_id}")
 
     async def fetch_bots(self) -> list:
-        return (await self.table("bots").select("*,bot_deployment:bot_deployments!bots_current_deployment_id_fkey!inner(*)").execute()).data
+        with jwt_expired_auth_raiser():
+            return (
+                await self.table("bots").select(
+                    "*,bot_deployment:bot_deployments!bots_current_deployment_id_fkey!inner(*)"
+                ).execute()).data
 
     async def create_bot(self, deployment_type: enums.DeploymentTypes) -> dict:
         created_bot = (await self.table("bots").insert({
@@ -305,19 +310,23 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         return resp.data[0]
 
     async def fetch_products(self, category_types: list[str]) -> list:
-        return (
-            await self.table("products").select(
-                "*,"
-                "category:product_categories!inner(slug, name_translations, type, metadata),"
-                "results:product_results!products_current_result_id_fkey("
-                "  profitability,"
-                "  reference_market_profitability"
-                ")"
-            ).eq(
-                enums.ProductKeys.VISIBILITY.value, "public"
-            ).in_("category.type", category_types)
-            .execute()
-        ).data
+        try:
+            return (
+                await self.table("products").select(
+                    "*,"
+                    "category:product_categories!inner(slug, name_translations, type, metadata),"
+                    "results:product_results!products_current_result_id_fkey("
+                    "  profitability,"
+                    "  reference_market_profitability"
+                    ")"
+                ).eq(
+                    enums.ProductKeys.VISIBILITY.value, "public"
+                ).in_("category.type", category_types)
+                .execute()
+            ).data
+        except postgrest.exceptions.APIError as err:
+            commons_logging.get_logger(__name__).error(f"Error when fetching products: {err}")
+            return []
 
     async def fetch_subscribed_products_urls(self) -> list:
         resp = await self.rpc("get_subscribed_products_urls").execute()
@@ -935,3 +944,13 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
                 # happens when the event loop is closed already
                 pass
             self.production_anon_client = None
+
+
+@contextlib.contextmanager
+def jwt_expired_auth_raiser():
+    try:
+        yield
+    except postgrest.exceptions.APIError as err:
+        if "JWT expired" in str(err):
+            raise authentication.AuthenticationError(f"Please re-login to your OctoBot account: {err}") from err
+        raise
