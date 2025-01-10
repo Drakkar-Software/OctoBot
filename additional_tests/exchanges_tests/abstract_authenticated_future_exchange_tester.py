@@ -15,12 +15,12 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import contextlib
 import decimal
-import ccxt
 import pytest
 
 import octobot_trading.enums as trading_enums
 import octobot_trading.constants as trading_constants
 import octobot_trading.errors as trading_errors
+import trading_backend.enums
 from additional_tests.exchanges_tests import abstract_authenticated_exchange_tester
 
 
@@ -191,6 +191,10 @@ class AbstractAuthenticatedFutureExchangeTester(
         await super().inner_test_create_and_cancel_limit_orders(
             symbol=self.INVERSE_SYMBOL, settlement_currency=self.ORDER_CURRENCY, margin_type=margin_type
         )
+
+    def _ensure_required_permissions(self, permissions):
+        super()._ensure_required_permissions(permissions)
+        assert trading_backend.enums.APIKeyRights.FUTURES_TRADING in permissions
 
     async def inner_test_create_and_fill_market_orders(self):
         portfolio = await self.get_portfolio()
