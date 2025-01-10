@@ -25,6 +25,7 @@ import pytest
 import octobot_commons.constants as constants
 import octobot_commons.enums as commons_enums
 import octobot_commons.symbols as symbols
+import octobot_commons.configuration as commons_configuration
 import octobot_trading.errors as trading_errors
 import octobot_trading.enums as trading_enums
 import octobot_trading.constants as trading_constants
@@ -109,6 +110,9 @@ class AbstractAuthenticatedExchangeTester:
     # Add method call to subclasses to be able to run them independently
 
     async def test_get_portfolio(self):
+        # encoded_a = _get_encoded_value("") # tool to get encoded values
+        # encoded_b = _get_encoded_value("")
+        # encoded_c = _get_encoded_value("")
         async with self.local_exchange_manager():
             await self.inner_test_get_portfolio()
 
@@ -1443,3 +1447,7 @@ class AbstractAuthenticatedExchangeTester:
             )
 
         return market_filter
+
+
+def _get_encoded_value(raw) -> str:
+    return commons_configuration.encrypt(raw).decode()
