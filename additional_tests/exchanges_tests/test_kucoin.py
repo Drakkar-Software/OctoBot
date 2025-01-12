@@ -75,6 +75,9 @@ class TestKucoinAuthenticatedExchange(
     async def test_get_portfolio_with_market_filter(self):
         await super().test_get_portfolio_with_market_filter()
 
+    async def test_untradable_symbols(self):
+        await super().test_untradable_symbols()
+
     async def test_is_valid_account(self):
         await super().test_is_valid_account()
 
