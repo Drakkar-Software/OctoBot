@@ -39,6 +39,9 @@ class TestCoinExAuthenticatedExchange(
     async def test_get_portfolio_with_market_filter(self):
         await super().test_get_portfolio_with_market_filter()
 
+    async def test_untradable_symbols(self):
+        await super().test_untradable_symbols()
+
     async def test_get_account_id(self):
         # pass if not implemented
         pass

@@ -42,6 +42,9 @@ class TestBitgetAuthenticatedExchange(
         # pass if not implemented
         pass
 
+    async def test_untradable_symbols(self):
+        await super().test_untradable_symbols()
+
     async def test_get_account_id(self):
         # pass if not implemented
         pass
