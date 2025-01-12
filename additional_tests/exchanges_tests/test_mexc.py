@@ -28,7 +28,7 @@ class TestMEXCAuthenticatedExchange(
     EXCHANGE_NAME = "mexc"
     EXCHANGE_TENTACLE_NAME = "MEXC"
     ORDER_CURRENCY = "BTC"
-    SETTLEMENT_CURRENCY = "USDC"
+    SETTLEMENT_CURRENCY = "USDT"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
     ORDER_SIZE = 30  # % of portfolio to include in test orders
     CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES = True
@@ -36,12 +36,16 @@ class TestMEXCAuthenticatedExchange(
     EXPECT_MISSING_FEE_IN_CANCELLED_ORDERS = False
     IS_ACCOUNT_ID_AVAILABLE = False
     USE_ORDER_OPERATION_TO_CHECK_API_KEY_RIGHTS = True
+    USED_TO_HAVE_UNTRADABLE_SYMBOL = True
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
 
     async def test_get_portfolio_with_market_filter(self):
         await super().test_get_portfolio_with_market_filter()
+
+    async def test_untradable_symbols(self):
+        await super().test_untradable_symbols()
 
     async def test_get_account_id(self):
         await super().test_get_account_id()

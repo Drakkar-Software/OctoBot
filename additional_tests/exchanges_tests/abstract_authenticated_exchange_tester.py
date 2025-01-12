@@ -16,6 +16,7 @@
 import asyncio
 import contextlib
 import decimal
+import random
 import time
 import typing
 import ccxt
@@ -53,6 +54,7 @@ class AbstractAuthenticatedExchangeTester:
     ORDER_CURRENCY = "BTC"
     SETTLEMENT_CURRENCY = "USDT"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
+    TIME_FRAME = "1h"
     VALID_ORDER_ID = "8bb80a81-27f7-4415-aa50-911ea46d841c"
     SPECIAL_ORDER_TYPES_BY_EXCHANGE_ID: dict[
         str, (
@@ -104,6 +106,8 @@ class AbstractAuthenticatedExchangeTester:
     CHECK_EMPTY_ACCOUNT = False  # set True when the account to check has no funds. Warning: does not check order
     # parse/create/fill/cancel or portfolio & trades parsing
     IS_BROKER_ENABLED_ACCOUNT = True # set False when this test account can't generate broker fees
+    # set True when this exchange used to have symbols that can't be traded through API (ex: MEXC)
+    USED_TO_HAVE_UNTRADABLE_SYMBOL = False
 
     # Implement all "test_[name]" methods, call super() to run the test, pass to ignore it.
     # Override the "inner_test_[name]" method to override a test content.
@@ -157,6 +161,98 @@ class AbstractAuthenticatedExchangeTester:
             if values[trading_constants.CONFIG_PORTFOLIO_TOTAL] > trading_constants.ZERO:
                 at_least_one_value = True
         assert at_least_one_value
+
+    async def test_untradable_symbols(self):
+        await self.inner_test_untradable_symbols()
+
+    async def inner_test_untradable_symbols(self):
+        if not self.USED_TO_HAVE_UNTRADABLE_SYMBOL:
+            # nothing to do
+            return
+        async with self.local_exchange_manager():
+            all_symbols = self.exchange_manager.exchange.get_all_available_symbols()
+            tradable_symbols = await self.exchange_manager.exchange.get_all_tradable_symbols()
+            assert len(all_symbols) > len(tradable_symbols)
+            untradable_symbols = [
+                symbol
+                for symbol in all_symbols
+                if symbol not in tradable_symbols
+                and symbol.endswith(f"/{self.SETTLEMENT_CURRENCY}")
+                and (
+                   symbols.parse_symbol(symbol).is_spot()
+                   if self.EXCHANGE_TYPE == trading_enums.ExchangeTypes.SPOT.value
+                   else symbols.parse_symbol(symbol).is_future()
+               )
+            ]
+            tradable_symbols = [
+                symbol
+                for symbol in all_symbols
+                if symbol in tradable_symbols
+                and symbol.endswith(f"/{self.SETTLEMENT_CURRENCY}")
+                and (
+                   symbols.parse_symbol(symbol).is_spot()
+                   if self.EXCHANGE_TYPE == trading_enums.ExchangeTypes.SPOT.value
+                   else symbols.parse_symbol(symbol).is_future()
+               )
+            ]
+            # has untradable symbols of this trading type
+            assert len(untradable_symbols) > 0
+            first_untradable_symbol = untradable_symbols[0]
+            # Public data
+            # market status is available
+            assert ccxt_constants.CCXT_INFO in self.exchange_manager.exchange.get_market_status(first_untradable_symbol)
+            # fetching ohlcv is ok
+            assert len(
+                await self.exchange_manager.exchange.get_symbol_prices(
+                    first_untradable_symbol, commons_enums.TimeFrames(self.TIME_FRAME)
+                )
+            ) > 5
+            # fetching kline is ok
+            kline = await self.exchange_manager.exchange.get_kline_price(
+                first_untradable_symbol, commons_enums.TimeFrames(self.TIME_FRAME)
+            )
+            assert len(kline) == 1
+            assert len(kline[0]) == 6
+            # fetching ticker is ok
+            ticker = await self.exchange_manager.exchange.get_price_ticker(first_untradable_symbol)
+            assert ticker
+            price = ticker[trading_enums.ExchangeConstantsTickersColumns.CLOSE.value]
+            assert price > 0
+            # fetching recent trades is ok
+            recent_trades = await self.exchange_manager.exchange.get_recent_trades(first_untradable_symbol)
+            assert len(recent_trades) > 1
+            # fetching order book is ok
+            order_book = await self.exchange_manager.exchange.get_order_book(first_untradable_symbol)
+            assert len(order_book[trading_enums.ExchangeConstantsOrderBookInfoColumns.ASKS.value]) > 0
+            # is in all tickers
+            all_tickers = await self.exchange_manager.exchange.get_all_currencies_price_ticker()
+            assert all_tickers[first_untradable_symbol][trading_enums.ExchangeConstantsTickersColumns.CLOSE.value] > 0
+            # Orders
+            # try creating & cancelling orders on 5 random tradable and untradable symbols
+            symbols_to_test = 5
+            tradable_stepper = random.randint(1, len(tradable_symbols) - 2)
+            tradable_indexes = [tradable_stepper * i for i in range(0, symbols_to_test)]
+            untradable_stepper = random.randint(1, len(untradable_symbols) - 2)
+            untradable_indexes = [untradable_stepper * i for i in range(0, symbols_to_test)]
+            to_test_symbols = [
+                tradable_symbols[i % (len(tradable_symbols) - 1)] for i in tradable_indexes
+            ] + [
+                untradable_symbols[i % (len(untradable_symbols) - 1)] for i in untradable_indexes
+            ]
+            for i, symbol in enumerate(to_test_symbols):
+                ticker = await self.exchange_manager.exchange.get_price_ticker(symbol)
+                price = ticker[trading_enums.ExchangeConstantsTickersColumns.CLOSE.value]
+                price = self.get_order_price(decimal.Decimal(str(price)), False, symbol=symbol)
+                size = self.get_order_size(
+                    await self.get_portfolio(), price, symbol=symbol,
+                    settlement_currency=self.SETTLEMENT_CURRENCY
+                )
+                buy_limit = await self.create_limit_order(
+                    price, size, trading_enums.TradeOrderSide.BUY,
+                    symbol=symbol
+                )
+                await self.cancel_order(buy_limit)
+                print(f"{i+1}/{len(to_test_symbols)} : {symbol} Create & cancel order OK")
 
     async def test_get_account_id(self):
         async with self.local_exchange_manager():
@@ -1432,7 +1528,7 @@ class AbstractAuthenticatedExchangeTester:
             exchange_details={"name": self.exchange_manager.exchange_name},
             markets=[
                 {
-                    "id": s, "symbol": s, "info": {}, "time_frame": "1h",
+                    "id": s, "symbol": s, "info": {}, "time_frame": self.TIME_FRAME,
                     "close": [0], "open": [0], "high": [0], "low": [0], "volume": [0], "time": [0]  # todo
                 }
                 for s in _symbols

@@ -46,6 +46,9 @@ class TestOKXFuturesAuthenticatedExchange(
     async def test_get_account_id(self):
         await super().test_get_account_id()
 
+    async def test_untradable_symbols(self):
+        await super().test_untradable_symbols()
+
     async def test_is_authenticated_request(self):
         await super().test_is_authenticated_request()
 
