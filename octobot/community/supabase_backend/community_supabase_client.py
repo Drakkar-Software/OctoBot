@@ -437,9 +437,10 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             ")"
         ).eq(enums.BotConfigKeys.ID.value, bot_config_id).execute()).data[0]
         try:
-            profile_data = commons_profiles.ProfileData.from_dict(
-                bot_config["product_config"][enums.ProfileConfigKeys.CONFIG.value]
-            )
+            profile_config = bot_config["product_config"][enums.ProfileConfigKeys.CONFIG.value]
+            if not profile_config:
+                raise TypeError(f"product_config.config is '{profile_config}'")
+            profile_data = commons_profiles.ProfileData.from_dict(profile_config)
         except (TypeError, KeyError) as err:
             raise errors.InvalidBotConfigError(f"Missing bot product config: {err} ({err.__class__.__name__})") from err
         profile_data.profile_details.name = bot_config["product_config"].get("product", {}).get(
