@@ -15,6 +15,7 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import pytest
 
+import octobot_trading.enums
 from additional_tests.exchanges_tests import abstract_authenticated_future_exchange_tester
 
 # All test coroutines will be treated as marked.
@@ -33,7 +34,6 @@ class TestKucoinFuturesAuthenticatedExchange(
     INVERSE_SYMBOL = f"{ORDER_CURRENCY}/USD:{ORDER_CURRENCY}"
     ORDER_SIZE = 5  # % of portfolio to include in test orders
     SUPPORTS_GET_LEVERAGE = False
-    SUPPORTS_SET_LEVERAGE = False
     USE_ORDER_OPERATION_TO_CHECK_API_KEY_RIGHTS = True
     VALID_ORDER_ID = "6617e84c5c1e0000083c71f7"
     EXPECT_MISSING_FEE_IN_CANCELLED_ORDERS = False
@@ -41,11 +41,46 @@ class TestKucoinFuturesAuthenticatedExchange(
     EXPECTED_QUOTE_MIN_ORDER_SIZE = 40
     EXPECT_BALANCE_FILTER_BY_MARKET_STATUS = True
 
+    SPECIAL_ORDER_TYPES_BY_EXCHANGE_ID: dict[
+        str, (
+            str, # symbol
+            str, # order type key in 'info' dict
+            str, # order type found in 'info' dict
+            str, # parsed trading_enums.TradeOrderType
+            str, # parsed trading_enums.TradeOrderSide
+            bool, # trigger above (on higher price than order price)
+        )
+    ] = {
+        "266424660906831872": (
+            "ETH/USDT:USDT", "type", "market",
+            octobot_trading.enums.TradeOrderType.LIMIT.value, octobot_trading.enums.TradeOrderSide.BUY.value, False
+        ),
+        '266424746172764160': (
+            "ETH/USDT:USDT", "type", "market",
+            octobot_trading.enums.TradeOrderType.STOP_LOSS.value, octobot_trading.enums.TradeOrderSide.SELL.value, False
+        ),
+        '266424798085668865': (
+            "ETH/USDT:USDT", "type", "limit",
+            octobot_trading.enums.TradeOrderType.LIMIT.value, octobot_trading.enums.TradeOrderSide.BUY.value, False
+        ),
+        '266424826044899328': (
+            "ETH/USDT:USDT", "type", "limit",
+            octobot_trading.enums.TradeOrderType.STOP_LOSS.value, octobot_trading.enums.TradeOrderSide.SELL.value, False
+        ),
+    }  # stop loss / take profit and other special order types to be successfully parsed
+    # details of an order that exists but can"t be cancelled
+    UNCANCELLABLE_ORDER_ID_SYMBOL_TYPE: tuple[str, str, octobot_trading.enums.TraderOrderType] = (
+        "266424798085668865", "ETH/USDT:USDT", octobot_trading.enums.TraderOrderType.BUY_LIMIT.value
+    )
+
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
 
     async def test_get_portfolio_with_market_filter(self):
         await super().test_get_portfolio_with_market_filter()   # can have small variations failing the test when positions are open
+
+    async def test_untradable_symbols(self):
+        await super().test_untradable_symbols()
 
     async def test_get_account_id(self):
         await super().test_get_account_id()
@@ -76,6 +111,9 @@ class TestKucoinFuturesAuthenticatedExchange(
 
     async def test_is_valid_account(self):
         await super().test_is_valid_account()
+
+    async def test_get_special_orders(self):
+        await super().test_get_special_orders()
 
     async def test_create_and_cancel_limit_orders(self):
         # todo test cross position order creation (kucoin param) at next ccxt update (will support set margin type)

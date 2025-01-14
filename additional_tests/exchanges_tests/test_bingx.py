@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import pytest
+import octobot_trading.enums
 
 from additional_tests.exchanges_tests import abstract_authenticated_exchange_tester
 
@@ -38,11 +39,46 @@ class TestBingxAuthenticatedExchange(
 
     VALID_ORDER_ID = "1812980957928929280"
 
+    SPECIAL_ORDER_TYPES_BY_EXCHANGE_ID: dict[
+        str, (
+            str, # symbol
+            str, # order type key in 'info' dict
+            str, # order type found in 'info' dict
+            str, # parsed trading_enums.TradeOrderType
+            str, # parsed trading_enums.TradeOrderSide
+            bool, # trigger above (on higher price than order price)
+        )
+    ] = {
+        "1877004154170146816": (
+            "TAO/USDT", "type", "TAKE_STOP_MARKET",
+            octobot_trading.enums.TradeOrderType.STOP_LOSS.value, octobot_trading.enums.TradeOrderSide.SELL.value, False
+        ),
+        '1877004191864356864': (
+            "TAO/USDT", "type", "TAKE_STOP_MARKET",
+            octobot_trading.enums.TradeOrderType.LIMIT.value, octobot_trading.enums.TradeOrderSide.SELL.value, True
+        ),
+        '1877004220704391168': (
+            "TAO/USDT", "type", "TAKE_STOP_LIMIT",
+            octobot_trading.enums.TradeOrderType.UNSUPPORTED.value, octobot_trading.enums.TradeOrderSide.SELL.value, None
+        ),
+        '1877004292053696512': (
+            "TAO/USDT", "type", "TAKE_STOP_LIMIT",
+            octobot_trading.enums.TradeOrderType.UNSUPPORTED.value, octobot_trading.enums.TradeOrderSide.SELL.value, None
+        ),
+    }  # stop loss / take profit and other special order types to be successfully parsed
+    # details of an order that exists but can"t be cancelled
+    UNCANCELLABLE_ORDER_ID_SYMBOL_TYPE: tuple[str, str, octobot_trading.enums.TraderOrderType] = (
+        "1877004292053696512", "TAO/USDT", octobot_trading.enums.TraderOrderType.SELL_LIMIT.value
+    )
+
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
 
     async def test_get_portfolio_with_market_filter(self):
         await super().test_get_portfolio_with_market_filter()
+
+    async def test_untradable_symbols(self):
+        await super().test_untradable_symbols()
 
     async def test_get_account_id(self):
         await super().test_get_account_id()
@@ -64,6 +100,9 @@ class TestBingxAuthenticatedExchange(
 
     async def test_is_valid_account(self):
         await super().test_is_valid_account()
+
+    async def test_get_special_orders(self):
+        await super().test_get_special_orders()
 
     async def test_create_and_cancel_limit_orders(self):
         await super().test_create_and_cancel_limit_orders()

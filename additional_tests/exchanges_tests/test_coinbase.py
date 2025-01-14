@@ -15,6 +15,7 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import pytest
 
+import octobot_trading.enums
 from additional_tests.exchanges_tests import abstract_authenticated_exchange_tester
 
 # All test coroutines will be treated as marked.
@@ -29,7 +30,7 @@ class TestCoinbaseAuthenticatedExchange(
     ORDER_CURRENCY = "ADA"
     SETTLEMENT_CURRENCY = "BTC"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
-    ORDER_SIZE = 5  # % of portfolio to include in test orders
+    ORDER_SIZE = 25  # % of portfolio to include in test orders
     CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES = True
     VALID_ORDER_ID = "8bb80a81-27f7-4415-aa50-911ea46d841c"
     USE_ORDER_OPERATION_TO_CHECK_API_KEY_RIGHTS = True    # set True when api key rights can't be checked using a
@@ -37,11 +38,42 @@ class TestCoinbaseAuthenticatedExchange(
     IS_BROKER_ENABLED_ACCOUNT = False
     IS_AUTHENTICATED_REQUEST_CHECK_AVAILABLE = True    # set True when is_authenticated_request is implemented
 
+    SPECIAL_ORDER_TYPES_BY_EXCHANGE_ID: dict[
+        str, (
+            str, # symbol
+            str, # order type key in 'info' dict
+            str, # order type found in 'info' dict
+            str, # parsed trading_enums.TradeOrderType
+            str, # parsed trading_enums.TradeOrderSide
+            bool, # trigger above (on higher price than order price)
+        )
+    ] = {
+        '7e03c745-7340-49ef-8af1-b8f7fe431c8a': (
+            "BTC/EUR", "order_type", "STOP_LIMIT",  # sell at a lower price
+            octobot_trading.enums.TradeOrderType.STOP_LOSS.value, octobot_trading.enums.TradeOrderSide.SELL.value, False
+        ),
+        '1e2f0918-5728-4c68-b8f4-6fd804396248': (
+            "ETH/BTC", "order_type", "STOP_LIMIT",  # buy at a higher price
+            octobot_trading.enums.TradeOrderType.STOP_LOSS.value, octobot_trading.enums.TradeOrderSide.BUY.value, True
+        ),
+        'f4016e50-1f0b-4caa-abe5-1ec00af18be9': (
+            "ETH/BTC", "order_type", "STOP_LIMIT",  # buy at a lower price
+            octobot_trading.enums.TradeOrderType.LIMIT.value, octobot_trading.enums.TradeOrderSide.BUY.value, False
+        ),
+    }  # stop loss / take profit and other special order types to be successfully parsed
+    # details of an order that exists but can"t be cancelled
+    UNCANCELLABLE_ORDER_ID_SYMBOL_TYPE: tuple[str, str, octobot_trading.enums.TraderOrderType] = (
+        "f4016e50-1f0b-4caa-abe5-1ec00af18be9", "ETH/BTC", octobot_trading.enums.TraderOrderType.BUY_LIMIT.value
+    )
+
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
 
     async def test_get_portfolio_with_market_filter(self):
         await super().test_get_portfolio_with_market_filter()
+
+    async def test_untradable_symbols(self):
+        await super().test_untradable_symbols()
 
     async def test_get_account_id(self):
         await super().test_get_account_id()
@@ -63,6 +95,9 @@ class TestCoinbaseAuthenticatedExchange(
 
     async def test_is_valid_account(self):
         await super().test_is_valid_account()
+
+    async def test_get_special_orders(self):
+        await super().test_get_special_orders()
 
     async def test_create_and_cancel_limit_orders(self):
         await super().test_create_and_cancel_limit_orders()

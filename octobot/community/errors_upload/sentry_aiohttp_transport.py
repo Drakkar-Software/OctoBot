@@ -17,8 +17,6 @@ import logging
 import typing
 import asyncio
 import aiohttp
-import io
-import gzip
 
 import sentry_sdk
 import sentry_sdk.consts
@@ -33,6 +31,8 @@ class SentryAiohttpTransport(sentry_sdk.HttpTransport):
         self, options: typing.Dict[str, typing.Any]
     ):
         super().__init__(options)
+        # WARNING: override default "br" value: not supported by Glitchtip yet
+        self._compression_algo = "gzip"
         # use custom async worker instead of default sentry thread worker
         # does not support proxies, at least for now
         self._worker = AiohttpWorker(queue_size=options["transport_queue_size"])
@@ -75,7 +75,7 @@ class SentryAiohttpTransport(sentry_sdk.HttpTransport):
                     pass
 
                 elif response.status >= 300 or response.status < 200:
-                    sentry_sdk.utils.logger.error(
+                    logging.getLogger(self.__class__.__name__).warning(
                         "Unexpected status code: %s (body: %s)",
                         response.status,
                         await response.text(),
@@ -121,14 +121,7 @@ class SentryAiohttpTransport(sentry_sdk.HttpTransport):
         if client_report_item is not None:
             envelope.items.append(client_report_item)
 
-        body = io.BytesIO()
-        if self._compresslevel == 0:
-            envelope.serialize_into(body)
-        else:
-            with gzip.GzipFile(
-                fileobj=body, mode="w", compresslevel=self._compresslevel
-            ) as f:
-                envelope.serialize_into(f)
+        content_encoding, body = self._serialize_envelope(envelope)
 
         assert self.parsed_dsn is not None
         sentry_sdk.utils.logger.debug(
@@ -141,8 +134,8 @@ class SentryAiohttpTransport(sentry_sdk.HttpTransport):
         headers = {
             "Content-Type": "application/x-sentry-envelope",
         }
-        if self._compresslevel > 0:
-            headers["Content-Encoding"] = "gzip"
+        if content_encoding:
+            headers["Content-Encoding"] = content_encoding
 
         await self._async_send_request(
             body.getvalue(),
@@ -163,13 +156,11 @@ class SentryAiohttpTransport(sentry_sdk.HttpTransport):
     def capture_envelope(
         self, envelope: sentry_sdk.envelope.Envelope
     ) -> None:
-        hub = self.hub_cls.current
 
         async def send_envelope_wrapper() -> None:
-            with hub:    # pylint: disable=not-context-manager
-                with sentry_sdk.utils.capture_internal_exceptions():
-                    await self._async_send_envelope(envelope)
-                    self._flush_client_reports()
+            with sentry_sdk.utils.capture_internal_exceptions():
+                await self._async_send_envelope(envelope)
+                self._flush_client_reports()
 
         if not self._worker.submit(send_envelope_wrapper):
             self.on_dropped_event("full_queue")
@@ -225,8 +216,7 @@ class AiohttpWorker:
         return len(self.call_tasks) > self._queue_size
 
     def flush(self, timeout: float, callback=None) -> None:
-        sentry_sdk.utils.logger.debug("background worker got flush request")
-        sentry_sdk.utils.logger.debug("background worker flush ignored")
+        sentry_sdk.utils.logger.debug("Custom background worker got flush request, ignored")
 
     async def _async_call(self, callback):
         try:

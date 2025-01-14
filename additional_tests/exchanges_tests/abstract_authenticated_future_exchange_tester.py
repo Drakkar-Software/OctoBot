@@ -15,12 +15,12 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import contextlib
 import decimal
-import ccxt
 import pytest
 
 import octobot_trading.enums as trading_enums
 import octobot_trading.constants as trading_constants
 import octobot_trading.errors as trading_errors
+import trading_backend.enums
 from additional_tests.exchanges_tests import abstract_authenticated_exchange_tester
 
 
@@ -33,7 +33,6 @@ class AbstractAuthenticatedFutureExchangeTester(
     INVERSE_SYMBOL = None
     MIN_PORTFOLIO_SIZE = 2  # ensure fetching currency for linear and inverse
     SUPPORTS_GET_LEVERAGE = True
-    SUPPORTS_SET_LEVERAGE = True
     SUPPORTS_EMPTY_POSITION_SET_MARGIN_TYPE = True
 
     async def test_get_empty_linear_and_inverse_positions(self):
@@ -85,9 +84,12 @@ class AbstractAuthenticatedFutureExchangeTester(
         assert origin_leverage != trading_constants.ZERO
         if self.SUPPORTS_GET_LEVERAGE:
             assert origin_leverage == await self.get_leverage()
-        if not self.SUPPORTS_SET_LEVERAGE:
-            return
         new_leverage = origin_leverage + 1
+        if not self.exchange_manager.exchange.UPDATE_LEVERAGE_FROM_API:
+            # can't set from api: make sure of that
+            with pytest.raises(trading_errors.NotSupported):
+                await self.exchange_manager.exchange.connector.set_symbol_leverage(self.SYMBOL, float(new_leverage))
+            return
         await self.set_leverage(new_leverage)
         await self._check_margin_type_and_leverage(origin_margin_type, new_leverage)    # did not change margin type
         # change leverage back to origin value
@@ -189,6 +191,10 @@ class AbstractAuthenticatedFutureExchangeTester(
         await super().inner_test_create_and_cancel_limit_orders(
             symbol=self.INVERSE_SYMBOL, settlement_currency=self.ORDER_CURRENCY, margin_type=margin_type
         )
+
+    def _ensure_required_permissions(self, permissions):
+        super()._ensure_required_permissions(permissions)
+        assert trading_backend.enums.APIKeyRights.FUTURES_TRADING in permissions
 
     async def inner_test_create_and_fill_market_orders(self):
         portfolio = await self.get_portfolio()

@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import pytest
+import octobot_trading.enums
 
 from additional_tests.exchanges_tests import abstract_authenticated_exchange_tester
 
@@ -36,14 +37,52 @@ class TestKucoinAuthenticatedExchange(
     VALID_ORDER_ID = "6617e84c5c1e0000083c71f7"
     IS_AUTHENTICATED_REQUEST_CHECK_AVAILABLE = True    # set True when is_authenticated_request is implemented
 
+    SPECIAL_ORDER_TYPES_BY_EXCHANGE_ID: dict[
+        str, (
+            str, # symbol
+            str, # order type key in 'info' dict
+            str, # order type found in 'info' dict
+            str, # parsed trading_enums.TradeOrderType
+            str, # parsed trading_enums.TradeOrderSide
+            bool, # trigger above (on higher price than order price)
+        )
+    ] = {
+        "vs93gpruc6ikekiv003o48ci": (
+            "BTC/USDT", "type", "market",
+            octobot_trading.enums.TradeOrderType.LIMIT.value, octobot_trading.enums.TradeOrderSide.BUY.value, False
+        ),
+        'vs93gpruc6n45taf003lr546': (
+            "BTC/USDT", "type", "market",
+            octobot_trading.enums.TradeOrderType.STOP_LOSS.value, octobot_trading.enums.TradeOrderSide.BUY.value, True
+        ),
+        'vs93gpruc69s00cs003tat0g': (
+            "BTC/USDT", "type", "limit",
+            octobot_trading.enums.TradeOrderType.LIMIT.value, octobot_trading.enums.TradeOrderSide.BUY.value, False
+        ),
+        'vs93gpruc5q45taf003lr545': (
+            "BTC/USDT", "type", "limit",
+            octobot_trading.enums.TradeOrderType.STOP_LOSS.value, octobot_trading.enums.TradeOrderSide.BUY.value, True
+        ),
+    }  # stop loss / take profit and other special order types to be successfully parsed
+    # details of an order that exists but can"t be cancelled
+    UNCANCELLABLE_ORDER_ID_SYMBOL_TYPE: tuple[str, str, octobot_trading.enums.TraderOrderType] = (
+        "vs93gpruc69s00cs003tat0g", "BTC/USDT", octobot_trading.enums.TraderOrderType.BUY_LIMIT.value
+    )
+
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
 
     async def test_get_portfolio_with_market_filter(self):
         await super().test_get_portfolio_with_market_filter()
 
+    async def test_untradable_symbols(self):
+        await super().test_untradable_symbols()
+
     async def test_is_valid_account(self):
         await super().test_is_valid_account()
+
+    async def test_get_special_orders(self):
+        await super().test_get_special_orders()
 
     async def test_create_and_cancel_limit_orders(self):
         await super().test_create_and_cancel_limit_orders()

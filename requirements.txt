@@ -1,12 +1,12 @@
 # Drakkar-Software requirements
 OctoBot-Commons==1.9.70
-OctoBot-Trading==2.4.140
+OctoBot-Trading==2.4.147
 OctoBot-Evaluators==1.9.7
 OctoBot-Tentacles-Manager==2.9.16
-OctoBot-Services==1.6.21
+OctoBot-Services==1.6.23
 OctoBot-Backtesting==1.9.7
 Async-Channel==2.2.1
-trading-backend==1.2.30
+trading-backend==1.2.32
 
 ## Others
 colorlog==6.8.0
@@ -18,14 +18,14 @@ setuptools==69.0.3
 
 # Community
 websockets
-gmqtt==0.6.16
+gmqtt==0.7.0
 pgpy==0.6.0
 
 # Error tracking
-sentry-sdk==2.13.0  # always make sure sentry_aiohttp_transport.py keep working
+sentry-sdk==2.19.2  # always make sure sentry_aiohttp_transport.py keep working
 
 # Supabase  ensure supabase_backend_tests keep passing when updating any of those
-supabase==2.7.1   # Supabase client
+supabase==2.11.0   # Supabase client
 gotrue     # Supabase authenticated API (required by supabase and enforced to allow direct import)
 postgrest  # Supabase posgres calls (required by supabase and enforced to allow direct import)
 
