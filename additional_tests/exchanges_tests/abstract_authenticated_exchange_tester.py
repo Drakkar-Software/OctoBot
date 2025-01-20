@@ -171,6 +171,12 @@ class AbstractAuthenticatedExchangeTester:
             return
         async with self.local_exchange_manager():
             all_symbols = self.exchange_manager.exchange.get_all_available_symbols()
+            all_symbols_including_disabled = self.exchange_manager.exchange.get_all_available_symbols(active_only=False)
+            disabled = [
+                symbol
+                for symbol in all_symbols_including_disabled
+                if symbol not in all_symbols
+            ]
             tradable_symbols = await self.exchange_manager.exchange.get_all_tradable_symbols()
             assert len(all_symbols) > len(tradable_symbols)
             untradable_symbols = [
@@ -197,48 +203,52 @@ class AbstractAuthenticatedExchangeTester:
             ]
             # has untradable symbols of this trading type
             assert len(untradable_symbols) > 0
-            first_untradable_symbol = untradable_symbols[0]
-            # Public data
-            # market status is available
-            assert ccxt_constants.CCXT_INFO in self.exchange_manager.exchange.get_market_status(first_untradable_symbol)
-            # fetching ohlcv is ok
-            assert len(
-                await self.exchange_manager.exchange.get_symbol_prices(
-                    first_untradable_symbol, commons_enums.TimeFrames(self.TIME_FRAME)
+            untradable = [untradable_symbols[0]]
+            if disabled:
+                print(f"Including {disabled[0]} disabled coin (from {len(disabled)} coins)")
+                untradable.append(disabled[0])
+            for untradable_symbol in untradable:
+                # Public data
+                # market status is available
+                assert ccxt_constants.CCXT_INFO in self.exchange_manager.exchange.get_market_status(untradable_symbol)
+                # fetching ohlcv is ok
+                assert len(
+                    await self.exchange_manager.exchange.get_symbol_prices(
+                        untradable_symbol, commons_enums.TimeFrames(self.TIME_FRAME)
+                    )
+                ) > 5
+                # fetching kline is ok
+                kline = await self.exchange_manager.exchange.get_kline_price(
+                    untradable_symbol, commons_enums.TimeFrames(self.TIME_FRAME)
                 )
-            ) > 5
-            # fetching kline is ok
-            kline = await self.exchange_manager.exchange.get_kline_price(
-                first_untradable_symbol, commons_enums.TimeFrames(self.TIME_FRAME)
-            )
-            assert len(kline) == 1
-            assert len(kline[0]) == 6
-            # fetching ticker is ok
-            ticker = await self.exchange_manager.exchange.get_price_ticker(first_untradable_symbol)
-            assert ticker
-            price = ticker[trading_enums.ExchangeConstantsTickersColumns.CLOSE.value]
-            assert price > 0
-            # fetching recent trades is ok
-            recent_trades = await self.exchange_manager.exchange.get_recent_trades(first_untradable_symbol)
-            assert len(recent_trades) > 1
-            # fetching order book is ok
-            order_book = await self.exchange_manager.exchange.get_order_book(first_untradable_symbol)
-            assert len(order_book[trading_enums.ExchangeConstantsOrderBookInfoColumns.ASKS.value]) > 0
-            # is in all tickers
-            all_tickers = await self.exchange_manager.exchange.get_all_currencies_price_ticker()
-            assert all_tickers[first_untradable_symbol][trading_enums.ExchangeConstantsTickersColumns.CLOSE.value] > 0
-            # Orders
-            # try creating & cancelling orders on 5 random tradable and untradable symbols
-            symbols_to_test = 5
-            tradable_stepper = random.randint(1, len(tradable_symbols) - 2)
-            tradable_indexes = [tradable_stepper * i for i in range(0, symbols_to_test)]
-            untradable_stepper = random.randint(1, len(untradable_symbols) - 2)
-            untradable_indexes = [untradable_stepper * i for i in range(0, symbols_to_test)]
-            to_test_symbols = [
-                tradable_symbols[i % (len(tradable_symbols) - 1)] for i in tradable_indexes
-            ] + [
-                untradable_symbols[i % (len(untradable_symbols) - 1)] for i in untradable_indexes
-            ]
+                assert len(kline) == 1
+                assert len(kline[0]) == 6
+                # fetching ticker is ok
+                ticker = await self.exchange_manager.exchange.get_price_ticker(untradable_symbol)
+                assert ticker
+                price = ticker[trading_enums.ExchangeConstantsTickersColumns.CLOSE.value]
+                assert price > 0
+                # fetching recent trades is ok
+                recent_trades = await self.exchange_manager.exchange.get_recent_trades(untradable_symbol)
+                assert len(recent_trades) > 1
+                # fetching order book is ok
+                order_book = await self.exchange_manager.exchange.get_order_book(untradable_symbol)
+                assert len(order_book[trading_enums.ExchangeConstantsOrderBookInfoColumns.ASKS.value]) > 0
+                # is in all tickers
+                all_tickers = await self.exchange_manager.exchange.get_all_currencies_price_ticker()
+                assert all_tickers[untradable_symbol][trading_enums.ExchangeConstantsTickersColumns.CLOSE.value] > 0
+                # Orders
+                # try creating & cancelling orders on 5 random tradable and untradable symbols
+                symbols_to_test = 5
+                tradable_stepper = random.randint(1, len(tradable_symbols) - 2)
+                tradable_indexes = [tradable_stepper * i for i in range(0, symbols_to_test)]
+                untradable_stepper = random.randint(1, len(untradable_symbols) - 2)
+                untradable_indexes = [untradable_stepper * i for i in range(0, symbols_to_test)]
+                to_test_symbols = [
+                    tradable_symbols[i % (len(tradable_symbols) - 1)] for i in tradable_indexes
+                ] + [
+                    untradable_symbols[i % (len(untradable_symbols) - 1)] for i in untradable_indexes
+                ]
             for i, symbol in enumerate(to_test_symbols):
                 ticker = await self.exchange_manager.exchange.get_price_ticker(symbol)
                 price = ticker[trading_enums.ExchangeConstantsTickersColumns.CLOSE.value]
@@ -1496,7 +1506,7 @@ class AbstractAuthenticatedExchangeTester:
     async def cancel_order(self, order):
         cancelled_order = order
         if not await self.exchange_manager.trader.cancel_order(order, wait_for_cancelling=False):
-            raise AssertionError("cancel_order returned False")
+            raise AssertionError(f"cancel_order returned False ({order.symbol})")
         if order.status is trading_enums.OrderStatus.PENDING_CANCEL:
             cancelled_order = await self.wait_for_cancel(order)
         assert cancelled_order.status is trading_enums.OrderStatus.CANCELED
