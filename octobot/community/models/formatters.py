@@ -69,6 +69,7 @@ def format_positions(positions: list, exchange_name: str) -> list:
             backend_enums.PositionKeys.TIME.value: position[trading_enums.ExchangeConstantsPositionColumns.TIMESTAMP.value],
             backend_enums.PositionKeys.POSITION_ID.value: position[trading_enums.ExchangeConstantsPositionColumns.ID.value],
             # from trading positions
+            backend_enums.PositionKeys.LOCAL_ID.value: position[trading_enums.ExchangeConstantsPositionColumns.LOCAL_ID.value],
             backend_enums.PositionKeys.SYMBOL.value: position[trading_enums.ExchangeConstantsPositionColumns.SYMBOL.value],
             backend_enums.PositionKeys.STATUS.value: position[trading_enums.ExchangeConstantsPositionColumns.STATUS.value],
             backend_enums.PositionKeys.SIDE.value: position[trading_enums.ExchangeConstantsPositionColumns.SIDE.value],
