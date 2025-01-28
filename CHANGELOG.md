@@ -6,6 +6,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [2.0.8] - 2025-01-27
+### Added
+- [Profiles] Trailing grid default profile
+- [GridTrading] Trading up and down options
+- [TradingView] Support LEVERAGE parameter to update position leverage value
+- [TradingView] Send REDUCE_ONLY param to exchange orders
+- [Exchanges] Support exchange-side spot market stop losses for Binance, Coinbase, Kucoin and BingX
+- [Exchanges] Add http, https and ws proxy support
+- [Exchanges] Add http requests counter
+- [Exchanges] Add request counter 
+- [Exchanges] Add custom exchange domain support
+### Updated
+- [GPTService] Improve custom LLM docs
+- [GPTService] Support empty token when calling custom LLMs
+- [Orders] Make chained orders more reliable 
+- [Exchanges] Reduce log size for html content errors 
+### Fixed
+- [FuturesTrading] Fix position sync issues
+- [TradingModes] Fix rare sell orders creation issues
+- [GridTrading & StaggeredOrders] Fix many live & backtesting quantity and price related issues
+- [DCATradingMode] Fix a rare init issue
+- [MarketPrice] Fix mark price issue
+- [Backtesting] Fix futures trading backtesting issues
+- [MEXC] Many fixes
+- [BingX] Order fixes
+- [Exchanges] Fix rare incorrect stop orders parsing
+- [Exchanges] Fix rare cancel order errors
+- [Exchanges] Fix rare exchange request spamming issues on looping errors 
+- [Community] Fix expired session error
+- [Community] Fix /community page error
+- [Community] Fix SSL-related issues
+
 ## [2.0.7] - 2024-10-26
 ### Added
 - [TradingView] Support multiple take profits
