@@ -761,19 +761,25 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         self, client, table_name: str, select: str, matcher: dict,
         first_open_time: float, last_open_time: float
     ) -> list:
-        def request_factory(table: postgrest.AsyncRequestBuilder, select_count):
-            return (
-                table.select(select, count=select_count)
-                .match(matcher).gte(
+        def request_factory(table: postgrest.AsyncRequestBuilder, select_count, last_fetched_row):
+            request = table.select(select, count=select_count)
+            if last_fetched_row is None:
+                request = request.match(matcher).gte(
                     "timestamp", self.get_formatted_time(first_open_time)
-                ).lte(
+                )
+            else:
+                request = request.match(matcher).gt(
+                    "timestamp", last_fetched_row["timestamp"]
+                )
+            return (
+                request.lte(
                     "timestamp", self.get_formatted_time(last_open_time)
                 ).order(
                     "timestamp", desc=False
                 )
             )
 
-        return await self.paginated_fetch(
+        return await self.cursor_paginated_fetch(
             client, table_name, request_factory
         )
 
@@ -811,6 +817,47 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             offset += len(fetched_elements)
             if max_size_per_fetch == 0:
                 max_size_per_fetch = offset
+            request_count += 1
+
+        if request_count == self.MAX_PAGINATED_REQUESTS_COUNT:
+            commons_logging.get_logger(self.__class__.__name__).info(
+                f"Paginated fetch error on {table_name} with request_factory: {request_factory.__name__}: "
+                f"too many requests ({request_count}), fetched: {len(total_elements)} elements"
+            )
+        return total_elements
+
+    async def cursor_paginated_fetch(
+        self,
+        client,
+        table_name: str,
+        request_factory: typing.Callable[
+            [postgrest.AsyncRequestBuilder, postgrest.types.CountMethod, typing.Optional[dict]],
+            postgrest.AsyncSelectRequestBuilder
+        ],
+    ) -> list:
+        max_size_per_fetch = 0
+        total_elements = []
+        request_count = 0
+        total_elements_count = 0
+        while request_count < self.MAX_PAGINATED_REQUESTS_COUNT:
+            request = request_factory(
+                client.table(table_name),
+                None if total_elements_count else postgrest.types.CountMethod.exact,
+                total_elements[-1] if total_elements else None
+            )
+            result = await request.execute()
+            fetched_elements = result.data
+            total_elements_count = total_elements_count or result.count   # don't change total count within iteration
+            total_elements += fetched_elements
+            if(
+                len(fetched_elements) == 0 or   # nothing to fetch
+                len(fetched_elements) < max_size_per_fetch or   # fetched the last elements
+                len(fetched_elements) == total_elements_count   # finished fetching
+            ):
+                # fetched everything
+                break
+            if max_size_per_fetch == 0:
+                max_size_per_fetch = len(fetched_elements)
             request_count += 1
 
         if request_count == self.MAX_PAGINATED_REQUESTS_COUNT:
