@@ -19,6 +19,7 @@ import aiohttp
 
 import octobot_commons.logging as logging
 import octobot_commons.constants as commons_constants
+import octobot_commons.aiohttp_util as aiohttp_util
 import octobot.constants as constants
 import octobot.community.identifiers_provider as identifiers_provider
 
@@ -41,7 +42,7 @@ async def _get_stats(endpoint_by_key):
 
     async def get_stats(url, stats_key):
         try:
-            async with aiohttp.ClientSession() as session:
+            async with aiohttp_util.ssl_fallback_aiohttp_client_session(url) as session:
                 async with session.get(url) as resp:
                     if resp.status > 299:
                         logger.error(f"Error when getting community status : error code={resp.status}")
