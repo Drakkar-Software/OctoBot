@@ -36,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [Exchanges] Fix rare exchange request spamming issues on looping errors 
 - [Community] Fix expired session error
 - [Community] Fix /community page error
+- [Community] Fix SSL-related issues
 
 ## [2.0.7] - 2024-10-26
 ### Added
