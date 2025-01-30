@@ -129,15 +129,19 @@ If you are an institutional interested by a white label solution, a commercial l
 ## Sponsors
 <table>
 <tr>
-<td><a href="https://www.jetbrains.com" target="_blank">JetBrains</a> with PyCharm Pro.</td>
+<td>Thank you <a href="https://www.jetbrains.com" target="_blank">JetBrains</a> with PyCharm Pro for allowing us to develop the new features of OctoBot under the best conditions.</td>
 <td><a href="https://www.jetbrains.com" target="_blank"><p align="center"><img src="https://resources.jetbrains.com/storage/products/pycharm/img/meta/pycharm_logo_300x300.png" width="100px"></p></a></td>
 </tr>
 <tr>
-<td>Special thanks to <a href="https://www.chatwoot.com/" target="_blank">Chatwoot</a> for providing their customer engagement platform.</td>
+<td>Special thanks to <a href="https://www.chatwoot.com/" target="_blank">Chatwoot</a> for helping us assist the users of OctoBot.</td>
 <td><a href="https://github.com/chatwoot/chatwoot" target="_blank"><p align="center"><img src="https://raw.githubusercontent.com/chatwoot/chatwoot/develop/public/brand-assets/logo.svg" width="500px"></p></a></td>
 </tr>
 <tr>
-<td>Special thanks to <a href="https://www.scaleway.com" target="_blank">Scaleway</a> for hosting OctoBot's cloud services.</td>
+<td>Huge thank you to <a href="https://www.scaleway.com" target="_blank">Scaleway</a> for hosting OctoBot's cloud services.</td>
 <td><a href="https://www.scaleway.com" target="_blank"><p align="center"><img src="https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/scaleway.svg" width="500px"></p></a></td>
+</tr>
+<tr>
+<td>A big thank you to <a href="https://sentry.io/welcome/" target="_blank">Sentry</a> for helping us identify and understand errors in OctoBot to make it better.</td>
+<td><a href="https://sentry.io/welcome/" target="_blank"><p align="center"><img src="https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/sentry.png" width="500px"></p></a></td>
 </tr>
 </table>
