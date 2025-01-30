@@ -126,6 +126,9 @@ See [GPL-3.0 LICENSE](https://github.com/Drakkar-Software/OctoBot/blob/master/LI
 ## Institutionals
 If you are an institutional interested in a commercial license or custom development to suit your specific needs please contact us at <a href="mailto:contact@drakkar.software">contact@drakkar.software</a>. 
 
+## Market making
+A version of OctoBot adapted for market making is available at [business.octobot.cloud](https://business.octobot.cloud/). Feel free to contact us if you have any questions about it.
+
 ## Sponsors
 <table>
 <tr>
