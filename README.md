@@ -126,6 +126,9 @@ See [GPL-3.0 LICENSE](https://octobot.click/gh-license) to see the full text.
 ## Institutionals
 If you are an institutional interested by a white label solution, a commercial license, or custom development to suit your specific needs, have a look at [our institutional offers](https://www.octobot.cloud/features/institutional-investors?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=for_institutionals). 
 
+## Market making
+A version of OctoBot adapted for market making is available at [business.octobot.cloud](https://business.octobot.cloud/). Feel free to contact us if you have any questions about it.
+
 ## Sponsors
 <table>
 <tr>
