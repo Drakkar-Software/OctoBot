@@ -121,10 +121,10 @@ Please feel free to read the source code and understand the mechanism of this bo
 ## License
 GNU General Public License v3.0 or later.
 
-See [GPL-3.0 LICENSE](https://octobot.click/gh-license) to see the full text.
+See [GPL-3.0 LICENSE](https://github.com/Drakkar-Software/OctoBot/blob/master/LICENSE) to see the full text.
 
 ## Institutionals
-If you are an institutional interested by a white label solution, a commercial license, or custom development to suit your specific needs, have a look at [our institutional offers](https://www.octobot.cloud/features/institutional-investors?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=for_institutionals). 
+If you are an institutional interested in a commercial license or custom development to suit your specific needs please contact us at <a href="mailto:contact@drakkar.software">contact@drakkar.software</a>. 
 
 ## Sponsors
 <table>
