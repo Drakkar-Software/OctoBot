@@ -102,6 +102,9 @@ class TestKucoinAuthenticatedExchange(
     async def test_missing_trading_api_key_permissions(self):
         await super().test_missing_trading_api_key_permissions()
 
+    async def test_api_key_ip_whitelist_error(self):
+        await super().test_api_key_ip_whitelist_error()
+
     async def test_get_not_found_order(self):
         await super().test_get_not_found_order()
 

@@ -385,8 +385,8 @@ class AbstractAuthenticatedExchangeTester:
             async with self.local_exchange_manager(use_invalid_creds=True):
                 created_exchange()
                 # should fail
-                await self.get_portfolio()
-                raise AssertionError("Did not raise")
+                portfolio = await self.get_portfolio()
+                raise AssertionError(f"Did not raise on invalid api keys, fetched portfolio: {portfolio}")
             # ensure self.local_exchange_manager did not raise
             created_exchange.assert_called_once()
 
@@ -427,6 +427,19 @@ class AbstractAuthenticatedExchangeTester:
             await self.inner_test_create_and_cancel_limit_orders()
         # ensure AuthenticationError is raised when creating order
         assert "inner_test_create_and_cancel_limit_orders#create_limit_order" in str(err)
+
+    async def test_api_key_ip_whitelist_error(self):
+        if not self._supports_ip_whitelist_error():
+            return
+        with pytest.raises(trading_errors.InvalidAPIKeyIPWhitelistError):
+            created_exchange = mock.Mock()
+            async with self.local_exchange_manager(identifiers_suffix="_INVALID_IP_WHITELIST"):
+                created_exchange()
+                # should fail
+                portfolio = await self.get_portfolio()
+                raise AssertionError(f"Did not raise on invalid IP whitelist error, fetched portfolio: {portfolio}")
+            # ensure self.local_exchange_manager did not raise
+            created_exchange.assert_called_once()
 
     async def test_get_not_found_order(self):
         async with self.local_exchange_manager():
@@ -1077,29 +1090,6 @@ class AbstractAuthenticatedExchangeTester:
             ]
         ))
 
-    @contextlib.asynccontextmanager
-    async def local_exchange_manager(
-        self, market_filter=None, identifiers_suffix=None, use_invalid_creds=False, http_proxy_callback_factory=None
-    ):
-        try:
-            exchange_tentacle_name = self.EXCHANGE_TENTACLE_NAME or self.EXCHANGE_NAME.capitalize()
-            credentials_exchange_name = self.CREDENTIALS_EXCHANGE_NAME or self.EXCHANGE_NAME
-            if identifiers_suffix:
-                credentials_exchange_name = f"{credentials_exchange_name}{identifiers_suffix}"
-            async with get_authenticated_exchange_manager(
-                    self.EXCHANGE_NAME,
-                    exchange_tentacle_name,
-                    self.get_config(),
-                    credentials_exchange_name=credentials_exchange_name,
-                    market_filter=market_filter,
-                    use_invalid_creds=use_invalid_creds,
-                    http_proxy_callback_factory=http_proxy_callback_factory,
-            ) as exchange_manager:
-                self.exchange_manager = exchange_manager
-                yield
-        finally:
-            self.exchange_manager = None
-
     async def get_order(self, exchange_order_id, symbol=None):
         assert self.exchange_manager.exchange.connector.client.has["fetchOrder"] is \
                self.EXPECT_FETCH_ORDER_TO_BE_AVAILABLE
@@ -1553,6 +1543,37 @@ class AbstractAuthenticatedExchangeTester:
             )
 
         return market_filter
+
+    @contextlib.asynccontextmanager
+    async def local_exchange_manager(
+        self, market_filter=None, identifiers_suffix=None, use_invalid_creds=False, http_proxy_callback_factory=None
+    ):
+        try:
+            credentials_exchange_name = self.CREDENTIALS_EXCHANGE_NAME or self.EXCHANGE_NAME
+            if identifiers_suffix:
+                credentials_exchange_name = f"{credentials_exchange_name}{identifiers_suffix}"
+            async with get_authenticated_exchange_manager(
+                    self.EXCHANGE_NAME,
+                    self._get_exchange_tentacle_name(),
+                    self.get_config(),
+                    credentials_exchange_name=credentials_exchange_name,
+                    market_filter=market_filter,
+                    use_invalid_creds=use_invalid_creds,
+                    http_proxy_callback_factory=http_proxy_callback_factory,
+            ) as exchange_manager:
+                self.exchange_manager = exchange_manager
+                yield
+        finally:
+            self.exchange_manager = None
+
+    def _get_exchange_tentacle_name(self):
+        return self.EXCHANGE_TENTACLE_NAME or self.EXCHANGE_NAME.capitalize()
+
+    def _get_exchange_tentacle_class(self):
+        return tentacles_manager_api.get_tentacle_class_from_string(self._get_exchange_tentacle_name())
+
+    def _supports_ip_whitelist_error(self):
+        return bool(self._get_exchange_tentacle_class().EXCHANGE_IP_WHITELIST_ERRORS)
 
 
 def _get_encoded_value(raw) -> str:
