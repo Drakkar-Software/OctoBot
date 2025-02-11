@@ -16,6 +16,7 @@
 import pytest_asyncio
 
 import octobot.strategy_optimizer as strategy_optimizer
+import octobot.strategy_optimizer.strategy_design_optimizer as strategy_design_optimizer
 import octobot_trading.api as trading_api
 import octobot_tentacles_manager.api as tentacles_manager_api
 import octobot_commons.enums as commons_enums
@@ -24,6 +25,7 @@ import octobot_evaluators.constants as evaluators_constants
 
 import tentacles.Evaluator.Strategies as Strategies
 import tentacles.Evaluator.TA as Evaluator
+import tentacles.Evaluator.RealTime as RealTimeEvaluator
 import tentacles.Trading.Mode as Mode
 
 
@@ -39,13 +41,14 @@ async def optimizer_inputs():
     return tentacles_setup_config, trading_mode
 
 
-def _get_optimizer_user_input_config(tentacle, user_input_name, enabled, value):
+def _get_optimizer_user_input_config(tentacle, user_input_name, enabled, value, value_type=None):
     return {
         get_ui_identifier(tentacle, user_input_name): {
             "enabled": enabled,
             "tentacle": tentacle.get_name(),
             "user_input": user_input_name,
-            "value": value
+            "value": value,
+            "type": value_type
         }
     }
 
@@ -84,6 +87,15 @@ def _get_mocked_ui_config():
             ),
             _get_optimizer_user_input_config(
                 Strategies.SimpleStrategyEvaluator, evaluators_constants.STRATEGIES_REQUIRED_TIME_FRAME, True,
+                [
+                    commons_enums.TimeFrames.FIVE_MINUTES.value,
+                    commons_enums.TimeFrames.ONE_HOUR.value,
+                    commons_enums.TimeFrames.ONE_DAY.value,
+                ],
+                value_type=strategy_design_optimizer.ConfigTypes.MULTIPLE_OPTIONS.value
+            ),
+            _get_optimizer_user_input_config(
+                RealTimeEvaluator.InstantFluctuationsEvaluator, commons_constants.CONFIG_TIME_FRAME, True,
                 [
                     commons_enums.TimeFrames.FIVE_MINUTES.value,
                     commons_enums.TimeFrames.ONE_HOUR.value,
@@ -145,37 +157,51 @@ MOCKED_OPTIMIZER_CONFIG = {
 }
 
 
-def _get_mocked_run_ui(ui_name, tentacle, value):
+def _get_mocked_run_ui(
+    ui_name, tentacle, value):
     return {
         strategy_optimizer.StrategyDesignOptimizer.CONFIG_USER_INPUT: ui_name,
         strategy_optimizer.StrategyDesignOptimizer.CONFIG_TENTACLE: [tentacle.get_name()],
-        strategy_optimizer.StrategyDesignOptimizer.CONFIG_VALUE: value
+        strategy_optimizer.StrategyDesignOptimizer.CONFIG_VALUE: value,
     }
 
 
-def _get_mocked_run(period_length, constrained_risk, time_frame):
+def _get_mocked_run(period_length, constrained_risk, time_frame, time_frames):
     return (
         _get_mocked_run_ui("period_length", Evaluator.RSIMomentumEvaluator, period_length),
         _get_mocked_run_ui("constrained_risk", Evaluator.RSIMomentumEvaluator, constrained_risk),
         _get_mocked_run_ui(evaluators_constants.STRATEGIES_REQUIRED_TIME_FRAME,
                            Strategies.SimpleStrategyEvaluator,
-                           [time_frame.value]),
+                           time_frames),
+        _get_mocked_run_ui(commons_constants.CONFIG_TIME_FRAME,
+                           RealTimeEvaluator.InstantFluctuationsEvaluator,
+                           time_frame.value),
         _get_mocked_run_ui(Strategies.SimpleStrategyEvaluator.RE_EVAL_TA_ON_RT_OR_SOCIAL,
                            Strategies.SimpleStrategyEvaluator, False),
     )
 
 
 MOCKED_RUNS = [
-    _get_mocked_run(period_length_val, constrained_risk_val, time_frame_val)
+    _get_mocked_run(period_length_val, constrained_risk_val, 
+                    time_frame_val, time_frames_vals) 
     for period_length_val in (5, 7, 9, 11, 13)
     for constrained_risk_val in (1, 2)
     for time_frame_val in (commons_enums.TimeFrames.FIVE_MINUTES,
                            commons_enums.TimeFrames.ONE_HOUR,
                            commons_enums.TimeFrames.ONE_DAY)
+    for time_frames_vals in (
+        [commons_enums.TimeFrames.FIVE_MINUTES.value], 
+        [commons_enums.TimeFrames.ONE_HOUR.value],
+        [commons_enums.TimeFrames.ONE_DAY.value],
+        [commons_enums.TimeFrames.ONE_HOUR.value, commons_enums.TimeFrames.FIVE_MINUTES.value],
+        [commons_enums.TimeFrames.ONE_DAY.value, commons_enums.TimeFrames.ONE_HOUR.value],
+        [commons_enums.TimeFrames.ONE_DAY.value, commons_enums.TimeFrames.FIVE_MINUTES.value],
+        [commons_enums.TimeFrames.ONE_DAY.value, 
+         commons_enums.TimeFrames.ONE_HOUR.value,
+         commons_enums.TimeFrames.FIVE_MINUTES.value])
 ]
 
 
-EXPECTED_RUNS_FROM_MOCK = {
-    index + 6: val  # index + 6 as the first 5 runs have been filtered
-    for index, val in enumerate(MOCKED_RUNS)
-}
+EXPECTED_RUNS_FROM_MOCK = {}
+for index, val in enumerate(MOCKED_RUNS):
+    EXPECTED_RUNS_FROM_MOCK[index] = val
