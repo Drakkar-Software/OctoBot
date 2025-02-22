@@ -269,7 +269,7 @@ class AbstractAuthenticatedExchangeTester:
             await self.inner_test_get_account_id()
 
     async def inner_test_get_account_id(self):
-        if self.IS_AUTHENTICATED_REQUEST_CHECK_AVAILABLE:
+        if self.IS_ACCOUNT_ID_AVAILABLE:
             account_id = await self.exchange_manager.exchange.get_account_id()
             assert account_id
             assert isinstance(account_id, str)
