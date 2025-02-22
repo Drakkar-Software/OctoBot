@@ -112,7 +112,7 @@ async def get_authenticated_exchange_manager(
             from err
     finally:
         if time.time() - t0 < 1:
-            print("Stopping the exchange manager too quickly can end in infinite loop, ensuring at least 1s passed")
+            # Stopping the exchange manager too quickly can end in infinite loop, ensuring at least 1s passed
             await asyncio.sleep(1)
         await exchange_manager_instance.stop()
         trading_api.cancel_ccxt_throttle_task()
