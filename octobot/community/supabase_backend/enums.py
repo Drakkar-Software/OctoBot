@@ -233,6 +233,10 @@ class BotConfigKeys(enum.Enum):
     IS_SIMULATED = "is_simulated"
 
 
+class BotConfigOptionsKeys(enum.Enum):
+    TENTACLES = "tentacles"
+
+
 class ProfileConfigKeys(enum.Enum):
     ID = "id"
     PRODUCT_CONFIG_ID = "product_id"

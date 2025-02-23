@@ -14,18 +14,17 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import asyncio
-import contextlib
+import postgrest
 
 import pytest
 import pytest_asyncio
 import mock
-import requests
-import aiohttp
 
 import octobot.community as community
 import octobot.constants as constants
 import octobot_commons.authentication as authentication
 import octobot_commons.configuration
+import octobot_commons.profiles.profile_data
 
 # All test coroutines will be treated as marked.
 pytestmark = pytest.mark.asyncio
@@ -90,15 +89,15 @@ async def test_login(auth):
     resp_mock = mock.Mock()
     with mock.patch.object(community.CommunityAuthentication, "_reset_tokens", mock.Mock()) as reset_mock, \
             mock.patch.object(community.CommunityAuthentication, "_ensure_community_url", mock.Mock()) \
-            as _ensure_community_url_mock, \
+                    as _ensure_community_url_mock, \
             mock.patch.object(community.CommunityAuthentication, "_ensure_email", mock.Mock()) \
-            as _ensure_email_mock, \
+                    as _ensure_email_mock, \
             mock.patch.object(community.CommunityAuthentication, "_on_account_updated", mock.AsyncMock()) \
-            as _on_account_updated_mock, \
+                    as _on_account_updated_mock, \
             mock.patch.object(community.CommunityAuthentication, "is_logged_in", mock.Mock()) \
-            as is_logged_in_mock, \
+                    as is_logged_in_mock, \
             mock.patch.object(community.CommunityAuthentication, "on_signed_in", mock.AsyncMock()) \
-            as on_signed_in_mock:
+                    as on_signed_in_mock:
         await auth.login("username", "password")
         reset_mock.assert_called_once()
         _ensure_community_url_mock.assert_called_once()
@@ -113,9 +112,173 @@ async def test_login(auth):
         auth.supabase_client.sign_in.assert_not_called()
         auth.supabase_client.sign_in_with_otp_token.assert_awaited_once_with("password_t")
 
+
+async def test_fetch_bot_profile_data_without_tentacles_options(auth):
+    FETCHED_PROFILE = {
+        "bot_id": "53e0dc3e-3cbe-476d-9bda-b30bc4941fb4",
+        "exchanges": [
+            {"exchange_credential_id": "30ee7b12-3415-4ce4-b050-80d8bf4548be"}], "is_simulated": True,
+        "options": {"portfolio": [{"asset": "USDT", "value": 1000}]}, "product_config": {"config": {
+            "backtesting_context": {"exchanges": ["mexc"], "start_time_delta": 15552000,
+                                    "starting_portfolio": {"USDT": 3000}},
+            "crypto_currencies": [{"name": "Bitcoin", "trading_pairs": ["BTC/USDT"]}],
+            "exchanges": [{"internal_name": "mexc"}], "options": {}, "profile_details": {"name": "serverless"},
+            "tentacles": [{"config": {"buy_order_amount": "4%t", "default_config": [None], "enable_health_check": True,
+                                      "entry_limit_orders_price_percent": 0.6, "exit_limit_orders_price_percent": 0.5,
+                                      "minutes_before_next_buy": 10080, "required_strategies": ["123"],
+                                      "secondary_entry_orders_amount": "3%t", "secondary_entry_orders_count": 1,
+                                      "secondary_entry_orders_price_percent": 0.5, "secondary_exit_orders_count": 1,
+                                      "secondary_exit_orders_price_percent": 0.8,
+                                      "trigger_mode": "Maximum evaluators signals based", "use_init_entry_orders": True,
+                                      "use_market_entry_orders": False, "use_secondary_entry_orders": True,
+                                      "use_secondary_exit_orders": True, "use_stop_losses": False,
+                                      "use_take_profit_exit_orders": True}, "name": "DCATradingMode"}, {
+                              "config": {"background_social_evaluators": [""], "default_config": [None],
+                                         "re_evaluate_TA_when_social_or_realtime_notification": True,
+                                         "required_candles_count": 21, "required_evaluators": [""],
+                                         "required_time_frames": ["1h"], "social_evaluators_notification_timeout": 3600},
+                              "name": "SimpleStrategyEvaluator"},
+                          {"config": {"period_length": 9, "price_threshold_percent": 0},
+                           "name": "EMAMomentumEvaluator"}], "trader": {"enabled": True}, "trader_simulator": {},
+            "trading": {"reference_market": "USDT", "risk": 0.5}}, "product": {
+            "attributes": {"coins": ["BTC", "USDT"], "ease": "Easy", "exchanges": ["mexc"],
+                           "minimal_funds": [{"asset": "USD-like", "value": 50}], "risk": "Moderate",
+                           "subcategories": ["classic-dca", "popular"], "trading": ["Spot"]}, "slug": "bitcoin-vision"},
+            "version": "0.0.1"}}
+    auth.supabase_client = community.CommunitySupabaseClient(
+        "https://kfgrrr.supabase.co",
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJfffffffHhscnl2bWhka2JyYXJyIiwicm9sZSI6ImFub24iLCJp"
+        "YXQiOjE2ODQ2ODcwMTksImV4cCI6MjAwMDI2MzAxOX0.UH0g1ZDr9kDQMkGWxxy29lLjDEIPlSeU_f2GjwFFfGE",
+        None
+    )
+    with mock.patch.object(postgrest.AsyncQueryRequestBuilder, "execute",
+                           mock.AsyncMock(return_value=mock.Mock(data=[FETCHED_PROFILE]))) as execute_mock, \
+            mock.patch.object(auth.supabase_client, "_fetch_full_exchange_configs",
+                              mock.AsyncMock(return_value=[])) as _fetch_full_exchange_configs_mock:
+        parsed_data = octobot_commons.profiles.profile_data.ProfileData.from_dict(
+            {"backtesting_context": {"exchanges": ["mexc"], "start_time_delta": 15552000,
+                                     "starting_portfolio": {"USDT": 3000}, "update_interval": 604800},
+             "crypto_currencies": [{"enabled": True, "name": "Bitcoin", "trading_pairs": ["BTC/USDT"]}],
+             "exchanges": [], "future_exchange_data": {"default_leverage": None, "symbol_data": []},
+             "options": {"values": {}},
+             "profile_details": {"bot_id": None, "id": "bot_id", "name": "bitcoin-vision", "version": "0.0.1"},
+             "tentacles": [{"config": {"buy_order_amount": "4%t", "default_config": [None], "enable_health_check": True,
+                                       "entry_limit_orders_price_percent": 0.6, "exit_limit_orders_price_percent": 0.5,
+                                       "minutes_before_next_buy": 10080, "required_strategies": ["123"],
+                                       "secondary_entry_orders_amount": "3%t", "secondary_entry_orders_count": 1,
+                                       "secondary_entry_orders_price_percent": 0.5, "secondary_exit_orders_count": 1,
+                                       "secondary_exit_orders_price_percent": 0.8,
+                                       "trigger_mode": "Maximum evaluators signals based",
+                                       "use_init_entry_orders": True, "use_market_entry_orders": False,
+                                       "use_secondary_entry_orders": True, "use_secondary_exit_orders": True,
+                                       "use_stop_losses": False, "use_take_profit_exit_orders": True},
+                            "name": "DCATradingMode"}, {
+                               "config": {"background_social_evaluators": [""], "default_config": [None],
+                                          "re_evaluate_TA_when_social_or_realtime_notification": True,
+                                          "required_candles_count": 21, "required_evaluators": [""],
+                                          "required_time_frames": ["1h"],
+                                          "social_evaluators_notification_timeout": 3600},
+                               "name": "SimpleStrategyEvaluator"},
+                           {"config": {"period_length": 9, "price_threshold_percent": 0},
+                            "name": "EMAMomentumEvaluator"}], "trader": {"enabled": True},
+             "trader_simulator": {"enabled": True, "maker_fees": 0.1, "starting_portfolio": {"USDT": 1000},
+                                  "taker_fees": 0.1},
+             "trading": {"minimal_funds": [{"asset": "USD-like", "available": 50, "total": 50}],
+                         "reference_market": "USDT", "risk": 0.5}}
+        )
+        assert await auth.supabase_client.fetch_bot_profile_data("bot_id") == parsed_data
+        execute_mock.assert_called_once()
+        _fetch_full_exchange_configs_mock.assert_called_once()
+
+
+async def test_fetch_bot_profile_data_with_tentacles_options(auth):
+    FETCHED_PROFILE = {
+        "bot_id": "53e0dc3e-3cbe-476d-9bda-b30bc4941fb4",
+        "exchanges": [
+            {"exchange_credential_id": "30ee7b12-3415-4ce4-b050-80d8bf4548be"}], "is_simulated": True,
+        "options": {
+            "portfolio": [{"asset": "USDT", "value": 1000}],
+            "tentacles": [
+                {"config": {"buy_order_amount": "10%t"}, "name": "DCATradingMode"},
+                {"config": {"period_length": 11, "price_threshold_percent": 1222}, "name": "EMAMomentumEvaluator"},
+            ],
+        },
+        "product_config": {"config": {
+            "backtesting_context": {"exchanges": ["mexc"], "start_time_delta": 15552000,
+                                    "starting_portfolio": {"USDT": 3000}},
+            "crypto_currencies": [{"name": "Bitcoin", "trading_pairs": ["BTC/USDT"]}],
+            "exchanges": [{"internal_name": "mexc"}], "options": {}, "profile_details": {"name": "serverless"},
+            "tentacles": [{"config": {"buy_order_amount": "4%t", "default_config": [None], "enable_health_check": True,
+                                      "entry_limit_orders_price_percent": 0.6, "exit_limit_orders_price_percent": 0.5,
+                                      "minutes_before_next_buy": 10080, "required_strategies": ["123"],
+                                      "secondary_entry_orders_amount": "3%t", "secondary_entry_orders_count": 1,
+                                      "secondary_entry_orders_price_percent": 0.5, "secondary_exit_orders_count": 1,
+                                      "secondary_exit_orders_price_percent": 0.8,
+                                      "trigger_mode": "Maximum evaluators signals based", "use_init_entry_orders": True,
+                                      "use_market_entry_orders": False, "use_secondary_entry_orders": True,
+                                      "use_secondary_exit_orders": True, "use_stop_losses": False,
+                                      "use_take_profit_exit_orders": True}, "name": "DCATradingMode"}, {
+                              "config": {"background_social_evaluators": [""], "default_config": [None],
+                                         "re_evaluate_TA_when_social_or_realtime_notification": True,
+                                         "required_candles_count": 21, "required_evaluators": [""],
+                                         "required_time_frames": ["1h"], "social_evaluators_notification_timeout": 3600},
+                              "name": "SimpleStrategyEvaluator"},
+                          {"config": {"period_length": 9, "price_threshold_percent": 0},
+                           "name": "EMAMomentumEvaluator"}], "trader": {"enabled": True}, "trader_simulator": {},
+            "trading": {"reference_market": "USDT", "risk": 0.5}}, "product": {
+            "attributes": {"coins": ["BTC", "USDT"], "ease": "Easy", "exchanges": ["mexc"],
+                           "minimal_funds": [{"asset": "USD-like", "value": 50}], "risk": "Moderate",
+                           "subcategories": ["classic-dca", "popular"], "trading": ["Spot"]}, "slug": "bitcoin-vision"},
+            "version": "0.0.1"}}
+    auth.supabase_client = community.CommunitySupabaseClient(
+        "https://kfgrrr.supabase.co",
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJfffffffHhscnl2bWhka2JyYXJyIiwicm9sZSI6ImFub24iLCJp"
+        "YXQiOjE2ODQ2ODcwMTksImV4cCI6MjAwMDI2MzAxOX0.UH0g1ZDr9kDQMkGWxxy29lLjDEIPlSeU_f2GjwFFfGE",
+        None
+    )
+    with mock.patch.object(postgrest.AsyncQueryRequestBuilder, "execute",
+                           mock.AsyncMock(return_value=mock.Mock(data=[FETCHED_PROFILE]))) as execute_mock, \
+            mock.patch.object(auth.supabase_client, "_fetch_full_exchange_configs",
+                              mock.AsyncMock(return_value=[])) as _fetch_full_exchange_configs_mock:
+        parsed_data = octobot_commons.profiles.profile_data.ProfileData.from_dict(
+            {"backtesting_context": {"exchanges": ["mexc"], "start_time_delta": 15552000,
+                                     "starting_portfolio": {"USDT": 3000}, "update_interval": 604800},
+             "crypto_currencies": [{"enabled": True, "name": "Bitcoin", "trading_pairs": ["BTC/USDT"]}],
+             "exchanges": [], "future_exchange_data": {"default_leverage": None, "symbol_data": []},
+             "options": {"values": {}},
+             "profile_details": {"bot_id": None, "id": "bot_id", "name": "bitcoin-vision", "version": "0.0.1"},
+             "tentacles": [{"config": {"buy_order_amount": "10%t", "default_config": [None], "enable_health_check": True,
+                                       "entry_limit_orders_price_percent": 0.6, "exit_limit_orders_price_percent": 0.5,
+                                       "minutes_before_next_buy": 10080, "required_strategies": ["123"],
+                                       "secondary_entry_orders_amount": "3%t", "secondary_entry_orders_count": 1,
+                                       "secondary_entry_orders_price_percent": 0.5, "secondary_exit_orders_count": 1,
+                                       "secondary_exit_orders_price_percent": 0.8,
+                                       "trigger_mode": "Maximum evaluators signals based",
+                                       "use_init_entry_orders": True, "use_market_entry_orders": False,
+                                       "use_secondary_entry_orders": True, "use_secondary_exit_orders": True,
+                                       "use_stop_losses": False, "use_take_profit_exit_orders": True},
+                            "name": "DCATradingMode"}, {
+                               "config": {"background_social_evaluators": [""], "default_config": [None],
+                                          "re_evaluate_TA_when_social_or_realtime_notification": True,
+                                          "required_candles_count": 21, "required_evaluators": [""],
+                                          "required_time_frames": ["1h"],
+                                          "social_evaluators_notification_timeout": 3600},
+                               "name": "SimpleStrategyEvaluator"},
+                           {"config": {"period_length": 11, "price_threshold_percent": 1222},
+                            "name": "EMAMomentumEvaluator"}], "trader": {"enabled": True},
+             "trader_simulator": {"enabled": True, "maker_fees": 0.1, "starting_portfolio": {"USDT": 1000},
+                                  "taker_fees": 0.1},
+             "trading": {"minimal_funds": [{"asset": "USD-like", "available": 50, "total": 50}],
+                         "reference_market": "USDT", "risk": 0.5}}
+        )
+        assert await auth.supabase_client.fetch_bot_profile_data("bot_id") == parsed_data
+        execute_mock.assert_called_once()
+        _fetch_full_exchange_configs_mock.assert_called_once()
+
+
 async def test_logout(auth):
     with mock.patch.object(community.CommunityAuthentication, "_reset_tokens", mock.Mock()) as reset_mock, \
-         mock.patch.object(community.CommunityAuthentication, "remove_login_detail", mock.Mock()) as remove_mock:
+            mock.patch.object(community.CommunityAuthentication, "remove_login_detail", mock.Mock()) as remove_mock:
         await auth.logout()
         reset_mock.assert_called_once()
         remove_mock.assert_called_once()
@@ -173,7 +336,8 @@ def test_reset_login_token(auth):
             }
         }
         auth._reset_login_token()
-        assert auth.configuration_storage.sync_storage._configuration.config[constants.CONFIG_COMMUNITY]["_storage_key"] == ""
+        assert auth.configuration_storage.sync_storage._configuration.config[constants.CONFIG_COMMUNITY][
+                   "_storage_key"] == ""
         save_mock.assert_called_once_with()
 
 
@@ -194,6 +358,7 @@ def test_authenticated(auth):
     @authentication.authenticated
     def mock_func(*_):
         pass
+
     with mock.patch.object(auth, "ensure_token_validity", mock.Mock()) as ensure_token_validity_mock:
         mock_func(auth)
         ensure_token_validity_mock.assert_called_once()
@@ -207,47 +372,6 @@ def test_update_supports(auth):
         from_community_dict_mock.assert_called_once_with({})
 
 
-# TODO restore test when implemented
-@pytest.mark.asyncio
-async def _test_auth_and_fetch_supports(auth):
-    with mock.patch.object(auth, "_async_try_auto_login", mock.AsyncMock()) as _async_try_auto_login_mock:
-        with mock.patch.object(auth, "is_logged_in", mock.Mock(return_value=False)) as is_logged_in_mock:
-            auth.initialized_event = asyncio.Event()
-            await auth._initialize_account()
-            _async_try_auto_login_mock.assert_called_once()
-            is_logged_in_mock.assert_called_once()
-            assert auth.initialized_event.is_set()
-            _async_try_auto_login_mock.reset_mock()
-        with mock.patch.object(auth, "is_logged_in", mock.Mock(return_value=True)) as is_logged_in_mock, \
-                mock.patch.object(auth, "_update_supports", mock.Mock()) as _update_supports_mock:
-            resp_mock = mock.AsyncMock()
-            resp_mock.status = 200
-            resp_mock.json = mock.AsyncMock(return_value="plop")
-
-            @contextlib.asynccontextmanager
-            async def async_get(*_, **__):
-                yield resp_mock
-
-            auth._aiohttp_gql_session = mock.AsyncMock()
-            auth._aiohttp_gql_session.get = async_get
-            auth.initialized_event = asyncio.Event()
-            await auth._initialize_account()
-            _async_try_auto_login_mock.assert_called_once()
-            is_logged_in_mock.assert_called_once()
-            _update_supports_mock.assert_called_once_with(200, "plop")
-            assert auth.initialized_event.is_set()
-
-
-# TODO restore test when implemented
-def _test_public_update_supports(auth):
-    with mock.patch.object(auth, "get", mock.Mock(return_value=MockedResponse(status_code=200, json=AUTH_RETURN))) \
-        as get_mock, \
-         mock.patch.object(auth, "_update_supports", mock.Mock()) as _update_supports_mock:
-        auth.update_supports()
-        get_mock.assert_called_once()
-        _update_supports_mock.assert_called_once_with(200, AUTH_RETURN)
-
-
 def test_is_initialized(auth):
     assert auth.is_initialized() is False
     auth.initialized_event = asyncio.Event()
@@ -259,7 +383,7 @@ def test_is_initialized(auth):
 def test_init_account(auth):
     with mock.patch.object(asyncio, "create_task", mock.Mock(return_value="task")) as create_task_mock, \
             mock.patch.object(auth, "_initialize_account", mock.Mock(return_value="coro")) \
-            as _auth_and_fetch_account_mock:
+                    as _auth_and_fetch_account_mock:
         auth.init_account(True)
         create_task_mock.assert_called_once_with("coro")
         _auth_and_fetch_account_mock.assert_called_once()
