@@ -18,7 +18,8 @@ import octobot.constants as constants
 import octobot.community.identifiers_provider as identifiers_provider
 import octobot_commons.dataclasses as commons_dataclasses
 import octobot_commons.enums as commons_enums
-
+import octobot_commons.profiles as profiles
+from octobot_commons.profiles import ProfileData
 
 CATEGORY_NAME_TRANSLATIONS_BY_SLUG = {
     "coingecko-index": {"en": "Crypto Basket"}
@@ -32,6 +33,8 @@ DEFAULT_LOGO_NAME_BY_SLUG = {
 AUTO_UPDATED_CATEGORIES = ["coingecko-index"]
 DEFAULT_LOGO_NAME = "default_strategy.png"
 EXTENSION_CATEGORIES = ["coingecko-index"]
+
+CUSTOM_STRATEGY_PREFIX = "[Custom]_"
 
 
 @dataclasses.dataclass
@@ -132,3 +135,20 @@ class StrategyData(commons_dataclasses.FlexibleDataclass):
 
     def is_extension_only(self) -> bool:
         return self.category.slug in EXTENSION_CATEGORIES
+
+
+def is_custom_category(category: dict) -> bool:
+    if slug := category.get('slug'):
+        return slug.startswith('creator-')
+    return False
+
+
+def get_custom_strategy_name(base_name) -> str:
+    return f"{CUSTOM_STRATEGY_PREFIX}{base_name}"
+
+
+def is_custom_strategy_profile(profile: profiles.ProfileData) -> str:
+    return (
+        profile.profile_details.name
+        and profile.profile_details.name.startswith(CUSTOM_STRATEGY_PREFIX)
+    )

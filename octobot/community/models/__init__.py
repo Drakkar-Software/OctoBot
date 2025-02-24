@@ -55,7 +55,10 @@ from octobot.community.models.community_public_data import (
     CommunityPublicData
 )
 from octobot.community.models.strategy_data import (
-    StrategyData
+    StrategyData,
+    is_custom_category,
+    get_custom_strategy_name,
+    is_custom_strategy_profile,
 )
 
 __all__ = [
@@ -76,4 +79,7 @@ __all__ = [
     "to_community_exchange_internal_name",
     "CommunityPublicData",
     "StrategyData",
+    "is_custom_category",
+    "get_custom_strategy_name",
+    "is_custom_strategy_profile",
 ]
