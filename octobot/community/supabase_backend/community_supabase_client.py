@@ -41,6 +41,7 @@ import octobot.constants as constants
 import octobot.community.errors as errors
 import octobot.community.models.formatters as formatters
 import octobot.community.models.community_user_account as community_user_account
+import octobot.community.models.strategy_data as strategy_data
 import octobot.community.supabase_backend.enums as enums
 import octobot.community.supabase_backend.supabase_client as supabase_client
 import octobot.community.supabase_backend.configuration_storage as configuration_storage
@@ -631,7 +632,8 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         try:
             query = self.table("products").select(
                 "slug, "
-                "product_config:product_configs!current_config_id(config, version)"
+                "product_config:product_configs!current_config_id(config, version), "
+                "category:product_categories!inner(slug)"
             )
             query = query.eq(enums.ProductKeys.SLUG.value, product_slug) if product_slug \
                 else query.eq(enums.ProductKeys.ID.value, product_id)
@@ -641,7 +643,10 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         profile_data = commons_profiles.ProfileData.from_dict(
             product["product_config"][enums.ProfileConfigKeys.CONFIG.value]
         )
-        profile_data.profile_details.name = product["slug"]
+        name = product["slug"]
+        if strategy_data.is_custom_category(product["category"]):
+            name = strategy_data.get_custom_strategy_name(name)
+        profile_data.profile_details.name = name
         profile_data.profile_details.version = product["product_config"][enums.ProfileConfigKeys.VERSION.value]
         return profile_data
 
