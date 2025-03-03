@@ -35,11 +35,13 @@ import octobot_commons.profiles as commons_profiles
 import octobot_commons.profiles.profile_data as commons_profile_data
 import octobot_commons.enums as commons_enums
 import octobot_commons.constants as commons_constants
+import octobot_commons.dict_util as dict_util
 import octobot_trading.api as trading_api
 import octobot.constants as constants
 import octobot.community.errors as errors
 import octobot.community.models.formatters as formatters
 import octobot.community.models.community_user_account as community_user_account
+import octobot.community.models.strategy_data as strategy_data
 import octobot.community.supabase_backend.enums as enums
 import octobot.community.supabase_backend.supabase_client as supabase_client
 import octobot.community.supabase_backend.configuration_storage as configuration_storage
@@ -403,24 +405,48 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         )
         auth_data = []
         # apply specific options
-        await self._apply_options_based_config(
+        await self._apply_options_based_authenticated_tentacles_config(
             profile_data, auth_data, bot_config["bot_config"], authenticator, auth_key
         )
         return profile_data, auth_data
 
-
-    async def _apply_options_based_config(
+    async def _apply_options_based_authenticated_tentacles_config(
         self, profile_data: commons_profiles.ProfileData,
         auth_data: list[commons_profiles.ExchangeAuthData], bot_config: dict,
         authenticator, auth_key: typing.Optional[str]
     ):
-        if tentacles_data := [
-            commons_profile_data.TentaclesData.from_dict(td)
-            for td in bot_config[enums.BotConfigKeys.OPTIONS.value].get("tentacles", [])
-        ]:
+        # updates tentacles config using authenticated requests
+        if tentacles_data := self.get_tentacles_data_options(bot_config):
             await commons_profiles.TentaclesProfileDataTranslator(profile_data, auth_data).translate(
                 tentacles_data, bot_config, authenticator, auth_key
             )
+
+    def _apply_options_based_tentacles_config(self, profile_data: commons_profiles.ProfileData, bot_config: dict):
+        # updates tentacles config only from options, makes no request
+        tentacle_data_overrides = self.get_tentacles_data_options(bot_config)
+        if not tentacle_data_overrides:
+            return
+        tentacle_config_by_tentacle = {
+            tentacle_config.name: tentacle_config.config
+            for tentacle_config in profile_data.tentacles
+        }
+        for tentacle_data_override in tentacle_data_overrides:
+            if tentacle_data_override.name in tentacle_config_by_tentacle:
+                # tentacle data exists: patch values
+                tentacle_config_by_tentacle[tentacle_data_override.name] = dict_util.nested_update_dict(
+                    tentacle_config_by_tentacle[tentacle_data_override.name],
+                    tentacle_data_override.config,
+                    ignore_lists=True
+                )
+            else:
+                # tentacle data doesn't exist: add it
+                profile_data.tentacles.append(tentacle_data_override)
+
+    def get_tentacles_data_options(self, bot_config: dict) -> list[commons_profile_data.TentaclesData]:
+        return [
+            commons_profile_data.TentaclesData.from_dict(td)
+            for td in bot_config[enums.BotConfigKeys.OPTIONS.value].get(enums.BotConfigOptionsKeys.TENTACLES.value, [])
+        ]
 
     async def fetch_bot_profile_data(self, bot_config_id: str) -> commons_profiles.ProfileData:
         if not bot_config_id:
@@ -472,6 +498,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         profile_data.exchanges = await self._fetch_full_exchange_configs(bot_config, profile_data)
         if options := bot_config.get(enums.BotConfigKeys.OPTIONS.value):
             profile_data.options = commons_profiles.OptionsData.from_dict(options)
+            self._apply_options_based_tentacles_config(profile_data, bot_config)
         return profile_data
 
     async def _fetch_full_exchange_configs(
@@ -605,7 +632,8 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         try:
             query = self.table("products").select(
                 "slug, "
-                "product_config:product_configs!current_config_id(config, version)"
+                "product_config:product_configs!current_config_id(config, version), "
+                "category:product_categories!inner(slug)"
             )
             query = query.eq(enums.ProductKeys.SLUG.value, product_slug) if product_slug \
                 else query.eq(enums.ProductKeys.ID.value, product_id)
@@ -615,7 +643,10 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         profile_data = commons_profiles.ProfileData.from_dict(
             product["product_config"][enums.ProfileConfigKeys.CONFIG.value]
         )
-        profile_data.profile_details.name = product["slug"]
+        name = product["slug"]
+        if strategy_data.is_custom_category(product["category"]):
+            name = strategy_data.get_custom_strategy_name(name)
+        profile_data.profile_details.name = name
         profile_data.profile_details.version = product["product_config"][enums.ProfileConfigKeys.VERSION.value]
         return profile_data
 
