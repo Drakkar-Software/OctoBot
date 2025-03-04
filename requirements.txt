@@ -25,9 +25,14 @@ pgpy==0.6.0
 sentry-sdk==2.20.0  # always make sure sentry_aiohttp_transport.py keep working
 
 # Supabase  ensure supabase_backend_tests keep passing when updating any of those
-supabase==2.11.0   # Supabase client
+supabase==2.13.0   # Supabase client
 gotrue     # Supabase authenticated API (required by supabase and enforced to allow direct import)
 postgrest  # Supabase posgres calls (required by supabase and enforced to allow direct import)
+gotrue==2.11.3
+storage3==0.11.3
+supafunc==0.9.3
+postgrest==0.19.3
+realtime==2.0.2 # can't use a higher version as long as aiohttp==3.10.4 is enforced (requires aiohttp>=3.10.10)
 
 # async http requests
 aiohttp==3.10.4

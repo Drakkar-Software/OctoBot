@@ -63,7 +63,7 @@ def error_describer():
     try:
         yield
     except postgrest.APIError as err:
-        if "jwt expired" in str(err).lower():
+        if _is_jwt_expired_error(err):
             raise errors.SessionTokenExpiredError(err) from err
         raise
 
@@ -1046,11 +1046,15 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             self.production_anon_client = None
 
 
+def _is_jwt_expired_error(err: Exception) -> bool:
+    return "jwt expired" in str(err).lower()
+
+
 @contextlib.contextmanager
 def jwt_expired_auth_raiser():
     try:
         yield
     except postgrest.exceptions.APIError as err:
-        if "JWT expired" in str(err):
+        if _is_jwt_expired_error(err):
             raise authentication.AuthenticationError(f"Please re-login to your OctoBot account: {err}") from err
         raise
