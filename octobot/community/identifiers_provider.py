@@ -21,7 +21,6 @@ import octobot_commons.configuration as configuration
 
 class IdentifiersProvider:
     ENABLED_ENVIRONMENT: str = None
-    COMMUNITY_LANDING_URL: str = None
     COMMUNITY_API_URL: str = None
     COMMUNITY_URL: str = None
     FRONTEND_PASSWORD_RECOVER_URL: str = None
@@ -31,7 +30,6 @@ class IdentifiersProvider:
     @staticmethod
     def use_production():
         IdentifiersProvider.COMMUNITY_URL = constants.OCTOBOT_COMMUNITY_URL
-        IdentifiersProvider.COMMUNITY_LANDING_URL = constants.OCTOBOT_COMMUNITY_LANDING_URL
         IdentifiersProvider.COMMUNITY_API_URL = constants.OCTOBOT_COMMUNITY_API_URL
         IdentifiersProvider.FRONTEND_PASSWORD_RECOVER_URL = constants.OCTOBOT_COMMUNITY_RECOVER_PASSWORD_URL
         IdentifiersProvider.BACKEND_URL = constants.COMMUNITY_BACKEND_URL
@@ -41,7 +39,6 @@ class IdentifiersProvider:
     @staticmethod
     def use_staging():
         IdentifiersProvider.COMMUNITY_URL = constants.STAGING_OCTOBOT_COMMUNITY_URL
-        IdentifiersProvider.COMMUNITY_LANDING_URL = constants.STAGING_OCTOBOT_COMMUNITY_LANDING_URL
         IdentifiersProvider.COMMUNITY_API_URL = constants.STAGING_OCTOBOT_COMMUNITY_API_URL
         IdentifiersProvider.FRONTEND_PASSWORD_RECOVER_URL = constants.STAGING_COMMUNITY_RECOVER_PASSWORD_URL
         IdentifiersProvider.BACKEND_URL = constants.STAGING_COMMUNITY_BACKEND_URL

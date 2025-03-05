@@ -46,7 +46,7 @@ import octobot.community.models.strategy_data as strategy_data
 import octobot.community.supabase_backend.enums as enums
 import octobot.community.supabase_backend.supabase_client as supabase_client
 import octobot.community.supabase_backend.configuration_storage as configuration_storage
-
+import octobot.community.identifiers_provider as identifiers_provider
 
 # Experimental to prevent httpx.PoolTimeout
 _INTERNAL_LOGGERS = [
@@ -111,6 +111,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
                 "email": email,
                 "password": password,
                 "options": {
+                    "redirect_to": f"{identifiers_provider.IdentifiersProvider.COMMUNITY_URL}/login",
                     "data": {
                         "hasRegisteredFromSelfHosted": True,
                         community_user_account.CommunityUserAccount.HOSTING_ENABLED: True,
