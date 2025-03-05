@@ -27,6 +27,7 @@ import gotrue.errors
 import gotrue.types
 import postgrest
 import postgrest.types
+import postgrest.utils
 import supabase
 
 import octobot_commons.authentication as authentication
@@ -311,20 +312,39 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         resp = await self.rpc("get_startup_info", {"bot_id": bot_id}).execute()
         return resp.data[0]
 
-    async def fetch_products(self, category_types: list[str]) -> list:
+    async def fetch_products(self, category_types: list[str], author_ids: typing.Optional[list[str]]) -> list:
         try:
-            return (
-                await self.table("products").select(
-                    "*,"
-                    "category:product_categories!inner(slug, name_translations, type, metadata),"
-                    "results:product_results!products_current_result_id_fkey("
-                    "  profitability,"
-                    "  reference_market_profitability"
-                    ")"
-                ).eq(
+            sanitized_authors = ",".join(map(
+                postgrest.utils.sanitize_param,
+                [author_id for author_id in author_ids if author_id]
+            )) if author_ids else None
+            query = self.table("products").select(
+                "*,"
+                "category:product_categories!inner(slug, name_translations, type, metadata),"
+                "results:product_results!products_current_result_id_fkey("
+                "  profitability,"
+                "  reference_market_profitability"
+                ")"
+            ).in_(
+                "category.type", category_types
+            )
+            if sanitized_authors:
+                query = query.or_(
+                    # https://supabase.com/docs/reference/python/or
+                    # either a public product with NULL author id
+                    f"and({enums.ProductKeys.VISIBILITY.value}.{postgrest.types.Filters.EQ}.public"
+                    f", {enums.ProductKeys.AUTHOR_ID.value}.{postgrest.types.Filters.IS}.NULL), "
+                    # or a product whose author is in sanitized_authors
+                    f"{enums.ProductKeys.AUTHOR_ID.value}.{postgrest.types.Filters.IN}.({sanitized_authors})"
+                )
+            else:
+                query = query.eq(
                     enums.ProductKeys.VISIBILITY.value, "public"
-                ).in_("category.type", category_types)
-                .execute()
+                ).is_(
+                    enums.ProductKeys.AUTHOR_ID.value, "NULL"
+                )
+            return (
+                await query.execute()
             ).data
         except postgrest.exceptions.APIError as err:
             commons_logging.get_logger(__name__).error(f"Error when fetching products: {err}")
