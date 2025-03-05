@@ -636,7 +636,10 @@ class CommunityAuthentication(authentication.Authenticator):
 
     async def _refresh_products(self):
         self.public_data.set_products(
-            await self.supabase_client.fetch_products(self._get_compatible_strategy_categories())
+            await self.supabase_client.fetch_products(
+                self._get_compatible_strategy_categories(),
+                [self.user_account.get_user_id()] if self.user_account.has_user_data() else None
+            )
         )
 
     def _get_compatible_strategy_categories(self) -> list[str]:

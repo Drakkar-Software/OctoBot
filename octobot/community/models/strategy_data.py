@@ -19,7 +19,6 @@ import octobot.community.identifiers_provider as identifiers_provider
 import octobot_commons.dataclasses as commons_dataclasses
 import octobot_commons.enums as commons_enums
 import octobot_commons.profiles as profiles
-from octobot_commons.profiles import ProfileData
 
 CATEGORY_NAME_TRANSLATIONS_BY_SLUG = {
     "coingecko-index": {"en": "Crypto Basket"}
@@ -35,6 +34,7 @@ DEFAULT_LOGO_NAME = "default_strategy.png"
 EXTENSION_CATEGORIES = ["coingecko-index"]
 
 CUSTOM_STRATEGY_PREFIX = "[Custom]_"
+CUSTOM_CATEGORY_SLUG_PREFIX = "creator-"
 
 
 @dataclasses.dataclass
@@ -117,8 +117,8 @@ class StrategyData(commons_dataclasses.FlexibleDataclass):
         return f"{identifiers_provider.IdentifiersProvider.COMMUNITY_URL}/strategies/{self.slug}"
 
     def get_risk(self) -> commons_enums.ProfileRisk:
-        risk = self.attributes['risk'].upper()
         try:
+            risk = self.attributes['risk'].upper()
             # use [] to access by name
             # https://docs.python.org/3/howto/enum.html#programmatic-access-to-enumeration-members-and-their-attributes
             return commons_enums.ProfileRisk[risk]
@@ -139,7 +139,7 @@ class StrategyData(commons_dataclasses.FlexibleDataclass):
 
 def is_custom_category(category: dict) -> bool:
     if slug := category.get('slug'):
-        return slug.startswith('creator-')
+        return slug.startswith(CUSTOM_CATEGORY_SLUG_PREFIX)
     return False
 
 
