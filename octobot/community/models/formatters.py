@@ -17,6 +17,7 @@ import octobot.community.supabase_backend.enums as backend_enums
 import octobot.community.supabase_backend as supabase_backend
 import octobot_commons.constants as commons_constants
 import octobot_commons.logging as commons_logging
+import octobot_commons.profiles as commons_profiles
 import octobot_trading.enums as trading_enums
 import octobot_trading.constants as trading_constants
 import octobot_trading.personal_data as trading_personal_data
@@ -159,6 +160,14 @@ def to_bot_exchange_internal_name(community_exchange_internal_name: str) -> str:
     if community_exchange_internal_name.endswith(FUTURES_INTERNAL_NAME_SUFFIX):
         return community_exchange_internal_name[:-len(FUTURES_INTERNAL_NAME_SUFFIX)]
     return community_exchange_internal_name
+
+
+def ensure_profile_data_exchanges_internal_name_and_type(profile_data: commons_profiles.ProfileData):
+    if profile_data.exchanges:
+        for exchange_data in profile_data.exchanges:
+            exchange_type = get_exchange_type_from_internal_name(exchange_data.internal_name)
+            exchange_data.internal_name = to_bot_exchange_internal_name(exchange_data.internal_name)
+            exchange_data.exchange_type = exchange_type
 
 
 def get_exchange_type_from_internal_name(community_exchange_internal_name: str) -> str:
