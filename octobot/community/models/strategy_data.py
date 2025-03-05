@@ -49,9 +49,9 @@ class CategoryData(commons_dataclasses.FlexibleDataclass):
             external_links = self.metadata.get("external_link")
             if external_links:
                 if blog_slug := external_links.get("blog"):
-                    return f"{identifiers_provider.IdentifiersProvider.COMMUNITY_LANDING_URL}/en/blog/{blog_slug}"
+                    return f"{identifiers_provider.IdentifiersProvider.COMMUNITY_URL}/en/blog/{blog_slug}"
                 if features_slug := external_links.get("features"):
-                    return f"{identifiers_provider.IdentifiersProvider.COMMUNITY_LANDING_URL}/features/{features_slug}"
+                    return f"{identifiers_provider.IdentifiersProvider.COMMUNITY_URL}/features/{features_slug}"
         return ""
 
     def get_default_logo_url(self) -> str:
@@ -110,7 +110,7 @@ class StrategyData(commons_dataclasses.FlexibleDataclass):
 
     def get_url(self) -> str:
         if path := FORCED_URL_PATH_BY_SLUG.get(self.category.slug):
-            return f"{identifiers_provider.IdentifiersProvider.COMMUNITY_LANDING_URL}/{path}"
+            return f"{identifiers_provider.IdentifiersProvider.COMMUNITY_URL}/{path}"
         return f"{identifiers_provider.IdentifiersProvider.COMMUNITY_URL}/strategies/{self.slug}"
 
     def get_product_url(self) -> str:
