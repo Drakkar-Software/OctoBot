@@ -154,7 +154,9 @@ class CommunityAuthentication(authentication.Authenticator):
     async def get_strategy_profile_data(
         self, strategy_id: str, product_slug: str = None
     ) -> commons_profiles.ProfileData:
-        return await self.supabase_client.fetch_product_config(strategy_id, product_slug=product_slug)
+        profile_data = await self.supabase_client.fetch_product_config(strategy_id, product_slug=product_slug)
+        formatters.ensure_profile_data_exchanges_internal_name_and_type(profile_data)
+        return profile_data
 
     def is_feed_connected(self):
         return self._community_feed is not None and self._community_feed.is_connected_to_remote_feed()
@@ -636,7 +638,10 @@ class CommunityAuthentication(authentication.Authenticator):
 
     async def _refresh_products(self):
         self.public_data.set_products(
-            await self.supabase_client.fetch_products(self._get_compatible_strategy_categories())
+            await self.supabase_client.fetch_products(
+                self._get_compatible_strategy_categories(),
+                [self.user_account.get_user_id()] if self.user_account.has_user_data() else None
+            )
         )
 
     def _get_compatible_strategy_categories(self) -> list[str]:

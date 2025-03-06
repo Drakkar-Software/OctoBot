@@ -48,6 +48,7 @@ from octobot.community.models.formatters import (
     format_portfolio_with_profitability,
     get_exchange_type_from_availability,
     to_bot_exchange_internal_name,
+    ensure_profile_data_exchanges_internal_name_and_type,
     get_exchange_type_from_internal_name,
     to_community_exchange_internal_name,
 )
@@ -75,6 +76,7 @@ __all__ = [
     "format_portfolio_with_profitability",
     "get_exchange_type_from_availability",
     "to_bot_exchange_internal_name",
+    "ensure_profile_data_exchanges_internal_name_and_type",
     "get_exchange_type_from_internal_name",
     "to_community_exchange_internal_name",
     "CommunityPublicData",
