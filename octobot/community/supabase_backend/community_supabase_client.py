@@ -337,6 +337,9 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
                     f", {enums.ProductKeys.AUTHOR_ID.value}.{postgrest.types.Filters.IS}.NULL), "
                     # or a product whose author is in sanitized_authors
                     f"{enums.ProductKeys.AUTHOR_ID.value}.{postgrest.types.Filters.IN}.({sanitized_authors})"
+                ).not_.eq(
+                    # skip deleted strategies
+                    enums.ProductKeys.VISIBILITY.value, "deleted"
                 )
             else:
                 query = query.eq(
