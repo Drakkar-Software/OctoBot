@@ -21,6 +21,7 @@ import sys
 import asyncio
 import signal
 import threading
+import subprocess
 
 import octobot_commons.configuration as configuration
 import octobot_commons.profiles as profiles
@@ -310,8 +311,12 @@ def restart_bot():
         # restart from python OctoBot package entrypoint
         os.execl(get_bot_file(), *argv)
     else:
-        # prevent binary to add self as first argument
-        os.execl(sys.executable, *(f'"{a}"' for a in sys.argv))
+        # restart from binary
+        # from https://pyinstaller.org/en/stable/common-issues-and-pitfalls.html#using-sys-executable-to-spawn-subprocesses-that-outlive-the-application-process-implementing-application-restart
+        # Restart the application
+        subprocess.Popen([sys.executable], env={**os.environ, "PYINSTALLER_RESET_ENVIRONMENT": "1"})
+        # force stop and restart
+        os._exit(0)
 
 
 def update_bot(bot_api):
