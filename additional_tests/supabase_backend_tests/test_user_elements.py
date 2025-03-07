@@ -187,14 +187,6 @@ async def test_expired_jwt_token(authenticated_client_1):
        "SIGNED_IN", session
     )
 
-    # now raising "APIError: JWT expired"
-    with pytest.raises(postgrest.APIError):
+    # now raising "APIError: JWT expired" which is converted into community_errors.AuthenticationError
+    with pytest.raises(authentication.AuthenticationError):
         await authenticated_client_1.fetch_bots()
-
-    # now raising "APIError: JWT expired" which is converted into community_errors.SessionTokenExpiredError
-    with pytest.raises(community_errors.SessionTokenExpiredError):
-        with supabase_backend.error_describer():
-            await authenticated_client_1.fetch_bots()
-
-
-
