@@ -36,6 +36,7 @@ class TestKucoinAuthenticatedExchange(
     USE_ORDER_OPERATION_TO_CHECK_API_KEY_RIGHTS = True
     VALID_ORDER_ID = "6617e84c5c1e0000083c71f7"
     IS_AUTHENTICATED_REQUEST_CHECK_AVAILABLE = True    # set True when is_authenticated_request is implemented
+    CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES = True
 
     SPECIAL_ORDER_TYPES_BY_EXCHANGE_ID: dict[
         str, (

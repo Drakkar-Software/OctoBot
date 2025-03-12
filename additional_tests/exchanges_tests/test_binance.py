@@ -28,7 +28,7 @@ class TestBinanceAuthenticatedExchange(
     # enter exchange name as a class variable here
     EXCHANGE_NAME = "binance"
     ORDER_CURRENCY = "BTC"
-    SETTLEMENT_CURRENCY = "USDT"
+    SETTLEMENT_CURRENCY = "USDC"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
     ORDER_SIZE = 50  # % of portfolio to include in test orders
     DUPLICATE_TRADES_RATIO = 0.1   # allow 10% duplicate in trades (due to trade id set to order id)
@@ -41,6 +41,7 @@ class TestBinanceAuthenticatedExchange(
     ]
     IS_BROKER_ENABLED_ACCOUNT = False
     IS_AUTHENTICATED_REQUEST_CHECK_AVAILABLE = True    # set True when is_authenticated_request is implemented
+    CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES = True
 
     SPECIAL_ORDER_TYPES_BY_EXCHANGE_ID: dict[
         str, (

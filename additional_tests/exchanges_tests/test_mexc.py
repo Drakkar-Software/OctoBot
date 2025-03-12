@@ -27,7 +27,7 @@ class TestMEXCAuthenticatedExchange(
     # enter exchange name as a class variable here
     EXCHANGE_NAME = "mexc"
     EXCHANGE_TENTACLE_NAME = "MEXC"
-    ORDER_CURRENCY = "BTC"
+    ORDER_CURRENCY = "MX"
     SETTLEMENT_CURRENCY = "USDT"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
     ORDER_SIZE = 30  # % of portfolio to include in test orders
