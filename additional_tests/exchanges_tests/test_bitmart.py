@@ -30,9 +30,11 @@ class TestBitMartAuthenticatedExchange(
     ORDER_CURRENCY = "BTC"
     SETTLEMENT_CURRENCY = "USDT"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
-    ORDER_SIZE = 20  # % of portfolio to include in test orders
+    ORDER_SIZE = 50  # % of portfolio to include in test orders
     CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES = True
     VALID_ORDER_ID = "1777764898965454848"
+    EXPECTED_GENERATED_ACCOUNT_ID = True
+    USE_ORDER_OPERATION_TO_CHECK_API_KEY_RIGHTS = True
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
@@ -44,8 +46,7 @@ class TestBitMartAuthenticatedExchange(
         await super().test_untradable_symbols()
 
     async def test_get_account_id(self):
-        # pass if not implemented
-        pass
+        await super().test_get_account_id()
 
     async def test_is_authenticated_request(self):
         await super().test_is_authenticated_request()
@@ -54,8 +55,7 @@ class TestBitMartAuthenticatedExchange(
         await super().test_invalid_api_key_error()
 
     async def test_get_api_key_permissions(self):
-        # pass if not implemented
-        pass
+        await super().test_get_api_key_permissions()
 
     async def test_missing_trading_api_key_permissions(self):
         pass
@@ -85,6 +85,7 @@ class TestBitMartAuthenticatedExchange(
         await super().test_get_closed_orders()
 
     async def test_get_cancelled_orders(self):
+        # broken: need v4 endpoint required, 13/03/25 ccxt still doesn't have it
         await super().test_get_cancelled_orders()
 
     async def test_create_and_cancel_stop_orders(self):
