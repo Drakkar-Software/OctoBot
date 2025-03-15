@@ -28,6 +28,7 @@ import octobot_commons.os_clock_sync as os_clock_sync
 import octobot_commons.system_resources_watcher as system_resources_watcher
 import octobot_commons.aiohttp_util as aiohttp_util
 import octobot_commons.profiles as profiles
+import octobot_commons.errors
 
 import octobot_services.api as service_api
 import octobot_trading.api as trading_api
@@ -278,7 +279,12 @@ class OctoBot:
         trader_str = "real trader" if has_real_trader else "simulated trader" if has_simulated_trader else "no trader"
         traded_symbols = trading_api.get_config_symbols(self.config, True)
         symbols_str = ', '.join(set(traded_symbols))
-        trading_mode = trading_api.get_activated_trading_mode(self.tentacles_setup_config)
+        trading_mode = None
+        try:
+            trading_mode = trading_api.get_activated_trading_mode(self.tentacles_setup_config)
+        except octobot_commons.errors.ConfigTradingError as err:
+            # no active trading mode
+            pass
         trading_mode_str = trading_mode.get_name() if trading_mode else "no trading mode"
         self.logger.info(f"Starting OctoBot with {trader_str} on "
                          f"{', '.join(exchanges) if exchanges else 'no exchange'} "
