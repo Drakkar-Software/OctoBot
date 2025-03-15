@@ -13,6 +13,9 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
+import decimal
+import typing
+
 import octobot.community.supabase_backend.enums as backend_enums
 import octobot.community.supabase_backend as supabase_backend
 import octobot_commons.constants as commons_constants
@@ -200,12 +203,25 @@ def get_exchange_type_from_availability(exchange_availability: dict) -> str:
 
 def format_portfolio(
     current_value: dict, initial_value: dict, profitability: float,
-    unit: str, content: dict, price_by_asset: dict,
+    unit: str, content: dict[str, dict[str, float]], price_by_asset: dict[str, typing.Union[float, decimal.Decimal]],
     bot_id: str
 ) -> dict:
     ref_market_current_value = current_value[unit]
     ref_market_initial_value = initial_value[unit]
-    formatted_content = [
+    return {
+        backend_enums.PortfolioKeys.CONTENT.value: format_portfolio_content(content, price_by_asset),
+        backend_enums.PortfolioKeys.CURRENT_VALUE.value: ref_market_current_value,
+        backend_enums.PortfolioKeys.INITIAL_VALUE.value: ref_market_initial_value,
+        backend_enums.PortfolioKeys.PROFITABILITY.value: float(profitability),
+        backend_enums.PortfolioKeys.UNIT.value: unit,
+        backend_enums.PortfolioKeys.BOT_ID.value: bot_id,
+    }
+
+
+def format_portfolio_content(
+    content: dict[str, dict[str, float]], price_by_asset: dict[str, typing.Union[float, decimal.Decimal]]
+) -> list[dict]:
+    return [
         {
             backend_enums.PortfolioAssetKeys.ASSET.value: key,
             backend_enums.PortfolioAssetKeys.QUANTITY.value: float(quantity[commons_constants.PORTFOLIO_TOTAL]),
@@ -214,15 +230,6 @@ def format_portfolio(
         }
         for key, quantity in content.items()
     ]
-
-    return {
-        backend_enums.PortfolioKeys.CONTENT.value: formatted_content,
-        backend_enums.PortfolioKeys.CURRENT_VALUE.value: ref_market_current_value,
-        backend_enums.PortfolioKeys.INITIAL_VALUE.value: ref_market_initial_value,
-        backend_enums.PortfolioKeys.PROFITABILITY.value: float(profitability),
-        backend_enums.PortfolioKeys.UNIT.value: unit,
-        backend_enums.PortfolioKeys.BOT_ID.value: bot_id,
-    }
 
 
 def format_portfolio_with_profitability(profitability) -> dict:
