@@ -506,6 +506,9 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         ] if bot_config[enums.BotConfigKeys.EXCHANGES.value] else []
         profile_data.profile_details.version = bot_config["product_config"][enums.ProfileConfigKeys.VERSION.value]
         profile_data.trader_simulator.enabled = bot_config.get(enums.BotConfigKeys.IS_SIMULATED.value, False)
+        profile_data.trading.sellable_assets = (bot_config.get(
+            enums.BotConfigKeys.OPTIONS.value
+        ) or {}).get("sellable_assets")
         portfolio = (bot_config.get(
             enums.BotConfigKeys.OPTIONS.value
         ) or {}).get("portfolio")
