@@ -116,6 +116,7 @@ async def test_login(auth):
 async def test_fetch_bot_profile_data_without_tentacles_options(auth):
     FETCHED_PROFILE = {
         "bot_id": "53e0dc3e-3cbe-476d-9bda-b30bc4941fb4",
+        "bot": {"user_id": "3330dc3e-3cbe-476d-9bda-b30bc4941fb4"},
         "exchanges": [
             {"exchange_credential_id": "30ee7b12-3415-4ce4-b050-80d8bf4548be"}], "is_simulated": True,
         "options": {"portfolio": [{"asset": "USDT", "value": 1000}]}, "product_config": {"config": {
@@ -161,7 +162,10 @@ async def test_fetch_bot_profile_data_without_tentacles_options(auth):
              "crypto_currencies": [{"enabled": True, "name": "Bitcoin", "trading_pairs": ["BTC/USDT"]}],
              "exchanges": [], "future_exchange_data": {"default_leverage": None, "symbol_data": []},
              "options": {"values": {}},
-             "profile_details": {"bot_id": None, "id": "bot_id", "name": "bitcoin-vision", "version": "0.0.1"},
+             "profile_details": {
+                 "bot_id": None, "id": "bot_id", "name": "bitcoin-vision", "version": "0.0.1",
+                 "user_id": '3330dc3e-3cbe-476d-9bda-b30bc4941fb4'
+             },
              "tentacles": [{"config": {"buy_order_amount": "4%t", "default_config": [None], "enable_health_check": True,
                                        "entry_limit_orders_price_percent": 0.6, "exit_limit_orders_price_percent": 0.5,
                                        "minutes_before_next_buy": 10080, "required_strategies": ["123"],
@@ -184,7 +188,8 @@ async def test_fetch_bot_profile_data_without_tentacles_options(auth):
              "trader_simulator": {"enabled": True, "maker_fees": 0.1, "starting_portfolio": {"USDT": 1000},
                                   "taker_fees": 0.1},
              "trading": {"minimal_funds": [{"asset": "USD-like", "available": 50, "total": 50}],
-                         "reference_market": "USDT", "risk": 0.5}}
+                         "reference_market": "USDT", "risk": 0.5, "sub_portfolio": {'USDT': 1000},
+                         "sellable_assets": None}}
         )
         assert await auth.supabase_client.fetch_bot_profile_data("bot_id") == parsed_data
         execute_mock.assert_called_once()
@@ -194,10 +199,12 @@ async def test_fetch_bot_profile_data_without_tentacles_options(auth):
 async def test_fetch_bot_profile_data_with_tentacles_options(auth):
     FETCHED_PROFILE = {
         "bot_id": "53e0dc3e-3cbe-476d-9bda-b30bc4941fb4",
+        "bot": {"user_id": "3330dc3e-3cbe-476d-9bda-b30bc4941fb4"},
         "exchanges": [
             {"exchange_credential_id": "30ee7b12-3415-4ce4-b050-80d8bf4548be"}], "is_simulated": True,
         "options": {
-            "portfolio": [{"asset": "USDT", "value": 1000}],
+            "portfolio": [{"asset": "USDT", "value": 2000}],
+            "sellable_assets": ["USDT", "EUR", "ETH"],
             "tentacles": [
                 {"config": {"buy_order_amount": "10%t"}, "name": "DCATradingMode"},
                 {"config": {"period_length": 11, "price_threshold_percent": 1222}, "name": "EMAMomentumEvaluator"},
@@ -246,7 +253,8 @@ async def test_fetch_bot_profile_data_with_tentacles_options(auth):
              "crypto_currencies": [{"enabled": True, "name": "Bitcoin", "trading_pairs": ["BTC/USDT"]}],
              "exchanges": [], "future_exchange_data": {"default_leverage": None, "symbol_data": []},
              "options": {"values": {}},
-             "profile_details": {"bot_id": None, "id": "bot_id", "name": "bitcoin-vision", "version": "0.0.1"},
+             "profile_details": {"bot_id": None, "id": "bot_id", "name": "bitcoin-vision", "version": "0.0.1",
+                                 "user_id": "3330dc3e-3cbe-476d-9bda-b30bc4941fb4"},
              "tentacles": [{"config": {"buy_order_amount": "10%t", "default_config": [None], "enable_health_check": True,
                                        "entry_limit_orders_price_percent": 0.6, "exit_limit_orders_price_percent": 0.5,
                                        "minutes_before_next_buy": 10080, "required_strategies": ["123"],
@@ -266,10 +274,11 @@ async def test_fetch_bot_profile_data_with_tentacles_options(auth):
                                "name": "SimpleStrategyEvaluator"},
                            {"config": {"period_length": 11, "price_threshold_percent": 1222},
                             "name": "EMAMomentumEvaluator"}], "trader": {"enabled": True},
-             "trader_simulator": {"enabled": True, "maker_fees": 0.1, "starting_portfolio": {"USDT": 1000},
+             "trader_simulator": {"enabled": True, "maker_fees": 0.1, "starting_portfolio": {"USDT": 2000},
                                   "taker_fees": 0.1},
              "trading": {"minimal_funds": [{"asset": "USD-like", "available": 50, "total": 50}],
-                         "reference_market": "USDT", "risk": 0.5}}
+                         "reference_market": "USDT", "risk": 0.5, "sub_portfolio": {'USDT': 2000},
+                         "sellable_assets": ["USDT", "EUR", "ETH"]}}
         )
         assert await auth.supabase_client.fetch_bot_profile_data("bot_id") == parsed_data
         execute_mock.assert_called_once()
