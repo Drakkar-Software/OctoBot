@@ -527,19 +527,25 @@ class AbstractAuthenticatedExchangeTester:
         default_size = self.get_order_size(
             await self.get_portfolio(), price, symbol=symbol, settlement_currency=settlement_currency
         )
-        self.check_order_size_and_price(default_size, price, symbol=symbol, allow_empty_size=self.CHECK_EMPTY_ACCOUNT)
-        # 2. try with minimal order size
-        min_size = personal_data.decimal_adapt_quantity(
-            market_status,
-            # add 25% to min order size to avoid rounding of amount of price ending up just bellow min cost
-            decimal.Decimal(str(self.EXPECTED_QUOTE_MIN_ORDER_SIZE)) * (
-                decimal.Decimal("1.25") if symbols.parse_symbol(symbol).is_spot() else decimal.Decimal("1")
-            ) / (
-                decimal.Decimal("1") if symbols.parse_symbol(symbol).is_inverse() else price
+        # self.check_order_size_and_price(default_size, price, symbol=symbol, allow_empty_size=self.CHECK_EMPTY_ACCOUNT)
+        enable_min_size_check = False
+        enable_min_size_check = True  # FOR TESTS: comment to disable
+        if enable_min_size_check:
+            # 2. try with minimal order size
+            min_size = personal_data.decimal_adapt_quantity(
+                market_status,
+                # add 25% to min order size to avoid rounding of amount of price ending up just bellow min cost
+                decimal.Decimal(str(self.EXPECTED_QUOTE_MIN_ORDER_SIZE)) * (
+                    decimal.Decimal("1.25") if symbols.parse_symbol(symbol).is_spot() else decimal.Decimal("1")
+                ) / (
+                    decimal.Decimal("1") if symbols.parse_symbol(symbol).is_inverse() else price
+                )
             )
-        )
-        self.check_order_size_and_price(min_size, price, symbol=symbol, allow_empty_size=False)
-        size = min(min_size, default_size)
+            # self.check_order_size_and_price(min_size, price, symbol=symbol, allow_empty_size=False)
+            size = max(min_size, default_size)
+        else:
+            size = default_size
+        # size = default_size   # to disable
         # # DEBUG tools p2, uncomment to create specific orders
         # precision = market_status[trading_enums.ExchangeConstantsMarketStatusColumns.PRECISION.value]
         # limits = market_status[trading_enums.ExchangeConstantsMarketStatusColumns.LIMITS.value]

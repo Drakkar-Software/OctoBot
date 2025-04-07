@@ -480,6 +480,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             "options, "
             "exchanges, "
             "is_simulated, "
+            "bot:bots!bot_id!inner(user_id), "
             "product_config:product_configs("
             "   config, "
             "   version, "
@@ -496,6 +497,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         profile_data.profile_details.name = bot_config["product_config"].get("product", {}).get(
             "slug", profile_data.profile_details.name
         )
+        profile_data.profile_details.user_id = bot_config["bot"]["user_id"]
         profile_data.trading.minimal_funds = [
             commons_profiles.MinimalFund.from_dict(minimal_fund)
             for minimal_fund in bot_config["product_config"]["product"][
@@ -504,19 +506,25 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         ] if bot_config[enums.BotConfigKeys.EXCHANGES.value] else []
         profile_data.profile_details.version = bot_config["product_config"][enums.ProfileConfigKeys.VERSION.value]
         profile_data.trader_simulator.enabled = bot_config.get(enums.BotConfigKeys.IS_SIMULATED.value, False)
-        if profile_data.trader_simulator.enabled:
-            portfolio = (bot_config.get(
-                enums.BotConfigKeys.OPTIONS.value
-            ) or {}).get("portfolio")
-            if not portfolio:
-                raise errors.InvalidBotConfigError("Missing portfolio in bot config")
+        profile_data.trading.sellable_assets = (bot_config.get(
+            enums.BotConfigKeys.OPTIONS.value
+        ) or {}).get("sellable_assets")
+        portfolio = (bot_config.get(
+            enums.BotConfigKeys.OPTIONS.value
+        ) or {}).get("portfolio")
+        if portfolio:
             if trading_api.is_usd_like_coin(profile_data.trading.reference_market):
                 usd_like_asset = profile_data.trading.reference_market
             else:
                 usd_like_asset = commons_constants.USD_LIKE_COINS[0]   # todo use dynamic value when exchange is not supporting USDT
-            profile_data.trader_simulator.starting_portfolio = formatters.get_adapted_portfolio(
+            formatted_portfolio = formatters.get_adapted_portfolio(
                 usd_like_asset, portfolio
             )
+            profile_data.trader_simulator.starting_portfolio = formatted_portfolio
+            profile_data.trading.sub_portfolio = formatted_portfolio
+        elif profile_data.trader_simulator.enabled:
+            # portfolio is required on trading simulator
+            raise errors.InvalidBotConfigError("Missing portfolio in bot config")
         profile_data.profile_details.id = bot_config_id
 
         profile_data.exchanges = await self._fetch_full_exchange_configs(bot_config, profile_data)
@@ -690,10 +698,10 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             enums.PortfolioKeys.ID.value, portfolio_id
         ).execute()).data
 
-    async def update_portfolio(self, portfolio) -> list:
+    async def update_portfolio(self, portfolio_update: dict) -> list:
         # use a new current portfolio for the given bot
-        return (await self.table("bot_portfolios").update(portfolio).eq(
-            enums.PortfolioKeys.ID.value, portfolio[enums.PortfolioKeys.ID.value]
+        return (await self.table("bot_portfolios").update(portfolio_update).eq(
+            enums.PortfolioKeys.ID.value, portfolio_update[enums.PortfolioKeys.ID.value]
         ).execute()).data
 
     async def switch_portfolio(self, new_portfolio) -> dict:

@@ -20,6 +20,7 @@ import time
 import typing
 import hashlib
 import os
+import decimal
 
 import octobot.constants as constants
 import octobot.enums as enums
@@ -871,9 +872,12 @@ class CommunityAuthentication(authentication.Authenticator):
         self.logger.info(f"Bot positions updated: using {len(formatted_positions)} positions")
 
     @_bot_data_update
-    async def update_portfolio(self, current_value: dict, initial_value: dict, profitability: float,
-                               unit: str, content: dict, history: dict, price_by_asset: dict,
-                               reset: bool):
+    async def update_portfolio(
+        self, current_value: dict, initial_value: dict, profitability: float,
+        unit: str, content: dict[str, dict[str, float]], history: dict,
+        price_by_asset: dict[str, typing.Union[float, decimal.Decimal]],
+        reset: bool
+    ):
         """
         Updates authenticated account portfolio
         """
