@@ -20,7 +20,7 @@ from additional_tests.exchanges_tests import abstract_authenticated_exchange_tes
 # All test coroutines will be treated as marked.
 pytestmark = pytest.mark.asyncio
 
-
+#todo
 class TestBybitAuthenticatedExchange(
     abstract_authenticated_exchange_tester.AbstractAuthenticatedExchangeTester
 ):

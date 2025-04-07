@@ -28,7 +28,7 @@ class TestKucoinFuturesAuthenticatedExchange(
     # enter exchange name as a class variable here
     EXCHANGE_NAME = "kucoin"
     CREDENTIALS_EXCHANGE_NAME = "KUCOIN_FUTURES"
-    ORDER_CURRENCY = "SOL"  # always use a contract that has a size different from 1 unit of the currency
+    ORDER_CURRENCY = "DOT"  # always use a contract that has a size different from 1 unit of the currency
     SETTLEMENT_CURRENCY = "USDT"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}:{SETTLEMENT_CURRENCY}"
     INVERSE_SYMBOL = f"{ORDER_CURRENCY}/USD:{ORDER_CURRENCY}"
