@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import pytest
+import decimal
 
 import octobot_trading.enums
 from additional_tests.exchanges_tests import abstract_authenticated_exchange_tester
@@ -30,7 +31,8 @@ class TestCoinbaseAuthenticatedExchange(
     ORDER_CURRENCY = "BTC"
     SETTLEMENT_CURRENCY = "USDC"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
-    ORDER_SIZE = 30  # % of portfolio to include in test orders
+    ORDER_SIZE = 80  # % of portfolio to include in test orders
+    MIN_TRADE_USD_VALUE = decimal.Decimal("0.004")
     CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES = True
     VALID_ORDER_ID = "8bb80a81-27f7-4415-aa50-911ea46d841c"
     USE_ORDER_OPERATION_TO_CHECK_API_KEY_RIGHTS = True    # set True when api key rights can't be checked using a

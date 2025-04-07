@@ -30,7 +30,7 @@ class TestBinanceAuthenticatedExchange(
     ORDER_CURRENCY = "BTC"
     SETTLEMENT_CURRENCY = "USDC"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
-    ORDER_SIZE = 50  # % of portfolio to include in test orders
+    ORDER_SIZE = 80  # % of portfolio to include in test orders
     DUPLICATE_TRADES_RATIO = 0.1   # allow 10% duplicate in trades (due to trade id set to order id)
     VALID_ORDER_ID = "26408108410"
     EXPECTED_QUOTE_MIN_ORDER_SIZE = 5   # min quote value of orders to create (used to check market status parsing)
