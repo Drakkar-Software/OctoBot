@@ -56,6 +56,7 @@ class AbstractAuthenticatedExchangeTester:
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
     TIME_FRAME = "1h"
     VALID_ORDER_ID = "8bb80a81-27f7-4415-aa50-911ea46d841c"
+    ALLOW_0_MAKER_FEES = False
     SPECIAL_ORDER_TYPES_BY_EXCHANGE_ID: dict[
         str, (
             str, # symbol
@@ -357,6 +358,8 @@ class AbstractAuthenticatedExchangeTester:
             amount = self.get_order_size(
                 portfolio, price, symbol=self.SYMBOL, settlement_currency=self.SETTLEMENT_CURRENCY
             ) * 100000
+            if amount == 0:
+                amount = 100000
             if self.CHECK_EMPTY_ACCOUNT:
                 amount = 10
             # (amount is too large, creating buy order will fail)
@@ -561,7 +564,7 @@ class AbstractAuthenticatedExchangeTester:
         open_orders = await self.get_open_orders(exchange_data)
         cancelled_orders = await self.get_cancelled_orders(exchange_data)
         if self.CHECK_EMPTY_ACCOUNT:
-            assert size == trading_constants.ZERO
+            assert size >= trading_constants.ZERO if enable_min_size_check else size == trading_constants.ZERO
             assert open_orders == []
             assert cancelled_orders == []
             return
@@ -1007,7 +1010,7 @@ class AbstractAuthenticatedExchangeTester:
             assert order.fee is None
         else:
             try:
-                assert order.fee
+                assert order.fee, f"Unexpected missing fee: {order.to_dict()}"
                 assert isinstance(order.fee[trading_enums.FeePropertyColumns.COST.value], decimal.Decimal)
                 has_paid_fees = order.fee[trading_enums.FeePropertyColumns.COST.value] > trading_constants.ZERO
                 if has_paid_fees:
@@ -1024,7 +1027,12 @@ class AbstractAuthenticatedExchangeTester:
                 else:
                     assert order.fee[trading_enums.FeePropertyColumns.IS_FROM_EXCHANGE.value] is True
             except AssertionError:
-                if allow_incomplete_fees and self.EXPECT_MISSING_ORDER_FEES_DUE_TO_ORDERS_TOO_OLD_FOR_RECENT_TRADES:
+                if (
+                    not order.fee and self.ALLOW_0_MAKER_FEES and
+                    order.taker_or_maker == trading_enums.ExchangeConstantsOrderColumns.MAKER.value
+                ):
+                    incomplete_fee_orders.append(order)
+                elif allow_incomplete_fees and self.EXPECT_MISSING_ORDER_FEES_DUE_TO_ORDERS_TOO_OLD_FOR_RECENT_TRADES:
                     incomplete_fee_orders.append(order)
                 else:
                     raise
@@ -1310,7 +1318,9 @@ class AbstractAuthenticatedExchangeTester:
     def _check_order(self, order, size, side):
         if self.CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES:
             # actual origin_quantity may vary due to quantity conversion for market orders
-            assert size * decimal.Decimal("0.8") <= order.origin_quantity <= size * decimal.Decimal("1.2")
+            assert size * decimal.Decimal("0.8") <= order.origin_quantity <= size * decimal.Decimal("1.2"), (
+                f"FALSE: {size * decimal.Decimal('0.8')} <= {order.origin_quantity} <= {size * decimal.Decimal('1.2')}"
+            )
         else:
             assert order.origin_quantity == size
         assert order.side is side

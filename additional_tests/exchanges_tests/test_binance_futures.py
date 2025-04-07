@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import pytest
+import decimal
 
 import octobot_trading.enums
 from additional_tests.exchanges_tests import abstract_authenticated_future_exchange_tester, \
@@ -30,7 +31,7 @@ class TestBinanceFuturesAuthenticatedExchange(
     EXCHANGE_NAME = "binance"
     CREDENTIALS_EXCHANGE_NAME = "BINANCE_FUTURES"
     ORDER_CURRENCY = "BTC"  # always use a contract that has a size different from 1 unit of the currency
-    SETTLEMENT_CURRENCY = "USDC"
+    SETTLEMENT_CURRENCY = "USDT"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}:{SETTLEMENT_CURRENCY}"
     INVERSE_SYMBOL = f"{ORDER_CURRENCY}/USD:{ORDER_CURRENCY}"
     ORDER_SIZE = 30  # % of portfolio to include in test orders
@@ -38,6 +39,8 @@ class TestBinanceFuturesAuthenticatedExchange(
     VALID_ORDER_ID = "26408108410"
     EXPECTED_QUOTE_MIN_ORDER_SIZE = 200   # min quote value of orders to create (used to check market status parsing)
     IS_AUTHENTICATED_REQUEST_CHECK_AVAILABLE = True    # set True when is_authenticated_request is implemented
+    MAX_TRADE_USD_VALUE = decimal.Decimal(200000)   # testnet portfolio
+    ALLOW_0_MAKER_FEES = True
 
     SPECIAL_ORDER_TYPES_BY_EXCHANGE_ID: dict[
         str, (

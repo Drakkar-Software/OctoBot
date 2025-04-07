@@ -21,6 +21,7 @@ from additional_tests.exchanges_tests import abstract_authenticated_future_excha
 pytestmark = pytest.mark.asyncio
 
 
+#todo
 class TestBybitFuturesAuthenticatedExchange(
     abstract_authenticated_future_exchange_tester.AbstractAuthenticatedFutureExchangeTester
 ):

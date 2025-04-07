@@ -26,6 +26,7 @@ class TestAscendexAuthenticatedExchange(
 ):
     # enter exchange name as a class variable here
     EXCHANGE_NAME = "ascendex"
+    EXCHANGE_TENTACLE_NAME = "AscendEx"
     ORDER_CURRENCY = "BTC"
     SETTLEMENT_CURRENCY = "USDT"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"

@@ -48,6 +48,7 @@ class TestKucoinAuthenticatedExchange(
             bool, # trigger above (on higher price than order price)
         )
     ] = {
+        # can't be fetched anymore
         "vs93gpruc6ikekiv003o48ci": (
             "BTC/USDT", "type", "market",
             octobot_trading.enums.TradeOrderType.LIMIT.value, octobot_trading.enums.TradeOrderSide.BUY.value, False
