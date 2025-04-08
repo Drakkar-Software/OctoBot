@@ -77,6 +77,7 @@ class AbstractAuthenticatedExchangeTester:
     # closed orders fees are taken from recent trades
     EXPECT_MISSING_FEE_IN_CANCELLED_ORDERS = True  # when get_cancelled_orders returns None in fee
     EXPECT_POSSIBLE_ORDER_NOT_FOUND_DURING_ORDER_CREATION = False
+    CONVERTS_MARKET_INTO_LIMIT_ORDERS = False   # when market orders are always converted into limit order by the exchange
     OPEN_ORDERS_IN_CLOSED_ORDERS = False
     CANCELLED_ORDERS_IN_CLOSED_ORDERS = False
     EXPECT_FETCH_ORDER_TO_BE_AVAILABLE = True
@@ -480,6 +481,7 @@ class AbstractAuthenticatedExchangeTester:
         # return
         for exchange_id, order_details in self.SPECIAL_ORDER_TYPES_BY_EXCHANGE_ID.items():
             symbol, info_key, info_type, expected_type, expected_side, expected_trigger_above = order_details
+            print(order_details)
             fetched_order = await self.exchange_manager.exchange.get_order(exchange_id, symbol=symbol)
             assert fetched_order is not None
             self._check_fetched_order_dicts([fetched_order])
@@ -1067,7 +1069,7 @@ class AbstractAuthenticatedExchangeTester:
 
     def check_parsed_trade(self, trade: personal_data.Trade):
         assert trade.symbol
-        assert trade.total_cost
+        assert trade.total_cost > 0
         assert trade.trade_type
         assert trade.trade_type is not trading_enums.TraderOrderType.UNKNOWN
         assert trade.exchange_trade_type is not trading_enums.TradeOrderType.UNKNOWN
@@ -1292,8 +1294,12 @@ class AbstractAuthenticatedExchangeTester:
 
     def check_created_market_order(self, order, size, side):
         self._check_order(order, size, side)
-        expected_type = personal_data.BuyMarketOrder \
-            if side is trading_enums.TradeOrderSide.BUY else personal_data.SellMarketOrder
+        if self.CONVERTS_MARKET_INTO_LIMIT_ORDERS:
+            expected_type = personal_data.BuyLimitOrder \
+                if side is trading_enums.TradeOrderSide.BUY else personal_data.SellLimitOrder
+        else:
+            expected_type = personal_data.BuyMarketOrder \
+                if side is trading_enums.TradeOrderSide.BUY else personal_data.SellMarketOrder
         assert isinstance(order, expected_type)
 
     def check_created_stop_order(self, order, price, size, side):
@@ -1324,6 +1330,7 @@ class AbstractAuthenticatedExchangeTester:
         else:
             assert order.origin_quantity == size
         assert order.side is side
+        assert order.total_cost > trading_constants.ZERO
         assert order.is_open()
 
     async def wait_for_order_exchange_id_in_trades(self, order_exchange_id):
