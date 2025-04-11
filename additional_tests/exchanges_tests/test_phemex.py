@@ -81,9 +81,13 @@ class TestPemexAuthenticatedExchange(
         await super().test_get_my_recent_trades()
 
     async def test_get_closed_orders(self):
+        # fails due to each trade being duplicated in privateGetExchangeSpotOrder resp
+        # 07/04/25
         await super().test_get_closed_orders()
 
     async def test_get_cancelled_orders(self):
+        # fails due to each trade being duplicated in privateGetExchangeSpotOrder resp
+        # 07/04/25
         await super().test_get_cancelled_orders()
 
     async def test_create_and_cancel_stop_orders(self):

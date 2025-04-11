@@ -49,6 +49,7 @@ class TestBingxAuthenticatedExchange(
             bool, # trigger above (on higher price than order price)
         )
     ] = {
+        # orders can't be fetched anymore: create new ones to test
         "1877004154170146816": (
             "TAO/USDT", "type", "TAKE_STOP_MARKET",
             octobot_trading.enums.TradeOrderType.STOP_LOSS.value, octobot_trading.enums.TradeOrderSide.SELL.value, False
