@@ -654,7 +654,9 @@ class AbstractAuthenticatedExchangeTester:
     async def inner_test_create_and_cancel_stop_orders(self):
         current_price = await self.get_price()
         price = self.get_order_price(current_price, False)
-        size = self.get_order_size(await self.get_portfolio(), price)
+        portfolio = await self.get_portfolio()
+        base = symbols.parse_symbol(self.SYMBOL).base
+        size = self.get_order_size(portfolio, price, settlement_currency=base)
         open_orders = await self.get_open_orders()
         assert self.exchange_manager.exchange.is_supported_order_type(
             trading_enums.TraderOrderType.STOP_LOSS
@@ -1208,8 +1210,10 @@ class AbstractAuthenticatedExchangeTester:
         symbol = symbols.parse_symbol(symbol or self.SYMBOL)
         if symbol.is_inverse():
             order_quantity = currency_quantity * price
-        else:
+        elif settlement_currency == symbol.quote:
             order_quantity = currency_quantity / price
+        else:
+            order_quantity = currency_quantity
         return personal_data.decimal_adapt_quantity(
             self.exchange_manager.exchange.get_market_status(str(symbol)),
             order_quantity
