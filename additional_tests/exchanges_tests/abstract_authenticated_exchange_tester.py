@@ -56,6 +56,7 @@ class AbstractAuthenticatedExchangeTester:
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
     TIME_FRAME = "1h"
     VALID_ORDER_ID = "8bb80a81-27f7-4415-aa50-911ea46d841c"
+    ALLOW_0_MAKER_FEES = False
     SPECIAL_ORDER_TYPES_BY_EXCHANGE_ID: dict[
         str, (
             str, # symbol
@@ -76,6 +77,7 @@ class AbstractAuthenticatedExchangeTester:
     # closed orders fees are taken from recent trades
     EXPECT_MISSING_FEE_IN_CANCELLED_ORDERS = True  # when get_cancelled_orders returns None in fee
     EXPECT_POSSIBLE_ORDER_NOT_FOUND_DURING_ORDER_CREATION = False
+    CONVERTS_MARKET_INTO_LIMIT_ORDERS = False   # when market orders are always converted into limit order by the exchange
     OPEN_ORDERS_IN_CLOSED_ORDERS = False
     CANCELLED_ORDERS_IN_CLOSED_ORDERS = False
     EXPECT_FETCH_ORDER_TO_BE_AVAILABLE = True
@@ -357,6 +359,8 @@ class AbstractAuthenticatedExchangeTester:
             amount = self.get_order_size(
                 portfolio, price, symbol=self.SYMBOL, settlement_currency=self.SETTLEMENT_CURRENCY
             ) * 100000
+            if amount == 0:
+                amount = 100000
             if self.CHECK_EMPTY_ACCOUNT:
                 amount = 10
             # (amount is too large, creating buy order will fail)
@@ -477,6 +481,7 @@ class AbstractAuthenticatedExchangeTester:
         # return
         for exchange_id, order_details in self.SPECIAL_ORDER_TYPES_BY_EXCHANGE_ID.items():
             symbol, info_key, info_type, expected_type, expected_side, expected_trigger_above = order_details
+            print(order_details)
             fetched_order = await self.exchange_manager.exchange.get_order(exchange_id, symbol=symbol)
             assert fetched_order is not None
             self._check_fetched_order_dicts([fetched_order])
@@ -561,7 +566,7 @@ class AbstractAuthenticatedExchangeTester:
         open_orders = await self.get_open_orders(exchange_data)
         cancelled_orders = await self.get_cancelled_orders(exchange_data)
         if self.CHECK_EMPTY_ACCOUNT:
-            assert size == trading_constants.ZERO
+            assert size >= trading_constants.ZERO if enable_min_size_check else size == trading_constants.ZERO
             assert open_orders == []
             assert cancelled_orders == []
             return
@@ -649,7 +654,9 @@ class AbstractAuthenticatedExchangeTester:
     async def inner_test_create_and_cancel_stop_orders(self):
         current_price = await self.get_price()
         price = self.get_order_price(current_price, False)
-        size = self.get_order_size(await self.get_portfolio(), price)
+        portfolio = await self.get_portfolio()
+        base = symbols.parse_symbol(self.SYMBOL).base
+        size = self.get_order_size(portfolio, price, settlement_currency=base)
         open_orders = await self.get_open_orders()
         assert self.exchange_manager.exchange.is_supported_order_type(
             trading_enums.TraderOrderType.STOP_LOSS
@@ -1007,7 +1014,7 @@ class AbstractAuthenticatedExchangeTester:
             assert order.fee is None
         else:
             try:
-                assert order.fee
+                assert order.fee, f"Unexpected missing fee: {order.to_dict()}"
                 assert isinstance(order.fee[trading_enums.FeePropertyColumns.COST.value], decimal.Decimal)
                 has_paid_fees = order.fee[trading_enums.FeePropertyColumns.COST.value] > trading_constants.ZERO
                 if has_paid_fees:
@@ -1024,7 +1031,12 @@ class AbstractAuthenticatedExchangeTester:
                 else:
                     assert order.fee[trading_enums.FeePropertyColumns.IS_FROM_EXCHANGE.value] is True
             except AssertionError:
-                if allow_incomplete_fees and self.EXPECT_MISSING_ORDER_FEES_DUE_TO_ORDERS_TOO_OLD_FOR_RECENT_TRADES:
+                if (
+                    not order.fee and self.ALLOW_0_MAKER_FEES and
+                    order.taker_or_maker == trading_enums.ExchangeConstantsOrderColumns.MAKER.value
+                ):
+                    incomplete_fee_orders.append(order)
+                elif allow_incomplete_fees and self.EXPECT_MISSING_ORDER_FEES_DUE_TO_ORDERS_TOO_OLD_FOR_RECENT_TRADES:
                     incomplete_fee_orders.append(order)
                 else:
                     raise
@@ -1059,7 +1071,7 @@ class AbstractAuthenticatedExchangeTester:
 
     def check_parsed_trade(self, trade: personal_data.Trade):
         assert trade.symbol
-        assert trade.total_cost
+        assert trade.total_cost > 0
         assert trade.trade_type
         assert trade.trade_type is not trading_enums.TraderOrderType.UNKNOWN
         assert trade.exchange_trade_type is not trading_enums.TradeOrderType.UNKNOWN
@@ -1198,8 +1210,10 @@ class AbstractAuthenticatedExchangeTester:
         symbol = symbols.parse_symbol(symbol or self.SYMBOL)
         if symbol.is_inverse():
             order_quantity = currency_quantity * price
-        else:
+        elif settlement_currency == symbol.quote:
             order_quantity = currency_quantity / price
+        else:
+            order_quantity = currency_quantity
         return personal_data.decimal_adapt_quantity(
             self.exchange_manager.exchange.get_market_status(str(symbol)),
             order_quantity
@@ -1284,8 +1298,12 @@ class AbstractAuthenticatedExchangeTester:
 
     def check_created_market_order(self, order, size, side):
         self._check_order(order, size, side)
-        expected_type = personal_data.BuyMarketOrder \
-            if side is trading_enums.TradeOrderSide.BUY else personal_data.SellMarketOrder
+        if self.CONVERTS_MARKET_INTO_LIMIT_ORDERS:
+            expected_type = personal_data.BuyLimitOrder \
+                if side is trading_enums.TradeOrderSide.BUY else personal_data.SellLimitOrder
+        else:
+            expected_type = personal_data.BuyMarketOrder \
+                if side is trading_enums.TradeOrderSide.BUY else personal_data.SellMarketOrder
         assert isinstance(order, expected_type)
 
     def check_created_stop_order(self, order, price, size, side):
@@ -1310,10 +1328,13 @@ class AbstractAuthenticatedExchangeTester:
     def _check_order(self, order, size, side):
         if self.CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES:
             # actual origin_quantity may vary due to quantity conversion for market orders
-            assert size * decimal.Decimal("0.8") <= order.origin_quantity <= size * decimal.Decimal("1.2")
+            assert size * decimal.Decimal("0.8") <= order.origin_quantity <= size * decimal.Decimal("1.2"), (
+                f"FALSE: {size * decimal.Decimal('0.8')} <= {order.origin_quantity} <= {size * decimal.Decimal('1.2')}"
+            )
         else:
             assert order.origin_quantity == size
         assert order.side is side
+        assert order.total_cost > trading_constants.ZERO
         assert order.is_open()
 
     async def wait_for_order_exchange_id_in_trades(self, order_exchange_id):
