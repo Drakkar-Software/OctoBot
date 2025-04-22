@@ -147,7 +147,7 @@ def get_custom_strategy_name(base_name) -> str:
     return f"{CUSTOM_STRATEGY_PREFIX}{base_name}"
 
 
-def is_custom_strategy_profile(profile: profiles.ProfileData) -> str:
+def is_custom_strategy_profile(profile: profiles.ProfileData) -> bool:
     return (
         profile.profile_details.name
         and profile.profile_details.name.startswith(CUSTOM_STRATEGY_PREFIX)
