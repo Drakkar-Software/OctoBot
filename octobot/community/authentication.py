@@ -942,3 +942,24 @@ class CommunityAuthentication(authentication.Authenticator):
                 f"Skipping activity update: current bot {self.user_account.bot_id} has no deployment"
             )
 
+    async def fetch_script_from_database(self):
+        """
+        Fetches a script from the database
+        """
+        try:
+            script = await self.supabase_client.fetch_script_from_database()
+            return script
+        except Exception as err:
+            self.logger.exception(err, True, f"Error when fetching script from database: {err}")
+            return None
+
+    async def determine_best_performance(self):
+        """
+        Determines the best performance for the application and bot
+        """
+        try:
+            performance = await self.supabase_client.determine_best_performance()
+            return performance
+        except Exception as err:
+            self.logger.exception(err, True, f"Error when determining best performance: {err}")
+            return None

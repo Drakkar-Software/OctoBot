@@ -1056,16 +1056,42 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
                 pass
             self.production_anon_client = None
 
+    async def fetch_script_from_database(self):
+        """
+        Fetches a script from the database
+        """
+        try:
+            script = await self.functions.invoke(
+                "fetch_script_from_database",
+                {
+                    "body": {
+                        "script_id": "your_script_id"
+                    },
+                }
+            )
+            return json.loads(script)["script"]
+        except Exception as err:
+            commons_logging.get_logger(self.__class__.__name__).exception(
+                err, True, f"Error when fetching script from database: {err}"
+            )
+            return None
 
-def _is_jwt_expired_error(err: Exception) -> bool:
-    return "jwt expired" in str(err).lower()
-
-
-@contextlib.contextmanager
-def jwt_expired_auth_raiser():
-    try:
-        yield
-    except postgrest.exceptions.APIError as err:
-        if _is_jwt_expired_error(err):
-            raise authentication.AuthenticationError(f"Please re-login to your OctoBot account: {err}") from err
-        raise
+    async def determine_best_performance(self):
+        """
+        Determines the best performance for the application and bot
+        """
+        try:
+            performance = await self.functions.invoke(
+                "determine_best_performance",
+                {
+                    "body": {
+                        "bot_id": "your_bot_id"
+                    },
+                }
+            )
+            return json.loads(performance)["performance"]
+        except Exception as err:
+            commons_logging.get_logger(self.__class__.__name__).exception(
+                err, True, f"Error when determining best performance: {err}"
+            )
+            return None

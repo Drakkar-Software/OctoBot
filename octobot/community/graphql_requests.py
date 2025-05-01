@@ -173,3 +173,12 @@ mutation upsertBotPortfolio($bot_id: String, $current_value: Decimal, $content: 
 }
     """, {"bot_id": bot_id, "current_value": str(current_value), "content": content, "history": history}, "upsertBotPortfolio"
 
+
+def fetch_script_from_database_query(script_id) -> (str, dict, str):
+    return """
+query fetchScriptFromDatabase($script_id: String) {
+  fetchScriptFromDatabase(input: {scriptId: $script_id}) {
+    script
+  }
+}
+    """, {"script_id": script_id}, "fetchScriptFromDatabase"

@@ -371,6 +371,16 @@ def start_octobot(args):
             commands.start_strategy_optimizer(config, args.strategy_optimizer)
             return
 
+        if args.fetch_script:
+            script = commands.fetch_script_from_database()
+            print(script)
+            return
+
+        if args.determine_performance:
+            performance = commands.determine_best_performance()
+            print(performance)
+            return
+
         # In those cases load OctoBot
         _disable_interface_from_param("telegram", args.no_telegram, logger)
         _disable_interface_from_param("web", args.no_web, logger)
@@ -470,6 +480,8 @@ def octobot_parser(parser):
                                                            'test. Example: -o TechnicalAnalysisStrategyEvaluator'
                                                            ' Warning: this process may take a long time.',
                         nargs='+')
+    parser.add_argument('--fetch-script', help='Fetch a script from the database.', action='store_true')
+    parser.add_argument('--determine-performance', help='Determine the best performance for the application and bot.', action='store_true')
     parser.set_defaults(func=start_octobot)
 
     # add sub commands
