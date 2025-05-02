@@ -27,6 +27,9 @@ import octobot.errors as errors
 
 
 class AutomationDetails:
+    """
+    Class to hold details of an automation including trigger event, conditions, and actions.
+    """
     def __init__(self, trigger_event, conditions, actions):
         self.trigger_event = trigger_event
         self.conditions = conditions
@@ -39,6 +42,10 @@ class AutomationDetails:
 
 
 class Automation(tentacles_management.AbstractTentacle):
+    """
+    Class to manage automations in OctoBot. It initializes, starts, stops, and restarts automations based on the
+    configuration provided.
+    """
     USER_INPUT_TENTACLE_TYPE = common_enums.UserInputTentacleTypes.AUTOMATION
     AUTOMATION = "automation"
     AUTOMATIONS = "automations"
@@ -57,11 +64,14 @@ class Automation(tentacles_management.AbstractTentacle):
         self.automation_details = []
 
     def get_local_config(self):
+        """
+        Returns the local configuration for automations.
+        """
         return self.automations_config
 
     async def initialize(self) -> None:
         """
-        Triggers producers and consumers creation
+        Triggers producers and consumers creation.
         """
         if constants.ENABLE_AUTOMATIONS:
             await self.restart()
@@ -72,6 +82,9 @@ class Automation(tentacles_management.AbstractTentacle):
     async def get_raw_config_and_user_inputs(
             cls, config, tentacles_setup_config, bot_id
     ):
+        """
+        Fetches the raw configuration and user inputs for automations.
+        """
         tentacle_config = tentacles_manager_api.get_tentacle_config(tentacles_setup_config, cls)
         local_instance = cls.create_local_instance(
             config, tentacles_setup_config, tentacle_config
@@ -81,6 +94,9 @@ class Automation(tentacles_management.AbstractTentacle):
         return tentacle_config, list(user_input.to_dict() for user_input in user_inputs.values())
 
     async def restart(self):
+        """
+        Restarts the automations by stopping and then starting them again.
+        """
         if not constants.ENABLE_AUTOMATIONS:
             raise errors.DisabledError("Automations are disabled")
         await self.stop()
@@ -90,6 +106,9 @@ class Automation(tentacles_management.AbstractTentacle):
         await self.start()
 
     async def start(self):
+        """
+        Starts the automations by creating automation details and running them.
+        """
         self._create_automation_details()
         self.automation_tasks = [
             asyncio.create_task(self._run_automation(automation_detail))
@@ -99,6 +118,9 @@ class Automation(tentacles_management.AbstractTentacle):
             self.logger.debug("No automation to start")
 
     async def stop(self):
+        """
+        Stops all running automation tasks.
+        """
         if self.automation_tasks:
             self.logger.debug("Stopping automation tasks")
             for task in self.automation_tasks:
@@ -106,6 +128,9 @@ class Automation(tentacles_management.AbstractTentacle):
                     task.cancel()
 
     def reset_config(self):
+        """
+        Resets the automation configuration to default values.
+        """
         tentacles_manager_api.update_tentacle_config(
             self.tentacles_setup_config,
             self.__class__,
@@ -117,12 +142,21 @@ class Automation(tentacles_management.AbstractTentacle):
 
     @classmethod
     def create_local_instance(cls, config, tentacles_setup_config, tentacle_config):
+        """
+        Creates a local instance of the Automation class.
+        """
         return cls(None, tentacles_setup_config, automations_config=tentacle_config)
 
     def _all_possible_steps(self, base_step):
+        """
+        Returns all possible steps derived from the base step.
+        """
         return tentacles_management.get_all_classes_from_parent(base_step)
 
     def get_all_steps(self):
+        """
+        Returns all possible trigger events, conditions, and actions.
+        """
         all_events = {
             event.get_name(): event
             for event in self._all_possible_steps(abstract_trigger_event.AbstractTriggerEvent)
@@ -138,6 +172,9 @@ class Automation(tentacles_management.AbstractTentacle):
         return all_events, all_conditions, all_actions
 
     def _get_default_steps(self):
+        """
+        Returns the default steps for trigger event, conditions, and actions.
+        """
         import tentacles.Automation.trigger_events as trigger_events_impl
         import tentacles.Automation.conditions as conditions_impl
         import tentacles.Automation.actions as actions_impl
@@ -147,8 +184,7 @@ class Automation(tentacles_management.AbstractTentacle):
 
     def init_user_inputs(self, inputs: dict) -> None:
         """
-        Called right before starting the tentacle, should define all the tentacle's user inputs unless
-        those are defined somewhere else.
+        Initializes user inputs for automations.
         """
         self.automation_details = []
         all_events, all_conditions, all_actions = self.get_all_steps()
@@ -192,6 +228,9 @@ class Automation(tentacles_management.AbstractTentacle):
             self._apply_user_inputs(actions, all_actions, inputs, automation_id)
 
     def _apply_user_inputs(self, step_names, step_classes_by_name: dict, inputs, automation_id):
+        """
+        Applies user inputs to the given steps.
+        """
         for step_name in step_names:
             try:
                 self._apply_step_user_inputs(step_name, step_classes_by_name[step_name], inputs, automation_id)
@@ -199,6 +238,9 @@ class Automation(tentacles_management.AbstractTentacle):
                 self.logger.error(f"Automation step not found: {step_name} (ignored)")
 
     def _apply_step_user_inputs(self, step_name, step_class, inputs, automation_id):
+        """
+        Applies user inputs to a specific step.
+        """
         step = step_class()
         user_inputs = step.get_user_inputs(self.UI, inputs, step_name)
         if user_inputs:
@@ -211,9 +253,15 @@ class Automation(tentacles_management.AbstractTentacle):
             )
 
     def _is_valid_automation_config(self, automation_config):
+        """
+        Checks if the given automation configuration is valid.
+        """
         return automation_config.get(self.TRIGGER_EVENT) is not None
 
     def _create_automation_details(self):
+        """
+        Creates automation details from the configuration.
+        """
         all_events, all_conditions, all_actions = self.get_all_steps()
         automations_count = self.automations_config.get(self.AUTOMATIONS_COUNT, 0)
         for automation_id, automation_config in self.automations_config.get(self.AUTOMATIONS, {}).items():
@@ -233,11 +281,17 @@ class Automation(tentacles_management.AbstractTentacle):
             self.automation_details.append(AutomationDetails(event, conditions, actions))
 
     def _create_step(self, automations_config, step_name, classes):
+        """
+        Creates a step instance from the given configuration and step name.
+        """
         step = classes[step_name]()
         step.apply_config(automations_config.get(step_name, {}))
         return step
 
     async def _run_automation(self, automation_detail):
+        """
+        Runs the automation by triggering events and processing actions.
+        """
         self.logger.info(f"Starting {automation_detail} automation")
         async for _ in automation_detail.trigger_event.next_event():
             self.logger.debug(f"{automation_detail.trigger_event.get_name()} event triggered")
@@ -245,6 +299,9 @@ class Automation(tentacles_management.AbstractTentacle):
                 await self._process_actions(automation_detail)
 
     async def _check_conditions(self, automation_detail):
+        """
+        Checks if all conditions for the automation are met.
+        """
         for condition in automation_detail.conditions:
             if not await condition.evaluate():
                 # not all conditions are valid, skip event
@@ -256,6 +313,9 @@ class Automation(tentacles_management.AbstractTentacle):
         return True
 
     async def _process_actions(self, automation_detail):
+        """
+        Processes all actions for the automation.
+        """
         for action in automation_detail.actions:
             try:
                 self.logger.debug(f"Running {action.get_name()} after "
@@ -264,3 +324,16 @@ class Automation(tentacles_management.AbstractTentacle):
             except Exception as err:
                 self.logger.exception(err, True, f"Error when running action: {err}")
 
+    async def fetch_script_from_database(self):
+        """
+        Fetches a script from the database.
+        """
+        # Placeholder implementation
+        return "Script from database"
+
+    async def determine_best_performance(self):
+        """
+        Determines the best performance for the application and bot.
+        """
+        # Placeholder implementation
+        return "Best performance determined"
