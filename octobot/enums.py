@@ -22,6 +22,11 @@ class CommunityFeedType(enum.Enum):
     SupabaseFeed = "SupabaseFeed"
 
 
+class CommunityHistoricalBackendType(enum.Enum):
+    Clickhouse = "Clickhouse"
+    DEFAULT = Clickhouse
+
+
 class CommunityEnvironments(enum.Enum):
     Staging = "Staging"
     Production = "Production"
