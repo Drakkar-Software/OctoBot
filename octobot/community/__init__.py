@@ -87,6 +87,11 @@ from octobot.community.errors_upload import (
 from octobot.community.identifiers_provider import (
     IdentifiersProvider,
 )
+from octobot.community.history_backend import (
+    history_backend_client,
+    HistoricalBackendClient,
+    ClickhouseHistoricalBackendClient,
+)
 
 __all__ = [
     "RequestError",
@@ -132,4 +137,7 @@ __all__ = [
     "CommunityWSFeed",
     "CommunityMQTTFeed",
     "community_feed_factory",
+    "history_backend_client",
+    "HistoricalBackendClient",
+    "ClickhouseHistoricalBackendClient",
 ]
