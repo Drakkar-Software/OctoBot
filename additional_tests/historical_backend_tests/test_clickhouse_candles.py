@@ -17,47 +17,23 @@ import math
 import time
 import pytest
 
+from additional_tests.historical_backend_tests import clickhouse_client
+
 import octobot_commons.enums as commons_enums
-from additional_tests.supabase_backend_tests import authenticated_client_1, anon_client
 
 
 # All test coroutines will be treated as marked.
 pytestmark = pytest.mark.asyncio
 
 
-async def test_fetch_candles_history_range_as_auth(authenticated_client_1):
-    # locale db
-    min_time, max_time = await authenticated_client_1.fetch_candles_history_range(
-        "binance", "BTC/USDT", commons_enums.TimeFrames.FOUR_HOURS, False
+async def test_fetch_candles_history_range(clickhouse_client):
+    min_time, max_time = await clickhouse_client.fetch_candles_history_range(
+        "binance", "BTC/USDT", commons_enums.TimeFrames.FOUR_HOURS
     )
     assert 0 < min_time < max_time < time.time()
 
-    # prod db
-    prod_min_time, prod_max_time = await authenticated_client_1.fetch_candles_history_range(
-        "binance", "BTC/USDT", commons_enums.TimeFrames.FOUR_HOURS, True
-    )
-    assert 0 < prod_min_time < prod_max_time < time.time()
-    assert prod_min_time != min_time
-    assert prod_max_time != max_time
 
-
-async def test_fetch_candles_history_range_as_anon(anon_client):
-    # locale db
-    min_time, max_time = await anon_client.fetch_candles_history_range(
-        "binance", "BTC/USDT", commons_enums.TimeFrames.FOUR_HOURS, False
-    )
-    assert 0 < min_time < max_time < time.time()
-
-    # prod db
-    prod_min_time, prod_max_time = await anon_client.fetch_candles_history_range(
-        "binance", "BTC/USDT", commons_enums.TimeFrames.FOUR_HOURS, True
-    )
-    assert 0 < prod_min_time < prod_max_time < time.time()
-    assert prod_min_time != min_time
-    assert prod_max_time != max_time
-
-
-async def test_fetch_candles_history(anon_client):
+async def test_fetch_candles_history(clickhouse_client):
     start_time = 1718785679
     end_time = 1721377495
     candles_count = math.floor((end_time - start_time) / (
@@ -65,10 +41,18 @@ async def test_fetch_candles_history(anon_client):
     ))
     # requires multiple fetches
     assert candles_count  == 2879
-    candles = await anon_client.fetch_candles_history(
+    candles = await clickhouse_client.fetch_candles_history(
         "binance", "BTC/USDT", commons_enums.TimeFrames.FIFTEEN_MINUTES, start_time, end_time
     )
     fetched_count = candles_count + 1
     assert len(candles) == fetched_count
+    assert (
+        candles[0][commons_enums.PriceIndexes.IND_PRICE_TIME.value]
+        != candles[0][commons_enums.PriceIndexes.IND_PRICE_OPEN.value]
+        != candles[0][commons_enums.PriceIndexes.IND_PRICE_HIGH.value]
+        != candles[0][commons_enums.PriceIndexes.IND_PRICE_LOW.value]
+        != candles[0][commons_enums.PriceIndexes.IND_PRICE_CLOSE.value]
+        != candles[0][commons_enums.PriceIndexes.IND_PRICE_VOL.value]
+    )
     # candles are unique
     assert len(set(c[0] for c in candles)) == fetched_count
