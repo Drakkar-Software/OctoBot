@@ -725,50 +725,6 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             on_conflict=f"{enums.PortfolioHistoryKeys.TIME.value},{enums.PortfolioHistoryKeys.PORTFOLIO_ID.value}"
         ).execute()).data
 
-    async def fetch_candles_history_range(
-        self, exchange: str, symbol: str, time_frame: commons_enums.TimeFrames, use_production_db: bool
-    ) -> (typing.Union[float, None], typing.Union[float, None]):
-        params = {
-            "exchange_internal_name": exchange,
-            "symbol": symbol,
-            "time_frame": time_frame.value,
-        }
-        db_rpc = (await self.production_anon_rpc()) if use_production_db else self.rpc
-        range_return = (await db_rpc(
-            "get_ohlcv_range",
-            params
-        ).execute()).data
-        try:
-            min_max = range_return[0]
-            return (
-                self.get_parsed_time(min_max["min_value"]).timestamp() if min_max["min_value"] else None,
-                self.get_parsed_time(min_max["max_value"]).timestamp() if min_max["max_value"] else None,
-            )
-        except TypeError as err:
-            commons_logging.get_logger(self.__class__.__name__).exception(
-                err, True, f"Error when fetching candle history range using get_ohlcv_range for {params}: "
-                           f"returned value {range_return}, error: {err} ({err.__class__.__name__})"
-            )
-            raise
-
-    async def fetch_candles_history(
-        self, exchange: str, symbol: str, time_frame: commons_enums.TimeFrames,
-        first_open_time: float, last_open_time: float
-    ) -> list:
-        historical_candles = await self._paginated_fetch_historical_data(
-            await self.get_production_anon_client(),
-            "temp_ohlcv_history",
-            "timestamp, open, high, low, close, volume",
-            {
-                "exchange_internal_name": exchange,
-                "symbol": symbol,
-                "time_frame": time_frame.value,
-            },
-            first_open_time,
-            last_open_time
-        )
-        return self._format_ohlcvs(historical_candles)
-
     async def fetch_gpt_signal(
         self, exchange: str, symbol: str, time_frame: commons_enums.TimeFrames, timestamp: float, version: str
     ) -> str:
@@ -935,47 +891,6 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             self.get_parsed_time(signal["timestamp"]).timestamp(): signal["signal"]["content"]
             for signal in signals
         }
-
-    def _format_ohlcvs(self, ohlcvs: list):
-        # uses PriceIndexes order
-        # IND_PRICE_TIME = 0
-        # IND_PRICE_OPEN = 1
-        # IND_PRICE_HIGH = 2
-        # IND_PRICE_LOW = 3
-        # IND_PRICE_CLOSE = 4
-        # IND_PRICE_VOL = 5
-        return [
-            [
-                int(self.get_parsed_time(ohlcv["timestamp"]).timestamp()),
-                ohlcv["open"],
-                ohlcv["high"],
-                ohlcv["low"],
-                ohlcv["close"],
-                ohlcv["volume"],
-            ]
-            for ohlcv in ohlcvs
-        ]
-
-    # async def get_asset_id(self, bucket_id: str, asset_name: str) -> str:
-    #     """
-    #     Not implemented for authenticated users
-    #     """
-    #     # possible with new version ?
-    #     return (await self.storage.from_("objects").select("*")
-    #         .eq(
-    #             "bucket_id", bucket_id
-    #         ).eq(
-    #             "name", asset_name
-    #         ).execute()
-    #     ).data[0]["id"]
-    #     # async with self.other_postgres_client("storage") as client:
-    #     #     return (await client.from_("objects").select("*")
-    #     #         .eq(
-    #     #             "bucket_id", bucket_id
-    #     #         ).eq(
-    #     #             "name", asset_name
-    #     #         ).execute()
-    #     #     ).data[0]["id"]
 
     async def upload_asset(self, bucket_name: str, asset_name: str, content: typing.Union[str, bytes],) -> str:
         """
