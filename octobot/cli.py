@@ -18,6 +18,7 @@ import os
 import sys
 import multiprocessing
 import asyncio
+
 import packaging.version as packaging_version
 
 import octobot_commons.os_util as os_util
@@ -42,6 +43,7 @@ import octobot.commands as commands
 import octobot.configuration_manager as configuration_manager
 import octobot.octobot_backtesting_factory as octobot_backtesting
 import octobot.constants as constants
+import octobot.enums as enums
 import octobot.disclaimer as disclaimer
 import octobot.logger as octobot_logger
 import octobot.community as octobot_community
@@ -127,6 +129,10 @@ def _create_startup_config(logger):
             # real issue if tentacles exist otherwise continue
             if os.path.isdir(tentacles_manager_constants.TENTACLES_PATH):
                 raise
+    distribution = configuration_manager.get_distribution(config.config)
+    if distribution is not enums.OctoBotDistribution.DEFAULT:
+        logger.info(f"Using {distribution.value} OctoBot distribution.")
+
     return config, is_first_startup
 
 

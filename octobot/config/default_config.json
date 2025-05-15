@@ -19,5 +19,6 @@
     ]
   },
   "profile": "default",
-  "accepted_terms": false
+  "accepted_terms": false,
+  "distribution": "default"
 }

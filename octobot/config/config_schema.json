@@ -13,6 +13,9 @@
     "accepted_terms": {
       "type": "boolean"
     },
+    "distribution": {
+      "type": "string"
+    },
     "profile": {
       "type": "string"
     },
