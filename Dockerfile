@@ -18,12 +18,6 @@ RUN pip install -U setuptools wheel pip>=20.0.0 \
     && pip install --no-cache-dir --prefer-binary -r requirements.txt \
     && python setup.py install
 
-# build amazon-efs-utils
-# use v1.36.0 to avoid rust compiler requirement
-WORKDIR /opt/efs
-RUN git clone https://github.com/aws/efs-utils --branch v1.36.0 . \
-    && ./build-deb.sh
-
 FROM python:3.10-slim-buster
 
 ARG TENTACLES_URL_TAG=""
@@ -33,9 +27,6 @@ WORKDIR /octobot
 
 # Import python dependencies
 COPY --from=base /opt/venv /opt/venv
-
-# Import built dependencies
-COPY --from=base /opt/efs/build /opt/efs/build
 
 # Add default config files
 COPY octobot/config /octobot/octobot/config
@@ -51,12 +42,10 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends curl \
     && mkdir -p /usr/share/keyrings \
     && chmod 0755 /usr/share/keyrings \
-    && curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg | tee /usr/share/keyrings/cloudflare-main.gpg >/dev/null \ 
+    && curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg | tee /usr/share/keyrings/cloudflare-main.gpg >/dev/null \
     && echo 'deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared buster main' | tee /etc/apt/sources.list.d/cloudflared.list \
-    && apt-get update \ 
-    && apt-get install -y --no-install-recommends curl cloudflared s3fs nfs-common libxslt-dev libxcb-xinput0 libjpeg62-turbo-dev zlib1g-dev libblas-dev liblapack-dev libatlas-base-dev libopenjp2-7 libtiff-dev \
-    && apt-get -y install --no-install-recommends /opt/efs/build/amazon-efs-utils*deb \
-    && rm -rf /opt/efs \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends curl cloudflared libxslt-dev libxcb-xinput0 libjpeg62-turbo-dev zlib1g-dev libblas-dev liblapack-dev libatlas-base-dev libopenjp2-7 libtiff-dev \
     && rm -rf /var/lib/apt/lists/* \
     && ln -s /opt/venv/bin/OctoBot OctoBot # Make sure we use the virtualenv \
     && chmod +x docker-entrypoint.sh
