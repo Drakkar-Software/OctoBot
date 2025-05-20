@@ -113,8 +113,8 @@ def config_health_check(config: configuration.Configuration, in_backtesting: boo
 
 
 def init_config(
-        config_file=configuration.get_user_config(),
-        from_config_file=constants.DEFAULT_CONFIG_FILE
+    config_file=configuration.get_user_config(),
+    from_config_file=constants.DEFAULT_CONFIG_FILE
 ):
     """
     Initialize default config
