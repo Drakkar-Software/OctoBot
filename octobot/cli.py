@@ -112,13 +112,13 @@ def _create_configuration():
     return config
 
 
-def _create_startup_config(logger):
+def _create_startup_config(logger, default_config_file):
     logger.info("Loading config files...")
     config = _create_configuration()
     is_first_startup = config.is_config_file_empty_or_missing()
     if is_first_startup:
         logger.info("No configuration found creating default configuration...")
-        configuration_manager.init_config()
+        configuration_manager.init_config(from_config_file=default_config_file)
         config.read(should_raise=False)
     else:
         _read_config(config, logger)
@@ -299,7 +299,7 @@ def _load_or_create_tentacles(community_auth, config, logger):
         config.load_profiles_if_possible_and_necessary()
 
 
-def start_octobot(args):
+def start_octobot(args, default_config_file=None):
     logger = None
     try:
         if args.version:
@@ -318,7 +318,9 @@ def start_octobot(args):
         octobot_community.init_sentry_tracker()
 
         # load configuration
-        config, is_first_startup = _create_startup_config(logger)
+        config, is_first_startup = _create_startup_config(
+            logger, default_config_file or constants.DEFAULT_CONFIG_FILE
+        )
 
         # check config loading
         if not config.is_loaded():
@@ -425,7 +427,7 @@ def start_octobot(args):
         os._exit(-1)
 
 
-def octobot_parser(parser):
+def octobot_parser(parser, default_config_file=None):
     parser.add_argument('-v', '--version', help='Show OctoBot current version.',
                         action='store_true')
     parser.add_argument('-s', '--simulate', help='Force OctoBot to start with the trader simulator only.',
@@ -476,7 +478,7 @@ def octobot_parser(parser):
                                                            'test. Example: -o TechnicalAnalysisStrategyEvaluator'
                                                            ' Warning: this process may take a long time.',
                         nargs='+')
-    parser.set_defaults(func=start_octobot)
+    parser.set_defaults(func= lambda args: start_octobot(args, default_config_file))
 
     # add sub commands
     subparsers = parser.add_subparsers(title="Other commands")
@@ -489,23 +491,26 @@ def octobot_parser(parser):
     tentacles_parser.set_defaults(func=commands.call_tentacles_manager)
 
 
-def start_background_octobot_with_args(version=False,
-                                       update=False,
-                                       encrypter=False,
-                                       strategy_optimizer=False,
-                                       data_collector=False,
-                                       backtesting_files=None,
-                                       no_telegram=False,
-                                       no_web=False,
-                                       no_logs=False,
-                                       backtesting=False,
-                                       identifier=None,
-                                       whole_data_range=True,
-                                       enable_backtesting_timeout=True,
-                                       simulate=True,
-                                       risk=None,
-                                       in_subprocess=False,
-                                       reset_trading_history=False,):
+def start_background_octobot_with_args(
+    version=False,
+    update=False,
+    encrypter=False,
+    strategy_optimizer=False,
+    data_collector=False,
+    backtesting_files=None,
+    no_telegram=False,
+    no_web=False,
+    no_logs=False,
+    backtesting=False,
+    identifier=None,
+    whole_data_range=True,
+    enable_backtesting_timeout=True,
+    simulate=True,
+    risk=None,
+    in_subprocess=False,
+    reset_trading_history=False,
+    default_config_file=None,
+):
     if backtesting_files is None:
         backtesting_files = []
     args = argparse.Namespace(version=version,
@@ -525,18 +530,18 @@ def start_background_octobot_with_args(version=False,
                               risk=risk,
                               reset_trading_history=reset_trading_history)
     if in_subprocess:
-        bot_process = multiprocessing.Process(target=start_octobot, args=(args,))
+        bot_process = multiprocessing.Process(target=start_octobot, args=(args, default_config_file))
         bot_process.start()
         return bot_process
     else:
-        return start_octobot(args)
+        return start_octobot(args, default_config_file)
 
 
-def main(args=None):
+def main(args=None, default_config_file=None):
     if not args:
         args = sys.argv[1:]
     parser = argparse.ArgumentParser(description='OctoBot')
-    octobot_parser(parser)
+    octobot_parser(parser, default_config_file=default_config_file)
 
     MIN_TENTACLE_MANAGER_VERSION = "1.0.10"
 
