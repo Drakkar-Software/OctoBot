@@ -472,6 +472,65 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             for td in bot_config[enums.BotConfigKeys.OPTIONS.value].get(enums.BotConfigOptionsKeys.TENTACLES.value, [])
         ]
 
+    async def fetch_bot_nested_config_profile_data_if_any(
+        self,
+        master_profile_config: typing.Optional[dict] = None,
+        bot_config_options: typing.Optional[dict] = None,
+        nested_config_id: typing.Optional[str] = None,
+    ) -> typing.Optional[dict]:
+        # one of master_profile_config, bot_config_options or nested_config_slug must be provided
+        # if there is a nested config to be found
+        to_fetch_nested_config = {}
+        if bot_config_options:
+            # use bot local config options as a priority when provided
+            to_fetch_nested_config = bot_config_options.get(enums.NestedProductConfigKeys.NESTED_CONFIG_ROOT.value, {})
+        if master_profile_config and not to_fetch_nested_config:
+            # no nested config in bot local config options, try master product config
+            to_fetch_nested_config = master_profile_config.get(enums.NestedProductConfigKeys.NESTED_CONFIG_ROOT.value, {})
+        try:
+            if to_fetch_nested_config:
+                if nested_config_slug := to_fetch_nested_config.get(enums.NestedProductConfigKeys.SLUG.value):
+                    nested_product_details = (await self.table("products").select(
+                        "slug, attributes, current_config_id,"
+                        "product_config:product_configs!current_config_id!inner("
+                        "   id, "
+                        "   config, "
+                        "   version"
+                        ")"
+                    ).eq(enums.ProductKeys.SLUG.value, nested_config_slug).execute()).data[0]
+                    # format as in fetch_bot_profile_data
+                    nested_product_config = nested_product_details["product_config"]
+                    nested_product_config["product"] = {
+                        enums.ProductKeys.SLUG.value: nested_product_details[enums.ProductKeys.SLUG.value],
+                        enums.ProductKeys.ATTRIBUTES.value: nested_product_details[enums.ProductKeys.ATTRIBUTES.value],
+                    }
+                    return nested_product_config
+                # slug should be available if to_fetch_nested_config has been set
+                key = (
+                    f"bot_config.options.{enums.NestedProductConfigKeys.NESTED_CONFIG_ROOT.value}" if bot_config_options
+                    else f"master product_config.config.{enums.NestedProductConfigKeys.NESTED_CONFIG_ROOT.value}"
+                )
+                raise TypeError(f"Invalid product nested config: {key} is '{to_fetch_nested_config}'")
+            if nested_config_id:
+                nested_product_config = (await self.table("product_configs").select(
+                    "id, "
+                    "config, "
+                    "version, "
+                    "product:products!product_id("
+                    "   slug, "
+                    "   attributes, "
+                    "   current_config_id"  # current_config_id is required to identify product current config in updates
+                    ")"
+                ).eq(enums.ProfileConfigKeys.ID.value, nested_config_id).execute()).data[0]
+                return nested_product_config
+        except IndexError as err:
+            raise errors.InvalidBotConfigError(
+                f"Invalid nested product config: Nested product not found {err} ({err.__class__.__name__}). "
+                f"{to_fetch_nested_config=} {nested_config_id=}"
+            ) from err
+        # no nested config or config id
+        return None
+
     async def fetch_bot_profile_data(self, bot_config_id: str) -> commons_profiles.ProfileData:
         if not bot_config_id:
             raise errors.MissingBotConfigError(f"bot_config_id is '{bot_config_id}'")
@@ -487,31 +546,49 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             "   product:products!product_id(slug, attributes)"
             ")"
         ).eq(enums.BotConfigKeys.ID.value, bot_config_id).execute()).data[0]
+        nested_strategy_slug = nested_strategy_config_id = None
+        bot_config_options = bot_config.get(enums.BotConfigKeys.OPTIONS.value) or {}
         try:
-            profile_config = bot_config["product_config"][enums.ProfileConfigKeys.CONFIG.value]
-            if not profile_config:
-                raise TypeError(f"product_config.config is '{profile_config}'")
-            profile_data = commons_profiles.ProfileData.from_dict(profile_config)
+            master_product_config = bot_config["product_config"]
+            master_profile_config = master_product_config[enums.ProfileConfigKeys.CONFIG.value]
+            if not master_profile_config:
+                raise TypeError(f"master product_config.config is '{master_profile_config}'")
+            if nested_product_config := await self.fetch_bot_nested_config_profile_data_if_any(
+                master_profile_config=master_profile_config, bot_config_options=bot_config_options
+            ):
+                # nested strategy: use nested strategy product config and details
+                nested_product_details = nested_product_config.get("product", {})
+                nested_strategy_slug = nested_product_details.get(enums.ProductKeys.SLUG.value, "")
+                nested_strategy_config_id = nested_product_config.get(enums.ProfileConfigKeys.ID.value, "")
+                # the nested strategy profile config will be executed
+                executed_product_config = nested_product_config
+                executed_profile_config = nested_product_config[enums.ProfileConfigKeys.CONFIG.value]
+            else:
+                # non-nested strategy: use master product config
+                executed_product_config = master_product_config
+                executed_profile_config = master_profile_config
+            # always build profile_data using the strategy the bot will actually execute, which might be a nested one
+            profile_data = commons_profiles.ProfileData.from_dict(executed_profile_config)
         except (TypeError, KeyError) as err:
             raise errors.InvalidBotConfigError(f"Missing bot product config: {err} ({err.__class__.__name__})") from err
-        profile_data.profile_details.name = bot_config["product_config"].get("product", {}).get(
-            "slug", profile_data.profile_details.name
+        profile_data.profile_details.name = formatters.create_profile_name(
+            master_product_config.get("product", {}).get(enums.ProductKeys.SLUG.value, "")
+                or profile_data.profile_details.name,
+            nested_strategy_slug
         )
+        profile_data.profile_details.nested_strategy_config_id = nested_strategy_config_id
         profile_data.profile_details.user_id = bot_config["bot"]["user_id"]
+        profile_data.profile_details.version = executed_product_config[enums.ProfileConfigKeys.VERSION.value]
+        profile_data.profile_details.id = bot_config_id
         profile_data.trading.minimal_funds = [
             commons_profiles.MinimalFund.from_dict(minimal_fund)
-            for minimal_fund in bot_config["product_config"]["product"][
+            for minimal_fund in executed_product_config["product"][
                 enums.ProductKeys.ATTRIBUTES.value
             ].get("minimal_funds", [])
         ] if bot_config[enums.BotConfigKeys.EXCHANGES.value] else []
-        profile_data.profile_details.version = bot_config["product_config"][enums.ProfileConfigKeys.VERSION.value]
         profile_data.trader_simulator.enabled = bot_config.get(enums.BotConfigKeys.IS_SIMULATED.value, False)
-        profile_data.trading.sellable_assets = (bot_config.get(
-            enums.BotConfigKeys.OPTIONS.value
-        ) or {}).get("sellable_assets")
-        portfolio = (bot_config.get(
-            enums.BotConfigKeys.OPTIONS.value
-        ) or {}).get("portfolio")
+        profile_data.trading.sellable_assets = bot_config_options.get("sellable_assets")
+        portfolio = bot_config_options.get("portfolio")
         if portfolio:
             if trading_api.is_usd_like_coin(profile_data.trading.reference_market):
                 usd_like_asset = profile_data.trading.reference_market
@@ -525,16 +602,20 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         elif profile_data.trader_simulator.enabled:
             # portfolio is required on trading simulator
             raise errors.InvalidBotConfigError("Missing portfolio in bot config")
-        profile_data.profile_details.id = bot_config_id
-
-        profile_data.exchanges = await self._fetch_full_exchange_configs(bot_config, profile_data)
-        if options := bot_config.get(enums.BotConfigKeys.OPTIONS.value):
-            profile_data.options = commons_profiles.OptionsData.from_dict(options)
+        # only use exchanges from master product config to avoid exchange changes from swapped nested strategies
+        master_product_exchanges_configs = master_product_config[enums.ProfileConfigKeys.CONFIG.value].get(
+            "exchanges"
+        )
+        profile_data.exchanges = await self._fetch_full_exchange_configs(
+            bot_config, master_product_exchanges_configs, profile_data
+        )
+        if bot_config_options:
+            profile_data.options = commons_profiles.OptionsData.from_dict(bot_config_options)
             self._apply_options_based_tentacles_config(profile_data, bot_config)
         return profile_data
 
     async def _fetch_full_exchange_configs(
-        self, bot_config: dict, profile_data: commons_profiles.ProfileData
+        self, bot_config: dict, product_exchanges_configs, profile_data: commons_profiles.ProfileData
     ) -> list[commons_profiles.ExchangeData]:
 
         # ensure all required exchange info are available
@@ -590,9 +671,6 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         if not exchanges_configs:
             if profile_data.trader_simulator.enabled:
                 # last attempt (simulator only): use exchange details from product config
-                product_exchanges_configs = bot_config["product_config"][enums.ProfileConfigKeys.CONFIG.value][
-                    "exchanges"
-                ]
                 internal_names = [
                     exchanges_config[enums.ExchangeKeys.INTERNAL_NAME.value]
                     for exchanges_config in product_exchanges_configs

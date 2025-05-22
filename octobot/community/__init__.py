@@ -36,6 +36,7 @@ from octobot.community.models import (
     get_exchange_type_from_internal_name,
     to_community_exchange_internal_name,
     is_custom_category,
+    get_master_and_nested_product_slug_from_profile_name,
 )
 from octobot.community.supabase_backend import (
     SyncConfigurationStorage,
@@ -120,6 +121,7 @@ __all__ = [
     "get_exchange_type_from_internal_name",
     "to_community_exchange_internal_name",
     "is_custom_category",
+    "get_master_and_nested_product_slug_from_profile_name",
     "SyncConfigurationStorage",
     "ASyncConfigurationStorage",
     "AuthenticatedAsyncSupabaseClient",
