@@ -38,8 +38,9 @@ class ClickhouseHistoricalBackendClient(historical_backend_client.HistoricalBack
                 password=constants.CLICKHOUSE_PASSWORD
             )
         except (TypeError, Exception) as err:
-            commons_logging.get_logger().exception(err, True, f"Error when connecting to Clickhouse server: {err}")
-            raise
+            message = f"Error when connecting to Clickhouse server, {err.__class__.__name__}: {err}"
+            commons_logging.get_logger().exception(err, True, message)
+            raise err.__class__(message) from err
 
     async def close(self):
         if self._client is not None:
