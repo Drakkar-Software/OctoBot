@@ -42,3 +42,10 @@ class HistoricalBackendClient:
         time_frame: commons_enums.TimeFrames
     ) -> tuple[float, float]:
         raise NotImplementedError("fetch_candles_history_range is not implemented")
+
+    async def insert_candles_history(self, rows: list, column_names: list) -> None:
+        raise NotImplementedError("insert_candles_history is not implemented")
+
+    @staticmethod
+    def get_formatted_time(timestamp: float):
+        raise NotImplementedError("insert_candles_history is not implemented")

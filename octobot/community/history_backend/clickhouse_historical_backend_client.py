@@ -93,6 +93,13 @@ class ClickhouseHistoricalBackendClient(historical_backend_client.HistoricalBack
             _get_utc_timestamp_from_datetime(result.result_rows[0][1])
         )
 
+    async def insert_candles_history(self, rows: list, column_names: list) -> None:
+        await self._client.insert(
+            table="ohlcv_history",
+            data=rows,
+            column_names=column_names,
+        )
+
     @staticmethod
     def _format_ohlcvs(ohlcvs: typing.Iterable) -> list[list[float]]:
         # uses PriceIndexes order
@@ -113,6 +120,10 @@ class ClickhouseHistoricalBackendClient(historical_backend_client.HistoricalBack
             ]
             for ohlcv in ohlcvs
         ]
+
+    @staticmethod
+    def get_formatted_time(timestamp: float) -> datetime:
+        return datetime.fromtimestamp(timestamp, tz=timezone.utc)
 
 def _get_utc_timestamp_from_datetime(dt: datetime) -> float:
     """
