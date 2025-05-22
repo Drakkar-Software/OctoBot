@@ -233,8 +233,14 @@ class BotConfigKeys(enum.Enum):
     IS_SIMULATED = "is_simulated"
 
 
+class NestedProductConfigKeys(enum.Enum):
+    NESTED_CONFIG_ROOT = "nested_config"
+    SLUG = "slug"
+
+
 class BotConfigOptionsKeys(enum.Enum):
     TENTACLES = "tentacles"
+    NESTED_CONFIG = NestedProductConfigKeys.NESTED_CONFIG_ROOT.value
 
 
 class ProfileConfigKeys(enum.Enum):
