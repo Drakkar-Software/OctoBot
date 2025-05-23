@@ -1,6 +1,6 @@
 # OctoBot source code
 
-In this folder is only present the highest abstraction level code of OctoBot.
+In this repository is containing the highest abstraction level code of OctoBot.
 
 - The trading logic code can be found on the [OctoBot Trading dependency](https://github.com/Drakkar-Software/OctoBot-trading)
 - OctoBot strategies, external connectors and UI are located in the [OctoBot Tentacles](https://github.com/Drakkar-Software/OctoBot-tentacles) repository
