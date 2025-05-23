@@ -33,7 +33,6 @@ class TestAscendexAuthenticatedExchange(
     ORDER_SIZE = 30  # % of portfolio to include in test orders
     IGNORE_EXCHANGE_TRADE_ID = True
     EXPECT_MISSING_FEE_IN_CANCELLED_ORDERS = False
-    SKIP_IP_WHITELIST_TEST = True
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
