@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [TradingViewTradingMode] Support custom volumes when using multiple take profits
 - [Exchanges] Add Hyperliquid
 ### Updated
-- [CCXT] update to CCXT 4.4.72
+- [CCXT] update to CCXT 4.4.85
 - [DCATradingMode] Simplify strategy selector
 - [IndexTradingMode] Now cancels open orders when starting rebalance in order to free funds for rebalance
 - [TradingViewTradingMode] Now log all requests in info level to display it by default in the terminal
@@ -27,6 +27,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [Staggered & Grid trading modes] Improve interfering orders error message to make it easier to understand 
 - [DCATradingMode] Fix secondary order amounts when trading futures
 - [Daily & TradingView trading modes] Fix "all in" orders configuration issues
+### Note for Bybit users
+We didn't have the time to include the Bybit unified account fix in this version. We are
+scheduling it for the next one.
 
 ## [2.0.9] - 2025-03-06
 ### Added

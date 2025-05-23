@@ -34,12 +34,12 @@ class TestBinanceFuturesAuthenticatedExchange(
     SETTLEMENT_CURRENCY = "USDT"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}:{SETTLEMENT_CURRENCY}"
     INVERSE_SYMBOL = f"{ORDER_CURRENCY}/USD:{ORDER_CURRENCY}"
-    ORDER_SIZE = 30  # % of portfolio to include in test orders
+    ORDER_SIZE = 5  # % of portfolio to include in test orders
     DUPLICATE_TRADES_RATIO = 0.1   # allow 10% duplicate in trades (due to trade id set to order id)
     VALID_ORDER_ID = "26408108410"
     EXPECTED_QUOTE_MIN_ORDER_SIZE = 200   # min quote value of orders to create (used to check market status parsing)
     IS_AUTHENTICATED_REQUEST_CHECK_AVAILABLE = True    # set True when is_authenticated_request is implemented
-    MAX_TRADE_USD_VALUE = decimal.Decimal(200000)   # testnet portfolio
+    MAX_TRADE_USD_VALUE = decimal.Decimal(450000)   # testnet portfolio
     ALLOW_0_MAKER_FEES = True
 
     SPECIAL_ORDER_TYPES_BY_EXCHANGE_ID: dict[

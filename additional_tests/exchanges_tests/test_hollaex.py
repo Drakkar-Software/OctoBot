@@ -32,7 +32,7 @@ class TestHollaexAuthenticatedExchange(
     # fetched balance assets
     SETTLEMENT_CURRENCY = "USDT"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
-    ORDER_SIZE = 50  # % of portfolio to include in test orders
+    ORDER_SIZE = 5  # % of portfolio to include in test orders
     EXPECT_MISSING_ORDER_FEES_DUE_TO_ORDERS_TOO_OLD_FOR_RECENT_TRADES = True   # when recent trades are limited and
     # closed orders fees are taken from recent trades
     IGNORE_EXCHANGE_TRADE_ID = True
