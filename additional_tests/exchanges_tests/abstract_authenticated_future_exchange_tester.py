@@ -169,11 +169,9 @@ class AbstractAuthenticatedFutureExchangeTester(
 
     async def inner_test_create_and_cancel_limit_orders(self, symbol=None, settlement_currency=None):
         if self.exchange_manager.exchange.SUPPORTS_SET_MARGIN_TYPE:
-            await self.set_margin_type(trading_enums.MarginType.ISOLATED)
             await self._inner_test_create_and_cancel_limit_orders_for_margin_type(
                 symbol=symbol, settlement_currency=settlement_currency, margin_type=trading_enums.MarginType.ISOLATED
             )
-            await self.set_margin_type(trading_enums.MarginType.CROSS)
             await self._inner_test_create_and_cancel_limit_orders_for_margin_type(
                 symbol=symbol, settlement_currency=settlement_currency, margin_type=trading_enums.MarginType.CROSS
             )
@@ -186,8 +184,12 @@ class AbstractAuthenticatedFutureExchangeTester(
             self, symbol=None, settlement_currency=None, margin_type=None
     ):
         # test with linear symbol
+        if margin_type is not None:
+            await self.set_margin_type(margin_type)
         await super().inner_test_create_and_cancel_limit_orders(margin_type=margin_type)
         # test with inverse symbol
+        if margin_type is not None:
+            await self.set_margin_type(margin_type, symbol=self.INVERSE_SYMBOL)
         await super().inner_test_create_and_cancel_limit_orders(
             symbol=self.INVERSE_SYMBOL, settlement_currency=self.ORDER_CURRENCY, margin_type=margin_type
         )
