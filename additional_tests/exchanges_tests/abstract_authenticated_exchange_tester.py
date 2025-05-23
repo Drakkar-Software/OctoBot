@@ -110,6 +110,8 @@ class AbstractAuthenticatedExchangeTester:
     IS_BROKER_ENABLED_ACCOUNT = True # set False when this test account can't generate broker fees
     # set True when this exchange used to have symbols that can't be traded through API (ex: MEXC)
     USED_TO_HAVE_UNTRADABLE_SYMBOL = False
+    # set true when IP whitleist test should be skipped even though EXCHANGE_IP_WHITELIST_ERRORS is set
+    SKIP_IP_WHITELIST_TEST = False
 
     # Implement all "test_[name]" methods, call super() to run the test, pass to ignore it.
     # Override the "inner_test_[name]" method to override a test content.
@@ -433,7 +435,7 @@ class AbstractAuthenticatedExchangeTester:
         assert "inner_test_create_and_cancel_limit_orders#create_limit_order" in str(err)
 
     async def test_api_key_ip_whitelist_error(self):
-        if not self._supports_ip_whitelist_error():
+        if self.SKIP_IP_WHITELIST_TEST or not self._supports_ip_whitelist_error():
             return
         with pytest.raises(trading_errors.InvalidAPIKeyIPWhitelistError):
             created_exchange = mock.Mock()

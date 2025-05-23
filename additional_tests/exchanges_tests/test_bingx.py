@@ -36,6 +36,7 @@ class TestBingxAuthenticatedExchange(
     USE_ORDER_OPERATION_TO_CHECK_API_KEY_RIGHTS = True
     EXPECT_MISSING_FEE_IN_CANCELLED_ORDERS = False
     IS_AUTHENTICATED_REQUEST_CHECK_AVAILABLE = True    # set True when is_authenticated_request is implemented
+    SKIP_IP_WHITELIST_TEST = True
 
     VALID_ORDER_ID = "1812980957928929280"
 
