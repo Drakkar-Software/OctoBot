@@ -33,10 +33,10 @@ gotrue==2.11.3
 storage3==0.11.3
 supafunc==0.9.3
 postgrest==0.19.3
-realtime==2.0.2 # can't use a higher version as long as aiohttp==3.10.4 is enforced (requires aiohttp>=3.10.10)
+realtime==2.0.2
 
 # async http requests
-aiohttp==3.10.4
+aiohttp==3.11.18
 # updating to aiodns==3.2.0 is incompatible (and failing CI)
 # raises RuntimeError: aiodns needs a SelectorEventLoop on Windows. See more: https://github.com/saghul/aiodns/issues/86
 aiodns==3.1.1   # used by aiohttp
