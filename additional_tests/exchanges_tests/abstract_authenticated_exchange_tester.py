@@ -38,7 +38,7 @@ import octobot_trading.util.test_tools.exchanges_test_tools as exchanges_test_to
 import octobot_trading.util.test_tools.exchange_data as exchange_data_import
 import trading_backend.enums
 import octobot_tentacles_manager.api as tentacles_manager_api
-from additional_tests.exchanges_tests import get_authenticated_exchange_manager
+from additional_tests.exchanges_tests import get_authenticated_exchange_manager, NoProvidedCredentialsError
 
 # always import and load tentacles
 import tentacles
@@ -110,8 +110,6 @@ class AbstractAuthenticatedExchangeTester:
     IS_BROKER_ENABLED_ACCOUNT = True # set False when this test account can't generate broker fees
     # set True when this exchange used to have symbols that can't be traded through API (ex: MEXC)
     USED_TO_HAVE_UNTRADABLE_SYMBOL = False
-    # set true when IP whitleist test should be skipped even though EXCHANGE_IP_WHITELIST_ERRORS is set
-    SKIP_IP_WHITELIST_TEST = False
 
     # Implement all "test_[name]" methods, call super() to run the test, pass to ignore it.
     # Override the "inner_test_[name]" method to override a test content.
@@ -435,17 +433,20 @@ class AbstractAuthenticatedExchangeTester:
         assert "inner_test_create_and_cancel_limit_orders#create_limit_order" in str(err)
 
     async def test_api_key_ip_whitelist_error(self):
-        if self.SKIP_IP_WHITELIST_TEST or not self._supports_ip_whitelist_error():
+        if not self._supports_ip_whitelist_error():
             return
-        with pytest.raises(trading_errors.InvalidAPIKeyIPWhitelistError):
-            created_exchange = mock.Mock()
-            async with self.local_exchange_manager(identifiers_suffix="_INVALID_IP_WHITELIST"):
-                created_exchange()
-                # should fail
-                portfolio = await self.get_portfolio()
-                raise AssertionError(f"Did not raise on invalid IP whitelist error, fetched portfolio: {portfolio}")
-            # ensure self.local_exchange_manager did not raise
-            created_exchange.assert_called_once()
+        try:
+            with pytest.raises(trading_errors.InvalidAPIKeyIPWhitelistError):
+                created_exchange = mock.Mock()
+                async with self.local_exchange_manager(identifiers_suffix="_INVALID_IP_WHITELIST"):
+                    created_exchange()
+                    # should fail
+                    portfolio = await self.get_portfolio()
+                    raise AssertionError(f"Did not raise on invalid IP whitelist error, fetched portfolio: {portfolio}")
+                # ensure self.local_exchange_manager did not raise
+                created_exchange.assert_called_once()
+        except NoProvidedCredentialsError as err:
+            pytest.skip(f"Skipped test_api_key_ip_whitelist_error test: {err}")
 
     async def test_get_not_found_order(self):
         async with self.local_exchange_manager():

@@ -39,6 +39,10 @@ import tests.test_utils.config as test_utils_config
 LOADED_EXCHANGE_CREDS_ENV_VARIABLES = False
 
 
+class NoProvidedCredentialsError(Exception):
+    pass
+
+
 class ExchangeChannelMock:
     def __init__(self, exchange_manager, name):
         self.exchange_manager = exchange_manager
@@ -154,6 +158,8 @@ def _get_exchange_auth_details(exchange_name, use_invalid_creds):
     }
     if use_invalid_creds:
         _invalidate(config)
+    if not config[commons_constants.CONFIG_EXCHANGE_KEY]:
+        raise NoProvidedCredentialsError(f"No {exchange_name} credentials in environment variables")
     return config
 
 
