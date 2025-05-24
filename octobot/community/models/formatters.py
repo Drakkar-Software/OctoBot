@@ -165,6 +165,22 @@ def to_bot_exchange_internal_name(community_exchange_internal_name: str) -> str:
     return community_exchange_internal_name
 
 
+def create_profile_name(bot_strategy_slug: str, nested_strategy_slug: typing.Optional[str]) -> str:
+    if nested_strategy_slug is None:
+        return bot_strategy_slug
+    return f"{bot_strategy_slug}[{nested_strategy_slug}]"
+
+
+def get_master_and_nested_product_slug_from_profile_name(profile_name: str) -> (str, typing.Optional[str]):
+    nested_product_slug = None
+    master_product_slug = profile_name
+    if "[" in profile_name and "]" in profile_name:
+        # nested product: extract it
+        nested_product_slug = profile_name[profile_name.index("[") + 1:profile_name.index("]")]
+        master_product_slug = profile_name[:profile_name.index("[")]
+    return master_product_slug, nested_product_slug
+
+
 def ensure_profile_data_exchanges_internal_name_and_type(profile_data: commons_profiles.ProfileData):
     if profile_data.exchanges:
         for exchange_data in profile_data.exchanges:

@@ -284,7 +284,7 @@ class OctoBot:
             trading_mode = trading_api.get_activated_trading_mode(self.tentacles_setup_config)
         except octobot_commons.errors.ConfigTradingError as err:
             # no active trading mode
-            pass
+            self.logger.warning(f"Failed to get activated trading mode: {err}" )
         trading_mode_str = trading_mode.get_name() if trading_mode else "no trading mode"
         self.logger.info(f"Starting OctoBot with {trader_str} on "
                          f"{', '.join(exchanges) if exchanges else 'no exchange'} "
