@@ -30,7 +30,7 @@ class TestBitMartAuthenticatedExchange(
     ORDER_CURRENCY = "BTC"
     SETTLEMENT_CURRENCY = "USDT"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
-    ORDER_SIZE = 50  # % of portfolio to include in test orders
+    ORDER_SIZE = 80  # % of portfolio to include in test orders
     CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES = True
     VALID_ORDER_ID = "1777764898965454848"
     EXPECTED_GENERATED_ACCOUNT_ID = True
@@ -85,7 +85,7 @@ class TestBitMartAuthenticatedExchange(
         await super().test_get_closed_orders()
 
     async def test_get_cancelled_orders(self):
-        # broken: need v4 endpoint required, 13/03/25 ccxt still doesn't have it
+        # broken: need v4 endpoint required, 23/05/25 ccxt still doesn't have it
         await super().test_get_cancelled_orders()
 
     async def test_create_and_cancel_stop_orders(self):

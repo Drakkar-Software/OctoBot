@@ -22,6 +22,11 @@ class CommunityFeedType(enum.Enum):
     SupabaseFeed = "SupabaseFeed"
 
 
+class CommunityHistoricalBackendType(enum.Enum):
+    Clickhouse = "Clickhouse"
+    DEFAULT = Clickhouse
+
+
 class CommunityEnvironments(enum.Enum):
     Staging = "Staging"
     Production = "Production"
@@ -65,3 +70,8 @@ class OptimizerConfig(enum.Enum):
     DEFAULT_CROSSOVER_PERCENT = "default_crossover_percent"
     STAY_WITHIN_BOUNDARIES = "stay_within_boundaries"
     TARGET_FITNESS_SCORE = "target_fitness_score"
+
+
+class OctoBotDistribution(enum.Enum):
+    DEFAULT = "default"
+    MARKET_MAKING = "market_making"

@@ -6,6 +6,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [2.0.10] - 2025-05-21
+### Added
+- [Distributions] Add [market making distribution](https://github.com/Drakkar-Software/OctoBot-Market-Making)
+- [Orders] Support simultaneous stop and take profit orders in spot trading using the new inactive orders system. This is used by default when stop losses are created alongside take profits in real trading.
+- [TradingViewTradingMode] Support custom volumes when using multiple take profits
+- [Exchanges] Add Hyperliquid
+### Updated
+- [CCXT] update to CCXT 4.4.85
+- [DCATradingMode] Simplify strategy selector
+- [IndexTradingMode] Now cancels open orders when starting rebalance in order to free funds for rebalance
+- [TradingViewTradingMode] Now log all requests in info level to display it by default in the terminal
+- [Bitfinex] Rename bitfinex2 into bitfinex
+- [WavesExchanges] Fix market status parsing issues
+### Fixed
+- [Orders] Fixed a rare fees computation issue causing Index trading mode to fail rebalance
+- [FuturesTrading] Fixed position reversing orders issues
+- [WebInterface] fix multi exchange historical portfolio display
+- [Staggered & Grid trading modes] Fix PNL display issues
+- [Staggered & Grid trading modes] Improve interfering orders error message to make it easier to understand 
+- [DCATradingMode] Fix secondary order amounts when trading futures
+- [Daily & TradingView trading modes] Fix "all in" orders configuration issues
+### Note for Bybit users
+We didn't have the time to include the Bybit unified account fix in this version. We are
+scheduling it for the next one.
 
 ## [2.0.9] - 2025-03-06
 ### Added

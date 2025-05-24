@@ -38,7 +38,7 @@ import octobot_trading.util.test_tools.exchanges_test_tools as exchanges_test_to
 import octobot_trading.util.test_tools.exchange_data as exchange_data_import
 import trading_backend.enums
 import octobot_tentacles_manager.api as tentacles_manager_api
-from additional_tests.exchanges_tests import get_authenticated_exchange_manager
+from additional_tests.exchanges_tests import get_authenticated_exchange_manager, NoProvidedCredentialsError
 
 # always import and load tentacles
 import tentacles
@@ -435,15 +435,18 @@ class AbstractAuthenticatedExchangeTester:
     async def test_api_key_ip_whitelist_error(self):
         if not self._supports_ip_whitelist_error():
             return
-        with pytest.raises(trading_errors.InvalidAPIKeyIPWhitelistError):
-            created_exchange = mock.Mock()
-            async with self.local_exchange_manager(identifiers_suffix="_INVALID_IP_WHITELIST"):
-                created_exchange()
-                # should fail
-                portfolio = await self.get_portfolio()
-                raise AssertionError(f"Did not raise on invalid IP whitelist error, fetched portfolio: {portfolio}")
-            # ensure self.local_exchange_manager did not raise
-            created_exchange.assert_called_once()
+        try:
+            with pytest.raises(trading_errors.InvalidAPIKeyIPWhitelistError):
+                created_exchange = mock.Mock()
+                async with self.local_exchange_manager(identifiers_suffix="_INVALID_IP_WHITELIST"):
+                    created_exchange()
+                    # should fail
+                    portfolio = await self.get_portfolio()
+                    raise AssertionError(f"Did not raise on invalid IP whitelist error, fetched portfolio: {portfolio}")
+                # ensure self.local_exchange_manager did not raise
+                created_exchange.assert_called_once()
+        except NoProvidedCredentialsError as err:
+            pytest.skip(f"Skipped test_api_key_ip_whitelist_error test: {err}")
 
     async def test_get_not_found_order(self):
         async with self.local_exchange_manager():

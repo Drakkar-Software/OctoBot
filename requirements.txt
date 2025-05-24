@@ -1,9 +1,9 @@
 # Drakkar-Software requirements
-OctoBot-Commons==1.9.74
-OctoBot-Trading==2.4.176
+OctoBot-Commons==1.9.75
+OctoBot-Trading==2.4.178
 OctoBot-Evaluators==1.9.7
 OctoBot-Tentacles-Manager==2.9.16
-OctoBot-Services==1.6.23
+OctoBot-Services==1.6.24
 OctoBot-Backtesting==1.9.7
 Async-Channel==2.2.1
 trading-backend==1.2.38
@@ -20,6 +20,7 @@ setuptools==69.0.3
 websockets
 gmqtt==0.7.0
 pgpy==0.6.0
+clickhouse-connect==0.8.17
 
 # Error tracking
 sentry-sdk==2.20.0  # always make sure sentry_aiohttp_transport.py keep working
@@ -32,10 +33,10 @@ gotrue==2.11.3
 storage3==0.11.3
 supafunc==0.9.3
 postgrest==0.19.3
-realtime==2.0.2 # can't use a higher version as long as aiohttp==3.10.4 is enforced (requires aiohttp>=3.10.10)
+realtime==2.0.2
 
 # async http requests
-aiohttp==3.10.4
+aiohttp==3.11.18
 # updating to aiodns==3.2.0 is incompatible (and failing CI)
 # raises RuntimeError: aiodns needs a SelectorEventLoop on Windows. See more: https://github.com/saghul/aiodns/issues/86
 aiodns==3.1.1   # used by aiohttp

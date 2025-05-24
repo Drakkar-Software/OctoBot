@@ -14,7 +14,23 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
-PROJECT_NAME = "OctoBot"
-AUTHOR = "Drakkar-Software"
-VERSION = "2.0.10"  # major.minor.revision
-LONG_VERSION = f"{VERSION}"
+from octobot.community.history_backend import history_backend_factory
+from octobot.community.history_backend.history_backend_factory import (
+    history_backend_client,
+)
+
+from octobot.community.history_backend import historical_backend_client
+from octobot.community.history_backend.historical_backend_client import (
+    HistoricalBackendClient,
+)
+
+from octobot.community.history_backend import clickhouse_historical_backend_client
+from octobot.community.history_backend.clickhouse_historical_backend_client import (
+    ClickhouseHistoricalBackendClient,
+)
+
+__all__ = [
+    "history_backend_client",
+    "HistoricalBackendClient",
+    "ClickhouseHistoricalBackendClient",
+]

@@ -25,6 +25,7 @@ import octobot_commons.json_util as json_util
 import octobot_tentacles_manager.constants as tentacles_manager_constants
 
 import octobot_trading.api as trading_api
+import octobot.enums as enums
 
 LOGGER_NAME = "Configuration"
 
@@ -112,8 +113,8 @@ def config_health_check(config: configuration.Configuration, in_backtesting: boo
 
 
 def init_config(
-        config_file=configuration.get_user_config(),
-        from_config_file=constants.DEFAULT_CONFIG_FILE
+    config_file=configuration.get_user_config(),
+    from_config_file=constants.DEFAULT_CONFIG_FILE
 ):
     """
     Initialize default config
@@ -217,3 +218,10 @@ def migrate_from_previous_config(config):
     else:
         # real config issue
         return False
+
+
+def get_distribution(config: dict) -> enums.OctoBotDistribution:
+    try:
+        return enums.OctoBotDistribution(config[common_constants.CONFIG_DISTRIBUTION])
+    except KeyError:
+        return enums.OctoBotDistribution.DEFAULT

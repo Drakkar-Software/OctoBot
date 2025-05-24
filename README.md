@@ -1,4 +1,4 @@
-# OctoBot [2.0.9](https://github.com/Drakkar-Software/OctoBot/blob/master/CHANGELOG.md)
+# OctoBot [2.0.10](https://github.com/Drakkar-Software/OctoBot/blob/master/CHANGELOG.md)
 [![PyPI](https://img.shields.io/pypi/v/OctoBot.svg?logo=pypi)](https://pypi.org/project/OctoBot)
 [![Downloads](https://pepy.tech/badge/octobot/month)](https://pepy.tech/project/octobot)
 [![Dockerhub](https://img.shields.io/docker/pulls/drakkarsoftware/octobot.svg?logo=docker)](https://hub.docker.com/r/drakkarsoftware/octobot)
@@ -99,6 +99,16 @@ OctoBot comes with its [built-in backtesting engine](https://www.octobot.cloud/e
 
 Backtesting will give you accurate insights on the past performance and behavior of trading strategies.
 
+## Institutionals
+If you are an institutional interested in a commercial license or custom development to suit your specific needs please contact us at <a href="mailto:contact@drakkar.software">contact@drakkar.software</a>. 
+
+## Market making
+A [market making distribution of OctoBot](https://github.com/Drakkar-Software/OctoBot-market-making) is available as a free open source software.
+
+![octobot market making dashboard with buy and sell orders](https://raw.githubusercontent.com/Drakkar-Software/OctoBot-Market-Making/master/docs/octobot-market-making-dashboard-with-buy-and-sell-orders.png)
+
+Advanced market making strategies can be automated on [market-making.octobot.cloud](https://market-making.octobot.cloud/), the self-service market making platform based on OctoBot. Feel free to contact us if you have any questions about it.
+
 ## Contribute from a browser IDE 
 Make changes and contribute to OctoBot in a single click with an **already setup and ready to code developer environment** using Gitpod !
 
@@ -107,7 +117,7 @@ Make changes and contribute to OctoBot in a single click with an **already setup
 ## Hardware requirements  
 - CPU : 1 Core / 1GHz  
 - RAM : 250 MB  
-- Disk : 1 GB  
+- Disk : 1 GB
 
 ## Disclaimer
 Do not risk money which you are afraid to lose. USE THE SOFTWARE AT YOUR OWN RISK. THE AUTHORS 
@@ -117,17 +127,6 @@ Always start by running a trading bot in simulation mode and do not engage money
 before you understand how it works and what profit/loss you should expect.
 
 Please feel free to read the source code and understand the mechanism of this bot.
-
-## License
-GNU General Public License v3.0 or later.
-
-See [GPL-3.0 LICENSE](https://github.com/Drakkar-Software/OctoBot/blob/master/LICENSE) to see the full text.
-
-## Institutionals
-If you are an institutional interested in a commercial license or custom development to suit your specific needs please contact us at <a href="mailto:contact@drakkar.software">contact@drakkar.software</a>. 
-
-## Market making
-A version of OctoBot adapted for market making is available at [business.octobot.cloud](https://business.octobot.cloud/). Feel free to contact us if you have any questions about it.
 
 ## Sponsors
 <table>
@@ -148,3 +147,8 @@ A version of OctoBot adapted for market making is available at [business.octobot
 <td><a href="https://sentry.io/welcome/" target="_blank"><p align="center"><img src="https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/sentry.png" width="500px"></p></a></td>
 </tr>
 </table>
+
+## License
+GNU General Public License v3.0 or later.
+
+See [GPL-3.0 LICENSE](https://github.com/Drakkar-Software/OctoBot/blob/master/LICENSE) to see the full text.
