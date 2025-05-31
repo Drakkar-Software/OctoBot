@@ -735,19 +735,22 @@ class AbstractAuthenticatedExchangeTester:
         price = self.get_order_price(current_price, True)
         size = self.get_order_size(portfolio, price)
         open_orders = await self.get_open_orders()
-        sell_limit = await self.create_limit_order(price, size, trading_enums.TradeOrderSide.SELL)
-        self.check_created_limit_order(sell_limit, price, size, trading_enums.TradeOrderSide.SELL)
-        assert await self.order_in_open_orders(open_orders, sell_limit)
-        edited_price = self.get_order_price(current_price, True, price_diff=2*self.ORDER_PRICE_DIFF)
-        edited_size = self.get_order_size(portfolio, price, order_size=2*self.ORDER_SIZE)
-        await self.edit_order(sell_limit,
-                              edited_price=edited_price,
-                              edited_quantity=edited_size)
-        await self.wait_for_edit(sell_limit, edited_size)
-        sell_limit = await self.get_order(sell_limit.exchange_order_id, sell_limit.symbol)
-        self.check_created_limit_order(sell_limit, edited_price, edited_size, trading_enums.TradeOrderSide.SELL)
-        await self.cancel_order(sell_limit)
-        assert await self.order_not_in_open_orders(open_orders, sell_limit)
+        sell_limit = None
+        try:
+            sell_limit = await self.create_limit_order(price, size, trading_enums.TradeOrderSide.SELL)
+            self.check_created_limit_order(sell_limit, price, size, trading_enums.TradeOrderSide.SELL)
+            assert await self.order_in_open_orders(open_orders, sell_limit)
+            edited_price = self.get_order_price(current_price, True, price_diff=2*self.ORDER_PRICE_DIFF)
+            edited_size = self.get_order_size(portfolio, price, order_size=2*self.ORDER_SIZE)
+            sell_limit = await self.edit_order(sell_limit,
+                                  edited_price=edited_price,
+                                  edited_quantity=edited_size)
+            await self.wait_for_edit(sell_limit, edited_size)
+            sell_limit = await self.get_order(sell_limit.exchange_order_id, sell_limit.symbol)
+            self.check_created_limit_order(sell_limit, edited_price, edited_size, trading_enums.TradeOrderSide.SELL)
+        finally:
+            await self.cancel_order(sell_limit)
+            assert await self.order_not_in_open_orders(open_orders, sell_limit)
 
     async def test_edit_stop_order(self):
         # pass if not implemented
@@ -1137,7 +1140,7 @@ class AbstractAuthenticatedExchangeTester:
             params=params
         )
         assert edited_order is not None
-        return edited_order
+        return personal_data_orders.order_factory.create_order_instance_from_raw(self.exchange_manager.trader, edited_order)
 
     async def create_limit_order(self, price, size, side, symbol=None,
                                  push_on_exchange=True):
@@ -1423,6 +1426,10 @@ class AbstractAuthenticatedExchangeTester:
                       f"True after {time.time() - t0} seconds and {iterations} iterations. "
                       f"Order: [{order}]. Raw order: [{raw_order}]")
                 return raw_order
+            else:
+                print(f"{self.exchange_manager.exchange_name} {order.order_type} {validation_func.__name__} "
+                      f"False after {time.time() - t0} seconds and {iterations} iterations. "
+                      f"Order: [{order}]. Raw order: [{raw_order}]")
             await asyncio.sleep(1)
         raise TimeoutError(f"Order not filled/cancelled within {timeout}s: {order} ({validation_func.__name__})")
 
