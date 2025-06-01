@@ -386,6 +386,9 @@ class AbstractAuthenticatedFutureExchangeTester(
                 return True
         return False
 
+    def _get_edit_order_settlement_currency(self):
+        return self.SETTLEMENT_CURRENCY
+
     def check_theoretical_cost(self, symbol, quantity, price, cost):
         if symbol.is_inverse():
             theoretical_cost = quantity
