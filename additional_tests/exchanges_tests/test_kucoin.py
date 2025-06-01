@@ -129,8 +129,7 @@ class TestKucoinAuthenticatedExchange(
         await super().test_edit_limit_order()
 
     async def test_edit_stop_order(self):
-        # pass if not implemented
-        pass
+        await super().test_edit_stop_order()
 
     async def test_create_single_bundled_orders(self):
         # pass if not implemented
