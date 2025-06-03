@@ -133,6 +133,8 @@ def format_orders(orders: list, exchange_name: str) -> list:
             ),
             backend_enums.OrderKeys.EXCHANGE_ID.value: storage_order[trading_constants.STORAGE_ORIGIN_VALUE][
                 trading_enums.ExchangeConstantsOrderColumns.EXCHANGE_ID.value],
+            backend_enums.OrderKeys.REDUCE_ONLY.value: storage_order[trading_constants.STORAGE_ORIGIN_VALUE][
+                trading_enums.ExchangeConstantsOrderColumns.REDUCE_ONLY.value],
             backend_enums.OrderKeys.CHAINED.value: format_orders(
                 storage_order.get(trading_enums.StoredOrdersAttr.CHAINED_ORDERS.value, []), exchange_name
             ) if storage_order.get(trading_enums.StoredOrdersAttr.CHAINED_ORDERS.value, []) else []
