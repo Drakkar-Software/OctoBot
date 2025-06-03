@@ -1,0 +1,49 @@
+version: "3"
+
+services:
+  octobot:
+    image: drakkarsoftware/octobot:stable
+    restart: always
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.octobot.rule=Host(`${HOST:-octobot.localhost}`)
+      - traefik.http.services.octobot.loadbalancer.server.port=${PORT:-5001}
+      - traefik.http.routers.octobot.tls=true
+      - traefik.http.routers.octobot.tls.certresolver=letsencrypt
+    volumes:
+      - ./logs:/octobot/logs
+      - ./backtesting:/octobot/backtesting
+      - ./tentacles:/octobot/tentacles
+      - ./user:/octobot/user
+    expose:
+      - ${PORT:-5001}
+
+  traefik:
+    image: traefik:v2
+    restart: always
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+      - "--entrypoints.web.http.redirections.entrypoint.permanent=true"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.letsencrypt.acme.email=${LETSENCRYPT_EMAIL:-admin@example.com}"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./letsencrypt:/letsencrypt
+    environment:
+      - LETSENCRYPT_EMAIL=${LETSENCRYPT_EMAIL:-admin@example.com}
+
+  watchtower:
+    image: containrrr/watchtower
+    restart: always
+    command: --cleanup --include-restarting
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
