@@ -85,7 +85,7 @@ class AbstractAuthenticatedFutureExchangeTester(
         if self.SUPPORTS_GET_LEVERAGE:
             assert origin_leverage == await self.get_leverage()
         new_leverage = origin_leverage + 1
-        if not self.exchange_manager.exchange.UPDATE_LEVERAGE_FROM_API:
+        if not self.exchange_manager.exchange.supports_api_leverage_update(self.SYMBOL):
             # can't set from api: make sure of that
             with pytest.raises(trading_errors.NotSupported):
                 await self.exchange_manager.exchange.connector.set_symbol_leverage(self.SYMBOL, float(new_leverage))
