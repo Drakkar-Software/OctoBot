@@ -417,6 +417,7 @@ class OctoBotBacktesting:
                 .use_tentacles_setup_config(self.tentacles_setup_config) \
                 .use_trading_config_by_trading_mode(self.config_by_tentacle) \
                 .use_cached_markets(self.backtesting_data.use_cached_markets if self.backtesting_data else False) \
+                .use_exchange_config_by_exchange(self.config_by_tentacle) \
                 .set_bot_id(self.bot_id) \
                 .is_simulated() \
                 .is_rest_only() \
