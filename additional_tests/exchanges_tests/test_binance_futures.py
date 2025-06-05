@@ -41,6 +41,7 @@ class TestBinanceFuturesAuthenticatedExchange(
     IS_AUTHENTICATED_REQUEST_CHECK_AVAILABLE = True    # set True when is_authenticated_request is implemented
     MAX_TRADE_USD_VALUE = decimal.Decimal(450000)   # testnet portfolio
     ALLOW_0_MAKER_FEES = True
+    SUPPORTS_GET_MAX_ORDERS_COUNT = True
 
     SPECIAL_ORDER_TYPES_BY_EXCHANGE_ID: dict[
         str, (
@@ -86,6 +87,9 @@ class TestBinanceFuturesAuthenticatedExchange(
 
     async def test_untradable_symbols(self):
         await super().test_untradable_symbols()
+
+    async def test_get_max_orders_count(self):
+        await super().test_get_max_orders_count()
 
     async def test_get_account_id(self):
         await super().test_get_account_id()

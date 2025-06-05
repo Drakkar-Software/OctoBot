@@ -96,6 +96,10 @@ class AbstractAuthenticatedFutureExchangeTester(
         await self.set_leverage(origin_leverage)
         await self._check_margin_type_and_leverage(origin_margin_type, origin_leverage)  # did not change margin type
 
+    async def inner_test_get_max_orders_count(self):
+        self._test_symbol_max_orders_count(self.SYMBOL)
+        self._test_symbol_max_orders_count(self.INVERSE_SYMBOL)
+
     async def test_get_and_set_margin_type(self):
         # ensure set_leverage works
         async with self.local_exchange_manager():
