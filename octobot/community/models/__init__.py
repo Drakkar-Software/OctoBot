@@ -54,6 +54,7 @@ from octobot.community.models.formatters import (
     ensure_profile_data_exchanges_internal_name_and_type,
     get_exchange_type_from_internal_name,
     to_community_exchange_internal_name,
+    get_tentacles_data_exchange_config,
 )
 from octobot.community.models.community_public_data import (
     CommunityPublicData
@@ -85,6 +86,7 @@ __all__ = [
     "ensure_profile_data_exchanges_internal_name_and_type",
     "get_exchange_type_from_internal_name",
     "to_community_exchange_internal_name",
+    "get_tentacles_data_exchange_config",
     "CommunityPublicData",
     "StrategyData",
     "is_custom_category",

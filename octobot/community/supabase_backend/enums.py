@@ -115,6 +115,7 @@ class ExchangeKeys(enum.Enum):
     EXCHANGE_TYPE = "exchange_type"
     SANDBOXED = "sandboxed"
     AVAILABILITY = "availability"
+    URL = "url"
 
 
 class ExchangeSupportValues(enum.Enum):
