@@ -40,6 +40,7 @@ class TestKucoinFuturesAuthenticatedExchange(
     IS_AUTHENTICATED_REQUEST_CHECK_AVAILABLE = True    # set True when is_authenticated_request is implemented
     EXPECTED_QUOTE_MIN_ORDER_SIZE = 40
     EXPECT_BALANCE_FILTER_BY_MARKET_STATUS = True
+    SUPPORTS_GET_MAX_ORDERS_COUNT = True
 
     SPECIAL_ORDER_TYPES_BY_EXCHANGE_ID: dict[
         str, (
@@ -81,6 +82,9 @@ class TestKucoinFuturesAuthenticatedExchange(
 
     async def test_untradable_symbols(self):
         await super().test_untradable_symbols()
+
+    async def test_get_max_orders_count(self):
+        await super().test_get_max_orders_count()
 
     async def test_get_account_id(self):
         await super().test_get_account_id()

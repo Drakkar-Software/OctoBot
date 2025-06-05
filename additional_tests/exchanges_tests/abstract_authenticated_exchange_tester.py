@@ -110,6 +110,9 @@ class AbstractAuthenticatedExchangeTester:
     IS_BROKER_ENABLED_ACCOUNT = True # set False when this test account can't generate broker fees
     # set True when this exchange used to have symbols that can't be traded through API (ex: MEXC)
     USED_TO_HAVE_UNTRADABLE_SYMBOL = False
+    SUPPORTS_GET_MAX_ORDERS_COUNT = False   # when True, will ensure that default values are not used
+    DEFAULT_MAX_DEFAULT_ORDERS_COUNT = trading_constants.DEFAULT_MAX_DEFAULT_ORDERS_COUNT
+    DEFAULT_MAX_STOP_ORDERS_COUNT = trading_constants.DEFAULT_MAX_STOP_ORDERS_COUNT
 
     # Implement all "test_[name]" methods, call super() to run the test, pass to ignore it.
     # Override the "inner_test_[name]" method to override a test content.
@@ -265,6 +268,27 @@ class AbstractAuthenticatedExchangeTester:
                 )
                 await self.cancel_order(buy_limit)
                 print(f"{i+1}/{len(to_test_symbols)} : {symbol} Create & cancel order OK")
+
+    async def test_get_max_orders_count(self):
+        async with self.local_exchange_manager():
+            await self.inner_test_get_max_orders_count()
+
+    async def inner_test_get_max_orders_count(self):
+        self._test_symbol_max_orders_count(self.SYMBOL)
+
+    def _test_symbol_max_orders_count(self, symbol):
+        max_base_order_count = self.exchange_manager.exchange.get_max_orders_count(
+            symbol, trading_enums.TraderOrderType.BUY_LIMIT
+        )
+        max_stop_order_count = self.exchange_manager.exchange.get_max_orders_count(
+            symbol, trading_enums.TraderOrderType.STOP_LOSS
+        )
+        if self.SUPPORTS_GET_MAX_ORDERS_COUNT:
+            assert max_base_order_count != self.DEFAULT_MAX_DEFAULT_ORDERS_COUNT
+            assert max_stop_order_count != self.DEFAULT_MAX_STOP_ORDERS_COUNT
+        else:
+            assert max_base_order_count == self.DEFAULT_MAX_DEFAULT_ORDERS_COUNT
+            assert max_stop_order_count == self.DEFAULT_MAX_STOP_ORDERS_COUNT
 
     async def test_get_account_id(self):
         async with self.local_exchange_manager():

@@ -42,6 +42,8 @@ class TestBinanceAuthenticatedExchange(
     IS_BROKER_ENABLED_ACCOUNT = False
     IS_AUTHENTICATED_REQUEST_CHECK_AVAILABLE = True    # set True when is_authenticated_request is implemented
     CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES = True
+    SUPPORTS_GET_MAX_ORDERS_COUNT = True
+    DEFAULT_MAX_STOP_ORDERS_COUNT = -1  # different from real max orders count
 
     SPECIAL_ORDER_TYPES_BY_EXCHANGE_ID: dict[
         str, (
@@ -84,6 +86,9 @@ class TestBinanceAuthenticatedExchange(
 
     async def test_untradable_symbols(self):
         await super().test_untradable_symbols()
+
+    async def test_get_max_orders_count(self):
+        await super().test_get_max_orders_count()
 
     async def test_get_account_id(self):
         await super().test_get_account_id()
