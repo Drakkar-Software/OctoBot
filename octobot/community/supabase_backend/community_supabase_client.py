@@ -450,6 +450,12 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         tentacle_data_overrides = self.get_tentacles_data_options(bot_config)
         if not tentacle_data_overrides:
             return
+        self._include_tentacles_config(profile_data, tentacle_data_overrides)
+
+    def _include_tentacles_config(
+        self, profile_data: commons_profiles.ProfileData,
+        tentacle_data_overrides: list[commons_profile_data.TentaclesData]
+    ):
         tentacle_config_by_tentacle = {
             tentacle_config.name: tentacle_config.config
             for tentacle_config in profile_data.tentacles
@@ -606,9 +612,11 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         master_product_exchanges_configs = master_product_config[enums.ProfileConfigKeys.CONFIG.value].get(
             "exchanges"
         )
-        profile_data.exchanges = await self._fetch_full_exchange_configs(
+        profile_data.exchanges, exchange_tentacles_data = await self._fetch_full_exchange_configs(
             bot_config, master_product_exchanges_configs, profile_data
         )
+        if exchange_tentacles_data:
+            self._include_tentacles_config(profile_data, exchange_tentacles_data)
         if bot_config_options:
             profile_data.options = commons_profiles.OptionsData.from_dict(bot_config_options)
             self._apply_options_based_tentacles_config(profile_data, bot_config)
@@ -616,7 +624,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
 
     async def _fetch_full_exchange_configs(
         self, bot_config: dict, product_exchanges_configs, profile_data: commons_profiles.ProfileData
-    ) -> list[commons_profiles.ExchangeData]:
+    ) -> (list[commons_profiles.ExchangeData], list[commons_profile_data.TentaclesData]):
 
         # ensure all required exchange info are available
         # check 1: update exchange using exchange_id when set in bot_config
@@ -640,6 +648,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
                     **{
                         enums.ExchangeKeys.INTERNAL_NAME.value: exchange[enums.ExchangeKeys.INTERNAL_NAME.value],
                         enums.ExchangeKeys.AVAILABILITY.value: exchange[enums.ExchangeKeys.AVAILABILITY.value],
+                        enums.ExchangeKeys.URL.value: exchange[enums.ExchangeKeys.URL.value],
                     }
                 }
                 for exchange in fetched_exchanges
@@ -664,6 +673,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
                         enums.ExchangeKeys.EXCHANGE_ID.value: exchange[enums.ExchangeKeys.ID.value],
                         enums.ExchangeKeys.INTERNAL_NAME.value: exchange[enums.ExchangeKeys.INTERNAL_NAME.value],
                         enums.ExchangeKeys.AVAILABILITY.value: exchange[enums.ExchangeKeys.AVAILABILITY.value],
+                        enums.ExchangeKeys.URL.value: exchange[enums.ExchangeKeys.URL.value],
                     }
                 }
                 for credentials_id, exchange in exchanges_by_credential_ids.items()
@@ -681,6 +691,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
                         enums.ExchangeKeys.EXCHANGE_ID.value: exchange[enums.ExchangeKeys.ID.value],
                         enums.ExchangeKeys.INTERNAL_NAME.value: exchange[enums.ExchangeKeys.INTERNAL_NAME.value],
                         enums.ExchangeKeys.AVAILABILITY.value: exchange[enums.ExchangeKeys.AVAILABILITY.value],
+                        enums.ExchangeKeys.URL.value: exchange[enums.ExchangeKeys.URL.value],
                     }
                     for exchange in fetched_exchanges
                     # no way to differentiate futures and spot exchanges using internal_names only:
@@ -705,21 +716,29 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
                     enums.ExchangeKeys.AVAILABILITY.value
                 )
             )
+        exchange_tentacles_data = []
         for exchange_data in exchanges_configs:
             exchange_data[enums.ExchangeKeys.EXCHANGE_TYPE.value] = exchange_type
             exchange_data[enums.ExchangeKeys.INTERNAL_NAME.value] = formatters.to_bot_exchange_internal_name(
                 exchange_data[enums.ExchangeKeys.INTERNAL_NAME.value]
             )
+            if url := exchange_data.get(enums.ExchangeKeys.URL.value):
+                exchange_tentacles_data.append(
+                    formatters.get_tentacles_data_exchange_config(
+                        exchange_data[enums.ExchangeKeys.INTERNAL_NAME.value], url
+                    )
+                )
         return [
             commons_profiles.ExchangeData.from_dict(exchange_data)
             for exchange_data in exchanges_configs
-        ]
+        ], exchange_tentacles_data
 
     async def fetch_exchanges(self, exchange_ids: list, internal_names: typing.Optional[list] = None) -> list:
         # WARNING: setting internal_names can result in duplicate (futures and spot) exchanges
         select = self.table("exchanges").select(
             f"{enums.ExchangeKeys.ID.value}, "
             f"{enums.ExchangeKeys.INTERNAL_NAME.value}, "
+            f"{enums.ExchangeKeys.URL.value}, "
             f"{enums.ExchangeKeys.AVAILABILITY.value}"
         )
         if internal_names:
@@ -729,7 +748,12 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
     async def fetch_exchanges_by_credential_ids(self, exchange_credential_ids: list) -> dict:
         exchanges = (await self.table("exchange_credentials").select(
             "id,"
-            f"exchange:exchanges(id, {enums.ExchangeKeys.INTERNAL_NAME.value}, {enums.ExchangeKeys.AVAILABILITY.value})"
+            f"exchange:exchanges("
+            f"  {enums.ExchangeKeys.ID.value}, "
+            f"  {enums.ExchangeKeys.INTERNAL_NAME.value}, "
+            f"  {enums.ExchangeKeys.URL.value}, "
+            f"  {enums.ExchangeKeys.AVAILABILITY.value}"
+            f")"
         ).in_("id", exchange_credential_ids).execute()).data
         return {
             exchange["id"]: exchange["exchange"]
