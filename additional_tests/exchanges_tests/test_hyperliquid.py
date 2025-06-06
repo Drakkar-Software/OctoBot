@@ -43,6 +43,9 @@ class TestHyperliquidAuthenticatedExchange(
     async def test_untradable_symbols(self):
         await super().test_untradable_symbols()
 
+    async def test_get_max_orders_count(self):
+        await super().test_get_max_orders_count()
+
     async def test_get_account_id(self):
         # pass if not implemented
         pass

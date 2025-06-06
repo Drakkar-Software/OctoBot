@@ -37,6 +37,7 @@ class TestKucoinAuthenticatedExchange(
     VALID_ORDER_ID = "6617e84c5c1e0000083c71f7"
     IS_AUTHENTICATED_REQUEST_CHECK_AVAILABLE = True    # set True when is_authenticated_request is implemented
     CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES = True
+    SUPPORTS_GET_MAX_ORDERS_COUNT = True
 
     SPECIAL_ORDER_TYPES_BY_EXCHANGE_ID: dict[
         str, (
@@ -79,6 +80,9 @@ class TestKucoinAuthenticatedExchange(
 
     async def test_untradable_symbols(self):
         await super().test_untradable_symbols()
+
+    async def test_get_max_orders_count(self):
+        await super().test_get_max_orders_count()
 
     async def test_is_valid_account(self):
         await super().test_is_valid_account()

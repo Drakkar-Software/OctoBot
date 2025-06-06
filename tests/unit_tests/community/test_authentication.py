@@ -155,7 +155,7 @@ async def test_fetch_bot_profile_data_without_tentacles_options(auth):
     with mock.patch.object(postgrest.AsyncQueryRequestBuilder, "execute",
                            mock.AsyncMock(return_value=mock.Mock(data=[FETCHED_PROFILE]))) as execute_mock, \
             mock.patch.object(auth.supabase_client, "_fetch_full_exchange_configs",
-                              mock.AsyncMock(return_value=[])) as _fetch_full_exchange_configs_mock:
+                              mock.AsyncMock(return_value=([], []))) as _fetch_full_exchange_configs_mock:
         parsed_data = octobot_commons.profiles.profile_data.ProfileData.from_dict(
             {"backtesting_context": {"exchanges": ["mexc"], "start_time_delta": 15552000,
                                      "starting_portfolio": {"USDT": 3000}, "update_interval": 604800},
@@ -246,7 +246,7 @@ async def test_fetch_bot_profile_data_with_tentacles_options(auth):
     with mock.patch.object(postgrest.AsyncQueryRequestBuilder, "execute",
                            mock.AsyncMock(return_value=mock.Mock(data=[FETCHED_PROFILE]))) as execute_mock, \
             mock.patch.object(auth.supabase_client, "_fetch_full_exchange_configs",
-                              mock.AsyncMock(return_value=[])) as _fetch_full_exchange_configs_mock:
+                              mock.AsyncMock(return_value=([], []))) as _fetch_full_exchange_configs_mock:
         parsed_data = octobot_commons.profiles.profile_data.ProfileData.from_dict(
             {"backtesting_context": {"exchanges": ["mexc"], "start_time_delta": 15552000,
                                      "starting_portfolio": {"USDT": 3000}, "update_interval": 604800},

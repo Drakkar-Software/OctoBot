@@ -85,7 +85,7 @@ class AbstractAuthenticatedFutureExchangeTester(
         if self.SUPPORTS_GET_LEVERAGE:
             assert origin_leverage == await self.get_leverage()
         new_leverage = origin_leverage + 1
-        if not self.exchange_manager.exchange.UPDATE_LEVERAGE_FROM_API:
+        if not self.exchange_manager.exchange.supports_api_leverage_update(self.SYMBOL):
             # can't set from api: make sure of that
             with pytest.raises(trading_errors.NotSupported):
                 await self.exchange_manager.exchange.connector.set_symbol_leverage(self.SYMBOL, float(new_leverage))
@@ -95,6 +95,10 @@ class AbstractAuthenticatedFutureExchangeTester(
         # change leverage back to origin value
         await self.set_leverage(origin_leverage)
         await self._check_margin_type_and_leverage(origin_margin_type, origin_leverage)  # did not change margin type
+
+    async def inner_test_get_max_orders_count(self):
+        self._test_symbol_max_orders_count(self.SYMBOL)
+        self._test_symbol_max_orders_count(self.INVERSE_SYMBOL)
 
     async def test_get_and_set_margin_type(self):
         # ensure set_leverage works
