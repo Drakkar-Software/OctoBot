@@ -6,6 +6,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [2.0.11] - 2025-06-06
+### Added
+- [DCATradingMode] Handle maximum open orders count per exchange
+- [Backtesting] Support HollaEx exchanges backtesting with real market rules
+### Updated
+- [DCATradingMode] Now updates leverage before entering a new position in futures trading when leverage is different from configured
+- [DCATradingMode] Improve "missing funds" error message to be easier to understand and fix
+- [WebInterface] Remove "emit signals" trading mode configuration
+### Fixed
+- [WebInterface] Fix invalid PNL display on PNL view
+- [WebInterface] Restore order quantity trading mode configuration
+- [Kucoin] Fix issues when setting leverage of cross positions
+- [Exchanges] Stop loss and edit orders issues
+- [Exchanges] Rare order cancel synchronization issues 
+
 ## [2.0.10] - 2025-05-21
 ### Added
 - [Distributions] Add [market making distribution](https://github.com/Drakkar-Software/OctoBot-Market-Making)
