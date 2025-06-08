@@ -43,6 +43,7 @@ import octobot.community.errors as errors
 import octobot.community.models.formatters as formatters
 import octobot.community.models.community_user_account as community_user_account
 import octobot.community.models.strategy_data as strategy_data
+import octobot.community.supabase_backend.error_translator as error_translator
 import octobot.community.supabase_backend.enums as enums
 import octobot.community.supabase_backend.supabase_client as supabase_client
 import octobot.community.supabase_backend.configuration_storage as configuration_storage
@@ -99,10 +100,10 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
                 "password": password,
             })
         except gotrue.errors.AuthApiError as err:
-            if "email" in str(err).lower():
-                # AuthApiError('Email not confirmed')
-                raise errors.EmailValidationRequiredError(err) from err
-            raise authentication.FailedAuthentication(f"Community auth error: {err}") from err
+            translated_error = error_translator.translate_error_code(err.code)
+            if err.code == error_translator.EMAIL_NOT_CONFIRMED_ERROR:
+                raise errors.EmailValidationRequiredError(translated_error) from err
+            raise authentication.FailedAuthentication(translated_error) from err
 
     async def sign_up(self, email: str, password: str) -> None:
         try:
@@ -118,10 +119,12 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
                     }
                 }
             })
+            if self._is_email_already_in_use(resp.user):
+                raise authentication.AuthenticationError(error_translator.translate_error_code("email_exists"))
             if self._requires_email_validation(resp.user):
                 raise errors.EmailValidationRequiredError()
         except gotrue.errors.AuthError as err:
-            raise authentication.AuthenticationError(f"Community auth error: {err}") from err
+            raise authentication.AuthenticationError(error_translator.translate_error_code(err.code)) from err
 
     async def sign_out(self, options: gotrue.types.SignOutOptions) -> None:
         try:
@@ -132,6 +135,12 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
     def _requires_email_validation(self, user: gotrue.types.User) -> bool:
         return user.app_metadata.get("provider") == "email" and user.confirmed_at is None
 
+    def _is_email_already_in_use(self, user: gotrue.types.User) -> bool:
+        # // Check if the user got created based on https://github.com/orgs/supabase/discussions/1282
+        if user.identities and len(user.identities) > 0:
+            return False
+        return True
+
     async def restore_session(self):
         self.event_loop = asyncio.get_event_loop()
         await self.auth.initialize_from_storage()
@@ -141,7 +150,9 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
     async def refresh_session(self, refresh_token: typing.Union[str, None] = None):
         try:
             await self.auth.refresh_session(refresh_token=refresh_token)
-        except (postgrest.exceptions.APIError, gotrue.errors.AuthError) as err:
+        except gotrue.errors.AuthError as err:
+            raise authentication.AuthenticationError(error_translator.translate_error_code(err.code)) from err
+        except postgrest.exceptions.APIError as err:
             raise authentication.AuthenticationError(f"Community auth error: {err}") from err
 
     async def sign_in_with_otp_token(self, token):
@@ -160,7 +171,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         except gotrue.errors.AuthImplicitGrantRedirectError as err:
             if saved_session:
                 await self.auth._storage.set_item(self.auth._storage_key, saved_session)
-            raise authentication.AuthenticationError(f"Community auth error: {err}") from err
+            raise authentication.AuthenticationError(error_translator.translate_error_code(err.code)) from err
 
     def is_signed_in(self) -> bool:
         # is signed in when a user auth key is set
@@ -186,9 +197,12 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             user = await self._get_user()
             return user.model_dump()
         except gotrue.errors.AuthApiError as err:
-            if "missing" in str(err):
-                raise errors.EmailValidationRequiredError(err) from err
-            raise authentication.AuthenticationError(f"Please re-login to your OctoBot account: {err}") from err
+            translated_error = error_translator.translate_error_code(err.code)
+            if err.code == error_translator.EMAIL_NOT_CONFIRMED_ERROR:
+                raise errors.EmailValidationRequiredError(translated_error) from err
+            raise authentication.AuthenticationError(
+                f"Please re-login to your OctoBot account: {translated_error}"
+            ) from err
 
     async def get_otp_with_auth_key(self, user_email: str, auth_key: str) -> str:
         try:
