@@ -680,6 +680,14 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             exchanges_by_credential_ids = await self.fetch_exchanges_by_credential_ids(
                 list(incomplete_exchange_config_by_credentials_id)
             )
+            if len(incomplete_exchange_config_by_credentials_id) != len(exchanges_by_credential_ids):
+                missing = [
+                    cred for cred in incomplete_exchange_config_by_credentials_id
+                    if cred not in exchanges_by_credential_ids
+                ]
+                commons_logging.get_logger(self.__class__.__name__).error(
+                    f"{len(missing)} exchange credentials id not found in db: {', '.join(missing)}"
+                )
             exchanges_configs += [
                 {
                     **incomplete_exchange_config_by_credentials_id[credentials_id],
