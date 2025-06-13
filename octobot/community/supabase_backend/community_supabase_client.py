@@ -149,7 +149,8 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
 
     async def refresh_session(self, refresh_token: typing.Union[str, None] = None):
         try:
-            await self.auth.refresh_session(refresh_token=refresh_token)
+            with jwt_expired_auth_raiser():
+                await self.auth.refresh_session(refresh_token=refresh_token)
         except gotrue.errors.AuthError as err:
             raise authentication.AuthenticationError(error_translator.translate_error_code(err.code)) from err
         except postgrest.exceptions.APIError as err:
@@ -1106,5 +1107,5 @@ def jwt_expired_auth_raiser():
         yield
     except postgrest.exceptions.APIError as err:
         if _is_jwt_expired_error(err):
-            raise authentication.AuthenticationError(f"Please re-login to your OctoBot account: {err}") from err
+            raise errors.JWTExpiredError(f"Please re-login to your OctoBot account: {err}") from err
         raise
