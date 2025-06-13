@@ -50,13 +50,13 @@ def expired_session_retrier(func):
         try:
             with supabase_backend.error_describer():
                 return await func(*args, **kwargs)
-        except errors.SessionTokenExpiredError:
+        except (errors.SessionTokenExpiredError, errors.JWTExpiredError):
             try:
                 with supabase_backend.error_describer():
                     self.logger.info(f"Expired session, trying to refresh token.")
                     await self.supabase_client.refresh_session()
                     return await func(*args, **kwargs)
-            except errors.SessionTokenExpiredError as err:
+            except (errors.SessionTokenExpiredError, errors.JWTExpiredError) as err:
                 if await self.auto_reauthenticate():
                     self.logger.error(
                         f"Impossible to use default refresh token, using saved auth details instead."
