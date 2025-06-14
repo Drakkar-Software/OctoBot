@@ -1369,6 +1369,7 @@ class AbstractAuthenticatedExchangeTester:
             )
         else:
             assert order.origin_quantity == size
+        assert order.exchange_order_id and isinstance(order.exchange_order_id, str)
         assert order.side is side
         assert order.total_cost > trading_constants.ZERO
         assert order.is_open()
