@@ -114,12 +114,12 @@ async def test_login(auth):
 
 
 async def test_fetch_bot_profile_data_without_tentacles_options(auth):
-    FETCHED_PROFILE = {
+    FETCHED_PROFILE_USD_LIKE = {
         "bot_id": "53e0dc3e-3cbe-476d-9bda-b30bc4941fb4",
         "bot": {"user_id": "3330dc3e-3cbe-476d-9bda-b30bc4941fb4"},
         "exchanges": [
             {"exchange_credential_id": "30ee7b12-3415-4ce4-b050-80d8bf4548be"}], "is_simulated": True,
-        "options": {"portfolio": [{"asset": "USDT", "value": 1000}]}, "product_config": {"config": {
+        "options": {"portfolio": [{"asset": "USD-like", "value": 1000}]}, "product_config": {"config": {
             "backtesting_context": {"exchanges": ["mexc"], "start_time_delta": 15552000,
                                     "starting_portfolio": {"USDT": 3000}},
             "crypto_currencies": [{"name": "Bitcoin", "trading_pairs": ["BTC/USDT"]}],
@@ -141,7 +141,7 @@ async def test_fetch_bot_profile_data_without_tentacles_options(auth):
                               "name": "SimpleStrategyEvaluator"},
                           {"config": {"period_length": 9, "price_threshold_percent": 0},
                            "name": "EMAMomentumEvaluator"}], "trader": {"enabled": True}, "trader_simulator": {},
-            "trading": {"reference_market": "USDT", "risk": 0.5}}, "product": {
+            "trading": {"reference_market": "USD-like", "risk": 0.5}}, "product": {
             "attributes": {"coins": ["BTC", "USDT"], "ease": "Easy", "exchanges": ["mexc"],
                            "minimal_funds": [{"asset": "USD-like", "value": 50}], "risk": "Moderate",
                            "subcategories": ["classic-dca", "popular"], "trading": ["Spot"]}, "slug": "bitcoin-vision"},
@@ -152,15 +152,16 @@ async def test_fetch_bot_profile_data_without_tentacles_options(auth):
         "YXQiOjE2ODQ2ODcwMTksImV4cCI6MjAwMDI2MzAxOX0.UH0g1ZDr9kDQMkGWxxy29lLjDEIPlSeU_f2GjwFFfGE",
         None
     )
+    exchange_data = octobot_commons.profiles.profile_data.ExchangeData(internal_name="mexc")
     with mock.patch.object(postgrest.AsyncQueryRequestBuilder, "execute",
-                           mock.AsyncMock(return_value=mock.Mock(data=[FETCHED_PROFILE]))) as execute_mock, \
+                           mock.AsyncMock(return_value=mock.Mock(data=[FETCHED_PROFILE_USD_LIKE]))) as execute_mock, \
             mock.patch.object(auth.supabase_client, "_fetch_full_exchange_configs",
-                              mock.AsyncMock(return_value=([], []))) as _fetch_full_exchange_configs_mock:
+                              mock.AsyncMock(return_value=([exchange_data], []))) as _fetch_full_exchange_configs_mock:
         parsed_data = octobot_commons.profiles.profile_data.ProfileData.from_dict(
             {"backtesting_context": {"exchanges": ["mexc"], "start_time_delta": 15552000,
                                      "starting_portfolio": {"USDT": 3000}, "update_interval": 604800},
              "crypto_currencies": [{"enabled": True, "name": "Bitcoin", "trading_pairs": ["BTC/USDT"]}],
-             "exchanges": [], "future_exchange_data": {"default_leverage": None, "symbol_data": []},
+             "exchanges": [{"internal_name": "mexc"}], "future_exchange_data": {"default_leverage": None, "symbol_data": []},
              "options": {"values": {}},
              "profile_details": {
                  "bot_id": None, "id": "bot_id", "name": "bitcoin-vision", "version": "0.0.1",
@@ -185,13 +186,13 @@ async def test_fetch_bot_profile_data_without_tentacles_options(auth):
                                "name": "SimpleStrategyEvaluator"},
                            {"config": {"period_length": 9, "price_threshold_percent": 0},
                             "name": "EMAMomentumEvaluator"}], "trader": {"enabled": True},
-             "trader_simulator": {"enabled": True, "maker_fees": 0.1, "starting_portfolio": {"USDT": 1000},
+             "trader_simulator": {"enabled": True, "maker_fees": 0.1, "starting_portfolio": {"USDC": 1000},
                                   "taker_fees": 0.1},
              "trading": {"minimal_funds": [{"asset": "USD-like", "available": 50, "total": 50}],
-                         "reference_market": "USDT", "risk": 0.5, "sub_portfolio": {'USDT': 1000},
+                         "reference_market": "USDC", "risk": 0.5, "sub_portfolio": {'USDC': 1000},
                          "sellable_assets": None}}
         )
-        assert await auth.supabase_client.fetch_bot_profile_data("bot_id") == parsed_data
+        assert await auth.supabase_client.fetch_bot_profile_data("bot_id", {"mexc": "USDC"}) == parsed_data
         execute_mock.assert_called_once()
         _fetch_full_exchange_configs_mock.assert_called_once()
 
@@ -280,7 +281,7 @@ async def test_fetch_bot_profile_data_with_tentacles_options(auth):
                          "reference_market": "USDT", "risk": 0.5, "sub_portfolio": {'USDT': 2000},
                          "sellable_assets": ["USDT", "EUR", "ETH"]}}
         )
-        assert await auth.supabase_client.fetch_bot_profile_data("bot_id") == parsed_data
+        assert await auth.supabase_client.fetch_bot_profile_data("bot_id", {}) == parsed_data
         execute_mock.assert_called_once()
         _fetch_full_exchange_configs_mock.assert_called_once()
 
