@@ -212,6 +212,12 @@ class PortfolioKeys(enum.Enum):
     PROFITABILITY = "profitability"
     UNIT = "unit"
     CONTENT = "content"
+    PORTFOLIO_TYPE = "portfolio_type"
+
+
+class PortfolioTypes(enum.Enum):
+    FULL_PORTFOLIO = "full-portfolio"
+    SUB_PORTFOLIO = "sub-portfolio"
 
 
 class PortfolioHistoryKeys(enum.Enum):

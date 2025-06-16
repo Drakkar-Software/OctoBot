@@ -350,5 +350,6 @@ def portfolio_mock(seed, bot_id):
         {"plop": {commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("12.2")},
          "BTC": {commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("0.32")}},
         {"plop": 1, "BTC": 12},
-        bot_id
+        bot_id,
+        False
     )

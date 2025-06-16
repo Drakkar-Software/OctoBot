@@ -222,7 +222,7 @@ def get_exchange_type_from_availability(exchange_availability: dict) -> str:
 def format_portfolio(
     current_value: dict, initial_value: dict, profitability: float,
     unit: str, content: dict[str, dict[str, float]], price_by_asset: dict[str, typing.Union[float, decimal.Decimal]],
-    bot_id: str
+    bot_id: str, is_sub_portfolio: bool
 ) -> dict:
     ref_market_current_value = current_value[unit]
     ref_market_initial_value = initial_value[unit]
@@ -233,6 +233,10 @@ def format_portfolio(
         backend_enums.PortfolioKeys.PROFITABILITY.value: float(profitability),
         backend_enums.PortfolioKeys.UNIT.value: unit,
         backend_enums.PortfolioKeys.BOT_ID.value: bot_id,
+        backend_enums.PortfolioKeys.PORTFOLIO_TYPE.value: (
+            backend_enums.PortfolioTypes.SUB_PORTFOLIO if is_sub_portfolio
+            else backend_enums.PortfolioTypes.FULL_PORTFOLIO
+        ).value,
     }
 
 
