@@ -193,10 +193,10 @@ async def test_fetch_bot_nested_config_profile_data_if_any_valid_inputs(mock_sup
 @pytest.mark.asyncio
 async def test_fetch_bot_profile_data_invalid_inputs(mock_supabase_client):
     with pytest.raises(octobot.community.errors.MissingBotConfigError):
-        await mock_supabase_client.fetch_bot_profile_data("")
+        await mock_supabase_client.fetch_bot_profile_data("", {})
     with mock.patch.object(
         mock_supabase_client, "fetch_bot_nested_config_profile_data_if_any", mock.AsyncMock(side_effect=KeyError)
     ) as fetch_bot_nested_config_profile_data_if_any_mock:
         with pytest.raises(octobot.community.errors.MissingBotConfigError):
-            await mock_supabase_client.fetch_bot_profile_data("")
+            await mock_supabase_client.fetch_bot_profile_data("", {})
         fetch_bot_nested_config_profile_data_if_any_mock.assert_not_called()
