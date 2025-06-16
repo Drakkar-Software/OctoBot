@@ -27,6 +27,7 @@ import octobot_trading.personal_data as trading_personal_data
 
 
 FUTURES_INTERNAL_NAME_SUFFIX = "_futures"
+USD_LIKE = "USD-like"
 
 
 def format_trades(trades: list, exchange_name: str, bot_id: str) -> list:
@@ -276,7 +277,7 @@ def get_adapted_portfolio(usd_like_asset, portfolio):
     formatted = {}
     for asset in portfolio:
         currency = asset[backend_enums.PortfolioAssetKeys.ASSET.value]
-        if currency == "USD-like":
+        if currency == USD_LIKE:
             currency = usd_like_asset
         formatted[currency] = asset[backend_enums.PortfolioAssetKeys.VALUE.value]
     return formatted
