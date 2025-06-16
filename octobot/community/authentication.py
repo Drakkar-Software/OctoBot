@@ -50,13 +50,13 @@ def expired_session_retrier(func):
         try:
             with supabase_backend.error_describer():
                 return await func(*args, **kwargs)
-        except errors.SessionTokenExpiredError:
+        except (errors.SessionTokenExpiredError, errors.JWTExpiredError):
             try:
                 with supabase_backend.error_describer():
                     self.logger.info(f"Expired session, trying to refresh token.")
                     await self.supabase_client.refresh_session()
                     return await func(*args, **kwargs)
-            except errors.SessionTokenExpiredError as err:
+            except (errors.SessionTokenExpiredError, errors.JWTExpiredError) as err:
                 if await self.auto_reauthenticate():
                     self.logger.error(
                         f"Impossible to use default refresh token, using saved auth details instead."
@@ -876,14 +876,15 @@ class CommunityAuthentication(authentication.Authenticator):
         self, current_value: dict, initial_value: dict, profitability: float,
         unit: str, content: dict[str, dict[str, float]], history: dict,
         price_by_asset: dict[str, typing.Union[float, decimal.Decimal]],
-        reset: bool
+        reset: bool, is_sub_portfolio: bool = False
     ):
         """
         Updates authenticated account portfolio
         """
         try:
             formatted_portfolio = formatters.format_portfolio(
-                current_value, initial_value, profitability, unit, content, price_by_asset, self.user_account.bot_id
+                current_value, initial_value, profitability, unit, content, price_by_asset, self.user_account.bot_id,
+                is_sub_portfolio
             )
             if reset or self.user_account.get_selected_bot_current_portfolio_id() is None:
                 self.logger.info(f"Switching bot portfolio")

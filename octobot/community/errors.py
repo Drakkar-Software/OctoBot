@@ -28,6 +28,10 @@ class SessionTokenExpiredError(commons_authentication.AuthenticationError):
     pass
 
 
+class JWTExpiredError(commons_authentication.AuthenticationError):
+    pass
+
+
 class BotError(commons_authentication.UnavailableError):
     pass
 

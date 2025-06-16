@@ -149,7 +149,8 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
 
     async def refresh_session(self, refresh_token: typing.Union[str, None] = None):
         try:
-            await self.auth.refresh_session(refresh_token=refresh_token)
+            with jwt_expired_auth_raiser():
+                await self.auth.refresh_session(refresh_token=refresh_token)
         except gotrue.errors.AuthError as err:
             raise authentication.AuthenticationError(error_translator.translate_error_code(err.code)) from err
         except postgrest.exceptions.APIError as err:
@@ -551,7 +552,9 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         # no nested config or config id
         return None
 
-    async def fetch_bot_profile_data(self, bot_config_id: str) -> commons_profiles.ProfileData:
+    async def fetch_bot_profile_data(
+        self, bot_config_id: str, usd_like_per_exchange: dict
+    ) -> commons_profiles.ProfileData:
         if not bot_config_id:
             raise errors.MissingBotConfigError(f"bot_config_id is '{bot_config_id}'")
         bot_config = (await self.table("bot_configs").select(
@@ -608,20 +611,6 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         ] if bot_config[enums.BotConfigKeys.EXCHANGES.value] else []
         profile_data.trader_simulator.enabled = bot_config.get(enums.BotConfigKeys.IS_SIMULATED.value, False)
         profile_data.trading.sellable_assets = bot_config_options.get("sellable_assets")
-        portfolio = bot_config_options.get("portfolio")
-        if portfolio:
-            if trading_api.is_usd_like_coin(profile_data.trading.reference_market):
-                usd_like_asset = profile_data.trading.reference_market
-            else:
-                usd_like_asset = commons_constants.USD_LIKE_COINS[0]   # todo use dynamic value when exchange is not supporting USDT
-            formatted_portfolio = formatters.get_adapted_portfolio(
-                usd_like_asset, portfolio
-            )
-            profile_data.trader_simulator.starting_portfolio = formatted_portfolio
-            profile_data.trading.sub_portfolio = formatted_portfolio
-        elif profile_data.trader_simulator.enabled:
-            # portfolio is required on trading simulator
-            raise errors.InvalidBotConfigError("Missing portfolio in bot config")
         # only use exchanges from master product config to avoid exchange changes from swapped nested strategies
         master_product_exchanges_configs = master_product_config[enums.ProfileConfigKeys.CONFIG.value].get(
             "exchanges"
@@ -634,6 +623,27 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         if bot_config_options:
             profile_data.options = commons_profiles.OptionsData.from_dict(bot_config_options)
             self._apply_options_based_tentacles_config(profile_data, bot_config)
+        portfolio = bot_config_options.get("portfolio")
+        if portfolio:
+            exchange = profile_data.exchanges[0].internal_name if profile_data.exchanges else None
+            if trading_api.is_usd_like_coin(profile_data.trading.reference_market):
+                usd_like_asset = profile_data.trading.reference_market
+            elif profile_data.trading.reference_market == formatters.USD_LIKE:
+                # use proper reference market for exchange, defaulting to first USD_LIKE_COINS coin
+                profile_data.trading.reference_market = usd_like_per_exchange.get(
+                    exchange, commons_constants.USD_LIKE_COINS[0]
+                )
+                usd_like_asset = profile_data.trading.reference_market
+            else:
+                usd_like_asset = usd_like_per_exchange.get(exchange, commons_constants.USD_LIKE_COINS[0])
+            formatted_portfolio = formatters.get_adapted_portfolio(
+                usd_like_asset, portfolio
+            )
+            profile_data.trader_simulator.starting_portfolio = formatted_portfolio
+            profile_data.trading.sub_portfolio = formatted_portfolio
+        elif profile_data.trader_simulator.enabled:
+            # portfolio is required on trading simulator
+            raise errors.InvalidBotConfigError("Missing portfolio in bot config")
         return profile_data
 
     async def _fetch_full_exchange_configs(
@@ -1106,5 +1116,5 @@ def jwt_expired_auth_raiser():
         yield
     except postgrest.exceptions.APIError as err:
         if _is_jwt_expired_error(err):
-            raise authentication.AuthenticationError(f"Please re-login to your OctoBot account: {err}") from err
+            raise errors.JWTExpiredError(f"Please re-login to your OctoBot account: {err}") from err
         raise
