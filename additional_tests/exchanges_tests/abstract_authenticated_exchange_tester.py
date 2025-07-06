@@ -166,6 +166,8 @@ class AbstractAuthenticatedExchangeTester:
             if values[trading_constants.CONFIG_PORTFOLIO_TOTAL] > trading_constants.ZERO:
                 at_least_one_value = True
         assert at_least_one_value
+        # ensure no duplicate
+        assert len(set(portfolio)) == len(portfolio)
 
     async def test_untradable_symbols(self):
         await self.inner_test_untradable_symbols()
