@@ -27,6 +27,7 @@ from octobot.community.models import community_tentacles_package
 from octobot.community.models import community_supports
 from octobot.community.models import community_donation
 from octobot.community.models import startup_info
+from octobot.community.models import executed_product_details
 
 from octobot.community.models.community_tentacles_package import (
     CommunityTentaclesPackage
@@ -66,6 +67,9 @@ from octobot.community.models.strategy_data import (
     get_custom_strategy_name,
     is_custom_strategy_profile,
 )
+from octobot.community.models.executed_product_details import (
+    ExecutedProductDetails
+)
 
 __all__ = [
     "CommunityUserAccount",
@@ -94,4 +98,5 @@ __all__ = [
     "is_custom_category",
     "get_custom_strategy_name",
     "is_custom_strategy_profile",
+    "ExecutedProductDetails",
 ]

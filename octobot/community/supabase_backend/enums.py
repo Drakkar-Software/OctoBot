@@ -239,6 +239,7 @@ class BotConfigKeys(enum.Enum):
     EXCHANGES = "exchanges"
     OPTIONS = "options"
     IS_SIMULATED = "is_simulated"
+    CREATED_AT = "created_at"
 
 
 class NestedProductConfigKeys(enum.Enum):

@@ -116,9 +116,10 @@ async def test_login(auth):
 async def test_fetch_bot_profile_data_without_tentacles_options(auth):
     FETCHED_PROFILE_USD_LIKE = {
         "bot_id": "53e0dc3e-3cbe-476d-9bda-b30bc4941fb4",
-        "bot": {"user_id": "3330dc3e-3cbe-476d-9bda-b30bc4941fb4"},
+        "bot": {"user_id": "3330dc3e-3cbe-476d-9bda-b30bc4941fb4", "created_at": "2024-08-14T22:13:22.1111+04:00"},
         "exchanges": [
-            {"exchange_credential_id": "30ee7b12-3415-4ce4-b050-80d8bf4548be"}], "is_simulated": True,
+            {"exchange_credential_id": "30ee7b12-3415-4ce4-b050-80d8bf4548be"}], 
+        "is_simulated": True, "created_at": "2023-08-14T22:13:22.466399+04:00",
         "options": {"portfolio": [{"asset": "USD-like", "value": 1000}]}, "product_config": {"config": {
             "backtesting_context": {"exchanges": ["mexc"], "start_time_delta": 15552000,
                                     "starting_portfolio": {"USDT": 3000}},
@@ -144,7 +145,7 @@ async def test_fetch_bot_profile_data_without_tentacles_options(auth):
             "trading": {"reference_market": "USD-like", "risk": 0.5}}, "product": {
             "attributes": {"coins": ["BTC", "USDT"], "ease": "Easy", "exchanges": ["mexc"],
                            "minimal_funds": [{"asset": "USD-like", "value": 50}], "risk": "Moderate",
-                           "subcategories": ["classic-dca", "popular"], "trading": ["Spot"]}, "slug": "bitcoin-vision"},
+                           "subcategories": ["classic-dca", "popular"], "trading": ["Spot"]}, "slug": "bitcoin-vision", "id": "product_id_123"},
             "version": "0.0.1"}}
     auth.supabase_client = community.CommunitySupabaseClient(
         "https://kfgrrr.supabase.co",
@@ -192,7 +193,13 @@ async def test_fetch_bot_profile_data_without_tentacles_options(auth):
                          "reference_market": "USDC", "risk": 0.5, "sub_portfolio": {'USDC': 1000},
                          "sellable_assets": None}}
         )
-        assert await auth.supabase_client.fetch_bot_profile_data("bot_id", {"mexc": "USDC"}) == parsed_data
+        executed_product_details = community.ExecutedProductDetails(
+            product_id="product_id_123",
+            started_at=1723659202.0, # not nested config: use bot created_at (2024-08-14T22:13:22.1111+04:00)
+        )
+        assert await auth.supabase_client.fetch_bot_profile_data("bot_id", {"mexc": "USDC"}) == (
+            parsed_data, executed_product_details
+        )
         execute_mock.assert_called_once()
         _fetch_full_exchange_configs_mock.assert_called_once()
 
@@ -200,9 +207,10 @@ async def test_fetch_bot_profile_data_without_tentacles_options(auth):
 async def test_fetch_bot_profile_data_with_tentacles_options(auth):
     FETCHED_PROFILE = {
         "bot_id": "53e0dc3e-3cbe-476d-9bda-b30bc4941fb4",
-        "bot": {"user_id": "3330dc3e-3cbe-476d-9bda-b30bc4941fb4"},
+        "bot": {"user_id": "3330dc3e-3cbe-476d-9bda-b30bc4941fb4", "created_at": "2024-08-14T22:13:22.1111+08:00"},
         "exchanges": [
             {"exchange_credential_id": "30ee7b12-3415-4ce4-b050-80d8bf4548be"}], "is_simulated": True,
+        "created_at": "2023-08-14T22:13:22.466399+08:00",
         "options": {
             "portfolio": [{"asset": "USDT", "value": 2000}],
             "sellable_assets": ["USDT", "EUR", "ETH"],
@@ -236,7 +244,7 @@ async def test_fetch_bot_profile_data_with_tentacles_options(auth):
             "trading": {"reference_market": "USDT", "risk": 0.5}}, "product": {
             "attributes": {"coins": ["BTC", "USDT"], "ease": "Easy", "exchanges": ["mexc"],
                            "minimal_funds": [{"asset": "USD-like", "value": 50}], "risk": "Moderate",
-                           "subcategories": ["classic-dca", "popular"], "trading": ["Spot"]}, "slug": "bitcoin-vision"},
+                           "subcategories": ["classic-dca", "popular"], "trading": ["Spot"]}, "slug": "bitcoin-vision", "id": "product_id_123"},
             "version": "0.0.1"}}
     auth.supabase_client = community.CommunitySupabaseClient(
         "https://kfgrrr.supabase.co",
@@ -281,7 +289,13 @@ async def test_fetch_bot_profile_data_with_tentacles_options(auth):
                          "reference_market": "USDT", "risk": 0.5, "sub_portfolio": {'USDT': 2000},
                          "sellable_assets": ["USDT", "EUR", "ETH"]}}
         )
-        assert await auth.supabase_client.fetch_bot_profile_data("bot_id", {}) == parsed_data
+        executed_product_details = community.ExecutedProductDetails(
+            product_id="product_id_123",
+            started_at=1723644802.0, # not nested config: use bot created_at (2024-08-14T22:13:22.1111+08:00)
+        )
+        assert await auth.supabase_client.fetch_bot_profile_data("bot_id", {}) == (
+            parsed_data, executed_product_details
+        )
         execute_mock.assert_called_once()
         _fetch_full_exchange_configs_mock.assert_called_once()
 
