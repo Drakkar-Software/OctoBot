@@ -98,6 +98,7 @@ async def test_fetch_bot_nested_config_profile_data_if_any_valid_inputs(mock_sup
     _execute_products_mock = mock.AsyncMock(
         return_value=mock.Mock(
             data = [{
+                "id": "product_id-xyz",
                 "slug": "slug-xyz",
                 "attributes": "attributes-xyz",
                 "current_config_id": "current_config_id-xyz",
@@ -116,6 +117,7 @@ async def test_fetch_bot_nested_config_profile_data_if_any_valid_inputs(mock_sup
                 "config" : "config-xyz",
                 "version": "version-xyz",
                 "product_config": {
+                    "id": "product_config.id-xyz",
                     "slug": "product_config.slug-xyz",
                     "attributes": "product_config.attributes-xyz",
                     "current_config_id": "product_config.current_config_id-xyz",
@@ -144,7 +146,7 @@ async def test_fetch_bot_nested_config_profile_data_if_any_valid_inputs(mock_sup
     assert config == {
         'config': 'product_config.config-xyz',
         'id': 'product_config.id-xyz',
-        'product': {'attributes': 'attributes-xyz', 'slug': 'slug-xyz'},
+        'product': {'attributes': 'attributes-xyz', 'slug': 'slug-xyz', 'id': 'product_id-xyz'},
         'version': 'product_config.version-xyz'
     }
     mock_supabase_client.table.assert_called_once()
@@ -162,7 +164,7 @@ async def test_fetch_bot_nested_config_profile_data_if_any_valid_inputs(mock_sup
     assert config == {
         'config': 'product_config.config-xyz',
         'id': 'product_config.id-xyz',
-        'product': {'attributes': 'attributes-xyz', 'slug': 'slug-xyz'},
+        'product': {'attributes': 'attributes-xyz', 'slug': 'slug-xyz', 'id': 'product_id-xyz'},
         'version': 'product_config.version-xyz'
     }
     mock_supabase_client.table.assert_called_once()
@@ -180,7 +182,8 @@ async def test_fetch_bot_nested_config_profile_data_if_any_valid_inputs(mock_sup
         'id': 'id-xyz',
         'product_config': {'attributes': 'product_config.attributes-xyz',
                            'current_config_id': 'product_config.current_config_id-xyz',
-                           'slug': 'product_config.slug-xyz'},
+                           'slug': 'product_config.slug-xyz',
+                           'id': 'product_config.id-xyz'},
         'version': 'version-xyz'
     }
     mock_supabase_client.table.assert_called_once()
