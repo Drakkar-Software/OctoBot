@@ -3,7 +3,11 @@ FROM python:3.10-slim-buster AS base
 WORKDIR /
 
 # requires git to install requirements with git+https
-RUN apt-get update \
+# Update to debian archive from https://gist.github.com/ishad0w/6ce1eb569c734880200c47923577426a
+RUN echo "deb http://archive.debian.org/debian buster main contrib non-free" > /etc/apt/sources.list \
+    && echo "deb http://archive.debian.org/debian-security buster/updates main contrib non-free" >> /etc/apt/sources.list \
+    && echo "deb http://archive.debian.org/debian buster-backports main contrib non-free" >> /etc/apt/sources.list \
+    && apt-get update \
     && apt-get install -y --no-install-recommends build-essential git gcc binutils libffi-dev libssl-dev libxml2-dev libxslt1-dev libxslt-dev libjpeg62-turbo-dev zlib1g-dev \
     && python -m venv /opt/venv
 
@@ -38,7 +42,11 @@ COPY docker/* /octobot/
 # 3. Install required packages
 # 4. Finish env setup
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-RUN apt-get update \
+# Update to debian archive from https://gist.github.com/ishad0w/6ce1eb569c734880200c47923577426a
+RUN echo "deb http://archive.debian.org/debian buster main contrib non-free" > /etc/apt/sources.list \
+    && echo "deb http://archive.debian.org/debian-security buster/updates main contrib non-free" >> /etc/apt/sources.list \
+    && echo "deb http://archive.debian.org/debian buster-backports main contrib non-free" >> /etc/apt/sources.list \
+    && apt-get update \
     && apt-get install -y --no-install-recommends curl \
     && mkdir -p /usr/share/keyrings \
     && chmod 0755 /usr/share/keyrings \
