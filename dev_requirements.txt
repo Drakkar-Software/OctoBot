@@ -1,5 +1,5 @@
 pytest>=7.1
-pytest-asyncio>=0.19
+pytest-asyncio>=0.19,<1.1.0 # 1.1.0 is not compatible with pytest-timeout (re-raise TimeoutError)
 pytest-cov
 pytest-timeout
 
