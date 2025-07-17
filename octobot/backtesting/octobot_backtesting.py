@@ -27,6 +27,7 @@ import octobot_commons.constants as commons_constants
 import octobot_commons.enums as commons_enums
 import octobot_commons.list_util as list_util
 import octobot_commons.asyncio_tools as asyncio_tools
+import octobot_commons.timestamp_util as timestamp_util
 
 import octobot_backtesting.api as backtesting_api
 import octobot_backtesting.importers as importers
@@ -102,7 +103,11 @@ class OctoBotBacktesting:
     async def initialize_and_run(self):
         if not constants.ENABLE_BACKTESTING:
             raise errors.DisabledError("Backtesting is disabled")
-        self.logger.info(f"Starting on {self.backtesting_files} with {self.symbols_to_create_exchange_classes}")
+        symbols_by_exchange = {
+            exchange: [str(s) for s in symbols]
+            for exchange, symbols in self.symbols_to_create_exchange_classes.items()
+        }
+        self.logger.info(f"Starting on {self.backtesting_files} with {symbols_by_exchange}")
         self.start_time = time.time()
         await commons_databases.init_bot_storage(
             self.bot_id,
@@ -118,6 +123,9 @@ class OctoBotBacktesting:
         await self._init_evaluators()
         await self._init_service_feeds()
         min_timestamp, max_timestamp = await self._configure_backtesting_time_window()
+        start_date = timestamp_util.convert_timestamp_to_datetime(min_timestamp) if min_timestamp else None
+        end_date = timestamp_util.convert_timestamp_to_datetime(max_timestamp) if max_timestamp else None
+        self.logger.info(f"Configured backtesting from the {start_date} to the {end_date}")
         await self._init_exchanges()
         self._ensure_limits()
         await self._create_evaluators()
