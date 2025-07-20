@@ -651,9 +651,14 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
                 usd_like_asset = profile_data.trading.reference_market
             else:
                 usd_like_asset = usd_like_per_exchange.get(exchange, commons_constants.USD_LIKE_COINS[0])
-            formatted_portfolio = formatters.get_adapted_portfolio(
-                usd_like_asset, portfolio
-            )
+            try:
+                formatted_portfolio = formatters.get_adapted_portfolio(
+                    usd_like_asset, portfolio
+                )
+            except KeyError as err:
+                raise errors.InvalidBotConfigError(
+                    f"Invalid configured portfolio: {err} ({err.__class__.__name__})"
+                ) from err
             profile_data.trader_simulator.starting_portfolio = formatted_portfolio
             profile_data.trading.sub_portfolio = formatted_portfolio
         elif profile_data.trader_simulator.enabled:
