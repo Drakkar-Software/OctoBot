@@ -785,7 +785,12 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             for exchange_data in exchanges_configs
         ], exchange_tentacles_data
 
-    async def fetch_exchanges(self, exchange_ids: list, internal_names: typing.Optional[list] = None) -> list:
+    async def fetch_exchanges(
+        self, 
+        exchange_ids: typing.Optional[list] = None,
+        internal_names: typing.Optional[list] = None, 
+        availabilities: typing.Optional[enums.ExchangeAvailabilities] = None
+    ) -> list:
         # WARNING: setting internal_names can result in duplicate (futures and spot) exchanges
         select = self.table("exchanges").select(
             f"{enums.ExchangeKeys.ID.value}, "
@@ -794,8 +799,19 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             f"{enums.ExchangeKeys.AVAILABILITY.value}"
         )
         if internal_names:
-            return (await select.in_(enums.ExchangeKeys.INTERNAL_NAME.value, internal_names).execute()).data
-        return (await select.in_(enums.ExchangeKeys.ID.value, exchange_ids).execute()).data
+            select = select.in_(enums.ExchangeKeys.INTERNAL_NAME.value, internal_names)
+        if exchange_ids:
+            select = select.in_(enums.ExchangeKeys.ID.value, exchange_ids)
+        exchanges = (await select.execute()).data
+        if availabilities:
+            exchanges = [
+                exchange for exchange in exchanges
+                if exchange[enums.ExchangeKeys.AVAILABILITY.value] and any(
+                     exchange[enums.ExchangeKeys.AVAILABILITY.value].get(availability.value) == enums.ExchangeSupportValues.SUPPORTED.value
+                     for availability in availabilities
+                )
+            ]
+        return exchanges
 
     async def fetch_exchanges_by_credential_ids(self, exchange_credential_ids: list) -> dict:
         exchanges = (await self.table("exchange_credentials").select(
