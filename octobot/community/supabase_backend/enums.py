@@ -116,11 +116,19 @@ class ExchangeKeys(enum.Enum):
     SANDBOXED = "sandboxed"
     AVAILABILITY = "availability"
     URL = "url"
+    TRUSTED_IPS = "trusted_ips"
 
 
 class ExchangeSupportValues(enum.Enum):
     SUPPORTED = "supported"
     UNSUPPORTED = "unsupported"
+
+
+class ExchangeAvailabilities(enum.Enum):
+    SPOT = "spot"
+    FUTURES = "futures"
+    OPEN_SOURCE = "open_source"
+    MARKET_MAKING = "market_making"
 
 
 class SignalKeys(enum.Enum):

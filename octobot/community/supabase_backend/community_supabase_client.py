@@ -785,17 +785,44 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             for exchange_data in exchanges_configs
         ], exchange_tentacles_data
 
-    async def fetch_exchanges(self, exchange_ids: list, internal_names: typing.Optional[list] = None) -> list:
+    async def fetch_exchanges(
+        self, 
+        exchange_ids: typing.Optional[list] = None,
+        internal_names: typing.Optional[list] = None, 
+        availabilities: typing.Optional[list[enums.ExchangeAvailabilities]] = None
+    ) -> list:
         # WARNING: setting internal_names can result in duplicate (futures and spot) exchanges
         select = self.table("exchanges").select(
             f"{enums.ExchangeKeys.ID.value}, "
             f"{enums.ExchangeKeys.INTERNAL_NAME.value}, "
             f"{enums.ExchangeKeys.URL.value}, "
-            f"{enums.ExchangeKeys.AVAILABILITY.value}"
+            f"{enums.ExchangeKeys.AVAILABILITY.value}, "
+            f"{enums.ExchangeKeys.TRUSTED_IPS.value}"
         )
         if internal_names:
-            return (await select.in_(enums.ExchangeKeys.INTERNAL_NAME.value, internal_names).execute()).data
-        return (await select.in_(enums.ExchangeKeys.ID.value, exchange_ids).execute()).data
+            select = select.in_(enums.ExchangeKeys.INTERNAL_NAME.value, internal_names)
+        if exchange_ids:
+            select = select.in_(enums.ExchangeKeys.ID.value, exchange_ids)
+        exchanges = (await select.execute()).data
+        if availabilities:
+            exchanges = [
+                exchange for exchange in exchanges
+                if self.is_compatible_availability(
+                    exchange[enums.ExchangeKeys.AVAILABILITY.value], availabilities
+                )
+            ]
+        return exchanges
+
+    @staticmethod
+    def is_compatible_availability(
+        exchange_availability: typing.Optional[dict[str, str]], availabilities: list[enums.ExchangeAvailabilities]
+    ) -> bool:
+        return bool(
+            exchange_availability and any(
+                exchange_availability.get(availability.value) == enums.ExchangeSupportValues.SUPPORTED.value
+                for availability in availabilities
+            )
+        )
 
     async def fetch_exchanges_by_credential_ids(self, exchange_credential_ids: list) -> dict:
         exchanges = (await self.table("exchange_credentials").select(
