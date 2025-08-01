@@ -24,6 +24,7 @@ import octobot_commons.profiles as commons_profiles
 import octobot_trading.enums as trading_enums
 import octobot_trading.constants as trading_constants
 import octobot_trading.personal_data as trading_personal_data
+import octobot_trading.api as trading_api
 
 
 FUTURES_INTERNAL_NAME_SUFFIX = "_futures"
@@ -223,11 +224,12 @@ def get_exchange_type_from_availability(exchange_availability: dict) -> str:
 def format_portfolio(
     current_value: dict, initial_value: dict, profitability: float,
     unit: str, content: dict[str, dict[str, float]], price_by_asset: dict[str, typing.Union[float, decimal.Decimal]],
-    bot_id: str, is_sub_portfolio: bool
+    bot_id: str, is_sub_portfolio: bool,
+    bot_locked_assets: typing.Optional[dict[str, dict[str, decimal.Decimal]]] = None,
 ) -> dict:
     ref_market_current_value = current_value[unit]
     ref_market_initial_value = initial_value[unit]
-    return {
+    update = {
         backend_enums.PortfolioKeys.CONTENT.value: format_portfolio_content(content, price_by_asset),
         backend_enums.PortfolioKeys.CURRENT_VALUE.value: ref_market_current_value,
         backend_enums.PortfolioKeys.INITIAL_VALUE.value: ref_market_initial_value,
@@ -239,6 +241,11 @@ def format_portfolio(
             else backend_enums.PortfolioTypes.FULL_PORTFOLIO
         ).value,
     }
+    if bot_locked_assets:
+        update[backend_enums.PortfolioKeys.LOCKED_ASSETS.value] = trading_api.format_portfolio(
+            bot_locked_assets, False
+        )
+    return update
 
 
 def format_portfolio_content(
