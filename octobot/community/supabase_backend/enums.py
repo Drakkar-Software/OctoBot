@@ -221,6 +221,7 @@ class PortfolioKeys(enum.Enum):
     UNIT = "unit"
     CONTENT = "content"
     PORTFOLIO_TYPE = "portfolio_type"
+    LOCKED_ASSETS = "locked_assets"
 
 
 class PortfolioTypes(enum.Enum):
