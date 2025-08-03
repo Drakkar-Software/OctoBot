@@ -28,11 +28,11 @@ class TestKucoinFuturesAuthenticatedExchange(
     # enter exchange name as a class variable here
     EXCHANGE_NAME = "kucoin"
     CREDENTIALS_EXCHANGE_NAME = "KUCOIN_FUTURES"
-    ORDER_CURRENCY = "ETH"  # always use a contract that has a size different from 1 unit of the currency
+    ORDER_CURRENCY = "SOL"  # always use a contract that has a size different from 1 unit of the currency
     SETTLEMENT_CURRENCY = "USDT"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}:{SETTLEMENT_CURRENCY}"
     INVERSE_SYMBOL = f"{ORDER_CURRENCY}/USD:{ORDER_CURRENCY}"
-    ORDER_SIZE = 5  # % of portfolio to include in test orders
+    ORDER_SIZE = 30  # % of portfolio to include in test orders
     SUPPORTS_GET_LEVERAGE = False
     USE_ORDER_OPERATION_TO_CHECK_API_KEY_RIGHTS = True
     VALID_ORDER_ID = "6617e84c5c1e0000083c71f7"
