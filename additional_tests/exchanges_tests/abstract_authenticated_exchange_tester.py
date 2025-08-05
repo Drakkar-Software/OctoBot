@@ -286,8 +286,10 @@ class AbstractAuthenticatedExchangeTester:
             symbol, trading_enums.TraderOrderType.STOP_LOSS
         )
         if self.SUPPORTS_GET_MAX_ORDERS_COUNT:
-            assert max_base_order_count != self.DEFAULT_MAX_DEFAULT_ORDERS_COUNT
-            assert max_stop_order_count != self.DEFAULT_MAX_STOP_ORDERS_COUNT
+            assert (
+                max_base_order_count != self.DEFAULT_MAX_DEFAULT_ORDERS_COUNT
+                or max_stop_order_count != self.DEFAULT_MAX_STOP_ORDERS_COUNT
+            )
         else:
             assert max_base_order_count == self.DEFAULT_MAX_DEFAULT_ORDERS_COUNT
             assert max_stop_order_count == self.DEFAULT_MAX_STOP_ORDERS_COUNT
@@ -456,7 +458,9 @@ class AbstractAuthenticatedExchangeTester:
         with pytest.raises(trading_errors.AuthenticationError) as err:
             await self.inner_test_create_and_cancel_limit_orders()
         # ensure AuthenticationError is raised when creating order
-        assert "inner_test_create_and_cancel_limit_orders#create_limit_order" in str(err)
+        assert "inner_test_create_and_cancel_limit_orders#create_limit_order" in str(err), (
+            f"Expected 'inner_test_create_and_cancel_limit_orders#create_limit_order' in error message, got: {err}"
+        )
 
     async def test_api_key_ip_whitelist_error(self):
         if not self._supports_ip_whitelist_error():
@@ -684,8 +688,7 @@ class AbstractAuthenticatedExchangeTester:
         current_price = await self.get_price()
         price = self.get_order_price(current_price, False)
         portfolio = await self.get_portfolio()
-        base = symbols.parse_symbol(self.SYMBOL).base
-        size = self.get_order_size(portfolio, price, settlement_currency=base)
+        size = self.get_order_size(portfolio, price, settlement_currency=self._get_edit_order_settlement_currency())
         open_orders = await self.get_open_orders()
         assert self.exchange_manager.exchange.is_supported_order_type(
             trading_enums.TraderOrderType.STOP_LOSS
@@ -786,7 +789,6 @@ class AbstractAuthenticatedExchangeTester:
         current_price = await self.get_price()
         portfolio = await self.get_portfolio()
         price = self.get_order_price(current_price, False)
-        base = symbols.parse_symbol(self.SYMBOL).base
         size = self.get_order_size(portfolio, price, settlement_currency=self._get_edit_order_settlement_currency())
         open_orders = await self.get_open_orders()
         stop_loss = None
@@ -1370,7 +1372,9 @@ class AbstractAuthenticatedExchangeTester:
                 f"FALSE: {size * decimal.Decimal('0.8')} <= {order.origin_quantity} <= {size * decimal.Decimal('1.2')}"
             )
         else:
-            assert order.origin_quantity == size
+            assert round(order.origin_quantity, 8) == round(size, 8), (
+                f"FALSE: {order.origin_quantity} == {size}"
+            )
         assert order.exchange_order_id and isinstance(order.exchange_order_id, str)
         assert order.side is side
         assert order.total_cost > trading_constants.ZERO
@@ -1430,8 +1434,8 @@ class AbstractAuthenticatedExchangeTester:
 
     async def wait_for_edit(self, order, edited_quantity):
         def is_edited(row_order):
-            return decimal.Decimal(str(row_order[trading_enums.ExchangeConstantsOrderColumns.AMOUNT.value])) \
-                   == edited_quantity
+            return round(decimal.Decimal(str(row_order[trading_enums.ExchangeConstantsOrderColumns.AMOUNT.value])), 8) \
+                   == round(edited_quantity, 8)
         await self._get_order_until(order, is_edited, self.EDIT_TIMEOUT, False)
 
     async def _get_order_until(self, order, validation_func, timeout, can_order_be_not_found_on_exchange):

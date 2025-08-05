@@ -398,7 +398,9 @@ class AbstractAuthenticatedFutureExchangeTester(
             theoretical_cost = quantity
         else:
             theoretical_cost = quantity * price
-        assert theoretical_cost * decimal.Decimal("0.8") <= cost <= theoretical_cost * decimal.Decimal("1.2")
+        assert theoretical_cost * decimal.Decimal("0.8") <= cost <= theoretical_cost * decimal.Decimal("1.2"), (
+            f"FALSE: {theoretical_cost * decimal.Decimal('0.8')} <= {cost} <= {theoretical_cost * decimal.Decimal('1.2')}"
+        )
 
     def _get_all_symbols(self):
         return [
