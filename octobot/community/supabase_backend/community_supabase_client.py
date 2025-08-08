@@ -1115,20 +1115,27 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
 
     @staticmethod
     def get_formatted_time(timestamp: float) -> str:
-        return datetime.datetime.utcfromtimestamp(timestamp).isoformat('T')
+        # don't include timezone offset (+00:00) as this is always a UTC time
+        return datetime.datetime.fromtimestamp(
+            timestamp, datetime.timezone.utc
+        ).isoformat(sep='T').replace("+00:00", "")
 
     @staticmethod
     def get_parsed_time(str_time: str) -> datetime.datetime:
         try:
-            return datetime.datetime.strptime(str_time, "%Y-%m-%dT%H:%M:%S")
+            # no fractional seconds, no timezone
+            return datetime.datetime.strptime(str_time, "%Y-%m-%dT%H:%M:%S").replace(tzinfo=datetime.timezone.utc)
         except ValueError:
             try:
-                return datetime.datetime.strptime(str_time, "%Y-%m-%dT%H:%M:%S.%f")
+                # fractional seconds, no timezone
+                return datetime.datetime.strptime(str_time, "%Y-%m-%dT%H:%M:%S.%f").replace(tzinfo=datetime.timezone.utc)
             except ValueError:
                 # last chance, try using iso format (ex: 2011-11-04T00:05:23.283+04:00)
                 try:
+                    # potential fractional seconds & timezone
                     return datetime.datetime.fromisoformat(str_time)
                 except ValueError:
+                    # removed fractional seconds & timezone
                     # sometimes fractional seconds are not supported, ex:
                     # '2023-09-04T00:01:31.06381+00:00'
                     if "." in str_time and "+" in str_time:
