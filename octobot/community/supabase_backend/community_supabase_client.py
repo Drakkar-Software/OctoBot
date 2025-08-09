@@ -785,7 +785,12 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             for exchange_data in exchanges_configs
         ], exchange_tentacles_data
 
-    async def fetch_exchanges(self, exchange_ids: list, internal_names: typing.Optional[list] = None) -> list:
+    async def fetch_exchanges(
+        self, 
+        exchange_ids: typing.Optional[list] = None,
+        internal_names: typing.Optional[list] = None, 
+        availabilities: typing.Optional[enums.ExchangeAvailabilities] = None
+    ) -> list:
         # WARNING: setting internal_names can result in duplicate (futures and spot) exchanges
         select = self.table("exchanges").select(
             f"{enums.ExchangeKeys.ID.value}, "
@@ -794,8 +799,19 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             f"{enums.ExchangeKeys.AVAILABILITY.value}"
         )
         if internal_names:
-            return (await select.in_(enums.ExchangeKeys.INTERNAL_NAME.value, internal_names).execute()).data
-        return (await select.in_(enums.ExchangeKeys.ID.value, exchange_ids).execute()).data
+            select = select.in_(enums.ExchangeKeys.INTERNAL_NAME.value, internal_names)
+        if exchange_ids:
+            select = select.in_(enums.ExchangeKeys.ID.value, exchange_ids)
+        exchanges = (await select.execute()).data
+        if availabilities:
+            exchanges = [
+                exchange for exchange in exchanges
+                if exchange[enums.ExchangeKeys.AVAILABILITY.value] and any(
+                     exchange[enums.ExchangeKeys.AVAILABILITY.value].get(availability.value) == enums.ExchangeSupportValues.SUPPORTED.value
+                     for availability in availabilities
+                )
+            ]
+        return exchanges
 
     async def fetch_exchanges_by_credential_ids(self, exchange_credential_ids: list) -> dict:
         exchanges = (await self.table("exchange_credentials").select(
@@ -1088,20 +1104,27 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
 
     @staticmethod
     def get_formatted_time(timestamp: float) -> str:
-        return datetime.datetime.utcfromtimestamp(timestamp).isoformat('T')
+        # don't include timezone offset (+00:00) as this is always a UTC time
+        return datetime.datetime.fromtimestamp(
+            timestamp, datetime.timezone.utc
+        ).isoformat(sep='T').replace("+00:00", "")
 
     @staticmethod
     def get_parsed_time(str_time: str) -> datetime.datetime:
         try:
-            return datetime.datetime.strptime(str_time, "%Y-%m-%dT%H:%M:%S")
+            # no fractional seconds, no timezone
+            return datetime.datetime.strptime(str_time, "%Y-%m-%dT%H:%M:%S").replace(tzinfo=datetime.timezone.utc)
         except ValueError:
             try:
-                return datetime.datetime.strptime(str_time, "%Y-%m-%dT%H:%M:%S.%f")
+                # fractional seconds, no timezone
+                return datetime.datetime.strptime(str_time, "%Y-%m-%dT%H:%M:%S.%f").replace(tzinfo=datetime.timezone.utc)
             except ValueError:
                 # last chance, try using iso format (ex: 2011-11-04T00:05:23.283+04:00)
                 try:
+                    # potential fractional seconds & timezone
                     return datetime.datetime.fromisoformat(str_time)
                 except ValueError:
+                    # removed fractional seconds & timezone
                     # sometimes fractional seconds are not supported, ex:
                     # '2023-09-04T00:01:31.06381+00:00'
                     if "." in str_time and "+" in str_time:

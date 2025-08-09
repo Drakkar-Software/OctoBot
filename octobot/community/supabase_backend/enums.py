@@ -123,6 +123,13 @@ class ExchangeSupportValues(enum.Enum):
     UNSUPPORTED = "unsupported"
 
 
+class ExchangeAvailabilities(enum.Enum):
+    SPOT = "spot"
+    FUTURES = "futures"
+    OPEN_SOURCE = "open_source"
+    MARKET_MAKING = "market_making"
+
+
 class SignalKeys(enum.Enum):
     ID = "id"
     TIME = "time"
@@ -213,6 +220,7 @@ class PortfolioKeys(enum.Enum):
     UNIT = "unit"
     CONTENT = "content"
     PORTFOLIO_TYPE = "portfolio_type"
+    LOCKED_ASSETS = "locked_assets"
 
 
 class PortfolioTypes(enum.Enum):

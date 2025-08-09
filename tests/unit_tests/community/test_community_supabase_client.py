@@ -15,6 +15,7 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import mock
 import pytest
+import datetime
 
 import octobot.community
 import octobot.community.supabase_backend.enums as enums
@@ -203,3 +204,28 @@ async def test_fetch_bot_profile_data_invalid_inputs(mock_supabase_client):
         with pytest.raises(octobot.community.errors.MissingBotConfigError):
             await mock_supabase_client.fetch_bot_profile_data("", {})
         fetch_bot_nested_config_profile_data_if_any_mock.assert_not_called()
+
+
+def test_get_formatted_time(mock_supabase_client):
+    utc_ts = 1754636150 #  Friday, August 8, 2025 6:55:50 GMT (+00:00)
+    assert mock_supabase_client.get_formatted_time(utc_ts) == "2025-08-08T06:55:50"
+    utc_ts = 1704067200 #  Monday, January 1, 2024 0:00:00 GMT (+00:00)
+    assert mock_supabase_client.get_formatted_time(utc_ts) == "2024-01-01T00:00:00"
+
+
+def test_get_parsed_time(mock_supabase_client):
+    # no timezone in parsed date: UTC timezone is forced
+    assert mock_supabase_client.get_parsed_time("2025-08-08T06:55:50") == datetime.datetime(2025, 8, 8, 6, 55, 50, tzinfo=datetime.timezone.utc)
+    assert mock_supabase_client.get_parsed_time("2025-08-08T06:55:50").timestamp() == 1754636150.0
+    assert mock_supabase_client.get_parsed_time("2025-08-08T06:55:50.123") == datetime.datetime(2025, 8, 8, 6, 55, 50, 123000, tzinfo=datetime.timezone.utc)
+    assert mock_supabase_client.get_parsed_time("2025-08-08T06:55:50.123+00:00").timestamp() == 1754636150.123
+    # with timezone: timezone is kept
+    assert mock_supabase_client.get_parsed_time("2025-08-08T06:55:50+00:00") == datetime.datetime(2025, 8, 8, 6, 55, 50, tzinfo=datetime.timezone.utc)
+    assert mock_supabase_client.get_parsed_time("2025-08-08T06:55:50+00:00").timestamp() == 1754636150.0
+    assert mock_supabase_client.get_parsed_time("2025-08-08T06:55:50.123+00:00") == datetime.datetime(2025, 8, 8, 6, 55, 50, 123000, tzinfo=datetime.timezone.utc)
+    assert mock_supabase_client.get_parsed_time("2025-08-08T06:55:50.123+00:00").timestamp() == 1754636150.123
+    # with non UTC timezone: timezone is kept
+    assert mock_supabase_client.get_parsed_time("2025-08-08T06:55:50+02:00") == datetime.datetime(
+        2025, 8, 8, 6, 55, 50, tzinfo=datetime.timezone(datetime.timedelta(hours=2))
+    )
+    assert mock_supabase_client.get_parsed_time("2025-08-08T06:55:50+02:00").timestamp() == 1754636150.0 - 2 * 3600
