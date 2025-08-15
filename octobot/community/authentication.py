@@ -891,23 +891,21 @@ class CommunityAuthentication(authentication.Authenticator):
                 self.logger.info(f"Switching bot portfolio")
                 await self.supabase_client.switch_portfolio(formatted_portfolio)
                 await self.refresh_selected_bot()
-
-            formatted_portfolio[backend_enums.PortfolioKeys.ID.value] = \
-                self.user_account.get_selected_bot_current_portfolio_id()
+            portfolio_id = self.user_account.get_selected_bot_current_portfolio_id()
+            formatted_portfolio[backend_enums.PortfolioKeys.ID.value] = portfolio_id
             await self.supabase_client.update_portfolio(formatted_portfolio)
             self.logger.info(
                 f"Bot portfolio [{formatted_portfolio[backend_enums.PortfolioKeys.ID.value]}] "
                 f"updated with content: {formatted_portfolio[backend_enums.PortfolioKeys.CONTENT.value]}"
             )
-            if formatted_histories := formatters.format_portfolio_history(
-                history, unit, self.user_account.get_selected_bot_current_portfolio_id()
-            ):
-                await self.supabase_client.upsert_portfolio_history(formatted_histories)
-                self.logger.info(
-                    f"Bot portfolio [{formatted_portfolio[backend_enums.PortfolioKeys.ID.value]}] history updated"
-                )
+            await self.upsert_portfolio_history(portfolio_id, history, unit)
         except KeyError as err:
             self.logger.debug(f"Error when updating community portfolio {err} (missing reference market value)")
+
+    async def upsert_portfolio_history(self, portfolio_id: str, history: dict, unit: str):
+        if formatted_histories := formatters.format_portfolio_history(history, unit, portfolio_id):
+            await self.supabase_client.upsert_portfolio_history(formatted_histories)
+            self.logger.info(f"Bot portfolio [{portfolio_id}] history updated")
 
     @_bot_data_update
     async def update_bot_config_and_stats(self, profitability):
