@@ -246,6 +246,7 @@ class BotConfigKeys(enum.Enum):
     BOT_ID = "bot_id"
     PRODUCT_CONFIG_ID = "product_config_id"
     EXCHANGES = "exchanges"
+    EXCHANGE_ACCOUNT_ID = "exchange_account_id"
     OPTIONS = "options"
     IS_SIMULATED = "is_simulated"
     CREATED_AT = "created_at"
