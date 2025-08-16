@@ -567,6 +567,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             "bot_id, "
             "options, "
             "exchanges, "
+            "exchange_account_id, "
             "created_at, "
             "is_simulated, "
             "bot:bots!bot_id!inner(user_id, created_at), "
@@ -674,94 +675,108 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
     ) -> (list[commons_profiles.ExchangeData], list[commons_profile_data.TentaclesData]):
 
         # ensure all required exchange info are available
-        # check 1: update exchange using exchange_id when set in bot_config
         exchanges_configs = []
-        incomplete_exchange_config_by_id = {
-            config[enums.ExchangeKeys.EXCHANGE_ID.value]: config
-            for config in (bot_config.get(enums.BotConfigKeys.EXCHANGES.value) or [])
-            if (
-                config.get(enums.ExchangeKeys.EXCHANGE_ID.value, None)
-                and not (
-                    config.get(enums.ExchangeKeys.INTERNAL_NAME.value, None)
-                    and config.get(enums.ExchangeKeys.AVAILABILITY.value, None)
+        exchange_account_id = None
+        if exchange_account_id := bot_config.get(enums.BotConfigKeys.EXCHANGE_ACCOUNT_ID.value):
+            # check 1: latest real bot config: use exchange_account_id when set in bot_config
+            # if exchange_account_id is set, this config only runs on one exchange and should use this account current credentials
+            exchange_id, credentials_id, exchange_details = await self.fetch_exchange_and_credential_ids_from_account_id(exchange_account_id)
+            exchange_config = {
+                # EXCHANGE_CREDENTIAL_ID is not set in latest real bot config
+                enums.ExchangeKeys.EXCHANGE_ID.value: exchange_id,
+                enums.ExchangeKeys.INTERNAL_NAME.value: exchange_details[enums.ExchangeKeys.INTERNAL_NAME.value],
+                enums.ExchangeKeys.AVAILABILITY.value: exchange_details[enums.ExchangeKeys.AVAILABILITY.value],
+                enums.ExchangeKeys.URL.value: exchange_details[enums.ExchangeKeys.URL.value],
+            }
+            exchanges_configs = [exchange_config]
+        else:
+            # check 2: latest simulated bot config: update exchange using exchange_id when set in bot_config
+            incomplete_exchange_config_by_id = {
+                config[enums.ExchangeKeys.EXCHANGE_ID.value]: config
+                for config in (bot_config.get(enums.BotConfigKeys.EXCHANGES.value) or [])
+                if (
+                    config.get(enums.ExchangeKeys.EXCHANGE_ID.value, None)
+                    and not (
+                        config.get(enums.ExchangeKeys.INTERNAL_NAME.value, None)
+                        and config.get(enums.ExchangeKeys.AVAILABILITY.value, None)
+                    )
                 )
-            )
-        }
-        if incomplete_exchange_config_by_id:
-            fetched_exchanges = await self.fetch_exchanges(list(incomplete_exchange_config_by_id))
-            exchanges_configs += [
-                {
-                    **incomplete_exchange_config_by_id[exchange[enums.ExchangeKeys.ID.value]],
-                    **{
-                        enums.ExchangeKeys.INTERNAL_NAME.value: exchange[enums.ExchangeKeys.INTERNAL_NAME.value],
-                        enums.ExchangeKeys.AVAILABILITY.value: exchange[enums.ExchangeKeys.AVAILABILITY.value],
-                        enums.ExchangeKeys.URL.value: exchange[enums.ExchangeKeys.URL.value],
-                    }
-                }
-                for exchange in fetched_exchanges
-            ]
-        # check 2: set exchange using credentials_id when set in bot_config
-        incomplete_exchange_config_by_credentials_id = {
-            config[enums.ExchangeKeys.EXCHANGE_CREDENTIAL_ID.value]: config
-            for config in (bot_config.get(enums.BotConfigKeys.EXCHANGES.value) or [])
-            if (
-                config.get(enums.ExchangeKeys.EXCHANGE_CREDENTIAL_ID.value, None)
-                and not config.get(enums.ExchangeKeys.EXCHANGE_ID.value, None)
-            )
-        }
-        if incomplete_exchange_config_by_credentials_id:
-            exchanges_by_credential_ids = await self.fetch_exchanges_by_credential_ids(
-                list(incomplete_exchange_config_by_credentials_id)
-            )
-            if len(incomplete_exchange_config_by_credentials_id) != len(exchanges_by_credential_ids):
-                missing = [
-                    cred for cred in incomplete_exchange_config_by_credentials_id
-                    if cred not in exchanges_by_credential_ids
-                ]
-                commons_logging.get_logger(self.__class__.__name__).error(
-                    f"{len(missing)} exchange credentials id not found in db: {', '.join(missing)}"
-                )
-            exchanges_configs += [
-                {
-                    **incomplete_exchange_config_by_credentials_id[credentials_id],
-                    **{
-                        enums.ExchangeKeys.EXCHANGE_ID.value: exchange[enums.ExchangeKeys.ID.value],
-                        enums.ExchangeKeys.INTERNAL_NAME.value: exchange[enums.ExchangeKeys.INTERNAL_NAME.value],
-                        enums.ExchangeKeys.AVAILABILITY.value: exchange[enums.ExchangeKeys.AVAILABILITY.value],
-                        enums.ExchangeKeys.URL.value: exchange[enums.ExchangeKeys.URL.value],
-                    }
-                }
-                for credentials_id, exchange in exchanges_by_credential_ids.items()
-            ]
-        if not exchanges_configs:
-            if profile_data.trader_simulator.enabled:
-                # last attempt (simulator only): use exchange details from product config
-                internal_names = [
-                    exchanges_config[enums.ExchangeKeys.INTERNAL_NAME.value]
-                    for exchanges_config in product_exchanges_configs
-                ]
-                fetched_exchanges = await self.fetch_exchanges([], internal_names=internal_names)
+            }
+            if incomplete_exchange_config_by_id:
+                fetched_exchanges = await self.fetch_exchanges(list(incomplete_exchange_config_by_id))
                 exchanges_configs += [
                     {
-                        enums.ExchangeKeys.EXCHANGE_ID.value: exchange[enums.ExchangeKeys.ID.value],
-                        enums.ExchangeKeys.INTERNAL_NAME.value: exchange[enums.ExchangeKeys.INTERNAL_NAME.value],
-                        enums.ExchangeKeys.AVAILABILITY.value: exchange[enums.ExchangeKeys.AVAILABILITY.value],
-                        enums.ExchangeKeys.URL.value: exchange[enums.ExchangeKeys.URL.value],
+                        **incomplete_exchange_config_by_id[exchange[enums.ExchangeKeys.ID.value]],
+                        **{
+                            enums.ExchangeKeys.INTERNAL_NAME.value: exchange[enums.ExchangeKeys.INTERNAL_NAME.value],
+                            enums.ExchangeKeys.AVAILABILITY.value: exchange[enums.ExchangeKeys.AVAILABILITY.value],
+                            enums.ExchangeKeys.URL.value: exchange[enums.ExchangeKeys.URL.value],
+                        }
                     }
                     for exchange in fetched_exchanges
-                    # no way to differentiate futures and spot exchanges using internal_names only:
-                    # use spot exchange here by default
-                    if (
-                        formatters.get_exchange_type_from_availability(
-                            exchange.get(enums.ExchangeKeys.AVAILABILITY.value)
-                        )
-                        == commons_constants.CONFIG_EXCHANGE_SPOT
-                    )
                 ]
-            else:
-                commons_logging.get_logger(self.__class__.__name__).error(
-                    f"Impossible to fetch exchange details for profile with bot id: {profile_data.profile_details.id}"
+            # check 3: legacy real bot config: set exchange using credentials_id when set in bot_config
+            incomplete_exchange_config_by_credentials_id = {
+                config[enums.ExchangeKeys.EXCHANGE_CREDENTIAL_ID.value]: config
+                for config in (bot_config.get(enums.BotConfigKeys.EXCHANGES.value) or [])
+                if (
+                    config.get(enums.ExchangeKeys.EXCHANGE_CREDENTIAL_ID.value, None)
+                    and not config.get(enums.ExchangeKeys.EXCHANGE_ID.value, None)
                 )
+            }
+            if incomplete_exchange_config_by_credentials_id:
+                exchanges_by_credential_ids = await self.fetch_exchanges_by_credential_ids(
+                    list(incomplete_exchange_config_by_credentials_id)
+                )
+                if len(incomplete_exchange_config_by_credentials_id) != len(exchanges_by_credential_ids):
+                    missing = [
+                        cred for cred in incomplete_exchange_config_by_credentials_id
+                        if cred not in exchanges_by_credential_ids
+                    ]
+                    commons_logging.get_logger(self.__class__.__name__).error(
+                        f"{len(missing)} exchange credentials id not found in db: {', '.join(missing)}"
+                    )
+                exchanges_configs += [
+                    {
+                        **incomplete_exchange_config_by_credentials_id[credentials_id],
+                        **{
+                            enums.ExchangeKeys.EXCHANGE_ID.value: exchange[enums.ExchangeKeys.ID.value],
+                            enums.ExchangeKeys.INTERNAL_NAME.value: exchange[enums.ExchangeKeys.INTERNAL_NAME.value],
+                            enums.ExchangeKeys.AVAILABILITY.value: exchange[enums.ExchangeKeys.AVAILABILITY.value],
+                            enums.ExchangeKeys.URL.value: exchange[enums.ExchangeKeys.URL.value],
+                        }
+                    }
+                    for credentials_id, exchange in exchanges_by_credential_ids.items()
+                ]
+            if not exchanges_configs:
+                if profile_data.trader_simulator.enabled:
+                    # last attempt (simulator only): use exchange details from product config
+                    internal_names = [
+                        exchanges_config[enums.ExchangeKeys.INTERNAL_NAME.value]
+                        for exchanges_config in product_exchanges_configs
+                    ]
+                    fetched_exchanges = await self.fetch_exchanges([], internal_names=internal_names)
+                    exchanges_configs += [
+                        {
+                            enums.ExchangeKeys.EXCHANGE_ID.value: exchange[enums.ExchangeKeys.ID.value],
+                            enums.ExchangeKeys.INTERNAL_NAME.value: exchange[enums.ExchangeKeys.INTERNAL_NAME.value],
+                            enums.ExchangeKeys.AVAILABILITY.value: exchange[enums.ExchangeKeys.AVAILABILITY.value],
+                            enums.ExchangeKeys.URL.value: exchange[enums.ExchangeKeys.URL.value],
+                        }
+                        for exchange in fetched_exchanges
+                        # no way to differentiate futures and spot exchanges using internal_names only:
+                        # use spot exchange here by default
+                        if (
+                            formatters.get_exchange_type_from_availability(
+                                exchange.get(enums.ExchangeKeys.AVAILABILITY.value)
+                            )
+                            == commons_constants.CONFIG_EXCHANGE_SPOT
+                        )
+                    ]
+                else:
+                    commons_logging.get_logger(self.__class__.__name__).error(
+                        f"Impossible to fetch exchange details for profile with bot id: {profile_data.profile_details.id}"
+                    )
         # Register exchange_type from exchange availability
         exchange_type = commons_constants.CONFIG_EXCHANGE_SPOT
         if exchanges_configs:
@@ -777,6 +792,14 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             exchange_data[enums.ExchangeKeys.INTERNAL_NAME.value] = formatters.to_bot_exchange_internal_name(
                 exchange_data[enums.ExchangeKeys.INTERNAL_NAME.value]
             )
+            if (
+                (exchanges_credentials_id := exchange_data.get(enums.ExchangeKeys.EXCHANGE_CREDENTIAL_ID.value))
+                and exchange_account_id is None
+            ):
+                # legacy bot_config compatibility: ensure exchange_account_id is set if missing
+                exchange_account_id = await self.fetch_exchange_accounts_id_from_credential_id(exchanges_credentials_id)
+            # always bind exchange_account_id when available
+            exchange_data[enums.BotConfigKeys.EXCHANGE_ACCOUNT_ID.value] = exchange_account_id
             if url := exchange_data.get(enums.ExchangeKeys.URL.value):
                 exchange_tentacles_data.append(
                     formatters.get_tentacles_data_exchange_config(
@@ -816,6 +839,29 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             ]
         return exchanges
 
+    async def fetch_exchange_and_credential_ids_from_account_id(
+        self, exchange_account_id: str
+    ) -> (str, str, dict):
+        select = self.table("exchange_accounts").select(
+            f"exchange_id, current_exchange_credentials_id,"
+            f"exchange:exchanges!exchange_id!inner("
+            f"  {enums.ExchangeKeys.ID.value}, "
+            f"  {enums.ExchangeKeys.INTERNAL_NAME.value}, "
+            f"  {enums.ExchangeKeys.URL.value}, "
+            f"  {enums.ExchangeKeys.AVAILABILITY.value}"           
+            f")" 
+        ).eq(
+            "id", exchange_account_id
+        )
+        exchange_accounts = (await select.execute()).data
+        if len(exchange_accounts) != 1:
+            raise errors.InvalidBotConfigError(f"Exchange account with id: {exchange_account_id} and associated exchange not found")
+        return (
+            exchange_accounts[0]["exchange_id"], 
+            exchange_accounts[0]["current_exchange_credentials_id"],
+            exchange_accounts[0]["exchange"]
+        )
+
     @staticmethod
     def is_compatible_availability(
         exchange_availability: typing.Optional[dict[str, str]], availabilities: list[enums.ExchangeAvailabilities]
@@ -841,6 +887,14 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             exchange["id"]: exchange["exchange"]
             for exchange in exchanges
         }
+
+    async def fetch_exchange_accounts_id_from_credential_id(self, exchange_credential_id: str) -> typing.Optional[str]:
+        rows = (await self.table("exchange_credentials").select(
+            "exchange_accounts_id"
+        ).eq("id", exchange_credential_id).execute()).data
+        if len(rows) != 1:
+            raise errors.InvalidBotConfigError(f"Exchange credential with id: {exchange_credential_id} not found")
+        return rows[0]["exchange_accounts_id"]
 
     async def fetch_product_config(self, product_id: str, product_slug: str = None) -> commons_profiles.ProfileData:
         if not product_id and not product_slug:
