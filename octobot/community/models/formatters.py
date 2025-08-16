@@ -199,7 +199,7 @@ def get_exchange_type_from_internal_name(community_exchange_internal_name: str) 
     return commons_constants.CONFIG_EXCHANGE_SPOT
 
 
-def get_exchange_type_from_availability(exchange_availability: dict) -> str:
+def get_exchange_type_from_availability(exchange_availability: typing.Optional[dict[str, str]]) -> str:
     if not exchange_availability:
         # use spot by default
         return commons_constants.CONFIG_EXCHANGE_SPOT
