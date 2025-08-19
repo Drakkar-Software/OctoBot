@@ -84,9 +84,12 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         storage: configuration_storage.ASyncConfigurationStorage,
         options: supabase.AClientOptions = None,
     ):
-        options = options or supabase.AClientOptions()
-        options.storage = storage   # use configuration storage
-        options.postgrest_client_timeout = self.REQUEST_TIMEOUT
+        # the timeout param logs a deprecation warning however default value still sets it
+        # wait for a fix in supabase. maybe set timeout in a AsyncClient instead
+        options = options or supabase.AClientOptions(
+            storage=storage,
+            postgrest_client_timeout=self.REQUEST_TIMEOUT
+        )
         self.event_loop = None
         super().__init__(supabase_url, supabase_key, options=options)
         self.is_admin = False
