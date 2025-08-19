@@ -456,7 +456,7 @@ class AbstractAuthenticatedExchangeTester:
         assert permissions == [trading_backend.enums.APIKeyRights.READING]
         # ensure order operations returns a permission error
         with pytest.raises(trading_errors.AuthenticationError) as err:
-            await self.inner_test_create_and_cancel_limit_orders()
+            await self.inner_test_create_and_cancel_limit_orders(use_both_margin_types=False)
         # ensure AuthenticationError is raised when creating order
         assert "inner_test_create_and_cancel_limit_orders#create_limit_order" in str(err), (
             f"Expected 'inner_test_create_and_cancel_limit_orders#create_limit_order' in error message, got: {err}"
@@ -552,7 +552,7 @@ class AbstractAuthenticatedExchangeTester:
             await self.inner_test_cancel_uncancellable_order()
             await self.inner_test_create_and_cancel_limit_orders()
 
-    async def inner_test_create_and_cancel_limit_orders(self, symbol=None, settlement_currency=None, margin_type=None):
+    async def inner_test_create_and_cancel_limit_orders(self, symbol=None, settlement_currency=None, **kwargs):
         symbol = symbol or self.SYMBOL
         # # DEBUG tools p1, uncomment to create specific orders
         # symbol = "ADA/USDT"

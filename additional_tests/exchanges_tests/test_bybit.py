@@ -35,7 +35,7 @@ class TestBybitAuthenticatedExchange(
     CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES = True
     EXPECT_MISSING_ORDER_FEES_DUE_TO_ORDERS_TOO_OLD_FOR_RECENT_TRADES = True   # when recent trades are limited and
     # closed orders fees are taken from recent trades
-    EXPECT_FETCH_ORDER_TO_BE_AVAILABLE = False
+    # EXPECT_FETCH_ORDER_TO_BE_AVAILABLE = False    # seems supported now ? todo check when supporting bybit
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
@@ -95,8 +95,8 @@ class TestBybitAuthenticatedExchange(
         await super().test_get_cancelled_orders()
 
     async def test_create_and_cancel_stop_orders(self):
-        # pass if not implemented
-        await super().test_create_and_cancel_stop_orders()
+        # futures only (for now)
+        pass
 
     async def test_edit_limit_order(self):
         # pass if not implemented
