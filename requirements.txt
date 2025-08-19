@@ -1,6 +1,6 @@
 # Drakkar-Software requirements
 OctoBot-Commons==1.9.80
-OctoBot-Trading==2.4.206
+OctoBot-Trading==2.4.208
 OctoBot-Evaluators==1.9.7
 OctoBot-Tentacles-Manager==2.9.16
 OctoBot-Services==1.6.25
@@ -35,3 +35,7 @@ aiohttp==3.12.15
 # updating to aiodns==3.2.0 is incompatible (and failing CI)
 # raises RuntimeError: aiodns needs a SelectorEventLoop on Windows. See more: https://github.com/saghul/aiodns/issues/86
 aiodns==3.1.1   # used by aiohttp
+
+# used by ccxt for protobuf "websockets" such as mexc
+# lock protobuf to avoid using .rc versions
+protobuf==5.29.5
