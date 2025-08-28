@@ -92,13 +92,13 @@ def check_orders(orders, evaluation, state, nb_orders, market_status):
                     assert order.simulated is True
                     assert order.fee
                     assert order.filled_price > trading_constants.ZERO
-                    assert order.filled_quantity == order.origin_quantity
+                    assert order.filled_quantity == order.origin_quantity   # filled quantity is only set for simulated market orders as they instantly fill
                 else:
                     assert order.status == trading_enum.OrderStatus.OPEN
                     assert order.simulated is True
                     assert order.fee is None
                     assert order.filled_price == trading_constants.ZERO
-                    assert order.filled_quantity == order.origin_quantity
+                    assert order.filled_quantity == trading_constants.ZERO
 
                 if state == trading_enum.EvaluatorStates.VERY_SHORT.value:
                     assert isinstance(order, trading_personal_data.SellMarketOrder)

@@ -1332,12 +1332,14 @@ class AbstractAuthenticatedExchangeTester:
     def check_created_limit_order(self, order, price, size, side):
         self._check_order(order, size, side)
         assert order.origin_price == price, f"{order.origin_price} != {price}"
+        assert isinstance(order.filled_quantity, decimal.Decimal)
         expected_type = personal_data.BuyLimitOrder \
             if side is trading_enums.TradeOrderSide.BUY else personal_data.SellLimitOrder
         assert isinstance(order, expected_type)
 
     def check_created_market_order(self, order, size, side):
         self._check_order(order, size, side)
+        assert isinstance(order.filled_quantity, decimal.Decimal)
         if self.CONVERTS_MARKET_INTO_LIMIT_ORDERS:
             expected_type = personal_data.BuyLimitOrder \
                 if side is trading_enums.TradeOrderSide.BUY else personal_data.SellLimitOrder
@@ -1349,6 +1351,7 @@ class AbstractAuthenticatedExchangeTester:
     def check_created_stop_order(self, order, price, size, side):
         self._check_order(order, size, side)
         assert order.origin_price == price, f"{order.origin_price=} != {price=}"
+        assert isinstance(order.filled_quantity, decimal.Decimal)
         assert order.side is side
         assert order.order_type is trading_enums.TraderOrderType.STOP_LOSS
         assert order.is_self_managed() is False # is real stop loss: NOT self-managed
