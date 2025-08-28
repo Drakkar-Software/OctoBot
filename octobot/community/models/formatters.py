@@ -128,6 +128,8 @@ def format_orders(orders: list, exchange_name: str) -> list:
             ),
             backend_enums.OrderKeys.QUANTITY.value: storage_order[trading_constants.STORAGE_ORIGIN_VALUE][
                 trading_enums.ExchangeConstantsOrderColumns.AMOUNT.value],
+            backend_enums.OrderKeys.FILLED.value: storage_order[trading_constants.STORAGE_ORIGIN_VALUE][
+                trading_enums.ExchangeConstantsOrderColumns.FILLED.value],
             backend_enums.OrderKeys.SIDE.value: storage_order[trading_constants.STORAGE_ORIGIN_VALUE][
                 trading_enums.ExchangeConstantsOrderColumns.SIDE.value],
             backend_enums.OrderKeys.TRIGGER_ABOVE.value: storage_order[trading_constants.STORAGE_ORIGIN_VALUE].get(
