@@ -177,6 +177,7 @@ class OrderKeys(enum.Enum):
     EXCHANGE = "exchange"
     PRICE = "price"
     QUANTITY = "quantity"
+    FILLED = "filled"
     EXCHANGE_ID = "exchange_id"
     SYMBOL = "symbol"
     TYPE = "type"
