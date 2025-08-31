@@ -833,6 +833,7 @@ class CommunityAuthentication(authentication.Authenticator):
         self.user_account.flush()
 
     @_bot_data_update
+    @supabase_backend.retried_failed_supabase_request
     async def update_trades(self, trades: list, exchange_name: str, reset: bool):
         """
         Updates authenticated account trades
@@ -850,6 +851,7 @@ class CommunityAuthentication(authentication.Authenticator):
             await self.supabase_client.upsert_trades(formatted_trades)
 
     @_bot_data_update
+    @supabase_backend.retried_failed_supabase_request
     async def update_orders(self, orders_by_exchange: dict[str, list]):
         """
         Updates authenticated account orders
@@ -861,6 +863,7 @@ class CommunityAuthentication(authentication.Authenticator):
         self.logger.info(f"Bot orders updated: using {len(formatted_orders)} orders")
 
     @_bot_data_update
+    @supabase_backend.retried_failed_supabase_request
     async def update_positions(self, positions_by_exchange: dict[str, list]):
         """
         Updates authenticated account positions
@@ -872,6 +875,7 @@ class CommunityAuthentication(authentication.Authenticator):
         self.logger.info(f"Bot positions updated: using {len(formatted_positions)} positions")
 
     @_bot_data_update
+    @supabase_backend.retried_failed_supabase_request
     async def update_portfolio(
         self, current_value: dict, initial_value: dict, profitability: float,
         unit: str, content: dict[str, dict[str, float]], history: dict,

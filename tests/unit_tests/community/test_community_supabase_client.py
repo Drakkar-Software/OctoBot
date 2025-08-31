@@ -16,9 +16,12 @@
 import mock
 import pytest
 import datetime
+import asyncio
+import postgrest
 
 import octobot.community
 import octobot.community.supabase_backend.enums as enums
+import octobot.constants as constants
 
 
 @pytest.fixture
@@ -229,3 +232,76 @@ def test_get_parsed_time(mock_supabase_client):
         2025, 8, 8, 6, 55, 50, tzinfo=datetime.timezone(datetime.timedelta(hours=2))
     )
     assert mock_supabase_client.get_parsed_time("2025-08-08T06:55:50+02:00").timestamp() == 1754636150.0 - 2 * 3600
+
+
+@pytest.mark.asyncio
+async def test_retried_failed_supabase_request(mock_supabase_client):
+    result = "result"
+    mocked_request = mock.AsyncMock()
+    @octobot.community.retried_failed_supabase_request
+    async def _retried_failed_supabase_request():
+        await mocked_request()
+        return result
+
+    with mock.patch.object(asyncio, "sleep") as sleep_mock: 
+        # success
+        assert await _retried_failed_supabase_request() == result
+        mocked_request.assert_called_once()
+        sleep_mock.assert_not_called()
+        mocked_request.reset_mock()
+        sleep_mock.reset_mock()
+
+        # random errors: don't retry
+        for error in [
+            Exception("test"),
+            KeyError("test"),
+            ValueError("test"),
+            TypeError("test"),
+            AttributeError("test"),
+            postgrest.APIError(error={}),
+        ]:
+            mocked_request.side_effect=error
+            with pytest.raises(error.__class__):
+                await _retried_failed_supabase_request()
+            mocked_request.assert_called_once()
+            sleep_mock.assert_not_called()
+            mocked_request.reset_mock()
+
+        # retriable errors
+        for error in [
+            postgrest.APIError(error={"code": "502"}),  # bad gateway
+        ]:
+            mocked_request.side_effect=error
+            with pytest.raises(error.__class__):
+                await _retried_failed_supabase_request()
+            assert mocked_request.call_count == constants.FAILED_DB_REQUEST_MAX_ATTEMPTS
+            assert sleep_mock.call_count == constants.FAILED_DB_REQUEST_MAX_ATTEMPTS - 1
+            assert sleep_mock.mock_calls[0].args == (constants.RETRY_DB_REQUEST_DELAY,)
+            assert sleep_mock.mock_calls[1].args == (constants.RETRY_DB_REQUEST_DELAY,)
+            mocked_request.reset_mock()  
+            sleep_mock.reset_mock()
+
+        # error when parsing postgrest.APIError ('str' object has no attribute 'get')
+        mocked_request.side_effect=lambda: postgrest.APIError(error="not a dict")
+        with pytest.raises(AttributeError):
+            await _retried_failed_supabase_request()
+        assert mocked_request.call_count == constants.FAILED_DB_REQUEST_MAX_ATTEMPTS
+        assert sleep_mock.call_count == constants.FAILED_DB_REQUEST_MAX_ATTEMPTS - 1
+        assert sleep_mock.mock_calls[0].args == (constants.RETRY_DB_REQUEST_DELAY,)
+        assert sleep_mock.mock_calls[1].args == (constants.RETRY_DB_REQUEST_DELAY,)
+        mocked_request.reset_mock()  
+        sleep_mock.reset_mock()
+
+        # retried once
+        def _side_effect():
+            if mocked_request.call_count == 1:
+                raise postgrest.APIError(error={"code": "502"})
+            else:
+                return result
+        mocked_request.side_effect=_side_effect
+        await _retried_failed_supabase_request()
+        assert mocked_request.call_count == 2
+        assert sleep_mock.call_count == 1
+        assert sleep_mock.mock_calls[0].args == (constants.RETRY_DB_REQUEST_DELAY,)
+        mocked_request.reset_mock()  
+        sleep_mock.reset_mock()
