@@ -69,6 +69,47 @@ def error_describer():
             raise errors.SessionTokenExpiredError(err) from err
         raise
 
+
+def retried_failed_supabase_request(func):
+    async def retried_failed_supabase_request_wrapper(*args, **kwargs):
+        last_error = None
+        for attempt in range(1, constants.FAILED_DB_REQUEST_MAX_ATTEMPTS + 1):
+            try:
+                if attempt > 1:
+                    await asyncio.sleep(constants.RETRY_DB_REQUEST_DELAY)
+                    commons_logging.get_logger("retried_failed_supabase_request").warning(
+                        f"{func.__name__} attempt {attempt}/{constants.FAILED_DB_REQUEST_MAX_ATTEMPTS} "
+                        f"{last_error=} ({last_error.__class__.__name__})"
+                    )
+                return await func(*args, **kwargs)
+            except postgrest.APIError as err:
+                if err.code == "502":
+                    # bad gateway, can happen: retry
+                    last_error = err
+                    continue
+                else:
+                    raise
+            except AttributeError as err:
+                if "'str' object has no attribute 'get'" in str(err):
+                    # error when parsing postgrest.APIError: retry
+                    last_error = err
+                    continue
+                else:
+                    raise
+            except Exception as err:
+                # unexpected error: don't retry
+                raise
+        if last_error:
+            commons_logging.get_logger("retried_failed_supabase_request").error(
+                f"{func.__name__} failed after {attempt} attempts: "
+                f" {last_error=} ({last_error.__class__.__name__})"
+            )
+            raise last_error
+        # last_error should always be set, handle it just in case
+        raise Exception(f"{func.__name__} failed after {attempt} attempts")
+    return retried_failed_supabase_request_wrapper
+
+
 class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
     """
     Octobot Community layer added to supabase_client.AuthenticatedSupabaseClient

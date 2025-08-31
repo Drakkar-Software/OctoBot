@@ -45,6 +45,7 @@ from octobot.community.supabase_backend import (
     SyncConfigurationStorage,
     ASyncConfigurationStorage,
     AuthenticatedAsyncSupabaseClient,
+    retried_failed_supabase_request,
     CommunitySupabaseClient,
 )
 
@@ -131,6 +132,7 @@ __all__ = [
     "SyncConfigurationStorage",
     "ASyncConfigurationStorage",
     "AuthenticatedAsyncSupabaseClient",
+    "retried_failed_supabase_request",
     "CommunitySupabaseClient",
     "select_startup_info_query",
     "select_bot_query",
