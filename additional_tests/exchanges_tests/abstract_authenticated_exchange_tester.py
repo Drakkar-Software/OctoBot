@@ -1,5 +1,5 @@
 #  This file is part of OctoBot (https://github.com/Drakkar-Software/OctoBot)
-#  Copyright (c) 2023 Drakkar-Software, All rights reserved.
+#  Copyright (c) 2025 Drakkar-Software, All rights reserved.
 #
 #  OctoBot is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
@@ -456,7 +456,7 @@ class AbstractAuthenticatedExchangeTester:
         assert permissions == [trading_backend.enums.APIKeyRights.READING]
         # ensure order operations returns a permission error
         with pytest.raises(trading_errors.AuthenticationError) as err:
-            await self.inner_test_create_and_cancel_limit_orders()
+            await self.inner_test_create_and_cancel_limit_orders(use_both_margin_types=False)
         # ensure AuthenticationError is raised when creating order
         assert "inner_test_create_and_cancel_limit_orders#create_limit_order" in str(err), (
             f"Expected 'inner_test_create_and_cancel_limit_orders#create_limit_order' in error message, got: {err}"
@@ -552,7 +552,7 @@ class AbstractAuthenticatedExchangeTester:
             await self.inner_test_cancel_uncancellable_order()
             await self.inner_test_create_and_cancel_limit_orders()
 
-    async def inner_test_create_and_cancel_limit_orders(self, symbol=None, settlement_currency=None, margin_type=None):
+    async def inner_test_create_and_cancel_limit_orders(self, symbol=None, settlement_currency=None, **kwargs):
         symbol = symbol or self.SYMBOL
         # # DEBUG tools p1, uncomment to create specific orders
         # symbol = "ADA/USDT"
@@ -1332,12 +1332,14 @@ class AbstractAuthenticatedExchangeTester:
     def check_created_limit_order(self, order, price, size, side):
         self._check_order(order, size, side)
         assert order.origin_price == price, f"{order.origin_price} != {price}"
+        assert isinstance(order.filled_quantity, decimal.Decimal)
         expected_type = personal_data.BuyLimitOrder \
             if side is trading_enums.TradeOrderSide.BUY else personal_data.SellLimitOrder
         assert isinstance(order, expected_type)
 
     def check_created_market_order(self, order, size, side):
         self._check_order(order, size, side)
+        assert isinstance(order.filled_quantity, decimal.Decimal)
         if self.CONVERTS_MARKET_INTO_LIMIT_ORDERS:
             expected_type = personal_data.BuyLimitOrder \
                 if side is trading_enums.TradeOrderSide.BUY else personal_data.SellLimitOrder
@@ -1349,6 +1351,7 @@ class AbstractAuthenticatedExchangeTester:
     def check_created_stop_order(self, order, price, size, side):
         self._check_order(order, size, side)
         assert order.origin_price == price, f"{order.origin_price=} != {price=}"
+        assert isinstance(order.filled_quantity, decimal.Decimal)
         assert order.side is side
         assert order.order_type is trading_enums.TraderOrderType.STOP_LOSS
         assert order.is_self_managed() is False # is real stop loss: NOT self-managed

@@ -1,5 +1,5 @@
 #  This file is part of OctoBot (https://github.com/Drakkar-Software/OctoBot)
-#  Copyright (c) 2023 Drakkar-Software, All rights reserved.
+#  Copyright (c) 2025 Drakkar-Software, All rights reserved.
 #
 #  OctoBot is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
@@ -20,6 +20,7 @@ import asyncio
 import json
 import time
 import websockets
+import websockets.asyncio.server
 
 import octobot.community as community
 import octobot.constants as constants
@@ -74,7 +75,7 @@ def _build_message(value):
     }
 
 
-async def echo_or_signal_reply_handler(websocket, _):
+async def echo_or_signal_reply_handler(websocket):
     async for message in websocket:
         parsed_message = json.loads(message)
         if parsed_message.get("command") == "subscribe":
@@ -87,7 +88,7 @@ async def echo_or_signal_reply_handler(websocket, _):
 
 @pytest_asyncio.fixture
 async def community_echo_server():
-    async with websockets.serve(echo_or_signal_reply_handler, HOST, PORT):
+    async with websockets.asyncio.server.serve(echo_or_signal_reply_handler, HOST, PORT):
         yield
 
 
@@ -105,7 +106,7 @@ async def authenticator():
 async def community_mocked_consumer_server():
     mock_consumer = mock.AsyncMock()
 
-    async def mock_handler(websocket, path):
+    async def mock_handler(websocket):
         async for message in websocket:
             await mock_consumer(message)
             parsed_message = json.loads(message)
@@ -113,7 +114,7 @@ async def community_mocked_consumer_server():
                 await websocket.send(json.dumps({"type": "confirm_subscription"}))
             else:
                 await websocket.send(json.dumps({"message": _build_message(mock_consumer.call_count)}))
-    async with websockets.serve(mock_handler, HOST, PORT):
+    async with websockets.asyncio.server.serve(mock_handler, HOST, PORT):
         yield mock_consumer
 
 
@@ -212,7 +213,7 @@ async def test_send_signal_message(community_mocked_consumer_server, connected_c
 async def test_reconnect(authenticator):
     server = client = None
     try:
-        server = await websockets.serve(echo_or_signal_reply_handler, HOST, PORT)
+        server = await websockets.asyncio.server.serve(echo_or_signal_reply_handler, HOST, PORT)
         client_handler = mock.AsyncMock()
         client = community.CommunityWSFeed(f"ws://{HOST}:{PORT}", authenticator)
         client.RECONNECT_DELAY = 0
@@ -240,7 +241,7 @@ async def test_reconnect(authenticator):
         client_handler.assert_not_called()
 
         # 3. client is reconnected (server restarts)
-        server = await websockets.serve(echo_or_signal_reply_handler, HOST, PORT)
+        server = await websockets.asyncio.server.serve(echo_or_signal_reply_handler, HOST, PORT)
         # ensure the previous message was not get sent upon reconnection
         client_handler.assert_not_called()
 
@@ -266,13 +267,13 @@ async def test_reconnect(authenticator):
         client_handler.assert_not_called()
 
         # 6. wait for client reconnection, receive signal as soon as possible
-        server = await websockets.serve(echo_or_signal_reply_handler, HOST, PORT)
+        server = await websockets.asyncio.server.serve(echo_or_signal_reply_handler, HOST, PORT)
         client_handler.assert_not_called()
         # wait for client reconnection
         await _wait_for_connection_and_subscribe(client)
 
         # 7. send message from server with a consuming only client
-        await next(iter(server.websockets)).send(json.dumps({"message": _build_message("greetings")}))
+        await next(iter(server.connections)).send(json.dumps({"message": _build_message("greetings")}))
         await _wait_for_receive()
         assert client.is_connected()
         # client_handler is called as the consume task did reconnect the client

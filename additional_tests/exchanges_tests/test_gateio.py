@@ -1,5 +1,5 @@
 #  This file is part of OctoBot (https://github.com/Drakkar-Software/OctoBot)
-#  Copyright (c) 2023 Drakkar-Software, All rights reserved.
+#  Copyright (c) 2025 Drakkar-Software, All rights reserved.
 #
 #  OctoBot is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
@@ -33,6 +33,7 @@ class TestGateIOAuthenticatedExchange(
     ORDER_SIZE = 40  # % of portfolio to include in test orders
     VALID_ORDER_ID = "1777764898965454848"
     CHECK_EMPTY_ACCOUNT = True  # set True when the account to check has no funds. Warning: does not check order
+    # can't test for now due to country restrictions
     # parse/create/fill/cancel or portfolio & trades parsing
 
     async def test_get_portfolio(self):

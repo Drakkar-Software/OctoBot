@@ -1,5 +1,5 @@
 #  This file is part of OctoBot (https://github.com/Drakkar-Software/OctoBot)
-#  Copyright (c) 2023 Drakkar-Software, All rights reserved.
+#  Copyright (c) 2025 Drakkar-Software, All rights reserved.
 #
 #  OctoBot is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
@@ -171,8 +171,8 @@ class AbstractAuthenticatedFutureExchangeTester(
         if position_mode is not None:
             assert position[trading_enums.ExchangeConstantsPositionColumns.POSITION_MODE.value] is position_mode
 
-    async def inner_test_create_and_cancel_limit_orders(self, symbol=None, settlement_currency=None):
-        if self.exchange_manager.exchange.SUPPORTS_SET_MARGIN_TYPE:
+    async def inner_test_create_and_cancel_limit_orders(self, symbol=None, settlement_currency=None, use_both_margin_types=True):
+        if self.exchange_manager.exchange.SUPPORTS_SET_MARGIN_TYPE and use_both_margin_types:
             await self._inner_test_create_and_cancel_limit_orders_for_margin_type(
                 symbol=symbol, settlement_currency=settlement_currency, margin_type=trading_enums.MarginType.ISOLATED
             )

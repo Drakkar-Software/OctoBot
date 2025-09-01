@@ -1,5 +1,5 @@
 #  This file is part of OctoBot (https://github.com/Drakkar-Software/OctoBot)
-#  Copyright (c) 2023 Drakkar-Software, All rights reserved.
+#  Copyright (c) 2025 Drakkar-Software, All rights reserved.
 #
 #  OctoBot is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
@@ -17,6 +17,8 @@ import random
 import time
 import typing
 import websockets
+import websockets.asyncio.client
+import websockets.protocol
 import asyncio
 import enum
 import json
@@ -47,7 +49,7 @@ class CommunityWSFeed(abstract_feed.AbstractFeed):
 
     def __init__(self, feed_url, authenticator):
         super().__init__(feed_url, authenticator)
-        self.websocket_connection = None
+        self.websocket_connection: websockets.asyncio.client.ClientConnection = None
         self.lock = asyncio.Lock()
 
         self.consumer_task = None
@@ -246,11 +248,11 @@ class CommunityWSFeed(abstract_feed.AbstractFeed):
         if not self.authenticator.is_logged_in():
             raise authentication.AuthenticationRequired("OctoBot Community authentication is required to "
                                                         "use community trading signals")
-        self.websocket_connection = await websockets.connect(self.feed_url,
-                                                             extra_headers=self.authenticator.get_backend_headers(),
-                                                             ping_interval=None)
+        self.websocket_connection = await websockets.asyncio.client.connect(
+            self.feed_url, additional_headers=self.authenticator.get_backend_headers(), ping_interval=None
+        )
         await self._subscribe()
         self.logger.info("Connected to community feed")
 
     def is_connected(self):
-        return self.websocket_connection is not None and self.websocket_connection.open
+        return self.websocket_connection is not None and self.websocket_connection.state == websockets.protocol.State.OPEN

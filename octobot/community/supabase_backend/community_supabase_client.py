@@ -1,5 +1,5 @@
 #  This file is part of OctoBot (https://github.com/Drakkar-Software/OctoBot)
-#  Copyright (c) 2023 Drakkar-Software, All rights reserved.
+#  Copyright (c) 2025 Drakkar-Software, All rights reserved.
 #
 #  OctoBot is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
@@ -23,8 +23,8 @@ import json
 import contextlib
 import aiohttp
 
-import gotrue.errors
-import gotrue.types
+import supabase_auth.errors
+import supabase_auth.types
 import postgrest
 import postgrest.types
 import postgrest.utils
@@ -69,6 +69,55 @@ def error_describer():
             raise errors.SessionTokenExpiredError(err) from err
         raise
 
+
+def retried_failed_supabase_request(func):
+    async def retried_failed_supabase_request_wrapper(*args, **kwargs):
+        last_error = None
+        for attempt in range(1, constants.FAILED_DB_REQUEST_MAX_ATTEMPTS + 1):
+            try:
+                if attempt > 1:
+                    await asyncio.sleep(constants.RETRY_DB_REQUEST_DELAY)
+                    commons_logging.get_logger("retried_failed_supabase_request").warning(
+                        f"{func.__name__} attempt {attempt}/{constants.FAILED_DB_REQUEST_MAX_ATTEMPTS} "
+                        f"{last_error=} ({last_error.__class__.__name__})"
+                    )
+                return await func(*args, **kwargs)
+            except postgrest.APIError as err:
+                if str(err.code) in ("502", "500"):
+                    # cloudflare errors, to be retried
+                    # 502: bad gateway, 500: internal server error => can happen: retry
+                    # all message are expected to be 'message': 'JSON could not be generated'
+                    if err.message != "JSON could not be generated":
+                        commons_logging.get_logger("retried_failed_supabase_request").error(
+                            f"{func.__name__} attempt {attempt}/{constants.FAILED_DB_REQUEST_MAX_ATTEMPTS} "
+                            f"unexpected error.message: '{err.message}'. Expected: 'JSON could not be generated'. "
+                            f"Retrying anyway"
+                        )
+                    last_error = err
+                    continue
+                else:
+                    raise
+            except AttributeError as err:
+                if "'str' object has no attribute 'get'" in str(err):
+                    # error when parsing postgrest.APIError: retry
+                    last_error = err
+                    continue
+                else:
+                    raise
+            except Exception as err:
+                # unexpected error: don't retry
+                raise
+        if last_error:
+            commons_logging.get_logger("retried_failed_supabase_request").error(
+                f"{func.__name__} failed after {attempt} attempts: "
+                f" {last_error=} ({last_error.__class__.__name__})"
+            )
+            raise last_error
+        # last_error should always be set, handle it just in case
+        raise Exception(f"{func.__name__} failed after {attempt} attempts")
+    return retried_failed_supabase_request_wrapper
+
+
 class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
     """
     Octobot Community layer added to supabase_client.AuthenticatedSupabaseClient
@@ -84,9 +133,12 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         storage: configuration_storage.ASyncConfigurationStorage,
         options: supabase.AClientOptions = None,
     ):
-        options = options or supabase.AClientOptions()
-        options.storage = storage   # use configuration storage
-        options.postgrest_client_timeout = self.REQUEST_TIMEOUT
+        # the timeout param logs a deprecation warning however default value still sets it
+        # wait for a fix in supabase. maybe set timeout in a AsyncClient instead
+        options = options or supabase.AClientOptions(
+            storage=storage,
+            postgrest_client_timeout=self.REQUEST_TIMEOUT
+        )
         self.event_loop = None
         super().__init__(supabase_url, supabase_key, options=options)
         self.is_admin = False
@@ -100,7 +152,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
                 "email": email,
                 "password": password,
             })
-        except gotrue.errors.AuthApiError as err:
+        except supabase_auth.errors.AuthApiError as err:
             translated_error = error_translator.translate_error_code(err.code)
             if err.code == error_translator.EMAIL_NOT_CONFIRMED_ERROR:
                 raise errors.EmailValidationRequiredError(translated_error) from err
@@ -124,19 +176,19 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
                 raise authentication.AuthenticationError(error_translator.translate_error_code("email_exists"))
             if self._requires_email_validation(resp.user):
                 raise errors.EmailValidationRequiredError()
-        except gotrue.errors.AuthError as err:
+        except supabase_auth.errors.AuthError as err:
             raise authentication.AuthenticationError(error_translator.translate_error_code(err.code)) from err
 
-    async def sign_out(self, options: gotrue.types.SignOutOptions) -> None:
+    async def sign_out(self, options: supabase_auth.types.SignOutOptions) -> None:
         try:
             await self.auth.sign_out(options)
-        except (postgrest.exceptions.APIError, gotrue.errors.AuthApiError):
+        except (postgrest.exceptions.APIError, supabase_auth.errors.AuthApiError):
             pass
 
-    def _requires_email_validation(self, user: gotrue.types.User) -> bool:
+    def _requires_email_validation(self, user: supabase_auth.types.User) -> bool:
         return user.app_metadata.get("provider") == "email" and user.confirmed_at is None
 
-    def _is_email_already_in_use(self, user: gotrue.types.User) -> bool:
+    def _is_email_already_in_use(self, user: supabase_auth.types.User) -> bool:
         # // Check if the user got created based on https://github.com/orgs/supabase/discussions/1282
         if user.identities and len(user.identities) > 0:
             return False
@@ -152,7 +204,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         try:
             with jwt_expired_auth_raiser():
                 await self.auth.refresh_session(refresh_token=refresh_token)
-        except gotrue.errors.AuthError as err:
+        except supabase_auth.errors.AuthError as err:
             raise authentication.AuthenticationError(error_translator.translate_error_code(err.code)) from err
         except postgrest.exceptions.APIError as err:
             raise authentication.AuthenticationError(f"Community auth error: {err}") from err
@@ -170,7 +222,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
                     .replace("#access_token", "?access_token")
                     .replace("#error", "?error")
                 )
-        except gotrue.errors.AuthImplicitGrantRedirectError as err:
+        except supabase_auth.errors.AuthImplicitGrantRedirectError as err:
             if saved_session:
                 await self.auth._storage.set_item(self.auth._storage_key, saved_session)
             raise authentication.AuthenticationError(error_translator.translate_error_code(err.code)) from err
@@ -179,7 +231,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         # is signed in when a user auth key is set
         return self._get_auth_key() != self.supabase_key
 
-    def get_in_saved_session(self) -> typing.Union[gotrue.types.Session, None]:
+    def get_in_saved_session(self) -> typing.Union[supabase_auth.types.Session, None]:
         return self.auth._get_valid_session(
             self.auth._storage.sync_storage.get_item(self.auth._storage_key)
         )
@@ -198,7 +250,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         try:
             user = await self._get_user()
             return user.model_dump()
-        except gotrue.errors.AuthApiError as err:
+        except supabase_auth.errors.AuthApiError as err:
             translated_error = error_translator.translate_error_code(err.code)
             if err.code == error_translator.EMAIL_NOT_CONFIRMED_ERROR:
                 raise errors.EmailValidationRequiredError(translated_error) from err
@@ -564,6 +616,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             "bot_id, "
             "options, "
             "exchanges, "
+            "exchange_account_id, "
             "created_at, "
             "is_simulated, "
             "bot:bots!bot_id!inner(user_id, created_at), "
@@ -671,94 +724,108 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
     ) -> (list[commons_profiles.ExchangeData], list[commons_profile_data.TentaclesData]):
 
         # ensure all required exchange info are available
-        # check 1: update exchange using exchange_id when set in bot_config
         exchanges_configs = []
-        incomplete_exchange_config_by_id = {
-            config[enums.ExchangeKeys.EXCHANGE_ID.value]: config
-            for config in (bot_config.get(enums.BotConfigKeys.EXCHANGES.value) or [])
-            if (
-                config.get(enums.ExchangeKeys.EXCHANGE_ID.value, None)
-                and not (
-                    config.get(enums.ExchangeKeys.INTERNAL_NAME.value, None)
-                    and config.get(enums.ExchangeKeys.AVAILABILITY.value, None)
+        exchange_account_id = None
+        if exchange_account_id := bot_config.get(enums.BotConfigKeys.EXCHANGE_ACCOUNT_ID.value):
+            # check 1: latest real bot config: use exchange_account_id when set in bot_config
+            # if exchange_account_id is set, this config only runs on one exchange and should use this account current credentials
+            exchange_id, credentials_id, exchange_details = await self.fetch_exchange_and_credential_ids_from_account_id(exchange_account_id)
+            exchange_config = {
+                # EXCHANGE_CREDENTIAL_ID is not set in latest real bot config
+                enums.ExchangeKeys.EXCHANGE_ID.value: exchange_id,
+                enums.ExchangeKeys.INTERNAL_NAME.value: exchange_details[enums.ExchangeKeys.INTERNAL_NAME.value],
+                enums.ExchangeKeys.AVAILABILITY.value: exchange_details[enums.ExchangeKeys.AVAILABILITY.value],
+                enums.ExchangeKeys.URL.value: exchange_details[enums.ExchangeKeys.URL.value],
+            }
+            exchanges_configs = [exchange_config]
+        else:
+            # check 2: latest simulated bot config: update exchange using exchange_id when set in bot_config
+            incomplete_exchange_config_by_id = {
+                config[enums.ExchangeKeys.EXCHANGE_ID.value]: config
+                for config in (bot_config.get(enums.BotConfigKeys.EXCHANGES.value) or [])
+                if (
+                    config.get(enums.ExchangeKeys.EXCHANGE_ID.value, None)
+                    and not (
+                        config.get(enums.ExchangeKeys.INTERNAL_NAME.value, None)
+                        and config.get(enums.ExchangeKeys.AVAILABILITY.value, None)
+                    )
                 )
-            )
-        }
-        if incomplete_exchange_config_by_id:
-            fetched_exchanges = await self.fetch_exchanges(list(incomplete_exchange_config_by_id))
-            exchanges_configs += [
-                {
-                    **incomplete_exchange_config_by_id[exchange[enums.ExchangeKeys.ID.value]],
-                    **{
-                        enums.ExchangeKeys.INTERNAL_NAME.value: exchange[enums.ExchangeKeys.INTERNAL_NAME.value],
-                        enums.ExchangeKeys.AVAILABILITY.value: exchange[enums.ExchangeKeys.AVAILABILITY.value],
-                        enums.ExchangeKeys.URL.value: exchange[enums.ExchangeKeys.URL.value],
-                    }
-                }
-                for exchange in fetched_exchanges
-            ]
-        # check 2: set exchange using credentials_id when set in bot_config
-        incomplete_exchange_config_by_credentials_id = {
-            config[enums.ExchangeKeys.EXCHANGE_CREDENTIAL_ID.value]: config
-            for config in (bot_config.get(enums.BotConfigKeys.EXCHANGES.value) or [])
-            if (
-                config.get(enums.ExchangeKeys.EXCHANGE_CREDENTIAL_ID.value, None)
-                and not config.get(enums.ExchangeKeys.EXCHANGE_ID.value, None)
-            )
-        }
-        if incomplete_exchange_config_by_credentials_id:
-            exchanges_by_credential_ids = await self.fetch_exchanges_by_credential_ids(
-                list(incomplete_exchange_config_by_credentials_id)
-            )
-            if len(incomplete_exchange_config_by_credentials_id) != len(exchanges_by_credential_ids):
-                missing = [
-                    cred for cred in incomplete_exchange_config_by_credentials_id
-                    if cred not in exchanges_by_credential_ids
-                ]
-                commons_logging.get_logger(self.__class__.__name__).error(
-                    f"{len(missing)} exchange credentials id not found in db: {', '.join(missing)}"
-                )
-            exchanges_configs += [
-                {
-                    **incomplete_exchange_config_by_credentials_id[credentials_id],
-                    **{
-                        enums.ExchangeKeys.EXCHANGE_ID.value: exchange[enums.ExchangeKeys.ID.value],
-                        enums.ExchangeKeys.INTERNAL_NAME.value: exchange[enums.ExchangeKeys.INTERNAL_NAME.value],
-                        enums.ExchangeKeys.AVAILABILITY.value: exchange[enums.ExchangeKeys.AVAILABILITY.value],
-                        enums.ExchangeKeys.URL.value: exchange[enums.ExchangeKeys.URL.value],
-                    }
-                }
-                for credentials_id, exchange in exchanges_by_credential_ids.items()
-            ]
-        if not exchanges_configs:
-            if profile_data.trader_simulator.enabled:
-                # last attempt (simulator only): use exchange details from product config
-                internal_names = [
-                    exchanges_config[enums.ExchangeKeys.INTERNAL_NAME.value]
-                    for exchanges_config in product_exchanges_configs
-                ]
-                fetched_exchanges = await self.fetch_exchanges([], internal_names=internal_names)
+            }
+            if incomplete_exchange_config_by_id:
+                fetched_exchanges = await self.fetch_exchanges(list(incomplete_exchange_config_by_id))
                 exchanges_configs += [
                     {
-                        enums.ExchangeKeys.EXCHANGE_ID.value: exchange[enums.ExchangeKeys.ID.value],
-                        enums.ExchangeKeys.INTERNAL_NAME.value: exchange[enums.ExchangeKeys.INTERNAL_NAME.value],
-                        enums.ExchangeKeys.AVAILABILITY.value: exchange[enums.ExchangeKeys.AVAILABILITY.value],
-                        enums.ExchangeKeys.URL.value: exchange[enums.ExchangeKeys.URL.value],
+                        **incomplete_exchange_config_by_id[exchange[enums.ExchangeKeys.ID.value]],
+                        **{
+                            enums.ExchangeKeys.INTERNAL_NAME.value: exchange[enums.ExchangeKeys.INTERNAL_NAME.value],
+                            enums.ExchangeKeys.AVAILABILITY.value: exchange[enums.ExchangeKeys.AVAILABILITY.value],
+                            enums.ExchangeKeys.URL.value: exchange[enums.ExchangeKeys.URL.value],
+                        }
                     }
                     for exchange in fetched_exchanges
-                    # no way to differentiate futures and spot exchanges using internal_names only:
-                    # use spot exchange here by default
-                    if (
-                        formatters.get_exchange_type_from_availability(
-                            exchange.get(enums.ExchangeKeys.AVAILABILITY.value)
-                        )
-                        == commons_constants.CONFIG_EXCHANGE_SPOT
-                    )
                 ]
-            else:
-                commons_logging.get_logger(self.__class__.__name__).error(
-                    f"Impossible to fetch exchange details for profile with bot id: {profile_data.profile_details.id}"
+            # check 3: legacy real bot config: set exchange using credentials_id when set in bot_config
+            incomplete_exchange_config_by_credentials_id = {
+                config[enums.ExchangeKeys.EXCHANGE_CREDENTIAL_ID.value]: config
+                for config in (bot_config.get(enums.BotConfigKeys.EXCHANGES.value) or [])
+                if (
+                    config.get(enums.ExchangeKeys.EXCHANGE_CREDENTIAL_ID.value, None)
+                    and not config.get(enums.ExchangeKeys.EXCHANGE_ID.value, None)
                 )
+            }
+            if incomplete_exchange_config_by_credentials_id:
+                exchanges_by_credential_ids = await self.fetch_exchanges_by_credential_ids(
+                    list(incomplete_exchange_config_by_credentials_id)
+                )
+                if len(incomplete_exchange_config_by_credentials_id) != len(exchanges_by_credential_ids):
+                    missing = [
+                        cred for cred in incomplete_exchange_config_by_credentials_id
+                        if cred not in exchanges_by_credential_ids
+                    ]
+                    commons_logging.get_logger(self.__class__.__name__).error(
+                        f"{len(missing)} exchange credentials id not found in db: {', '.join(missing)}"
+                    )
+                exchanges_configs += [
+                    {
+                        **incomplete_exchange_config_by_credentials_id[credentials_id],
+                        **{
+                            enums.ExchangeKeys.EXCHANGE_ID.value: exchange[enums.ExchangeKeys.ID.value],
+                            enums.ExchangeKeys.INTERNAL_NAME.value: exchange[enums.ExchangeKeys.INTERNAL_NAME.value],
+                            enums.ExchangeKeys.AVAILABILITY.value: exchange[enums.ExchangeKeys.AVAILABILITY.value],
+                            enums.ExchangeKeys.URL.value: exchange[enums.ExchangeKeys.URL.value],
+                        }
+                    }
+                    for credentials_id, exchange in exchanges_by_credential_ids.items()
+                ]
+            if not exchanges_configs:
+                if profile_data.trader_simulator.enabled:
+                    # last attempt (simulator only): use exchange details from product config
+                    internal_names = [
+                        exchanges_config[enums.ExchangeKeys.INTERNAL_NAME.value]
+                        for exchanges_config in product_exchanges_configs
+                    ]
+                    fetched_exchanges = await self.fetch_exchanges([], internal_names=internal_names)
+                    exchanges_configs += [
+                        {
+                            enums.ExchangeKeys.EXCHANGE_ID.value: exchange[enums.ExchangeKeys.ID.value],
+                            enums.ExchangeKeys.INTERNAL_NAME.value: exchange[enums.ExchangeKeys.INTERNAL_NAME.value],
+                            enums.ExchangeKeys.AVAILABILITY.value: exchange[enums.ExchangeKeys.AVAILABILITY.value],
+                            enums.ExchangeKeys.URL.value: exchange[enums.ExchangeKeys.URL.value],
+                        }
+                        for exchange in fetched_exchanges
+                        # no way to differentiate futures and spot exchanges using internal_names only:
+                        # use spot exchange here by default
+                        if (
+                            formatters.get_exchange_type_from_availability(
+                                exchange.get(enums.ExchangeKeys.AVAILABILITY.value)
+                            )
+                            == commons_constants.CONFIG_EXCHANGE_SPOT
+                        )
+                    ]
+                else:
+                    commons_logging.get_logger(self.__class__.__name__).error(
+                        f"Impossible to fetch exchange details for profile with bot id: {profile_data.profile_details.id}"
+                    )
         # Register exchange_type from exchange availability
         exchange_type = commons_constants.CONFIG_EXCHANGE_SPOT
         if exchanges_configs:
@@ -774,6 +841,14 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             exchange_data[enums.ExchangeKeys.INTERNAL_NAME.value] = formatters.to_bot_exchange_internal_name(
                 exchange_data[enums.ExchangeKeys.INTERNAL_NAME.value]
             )
+            if (
+                (exchanges_credentials_id := exchange_data.get(enums.ExchangeKeys.EXCHANGE_CREDENTIAL_ID.value))
+                and exchange_account_id is None
+            ):
+                # legacy bot_config compatibility: ensure exchange_account_id is set if missing
+                exchange_account_id = await self.fetch_exchange_accounts_id_from_credential_id(exchanges_credentials_id)
+            # always bind exchange_account_id when available
+            exchange_data[enums.BotConfigKeys.EXCHANGE_ACCOUNT_ID.value] = exchange_account_id
             if url := exchange_data.get(enums.ExchangeKeys.URL.value):
                 exchange_tentacles_data.append(
                     formatters.get_tentacles_data_exchange_config(
@@ -785,17 +860,67 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             for exchange_data in exchanges_configs
         ], exchange_tentacles_data
 
-    async def fetch_exchanges(self, exchange_ids: list, internal_names: typing.Optional[list] = None) -> list:
+    async def fetch_exchanges(
+        self, 
+        exchange_ids: typing.Optional[list] = None,
+        internal_names: typing.Optional[list] = None, 
+        availabilities: typing.Optional[list[enums.ExchangeAvailabilities]] = None
+    ) -> list:
         # WARNING: setting internal_names can result in duplicate (futures and spot) exchanges
         select = self.table("exchanges").select(
             f"{enums.ExchangeKeys.ID.value}, "
             f"{enums.ExchangeKeys.INTERNAL_NAME.value}, "
             f"{enums.ExchangeKeys.URL.value}, "
-            f"{enums.ExchangeKeys.AVAILABILITY.value}"
+            f"{enums.ExchangeKeys.AVAILABILITY.value}, "
+            f"{enums.ExchangeKeys.TRUSTED_IPS.value}"
         )
         if internal_names:
-            return (await select.in_(enums.ExchangeKeys.INTERNAL_NAME.value, internal_names).execute()).data
-        return (await select.in_(enums.ExchangeKeys.ID.value, exchange_ids).execute()).data
+            select = select.in_(enums.ExchangeKeys.INTERNAL_NAME.value, internal_names)
+        if exchange_ids:
+            select = select.in_(enums.ExchangeKeys.ID.value, exchange_ids)
+        exchanges = (await select.execute()).data
+        if availabilities:
+            exchanges = [
+                exchange for exchange in exchanges
+                if self.is_compatible_availability(
+                    exchange[enums.ExchangeKeys.AVAILABILITY.value], availabilities
+                )
+            ]
+        return exchanges
+
+    async def fetch_exchange_and_credential_ids_from_account_id(
+        self, exchange_account_id: str
+    ) -> (str, str, dict):
+        select = self.table("exchange_accounts").select(
+            f"exchange_id, current_exchange_credentials_id,"
+            f"exchange:exchanges!exchange_id!inner("
+            f"  {enums.ExchangeKeys.ID.value}, "
+            f"  {enums.ExchangeKeys.INTERNAL_NAME.value}, "
+            f"  {enums.ExchangeKeys.URL.value}, "
+            f"  {enums.ExchangeKeys.AVAILABILITY.value}"           
+            f")" 
+        ).eq(
+            "id", exchange_account_id
+        )
+        exchange_accounts = (await select.execute()).data
+        if len(exchange_accounts) != 1:
+            raise errors.InvalidBotConfigError(f"Exchange account with id: {exchange_account_id} and associated exchange not found")
+        return (
+            exchange_accounts[0]["exchange_id"], 
+            exchange_accounts[0]["current_exchange_credentials_id"],
+            exchange_accounts[0]["exchange"]
+        )
+
+    @staticmethod
+    def is_compatible_availability(
+        exchange_availability: typing.Optional[dict[str, str]], availabilities: list[enums.ExchangeAvailabilities]
+    ) -> bool:
+        return bool(
+            exchange_availability and any(
+                exchange_availability.get(availability.value) == enums.ExchangeSupportValues.SUPPORTED.value
+                for availability in availabilities
+            )
+        )
 
     async def fetch_exchanges_by_credential_ids(self, exchange_credential_ids: list) -> dict:
         exchanges = (await self.table("exchange_credentials").select(
@@ -811,6 +936,14 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             exchange["id"]: exchange["exchange"]
             for exchange in exchanges
         }
+
+    async def fetch_exchange_accounts_id_from_credential_id(self, exchange_credential_id: str) -> typing.Optional[str]:
+        rows = (await self.table("exchange_credentials").select(
+            "exchange_accounts_id"
+        ).eq("id", exchange_credential_id).execute()).data
+        if len(rows) != 1:
+            raise errors.InvalidBotConfigError(f"Exchange credential with id: {exchange_credential_id} not found")
+        return rows[0]["exchange_accounts_id"]
 
     async def fetch_product_config(self, product_id: str, product_slug: str = None) -> commons_profiles.ProfileData:
         if not product_id and not product_slug:
@@ -1088,20 +1221,27 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
 
     @staticmethod
     def get_formatted_time(timestamp: float) -> str:
-        return datetime.datetime.utcfromtimestamp(timestamp).isoformat('T')
+        # don't include timezone offset (+00:00) as this is always a UTC time
+        return datetime.datetime.fromtimestamp(
+            timestamp, datetime.timezone.utc
+        ).isoformat(sep='T').replace("+00:00", "")
 
     @staticmethod
     def get_parsed_time(str_time: str) -> datetime.datetime:
         try:
-            return datetime.datetime.strptime(str_time, "%Y-%m-%dT%H:%M:%S")
+            # no fractional seconds, no timezone
+            return datetime.datetime.strptime(str_time, "%Y-%m-%dT%H:%M:%S").replace(tzinfo=datetime.timezone.utc)
         except ValueError:
             try:
-                return datetime.datetime.strptime(str_time, "%Y-%m-%dT%H:%M:%S.%f")
+                # fractional seconds, no timezone
+                return datetime.datetime.strptime(str_time, "%Y-%m-%dT%H:%M:%S.%f").replace(tzinfo=datetime.timezone.utc)
             except ValueError:
                 # last chance, try using iso format (ex: 2011-11-04T00:05:23.283+04:00)
                 try:
+                    # potential fractional seconds & timezone
                     return datetime.datetime.fromisoformat(str_time)
                 except ValueError:
+                    # removed fractional seconds & timezone
                     # sometimes fractional seconds are not supported, ex:
                     # '2023-09-04T00:01:31.06381+00:00'
                     if "." in str_time and "+" in str_time:
@@ -1110,7 +1250,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
                         return datetime.datetime.fromisoformat(without_ms_time)
                     raise
 
-    async def _get_user(self) -> gotrue.User:
+    async def _get_user(self) -> supabase_auth.User:
         if user := await self.auth.get_user():
             return user.user
         raise authentication.AuthenticationError("Please login to your OctoBot account")

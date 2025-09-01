@@ -1,5 +1,5 @@
 #  This file is part of OctoBot (https://github.com/Drakkar-Software/OctoBot)
-#  Copyright (c) 2023 Drakkar-Software, All rights reserved.
+#  Copyright (c) 2025 Drakkar-Software, All rights reserved.
 #
 #  OctoBot is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
@@ -833,6 +833,7 @@ class CommunityAuthentication(authentication.Authenticator):
         self.user_account.flush()
 
     @_bot_data_update
+    @supabase_backend.retried_failed_supabase_request
     async def update_trades(self, trades: list, exchange_name: str, reset: bool):
         """
         Updates authenticated account trades
@@ -850,6 +851,7 @@ class CommunityAuthentication(authentication.Authenticator):
             await self.supabase_client.upsert_trades(formatted_trades)
 
     @_bot_data_update
+    @supabase_backend.retried_failed_supabase_request
     async def update_orders(self, orders_by_exchange: dict[str, list]):
         """
         Updates authenticated account orders
@@ -861,6 +863,7 @@ class CommunityAuthentication(authentication.Authenticator):
         self.logger.info(f"Bot orders updated: using {len(formatted_orders)} orders")
 
     @_bot_data_update
+    @supabase_backend.retried_failed_supabase_request
     async def update_positions(self, positions_by_exchange: dict[str, list]):
         """
         Updates authenticated account positions
@@ -872,11 +875,13 @@ class CommunityAuthentication(authentication.Authenticator):
         self.logger.info(f"Bot positions updated: using {len(formatted_positions)} positions")
 
     @_bot_data_update
+    @supabase_backend.retried_failed_supabase_request
     async def update_portfolio(
         self, current_value: dict, initial_value: dict, profitability: float,
         unit: str, content: dict[str, dict[str, float]], history: dict,
         price_by_asset: dict[str, typing.Union[float, decimal.Decimal]],
-        reset: bool, is_sub_portfolio: bool = False
+        reset: bool, is_sub_portfolio: bool = False, 
+        bot_locked_assets: typing.Optional[dict[str, dict[str, decimal.Decimal]]] = None
     ):
         """
         Updates authenticated account portfolio
@@ -884,29 +889,27 @@ class CommunityAuthentication(authentication.Authenticator):
         try:
             formatted_portfolio = formatters.format_portfolio(
                 current_value, initial_value, profitability, unit, content, price_by_asset, self.user_account.bot_id,
-                is_sub_portfolio
+                is_sub_portfolio, bot_locked_assets
             )
             if reset or self.user_account.get_selected_bot_current_portfolio_id() is None:
                 self.logger.info(f"Switching bot portfolio")
                 await self.supabase_client.switch_portfolio(formatted_portfolio)
                 await self.refresh_selected_bot()
-
-            formatted_portfolio[backend_enums.PortfolioKeys.ID.value] = \
-                self.user_account.get_selected_bot_current_portfolio_id()
+            portfolio_id = self.user_account.get_selected_bot_current_portfolio_id()
+            formatted_portfolio[backend_enums.PortfolioKeys.ID.value] = portfolio_id
             await self.supabase_client.update_portfolio(formatted_portfolio)
             self.logger.info(
                 f"Bot portfolio [{formatted_portfolio[backend_enums.PortfolioKeys.ID.value]}] "
                 f"updated with content: {formatted_portfolio[backend_enums.PortfolioKeys.CONTENT.value]}"
             )
-            if formatted_histories := formatters.format_portfolio_history(
-                history, unit, self.user_account.get_selected_bot_current_portfolio_id()
-            ):
-                await self.supabase_client.upsert_portfolio_history(formatted_histories)
-                self.logger.info(
-                    f"Bot portfolio [{formatted_portfolio[backend_enums.PortfolioKeys.ID.value]}] history updated"
-                )
+            await self.upsert_portfolio_history(portfolio_id, history, unit)
         except KeyError as err:
             self.logger.debug(f"Error when updating community portfolio {err} (missing reference market value)")
+
+    async def upsert_portfolio_history(self, portfolio_id: str, history: dict, unit: str):
+        if formatted_histories := formatters.format_portfolio_history(history, unit, portfolio_id):
+            await self.supabase_client.upsert_portfolio_history(formatted_histories)
+            self.logger.info(f"Bot portfolio [{portfolio_id}] history updated")
 
     @_bot_data_update
     async def update_bot_config_and_stats(self, profitability):

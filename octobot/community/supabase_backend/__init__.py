@@ -1,5 +1,5 @@
 #  This file is part of OctoBot (https://github.com/Drakkar-Software/OctoBot)
-#  Copyright (c) 2023 Drakkar-Software, All rights reserved.
+#  Copyright (c) 2025 Drakkar-Software, All rights reserved.
 #
 #  OctoBot is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
@@ -25,6 +25,7 @@ from octobot.community.supabase_backend.supabase_client import (
 )
 from octobot.community.supabase_backend import community_supabase_client
 from octobot.community.supabase_backend.community_supabase_client import (
+    retried_failed_supabase_request,
     error_describer,
     CommunitySupabaseClient,
     HTTP_RETRY_COUNT,
@@ -34,6 +35,7 @@ __all__ = [
     "SyncConfigurationStorage",
     "ASyncConfigurationStorage",
     "AuthenticatedAsyncSupabaseClient",
+    "retried_failed_supabase_request",
     "error_describer",
     "CommunitySupabaseClient",
     "HTTP_RETRY_COUNT",

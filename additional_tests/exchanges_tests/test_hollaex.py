@@ -1,5 +1,5 @@
 #  This file is part of OctoBot (https://github.com/Drakkar-Software/OctoBot)
-#  Copyright (c) 2023 Drakkar-Software, All rights reserved.
+#  Copyright (c) 2025 Drakkar-Software, All rights reserved.
 #
 #  OctoBot is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
@@ -27,13 +27,13 @@ class TestHollaexAuthenticatedExchange(
     # enter exchange name as a class variable here
     EXCHANGE_NAME = "hollaex"
     EXCHANGE_TENTACLE_NAME = "hollaex"  # specify EXCHANGE_TENTACLE_NAME as the tentacle class has no capital H
-    ORDER_CURRENCY = "BTC"
+    ORDER_CURRENCY = "ETH"
     EXPECT_BALANCE_FILTER_BY_MARKET_STATUS = True  # set true when using filtered market status also filters
     IS_AUTHENTICATED_REQUEST_CHECK_AVAILABLE = True    # set True when is_authenticated_request is implemented
     # fetched balance assets
     SETTLEMENT_CURRENCY = "USDT"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
-    ORDER_SIZE = 50  # % of portfolio to include in test orders
+    ORDER_SIZE = 0.05  # % of portfolio to include in test orders
     EXPECT_MISSING_ORDER_FEES_DUE_TO_ORDERS_TOO_OLD_FOR_RECENT_TRADES = True   # when recent trades are limited and
     # closed orders fees are taken from recent trades
     IGNORE_EXCHANGE_TRADE_ID = True
@@ -94,6 +94,7 @@ class TestHollaexAuthenticatedExchange(
         await super().test_get_cancelled_orders()
 
     async def test_create_and_cancel_stop_orders(self):
+        # broken: stop param is ignored by exchange because it's sent as a string instead of float. Converting it to flaat fails the signature
         # Warning: can't be tested on sandbox exchange: use a real production exchange for those tests
         await super().test_create_and_cancel_stop_orders()
 
@@ -101,6 +102,7 @@ class TestHollaexAuthenticatedExchange(
         await super().test_edit_limit_order()
 
     async def test_edit_stop_order(self):
+        # broken: stop param is ignored by exchange because it's sent as a string instead of float. Converting it to flaat fails the signature
         # Warning: can't be tested on sandbox exchange: use a real production exchange for those tests
         await super().test_edit_stop_order()
 

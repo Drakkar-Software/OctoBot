@@ -1,5 +1,5 @@
 #  This file is part of OctoBot (https://github.com/Drakkar-Software/OctoBot)
-#  Copyright (c) 2023 Drakkar-Software, All rights reserved.
+#  Copyright (c) 2025 Drakkar-Software, All rights reserved.
 #
 #  OctoBot is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
@@ -122,6 +122,8 @@ TO_DOWNLOAD_PROFILES = os.getenv("TO_DOWNLOAD_PROFILES", None)
 FORCED_PROFILE = os.getenv("FORCED_PROFILE", None)
 RUN_IN_MAIN_THREAD = os.getenv("RUN_IN_MAIN_THREAD", False)
 PROFILE_UPDATE_RESTART_MIN = float(os.getenv("PROFILE_UPDATE_RESTART_MIN", 5))
+FAILED_DB_REQUEST_MAX_ATTEMPTS = 3
+RETRY_DB_REQUEST_DELAY = 0.5
 
 OCTOBOT_BINARY_PROJECT_NAME = "OctoBot-Binary"
 

@@ -1,5 +1,5 @@
 #  This file is part of OctoBot (https://github.com/Drakkar-Software/OctoBot)
-#  Copyright (c) 2023 Drakkar-Software, All rights reserved.
+#  Copyright (c) 2025 Drakkar-Software, All rights reserved.
 #
 #  OctoBot is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
@@ -30,7 +30,7 @@ class TestKucoinAuthenticatedExchange(
     ORDER_CURRENCY = "BTC"
     SETTLEMENT_CURRENCY = "USDT"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
-    ORDER_SIZE = 20  # % of portfolio to include in test orders
+    ORDER_SIZE = 40  # % of portfolio to include in test orders
     EXPECT_MISSING_FEE_IN_CANCELLED_ORDERS = False  # when get_cancelled_orders returns None in fee
     EXPECTED_GENERATED_ACCOUNT_ID = False   # True when subaccounts are created
     USE_ORDER_OPERATION_TO_CHECK_API_KEY_RIGHTS = True

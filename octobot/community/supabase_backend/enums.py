@@ -1,5 +1,5 @@
 #  This file is part of OctoBot (https://github.com/Drakkar-Software/OctoBot)
-#  Copyright (c) 2023 Drakkar-Software, All rights reserved.
+#  Copyright (c) 2025 Drakkar-Software, All rights reserved.
 #
 #  OctoBot is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
@@ -116,11 +116,19 @@ class ExchangeKeys(enum.Enum):
     SANDBOXED = "sandboxed"
     AVAILABILITY = "availability"
     URL = "url"
+    TRUSTED_IPS = "trusted_ips"
 
 
 class ExchangeSupportValues(enum.Enum):
     SUPPORTED = "supported"
     UNSUPPORTED = "unsupported"
+
+
+class ExchangeAvailabilities(enum.Enum):
+    SPOT = "spot"
+    FUTURES = "futures"
+    OPEN_SOURCE = "open_source"
+    MARKET_MAKING = "market_making"
 
 
 class SignalKeys(enum.Enum):
@@ -169,6 +177,7 @@ class OrderKeys(enum.Enum):
     EXCHANGE = "exchange"
     PRICE = "price"
     QUANTITY = "quantity"
+    FILLED = "filled"
     EXCHANGE_ID = "exchange_id"
     SYMBOL = "symbol"
     TYPE = "type"
@@ -213,6 +222,7 @@ class PortfolioKeys(enum.Enum):
     UNIT = "unit"
     CONTENT = "content"
     PORTFOLIO_TYPE = "portfolio_type"
+    LOCKED_ASSETS = "locked_assets"
 
 
 class PortfolioTypes(enum.Enum):
@@ -237,6 +247,7 @@ class BotConfigKeys(enum.Enum):
     BOT_ID = "bot_id"
     PRODUCT_CONFIG_ID = "product_config_id"
     EXCHANGES = "exchanges"
+    EXCHANGE_ACCOUNT_ID = "exchange_account_id"
     OPTIONS = "options"
     IS_SIMULATED = "is_simulated"
     CREATED_AT = "created_at"

@@ -1,5 +1,5 @@
 #  This file is part of OctoBot (https://github.com/Drakkar-Software/OctoBot)
-#  Copyright (c) 2023 Drakkar-Software, All rights reserved.
+#  Copyright (c) 2025 Drakkar-Software, All rights reserved.
 #
 #  OctoBot is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
@@ -15,9 +15,13 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import mock
 import pytest
+import datetime
+import asyncio
+import postgrest
 
 import octobot.community
 import octobot.community.supabase_backend.enums as enums
+import octobot.constants as constants
 
 
 @pytest.fixture
@@ -203,3 +207,102 @@ async def test_fetch_bot_profile_data_invalid_inputs(mock_supabase_client):
         with pytest.raises(octobot.community.errors.MissingBotConfigError):
             await mock_supabase_client.fetch_bot_profile_data("", {})
         fetch_bot_nested_config_profile_data_if_any_mock.assert_not_called()
+
+
+def test_get_formatted_time(mock_supabase_client):
+    utc_ts = 1754636150 #  Friday, August 8, 2025 6:55:50 GMT (+00:00)
+    assert mock_supabase_client.get_formatted_time(utc_ts) == "2025-08-08T06:55:50"
+    utc_ts = 1704067200 #  Monday, January 1, 2024 0:00:00 GMT (+00:00)
+    assert mock_supabase_client.get_formatted_time(utc_ts) == "2024-01-01T00:00:00"
+
+
+def test_get_parsed_time(mock_supabase_client):
+    # no timezone in parsed date: UTC timezone is forced
+    assert mock_supabase_client.get_parsed_time("2025-08-08T06:55:50") == datetime.datetime(2025, 8, 8, 6, 55, 50, tzinfo=datetime.timezone.utc)
+    assert mock_supabase_client.get_parsed_time("2025-08-08T06:55:50").timestamp() == 1754636150.0
+    assert mock_supabase_client.get_parsed_time("2025-08-08T06:55:50.123") == datetime.datetime(2025, 8, 8, 6, 55, 50, 123000, tzinfo=datetime.timezone.utc)
+    assert mock_supabase_client.get_parsed_time("2025-08-08T06:55:50.123+00:00").timestamp() == 1754636150.123
+    # with timezone: timezone is kept
+    assert mock_supabase_client.get_parsed_time("2025-08-08T06:55:50+00:00") == datetime.datetime(2025, 8, 8, 6, 55, 50, tzinfo=datetime.timezone.utc)
+    assert mock_supabase_client.get_parsed_time("2025-08-08T06:55:50+00:00").timestamp() == 1754636150.0
+    assert mock_supabase_client.get_parsed_time("2025-08-08T06:55:50.123+00:00") == datetime.datetime(2025, 8, 8, 6, 55, 50, 123000, tzinfo=datetime.timezone.utc)
+    assert mock_supabase_client.get_parsed_time("2025-08-08T06:55:50.123+00:00").timestamp() == 1754636150.123
+    # with non UTC timezone: timezone is kept
+    assert mock_supabase_client.get_parsed_time("2025-08-08T06:55:50+02:00") == datetime.datetime(
+        2025, 8, 8, 6, 55, 50, tzinfo=datetime.timezone(datetime.timedelta(hours=2))
+    )
+    assert mock_supabase_client.get_parsed_time("2025-08-08T06:55:50+02:00").timestamp() == 1754636150.0 - 2 * 3600
+
+
+@pytest.mark.asyncio
+async def test_retried_failed_supabase_request(mock_supabase_client):
+    result = "result"
+    mocked_request = mock.AsyncMock()
+    @octobot.community.retried_failed_supabase_request
+    async def _retried_failed_supabase_request():
+        await mocked_request()
+        return result
+
+    with mock.patch.object(asyncio, "sleep") as sleep_mock: 
+        # success
+        assert await _retried_failed_supabase_request() == result
+        mocked_request.assert_called_once()
+        sleep_mock.assert_not_called()
+        mocked_request.reset_mock()
+        sleep_mock.reset_mock()
+
+        # random errors: don't retry
+        for error in [
+            Exception("test"),
+            KeyError("test"),
+            ValueError("test"),
+            TypeError("test"),
+            AttributeError("test"),
+            postgrest.APIError(error={}),
+        ]:
+            mocked_request.side_effect=error
+            with pytest.raises(error.__class__):
+                await _retried_failed_supabase_request()
+            mocked_request.assert_called_once()
+            sleep_mock.assert_not_called()
+            mocked_request.reset_mock()
+
+        # retriable errors
+        for error in [
+            postgrest.APIError(error={"code": "502", "message": "JSON could not be generated"}),  # bad gateway
+            postgrest.APIError(error={"code": 500, "message": "random"}),  # internal server error (with int code even though expected is str)
+        ]:
+            mocked_request.side_effect=error
+            with pytest.raises(error.__class__):
+                await _retried_failed_supabase_request()
+            assert mocked_request.call_count == constants.FAILED_DB_REQUEST_MAX_ATTEMPTS
+            assert sleep_mock.call_count == constants.FAILED_DB_REQUEST_MAX_ATTEMPTS - 1
+            assert sleep_mock.mock_calls[0].args == (constants.RETRY_DB_REQUEST_DELAY,)
+            assert sleep_mock.mock_calls[1].args == (constants.RETRY_DB_REQUEST_DELAY,)
+            mocked_request.reset_mock()  
+            sleep_mock.reset_mock()
+
+        # error when parsing postgrest.APIError ('str' object has no attribute 'get')
+        mocked_request.side_effect=lambda: postgrest.APIError(error="not a dict")
+        with pytest.raises(AttributeError):
+            await _retried_failed_supabase_request()
+        assert mocked_request.call_count == constants.FAILED_DB_REQUEST_MAX_ATTEMPTS
+        assert sleep_mock.call_count == constants.FAILED_DB_REQUEST_MAX_ATTEMPTS - 1
+        assert sleep_mock.mock_calls[0].args == (constants.RETRY_DB_REQUEST_DELAY,)
+        assert sleep_mock.mock_calls[1].args == (constants.RETRY_DB_REQUEST_DELAY,)
+        mocked_request.reset_mock()  
+        sleep_mock.reset_mock()
+
+        # retried once
+        def _side_effect():
+            if mocked_request.call_count == 1:
+                raise postgrest.APIError(error={"code": "502"})
+            else:
+                return result
+        mocked_request.side_effect=_side_effect
+        await _retried_failed_supabase_request()
+        assert mocked_request.call_count == 2
+        assert sleep_mock.call_count == 1
+        assert sleep_mock.mock_calls[0].args == (constants.RETRY_DB_REQUEST_DELAY,)
+        mocked_request.reset_mock()  
+        sleep_mock.reset_mock()

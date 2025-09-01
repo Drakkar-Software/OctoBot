@@ -1,5 +1,5 @@
 #  This file is part of OctoBot (https://github.com/Drakkar-Software/OctoBot)
-#  Copyright (c) 2023 Drakkar-Software, All rights reserved.
+#  Copyright (c) 2025 Drakkar-Software, All rights reserved.
 #
 #  OctoBot is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
@@ -15,7 +15,6 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import copy
 import typing
-import gotrue.errors
 import postgrest
 import supabase
 
@@ -44,24 +43,6 @@ class AuthenticatedAsyncSupabaseClient(supabase.AClient):
         self.auth._remove_session()
         self.auth._notify_all_subscribers("SIGNED_OUT", None)
 
-    # OVERRIDE TO AVOID WARNING
-    def _listen_to_auth_events(
-        self, event: gotrue.types.AuthChangeEvent, session: typing.Union[gotrue.types.Session, None]
-    ):
-        access_token = self.supabase_key
-        if event in ["SIGNED_IN", "TOKEN_REFRESHED", "SIGNED_OUT"]:
-            # reset postgrest and storage instance on event change
-            self._postgrest = None
-            self._storage = None
-            self._functions = None
-            access_token = session.access_token if session else self.supabase_key
-
-        self.options.headers["Authorization"] = self._create_auth_header(access_token)
-
-        # REMOVED TO AVOID WARNING
-        # # set_auth is a coroutine, how to handle this?
-        # self.realtime.set_auth(access_token)
-
     async def aclose(self):
         # waiting from supabase close() method
         try:
@@ -77,8 +58,6 @@ class AuthenticatedAsyncSupabaseClient(supabase.AClient):
             except RuntimeError:
                 # can happen when "Event loop is closed"
                 pass
-        if self._storage:
-            await self._storage.aclose()
         # timer has to be stopped, there is no public stop api
         if self.auth._refresh_token_timer:
             self.auth._refresh_token_timer.cancel()

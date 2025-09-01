@@ -1,5 +1,5 @@
 #  This file is part of OctoBot (https://github.com/Drakkar-Software/OctoBot)
-#  Copyright (c) 2023 Drakkar-Software, All rights reserved.
+#  Copyright (c) 2025 Drakkar-Software, All rights reserved.
 #
 #  OctoBot is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
@@ -14,15 +14,15 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import typing
-import gotrue
+import supabase_auth
 import octobot_commons.configuration
 import octobot_commons.logging
 import octobot.constants
 
 
-class SyncConfigurationStorage(gotrue.SyncSupportedStorage):
+class SyncConfigurationStorage(supabase_auth.SyncSupportedStorage):
     """
-    Used by gotrue client to save authenticated user session
+    Used by supabase_auth client to save authenticated user session
     """
     def __init__(self, configuration: octobot_commons.configuration.Configuration):
         self._configuration: octobot_commons.configuration.Configuration = configuration
@@ -67,7 +67,7 @@ class SyncConfigurationStorage(gotrue.SyncSupportedStorage):
         return None
 
 
-class ASyncConfigurationStorage(gotrue.AsyncSupportedStorage):
+class ASyncConfigurationStorage(supabase_auth.AsyncSupportedStorage):
     def __init__(self, configuration: octobot_commons.configuration.Configuration):
         self.sync_storage: SyncConfigurationStorage = SyncConfigurationStorage(configuration)
 
