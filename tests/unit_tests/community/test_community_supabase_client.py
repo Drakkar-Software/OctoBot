@@ -269,7 +269,8 @@ async def test_retried_failed_supabase_request(mock_supabase_client):
 
         # retriable errors
         for error in [
-            postgrest.APIError(error={"code": "502"}),  # bad gateway
+            postgrest.APIError(error={"code": "502", "message": "JSON could not be generated"}),  # bad gateway
+            postgrest.APIError(error={"code": 500, "message": "random"}),  # internal server error (with int code even though expected is str)
         ]:
             mocked_request.side_effect=error
             with pytest.raises(error.__class__):
