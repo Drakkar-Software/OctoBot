@@ -83,8 +83,16 @@ def retried_failed_supabase_request(func):
                     )
                 return await func(*args, **kwargs)
             except postgrest.APIError as err:
-                if err.code == "502":
-                    # bad gateway, can happen: retry
+                if str(err.code) in ("502", "500"):
+                    # cloudflare errors, to be retried
+                    # 502: bad gateway, 500: internal server error => can happen: retry
+                    # all message are expected to be 'message': 'JSON could not be generated'
+                    if err.message != "JSON could not be generated":
+                        commons_logging.get_logger("retried_failed_supabase_request").error(
+                            f"{func.__name__} attempt {attempt}/{constants.FAILED_DB_REQUEST_MAX_ATTEMPTS} "
+                            f"unexpected error.message: '{err.message}'. Expected: 'JSON could not be generated'. "
+                            f"Retrying anyway"
+                        )
                     last_error = err
                     continue
                 else:
