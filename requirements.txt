@@ -10,11 +10,11 @@ trading-backend==1.2.41
 
 ## Others
 colorlog==6.8.0
-requests==2.32.3
+requests==2.32.5
 urllib3 # required by requests, used in imports: make sure it's always available
 packaging==23.2
 python-dotenv==1.0.0
-setuptools==69.0.3
+setuptools==80.9.0
 
 # Community
 websockets==15.0.1 # used by supabase, a recent version is required, see https://github.com/supabase/realtime-py/blob/main/pyproject.toml
