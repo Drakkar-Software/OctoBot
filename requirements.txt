@@ -14,7 +14,8 @@ requests==2.32.5
 urllib3 # required by requests, used in imports: make sure it's always available
 packaging==23.2
 python-dotenv==1.0.0
-setuptools==80.9.0
+setuptools==79.0.1  # warning: setuptools>=80 breaks easy_install, need to find an alternative not to break installs
+# see https://community.palantir.com/t/important-update-on-setuptools-pinning-the-version-below-80-0-0/3872
 
 # Community
 websockets==15.0.1 # used by supabase, a recent version is required, see https://github.com/supabase/realtime-py/blob/main/pyproject.toml
