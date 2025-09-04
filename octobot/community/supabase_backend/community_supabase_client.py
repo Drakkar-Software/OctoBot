@@ -22,6 +22,7 @@ import uuid
 import json
 import contextlib
 import aiohttp
+import httpx
 
 import supabase_auth.errors
 import supabase_auth.types
@@ -104,6 +105,10 @@ def retried_failed_supabase_request(func):
                     continue
                 else:
                     raise
+            except httpx.NetworkError as err:
+                # network error (WriteError, etc), to be retried
+                last_error = err
+                continue
             except Exception as err:
                 # unexpected error: don't retry
                 raise
