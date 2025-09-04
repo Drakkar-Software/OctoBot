@@ -18,6 +18,7 @@ import pytest
 import datetime
 import asyncio
 import postgrest
+import httpx
 
 import octobot.community
 import octobot.community.supabase_backend.enums as enums
@@ -271,6 +272,8 @@ async def test_retried_failed_supabase_request(mock_supabase_client):
         for error in [
             postgrest.APIError(error={"code": "502", "message": "JSON could not be generated"}),  # bad gateway
             postgrest.APIError(error={"code": 500, "message": "random"}),  # internal server error (with int code even though expected is str)
+            httpx.WriteError("test"),
+            httpx.NetworkError("test"),
         ]:
             mocked_request.side_effect=error
             with pytest.raises(error.__class__):
