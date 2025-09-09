@@ -105,7 +105,7 @@ def retried_failed_supabase_request(func):
                     continue
                 else:
                     raise
-            except httpx.NetworkError as err:
+            except (httpx.NetworkError, httpx.RemoteProtocolError) as err:
                 # network error (WriteError, etc), to be retried
                 last_error = err
                 continue

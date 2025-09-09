@@ -274,6 +274,7 @@ async def test_retried_failed_supabase_request(mock_supabase_client):
             postgrest.APIError(error={"code": 500, "message": "random"}),  # internal server error (with int code even though expected is str)
             httpx.WriteError("test"),
             httpx.NetworkError("test"),
+            httpx.RemoteProtocolError("test"),
         ]:
             mocked_request.side_effect=error
             with pytest.raises(error.__class__):
