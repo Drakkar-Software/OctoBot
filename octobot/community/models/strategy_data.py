@@ -23,9 +23,6 @@ import octobot_commons.profiles as profiles
 CATEGORY_NAME_TRANSLATIONS_BY_SLUG = {
     "coingecko-index": {"en": "Crypto Basket"}
 }
-FORCED_URL_PATH_BY_SLUG = {
-    "coingecko-index": "features/crypto-basket",
-}
 DEFAULT_LOGO_NAME_BY_SLUG = {
     "coingecko-index": "crypto-basket.png",
 }
@@ -107,11 +104,6 @@ class StrategyData(commons_dataclasses.FlexibleDataclass):
 
     def get_name(self, locale, default_locale=constants.DEFAULT_LOCALE):
         return self.content["name_translations"].get(locale, default_locale)
-
-    def get_url(self) -> str:
-        if path := FORCED_URL_PATH_BY_SLUG.get(self.category.slug):
-            return f"{identifiers_provider.IdentifiersProvider.COMMUNITY_URL}/{path}"
-        return f"{identifiers_provider.IdentifiersProvider.COMMUNITY_URL}/strategies/{self.slug}"
 
     def get_product_url(self) -> str:
         return f"{identifiers_provider.IdentifiersProvider.COMMUNITY_URL}/strategies/{self.slug}"
