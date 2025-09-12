@@ -31,10 +31,10 @@ TOKEN = "acb1"
 NAME = "name_a"
 
 
-def _build_message(value, identifier):
+def _build_message(value, identifier, version=constants.COMMUNITY_FEED_CURRENT_MINIMUM_VERSION):
     return json.dumps({
         commons_enums.CommunityFeedAttrs.CHANNEL_TYPE.value: commons_enums.CommunityChannelTypes.SIGNAL.value,
-        commons_enums.CommunityFeedAttrs.VERSION.value: constants.COMMUNITY_FEED_CURRENT_MINIMUM_VERSION,
+        commons_enums.CommunityFeedAttrs.VERSION.value: version,
         commons_enums.CommunityFeedAttrs.VALUE.value: value,
         commons_enums.CommunityFeedAttrs.ID.value: identifier,
     }).encode()
@@ -132,3 +132,13 @@ async def test_on_message(connected_community_feed):
     connected_community_feed.feed_callbacks["topic"][1].reset_mock()
     await connected_community_feed._on_message(client, topic, message, 1, {})
     assert all(cb.assert_not_called() is None for cb in connected_community_feed.feed_callbacks["topic"])
+
+    for cb in connected_community_feed.feed_callbacks["topic"]:
+        cb.reset_mock()
+
+    for version in ["0.1.0", "333.1.0"]:
+        message = _build_message("hello", "2", version)
+        # version is not supported
+        await connected_community_feed._on_message(client, topic, message, 1, {})
+        for cb in connected_community_feed.feed_callbacks["topic"]:
+            cb.assert_not_called()
