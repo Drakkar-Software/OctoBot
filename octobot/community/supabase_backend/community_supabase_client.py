@@ -681,7 +681,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             for minimal_fund in executed_product_config["product"][
                 enums.ProductKeys.ATTRIBUTES.value
             ].get("minimal_funds", [])
-        ] if bot_config[enums.BotConfigKeys.EXCHANGES.value] else []
+        ]
         profile_data.trader_simulator.enabled = bot_config.get(enums.BotConfigKeys.IS_SIMULATED.value, False)
         profile_data.trading.sellable_assets = bot_config_options.get("sellable_assets")
         # only use exchanges from master product config to avoid exchange changes from swapped nested strategies

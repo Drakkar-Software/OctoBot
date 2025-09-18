@@ -117,8 +117,8 @@ async def test_fetch_bot_profile_data_without_tentacles_options(auth):
     FETCHED_PROFILE_USD_LIKE = {
         "bot_id": "53e0dc3e-3cbe-476d-9bda-b30bc4941fb4",
         "bot": {"user_id": "3330dc3e-3cbe-476d-9bda-b30bc4941fb4", "created_at": "2024-08-14T22:13:22.1111+04:00"},
-        "exchanges": [
-            {"exchange_credential_id": "30ee7b12-3415-4ce4-b050-80d8bf4548be"}], 
+        "exchanges": [],
+        "exchange_account_id": "exchange_account_id_123",
         "is_simulated": True, "created_at": "2023-08-14T22:13:22.466399+04:00",
         "options": {"portfolio": [{"asset": "USD-like", "value": 1000}]}, "product_config": {"config": {
             "backtesting_context": {"exchanges": ["mexc"], "start_time_delta": 15552000,
