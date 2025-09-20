@@ -67,6 +67,18 @@ class ExchangeChannelMock:
         return self.name
 
 
+def _get_http_proxy_callback_factory_if_needed(credentials_exchange_name: str):
+    # if credentials_exchange_name is set to use a proxy, use it
+    if os.getenv(f"{credentials_exchange_name}_IS_PROXIED".upper()) == "true":
+        proxy_url = os.environ["PROXY_URL"]
+        def _http_proxy_callback_factory(_):
+            def proxy_callback(url: str, method: str, headers: dict, body) -> str:
+                return proxy_url
+            return proxy_callback
+        return _http_proxy_callback_factory
+    return None
+
+
 @contextlib.asynccontextmanager
 async def get_authenticated_exchange_manager(
     exchange_name, exchange_tentacle_name, config=None,
@@ -81,6 +93,8 @@ async def get_authenticated_exchange_manager(
     config[commons_constants.CONFIG_EXCHANGES][exchange_name].update(_get_exchange_auth_details(
         credentials_exchange_name, use_invalid_creds
     ))
+
+    http_proxy_callback_factory = http_proxy_callback_factory or _get_http_proxy_callback_factory_if_needed(credentials_exchange_name)
     exchange_type = config[commons_constants.CONFIG_EXCHANGES][exchange_name].get(
         commons_constants.CONFIG_EXCHANGE_TYPE, exchanges.get_default_exchange_type(exchange_name))
     exchange_builder = trading_api.create_exchange_builder(config, exchange_name) \
