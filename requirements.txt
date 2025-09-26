@@ -1,6 +1,6 @@
 # Drakkar-Software requirements
 OctoBot-Commons==1.9.82
-OctoBot-Trading==2.4.221
+OctoBot-Trading==2.4.223
 OctoBot-Evaluators==1.9.7
 OctoBot-Tentacles-Manager==2.9.17
 OctoBot-Services==1.6.26
@@ -13,7 +13,7 @@ colorlog==6.8.0
 requests==2.32.5
 urllib3 # required by requests, used in imports: make sure it's always available
 packaging==25.0
-python-dotenv==1.0.0
+python-dotenv==1.1.1
 setuptools==79.0.1  # warning: setuptools>=80 breaks easy_install, need to find an alternative not to break installs
 # see https://community.palantir.com/t/important-update-on-setuptools-pinning-the-version-below-80-0-0/3872
 

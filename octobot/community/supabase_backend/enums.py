@@ -96,6 +96,7 @@ class BotDeploymentErrorsStatuses(enum.Enum):
     INCOMPATIBLE_USER_EXCHANGE_ACCOUNT_WITH_CONFIG = "incompatible_user_exchange_account_with_config"
     ALREADY_USED_EXCHANGE_ACCOUNT = "already_used_exchange_account"
     MISSING_MINIMAL_FUNDS = "missing_minimal_funds"
+    TOO_MANY_ORDERS_TO_EXECUTE_STRATEGY = "too_many_orders_to_execute_strategy"
     MISSING_CONFIG = "missing_config"
     EXPIRED_BOT = "expired_bot"
     MAX_SIMULATORS_REACHED = "max_simulators_reached"
