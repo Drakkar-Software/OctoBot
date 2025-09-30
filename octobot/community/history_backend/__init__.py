@@ -29,8 +29,14 @@ from octobot.community.history_backend.clickhouse_historical_backend_client impo
     ClickhouseHistoricalBackendClient,
 )
 
+from octobot.community.history_backend import iceberg_historical_backend_client
+from octobot.community.history_backend.iceberg_historical_backend_client import (
+    IcebergHistoricalBackendClient,
+)
+
 __all__ = [
     "history_backend_client",
     "HistoricalBackendClient",
     "ClickhouseHistoricalBackendClient",
+    "IcebergHistoricalBackendClient",
 ]

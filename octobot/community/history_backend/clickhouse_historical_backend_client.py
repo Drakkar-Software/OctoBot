@@ -22,6 +22,7 @@ import octobot_commons.logging as commons_logging
 import octobot_commons.enums as commons_enums
 import octobot.constants as constants
 import octobot.community.history_backend.historical_backend_client as historical_backend_client
+import octobot.community.history_backend.util as history_backend_util
 
 
 class ClickhouseHistoricalBackendClient(historical_backend_client.HistoricalBackendClient):
@@ -69,7 +70,7 @@ class ClickhouseHistoricalBackendClient(historical_backend_client.HistoricalBack
             [time_frame.value, exchange, symbol, first_open_time, last_open_time],
         )
         formatted = self._format_ohlcvs(result.result_rows)
-        return _deduplicate(formatted, 0)
+        return history_backend_util.deduplicate(formatted, 0)
 
     async def fetch_candles_history_range(
         self,
@@ -89,8 +90,8 @@ class ClickhouseHistoricalBackendClient(historical_backend_client.HistoricalBack
             [time_frame.value, exchange, symbol],
         )
         return (
-            _get_utc_timestamp_from_datetime(result.result_rows[0][0]),
-            _get_utc_timestamp_from_datetime(result.result_rows[0][1])
+            history_backend_util.get_utc_timestamp_from_datetime(result.result_rows[0][0]),
+            history_backend_util.get_utc_timestamp_from_datetime(result.result_rows[0][1])
         )
 
     async def insert_candles_history(self, rows: list, column_names: list) -> None:
@@ -111,7 +112,7 @@ class ClickhouseHistoricalBackendClient(historical_backend_client.HistoricalBack
         # IND_PRICE_VOL = 5
         return [
             [
-                int(_get_utc_timestamp_from_datetime(ohlcv[0])),
+                int(history_backend_util.get_utc_timestamp_from_datetime(ohlcv[0])),
                 ohlcv[1],
                 ohlcv[2],
                 ohlcv[3],
@@ -124,17 +125,3 @@ class ClickhouseHistoricalBackendClient(historical_backend_client.HistoricalBack
     @staticmethod
     def get_formatted_time(timestamp: float) -> datetime:
         return datetime.fromtimestamp(timestamp, tz=timezone.utc)
-
-def _get_utc_timestamp_from_datetime(dt: datetime) -> float:
-    """
-    Convert a datetime to a timestamp in UTC
-    WARNING: usable here as we know this DB stores time in UTC only
-    """
-    return dt.replace(tzinfo=timezone.utc).timestamp()
-
-
-def _deduplicate(elements, key) -> list:
-    # from https://stackoverflow.com/questions/480214/how-do-i-remove-duplicates-from-a-list-while-preserving-order
-    seen = set()
-    seen_add = seen.add
-    return [x for x in elements if not (x[key] in seen or seen_add(x[key]))]
