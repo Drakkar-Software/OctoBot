@@ -16,6 +16,7 @@
 import contextlib
 
 import octobot.community.history_backend.clickhouse_historical_backend_client as clickhouse_historical_backend_client
+import octobot.community.history_backend.iceberg_historical_backend_client as iceberg_historical_backend_client
 import octobot.enums
 
 
@@ -38,6 +39,8 @@ def _create_client(
     async with history_backend_client(backend_type) as client:
         await client.xxxx()
     """
+    if backend_type is octobot.enums.CommunityHistoricalBackendType.Iceberg:
+        return iceberg_historical_backend_client.IcebergHistoricalBackendClient()
     if backend_type is octobot.enums.CommunityHistoricalBackendType.Clickhouse:
         return clickhouse_historical_backend_client.ClickhouseHistoricalBackendClient()
     raise NotImplementedError(f"Unsupported historical backend type: {backend_type}")
