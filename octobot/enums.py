@@ -24,7 +24,8 @@ class CommunityFeedType(enum.Enum):
 
 class CommunityHistoricalBackendType(enum.Enum):
     Clickhouse = "Clickhouse"
-    DEFAULT = Clickhouse
+    Iceberg = "Iceberg"
+    DEFAULT = Iceberg
 
 
 class CommunityEnvironments(enum.Enum):

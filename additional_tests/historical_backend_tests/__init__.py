@@ -37,3 +37,9 @@ import octobot.enums
 async def clickhouse_client():
     async with octobot.community.history_backend_client(octobot.enums.CommunityHistoricalBackendType.Clickhouse) as client:
         yield client
+
+
+@pytest_asyncio.fixture
+async def iceberg_client():
+    async with octobot.community.history_backend_client(octobot.enums.CommunityHistoricalBackendType.Iceberg) as client:
+        yield client

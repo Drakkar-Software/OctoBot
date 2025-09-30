@@ -97,6 +97,7 @@ from octobot.community.history_backend import (
     history_backend_client,
     HistoricalBackendClient,
     ClickhouseHistoricalBackendClient,
+    IcebergHistoricalBackendClient,
 )
 
 __all__ = [
@@ -152,4 +153,5 @@ __all__ = [
     "history_backend_client",
     "HistoricalBackendClient",
     "ClickhouseHistoricalBackendClient",
+    "IcebergHistoricalBackendClient",
 ]
