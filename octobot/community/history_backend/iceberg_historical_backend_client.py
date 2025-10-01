@@ -19,6 +19,7 @@ import datetime
 import os
 import asyncio
 import concurrent.futures
+import logging
 
 import pyarrow
 import pyiceberg.catalog
@@ -34,6 +35,10 @@ import octobot_commons.enums as commons_enums
 import octobot.constants as constants
 import octobot.community.history_backend.historical_backend_client as historical_backend_client
 import octobot.community.history_backend.util as history_backend_util
+
+
+# avoid "Loaded FileIO: pyiceberg.io.pyarrow.PyArrowFileIO" info logs
+logging.getLogger("pyiceberg.io").setLevel(logging.WARNING)
 
 
 class TableNames(enum.Enum):
@@ -149,6 +154,31 @@ class IcebergHistoricalBackendClient(historical_backend_client.HistoricalBackend
                 history_backend_util.get_utc_timestamp_from_datetime(max_ts)
             )
         return 0, 0
+
+    async def fetch_all_candles_for_exchange(self, exchange: str) -> list[list[float]]:
+        return await self._run_in_executor(
+            self._sync_fetch_all_candles_for_exchange,
+            exchange
+        )
+
+    def _sync_fetch_all_candles_for_exchange(self, exchange: str) -> list[list[float]]:
+        table = self.get_or_create_table(TableNames.OHLCV_HISTORY)
+        filter = pyiceberg.expressions.EqualTo("exchange_internal_name", exchange)
+        result = table.scan(
+            row_filter=filter,
+            selected_fields=("timestamp", "symbol", "time_frame", "open", "high", "low", "close", "volume"),
+            case_sensitive=True,
+        )
+        ohlcvs = [
+            # convert table into list of candles
+            [history_backend_util.get_utc_timestamp_from_datetime(t), exchange, s, tf, o, h, l, c, v]
+            for batch in result.to_arrow().to_batches()
+            if (batch_dict := batch.to_pydict())
+            for t, s, tf, o, h, l, c, v in zip(
+                batch_dict['timestamp'], batch_dict['symbol'], batch_dict['time_frame'], batch_dict['open'], batch_dict['high'], batch_dict['low'], batch_dict['close'], batch_dict['volume']
+            )
+        ]
+        return ohlcvs
 
     async def insert_candles_history(self, rows: list, column_names: list) -> None:
         await self._run_in_executor(

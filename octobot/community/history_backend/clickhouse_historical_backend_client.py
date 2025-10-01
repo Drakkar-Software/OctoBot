@@ -72,6 +72,33 @@ class ClickhouseHistoricalBackendClient(historical_backend_client.HistoricalBack
         formatted = self._format_ohlcvs(result.result_rows)
         return history_backend_util.deduplicate(formatted, 0)
 
+    async def fetch_all_candles_for_exchange(self, exchange: str) -> list[list[float]]:
+        result = await self._client.query(
+            """
+            SELECT timestamp, open, high, low, close, volume, symbol, time_frame
+            FROM ohlcv_history
+            WHERE 
+                exchange_internal_name = %s
+            ORDER BY timestamp ASC
+            """,
+            [exchange],
+        )
+        formatted = [
+            [
+                int(history_backend_util.get_utc_timestamp_from_datetime(ohlcv[0])),
+                exchange,
+                ohlcv[6],
+                ohlcv[7],
+                ohlcv[1],
+                ohlcv[2],
+                ohlcv[3],
+                ohlcv[4],
+                ohlcv[5],
+            ]
+            for ohlcv in result.result_rows
+        ]
+        return formatted
+
     async def fetch_candles_history_range(
         self,
         exchange: str,

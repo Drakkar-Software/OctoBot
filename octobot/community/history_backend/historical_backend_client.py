@@ -46,6 +46,9 @@ class HistoricalBackendClient:
     async def insert_candles_history(self, rows: list, column_names: list) -> None:
         raise NotImplementedError("insert_candles_history is not implemented")
 
+    async def fetch_all_candles_for_exchange(self, exchange: str) -> list[list[float]]:
+        raise NotImplementedError("fetch_all_candles_for_exchange is not implemented")
+
     @staticmethod
     def get_formatted_time(timestamp: float):
         raise NotImplementedError("insert_candles_history is not implemented")
