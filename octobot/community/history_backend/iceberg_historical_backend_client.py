@@ -246,6 +246,10 @@ class IcebergHistoricalBackendClient(historical_backend_client.HistoricalBackend
         self.get_logger().info(f"PyIceberg catalog '{constants.ICEBERG_CATALOG_NAME}' initialized successfully")
         return catalog
     
+    def drop_table(self, table_name: str) -> None:
+        self.catalog.purge_table(f"{self.namespace}.{table_name}")
+        self.get_logger().info(f"Table {table_name} deleted successfully")
+    
     def get_or_create_table(self, table_name: TableNames) -> pyiceberg.table.Table:
         try:
             return self.catalog.load_table(f"{self.namespace}.{table_name.value}")
