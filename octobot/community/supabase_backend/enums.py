@@ -186,6 +186,7 @@ class OrderKeys(enum.Enum):
     SIDE = "side"
     TRIGGER_ABOVE = "trigger_above"
     REDUCE_ONLY = "reduce_only"
+    IS_ACTIVE = "is_active"
 
 
 class PositionKeys(enum.Enum):
