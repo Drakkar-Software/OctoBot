@@ -112,9 +112,9 @@ async def test_fetch_candles_history_asynchronousness(iceberg_client):
         table.scan = mock.Mock(side_effect=_scan)
         return table
 
-    original_get_or_create_table = iceberg_client.get_or_create_table
+    original_get_or_create_table = iceberg_client._get_or_create_table
     with (
-        mock.patch.object(iceberg_client, "get_or_create_table", mock.Mock(side_effect=_get_or_create_table)) as get_or_create_table_mock
+        mock.patch.object(iceberg_client, "_get_or_create_table", mock.Mock(side_effect=_get_or_create_table)) as get_or_create_table_mock
     ):
         candles_1, candles_2, candles_3 = await asyncio.gather(
             iceberg_client.fetch_candles_history(
@@ -148,12 +148,14 @@ async def test_fetch_candles_history_asynchronousness(iceberg_client):
 async def test_deduplicate(iceberg_client):
     start_time = 1718785679
     end_time = 1721377495
-    candles = await iceberg_client.fetch_candles_history(
-        EXCHANGE, SYMBOL, SHORT_TIME_FRAME, start_time, end_time
+    candles = await iceberg_client.fetch_extended_candles_history(
+        EXCHANGE, [SYMBOL], [SHORT_TIME_FRAME], start_time, end_time
     )
+    assert all(c[0] == SHORT_TIME_FRAME.value for c in candles)
+    assert all(c[1] == SYMBOL for c in candles)
     duplicated = candles + candles
     assert len(duplicated) == len(candles) * 2
-    assert sorted(candles, key=lambda c: c[0]) == candles
-    deduplicated = history_backend_util.deduplicate(duplicated, 0)
+    assert sorted(candles, key=lambda c: c[2]) == candles
+    deduplicated = history_backend_util.deduplicate(duplicated, [0, 1, 2])
     # deduplicated and still sorted
     assert deduplicated == candles
