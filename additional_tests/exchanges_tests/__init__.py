@@ -103,6 +103,7 @@ async def get_authenticated_exchange_manager(
         .set_bot_id("") \
         .is_real() \
         .is_checking_credentials(False) \
+        .disable_unauth_retry(True) \
         .is_sandboxed(_get_exchange_is_sandboxed(credentials_exchange_name)) \
         .is_using_exchange_type(exchange_type) \
         .use_market_filter(market_filter) \

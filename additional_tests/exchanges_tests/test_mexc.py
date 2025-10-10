@@ -28,9 +28,9 @@ class TestMEXCAuthenticatedExchange(
     EXCHANGE_NAME = "mexc"
     EXCHANGE_TENTACLE_NAME = "MEXC"
     ORDER_CURRENCY = "MX"
-    SETTLEMENT_CURRENCY = "USDC"
+    SETTLEMENT_CURRENCY = "USDT"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
-    ORDER_SIZE = 30  # % of portfolio to include in test orders
+    ORDER_SIZE = 70  # % of portfolio to include in test orders
     CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES = True
     CANCELLED_ORDERS_IN_CLOSED_ORDERS = True
     EXPECT_MISSING_FEE_IN_CANCELLED_ORDERS = False
