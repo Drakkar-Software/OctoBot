@@ -28,9 +28,9 @@ class TestKucoinAuthenticatedExchange(
     # enter exchange name as a class variable here
     EXCHANGE_NAME = "kucoin"
     ORDER_CURRENCY = "BTC"
-    SETTLEMENT_CURRENCY = "USDT"
+    SETTLEMENT_CURRENCY = "USDC"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
-    ORDER_SIZE = 40  # % of portfolio to include in test orders
+    ORDER_SIZE = 50  # % of portfolio to include in test orders
     EXPECT_MISSING_FEE_IN_CANCELLED_ORDERS = False  # when get_cancelled_orders returns None in fee
     EXPECTED_GENERATED_ACCOUNT_ID = False   # True when subaccounts are created
     USE_ORDER_OPERATION_TO_CHECK_API_KEY_RIGHTS = True
