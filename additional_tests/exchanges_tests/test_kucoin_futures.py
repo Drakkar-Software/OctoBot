@@ -28,17 +28,17 @@ class TestKucoinFuturesAuthenticatedExchange(
     # enter exchange name as a class variable here
     EXCHANGE_NAME = "kucoin"
     CREDENTIALS_EXCHANGE_NAME = "KUCOIN_FUTURES"
-    ORDER_CURRENCY = "SOL"  # always use a contract that has a size different from 1 unit of the currency
+    ORDER_CURRENCY = "DOT"  # always use a contract that has a size different from 1 unit of the currency
     SETTLEMENT_CURRENCY = "USDT"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}:{SETTLEMENT_CURRENCY}"
     INVERSE_SYMBOL = f"{ORDER_CURRENCY}/USD:{ORDER_CURRENCY}"
-    ORDER_SIZE = 40  # % of portfolio to include in test orders
+    ORDER_SIZE = 80  # % of portfolio to include in test orders
     SUPPORTS_GET_LEVERAGE = False
     USE_ORDER_OPERATION_TO_CHECK_API_KEY_RIGHTS = True
     VALID_ORDER_ID = "6617e84c5c1e0000083c71f7"
     EXPECT_MISSING_FEE_IN_CANCELLED_ORDERS = False
     IS_AUTHENTICATED_REQUEST_CHECK_AVAILABLE = True    # set True when is_authenticated_request is implemented
-    EXPECTED_QUOTE_MIN_ORDER_SIZE = 40
+    EXPECTED_QUOTE_MIN_ORDER_SIZE = 4
     EXPECT_BALANCE_FILTER_BY_MARKET_STATUS = True
     SUPPORTS_GET_MAX_ORDERS_COUNT = True
 

@@ -616,7 +616,9 @@ class AbstractAuthenticatedExchangeTester:
             # assert free portfolio amount is smaller than total amount
             balance = await self.get_portfolio()
             assert balance[settlement_currency][trading_constants.CONFIG_PORTFOLIO_FREE] < \
-                   balance[settlement_currency][trading_constants.CONFIG_PORTFOLIO_TOTAL]
+                   balance[settlement_currency][trading_constants.CONFIG_PORTFOLIO_TOTAL], (
+                    f"FALSE: {balance[settlement_currency][trading_constants.CONFIG_PORTFOLIO_FREE]} < {balance[settlement_currency][trading_constants.CONFIG_PORTFOLIO_TOTAL]}"
+                   )
         finally:
             # don't leave buy_limit as open order
             await self.cancel_order(buy_limit)
@@ -1364,9 +1366,13 @@ class AbstractAuthenticatedExchangeTester:
         updated_free_quantity = updated_portfolio[symbol or self.SETTLEMENT_CURRENCY][
             trading_constants.CONFIG_PORTFOLIO_FREE]
         if has_increased:
-            assert updated_free_quantity > previous_free_quantity
+            assert updated_free_quantity > previous_free_quantity, (
+                f"FALSE: {updated_free_quantity} > {previous_free_quantity}"
+            )
         else:
-            assert updated_free_quantity < previous_free_quantity
+            assert updated_free_quantity < previous_free_quantity, (
+                f"FALSE: {updated_free_quantity} < {previous_free_quantity}"
+            )
 
     def _check_order(self, order, size, side):
         if self.CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES:

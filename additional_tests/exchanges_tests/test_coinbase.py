@@ -31,7 +31,7 @@ class TestCoinbaseAuthenticatedExchange(
     ORDER_CURRENCY = "ADA"
     SETTLEMENT_CURRENCY = "USDC"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
-    ORDER_SIZE = 40  # % of portfolio to include in test orders
+    ORDER_SIZE = 70  # % of portfolio to include in test orders
     MIN_TRADE_USD_VALUE = decimal.Decimal("0.004")
     CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES = True
     VALID_ORDER_ID = "8bb80a81-27f7-4415-aa50-911ea46d841c"
