@@ -27,7 +27,7 @@ import octobot.community.history_backend.util as history_backend_util
 
 class ClickhouseHistoricalBackendClient(historical_backend_client.HistoricalBackendClient):
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         self._client: typing.Optional[clickhouse_connect.driver.AsyncClient] = None
 
     async def open(self):
