@@ -22,9 +22,10 @@ import octobot.enums
 
 @contextlib.asynccontextmanager
 async def history_backend_client(
-    backend_type: octobot.enums.CommunityHistoricalBackendType = octobot.enums.CommunityHistoricalBackendType.DEFAULT
+    backend_type: octobot.enums.CommunityHistoricalBackendType = octobot.enums.CommunityHistoricalBackendType.DEFAULT,
+    **kwargs
 ):
-    client = _create_client(backend_type)
+    client = _create_client(backend_type, **kwargs)
     try:
         await client.open()
         yield client
@@ -32,7 +33,8 @@ async def history_backend_client(
         await client.close()
 
 def _create_client(
-    backend_type: octobot.enums.CommunityHistoricalBackendType = octobot.enums.CommunityHistoricalBackendType.DEFAULT
+    backend_type: octobot.enums.CommunityHistoricalBackendType = octobot.enums.CommunityHistoricalBackendType.DEFAULT,
+    **kwargs
 ):
     """
     Usage:
@@ -40,7 +42,7 @@ def _create_client(
         await client.xxxx()
     """
     if backend_type is octobot.enums.CommunityHistoricalBackendType.Iceberg:
-        return iceberg_historical_backend_client.IcebergHistoricalBackendClient()
+        return iceberg_historical_backend_client.IcebergHistoricalBackendClient(**kwargs)
     if backend_type is octobot.enums.CommunityHistoricalBackendType.Clickhouse:
-        return clickhouse_historical_backend_client.ClickhouseHistoricalBackendClient()
+        return clickhouse_historical_backend_client.ClickhouseHistoricalBackendClient(**kwargs)
     raise NotImplementedError(f"Unsupported historical backend type: {backend_type}")

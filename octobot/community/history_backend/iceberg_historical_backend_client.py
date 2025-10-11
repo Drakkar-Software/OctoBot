@@ -22,6 +22,7 @@ import concurrent.futures
 import logging
 import json
 import time
+import dataclasses
 
 import pyarrow
 import pyiceberg.catalog
@@ -35,7 +36,6 @@ import pyiceberg.table.statistics
 
 import octobot_commons.logging as commons_logging
 import octobot_commons.enums as commons_enums
-import octobot_commons.constants as commons_constants
 import octobot.constants as constants
 import octobot.community.history_backend.historical_backend_client as historical_backend_client
 import octobot.community.history_backend.util as history_backend_util
@@ -55,31 +55,46 @@ _MAX_EXECUTOR_WORKERS = min(4, (os.cpu_count() or 1)) # use a max of 4 workers
 _METADATA_SEPARATOR = "|"
 _METADATA_VERSION = "1.0.0"
 _MAX_STATISTICS_FILES = 10 # keep only the last X statistics files
+_MAX_PENDING_BATCH_INSERT_SIZE = 500000 # max number of pending rows to store before inserting when enable_async_batch_inserts is True
 
 class _MetadataIdentifiers(enum.Enum):
     UPDATED_AT = "updated_at"
     VERSION = "version"
 
 
+@dataclasses.dataclass
+class _PendingInsertData:
+    data: typing.Iterable[list]
+    column_names: list[str]
+
+    def get_columns_fingerprint(self) -> str:
+        return ",".join(self.column_names)
+
+
 class IcebergHistoricalBackendClient(historical_backend_client.HistoricalBackendClient):
 
-    def __init__(self):
+    def __init__(self, enable_async_batch_inserts: bool = True, **kwargs):
+        # enable_async_batch_inserts is used to avoid concurrent inserts, which are not properly supported by iceberg
+        self.enable_async_batch_inserts: bool = enable_async_batch_inserts
         self.namespace: typing.Optional[str] = None
         self.catalog: pyiceberg.catalog.Catalog = None # type: ignore
         self._executor: typing.Optional[concurrent.futures.ThreadPoolExecutor] = None # only availble when client is open
         self._fetching_candles_history_range: asyncio.Lock() = None # type: ignore
+        self._inserting_pending_data: asyncio.Lock() = None # type: ignore
         self._fetched_min_max_per_symbol_per_time_frame_per_exchange: typing.Optional[
             dict[str, dict[str, dict[str, tuple[float, float]]]]
         ] = None
         self._updated_min_max_per_symbol_per_time_frame_per_exchange: typing.Optional[
             dict[str, dict[str, dict[str, tuple[float, float]]]]
         ] = None
+        self._pending_insert_data_by_table: dict[TableNames, list[_PendingInsertData]] = {}
 
     async def open(self):
         try:
             self._fetched_min_max_per_symbol_per_time_frame_per_exchange = None
             self._updated_min_max_per_symbol_per_time_frame_per_exchange = None
             self._fetching_candles_history_range = asyncio.Lock()
+            self._inserting_pending_data = asyncio.Lock()
             self._executor = concurrent.futures.ThreadPoolExecutor(
                 max_workers=_MAX_EXECUTOR_WORKERS,
                 thread_name_prefix="IcebergHistoricalBackendClient"
@@ -92,6 +107,9 @@ class IcebergHistoricalBackendClient(historical_backend_client.HistoricalBackend
 
     async def close(self):
         if self._executor is not None:
+            if self.enable_async_batch_inserts:
+                async with self._inserting_pending_data:
+                    await self._insert_and_reset_pending_data()
             if self._has_metadata_to_update():
                 # should always be called when metadata have to be updated 
                 # otherwise their update will be lost and candle ranges won't be updated
@@ -100,6 +118,7 @@ class IcebergHistoricalBackendClient(historical_backend_client.HistoricalBackend
             self._fetched_min_max_per_symbol_per_time_frame_per_exchange = None
             self._executor.shutdown()
         self._fetching_candles_history_range = None
+        self._inserting_pending_data = None
         self._executor = None
 
     async def _run_in_executor(self, func, *args):
@@ -235,12 +254,15 @@ class IcebergHistoricalBackendClient(historical_backend_client.HistoricalBackend
         return self._format_ohlcvs(scan.to_arrow(), True)
 
     async def insert_candles_history(self, rows: list, column_names: list) -> None:
-        await self._run_in_executor(
-            self._sync_insert_candles_history,
-            rows, column_names
-        )
+        if self.enable_async_batch_inserts:
+            await self._async_insert(TableNames.OHLCV_HISTORY, rows, column_names)
+        else:
+            await self._run_in_executor(
+                self._sync_insert_candles_history,
+                rows, column_names
+            )
 
-    def _sync_insert_candles_history(self, rows: list, column_names: list) -> None:
+    def _sync_insert_candles_history(self, rows: typing.Iterable[list], column_names: list[str]) -> None:
         if not rows:
             return
         schema = self._pyarrow_get_ohlcv_schema()
@@ -263,6 +285,53 @@ class IcebergHistoricalBackendClient(historical_backend_client.HistoricalBackend
             f"Successfully inserted {len(rows)} rows into "
             f"{TableNames.OHLCV_HISTORY.value} for {pa_table['exchange_internal_name'][0]}:{pa_table['symbol'][0]}:{pa_table['time_frame'][0]}"
         )
+
+    async def _async_insert(
+        self, table_name: TableNames, rows: typing.Iterable[list], column_names: list[str]
+    ) -> None:
+        if table_name not in self._pending_insert_data_by_table:
+            self._pending_insert_data_by_table[table_name] = []
+        self._pending_insert_data_by_table[table_name].append(_PendingInsertData(rows, column_names))
+        self._get_logger().info(f"Registered {len(rows)} rows to insert into {table_name.value}")
+        await self._insert_pending_data_if_necessary()
+
+    async def _insert_pending_data_if_necessary(self) -> None:
+        if self.enable_async_batch_inserts:
+            async with self._inserting_pending_data:
+                pending_rows_count = sum(
+                    len(data.data) 
+                    for pending_data_list in self._pending_insert_data_by_table.values()
+                    for data in pending_data_list
+                )
+                if pending_rows_count >= _MAX_PENDING_BATCH_INSERT_SIZE:
+                    self._get_logger().info(f"Inserting {pending_rows_count} pending rows")
+                    await self._insert_and_reset_pending_data()
+
+    async def _insert_and_reset_pending_data(self):
+        to_insert_pending_data = self._pending_insert_data_by_table
+        # reset pending data
+        self._pending_insert_data_by_table = {}
+        for table_name, pending_data in to_insert_pending_data.items():
+            await self._run_in_executor(self._sync_insert_table_pending_data, table_name, pending_data)
+
+    def _sync_insert_table_pending_data(self, table_name: TableNames, pending_data: list[_PendingInsertData]):
+        # group pending data by columns to insert compatible ones all at once
+        pending_data_by_columns_fingerprint: dict[str, list[_PendingInsertData]] = {}
+        for data in pending_data:
+            columns_fingerprint = data.get_columns_fingerprint()
+            if columns_fingerprint not in pending_data_by_columns_fingerprint:
+                pending_data_by_columns_fingerprint[columns_fingerprint] = []
+            pending_data_by_columns_fingerprint[columns_fingerprint].append(data)
+        if table_name.name == TableNames.OHLCV_HISTORY.name:
+            for pending_data_list in pending_data_by_columns_fingerprint.values():
+                rows = list(pending_data_list[0].data)
+                for other_rows in pending_data_list[1:]:
+                    rows.extend(other_rows.data)
+                column_names = pending_data_list[0].column_names
+                self._get_logger().info(f"Inserting {len(rows)} rows into {table_name.value} (columns: {column_names})")
+                self._sync_insert_candles_history(rows, column_names)
+        else:
+            raise NotImplementedError(f"Inserting pending data for table {table_name.value} is not implemented")
 
     @staticmethod
     def get_formatted_time(timestamp: float) -> str:
@@ -595,7 +664,7 @@ class IcebergHistoricalBackendClient(historical_backend_client.HistoricalBackend
                         )
                     )
                 )
-                self._get_logger().info(f"Table {table_name.value} created successfully")
+                self._get_logger().info(f"Table {table_name.value} successfully created")
                 return self.catalog.load_table(f"{self.namespace}.{table_name.value}")
             raise
     
