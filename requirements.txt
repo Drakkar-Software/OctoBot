@@ -1,6 +1,6 @@
 # Drakkar-Software requirements
 OctoBot-Commons==1.9.82
-OctoBot-Trading==2.4.223
+OctoBot-Trading==2.4.224
 OctoBot-Evaluators==1.9.7
 OctoBot-Tentacles-Manager==2.9.17
 OctoBot-Services==1.6.26
@@ -22,6 +22,9 @@ websockets==15.0.1 # used by supabase, a recent version is required, see https:/
 gmqtt==0.7.0
 pgpy==0.6.0
 clickhouse-connect==0.8.18
+pyiceberg==0.10.0
+pydantic<2.12 # required for pyiceberg 0.10.0 https://github.com/apache/iceberg-python/issues/2590
+pyarrow==21.0.0
 
 # Error tracking
 sentry-sdk==2.35.0  # always make sure sentry_aiohttp_transport.py keep working

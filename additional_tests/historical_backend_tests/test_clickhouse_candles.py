@@ -18,7 +18,7 @@ import time
 import pytest
 
 from additional_tests.historical_backend_tests import clickhouse_client
-import octobot.community.history_backend.clickhouse_historical_backend_client as clickhouse_historical_backend_client
+import octobot.community.history_backend.util as history_backend_util
 
 import octobot_commons.enums as commons_enums
 
@@ -27,9 +27,21 @@ import octobot_commons.enums as commons_enums
 pytestmark = pytest.mark.asyncio
 
 
+EXCHANGE = "binance"
+SYMBOL = "BTC/USDT"
+SHORT_TIME_FRAME = commons_enums.TimeFrames.FIFTEEN_MINUTES
+
+
 async def test_fetch_candles_history_range(clickhouse_client):
+    # unknown candles
     min_time, max_time = await clickhouse_client.fetch_candles_history_range(
-        "binance", "BTC/USDT", commons_enums.TimeFrames.FOUR_HOURS
+        EXCHANGE+"plop", SYMBOL, SHORT_TIME_FRAME
+    )
+    assert min_time == max_time == 0
+
+    # known candles
+    min_time, max_time = await clickhouse_client.fetch_candles_history_range(
+        EXCHANGE, SYMBOL, SHORT_TIME_FRAME
     )
     assert 0 < min_time < max_time < time.time()
 
@@ -38,12 +50,12 @@ async def test_fetch_candles_history(clickhouse_client):
     start_time = 1718785679
     end_time = 1721377495
     candles_count = math.floor((end_time - start_time) / (
-        commons_enums.TimeFramesMinutes[commons_enums.TimeFrames.FIFTEEN_MINUTES] * 60
+        commons_enums.TimeFramesMinutes[SHORT_TIME_FRAME] * 60
     ))
     # requires multiple fetches
     assert candles_count  == 2879
     candles = await clickhouse_client.fetch_candles_history(
-        "binance", "BTC/USDT", commons_enums.TimeFrames.FIFTEEN_MINUTES, start_time, end_time
+        EXCHANGE, SYMBOL, SHORT_TIME_FRAME, start_time, end_time
     )
     assert sorted(candles, key=lambda c: c[0]) == candles
     fetched_count = candles_count + 1
@@ -65,12 +77,14 @@ async def test_fetch_candles_history(clickhouse_client):
 async def test_deduplicate(clickhouse_client):
     start_time = 1718785679
     end_time = 1721377495
-    candles = await clickhouse_client.fetch_candles_history(
-        "binance", "BTC/USDT", commons_enums.TimeFrames.FIFTEEN_MINUTES, start_time, end_time
+    candles = await clickhouse_client.fetch_extended_candles_history(
+        EXCHANGE, [SYMBOL], [SHORT_TIME_FRAME], start_time, end_time
     )
+    assert all(c[0] == SHORT_TIME_FRAME.value for c in candles)
+    assert all(c[1] == SYMBOL for c in candles)
     duplicated = candles + candles
     assert len(duplicated) == len(candles) * 2
-    assert sorted(candles, key=lambda c: c[0]) == candles
-    deduplicated = clickhouse_historical_backend_client._deduplicate(duplicated, 0)
+    assert sorted(candles, key=lambda c: c[2]) == candles
+    deduplicated = history_backend_util.deduplicate(duplicated, [0, 1, 2])
     # deduplicated and still sorted
     assert deduplicated == candles
