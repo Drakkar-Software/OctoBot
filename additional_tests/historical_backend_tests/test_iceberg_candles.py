@@ -18,9 +18,12 @@ import time
 import mock
 import pytest
 import asyncio
-import pyiceberg.table
+import datetime
+import enum
 
 from additional_tests.historical_backend_tests import iceberg_client
+
+import octobot.constants as constants
 import octobot.community.history_backend.iceberg_historical_backend_client as iceberg_historical_backend_client
 import octobot.community.history_backend.util as history_backend_util
 
@@ -143,6 +146,94 @@ async def test_fetch_candles_history_asynchronousness(iceberg_client):
     assert len(candles_1) > 2000
     assert len(candles_2) > len(candles_1)
     assert len(candles_3) > len(candles_2)
+
+
+async def test_concurrent_insert_candles_history(iceberg_client):
+    assert iceberg_client.enable_async_batch_inserts is True # default value
+    temp_test_table = "temp_test_ohlcv_history_table" # use temp test table
+    
+    class _TableNames(enum.Enum):
+        OHLCV_HISTORY = "temp_test_ohlcv_history_table"
+
+    with (
+        mock.patch.object(iceberg_historical_backend_client, "TableNames", _TableNames),
+        mock.patch.object(constants, "CREATE_ICEBERG_DB_IF_MISSING", True),
+    ):
+        exchange = "binance"
+        symbol = "BTC/USDC"
+        time_frame = commons_enums.TimeFrames.FIFTEEN_MINUTES
+        # iceberg_client.drop_table(temp_test_table) # in case table is not empty
+        assert len(await iceberg_client.fetch_extended_candles_history(
+            exchange, [symbol], [time_frame], 0, 1818785688
+        )) == 0, (
+            f"Test table is not empty"
+        )
+        try:
+            rows_1 = [
+                [iceberg_client.get_formatted_time(1718785679), exchange, symbol, time_frame.value, 80, 100, 79, 85, 12312],
+                [iceberg_client.get_formatted_time(1718785680), exchange, symbol, time_frame.value, 85, 86, 84, 86, 12312],
+            ]
+            rows_2 = [
+                [iceberg_client.get_formatted_time(1718785681), exchange, symbol, time_frame.value, 86, 87, 85, 87, 12312],
+                [iceberg_client.get_formatted_time(1718785682), exchange, symbol, time_frame.value, 87, 88, 86, 88, 12312],
+            ]
+            rows_3 = [
+                [iceberg_client.get_formatted_time(1718785683), exchange, symbol, time_frame.value, 88, 89, 87, 89, 12312],
+                [iceberg_client.get_formatted_time(1718785684), exchange, symbol, time_frame.value, 89, 90, 88, 90, 12312],
+            ]
+            column_names = [
+                "timestamp", "exchange_internal_name", "symbol", "time_frame", "open", "high", "low", "close", "volume"
+            ]
+            await asyncio.gather(
+                iceberg_client.insert_candles_history(rows_1, column_names),
+                iceberg_client.insert_candles_history(rows_2, column_names),
+                iceberg_client.insert_candles_history(rows_3, column_names),
+            )
+            assert len(iceberg_client._pending_insert_data_by_table) == 1
+            assert sum(
+                len(pending_data.data)
+                for pending_data in iceberg_client._pending_insert_data_by_table[
+                    iceberg_historical_backend_client.TableNames.OHLCV_HISTORY
+                ]
+            ) == len(rows_1) + len(rows_2) + len(rows_3)
+            # didn't insert yet: max pending rows is not reached, it will now be reached
+            assert await iceberg_client.fetch_extended_candles_history(
+                exchange, [symbol], [time_frame], 0, 1818785688
+            ) == []
+            with mock.patch.object(iceberg_historical_backend_client, "_MAX_PENDING_BATCH_INSERT_SIZE", 3):
+                rows_4 = [
+                    # will trigger insert of previous pending rows
+                    [iceberg_client.get_formatted_time(1718785685), exchange, symbol, time_frame.value, 90, 91, 89, 91, 12312],
+                    [iceberg_client.get_formatted_time(1718785686), exchange, symbol, time_frame.value, 91, 92, 90, 92, 12312],
+                    [iceberg_client.get_formatted_time(1718785687), exchange, symbol, time_frame.value, 91.5, 92, 90, 92, 12312],
+                ]
+                rows_5 = [
+                    # will  trigger another insert
+                    [iceberg_client.get_formatted_time(1718785688), exchange, symbol, time_frame.value, 92, 93, 91, 93, 12312],
+                    [iceberg_client.get_formatted_time(1718785689), exchange, symbol, time_frame.value, 93, 94, 92, 94, 12312],
+                    [iceberg_client.get_formatted_time(1718785690), exchange, symbol, time_frame.value, 93, 94, 92, 94, 12312],
+                ]
+                # inserting: max pending rows is reached, it will now be inserted
+                await asyncio.gather(
+                    iceberg_client.insert_candles_history(rows_4, column_names),
+                    iceberg_client.insert_candles_history(rows_5, column_names),
+                )
+                # rows have been inserted
+                fetched_rows = await iceberg_client.fetch_extended_candles_history(
+                    exchange, [symbol], [time_frame], 0, 1818785688
+                )
+                expected_rows = [
+                    [row[3], row[2], history_backend_util.get_utc_timestamp_from_datetime(
+                        datetime.datetime.strptime(row[0], "%Y-%m-%dT%H:%M:%S").replace(tzinfo=datetime.timezone.utc)
+                    )] + row[4:]
+                    for row in rows_1 + rows_2 + rows_3 + rows_4 + rows_5
+                ]
+                assert fetched_rows == expected_rows
+                # no remaining pending rows
+                assert iceberg_client._pending_insert_data_by_table == {}
+        finally:
+            # test complete: delete test table
+            iceberg_client.drop_table(temp_test_table)
 
 
 async def test_deduplicate(iceberg_client):
