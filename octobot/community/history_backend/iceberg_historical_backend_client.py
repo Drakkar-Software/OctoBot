@@ -33,6 +33,8 @@ import pyiceberg.expressions
 import pyiceberg.table
 import pyiceberg.table.sorting
 import pyiceberg.table.statistics
+import pyiceberg.table.update
+import pyiceberg.table.refs
 
 import octobot_commons.logging as commons_logging
 import octobot_commons.enums as commons_enums
@@ -263,6 +265,8 @@ class IcebergHistoricalBackendClient(historical_backend_client.HistoricalBackend
             )
 
     def _sync_insert_candles_history(self, rows: typing.Iterable[list], column_names: list[str]) -> None:
+        # warning: try not to insert duplicate candles, 
+        # however duplicates will be deduplicated later on anyway
         if not rows:
             return
         schema = self._pyarrow_get_ohlcv_schema()
@@ -275,12 +279,22 @@ class IcebergHistoricalBackendClient(historical_backend_client.HistoricalBackend
             for i, _ in enumerate(column_names)
         ]
         pa_table = pyarrow.Table.from_arrays(pa_arrays, schema=schema)
+        try:
+            table.append(pa_table)
+            # note: alternative upsert syntax could prevent duplicates but is really slow and silentlycrashes the process 
+            # when used with a few thousand rows
+            # table.upsert(pa_table, join_cols=["timestamp", "exchange_internal_name", "symbol", "time_frame"])
+        except pyiceberg.exceptions.CommitFailedException as err:
+            # if this happens, it means there are conflicts. Log error and let maintenance 
+            # perform the rollback to previous snapshot
+            self._get_logger().exception(
+                err, 
+                True, 
+                f"Commit failed: conflicts. Rolling back to previous snapshot might fix this {err}"
+            )
+            raise
+        # now that candles have been inserted, update metadata
         self._register_updated_min_max(table, pa_table)
-        # warning: try not to insert duplicate candles, duplicates will be deduplicated later on anyway
-        table.append(pa_table)
-        # note: alternative upsert syntax could prevent duplicates but is really slow and silentlycrashes the process 
-        # when used with a few thousand rows
-        # table.upsert(pa_table, join_cols=["timestamp", "exchange_internal_name", "symbol", "time_frame"])
         self._get_logger().info(
             f"Successfully inserted {len(rows)} rows into "
             f"{TableNames.OHLCV_HISTORY.value} for {pa_table['exchange_internal_name'][0]}:{pa_table['symbol'][0]}:{pa_table['time_frame'][0]}"
@@ -312,6 +326,11 @@ class IcebergHistoricalBackendClient(historical_backend_client.HistoricalBackend
         # reset pending data
         self._pending_insert_data_by_table = {}
         for table_name, pending_data in to_insert_pending_data.items():
+            pending_rows_count = sum(
+                len(data.data) 
+                for data in pending_data
+            )
+            self._get_logger().info(f"Inserting {table_name.value} {pending_rows_count} pending rows")
             await self._run_in_executor(self._sync_insert_table_pending_data, table_name, pending_data)
 
     def _sync_insert_table_pending_data(self, table_name: TableNames, pending_data: list[_PendingInsertData]):
@@ -738,3 +757,145 @@ class IcebergHistoricalBackendClient(historical_backend_client.HistoricalBackend
 
     def _has_metadata_to_update(self) -> bool:
         return bool(self._updated_min_max_per_symbol_per_time_frame_per_exchange)
+
+    async def rollback_to_previous_snapshot(
+        self, table_name: TableNames, snapshot_id: typing.Optional[int] = None
+    ) -> int:
+        return await self._run_in_executor(
+            self._sync_rollback_to_previous_snapshot, table_name, snapshot_id
+        )
+
+    def _sync_rollback_to_previous_snapshot(
+        self, table_name: TableNames, snapshot_id: typing.Optional[int] = None
+    ) -> int:
+        """Synchronous implementation of rollback_to_previous_snapshot"""
+        table = self._get_or_create_table(table_name)
+        
+        # Get the snapshot history
+        history = table.history()
+        
+        if not history:
+            raise ValueError(f"No snapshot history found for table {table_name.value}")
+        
+        # Sort snapshots by timestamp (most recent first)
+        sorted_snapshots = sorted(
+            history, 
+            key=lambda s: s.timestamp_ms,
+            reverse=True
+        )
+        
+        if snapshot_id is not None:
+            # Rollback to specific snapshot
+            target_snapshot_id = snapshot_id
+            if not any(s.snapshot_id == snapshot_id for s in sorted_snapshots):
+                raise ValueError(
+                    f"Snapshot ID {snapshot_id} not found in table {table_name.value} history"
+                )
+        else:
+            # Rollback to previous snapshot (second most recent)
+            if len(sorted_snapshots) < 2:
+                raise ValueError(
+                    f"No previous snapshot to rollback to for table {table_name.value}. "
+                    f"Only {len(sorted_snapshots)} snapshot(s) available."
+                )
+            # sorted_snapshots[0] is the current snapshot, [1] is the previous one
+            target_snapshot_id = sorted_snapshots[1].snapshot_id
+        
+        # Perform the rollback by updating the main branch to point to the target snapshot
+        # This is the PyIceberg way to "rollback" - you update the branch reference to a previous snapshot
+        self._get_logger().info(
+            f"Rolling back table {table_name.value} to snapshot {target_snapshot_id}"
+        )
+        
+        # Use transaction to update the main branch reference to the target snapshot
+        # We create the update directly to avoid the AssertRefSnapshotId requirement that causes 409 conflicts
+        with table.transaction() as txn:
+            # Create the SetSnapshotRefUpdate directly without assertion requirements
+            update = pyiceberg.table.update.SetSnapshotRefUpdate(
+                ref_name=pyiceberg.table.refs.MAIN_BRANCH,
+                type=pyiceberg.table.refs.SnapshotRefType.BRANCH,
+                snapshot_id=target_snapshot_id,
+            )
+            txn._updates += (update,)
+            # Warning: don't add requirements - this allows the update to succeed even if there are concurrent changes
+            # (otherwise, the update will fail with a 409 conflict in case the target branch is corrupted)
+        
+        self._get_logger().info(
+            f"Successfully rolled back table {table_name.value} to snapshot {target_snapshot_id}"
+        )
+        
+        return target_snapshot_id
+
+
+    async def cleanup_old_snapshots_and_branches(
+        self,
+        table_name: TableNames,
+        older_than_s: int,
+        branches_to_delete: typing.Optional[list[str]] = None
+    ) -> tuple[int, int]:
+        return await self._run_in_executor(
+            self._sync_cleanup_old_snapshots_and_branches,
+            table_name,
+            older_than_s,
+            branches_to_delete
+        )
+
+    def _sync_cleanup_old_snapshots_and_branches(
+        self,
+        table_name: TableNames,
+        older_than_s: float,
+        branches_to_delete: typing.Optional[list[str]] = None
+    ) -> tuple[int, int]:
+        """Synchronous implementation of cleanup_old_snapshots_and_branches"""
+        table = self._get_or_create_table(table_name)
+        snapshots_expired = 0
+        branches_deleted = 0
+
+        table.maintenance.expire_snapshots().older_than(
+            datetime.datetime.fromtimestamp(
+                older_than_s, tz=datetime.timezone.utc
+            )
+        ).commit()
+
+        # Delete branches if branches_to_delete is provided
+        if branches_to_delete:
+            # Refresh table metadata to get current branches
+            table.refresh()
+            current_refs = table.metadata.refs
+            
+            # Filter to only delete branches that exist and are not the main branch
+            valid_branches_to_delete = [
+                branch for branch in branches_to_delete
+                if branch in current_refs and branch != pyiceberg.table.refs.MAIN_BRANCH
+            ]
+            
+            if valid_branches_to_delete:
+                self._get_logger().info(
+                    f"Deleting {len(valid_branches_to_delete)} branches for table {table_name.value}: "
+                    f"{', '.join(valid_branches_to_delete)}"
+                )
+                
+                # Delete branches one by one using manage_snapshots
+                with table.manage_snapshots() as ms:
+                    for branch in valid_branches_to_delete:
+                        ms.remove_branch(branch_name=branch)
+                
+                branches_deleted = len(valid_branches_to_delete)
+                self._get_logger().info(
+                    f"Successfully deleted {branches_deleted} branches for table {table_name.value}"
+                )
+            elif branches_to_delete:
+                # Log warning if some branches were requested but don't exist or are protected
+                invalid_branches = [b for b in branches_to_delete if b not in current_refs or b == pyiceberg.table.refs.MAIN_BRANCH]
+                if invalid_branches:
+                    self._get_logger().warning(
+                        f"Skipped deletion of {len(invalid_branches)} branches (non-existent or protected): "
+                        f"{', '.join(invalid_branches)}"
+                    )
+        
+        self._get_logger().info(
+            f"Cleanup complete for table {table_name.value}: "
+            f"{snapshots_expired} snapshots expired, {branches_deleted} branches deleted"
+        )
+        
+        return snapshots_expired, branches_deleted
