@@ -20,6 +20,7 @@ import decimal
 
 import octobot_commons.os_util as os_util
 import octobot_commons.enums
+import octobot_commons.constants
 import octobot.enums
 
 # make constants visible
@@ -150,6 +151,10 @@ ENABLE_AUTOMATIONS = os_util.parse_boolean_environment_var("ENABLE_AUTOMATIONS",
 ENABLE_BACKTESTING = os_util.parse_boolean_environment_var("ENABLE_BACKTESTING", "True")
 ENABLE_ADVANCED_INTERFACE = os_util.parse_boolean_environment_var("ENABLE_ADVANCED_INTERFACE", "True")
 ENABLE_STRATEGY_OPTIMIZER = os_util.parse_boolean_environment_var("ENABLE_STRATEGY_OPTIMIZER", "True")
+
+# Backtesting
+BACKTESTING_DATA_ALLOWED_PRICE_WINDOW = 2 * octobot_commons.constants.DAYS_TO_SECONDS
+BACKTESTING_MIN_DURATION_RATIO = 1/3  # 1/3% of the ideal duration
 
 # tentacles
 ENV_TENTACLES_URL = "TENTACLES_URL"
