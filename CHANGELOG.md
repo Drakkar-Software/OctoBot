@@ -6,6 +6,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [2.0.13] - 2025-10-17
+### Added
+- [GridTrading] Order by order trailing system
+- [Exchanges] Support myokx and okxus
+- [Binance] Support Binance futures demo trading
+- [Coinbase] Support Ed25519 api keys format
+- [Coinbase] Support websockets
+- [Hyperliquid] Log available trading pairs at startup
+- [Exchanges] Add auto-retry system on specific exchange requests errors 
+- [Exchanges] Add tickers autofix system
+- [Scripting] Add backtesting & data collector Keywords
+- [IndexTrading] Add synchronization policies
+- [Infra] Add octobot.hcl
+### Updated
+- [TradingView] Make configuration & signal errors much more visible
+- [CCXT] Update to CCXT 4.5.8
+- [Orders] Properly handle partially filled orders 
+- [Orders] Dusts addition to sell orders can now be disabled using the INCLUDE_DUSTS_IN_SELL_ORDERS_WHEN_POSSIBLE env variable
+- [Exchanges] Improve errors accuracy
+- [Coinbase] Use intro 2 fees level by default
+- [WebInterface] Display checkout link as fallback when necessary
+- [WebInterface] Cache version check to reduce requests
+- [OpenAI] Fix deprecations & support latest models
+- [Exchanges] Make "too many open orders" error clearer
+### Fixed
+- [MEXC] Fix websocket issues 
+- [Kucoin] Fix parsing issues
+- [Orders] Fix market orders related fee error
+- [GridTrading] Fix incorrect orders pricing
+- [GridTrading] Fix incorrect orders reset
+- [WebInterface] Fix broken links
+- [TradingModes] Fix rare backtesting early stop error
+
 ## [2.0.12] - 2025-06-09
 ### Updated
 - [WebInterface] Restore order quantity trading mode configuration (really, this time)
