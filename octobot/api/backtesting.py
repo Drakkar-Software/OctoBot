@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import octobot.backtesting as backtesting
+import octobot.backtesting.independent_backtesting
 import octobot_backtesting.constants as constants
 
 
@@ -35,8 +36,8 @@ def create_independent_backtesting(
     backtesting_data=None,
     config_by_tentacle=None,
     services_config=None
-) -> backtesting.IndependentBacktesting:
-    return backtesting.IndependentBacktesting(
+) -> backtesting.independent_backtesting.IndependentBacktesting:
+    return backtesting.independent_backtesting.IndependentBacktesting(
         config, tentacles_setup_config, data_files,
         data_file_path,
         run_on_common_part_only=run_on_common_part_only,
