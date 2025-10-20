@@ -24,7 +24,18 @@ import json
 import time
 import dataclasses
 
-import pyarrow
+import octobot_commons.logging as commons_logging
+
+try:
+    import pyarrow
+except ImportError as err:
+    commons_logging.get_logger().info(f"Skipped pyarrow import: {err}")
+    class PyArrowMock():
+        # mock to allow typing hints
+        Table = None
+        Schema = None
+    pyarrow = PyArrowMock()
+
 import pyiceberg.catalog
 import pyiceberg.schema
 import pyiceberg.types
@@ -36,7 +47,6 @@ import pyiceberg.table.statistics
 import pyiceberg.table.update
 import pyiceberg.table.refs
 
-import octobot_commons.logging as commons_logging
 import octobot_commons.enums as commons_enums
 import octobot.constants as constants
 import octobot.community.history_backend.historical_backend_client as historical_backend_client
@@ -77,6 +87,8 @@ class IcebergHistoricalBackendClient(historical_backend_client.HistoricalBackend
 
     def __init__(self, enable_async_batch_inserts: bool = True, **kwargs):
         # enable_async_batch_inserts is used to avoid concurrent inserts, which are not properly supported by iceberg
+        if pyarrow.Table is None:
+            raise ImportError(f"The pyarrow dependency is required to use {self.__class__.__name__}")
         self.enable_async_batch_inserts: bool = enable_async_batch_inserts
         self.namespace: typing.Optional[str] = None
         self.catalog: pyiceberg.catalog.Catalog = None # type: ignore
@@ -737,9 +749,9 @@ class IcebergHistoricalBackendClient(historical_backend_client.HistoricalBackend
             pyiceberg.types.NestedField(9, "volume", pyiceberg.types.DoubleType(), required=True),
         )
     @staticmethod
-    def _pyarrow_get_ohlcv_schema() -> pyarrow.schema:
+    def _pyarrow_get_ohlcv_schema() -> pyarrow.Schema:
         """Schema for OHLCV data"""
-        return pyarrow.schema([
+        return pyarrow.Schema([
             pyarrow.field("timestamp", pyarrow.timestamp("us"), False),  # Adjust precision as needed (e.g., "ms" for milliseconds)
             pyarrow.field("exchange_internal_name", pyarrow.string(), False),
             pyarrow.field("symbol", pyarrow.string(), False),
