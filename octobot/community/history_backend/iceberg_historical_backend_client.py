@@ -751,7 +751,8 @@ class IcebergHistoricalBackendClient(historical_backend_client.HistoricalBackend
     @staticmethod
     def _pyarrow_get_ohlcv_schema() -> pyarrow.Schema:
         """Schema for OHLCV data"""
-        return pyarrow.Schema([
+        # constructor is pyarrow.schema([...]), not pyarrow.Schema([...])
+        return pyarrow.schema([
             pyarrow.field("timestamp", pyarrow.timestamp("us"), False),  # Adjust precision as needed (e.g., "ms" for milliseconds)
             pyarrow.field("exchange_internal_name", pyarrow.string(), False),
             pyarrow.field("symbol", pyarrow.string(), False),
