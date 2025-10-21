@@ -108,6 +108,10 @@ class ExchangeAccountStatuses(enum.Enum):
     NO_PENDING_ACTION = "no_pending_action"
 
 
+class BotLogContentKeys(enum.Enum):
+    REASON = "reason"
+
+
 class BotLogType(enum.Enum):
     # order is important to keep priority on log to emit on a bot wakeup
     INVALID_EXCHANGE_CREDENTIALS = "invalid_exchange_credentials"
