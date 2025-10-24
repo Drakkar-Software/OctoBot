@@ -309,7 +309,7 @@ class IcebergHistoricalBackendClient(historical_backend_client.HistoricalBackend
         self._register_updated_min_max(table, pa_table)
         self._get_logger().info(
             f"Successfully inserted {len(rows)} rows into "
-            f"{TableNames.OHLCV_HISTORY.value} for {pa_table['exchange_internal_name'][0]}:{pa_table['symbol'][0]}:{pa_table['time_frame'][0]}"
+            f"{TableNames.OHLCV_HISTORY.value}: {self._get_candles_summary(pa_table)}"
         )
 
     async def _async_insert(
@@ -629,6 +629,26 @@ class IcebergHistoricalBackendClient(historical_backend_client.HistoricalBackend
         self._update_min_max_per_symbol_per_time_frame_per_exchange_for_table(
             update_table, self._updated_min_max_per_symbol_per_time_frame_per_exchange
         )
+
+    def _get_candles_summary(self, table: pyarrow.Table) -> dict[str, dict[str, int]]:
+        grouped_result = table.group_by(
+            ["exchange_internal_name", "symbol", "time_frame"]
+        ).aggregate([
+            ("timestamp", "count"),
+        ])
+        summary = {}
+        for exchange, symbol, time_frame, count in zip(
+            grouped_result['exchange_internal_name'], grouped_result['symbol'], grouped_result['time_frame'], grouped_result['timestamp_count']
+        ):
+            py_exchange = exchange.as_py() # type: ignore
+            py_symbol = symbol.as_py() # type: ignore
+            py_time_frame = time_frame.as_py() # type: ignore
+            if py_exchange not in summary:
+                summary[py_exchange] = {}
+            if py_symbol not in summary[py_exchange]:
+                summary[py_exchange][py_symbol] = {}
+            summary[py_exchange][py_symbol][py_time_frame] = count.as_py() # type: ignore
+        return summary
 
     @staticmethod
     def _update_min_max_per_symbol_per_time_frame_per_exchange_for_table(
