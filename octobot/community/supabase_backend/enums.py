@@ -108,6 +108,36 @@ class ExchangeAccountStatuses(enum.Enum):
     NO_PENDING_ACTION = "no_pending_action"
 
 
+class BotLogContentKeys(enum.Enum):
+    REASON = "reason"
+
+
+class BotLogType(enum.Enum):
+    # order is important to keep priority on log to emit on a bot wakeup
+    INVALID_EXCHANGE_CREDENTIALS = "invalid_exchange_credentials"
+    MISSING_API_KEY_TRADING_RIGHTS = "missing_api_key_trading_rights"
+    CREATED_ORDERS = "created_orders"
+    CANCELLED_ORDERS = "cancelled_orders"
+    REBALANCING_DONE = "rebalancing_done"
+    REBALANCING_SKIPPED = "rebalancing_skipped"
+    USER_DEPOSIT = "user_deposit"
+    USER_WITHDRAW = "user_withdraw"
+    IMPORTANT_GAIN = "important_gain"
+    IMPORTANT_LOSS = "important_loss"
+    OPENED_POSITION = "opened_position"
+    CLOSED_POSITION = "closed_position"
+    UNSUPPORTED_HEDGE_POSITION = "unsupported_hedge_position"
+    NOTHING_TO_DO = "nothing_to_do"
+    BOT_RESTARTED = "bot_restarted"
+    BOT_STOPPED = "bot_stopped"
+    MISSING_MINIMAL_FUNDS = "missing_minimal_funds"
+    CHANGED_PRODUCT = "changed_product"
+    IMPOSSIBLE_TO_CREATE_ALL_REQUIRED_ORDERS = "impossible_to_create_all_required_orders"
+    RESUMED_STRATEGY_EXECUTION = "resumed_strategy_execution"
+    STOPPED_STRATEGY_EXECUTION = "stopped_strategy_execution"
+    NO_LOG = None
+
+
 class ExchangeKeys(enum.Enum):
     ID = "id"
     INTERNAL_NAME = "internal_name"

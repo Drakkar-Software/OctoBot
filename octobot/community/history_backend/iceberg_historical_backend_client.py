@@ -24,7 +24,18 @@ import json
 import time
 import dataclasses
 
-import pyarrow
+import octobot_commons.logging as commons_logging
+
+try:
+    import pyarrow
+except ImportError as err:
+    commons_logging.get_logger().info(f"Skipped pyarrow import: {err}")
+    class PyArrowMock():
+        # mock to allow typing hints
+        Table = None
+        Schema = None
+    pyarrow = PyArrowMock()
+
 import pyiceberg.catalog
 import pyiceberg.schema
 import pyiceberg.types
@@ -36,7 +47,6 @@ import pyiceberg.table.statistics
 import pyiceberg.table.update
 import pyiceberg.table.refs
 
-import octobot_commons.logging as commons_logging
 import octobot_commons.enums as commons_enums
 import octobot.constants as constants
 import octobot.community.history_backend.historical_backend_client as historical_backend_client
@@ -77,6 +87,8 @@ class IcebergHistoricalBackendClient(historical_backend_client.HistoricalBackend
 
     def __init__(self, enable_async_batch_inserts: bool = True, **kwargs):
         # enable_async_batch_inserts is used to avoid concurrent inserts, which are not properly supported by iceberg
+        if pyarrow.Table is None:
+            raise ImportError(f"The pyarrow dependency is required to use {self.__class__.__name__}")
         self.enable_async_batch_inserts: bool = enable_async_batch_inserts
         self.namespace: typing.Optional[str] = None
         self.catalog: pyiceberg.catalog.Catalog = None # type: ignore
@@ -297,7 +309,7 @@ class IcebergHistoricalBackendClient(historical_backend_client.HistoricalBackend
         self._register_updated_min_max(table, pa_table)
         self._get_logger().info(
             f"Successfully inserted {len(rows)} rows into "
-            f"{TableNames.OHLCV_HISTORY.value} for {pa_table['exchange_internal_name'][0]}:{pa_table['symbol'][0]}:{pa_table['time_frame'][0]}"
+            f"{TableNames.OHLCV_HISTORY.value}: {self._get_candles_summary(pa_table)}"
         )
 
     async def _async_insert(
@@ -618,6 +630,26 @@ class IcebergHistoricalBackendClient(historical_backend_client.HistoricalBackend
             update_table, self._updated_min_max_per_symbol_per_time_frame_per_exchange
         )
 
+    def _get_candles_summary(self, table: pyarrow.Table) -> dict[str, dict[str, int]]:
+        grouped_result = table.group_by(
+            ["exchange_internal_name", "symbol", "time_frame"]
+        ).aggregate([
+            ("timestamp", "count"),
+        ])
+        summary = {}
+        for exchange, symbol, time_frame, count in zip(
+            grouped_result['exchange_internal_name'], grouped_result['symbol'], grouped_result['time_frame'], grouped_result['timestamp_count']
+        ):
+            py_exchange = exchange.as_py() # type: ignore
+            py_symbol = symbol.as_py() # type: ignore
+            py_time_frame = time_frame.as_py() # type: ignore
+            if py_exchange not in summary:
+                summary[py_exchange] = {}
+            if py_symbol not in summary[py_exchange]:
+                summary[py_exchange][py_symbol] = {}
+            summary[py_exchange][py_symbol][py_time_frame] = count.as_py() # type: ignore
+        return summary
+
     @staticmethod
     def _update_min_max_per_symbol_per_time_frame_per_exchange_for_table(
         update_table: pyarrow.Table, 
@@ -737,8 +769,9 @@ class IcebergHistoricalBackendClient(historical_backend_client.HistoricalBackend
             pyiceberg.types.NestedField(9, "volume", pyiceberg.types.DoubleType(), required=True),
         )
     @staticmethod
-    def _pyarrow_get_ohlcv_schema() -> pyarrow.schema:
+    def _pyarrow_get_ohlcv_schema() -> pyarrow.Schema:
         """Schema for OHLCV data"""
+        # constructor is pyarrow.schema([...]), not pyarrow.Schema([...])
         return pyarrow.schema([
             pyarrow.field("timestamp", pyarrow.timestamp("us"), False),  # Adjust precision as needed (e.g., "ms" for milliseconds)
             pyarrow.field("exchange_internal_name", pyarrow.string(), False),
