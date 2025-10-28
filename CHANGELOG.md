@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [2.0.14] - 2025-10-28
+### Fixed
+- Made pyarrow dependency optionnal to prevent a rare .dll import error
+- [Coinbase] fix markets loading error when api keys are invalid
+
 ## [2.0.13] - 2025-10-17
 ### Added
 - [GridTrading] Order by order trailing system
