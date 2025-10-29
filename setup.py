@@ -32,7 +32,7 @@ REQUIRED = ignore_git_requirements(open('requirements.txt').readlines())
 REQUIRES_PYTHON = '>=3.10'
 
 setup(
-    name=PROJECT_NAME,
+    name=PROJECT_NAME.lower().replace("-", "_"),
     version=VERSION,
     url='https://github.com/Drakkar-Software/OctoBot',
     license='GPL-3.0',
