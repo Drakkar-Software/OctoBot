@@ -382,6 +382,8 @@ async def matrix_callback(
         evaluator_type,
         eval_note,
         eval_note_type,
+        eval_note_description,
+        eval_note_metadata,
         exchange_name,
         cryptocurrency,
         symbol,
