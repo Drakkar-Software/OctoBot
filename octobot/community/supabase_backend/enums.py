@@ -135,6 +135,7 @@ class BotLogType(enum.Enum):
     IMPOSSIBLE_TO_CREATE_ALL_REQUIRED_ORDERS = "impossible_to_create_all_required_orders"
     RESUMED_STRATEGY_EXECUTION = "resumed_strategy_execution"
     STOPPED_STRATEGY_EXECUTION = "stopped_strategy_execution"
+    RESIZED_SUB_PORTFOLIO = "resized_sub_portfolio"
     NO_LOG = None
 
 
