@@ -38,22 +38,15 @@ COPY octobot/config /octobot/octobot/config
 COPY docker/* /octobot/
 
 # 1. Install requirements
-# 2. Add cloudflare gpg key and add cloudflare repo in apt repositories (from https://pkg.cloudflare.com/index.html)
-# 3. Install required packages
-# 4. Finish env setup
+# 2. Install required packages
+# 3. Finish env setup
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 # Update to debian archive from https://gist.github.com/ishad0w/6ce1eb569c734880200c47923577426a
 RUN echo "deb http://archive.debian.org/debian buster main contrib non-free" > /etc/apt/sources.list \
     && echo "deb http://archive.debian.org/debian-security buster/updates main contrib non-free" >> /etc/apt/sources.list \
     && echo "deb http://archive.debian.org/debian buster-backports main contrib non-free" >> /etc/apt/sources.list \
     && apt-get update \
-    && apt-get install -y --no-install-recommends curl \
-    && mkdir -p /usr/share/keyrings \
-    && chmod 0755 /usr/share/keyrings \
-    && curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg | tee /usr/share/keyrings/cloudflare-main.gpg >/dev/null \
-    && echo 'deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared buster main' | tee /etc/apt/sources.list.d/cloudflared.list \
-    && apt-get update \
-    && apt-get install -y --no-install-recommends curl cloudflared libxslt-dev libxcb-xinput0 libjpeg62-turbo-dev zlib1g-dev libblas-dev liblapack-dev libatlas-base-dev libopenjp2-7 libtiff-dev \
+    && apt-get install -y --no-install-recommends curl libxslt-dev libxcb-xinput0 libjpeg62-turbo-dev zlib1g-dev libblas-dev liblapack-dev libatlas-base-dev libopenjp2-7 libtiff-dev \
     && rm -rf /var/lib/apt/lists/* \
     && ln -s /opt/venv/bin/OctoBot OctoBot # Make sure we use the virtualenv \
     && chmod +x docker-entrypoint.sh
