@@ -121,13 +121,15 @@ class OctoBot:
         await self.initializer.create(True)
         self._log_config()
         await self._start_tools_tasks()
-        await logger.init_octobot_chan_logger(self.bot_id)
         await self.create_producers()
         await self.start_producers()
         await self._ensure_watchers()
         await self._post_initialize()
 
     async def create_producers(self):
+        logger_consumer = await logger.init_octobot_chan_logger(self.bot_id)
+        # keep track of the logger consumer to stop it when stopping the bot
+        self.global_consumer.add_consumer(logger_consumer)
         self.exchange_producer = producers.ExchangeProducer(self.global_consumer.octobot_channel, self,
                                                             None, self.ignore_config)
         self.evaluator_producer = producers.EvaluatorProducer(self.global_consumer.octobot_channel, self)
@@ -220,6 +222,7 @@ class OctoBot:
             await databases.close_bot_storage(self.bot_id)
             if self.automation is not None:
                 await self.automation.stop()
+            await self.global_consumer.stop()
 
         finally:
             self.stopped.set()
