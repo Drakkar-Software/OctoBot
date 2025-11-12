@@ -179,7 +179,7 @@ async def init_evaluator_chan_logger(matrix_id: str):
 
 
 async def init_octobot_chan_logger(bot_id: str):
-    await channel_instances.get_chan_at_id(constants.OCTOBOT_CHANNEL, bot_id).new_consumer(
+    return await channel_instances.get_chan_at_id(constants.OCTOBOT_CHANNEL, bot_id).new_consumer(
         octobot_channel_callback,
         priority_level=LOGGER_PRIORITY_LEVEL,
         bot_id=bot_id,

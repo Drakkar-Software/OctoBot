@@ -76,6 +76,9 @@ class OctoBotChannelGlobalConsumer:
                 action=[action.value for action in service_channel_consumer.OctoBotChannelServiceActions]
             ))
 
+    def add_consumer(self, consumer):
+        self.octobot_channel_consumers.append(consumer)
+
     async def octobot_channel_callback(self, bot_id, subject, action, data) -> None:
         """
         OctoBot channel consumer callback
