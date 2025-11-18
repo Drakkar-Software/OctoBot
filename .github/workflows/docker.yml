@@ -13,7 +13,7 @@ jobs:
     name: ubuntu-latest - Docker - lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Run hadolint
         uses: reviewdog/action-hadolint@v1
@@ -27,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set Environment Variables
         run: |
