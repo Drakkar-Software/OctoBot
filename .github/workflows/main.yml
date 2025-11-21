@@ -18,9 +18,9 @@ jobs:
         arch: [ x64 ]
         version: [ "3.10.x" ]
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - name: Set up Python ${{ matrix.version }}
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: ${{ matrix.version }}
         architecture: ${{ matrix.arch }}
@@ -42,14 +42,14 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ macos-13, windows-latest, ubuntu-latest ]
+        os: [ windows-latest, ubuntu-latest ]
         arch: [ x64 ]
         version: [ "3.10.x" ]
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - name: Set up Python ${{ matrix.version }}
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: ${{ matrix.version }}
         architecture: ${{ matrix.arch }}
@@ -128,10 +128,10 @@ jobs:
         version: [ "3.10.x" ]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Python ${{ matrix.version }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.version }}
           architecture: ${{ matrix.arch }}

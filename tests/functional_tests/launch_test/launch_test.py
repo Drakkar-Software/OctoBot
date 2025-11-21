@@ -25,11 +25,9 @@ from octobot.logger import init_logger
 from octobot.octobot import OctoBot
 import octobot.community as community
 
-# All test coroutines will be treated as marked.
-pytestmark = pytest.mark.asyncio
-
 
 @pytest.mark.timeout(12)
+@pytest.mark.asyncio
 async def test_run_bot():
     # avoid web interface in this test
     WebInterface.enabled = False
