@@ -18,6 +18,10 @@ from octobot.community.models import community_user_account
 from octobot.community.models.community_user_account import (
     CommunityUserAccount,
 )
+from octobot.community.models import bot_log
+from octobot.community.models.bot_log import (
+    BotLogData,
+)
 from octobot.community.models import community_fields
 from octobot.community.models.community_fields import (
     CommunityFields,
@@ -74,6 +78,7 @@ from octobot.community.models.executed_product_details import (
 __all__ = [
     "CommunityUserAccount",
     "CommunityFields",
+    "BotLogData",
     "CommunityTentaclesPackage",
     "CommunitySupports",
     "CommunityDonation",
