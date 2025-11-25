@@ -137,7 +137,7 @@ jobs:
           architecture: ${{ matrix.arch }}
 
       - name: Install dependencies
-        run: pip install --prefer-binary -r dev_requirements.txt -r requirements.txt
+        run: pip install --prefer-binary -r dev_requirements.txt -r requirements.txt -r full_requirements.txt
 
       - name: Build sdist
         run: python setup.py sdist

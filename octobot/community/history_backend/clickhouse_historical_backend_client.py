@@ -16,7 +16,20 @@
 import typing
 from datetime import datetime, timezone
 
-import clickhouse_connect.driver
+import octobot_commons.constants as commons_constants
+try:
+    import clickhouse_connect.driver
+except ImportError:
+    if commons_constants.USE_MINIMAL_LIBS:
+        # mock clickhouse_connect.driver imports
+        class ClickhouseConnectImportMock:
+            async def get_async_client(self, *args):
+                raise ImportError("clickhouse_connect not installed")
+            class driver:
+                class AsyncClient:
+                    async def close(self):
+                        pass
+        clickhouse_connect = ClickhouseConnectImportMock()
 
 import octobot_commons.logging as commons_logging
 import octobot_commons.enums as commons_enums

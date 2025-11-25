@@ -15,14 +15,37 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import logging
 import typing
-import gmqtt
+import octobot_commons.constants as commons_constants
+try:
+    import gmqtt
+except ImportError:
+    if commons_constants.USE_MINIMAL_LIBS:
+        # mock gmqtt imports
+        class GmqttImportMock:
+            class Client:
+                def __init__(self, *args):
+                    raise ImportError("gmqtt not installed")
+            class Subscription:
+                def __init__(self, topic, qos):
+                    raise ImportError("gmqtt not installed")
+            class constants:
+                class MQTTv311:
+                    pass
+                class SubAckReasonCode:
+                    class UNSPECIFIED_ERROR:
+                        value = 1
+                class DEFAULT_CONFIG:
+                    pass
+                class Subscription:
+                    def __init__(self, topic, qos):
+                        pass
+        gmqtt = GmqttImportMock()
 import json
 import asyncio
 import packaging.version as packaging_version
 
 import octobot_commons.enums as commons_enums
 import octobot_commons.errors as commons_errors
-import octobot_commons.constants as commons_constants
 import octobot.community.errors as errors
 import octobot.community.feeds.abstract_feed as abstract_feed
 import octobot.constants as constants

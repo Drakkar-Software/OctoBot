@@ -4,5 +4,6 @@ include README.md
 include LICENSE
 include CHANGELOG.md
 include requirements.txt
+include full_requirements.txt
 
 global-exclude *.c
