@@ -29,6 +29,7 @@ def ignore_git_requirements(requirements):
 
 
 REQUIRED = ignore_git_requirements(open('requirements.txt').readlines())
+FULL_REQUIRED = ignore_git_requirements(open('full_requirements.txt').readlines())
 REQUIRES_PYTHON = '>=3.10'
 
 setup(
@@ -50,6 +51,9 @@ setup(
     test_suite="tests",
     zip_safe=False,
     install_requires=REQUIRED,
+    extras_require={
+        'full': FULL_REQUIRED,
+    },
     python_requires=REQUIRES_PYTHON,
     entry_points={
         'console_scripts': [

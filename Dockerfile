@@ -19,7 +19,7 @@ ENV PATH="/opt/venv/bin:$PATH"
 
 COPY . .
 RUN pip install -U setuptools wheel pip>=20.0.0 \
-    && pip install --no-cache-dir --prefer-binary -r requirements.txt \
+    && pip install --no-cache-dir --prefer-binary -r requirements.txt -r full_requirements.txt \
     && python setup.py install
 
 FROM python:3.10-slim-buster
