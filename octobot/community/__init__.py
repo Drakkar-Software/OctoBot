@@ -24,6 +24,7 @@ from octobot.community.errors import (
 )
 from octobot.community import models
 from octobot.community.models import (
+    BotLogData,
     CommunityUserAccount,
     CommunityFields,
     CommunityTentaclesPackage,
