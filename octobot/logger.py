@@ -98,8 +98,9 @@ def _load_logger_config():
             common_logging.set_global_logger_level(constants.FORCED_LOG_LEVEL)
     except Exception as ex:
         config.fileConfig(constants.LOGGING_CONFIG_FILE)
-        logging.getLogger("Logging Configuration").warning(f"Impossible to initialize local logging configuration file,"
-                                                           f" using default one. {ex}")
+        logging.getLogger("Logging Configuration").warning(
+            f"Impossible to initialize local logging configuration file, using default one. {ex}"
+        )
 
 
 async def init_exchange_chan_logger(exchange_id):
