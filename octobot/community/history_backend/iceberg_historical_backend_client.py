@@ -72,7 +72,7 @@ except ImportError as err:
                 def __init__(self, *args):
                     raise ImportError("pyiceberg not installed")
         class exceptions:
-            class NoSuchTableError:
+            class NoSuchTableError(Exception):
                 def __init__(self, *args):
                     raise ImportError("pyiceberg not installed")
         class schema:
