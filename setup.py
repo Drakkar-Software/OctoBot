@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import sys
+import os
 from setuptools import find_packages
 from setuptools import setup
 from octobot import PROJECT_NAME, AUTHOR, VERSION
@@ -22,8 +23,8 @@ is_building_wheel = "bdist_wheel" in sys.argv
 
 EXCLUDED_PACKAGES = ["tentacles*", "tests"]
 DATA_FILES = ["config/*", "strategy_optimizer/optimizer_data_files/*"]
-if is_building_wheel:
-    # exclude data files when building a wheel
+if is_building_wheel and bool(os.getenv("USE_MINIMAL_LIBS", "false").lower() == "true"):
+    # exclude data files when building a wheel with minimal libs
     DATA_FILES = []
 PACKAGES = [
     pkg for pkg in find_packages(exclude=EXCLUDED_PACKAGES)
