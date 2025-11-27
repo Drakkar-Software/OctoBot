@@ -21,35 +21,42 @@ import asyncio
 
 import packaging.version as packaging_version
 
-import octobot_commons.os_util as os_util
-import octobot_commons.logging as logging
-import octobot_commons.configuration as configuration
-import octobot_commons.profiles as profiles
-import octobot_commons.authentication as authentication
-import octobot_commons.constants as common_constants
-import octobot_commons.errors as errors
+try:
+    import octobot_commons.os_util as os_util
+    import octobot_commons.logging as logging
+    import octobot_commons.configuration as configuration
+    import octobot_commons.profiles as profiles
+    import octobot_commons.authentication as authentication
+    import octobot_commons.constants as common_constants
+    import octobot_commons.errors as errors
 
-import octobot_services.api as service_api
+    import octobot_services.api as service_api
 
-import octobot_tentacles_manager.api as tentacles_manager_api
-import octobot_tentacles_manager.cli as tentacles_manager_cli
-import octobot_tentacles_manager.constants as tentacles_manager_constants
+    import octobot_tentacles_manager.api as tentacles_manager_api
+    import octobot_tentacles_manager.cli as tentacles_manager_cli
+    import octobot_tentacles_manager.constants as tentacles_manager_constants
 
-# make tentacles importable
-sys.path.append(os.path.dirname(sys.executable))
+    # make tentacles importable
+    sys.path.append(os.path.dirname(sys.executable))
 
-import octobot.octobot as octobot_class
-import octobot.commands as commands
-import octobot.configuration_manager as configuration_manager
-import octobot.octobot_backtesting_factory as octobot_backtesting
-import octobot.constants as constants
-import octobot.enums as enums
-import octobot.disclaimer as disclaimer
-import octobot.logger as octobot_logger
-import octobot.community as octobot_community
-import octobot.community.errors
-import octobot.limits as limits
-
+    import octobot.octobot as octobot_class
+    import octobot.commands as commands
+    import octobot.configuration_manager as configuration_manager
+    import octobot.octobot_backtesting_factory as octobot_backtesting
+    import octobot.constants as constants
+    import octobot.enums as enums
+    import octobot.disclaimer as disclaimer
+    import octobot.logger as octobot_logger
+    import octobot.community as octobot_community
+    import octobot.community.errors
+    import octobot.limits as limits
+except ImportError as err:
+    print(
+        "Error importing OctoBot dependencies, please install OctoBot with the [full] option. "
+        "Example: \"pip install -U octobot[full]\" "
+        "(Error: {0}: {1})".format(err.__class__.__name__, str(err)), file=sys.stderr
+    )
+    sys.exit(-1)
 
 def update_config_with_args(starting_args, config: configuration.Configuration, logger):
     try:
