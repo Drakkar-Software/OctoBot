@@ -3,7 +3,7 @@ OctoBot-Commons[full]==1.9.88
 OctoBot-Trading[full]==2.4.233
 OctoBot-Evaluators[full]==1.9.9
 OctoBot-Tentacles-Manager[full]==2.9.19
-OctoBot-Services[full]==1.6.29
+OctoBot-Services[full]==1.6.30
 OctoBot-Backtesting[full]==1.9.8
 
 ## Others
