@@ -554,16 +554,17 @@ class AbstractAuthenticatedExchangeTester:
 
     async def inner_test_create_and_cancel_limit_orders(self, symbol=None, settlement_currency=None, **kwargs):
         symbol = symbol or self.SYMBOL
+        side = trading_enums.TradeOrderSide.BUY
         # # DEBUG tools p1, uncomment to create specific orders
         # symbol = "ADA/USDT"
         # # end debug tools
         market_status = self.exchange_manager.exchange.get_market_status(symbol)
         exchange_data = self.get_exchange_data(symbol=symbol)
         settlement_currency = settlement_currency or self.SETTLEMENT_CURRENCY
-        price = self.get_order_price(await self.get_price(symbol=symbol), False, symbol=symbol)
+        price = self.get_order_price(await self.get_price(symbol=symbol), side == trading_enums.TradeOrderSide.SELL, symbol=symbol)
         # 1. try with "normal" order size
         default_size = self.get_order_size(
-            await self.get_portfolio(), price, symbol=symbol, settlement_currency=settlement_currency
+            await self.get_portfolio(), price, symbol=symbol, settlement_currency=(settlement_currency if side == trading_enums.TradeOrderSide.BUY else self.ORDER_CURRENCY)
         )
         # self.check_order_size_and_price(default_size, price, symbol=symbol, allow_empty_size=self.CHECK_EMPTY_ACCOUNT)
         enable_min_size_check = False
@@ -604,26 +605,27 @@ class AbstractAuthenticatedExchangeTester:
             assert cancelled_orders == []
             return
         try:
-            buy_limit = await self.create_limit_order(price, size, trading_enums.TradeOrderSide.BUY, symbol=symbol)
+            limit_order = await self.create_limit_order(price, size, side, symbol=symbol)
         except trading_errors.AuthenticationError as err:
             raise trading_errors.AuthenticationError(
                 f"inner_test_create_and_cancel_limit_orders#create_limit_order {err}"
             ) from err
         try:
-            self.check_created_limit_order(buy_limit, price, size, trading_enums.TradeOrderSide.BUY)
-            assert await self.order_in_open_orders(open_orders, buy_limit, symbol=symbol)
-            await self.check_can_get_order(buy_limit)
+            self.check_created_limit_order(limit_order, price, size, side)
+            assert await self.order_in_open_orders(open_orders, limit_order, symbol=symbol)
+            await self.check_can_get_order(limit_order)
             # assert free portfolio amount is smaller than total amount
             balance = await self.get_portfolio()
-            assert balance[settlement_currency][trading_constants.CONFIG_PORTFOLIO_FREE] < \
-                   balance[settlement_currency][trading_constants.CONFIG_PORTFOLIO_TOTAL], (
-                    f"FALSE: {balance[settlement_currency][trading_constants.CONFIG_PORTFOLIO_FREE]} < {balance[settlement_currency][trading_constants.CONFIG_PORTFOLIO_TOTAL]}"
+            locked_currency = settlement_currency if side == trading_enums.TradeOrderSide.BUY else self.ORDER_CURRENCY
+            assert balance[locked_currency][trading_constants.CONFIG_PORTFOLIO_FREE] < \
+                   balance[locked_currency][trading_constants.CONFIG_PORTFOLIO_TOTAL], (
+                    f"FALSE: {balance[locked_currency][trading_constants.CONFIG_PORTFOLIO_FREE]} < {balance[locked_currency][trading_constants.CONFIG_PORTFOLIO_TOTAL]}"
                    )
         finally:
             # don't leave buy_limit as open order
-            await self.cancel_order(buy_limit)
-        assert await self.order_not_in_open_orders(open_orders, buy_limit, symbol=symbol)
-        assert await self.order_in_cancelled_orders(cancelled_orders, buy_limit, symbol=symbol)
+            await self.cancel_order(limit_order)
+        assert await self.order_not_in_open_orders(open_orders, limit_order, symbol=symbol)
+        assert await self.order_in_cancelled_orders(cancelled_orders, limit_order, symbol=symbol)
 
     async def inner_test_cancel_uncancellable_order(self):
         if self.UNCANCELLABLE_ORDER_ID_SYMBOL_TYPE:
@@ -636,39 +638,44 @@ class AbstractAuthenticatedExchangeTester:
             await self.inner_test_create_and_fill_market_orders()
 
     async def inner_test_create_and_fill_market_orders(self):
+        side = trading_enums.TradeOrderSide.BUY
         portfolio = await self.get_portfolio()
         current_price = await self.get_price()
-        price = self.get_order_price(current_price, False, price_diff=0)
-        size = self.get_order_size(portfolio, price)
+        order_currency = self.ORDER_CURRENCY if side == trading_enums.TradeOrderSide.SELL else self.SETTLEMENT_CURRENCY
+        price = self.get_order_price(current_price, side == trading_enums.TradeOrderSide.SELL, price_diff=0)
+        size = self.get_order_size(portfolio, price, settlement_currency=order_currency)
         if self.CHECK_EMPTY_ACCOUNT:
             assert size == trading_constants.ZERO
             return
-        buy_market = await self.create_market_order(current_price, size, trading_enums.TradeOrderSide.BUY)
+        first_market_order = await self.create_market_order(current_price, size, side)
         post_buy_portfolio = {}
         try:
-            self.check_created_market_order(buy_market, size, trading_enums.TradeOrderSide.BUY)
-            filled_order = await self.wait_for_fill(buy_market)
+            self.check_created_market_order(first_market_order, size, side)
+            filled_order = await self.wait_for_fill(first_market_order)
             parsed_filled_order = personal_data.create_order_instance_from_raw(
                 self.exchange_manager.trader,
                 filled_order
             )
-            self._check_order(parsed_filled_order, size, trading_enums.TradeOrderSide.BUY)
+            self._check_order(parsed_filled_order, size, side)
             await self.wait_for_order_exchange_id_in_trades(parsed_filled_order.exchange_order_id)
             await self.check_require_order_fees_from_trades(
                 filled_order[trading_enums.ExchangeConstantsOrderColumns.EXCHANGE_ID.value]
             )
             self.check_raw_closed_orders([filled_order])
             post_buy_portfolio = await self.get_portfolio()
-            self.check_portfolio_changed(portfolio, post_buy_portfolio, False)
+            portfolio_increased = side == trading_enums.TradeOrderSide.SELL
+            self.check_portfolio_changed(portfolio, post_buy_portfolio, portfolio_increased)
         finally:
-            sell_size = self.get_sell_size_from_buy_order(buy_market)
+            mirror_size = self.get_sell_size_from_buy_order(first_market_order)
             # sell: reset portfolio
-            sell_market = await self.create_market_order(current_price, sell_size, trading_enums.TradeOrderSide.SELL)
-            self.check_created_market_order(sell_market, sell_size, trading_enums.TradeOrderSide.SELL)
-            await self.wait_for_fill(sell_market)
+            other_side = trading_enums.TradeOrderSide.SELL if side == trading_enums.TradeOrderSide.BUY else trading_enums.TradeOrderSide.BUY
+            second_market_order = await self.create_market_order(current_price, mirror_size, other_side)
+            self.check_created_market_order(second_market_order, mirror_size, other_side)
+            await self.wait_for_fill(second_market_order)
             post_sell_portfolio = await self.get_portfolio()
             if post_buy_portfolio:
-                self.check_portfolio_changed(post_buy_portfolio, post_sell_portfolio, True)
+                portfolio_increased = other_side == trading_enums.TradeOrderSide.SELL
+                self.check_portfolio_changed(post_buy_portfolio, post_sell_portfolio, portfolio_increased)
 
     async def check_require_order_fees_from_trades(self, filled_exchange_order_id, symbol=None):
         symbol = symbol or self.SYMBOL
@@ -771,8 +778,8 @@ class AbstractAuthenticatedExchangeTester:
             sell_limit = await self.create_limit_order(price, size, trading_enums.TradeOrderSide.SELL)
             self.check_created_limit_order(sell_limit, price, size, trading_enums.TradeOrderSide.SELL)
             assert await self.order_in_open_orders(open_orders, sell_limit)
-            edited_price = self.get_order_price(current_price, True, price_diff=2*self.ORDER_PRICE_DIFF)
-            edited_size = self.get_order_size(portfolio, price, order_size=2*self.ORDER_SIZE, settlement_currency=self._get_edit_order_settlement_currency())
+            edited_price = self.get_order_price(current_price, True, price_diff=1.3*self.ORDER_PRICE_DIFF)
+            edited_size = self.get_order_size(portfolio, price, order_size=1.3*self.ORDER_SIZE, settlement_currency=self._get_edit_order_settlement_currency())
             sell_limit = await self.edit_order(sell_limit, edited_price=edited_price, edited_quantity=edited_size)
             await self.wait_for_edit(sell_limit, edited_size)
             sell_limit = await self.get_order(sell_limit.exchange_order_id, sell_limit.symbol)
@@ -800,8 +807,8 @@ class AbstractAuthenticatedExchangeTester:
             )
             self.check_created_stop_order(stop_loss, price, size, trading_enums.TradeOrderSide.SELL)
             assert await self.order_in_open_orders(open_orders, stop_loss)
-            edited_price = self.get_order_price(current_price, False, price_diff=2*self.ORDER_PRICE_DIFF)
-            edited_size = self.get_order_size(portfolio, price, order_size=2*self.ORDER_SIZE, settlement_currency=self._get_edit_order_settlement_currency())
+            edited_price = self.get_order_price(current_price, False, price_diff=1.3*self.ORDER_PRICE_DIFF)
+            edited_size = self.get_order_size(portfolio, price, order_size=1.3*self.ORDER_SIZE, settlement_currency=self._get_edit_order_settlement_currency())
             stop_loss = await self.edit_order(stop_loss, edited_price=edited_price, edited_quantity=edited_size)
             await self.wait_for_edit(stop_loss, edited_size)
             stop_loss = await self.get_order(stop_loss.exchange_order_id, stop_loss.symbol)
