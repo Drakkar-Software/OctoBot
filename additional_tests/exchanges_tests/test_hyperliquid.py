@@ -26,7 +26,7 @@ class TestHyperliquidAuthenticatedExchange(
 ):
     # enter exchange name as a class variable here
     EXCHANGE_NAME = "hyperliquid"
-    ORDER_CURRENCY = "HYPE"
+    ORDER_CURRENCY = "ETH"
     SETTLEMENT_CURRENCY = "USDC"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
     ORDER_SIZE = 25  # % of portfolio to include in test orders
