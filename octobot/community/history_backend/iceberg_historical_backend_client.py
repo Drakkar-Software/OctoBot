@@ -25,9 +25,13 @@ import time
 import dataclasses
 
 import octobot_commons.logging as commons_logging
+import octobot_commons.os_util as os_util
 
 try:
-    import pyarrow
+    if os_util.is_raspberry_pi_machine():
+        raise ImportError("pyarrow is not available on Raspberry Pi")
+    else:
+        import pyarrow
 except ImportError as err:
     commons_logging.get_logger().info(f"Skipped pyarrow import: {err}")
     class PyArrowMock():
