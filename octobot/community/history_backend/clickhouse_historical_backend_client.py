@@ -17,8 +17,13 @@ import typing
 from datetime import datetime, timezone
 
 import octobot_commons.constants as commons_constants
+import octobot_commons.os_util as os_util
+
 try:
-    import clickhouse_connect.driver
+    if os_util.is_raspberry_pi_machine():
+        raise ImportError("clickhouse_connect is not available on Raspberry Pi")
+    else:
+        import clickhouse_connect.driver
 except ImportError:
     if commons_constants.USE_MINIMAL_LIBS:
         # mock clickhouse_connect.driver imports
