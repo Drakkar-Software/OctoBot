@@ -34,6 +34,7 @@ import octobot_evaluators.evaluators.channel as evaluator_channels
 import octobot_trading.exchange_channel as exchanges_channel
 import octobot_trading.enums as trading_enums
 import octobot_trading.api as trading_api
+import octobot_trading.personal_data as personal_data
 
 import octobot.constants as constants
 import octobot.configuration_manager as configuration_manager
@@ -294,6 +295,14 @@ def _filter_balance(balance: dict):
         }
         removed_count = len(balance) - len(filtered_balance)
         return trading_api.parse_decimal_portfolio(filtered_balance, False), removed_count
+    elif isinstance(first_value, personal_data.Asset):
+        filtered_balance = {
+            key: values
+            for key, values in balance.items()
+            if values.total
+        }
+        removed_count = len(balance) - len(filtered_balance)
+        return filtered_balance, removed_count
     return balance, 0
 
 
