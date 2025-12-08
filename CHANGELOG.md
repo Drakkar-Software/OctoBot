@@ -6,6 +6,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [2.0.15] - 2025-12-08
+### Breaking pip installation change
+To install the full OctoBot (equivalent to previous versions), OctoBot needs to be installed with the [full] parameter: `pip install octobot[full]` 
+### Added
+- [TradingModes] add cancel policies
+- [DSL] add DSL and base keywords tentacles
+### Updated
+- Light installation: OctoBot can now be used with minimal dependencies when started with the USE_MINIMAL_LIBS=true environment variable
+- Full installation: to use the full OctoBot (with user interface, etc), install octobot[full] 
+- [Exchanges] update to ccxt 4.5.22
+- [Hyperliquid] fix markets fetch and use uniform tickers
+- Typing: add typing to most OctoBot-Trading objects
+- [TradingView] deprecate email alerts
+### Fixed
+- [RaspberryPi]: Fix "Illegal instruction" crash
+- [Exchanges] fix proxy error during markets loading
+- [StaggeredOrders] fix rare orders error
+
 ## [2.0.14] - 2025-10-29
 ### Fixed
 - Made pyarrow dependency optionnal to prevent a rare .dll import error
