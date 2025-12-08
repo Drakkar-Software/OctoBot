@@ -13,8 +13,14 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
+import dataclasses
+import typing
 
-PROJECT_NAME = "OctoBot"
-AUTHOR = "Drakkar-Software"
-VERSION = "2.0.15"  # major.minor.revision
-LONG_VERSION = f"{VERSION}"
+import octobot_commons.dataclasses
+import octobot.community.supabase_backend.enums as supabase_enums
+
+
+@dataclasses.dataclass
+class BotLogData(octobot_commons.dataclasses.FlexibleDataclass):
+    log_type: supabase_enums.BotLogType
+    content: typing.Optional[dict]

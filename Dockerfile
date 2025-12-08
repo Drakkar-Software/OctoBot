@@ -1,13 +1,9 @@
-FROM python:3.10-slim-buster AS base
+FROM python:3.10-slim-bookworm AS base
 
 WORKDIR /
 
 # requires git to install requirements with git+https
-# Update to debian archive from https://gist.github.com/ishad0w/6ce1eb569c734880200c47923577426a
-RUN echo "deb http://archive.debian.org/debian buster main contrib non-free" > /etc/apt/sources.list \
-    && echo "deb http://archive.debian.org/debian-security buster/updates main contrib non-free" >> /etc/apt/sources.list \
-    && echo "deb http://archive.debian.org/debian buster-backports main contrib non-free" >> /etc/apt/sources.list \
-    && apt-get update \
+RUN apt-get update \
     && apt-get install -y --no-install-recommends build-essential git gcc binutils libffi-dev libssl-dev libxml2-dev libxslt1-dev libxslt-dev libjpeg62-turbo-dev zlib1g-dev \
     && python -m venv /opt/venv
 
@@ -19,10 +15,10 @@ ENV PATH="/opt/venv/bin:$PATH"
 
 COPY . .
 RUN pip install -U setuptools wheel pip>=20.0.0 \
-    && pip install --no-cache-dir --prefer-binary -r requirements.txt \
+    && pip install --no-cache-dir --prefer-binary -r requirements.txt -r full_requirements.txt \
     && python setup.py install
 
-FROM python:3.10-slim-buster
+FROM python:3.10-slim-bookworm
 
 ARG TENTACLES_URL_TAG=""
 ENV TENTACLES_URL_TAG=$TENTACLES_URL_TAG
@@ -41,11 +37,7 @@ COPY docker/* /octobot/
 # 2. Install required packages
 # 3. Finish env setup
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-# Update to debian archive from https://gist.github.com/ishad0w/6ce1eb569c734880200c47923577426a
-RUN echo "deb http://archive.debian.org/debian buster main contrib non-free" > /etc/apt/sources.list \
-    && echo "deb http://archive.debian.org/debian-security buster/updates main contrib non-free" >> /etc/apt/sources.list \
-    && echo "deb http://archive.debian.org/debian buster-backports main contrib non-free" >> /etc/apt/sources.list \
-    && apt-get update \
+RUN apt-get update \
     && apt-get install -y --no-install-recommends curl libxslt-dev libxcb-xinput0 libjpeg62-turbo-dev zlib1g-dev libblas-dev liblapack-dev libatlas-base-dev libopenjp2-7 libtiff-dev \
     && rm -rf /var/lib/apt/lists/* \
     && ln -s /opt/venv/bin/OctoBot OctoBot # Make sure we use the virtualenv \

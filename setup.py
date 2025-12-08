@@ -13,11 +13,28 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
+import sys
+import os
 from setuptools import find_packages
 from setuptools import setup
 from octobot import PROJECT_NAME, AUTHOR, VERSION
 
-PACKAGES = find_packages(exclude=["tentacles*", "tests", ])
+is_building_wheel = "bdist_wheel" in sys.argv
+
+EXCLUDED_PACKAGES = ["tentacles*", "tests"]
+DATA_FILES = ["config/*", "strategy_optimizer/optimizer_data_files/*"]
+if is_building_wheel and bool(os.getenv("USE_MINIMAL_LIBS", "false").lower() == "true"):
+    # exclude data files when building a wheel with minimal libs
+    DATA_FILES = []
+PACKAGES = [
+    pkg for pkg in find_packages(exclude=EXCLUDED_PACKAGES)
+    if not any(
+        # manually excluded packages as they can't be excluded from a wheel otherwise 
+        # because those are valid python packages
+        str(pkg).startswith(excluded_package)
+        for excluded_package in EXCLUDED_PACKAGES
+    )
+]
 
 # long description from README file
 with open('README.md', encoding='utf-8') as f:
@@ -29,6 +46,7 @@ def ignore_git_requirements(requirements):
 
 
 REQUIRED = ignore_git_requirements(open('requirements.txt').readlines())
+FULL_REQUIRED = ignore_git_requirements(open('full_requirements.txt').readlines())
 REQUIRES_PYTHON = '>=3.10'
 
 setup(
@@ -42,7 +60,7 @@ setup(
     py_modules=['start'],
     packages=PACKAGES,
     package_data={
-        "": ["config/*", "strategy_optimizer/optimizer_data_files/*"],
+        "": DATA_FILES,
     },
     long_description=DESCRIPTION,
     long_description_content_type='text/markdown',
@@ -50,6 +68,9 @@ setup(
     test_suite="tests",
     zip_safe=False,
     install_requires=REQUIRED,
+    extras_require={
+        'full': FULL_REQUIRED,
+    },
     python_requires=REQUIRES_PYTHON,
     entry_points={
         'console_scripts': [

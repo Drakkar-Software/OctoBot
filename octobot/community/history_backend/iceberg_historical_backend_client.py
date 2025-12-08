@@ -25,9 +25,13 @@ import time
 import dataclasses
 
 import octobot_commons.logging as commons_logging
+import octobot_commons.os_util as os_util
 
 try:
-    import pyarrow
+    if os_util.is_raspberry_pi_machine():
+        raise ImportError("pyarrow is not available on Raspberry Pi")
+    else:
+        import pyarrow
 except ImportError as err:
     commons_logging.get_logger().info(f"Skipped pyarrow import: {err}")
     class PyArrowMock():
@@ -36,16 +40,60 @@ except ImportError as err:
         Schema = None
     pyarrow = PyArrowMock()
 
-import pyiceberg.catalog
-import pyiceberg.schema
-import pyiceberg.types
-import pyiceberg.exceptions
-import pyiceberg.expressions
-import pyiceberg.table
-import pyiceberg.table.sorting
-import pyiceberg.table.statistics
-import pyiceberg.table.update
-import pyiceberg.table.refs
+try:
+    import pyiceberg.catalog
+    import pyiceberg.schema
+    import pyiceberg.types
+    import pyiceberg.exceptions
+    import pyiceberg.expressions
+    import pyiceberg.table
+    import pyiceberg.table.sorting
+    import pyiceberg.table.statistics
+    import pyiceberg.table.update
+    import pyiceberg.table.refs
+except ImportError as err:
+    commons_logging.get_logger().info(f"Skipped pyiceberg import: {err}")
+    class PyIcebergImportMock():
+        # type hints mocks only
+        class catalog:
+            class Catalog:
+                def __init__(self, *args):
+                    raise ImportError("pyiceberg not installed")
+            def load_catalog(self, *args, **kwargs):
+                raise ImportError("pyiceberg not installed")
+        class table:
+            class statistics:
+                class StatisticsFile:
+                    def __init__(self, *args):
+                        raise ImportError("pyiceberg not installed")
+                class BlobMetadata:
+                    def __init__(self, *args):
+                        raise ImportError("pyiceberg not installed")
+            class Table:
+                def __init__(self, *args):
+                    raise ImportError("pyiceberg not installed")
+            class DataScan:
+                def __init__(self, *args):
+                    raise ImportError("pyiceberg not installed")
+        class exceptions:
+            class NoSuchTableError(Exception):
+                def __init__(self, *args):
+                    raise ImportError("pyiceberg not installed")
+        class schema:
+            class Schema:
+                def __init__(self, *args):
+                    raise ImportError("pyiceberg not installed")
+        class expressions:
+            class BooleanExpression:
+                def __init__(self, *args):
+                    raise ImportError("pyiceberg not installed")
+            class Or:
+                def __init__(self, *args):
+                    raise ImportError("pyiceberg not installed")
+            class EqualTo:
+                def __init__(self, *args):
+                    raise ImportError("pyiceberg not installed")
+    pyiceberg = PyIcebergImportMock()
 
 import octobot_commons.enums as commons_enums
 import octobot.constants as constants

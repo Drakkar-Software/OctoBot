@@ -26,7 +26,7 @@ jobs:
         architecture: ${{ matrix.arch }}
 
     - name: Install dependencies
-      run: pip install wheel && pip install --prefer-binary -r dev_requirements.txt -r requirements.txt
+      run: pip install wheel && pip install --prefer-binary -r dev_requirements.txt -r requirements.txt -r full_requirements.txt
 
 #    - name: Black lint
 #      run: black ${{ secrets.PACKAGE_FOLDER }} --diff --check
@@ -70,7 +70,7 @@ jobs:
       run: exit 1
 
     - name: Install dependencies
-      run: pip install wheel && pip install --prefer-binary -r dev_requirements.txt -r requirements.txt
+      run: pip install wheel && pip install --prefer-binary -r dev_requirements.txt -r requirements.txt -r full_requirements.txt
 
     - name: Install tentacles on Unix
       env:
@@ -137,7 +137,7 @@ jobs:
           architecture: ${{ matrix.arch }}
 
       - name: Install dependencies
-        run: pip install --prefer-binary -r dev_requirements.txt -r requirements.txt
+        run: pip install --prefer-binary -r dev_requirements.txt -r requirements.txt -r full_requirements.txt
 
       - name: Build sdist
         run: python setup.py sdist

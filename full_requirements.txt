@@ -1,0 +1,22 @@
+# Drakkar-Software full requirements
+OctoBot-Commons[full]==1.9.91
+OctoBot-Trading[full]==2.4.236
+OctoBot-Evaluators[full]==1.9.9
+OctoBot-Tentacles-Manager[full]==2.9.19
+OctoBot-Services[full]==1.6.30
+OctoBot-Backtesting[full]==1.9.8
+
+## Others
+colorlog==6.8.0
+
+# Community
+gmqtt==0.7.0
+pgpy==0.6.0
+clickhouse-connect==0.8.18
+pyiceberg==0.10.0
+pydantic<2.12 # required for pyiceberg 0.10.0 https://github.com/apache/iceberg-python/issues/2590
+pyarrow==21.0.0
+
+# used by ccxt for protobuf "websockets" such as mexc
+# lock protobuf to avoid using .rc versions
+protobuf==5.29.5
