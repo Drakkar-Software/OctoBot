@@ -489,6 +489,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             ).eq(enums.BotKeys.ID.value, bot_id).execute()).data[0]
         except IndexError:
             raise errors.MissingBotConfigError(f"No bot config for bot with bot_id: '{bot_id}'")
+        commons_logging.get_logger(__name__).info(f"Fetched bot config: {bot_config['bot_config']}")
         bot_name = bot_config["name"]
         # generic options
         profile_data = commons_profiles.ProfileData(
