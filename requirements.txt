@@ -23,7 +23,7 @@ pgpy==0.6.0
 sentry-sdk==2.35.0  # always make sure sentry_aiohttp_transport.py keep working
 
 # Supabase  ensure supabase_backend_tests keep passing when updating any of those
-supabase==2.18.1   # Supabase client
+supabase==2.27.2   # Supabase client
 supabase_auth     # Supabase authenticated API (required by supabase and enforced to allow direct import)
 postgrest  # Supabase posgres calls (required by supabase and enforced to allow direct import)
 websockets==15.0.1 # used by supabase, a recent version is required, see https://github.com/supabase/realtime-py/blob/main/pyproject.toml
