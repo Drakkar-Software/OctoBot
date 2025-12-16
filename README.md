@@ -24,7 +24,7 @@
 - [TradingView connectors](#tradingview-trading-bot) to automate trades from [TradingView](https://www.tradingview.com/?aff_id=27595) indicators or strategies
 - Social indicators to analyse social data such as [Google trends](https://trends.google.com/trends/explore?date=today%205-y&q=%2Fm%2F05p0rrx&hl=en) or [Reddit](https://reddit.com)
 - Technical analysis indicators such as RSI, Moving Averages or MACD
-- [15+ exchange integration](#your-trading-bot-for-binance-coinbase-hyperliquid-and-15-other-exchanges) including Binance, Coinbase, MEXC and Hyperliquid
+- [15+ exchange integrations](#your-trading-bot-for-binance-coinbase-hyperliquid-and-15-other-exchanges) including Binance, Coinbase, MEXC and Hyperliquid
 
 
 <p align="middle">
@@ -74,7 +74,7 @@ Backtesting your trading strategy and portfolio will give you accurate insights 
 OctoBot supports the vast majority of crypto exchanges thanks to the great [CCXT library](https://github.com/ccxt/ccxt).
 
 <p align="middle">
-  <img alt='list of octobot supported exchanges including binance coinbase hyperliquid mexc and more' src='../list-of-octobot-supported-exchanges-including-binance-coinbase-hyperliquid-mexc-and-more.png' width="630px"/>
+  <img alt='list of octobot supported exchanges including binance coinbase hyperliquid mexc and more' src='../assets/list-of-octobot-supported-exchanges-including-binance-coinbase-hyperliquid-mexc-and-more.png' width="630px"/>
 </p>
 
 
