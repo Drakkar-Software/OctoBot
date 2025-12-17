@@ -38,12 +38,12 @@ Are you looking for a bot you can setup from the peaceful environment of your ho
 
 OctoBot is designed for crypto investors who want to automate their trading strategies in a simple way, using a graphic interface to:
 - Configure the details of their strategy and its traded markets and exchange(s)
-- Test and optimize the strategy using [backtesting](https://www.octobot.cloud/en/guides/octobot-usage/backtesting)
+- Test and optimize the strategy using [backtesting](https://www.octobot.cloud/en/guides/octobot-usage/backtesting?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=backtesting)
 - Live test it with paper money
 - Execute it on a real exchange account, by automatically sending orders to the exchange
 
 Once started, an OctoBot can be followed using its web interface, making it reachable when running on a cloud server.  
-OctoBot can also be connected to a Telegram bot, therefore turning OctoBot into a [Telegram trading bot](https://www.octobot.cloud/en/guides/octobot-interfaces/telegram).
+OctoBot can also be connected to a Telegram bot, therefore turning OctoBot into a [Telegram trading bot](https://www.octobot.cloud/en/guides/octobot-interfaces/telegram?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=telegram).
 
 You can also follow your trading bot from the OctoBot mobile app, which is designed to automate [octobot.cloud](https://www.octobot.cloud/trading-bot?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=octobot_app_section) strategies, the app can also be used to follow your open source OctoBot's profits, portfolio, open orders and trades.
 
@@ -62,7 +62,7 @@ You can also follow your trading bot from the OctoBot mobile app, which is desig
 OctoBot is more than just a strategy execution engine, it can also simulate investments using [risk-free paper trading](https://www.octobot.cloud/en/guides/octobot-usage/simulator?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=risk-free_paper_trading).
 
 
-Even better, the trading robot comes with its [built-in backtesting engine](https://www.octobot.cloud/en/guides/octobot-usage/backtesting?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=backtesting) to help you test and optimize your strategy over a long period of time with a simulated portfolio and historical exchange data.
+Even better, the trading robot comes with its [built-in backtesting engine](https://www.octobot.cloud/en/guides/octobot-usage/backtesting?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=backtesting_engine) to help you test and optimize your strategy over a long period of time with a simulated portfolio and historical exchange data.
 
 <p align="middle">
   <img alt='Backtesting report using grid trading on eth btc with 8 percent profit' src='../assets/backtesting_report.jpg' width="630px"/>
@@ -119,7 +119,8 @@ OctoBot can also [automate market making strategies](https://github.com/Drakkar-
 <p align="middle">
   <img alt='octobot market making dashboard with buy and sell orders' src='https://raw.githubusercontent.com/Drakkar-Software/OctoBot-Market-Making/master/docs/octobot-market-making-dashboard-with-buy-and-sell-orders.png' width="630px"/>
 </p>
-Advanced market making strategies can be automated on [market-making.octobot.cloud](https://market-making.octobot.cloud/), the self-service market making platform based on OctoBot. Feel free to contact us if you have any questions about it.
+
+Advanced market making strategies can be automated on [market-making.octobot.cloud](https://market-making.octobot.cloud?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=market-making), the self-service market making platform based on OctoBot. Feel free to contact us if you have any questions about it.
 
 ### Institutional custom strategies
 If you represent an institution that is interested in a commercial license or custom development to suit your specific needs or strategy please contact us at <a href="mailto:contact@drakkar.software">contact@drakkar.software</a>. 
@@ -139,7 +140,7 @@ OctoBot can be easily launched in the cloud from the [DigitalOcean Marketplace](
 
 ### Using the OctoBot Executable
 This is the easiest way to download and install OctoBot on your computer or server. Here is [our executable installation guide](https://www.octobot.cloud/en/guides/octobot-installation/install-octobot-on-your-computer?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=readme_local_installation).  
-Note: The latest release executables for Windows, MacOS, Linux and Raspberry Pi are automatically built and pushed to the [releases](releases) page.
+Note: The latest release executables for Windows, MacOS, Linux and Raspberry Pi are automatically built and pushed to the [releases](https://github.com/Drakkar-Software/OctoBot/releases) page.
 
 ### Using the OctoBot Docker image
 You can also install OctoBot using the [OctoBot Docker image](https://hub.docker.com/r/drakkarsoftware/octobot). Here is our [using Docker installation guide](https://www.octobot.cloud/en/guides/octobot-installation/install-octobot-with-docker-video?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=readme_docker_installation).
@@ -166,7 +167,7 @@ Please have a look at our [contributing guide](CONTRIBUTING.md) to read our guid
 
 ### Contribute to OctoBot from a local IDE
 We recommend using a [VSCode](https://code.visualstudio.com/)-based IDE to contribute to OctoBot however [PyCharm](https://www.jetbrains.com/pycharm/) can also be used.  
-As the OctoBot code is split into different repositories, we created a [developer installation guide](https://www.octobot.cloud/en/guides/octobot-developers-environment/setup-your-environment) to help setting up a VSCode or PyCharm environment.
+As the OctoBot code is split into different repositories, we created a [developer installation guide](https://www.octobot.cloud/en/guides/octobot-developers-environment/setup-your-environment?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=setup_your_environment) to help setting up a VSCode or PyCharm environment.
 
 ### Contribute to OctoBot from Ona (formerly Gitpod)
 Make changes and contribute to OctoBot in a single click with an **already setup and ready to code developer environment** using Ona.
