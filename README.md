@@ -119,7 +119,8 @@ OctoBot can also [automate market making strategies](https://github.com/Drakkar-
 <p align="middle">
   <img alt='octobot market making dashboard with buy and sell orders' src='https://raw.githubusercontent.com/Drakkar-Software/OctoBot-Market-Making/master/docs/octobot-market-making-dashboard-with-buy-and-sell-orders.png' width="630px"/>
 </p>
-Advanced market making strategies can be automated on [market-making.octobot.cloud](https://market-making.octobot.cloud) - the self-service market making platform based on OctoBot. Feel free to contact us if you have any questions about it.
+
+Advanced market making strategies can be automated on [market-making.octobot.cloud](https://market-making.octobot.cloud?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=market-making), the self-service market making platform based on OctoBot. Feel free to contact us if you have any questions about it.
 
 ### Institutional custom strategies
 If you represent an institution that is interested in a commercial license or custom development to suit your specific needs or strategy please contact us at <a href="mailto:contact@drakkar.software">contact@drakkar.software</a>. 
