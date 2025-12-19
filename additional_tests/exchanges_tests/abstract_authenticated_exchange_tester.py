@@ -72,6 +72,7 @@ class AbstractAuthenticatedExchangeTester:
     ORDER_SIZE = 10  # % of portfolio to include in test orders
     PORTFOLIO_TYPE_FOR_SIZE = trading_constants.CONFIG_PORTFOLIO_FREE
     CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES = False
+    CONVERTS_ORDER_PRICE_BEFORE_PUSHING_TO_EXCHANGE = False
     ORDER_PRICE_DIFF = 20  # % of price difference compared to current price for limit and stop orders
     EXPECT_MISSING_ORDER_FEES_DUE_TO_ORDERS_TOO_OLD_FOR_RECENT_TRADES = False   # when recent trades are limited and
     # closed orders fees are taken from recent trades
@@ -86,6 +87,7 @@ class AbstractAuthenticatedExchangeTester:
     OPEN_TIMEOUT = 15
     # if >0: retry fetching open/cancelled orders when created/cancelled orders are not synchronised instantly
     ORDER_IN_OPEN_AND_CANCELLED_ORDERS_TIMEOUT = 10
+    ORDER_IMPACTS_PORTFOLIO_FREE_BALANCE = True
     CANCEL_TIMEOUT = 15
     EDIT_TIMEOUT = 15
     MIN_PORTFOLIO_SIZE = 1
@@ -616,13 +618,22 @@ class AbstractAuthenticatedExchangeTester:
             assert await self.order_in_open_orders(open_orders, limit_order, symbol=symbol)
             await self.check_can_get_order(limit_order)
             await self.sleep_before_checking_portfolio()
-            # assert free portfolio amount is smaller than total amount
-            balance = await self.get_portfolio()
-            locked_currency = settlement_currency if side == trading_enums.TradeOrderSide.BUY else self.ORDER_CURRENCY
-            assert balance[locked_currency][trading_constants.CONFIG_PORTFOLIO_FREE] < \
-                   balance[locked_currency][trading_constants.CONFIG_PORTFOLIO_TOTAL], (
-                    f"FALSE: {balance[locked_currency][trading_constants.CONFIG_PORTFOLIO_FREE]} < {balance[locked_currency][trading_constants.CONFIG_PORTFOLIO_TOTAL]}"
-                   )
+            if self.ORDER_IMPACTS_PORTFOLIO_FREE_BALANCE:
+                # assert free portfolio amount is smaller than total amount
+                balance = await self.get_portfolio()
+                locked_currency = settlement_currency if side == trading_enums.TradeOrderSide.BUY else self.ORDER_CURRENCY
+                assert balance[locked_currency][trading_constants.CONFIG_PORTFOLIO_FREE] < \
+                    balance[locked_currency][trading_constants.CONFIG_PORTFOLIO_TOTAL], (
+                        f"FALSE: {balance[locked_currency][trading_constants.CONFIG_PORTFOLIO_FREE]} < {balance[locked_currency][trading_constants.CONFIG_PORTFOLIO_TOTAL]}"
+                    )
+            else:
+                # assert free portfolio amount equals total amount when orders don't impact free balance
+                balance = await self.get_portfolio()
+                locked_currency = settlement_currency if side == trading_enums.TradeOrderSide.BUY else self.ORDER_CURRENCY
+                assert balance[locked_currency][trading_constants.CONFIG_PORTFOLIO_FREE] == \
+                    balance[locked_currency][trading_constants.CONFIG_PORTFOLIO_TOTAL], (
+                        f"FALSE: {balance[locked_currency][trading_constants.CONFIG_PORTFOLIO_FREE]} == {balance[locked_currency][trading_constants.CONFIG_PORTFOLIO_TOTAL]}"
+                    )
         finally:
             # don't leave buy_limit as open order
             await self.cancel_order(limit_order)
@@ -1344,7 +1355,13 @@ class AbstractAuthenticatedExchangeTester:
 
     def check_created_limit_order(self, order, price, size, side):
         self._check_order(order, size, side)
-        assert order.origin_price == price, f"{order.origin_price} != {price}"
+        if self.CONVERTS_ORDER_PRICE_BEFORE_PUSHING_TO_EXCHANGE:
+            # actual origin_price may vary due to price conversion
+            assert price * decimal.Decimal("0.8") <= order.origin_price <= price * decimal.Decimal("1.2"), (
+                f"FALSE: {price * decimal.Decimal('0.8')} <= {order.origin_price} <= {price * decimal.Decimal('1.2')}"
+            )
+        else:
+            assert order.origin_price == price, f"{order.origin_price} != {price}"
         assert isinstance(order.filled_quantity, decimal.Decimal)
         expected_type = personal_data.BuyLimitOrder \
             if side is trading_enums.TradeOrderSide.BUY else personal_data.SellLimitOrder
