@@ -29,7 +29,7 @@ class TestCoinExAuthenticatedExchange(
     ORDER_CURRENCY = "BTC"
     SETTLEMENT_CURRENCY = "USDT"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
-    ORDER_SIZE = 70  # % of portfolio to include in test orders
+    ORDER_SIZE = 90  # % of portfolio to include in test orders
     CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES = True
     EXPECTED_GENERATED_ACCOUNT_ID = True   # set True when account_id can't be fetch and a generated account id is used
     IS_AUTHENTICATED_REQUEST_CHECK_AVAILABLE = True    # set True when is_authenticated_request is implemented
