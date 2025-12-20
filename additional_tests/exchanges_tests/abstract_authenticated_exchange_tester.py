@@ -113,6 +113,7 @@ class AbstractAuthenticatedExchangeTester:
     SUPPORTS_GET_MAX_ORDERS_COUNT = False   # when True, will ensure that default values are not used
     DEFAULT_MAX_DEFAULT_ORDERS_COUNT = trading_constants.DEFAULT_MAX_DEFAULT_ORDERS_COUNT
     DEFAULT_MAX_STOP_ORDERS_COUNT = trading_constants.DEFAULT_MAX_STOP_ORDERS_COUNT
+    SLEEP_SECONDS_BEFORE_CHECKING_PORTFOLIO = 0  # used to wait before fetching portfolio after creating/cancelling an order
 
     # Implement all "test_[name]" methods, call super() to run the test, pass to ignore it.
     # Override the "inner_test_[name]" method to override a test content.
@@ -515,7 +516,7 @@ class AbstractAuthenticatedExchangeTester:
         for exchange_id, order_details in self.SPECIAL_ORDER_TYPES_BY_EXCHANGE_ID.items():
             symbol, info_key, info_type, expected_type, expected_side, expected_trigger_above = order_details
             print(order_details)
-            fetched_order = await self.exchange_manager.exchange.get_order(exchange_id, symbol=symbol)
+            fetched_order = await self.exchange_manager.exchange.get_order(exchange_id, symbol=symbol, order_type=trading_enums.TradeOrderType(expected_type))
             assert fetched_order is not None
             self._check_fetched_order_dicts([fetched_order])
             # ensure parsing order doesn't crash
@@ -614,6 +615,7 @@ class AbstractAuthenticatedExchangeTester:
             self.check_created_limit_order(limit_order, price, size, side)
             assert await self.order_in_open_orders(open_orders, limit_order, symbol=symbol)
             await self.check_can_get_order(limit_order)
+            await self.sleep_before_checking_portfolio()
             # assert free portfolio amount is smaller than total amount
             balance = await self.get_portfolio()
             locked_currency = settlement_currency if side == trading_enums.TradeOrderSide.BUY else self.ORDER_CURRENCY
@@ -662,6 +664,7 @@ class AbstractAuthenticatedExchangeTester:
                 filled_order[trading_enums.ExchangeConstantsOrderColumns.EXCHANGE_ID.value]
             )
             self.check_raw_closed_orders([filled_order])
+            await self.sleep_before_checking_portfolio()
             post_buy_portfolio = await self.get_portfolio()
             portfolio_increased = side == trading_enums.TradeOrderSide.SELL
             self.check_portfolio_changed(portfolio, post_buy_portfolio, portfolio_increased)
@@ -672,6 +675,7 @@ class AbstractAuthenticatedExchangeTester:
             second_market_order = await self.create_market_order(current_price, mirror_size, other_side)
             self.check_created_market_order(second_market_order, mirror_size, other_side)
             await self.wait_for_fill(second_market_order)
+            await self.sleep_before_checking_portfolio()
             post_sell_portfolio = await self.get_portfolio()
             if post_buy_portfolio:
                 portfolio_increased = other_side == trading_enums.TradeOrderSide.SELL
@@ -707,7 +711,7 @@ class AbstractAuthenticatedExchangeTester:
         )
         try:
             self.check_created_stop_order(stop_loss, price, size, trading_enums.TradeOrderSide.SELL)
-            stop_loss_from_get_order = await self.get_order(stop_loss.exchange_order_id, stop_loss.symbol)
+            stop_loss_from_get_order = await self.get_order(stop_loss.exchange_order_id, stop_loss.symbol, stop_loss.order_type)
             self.check_created_stop_order(stop_loss_from_get_order, price, size, trading_enums.TradeOrderSide.SELL)
             assert await self.order_in_open_orders(open_orders, stop_loss)
             ## for manual checks
@@ -782,7 +786,7 @@ class AbstractAuthenticatedExchangeTester:
             edited_size = self.get_order_size(portfolio, price, order_size=1.3*self.ORDER_SIZE, settlement_currency=self._get_edit_order_settlement_currency())
             sell_limit = await self.edit_order(sell_limit, edited_price=edited_price, edited_quantity=edited_size)
             await self.wait_for_edit(sell_limit, edited_size)
-            sell_limit = await self.get_order(sell_limit.exchange_order_id, sell_limit.symbol)
+            sell_limit = await self.get_order(sell_limit.exchange_order_id, sell_limit.symbol, sell_limit.order_type)
             self.check_created_limit_order(sell_limit, edited_price, edited_size, trading_enums.TradeOrderSide.SELL)
         finally:
             if sell_limit is not None:
@@ -811,7 +815,7 @@ class AbstractAuthenticatedExchangeTester:
             edited_size = self.get_order_size(portfolio, price, order_size=1.3*self.ORDER_SIZE, settlement_currency=self._get_edit_order_settlement_currency())
             stop_loss = await self.edit_order(stop_loss, edited_price=edited_price, edited_quantity=edited_size)
             await self.wait_for_edit(stop_loss, edited_size)
-            stop_loss = await self.get_order(stop_loss.exchange_order_id, stop_loss.symbol)
+            stop_loss = await self.get_order(stop_loss.exchange_order_id, stop_loss.symbol, stop_loss.order_type)
             self.check_created_stop_order(stop_loss, edited_price, edited_size, trading_enums.TradeOrderSide.SELL)
         finally:
             if stop_loss is not None:
@@ -1157,10 +1161,10 @@ class AbstractAuthenticatedExchangeTester:
             ]
         ))
 
-    async def get_order(self, exchange_order_id, symbol=None):
+    async def get_order(self, exchange_order_id, symbol=None, order_type: trading_enums.TraderOrderType = None):
         assert self.exchange_manager.exchange.connector.client.has["fetchOrder"] is \
                self.EXPECT_FETCH_ORDER_TO_BE_AVAILABLE
-        order = await self.exchange_manager.exchange.get_order(exchange_order_id, symbol or self.SYMBOL)
+        order = await self.exchange_manager.exchange.get_order(exchange_order_id, symbol or self.SYMBOL, order_type)
         self._check_fetched_order_dicts([order])
         return personal_data.create_order_instance_from_raw(self.exchange_manager.trader, order)
 
@@ -1246,7 +1250,7 @@ class AbstractAuthenticatedExchangeTester:
             raise AssertionError(f"Created order is None. input order: {order}, params: {params}")
         if created_order.status is trading_enums.OrderStatus.PENDING_CREATION:
             await self.wait_for_open(created_order)
-            return await self.get_order(created_order.exchange_order_id, order.symbol)
+            return await self.get_order(created_order.exchange_order_id, order.symbol, order.order_type)
         return created_order
 
     def get_order_size(self, portfolio, price, symbol=None, order_size=None, settlement_currency=None):
@@ -1461,7 +1465,7 @@ class AbstractAuthenticatedExchangeTester:
         t0 = time.time()
         iterations = 0
         while time.time() - t0 < timeout:
-            raw_order = await self.exchange_manager.exchange.get_order(order.exchange_order_id, order.symbol)
+            raw_order = await self.exchange_manager.exchange.get_order(order.exchange_order_id, order.symbol, order.order_type)
             iterations += 1
             if raw_order is None:
                 print(f"{self.exchange_manager.exchange_name} {order.order_type} {validation_func.__name__} "
@@ -1487,7 +1491,7 @@ class AbstractAuthenticatedExchangeTester:
         raise TimeoutError(f"Order not filled/cancelled within {timeout}s: {order} ({validation_func.__name__})")
 
     async def check_can_get_order(self, order):
-        fetched_order = await self.get_order(order.exchange_order_id, order.symbol)
+        fetched_order = await self.get_order(order.exchange_order_id, order.symbol, order.order_type)
         self.check_created_limit_order(fetched_order, order.origin_price, order.origin_quantity, order.side)
 
     async def order_in_fetched_orders(self, method, previous_orders, order, symbol=None, check_presence=True):
@@ -1664,6 +1668,11 @@ class AbstractAuthenticatedExchangeTester:
 
     def _supports_ip_whitelist_error(self):
         return bool(self._get_exchange_tentacle_class().EXCHANGE_IP_WHITELIST_ERRORS)
+
+    async def sleep_before_checking_portfolio(self):
+        if self.SLEEP_SECONDS_BEFORE_CHECKING_PORTFOLIO > 0:
+            print(f"{self.__class__.__name__} Waiting {self.SLEEP_SECONDS_BEFORE_CHECKING_PORTFOLIO} seconds to check portfolio")
+            await asyncio.sleep(self.SLEEP_SECONDS_BEFORE_CHECKING_PORTFOLIO)
 
 
 def _get_encoded_value(raw) -> str:
