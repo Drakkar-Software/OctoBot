@@ -6,6 +6,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [2.0.16] - 2025-12-24
+### Added
+- [Automations] add scripted automation condition using the OctoBot DSL
+- [DSL] add portfolio holding keyword
+- [DSL] add web documentation 
+### Updated
+- [Exchanges] update to ccxt 4.5.28
+- [HollaEx] make fee tiers configurable
+### Fixed
+- [Binance]: Fix stop futures orders
+- [HollaEx]: fix missing fee error
+- [Hyperliquid] fix websocket start
+
+
 ## [2.0.15] - 2025-12-08
 ### Breaking pip installation change
 To install the full OctoBot (equivalent to previous versions), OctoBot needs to be installed with the [full] parameter: `pip install octobot[full]` 
