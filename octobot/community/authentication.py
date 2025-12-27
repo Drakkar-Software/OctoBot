@@ -75,8 +75,9 @@ def _bot_data_update(func):
             self.logger.debug(f"Skipping {func.__name__} update: no user selected bot.")
             return
         try:
-            self.logger.debug(f"bot_data_update: {func.__name__} initiated.")
-            return await func(*args, **kwargs)
+            with supabase_backend.error_describer():
+                self.logger.debug(f"bot_data_update: {func.__name__} initiated.")
+                return await func(*args, **kwargs)
         except errors.SessionTokenExpiredError:
             # requried by expired_session_retrier
             raise
