@@ -25,6 +25,7 @@ pytestmark = pytest.mark.asyncio
 class TestKucoinAuthenticatedExchange(
     abstract_authenticated_exchange_tester.AbstractAuthenticatedExchangeTester
 ):
+    # WARNING: can't be tested since dec 2025 due to regulatory changes on EU countries
     # enter exchange name as a class variable here
     EXCHANGE_NAME = "kucoin"
     ORDER_CURRENCY = "BTC"
