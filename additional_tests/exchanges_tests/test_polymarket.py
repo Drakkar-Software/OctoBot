@@ -15,7 +15,7 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import pytest
 
-from additional_tests.exchanges_tests import abstract_authenticated_exchange_tester
+from additional_tests.exchanges_tests import abstract_authenticated_option_exchange_tester
 
 try:
     import tentacles.Trading.Exchange.polymarket.ccxt.polymarket_async
@@ -31,19 +31,20 @@ pytestmark = pytest.mark.asyncio
 
 
 class TestPolymarketAuthenticatedExchange(
-    abstract_authenticated_exchange_tester.AbstractAuthenticatedExchangeTester
+    abstract_authenticated_option_exchange_tester.AbstractAuthenticatedOptionExchangeTester
 ):
     # enter exchange name as a class variable here
     EXCHANGE_NAME = "polymarket"
     ORDER_CURRENCY = "will-bitcoin-replace-sha-256-before-2027"
     SETTLEMENT_CURRENCY = "USDC"
     EXPIRATION_DATE = "261231"
-    SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}:{SETTLEMENT_CURRENCY}-{EXPIRATION_DATE}"
+    SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}:{SETTLEMENT_CURRENCY}-{EXPIRATION_DATE}-0-YES"
     ORDER_SIZE = 10  # % of portfolio to include in test orders
     EXPECT_MISSING_FEE_IN_CANCELLED_ORDERS = False
     CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES = True
     CONVERTS_ORDER_PRICE_BEFORE_PUSHING_TO_EXCHANGE = True
     ORDER_IMPACTS_PORTFOLIO_FREE_BALANCE = False
+    SUPPORTS_GET_POSITION = False
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
@@ -128,3 +129,6 @@ class TestPolymarketAuthenticatedExchange(
     async def test_create_double_bundled_orders(self):
         # pass if not implemented
         pass
+
+    async def test_get_empty_linear_and_inverse_positions(self):
+        await super().test_get_empty_linear_and_inverse_positions()

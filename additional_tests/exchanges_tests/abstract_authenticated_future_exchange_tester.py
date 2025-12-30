@@ -33,6 +33,7 @@ class AbstractAuthenticatedFutureExchangeTester(
     INVERSE_SYMBOL = None
     MIN_PORTFOLIO_SIZE = 2  # ensure fetching currency for linear and inverse
     SUPPORTS_GET_LEVERAGE = True
+    SUPPORTS_GET_POSITION = True
     SUPPORTS_EMPTY_POSITION_SET_MARGIN_TYPE = True
 
     async def test_get_empty_linear_and_inverse_positions(self):
@@ -58,19 +59,23 @@ class AbstractAuthenticatedFutureExchangeTester(
     ):
         positions = await self.get_positions()
         self._check_positions_content(positions)
-        position = await self.get_position(self.SYMBOL)
-        self._check_position_content(position, self.SYMBOL, margin_type=margin_type)
-        for contract_type in (trading_enums.FutureContractType.LINEAR_PERPETUAL,
-                              trading_enums.FutureContractType.INVERSE_PERPETUAL):
-            if not self.has_empty_position(self.get_filtered_positions(positions, contract_type)):
-                empty_position_symbol = self.get_other_position_symbol(positions, contract_type)
-                # test with get_position
-                empty_position = await self.get_position(empty_position_symbol)
-                assert self.is_position_empty(empty_position)
-                # test with get_positions
-                empty_positions = await self.get_positions([empty_position_symbol])
-                assert len(empty_positions) == 1
-                assert self.is_position_empty(empty_positions[0])
+        if self.SUPPORTS_GET_POSITION:
+            position = await self.get_position(self.SYMBOL)
+            self._check_position_content(position, self.SYMBOL, margin_type=margin_type)
+        
+        if self.EXCHANGE_TYPE == trading_enums.ExchangeTypes.FUTURE.value:
+            for contract_type in (trading_enums.FutureContractType.LINEAR_PERPETUAL,
+                                trading_enums.FutureContractType.INVERSE_PERPETUAL):
+                if not self.has_empty_position(self.get_filtered_positions(positions, contract_type)):
+                    empty_position_symbol = self.get_other_position_symbol(positions, contract_type)
+                    if self.SUPPORTS_GET_POSITION:
+                        # test with get_position
+                        empty_position = await self.get_position(empty_position_symbol)
+                        assert self.is_position_empty(empty_position)
+                    # test with get_positions
+                    empty_positions = await self.get_positions([empty_position_symbol])
+                    assert len(empty_positions) == 1
+                    assert self.is_position_empty(empty_positions[0])
 
     async def test_get_and_set_leverage(self):
         # ensure set_leverage works
@@ -265,10 +270,10 @@ class AbstractAuthenticatedFutureExchangeTester(
 
     async def init_and_get_contract(self, symbol=None):
         symbol = symbol or self.SYMBOL
-        await self.exchange_manager.exchange.load_pair_future_contract(symbol)
-        if not self.exchange_manager.exchange.has_pair_future_contract(symbol):
+        await self.exchange_manager.exchange.load_pair_contract(symbol)
+        if not self.exchange_manager.exchange.has_pair_contract(symbol):
             raise AssertionError(f"{symbol} contract not initialized")
-        return self.exchange_manager.exchange.get_pair_future_contract(symbol)
+        return self.exchange_manager.exchange.get_pair_contract(symbol)
 
     async def get_margin_type_and_leverage_from_position(self, symbol=None):
         position = await self.get_position(symbol=symbol)
@@ -298,7 +303,7 @@ class AbstractAuthenticatedFutureExchangeTester(
     async def load_contract(self, symbol=None):
         symbol = symbol or self.SYMBOL
         if self.exchange_manager.is_future and symbol not in self.exchange_manager.exchange.pair_contracts:
-            await self.exchange_manager.exchange.load_pair_future_contract(symbol)
+            await self.exchange_manager.exchange.load_pair_contract(symbol)
 
     async def enable_partial_take_profits_and_stop_loss(self, mode, symbol=None):
         await self.exchange_manager.exchange.set_symbol_partial_take_profit_stop_loss(
