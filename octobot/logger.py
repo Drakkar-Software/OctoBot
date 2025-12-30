@@ -159,6 +159,10 @@ async def init_exchange_chan_logger(exchange_id):
                                          exchange_id).new_consumer(
             kline_callback, priority_level=LOGGER_PRIORITY_LEVEL
         )
+        await exchanges_channel.get_chan(channels_name.OctoBotTradingChannelsName.MARKETS_CHANNEL.value,
+                                         exchange_id).new_consumer(
+            markets_callback, priority_level=LOGGER_PRIORITY_LEVEL
+        )
         await exchanges_channel.get_chan(channels_name.OctoBotTradingChannelsName.MARK_PRICE_CHANNEL.value,
                                          exchange_id).new_consumer(
             mark_price_callback, priority_level=LOGGER_PRIORITY_LEVEL
@@ -280,6 +284,14 @@ async def mark_price_callback(
     BOT_CHANNEL_LOGGER.debug(
         f"MARK PRICE : EXCHANGE = {exchange} || CRYPTOCURRENCY = {cryptocurrency} "
         f"|| SYMBOL = {symbol} || MARK PRICE = {mark_price}"
+    )
+
+
+async def markets_callback(
+        exchange: str, exchange_id: str, markets
+):
+    BOT_CHANNEL_LOGGER.debug(
+        f"MARKETS : EXCHANGE = {exchange} || MARKET RELOADED"
     )
 
 
