@@ -135,24 +135,25 @@ async def update_or_repair_tentacles_if_necessary(community_auth, selected_profi
     elif force_refresh_tentacles_setup_config:
         community_tentacles_packages.refresh_tentacles_setup_config()
 
-    if local_profile_tentacles_setup_config is None or \
-            not tentacles_manager_api.are_tentacles_up_to_date(local_profile_tentacles_setup_config, constants.VERSION):
-        logger.info("OctoBot tentacles are not up to date. Updating tentacles...")
-        _check_tentacles_install_exit()
-        if await install_or_update_tentacles(config, to_install_urls, False):
-            logger.info("OctoBot tentacles are now up to date.")
-    else:
-        if to_install_urls:
-            logger.debug("Installing new tentacles.")
-            # install additional tentacles only when tentacles arch is valid. Install all tentacles otherwise
-            only_additional = tentacles_manager_api.is_tentacles_architecture_valid()
-            await install_or_update_tentacles(config, to_install_urls, only_additional)
-        if tentacles_manager_api.load_tentacles(verbose=True):
-            logger.debug("OctoBot tentacles are up to date.")
-        else:
-            logger.info("OctoBot tentacles are damaged. Installing default tentacles only ...")
+    if constants.SHOULD_CHECK_TENTACLES:
+        if local_profile_tentacles_setup_config is None or \
+                not tentacles_manager_api.are_tentacles_up_to_date(local_profile_tentacles_setup_config, constants.VERSION):
+            logger.info("OctoBot tentacles are not up to date. Updating tentacles...")
             _check_tentacles_install_exit()
-            await install_or_update_tentacles(config, [], False)
+            if await install_or_update_tentacles(config, to_install_urls, False):
+                logger.info("OctoBot tentacles are now up to date.")
+        else:
+            if to_install_urls:
+                logger.debug("Installing new tentacles.")
+                # install additional tentacles only when tentacles arch is valid. Install all tentacles otherwise
+                only_additional = tentacles_manager_api.is_tentacles_architecture_valid()
+                await install_or_update_tentacles(config, to_install_urls, only_additional)
+            if tentacles_manager_api.load_tentacles(verbose=True):
+                logger.debug("OctoBot tentacles are up to date.")
+            else:
+                logger.info("OctoBot tentacles are damaged. Installing default tentacles only ...")
+                _check_tentacles_install_exit()
+                await install_or_update_tentacles(config, [], False)
 
 
 async def install_or_update_tentacles(
