@@ -127,6 +127,7 @@ COMMUNITY_BOT_ID = os.getenv("COMMUNITY_BOT_ID", "")
 IS_DEMO = os_util.parse_boolean_environment_var("IS_DEMO", "False")
 IS_CLOUD_ENV = os_util.parse_boolean_environment_var("IS_CLOUD_ENV", "false")
 USE_FETCHED_BOT_CONFIG = os_util.parse_boolean_environment_var("USE_FETCHED_BOT_CONFIG", "false")
+SHOULD_CHECK_TENTACLES = os_util.parse_boolean_environment_var("SHOULD_CHECK_TENTACLES", "true")
 CAN_INSTALL_TENTACLES = os_util.parse_boolean_environment_var("CAN_INSTALL_TENTACLES", str(not IS_CLOUD_ENV))
 PH_TRACKING_ID = os.getenv("PH_TRACKING_ID", "phc_QSuFy6zqOXXKT7zAYboYS4nJShfKovpB172aa8X9nXf")
 # Profiles download urls to import at startup if missing, split by ","
