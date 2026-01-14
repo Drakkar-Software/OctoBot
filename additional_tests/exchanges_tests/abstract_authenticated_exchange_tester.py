@@ -78,6 +78,7 @@ class AbstractAuthenticatedExchangeTester:
     # closed orders fees are taken from recent trades
     EXPECT_MISSING_FEE_IN_CANCELLED_ORDERS = True  # when get_cancelled_orders returns None in fee
     EXPECT_POSSIBLE_ORDER_NOT_FOUND_DURING_ORDER_CREATION = False
+    EXPECT_NOT_SUPPORTED_ERROR_WHEN_FETCHING_CANCELLED_ORDERS = False    # set True when fetching cancelled orders is not supported and should raise a NotSupported error
     CONVERTS_MARKET_INTO_LIMIT_ORDERS = False   # when market orders are always converted into limit order by the exchange
     OPEN_ORDERS_IN_CLOSED_ORDERS = False
     CANCELLED_ORDERS_IN_CLOSED_ORDERS = False
@@ -112,6 +113,7 @@ class AbstractAuthenticatedExchangeTester:
     IS_BROKER_ENABLED_ACCOUNT = True # set False when this test account can't generate broker fees
     # set True when this exchange used to have symbols that can't be traded through API (ex: MEXC)
     USED_TO_HAVE_UNTRADABLE_SYMBOL = False
+    LIST_TRADABLE_SYMBOLS = False
     SUPPORTS_GET_MAX_ORDERS_COUNT = False   # when True, will ensure that default values are not used
     DEFAULT_MAX_DEFAULT_ORDERS_COUNT = trading_constants.DEFAULT_MAX_DEFAULT_ORDERS_COUNT
     DEFAULT_MAX_STOP_ORDERS_COUNT = trading_constants.DEFAULT_MAX_STOP_ORDERS_COUNT
@@ -173,12 +175,28 @@ class AbstractAuthenticatedExchangeTester:
         assert len(set(portfolio)) == len(portfolio)
 
     async def test_untradable_symbols(self):
-        await self.inner_test_untradable_symbols()
-
-    async def inner_test_untradable_symbols(self):
-        if not self.USED_TO_HAVE_UNTRADABLE_SYMBOL:
+        if self.USED_TO_HAVE_UNTRADABLE_SYMBOL:
+            await self.inner_test_untradable_symbols()
+        elif self.LIST_TRADABLE_SYMBOLS:
+            await self._list_tradable_symbols()
+        else:
             # nothing to do
             return
+
+    async def _list_tradable_symbols(self):
+        all_symbols = self.exchange_manager.exchange.get_all_available_symbols()
+        tradable = []
+        for i, symbol in enumerate(all_symbols):
+            try:
+                await self.get_open_orders(_symbols=[symbol])
+                tradable.append(symbol)
+                print(f"{i+1}/{len(all_symbols)} : {symbol} is tradable")
+            except ccxt.BadSymbol as e:
+                print(f"{i+1}/{len(all_symbols)} : {symbol} is untradable")
+        sorted_tradable = sorted(tradable, key=lambda x: f"{len(x.split('/')[0])}{x}")
+        print(f"Tradable symbols: {len(sorted_tradable)}/{len(all_symbols)}: {sorted_tradable}")
+
+    async def inner_test_untradable_symbols(self):
         async with self.local_exchange_manager():
             all_symbols = self.exchange_manager.exchange.get_all_available_symbols()
             all_symbols_including_disabled = self.exchange_manager.exchange.get_all_available_symbols(active_only=False)
@@ -366,14 +384,20 @@ class AbstractAuthenticatedExchangeTester:
             )
             latest_calls = get_latest_calls()
             for latest_call in latest_calls:
-                assert latest_call[1] is False, f"{latest_call} should be NOT authenticated"  # authenticated request
+                if self.exchange_manager.exchange.ALWAYS_REQUIRES_AUTHENTICATION:
+                    assert latest_call[1] is True, f"{latest_call} should be authenticated"  # authenticated request
+                else:
+                    assert latest_call[1] is False, f"{latest_call} should be NOT authenticated"  # authenticated request
             ticker = await self.exchange_manager.exchange.get_price_ticker(self.SYMBOL)
             assert ticker
             last_price = ticker[trading_enums.ExchangeConstantsTickersColumns.CLOSE.value]
             assert rest_exchange_data["calls"][-1][0][0] != latest_calls[-1][0][0]  # assert latest call's url changed
             latest_calls = get_latest_calls()
             for latest_call in latest_calls:
-                assert latest_call[1] is False, f"{latest_call} should be NOT authenticated"  # authenticated request
+                if self.exchange_manager.exchange.ALWAYS_REQUIRES_AUTHENTICATION:
+                    assert latest_call[1] is True, f"{latest_call} should be authenticated"  # authenticated request
+                else:
+                    assert latest_call[1] is False, f"{latest_call} should be NOT authenticated"  # authenticated request
 
             # 3. make private requests
             # balance (usually a GET)
@@ -456,7 +480,7 @@ class AbstractAuthenticatedExchangeTester:
     async def inner_test_missing_trading_api_key_permissions(self):
         permissions = await self.exchange_manager.exchange_backend._get_api_key_rights()
         # ensure reading permission only are returned
-        assert permissions == [trading_backend.enums.APIKeyRights.READING]
+        assert permissions == [trading_backend.enums.APIKeyRights.READING], f"Expected reading permission only, got: {permissions}"
         # ensure order operations returns a permission error
         with pytest.raises(trading_errors.AuthenticationError) as err:
             await self.inner_test_create_and_cancel_limit_orders(use_both_margin_types=False)
@@ -766,7 +790,11 @@ class AbstractAuthenticatedExchangeTester:
         if not self.exchange_manager.exchange.SUPPORT_FETCHING_CANCELLED_ORDERS:
             assert not self.exchange_manager.exchange.connector.client.has["fetchCanceledOrders"]
             # use get_closed order, no cancelled order is returned
-            assert await self.exchange_manager.exchange.connector.get_cancelled_orders(self.SYMBOL) == []
+            if self.EXPECT_NOT_SUPPORTED_ERROR_WHEN_FETCHING_CANCELLED_ORDERS:
+                with pytest.raises(trading_errors.NotSupported):
+                    await self.exchange_manager.exchange.connector.get_cancelled_orders(self.SYMBOL)
+            else:
+                assert await self.exchange_manager.exchange.connector.get_cancelled_orders(self.SYMBOL) == []
             with pytest.raises(trading_errors.NotSupported):
                 await self.get_cancelled_orders(force_fetch=True)
             return
