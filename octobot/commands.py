@@ -154,6 +154,14 @@ async def update_or_repair_tentacles_if_necessary(community_auth, selected_profi
                 logger.info("OctoBot tentacles are damaged. Installing default tentacles only ...")
                 _check_tentacles_install_exit()
                 await install_or_update_tentacles(config, [], False)
+    else:
+        if tentacles_manager_api.load_tentacles(verbose=True):
+            logger.debug("OctoBot tentacles loaded.")
+        else:
+            logger.error(
+                f"OctoBot tentacles are damaged. Continuing anyway as SHOULD_CHECK_TENTACLES "
+                f"is {constants.SHOULD_CHECK_TENTACLES}..."
+            )
 
 
 async def install_or_update_tentacles(
