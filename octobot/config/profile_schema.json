@@ -168,6 +168,9 @@
             "current-live-id": {
               "type": "integer",
               "minimum": 1
+            },
+            "paused": {
+              "type": "boolean"
             }
           },
           "required": [
