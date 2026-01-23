@@ -159,10 +159,6 @@ async def init_exchange_chan_logger(exchange_id):
                                          exchange_id).new_consumer(
             kline_callback, priority_level=LOGGER_PRIORITY_LEVEL
         )
-        await exchanges_channel.get_chan(channels_name.OctoBotTradingChannelsName.MARKETS_CHANNEL.value,
-                                         exchange_id).new_consumer(
-            markets_callback, priority_level=LOGGER_PRIORITY_LEVEL
-        )
         await exchanges_channel.get_chan(channels_name.OctoBotTradingChannelsName.MARK_PRICE_CHANNEL.value,
                                          exchange_id).new_consumer(
             mark_price_callback, priority_level=LOGGER_PRIORITY_LEVEL
