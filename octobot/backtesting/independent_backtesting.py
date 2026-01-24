@@ -416,6 +416,8 @@ class IndependentBacktesting:
         forced_contract_type = self.octobot_origin_config.get(common_constants.CONFIG_CONTRACT_TYPE,
                                                               common_constants.USE_CURRENT_PROFILE)
         for symbols in self.symbols_to_create_exchange_classes.values():
+            if not symbols:
+                continue
             symbol = symbols[0]
             if next(iter(self.octobot_backtesting.exchange_type_by_exchange.values())) \
                     == common_constants.CONFIG_EXCHANGE_FUTURE:
@@ -451,7 +453,7 @@ class IndependentBacktesting:
                 if ref_market_candidate != quote and \
                         ref_market_candidates[ref_market_candidate] < ref_market_candidates[quote]:
                     ref_market_candidate = quote
-        return ref_market_candidate
+        return ref_market_candidate or common_constants.DEFAULT_REFERENCE_MARKET
 
     def _add_config_default_backtesting_values(self):
         if backtesting_constants.CONFIG_BACKTESTING not in self.backtesting_config:
