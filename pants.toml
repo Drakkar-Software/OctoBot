@@ -48,3 +48,11 @@ build_verbose = true
 env_vars.add = [
   "DOCKER_BUILDKIT=1",
 ]
+=======
+interpreter_constraints = [">=3.10"]
+
+[python-infer]
+# Enable dependency inference
+inits = true
+conftests = true
+>>>>>>> bd80761e ([Agent] Add manager)

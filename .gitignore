@@ -140,8 +140,9 @@ letsencrypt/
 # dev env
 .env
 
-# pants
-.pants.d/
+# Pants build system
+/.pants.d/
+/dist/
 
 # bin
 nltk_data/

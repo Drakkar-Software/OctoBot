@@ -14,44 +14,23 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
-from octobot.agent import channel
-from octobot.agent import team
-
-# Base agent channel classes
-from octobot.agent.channel import (
+from octobot_agents.agent.channels.agent import (
     AbstractAgentChannel,
-    AbstractAgentChannelProducer,
     AbstractAgentChannelConsumer,
+    AbstractAgentChannelProducer,
 )
 
-# AI agent channel classes (with LLM capabilities)
-from octobot.agent.channel import (
-    AbstractAIAgentChannelProducer,
+from octobot_agents.agent.channels.ai_agent import (
+    AbstractAIAgentChannel,
     AbstractAIAgentChannelConsumer,
+    AbstractAIAgentChannelProducer,
 )
-
-# Team channel classes
-from octobot.agent.team import (
-    AbstractAgentTeamChannel,
-    AbstractAgentTeamChannelProducer,
-    AbstractAgentTeamChannelConsumer,
-    AbstractSyncAgentTeamChannelProducer,
-    AbstractLiveAgentTeamChannelProducer,
-)
-
 
 __all__ = [
-    # Base classes
     "AbstractAgentChannel",
-    "AbstractAgentChannelProducer",
     "AbstractAgentChannelConsumer",
-    # AI agent classes
-    "AbstractAIAgentChannelProducer",
+    "AbstractAgentChannelProducer",
+    "AbstractAIAgentChannel",
     "AbstractAIAgentChannelConsumer",
-    # Team classes
-    "AbstractAgentTeamChannel",
-    "AbstractAgentTeamChannelProducer",
-    "AbstractAgentTeamChannelConsumer",
-    "AbstractSyncAgentTeamChannelProducer",
-    "AbstractLiveAgentTeamChannelProducer",
+    "AbstractAIAgentChannelProducer",
 ]
