@@ -76,3 +76,4 @@ class OptimizerConfig(enum.Enum):
 class OctoBotDistribution(enum.Enum):
     DEFAULT = "default"
     MARKET_MAKING = "market_making"
+    PREDICTION_MARKET = "prediction_market"
