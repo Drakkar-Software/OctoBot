@@ -35,6 +35,7 @@ class EvaluatorProducer(octobot_channel.OctoBotChannelProducer):
         self.tentacles_setup_config = self.octobot.tentacles_setup_config
 
         self.matrix_id = None
+        self.has_real_time_evaluators_configured = False
 
     async def start(self):
         await evaluator_api.initialize_evaluators(self.octobot.config, self.tentacles_setup_config)
@@ -42,6 +43,9 @@ class EvaluatorProducer(octobot_channel.OctoBotChannelProducer):
         await evaluator_api.create_evaluator_channels(
             self.matrix_id, is_backtesting=backtesting_api.is_backtesting_enabled(self.octobot.config)
         )
+        self.has_real_time_evaluators_configured = len(evaluator_api.get_activated_real_time_evaluators_classes(
+            self.tentacles_setup_config
+        )) > 0
         await logger.init_evaluator_chan_logger(self.matrix_id)
 
     async def create_evaluators(self, exchange_configuration):

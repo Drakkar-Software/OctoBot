@@ -16,7 +16,6 @@
 import asyncio
 
 import octobot_commons.enums as common_enums
-import octobot_commons.constants as common_constants
 
 import octobot_trading.api as trading_api
 import octobot_trading.octobot_channel_consumer as trading_channel_consumer
@@ -64,6 +63,8 @@ class ExchangeProducer(octobot_channel.OctoBotChannelProducer):
                                 self.octobot.tentacles_setup_config,
                             trading_channel_consumer.OctoBotChannelTradingDataKeys.MATRIX_ID.value:
                                 self.octobot.evaluator_producer.matrix_id,
+                            trading_channel_consumer.OctoBotChannelTradingDataKeys.ENABLE_REALTIME_DATA_FETCHING.value: 
+                                self.octobot.evaluator_producer.has_real_time_evaluators_configured,
                             trading_channel_consumer.OctoBotChannelTradingDataKeys.BACKTESTING.value: backtesting,
                             trading_channel_consumer.OctoBotChannelTradingDataKeys.EXCHANGE_CONFIG.value:
                                 self.octobot.config,
