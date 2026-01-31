@@ -1,0 +1,199 @@
+{% extends "layout.html" %}
+{% set active_page = "accounts" %}
+{% import "components/community/tentacle_packages.html" as m_tentacle_packages %}
+{% import 'macros/flash_messages.html' as m_flash_messages %}
+
+{% macro tutorial_article(title, image, details) -%}
+<div class="my-2">
+    <h4>
+        {{ title | safe }}
+    </h4>
+    {% if image %}
+    <div class="text-center mt-3">
+        <img src="{{url_for('static', filename=image)}}" class="img-fluid interface-screen" alt="tutorial illustration">
+    </div>
+    {% endif %}
+    <p class="pt-2 text-center">
+        {{ details | safe }}
+    </p>
+</div>
+{%- endmacro %}
+
+{% block body %}
+<br>
+
+{{ m_flash_messages.flash_messages() }}
+
+
+<div class="card w-100 w-lg-50 mx-auto">
+    <div class="card-header">
+        <h2>
+            Configure OctoBot to trade using TradingView email alerts
+        </h2>
+    </div>
+    <div class="card-body">
+        {% if not is_community_authenticated %}
+        <div class="text-center">
+            <p>
+                Please login to your OctoBot account to configure your TradingView email alerts.
+            </p>
+            <a type="button" class="btn btn-primary btn-lg my-4"
+               href="{{ url_for('community_login', next='tradingview_email_config') }}">
+                Login
+            </a>
+            <p>
+                Note: The <a class="font-weight-bolder" href="{{url_for('extensions')}}">{{OCTOBOT_EXTENSION_PACKAGE_1_NAME}}</a>
+                is required to connect your OctoBot to TradingView email alerts.
+            </p>
+        </div>
+        {% elif has_open_source_package() %}
+            <div id="config-stepper"
+                 data-trigger-verif-code-waiter="{{url_for('api.trigger_wait_for_email_address_confirm_code_email')}}"
+                 data-get-verif-code-content="{{url_for('api.tradingview_confirm_email_content')}}"
+            >
+                 <div class="card-body pt-1 tutorial-step" data-step-id="1">
+                    {{ tutorial_article(
+                        "Trading using email alerts",
+                        "img/tradingview/tradingview-logo.png",
+                        "Follow those steps to add your OctoBot TradingView email address to your TradingView account "
+                     "if your TradingView alert email is <span class='font-weight-bolder'>unset or different</span> from: <p
+                            class='font-weight-bolder text-center pointer-cursor'
+                            data-role='copy-to-clipboard' data-name='Email address' data-value='" + tradingview_email_address + "'
+                            data-toggle='tooltip' data-placement='bottom' title='Click to copy'>"+ tradingview_email_address + "</p>"
+                    ) }}
+                </div>
+                <div class="card-body pt-1 tutorial-step d-none" data-step-id="2">
+                    {{ tutorial_article(
+                        "1. Create or edit an alert",
+                        "img/tradingview/tradingview-create-alert.png",
+                        "Create / edit an alert to open the alert configuration view"
+                    ) }}
+                    {{ tutorial_article(
+                        "",
+                        "img/tradingview/create-alert-view.png",
+                        ""
+                    ) }}
+                </div>
+                <div class="card-body pt-1 tutorial-step d-none" data-step-id="3">
+                    {{ tutorial_article(
+                        "2. Go to the Notifications tab and select Send plain text",
+                        "img/tradingview/tradingview-alert-notification-email-selected-form.png",
+                        "Go to the Notifications tab and select <span class='font-weight-bolder'>Send plain text</span>.
+                        <br/>This will open the 'Account verification' modal.
+                        <p class='mt-4'>Note: if the modal doesn't show up, it means that an alert email address is already set.
+                        In this case, go to your <span class='font-weight-bolder'>profile settings</span> and edit your
+                            <span class='font-weight-bolder'>Alternative email for alerts</span>.</p>"
+                    ) }}
+                </div>
+                <div class="card-body pt-1 tutorial-step d-none" data-step-id="4">
+                    {{ tutorial_article(
+                        "3. Enter your OctoBot alert email address",
+                        "img/tradingview/tradingview-alert-email-form.png",
+                        "Enter your OctoBot alert email address: <p
+                            class='font-weight-bolder text-center pointer-cursor'
+                            data-role='copy-to-clipboard' data-name='Email address' data-value='" + tradingview_email_address + "'
+                            data-toggle='tooltip' data-placement='bottom' title='Click to copy'>"+ tradingview_email_address + "</p>
+                            <p class='text-center'>and click 'Get code'.</p>"
+                    ) }}
+                </div>
+                <div class="card-body pt-1 tutorial-step d-none" data-step-id="5">
+                    {{ tutorial_article(
+                        "4. Enter your verification code",
+                        "img/tradingview/tradingview-alert-email-form-confirm-code.png",
+                        "<span data-role='verification-code-waiter'>Email address: <span
+                            class='font-weight-bolder pointer-cursor'
+                            data-role='copy-to-clipboard' data-name='Email address' data-value='" + tradingview_email_address + "'
+                            data-toggle='tooltip' data-placement='bottom' title='Click to copy'>"+ tradingview_email_address + "</span><br/>
+                            ✅ Your verification code is on the way, it will be displayed here ...</span>
+                         <span class='d-none' data-role='verification-code-received'>Enter your verification code:</span>
+                         <p class='text-center mt-4'> <span data-role='verification-code-waiter'>
+                         <i class='fa fa-spinner fa-spin fa-2xl my-4'></i><br/>
+                         Receiving the code may take up to 2 minute.
+                         </span><span class='d-none font-weight-bolder' id='verification-code-received-content' data-role='verification-code-received'></span>
+                         <span class='d-none' data-role='verification-code-error'>😦 Receiving the code is taking too long.
+                         Can you please double-check the email address?<br/>
+                         Email address: <span
+                         class='font-weight-bolder pointer-cursor'
+                         data-role='copy-to-clipboard' data-name='Email address' data-value='" + tradingview_email_address + "'
+                         data-toggle='tooltip' data-placement='bottom' title='Click to copy'>"+ tradingview_email_address + "</span><br/>
+                         <span class='font-weight-bolder' id='verification-code-error-content'></span><br/>Please
+                         <a href='mailto:contact@octobot.cloud?subject=Open source TradingView email alert config issue'>
+                         contact the support</a> if your believe this is an issue with OctoBot.</span></p>"
+                    ) }}
+                </div>
+                <div class="card-body pt-1 tutorial-step d-none" data-step-id="6">
+                    {{ tutorial_article(
+                        "You are all set!",
+                        "img/tradingview/tradingview-alert-email-form-completed.png",
+                        "🎉 TradingView will now notify your OctoBot using emails when your alerts will fire."
+                    ) }}
+                    {{ tutorial_article(
+                        "Last words",
+                        "img/tradingview/use-email-alerts.png",
+                        "<ul><li>Remember to check <span class='font-weight-bolder'>Use-Email-Alerts</span> in your <a href='/accounts#panelServices'>TradingView interface configuration</a> to
+                        make your OctoBot listen to email alerts.</li>
+                        <li>Selecting a TradingView-related profile such as 'TradingView Signals Trading' is necessary to trade using TradingView on OctoBot.</li><li>Avoid enabling both email and webhook alerts on TradingView otherwise alerts will trigger
+                        twice your OctoBot.</li></ul> <p class='text-center'><a type='button' class='btn btn-primary'
+                        href='accounts#panelServices'>Back to TradingView configuration</a></p>"
+                    ) }}
+                </div>
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                Using the <a class="font-weight-bolder" href="{{url_for('extensions')}}">{{OCTOBOT_EXTENSION_PACKAGE_1_NAME}}</a>,
+                your OctoBot can trade using TradingView free email alerts.
+            </div>
+            <div class="text-center">
+                <a type="button" class="btn btn-primary btn-lg"
+                   href="{{ url_for('extensions') }}">
+                    View extension
+                </a>
+            </div>
+        {% endif %}
+    </div>
+    {% if is_community_authenticated and has_open_source_package() %}
+    <div class="card-footer">
+        <div class="w-75 mx-auto d-sm-block d-md-none pb-2">
+            <div class='progress'>
+                <div class='progress-bar progress-bar-striped progress-bar-animated' role='progressbar' aria-valuenow='0' aria-valuemin='0' aria-valuemax='100' style='width: 0%;'></div>
+            </div>
+        </div>
+        <div class="d-flex justify-content-between flex-wrap">
+            <div class="">
+                <button id="previous-step" class="btn btn-outline-primary">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+            </div>
+            <div class="row w-75 my-auto d-none d-md-flex">
+                <div class="offset-md-1 col-md-2">
+                    Progress:
+                </div>
+                <div class='progress col-md-8 my-auto px-0'>
+                    <div class='progress-bar progress-bar-striped progress-bar-animated' role='progressbar' aria-valuenow='0' aria-valuemin='0' aria-valuemax='100' style='width: 0%;'></div>
+                </div>
+            </div>
+            <div class="">
+                <button id="next-step" class="btn btn-primary">
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<br>
+{% endblock %}
+
+{% block additional_scripts %}
+<script src="{{ url_for('static', filename='js/common/stepper.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+<script src="{{ url_for('static', filename='js/components/tradingview_email_config.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+<script src="{{ url_for('static', filename='js/common/resources_rendering.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+
+<script>
+    let stepperCallbackById = {
+        1: triggerEmailConfirmWaiter
+    }
+</script>
+
+{% endblock additional_scripts %}

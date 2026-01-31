@@ -1,0 +1,9 @@
+author: DrakkarSoftware
+name: base
+short-name: base
+repository: OctoBot-Tentacles
+version: VERSION_PLACEHOLDER
+description: >
+  This package contains default evaluators, strategies, utilitary modules, interfaces and trading modes.
+tags:
+  - officials

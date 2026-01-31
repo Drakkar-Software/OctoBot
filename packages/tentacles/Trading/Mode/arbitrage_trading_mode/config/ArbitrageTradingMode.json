@@ -1,0 +1,7 @@
+{
+    "minimal_price_delta_percent": 0.25,
+    "portfolio_percent_per_trade": 25,
+    "stop_loss_delta_percent": 0.1,
+    "exchanges_to_trade_on": [],
+    "required_strategies": []
+}

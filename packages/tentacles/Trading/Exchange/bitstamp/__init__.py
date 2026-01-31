@@ -1,0 +1,1 @@
+from .bitstamp_exchange import Bitstamp

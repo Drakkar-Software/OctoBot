@@ -1,0 +1,113 @@
+{% from "macros/forms.html" import render_field %}
+
+{% macro login_form(form, is_in_stating_community_env, after_login_url, recover_password_url,
+                    after_login_action=None, details=None) -%}
+<div class="text-center">
+    <div class="card-header">
+        <h2>
+            OctoBot community
+        </h2>
+    </div>
+    <div class="card-body">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+                {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+          {% endif %}
+        {% endwith %}
+        {% if current_logged_in_email %}
+            <h5>Logged in as {{ current_logged_in_email }}</h5>
+            <a class="btn btn-sm btn-outline-warning waves-effect mt-4" href="{{ url_for('community_logout') }}">Logout</a>
+        {% else %}
+            <h5>
+                Login and access your
+                {% if is_in_stating_community_env() %}
+                    <span class="badge badge-light">
+                        Beta
+                    </span>
+                {% endif %}
+                Octobot account.
+            </h5>
+            {% if details %}
+            <p>
+                {{ details }}
+            </p>
+            {% endif %}
+            {{ login_form_content(form, 'community_login', after_login_url, after_login_action, "Login") }}
+            <div class="mt-2">
+                <a href="{{ recover_password_url }}" class="font-weight-bold">Forgot your password ?</a>
+            </div>
+        {% endif %}
+    </div>
+    {% if not current_logged_in_email %}
+        <div class="card-footer mx-auto">
+            New to the OctoBot community ? <a href="{{ url_for('community_register', next=after_login_url) }}" class="font-weight-bold">Create your account here.</a>
+        </div>
+    {% endif %}
+</div>
+{%- endmacro %}
+
+{% macro register_form(form, is_in_stating_community_env, after_login_url,
+                    after_login_action=None, details=None) -%}
+<div class="text-center">
+    <div class="card-header">
+        <h2>
+            Join the OctoBot community
+        </h2>
+    </div>
+    <div class="card-body">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+                {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+          {% endif %}
+        {% endwith %}
+        <h5>
+            Create your
+            {% if is_in_stating_community_env() %}
+                <span class="badge badge-light">
+                    Beta
+                </span>
+            {% endif %}
+            Octobot account.
+        </h5>
+        {% if details %}
+        <p>
+            {{ details }}
+        </p>
+        {% endif %}
+        {{ login_form_content(form, 'community_register', after_login_url, after_login_action, "Register") }}
+    </div>
+    <div class="card-footer">
+        Already have an OctoBot account ? <a href="{{ url_for('community_login', next=after_login_url) }}" class="font-weight-bold">Login here.</a>
+    </div>
+</div>
+{%- endmacro %}
+
+{%- macro login_form_content(form, submit_route, after_login_url, after_login_action, form_value) %}
+<form method=post action="{{url_for(submit_route, next=after_login_url, after_login_action=after_login_action)}}" name="community-login">
+    <div class="my-4">
+        {{ form.csrf_token }}
+        <div class="mb-2">
+            {{ render_field(form.email, autofocus=true, class="form-control mx-auto", placeholder="Email") }}
+        </div>
+        <div>
+            {{ render_field(form.password, autofocus=true, class="form-control mx-auto", placeholder="Password") }}
+        </div>
+        <div class="custom-control custom-switch mt-2">
+            {{ render_field(form.remember_me, class="custom-control-input") }}
+            <label class="custom-control-label" for="remember_me">Remember me</label>
+        </div>
+    </div>
+    <span class="mt-2">
+        <input type=submit value={{form_value}} class="btn btn-primary waves-effect m-0">
+        <span id="login-waiter" class="d-none btn btn-outline-primary mt-2" disabled><i class='fa fa-spinner fa-spin'></i></span>
+    </span>
+</form>
+{%- endmacro %}

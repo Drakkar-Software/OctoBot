@@ -1,0 +1,49 @@
+{
+    "config": {
+        "crypto-currencies": {
+            "Bitcoin": {
+                "enabled": true,
+                "pairs": [
+                    "BTC/USDT"
+                ]
+            }
+        },
+        "exchanges": {
+            "binance": {
+                "enabled": true,
+                "exchange-type": "spot"
+            }
+        },
+        "trader": {
+            "enabled": false,
+            "load-trade-history": false
+        },
+        "trader-simulator": {
+            "enabled": true,
+            "fees": {
+                "maker": 0.1,
+                "taker": 0.1
+            },
+            "starting-portfolio": {
+                "BTC": 0,
+                "USDT": 1000,
+                "ETH": 0
+            }
+        },
+        "trading": {
+            "reference-market": "USDT",
+            "risk": 0.5
+        }
+    },
+    "profile": {
+        "avatar": "default_profile.png",
+        "complexity": 3,
+        "description": "Smart DCA (Dollar cost averaging) is a profile that trades by quickly entering and exiting the market using up to 3 entries each split into 2 exits. Each entry uses 5% of the portfolio and is signaled when the price is bellow its by EMA values.",
+        "imported": false,
+        "name": "Smart DCA",
+        "origin_url": null,
+        "read_only": true,
+        "risk": 2,
+        "id": "smart_dca"
+    }
+}

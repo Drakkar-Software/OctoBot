@@ -1,0 +1,99 @@
+{% extends "layout.html" %}
+{% set active_page = "help" %}
+
+{% block body %}
+<br>
+<div class="card w-md-75 mx-auto">
+    <div class="card-header">
+        <h2>Understanding OctoBot</h2>
+    </div>
+    <div class="card-body pt-1">
+        <p class="help-section">
+            <h4>
+                Tutorials
+            </h4>
+            <a class="btn btn-sm btn-primary waves-effect" href="{{url_for('home', reset_tutorials=True)}}">Reset introduction tutorials</a>
+        </p>
+        <p class="help-section">
+            <h4>
+                Help buttons: <a class="blue-text" target="_blank"><i class="fa-solid fa-question"></i></a>
+            </h4>
+            When using OctoBot, you will find these buttons: <a class="blue-text" target="_blank"><i class="fa-solid fa-question"></i></a>.
+            They are triggering the in page help and contain links to the
+            <a target="_blank" rel="noopener" href="{{OCTOBOT_WEBSITE_URL}}?utm_source=octobot&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=octobot_help_buttons"> OctoBot website</a> or
+            <a target="_blank" rel="noopener" href="{{OCTOBOT_DOCS_URL}}/octobot?utm_source=octobot&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=octobot_help_buttons"> OctoBot guides</a> explaining
+            to the associated element.
+        </p>
+        <p class="help-section">
+            <h4>
+                Frequently asked questions
+            </h4>
+            We keep track of many of our community users questions so that everyone can benefit from the answers in
+            <a target="_blank" rel="noopener" href="{{OCTOBOT_DOCS_URL}}/octobot-usage/frequently-asked-questions-faq?utm_source=octobot&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=octobot_help_faq">our dedicated FAQ</a>.
+        </p>
+        <p class="help-section">
+            <h4>
+                Troubleshoot
+            </h4>
+            Some issues are pretty common and sometimes they are due to factors that are external to OctoBot. In the
+            <a target="_blank" rel="noopener" href="{{OCTOBOT_DOCS_URL}}/octobot-installation/troubleshoot?utm_source=octobot&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=octobot_help_troubleshoot">troubleshoot section </a> you will
+            find many possible issues happening on various situations and how to fix them.
+        </p>
+        <p class="help-section">
+            <h4>
+                OctoBot cloud
+            </h4>
+            In the <a target="_blank" rel="noopener" href="{{OCTOBOT_WEBSITE_URL}}?utm_source=octobot&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=octobot_help_details"> OctoBot website</a>, you will find many resources on various subjects including:
+            <ul>
+                <li>
+                    What is the OctoBot Project
+                </li>
+                <li>
+                    In depth insight regarding OctoBot, its design and philosophy
+                </li>
+            </ul>
+            <h4>
+                OctoBot guides
+            </h4>
+            In the <a target="_blank" rel="noopener" href="{{OCTOBOT_DOCS_URL}}/octobot?utm_source=octobot&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=octobot_help_details"> OctoBot guides</a>, you will find many articles to help you use OctoBot including:
+            <ul>
+                <li>
+                    Video guides on OctoBot's setup and main features
+                </li>
+                <li>
+                    Different ways to install OctoBot on your own computer or on the cloud
+                </li>
+                <li>
+                    OctoBot configuration
+                </li>
+                <li>
+                    OctoBot strategies and trading modes
+                </li>
+                <li>
+                    Supported exchanges
+                </li>
+                <li>
+                    Advanced resources on OctoBot architecture, development guides and specific features
+                </li>
+                <li>
+                    OctoBot Script
+                </li>
+            </ul>
+        </p>
+        <p class="help-section">
+            <h4>
+                Telegram and Discord channels
+            </h4>
+            In case none of the above resources helped you to solve your issue or answer your question, you can always ask for help in the
+            <a class href="https://t.me/joinchat/F9cyfxV97ZOaXQ47H5dRWw" target="_blank" rel="noopener"><i class="fab fa-telegram"></i> Telegram</a>
+            or <a class href="https://discordapp.com/invite/vHkcb8W" target="_blank" rel="noopener"><i class="fab fa-discord"></i> Discord</a>
+            community channels.
+        </p>
+    </div>
+</div>
+
+<br>
+{% endblock %}
+
+{% block additional_scripts %}
+{% endblock additional_scripts %}

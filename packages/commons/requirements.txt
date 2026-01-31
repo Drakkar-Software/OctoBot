@@ -1,0 +1,9 @@
+# Setup requirements
+numpy==1.26.3
+
+# Commons requirements
+cryptography
+sortedcontainers
+requests
+
+aiohttp>=3.9.5

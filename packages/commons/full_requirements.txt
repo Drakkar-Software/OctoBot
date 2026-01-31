@@ -1,0 +1,10 @@
+# Commons requirements
+jsonschema==4.26.0
+psutil==5.9.7
+
+certifi==2024.02.02
+
+# async sqlite connection
+# update asap (0.19 working)
+# but required <= 0.17.0 from asyncpraw https://github.com/praw-dev/asyncpraw/blob/master/pyproject.toml
+aiosqlite==0.17.0

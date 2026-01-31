@@ -1,0 +1,146 @@
+{% extends "layout.html" %}
+{% set active_page = "about" %}
+{% import 'macros/text.html' as m_text %}
+{% import "components/community/octobot_cloud_description.html" as octobot_cloud_description %}
+
+{% block body %}
+<br>
+<div class="card">
+    <div class="card-header">
+        <h2>Your OctoBot</h2>
+    </div>
+    <div class="card-body">
+        <button route="{{ url_for('commands', cmd='restart') }}" type="button" class="btn btn-warning waves-effect">Restart Octobot</button>
+        <button route="{{ url_for('commands', cmd='stop') }}" type="button" class="btn btn-danger waves-effect">Stop Octobot</button>
+        {% if current_user.is_authenticated %}
+            <div class="float-right">
+                <a href="{{ url_for('logout') }}" class="btn btn-outline-warning waves-effect">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Lock
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+<br>
+<div class="card" id="hosting">
+    <div class="card-header">
+        <h2>Get more from OctoBot using OctoBot cloud</h2>
+    </div>
+    <div class="card-body py-0">
+        {{ octobot_cloud_description.octobot_cloud_description(OCTOBOT_COMMUNITY_URL, LOCALE) }}
+    </div>
+</div>
+<br>
+
+<div class="card" id="support">
+    <div class="card-header">
+        <h2>Running your OctoBot on the cloud</h2>
+    </div>
+    <div class="card-body">
+        <p>
+            While it is possible to use OctoBot directly from your computer as much as you want, you can also
+            also <a target="_blank" rel="noopener" href="{{OCTOBOT_COMMUNITY_URL}}/{{LOCALE}}/guides/octobot-installation/cloud-install-octobot-on-digitalocean?utm_source=octobot&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=about_cloud_hosting">
+            easily host your OctoBot on the cloud using DigitalOcean</a>.
+        </p>
+        <p>
+            OctoBot is available from on the <a target="_blank" rel="noopener" href="https://digitalocean.pxf.io/octobot-app">DigitalOcean marketplace</a>.
+            It enables you to have your OctoBot executing your trading strategies 24/7 without having to leave a computer on.
+        </p>
+        <div>
+            <a href="https://digitalocean.pxf.io/start-octobot">
+                <img src="https://mp-assets1.sfo2.digitaloceanspaces.com/deploy-to-do/do-btn-blue.svg" alt="Deploy on DO"/>
+            </a>
+        </div>
+    </div>
+</div>
+<br>
+<div class="card">
+    <div class="card-header">
+        <h2>Help us to improve OctoBot</h2>
+    </div>
+    <div class="card-body">
+        <div class="mb-4">
+            Any question ?
+            Please have a look at our
+            <a target="_blank" rel="noopener" href="{{OCTOBOT_DOCS_URL}}/octobot-usage/frequently-asked-questions-faq?utm_source=octobot&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=faq">
+                Frequently ask question (FAQ) section
+            </a>
+            first !
+        </div>
+        {% if not IS_CLOUD %}
+        <div class="custom-control custom-switch">
+            <input type="checkbox" class="custom-control-input" id="metricsCheckbox" update-url="{{ url_for('metrics_settings') }}" {{ 'checked' if metrics_enabled else ''}}>
+            <label class="custom-control-label" for="metricsCheckbox">Share</label> metrics to help the OctoBot Community
+            <p>
+                This will greatly help the OctoBot team to figure out the best ways to improve OctoBot and won't slow your OctoBot down.
+            </p>
+        </div>
+        {% endif %}
+        <hr>
+        <div>
+            <p>
+                In order to improve OctoBot, your user feedback is extremely helpful. The best way to make this project better and better is by telling us about your experience
+                (positive and negative) when using OctoBot.
+            </p>
+            <a update-url="{{ url_for('api.user_feedback') }}" href="" id=feedbackButton class="btn btn-primary waves-effect disabled" target="_blank" rel="noopener">
+                Tell us what you think about OctoBot
+            </a>
+            <a href="{{ OCTOBOT_FEEDBACK_URL }}open-source" id=suggestButton class="btn btn-primary waves-effect" target="_blank" rel="noopener">
+                Suggest a feature for OctoBot
+            </a>
+        </div>
+    </div>
+</div>
+<br>
+
+<div class="card">
+    <div class="card-header"><h2>Disclaimer</h2></div>
+    <div class="card-body">
+        {{ m_text.text_lines(disclaimer) }}
+        <p>
+            <a href="{{ url_for('terms') }}">
+                Terms and conditions
+            </a>
+        </p>
+    </div>
+</div>
+<br>
+
+<div class="card" id="beta-program">
+    <div class="card-header"><h2>OctoBot Beta Tester program</h2></div>
+    <div class="card-body">
+        <p>
+            You can help the team improving OctoBot by testing features in advance through the beta tester group.
+            Registering to the beta tester group will grant you access to major new features weeks in advance as well
+            as a direct communication channel to the OctoBot team to share your feedback and ideas before new versions are
+            released to the public.
+            <a href="{{OCTOBOT_DOCS_URL}}/octobot-advanced-usage/beta-program?utm_source=octobot&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=beta_program" target="_blank" rel="noopener">
+                More info on the beta tester program
+            </a>
+        </p>
+        <div class="custom-control custom-switch my-2">
+            <input type="checkbox" class="custom-control-input" id="beta-checkbox" update-url="{{ url_for('beta_env_settings') }}"
+                   {{ 'checked' if beta_env_enabled_in_config else ''}}
+            >
+            <label class="custom-control-label" for="beta-checkbox">Connect to the beta environment</label>
+        </div>
+        <div class="alert alert-info">
+            When the beta environment is enabled, you will be connected to the "in development" version of {{OCTOBOT_COMMUNITY_URL}}.
+            Available elements will be different from normal ones and your OctoBot might produce unexpected behaviors.
+            Only enable it when actively beta testing and disable it afterwards.
+        </div>
+
+        <p>
+            <a href="{{ octobot_beta_program_form_url }}" class="btn btn-primary waves-effect" target="_blank" rel="noopener">
+                Register to the beta tester program
+            </a>
+        </p>
+    </div>
+</div>
+<br>
+{% endblock %}
+
+{% block additional_scripts %}
+<script src="{{ url_for('static', filename='js/components/commands.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+{% endblock additional_scripts %}

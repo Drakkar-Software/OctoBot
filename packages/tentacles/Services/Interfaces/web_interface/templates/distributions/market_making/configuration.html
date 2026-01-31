@@ -1,0 +1,118 @@
+{% extends "layout.html" %}
+{% set active_page = "configuration" %}
+
+{% import 'components/config/tentacle_config_editor.html' as m_tentacle_config_editor %}
+
+
+{% macro save_block(display_interfaces_link) %}
+<div class="d-flex justify-content-between">
+    {% if display_interfaces_link %}
+    <div>
+        <a href="{{url_for('interfaces')}}">
+            <button type="button" class="btn btn-outline-primary btn-lg"
+                    data-toggle="tooltip" title="Configure your OctoBot's web interface access and enable the Telegram bot.">
+                Web & Telegram configuration
+            </button>
+        </a>
+    </div>
+    {% endif %}
+    <div class="">
+        <button type="button" class="btn btn-primary btn-lg"
+                data-role="save" data-update-url="{{url_for('save_market_making_config')}}">
+            <i class="fas fa-save" aria-hidden="true"></i> Save
+        </button>
+    </div>
+    <div>
+        <button type="button" class="btn btn-outline-primary btn-lg" route="{{ url_for('commands', cmd='restart') }}">
+            <i class="fa fa-refresh" aria-hidden="true"></i> Restart
+        </button>
+    </div>
+</div>
+{% endmacro %}
+
+{% block body %}
+<br/>
+<div class="card card-body">
+    <div class="grid row">
+        <div class="col col-lg-6 markdown-content">
+            {{tentacle_docs}}
+        </div>
+        <div class="col col-lg-6">
+            <div id="exchange-and-pair">
+                <h2>Exchange and Trading pair</h2>
+                <div class="grid row form-inline my-4">
+                    <div class="col col-lg-6">
+                        <div class="input-group">
+                            <label for="main-exchange-selector" class="font-weight-bolder">Exchange</label>
+                            <select id="main-exchange-selector" class="form-control ml-1 mx-lg-4"
+                                    data-selected-exchange="{{selected_exchange}}"></select>
+                        </div>
+                    </div>
+                    <div class="col col-lg-6">
+                        <div class="input-group">
+                            <label for="traded-symbol-selector" class="font-weight-bolder">Trading pair</label>
+                            <select id="traded-symbol-selector" class="form-control ml-1 mx-lg-4" data-selected-pair="{{selected_pair}}"
+                                    data-update-url="{{ url_for('api.get_all_symbols', exchange='') }}"></select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="trading-mode-config-editor" data-trading-mode-name="{{trading_mode_name}}">
+                {{ m_tentacle_config_editor.tentacles_config_editor(trading_mode_name) }}
+            </div>
+            <div class="mx-3">
+                {{ save_block(False) }}
+            </div>
+        </div>
+    </div>
+    <div id="trading-simulation">
+        <h2>Trading simulator configuration</h2>
+        <div class="grid row">
+            <div class="col col-lg-6">
+                <div id="trading-simulator-editor"
+                     data-config='{{config_trading_simulator | tojson}}'
+                     data-schema='{{trading_simulator_schema | tojson}}'
+                ></div>
+            </div>
+            <div class="col col-lg-6 pt-lg-5">
+                <div id="simulated-portfolio-editor"
+                     data-config='{{simulated_portfolio | tojson}}'
+                     data-schema='{{portfolio_schema | tojson}}'
+                ></div>
+            </div>
+        </div>
+    </div>
+    <div id="exchange-configuration">
+        <h2>Exchanges configuration</h2>
+        <div class="mt-4">
+            <p>
+                Add the exchange to perform market making on as well as the exchange used as "Reference exchange".
+            </p>
+            <div>
+                Note: For trading simulator and <strong>reference exchanges</strong>, exchanges must be added, and
+                <strong>API details are not required</strong>.
+            </div>
+        </div>
+        <div id="exchanges-editor"
+             data-config='{{config_exchanges | tojson}}'
+             data-schema='{{exchanges_schema | tojson}}'
+        ></div>
+        <p class="mx-4">
+            <i>Click save after adding a new exchange to be able to select it.</i>
+        </p>
+    </div>
+    {{ save_block(True) }}
+
+    <span class="d-none"
+          data-display-intro="{{display_intro}}"
+    ></span>
+</div>
+{% endblock %}
+
+{% block additional_scripts %}
+<script src="{{ url_for('static', filename='js/common/resources_rendering.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+<script src="{{ url_for('static', filename='js/common/custom_elements.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+<script src="{{ url_for('static', filename='js/common/common_handlers.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+<script src="{{ url_for('static', filename='distributions/market_making/js/configuration.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+<script src="{{ url_for('static', filename='js/components/config_tentacle.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+{% endblock additional_scripts %}

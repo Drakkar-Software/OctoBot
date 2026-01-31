@@ -1,0 +1,410 @@
+{% extends "layout.html" %}
+{% set active_page = "trading" %}
+{% set startup_messages_added_classes = "justify-content-end px-4" %}
+{% set inner_startup_messages_added_classes = "offset-md-3 offset-lg-2 offset-1" %}
+{% import 'macros/cards.html' as m_cards %}
+{% import 'macros/starting_waiter.html' as m_waiter %}
+
+{% set vars = {'exchange_overload': False} %}
+
+{% macro exchange_overload_warning(exchange, load) -%}
+    {% if load["has_reached_websocket_limit"] %}
+        <div class="alert alert-info font-weight-normal offset-md-3 offset-lg-2 offset-1" role="alert">
+            <span class="text-capitalize">{{ exchange }}</span> exchange websocket can't handle the required
+            {{load["load"]}} simultaneous feed. Exchange maximum is {{load["max_load"]}}. Falling back to the
+            slower "REST" connection.
+        </div>
+    {% elif load["overloaded"] %}
+        <div class="alert alert-danger font-weight-normal offset-md-3 offset-lg-2 offset-1" role="alert">
+            <span class="text-capitalize">{{ exchange }}</span> exchange is overloaded by
+            <span class="font-weight-bold">{{ (load["load"] * 100 / load["max_load"] - 100) | round | int }}%</span>.
+            <span class="d-none d-sm-inline">
+                <span class="text-capitalize">{{ exchange }}</span> capacity is
+                <span class="font-weight-bold">{{ load["max_load"] }}</span> simultaneous traded pair/time frame
+                couples and the current configuration involves <span class="font-weight-bold">{{ load["load"] }}</span>.
+            </span>
+        </div>
+        {% set _ = vars.update({'exchange_overload': True}) %}
+    {% endif %}
+{%- endmacro %}
+
+{% macro waiter(waiter_id, title) %}
+<div id="{{waiter_id}}" class="text-center my-4 py-4 h-100">
+    <div class="py-4">
+        <h2>{{title}}</h2>
+    </div>
+    <div class="py-4">
+        <h2><i class="fa fa-spinner fa-spin"></i></h2>
+    </div>
+</div>
+{% endmacro %}
+
+{% block body %}
+<br>
+
+{% if not (pairs_with_status or has_real_trader) %}
+    {{ m_waiter.display_loading_message(details="If this message remains, please make sure that at least one exchange is enabled in your profile.") }}
+{% else %}
+    {% for exchange, load in exchanges_load.items() %}
+        {{ exchange_overload_warning(exchange, load) }}
+    {% endfor %}
+    {% if vars['exchange_overload'] %}
+    <div class="d-none d-md-block alert alert-warning font-weight-normal offset-md-3 offset-lg-2 offset-1" role="alert">
+        This limit is due to the exchange's REST API rate limit and prevents OctoBot from getting banned for spam.
+        OctoBot is operating with the given configuration but this exchange trading will be slowed down and might
+        underperform due to this rate limit restrictions.
+        Using a websocket tentacle for this exchange would handle as many pairs and time frames as wanted.
+    </div>
+    {% endif %}
+
+<div class="row">
+    <nav class="mt-md-4 mt-2 col-md-3 col-lg-2 col-1 d-block sidebar shadow">
+        <div class="sidebar-sticky mt-0 pt-0">
+            <div class="nav flex-column pt-0 mt-0 mt-md-4" id="v-tab" role="tablist"
+                 aria-orientation="vertical">
+                <a class="nav-link pl-2 pl-sm-3 waves-effect d-flex" data-tab={{ 'default' if has_pnl_history else 'other'}} id="panel-pnl-tab" data-toggle="tab"
+                   href="#panel-pnl" role="tab" aria-controls="panel-pnl" aria-selected="true">
+                    <i class="fa-solid fa-chart-line"></i><span class="d-none d-md-block pl-3">Profit & Loss</span>
+                </a>
+                <a class="nav-link pl-2 pl-sm-3 waves-effect d-flex" data-tab={{ 'default' if not has_pnl_history else 'other'}} id="panel-orders-tab" data-toggle="tab"
+                   href="#panel-orders" role="tab" aria-controls="panel-orders" aria-selected="false">
+                    <i class="fa-solid fa-list-ul"></i><span class="d-none d-md-block pl-3">Orders</span>
+                </a>
+                {% if might_have_positions %}
+                <a class="nav-link pl-2 pl-sm-3 waves-effect d-flex" id="panel-positions-tab" data-toggle="tab"
+                   href="#panel-positions" role="tab" aria-controls="panel-positions" aria-selected="false">
+                    <i class="fa-solid fa-table-list"></i><span class="d-none d-md-block pl-3">Positions</span>
+                </a>
+                {% endif %}
+                <a class="nav-link pl-2 pl-sm-3 waves-effect d-flex" id="panel-market-status-tab" data-toggle="tab"
+                   href="#panel-market-status" role="tab" aria-controls="panel-market-status" aria-selected="false">
+                    <i class="fab fa-bitcoin"></i><span class="d-none d-md-block pl-3">Market Status</span>
+                </a>
+                <a class="nav-link pl-2 pl-sm-3 waves-effect d-flex" id="panel-trades-tab" data-toggle="tab"
+                   href="#panel-trades" role="tab" aria-controls="panel-trades" aria-selected="false">
+                    <i class="fa-solid fa-clock-rotate-left"></i><span class="d-none d-md-block pl-3">Trades</span>
+                </a>
+                {% if followed_strategy_url %}
+                <a class="nav-link pl-2 pl-sm-3 waves-effect d-flex" id="panel-followed-strategy-tab" data-toggle="tab"
+                   href="#panel-followed-strategy" role="tab" aria-controls="panel-followed-strategy" aria-selected="false">
+                   <i class="fa-solid fa-copy"></i><span class="d-none d-md-block pl-3">Followed strategy</span>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+    <main role="main" id="main-nav" class="col-md-9 col-lg-10 col-11 ml-auto">
+        <div class="tab-content">
+            <div class="tab-pane fade" id="panel-pnl" role="tabpanel"
+                 aria-labelledby="panel-pnl-tab">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between">
+                        <div>
+                            <h2>
+                                Profit and Loss
+                            </h2>
+                        </div>
+                        <div>
+                            <ul class="nav nav-pills">
+                              <li class="nav-item">
+                                <a class="nav-link primary-pill scale-selector"
+                                   href="#"
+                                   data-action="change-scale"
+                                   data-scale=""
+                                >Detailed</a>
+                              </li>
+                              <li class="nav-item">
+                                <a class="nav-link primary-pill scale-selector"
+                                   href="#"
+                                   data-action="change-scale"
+                                   data-scale="1h"
+                                >1h</a>
+                              </li>
+                              <li class="nav-item">
+                                <a class="nav-link primary-pill scale-selector"
+                                   href="#"
+                                   data-action="change-scale"
+                                   data-scale="4h"
+                                >4h</a>
+                              </li>
+                              <li class="nav-item">
+                                <a class="nav-link primary-pill scale-selector active"
+                                   href="#"
+                                   data-action="change-scale"
+                                   data-scale="1d"
+                                >Daily</a>
+                              </li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        {{ waiter("pnl-waiter", "Loading Profit and Loss") }}
+                        <div class="w-100">
+                            {% if might_have_positions %}
+                            <div class="alert alert-info mt-4">
+                                When trading futures, PNL might be incorrect. The team is working on fixing this issue.
+                            </div>
+                            {% endif %}
+                            <div class="d-flex justify-content-between">
+                                <h4>
+                                    <span id="match-trades-count" class="badge font-size-90 badge-success"></span>
+                                    <span class="d-none d-md-inline">Matched</span> Trades
+                                </h4>
+                                <select id="symbol-select" class="selectpicker" data-live-search="true">
+                                    <option value="" selected>
+                                        Reference market
+                                    </option>
+                                    {% for symbol in pnl_symbols | sort %}
+                                        <option value="{{ symbol }}">
+                                            {{ symbol }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div id="pnl_historyChart"
+                                 data-url="{{url_for('api.pnl_history', quote=reference_market, scale='')}}"
+                                 data-unit="{{reference_market}}"
+                                 class="h-100 w-100">
+                            </div>
+                        </div>
+                        <div class="w-100">
+                            <table id="pnl_historyTable"
+                                 data-unit="{{reference_market}}"
+                                 class="w-100 table-striped table-responsive-sm">
+                            </table>
+                        </div>
+                        <div class="alert alert-info mt-4">
+                            For accuracy, Profit and Loss is only computed for trades that are coming from a
+                            trading mode that is supporting PNL history such as Grid Trading or the Dip Analyser.
+                            <br>
+                            Please check trading modes description to find out if PNL history is supported.
+                            Resetting the trades history will reset Profit and Loss.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="tab-pane fade" id="panel-orders" role="tabpanel"
+                 aria-labelledby="panel-orders-tab">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Open orders
+                            <button type="button" class="btn btn-outline-danger waves-effect float-right" id="cancel_all_orders"
+                                    update-url="{{ url_for('api.orders', action='cancel_orders') }}"
+                                    disabled>
+                            <i id="cancel_all_icon" class="fas fa-ban"></i> <span class="d-none d-md-inline-block">Cancel all</span>
+                            </button>
+                        </h2>
+                    </div>
+                    <div class="card-body">
+                        {{ waiter("orders-waiter", "Loading orders") }}
+                        <div class='progress mb-1' id='cancel_order_progress_bar' style='display: none;'>
+                            <div class='progress-bar progress-bar-striped progress-bar-animated' role='progressbar' aria-valuenow='100' aria-valuemin='0' aria-valuemax='100' style='width: 100%;'></div>
+                        </div>
+                        <div id="openOrderTable">
+                          <table id="orders-table"
+                                 data-url="{{url_for('api.orders')}}"
+                                 data-cancel-url="{{url_for('api.orders', action='cancel_order')}}"
+                                 class="w-100 table-striped table-responsive-sm">
+                          </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% if might_have_positions %}
+            <div class="tab-pane fade" id="panel-positions" role="tabpanel"
+                 aria-labelledby="panel-positions-tab">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Positions</h2>
+                    </div>
+                    <div class="card-body">
+                        {{ waiter("positions-waiter", "Loading positions") }}
+                        <div class='progress mb-1' id='cancel_position_progress_bar' style='display: none;'>
+                            <div class='progress-bar progress-bar-striped progress-bar-animated' role='progressbar' aria-valuenow='100' aria-valuemin='0' aria-valuemax='100' style='width: 100%;'></div>
+                        </div>
+                        <div id="positionTable">
+                          <table id="positions-table"
+                                 data-url="{{url_for('api.positions')}}"
+                                 data-close-url="{{url_for('api.positions', action='close_position')}}"
+                                 class="w-100 table-striped table-responsive-sm">
+                          </table>
+                        </div>
+                    </div>
+                </div>
+                <br>
+            </div>
+            {% endif %}
+            <div class="tab-pane fade" id="panel-market-status" role="tabpanel"
+                 aria-labelledby="panel-market-status-tab">
+                <div class="card">
+                    <div class="card-header"><h2>Market status</h2></div>
+                    <div class="card-body">
+                        <div class="card-deck">
+                            {% for pair, status in pairs_with_status.items() | sort(attribute='0') %}
+                                {{ m_cards.pair_status_card(pair, status, watched_symbols, displayed_portfolio, symbols_values, reference_market) }}
+                            {% endfor %}
+
+                            <!-- Add new pair Card -->
+                            <div class="card mb-4 small-size unique-color-dark-card">
+
+                                <!--Title-->
+                                <div class="card-header">
+                                    <a class="" href="{{ url_for('profile')+'#panelCurrency' }}">New trading pair</a>
+                                </div>
+
+                                <!--Card image-->
+                                <div class="view overlay animated text-center pt-2 mb-5">
+                                  <a href="{{ url_for('profile')+'#panelCurrency' }}">
+                                    <i class="fas fa-8x fa-plus-circle fa-3x"></i>
+                                  </a>
+                                </div>
+
+                                <div class="px-4 pt-3 pb-3">
+                                    <!--Card content-->
+                                    <div class="list-group-flush text-center">
+                                        <a class="btn btn-outline-primary hover_anim"
+                                           href="{{ url_for('profile')+'#panelCurrency' }}">
+                                            Add a new pair
+                                        </a>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="tab-pane fade" id="panel-trades" role="tabpanel"
+                 aria-labelledby="panel-trades-tab">
+                <div class="card">
+                    <div class="card-header"><h2>
+                        &ensp;Trades history
+                    </h2></div>
+                    <div class="card-body">
+                    {{ waiter("trades-waiter", "Loading trades") }}
+                      <table id="trades-table"
+                             data-url="{{url_for('api.trades')}}"
+                             data-reference-market="{{reference_market}}"
+                             class="w-100 table-striped table-responsive-sm">
+                      </table>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-end">
+                    <button
+                        data-url="{{ url_for('api.clear_trades_history') }}"
+                        id="clear-trades-history-button"
+                        class="btn btn-outline-warning waves-effect mt-2">
+                        <i class="fas fa-trash"></i> Clear trades history
+                    </button>
+                </div>
+            </div>
+            {% if followed_strategy_url %}
+            <div class="tab-pane fade" id="panel-followed-strategy" role="tabpanel"
+                 aria-labelledby="panel-followed-strategy-tab">
+                <div class="card" role="alert">
+                    <div class="card-header">
+                        <h4>
+                            Subscribed to OctoBot trading signals
+                            {% if is_community_feed_connected %}
+                            <span class="badge badge-success">Connected</span>
+                            {% else %}
+                            <span class="badge badge-danger">Disconnected</span>
+                            {% endif %}
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        {% if last_signal_time %}
+                        Last received signal: {{convert_timestamp(last_signal_time)}}.
+                        {% else %}
+                        No signal received yet.
+                        {% endif %}
+                        <div>
+                            Following <a target="_blank" rel="noopener" href="{{ followed_strategy_url }}">{{ followed_strategy_url }}</a>.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </main>
+</div>
+    <div class="row">
+    </div>
+    <br>
+    <span id="trading-orders-and-positions">
+    </span>
+
+<div class="modal" id="CancelAllOrdersModal" tabindex="-1" role="dialog" aria-labelledby="#CancelAllOrdersModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content modal-text">
+      <div class="modal-header primary-text">
+        <h5 class="modal-title" id="#CancelAllOrdersModalLabel">Confirm action</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body text-center">
+          <h4>Cancel all <strong id="ordersCount"></strong> displayed orders ?</h4>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="confirmCancelAllOrders" class="btn btn-danger" data-dismiss="modal"><i class="fas fa-ban"></i> Cancel orders</button>
+        <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="CancelOrderModal" tabindex="-1" role="dialog" aria-labelledby="#CancelOrderModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content modal-text">
+      <div class="modal-header primary-text">
+        <h5 class="modal-title" id="#CancelOrderModalLabel">Confirm action</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body text-center">
+          <h4>Cancel order ?</h4>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="confirmCancelOrder" class="btn btn-danger"><i class="fas fa-ban"></i> Cancel order</button>
+        <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="ClosePositionModal" tabindex="-1" role="dialog" aria-labelledby="#ClosePositionModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content modal-text">
+      <div class="modal-header primary-text">
+        <h5 class="modal-title" id="#ClosePositionModalLabel">Confirm action</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body text-center">
+          <h4>Close position ?</h4>
+          <p>
+              This will create orders to close this position.
+          </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-danger"><i class="fas fa-ban"></i> Close position</button>
+        <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block additional_scripts %}
+<script src="{{ url_for('static', filename='js/common/custom_elements.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+<script src="{{ url_for('static', filename='js/common/resources_rendering.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+<script src="{{ url_for('static', filename='js/common/common_handlers.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+<script src="{{ url_for('static', filename='js/common/pnl_history.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+<script src="{{ url_for('static', filename='js/common/tables_display.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+<script src="{{ url_for('static', filename='js/components/trading.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+{% endblock additional_scripts %}

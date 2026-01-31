@@ -1,0 +1,9 @@
+[run]
+omit =
+    octobot_commons/channels_name.py
+    octobot_commons/constants.py
+    octobot_commons/errors.py
+    octobot_commons/enums.py
+    venv/*
+    tests/*
+    setup.py

@@ -1,0 +1,52 @@
+{
+    "config": {
+        "crypto-currencies": {
+            "Bitcoin": {
+                "enabled": true,
+                "pairs": [
+                    "BTC/USDC"
+                ]
+            }
+        },
+        "exchanges": {
+            "binance": {
+                "enabled": true,
+                "exchange-type": "spot"
+            }
+        },
+        "trader": {
+            "enabled": false,
+            "load-trade-history": true
+        },
+        "trader-simulator": {
+            "enabled": true,
+            "fees": {
+                "maker": 0.1,
+                "taker": 0.1
+            },
+            "starting-portfolio": {
+                "BTC": 0.001,
+                "USDC": 1000
+            }
+        },
+        "trading": {
+            "reference-market": "USDC",
+            "risk": 1.0
+        }
+    },
+    "profile": {
+        "auto_update": false,
+        "avatar": "default_profile.png",
+        "complexity": 1,
+        "description": "Market making will create and maintain an order book following a customized market making strategy.",
+        "extra_backtesting_time_frames": [],
+        "id": "market_making",
+        "imported": false,
+        "name": "Market making",
+        "origin_url": null,
+        "read_only": true,
+        "risk": 3,
+        "slug": "",
+        "type": "live"
+    }
+}

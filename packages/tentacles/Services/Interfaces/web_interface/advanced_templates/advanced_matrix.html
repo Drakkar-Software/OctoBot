@@ -1,0 +1,105 @@
+{% extends "advanced_layout.html" %}
+{% set active_page = "advanced.matrix" %}
+{% block body %}
+<div class="card">
+    <div class="card-header" id="matrixViewPage">
+        <h1>
+            Matrix View
+        </h1>
+    </div>
+    <div class="card-body">
+        <div class="container-fluid row mx-0">
+            <div class="col-md-3 mb-3">
+                Evaluators :
+                <select class="mx-0 selectpicker" id="evaluatorsSelect" data-width="50%" data-window-padding="25" multiple>
+                </select>
+            </div>
+            <div class="col-md-3 mb-3">
+                Time frames :
+                <select class="mx-0 selectpicker" id="timeframesSelect" data-width="50%" data-window-padding="25" multiple>
+                </select>
+            </div>
+            <div class="col-md-3 mb-3">
+                Symbols :
+                <select class="mx-0 selectpicker" id="symbolsSelect" data-width="50%" data-window-padding="25" multiple>
+                </select>
+            </div>
+            <div class="col-md-3 mb-3">
+                Exchanges :
+                <select class="mx-0 selectpicker" id="exchangesSelect" data-width="50%" data-window-padding="25" multiple>
+                </select>
+            </div>
+        </div>
+        <table class="table table-striped table-sm table-responsive-sm" id="matrixDataTable">
+          <thead>
+            <tr>
+                <th scope="col">Evaluator</th>
+                <th scope="col">Value</th>
+                <th scope="col">Time frame</th>
+                <th scope="col">Symbol</th>
+                <th scope="col">Exchange</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for exchange, matrix_exchange in matrix_list.items() %}
+                {% for evaluator, matrix_evaluator in matrix_exchange.items() %}
+                    {% for symbol, matrix_symbol in matrix_evaluator.items() %}
+                        {% if matrix_symbol is iterable and matrix_symbol is not string %}
+                            {% for time_frame, eval_note in matrix_symbol.items() %}
+                                 <tr>
+                                    <td>{{evaluator}}</td>
+                                    <td>{{eval_note}}</td>
+                                    <td>{{time_frame}}</td>
+                                    <td>{{symbol}}</td>
+                                    <td>{{exchange}}</td>
+                                 </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td>{{evaluator}}</td>
+                                <td>{{matrix_symbol}}</td>
+                                <td></td>
+                                <td>{{symbol}}</td>
+                                <td>{{exchange}}</td>
+                            </tr>
+                        {% endif %}
+                    {% endfor %}
+                {% endfor %}
+            {% endfor %}
+          </tbody>
+        </table>
+        <div class="container-fluid alert alert-info mx-0 mt-2" role="alert">
+            <p>
+                <i class="fa-regular fa-lightbulb"></i>
+                The matrix view shows the current value of each active evaluator and strategy.
+            </p>
+            <p>
+                For evaluators and strategies returning a number between -1 and 1 like the RSIMomentumEvaluator or
+                DoubleMovingAverageTrendEvaluator, values are to be understood this way:
+                <ul>
+                    <li>
+                        -1: Strong buy signal
+                    </li>
+                    <li>
+                        Between -1 and 0: Buy signal, the closer to -1 the stronger
+                    </li>
+                    <li>
+                        0: Neutral or undefined
+                    </li>
+                    <li>
+                        Between 0 and 1: Sell signal, the closer to -1 the stronger
+                    </li>
+                    <li>
+                        1: Strong sell signal
+                    </li>
+                </ul>
+            </p>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block additional_scripts %}
+<script src="{{ url_for('static', filename='js/components/advanced_matrix.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+{% endblock additional_scripts %}

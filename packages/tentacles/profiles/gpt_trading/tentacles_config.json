@@ -1,0 +1,11 @@
+{
+    "tentacle_activation": {
+        "Evaluator": {
+            "GPTEvaluator": true,
+            "SimpleStrategyEvaluator": true
+        },
+        "Trading": {
+            "DCATradingMode": true
+        }
+    }
+}

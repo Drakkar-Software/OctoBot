@@ -1,0 +1,61 @@
+{% extends "layout.html" %}
+{% set active_page = "home" %}
+
+{% from "macros/forms.html" import render_field %}
+
+{% block body %}
+<br>
+<div class="login_box mx-auto mt-1 mt-xl-5">
+    <div class="card text-center">
+        <div class="card-header">
+            <h2>
+                Welcome back
+                <a class="float-right blue-text" target="_blank" rel="noopener" href="{{OCTOBOT_DOCS_URL}}/octobot-interfaces/web#protect-your-web-interface">
+                    <i class="fa-solid fa-question"></i>
+                </a>
+            </h2>
+        </div>
+        <div class="card-body">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                    {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }}">
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+              {% endif %}
+            {% endwith %}
+            <h5>
+                {% if is_remote_login %}
+                Please enter your OctoBot account password to access your OctoBot
+                {% else %}
+                Please enter your password to access your OctoBot
+                {% endif %}
+            </h5>
+            <form method=post>
+                <div class="my-4">
+                    {{ form.csrf_token }}
+                    <div>
+                        {{ render_field(form.password, autofocus=true, class="form-control mx-auto", placeholder="Password") }}
+                    </div>
+                    <div class="custom-control custom-switch mt-2">
+                        {{ render_field(form.remember_me, class="custom-control-input") }}
+                        <label class="custom-control-label" for="remember_me">Remember me</label>
+                    </div>
+                </div>
+            <input type=submit value=Login class="btn btn-primary waves-effect mt-2">
+            {% if is_remote_login %}
+            <div class="mt-2">
+                <a href="{{ OCTOBOT_COMMUNITY_RECOVER_PASSWORD_URL }}" class="font-weight-bold">Forgot your password ?</a>
+            </div>
+            {% endif %}
+            </form>
+        </div>
+    </div>
+</div>
+
+<br>
+{% endblock %}
+
+{% block additional_scripts %}
+{% endblock additional_scripts %}

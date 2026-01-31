@@ -1,0 +1,26 @@
+# Pants ignore file - directories to exclude from file watching
+# This prevents "Filesystem changed during run" errors
+
+# IDE and editor directories
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Log files that may be written during tests
+logs/
+*.log
+
+# Output directories
+output/
+user/
+
+# Cache directories
+.pytest_cache/
+__pycache__/
+.mypy_cache/
+
+# Pants internal directories (already ignored by default)
+.pants.d/
+dist/

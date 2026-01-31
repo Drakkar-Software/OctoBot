@@ -1,0 +1,7 @@
+recursive-include trading_backend *.pxd
+recursive-include trading_backend/creators/templates *.*
+
+include README.md
+include LICENSE
+include CHANGELOG.md
+include requirements.txt

@@ -10,114 +10,178 @@ on:
 
 jobs:
   lint:
-    name: ${{ matrix.os }}${{ matrix.arch }} - Python ${{ matrix.version }} - lint
+    name: ${{ matrix.os }}${{ matrix.arch }} - Python ${{ matrix.version }} - lint ${{ matrix.package }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ ubuntu-latest ]
         arch: [ x64 ]
         version: [ "3.10.x" ]
+        package:
+          - octobot
+          - packages/async_channel
+          - packages/backtesting
+          - packages/commons
+          - packages/evaluators
+          - packages/node
+          - packages/services
+          - packages/tentacles_manager
+          - packages/trading
+          - packages/trading_backend
+
     steps:
     - uses: actions/checkout@v5
+
     - name: Set up Python ${{ matrix.version }}
       uses: actions/setup-python@v6
       with:
         python-version: ${{ matrix.version }}
         architecture: ${{ matrix.arch }}
 
-    - name: Install dependencies
-      run: pip install wheel && pip install --prefer-binary -r dev_requirements.txt -r requirements.txt -r full_requirements.txt
+    - name: Install Pants
+      uses: pantsbuild/actions/init-pants@v10
+      with:
+        gha-cache-key: ${{ runner.os }}-pants-lint-${{ matrix.package }}
+        named-caches-hash: ${{ hashFiles('pants.toml') }}
 
-#    - name: Black lint
-#      run: black ${{ secrets.PACKAGE_FOLDER }} --diff --check
+    - name: Install pylint
+      run: pip install pylint
 
-    - name: Pylint
+    - name: Lint package
       run: |
-        pylint --rcfile=standard.rc octobot
-        if [ $? -ne 1 ]; then exit 0; fi
+        if [ -f "${{ matrix.package }}/standard.rc" ]; then
+          pylint --rcfile=${{ matrix.package }}/standard.rc ${{ matrix.package }} || true
+        else
+          pylint ${{ matrix.package }} || true
+        fi
 
   tests:
     needs: lint
-    name: ${{ matrix.os }}${{ matrix.arch }} - Python ${{ matrix.version }} - tests
+    name: ${{ matrix.os }}${{ matrix.arch }} - Python ${{ matrix.version }} - ${{ matrix.package }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ windows-latest, ubuntu-latest ]
+        os: [ ubuntu-latest ]
+        arch: [ x64 ]
+        version: [ "3.10.x" ]
+        package:
+          - octobot
+          - packages/async_channel
+          - packages/backtesting
+          - packages/commons
+          - packages/evaluators
+          - packages/node
+          - packages/services
+          - packages/tentacles_manager
+          - packages/trading
+          - packages/trading_backend
+
+    steps:
+    - uses: actions/checkout@v5
+
+    - name: Set up Python ${{ matrix.version }}
+      uses: actions/setup-python@v6
+      with:
+        python-version: ${{ matrix.version }}
+        architecture: ${{ matrix.arch }}
+
+    - name: Install Pants
+      uses: pantsbuild/actions/init-pants@v10
+      with:
+        gha-cache-key: ${{ runner.os }}-pants-${{ matrix.package }}
+        named-caches-hash: ${{ hashFiles('pants.toml') }}
+
+    - name: Install tentacles
+      if:  matrix.package == 'octobot' || matrix.package == 'packages/evaluators'
+      run: |
+        mkdir -p output
+        pants run //:start -- tentacles -d packages/tentacles -p any_platform.zip
+        pants run //:start -- tentacles --install --location output/any_platform.zip --all
+
+    - name: Run tests
+      run: |
+        if [ "${{ matrix.package }}" = "octobot" ]; then
+          pants --process-execution-local-parallelism=1 test :tests
+        else
+          pants --process-execution-local-parallelism=1 test ${{ matrix.package }}:tests
+        fi
+      env:
+        DISABLE_SENTRY: True
+
+  upload_tentacles:
+    needs: tests
+    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/dev' || startsWith(github.ref, 'refs/tags/')
+    name: ${{ matrix.os }}${{ matrix.arch }} - Python ${{ matrix.version }} - Upload Tentacles
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest ]
         arch: [ x64 ]
         version: [ "3.10.x" ]
 
     steps:
-    - uses: actions/checkout@v5
-    - name: Set up Python ${{ matrix.version }}
-      uses: actions/setup-python@v6
-      with:
-        python-version: ${{ matrix.version }}
-        architecture: ${{ matrix.arch }}
+      - uses: actions/checkout@v5
 
-    - name: Wait for tentacles
-      if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
-      uses: fountainhead/action-wait-for-check@v1.0.0
-      id: wait-for-build
-      with:
-        token: ${{ secrets.AUTH_TOKEN }}
-        checkName: "ubuntu-latestx64 - Python - 3.10 - Upload"
-        ref: ${{ github.ref }}
-        repo: OctoBot-Tentacles
-        timeoutSeconds: 3600
+      - name: Set Environment Variables
+        run: |
+          echo "S3_API_KEY=${{ secrets.S3_API_KEY }}" >> $GITHUB_ENV
+          echo "S3_API_SECRET_KEY=${{ secrets.S3_API_SECRET_KEY }}" >> $GITHUB_ENV
+          echo "S3_REGION_NAME=${{ secrets.S3_REGION_NAME }}" >> $GITHUB_ENV
+          echo "S3_ENDPOINT_URL=${{ secrets.S3_ENDPOINT_URL }}" >> $GITHUB_ENV
+          echo "CLOUDFLARE_TOKEN=${{ secrets.CLOUDFLARE_TOKEN }}" >> $GITHUB_ENV
+          echo "CLOUDFLARE_ZONE=${{ secrets.CLOUDFLARE_ZONE }}" >> $GITHUB_ENV
+          TARGET_BRANCH=$([ "$GITHUB_HEAD_REF" == "" ] && echo ${GITHUB_REF##*/} || echo "$GITHUB_HEAD_REF")
+          echo "TARGET_BRANCH=${TARGET_BRANCH}" >> $GITHUB_ENV
 
-    - name: Trigger fail when Tentacles failed
-      if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags') && steps.wait-for-build.outputs.conclusion == 'failure'
-      run: exit 1
+      - name: Set up Python ${{ matrix.version }}
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.version }}
+          architecture: ${{ matrix.arch }}
 
-    - name: Install dependencies
-      run: pip install wheel && pip install --prefer-binary -r dev_requirements.txt -r requirements.txt -r full_requirements.txt
+      - name: Install Pants
+        uses: pantsbuild/actions/init-pants@v10
+        with:
+          gha-cache-key: ${{ runner.os }}-pants-tentacles
+          named-caches-hash: ${{ hashFiles('pants.toml') }}
 
-    - name: Install tentacles on Unix
-      env:
-        DISABLE_SENTRY: True
-      if: matrix.os != 'windows-latest'
-      run: |
-        mkdir user
-        cp ./octobot/config/default_config.json ./user/config.json
-        branch="${GITHUB_HEAD_REF}"
-        echo "Trying to download tentacles package ${branch////_}.zip ..."
-        TENTACLES_REPOSITORY=dev-tentacles TENTACLES_URL_TAG=${branch////_} python3 start.py tentacles -q --install --all || TENTACLES_URL_TAG=latest python3 start.py tentacles --install --all
+      - name: Prepare tentacles package
+        run: |
+          mkdir -p ../new_tentacles
+          cp -r packages/tentacles/Automation packages/tentacles/Backtesting packages/tentacles/Evaluator packages/tentacles/Meta packages/tentacles/Services packages/tentacles/Trading packages/tentacles/profiles ../new_tentacles/
 
-    - name: Install tentacles on Windows
-      env:
-        DISABLE_SENTRY: True
-      if: matrix.os == 'windows-latest'
-      run: |
-        mkdir user
-        copy octobot\config\default_config.json user\config.json
-        $Env:TENTACLES_REPOSITORY = "dev-tentacles"
-        $Env:TENTACLES_URL_TAG = $env:GITHUB_HEAD_REF -replace "/", "_"
-        echo "Trying to download tentacles package $Env:TENTACLES_URL_TAG.zip ..."
-        python start.py tentacles -q --install --all
-        if ($LastExitCode -ne 0)
-        {
-          $Env:TENTACLES_URL_SUBCATEGORY = ""
-          If ($env:GITHUB_REF -like "*refs/tags/*") {
-            $Env:TENTACLES_URL_TAG = ""
-            $Env:TENTACLES_REPOSITORY = ""
-          } else {
-            $Env:TENTACLES_URL_TAG = "latest"
-            $Env:TENTACLES_REPOSITORY = ""
-          }
-          echo "Failed to download branch tentacles, trying to download tentacles package $Env:TENTACLES_URL_TAG.zip ..."
-          python start.py tentacles --install --all
-        }
-      shell: powershell
+      - name: Publish tag tentacles
+        if: startsWith(github.ref, 'refs/tags')
+        env:
+          S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
+        run: |
+          cp packages/tentacles/metadata.yaml ../metadata.yaml
+          sed -i "s/VERSION_PLACEHOLDER/${TARGET_BRANCH#refs/*/}/g" ../metadata.yaml
+          pants run //:start -- tentacles -m "../metadata.yaml" -d "../new_tentacles" -p "../any_platform.zip" -ite -ute ${{ secrets.TENTACLES_OFFICIAL_PATH }}/tentacles -upe ${{ secrets.TENTACLES_OFFICIAL_PATH }}/packages/full/${{ secrets.TENTACLES_REPOSITORY_NAME }}/
+          python packages/tentacles/scripts/clear_cloudflare_cache.py ${TARGET_BRANCH#refs/*/}
 
-    - name: Pytests
-      env:
-        DISABLE_SENTRY: True
-      run: |
-        pytest --cov=. --cov-config=.coveragerc --durations=0 -rw tests
-        pytest --durations=0 -rw --ignore=tentacles/Trading/Exchange tentacles
+      - name: Publish latest tentacles
+        if: github.ref == 'refs/heads/dev' && startsWith(github.ref, 'refs/tags') != true
+        env:
+          S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
+        run: |
+          cp packages/tentacles/metadata.yaml ../metadata.yaml
+          sed -i "s/VERSION_PLACEHOLDER/latest/g" ../metadata.yaml
+          pants run //:start -- tentacles -m "../metadata.yaml" -d "../new_tentacles" -p "../any_platform.zip" -upe ${{ secrets.TENTACLES_OFFICIAL_PATH }}/packages/full/${{ secrets.TENTACLES_REPOSITORY_NAME }}/
+          python packages/tentacles/scripts/clear_cloudflare_cache.py latest
+
+      - name: Publish stable tentacles
+        if: github.ref == 'refs/heads/master'
+        env:
+          S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
+        run: |
+          cp packages/tentacles/metadata.yaml ../metadata.yaml
+          sed -i "s/VERSION_PLACEHOLDER/stable/g" ../metadata.yaml
+          pants run //:start -- tentacles -m "../metadata.yaml" -d "../new_tentacles" -p "../any_platform.zip" -upe ${{ secrets.TENTACLES_OFFICIAL_PATH }}/packages/full/${{ secrets.TENTACLES_REPOSITORY_NAME }}/
+          python packages/tentacles/scripts/clear_cloudflare_cache.py stable
 
   build_sdist:
-    needs: tests
+    needs: [ tests ]
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
     name: Source distribution - Python ${{ matrix.version }} - Deploy
     runs-on: ${{ matrix.os }}
@@ -136,14 +200,18 @@ jobs:
           python-version: ${{ matrix.version }}
           architecture: ${{ matrix.arch }}
 
-      - name: Install dependencies
-        run: pip install --prefer-binary -r dev_requirements.txt -r requirements.txt -r full_requirements.txt
+      - name: Install Pants
+        uses: pantsbuild/actions/init-pants@v10
+        with:
+          gha-cache-key: ${{ runner.os }}-pants-build
+          named-caches-hash: ${{ hashFiles('pants.toml') }}
 
-      - name: Build sdist
-        run: python setup.py sdist
+      - name: Build packages with Pants
+        run: "pants package ::"
 
-      - name: Publish package
+      - name: Publish packages
         run: |
+          pip install twine
           python -m twine upload --repository-url ${{ secrets.PYPI_OFFICIAL_UPLOAD_URL }} -u __token__ -p ${{ secrets.PYPI_TOKEN }} --skip-existing dist/*
 
   notify:
@@ -151,6 +219,7 @@ jobs:
     needs:
       - lint
       - tests
+      - upload_tentacles
       - build_sdist
     uses: Drakkar-Software/.github/.github/workflows/failure_notify_workflow.yml@master
     secrets:

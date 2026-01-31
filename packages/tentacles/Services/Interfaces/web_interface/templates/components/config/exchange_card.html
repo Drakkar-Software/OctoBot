@@ -1,0 +1,185 @@
+{% import 'components/config/editable_config.html' as m_editable_config %}
+{% macro config_exchange_card(config, exchange, exchanges_details, is_supporting_future_trading,
+                              keys_value="*********", enabled=True,
+                              sandboxed=False, selected_exchange_type='spot', add_class='', config_values=None,
+                              full_config=True, lite_config=False) -%}
+    <!-- Card -->
+    <div data-role="exchange" class="card mb-4 {{add_class}} config-card">
+
+        <div class="card-header d-flex">
+            <div class="col-7 col-lg-5">
+                <h4 class="text-capitalize">
+                    {{exchange}}
+                    <span data-role="supporting-exchange" class="mx-md-4 d-none">
+                        <i class="fas fa-star" data-toggle="tooltip" data-placement="top" title="Partner exchange:
+                        Support the OctoBot project by trading on this exchange."></i>
+                    </span>
+                    <span data-role="valid-account"
+                          class="mx-md-4 d-none"
+                          data-toggle="tooltip"
+                          data-placement="top"
+                          title="Login successful">
+                        <i class="fas fa-check"></i>
+                    </span>
+                    <span data-role="supporting-account" class="mx-md-4 d-none">
+                        <i class="fas fa-trophy" data-toggle="tooltip" data-placement="top"
+                           title="Partner exchange: Thank you for supporting the OctoBot project by using this exchange !"></i>
+                    </span>
+                </h4>
+            </div>
+            <div class="col-5 col-lg-5">
+                <a href="" target="_blank" rel="noopener noreferrer" class="waves-effect">
+                    <img class="img-fluid product-logo exchange-logo d-none" src="" alt="{{exchange}}-logo" url="{{url_for('exchange_logo', name=exchange)}}">
+                </a>
+            </div>
+            {% if not lite_config %}
+            <div class="col-sm-5 col-lg-2 row">
+                <div data-role="websocket-mark" class="{{'' if exchanges_details['has_websockets'] else 'd-none'}} col">
+                    <div class="d-lg-flex justify-content-end">
+                        <i class="fas fa-bolt" data-toggle="tooltip" data-placement="top" title="This exchange can support
+                        many more trading pairs and is faster thanks to its websocket connection."></i>
+                    </div>
+                </div>
+                <div class="{{'' if exchanges_details['configurable'] else 'd-none'}} col">
+                    <div class="d-lg-flex justify-content-end">
+                        <a href="{{ url_for('config_tentacle', name=(exchange)) }}">
+                            <i class="fas fa-cog" data-toggle="tooltip" data-placement="top" title="Configure"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!--Card image-->
+        <div class="view overlay">
+          <!--{{ exchange }}-->
+        </div>
+
+        <!--Card content-->
+        <div class="card-body px-2 px-md-4" name="{{exchange}}" config-key="exchanges_{{exchange}}">
+            <div data-role="account-warning-details-wrapper" class="alert alert-danger d-none px-1 px-md-4">
+                <span data-role="account-warning-details">
+                    Unknown authentication error.
+                </span>
+            </div>
+            <div class="d-md-flex">
+                {% if full_config %}
+                    <div class="flex-grow-1">
+                    <p class="card-text api analytics-hidden">
+                        API Key : <a href="#"
+                                     id="exchange_api-key"
+                                     config-key="exchanges_{{exchange}}_api-key"
+                                     config-type="global_config"
+                                     config-value="{{config_values if config_values else keys_value}}"
+                                     startup-config-value="{{keys_value}}"
+                                     data-type="text"
+                                     data-pk="1"
+                                     data-title="Enter api key"
+                                     data-onblur="submit"
+                                     data-highlight=true
+                                     class="editable editable-click config-element">
+                        {{keys_value}}</a><br>
+
+                        API Secret : <a href="#"
+                                        id="exchange_api-secret"
+                                        config-key="exchanges_{{exchange}}_api-secret"
+                                        config-type="global_config"
+                                        config-value="{{config_values if config_values else keys_value}}"
+                                        startup-config-value="{{keys_value}}"
+                                        data-type="text"
+                                        data-pk="1"
+                                        data-title="Enter exchange api secret"
+                                         data-onblur="submit"
+                                         data-highlight=true
+                                        class="editable editable-click config-element">
+                        {{keys_value}}</a><br>
+
+                        <i>API Pass/UID</i>
+                        <i class="fa-solid fa-question"
+                           data-toggle="tooltip" data-placement="top"
+                           title="An API password or Memo/UID is required by some exchanges, leave as is otherwise.">
+                        </i> : <a href="#"
+                                  id="exchange_api-password"
+                                  config-key="exchanges_{{exchange}}_api-password"
+                                  config-type="global_config"
+                                  config-value="{{config_values if config_values else keys_value}}"
+                                  startup-config-value="{{keys_value}}"
+                                  data-type="text"
+                                  data-pk="1"
+                                  data-title="Enter exchange api password"
+                                  data-onblur="submit"
+                                  data-highlight=true
+                                  class="editable editable-click config-element">
+                        {{keys_value}}</a><br>
+                    </p>
+                </div>
+                {% endif %}
+                {% if not lite_config %}
+                <div class="">
+                    <div
+                            class="custom-control custom-switch"
+                            data-toggle="tooltip"
+                            data-placement="top"
+                            title="Disabled exchanges are not used by OctoBot.">
+                        <input type="checkbox"
+                               class="custom-control-input config-element"
+                               id="exchange_{{exchange}}_enabled"
+                               config-key="exchanges_{{exchange}}_enabled"
+                               config-type="global_config"
+                               config-value="{{enabled}}"
+                               startup-config-value="{{enabled}}"
+                               data-type="bool"
+                               {{ 'checked' if enabled else '' }}>
+                        <label class="custom-control-label" for="exchange_{{exchange}}_enabled">Enabled</label>
+                    </div>
+                    {% if full_config %}
+                    <div
+                            class="custom-control custom-switch"
+                            data-toggle="tooltip"
+                            data-placement="top"
+                            title="Enable the sandbox to use the exchange test website. Only works for exchanges supporting this feature.">
+                        <input type="checkbox"
+                               class="custom-control-input config-element"
+                               id="exchange_{{exchange}}_sandboxed"
+                               config-key="exchanges_{{exchange}}_sandboxed"
+                               config-type="global_config"
+                               config-value="{{sandboxed}}"
+                               startup-config-value="{{sandboxed}}"
+                               data-type="bool"
+                               {{ 'checked' if sandboxed else '' }}>
+                        <label class="custom-control-label" for="exchange_{{exchange}}_sandboxed">Trade in exchange sandbox</label>
+                    </div>
+                    {% else %}
+                    <span
+                         config-key="exchanges_{{exchange}}_exchange-type"
+                         config-type="global_config"
+                         config-value="{{selected_exchange_type}}"
+                         startup-config-value="{{selected_exchange_type}}"
+                         current-value="{{selected_exchange_type}}"
+                         data-type="text"
+                         data-summary-field="radio-select"
+                         class="row mx-auto config-element"
+                    >
+                        {% for exchange_type in exchanges_details['supported_exchange_types'] %}
+                        <div class="col form-check">
+                          <input class="form-check-input" type="radio"
+                                 name="exchangeTypeRadioOptions{{exchange}}"
+                                 id="exchangeTypeRadio{{exchange}}{{exchange_type.value}}"
+                                 value="{{exchange_type.value}}"
+                                 {{'checked' if exchange_type.value == selected_exchange_type else ''}}>
+                          <label class="col form-check-label"
+                                 for="exchangeTypeRadio{{exchange}}{{exchange_type.value}}">{{exchange_type.value}}</label>
+                        </div>
+                        {% endfor %}
+                    </span>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+            {% if full_config and not lite_config %}
+            <button type="button" class="btn btn-danger remove-btn px-3 waves-effect"><i class="fa fa-ban" aria-hidden="true"></i> Remove</button>
+            {% endif %}
+        </div>
+    </div>
+{%- endmacro %}

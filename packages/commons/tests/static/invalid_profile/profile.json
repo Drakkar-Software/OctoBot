@@ -1,0 +1,50 @@
+{
+  "profile": {
+    "avatar": "default_profile.png",
+    "description": "OctoBot default profile.",
+    "id": "invalid_profile",
+    "name": "default",
+    "origin_url": "https://default.url"
+  },
+  "config": {
+    "crypto-currencies": {
+      "Bitcoin": {
+        "pairs": [
+          "BTC/USDT"
+        ]
+      },
+      "plop": {
+        "pairs": [
+          "BTC/USDT"
+        ],
+        "config": {
+          "i should not be there": true
+        }
+      }
+    },
+    "exchanges": {
+      "binance": {
+        "enabled": true
+      }
+    },
+    "trading": {
+      "reference-market": "BTC",
+      "risk": 0.5
+    },
+    "trader": {
+      "enabled": false,
+      "load-trade-history": true
+    },
+    "trader-simulator": {
+      "enabled": true,
+      "fees": {
+        "maker": 0.1,
+        "taker": 0.1
+      },
+      "starting-portfolio": {
+        "BTC": 10,
+        "USDT": 1000
+      }
+    }
+  }
+}

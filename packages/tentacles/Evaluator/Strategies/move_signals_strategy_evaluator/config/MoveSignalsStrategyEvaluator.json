@@ -1,0 +1,5 @@
+{
+  "required_time_frames" : ["30m", "1h", "4h"],
+  "required_evaluators" : ["InstantFluctuationsEvaluator", "KlingerOscillatorMomentumEvaluator", "BBMomentumEvaluator"],
+  "default_config" : ["KlingerOscillatorMomentumEvaluator", "BBMomentumEvaluator"]
+}

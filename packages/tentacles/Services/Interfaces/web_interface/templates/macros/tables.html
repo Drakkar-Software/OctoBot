@@ -1,0 +1,109 @@
+{% macro order_tr(order, type='', timestamp='', sim_or_real='Simulated') -%}
+    <tr>
+        <td>{{ order.symbol }}</td>
+        <td class="text-center">{{ type.replace("_", " ")}}</td>
+        <td>{{ order.origin_price if not order.origin_stop_price else order.origin_stop_price}}</td>
+        <td>{{ order.origin_quantity }}</td>
+        <td>{{ order.exchange_manager.exchange.name if order.exchange_manager else '' }}</td>
+        <td>{{ timestamp }}</td>
+        <td class="text-right" data-order="{{ order.total_cost }}">
+            {{ order.total_cost }} {{ order.market }}
+        </td>
+        <td scope="row">
+            {% if sim_or_real == 'Simulated' %}
+                {{ sim_or_real }}
+            {% else %}
+                {{ sim_or_real }} {{"(virtual)" if order.is_self_managed()}}
+            {% endif %}
+        </td>
+        <td class="text-center py-1">
+            <button type="button" class="btn btn-sm btn-outline-danger waves-effect" action="cancel_order" order_desc="{{ order.order_id }}" update-url="{{ url_for('api.orders', action='cancel_order') }}"><i class="fas fa-ban"></i></button>
+        </td>
+    </tr>
+{%- endmacro %}
+
+{% macro position_tr(position, sim_or_real='Simulated') -%}
+    {% if not position.is_idle() %}
+    <tr>
+        <td>{{ position.side.value | upper }} {{ position.symbol_contract }}</td>
+        <td>{{ position.size | round(5) }}</td>
+        <td>{{ position.value | round(5) }} {{ position.currency if position.symbol_contract.is_inverse_contract() else position.market }}</td>
+        <td>{{ position.entry_price | round(5) }}</td>
+        <td>{{ position.liquidation_price | round(5) }}</td>
+        <td>{{ position.margin | round(5) }} {{ position.currency if position.symbol_contract.is_inverse_contract() else position.market }}</td>
+        <td>{{ position.unrealized_pnl | round(5) }} {{ position.currency if position.symbol_contract.is_inverse_contract() else position.market }} ({{ position.get_unrealized_pnl_percent() | round(5) }}%)</td>
+        <td>{{ position.exchange_manager.exchange.name if position.exchange_manager else '' }}</td>
+        <td>{{ sim_or_real }}</td>
+        <td class="text-center py-1">
+            <button type="button" class="btn btn-sm btn-outline-danger waves-effect" data-action="close_position"
+                    data-position_symbol="{{ position.symbol }}" data-position_side="{{ position.side.value }}"
+                    data-update-url="{{ url_for('api.positions', action='close_position') }}">
+                <i class="fas fa-ban"></i>
+            </button>
+        </td>
+    </tr>
+    {% endif %}
+{%- endmacro %}
+
+{% macro trades_tr(trade, type='', timestamp='', sim_or_real='Simulated') -%}
+    <tr>
+        <td>{{ trade.symbol }}</td>
+        <td class="text-center">{{ type.replace("_", " ")}}</td>
+        <td>{{ trade.executed_price }}</td>
+        <td>{{ trade.executed_quantity }}</td>
+        <td>{{ trade.exchange_manager.exchange.name if trade.exchange_manager else ''}}</td>
+        <td class="text-right" data-order="{{ trade.total_cost }}">{{ trade.total_cost }} {{ trade.market }}</td>
+        <td class="text-right" data-order="{{ trade.fee['cost'] }}">{{ trade.fee['cost'] }} {{ trade.fee['currency'] }}</td>
+        <td class="text-right">{{ timestamp }}</td>
+        <td class="text-right">{{ trade.trade_id }}</td>
+        <td>{{ sim_or_real }}</td>
+    </tr>
+{%- endmacro %}
+
+{% macro logs_tr(log) -%}
+    <tr
+    {% if "ERROR" in log["Level"] %}
+        class="bg-danger"
+    {% endif %}
+    {% if "WARNING" in log["Level"] %}
+        class="bg-warning-dark"
+    {% endif %}
+    >
+        <td>{{ log["Time"] }}</td>
+        <td>{{ log["Level"] }}</td>
+        <td>{{ log["Source"] }}</td>
+        <td>{{ log["Message"] }}</td>
+    </tr>
+{%- endmacro %}
+
+{% macro notifications_tr(notification) -%}
+    <tr
+    {% if "ERROR" in notification["Level"] %}
+        class="bg-danger"
+    {% endif %}
+    {% if "WARNING" in notification["Level"] %}
+        class="bg-warning-dark"
+    {% endif %}
+    >
+        <td>{{ notification["Time"] }}</td>
+        <td>{{ notification["Title"] }}</td>
+        <td>{{ notification["Message"] }}</td>
+        <td>{{ notification["Level"] }}</td>
+    </tr>
+{%- endmacro %}
+
+{% macro top_tr(item) -%}
+    <tr
+    {% if item["rank"] == 0 %}
+        class="unique-color-dark"
+    {% elif item["rank"] == 1 %}
+        class="unique-color"
+    {% elif item["rank"] == 2 %}
+        class="special-color"
+    {% endif %}
+    >
+        <td scope="row">{{ item["rank"] }}</td>
+        <td class="text-capitalize">{{ item["name"] }}</td>
+        <td>{{ item["count"] }}</td>
+    </tr>
+{%- endmacro %}

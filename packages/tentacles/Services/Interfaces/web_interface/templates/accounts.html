@@ -1,0 +1,191 @@
+{% extends "layout.html" %}
+{% set active_page = "accounts" %}
+{% set startup_messages_added_classes = "justify-content-end px-4" %}
+{% set inner_startup_messages_added_classes = "offset-md-3 offset-lg-2 offset-1" %}
+{% import 'components/config/exchange_card.html' as m_config_exchange_card %}
+{% import 'components/config/service_card.html' as m_config_service_card %}
+{% import 'components/config/notification_config.html' as m_config_notification %}
+
+{% set config_default_value = "Bitcoin" %}
+{% set added_class = "new_element" %}
+
+
+{% block additional_style %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/configuration.css', u=LAST_UPDATED_STATIC_FILES) }}">
+{% endblock additional_style %}
+
+{% block body %}
+<div class="row mt-md-4 mt-2">
+  <nav class="mt-md-4 mt-2 col-md-3 col-lg-2 col-1 d-block sidebar shadow">
+      <div class="sidebar-sticky mt-0 pt-0">
+        <div class="col-8 d-none d-md-block">
+            <div class="px-1 px-md-4">
+                <h4>Accounts settings</h4>
+            </div>
+        </div>
+        <div class="nav flex-column bordered pt-0 mt-0 mt-md-4" id="v-tab" role="tablist" aria-orientation="vertical">
+          <a class="nav-link pl-2 pl-sm-3 waves-effect d-flex" data-tab="default" id="panelExchanges-tab" data-toggle="pill" href="#panelExchanges" role="tab" aria-controls="panelExchanges" aria-selected="false">
+              <i class="fas fa-exchange-alt my-auto"></i><span class="d-none d-md-block pl-3">Exchanges</span>
+          </a>
+          <a class="nav-link pl-2 pl-sm-3 waves-effect d-flex" id="panelServices-tab" data-toggle="pill" href="#panelServices" role="tab" aria-controls="panelServices" aria-selected="false">
+              <i class="fas fa-share-alt my-auto"></i><span class="d-none d-md-block pl-3">Interfaces</span>
+          </a>
+          <a class="nav-link pl-2 pl-sm-3 waves-effect d-flex" id="panelNotifications-tab" data-toggle="pill" href="#panelNotifications" role="tab" aria-controls="panelNotifications" aria-selected="false">
+              <i class="fas fa-bell my-auto"></i><span class="d-none d-md-block pl-3">Notifications</span>
+          </a>
+        </div>
+        <a class="w-100 my-3 p-2 pl-sm-3 btn btn-lg btn-outline-primary waves-effect d-flex mx-0" id="save-config" href="#" role="tab" aria-selected="false" update-url="{{ url_for('config') }}">
+            <i class="fas fa-save my-auto"></i><span class="d-none d-md-block pl-2">Save</span>
+        </a>
+        <a class="w-100 my-3 p-2 pl-sm-3 btn btn-lg btn-outline-primary waves-effect d-flex mx-0" id="reset-config" href="#" role="tab" aria-selected="false">
+            <i class="fas fa-redo-alt my-auto"></i><span class="d-none d-md-block pl-2">Reset all</span>
+        </a>
+        <button class="w-100 my-3 p-2 pl-sm-3 btn btn-lg btn-outline-primary waves-effect d-flex mx-0 mt-3 mt-mb-5 mb-5" id="save-config-and-restart" href="#" role="tab" type="button" aria-selected="false" update-url="{{ url_for('config') }}">
+            <i class="fas fa-power-off my-auto"></i><span class="d-none d-md-block pl-2">Apply changes and restart</span>
+        </button>
+    </div>
+  </nav>
+  <main role="main" class="col-md-9 col-lg-10 col-11 ml-auto px-4">
+    <div class="tab-content" id="super-container">
+      <div class="tab-pane fade config-root show" id="panelExchanges" role="tabpanel" aria-labelledby="panelExchanges-tab">
+          <div class="card">
+            <div class="card-header">
+                <h2>Exchanges
+                    <a class="float-right blue-text" target="_blank" data-intro="account_exchanges">
+                        <i class="fa-solid fa-question"></i>
+                    </a>
+                </h2>
+            </div>
+            <div class="card-body deck-container">
+                <div class="card" id="new-exchange-selector">
+                    <div class="card-body">Add a new exchange :
+                        <select id="AddExchangeSelect" class="selectpicker" data-live-search="true" data-window-padding="50">
+                            <optgroup label="OctoBot fully tested">
+                               {% for exchange in ccxt_tested_exchanges %}
+                                    {% set has_ws = exchanges_details[exchange] and exchanges_details[exchange]['has_websockets'] %}
+                                    <option data-tokens="{{ exchange }}" data-ws="{{ 'True' if has_ws else 'False'}}">{{ exchange }}</option>
+                               {% endfor %}
+                            </optgroup>
+                            {% if ccxt_simulated_tested_exchanges %}
+                            <optgroup label="OctoBot tested with simulated trading">
+                               {% for exchange in ccxt_simulated_tested_exchanges %}
+                                    {% set has_ws = exchanges_details[exchange] and exchanges_details[exchange]['has_websockets'] %}
+                                    <option data-tokens="{{ exchange }}" data-ws="{{ 'True' if has_ws else 'False' }}">{{ exchange }}</option>
+                               {% endfor %}
+                            </optgroup>
+                            {% endif %}
+                            <optgroup label="OctoBot untested">
+                               {% for exchange in ccxt_other_exchanges %}
+                                    {% set has_ws = exchanges_details[exchange] and exchanges_details[exchange]['has_websockets'] %}
+                                    <option data-tokens="{{ exchange }}" data-ws="{{ 'True' if has_ws else 'False' }}">{{ exchange }}</option>
+                               {% endfor %}
+                            </optgroup>
+                        </select>
+                        <button type="button" id="AddExchange" class="btn btn-primary add-btn px-3 waves-effect"><i class="fa fa-plus pr-2" aria-hidden="true"></i> Add</button>
+                    </div>
+                </div>
+                <br>
+                <div class="alert alert-info" role="alert">
+                    <i class="fa-regular fa-lightbulb"></i> Add exchanges here and select the ones to use in your profile settings. Switch to <span class="font-weight-bold">futures or spot</span> trading in your <a href="{{url_for('profile', _anchor='panelExchanges')}}">profile exchange settings</a>.
+                </div>
+                <!-- Card deck -->
+                <div class="card-deck config-container" id="exchange-container" update-url="{{ url_for('api.are_compatible_accounts') }}">
+                    {% for exchange in config_exchanges %}
+                        {{ m_config_exchange_card.config_exchange_card(config_exchanges,
+                                                                       exchange,
+                                                                       exchanges_details[exchange],
+                                                                       is_supporting_future_trading,
+                                                                       enabled=config_exchanges[exchange].get('enabled', True),
+                                                                       sandboxed=config_exchanges[exchange].get('sandboxed', False),
+                                                                       selected_exchange_type=config_exchanges[exchange].get('exchange-type', 'spot'),
+                                                                       full_config=True)}}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+      </div>
+      <div class="tab-pane fade config-root" id="panelServices" role="tabpanel" aria-labelledby="panelServices-tab">
+          <div class="card">
+            <div class="card-header"><h2>Interfaces</h2></div>
+            <div class="card-body deck-container">
+                <div class="card">
+                    <div class="card-body">Add a new interface :
+                    <select id="AddServiceSelect" class="selectpicker" data-live-search="true">
+                       {% for service in services_list | sort() %}
+                            <option data-tokens="{{ service }}">{{ service }}</option>
+                       {% endfor %}
+                    </select>
+                    <button type="button" id="AddService" class="btn btn-primary add-btn px-3 waves-effect"><i class="fa fa-plus pr-2" aria-hidden="true"></i> Add</button>
+                    </div>
+                </div>
+                <br>
+                <!-- Card deck -->
+                <div class="card-deck config-container" update-url="{{ url_for('config') }}">
+                    {% for service in services_list %}
+                        {% if service in config_services %}
+                            {{ m_config_service_card.config_service_card(config_services, service, services_list[service], extension_name=OCTOBOT_EXTENSION_PACKAGE_1_NAME) }}
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+      </div>
+      <div class="tab-pane fade config-root" id="panelNotifications" role="tabpanel" aria-labelledby="panelNotifications-tab">
+          <div class="card">
+            <div class="card-header">
+                <h2>
+                    Notifications
+                    <a class="float-right blue-text" target="_blank" rel="noopener" href="{{OCTOBOT_DOCS_URL}}/octobot-configuration/accounts#notifications">
+                        <i class="fa-solid fa-question"></i>
+                    </a>
+                </h2>
+            </div>
+            <div class="card-body deck-container">
+                <!-- Card deck -->
+                <div class="card-deck config-container">
+                    {{ m_config_notification.config_notification(config_notifications, "notification", notifiers_list) }}
+                </div>
+            </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Default cards -->
+<div class="d-none">
+    <!-- Exchange -->
+    <div id="AddExchange-template-default">
+        {{ m_config_exchange_card.config_exchange_card( config=config_exchanges,
+                                                        exchange=config_default_value,
+                                                        exchanges_details=exchanges_details,
+                                                        is_supporting_future_trading=is_supporting_future_trading,
+                                                        add_class=added_class,
+                                                        keys_value="NO KEY",
+                                                        config_values="no value",
+                                                        full_config=True) }}
+    </div>
+
+    <!-- Services -->
+    <div id="AddService-template-default">
+        {% for service in services_list %}
+            <div id="AddService-template-default-{{service}}">
+            {{ m_config_service_card.config_service_card(  config_services,
+                                                           service,
+                                                           services_list[service],
+                                                           add_class=added_class,
+                                                           no_select=True,
+                                                           default_values=True,
+                                                           extension_name=OCTOBOT_EXTENSION_PACKAGE_1_NAME) }}
+            </div>
+        {% endfor %}
+    </div>
+</div>
+<br>
+{% endblock %}
+
+{% block additional_scripts %}
+<script src="{{ url_for('static', filename='js/common/resources_rendering.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+<script src="{{ url_for('static', filename='js/common/exchange_accounts.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+<script src="{{ url_for('static', filename='js/components/configuration.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+{% endblock additional_scripts %}

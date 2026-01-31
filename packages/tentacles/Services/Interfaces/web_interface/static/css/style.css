@@ -1,0 +1,729 @@
+/*
+ * Drakkar-Software OctoBot
+ * Copyright (c) Drakkar-Software, All rights reserved.
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3.0 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library.
+ */
+
+/* variables */
+/* commons */
+:root {
+    --mdb-body-font-family: DM Sans, sans-serif;
+    --local-secondary-bg-text-color: #0f1237;   /* same as dark mdb-primary */
+    --local-price-chart-sell-color: #F65A33;
+    --local-price-chart-stop-color: #FFA500;
+}
+
+:root[data-mdb-theme=light] {
+    --mdb-primary: #0f1237;
+    --mdb-primary-rgb: 15, 18, 55;
+    --mdb-primary-500: #5ba0cc;
+    --mdb-primary-500-rgb: 91, 106, 204;
+    --mdb-secondary: #85d6d7;
+    --mdb-secondary-rgb: 133, 214, 215;
+    --mdb-secondary-500: #65e7cf;
+    --mdb-secondary-500-rgb: 101, 231, 207;
+    --mdb-bg: #f3f6f8;
+    --mdb-bg-500: #85d6d7;
+
+    /* text */
+    --mdb-emphasis-color-rgb: var(--mdb-primary-rgb);
+    --mdb-primary-text-emphasis: var(--mdb-primary);
+    --mdb-heading-color: var(--mdb-primary);
+
+    /* links */
+    --mdb-link-color: var(--mdb-secondary);
+    --mdb-link-color-rgb: var(--mdb-secondary-rgb);
+    --mdb-link-hover-color: var(--mdb-secondary-500);
+    --mdb-link-hover-color-rgb: var(--mdb-secondary-500-rgb);
+
+    /* navbar */
+    --mdb-navbar-color: var(--mdb-primary);
+    --mdb-nav-link-color: var(--mdb-primary);
+
+    /* body */
+    --mdb-body-color: var(--mdb-primary);
+    --mdb-body-color-rgb: var(--mdb-primary-rgb);
+    --mdb-body-bg: var(--mdb-bg);
+    --mdb-body-bg-rgb: var(--mdb-bg-rgb);
+
+    /* button */
+    --mdb-button-color: var(--mdb-primary);
+    --mdb-outline-button-color: var(--mdb-primary);
+
+    /* table */
+    --mdb-table-headings-bg: var(--mdb-secondary);
+    --mdb-table-headings-color: var(--mdb-primary);
+
+    /* cards */
+    --mdb-card-modified-border-color: var(--mdb-orange);
+    --mdb-card-container-modified-border-color: var(--mdb-orange);
+    --mdb-card-status-color: var(--mdb-bg);
+    --mdb-card-very-long-border-color: var(--mdb-secondary-500);
+    --mdb-card-long-border-color: var(--mdb-secondary);
+    --mdb-card-short-border-color: var(--mdb-orange);
+    --mdb-card-very-short-border-color: var(--mdb-red);
+    --mdb-card-bg: var(--mdb-bg);
+    --mdb-card-color: var(--mdb-primary);
+    --mdb-surface-bg: var(--mdb-bg);
+
+    /* navbar */
+    --mdb-navbar-bg: var(--mdb-bg);
+    --mdb-navbar-brand-color: var(--mdb-primary);
+
+    /* local */
+    /* config cards */
+    --local-config-card--border-width: 0px;
+
+    /* price charts */
+    --local-price-chart-buy-color: #6cb596;
+    --local-price-chart-candle-sell-color: var(--local-price-chart-sell-color);
+    --local-price-chart-candle-buy-color: #6cb596;
+}
+
+:root[data-mdb-theme=dark] {
+    --mdb-primary: #f3f6f8;
+    --mdb-primary-rgb: 243, 246, 248;
+    --mdb-secondary: #85d6d7;
+    --mdb-secondary-rgb: 133, 214, 215;
+    --mdb-secondary-500: #65e7cf;
+    --mdb-secondary-500-rgb: 101, 231, 207;
+    --mdb-bg: #0f1237;
+    --mdb-bg-rgb: 15, 18, 55;
+    --mdb-bg-500: #19283e;
+
+    /* text */
+    --mdb-emphasis-color-rgb: var(--mdb-primary-rgb);
+    --mdb-primary-text-emphasis: var(--mdb-primary);
+    --mdb-heading-color: var(--mdb-primary);
+
+    /* links */
+    --mdb-link-color: var(--mdb-secondary);
+    --mdb-link-color-rgb: var(--mdb-secondary-rgb);
+    --mdb-link-hover-color: var(--mdb-secondary-500);
+    --mdb-link-hover-color-rgb: var(--mdb-secondary-500-rgb);
+
+    /* navbar */
+    --mdb-navbar-color: var(--mdb-primary);
+    --mdb-nav-link-color: var(--mdb-primary);
+
+    /* body */
+    --mdb-body-color: var(--mdb-primary);
+    --mdb-body-color-rgb: var(--mdb-primary-rgb);
+    --mdb-body-bg: var(--mdb-bg);
+    --mdb-body-bg-rgb: var(--mdb-bg-rgb);
+
+    /* button */
+    --mdb-button-color: var(--mdb-bg);
+    --mdb-outline-button-color: var(--mdb-primary);
+
+    /* table */
+    --mdb-table-headings-bg: var(--mdb-bg);
+    --mdb-table-headings-color: var(--mdb-secondary);
+
+   /* cards */
+    --mdb-card-modified-border-color: var(--mdb-orange);
+    --mdb-card-container-modified-border-color: var(--mdb-orange);
+    --mdb-card-status-color: var(--mdb-bg);
+    --mdb-card-very-long-border-color: var(--mdb-secondary-500);
+    --mdb-card-long-border-color: var(--mdb-secondary);
+    --mdb-card-short-border-color: var(--mdb-orange);
+    --mdb-card-very-short-border-color: var(--mdb-red);
+    --mdb-card-bg: var(--mdb-secondary);
+    --mdb-card-color: var(--mdb-primary);
+    --mdb-surface-bg: var(--mdb-bg-500);
+
+    /* navbar */
+    --mdb-navbar-bg: var(--mdb-bg);
+    --mdb-navbar-brand-color: var(--mdb-primary);
+
+    /* local */
+    /* config cards */
+    --local-config-card--border-width: 1px;
+
+    /* price charts */
+    --local-price-chart-buy-color: #6cb596;
+    --local-price-chart-candle-sell-color: var(--local-price-chart-sell-color);
+    --local-price-chart-candle-buy-color: #65e7cf;
+}
+
+/* Fix incompatibility with bootstrap 4 */
+a:hover {
+    color: var(--mdb-link-hover-color);
+}
+
+/* Fix declarations */
+.nav-link, .navbar-brand, .card-body, .card-footer, .card-header, .select2-results__option, .filter-option {
+    color: var(--mdb-primary);
+}
+
+.dropdown, .datepicker, .select2-container--default .select2-selection--multiple, .select2-results__option {
+    background-color: var(--mdb-bg);
+}
+
+.dropdown.bootstrap-select, .datepicker, .select2-selection select2-selection--multiple {
+    border: solid black 1px;
+    border-radius: 4px;
+}
+
+.nav-tabs .nav-link {
+    --mdb-nav-tabs-link-active-color: var(--mdb-secondary);
+    --mdb-nav-tabs-link-active-border-color: var(--mdb-secondary);
+}
+
+.btn-primary {
+    --mdb-btn-bg: var(--mdb-secondary);
+    --mdb-btn-color: var(--mdb-button-color);
+    --mdb-btn-box-shadow: 0 4px 9px -4px var(--mdb-secondary-500);
+    --mdb-btn-hover-bg: var(--mdb-secondary-500);
+    --mdb-btn-focus-bg: var(--mdb-secondary-500);
+    --mdb-btn-active-bg: var(--mdb-secondary-500);
+    --mdb-btn-disabled-bg:  var(--mdb-secondary);
+}
+
+.btn-outline-primary {
+    /*--mdb-btn-bg: var(--mdb-secondary);*/
+    --mdb-btn-color: var(--mdb-outline-button-color) !important;
+    --mdb-btn-box-shadow: 0 4px 9px -4px var(--mdb-secondary);
+    --mdb-btn-hover-color: var(--mdb-primary);
+    --mdb-btn-hover-border-color: var(--mdb-secondary);
+    --mdb-btn-focus-shadow-rgb: var(--mdb-secondary-rgb);
+    --mdb-btn-hover-bg: var(--mdb-secondary);
+    --mdb-btn-focus-bg: var(--mdb-secondary);
+    --mdb-btn-active-bg: var(--mdb-secondary);
+    --mdb-btn-focus-color:  var(--mdb-secondary);
+    --mdb-btn-active-color: var(--mdb-secondary);
+    --mdb-btn-active-border-color: var(--mdb-secondary);
+    --mdb-btn-outline-border-color: var(--mdb-secondary);
+    --mdb-btn-outline-focus-border-color: var(--mdb-secondary);
+    --mdb-btn-outline-hover-border-color: var(--mdb-secondary);
+}
+
+.editable-cancel {
+    --mdb-btn-bg: var(--mdb-bg);
+    --mdb-btn-color: var(--mdb-primary);
+    --mdb-btn-box-shadow: 0 4px 9px -4px var(--mdb-secondary);
+    --mdb-btn-hover-color: var(--mdb-primary);
+    --mdb-btn-hover-border-color: var(--danger);
+    --mdb-btn-focus-shadow-rgb: var(--mdb-secondary-rgb);
+    --mdb-btn-hover-bg: var(--danger);
+    --mdb-btn-focus-bg: var(--danger);
+    --mdb-btn-active-bg: var(--danger);
+    --mdb-btn-focus-color:  var(--mdb-secondary);
+    --mdb-btn-active-color: var(--mdb-secondary);
+    --mdb-btn-active-border-color: var(--danger);
+    --mdb-btn-outline-border-color: var(--mdb-secondary);
+    --mdb-btn-outline-focus-border-color: var(--mdb-secondary);
+    --mdb-btn-outline-hover-border-color: var(--mdb-secondary);
+}
+
+.table th, th {
+    color: var(--mdb-table-headings-color);
+}
+
+.table {
+    --mdb-table-color: var(--mdb-primary);
+    --mdb-table-striped-color: var(--mdb-primary);
+}
+
+.table td, .table th {
+    border-top: none;
+}
+
+/* toast */
+#toast-container>.toast-warning {
+    background-image: none !important;
+}
+
+#toast-container>.toast-error {
+    background-image: none !important;
+}
+
+#toast-container>.toast-success {
+    background-image: none !important;
+}
+
+#toast-container>.toast-info {
+    background-image: none !important;
+}
+
+.bg-light, .btn-light {
+    background-color: transparent !important;
+}
+
+.select2-selection__choice {
+    background-color: var(--mdb-secondary) !important;
+    color: var(--mdb-button-color) !important;
+}
+
+.select2-container--default .select2-results__option--selected {
+    background-color: var(--mdb-secondary) !important;
+    color: var(--mdb-button-color) !important;
+}
+
+/* modal */
+.close {
+    color: var(--mdb-primary);  /* ensure close button is visible in both themes */
+}
+.close:hover {
+    color: var(--mdb-secondary);  /* ensure close button is visible in both themes */
+}
+
+.fs-1 {
+    font-size: 4rem !important;
+}
+
+/* plotly */
+.gtitle, .xtitle, .xtick text {
+    fill: var(--mdb-primary) !important;
+}
+
+/*override mdb <strong> font-weight */
+strong {
+    font-weight: bolder;
+}
+
+.editable {
+    display: inline;
+}
+
+.bg-warning-dark {
+    background-color: #FF8800 !important;
+}
+
+.toast-top-right {
+    top: 4rem;
+}
+
+#toast-container>div {
+    color: var(--mdb-primary);
+}
+
+.quote {
+    border-left: 5px solid #1565C0;
+}
+
+html, body {
+    height: 100%;
+    min-height: 100%;
+}
+
+@media screen and (min-width: 768px) {  /*equivalent of bootstrap -md filter*/
+    .w-md-75 {
+        width: 75% !important;
+    }
+}
+
+@media screen and (min-width: 992px) {  /*equivalent of bootstrap -lg filter*/
+    .w-lg-50 {
+        width: 50% !important;
+    }
+}
+
+.login_box {
+    max-width: 30rem;
+}
+
+.brand-logo {
+    height: 100%;
+    width: 100%;
+    max-height: 2.5rem;
+    max-width: 2.5rem;
+}
+
+.navbar-logo {
+    height: 100%;
+    width: 100%;
+    max-height: 3rem;
+    max-width: 3rem;
+}
+
+.profile-overview-values {
+    font-weight: bold;
+}
+
+.profile-overview-explanation {
+    font-weight: inherit;
+}
+
+.profile-overview {
+    border: 2px solid black;
+}
+
+.vertically-aligned {
+    justify-content: space-between;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.profile-overview:hover {
+    animation: all 0.2s ease-in forwards;
+    border-bottom: 2px solid white;
+    border-right: 2px solid white;
+}
+
+.profile-overview-selected {
+    border-bottom: 2px solid var(--mdb-secondary-500);
+    border-right: 2px solid var(--mdb-secondary-500);
+}
+
+.profile-overview-image {
+    max-height: 120px;
+    max-width: 120px;
+}
+
+footer.page-footer {
+    color: var(--mdb-primary-text-emphasis);
+    background-color: var(--mdb-navbar-bg);
+    box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.navbar {
+    background-color: var(--mdb-navbar-bg);
+}
+
+.navbar .navbar-nav .nav-item:hover {
+    animation: all 0.2s ease-in forwards;
+    border-bottom: 2px solid var(--mdb-secondary);
+}
+
+.navbar .navbar-nav .nav-item.active {
+    border-bottom: 2px solid var(--mdb-secondary);
+}
+
+.dropdown-toggle::after {
+    margin-top: auto;
+    margin-bottom: auto;
+    transform: rotate(180deg);
+}
+
+.dropdown-toggle.collapsed::after {
+    margin-top: auto;
+    margin-bottom: auto;
+    transform: none;
+}
+
+.sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 10; /* Behind the navbar */
+    padding: 48px 0 0; /* Height of navbar */
+    box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
+}
+
+@supports ((position: -webkit-sticky) or (position: sticky)) {
+    .sidebar-sticky {
+        position: -webkit-sticky;
+        position: sticky;
+    }
+}
+
+.sidebar-sticky {
+    position: relative;
+    top: 0;
+    height: calc(100vh - 48px);
+    padding-top: .5rem;
+    overflow-x: hidden;
+    overflow-y: auto; /* Scrollable contents if viewport is shorter than content. */
+}
+
+.sidebar .nav-title {
+    margin-left: 2rem;
+}
+
+.separator {
+    border-bottom: 1px solid var(--mdb-secondary);
+}
+
+.btn.btn-sm.rounded-circle {
+    padding-left: 0.64rem;
+    padding-right: 0.64rem;
+    border-radius: 50%;
+}
+
+.font-size-90 {
+    font-size: 90% !important;
+}
+
+/* Cards */
+.card-deck {
+    display: flex;
+    justify-content: flex-start;
+    flex-flow: row wrap;
+    align-items: stretch;
+}
+
+.card {
+    display: block;
+    flex-basis: 33.3%;
+    . rounded-bottom !important;
+}
+
+.card.profile-card {
+    flex-basis: inherit !important;
+}
+
+.config-card {
+    border: var(--local-config-card--border-width) solid rgba(var(--mdb-primary-rgb), 0.3);
+}
+
+.community-bot-stats-label {
+  font-weight: bold;
+  font-size: x-large;
+  color: var(--mdb-primary);
+}
+
+.community-bot-stats {
+  font-size: large;
+  color: var(--mdb-button-color);
+  background-color: var(--mdb-secondary-500);
+}
+
+.package_row_image {
+    max-height: 4rem;
+}
+
+.table td.centered {
+    text-align: center;
+    vertical-align: middle;
+}
+
+.tentacle_package_action {
+    font-size: 1.5rem;
+}
+
+.blurred {
+    filter: blur(0.1rem);
+}
+
+.card,
+.block-card {
+    flex-basis: 100% !important;
+}
+@media screen and (min-width: 768px) {  /*equivalent of bootstrap -md filter*/
+    .card,
+    .block-card {
+        flex-basis: 50% !important;
+    }
+}
+
+.bg-darker {
+    background-color: #121212;
+}
+
+.text-danger-darker {
+    color: #C62828;
+}
+
+.disabled-text {
+    color: grey;
+}
+
+.medium-size {
+    max-width: 18rem;
+    min-width: 12rem;
+    justify-content: space-between;
+    display: flex;
+}
+
+.medium-size .card-body {
+    flex: 0 0 auto;
+}
+
+.small-size {
+    max-width: 18rem;
+    min-width: 12rem;
+    min-height: 14rem;
+}
+
+.very-small-size {
+    max-width: 3rem;
+    min-width: 2rem;
+    max-height: 3rem;
+    min-height: 2rem;
+}
+
+.cloud-logo {
+    max-width: 6rem;
+    min-width: 4rem;
+    max-height: 6rem;
+    min-height: 4rem;
+}
+
+.cloud-logo-2x {
+    max-height: 8rem;
+}
+
+.cloud-logo-4x {
+    max-height: 24rem;
+}
+
+.feature-margin {
+    margin-top: 10rem;
+}
+
+.img-feature {
+    max-height: 20rem;
+    margin: auto;
+    display: block;
+}
+
+/* Theme */
+/* Elegant */
+.card-body.candle-graph {
+    height: 30.625rem;
+    background-color: inherit;
+}
+
+.select2-results__group{
+    font-weight: bold;
+    text-align: center;
+    border-top: 1px solid #e9ecef;
+    font-size: .875rem;
+}
+
+.small-image {
+    max-height: 128px;
+    max-width: 128px;
+}
+
+.help-section {
+    padding-bottom: 0.4rem;
+}
+
+.fa-1_5x {
+    font-size: 1.5em;
+}
+
+.fa.fa-spinner {
+    font-size: 1.4em;
+}
+
+.fa.fa-spinner.fa-2xl {
+    font-size: 32px;
+}
+
+span.large-editable div.editable-input {
+    width: 100%;
+}
+
+a:hover.external-link {
+    font-weight: inherit;
+}
+
+a:hover.hover_anim {
+    font-weight: inherit;
+    box-shadow: 0.1rem 0.1rem;
+}
+
+a:hover.badge {
+    font-weight: 700;
+}
+
+.card a:link.button {
+    color: inherit;
+}
+
+.interface-screen {
+    filter: brightness(80%);
+}
+
+.editable-input,
+.editable-submit,
+.editable-cancel {
+    position: relative;
+    z-index: 2;
+}
+
+.bg-rating-1 {
+    background-color: rgba(1, 181, 116, 0.6);
+}
+
+.bg-rating-2 {
+    background-color: rgba(255, 181, 71, 0.6);
+}
+
+.bg-rating-3 {
+    background-color: rgba(238, 93, 80, 0.6);
+}
+
+.exchange-logo {
+    max-width: 85px;
+    height: auto;
+}
+
+.pointer-cursor {
+    cursor: pointer;
+}
+
+/* tables */
+table.dataTable thead th,
+table.dataTable tfoot th {
+    background: var(--mdb-table-headings-bg);
+    font-weight: normal;
+}
+
+/* cards */
+.card .deck-container-modified {
+    border: 2px solid var(--mdb-card-container-modified-border-color);
+}
+
+.card .card-modified,
+.card .card-deck .card-modified {
+    border: 2px solid var(--mdb-card-modified-border-color);
+}
+
+.card .card-deck .card-status-color {
+    -webkit-transition: all 0.5s ease;
+    -moz-transition: all 0.5s ease;
+    -o-transition: all 0.5s ease;
+    transition: all 0.5s ease;
+    border: 5px solid var(--mdb-card-status-color);
+}
+
+.card .card-deck .card-very-long {
+    border: 5px solid var(--mdb-card-very-long-border-color);
+}
+
+.card .card-deck .card-long {
+    border: 5px solid var(--mdb-card-long-border-color);
+}
+
+.card .card-deck .card-short {
+    border: 5px solid var(--mdb-card-short-border-color);
+}
+
+.card .card-deck .card-very-short {
+    border: 5px solid var(--mdb-card-very-short-border-color);
+}
+
+/* introjs */
+
+.introjs-tooltip {
+  background-color: rgba(000, 0, 0, 0.9);
+}
+
+.introjs-tooltip-title {
+  color: #fff;  /* avoid using h1 color */
+}
+
+/* markdown fixes */
+pre code {
+    font-size: inherit;
+    color: var(--mdb-code-color);   /* 'inherit' overridden for themes compatibility */
+    word-break: normal;
+}

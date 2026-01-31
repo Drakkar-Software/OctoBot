@@ -1,0 +1,147 @@
+{% extends "layout.html" %}
+{% set active_page = "profile" %}
+{% set startup_messages_added_classes = "d-none" %}
+
+{% import 'macros/flash_messages.html' as m_flash_messages %}
+{% import 'macros/starting_waiter.html' as m_starting_waiter %}
+{% import 'components/config/exchange_card.html' as m_config_exchange_card %}
+
+{% block body %}
+<br>
+<div class="card w-100 w-md-75 mx-auto">
+    <div class="card-header d-flex justify-content-between">
+        <div>
+            <h3>
+                <span class="d-none d-md-inline">Final step: select how to trade using </span>
+                {{current_profile_name}}
+            </h3>
+        </div>
+    </div>
+    <div class="card-body pt-0 text-center">
+        {{ m_flash_messages.flash_messages() }}
+        <div class="text-center my-2">
+            Select the exchange to use :
+            <select id="AddExchangeSelect" class="selectpicker" data-live-search="true">
+                <optgroup label="OctoBot fully tested">
+                   {% for exchange in ccxt_tested_exchanges %}
+                        <option data-tokens="{{ exchange }}" {{"selected" if exchange == enabled_exchanges[0] else ""}}>{{ exchange }}</option>
+                   {% endfor %}
+                </optgroup>
+                {% if ccxt_simulated_tested_exchanges %}
+                <optgroup label="OctoBot tested with simulated trading">
+                   {% for exchange in ccxt_simulated_tested_exchanges %}
+                        <option data-tokens="{{ exchange }}">{{ exchange }}</option>
+                   {% endfor %}
+                </optgroup>
+                {% endif %}
+                <optgroup label="OctoBot untested">
+                   {% for exchange in ccxt_other_exchanges %}
+                        <option data-tokens="{{ exchange }}">{{ exchange }}</option>
+                   {% endfor %}
+                </optgroup>
+            </select>
+        </div>
+        <div>
+            <ul class="nav nav-tabs md-tabs justify-content-center" id="tabs" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link primary-tab-selector {{'' if real_trader_activated else 'active show'}}" id="simulated-tab" data-toggle="tab" href="#simulated" role="tab"
+                       aria-controls="simulated"
+                       aria-selected="true">
+                        <h5><i class="fa fa-robot"></i> <span class="d-none d-md-inline">Trade using</span> paper <span class="d-none d-md-inline">money</span></h5>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link primary-tab-selector {{'active show' if real_trader_activated else ''}}" id="real-tab" data-toggle="tab" href="#real" role="tab"
+                       aria-controls="real"
+                       aria-selected="false">
+                        <h5><i class="fa fa-coins"></i> <span class="d-none d-md-inline">Trade using</span> real <span class="d-none d-md-inline">money</span></h5>
+                    </a>
+                </li>
+            </ul>
+        </div>
+        <div class="tab-content my-2" id="exchanges-tab-content"
+             data-exchange-name="{{enabled_exchanges[0]}}" data-has-real-trader="{{real_trader_activated}}">
+            <div class="tab-pane fade {{'' if real_trader_activated else 'active show'}}" id="simulated" role="tabsimulated" aria-labelledby="simulated-tab">
+                <div class="text-left">
+                    <div data-role="exchange" class="card mb-4 config-card">
+
+                        <div class="card-header d-flex" id="simulated-config-header">
+                            <div class="col-7 col-lg-5">
+                                <h4 class="text-capitalize">
+                                    {{enabled_exchanges[0]}}
+                                </h4>
+                            </div>
+                            <div class="col-5 col-lg-5">
+                                <a href="" target="_blank" rel="noopener noreferrer" class="waves-effect">
+                                    <img class="img-fluid product-logo d-none" src="" alt="{{enabled_exchanges[0]}}-logo" url="{{url_for('exchange_logo', name=enabled_exchanges[0])}}">
+                                </a>
+                            </div>
+                        </div>
+
+                        <!--Card image-->
+                        <div class="view overlay">
+                          <!--{{ exchange }}-->
+                        </div>
+
+                        <!--Card content-->
+                        <div class="card-body px-2 px-md-4 text-left">
+                            <div id="portfolio-editor"
+                                 data-portfolio='{{simulated_portfolio | tojson}}'
+                                 data-portfolio-schema='{{portfolio_schema | tojson}}'
+                                 data-currencies-url="{{url_for('api.get_all_currencies', exchange='')}}"
+                            >
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <button class="btn btn-primary btn-lg"
+                            data-toggle="tooltip" data-placement="top"
+                            title="Save and start trading with simulated money. Will restart OctoBot if necessary."
+                            data-role="start-trading"
+                            data-trading-type="simulated"
+                            data-config-url="{{url_for('config')}}"
+                            data-start-url="{{url_for('wait_reboot', onboarding=onboarding, trading_delay_info=True, reboot='')}}">
+                        Start trading
+                    </button>
+                </div>
+            </div>
+            <div class="tab-pane fade {{'active show' if real_trader_activated else ''}}" id="real" role="tabreal" aria-labelledby="real-tab">
+                <div id="exchange-container" class="text-left" update-url="{{url_for('api.are_compatible_accounts')}}">
+                    {{ m_config_exchange_card.config_exchange_card(config_exchanges,
+                                                                   enabled_exchanges[0],
+                                                                   exchanges_details[enabled_exchanges[0]],
+                                                                   is_supporting_future_trading,
+                                                                   enabled=True,
+                                                                   sandboxed=False,
+                                                                   selected_exchange_type=config_exchanges[enabled_exchanges[0]].get('exchange-type', 'spot'),
+                                                                   full_config=True,
+                                                                   lite_config=True)}}
+                </div>
+                <div>
+                    <button class="btn btn-primary btn-lg"
+                            data-toggle="tooltip" data-placement="top"
+                            title="Save and start trading with exchange funds. Will restart OctoBot if necessary."
+                            data-role="start-trading"
+                            data-trading-type="real"
+                            data-config-url="{{url_for('config')}}"
+                            data-start-url="{{url_for('wait_reboot', onboarding=onboarding, trading_delay_info=True, reboot='')}}">
+                        Start trading
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<br>
+
+{% endblock %}
+
+{% block additional_scripts %}
+<script src="{{ url_for('static', filename='js/common/common_handlers.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+<script src="{{ url_for('static', filename='js/common/resources_rendering.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+<script src="{{ url_for('static', filename='js/common/exchange_accounts.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+<script src="{{ url_for('static', filename='js/components/trading_type_selector.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+{% endblock additional_scripts %}
