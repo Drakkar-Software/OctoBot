@@ -1,0 +1,6 @@
+{
+  "version": "1.2.0",
+  "origin_package": "OctoBot-Default-Tentacles",
+  "tentacles": ["RedditForumEvaluator"],
+  "tentacles-requirements": ["overall_state_analysis", "text_analysis", "reddit_service_feed"]
+}

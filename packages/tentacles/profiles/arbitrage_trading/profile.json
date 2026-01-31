@@ -1,0 +1,51 @@
+{
+    "config": {
+        "crypto-currencies": {
+            "Bitcoin": {
+                "enabled": true,
+                "pairs": [
+                    "BTC/USDT"
+                ]
+            }
+        },
+        "exchanges": {
+            "binance": {
+                "enabled": true
+            },
+            "coinbase": {
+                "enabled": true
+            },
+            "kucoin": {
+                "enabled": true
+            }
+        },
+        "trader": {
+            "enabled": false,
+            "load-trade-history": false
+        },
+        "trader-simulator": {
+            "enabled": true,
+            "fees": {
+                "maker": 0.1,
+                "taker": 0.1
+            },
+            "starting-portfolio": {
+                "BTC": 10,
+                "USDT": 1000
+            }
+        },
+        "trading": {
+            "reference-market": "USDT",
+            "risk": 0.5
+        }
+    },
+    "profile": {
+        "avatar": "default_profile.png",
+        "risk": 1,
+        "complexity": 3,
+        "description": "ArbitrageTrading is watching prices of the configured trading pairs across the available exchanges to find arbitrage opportunities.",
+        "id": "arbitrage_trading",
+        "name": "Arbitrage Trading",
+        "read_only": true
+    }
+}

@@ -1,0 +1,83 @@
+{% import 'macros/text.html' as m_text %}
+
+{% macro tentacle_description(info, strategy, name, read_only=False) %}
+      <span class="markdown-content">
+            {{info['description']}}
+      </span>
+      {% if not read_only and info['default-config'] %}
+            <p>
+                {{ default_config_with_apply(info['default-config'], strategy, name, info['requirements']) }}
+            </p>
+      {% endif %}
+{% endmacro %}
+
+{% macro tentacle_horizontal_description(info, strategy) %}
+    <div class="row">
+    {{ tentacle_horizontal_description_row_content(info, strategy, not info['requirements']) }}
+    {% if info['requirements'] %}
+        <div class="col border-left border-dark">
+            {{ requirements_and_default_config(info['requirements'], info['default-config'], strategy, info['name']) }}
+        </div>
+    {% endif %}
+    </div>
+{% endmacro %}
+
+{% macro tentacle_horizontal_description_row_content(info, strategy, use_all_cols) %}
+    {% if info['description'] %}
+    <div class="col{{'' if use_all_cols else '-md-8'}} markdown-content">
+        {{info['description']}}
+    </div>
+    {% endif %}
+{% endmacro %}
+
+{% macro tentacle_with_link(tentacle_name) %}
+    <a href="{{ url_for('config_tentacle', name=(tentacle_name)) }}">{{ tentacle_name }}</a>
+{% endmacro %}
+
+{% macro tentacle_with_link_list(tentacle_list) %}
+    {% if tentacle_list == ["*"] %}
+        All tentacles returning values between -1 and 1.
+    {% else %}
+        {% for tentacle in tentacle_list %}
+            {{ tentacle_with_link(tentacle) }}
+        {% endfor %}
+    {% endif %}
+{% endmacro %}
+
+{% macro default_config_with_apply(default_config, strategy, name, requirements) %}
+    <div>
+        <h5>Default configuration:
+            {% if strategy or (not strategy and requirements|length > 1) %}
+             <button type="button"
+                   config-type="evaluator_list_config"
+                   id="applyDefaultConfig"
+                   tentacle="{{ name }}"
+                   class="btn btn-sm btn-outline-green waves-effect config-element float-right">
+               <i class="fas fa-check"></i> Activate
+            </button>
+            {% endif %}
+        </h5>
+    </div>
+    {{ tentacle_with_link_list(default_config) }}
+{% endmacro %}
+
+{% macro requirements_and_default_config(requirements, default_config, strategy, name) %}
+    <h5>Compatible {{ 'evaluators' if strategy else 'strategies' }}:</h5>
+        {{ tentacle_with_link_list(requirements) }}
+    <hr>
+    {{ default_config_with_apply(default_config, strategy, name, requirements) }}
+{% endmacro %}
+
+{% macro missing_tentacles_warning(missing_tentacles) %}
+    {% if missing_tentacles %}
+        <div class="alert alert-warning" role="alert">
+            <h4>Missing tentacles</h4>
+            <p>
+                <span class="font-weight-bold">{{ missing_tentacles | join(', ') }}</span>
+                tentacle{{"s are" if missing_tentacles|length > 1 else " is"}} missing in
+                your OctoBot tentacles but {{"are" if missing_tentacles|length > 1 else " is"}} referenced in your
+                current profile. Your OctoBot might not work as expected if those are necessary.
+                </p>
+        </div>
+    {% endif %}
+{% endmacro %}

@@ -1,0 +1,2 @@
+pyinstaller==6.13.0
+nltk

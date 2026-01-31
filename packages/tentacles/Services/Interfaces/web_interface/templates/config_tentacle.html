@@ -1,0 +1,276 @@
+{% extends "layout.html" %}
+{% set active_page = "profile" %}
+{% set page_title = name %}
+
+{% import 'macros/tentacles.html' as m_tentacles %}
+{% import 'macros/backtesting_utils.html' as m_backtesting_utils %}
+{% import 'components/config/tentacle_config_editor.html' as m_tentacle_config_editor %}
+{% import 'components/config/evaluator_card.html' as m_config_evaluator_card %}
+
+{% block body %}
+<br>
+{% if tentacle_desc %}
+    <div class="card">
+        <div class="card-header">
+            <h2 id='{{ name }}' config-type="evaluator_config" default-elements="{{tentacle_desc['default-config']}}">
+                {{ name }}
+                <a href='{{ url_for("profile") if tentacle_type in ["trading mode", "strategy"] else url_for("advanced.evaluator_config") }}'>
+                    {% if tentacle_desc["activation"] %}
+                        <span class="badge badge-primary float-right waves-effect">Activated</span>
+                    {% else %}
+                        <span class="badge badge-warning float-right waves-effect">Deactivated</span>
+                    {% endif %}
+                </a>
+            </h2>
+        </div>
+        <div class="card-body" id='defaultConfigDiv' update-url="{{ url_for('config') }}">
+          {{ m_tentacles.tentacle_horizontal_description(tentacle_desc, tentacle_type=="strategy") }}
+        </div>
+    </div>
+    <br>
+    <div class="card">
+        <div class="card-header">
+            <h2>Configuration
+                <button data-role='saveConfig'
+                        class="btn btn-success rounded-circle waves-effect px-3 d-none"
+                        update-url="{{ url_for('config_tentacle', name=name, action='update') }}"
+                        role="button" data-toggle="tooltip" title="Save">
+                    <i class="fas fa-save" aria-hidden="true"></i>
+                </button>
+                <a class="float-right blue-text" target="_blank" rel="noopener" href="{{OCTOBOT_DOCS_URL}}/octobot-configuration/profile-configuration#specific-evaluator-configuration">
+                    <i class="fa-solid fa-question"></i>
+                </a>
+            </h2>
+        </div>
+        {{ m_tentacle_config_editor.tentacles_config_editor(name, "card-body") }}
+        <div class="card-footer" id='saveConfigFooter' style='display: none;'>
+            <button class="btn btn-primary waves-effect" data-role='saveConfig' update-url="{{ url_for('config_tentacle', name=name, action='update', restart='false') }}"><i class="fas fa-save"></i> Save configuration and restart later</button>
+            <button class="btn btn-outline-primary waves-effect mx-5" data-role='saveConfig' update-url="{{ url_for('config_tentacle', name=name, action='update', restart='true') }}">Save and restart</button>
+            <button class="btn btn-outline-warning waves-effect float-right" data-role='factoryResetConfig'
+                    update-url="{{ url_for('config_tentacle', name=name, action='factory_reset') }}"><i class="fas fa-recycle"></i> Reset configuration to default values</button>
+        </div>
+    </div>
+    {% if user_commands %}
+    <div class="card mt-2">
+        <div class="card-header">
+            <h2>Commands</h2>
+        </div>
+        <div class="card-body">
+            {% for command_action, command_params in user_commands.items() %}
+                <!-- Button trigger modal -->
+                <button type="button" class="btn btn-outline-primary waves-effect"
+                        data-toggle="modal" data-target="#{{ command_action | replace (' ', '') }}Modal">
+                    {{ command_action }}
+                </button>
+
+                <!-- Modal -->
+                <div class="modal text-dark" id="{{ command_action | replace (' ', '') }}Modal" tabindex="-1" role="dialog" aria-labelledby="{{ command_action | replace (' ', '') }}ModalLabel" aria-hidden="true">
+                  <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content p-2">
+                      <div class="modal-header">
+                        <h5 class="modal-title" id="{{ command_action | replace (' ', '') }}ModalLabel">{{ command_action | capitalize }}</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                          <span aria-hidden="true">&times;</span>
+                        </button>
+                      </div>
+                      {% if command_params %}
+                      <div class="modal-body text-justify">
+                        {% for param_name, param_type in command_params.items() %}
+                        <label class="required, form-control-label"
+                               for="{{ command_action | replace (' ', '') }}{{ param_name | replace (' ', '') }}input">
+                            {{ param_name | capitalize }}:
+                        </label>
+                          <input type="{{ param_type }}" class="form-control command-param" data-param-name="{{param_name}}"
+                                 id="{{ command_action | replace (' ', '') }}{{ param_name | replace (' ', '') }}input">
+                        {% endfor %}
+                      </div>
+                      {% endif %}
+                      <div class="modal-footer">
+                        <button class="btn btn-primary waves-effect user-command"
+                            update-url="{{ url_for('api.user_command') }}"
+                            data-action="{{ command_action }}"
+                            data-subject="{{ name }}"
+                            data-dismiss="modal">
+                            {{ command_action | capitalize }}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    <br>
+    {% if not current_profile.read_only and
+        ((tentacle_type == "trading mode" and tentacle_desc['requirements']|length > 1) or tentacle_desc['requirements'] == ["*"]) %}
+            {{ m_tentacles.missing_tentacles_warning(missing_tentacles) }}
+        <div class="card" id="super-container">
+            <div class="card-header">
+                <h2>Compatible {{"strategies" if tentacle_type == "trading mode" else "evaluators"}}</h2>
+            </div>
+            <div class="card-body" id="activatedElementsBody">
+                {% if tentacle_type == "trading mode" %}
+                    {% for evaluator_name, info in strategy_config["strategies"].items() %}
+                        {% if evaluator_name in tentacle_desc['requirements'] %}
+                            {{ m_config_evaluator_card.tentacle_evaluator_card(evaluator_startup_config, evaluator_name, info, "evaluator_config") }}
+                        {% endif %}
+                    {% endfor %}
+                {% else %}
+                    {% if "TA" in tentacle_desc["compatible-types"] or tentacle_desc["compatible-types"] == ["*"]%}
+                    <h2>Technical analysis</h2>
+                        <div>
+                            <div class="row config-container" id="ta-evaluator-config-root">
+                                {% for evaluator_name, info in evaluator_config["ta"].items() %}
+                                    {% if info["evaluation_format"] == "float" %}
+                                        {{ m_config_evaluator_card.tentacle_evaluator_card(evaluator_startup_config, evaluator_name, info, "evaluator_config") }}
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <br>
+                    {% endif %}
+                    {% if "SOCIAL" in tentacle_desc["compatible-types"] or tentacle_desc["compatible-types"] == ["*"]%}
+                        <h2>Social analysis</h2>
+                        <div>
+                            <div class="row config-container" id="social-evaluator-config-root">
+                                {% for evaluator_name, info in evaluator_config["social"].items() %}
+                                    {% if info["evaluation_format"] == "float" %}
+                                        {{ m_config_evaluator_card.tentacle_evaluator_card(evaluator_startup_config, evaluator_name, info, "evaluator_config") }}
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <br>
+                    {% endif %}
+                    {% if "REAL_TIME" in tentacle_desc["compatible-types"] or tentacle_desc["compatible-types"] == ["*"]%}
+                        <h2>Real time analysis</h2>
+                        <div>
+                            <div class="row config-container" id="rt-evaluator-config-root">
+                                {% for evaluator_name, info in evaluator_config["real-time"].items() %}
+                                    {% if info["evaluation_format"] == "float" %}
+                                        {{ m_config_evaluator_card.tentacle_evaluator_card(evaluator_startup_config, evaluator_name, info, "evaluator_config") }}
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endif %}
+            </div>
+            <div class="card-footer" id='saveConfigFooter'>
+                <button class="btn btn-outline-success waves-effect" id='saveActivationConfig' update-url="{{ url_for('advanced.evaluator_config' if tentacle_type == "strategy" else 'config') }}">Save activation and restart later</button>
+            </div>
+        </div>
+        <br>
+    {% endif %}
+    {% if is_trading_strategy_configuration %}
+    <div class="card" id="backtestingInputPart">
+        <div class="card-header" id="backtestingPage" update-url="{{ url_for('backtesting', update_type='backtesting_status') }}">
+            <h2>Test configuration
+                {% if tentacle_desc["activation"] %}
+                    <span class="badge badge-primary text-center waves-effect">Ready to test</span>
+                {% else %}
+                    <a id="reloadBacktestingPart">
+                        <span class="badge badge-warning text-center waves-effect">Activation required <i class="fas fa-sync-alt"></i></span>
+                    </a>
+                {% endif %}
+                <a class="float-right blue-text" target="_blank" rel="noopener" href="{{OCTOBOT_DOCS_URL}}/octobot-advanced-usage/backtesting-and-strategy-optimization?utm_source=octobot&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=config_tentacles">
+                    &nbsp <i class="fa-solid fa-question"></i>
+                </a>
+                {% if activated_trading_mode %}
+                <a class="float-right badge badge-info waves-effect" href="{{ url_for('config_tentacle', name=activated_trading_mode.get_name()) }}">
+                    <span class="d-none d-md-inline">Current trading mode: </span>{{ activated_trading_mode.get_name() }}
+                </a>
+                {% endif %}
+            </h2>
+        </div>
+        <div class="card-body">
+            <div class="row w-100">
+                {% if activated_trading_mode and activated_trading_mode.is_backtestable() %}
+                    {% if data_files %}
+                        <div class="col-12 col-md-6 col-xl-4">
+                           <select class="selectpicker w-100" data-live-search="true" data-width="auto" data-window-padding="25" id="dataFileSelect"
+                                   {{ "disabled" if not tentacle_desc["activation"] }}>
+                            {% for file, description in data_files%}
+                             <option value={{file}}
+                                {% if loop.first %}
+                                    selected="selected"
+                                {% endif %}>
+                               {{", ".join(description.symbols)}} on {{(description.exchange)}} from the {{(description.date)}}
+                             </option>
+                             {% endfor %}
+                           </select>
+                        </div>
+                        <div class="col-12 col-md-6 col-xl-5 row">
+                            {% if tentacle_desc["activation"] %}
+                                <div class="col-12 col-xl-8 d-flex my-auto">
+                                    <div class="mx-1">
+                                        From :
+                                        <input type="date" class="datepicker" id="startDate">
+                                    </div>
+                                    <div class="mx-1">
+                                        To :
+                                        <input type="date" class="datepicker" id="endDate">
+                                    </div>
+                                </div>
+                                <div class="col-12 col-xl-4">
+                                    <button type="button" id="startBacktesting" class="btn btn-primary waves-effect"
+                                            start-url="{{ url_for('backtesting', action_type='start_backtesting', source='config_tentacle', reset_tentacle_config=True) }}">
+                                        Backtest
+                                    </button>
+                                </div>
+                            {% else %}
+                                <a href="{{ url_for('profile') if tentacle_type in ["trading mode", "strategy"] else url_for('advanced.evaluator_config') }}"
+                                    role="button" id="startBacktesting" class="btn btn-outline-primary waves-effect">
+                                    Activate this {{ tentacle_type }} to test it
+                                </a>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        <h4 class="py-3 px-3">
+                            No backtesting data files found. Once you have data files, you will be able to use them here.
+                        </h4>
+                    {% endif %}
+                {% elif activated_trading_mode %}
+                    <div class="col-8 alert alert-warning mt-1 text-center" role="alert">
+                        <a class="alert-link" href="{{ url_for('config_tentacle', name=activated_trading_mode.get_name()) }}">{{ activated_trading_mode.get_name() }}</a> can't be used in backtesting for now.
+                    </div>
+                {% endif %}
+                <div class="col-12 col-xl-3">
+                    <a href="{{ url_for('data_collector', from=url_for(request.endpoint, name=name)) }}" class="btn btn-outline-info waves-effect"> <i class="fa fa-cloud-download-alt"></i> Get historical data</a>
+                </div>
+            </div>
+
+            <span id='backtesting_progress_bar' style='display: none;'>
+                <div class="card-title">
+                    <h2>Backtesting in progress</h2>
+                </div>
+
+                <div class='progress'>
+                  <div id='progess_bar_anim'  class='progress-bar progress-bar-striped progress-bar-animated' role='progressbar' aria-valuenow='0' aria-valuemin='0' aria-valuemax='100' style='width: 0%;'></div>
+                </div>
+            </span>
+        </div>
+    </div>
+    <br>
+    {{ m_backtesting_utils.backtesting_report('config_tentacle', OCTOBOT_DOCS_URL, has_open_source_package) }}
+    {% endif %}
+{% else %}
+    <div class="card">
+        <div class="card-header">
+            <h2>{{ name }}</h2>
+        </div>
+        <div class="card-body">
+          Can't find any tentacle named {{ name }}
+        </div>
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block additional_scripts %}
+<script src="{{ url_for('static', filename='js/common/candlesticks.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+<script src="{{ url_for('static', filename='js/common/tables_display.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+<script src="{{ url_for('static', filename='js/common/backtesting_util.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+<script src="{{ url_for('static', filename='js/common/resources_rendering.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+<script src="{{ url_for('static', filename='js/components/config_tentacle.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+{% endblock additional_scripts %}

@@ -1,0 +1,100 @@
+{% extends "layout.html" %}
+{% set active_page = "community" %}
+
+{% import "components/community/bot_selector.html" as bot_selector %}
+{% import "components/community/cloud_strategies.html" as cloud_strategies_display %}
+{% import "components/community/bots_stats.html" as bots_stats %}
+{% import "components/community/tentacle_packages.html" as m_tentacle_packages %}
+{% import 'macros/flash_messages.html' as m_flash_messages %}
+
+{% block body %}
+<br>
+
+{{ bots_stats.bots_stats_card(current_bots_stats) }}
+
+
+{{ m_flash_messages.flash_messages() }}
+
+{{ m_tentacle_packages.pending_tentacles_install_modal(has_owned_packages_to_install and not auto_refresh_packages) }}
+{{ cloud_strategies_display.cloud_strategies(strategies, OCTOBOT_COMMUNITY_URL, LOCALE, OCTOBOT_EXTENSION_PACKAGE_1_NAME, has_open_source_package) }}
+
+<div class="card">
+    <div class="card-body">
+        <div class="row py-0">
+            <div class="col-8 my-auto">
+                <h5 class="p-0 my-0">
+
+                    Logged in as {{current_logged_in_email}}
+                    {% if selected_user_bot["name"] %}
+                        using bot <span class="badge badge-info">{{ selected_user_bot["name"] }}</span>
+                    {% else %}
+                        <span class="badge badge-danger">without selected bot</span>
+                    {% endif %}
+                    {% if can_select_bot %}
+                    <a class="btn btn-sm btn-outline-primary waves-effect" href="#" id="display-bot-select-modal"
+                       data-toggle="modal" data-target="#bot-select-modal">
+                       Select bot
+                    </a>
+                    {% endif %}
+                    <span class="ml-2 ml-md-4 text-danger-darker">
+                        {% if 'tester' in role %}
+                            <i class="fas fa-tools" data-toggle="tooltip" title="OctoBot tester"></i>
+                        {% elif 'contributor' in role %}
+                            <i class="fas fa-laptop-code" data-toggle="tooltip" title="OctoBot contributor"></i>
+                        {% elif 'sponsor' in role %}
+                            <i class="fas fa-star" data-toggle="tooltip" title="OctoBot sponsor"></i>
+                        {% endif %}
+                        {% if is_donor %}
+                            <i class="fas fa-trophy" data-toggle="tooltip"
+                               title="OctoBot donor: On behalf of the OctoBot team, thank you for being awesome and your donating to the project."></i>
+                        {% endif %}
+                    </span>
+                </h5>
+            </div>
+            {% if can_logout %}
+                <div class="col-4 text-right">
+                    <a class="align-right btn btn-sm btn-outline-info waves-effect"
+                       href="{{ url_for('community_logout')}}">
+                        logout
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+        {% if can_select_bot %}
+        <div class="modal" id="bot-select-modal" tabindex="-1" role="dialog"
+             aria-labelledby="#display-bot-select-modal" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+            <div class="modal-content modal-text">
+              <div class="modal-header primary-text">
+                <h2 class="modal-title">Bot selection</h2>
+                    {% if can_logout and not selected_user_bot["id"]%}
+                    <div class="text-right">
+                        <a class="btn btn-sm btn-outline-info waves-effect"
+                           href="{{ url_for('community_logout')}}">
+                            logout
+                        </a>
+                    </div>
+                    {% endif %}
+                  {% if selected_user_bot["id"] %}
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                      <span aria-hidden="true">&times;</span>
+                    </button>
+                  {% endif %}
+              </div>
+              <div class="modal-body">
+                {{ bot_selector.bot_selector(all_user_bots, selected_user_bot) }}
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<br>
+{% endblock %}
+
+{% block additional_scripts %}
+<script src="{{ url_for('static', filename='js/components/extensions.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+<script src="{{ url_for('static', filename='js/components/community.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+{% endblock additional_scripts %}

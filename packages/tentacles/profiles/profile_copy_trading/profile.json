@@ -1,0 +1,36 @@
+{
+    "config": {
+        "crypto-currencies": {},
+        "exchanges": {
+            "polymarket": {
+                "enabled": true,
+                "exchange-type": "option"
+            }
+        },
+        "trader": {
+            "enabled": false,
+            "load-trade-history": false
+        },
+        "trader-simulator": {
+            "enabled": true,
+            "fees": {
+                "maker": 0.1,
+                "taker": 0.1
+            },
+            "starting-portfolio": {
+                "USDC": 1000
+            }
+        },
+        "trading": {
+            "reference-market": "USDC",
+            "risk": 0.5
+        }
+    },
+    "profile": {
+        "auto_update": false,
+        "avatar": "default_profile.png",
+        "description": "Profile copy trading will copy the trading of a given profile on the specified exchanges.",
+        "id": "profile_copy_trading",
+        "name": "Profile copy trading"
+    }
+}

@@ -1,0 +1,109 @@
+{% extends "layout.html" %}
+{% set active_page = "community" %}
+{% import 'macros/tables.html' as m_tables %}
+
+{% macro top_table_card(items, item_name, table_name) -%}
+    <div class="col-12 col-md-5 card block-card d-block mb-4 mx-auto">
+        <div class="card-header"><h3>{{ table_name }}</h3></div>
+        <div class="card-body">
+          <table class="table table-striped table-responsive-lg">
+              <thead>
+                <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">{{ item_name }}</th>
+                    <th scope="col">OctoBots</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in items %}
+                    {{ m_tables.top_tr(item) }}
+                {% endfor %}
+              </tbody>
+          </table>
+        </div>
+    </div>
+{%- endmacro %}
+
+{% macro col_elem_with_badge(title, badge, badge_color="unique-color-dark") -%}
+    <div class="col-9 col-md-2 my-1">
+        {{ title }}
+    </div>
+    <div class="col-3 col-md-2 my-1">
+        <span class="badge {{ badge_color }} font-weight-bold">{{ badge }}</span>
+    </div>
+{%- endmacro %}
+
+{% block body %}
+<br>
+{% if can_get_metrics %}
+    <div class="card">
+        <div class="card-header">
+            <h2>
+                OctoBot Community metrics
+                <a class="badge unique-color-dark float-right" href="https://t.me/joinchat/F9cyfxV97ZOaXQ47H5dRWw" target="_blank" rel="noopener">
+                    <i class="fab fa-telegram"></i> <span class="d-none d-md-inline-block">Community chat</span>
+                </a>
+            </h2>
+        </div>
+    </div>
+    <br>
+    <div class="col card text-center align-self-start">
+        <div class="card-header"><h3>Active OctoBots</h3></div>
+        <h4>
+            <div class="card-body row">
+                {{ col_elem_with_badge("Total:", community_metrics['total_count']) }}
+                {{ col_elem_with_badge("This month:", community_metrics['this_month'], badge_color="unique-color") }}
+                {{ col_elem_with_badge("Last 6 months:", community_metrics['last_six_month']) }}
+            </div>
+        </h4>
+    </div>
+    <br>
+    <div>
+        <div class="card my-1">
+            <div class="card-header">
+                <ul class="nav nav-tabs md-tabs justify-content-center" id="tabs" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link primary-tab-selector active show" id="real-tab" data-toggle="tab" href="#real" role="tab"
+                           aria-controls="real"
+                           aria-selected="true">
+                            <h5>Real trading OctoBots this month</h5>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link primary-tab-selector" id="simulated-tab" data-toggle="tab" href="#simulated" role="tab"
+                           aria-controls="simulated"
+                           aria-selected="false">
+                            <h5>Simulated trading OctoBots this month</h5>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            <div class="tab-content my-2" id="tabcontent">
+                <div class="tab-pane fade show active" id="real" role="tabreal" aria-labelledby="real-tab">
+                    <div class="row w-100 mx-0 d-block d-md-flex">
+                        {{ top_table_card(community_metrics['top_real_exchanges'], "Exchange", "Top community exchanges") }}
+                        {{ top_table_card(community_metrics['top_real_eval_config'], "Tentacle", "Top community tentacles") }}
+                        {{ top_table_card(community_metrics['top_real_pairs'], "Pair", "Top community traded pairs") }}
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="simulated" role="tabsimulated" aria-labelledby="simulated-tab">
+                    <div class="row w-100 mx-0 d-block d-md-flex">
+                        {{ top_table_card(community_metrics['top_simulated_exchanges'], "Exchange", "Top community exchanges") }}
+                        {{ top_table_card(community_metrics['top_simulated_eval_config'], "Tentacle", "Top community tentacles") }}
+                        {{ top_table_card(community_metrics['top_simulated_pairs'], "Pair", "Top community traded pairs") }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% else %}
+    <div class="card">
+        <div class="card-header"><h2>To be part of the OctoBot community, please enable <a href="{{ url_for('about') }}"> OctoBot community data</a>.</h2></div>
+    </div>
+{% endif %}
+<br>
+{% endblock %}
+
+{% block additional_scripts %}
+<script src="{{ url_for('static', filename='js/components/community.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+{% endblock additional_scripts %}

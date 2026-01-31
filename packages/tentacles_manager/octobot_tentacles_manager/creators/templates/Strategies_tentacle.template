@@ -1,0 +1,20 @@
+from config import TimeFrames, EvaluatorMatrixTypes
+from evaluator.Strategies import MixedStrategiesEvaluator
+
+
+class {{ big_name }}StrategiesEvaluator(MixedStrategiesEvaluator):
+    DESCRIPTION = ""
+
+    def __init__(self):
+        super().__init__()
+
+    async def eval_impl(self) -> None:
+        pass
+
+    @classmethod
+    def get_required_time_frames(cls):
+        return [TimeFrames.ONE_HOUR]
+
+    @classmethod
+    def get_required_evaluators(cls):
+        return []

@@ -1,0 +1,78 @@
+{% macro cloud_strategies_selector(strategies, locale, post_install_action) -%}
+<div id="strategies">
+    <table class="table table-striped table-responsive-md 'table-hover'}} w-100">
+        <thead>
+            <tr class="">
+                <th scope="col">Strategy</th>
+                <th scope="col">Profitability</th>
+                <th scope="col">Traded coins</th>
+                <th scope="col">Exchange</th>
+                <th scope="col">Risk level</th>
+                <th scope="col">Type</th>
+                <th scope="col">{{'Use' if post_install_action else 'Install'}}</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for strategy in strategies %}
+            <tr>
+                <td>
+                    <a href="{{ strategy.get_product_url() }}?utm_source=octobot&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=cloud_strategies_selector_strategy_name" target="_blank">
+                        <div class="row">
+                            <div class="col-4 pr-1">
+                                <img class="img-fluid package_row_image"
+                                     src="{{strategy.get_logo_url(url_for('static', filename='img/community/tentacles_packages_previews/'))}}"
+                                     alt="Strategy illustration">
+                            </div>
+                            <div class="col-8 text-left my-auto pl-0 font-weight-bold">
+                                {{strategy.get_name(locale) | capitalize}}
+                                <i class="fas fa-external-link-alt"></i>
+                            </div>
+                        </div>
+                    </a>
+                </td>
+                {% if strategy.results %}
+                <td class="align-middle" data-order="{{ strategy.results.get_max_value() }}">
+                    {{ (strategy.results.get_max_value()) | round(2) }}% over {{ strategy.results.get_max_unit() }}
+                </td>
+                {% else %}
+                <td data-order="0"></td>
+                {% endif %}
+                <td class="align-middle">
+                    {{ strategy.attributes['coins'] | join(', ') }}
+                </td>
+                <td class="align-middle">
+                    {{ strategy.attributes['exchanges'] | join(', ') }}
+                </td>
+                <td class="align-middle">
+                    {{ strategy.get_risk().name | capitalize }}
+                </td>
+                <td class="align-middle">
+                    {% if strategy.category %}
+                        {% if strategy.category.get_url() %}
+                            <a href="{{strategy.category.get_url()}}?utm_source=octobot&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=cloud_strategies_selector_strategy_category" target="_blank">
+                                {{ strategy.category.get_name(locale) }} <i class="fas fa-external-link-alt"></i>
+                            </a>
+                        {% else %}
+                            {{ strategy.category.get_name(locale) }}
+                        {% endif %}
+                    {% endif %}
+                </td>
+                <td class="align-middle">
+                    <button update-url="{{ url_for('profiles_management', action='download') }}"
+                            role="button" class="btn btn-sm btn-outline-primary px-1 m-1"
+                            data-toggle="tooltip" data-placement="top" title="{{'Use this strategy' if post_install_action else 'Add to OctoBot'}}"
+                            data-role="install-strategy"
+                            data-strategy-id="{{strategy.id}}"
+                            data-strategy-name="{{strategy.get_name(locale) | capitalize}}"
+                            data-description="{{strategy.content['description_translations'][locale]}}"
+                            data-post-install-action="{{post_install_action}}"
+                    >
+                        <i class="fa {{'fa-check' if post_install_action else 'fa-download'}} px-2 strategy_action px-4"></i>
+                    </button>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{%- endmacro %}

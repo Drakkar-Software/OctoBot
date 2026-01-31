@@ -1,0 +1,90 @@
+{
+    "crypto-currencies": [
+        {
+            "crypto-currency": "Bitcoin",
+            "accounts": [
+                "BTCFoundation"
+            ],
+            "hashtags": []
+        },
+        {
+            "crypto-currency": "Ethereum",
+            "accounts": [
+                "ethereum",
+                "VitalikButerin"
+            ],
+            "hashtags": []
+        },
+        {
+            "crypto-currency": "Neo",
+            "accounts": [
+                "NEO_Blockchain",
+                "NEOnewstoday",
+                "NEO_council",
+                "neotogas",
+                "NEO_DevCon",
+                "neonexchange",
+                "dahongfei"
+            ],
+            "hashtags": []
+        },
+        {
+            "crypto-currency": "ICON",
+            "accounts": [
+                "helloiconworld"
+            ],
+            "hashtags": []
+        },
+        {
+            "crypto-currency": "NANO",
+            "accounts": [
+                "nanocurrency"
+            ],
+            "hashtags": []
+        },
+        {
+            "crypto-currency": "VeChain",
+            "accounts": [
+                "sunshinelu24",
+                "VechainThorCom",
+                "Vechain1"
+            ],
+            "hashtags": []
+        },
+        {
+            "crypto-currency": "VeChain Thor",
+            "accounts": [
+                "sunshinelu24",
+                "VechainThorCom",
+                "Vechain1"
+            ],
+            "hashtags": []
+        },
+        {
+            "crypto-currency": "Substratum",
+            "accounts": [
+                "SubstratumNet"
+            ],
+            "hashtags": []
+        },
+        {
+            "crypto-currency": "Ethos",
+            "accounts": [
+                "Ethos_io"
+            ],
+            "hashtags": []
+        },
+        {
+            "crypto-currency": "Ontology",
+            "accounts": [
+                "OntologyNetwork"
+            ],
+            "hashtags": []
+        },
+        {
+            "crypto-currency": "Binance Coin",
+            "accounts": [],
+            "hashtags": []
+        }
+    ]
+}

@@ -1,0 +1,5 @@
+# Setup requirements
+numpy==1.26.3
+
+# Drakkar-Software requirements
+OctoBot-Tulipy>=0.4.3

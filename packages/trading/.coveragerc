@@ -1,0 +1,12 @@
+[run]
+omit =
+    octobot_trading/cli/*
+    octobot_trading/api/*
+    octobot_trading/util/test_tools/*
+    tests/*
+    tests_additional/*
+    tentacles/*
+    logs/*
+    backtesting/*
+    demo.py
+    setup.py

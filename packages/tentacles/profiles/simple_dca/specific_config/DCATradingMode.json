@@ -1,0 +1,14 @@
+{
+    "buy_order_amount": "5%t",
+    "default_config": [],
+    "required_strategies": [],
+    "cancel_open_orders_at_each_entry": false,
+    "minutes_before_next_buy": 10080,
+    "trigger_mode": "Time based",
+    "use_market_entry_orders": true,
+    "use_secondary_entry_orders": false,
+    "use_stop_losses": false,
+    "use_take_profit_exit_orders": false,
+    "enable_health_check": false,
+    "health_check_orphan_funds_threshold": 15
+}

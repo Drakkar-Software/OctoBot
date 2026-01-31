@@ -1,0 +1,57 @@
+{% macro pair_status_card(pair, status, watched_symbols, displayed_portfolio, symbols_values, ref_market) -%}
+    {% set symbol = pair.split('/')[0] %}
+    <!-- Card -->
+    <div class="card card-status-color pair_status_card mb-4 small-size">
+
+    <!--Title-->
+    <div class="card-header">{{ pair }}
+        <a class="float-right">
+            <i class="{{'fas' if pair in watched_symbols else 'far'}} fa-star ml-auto watched_element" symbol="{{ pair }}" update_url="{{ url_for('watched_symbols') }}"
+               data-toggle="tooltip" data-placement="top" title="Add to / Remove from watched markets"></i>
+        </a>
+    </div>
+
+    <!--Card image-->
+    <div class="view overlay animated fadeIn text-center pt-2">
+      <img class="img-fluid mx-auto currency-image small-image"
+           src="{{ url_for('static', filename='img/svg/loading_currency.svg') }}"
+           alt="{{ symbol }} :("
+           data-symbol="{{symbol.lower()}}">
+        <a href="{{ url_for('symbol_market_status', exchange_id=status.keys()|list|first if status else '', symbol=pair) }}">
+      </a>
+    </div>
+    <div class="card-body pb-3 px-3">
+        <!--Card content-->
+        <div class="row text-center">
+            <div class="col-6">
+                {{ symbol }}
+            </div>
+            <div class="col-6">
+                {{ ref_market }} equiv.
+            </div>
+            <div class="col-6 rounded-number">
+                {{ displayed_portfolio[symbol]["total"] if symbol in displayed_portfolio else 0 }}
+            </div>
+            <div class="col-6 rounded-number">
+                {{ symbols_values[symbol] if symbol in symbols_values else 0 }}
+            </div>
+        </div>
+        <div class="list-group list-group-flush">
+            {% for exchange_id, evaluation in status.items() %}
+                <a class="btn btn-outline-primary status hover_anim px-3"
+                   status="{{evaluation[0]}}"
+                   href="{{ url_for('symbol_market_status', exchange_id=exchange_id, symbol=pair) }}">
+                        {{ evaluation[2] }}
+                        {% if evaluation[1] %}
+                            : {{ evaluation[0] }}
+                            ({{ evaluation[1] }})
+                        {% endif %}
+                        <i class="float-right fa-solid fa-chart-column pt-1"> </i>
+                </a>
+            {% endfor %}
+        </div>
+    </div>
+
+    </div>
+    <!-- Card -->
+{%- endmacro %}

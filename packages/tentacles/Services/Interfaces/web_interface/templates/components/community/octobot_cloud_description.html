@@ -1,0 +1,36 @@
+{% import "components/community/octobot_cloud_features.html" as octobot_cloud_features %}
+
+
+{% macro octobot_cloud_description(OCTOBOT_COMMUNITY_URL, LOCALE) -%}
+<div class="row">
+    <div class="col-12 col-md-2 col-xl-1 d-flex">
+        <div class="m-auto">
+            <a target="_blank" rel="noopener" href="{{OCTOBOT_COMMUNITY_URL}}?utm_source=octobot&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=about_logo">
+                <img class="img-fluid cloud-logo-4x"
+                     src="{{url_for('static', filename='img/community/octobot-cloud.png')}}" alt="OctoBot cloud">
+            </a>
+        </div>
+    </div>
+    <div class="col-12 col-md-10 col-lg-6 col-xl-7 pt-4">
+        <h5>Profit from OctoBot strategies in a simpler way</h5>
+        <p>
+            While the <a target="_blank" rel="noopener" href="{{OCTOBOT_COMMUNITY_URL}}/trading-bot?utm_source=octobot&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=about">OctoBot</a>
+             you are currently using is about creating and testing your own strategy,
+            <a href="{{OCTOBOT_COMMUNITY_URL}}?utm_source=octobot&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=about" target="_blank" rel="noopener">
+                octobot.cloud</a>, enables every crypto investors to enjoy trading strategies in the simplest way possible. <br/>
+            It also uses OctoBot under the hood and is perfect to diversify crypto investments or for people who don't want the technical aspect of a trading bot.
+       </p>
+        {{ octobot_cloud_features.octobot_cloud_features(OCTOBOT_COMMUNITY_URL, LOCALE, 'about') }}
+        <p>
+            Follow the OctoBot news on
+            <a href="{{OCTOBOT_COMMUNITY_URL}}/{{LOCALE}}/blog/introducing-the-new-octobot-cloud?utm_source=octobot&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=about" target="_blank" rel="noopener"> our blog</a>.
+        </p>
+    </div>
+    <div class="d-none d-lg-flex col-lg-4">
+        <a class="mx-auto" target="_blank" rel="noopener" href="{{OCTOBOT_COMMUNITY_URL}}?utm_source=octobot&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=about_illustration">
+            <img class="img-fluid cloud-logo-4x"
+                 src="{{url_for('static', filename='img/community/cloud_dark.png')}}" alt="OctoBot cloud">
+        </a>
+    </div>
+</div>
+{%- endmacro %}

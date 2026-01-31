@@ -1,0 +1,7 @@
+{% macro major_issue_alert(major_issue_alerts) %}
+    {% for alert in major_issue_alerts %}
+        <div class="alert alert-danger" role="alert">
+            {{ alert }}
+        </div>
+    {% endfor %}
+{% endmacro %}

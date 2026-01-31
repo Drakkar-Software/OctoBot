@@ -1,0 +1,22 @@
+{% extends "layout.html" %}
+{% set active_page = "community" %}
+
+{% import "components/community/bots_stats.html" as bots_stats %}
+{% import "components/community/login.html" as login %}
+
+{% block body %}
+<br>
+{{ bots_stats.bots_stats_card(current_bots_stats) }}
+
+<div class="login_box mx-auto mt-1 mt-xl-5">
+    <div class="card">
+        {{ login.login_form(form, is_in_stating_community_env, next_url, OCTOBOT_COMMUNITY_RECOVER_PASSWORD_URL) }}
+    </div>
+</div>
+
+<br>
+{% endblock %}
+
+{% block additional_scripts %}
+<script src="{{ url_for('static', filename='js/components/community.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+{% endblock additional_scripts %}

@@ -1,0 +1,13 @@
+{
+    "tentacle_activation": {
+        "Evaluator": {
+            "DipAnalyserStrategyEvaluator": true,
+            "InstantFluctuationsEvaluator": true,
+            "KlingerOscillatorReversalConfirmationMomentumEvaluator": true,
+            "RSIWeightMomentumEvaluator": true
+        },
+        "Trading": {
+            "DipAnalyserTradingMode": true
+        }
+    }
+}

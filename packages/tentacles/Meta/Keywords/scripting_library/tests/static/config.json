@@ -1,0 +1,20 @@
+{
+  "time_frame": ["1h", "4h", "1d"],
+  "exchanges": {
+    "binance": {
+      "api-key": "",
+      "api-secret": "",
+      "web-socket": false
+    },
+    "bitmex": {
+      "api-key": "",
+      "api-secret": "",
+      "web-socket": false
+    },
+    "poloniex": {
+      "api-key": "",
+      "api-secret": "",
+      "web-socket": false
+    }
+  }
+}

@@ -1,0 +1,8 @@
+recursive-include octobot_tentacles_manager *.pxd
+recursive-include octobot_tentacles_manager/creators/templates *.*
+
+include README.md
+include LICENSE
+include CHANGELOG.md
+include requirements.txt
+include full_requirements.txt

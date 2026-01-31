@@ -1,0 +1,4 @@
+\{
+  "required_time_frames" : ["30m", "1h", "2h", "4h", "1d"],
+  "required_evaluators" : ["*"]
+}

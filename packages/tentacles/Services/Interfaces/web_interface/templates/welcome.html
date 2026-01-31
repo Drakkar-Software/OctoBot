@@ -1,0 +1,73 @@
+{% extends "layout.html" %}
+{% set active_page = "home" %}
+{% set show_nab_bar = false %}
+
+{% block body %}
+<br>
+
+<div class="card w-100 w-md-75 w-lg-50 mx-auto">
+    <div class="card-header text-center"><h2>Welcome to your OctoBot !</h2></div>
+    <div class="card-body">
+        <div>
+            <p>
+                To quickly get started with OctoBot, the first thing to do is to select a strategy to use.
+            </p>
+            <p>
+                A strategy is defined in a profile. Each profile can be used either with your real exchange
+                account or using paper trading. Paper trading
+                allows you to experiment a profile risk-free, with a virtual portfolio.
+            </p>
+        </div>
+        <div class="text-center">
+            <img class="img-fluid cloud-logo-4x"
+                 src="{{url_for('static', filename='img/community/cloud_dark.png')}}" alt="OctoBot cloud">
+        </div>
+        <div>
+            How do you want to first start your OctoBot ? Remember that you can always change your mind later on.
+        </div>
+    </div>
+    <div class="card-footer p-4">
+        <div>
+            <div class="row">
+                <div class="col col-xl-8">
+                    <h3>OctoBot cloud strategies</h3>
+                    <p>
+                        I first want to use ready-made strategies from
+                    <a href="{{OCTOBOT_COMMUNITY_URL}}?utm_source=octobot&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=welcome" target="_blank"> OctoBot cloud
+                        <i class="fas fa-external-link-alt"></i></a>.
+                    </p>
+                    <p>
+                        <i class="far fa-lightbulb"></i> You can also use OctoBot cloud
+                        </a> for free to easily run cloud strategies.
+                    </p>
+                </div>
+                <div class="col my-auto">
+                    <a href="{{ url_for('accept_terms', accept_terms=True, next=url_for('profiles_selector', use_cloud=True, onboarding=True)) }}"
+                       class="button btn btn-primary waves-effect">
+                        Use cloud strategies
+                    </a>
+                </div>
+            </div>
+            <div class="row border-top mt-4">
+                <div class="col col-xl-8 mt-4">
+                    <h3>Strategies to customize</h3>
+                    <p>
+                        I want to create and customize my own strategies.
+                    </p>
+                    <p>
+                        <i class="fas fa-user-graduate"></i> For advanced investors.
+                    </p>
+                </div>
+                <div class="col mt-4 my-auto">
+                    <a href="{{ url_for('accept_terms', accept_terms=True, next=url_for('profiles_selector', use_cloud=false, onboarding=True)) }}"
+                       class="button btn btn-outline-primary waves-effect">
+                        Use custom strategies
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<br>
+{% endblock %}

@@ -1,0 +1,112 @@
+{% extends "layout.html" %}
+{% set active_page = "profile" %}
+{% set startup_messages_added_classes = "d-none" %}
+
+{% import "components/community/login.html" as login %}
+{% import 'components/config/evaluator_card.html' as m_config_evaluator_card %}
+{% import 'components/community/cloud_strategies_selector.html' as m_cloud_strategies_selector %}
+{% import "components/config/profiles.html" as profiles_macros %}
+{% import 'macros/flash_messages.html' as m_flash_messages %}
+{% import 'macros/starting_waiter.html' as m_starting_waiter %}
+
+{% block body %}
+<br>
+{% if not current_logged_in_email %}
+<div class="login_box mx-auto mb-2">
+    <div class="card">
+    {{ login.register_form(form, is_in_stating_community_env,
+                           url_for("profiles_selector", onboarding=onboarding), after_login_action="sync_account",
+                           details="Access your subscribed profiles as well as additional profiles.") }}
+    </div>
+</div>
+{% endif %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between">
+        <div>
+            <h3>
+                Select the profile your OctoBot should use
+            </h3>
+        </div>
+        <div class="text-right mt-4">
+            <button class="btn btn-outline-primary waves-effect"
+                    data-toggle="modal" data-target="#importProfileModal">
+                Import a profile
+            </button>
+        </div>
+    </div>
+    <div class="card-body pt-0">
+        <div>
+            <div>
+                <ul class="nav nav-tabs md-tabs justify-content-center" id="tabs" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link primary-tab-selector {{ '' if use_cloud else 'active show' }}" id="your-profiles-tab" data-toggle="tab" href="#your-profiles" role="tab"
+                           aria-controls="your-profiles"
+                           aria-selected="{{ 'false' if use_cloud else 'true' }}">
+                            <h5>Default</h5>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link primary-tab-selector {{ 'active show' if use_cloud else '' }}" id="cloud-profiles-tab" data-toggle="tab" href="#cloud-profiles" role="tab"
+                           aria-controls="cloud-profiles"
+                           aria-selected="{{ 'true' if use_cloud else 'false' }}">
+                            <h5>From OctoBot cloud</h5>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            <div class="tab-content my-2" id="tabcontent">
+                <div class="tab-pane fade {{ '' if use_cloud else 'active show' }}" id="your-profiles" role="tab-your-profiles" aria-labelledby="your-profiles-tab">
+                    <h4 class="text-center mt-4">
+                        Use ready-made profiles from the open-source OctoBot and your custom profiles.
+                    </h4>
+                    <div class="row mx-0 mt-1">
+                        {% for profile in profiles %}
+                        {{ profiles_macros.profile_overview(profile, current_profile,
+                          profiles_tentacles_details[profile.profile_id], strategy_config,
+                          evaluator_config, get_profile_traded_pairs_by_currency, get_profile_exchanges,
+                          get_enabled_trader, get_filtered_list, read_only, True, onboarding) }}
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="tab-pane fade {{ 'active show' if use_cloud else '' }}" id="cloud-profiles" role="tab-cloud-profiles" aria-labelledby="cloud-profiles-tab">
+                    <div id="cloud-strategies-selector"
+                         data-select-profile-url="{{url_for('profile', select='PROFILE_ID',
+                                                    next=url_for('trading_type_selector', reboot=True, onboarding=onboarding))}}">
+                        <h4 class="text-center mt-4">
+                            Use <a href="{{OCTOBOT_COMMUNITY_URL}}/strategies?utm_source=octobot&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=profile_selector" target="_blank">OctoBot cloud strategies</a>
+                            directly from your OctoBot.
+                        </h4>
+                        {{ m_cloud_strategies_selector.cloud_strategies_selector(cloud_strategies, LOCALE, "select-profile") }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!--<span class="d-none" data-display-intro="{{display_intro}}"></span>-->
+
+<br>
+
+<!-- Modals -->
+{{ profiles_macros.profile_import_modal(url_for('profiles_selector')) }}
+{% for trading_mode_name, info in strategy_config["trading-modes"].items() %}
+    {{ m_config_evaluator_card.evaluator_card_modal(trading_mode_name, info, False, read_only) }}
+{% endfor %}
+{% for evaluator_name, info in strategy_config["strategies"].items() %}
+    {{ m_config_evaluator_card.evaluator_card_modal(evaluator_name, info, True, read_only) }}
+{% endfor %}
+{% for evaluator_type_items in ['ta', 'social', 'real-time'] %}
+    {% for evaluator_name, info in evaluator_config[evaluator_type_items].items() %}
+        {{ m_config_evaluator_card.evaluator_card_modal(evaluator_name, info, True, read_only) }}
+    {% endfor %}
+{% endfor %}
+{% endblock %}
+
+{% block additional_scripts %}
+<script src="{{ url_for('static', filename='js/common/common_handlers.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+<script src="{{ url_for('static', filename='js/common/resources_rendering.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+<script src="{{ url_for('static', filename='js/components/profile_management.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+<script src="{{ url_for('static', filename='js/components/community.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+<script src="{{ url_for('static', filename='js/components/profiles_selector.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+{% endblock additional_scripts %}
