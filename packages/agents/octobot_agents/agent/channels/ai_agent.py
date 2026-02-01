@@ -38,8 +38,8 @@ from octobot_agents.storage import (
     execute_memory_tool,
 )
 from octobot_agents.enums import MemoryStorageType
-import octobot_services.services.abstract_ai_service as abstract_ai_service
-from octobot_services.enums import ModelPolicy
+import octobot_services.services as services
+import octobot_services.enums as enums
 import octobot_services.errors as services_errors
 
 class AbstractAIAgentChannel(AbstractAgentChannel):
@@ -62,7 +62,7 @@ class AbstractAIAgentChannelConsumer(AbstractAgentChannelConsumer):
     
     def __init__(
         self,
-        callback: typing.Callable = None,
+        callback: typing.Optional[typing.Callable] = None,
         size: int = 0,
         priority_level: int = AbstractAgentChannel.DEFAULT_PRIORITY_LEVEL,
         expected_inputs: int = 1,
@@ -123,7 +123,7 @@ class AbstractAIAgentChannelProducer(AbstractAgentChannelProducer, abc.ABC):
     DEFAULT_TEMPERATURE: float = AGENT_DEFAULT_TEMPERATURE
     MAX_RETRIES: int = AGENT_DEFAULT_MAX_RETRIES
     # Model policy for multi-model config: fast (analysts, debators) or reasoning (judge, final step). None = use self.model.
-    MODEL_POLICY: typing.Optional[ModelPolicy] = None
+    MODEL_POLICY: typing.Optional[enums.AIModelPolicy] = None
 
     # Memory configuration
     ENABLE_MEMORY: bool = False
@@ -137,6 +137,7 @@ class AbstractAIAgentChannelProducer(AbstractAgentChannelProducer, abc.ABC):
     def __init__(
         self,
         channel: typing.Optional[AbstractAgentChannel],
+        ai_service: typing.Optional[services.AbstractAIService] = None,
         model: typing.Optional[str] = None,
         max_tokens: typing.Optional[int] = None,
         temperature: typing.Optional[float] = None,
@@ -158,7 +159,7 @@ class AbstractAIAgentChannelProducer(AbstractAgentChannelProducer, abc.ABC):
         self.max_tokens = max_tokens or self.DEFAULT_MAX_TOKENS
         self.temperature = temperature or self.DEFAULT_TEMPERATURE
         self._custom_prompt: typing.Optional[str] = None
-        self.ai_service: abstract_ai_service.AbstractAIService = None
+        self.ai_service: services.AbstractAIService = None
         self.logger = logging.get_logger(f"{self.__class__.__name__}")
         
         # Initialize memory storage if memory is enabled
@@ -205,7 +206,7 @@ class AbstractAIAgentChannelProducer(AbstractAgentChannelProducer, abc.ABC):
         raise NotImplementedError("_get_default_prompt not implemented")
     
     @abc.abstractmethod
-    async def execute(self, input_data: typing.Any, ai_service: abstract_ai_service.AbstractAIService) -> typing.Any:
+    async def execute(self, input_data: typing.Any, ai_service: services.AbstractAIService) -> typing.Any:
         """
         Execute the agent's primary function.
         
@@ -283,7 +284,7 @@ class AbstractAIAgentChannelProducer(AbstractAgentChannelProducer, abc.ABC):
     async def _call_llm(
         self,
         messages: list,
-        llm_service: abstract_ai_service.AbstractAIService,
+        llm_service: services.AbstractAIService,
         json_output: bool = True,
         response_schema: typing.Optional[typing.Any] = None,
         input_data: typing.Optional[typing.Any] = None,

@@ -34,12 +34,18 @@ class DataFormatKeys(enum.Enum):
     TIME_FRAMES = "time_frames"
     TYPE = "type"
     VERSION = "version"
+    DATA_TYPE = "data_type"
 
 
 class ReportFormat(enum.Enum):
     SYMBOL_REPORT = "symbol_report"
     BOT_REPORT = "bot_report"
     SYMBOLS_WITH_TF = "symbols_with_time_frames_frames"
+
+
+class DataType(enum.Enum):
+    EXCHANGE = "exchange"
+    SOCIAL = "social"
 
 
 class DataTables(enum.Enum):
@@ -53,3 +59,7 @@ class ExchangeDataTables(enum.Enum):
     KLINE = "kline"
     TICKER = "ticker"
     FUNDING = "funding"
+
+
+class SocialDataTables(enum.Enum):
+    SOCIAL_EVENTS = "social_events"

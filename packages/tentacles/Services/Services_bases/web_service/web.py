@@ -27,8 +27,6 @@ LOCAL_HOST_IP = "127.0.0.1"
 
 
 class WebService(services.AbstractService):
-    BACKTESTING_ENABLED = True
-
     def __init__(self):
         super().__init__()
         self.web_app = None

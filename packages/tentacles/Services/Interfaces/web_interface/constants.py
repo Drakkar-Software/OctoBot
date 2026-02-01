@@ -44,6 +44,7 @@ BOT_TOOLS_STRATEGY_OPTIMIZER = "strategy_optimizer"
 
 # data collector
 BOT_TOOLS_DATA_COLLECTOR = "data_collector"
+BOT_TOOLS_SOCIAL_DATA_COLLECTOR = "social_data_collector"
 
 PRODUCT_HUNT_ANNOUNCEMENT = "product_hunt_announcement"
 PRODUCT_HUNT_ANNOUNCEMENT_DAY = 1720594860  # Wednesday, July 10, 2024 7:01:00 AM UTC

@@ -51,6 +51,9 @@ class DataImporter:
     async def start(self) -> None:
         raise NotImplementedError("Start is not implemented")
 
+    def provides_accurate_price_time_frame(self) -> bool:
+        raise NotImplementedError("provides_accurate_price_time_frame is not implemented")
+
     def load_database(self) -> None:
         file_path = self.adapt_file_path_if_necessary()
         if not self.database:

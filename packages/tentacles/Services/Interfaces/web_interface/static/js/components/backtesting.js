@@ -67,13 +67,15 @@ function handle_file_selection(){
             const symbols = checkbox.attr("symbols");
             const data_file = checkbox.attr("data-file");
             checkbox.prop('checked', true);
-            // uncheck same symbols from other rows if any
-            $("#dataFilesTable").find("input[type='checkbox']:checked").each(function(){
-                if($(this).attr("symbols") === symbols && !($(this).attr("data-file") === data_file)){
-                    $(this).closest('tr').removeClass(selected_item_class);
-                    $(this).prop('checked', false);
-                }
-            });
+            // uncheck same symbols from other rows if any (skip for social files to allow multiple social selection)
+            if (row_element.attr("data-file-type") !== "social") {
+                $("#dataFilesTable").find("input[type='checkbox']:checked").each(function(){
+                    if($(this).attr("symbols") === symbols && !($(this).attr("data-file") === data_file)){
+                        $(this).closest('tr').removeClass(selected_item_class);
+                        $(this).prop('checked', false);
+                    }
+                });
+            }
         }
         if($("#dataFilesTable").find("input[type='checkbox']:checked").length > 1){
            syncDataOnlyDiv.removeClass(hidden_class);

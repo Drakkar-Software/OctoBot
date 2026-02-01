@@ -15,6 +15,7 @@ pantsd_max_memory_usage = "6GiB"
 # /packages for tentacles package which needs to be imported as 'tentacles.Evaluator.X'
 # / - for root level sources like octobot
 root_patterns = [
+    "/packages/agents",
     "/packages/async_channel",
     "/packages/backtesting",
     "/packages/binary",
@@ -48,11 +49,3 @@ build_verbose = true
 env_vars.add = [
   "DOCKER_BUILDKIT=1",
 ]
-=======
-interpreter_constraints = [">=3.10"]
-
-[python-infer]
-# Enable dependency inference
-inits = true
-conftests = true
->>>>>>> bd80761e ([Agent] Add manager)

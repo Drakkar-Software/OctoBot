@@ -163,11 +163,15 @@
           </thead>
           <tbody>
             {% for file, description in data_files %}
-                <tr class="selectable_datafile">
+                <tr class="selectable_datafile" data-file-type="{{ description.data_type }}">
                     <td>{{", ".join(description.symbols)}}</td>
                     {% if description.start_timestamp %}
                         <td data-order="{{description.timestamp}}">{{description.start_date}} to {{description.end_date}}</td>
+                        {% if description.data_type == "social" %}
+                        <td>-</td>
+                        {% else %}
                         <td>Full</td>
+                        {% endif %}
                     {% else %}
                         <td data-order="{{description.timestamp}}">{{description.date}}</td>
                         <td>{{description.candles_length}}</td>

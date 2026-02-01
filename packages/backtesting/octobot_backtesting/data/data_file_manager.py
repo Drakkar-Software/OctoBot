@@ -54,10 +54,50 @@ def get_date(time_info) -> str:
 async def get_database_description(database):
     description = (await database.select(enums.DataTables.DESCRIPTION, size=1))[0]
     version = description[1]
-    if version == "1.0":
+    if version == "2.0":
+        data_type = description[2]
+        if data_type == enums.DataType.EXCHANGE.value:
+            symbols = json.loads(description[4])
+            time_frames = [common_enums.TimeFrames(tf) for tf in json.loads(description[5])]
+            candles_count = (await database.select_count(
+                enums.ExchangeDataTables.OHLCV, ["*"],
+                time_frame=tmf_manager.find_min_time_frame(time_frames).value
+            ))[0][0]
+            candles_length = int(candles_count / len(symbols)) if symbols else 0
+            return {
+                enums.DataFormatKeys.TIMESTAMP.value: description[0],
+                enums.DataFormatKeys.VERSION.value: description[1],
+                enums.DataFormatKeys.DATA_TYPE.value: enums.DataType.EXCHANGE.value,
+                enums.DataFormatKeys.EXCHANGE.value: description[3],
+                enums.DataFormatKeys.SYMBOLS.value: symbols,
+                enums.DataFormatKeys.TIME_FRAMES.value: time_frames,
+                enums.DataFormatKeys.START_TIMESTAMP.value: description[6],
+                enums.DataFormatKeys.END_TIMESTAMP.value: description[7],
+                enums.DataFormatKeys.CANDLES_LENGTH.value: candles_length,
+            }
+        elif data_type == enums.DataType.SOCIAL.value:
+            symbols = []
+            if description[5]:
+                try:
+                    symbols = json.loads(description[5])
+                except (json.JSONDecodeError, TypeError):
+                    pass
+            return {
+                enums.DataFormatKeys.TIMESTAMP.value: description[0],
+                enums.DataFormatKeys.VERSION.value: description[1],
+                enums.DataFormatKeys.DATA_TYPE.value: enums.DataType.SOCIAL.value,
+                enums.DataFormatKeys.EXCHANGE.value: description[3] if len(description) > 3 else "social",
+                enums.DataFormatKeys.SYMBOLS.value: symbols if isinstance(symbols, list) else [],
+                enums.DataFormatKeys.TIME_FRAMES.value: [],
+                enums.DataFormatKeys.START_TIMESTAMP.value: description[6] if len(description) > 6 else 0,
+                enums.DataFormatKeys.END_TIMESTAMP.value: description[7] if len(description) > 7 else 0,
+                enums.DataFormatKeys.CANDLES_LENGTH.value: 0,
+            }
+    elif version == "1.0":
         return {
             enums.DataFormatKeys.TIMESTAMP.value: description[0],
             enums.DataFormatKeys.VERSION.value: description[1],
+            enums.DataFormatKeys.DATA_TYPE.value: enums.DataType.EXCHANGE.value,
             enums.DataFormatKeys.EXCHANGE.value: description[2],
             enums.DataFormatKeys.SYMBOLS.value: json.loads(description[3]),
             enums.DataFormatKeys.TIME_FRAMES.value: [common_enums.TimeFrames(tf) for tf in json.loads(description[4])],
@@ -73,6 +113,7 @@ async def get_database_description(database):
         return {
             enums.DataFormatKeys.TIMESTAMP.value: description[0],
             enums.DataFormatKeys.VERSION.value: description[1],
+            enums.DataFormatKeys.DATA_TYPE.value: enums.DataType.EXCHANGE.value,
             enums.DataFormatKeys.EXCHANGE.value: description[2],
             enums.DataFormatKeys.SYMBOLS.value: json.loads(description[3]),
             enums.DataFormatKeys.TIME_FRAMES.value: [common_enums.TimeFrames(tf) for tf in json.loads(description[4])],

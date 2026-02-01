@@ -109,6 +109,60 @@ def register(blueprint):
         run_id = models.get_latest_backtesting_run_id(trading_mode)
         return flask.jsonify(run_id)
 
+    @blueprint.route("/social_data_collector")
+    @blueprint.route('/social_data_collector', methods=['GET', 'POST'])
+    @login.login_required_when_activated
+    def social_data_collector():
+        if not models.is_backtesting_enabled():
+            return flask.redirect(flask.url_for("home"))
+        if flask.request.method == 'POST':
+            action_type = flask.request.args["action_type"]
+            success = False
+            reply = "Action failed"
+            if action_type == "start_collector":
+                details = flask.request.get_json()
+                success, reply = models.collect_social_data_file(
+                    details["social_name"],
+                    details["sources"],
+                    details.get("startTimestamp"),
+                    details.get("endTimestamp")
+                )
+                if success:
+                    web_interface.send_social_data_collector_status()
+            elif action_type == "stop_collector":
+                success, reply = models.stop_social_data_collector()
+            if success:
+                return util.get_rest_reply(flask.jsonify(reply))
+            else:
+                return util.get_rest_reply(reply, 500)
+
+        elif flask.request.method == 'GET':
+            if flask.request.args:
+                action_type_key = "action_type"
+                if action_type_key in flask.request.args:
+                    target = flask.request.args[action_type_key]
+                    if target == "available_services":
+                        return flask.jsonify(models.get_available_social_services())
+                    elif target == "service_sources":
+                        service_name = flask.request.args.get('service_name')
+                        return flask.jsonify(models.get_service_sources(service_name))
+                    elif target == "status":
+                        status, progress = models.get_social_data_collector_status()
+                        return flask.jsonify({"status": status, "progress": progress})
+
+            # Render the social data collector page
+            origin_page = None
+            if flask.request.args:
+                from_key = "from"
+                if from_key in flask.request.args:
+                    origin_page = flask.request.args[from_key]
+
+            available_services = models.get_available_social_services()
+            return flask.render_template('social_data_collector.html',
+                                         available_services=available_services,
+                                         origin_page=origin_page,
+                                         alert={})
+
 
     @blueprint.route("/data_collector")
     @blueprint.route('/data_collector', methods=['GET', 'POST'])

@@ -25,10 +25,20 @@ from octobot_agents.team.channels.ai_agents_team import (
     AbstractLiveAgentsTeamChannelProducer,
 )
 
+from octobot_agents.team.channels.deep_agents_team import (
+    AbstractDeepAgentsTeamChannel,
+    AbstractDeepAgentsTeamChannelConsumer,
+    AbstractDeepAgentsTeamChannelProducer,
+)
+
 __all__ = [
     "AbstractAgentsTeamChannel",
     "AbstractAgentsTeamChannelConsumer",
     "AbstractAgentsTeamChannelProducer",
     "AbstractSyncAgentsTeamChannelProducer",
     "AbstractLiveAgentsTeamChannelProducer",
+    # Deep Agents Team
+    "AbstractDeepAgentsTeamChannel",
+    "AbstractDeepAgentsTeamChannelConsumer",
+    "AbstractDeepAgentsTeamChannelProducer",
 ]

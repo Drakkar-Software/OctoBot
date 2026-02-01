@@ -41,6 +41,7 @@ def register_notifier(notification_key, notifier):
 GENERAL_NOTIFICATION_KEY = "general_notifications"
 BACKTESTING_NOTIFICATION_KEY = "backtesting_notifications"
 DATA_COLLECTOR_NOTIFICATION_KEY = "data_collector_notifications"
+SOCIAL_DATA_COLLECTOR_NOTIFICATION_KEY = "social_data_collector_notifications"
 STRATEGY_OPTIMIZER_NOTIFICATION_KEY = "strategy_optimizer_notifications"
 DASHBOARD_NOTIFICATION_KEY = "dashboard_notifications"
 
@@ -114,6 +115,10 @@ def send_backtesting_status(**kwargs):
 
 def send_data_collector_status(**kwargs):
     _send_notification(DATA_COLLECTOR_NOTIFICATION_KEY, **kwargs)
+
+
+def send_social_data_collector_status(**kwargs):
+    _send_notification(SOCIAL_DATA_COLLECTOR_NOTIFICATION_KEY, **kwargs)
 
 
 def send_strategy_optimizer_status(**kwargs):

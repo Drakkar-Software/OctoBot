@@ -31,10 +31,14 @@ from octobot_backtesting.importers.exchanges import (
     import_recent_trades,
     import_klines,
 )
+from octobot_backtesting.importers.social import (
+    SocialDataImporter,
+)
 
 __all__ = [
     "DataImporter",
     "ExchangeDataImporter",
+    "SocialDataImporter",
     "get_operations_from_timestamps",
     "import_ohlcvs",
     "import_tickers",

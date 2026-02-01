@@ -37,7 +37,7 @@ flask-socketio==5.6.0
 # openai
 openai==2.15.0
 # agents
-pydantic>=2.11.10
+pydantic>=2.12
 mcp==1.26.0
 # Coingecko
 coingecko-openapi-client==1.4.0

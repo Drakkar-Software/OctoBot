@@ -57,6 +57,7 @@ jobs:
         version: [ "3.13.x" ]
         package:
           - octobot
+          - packages/agents
           - packages/async_channel
           - packages/backtesting
           - packages/commons

@@ -19,6 +19,7 @@ from octobot_backtesting.api import data_file
 from octobot_backtesting.api import importer
 from octobot_backtesting.api import backtesting
 from octobot_backtesting.api import exchange_data_collector
+from octobot_backtesting.api import social_data_collector
 
 from octobot_backtesting.api.data_file_converters import (
     convert_data_file,
@@ -72,6 +73,10 @@ from octobot_backtesting.api.exchange_data_collector import (
     get_data_collector_progress,
     is_data_collector_finished,
 )
+from octobot_backtesting.api.social_data_collector import (
+    social_historical_data_collector_factory,
+    social_live_data_collector_factory,
+)
 
 __all__ = [
     "convert_data_file",
@@ -116,4 +121,6 @@ __all__ = [
     "is_data_collector_in_progress",
     "get_data_collector_progress",
     "is_data_collector_finished",
+    "social_historical_data_collector_factory",
+    "social_live_data_collector_factory",
 ]

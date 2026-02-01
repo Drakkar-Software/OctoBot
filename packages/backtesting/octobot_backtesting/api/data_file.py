@@ -37,7 +37,10 @@ async def get_file_description(file_name, data_path=constants.BACKTESTING_FILE_P
             enums.DataFormatKeys.TIME_FRAMES.value: [tf.value
                                                      for tf in description[enums.DataFormatKeys.TIME_FRAMES.value]],
             enums.DataFormatKeys.CANDLES_LENGTH.value: description[enums.DataFormatKeys.CANDLES_LENGTH.value],
-            enums.DataFormatKeys.TYPE.value: "OctoBot data file"
+            enums.DataFormatKeys.TYPE.value: "OctoBot data file",
+            enums.DataFormatKeys.DATA_TYPE.value: description.get(
+                enums.DataFormatKeys.DATA_TYPE.value, enums.DataType.EXCHANGE.value
+            ),
         }
     else:
         return description

@@ -68,3 +68,43 @@ ANALYSIS_TYPE_OPTIMIZATIONS = "optimizations"
 TOOL_RUN_AGENT = "run_agent"
 TOOL_RUN_DEBATE = "run_debate"
 TOOL_FINISH = "finish"
+
+# Deep Agent memory paths - using /memories/ prefix for persistent storage
+MEMORIES_PATH_PREFIX = "/memories/"
+MEMORIES_AGENT_DATA = "data"
+MEMORIES_AGENT_CONTEXT = "context"
+MEMORIES_AGENT_HISTORY = "history"
+MEMORIES_TEAM_SHARED = "shared"
+
+# Deep Agent supervisor defaults
+SUPERVISOR_MAX_DELEGATION_DEPTH = 3
+SUPERVISOR_WORKER_TIMEOUT_SECONDS = 60
+
+# Subagent configuration keys
+SUBAGENT_NAME_KEY = "name"
+SUBAGENT_INSTRUCTIONS_KEY = "instructions"
+SUBAGENT_TOOLS_KEY = "tools"
+SUBAGENT_MODEL_KEY = "model"
+SUBAGENT_HANDOFF_BACK_KEY = "handoff_back"
+
+# Debate workflow constants
+DEBATE_MAX_ROUNDS = 3
+DEBATE_CONVERGENCE_THRESHOLD = 0.8
+DEBATE_MIN_CONFIDENCE = 0.6
+
+# Human-in-the-loop (HITL) constants
+HITL_DECISION_APPROVE = "approve"
+HITL_DECISION_EDIT = "edit"
+HITL_DECISION_REJECT = "reject"
+HITL_ALLOWED_DECISIONS = [HITL_DECISION_APPROVE, HITL_DECISION_EDIT, HITL_DECISION_REJECT]
+HITL_DEFAULT_ALLOWED = [HITL_DECISION_APPROVE, HITL_DECISION_REJECT]
+HITL_INTERRUPT_KEY = "__interrupt__"
+
+# Skills configuration
+SKILLS_PATH_PREFIX = "/skills/"
+SKILLS_MANIFEST_FILE = "SKILL.md"
+SKILLS_DEFAULT_DIR = "./skills/"
+
+# CompiledSubAgent types
+COMPILED_SUBAGENT_TYPE = "compiled"
+DICTIONARY_SUBAGENT_TYPE = "dictionary"

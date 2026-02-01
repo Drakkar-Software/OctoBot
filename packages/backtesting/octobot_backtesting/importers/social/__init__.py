@@ -15,3 +15,11 @@
 #  License along with this library.
 
 from octobot_backtesting.importers.social import social_importer
+
+from octobot_backtesting.importers.social.social_importer import (
+    SocialDataImporter,
+)
+
+__all__ = [
+    "SocialDataImporter",
+]
