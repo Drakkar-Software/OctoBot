@@ -16,7 +16,7 @@
 
 
 import numpy
-# import tulipy
+import tulipy
 
 
 DATA = numpy.array([81.59, 81.06, 82.87, 83, 83.61,
