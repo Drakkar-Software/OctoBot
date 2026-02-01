@@ -16,8 +16,8 @@ ENV PATH="/opt/venv/bin:$PATH"
 # Copy the repository
 COPY . .
 
-# Install Pants and build OctoBot
-RUN curl --proto '=https' --tlsv1.2 -sSf https://static.pantsbuild.org/setup/get-pants.sh | bash
+# Install Pants
+RUN curl --proto '=https' --tlsv1.2 -fsSL https://static.pantsbuild.org/setup/get-pants.sh | bash -s -- --bin-dir /usr/local/bin
 RUN pants package :OctoBot
 
 # Install the packaged wheel into the virtualenv

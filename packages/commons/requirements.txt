@@ -1,5 +1,5 @@
 # Setup requirements
-numpy==1.26.3
+numpy==2.4.2
 
 # Commons requirements
 cryptography
