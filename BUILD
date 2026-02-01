@@ -16,6 +16,11 @@ resources(
     ]
 )
 
+files(
+    name="config_data",
+    sources=["octobot/config/*"]
+)
+
 PACKAGE_SOURCES = [
     "packages/async_channel:async_channel",
     "packages/backtesting:octobot_backtesting",
@@ -49,11 +54,6 @@ PACKAGE_FULL_REQS = [
 python_source(
     name="test_conftest",
     source="tests/conftest.py",
-)
-
-files(
-    name="ob_config_data",
-    sources=["octobot/config/*"]
 )
 
 files(
@@ -101,6 +101,7 @@ python_tests(
         ":test_utils",
         ":test_exchanges_util",
         ":web_interface_resources",
+        ":config_data"
         "//:tentacles",
         "packages/tentacles:tentacles_metadata",
         "packages/tentacles:tentacles_test_utils",
@@ -117,6 +118,7 @@ pex_binary(
         ":octobot",
         ":reqs",
         ":full_reqs",
+        ":config_data"
     ] + PACKAGE_SOURCES + PACKAGE_REQS + PACKAGE_FULL_REQS,
 )
 
