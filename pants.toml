@@ -45,4 +45,6 @@ conftests = true
 [docker]
 default_repository = "drakkarsoftware/octobot"
 build_verbose = true 
-
+env_vars.add = [
+  "DOCKER_BUILDKIT=1",
+]

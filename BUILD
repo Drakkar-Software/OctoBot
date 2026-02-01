@@ -161,17 +161,28 @@ python_distribution(
 )
 
 docker_image(
-    name="OctoBot-Docker-Image",
+    name="docker",
     source="Dockerfile",
     dependencies=[
         ":octobot",
         ":octobot_config",
         "docker:files",
     ],
-    repository="octobot",
-    image_tags=["latest", "v{build_args.VERSION}"],
+    repository="drakkarsoftware/octobot",
+    image_tags=[
+        "latest",
+        "{build_args.TENTACLES_URL_TAG}",
+        "stable",
+        "v{build_args.VERSION}",
+    ],
     extra_build_args={
-        "TENTACLES_URL_TAG": "",
+        "TENTACLES_URL_TAG": "{build_args.TENTACLES_URL_TAG}",
     },
+    build_platform=[
+        "linux/amd64",
+        "linux/arm64",
+        # "linux/arm/v7",
+    ],
+    skip_push = False,
 )
 
