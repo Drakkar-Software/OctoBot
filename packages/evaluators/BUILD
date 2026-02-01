@@ -1,8 +1,5 @@
 python_requirements(
     name="reqs",
-    module_mapping={
-        "OctoBot-Tulipy": ["tulipy"],
-    },
     source="requirements.txt"
 )
 

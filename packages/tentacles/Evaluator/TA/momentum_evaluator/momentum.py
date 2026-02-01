@@ -15,7 +15,7 @@
 #  License along with this library.
 import math
 import numpy
-import tulipy
+# import tulipy
 import typing
 
 import octobot_commons.constants as commons_constants
