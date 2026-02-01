@@ -145,6 +145,7 @@ python_distribution(
         ":octobot",
         ":reqs",
         ":full_reqs",
+        ":config_data"
     ] + PACKAGE_SOURCES + PACKAGE_REQS + PACKAGE_FULL_REQS,
     provides=python_artifact(
         name="octobot",
