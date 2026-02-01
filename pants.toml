@@ -6,8 +6,6 @@ backend_packages = [
     "pants.backend.python",
 ]
 pants_ignore_use_gitignore = false
-pantsd = "False"
-pantsd_max_memory_usage = "6GiB"
 
 [source]
 # Configure source roots for packages directory

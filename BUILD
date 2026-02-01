@@ -52,8 +52,8 @@ python_source(
 )
 
 files(
-    name="config_data",
-    sources=["octobot/config/**/*"]
+    name="ob_config_data",
+    sources=["octobot/config/*"]
 )
 
 files(
