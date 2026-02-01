@@ -1,4 +1,4 @@
-numpy==2.4.2
+numpy==1.26.3
 
 # Exchange connection requirements
 ccxt==4.5.28 # always ensure real exchanges tests (in tests_additional and authenticated exchange tests) are passing before changing the ccxt version
