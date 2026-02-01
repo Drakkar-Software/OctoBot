@@ -13,7 +13,7 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-import tulipy
+# import tulipy
 import numpy
 
 import octobot_commons.constants as commons_constants

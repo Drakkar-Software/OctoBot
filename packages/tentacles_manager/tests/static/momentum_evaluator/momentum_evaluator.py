@@ -16,7 +16,7 @@
 
 import math
 
-import tulipy
+# import tulipy
 
 from octobot_evaluators.evaluator import TAEvaluator
 from tentacles.Evaluator.Util import TrendAnalysis

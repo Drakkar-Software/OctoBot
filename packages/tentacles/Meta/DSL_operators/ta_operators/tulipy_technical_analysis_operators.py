@@ -14,7 +14,7 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-import tulipy
+# import tulipy
 import numpy as np
 
 import octobot_commons.errors
