@@ -101,7 +101,7 @@ python_tests(
         ":test_utils",
         ":test_exchanges_util",
         ":web_interface_resources",
-        ":config_data"
+        ":config_data",
         "//:tentacles",
         "packages/tentacles:tentacles_metadata",
         "packages/tentacles:tentacles_test_utils",
@@ -118,7 +118,7 @@ pex_binary(
         ":octobot",
         ":reqs",
         ":full_reqs",
-        ":config_data"
+        ":config_data",
     ] + PACKAGE_SOURCES + PACKAGE_REQS + PACKAGE_FULL_REQS,
 )
 
@@ -145,7 +145,7 @@ python_distribution(
         ":octobot",
         ":reqs",
         ":full_reqs",
-        ":config_data"
+        ":config_data",
     ] + PACKAGE_SOURCES + PACKAGE_REQS + PACKAGE_FULL_REQS,
     provides=python_artifact(
         name="octobot",
