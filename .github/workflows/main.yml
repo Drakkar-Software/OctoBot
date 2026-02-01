@@ -63,7 +63,7 @@ jobs:
       matrix:
         os: [ ubuntu-latest ]
         arch: [ x64 ]
-        version: [ "3.10.x" ]
+        version: [ "3.13.x" ]
         package:
           # - octobot
           # - packages/async_channel
@@ -88,7 +88,7 @@ jobs:
     - name: Install Pants
       uses: pantsbuild/actions/init-pants@v10
       with:
-        gha-cache-key: ${{ runner.os }}-pants-${{ matrix.package }}-disabled
+        gha-cache-key: ${{ runner.os }}-pants-${{ matrix.package }}-disabled-13
         named-caches-hash: ${{ hashFiles('pants.toml') }}
 
     - name: Install tentacles
@@ -117,7 +117,7 @@ jobs:
       matrix:
         os: [ ubuntu-latest ]
         arch: [ x64 ]
-        version: [ "3.10.x" ]
+        version: [ "3.13.x" ]
 
     steps:
       - uses: actions/checkout@v5
@@ -189,7 +189,7 @@ jobs:
       matrix:
         os: [ ubuntu-latest ]
         arch: [ x64 ]
-        version: [ "3.10.x" ]
+        version: [ "3.13.x" ]
 
     steps:
       - uses: actions/checkout@v5
