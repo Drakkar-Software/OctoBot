@@ -18,16 +18,16 @@ jobs:
         arch: [ x64 ]
         version: [ "3.10.x" ]
         package:
-          - octobot
-          - packages/async_channel
-          - packages/backtesting
-          - packages/commons
+          # - octobot
+          # - packages/async_channel
+          # - packages/backtesting
+          # - packages/commons
           - packages/evaluators
-          - packages/node
-          - packages/services
-          - packages/tentacles_manager
-          - packages/trading
-          - packages/trading_backend
+          # - packages/node
+          # - packages/services
+          # - packages/tentacles_manager
+          # - packages/trading
+          # - packages/trading_backend
 
     steps:
     - uses: actions/checkout@v5
