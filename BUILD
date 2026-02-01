@@ -165,8 +165,7 @@ docker_image(
     source="Dockerfile",
     dependencies=[
         ":octobot",
-        ":octobot_config",
-        "docker:files",
+        ":octobot_config"
     ],
     repository="drakkarsoftware/octobot",
     image_tags=[
