@@ -1,4 +1,4 @@
-FROM python:3.10-slim-bookworm AS base
+FROM python:3.14-slim AS base
 
 WORKDIR /
 
@@ -14,7 +14,7 @@ RUN python -m venv /opt/venv \
     && pip install -U pip setuptools wheel \
     && pip install --no-cache-dir /tmp/octobot-*.whl
 
-FROM python:3.10-slim-bookworm
+FROM python:3.14-slim
 
 ARG TENTACLES_URL_TAG=""
 ENV TENTACLES_URL_TAG=$TENTACLES_URL_TAG
