@@ -95,7 +95,7 @@ jobs:
       if:  matrix.package == 'octobot' || matrix.package == 'packages/evaluators'
       run: |
         pants package :OctoBot
-        pip3 install dist/*.whl
+        pip3 install pytest dist/octobot-*.whl
 
     - name: Install tentacles
       if:  matrix.package == 'octobot' || matrix.package == 'packages/evaluators'
@@ -107,7 +107,8 @@ jobs:
     - name: Run tests
       run: |
         if [ "${{ matrix.package }}" = "octobot" ]; then
-          pants --process-execution-local-parallelism=1 test :tests
+          pytest --cov=. --cov-config=.coveragerc --durations=0 -rw tests
+          pytest --cov=. --cov-config=.coveragerc --durations=0 -rw --ignore=tentacles/Trading/Exchange tentacles
         else
           pants --process-execution-local-parallelism=1 test ${{ matrix.package }}:tests
         fi

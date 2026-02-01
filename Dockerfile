@@ -16,11 +16,9 @@ ENV PATH="/opt/venv/bin:$PATH"
 # Copy the repository
 COPY . .
 
-# Install Pants
+# Install Pants and build OctoBot
 RUN curl --proto '=https' --tlsv1.2 -sSf https://static.pantsbuild.org/setup/get-pants.sh | bash
-
-# Use Pants to package the OctoBot distribution (builds the wheel with all dependencies)
-RUN ~/.local/bin/pants package :OctoBot
+RUN pants package :OctoBot
 
 # Install the packaged wheel into the virtualenv
 RUN pip install -U setuptools wheel pip>=20.0.0 \
