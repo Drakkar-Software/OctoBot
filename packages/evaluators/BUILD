@@ -3,6 +3,7 @@ python_requirements(
     module_mapping={
         "OctoBot-Tulipy": ["tulipy"],
     },
+    source="requirements.txt"
 )
 
 python_sources(name="octobot_evaluators", sources=["octobot_evaluators/**/*.py"])
