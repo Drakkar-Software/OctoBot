@@ -52,6 +52,11 @@ python_source(
 )
 
 files(
+    name="config_data",
+    sources=["octobot/config/**/*"]
+)
+
+files(
     name="test_data",
     sources=["tests/static/**/*"],
 )
