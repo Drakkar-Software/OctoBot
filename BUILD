@@ -159,3 +159,19 @@ python_distribution(
     sdist=True,
     wheel=True,
 )
+
+docker_image(
+    name="OctoBot",
+    source="Dockerfile",
+    dependencies=[
+        ":octobot",
+        ":octobot_config",
+        "docker:files",
+    ],
+    repository="octobot",
+    image_tags=["latest", "v{build_args.VERSION}"],
+    extra_build_args={
+        "TENTACLES_URL_TAG": "",
+    },
+)
+

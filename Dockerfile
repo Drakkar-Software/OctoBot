@@ -2,27 +2,17 @@ FROM python:3.10-slim-bookworm AS base
 
 WORKDIR /
 
-# Install system dependencies for Pants and building
+# Install system dependencies for building
 RUN apt-get update \
     && apt-get install -y --no-install-recommends build-essential git gcc binutils libffi-dev libssl-dev libxml2-dev libxslt1-dev libxslt-dev libjpeg62-turbo-dev zlib1g-dev curl \
     && python -m venv /opt/venv
 
-# Skip cryptography rust compilation (required for armv7 builds)
-ENV CRYPTOGRAPHY_DONT_BUILD_RUST=1
+COPY dist/octobot-*.whl /tmp/
 
-# Make sure we use the virtualenv:
-ENV PATH="/opt/venv/bin:$PATH"
-
-# Copy the repository
-COPY . .
-
-# Install Pants
-RUN curl --proto '=https' --tlsv1.2 -fsSL https://static.pantsbuild.org/setup/get-pants.sh | bash -s -- --bin-dir /usr/local/bin
-RUN pants package :OctoBot
-
-# Install the packaged wheel into the virtualenv
-RUN pip install -U setuptools wheel pip>=20.0.0 \
-    && pip install --no-cache-dir dist/octobot-*.whl
+RUN python -m venv /opt/venv \
+    && . /opt/venv/bin/activate \
+    && pip install -U pip setuptools wheel \
+    && pip install --no-cache-dir /tmp/octobot-*.whl
 
 FROM python:3.10-slim-bookworm
 

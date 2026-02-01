@@ -3,6 +3,7 @@
 pants_version = "2.30.0"
 backend_packages = [
     "pants.backend.python",
+    "pants.backend.docker",
 ]
 pants_ignore_use_gitignore = false
 pantsd = true
@@ -40,3 +41,8 @@ python-default = ["==3.13.*"]
 # Enable dependency inference
 imports = true
 conftests = true
+
+[docker]
+default_repository = "drakkarsoftware/octobot"
+build_verbose = true 
+
