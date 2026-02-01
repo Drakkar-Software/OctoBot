@@ -55,6 +55,11 @@ from tentacles.Services.Interfaces.web_interface.models.backtesting import (
     stop_data_collector,
     collect_data_file,
     save_data_file,
+    get_available_social_services,
+    get_service_sources,
+    get_social_data_collector_status,
+    collect_social_data_file,
+    stop_social_data_collector,
 )
 from tentacles.Services.Interfaces.web_interface.models.commands import (
     schedule_delayed_command,
@@ -305,6 +310,11 @@ __all__ = [
     "stop_data_collector",
     "collect_data_file",
     "save_data_file",
+    "get_available_social_services",
+    "get_service_sources",
+    "get_social_data_collector_status",
+    "collect_social_data_file",
+    "stop_social_data_collector",
     "schedule_delayed_command",
     "restart_bot",
     "is_rebooting",

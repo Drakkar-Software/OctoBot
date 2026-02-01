@@ -27,6 +27,11 @@
                                class="btn btn-outline-info waves-effect">
                                 <i class="fa fa-cloud-download-alt"></i> Get historical data
                             </a>
+                            <a href="{{ url_for('social_data_collector') }}"
+                               id="social-data-collector-link"
+                               class="btn btn-outline-info waves-effect ml-2">
+                                <i class="fa fa-download"></i> Download social data
+                            </a>
 
             </div>
             <table class="table table-striped table-sm table-responsive-xs" id="dataFilesTable">
@@ -44,7 +49,7 @@
               </thead>
               <tbody>
                 {% for file, description in data_files %}
-                    <tr class="selectable_datafile">
+                    <tr class="selectable_datafile" data-file-type="{{ description.data_type }}">
                         <td><div class="custom-control custom-checkbox">
                             <input type="checkbox" class="custom-control-input dataFileCheckbox" data-file="{{file}}" symbols="{{description.symbols}}">
                             <label class="custom-control-label"></label>
@@ -55,7 +60,11 @@
                                     data-end-timestamp="{{description.end_timestamp}}">
                                 {{description.start_date}} to {{description.end_date}}
                             </td>
+                            {% if description.data_type == "social" %}
+                            <td>-</td>
+                            {% else %}
                             <td>Full</td>
+                            {% endif %}
                         {% else %}
                             <td data-order="{{description.timestamp}}">{{description.date}}</td>
                             <td>{{description.candles_length}}</td>
@@ -122,6 +131,7 @@
             </h4>
             <div class="d-flex justify-content-center">
                 <a href="{{ url_for('data_collector') }}" class="btn btn-primary waves-effect"> <i class="fa fa-cloud-download-alt"></i> Get historical data</a>
+                <a href="{{ url_for('social_data_collector') }}" class="btn btn-outline-info waves-effect ml-2"> <i class="fa fa-download"></i> Download social data</a>
             </div>
         {% endif %}
     </div>

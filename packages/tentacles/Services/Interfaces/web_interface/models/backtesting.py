@@ -36,6 +36,7 @@ import octobot_backtesting.enums as backtesting_enums
 import octobot_backtesting.collectors as collectors
 import octobot_services.interfaces.util as interfaces_util
 import octobot_services.enums as services_enums
+import octobot_services.api as services_api
 import octobot_trading.constants as trading_constants
 import octobot_trading.enums as trading_enums
 import octobot_trading.api as trading_api
@@ -44,6 +45,7 @@ import tentacles.Services.Interfaces.web_interface as web_interface_root
 import tentacles.Services.Interfaces.web_interface.models.trading as trading_model
 import tentacles.Services.Interfaces.web_interface.models.profiles as profiles_model
 import tentacles.Services.Interfaces.web_interface.models.configuration as configuration_model
+import tentacles.Backtesting.collectors.social.social_history_collector.social_history_collector
 
 
 STOPPING_TIMEOUT = 30
@@ -371,6 +373,101 @@ def stop_data_collector():
     return success, message
 
 
+def collect_social_data_file(social_name, sources, start_timestamp=None, end_timestamp=None):
+    """
+    Start collecting social data from a backtestable feed.
+    
+    :param social_name: Name of the feed (e.g., "CoindeskServiceFeed")
+    :param sources: List of sources/topics to collect (e.g., ["topic_news", "topic_marketcap"])
+    :param start_timestamp: Start timestamp in milliseconds
+    :param end_timestamp: End timestamp in milliseconds
+    :return: (success, message) tuple
+    """
+    if not is_backtesting_enabled():
+        return False, "Backtesting is disabled."
+    if not social_name:
+        return False, "Please select a service."
+    if not sources:
+        return False, "Please select at least one source/topic."
+    if start_timestamp is None:
+        return False, "Start date is required for social history collection."
+    if web_interface_root.WebInterface.tools[constants.BOT_TOOLS_SOCIAL_DATA_COLLECTOR] is None or \
+            backtesting_api.is_data_collector_finished(
+                web_interface_root.WebInterface.tools[constants.BOT_TOOLS_SOCIAL_DATA_COLLECTOR]):
+        _background_collect_social_historical_data(social_name, sources, start_timestamp, end_timestamp)
+        return True, f"Social data collection started for {social_name}."
+    else:
+        return False, f"Can't collect data for {social_name} (Social data collector is already running)"
+
+
+def stop_social_data_collector():
+    """Stop the running social data collector."""
+    success = False
+    message = "Failed to stop social data collector"
+    if web_interface_root.WebInterface.tools[constants.BOT_TOOLS_SOCIAL_DATA_COLLECTOR] is not None:
+        success = interfaces_util.run_in_bot_main_loop(
+            backtesting_api.stop_data_collector(
+                web_interface_root.WebInterface.tools[constants.BOT_TOOLS_SOCIAL_DATA_COLLECTOR]
+            )
+        )
+        message = "Social data collector stopped"
+        web_interface_root.WebInterface.tools[constants.BOT_TOOLS_SOCIAL_DATA_COLLECTOR] = None
+    return success, message
+
+
+def _background_collect_social_historical_data(social_name, sources, start_timestamp, end_timestamp):
+    """Start social data collection in a background thread."""
+    data_collector_instance = backtesting_api.social_historical_data_collector_factory(
+        social_name=social_name,
+        tentacles_setup_config=interfaces_util.get_bot_api().get_edited_tentacles_config(),
+        sources=sources,
+        symbols=None,  # Usually not applicable for social services
+        start_timestamp=start_timestamp,
+        end_timestamp=end_timestamp,
+        config=interfaces_util.get_bot_api().get_edited_config(dict_only=True),
+    )
+    web_interface_root.WebInterface.tools[constants.BOT_TOOLS_SOCIAL_DATA_COLLECTOR] = data_collector_instance
+    coro = _start_social_collect_and_notify(data_collector_instance)
+    threading.Thread(target=asyncio.run, args=(coro,), name=f"SocialDataCollector{social_name}").start()
+
+
+def get_available_social_services():
+    try:
+        feeds = services_api.get_available_backtestable_feeds()
+        return sorted(feed.get_name() for feed in feeds)
+    except ImportError:
+        return []
+
+
+def get_service_sources(service_name):
+    try:
+        feeds = services_api.get_available_backtestable_feeds()
+        for feed_class in feeds:
+            if feed_class.get_name() == service_name:
+                return list(feed_class.get_historical_sources())
+        return []
+    except ImportError:
+        return []
+
+
+def get_social_data_collector_status():
+    """Get the status of the social data collector."""
+    progress = {"current_step": 0, "total_steps": 0, "current_step_percent": 0}
+    if web_interface_root.WebInterface.tools[constants.BOT_TOOLS_SOCIAL_DATA_COLLECTOR] is not None:
+        data_collector = web_interface_root.WebInterface.tools[constants.BOT_TOOLS_SOCIAL_DATA_COLLECTOR]
+        if backtesting_api.is_data_collector_in_progress(data_collector):
+            current_step, total_steps, current_step_percent = \
+                backtesting_api.get_data_collector_progress(data_collector)
+            progress["current_step"] = current_step
+            progress["total_steps"] = total_steps
+            progress["current_step_percent"] = current_step_percent
+            return "collecting", progress
+        if backtesting_api.is_data_collector_finished(data_collector):
+            return "finished", progress
+        return "starting", progress
+    return "not started", progress
+
+
 def create_snapshot_data_collector(exchange_id, start_timestamp, end_timestamp, profile_id=None):
     exchange_manager = trading_api.get_exchange_manager_from_exchange_id(exchange_id)
     symbols = trading_api.get_trading_symbols(exchange_manager)
@@ -475,6 +572,18 @@ async def _start_collect_and_notify(data_collector_instance):
         message = f"error: {e}"
     notification_level = services_enums.NotificationLevel.SUCCESS if success else services_enums.NotificationLevel.ERROR
     await web_interface_root.add_notification(notification_level, f"Data collection", message)
+
+
+async def _start_social_collect_and_notify(data_collector_instance):
+    success = False
+    message = "finished"
+    try:
+        await backtesting_api.initialize_and_run_data_collector(data_collector_instance)
+        success = True
+    except Exception as e:
+        message = f"error: {e}"
+    notification_level = services_enums.NotificationLevel.SUCCESS if success else services_enums.NotificationLevel.ERROR
+    await web_interface_root.add_notification(notification_level, f"Social data collection", message)
 
 
 def _background_collect_exchange_historical_data(exchange, exchange_type, symbols, time_frames,

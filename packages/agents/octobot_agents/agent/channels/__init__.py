@@ -26,6 +26,29 @@ from octobot_agents.agent.channels.ai_agent import (
     AbstractAIAgentChannelProducer,
 )
 
+from octobot_agents.agent.channels.deep_agent import (
+    DEEP_AGENTS_AVAILABLE,
+    AbstractDeepAgentChannel,
+    AbstractDeepAgentChannelConsumer,
+    AbstractDeepAgentChannelProducer,
+    create_memory_backend,
+    get_agent_memory_path,
+    build_dictionary_subagent,
+    build_compiled_subagent,
+    build_subagents_from_agents,
+    build_subagents_from_producers,
+    create_deep_agent_safe,
+    create_supervisor_agent,
+    create_team_deep_agent,
+    # Skills utilities
+    load_skill_from_file,
+    discover_skills,
+    create_skills_files_dict,
+    # HITL utilities
+    create_interrupt_config,
+    build_hitl_decision,
+)
+
 __all__ = [
     "AbstractAgentChannel",
     "AbstractAgentChannelConsumer",
@@ -33,4 +56,25 @@ __all__ = [
     "AbstractAIAgentChannel",
     "AbstractAIAgentChannelConsumer",
     "AbstractAIAgentChannelProducer",
+    # Deep Agent
+    "DEEP_AGENTS_AVAILABLE",
+    "AbstractDeepAgentChannel",
+    "AbstractDeepAgentChannelConsumer",
+    "AbstractDeepAgentChannelProducer",
+    "create_memory_backend",
+    "get_agent_memory_path",
+    "build_dictionary_subagent",
+    "build_compiled_subagent",
+    "build_subagents_from_agents",
+    "build_subagents_from_producers",
+    "create_deep_agent_safe",
+    "create_supervisor_agent",
+    "create_team_deep_agent",
+    # Skills utilities
+    "load_skill_from_file",
+    "discover_skills",
+    "create_skills_files_dict",
+    # HITL utilities
+    "create_interrupt_config",
+    "build_hitl_decision",
 ]

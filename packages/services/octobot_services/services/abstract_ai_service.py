@@ -21,6 +21,7 @@ import logging
 import typing
 
 from octobot_services.services.abstract_service import AbstractService
+import octobot_services.enums as enums
 
 class AbstractAIService(AbstractService, abc.ABC):
     DEFAULT_MODEL: typing.Optional[str] = None
@@ -32,6 +33,9 @@ class AbstractAIService(AbstractService, abc.ABC):
         self.model = self.DEFAULT_MODEL
         self.models: list[str] = []
         self.models_config: typing.Dict[str, str] = {}  # usage policy -> model name, e.g. {"fast": "gpt-4o-mini", "reasoning": "o4-mini"}
+        self.ai_provider: typing.Optional[enums.AIProvider] = None
+        self.auth_token: typing.Optional[str] = None
+        self.api_key: typing.Optional[str] = None
 
     @staticmethod
     def retry_llm_completion(

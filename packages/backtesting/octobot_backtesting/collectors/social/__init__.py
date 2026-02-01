@@ -15,11 +15,21 @@
 #  License along with this library.
 
 from octobot_backtesting.collectors.social import social_collector
+from octobot_backtesting.collectors.social import abstract_social_history_collector
+from octobot_backtesting.collectors.social import abstract_social_live_collector
 
 from octobot_backtesting.collectors.social.social_collector import (
     SocialDataCollector,
 )
+from octobot_backtesting.collectors.social.abstract_social_history_collector import (
+    AbstractSocialHistoryCollector,
+)
+from octobot_backtesting.collectors.social.abstract_social_live_collector import (
+    AbstractSocialLiveCollector,
+)
 
 __all__ = [
     "SocialDataCollector",
+    "AbstractSocialHistoryCollector",
+    "AbstractSocialLiveCollector",
 ]

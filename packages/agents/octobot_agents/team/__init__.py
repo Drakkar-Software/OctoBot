@@ -21,6 +21,9 @@ from octobot_agents.team.channels import (
     AbstractAgentsTeamChannelConsumer,
     AbstractSyncAgentsTeamChannelProducer,
     AbstractLiveAgentsTeamChannelProducer,
+    AbstractDeepAgentsTeamChannel,
+    AbstractDeepAgentsTeamChannelConsumer,
+    AbstractDeepAgentsTeamChannelProducer,
 )
 
 from octobot_agents.team import critic
@@ -46,6 +49,10 @@ __all__ = [
     "AbstractAgentsTeamChannelConsumer",
     "AbstractSyncAgentsTeamChannelProducer",
     "AbstractLiveAgentsTeamChannelProducer",
+    # Deep Agents Team
+    "AbstractDeepAgentsTeamChannel",
+    "AbstractDeepAgentsTeamChannelConsumer",
+    "AbstractDeepAgentsTeamChannelProducer",
     "AbstractTeamManagerAgent",
     "MODIFICATION_ADDITIONAL_INSTRUCTIONS",
     "MODIFICATION_CUSTOM_PROMPT",

@@ -100,7 +100,7 @@ class GPTEvaluator(evaluators.TAEvaluator):
         :return: the filled user input configuration
         """
         self.is_backtesting = self._is_in_backtesting()
-        if self.is_backtesting and not _get_gpt_service().BACKTESTING_ENABLED:
+        if self.is_backtesting and not services_api.is_service_used_by_backtestable_feed(_get_gpt_service()):
             self.logger.error(f"{self.get_name()} is disabled in backtesting. It will only emit neutral evaluations")
         await self._init_GPT_models()
         return await super().load_and_save_user_inputs(bot_id)

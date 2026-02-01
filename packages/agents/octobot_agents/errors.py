@@ -47,3 +47,48 @@ class StorageError(AgentError):
 class UnsupportedStorageTypeError(StorageError):
     """Raised when an unsupported storage type is requested."""
     pass
+
+
+class DeepAgentError(AgentError):
+    """Base exception for Deep Agent related errors."""
+    pass
+
+
+class DeepAgentNotAvailableError(DeepAgentError):
+    """Raised when deep_agents package is not installed."""
+    pass
+
+
+class SubagentError(DeepAgentError):
+    """Raised when there's an error with subagent execution."""
+    pass
+
+
+class SubagentTimeoutError(SubagentError):
+    """Raised when a subagent execution times out."""
+    pass
+
+
+class SupervisorError(DeepAgentError):
+    """Raised when the supervisor agent encounters an error."""
+    pass
+
+
+class DebateError(AgentError):
+    """Raised when there's an error in the debate workflow."""
+    pass
+
+
+class DebateConvergenceError(DebateError):
+    """Raised when debate fails to converge within max rounds."""
+    pass
+
+
+class MemoryPathError(StorageError):
+    """Raised when there's an error with memory path operations."""
+    pass
+
+
+class ToolExecutionError(AgentError):
+    """Raised when a tool execution fails."""
+    pass

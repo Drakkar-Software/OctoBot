@@ -21,6 +21,7 @@ import time
 
 import octobot_commons.constants as commons_constants
 import octobot_backtesting.collectors.data_collector as data_collector
+import octobot_backtesting.constants as constants
 import octobot_backtesting.enums as enums
 import octobot_backtesting.importers as importers
 
@@ -88,7 +89,8 @@ class ExchangeDataCollector(data_collector.DataCollector):
     async def _create_description(self):
         await self.database.insert(enums.DataTables.DESCRIPTION,
                                    timestamp=time.time(),
-                                   version=self.VERSION,
+                                   version=constants.CURRENT_VERSION,
+                                   type=enums.DataType.EXCHANGE.value,
                                    exchange=self.exchange_name,
                                    symbols=json.dumps([symbol.symbol_str for symbol in self.symbols]),
                                    time_frames=json.dumps([tf.value for tf in self.time_frames]),

@@ -25,6 +25,7 @@ from tentacles.Services.Interfaces.web_interface.websockets.abstract_websocket_n
 )
 
 from tentacles.Services.Interfaces.web_interface.websockets import data_collector
+from tentacles.Services.Interfaces.web_interface.websockets import social_data_collector
 from tentacles.Services.Interfaces.web_interface.websockets import backtesting
 from tentacles.Services.Interfaces.web_interface.websockets import dashboard
 from tentacles.Services.Interfaces.web_interface.websockets import notifications
@@ -33,6 +34,9 @@ from tentacles.Services.Interfaces.web_interface.websockets import strategy_opti
 
 from tentacles.Services.Interfaces.web_interface.websockets.data_collector import (
     DataCollectorNamespace,
+)
+from tentacles.Services.Interfaces.web_interface.websockets.social_data_collector import (
+    SocialDataCollectorNamespace,
 )
 from tentacles.Services.Interfaces.web_interface.websockets.backtesting import (
     BacktestingNamespace,
@@ -53,6 +57,7 @@ __all__ = [
     "websocket_with_login_required_when_activated",
     "BacktestingNamespace",
     "DataCollectorNamespace",
+    "SocialDataCollectorNamespace",
     "DashboardNamespace",
     "NotificationsNamespace",
     "StrategyOptimizerNamespace",

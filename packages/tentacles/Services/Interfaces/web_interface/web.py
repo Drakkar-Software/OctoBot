@@ -58,6 +58,7 @@ class WebInterface(services_interfaces.AbstractWebInterface):
         constants.BOT_TOOLS_BACKTESTING_SOURCE: None,
         constants.BOT_TOOLS_STRATEGY_OPTIMIZER: None,
         constants.BOT_TOOLS_DATA_COLLECTOR: None,
+        constants.BOT_TOOLS_SOCIAL_DATA_COLLECTOR: None,
         constants.BOT_PREPARING_BACKTESTING: False,
     }
 

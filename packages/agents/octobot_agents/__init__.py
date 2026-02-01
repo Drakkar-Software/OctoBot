@@ -25,6 +25,27 @@ from octobot_agents.agent import (
     AbstractMemoryAgent,
     export_memories,
     import_memories,
+    # Deep Agent
+    DEEP_AGENTS_AVAILABLE,
+    AbstractDeepAgentChannel,
+    AbstractDeepAgentChannelConsumer,
+    AbstractDeepAgentChannelProducer,
+    create_memory_backend,
+    get_agent_memory_path,
+    build_dictionary_subagent,
+    build_compiled_subagent,
+    build_subagents_from_agents,
+    build_subagents_from_producers,
+    create_deep_agent_safe,
+    create_supervisor_agent,
+    create_team_deep_agent,
+    # Skills utilities
+    load_skill_from_file,
+    discover_skills,
+    create_skills_files_dict,
+    # HITL utilities
+    create_interrupt_config,
+    build_hitl_decision,
 )
 
 from octobot_agents import storage
@@ -45,6 +66,10 @@ from octobot_agents.team import (
     AbstractLiveAgentsTeamChannelProducer,
     AbstractCriticAgent,
     AbstractJudgeAgent,
+    # Deep Agents Team
+    AbstractDeepAgentsTeamChannel,
+    AbstractDeepAgentsTeamChannelConsumer,
+    AbstractDeepAgentsTeamChannelProducer,
 )
 
 from octobot_agents import errors
@@ -56,6 +81,37 @@ from octobot_agents.errors import (
     AgentConfigurationError,
     StorageError,
     UnsupportedStorageTypeError,
+    DeepAgentError,
+    DeepAgentNotAvailableError,
+    SubagentError,
+    SubagentTimeoutError,
+    SupervisorError,
+    DebateError,
+    DebateConvergenceError,
+    MemoryPathError,
+    ToolExecutionError,
+)
+
+from octobot_agents import enums
+from octobot_agents.enums import (
+    MemoryStorageType,
+    StepType,
+    JudgeDecisionType,
+    AgentRole,
+    SubagentMode,
+    ToolCallMode,
+    MemoryScope,
+    ExecutionStatus,
+)
+
+from octobot_agents import models
+from octobot_agents.models import (
+    SubagentConfig,
+    MemoryEntry,
+    TodoItem,
+    DeepAgentResult,
+    TeamExecutionResult,
+    SupervisorState,
 )
 
 __all__ = [
@@ -87,4 +143,55 @@ __all__ = [
     "AgentConfigurationError",
     "StorageError",
     "UnsupportedStorageTypeError",
+    # Deep Agent errors
+    "DeepAgentError",
+    "DeepAgentNotAvailableError",
+    "SubagentError",
+    "SubagentTimeoutError",
+    "SupervisorError",
+    "DebateError",
+    "DebateConvergenceError",
+    "MemoryPathError",
+    "ToolExecutionError",
+    # Deep Agent (from agent/channels/deep_agent.py)
+    "DEEP_AGENTS_AVAILABLE",
+    "AbstractDeepAgentChannel",
+    "AbstractDeepAgentChannelConsumer",
+    "AbstractDeepAgentChannelProducer",
+    "create_memory_backend",
+    "get_agent_memory_path",
+    "build_dictionary_subagent",
+    "build_compiled_subagent",
+    "build_subagents_from_agents",
+    "build_subagents_from_producers",
+    "create_deep_agent_safe",
+    "create_supervisor_agent",
+    "create_team_deep_agent",
+    # Skills utilities
+    "load_skill_from_file",
+    "discover_skills",
+    "create_skills_files_dict",
+    # HITL utilities
+    "create_interrupt_config",
+    "build_hitl_decision",
+    # Deep Agents Team
+    "AbstractDeepAgentsTeamChannel",
+    "AbstractDeepAgentsTeamChannelConsumer",
+    "AbstractDeepAgentsTeamChannelProducer",
+    # Enums
+    "MemoryStorageType",
+    "StepType",
+    "JudgeDecisionType",
+    "AgentRole",
+    "SubagentMode",
+    "ToolCallMode",
+    "MemoryScope",
+    "ExecutionStatus",
+    # Deep Agent models
+    "SubagentConfig",
+    "MemoryEntry",
+    "TodoItem",
+    "DeepAgentResult",
+    "TeamExecutionResult",
+    "SupervisorState",
 ]

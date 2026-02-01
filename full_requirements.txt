@@ -7,7 +7,7 @@ pgpy==0.6.0
 clickhouse-connect==0.10.0
 pyiceberg==0.10.0
 # 2.12.3 is compataible with pyiceberg 0.10.0, but logs tons of deprecation warnings, wait for pyiceberg new version
-pydantic==2.11.10 # required for pyiceberg 0.10.0 https://github.com/apache/iceberg-python/issues/2590.
+#pydantic==2.11.10 # required for pyiceberg 0.10.0 https://github.com/apache/iceberg-python/issues/2590.
 pyarrow==23.0.0
 
 # used by ccxt for protobuf "websockets" such as mexc

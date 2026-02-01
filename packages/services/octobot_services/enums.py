@@ -47,3 +47,9 @@ class ReadOnlyInfoType(enum.Enum):
 class AIModelPolicy(enum.Enum):
     FAST = "fast"
     REASONING = "reasoning"
+
+class AIProvider(enum.Enum):
+    OPENAI = "openai"
+    ANTHROPIC = "anthropic"
+    LOCAL = "local"
+    OTHER = "other"

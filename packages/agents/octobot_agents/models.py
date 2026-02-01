@@ -496,3 +496,108 @@ class MemoryInput(TypedDict, total=False):
     critic_analysis: "CriticAnalysis"
     agent_outputs: Dict[str, Any]
     execution_metadata: Dict[str, Any]
+
+
+class SubagentConfig(AgentBaseModel):
+    """Configuration for a Deep Agent subagent."""
+    model_config = ConfigDict(extra="forbid")
+    
+    name: str = pydantic.Field(..., description="Unique name for the subagent")
+    instructions: str = pydantic.Field(..., description="System instructions for the subagent")
+    tools: Optional[List[str]] = pydantic.Field(default=None, description="Tool names available to subagent")
+    model: Optional[str] = pydantic.Field(default=None, description="Model override")
+    handoff_back: bool = pydantic.Field(default=True, description="Whether to hand back to supervisor")
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary format for Deep Agents."""
+        result: Dict[str, Any] = {
+            "name": self.name,
+            "instructions": self.instructions,
+        }
+        if self.tools:
+            result["tools"] = self.tools
+        if self.model:
+            result["model"] = self.model
+        if self.handoff_back:
+            result["handoff_back"] = True
+        return result
+
+
+class MemoryEntry(AgentBaseModel):
+    """A single memory entry for Deep Agent persistent storage."""
+    model_config = ConfigDict(extra="forbid")
+    
+    key: str = pydantic.Field(..., description="Memory key/path")
+    value: Any = pydantic.Field(..., description="Memory value")
+    timestamp: Optional[str] = pydantic.Field(default=None, description="ISO timestamp")
+    metadata: Optional[Dict[str, Any]] = pydantic.Field(default=None, description="Additional metadata")
+
+
+class TodoItem(AgentBaseModel):
+    """A todo item for Deep Agent write_todos planning."""
+    model_config = ConfigDict(extra="forbid")
+    
+    task: str = pydantic.Field(..., description="Task description")
+    status: str = pydantic.Field(default="pending", description="Task status: pending, in_progress, done")
+    assigned_to: Optional[str] = pydantic.Field(default=None, description="Subagent name assigned to task")
+    priority: int = pydantic.Field(default=1, description="Priority 1-5 (1=highest)")
+    depends_on: Optional[List[str]] = pydantic.Field(default=None, description="Task dependencies")
+
+
+class DeepAgentResult(AgentBaseModel):
+    """Result from Deep Agent execution."""
+    model_config = ConfigDict(extra="forbid")
+    
+    output: Any = pydantic.Field(..., description="Agent output/response")
+    iterations: int = pydantic.Field(default=0, description="Number of reasoning iterations")
+    subagents_called: List[str] = pydantic.Field(default_factory=list, description="Subagents that were invoked")
+    tools_called: List[str] = pydantic.Field(default_factory=list, description="Tools that were called")
+    memory_operations: int = pydantic.Field(default=0, description="Number of memory read/write operations")
+    
+    @classmethod
+    def from_agent_output(cls, output: Any, metadata: Optional[Dict[str, Any]] = None) -> "DeepAgentResult":
+        """Create result from raw agent output."""
+        metadata = metadata or {}
+        return cls(
+            output=output,
+            iterations=metadata.get("iterations", 0),
+            subagents_called=metadata.get("subagents_called", []),
+            tools_called=metadata.get("tools_called", []),
+            memory_operations=metadata.get("memory_operations", 0),
+        )
+
+
+class TeamExecutionResult(AgentBaseModel):
+    """Result from a complete team execution using Deep Agents."""
+    model_config = ConfigDict(extra="forbid")
+    
+    team_name: str = pydantic.Field(..., description="Name of the team")
+    final_output: Any = pydantic.Field(..., description="Final synthesized output")
+    worker_results: Dict[str, DeepAgentResult] = pydantic.Field(
+        default_factory=dict, 
+        description="Results from each worker agent"
+    )
+    debate_results: Optional[Dict[str, Any]] = pydantic.Field(
+        default=None, 
+        description="Results from debate phase if enabled"
+    )
+    total_iterations: int = pydantic.Field(default=0, description="Total iterations across all agents")
+    execution_time_ms: Optional[float] = pydantic.Field(default=None, description="Total execution time")
+    
+    def get_worker_output(self, worker_name: str) -> Optional[Any]:
+        """Get output from a specific worker."""
+        if worker_name in self.worker_results:
+            return self.worker_results[worker_name].output
+        return None
+
+
+class SupervisorState(AgentBaseModel):
+    """State maintained by supervisor during team orchestration."""
+    model_config = ConfigDict(extra="forbid")
+    
+    pending_workers: List[str] = pydantic.Field(default_factory=list, description="Workers not yet called")
+    completed_workers: List[str] = pydantic.Field(default_factory=list, description="Workers that completed")
+    worker_outputs: Dict[str, Any] = pydantic.Field(default_factory=dict, description="Outputs from workers")
+    current_todos: List[TodoItem] = pydantic.Field(default_factory=list, description="Current todo list")
+    debate_round: int = pydantic.Field(default=0, description="Current debate round if in debate")
+    phase: str = pydantic.Field(default="planning", description="Current phase: planning, delegating, synthesizing, debating")

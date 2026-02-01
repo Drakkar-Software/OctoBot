@@ -52,6 +52,10 @@ class ExchangeDataImporter(importers.DataImporter):
     async def start(self) -> None:
         pass
 
+    def provides_accurate_price_time_frame(self) -> bool:
+        # has_all_time_frames_candles_history is necessary for accurate price time frame
+        return self.has_all_time_frames_candles_history
+
     async def get_data_timestamp_interval(self, time_frame=None):
         minimum_timestamp: float = 0.0
         maximum_timestamp: float = 0.0

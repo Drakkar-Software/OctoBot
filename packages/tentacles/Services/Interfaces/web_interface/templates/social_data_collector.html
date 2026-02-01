@@ -1,0 +1,122 @@
+{% extends "layout.html" %}
+{% set active_page = "backtesting" %}
+{% block body %}
+
+<br>
+
+<div class="card">
+    <div class="card-header"><h2>
+        <span class="float-left">
+            <a href="{{ origin_page if origin_page else url_for("backtesting")}}">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+        </span>
+        &ensp;Download social data
+    </h2></div>
+    <div class="card-body px-0 px-md-3">
+        <div class="container-fluid row mx-0">
+            <div class="col-12 col-md-10 row">
+                <div class="col-12 col-md-5 row">
+                    <div class="col-6 col-md-3 my-auto">
+                        Service :
+                    </div>
+                    <div class="col-6 col-md-9 px-0">
+                        <select class="selectpicker mx-0"
+                                data-live-search="true"
+                                data-width="75%"
+                                data-window-padding="25"
+                                id="socialNameSelect"
+                                update-url="{{ url_for('social_data_collector', action_type='available_services') }}">
+                            {% for service in available_services %}
+                            <option value="{{ service }}">
+                                {{ service }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="col-12 col-xl-7">
+                    <div class="row pb-1 pb-md-0" id="social_collector_date_range">
+                        <div class="col-12 col-md-5">
+                            <div class="row">
+                                <div class="col-6 col-md-5 my-auto">
+                                    Start Date :
+                                </div>
+                                <div class="col-6 col-md-7">
+                                    <input type="date" class="datepicker" id="startDate">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 offset-md-1 col-md-5 pt-1 pt-md-0">
+                            <div class="row">
+                                <div class="col-6 col-md-5 my-auto">
+                                    End Date :
+                                </div>
+                                <div class="col-6 col-md-7">
+                                    <input type="date" class="datepicker" id="endDate">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-5 row">
+                    <div class="col-6 col-md-3 my-auto">
+                        Source(s) :
+                    </div>
+                    <div class="col-6 col-md-9 px-0">
+                        <select data-live-search="true"
+                                data-width="75%"
+                                data-window-padding="25"
+                                id="sourcesSelect"
+                                update-url="{{ url_for('social_data_collector', action_type='service_sources') }}"
+                                multiple>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-md-2 row">
+                <div class="col-12 text-center">
+                    <button id="collect_social_data" type="button" class="btn btn-primary waves-effect"
+                        update-url="{{ url_for('social_data_collector', action_type='start_collector') }}">
+                        Download
+                    </button>
+                </div>
+                <div class="col-12 text-center mt-2">
+                    <button id="stop_collect_social_data" type="button" class="btn btn-danger waves-effect"
+                        update-url="{{ url_for('social_data_collector', action_type='stop_collector') }}">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="social_collector_operation" class="p-1" style='display: none;'>
+        <div id="social_total_progress_bar_anim-container" class='progress'>
+            <div id='social_total_progess_bar_anim'
+                 class='progress-bar progress-bar-striped progress-bar-animated'
+                 role='progressbar'
+                 aria-valuenow='0' aria-valuemin='0' aria-valuemax='100'
+                 style='width: 0;'></div>
+        </div>
+        <div id="social_progress_bar_anim-container" class='progress mt-1'>
+          <div id='social_current_progess_bar_anim'
+               class='progress-bar progress-bar-striped progress-bar-animated'
+               role='progressbar'
+               aria-valuenow='100' aria-valuemin='0' aria-valuemax='100'
+               style='width: 100%;'></div>
+        </div>
+    </div>
+</div>
+
+<br>
+{% endblock %}
+
+{% block additional_scripts %}
+<script src="{{ url_for('static', filename='js/common/social_data_collector_util.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+<script src="{{ url_for('static', filename='js/components/social_data_collector.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+{% if alert %}
+<script>
+    display_alert("{{alert["success"]}}", "{{alert["message"]}}");
+</script>
+{% endif %}
+{% endblock additional_scripts %}
