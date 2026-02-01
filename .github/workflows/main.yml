@@ -91,12 +91,18 @@ jobs:
         gha-cache-key: ${{ runner.os }}-pants-${{ matrix.package }}
         named-caches-hash: ${{ hashFiles('pants.toml') }}
 
+    - name: Install OctoBot
+      if:  matrix.package == 'octobot' || matrix.package == 'packages/evaluators'
+      run: |
+        pants package :OctoBot
+        pip3 install dist/*.whl
+
     - name: Install tentacles
       if:  matrix.package == 'octobot' || matrix.package == 'packages/evaluators'
       run: |
         mkdir -p output
-        pants run //:start -- tentacles -d packages/tentacles -p any_platform.zip
-        pants run //:start -- tentacles --install --location output/any_platform.zip --all
+        OctoBot tentacles -d packages/tentacles -p any_platform.zip
+        OctoBot tentacles --install --location output/any_platform.zip --all
 
     - name: Run tests
       run: |
