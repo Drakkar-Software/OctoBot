@@ -161,7 +161,7 @@ python_distribution(
 )
 
 docker_image(
-    name="OctoBot",
+    name="OctoBot-Docker-Image",
     source="Dockerfile",
     dependencies=[
         ":octobot",
