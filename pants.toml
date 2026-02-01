@@ -1,14 +1,12 @@
 # Pants configuration for OctoBot
 [GLOBAL]
-pantsd = "False"
-pantsd_max_memory_usage = "6GiB"
 
 pants_version = "2.30.0"
 backend_packages = [
     "pants.backend.python",
 ]
 pants_ignore_use_gitignore = false
-pantsd = true
+pantsd = "False"
 pantsd_max_memory_usage = "6GiB"
 
 [source]
