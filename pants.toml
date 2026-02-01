@@ -2,6 +2,7 @@
 [GLOBAL]
 pantsd = False
 pantsd_max_memory_usage = 6GiB
+
 pants_version = "2.30.0"
 backend_packages = [
     "pants.backend.python",
