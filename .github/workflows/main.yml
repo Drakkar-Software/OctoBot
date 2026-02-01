@@ -56,7 +56,7 @@ jobs:
   #       fi
 
   tests:
-    needs: lint
+    # needs: lint
     name: ${{ matrix.os }}${{ matrix.arch }} - Python ${{ matrix.version }} - ${{ matrix.package }}
     runs-on: ${{ matrix.os }}
     strategy:
