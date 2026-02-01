@@ -217,7 +217,7 @@ jobs:
   notify:
     if: ${{ failure() }}
     needs:
-      - lint
+      # - lint
       - tests
       - upload_tentacles
       - build_sdist
