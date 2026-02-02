@@ -3,8 +3,7 @@
 asyncpraw==7.8.1
 # Telegram
 python-telegram-bot==22.3   # update alongside supabase for httpx requirement
-telethon==1.24.0
-standard-imghdr # required by telethon for image handling
+telethon==1.42.0
 # Twitter (associated tentacles are disabled as starting from feb 9 2023, API is now paid only).
 # see https://twitter.com/TwitterDev/status/1621026986784337922
 # Python-Twitter==3.5
