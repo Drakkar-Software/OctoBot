@@ -31,24 +31,50 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Set Environment Variables
+        run: |
+          OWNER="$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]' | tr -d '-')"
+          IMG=octobot
+          echo "VERSION=${GITHUB_REF##*/}" >> $GITHUB_ENV
+          echo "IMAGE=${OWNER}/${IMG}" >> $GITHUB_ENV
+          echo "LATEST=latest" >> $GITHUB_ENV
+          echo "STAGING=staging" >> $GITHUB_ENV
+          echo "STABLE=stable" >> $GITHUB_ENV
+          echo "TEST=test" >> $GITHUB_ENV
+          echo "SHA=${GITHUB_SHA}" >> $GITHUB_ENV
+          echo "CONTAINER_NAME=octobot" >> $GITHUB_ENV
+          echo "CHECK_TENTACLE_CONTAINER_TIME=10" >> $GITHUB_ENV
+          echo "WAIT_CONTAINER_TIME=80" >> $GITHUB_ENV
+
       - name: Set up Python ${{ matrix.version }}
         uses: actions/setup-python@v6
         with:
           python-version: "3.13.x"
           architecture: x64
 
-      - name: Set up QEMU (multi-arch support)
+      - name: Set up QEMU
+        id: qemu-setup
         uses: docker/setup-qemu-action@v3
         with:
-          platforms: linux/amd64,linux/arm64
+          platforms: all
+
+      - name: Print available platforms
+        run: echo ${{ steps.qemu.outputs.platforms }}
 
       - name: Set up Docker Buildx
         id: buildx
         uses: docker/setup-buildx-action@v3
         with:
           driver: docker-container
-          platforms: linux/amd64,linux/arm64
-          buildkitd-flags: --debug
+          use: true
+
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
 
       - name: Login to Docker Hub
         if: github.event_name == 'push'
@@ -57,54 +83,100 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Define version & target tags
-        run: |
-          SHORT_SHA="${GITHUB_SHA::8}"
-
-          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
-            VERSION="${{ github.ref_name }}"
-            echo "VERSION=$VERSION" >> $GITHUB_ENV
-            echo "TAGS=latest stable $VERSION" >> $GITHUB_ENV
-            echo "TENTACLES_TAG=stable" >> $GITHUB_ENV
-          elif [[ "${{ github.ref }}" == refs/heads/dev ]]; then
-            echo "VERSION=dev-$SHORT_SHA" >> $GITHUB_ENV
-            echo "TAGS=latest-dev" >> $GITHUB_ENV
-            echo "TENTACLES_TAG=latest" >> $GITHUB_ENV
-          elif [[ "${{ github.ref }}" == refs/heads/master ]]; then
-            echo "VERSION=staging-$SHORT_SHA" >> $GITHUB_ENV
-            echo "TAGS=staging" >> $GITHUB_ENV
-            echo "TENTACLES_TAG=stable" >> $GITHUB_ENV
-          else
-            # PR or other → build only, no push, single tag for verification
-            echo "VERSION=pr-${{ github.event.pull_request.number || 'unknown' }}-$SHORT_SHA" >> $GITHUB_ENV
-            echo "TAGS=pr-$SHORT_SHA" >> $GITHUB_ENV
-            echo "TENTACLES_TAG=dev" >> $GITHUB_ENV
-          fi
-
       - name: Install Pants
         uses: pantsbuild/actions/init-pants@v10
         with:
           named-caches-hash: ${{ hashFiles('pants.toml', '**/*.lock') }}
 
-      - name: Build wheel with Pants
+      - name: Install OctoBot & tentacles
         run: |
           pants package :OctoBot
+          pip3 install -r dev_requirements.txt
+          pip3 install dist/octobot-*.whl
+          mkdir -p output
+          OctoBot tentacles -d packages/tentacles -p any_platform.zip
+          OctoBot tentacles --install --location output/any_platform.zip --all
 
-      - name: Build and push multi-platform Docker image
-        env:
-          TENTACLES_URL_TAG: ${{ env.TENTACLES_TAG }}
-          VERSION: ${{ env.VERSION }}
-        run: |
-          pants package :docker
+      - name: Build latest
+        if: github.event_name != 'push'
+        uses: docker/build-push-action@master
+        with:
+          context: .
+          builder: ${{ steps.buildx.outputs.name }}
+          platforms: linux/amd64
+          # Using "load: true" forces the docker driver.
+          # Unfortunately, the "docker" driver does not support
+          # multi-platform builds.
+          load: true
+          push: false
+          tags: ${{ env.IMAGE }}:${{ env.SHA }}
+          build-args: |
+            TENTACLES_URL_TAG=${{ env.LATEST }}
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache
 
-      - name: Push tags (only on push events)
-        if: github.event_name == 'push'
+      - name: Docker build test container
+        if: github.event_name != 'push'
         run: |
-          SOURCE_TAG="${{ env.IMAGE }}:${{ env.VERSION }}"
-          for tag in ${{ env.TAGS }}; do
-            echo "Pushing ${{ env.IMAGE }}:$tag"
-            docker buildx imagetools create --tag "${{ env.IMAGE }}:$tag" "$SOURCE_TAG"
-          done
+          docker build -f ./tests/Dockerfile --build-arg OCTOBOT_IMAGE=${{ env.IMAGE }}:${{ env.SHA }} -t ${{ env.IMAGE }}:${{ env.TEST }} .
+
+      - name: run tests in docker
+        if: github.event_name != 'push'
+        run: |
+          docker run -i -v $(pwd)/tentacles:/octobot/tentacles -e DISABLE_SENTRY=True ${{ env.IMAGE }}:${{ env.TEST }}
+
+      - name: run and check health after start
+        if: github.event_name != 'push'
+        run: |
+          echo Start OctoBot docker container with tentacles...
+          docker run -id -v $(pwd)/tentacles:/octobot/tentacles -e DISABLE_SENTRY=True --name ${{ env.CONTAINER_NAME }} ${{ env.IMAGE }}:${{ env.LATEST }}
+          sleep ${{ env.WAIT_CONTAINER_TIME }}
+          docker logs ${{ env.CONTAINER_NAME }}
+          docker inspect ${{ env.CONTAINER_NAME }} | jq '.[].State.Health.Status' | grep "healthy"
+
+      - name: Build and push latest
+        if: github.event_name == 'push' && !startsWith(github.ref, 'refs/tags') && github.ref == 'refs/heads/dev'
+        uses: docker/build-push-action@master
+        with:
+          context: .
+          builder: ${{ steps.buildx.outputs.name }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ env.IMAGE }}:${{ env.LATEST }}
+          build-args: |
+            TENTACLES_URL_TAG=${{ env.LATEST }}
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache
+
+      - name: Build and push staging
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        uses: docker/build-push-action@master
+        with:
+          context: .
+          builder: ${{ steps.buildx.outputs.name }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ env.IMAGE }}:${{ env.STAGING }}
+          build-args: |
+            TENTACLES_URL_TAG=${{ env.STABLE }}
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache
+
+      - name: Build and push on tag
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+        uses: docker/build-push-action@master
+        with:
+          context: .
+          file: ./Dockerfile
+          builder: ${{ steps.buildx.outputs.name }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:${{ env.LATEST }}
+            ${{ env.IMAGE }}:${{ env.STABLE }}
+            ${{ env.IMAGE }}:${{ env.VERSION }}
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache
 
   notify-on-failure:
     if: failure()
@@ -112,7 +184,6 @@ jobs:
     uses: Drakkar-Software/.github/.github/workflows/failure_notify_workflow.yml@master
     secrets:
       DISCORD_GITHUB_WEBHOOK: ${{ secrets.DISCORD_GITHUB_WEBHOOK }}
-
 
   notify-on-new-tag:
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')

@@ -21,8 +21,7 @@ RUN apt-get update \
 # Skip cryptography rust compilation (required for armv7 builds)
 ENV CRYPTOGRAPHY_DONT_BUILD_RUST=1
 
-# hadolint ignore=DL3025
-COPY octobot-*.whl /tmp/
+COPY dist/octobot-*.whl /tmp/
 RUN python -m venv /opt/venv \
     && . /opt/venv/bin/activate \
     && pip install --no-cache-dir --upgrade pip setuptools wheel \

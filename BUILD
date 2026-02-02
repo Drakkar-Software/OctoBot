@@ -181,29 +181,6 @@ docker_image(
         ":docker_files",
     ],
     repository="drakkarsoftware/octobot",
-    image_tags=["tmp"],
-    build_platform=[
-        "linux/amd64",
-        "linux/arm64",
-    ],
-    extra_build_args={
-        "VERSION": "{build_args.VERSION}",
-        "TENTACLES_URL_TAG": "{build_args.TENTACLES_URL_TAG}",
-    },
-    skip_push = False
-)
-
-# Local development build
-docker_image(
-    name="docker-local",
-    source="Dockerfile",
-    dependencies=[
-        ":OctoBot",
-        ":wheel_files",
-        ":octobot_config",
-        ":docker_files",
-    ],
-    repository="drakkarsoftware/octobot",
     image_tags=["local"],
     extra_build_args={
         "VERSION": "local",
