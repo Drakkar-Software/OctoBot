@@ -40,6 +40,7 @@ from octobot_tentacles_manager.util.file_util import (
     get_file_creation_time,
     log_tentacles_file_details,
     find_or_create,
+    find_or_create_with_empty_init_file,
     replace_with_remove_or_rename,
     merge_folders,
 )
@@ -73,6 +74,7 @@ __all__ = [
     "get_file_creation_time",
     "log_tentacles_file_details",
     "find_or_create",
+    "find_or_create_with_empty_init_file",
     "replace_with_remove_or_rename",
     "merge_folders",
     "TentacleFilter",

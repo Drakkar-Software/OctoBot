@@ -95,10 +95,12 @@ class TentaclesSetupManager:
         await util.find_or_create(path.join(self.tentacle_setup_root_path, constants.PYTHON_INIT_FILE), False,
                                   managers.get_module_init_file_content(constants.TENTACLES_FOLDERS_ARCH.keys()))
         # tentacle inner architecture
-        await TentaclesSetupManager._tentacle_arch_operation(self.tentacle_setup_root_path,
-                                                             constants.TENTACLES_FOLDERS_ARCH,
-                                                             self._create_missing_files_and_folders,
-                                                             util.find_or_create)
+        await TentaclesSetupManager._tentacle_arch_operation(
+            self.tentacle_setup_root_path,
+            constants.TENTACLES_FOLDERS_ARCH,
+            self._create_missing_files_and_folders,
+            util.find_or_create_with_empty_init_file
+        )
         await self._create_missing_files_and_folders(self.tentacle_setup_root_path, constants.TENTACLES_FOLDERS_ARCH)
         return found_existing_installation
 

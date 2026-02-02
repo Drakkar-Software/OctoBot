@@ -26,7 +26,9 @@ import octobot_tentacles_manager.constants as constants
 
 def get_file_creation_time(file_path) -> str:
     try:
-        return datetime.datetime.utcfromtimestamp(os.path.getctime(file_path)).isoformat()
+        return datetime.datetime.fromtimestamp(os.path.getctime(file_path)).replace(
+            tzinfo=datetime.timezone.utc
+        ).isoformat()
     except Exception as err:
         commons_logging.get_logger("tentacles_fetching").exception(
             err, True, f"Error when computing {file_path} creation date: {err}"
@@ -63,6 +65,17 @@ async def find_or_create(path_to_create, is_directory=True, file_content=""):
                     await file.write(file_content)
         return True
     return False
+
+
+async def find_or_create_with_empty_init_file(path_to_create, is_directory=True, file_content=""):
+    created = await find_or_create(path_to_create, is_directory=is_directory, file_content=file_content)
+    if os.path.exists(path_to_create) and os.path.isdir(path_to_create):
+        init_file = path.join(path_to_create, constants.PYTHON_INIT_FILE)
+        if not path.exists(init_file):
+            # create empty init file
+            open(init_file, 'w').close()
+            created = True
+    return created
 
 
 async def replace_with_remove_or_rename(new_file_or_dir_entry, dest_file_or_dir):
