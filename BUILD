@@ -4,7 +4,7 @@ python_requirements(name="dev_reqs", source="dev_requirements.txt")
 
 python_sources(name="octobot", sources=["octobot/**/*.py"])
 
-resources(
+files(
     name="octobot_config",
     sources=["octobot/config/**/*"],
 )
@@ -160,12 +160,26 @@ python_distribution(
     wheel=True,
 )
 
+files(
+    name="docker_files",
+    sources=["docker/**/*"],
+)
+
+files(
+    name="start_pex_files",
+    sources=["dist/start.pex"],
+    dependencies=[":start"],
+)
+
 docker_image(
     name="docker",
     source="Dockerfile",
     dependencies=[
         ":octobot",
-        ":octobot_config"
+        ":octobot_config",
+        ":start",
+        ":start_pex_files",
+        ":docker_files",
     ],
     repository="drakkarsoftware/octobot",
     image_tags=[
@@ -174,14 +188,15 @@ docker_image(
         "stable",
         "v{build_args.VERSION}",
     ],
-    extra_build_args={
-        "TENTACLES_URL_TAG": "{build_args.TENTACLES_URL_TAG}",
-    },
     build_platform=[
         "linux/amd64",
         "linux/arm64",
         # "linux/arm/v7",
     ],
+    extra_build_args={
+        "VERSION": "{build_args.VERSION}",
+        "TENTACLES_URL_TAG": "{build_args.TENTACLES_URL_TAG}",
+    },
     skip_push = False,
 )
 

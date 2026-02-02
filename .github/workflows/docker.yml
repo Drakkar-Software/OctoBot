@@ -22,7 +22,6 @@ jobs:
           github_token: ${{ secrets.github_token }}
           hadolint_ignore: DL3013 DL3008
 
-
   build-and-push:
     name: Build & Push Docker images
     needs: lint
@@ -86,6 +85,7 @@ jobs:
       - name: Build multi-platform Docker image with Pants
         env:
           TENTACLES_URL_TAG: ${{ env.TENTACLES_TAG }}
+          VERSION: ${{ env.VERSION }}
         run: |
           pants package :docker
 

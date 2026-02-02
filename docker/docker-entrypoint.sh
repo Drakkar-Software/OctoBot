@@ -15,4 +15,4 @@ bash tunnel.sh
 set +e
 
 # Start OctoBot
-./OctoBot
+python /octobot/start.pex

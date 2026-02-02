@@ -31,11 +31,11 @@ root_patterns = [
 
 [python]
 # Python interpreter compatibility
-interpreter_constraints = ["==3.14.*"]
+interpreter_constraints = ["==3.13.*"]
 
 # Module mappings for packages with different import names
 [python.resolves_to_interpreter_constraints]
-python-default = ["==3.14.*"]
+python-default = ["==3.13.*"]
 
 [python-infer]
 # Enable dependency inference
@@ -43,6 +43,7 @@ imports = true
 conftests = true
 
 [docker]
+use_buildx = true
 default_repository = "drakkarsoftware/octobot"
 build_verbose = true 
 env_vars.add = [
