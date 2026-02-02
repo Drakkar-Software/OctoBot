@@ -6,7 +6,7 @@ on:
 
 jobs:
   builds:
-    name: ${{ matrix.os }} - ${{ matrix.arch }} - Python 3.10 - build
+    name: ${{ matrix.os }} - ${{ matrix.arch }} - Python 3.13 - build
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -22,10 +22,10 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Set up Python 3.10
+    - name: Set up Python 3.13
       uses: actions/setup-python@v4
       with:
-        python-version: '3.10.x'
+        python-version: '3.13.x'
         architecture: x64
 
     - name: Build OctoBot Binary on Linux arm64
@@ -44,7 +44,8 @@ jobs:
           BUILD_ARCH: ${{ matrix.arch }}
         run: |
           apt-get update
-          apt-get install -y --no-install-recommends python3.10 python3-pip python3-dev git gcc musl-dev libc-dev build-essential zlib1g zlib1g-dev
+          apt-get install -y --no-install-recommends python3.13 python3-pip python3-dev git gcc musl-dev libc-dev build-essential zlib1g zlib1g-dev
+          curl --proto '=https' --tlsv1.2 -fsSL https://static.pantsbuild.org/setup/get-pants.sh | bash
           bash ./packages/binary/build_scripts/unix.sh
 
     - name: Build OctoBot Binary on Linux
@@ -56,7 +57,9 @@ jobs:
         OCTOBOT_REPOSITORY_DIR: OctoBot
         NLTK_DATA: nltk_data
         BUILD_ARCH: ${{ matrix.arch }}
-      run: bash ./packages/binary/build_scripts/unix.sh
+      run: |
+        curl --proto '=https' --tlsv1.2 -fsSL https://static.pantsbuild.org/setup/get-pants.sh | bash
+        bash ./packages/binary/build_scripts/unix.sh
 
     - name: Build OctoBot Binary on MacOS
       if: matrix.os == 'macos-13'
@@ -67,7 +70,9 @@ jobs:
         OCTOBOT_REPOSITORY_DIR: OctoBot
         NLTK_DATA: nltk_data
         BUILD_ARCH: ${{ matrix.arch }}
-      run: bash ./build_scripts/unix.sh
+      run: |
+        curl --proto '=https' --tlsv1.2 -fsSL https://static.pantsbuild.org/setup/get-pants.sh | bash
+        bash ./build_scripts/unix.sh
 
     - name: Build OctoBot Binary on Windows
       if: matrix.os == 'windows-latest'
