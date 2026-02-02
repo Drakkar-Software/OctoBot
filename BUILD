@@ -167,7 +167,7 @@ files(
 
 files(
     name="wheel_files",
-    sources=["dist/*.whl"],
+    sources=["dist/"],
     dependencies=[":OctoBot"],
 )
 
@@ -181,7 +181,7 @@ docker_image(
         ":docker_files",
     ],
     repository="drakkarsoftware/octobot",
-    image_tags=["latest"],
+    image_tags=["tmp"],
     build_platform=[
         "linux/amd64",
         "linux/arm64",

@@ -46,8 +46,9 @@ jobs:
         id: buildx
         uses: docker/setup-buildx-action@v3
         with:
-          driver: docker
+          driver: docker-container
           platforms: linux/amd64,linux/arm64
+          buildkitd-flags: --debug
 
       - name: Login to Docker Hub
         if: github.event_name == 'push'
@@ -85,12 +86,15 @@ jobs:
         with:
           named-caches-hash: ${{ hashFiles('pants.toml', '**/*.lock') }}
 
-      - name: Build multi-platform Docker image with Pants
+      - name: Build wheel with Pants
+        run: |
+          pants package :OctoBot
+
+      - name: Build and push multi-platform Docker image
         env:
           TENTACLES_URL_TAG: ${{ env.TENTACLES_TAG }}
           VERSION: ${{ env.VERSION }}
         run: |
-          pants package :OctoBot
           pants package :docker
 
       - name: Push tags (only on push events)
