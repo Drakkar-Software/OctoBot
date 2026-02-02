@@ -166,37 +166,48 @@ files(
 )
 
 files(
-    name="start_pex_files",
-    sources=["dist/start.pex"],
-    dependencies=[":start"],
+    name="wheel_files",
+    sources=["dist/*.whl"],
+    dependencies=[":OctoBot"],
 )
 
 docker_image(
     name="docker",
     source="Dockerfile",
     dependencies=[
-        ":octobot",
+        ":OctoBot",
+        ":wheel_files",
         ":octobot_config",
-        ":start",
-        ":start_pex_files",
         ":docker_files",
     ],
     repository="drakkarsoftware/octobot",
-    image_tags=[
-        "latest",
-        "{build_args.TENTACLES_URL_TAG}",
-        "stable",
-        "v{build_args.VERSION}",
-    ],
+    image_tags=["latest"],
     build_platform=[
         "linux/amd64",
         "linux/arm64",
-        # "linux/arm/v7",
     ],
     extra_build_args={
         "VERSION": "{build_args.VERSION}",
         "TENTACLES_URL_TAG": "{build_args.TENTACLES_URL_TAG}",
     },
-    skip_push = False,
+    skip_push = False
 )
 
+# Local development build
+docker_image(
+    name="docker-local",
+    source="Dockerfile",
+    dependencies=[
+        ":OctoBot",
+        ":wheel_files",
+        ":octobot_config",
+        ":docker_files",
+    ],
+    repository="drakkarsoftware/octobot",
+    image_tags=["local"],
+    extra_build_args={
+        "VERSION": "local",
+        "TENTACLES_URL_TAG": "dev",
+    },
+    skip_push = True,
+)

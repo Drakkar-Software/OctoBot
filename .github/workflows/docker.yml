@@ -31,12 +31,23 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Set up Python ${{ matrix.version }}
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13.x"
+          architecture: x64
+
       - name: Set up QEMU (multi-arch support)
         uses: docker/setup-qemu-action@v3
+        with:
+          platforms: linux/amd64,linux/arm64
 
       - name: Set up Docker Buildx
         id: buildx
         uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker
+          platforms: linux/amd64,linux/arm64
 
       - name: Login to Docker Hub
         if: github.event_name == 'push'
@@ -47,34 +58,26 @@ jobs:
 
       - name: Define version & target tags
         run: |
-          OWNER="$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]' | tr -d '-')"
-          IMG=octobot
           SHORT_SHA="${GITHUB_SHA::8}"
-
-          echo "IMAGE=$OWNER/$IMG" >> $GITHUB_ENV
 
           if [[ "${{ github.ref }}" == refs/tags/* ]]; then
             VERSION="${{ github.ref_name }}"
             echo "VERSION=$VERSION" >> $GITHUB_ENV
             echo "TAGS=latest stable $VERSION" >> $GITHUB_ENV
             echo "TENTACLES_TAG=stable" >> $GITHUB_ENV
-            echo "PUSH=true" >> $GITHUB_ENV
           elif [[ "${{ github.ref }}" == refs/heads/dev ]]; then
             echo "VERSION=dev-$SHORT_SHA" >> $GITHUB_ENV
             echo "TAGS=latest-dev" >> $GITHUB_ENV
             echo "TENTACLES_TAG=latest" >> $GITHUB_ENV
-            echo "PUSH=true" >> $GITHUB_ENV
           elif [[ "${{ github.ref }}" == refs/heads/master ]]; then
             echo "VERSION=staging-$SHORT_SHA" >> $GITHUB_ENV
             echo "TAGS=staging" >> $GITHUB_ENV
             echo "TENTACLES_TAG=stable" >> $GITHUB_ENV
-            echo "PUSH=true" >> $GITHUB_ENV
           else
             # PR or other → build only, no push, single tag for verification
             echo "VERSION=pr-${{ github.event.pull_request.number || 'unknown' }}-$SHORT_SHA" >> $GITHUB_ENV
             echo "TAGS=pr-$SHORT_SHA" >> $GITHUB_ENV
             echo "TENTACLES_TAG=dev" >> $GITHUB_ENV
-            echo "PUSH=false" >> $GITHUB_ENV
           fi
 
       - name: Install Pants
@@ -87,34 +90,17 @@ jobs:
           TENTACLES_URL_TAG: ${{ env.TENTACLES_TAG }}
           VERSION: ${{ env.VERSION }}
         run: |
+          pants package :OctoBot
           pants package :docker
 
       - name: Push tags (only on push events)
-        if: github.event_name == 'push' && env.PUSH == 'true'
+        if: github.event_name == 'push'
         run: |
-          # If Pants was configured to push directly → you can replace with:
-          # pants publish :docker
-
-          # Otherwise — assuming Pants built & tagged locally with a sha-like tag
-          # (adjust the source tag if your Pants docker_image uses different tagging)
           SOURCE_TAG="${{ env.IMAGE }}:${{ env.VERSION }}"
-
           for tag in ${{ env.TAGS }}; do
             echo "Pushing ${{ env.IMAGE }}:$tag"
-            docker buildx imagetools create \
-              --tag "${{ env.IMAGE }}:$tag" \
-              "$SOURCE_TAG"
+            docker buildx imagetools create --tag "${{ env.IMAGE }}:$tag" "$SOURCE_TAG"
           done
-
-      - name: Summary
-        if: always()
-        run: |
-          echo "Repository:   ${{ env.IMAGE }}"
-          echo "Built version: ${{ env.VERSION }}"
-          echo "Tags pushed:   ${{ env.TAGS }}"
-          echo "Tentacles tag: ${{ env.TENTACLES_TAG }}"
-          echo "Push enabled:  ${{ env.PUSH }}"
-
 
   notify-on-failure:
     if: failure()

@@ -14,5 +14,5 @@ bash tunnel.sh
 # Disable set -e 
 set +e
 
-# Start OctoBot
-python /octobot/start.pex
+# Start OctoBot using the installed console script
+OctoBot
