@@ -118,7 +118,7 @@ jobs:
         NLTK_DATA: nltk_data
       run: |
         python -m pip install -U pip setuptools wheel
-        python -m pip install -r \packages\binary\requirements.txt
+        python -m pip install -r packages\binary\requirements.txt
         python -m pip install (Get-Item dist/octobot-*.whl).FullName
         .\packages\binary\build_scripts\windows.ps1
       shell: powershell
