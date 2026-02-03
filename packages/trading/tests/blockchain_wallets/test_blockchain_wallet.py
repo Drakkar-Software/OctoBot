@@ -28,7 +28,7 @@ NATIVE_COIN_TRANSACTION_ID = "test_tx_id_native_coin"
 CUSTOM_TOKEN_TRANSACTION_ID = "test_tx_id_custom_token"
 
 
-class TestBlockchainWallet(octobot_trading.blockchain_wallets.BlockchainWallet):
+class BlockchainTestWallet(octobot_trading.blockchain_wallets.BlockchainWallet):
     """Concrete implementation for testing"""
     
     async def get_native_coin_balance(self):
@@ -66,7 +66,7 @@ def test_wallet(blockchain_descriptor_simulated, wallet_descriptor):
         blockchain_descriptor=blockchain_descriptor_simulated,
         wallet_descriptor=wallet_descriptor
     )
-    return TestBlockchainWallet(parameters)
+    return BlockchainTestWallet(parameters)
 
 
 @pytest.fixture
@@ -90,7 +90,7 @@ def test_wallet_with_tokens(blockchain_descriptor_with_tokens, wallet_descriptor
         blockchain_descriptor=blockchain_descriptor_with_tokens,
         wallet_descriptor=wallet_descriptor
     )
-    return TestBlockchainWallet(parameters)
+    return BlockchainTestWallet(parameters)
 
 
 @pytest.mark.asyncio
@@ -136,7 +136,7 @@ async def test_get_balance_no_native_coin():
         blockchain_descriptor=blockchain_descriptor,
         wallet_descriptor=wallet_desc
     )
-    wallet = TestBlockchainWallet(parameters)
+    wallet = BlockchainTestWallet(parameters)
     
     balance = await wallet.get_balance()
     

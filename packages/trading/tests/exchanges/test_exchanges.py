@@ -17,7 +17,7 @@ import os
 
 import pytest
 from mock import patch
-from datetime import datetime
+from datetime import datetime, timezone
 
 from octobot_commons.asyncio_tools import wait_asyncio_next_cycle
 from octobot_commons.constants import MSECONDS_TO_MINUTE
@@ -33,7 +33,7 @@ from tests.exchanges import cached_markets_exchange_manager
 pytestmark = pytest.mark.asyncio
 
 
-MS_TIMESTAMP = round((datetime.utcnow() - datetime(1970, 1, 1)).total_seconds() * 1000)
+MS_TIMESTAMP = round((datetime.now(timezone.utc) - datetime(1970, 1, 1)).total_seconds() * 1000)
 
 
 def get_constant_ms_timestamp():
