@@ -106,6 +106,7 @@ ENV/
 
 # Tentacles manager temporary files
 octobot/creator_temp/
+packages/metadata.yaml
 creator_temp/
 
 # Data
