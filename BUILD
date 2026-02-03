@@ -9,6 +9,11 @@ files(
     sources=["octobot/config/**/*"],
 )
 
+files(
+    name="octobot_strategy_optimizer_data",
+    sources=["octobot/strategy_optimizer/optimizer_data_files/**/*"],
+)
+
 # For development purposes only
 python_sources(name="tentacles", sources=["tentacles/**/*.py"])
 
@@ -102,6 +107,7 @@ python_tests(
         ":test_exchanges_util",
         ":web_interface_resources",
         ":octobot_config",
+        ":octobot_strategy_optimizer_data",
         "//:tentacles",
         "packages/tentacles:tentacles_metadata",
         "packages/tentacles:tentacles_test_utils",
@@ -117,6 +123,7 @@ pex_binary(
     dependencies=[
         ":octobot",
         ":octobot_config",
+        ":octobot_strategy_optimizer_data",
         ":reqs",
         ":full_reqs",
     ] + PACKAGE_SOURCES + PACKAGE_REQS + PACKAGE_FULL_REQS,
@@ -144,6 +151,7 @@ python_distribution(
     dependencies=[
         ":octobot",
         ":octobot_config",
+        ":octobot_strategy_optimizer_data",
         ":reqs",
         ":full_reqs",
     ] + PACKAGE_SOURCES + PACKAGE_REQS + PACKAGE_FULL_REQS,
@@ -178,6 +186,7 @@ docker_image(
         ":OctoBot",
         ":wheel_files",
         ":octobot_config",
+        ":octobot_strategy_optimizer_data",
         ":docker_files",
     ],
     repository="drakkarsoftware/octobot",
