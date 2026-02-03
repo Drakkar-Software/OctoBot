@@ -35,9 +35,9 @@ temp_dir = "temp_tests"
 
 async def test_update_activation_configuration():
     _cleanup(False)
-    await fetch_and_extract_tentacles(temp_dir, join("packages", "tentacles_manager", "tests", "static", "tentacles.zip"), None)
+    await fetch_and_extract_tentacles(temp_dir, join("tests", "static", "tentacles.zip"), None)
     worker = InstallWorker(temp_dir, TENTACLES_PATH, DEFAULT_BOT_PATH, False, None)
-    worker.tentacles_setup_manager.default_tentacle_config = join("packages", "tentacles_manager", "tests", "static", "default_tentacle_config.json")
+    worker.tentacles_setup_manager.default_tentacle_config = join("tests", "static", "default_tentacle_config.json")
     assert await worker.process() == 0
     setup_config = get_tentacles_setup_config()
     default_activation = copy(get_tentacles_activation(setup_config))
@@ -159,7 +159,7 @@ async def test_update_activation_configuration():
 
 
 def _tentacles_local_path():
-    return path.join("packages", "tentacles_manager", "tests", "static", "tentacles.zip")
+    return path.join("tests", "static", "tentacles.zip")
 
 
 def _cleanup(raises=True):

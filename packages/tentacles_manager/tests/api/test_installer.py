@@ -52,7 +52,7 @@ async def test_install_one_tentacle_with_requirement():
 
 
 async def test_install_single_tentacle():
-    tentacle_path = path.join("packages", "tentacles_manager", "tests", "static", "momentum_evaluator")
+    tentacle_path = path.join("tests", "static", "momentum_evaluator")
     tentacle_type = "Evaluator/TA"
     async with aiohttp.ClientSession() as session:
         assert await install_single_tentacle(tentacle_path, tentacle_type, aiohttp_session=session) == 0
@@ -68,7 +68,7 @@ async def test_repair_installation():
     # We need to pass tentacle_path="tentacles" explicitly since the zip structure is fixed
     broken_install = "broken_installation"
     broken_tentacles = path.join("broken_installation", "tentacles")
-    with ZipFile(path.join("packages", "tentacles_manager", "tests", "static", "broken_tentacles.zip")) as zipped_broken_tentacles:
+    with ZipFile(path.join("tests", "static", "broken_tentacles.zip")) as zipped_broken_tentacles:
         zipped_broken_tentacles.extractall(broken_install)
 
     # Pass tentacle_path explicitly since the zip uses "tentacles/" structure
@@ -113,7 +113,7 @@ async def test_repair_installation():
 
 
 def _tentacles_local_path():
-    return path.join("packages", "tentacles_manager", "tests", "static", "tentacles.zip")
+    return path.join("tests", "static", "tentacles.zip")
 
 
 def _cleanup(raises=True):

@@ -278,7 +278,7 @@ async def test_get_config_schema_path():
 
 
 def _tentacles_local_path():
-    return path.join("packages", "tentacles_manager", "tests", "static", "tentacles.zip")
+    return path.join("tests", "static", "tentacles.zip")
 
 
 def _cleanup():

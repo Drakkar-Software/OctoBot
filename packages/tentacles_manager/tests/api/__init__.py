@@ -31,7 +31,7 @@ TEST_EXPORT_DIR = "test_export_dir"
 async def install_tentacles():
     _cleanup()
     async with aiohttp.ClientSession() as session:
-        assert await api.install_all_tentacles(os.path.join("packages", "tentacles_manager", "tests", "static", "tentacles.zip"),
+        assert await api.install_all_tentacles(os.path.join("tests", "static", "tentacles.zip"),
                                                aiohttp_session=session) == 0
         yield
     _cleanup()

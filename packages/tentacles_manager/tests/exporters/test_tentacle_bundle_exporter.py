@@ -118,7 +118,7 @@ async def test_tentacle_bundle_exporter_with_specified_output_dir(install_tentac
 async def test_tentacle_bundle_exporter_with_metadata_injection(install_tentacles):
     assert await create_tentacles_package(package_name=TENTACLE_PACKAGE,
                                           output_dir=constants.CURRENT_DIR_PATH,
-                                          metadata_file=os.path.join("packages", "tentacles_manager", "tests", "static", "metadata.yml"),
+                                          metadata_file=os.path.join("tests", "static", "metadata.yml"),
                                           in_zip=True,
                                           use_package_as_file_name=True) == 0
     assert os.path.exists(constants.ARTIFACT_METADATA_FILE)
