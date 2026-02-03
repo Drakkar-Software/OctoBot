@@ -186,6 +186,7 @@ async def test_init_default_values(trading_tools):
     assert mode.refresh_interval_days == 1
     assert mode.rebalance_trigger_min_ratio == decimal.Decimal(str(index_trading.DEFAULT_REBALANCE_TRIGGER_MIN_RATIO))
     assert mode.quote_asset_rebalance_ratio_threshold == decimal.Decimal(str(index_trading.DEFAULT_QUOTE_ASSET_REBALANCE_TRIGGER_MIN_RATIO))
+    assert mode.min_order_size_margin == decimal.Decimal("2")
     assert mode.ratio_per_asset == {'BTC': {'name': 'BTC', 'value': 100.0, 'price': None}}
     assert mode.total_ratio_per_asset == decimal.Decimal(100)
     assert mode.synchronization_policy == index_trading.SynchronizationPolicy.SELL_REMOVED_INDEX_COINS_AS_SOON_AS_POSSIBLE
@@ -193,6 +194,7 @@ async def test_init_default_values(trading_tools):
     assert mode.indexed_coins == ["BTC"]
     assert mode.selected_rebalance_trigger_profile is None
     assert mode.rebalance_trigger_profiles is None
+    assert mode.allow_skip_asset is False
 
 
 @pytest.mark.parametrize("trading_tools", ["spot", "futures"], indirect=True)
@@ -201,6 +203,8 @@ async def test_init_config_values(trading_tools):
         index_trading.IndexTradingModeProducer.REFRESH_INTERVAL: 72,
         index_trading.IndexTradingModeProducer.SYNCHRONIZATION_POLICY: index_trading.SynchronizationPolicy.SELL_REMOVED_INDEX_COINS_ON_RATIO_REBALANCE.value,
         index_trading.IndexTradingModeProducer.REBALANCE_TRIGGER_MIN_PERCENT: 10.2,
+        index_trading.IndexTradingModeProducer.MIN_ORDER_SIZE_MARGIN: 3.5,
+        index_trading.IndexTradingModeProducer.ALLOW_SKIP_ASSET: True,
         index_trading.IndexTradingModeProducer.SELECTED_REBALANCE_TRIGGER_PROFILE: None,
         index_trading.IndexTradingModeProducer.REBALANCE_TRIGGER_PROFILES: [
             {
@@ -231,6 +235,8 @@ async def test_init_config_values(trading_tools):
     mode, producer, consumer, trader = await _init_mode(trading_tools, _get_config(trading_tools, update))
     assert mode.refresh_interval_days == 72
     assert mode.rebalance_trigger_min_ratio == decimal.Decimal("0.102")
+    assert mode.min_order_size_margin == decimal.Decimal("3.5")
+    assert mode.allow_skip_asset is True
     assert mode.selected_rebalance_trigger_profile is None
     assert mode.rebalance_trigger_profiles ==  [
         {
@@ -2421,9 +2427,45 @@ async def test_get_symbols_and_amounts(trading_tools):
         }
         assert get_up_to_date_price_mock.call_count == 2
 
+    # enough funds
+    trader.exchange_manager.exchange_config.traded_symbols = [
+        commons_symbols.parse_symbol(symbol)
+        for symbol in ["BTC/USDT"]
+    ]
+    mode.ensure_updated_coins_distribution()
+    mode.min_order_size_margin = decimal.Decimal("2")
+    with mock.patch.object(
+            trading_personal_data, "get_up_to_date_price", mock.AsyncMock(return_value=decimal.Decimal(1000))
+    ), mock.patch.object(
+            trading_personal_data,
+            "decimal_check_and_adapt_order_details_if_necessary",
+            mock.Mock(return_value=decimal.Decimal("1"))
+    ) as decimal_check_mock:
+        await consumer._get_symbols_and_amounts(["BTC"], {}, decimal.Decimal(3000))
+        assert decimal_check_mock.call_args[0][0] == decimal.Decimal("1.5")
+
+    # not enough funds due to too much margin
+    mode.min_order_size_margin = decimal.Decimal("10")
+    with mock.patch.object(
+            trading_personal_data, "get_up_to_date_price", mock.AsyncMock(return_value=decimal.Decimal(1000))
+    ), mock.patch.object(
+            trading_personal_data,
+            "decimal_check_and_adapt_order_details_if_necessary",
+            mock.Mock(return_value=None)
+    ) as decimal_check_mock:
+        with pytest.raises(trading_errors.MissingMinimalExchangeTradeVolume):
+            await consumer._get_symbols_and_amounts(["BTC"], {}, decimal.Decimal(3000))
+        assert decimal_check_mock.call_args[0][0] == decimal.Decimal("0.3")
+
     # not enough funds
     with pytest.raises(trading_errors.MissingMinimalExchangeTradeVolume):
         await consumer._get_symbols_and_amounts(["BTC"], {}, decimal.Decimal(0.0003))
+
+    # not enough funds but skipping allowed so it doesn't raise
+    mode.allow_skip_asset = True
+    assert await consumer._get_symbols_and_amounts(["BTC"], {}, decimal.Decimal(0.0003)) == {}
+    mode.allow_skip_asset = False
+
     with mock.patch.object(
             trading_personal_data, "get_up_to_date_price", mock.AsyncMock(return_value=decimal.Decimal(0.000000001))
     ) as get_up_to_date_price_mock:

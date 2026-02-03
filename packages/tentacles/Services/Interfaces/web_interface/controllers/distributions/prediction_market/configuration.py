@@ -21,16 +21,34 @@ import octobot_services.interfaces.util as interfaces_util
 import tentacles.Services.Interfaces.web_interface.constants as constants
 import tentacles.Services.Interfaces.web_interface.login as login
 import tentacles.Services.Interfaces.web_interface.models as models
+import tentacles.Services.Interfaces.web_interface.models.distributions.prediction_market as models_prediction_market
+import tentacles.Services.Interfaces.web_interface.enums as enums
 import tentacles.Services.Interfaces.web_interface.util as util
 import tentacles.Services.Interfaces.web_interface.flask_util as flask_util
-import tentacles.Services.Interfaces.web_interface.enums as enums
 import octobot_trading.api as trading_api
 
 
 def register(blueprint):
     @blueprint.route('/configuration')
+    @blueprint.route('/configuration/<profile_id>')
     @login.login_required_when_activated
-    def configuration():
+    def configuration(profile_id=None):
+        requested_profile_id = profile_id
+        current_profile = models.get_current_profile()
+        
+        if requested_profile_id and requested_profile_id != current_profile.profile_id:
+            # Show profile switch UI for non-current profile
+            requested_profile = models.get_profile(requested_profile_id)
+            return flask.render_template(
+                'distributions/prediction_market/configuration.html',
+                show_profile_switch=True,
+                requested_profile=requested_profile,
+                current_profile=current_profile,
+                current_profile_id=requested_profile_id,
+                display_intro=False,
+            )
+        
+        # Show normal configuration for current profile
         display_intro = flask_util.BrowsingDataProvider.instance().get_and_unset_is_first_display(
             flask_util.BrowsingDataProvider.get_distribution_key(
                 models.get_distribution(),
@@ -49,13 +67,13 @@ def register(blueprint):
         if trading_mode:
             tentacle_docs = models.get_tentacle_documentation(trading_mode.get_name(), media_url)
         return flask.render_template(
-            'distributions/market_making/configuration.html',
+            'distributions/prediction_market/configuration.html',
+            show_profile_switch=False,
             selected_exchange=enabled_exchanges[0] if enabled_exchanges else (config_exchanges[0][models.NAME] if config_exchanges else None),
             config_exchanges=config_exchanges,
-            exchanges_schema=models.get_json_exchanges_schema(models.get_tested_exchange_list(), enums.ExchangeConnectionType.API_KEY),
+            exchanges_schema=models.get_json_exchanges_schema(models.get_tested_exchange_list(), enums.ExchangeConnectionType.WALLET),
 
             selected_pair=first_symbol_pair,
-
             trading_mode_name=trading_mode_name,
             tentacle_docs=tentacle_docs,
 
@@ -63,7 +81,9 @@ def register(blueprint):
             portfolio_schema=models.JSON_PORTFOLIO_SCHEMA,
             trading_simulator_schema=models.JSON_TRADING_SIMULATOR_SCHEMA,
             config_trading_simulator=models.get_json_trading_simulator_config(display_config),
+            reference_market=interfaces_util.get_reference_market(),
 
+            current_profile_id=current_profile.profile_id,
             display_intro=display_intro,
         )
 
@@ -73,7 +93,7 @@ def register(blueprint):
         display_config = interfaces_util.get_edited_config()
 
         # service lists
-        service_list = models.get_market_making_services()
+        service_list = models_prediction_market.get_prediction_market_services()
         services_config = {
             service: config
             for service, config in display_config[services_constants.CONFIG_CATEGORY_SERVICES].items()
@@ -82,11 +102,10 @@ def register(blueprint):
         notifiers_list = models.get_notifiers_list()
 
         return flask.render_template(
-            'distributions/market_making/interfaces.html',
+            'distributions/prediction_market/interfaces.html',
             config_notifications=display_config[
              services_constants.CONFIG_CATEGORY_NOTIFICATION],
             config_services=services_config,
-
             services_list=service_list,
             notifiers_list=notifiers_list,
         )
@@ -133,13 +152,13 @@ def register(blueprint):
 
     @blueprint.route('/configuration', methods=['POST'])
     @login.login_required_when_activated
-    def save_market_making_config():
+    def save_prediction_market_config():
         request_data = flask.request.get_json()
         success = False
         response = "Restart to apply."
         err_message = None
         try:
-            models.save_market_making_configuration(
+            models_prediction_market.save_prediction_market_configuration(
                 request_data["exchange"],
                 request_data["tradingPair"],
                 request_data["exchangesConfig"],
@@ -150,8 +169,8 @@ def register(blueprint):
             )
             success = True
         except Exception as e:
-            err_message = f"Failed to save market making configuration: {e.__class__.__name__}: {e}"
-            commons_logging.get_logger("save_market_making_config").exception(
+            err_message = f"Failed to save prediction market configuration: {e.__class__.__name__}: {e}"
+            commons_logging.get_logger("save_prediction_market_config").exception(
                 e, True, f"{err_message} ({e.__class__.__name__})"
             )
         if success:
@@ -159,3 +178,15 @@ def register(blueprint):
         else:
             return util.get_rest_reply(flask.jsonify(err_message), 500)
 
+    @blueprint.route('/profile')
+    @login.login_required_when_activated
+    def profile():
+        selected_profile = flask.request.args.get("select", None)
+        next_url = flask.request.args.get("next", flask.url_for('configuration'))
+        if selected_profile is not None and selected_profile != models.get_current_profile().profile_id:
+            models.select_profile(selected_profile)
+            current_profile = models.get_current_profile()
+            flask.flash(
+                f"Selected the {current_profile.name} profile", "success"
+            )
+        return flask.redirect(next_url)

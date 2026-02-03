@@ -1,0 +1,128 @@
+{% extends "layout.html" %}
+{% set active_page = "configuration" %}
+
+{% import 'components/config/tentacle_config_editor.html' as m_tentacle_config_editor %}
+
+
+{% macro save_block(display_interfaces_link) %}
+<div class="d-flex justify-content-between">
+    {% if display_interfaces_link %}
+    <div>
+        <a href="{{url_for('interfaces')}}">
+            <button type="button" class="btn btn-outline-primary btn-lg"
+                    data-toggle="tooltip" title="Configure your OctoBot's web interface access and enable the Telegram bot.">
+                Web & Telegram configuration
+            </button>
+        </a>
+    </div>
+    {% endif %}
+    <div class="">
+        <button type="button" class="btn btn-primary btn-lg"
+                data-role="save" data-update-url="{{url_for('save_prediction_market_config')}}">
+            <i class="fas fa-save" aria-hidden="true"></i> Save
+        </button>
+    </div>
+    <div>
+        <button type="button" class="btn btn-outline-primary btn-lg" route="{{ url_for('commands', cmd='restart') }}">
+            <i class="fa fa-refresh" aria-hidden="true"></i> Restart
+        </button>
+    </div>
+</div>
+{% endmacro %}
+
+{% block body %}
+<br/>
+<div class="card card-body">
+    {% if show_profile_switch %}
+    <!-- Profile Switch UI -->
+    <div class="text-center">
+        <h2>Switch to {{ requested_profile.name }} Profile</h2>
+        <p class="mt-3">
+            You are currently viewing the configuration for the <strong>{{ requested_profile.name }}</strong> profile.
+            To configure this profile, you need to switch to it first.
+        </p>
+        <div class="alert alert-warning mt-4">
+            <strong>Warning:</strong> Switching profiles will restart OctoBot with the new profile configuration.
+        </div>
+        <div class="mt-4">
+            <a href="{{ url_for('profile', select=requested_profile.profile_id, next=url_for('configuration')) }}" class="btn btn-primary btn-lg">
+                <i class="fas fa-exchange-alt"></i> Switch to {{ requested_profile.name }} Profile
+            </a>
+            <a href="{{ url_for('configuration') }}" class="btn btn-outline-secondary btn-lg ml-3">
+                <i class="fas fa-times"></i> Cancel
+            </a>
+        </div>
+        <div class="mt-4">
+            <small class="text-muted">
+                Current profile: <strong>{{ current_profile.name }}</strong>
+            </small>
+        </div>
+    </div>
+    {% else %}
+    <!-- Normal Configuration UI -->
+    <div class="grid row">
+        <div class="col col-lg-6 markdown-content">
+            {{tentacle_docs}}
+        </div>
+        <div class="col col-lg-6">
+            <div id="trading-mode-config-editor" data-trading-mode-name="{{trading_mode_name}}">
+                {{ m_tentacle_config_editor.tentacles_config_editor(trading_mode_name) }}
+            </div>
+            <div class="mx-3">
+                {{ save_block(False) }}
+            </div>
+        </div>
+    </div>
+    <div id="exchange-configuration">
+        <h2>Exchanges configuration</h2>
+        <div class="mt-4">
+            <p>
+                Add the exchange to perform prediction market trading on.
+            </p>
+            <div>
+                Note: For trading simulator, exchanges must be added, and
+                <strong>API details are not required</strong>.
+            </div>
+        </div>
+        <div id="exchanges-editor"
+             data-config='{{config_exchanges | tojson}}'
+             data-schema='{{exchanges_schema | tojson}}'
+        ></div>
+        <p class="mx-4">
+            <i>Click save after adding a new exchange to be able to select it.</i>
+        </p>
+    </div>
+    <div id="trading-simulation">
+        <h2>Trading simulator configuration</h2>
+        <div class="grid row">
+            <div class="col col-lg-6">
+                <div id="trading-simulator-editor"
+                     data-config='{{config_trading_simulator | tojson}}'
+                     data-schema='{{trading_simulator_schema | tojson}}'
+                ></div>
+            </div>
+            <div class="col col-lg-6 pt-lg-5">
+                <div id="simulated-portfolio-editor"
+                     data-config='{{simulated_portfolio | tojson}}'
+                     data-schema='{{portfolio_schema | tojson}}'
+                     data-reference-market='{{reference_market}}'
+                ></div>
+            </div>
+        </div>
+    </div>
+    {{ save_block(True) }}
+
+    <span class="d-none"
+          data-display-intro="{{display_intro}}"
+    ></span>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block additional_scripts %}
+<script src="{{ url_for('static', filename='js/common/resources_rendering.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+<script src="{{ url_for('static', filename='js/common/custom_elements.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+<script src="{{ url_for('static', filename='js/common/common_handlers.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+<script src="{{ url_for('static', filename='distributions/prediction_market/js/configuration.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+<script src="{{ url_for('static', filename='js/components/config_tentacle.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+{% endblock additional_scripts %}

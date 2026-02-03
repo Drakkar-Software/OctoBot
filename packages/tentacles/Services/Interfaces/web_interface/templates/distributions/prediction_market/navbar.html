@@ -1,0 +1,57 @@
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg sticky-top py-0 py-md-2" id="main-nav-bar">
+    <div class="navbar-collapse collapse w-100 order-1 order-md-0 dual-collapse2">
+        <ul class="navbar-nav mr-auto" id="main-nav-left-part">
+            <li class="nav-item mx-1 px-0 my-auto {% if 'home' == active_page %} active{% endif %}">
+                <a class="nav-link" href="{{ url_for('home') }}">Dashboard</a>
+            </li>
+            <li id="main-nav-portfolio" class="nav-item mx-1 px-0 my-auto {% if 'portfolio' == active_page %} active{% endif %}">
+                <a class="nav-link" href="{{ url_for('portfolio') }}">Portfolio</a>
+            </li>
+            <li class="nav-item mx-1 px-0 my-auto {% if 'configuration' == active_page and current_profile_id == 'profile_copy_trading' %} active{% endif %}">
+                <a class="nav-link" href="{{ url_for('configuration', profile_id='profile_copy_trading') }}">Copy Trading</a>
+            </li>
+            <li class="nav-item mx-1 px-0 my-auto">
+                <a class="nav-link disabled" href="#" aria-disabled="true" tabindex="-1"
+                   data-toggle="tooltip" data-placement="bottom" title="AI Trading is coming soon">
+                    AI Trading
+                </a>
+            </li>
+        </ul>
+    </div>
+    <div class="d-flex mx-auto order-0">
+        <a class="navbar-brand mx-auto font-weight-bolder" href="{{ url_for('home') }}">
+            <img
+                src="{{url_for('static', filename='img/octobot-logo-'+get_color_mode()+'.png')}}" alt="octobot-logo"
+                class="navbar-logo"
+            > OctoBot Prediction Market
+            <i id="navbar-bot-status" class="ml-2 fa fa-check" data-toggle="tooltip" data-placement="bottom" title="OctoBot operational"></i>
+        </a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target=".dual-collapse2">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+    </div>
+    <div class="navbar-collapse collapse w-100 order-3 dual-collapse2">
+        <ul class="navbar-nav ml-auto" id="main-nav-right-part">
+            {% if (not is_login_required()) or (is_login_required() and is_authenticated()) %}
+            <li class=" mx-1 px-0 my-auto" id="trading-type-indicator">
+                <span class="p-2" aria-label="TradingSwitch">
+                    {{ m_trading_state.display_trading_state(is_real_trading(get_current_profile()), get_enabled_trader(get_current_profile())) }}
+                </span>
+            </li>
+            {% endif %}
+            <li class="nav-item mx-1 px-0 my-auto {% if 'logs' == active_page %} active{% endif %}">
+                <a class="nav-link" href="{{ url_for('logs') }}" aria-label="Logs"><i class="fa fa-bell" data-toggle="tooltip" data-placement="top" title="Event logs">
+                    <span id="errors-count-badge" class="badge badge-warning"></span>
+                </i></a>
+            </li>
+            <li class="nav-item mx-1 px-0 my-auto {% if 'logs' == active_page %} active{% endif %}">
+                <a id="theme-switch" class="nav-link" href="#" aria-label="Switch theme" data-update-url="{{url_for('api.display_config')}}">
+                    <i class="{{'fa fa-moon' if get_color_mode() == 'light' else 'fas fa-sun'}}" data-toggle="tooltip" data-placement="top"
+                       title="Use {{'dark' if get_color_mode() == 'light' else 'light'}} theme">
+                </i></a>
+            </li>
+        </ul>
+    </div>
+</nav>
+<!-- Navbar -->

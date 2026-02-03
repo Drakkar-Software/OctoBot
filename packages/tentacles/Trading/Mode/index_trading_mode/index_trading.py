@@ -226,7 +226,7 @@ class IndexTradingModeConsumer(trading_modes.AbstractTradingModeConsumer):
         amount_by_symbol = await self._get_symbols_and_amounts(coins_to_buy, coins_prices, reference_market_to_distribute)
         for symbol, values in amount_by_symbol.items():
             orders.extend(await self.trading_mode.rebalancer.buy_coin(symbol, values.get(self.IDEAL_AMOUNT), values.get(self.IDEAL_PRICE), dependencies))
-        if not orders:
+        if not orders and not self.trading_mode.allow_skip_asset:
             raise trading_errors.MissingMinimalExchangeTradeVolume()
         return orders
 
@@ -265,23 +265,34 @@ class IndexTradingModeConsumer(trading_modes.AbstractTradingModeConsumer):
                     f"Error computing {symbol} ideal amount ({ratio=}, {reference_market_to_split=}, {price=}): {err=}"
                 ) from err
             # worse case (ex with 5 USDT min order size): exactly 5 USDT can be in portfolio, we therefore want to
-            # trade at lease 5 USDT to be able to buy more.
+            # trade at least 5 USDT to be able to buy more.
             # - we want ideal_amount - min_cost > min_cost
-            # - in other words ideal_amount > 2*min_cost => ideal_amount/2 > min cost
+            # - in other words ideal_amount > min_cost * min_order_size_margin
+            #   => ideal_amount / min_order_size_margin > min_cost
+            min_order_size_margin = self.trading_mode.min_order_size_margin
+            if min_order_size_margin < trading_constants.ONE:
+                min_order_size_margin = trading_constants.ONE
             adapted_quantity = trading_personal_data.decimal_check_and_adapt_order_details_if_necessary(
-                ideal_amount / decimal.Decimal(2),
+                ideal_amount / min_order_size_margin,
                 price,
                 symbol_market
             )
             if not adapted_quantity:
+                if self.trading_mode.allow_skip_asset:
+                    self.logger.warning(
+                        f"Skipping {symbol} buy: available funds are too low to buy {ratio*trading_constants.ONE_HUNDRED}% "
+                        f"of {reference_market_to_split} holdings: {round(ideal_amount / min_order_size_margin, 9)} {coin}"
+                    )
+                    continue
                 # if we can't create an order in this case, we won't be able to balance the portfolio.
                 # don't try to avoid triggering new rebalances on each wakeup cycling market sell & buy orders
                 raise trading_errors.MissingMinimalExchangeTradeVolume(
                     f"Can't buy {symbol}: available funds are too low to buy {ratio*trading_constants.ONE_HUNDRED}% "
-                    f"of {reference_market_to_split} holdings: {round(ideal_amount / decimal.Decimal(2), 9)} {coin} "
+                    f"of {reference_market_to_split} holdings: {round(ideal_amount / min_order_size_margin, 9)} {coin} "
                     f"required order size is not compatible with {symbol} exchange requirements: "
                     f"{symbol_market[trading_enums.ExchangeConstantsMarketStatusColumns.LIMITS.value]}."
                 )
+
             amount_by_symbol[symbol] = {
                 self.IDEAL_AMOUNT: ideal_amount,
                 self.IDEAL_PRICE: price,
@@ -292,12 +303,14 @@ class IndexTradingModeConsumer(trading_modes.AbstractTradingModeConsumer):
 class IndexTradingModeProducer(trading_modes.AbstractTradingModeProducer):
     REFRESH_INTERVAL = "refresh_interval"
     CANCEL_OPEN_ORDERS = "cancel_open_orders"
+    ALLOW_SKIP_ASSET = "allow_skip_asset"
     REBALANCE_TRIGGER_MIN_PERCENT = "rebalance_trigger_min_percent"
     SELECTED_REBALANCE_TRIGGER_PROFILE = "selected_rebalance_trigger_profile"
     REBALANCE_TRIGGER_PROFILES = "rebalance_trigger_profiles"
     REBALANCE_TRIGGER_PROFILE_NAME = "name"
     REBALANCE_TRIGGER_PROFILE_MIN_PERCENT = "min_percent"
     QUOTE_ASSET_REBALANCE_TRIGGER_MIN_PERCENT = "quote_asset_rebalance_trigger_min_percent"
+    MIN_ORDER_SIZE_MARGIN = "min_order_size_margin"
     REFERENCE_MARKET_RATIO = "reference_market_ratio"
     SYNCHRONIZATION_POLICY = "synchronization_policy"
     SELL_UNINDEXED_TRADED_COINS = "sell_unindexed_traded_coins"
@@ -736,15 +749,17 @@ class IndexTradingMode(trading_modes.AbstractTradingMode):
         self.ratio_per_asset = {}
         self.sell_unindexed_traded_coins = True
         self.cancel_open_orders = True
+        self.allow_skip_asset = False
         self.total_ratio_per_asset = trading_constants.ZERO
         self.quote_asset_rebalance_ratio_threshold = decimal.Decimal(str(DEFAULT_QUOTE_ASSET_REBALANCE_TRIGGER_MIN_RATIO))
         self.reference_market_ratio = trading_constants.ONE
+        self.min_order_size_margin = decimal.Decimal("2")
         self.synchronization_policy: SynchronizationPolicy = SynchronizationPolicy.SELL_REMOVED_INDEX_COINS_AS_SOON_AS_POSSIBLE
         self.requires_initializing_appropriate_coins_distribution = False
         self.indexed_coins = []
         self.indexed_coins_prices = {}
         self.is_processing_rebalance = False
-        self.rebalancer: rebalancer.AbstractRebalancer = self._create_rebalancer()
+        self.rebalancer: typing.Optional[rebalancer.AbstractRebalancer] = self._create_rebalancer(exchange_manager) if exchange_manager else None
     
     def init_user_inputs(self, inputs: dict) -> None:
         """
@@ -780,6 +795,13 @@ class IndexTradingMode(trading_modes.AbstractTradingMode):
             title="Percentage of the portfolio to trade (distributed among indexed coins). "
                   "The remaining percentage will be kept in the reference market.",
         ))) / trading_constants.ONE_HUNDRED
+        self.min_order_size_margin = decimal.Decimal(str(self.UI.user_input(
+            IndexTradingModeProducer.MIN_ORDER_SIZE_MARGIN, commons_enums.UserInputTypes.FLOAT,
+            float(self.min_order_size_margin), inputs,
+            min_val=1,
+            title="Min order size safety factor: ideal amount must be at least this multiple of the exchange min cost. "
+                  "Higher values are more conservative.",
+        )))
 
         self.rebalance_trigger_profiles = self.trading_config.get(IndexTradingModeProducer.REBALANCE_TRIGGER_PROFILES, None)
         if self.rebalance_trigger_profiles:
@@ -851,6 +873,11 @@ class IndexTradingMode(trading_modes.AbstractTradingMode):
             self.cancel_open_orders, inputs,
             title="Cancel open orders: When enabled, open orders of the index trading pairs will be canceled to free "
                   "funds and invest in the index content.",
+        ))
+        self.allow_skip_asset = bool(self.UI.user_input(
+            IndexTradingModeProducer.ALLOW_SKIP_ASSET, commons_enums.UserInputTypes.BOOLEAN,
+            self.allow_skip_asset, inputs,
+            title="Allow skipping assets that don't meet minimum order size requirements instead of aborting portfolio rebalancing.",
         ))
         self.sell_unindexed_traded_coins = trading_config.get(
             IndexTradingModeProducer.SELL_UNINDEXED_TRADED_COINS,
@@ -1171,10 +1198,10 @@ class IndexTradingMode(trading_modes.AbstractTradingMode):
             return base_ratio * self.reference_market_ratio
         return base_ratio
 
-    def _create_rebalancer(self) -> rebalancer.AbstractRebalancer:
-        if self.exchange_manager.is_option:
+    def _create_rebalancer(self, exchange_manager) -> rebalancer.AbstractRebalancer:
+        if exchange_manager.is_option:
             return rebalancer.OptionRebalancer(self)
-        if self.exchange_manager.is_future:
+        if exchange_manager.is_future:
             return rebalancer.FuturesRebalancer(self)
         return rebalancer.SpotRebalancer(self)
 

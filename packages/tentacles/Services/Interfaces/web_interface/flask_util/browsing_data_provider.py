@@ -31,6 +31,7 @@ import octobot.enums
 _PREFIX_BY_DISTRIBUTION = {
     octobot.enums.OctoBotDistribution.DEFAULT.value: "",
     octobot.enums.OctoBotDistribution.MARKET_MAKING.value: "mm:",
+    octobot.enums.OctoBotDistribution.PREDICTION_MARKET.value: "pm:",
 }
 
 

@@ -16,6 +16,7 @@
 import octobot_commons.constants as commons_constants
 import octobot_commons.configuration as configuration
 
+import tentacles.Services.Interfaces.web_interface.enums as enums
 
 ASSET = "asset"
 VALUE = "value"
@@ -116,7 +117,23 @@ def get_json_trading_simulator_config(user_config: dict) -> dict:
     }
 
 
-def get_json_exchanges_schema(exchanges: list[str]) -> dict:
+CONNECTION_TYPE_EXCHANGE_FIELDS = {
+    enums.ExchangeConnectionType.API_KEY: {
+        "api_key_title": "API key: your API key for this exchange",
+        "api_secret_title": "API secret: your API secret for this exchange",
+        "api_password_title": "API password: leave empty if not required by exchange",
+    },
+    enums.ExchangeConnectionType.WALLET: {
+        "api_key_title": "Funds Wallet address",
+        "api_secret_title": "Funds Wallet private key",
+        "api_password_title": "API wallet address : only provide if authenticated with email",
+    }
+}
+
+
+def get_json_exchanges_schema(exchanges: list[str], connection_type: enums.ExchangeConnectionType = enums.ExchangeConnectionType.API_KEY) -> dict:
+    field_config = CONNECTION_TYPE_EXCHANGE_FIELDS.get(connection_type, CONNECTION_TYPE_EXCHANGE_FIELDS[enums.ExchangeConnectionType.API_KEY])
+
     return {
         "type": "array",
         "uniqueItems": True,
@@ -136,19 +153,19 @@ def get_json_exchanges_schema(exchanges: list[str]) -> dict:
                     "propertyOrder": 1,
                 },
                 API_KEY: {
-                    "title": "API key: your API key for this exchange",
+                    "title": field_config["api_key_title"],
                     "type": "string",
                     "minLength": 0,
                     "propertyOrder": 2,
                 },
                 API_SECRET: {
-                    "title": "API secret: your API secret for this exchange",
+                    "title": field_config["api_secret_title"],
                     "type": "string",
                     "minLength": 0,
                     "propertyOrder": 3,
                 },
                 API_PASSWORD: {
-                    "title": "API password: leave empty if not required by exchange",
+                    "title": field_config["api_password_title"],
                     "type": "string",
                     "minLength": 0,
                     "propertyOrder": 4,

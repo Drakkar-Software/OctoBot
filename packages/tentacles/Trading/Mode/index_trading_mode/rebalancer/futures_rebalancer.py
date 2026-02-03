@@ -29,14 +29,6 @@ import tentacles.Trading.Mode.index_trading_mode.rebalancer as rebalancer
 
 
 class FuturesRebalancer(rebalancer.AbstractRebalancer):
-    """
-    Futures market rebalancer implementation.
-    Handles opening and closing positions instead of buying/selling assets.
-    """
-    
-    def __init__(self, trading_mode):
-        super().__init__(trading_mode)
-
     async def prepare_coin_rebalancing(self, coin: str):
         await self.ensure_contract_loaded(coin)
 
@@ -124,10 +116,14 @@ class FuturesRebalancer(rebalancer.AbstractRebalancer):
                 reduce_only=False,  # Opening/increasing position
             )
             created_order = await self.trading_mode.create_order(current_order, dependencies=dependencies)
-            created_orders.append(created_order)
+            if created_order is not None:
+                created_orders.append(created_order)
         
         if created_orders:
             return created_orders
+        if self.trading_mode.allow_skip_asset:
+            self.logger.warning(f"Skipping {symbol} order creation...")
+            return []
         if orders_should_have_been_created:
             raise trading_errors.OrderCreationError()
         raise trading_errors.MissingMinimalExchangeTradeVolume()

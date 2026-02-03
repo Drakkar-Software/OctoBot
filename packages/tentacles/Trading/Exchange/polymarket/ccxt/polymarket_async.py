@@ -1067,8 +1067,21 @@ class polymarket(Exchange, ImplicitAPI):
     - API: GET /last-trade-price(see https://docs.polymarket.com/api-reference/trades/get-last-trade-price)
         """
         await self.load_markets()
-        market = self.market(symbol)
-        marketInfo = self.safe_dict(market, 'info', {})
+        market: Market = None
+        try:
+            market = self.market(symbol)
+        except Exception as e:
+            market = None
+        if market is None:
+            conditionId = self.safe_string_2(params, 'condition_id', 'conditionId')
+            slug = self.safe_string(params, 'slug')
+            tokenIdParam = self.safe_string(params, 'token_id')
+            fallbackId = conditionId or slug or tokenIdParam or symbol
+            try:
+                market = self.safe_market_with_fallback(fallbackId, None, params)
+            except Exception as e:
+                market = None
+        marketInfo = self.safe_dict(market, 'info', {}) if market else {}
         # Get token ID from params or market
         # Use market['id'] which is the specific token ID for self outcome(YES/NO)
         # Do NOT use clobTokenIds[0] always picks the first outcome regardless of symbol
@@ -1269,6 +1282,17 @@ class polymarket(Exchange, ImplicitAPI):
         """
         # Polymarket ticker format from market data
         symbol = market['symbol'] if market else None
+        if market is None:
+            conditionId = self.safe_string_2(ticker, 'condition_id', 'conditionId')
+            slug = self.safe_string(ticker, 'slug')
+            tokenId = self.safe_string(ticker, 'token_id')
+            fallbackId = conditionId or slug or tokenId
+            if fallbackId is not None or slug is not None:
+                try:
+                    market = self.safe_market_with_fallback(fallbackId or slug, None, ticker)
+                    symbol = self.safe_string(market, 'symbol', symbol)
+                except Exception as e:
+                    market = None
         # Parse outcome prices
         outcomePricesStr = self.safe_string(ticker, 'outcomePrices')
         outcomePrices = []

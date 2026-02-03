@@ -18,7 +18,7 @@ import shutil
 from pathlib import Path
 from typing import Dict, List, Tuple, Any
 
-CCXT_PATH = '../../../../../ccxt'
+CCXT_PATH = '../../../../../../../ccxt'
 FILE_MAPPINGS: Dict[str, Dict[str, Any]] = {
     f'{CCXT_PATH}/python/ccxt/polymarket.py': {
         'destination': '../ccxt/polymarket_sync.py',
