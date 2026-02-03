@@ -51,16 +51,23 @@ async def matrix_id():
 
 @pytest_asyncio.fixture
 async def install_tentacles():
+    tentacles_folder_name = constants.TENTACLES_PATH
     def _cleanup(raises=True):
-        if path.exists(constants.TENTACLES_PATH):
-            managers.TentaclesSetupManager.delete_tentacles_arch(force=True, raises=raises)
+        if path.exists(tentacles_folder_name):
+            managers.TentaclesSetupManager.delete_tentacles_arch(
+                force=True, raises=raises, tentacles_folder_name=tentacles_folder_name
+            )
 
     def _tentacles_local_path():
-        return path.join("packages", "evaluators", "tests", "static", "tentacles.zip")
+        return path.join("tests", "static", "tentacles.zip")
 
     _cleanup(False)
     async with aiohttp.ClientSession() as session:
-        yield await tentacles_api.install_all_tentacles(_tentacles_local_path(), aiohttp_session=session)
+        if nb_errors := await tentacles_api.install_all_tentacles(
+            _tentacles_local_path(), tentacle_path=tentacles_folder_name, aiohttp_session=session
+        ):
+            raise AssertionError(f"Failed to install tentacles: {nb_errors} error(s) occurred")
+        yield 
         import tentacles
     _cleanup()
 

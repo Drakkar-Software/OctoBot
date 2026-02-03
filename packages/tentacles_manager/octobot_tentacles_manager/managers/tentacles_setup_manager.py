@@ -145,11 +145,13 @@ class TentaclesSetupManager:
         return True
 
     @staticmethod
-    def delete_tentacles_arch(force=False, raises=False,
-                              with_user_config=False, bot_installation_path=constants.DEFAULT_BOT_PATH):
+    def delete_tentacles_arch(
+        force=False, raises=False, with_user_config=False, bot_installation_path=constants.DEFAULT_BOT_PATH,
+        tentacles_folder_name=constants.TENTACLES_PATH
+    ):
         if TentaclesSetupManager.is_tentacles_arch_valid(verbose=False, raises=raises) \
-                or (force and path.exists(path.join(bot_installation_path, constants.TENTACLES_PATH))):
-            shutil.rmtree(path.join(bot_installation_path, constants.TENTACLES_PATH))
+                or (force and path.exists(path.join(bot_installation_path, tentacles_folder_name))):
+            shutil.rmtree(path.join(bot_installation_path, tentacles_folder_name))
         if with_user_config and path.exists(path.join(bot_installation_path, constants.USER_REFERENCE_TENTACLE_CONFIG_PATH)):
             shutil.rmtree(path.join(bot_installation_path, constants.USER_REFERENCE_TENTACLE_CONFIG_PATH))
 

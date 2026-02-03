@@ -116,7 +116,8 @@ async def _test_evaluators_creation(evaluator_parent_class, fixture_matrix_id, e
                                                             symbols=symbols,
                                                             time_frames=time_frames)
     assert created_evaluators
-    assert all([evaluator.__class__ in expected_evaluators for evaluator in created_evaluators])
+    for evaluator in created_evaluators:
+        assert evaluator.__class__ in expected_evaluators
 
 
 async def test_start_evaluators():
