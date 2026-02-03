@@ -33,7 +33,7 @@ from tests.exchanges import cached_markets_exchange_manager
 pytestmark = pytest.mark.asyncio
 
 
-MS_TIMESTAMP = round((datetime.now(timezone.utc) - datetime(1970, 1, 1)).total_seconds() * 1000)
+MS_TIMESTAMP = round((datetime.now(timezone.utc) - datetime(1970, 1, 1, tzinfo=timezone.utc)).total_seconds() * 1000)
 
 
 def get_constant_ms_timestamp():
