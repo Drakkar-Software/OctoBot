@@ -4,5 +4,5 @@ python packages/binary/scripts/insert_imports.py octobot/cli.py
 python packages/binary/scripts/fetch_nltk_data.py words $env:NLTK_DATA
 python -m PyInstaller bin/start.spec --workpath installer
 Move-Item dist\OctoBot.exe OctoBot_windows.exe
-dir
 .\OctoBot_windows.exe --version
+dir
