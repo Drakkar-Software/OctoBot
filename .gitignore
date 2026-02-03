@@ -113,8 +113,10 @@ backtesting/collector/data/
 backtesting/data/
 
 # Tentacles
+output
 tentacles
 downloaded_temp_tentacles
+!packages/tentacles
 
 # User config
 user/
@@ -136,3 +138,10 @@ letsencrypt/
 
 # dev env
 .env
+
+# pants
+.pants.d/
+
+# bin
+nltk_data/
+installer/

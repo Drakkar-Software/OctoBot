@@ -1,0 +1,45 @@
+# Services
+# Reddit
+asyncpraw==7.8.1
+# Telegram
+python-telegram-bot==22.3   # update alongside supabase for httpx requirement
+telethon==1.42.0
+# Twitter (associated tentacles are disabled as starting from feb 9 2023, API is now paid only).
+# see https://twitter.com/TwitterDev/status/1621026986784337922
+# Python-Twitter==3.5
+# Google
+simplifiedpytrends>=1.1.2
+# Ngrok
+pyngrok==7.3.0
+# Web
+## http server
+flask==3.1.1
+werkzeug == 3.1.3
+# Flask templates
+jinja2==3.1.6
+## flask minification
+flask-compress==1.18
+## flask cache
+flask-caching==2.3.1
+## flask user authentication management
+flask-login==0.6.3
+## flask CORS management
+flask-cors==6.0.1
+## user form validators
+WTForms==3.2.1
+Flask-WTF==1.2.2
+## websockets
+### used by the webhook service and flask-socketio for the web interface
+gevent==25.5.1
+### used by flask-socketio with gevent (listed here because multiple libs are usable, force this one)
+gevent-websocket==0.10.1
+flask-socketio==5.5.1
+# openai
+openai==2.15.0
+# agents
+pydantic>=2.11.10
+mcp==1.26.0
+# Coingecko
+coingecko-openapi-client>=1.3.0
+# Analysis tools
+vaderSentiment==3.3.2

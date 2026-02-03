@@ -1,0 +1,26 @@
+{
+    "buy_order_amount": "8%t",
+    "cancel_open_orders_at_each_entry": true,
+    "default_config": [
+        "SimpleStrategyEvaluator"
+    ],
+    "entry_limit_orders_price_percent": 1.3,
+    "exit_limit_orders_price_percent": 2,
+    "minutes_before_next_buy": 10080,
+    "required_strategies": [
+        "SimpleStrategyEvaluator",
+        "TechnicalAnalysisStrategyEvaluator"
+    ],
+    "secondary_entry_orders_amount": "8%t",
+    "secondary_entry_orders_count": 1,
+    "secondary_entry_orders_price_percent": 1.3,
+    "secondary_exit_orders_count": 1,
+    "secondary_exit_orders_price_percent": 0.5,
+    "trigger_mode": "Maximum evaluators signals based",
+    "use_init_entry_orders": false,
+    "use_market_entry_orders": false,
+    "use_secondary_entry_orders": true,
+    "use_secondary_exit_orders": false,
+    "use_stop_losses": false,
+    "use_take_profit_exit_orders": true
+}

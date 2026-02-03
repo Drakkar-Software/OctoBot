@@ -1,0 +1,31 @@
+services:
+  redis:
+    image: redis:8-alpine
+    container_name: redis-tls
+    restart: unless-stopped
+
+    command: >
+      redis-server
+      --port 0
+      --tls-port 6379
+      --tls-cert-file /certs/redis.crt
+      --tls-key-file /certs/redis.key
+      --tls-ca-cert-file /certs/ca.crt
+      --tls-auth-clients yes
+      --requirepass "${REDIS_PASSWORD}"
+      --tls-protocols "TLSv1.2 TLSv1.3"
+      --tls-ciphers "ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256"
+      --tls-ciphersuites "TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:TLS_AES_128_GCM_SHA256"
+      --tls-prefer-server-ciphers yes
+      --appendonly yes
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+
+    ports:
+      - "6379:6379"
+
+    volumes:
+      - ./data:/data
+      - ./certs:/certs:ro
+  

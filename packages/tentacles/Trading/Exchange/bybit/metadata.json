@@ -1,0 +1,8 @@
+{
+  "version": "1.2.0",
+  "origin_package": "OctoBot-Default-Tentacles",
+  "tentacles": [
+    "Bybit"
+  ],
+  "tentacles-requirements": []
+}

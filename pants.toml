@@ -1,0 +1,51 @@
+# Pants configuration for OctoBot
+[GLOBAL]
+pants_version = "2.30.0"
+backend_packages = [
+    "pants.backend.python",
+    "pants.backend.docker"
+]
+pants_ignore_use_gitignore = false
+pantsd = true
+pantsd_max_memory_usage = "6GiB"
+
+[source]
+# Configure source roots for packages directory
+# Each package folder is a source root (octobot_commons, octobot_trading, etc.)
+# /packages for tentacles package which needs to be imported as 'tentacles.Evaluator.X'
+# / - for root level sources like octobot
+root_patterns = [
+    "/packages/async_channel",
+    "/packages/backtesting",
+    "/packages/binary",
+    "/packages/commons",
+    "/packages/evaluators",
+    "/packages/node",
+    "/packages/services",
+    "/packages/tentacles_manager",
+    "/packages/trading",
+    "/packages/trading_backend",
+    "/packages",
+    "/",
+]
+
+[python]
+# Python interpreter compatibility
+interpreter_constraints = ["==3.13.*"]
+
+# Module mappings for packages with different import names
+[python.resolves_to_interpreter_constraints]
+python-default = ["==3.13.*"]
+
+[python-infer]
+# Enable dependency inference
+imports = true
+conftests = true
+
+[docker]
+use_buildx = true
+default_repository = "drakkarsoftware/octobot"
+build_verbose = true 
+env_vars.add = [
+  "DOCKER_BUILDKIT=1",
+]

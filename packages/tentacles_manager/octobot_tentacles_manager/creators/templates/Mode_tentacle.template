@@ -1,0 +1,40 @@
+from trading.trader.modes.abstract_mode_creator import AbstractTradingModeCreator
+from trading.trader.modes.abstract_mode_decider import AbstractTradingModeDecider
+from trading.trader.modes.abstract_trading_mode import AbstractTradingMode
+
+
+class {{ big_name }}Mode(AbstractTradingMode):
+    DESCRIPTION = ""
+
+    def __init__(self, config, symbol_evaluator, exchange):
+        super().__init__(config, symbol_evaluator, exchange)
+
+        self.add_creator({{ big_name }}ModeCreator(self))
+        self.add_decider({{ big_name }}ModeDecider(self, symbol_evaluator, exchange))
+
+    @staticmethod
+    def get_required_strategies():
+        pass
+
+
+class {{ big_name }}ModeCreator(AbstractTradingModeCreator):
+    def __init__(self, trading_mode):
+        super().__init__(trading_mode)
+
+    def create_new_order(self, eval_note, symbol, exchange, trader, portfolio, state):
+        pass
+
+
+class {{ big_name }}ModeDecider(AbstractTradingModeDecider):
+    def __init__(self, trading_mode, symbol_evaluator, exchange):
+        super().__init__(trading_mode, symbol_evaluator, exchange)
+
+    @classmethod
+    def get_should_cancel_loaded_orders(cls):
+        pass
+
+    def set_final_eval(self):
+        pass
+
+    def create_state(self):
+        pass

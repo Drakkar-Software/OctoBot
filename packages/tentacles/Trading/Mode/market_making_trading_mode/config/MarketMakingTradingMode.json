@@ -1,0 +1,8 @@
+{
+  "required_strategies": [],
+  "asks_count": 3,
+  "bids_count": 3,
+  "min_spread": 2,
+  "max_spread": 10,
+  "reference_exchange": "local"
+}

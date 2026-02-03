@@ -1,0 +1,225 @@
+{% macro editable_key(config, key, config_key, config_type, config_value, startup_config_value, suggestions="",
+                      no_select=False, number_step=0.01, force_title=False, tooltip=None, identifier="",
+                      placeholder_str="", allow_create_for=None, edit_key=False, dict_as_option_group=False) -%}
+    <span
+        {% if tooltip is not none and not config[key] | is_bool %}
+            data-toggle="tooltip" title="{{tooltip}}"
+        {% endif %}
+    >
+        {% if config[key]|default (config_value) is string %}
+            {{ editable_key_string(config, key, config_key, config_type, config_value, startup_config_value, suggestions, placeholder_str) }}
+        {% elif config[key]|default (config_value) | is_dict %}
+            {{ editable_key_dict(config, key, config_key, config_type, config_value, startup_config_value, suggestions, no_select, number_step, force_title, tooltip, identifier, placeholder_str, allow_create_for, dict_as_option_group=dict_as_option_group) }}
+        {% elif config[key]|default (config_value) | is_list %}
+            {{ editable_key_list(config, key, config_key, config_type, config_value, startup_config_value, suggestions, no_select, force_title, identifier, placeholder_str, dict_as_option_group=dict_as_option_group) }}
+        {% elif config[key]|default (config_value) | is_bool %}
+            {{ editable_key_bool(config, key, config_key, config_type, config_value, startup_config_value, suggestions, tooltip) }}
+        {% elif config[key]|default (config_value) is number %}
+            {{ editable_key_number(config, key, config_key, config_type, config_value, startup_config_value, suggestions, number_step, edit_key) }}
+        {% else %}
+            {{ editable_key_string(config, key, config_key, config_type, config_value, startup_config_value, suggestions, placeholder_str) }}
+        {% endif %}
+    </span>
+{%- endmacro %}
+
+{% macro editable_key_dict(config, key, config_key, config_type, config_value, startup_config_value, suggestions, no_select, number_step, force_title, tooltip, identifier, placeholder_str, allow_create_for, dict_as_option_group) -%}
+    <span class="text-capitalize">{{ key }} : </span> <br>
+    {% for new_key in config[key] %}
+
+        &emsp;{{  editable_key( config[key],
+                            new_key,
+                            config_key + "_" + new_key,
+                            config_type,
+                            config_value[new_key],
+                            startup_config_value[new_key],
+                            suggestions,
+                            no_select,
+                            number_step,
+                            force_title,
+                            tooltip,
+                            identifier,
+                            placeholder_str,
+                            edit_key=(allow_create_for == key),
+                            dict_as_option_group=dict_as_option_group)
+        }}
+        {% if loop.last and allow_create_for == key %}
+            <span data-add-template-for="{{config_key + '_Empty'}}" class="d-none">
+                {{  editable_key( config[key],
+                                "Empty",
+                                config_key + "_Empty",
+                                config_type,
+                                config_value[new_key],
+                                startup_config_value[new_key],
+                                suggestions,
+                                no_select,
+                                number_step,
+                                force_title,
+                                tooltip,
+                                identifier,
+                                placeholder_str,
+                                edit_key=True,
+                                dict_as_option_group=dict_as_option_group)
+                }}
+            </span>
+            <button type="button" class="btn btn-sm btn-primary rounded-circle waves-effect ml-4"
+                    data-toggle="tooltip" data-placement="bottom" title="Add a new element to {{key}}"
+                    data-role="editable-add" data-add-template-target="{{config_key + '_Empty'}}"
+                    data-default-key="Empty">
+                <i class="fas fa-plus"></i>
+            </button><br>
+        {% endif %}
+    {% endfor %}
+{%- endmacro %}
+
+{% macro editable_key_number(config, key, config_key, config_type, config_value, startup_config_value, suggestions, number_step, edit_key) -%}
+    <span class="text-capitalize">
+        {% if edit_key %}
+            <a href="#"
+               config-type="global_config"
+               config-value="{{ key }}"
+               startup-config-value="{{ key }}"
+               data-type="text"
+               data-pk="1"
+               data-clear=false
+               data-onblur="submit"
+               data-highlight=true
+               data-label-for="{{config_key}}"
+               placeholder="{{ key }}"
+               class="editable editable-click config-element">
+            {{ key }}</a>
+        {% else %}
+            {{ key }}
+        {% endif %}:
+    </span>
+    <a href="#"
+                   config-key="{{config_key}}"
+                   config-type="global_config"
+                   config-value="{{config[key]}}"
+                   startup-config-value="{{config[key]}}"
+                   data-type="number"
+                   data-step="{{number_step}}"
+                   data-pk="1"
+                   data-onblur="submit"
+                   data-highlight=true
+                   id="{{config_key}}"
+                class="editable editable-click config-element">
+    {{ config[key]|default (config_value) }}</a><br>
+{%- endmacro %}
+
+{% macro editable_key_string(config, key, config_key, config_type, config_value, startup_config_value, suggestions, placeholder_str="", password_val="*********") -%}
+    <span class="text-capitalize">{{ key }} : </span>
+    {% if key == "password" %}
+        <a href="#"
+           config-key="{{config_key}}"
+           config-type="global_config"
+           config-value="{{password_val}}"
+           startup-config-value="{{password_val}}"
+           data-type="text"
+           data-pk="1"
+           data-clear=false
+           data-onblur="submit"
+           data-highlight=true
+           id="{{config_key}}"
+           placeholder="{{ placeholder_str }}"
+           class="editable editable-click config-element">
+        {{ password_val }}</a><br>
+    {% else %}
+        <a href="#"
+           config-key="{{config_key}}"
+           config-type="global_config"
+           config-value="{{config[key]}}"
+           startup-config-value="{{config[key]}}"
+           data-type="text"
+           data-pk="1"
+           data-clear=false
+           data-onblur="submit"
+           data-highlight=true
+           id="{{config_key}}"
+           placeholder="{{ placeholder_str }}"
+           class="editable editable-click config-element">
+        {{ config[key]|default (config_value) }}</a><br>
+    {% endif %}
+{%- endmacro %}
+
+{% macro editable_key_bool(config, key, config_key, config_type, config_value, startup_config_value, suggestions, tooltip) -%}
+    <div class="custom-control custom-switch">
+      <input type="checkbox"
+             class="custom-control-input config-element"
+             config-key="{{config_key}}"
+             config-type="global_config"
+             config-value="{{config[key]}}"
+             startup-config-value="{{config[key]}}"
+             data-type="bool"
+             id="{{config_key}}"
+      {% if config[key] == True %}checked{% endif %}>
+
+      <label class="custom-control-label text-capitalize" for="{{config_key}}"
+          {% if tooltip is not none %}
+            data-toggle="tooltip" title="{{tooltip}}"
+          {% endif %}
+      >
+
+          {{ key }}
+      </label>
+    </div>
+{%- endmacro %}
+
+{% macro editable_key_list(config, key, config_key, config_type, config_value, startup_config_value, suggestions, no_select, force_title, identifier="", placeholder_str="", dict_as_option_group=False) -%}
+    {% if force_title %}
+        <span class="text-capitalize">{{ key }} : </span>
+    {% endif %}
+    <select config-key="{{ config_key }}"
+            config-type="global_config"
+            config-value="{{config[key]}}"
+            startup-config-value="{{config[key]}}"
+            class="editable editable-click config-element multi-select-element"
+            data-type="list"
+            multiple="multiple"
+            style="width:100%;"
+            id="{{config_key}}"
+            editable_config_id="multi-select-element-{{ identifier }}"
+            >
+        {% if dict_as_option_group and suggestions is mapping %}
+            {% for group_name, values in suggestions.items() %}
+                <optgroup label="{{group_name}}">
+                {% for name in values %}
+                    <option value="{{ name }}"
+                    {% if not no_select %}
+                        {{"selected=selected" if name in config[key] else ""}}
+                    {% endif %}
+                    >
+                        {{ name }}
+                    </option>
+                {% endfor %}
+               </optgroup>
+            {% endfor %}
+        {% else %}
+            {% for name in config[key] %}
+                <option value="{{ name }}"
+                {% if not no_select %}
+                    selected="selected"
+                {% endif %}
+                >
+                    {{ name }}
+                </option>
+            {% endfor %}
+            {% for name in suggestions %}
+                {% if name not in config[key] %}
+                <option value="{{ name }}">
+                    {{ name }}
+                </option>
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+    </select>
+    {% if not no_select %}
+    <br>
+    <script>
+        $("select[editable_config_id=\"multi-select-element-{{ identifier }}\"]:first").select2({
+            dropdownAutoWidth : true,
+            tags: true,
+            placeholder:"{{ placeholder_str }}"
+        });
+    </script>
+    {% endif %}
+{%- endmacro %}

@@ -1,0 +1,58 @@
+{% extends "layout.html" %}
+{% set active_page = "trading" %}
+{% block body %}
+<style>
+.card-deck .card{
+    max-width: 230px;
+}
+</style>
+<br>
+<div class="card">
+    <div class="card-header d-flex">
+        <h2>
+            <span class="float-left">
+                <a href="{{ url_for('trading', _anchor='panel-market-status') }}">
+                    <i class="fas fa-arrow-left"></i>
+                </a>&nbsp
+            </span>
+        </h2>
+        <div class="animated fadeIn img-fluid very-small-size">
+            <img class="card-img-top currency-image"
+                 src="{{ url_for('static', filename='img/svg/loading_currency.svg') }}"
+                 alt="{{currency}}"
+                 data-symbol="{{symbol.split('/')[0].lower()}}">
+        </div>
+        <div>
+            <h2>&nbsp{{symbol}} on {{exchange}}: <strong>{{symbol_evaluation}}</strong></h2>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="text-center">
+            Time frame
+            <select class="selectpicker" data-live-search="true" data-width="auto" data-window-padding="25" id="time-frame-select">
+                {% for time_frame in time_frames %}
+                <option value={{time_frame.value}}>
+                {{time_frame.value}}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <br>
+        <div class="card-body candle-graph" id="symbol_graph" symbol="{{symbol}}" exchange="{{exchange}}" exchange_id="{{exchange_id}}" backtesting_mode="{{ backtesting_mode }}">
+            <div class="card-body text-center" name="loadingSpinner">
+                <h2>
+                    <i class="fa fa-spinner fa-spin"></i>
+                </h2>
+            </div>
+            <div id="graph-symbol-price"></div>
+        </div>
+    </div>
+</div>
+<br>
+{% endblock %}
+
+{% block additional_scripts %}
+<script src="{{ url_for('static', filename='js/common/resources_rendering.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+<script src="{{ url_for('static', filename='js/common/candlesticks.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+<script src="{{ url_for('static', filename='js/components/market_status.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+{% endblock additional_scripts %}

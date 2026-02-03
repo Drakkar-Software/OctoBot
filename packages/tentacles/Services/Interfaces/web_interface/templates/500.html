@@ -1,0 +1,27 @@
+{% extends "layout.html" %}
+{% import 'macros/flash_messages.html' as m_flash_messages %}
+{% block body %}
+<br>
+<div class="card">
+    <div class="card-header">
+        <h2>We are sorry, but an unexpected error occurred.</h2>
+    </div>
+    <div class="card-body">
+        {{ m_flash_messages.flash_messages() }}
+        <p>
+            Error: {{ error }} ({{ error.__class__.__name__ }}). More details in logs.
+        </p>
+        <p>
+            If you believe this is an issue with OctoBot, please open an issue describing what happened on the
+            <a target="_blank" rel="noopener" href="https://github.com/Drakkar-Software/OctoBot/issues"
+               class="btn btn-outline-primary btn-md waves-effect">OctoBot issues report system.</a>
+        </p>
+    </div>
+    <div class="card-footer">
+        <button type="button" id="back-button" class="btn btn-lg btn-primary waves-effect">Go back</button>
+    </div>
+</div>
+{% endblock %}
+{% block additional_scripts %}
+<script src="{{ url_for('static', filename='js/common/common_handlers.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+{% endblock additional_scripts %}

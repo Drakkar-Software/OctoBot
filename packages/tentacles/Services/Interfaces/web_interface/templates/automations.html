@@ -1,0 +1,148 @@
+{% extends "layout.html" %}
+{% set active_page = "profile" %}
+
+{% macro automation_details(automations) %}
+    <ul>
+    {% for automation in automations %}
+        <li>
+            <span class="font-weight-bold">{{automation.get_name()}}</span>: {{automation.get_description() }}
+        </li>
+    {% endfor %}
+    </ul>
+{% endmacro %}
+
+{% block body %}
+<br>
+<div class="card">
+    <div class="card-header">
+        <h2 id="page-title">Automations
+            <span class="d-none d-md-inline">
+                configuration of the <span class="font-weight-bold">{{ profile_name }}</span> profile
+                <a class="btn btn-sm rounded-circle btn-primary waves-effect mx-1 mx-md-4 align-top"
+                   href="{{url_for('profiles_selector')}}" data-toggle="tooltip"
+                   title="Select another profile"
+                   id="profile-selector-link"
+                >
+                    <i class="fas fa-exchange-alt" aria-hidden="true"></i>
+                </a>
+            </span>
+            <a class="float-right blue-text" target="_blank" data-intro="automations" >
+                <i class="fa-solid fa-question"></i>
+            </a>
+        </h2>
+    </div>
+    <div class="card-body" id="configEditorBody"
+         data-edit-details-url="{{ url_for('automations_edit_details') }}">
+        <div class="row">
+            <div class="col-12 col-md-10">
+                <p>
+                    Automations are actions that will be triggered automatically when something happens.
+                    You can have as many automations as you want. Automation are started automatically
+                    when your OctoBot starts and when hitting <i class="fas fa-save"></i> Apply.
+                </p>
+            </div>
+            <div class="col col-md-2">
+                <button class="btn btn-outline-primary btn-md waves-effect"
+                        data-toggle="modal" data-target="#AutomationDetailsModal">
+                    Automation details
+                </button>
+            </div>
+        </div>
+        <div id="configEditor"></div>
+        <div id="configEditorButtons" class="d-none">
+            <div class="text-center">
+                <button class="btn btn-primary waves-effect" data-role='add-automation'
+                ><i class="fas fa-plus"></i> <span class="d-none d-md-inline-block">Add automation</span></button>
+                <button class="btn btn-outline-primary waves-effect" data-role='remove-automation'
+                ><i class="fas fa-minus"></i> <span class="d-none d-md-inline-block">Remove last automation</span></button>
+            </div>
+        </div>
+        <div id="editor-waiter" class="text-center my-4">
+            <div>
+                <h2>Loading configuration</h2>
+            </div>
+            <div>
+                <h2><i class="fa fa-spinner fa-spin"></i></h2>
+            </div>
+        </div>
+        <div id="configErrorDetails" style='display: none;'>
+            <div>
+                Error when fetching automation config. Resetting its configuration should fix the issue.
+            </div>
+            <div>
+                <button class="btn btn-warning waves-effect" data-role='factoryResetConfig'
+                        update-url="{{ url_for('automations', action='factory_reset') }}"><i class="fas fa-recycle"></i> Reset configuration to default values</button>
+            </div>
+        </div>
+    </div>
+    <div class="card-footer" id='saveConfigFooter' style='display: none;'>
+        <button id="applyAutomations" class="btn btn-primary waves-effect" data-role='startAutomations' update-url="{{ url_for('automations', action='start') }}">
+            <i class="fas fa-save"></i> Apply
+        </button>
+        <button class="btn btn-outline-warning waves-effect float-right" data-role='factoryResetConfig'
+                update-url="{{ url_for('config_tentacle', name=name, action='factory_reset') }}"><i class="fas fa-recycle"></i> Reset all</button>
+    </div>
+</div>
+<span class="d-none">
+    <button class="d-none" data-role='saveConfig' update-url="{{ url_for('automations', action='save') }}">Save</button>
+</span>
+<br>
+
+
+<div class="modal fade" id="AutomationDetailsModal" tabindex="-1" role="dialog" aria-labelledby="#AutomationDetailsModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-xl" role="document">
+    <div class="modal-content modal-text mt-4">
+      <div class="modal-header primary-text">
+          <h5 class="modal-title" id="AutomationDetailsModalLabel">
+              Available automations
+          </h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+          <div>
+              <h5>Triggers</h5>
+              <p>
+                  When your automation should be executed.
+              </p>
+              {{ automation_details(events.values()) }}
+          </div>
+          <div>
+              <h5>Conditions</h5>
+              <p>
+                  Checks to perform when a trigger occurs to know if actions should be executed.
+              </p>
+              {{ automation_details(conditions.values()) }}
+          </div>
+          <div>
+              <h5>Actions</h5>
+              <p>
+                  What to do when triggered and passing conditions.
+              </p>
+              {{ automation_details(actions.values()) }}
+          </div>
+      </div>
+      <div class="modal-footer d-flex justify-content-between">
+        <a class="btn btn-outline-primary waves-effect" href="{{url_for('dsl_help')}}" target="_blank" rel="noopener">OctoBot DSL Help</a>
+        <button class="btn btn-outline-primary waves-effect" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<span class="d-none" data-display-intro="{{display_intro}}"></span>
+<span class="d-none" id="feedback-form-data"
+      data-display-form="{{display_feedback_form}}"
+      data-user-id="{{user_id}}"
+      data-form-to-display="{{form_to_display}}"
+      data-on-submit-url="{{url_for('api.register_submitted_form')}}"
+></span>
+
+{% endblock %}
+
+{% block additional_scripts %}
+<script src="{{ url_for('static', filename='js/common/resources_rendering.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+<script src="{{ url_for('static', filename='js/components/config_tentacle.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+<script src="{{ url_for('static', filename='js/components/automations.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+{% endblock additional_scripts %}

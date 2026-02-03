@@ -1,0 +1,118 @@
+{% extends "advanced_layout.html" %}
+{% set active_page = "advanced.evaluator_config" %}
+{% import 'components/config/evaluator_card.html' as m_config_evaluator_card %}
+{% import 'macros/tentacles.html' as m_tentacles %}
+
+{% block additional_style %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/configuration.css', u=LAST_UPDATED_STATIC_FILES) }}">
+{% endblock additional_style %}
+
+{% block body %}
+<div id="nav-config">
+    <div class="card card-header">
+        <h3>
+            <span class="float-left">
+                <a href="{{ url_for('profile') }}">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+            </span>
+            &ensp;Activated strategies: {{ ', '.join(evaluator_config["activated_strategies"]) }}
+        </h3>
+    </div>
+    {% if not current_profile.read_only %}
+        <div class="navbar nav-tabs navbar-dark primary-color">
+            <span class="white-text"> Any configuration change will be applied after OctoBot restarts.</span>
+            <ul class="nav mx-auto">
+                <li class="nav-item">
+                    <a class="btn btn-primary waves-effect" id='save-config' href="#" role="tab" update-url="{{ url_for('advanced.evaluator_config') }}">Save</a>
+                </li>
+                <li class="nav-item">
+                    <a class="btn btn-outline-primary waves-effect" id='reset-config' href="#" role="tab">Reset all</a>
+                </li>
+            </ul>
+            <ul class="nav ml-auto">
+                <li class="nav-item">
+                    <button id='save-config-and-restart' update-url="{{ url_for('advanced.evaluator_config') }}" type="button" class="btn btn-outline-primary waves-effect">Apply changes and restart</button>
+                </li>
+            </ul>
+        </div>
+    {% endif %}
+</div>
+<div id="super-container">
+    {% if not current_profile.read_only %}
+        <div class="config-root" id="panelEvaluators"><br>
+            {{ m_tentacles.missing_tentacles_warning(missing_tentacles) }}
+            <div class="container-fluid alert alert-info mx-0 mt-2" role="alert">
+                <p>
+                    <i class="fa-regular fa-lightbulb"></i>
+                    Select evaluators and configure to use in your profile.
+                    Please note with for some strategies, there might be <i class="fa fa-flag"></i> required evaluators.
+                </p>
+            </div>
+            <div class="card">
+                <div class="card-header"><h2>Technical analysis</h2></div>
+                <div class="card-body">
+                    <div class="row config-container" id="ta-evaluator-config-root">
+                        {% for evaluator_name, info in evaluator_config["ta"].items() %}
+                            {{ m_config_evaluator_card.config_evaluator_card(evaluator_startup_config, evaluator_name, info, "evaluator_config") }}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            <br>
+            <div class="card">
+                <div class="card-header"><h2>Social analysis</h2></div>
+                <div class="card-body">
+                    <div class="row config-container" id="social-evaluator-config-root">
+                        {% for evaluator_name, info in evaluator_config["social"].items() %}
+                            {{ m_config_evaluator_card.config_evaluator_card(evaluator_startup_config, evaluator_name, info, "evaluator_config") }}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            <br>
+            <div class="card">
+                <div class="card-header"><h2>Scripted evaluators</h2></div>
+                <div class="card-body">
+                    <div class="row config-container" id="scripted-evaluator-config-root">
+                        {% for evaluator_name, info in evaluator_config["scripted"].items() %}
+                            {{ m_config_evaluator_card.config_evaluator_card(evaluator_startup_config, evaluator_name, info, "evaluator_config") }}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            <br>
+            <div class="card">
+                <div class="card-header"><h2 style="display:inline;">Real time analysis</h2> <h4 style="display:inline;">
+                    <i class="fas fa-exclamation-triangle"></i> Should only be used with exchanges supporting
+                    <a  target="_blank" rel="noopener" href="{{EXCHANGES_DOCS_URL}}" >websocket connection</a></h4>
+                </div>
+                <div class="card-body">
+                    <div class="row config-container" id="rt-evaluator-config-root">
+                        {% for evaluator_name, info in evaluator_config["real-time"].items() %}
+                            {{ m_config_evaluator_card.config_evaluator_card(evaluator_startup_config, evaluator_name, info, "evaluator_config") }}
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <p class="mb-0">Back to <a class="btn btn-outline-primary btn-md waves-effect" href="{{ url_for('profile') }}">OctoBot standard configuration</a></p>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="card">
+            <div class="card-body">
+                Current profile is read only. To be able to change the currently enabled evaluators,
+                please duplicate your current profile by using "duplicate" button
+                in <a href={{ url_for('profile') }}>profile page</a> using the "Edit profiles" menu.
+            </div>
+        </div>
+    {% endif %}
+</div>
+<br>
+{% endblock %}
+
+{% block additional_scripts %}
+<script src="{{ url_for('static', filename='js/common/resources_rendering.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+<script src="{{ url_for('static', filename='js/components/evaluator_configuration.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+{% endblock additional_scripts %}

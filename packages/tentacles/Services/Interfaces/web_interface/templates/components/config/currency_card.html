@@ -1,0 +1,39 @@
+{% import 'components/config/editable_config.html' as m_editable_config %}
+{% macro config_currency_card(config_symbols, crypto_currency, symbol_list_by_type, full_symbol_list, get_currency_id, add_class='', no_select=False, additional_classes="", symbol="") -%}
+    <!-- Card -->
+    <div class="card {{add_class}} mb-3 medium-size config-card">
+
+        <!--Title-->
+        <div class="card-header">{{crypto_currency}}</div>
+
+        <!--Card image-->
+        <div class="view overlay animated fadeIn">
+            <img class="card-img-top currency-image p-2 {{additional_classes}}"
+                 src="{{ url_for('static', filename='img/svg/loading_currency.svg') }}"
+                 alt="{{ crypto_currency }}"
+                 data-currency-id="{{get_currency_id(full_symbol_list, crypto_currency)}}"
+                 style="height:100%">
+        </div>
+
+        <!--Card content-->
+        <div class="card-body" name="{{crypto_currency}}" config-key="crypto-currencies_{{crypto_currency}}">
+
+            <p class="card-text symbols my-0 {{additional_classes}}">
+                 {{ m_editable_config.editable_key( config_symbols,
+                                                    crypto_currency,
+                                                    "crypto-currencies_" + crypto_currency,
+                                                    "global_config",
+                                                    config_symbols[crypto_currency]['pairs'] if crypto_currency in config_symbols and 'pair' in config_symbols[crypto_currency] else [],
+                                                    config_symbols[crypto_currency]['pairs'] if crypto_currency in config_symbols and 'pair' in config_symbols[crypto_currency] else [],
+                                                    symbol_list_by_type,
+                                                    no_select,
+                                                    identifier=crypto_currency,
+                                                    placeholder_str="Select trading pair(s)",
+                                                    dict_as_option_group=True)
+                }}
+            </p>
+
+            <button type="button" class="btn btn-danger remove-btn px-3 waves-effect"><i class="fa fa-ban" aria-hidden="true"></i> Remove</button>
+        </div>
+    </div>
+{%- endmacro %}

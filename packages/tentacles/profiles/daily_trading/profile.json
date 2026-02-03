@@ -1,0 +1,45 @@
+{
+    "config": {
+        "crypto-currencies": {
+            "Bitcoin": {
+                "enabled": true,
+                "pairs": [
+                    "BTC/USDT"
+                ]
+            }
+        },
+        "exchanges": {
+            "binance": {
+                "enabled": true
+            }
+        },
+        "trader": {
+            "enabled": false,
+            "load-trade-history": false
+        },
+        "trader-simulator": {
+            "enabled": true,
+            "fees": {
+                "maker": 0.1,
+                "taker": 0.1
+            },
+            "starting-portfolio": {
+                "BTC": 10,
+                "USDT": 1000
+            }
+        },
+        "trading": {
+            "reference-market": "USDT",
+            "risk": 0.5
+        }
+    },
+    "profile": {
+        "avatar": "default_profile.png",
+        "risk": 3,
+        "complexity": 1,
+        "description": "DailyTrading is a versatile profile that catches buy and sell opportunities using RSI and moving average indicators.",
+        "id": "daily_trading",
+        "name": "DailyTrading",
+        "read_only": true
+    }
+}

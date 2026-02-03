@@ -1,0 +1,24 @@
+{% macro display_loading_message(text=None, details=None, next_url=None) -%}
+    <div class="card w-75 mx-auto">
+        <div class="card-header"><h2>
+            {{ text or "OctoBot is starting, please refresh this page in a few seconds." }}
+        </h2></div>
+        <div class="card-body text-center" name="loadingSpinner">
+            <div>
+                <i class="fa fa-spinner fa-spin fa-2xl"></i>
+            </div>
+            {% if details %}
+            <div class="my-4">
+                <h4>{{ details }}</h4>
+            </div>
+            {% endif %}
+        </div>
+        <div class="card-footer text-right">
+        {% if next_url %}
+            <a type="button" href="{{next_url}}" class="btn btn-sm btn-outline-primary waves-effect">Proceed anyway</a>
+        {% else %}
+            <button type="button" id="reload-button" class="btn btn-lg btn-primary waves-effect">Refresh</button>
+        {% endif %}
+        </div>
+    </div>
+{%- endmacro %}

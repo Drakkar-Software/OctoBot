@@ -1,0 +1,43 @@
+{% macro user_details(
+    USER_EMAIL,
+    USER_SELECTED_BOT_ID,
+    has_open_source_package,
+    PROFILE_NAME,
+    TRADING_MODE_NAME,
+    EXCHANGE_NAMES,
+    IS_REAL_TRADING)
+-%}
+<script>
+    const _USER_DETAILS = {
+        email: "{{ USER_EMAIL }}",
+        botId: "{{ USER_SELECTED_BOT_ID }}",
+        hasPremiumExtension: {{ 'true' if has_open_source_package() else 'false'}},
+        profileName: "{{ PROFILE_NAME }}",
+        tradingMode: "{{ TRADING_MODE_NAME }}",
+        exchanges: "{{ EXCHANGE_NAMES }}".split(","),
+        isRealTrading: {{ 'true' if IS_REAL_TRADING else 'false' }},
+    }
+</script>
+{%- endmacro %}
+
+{%- macro posthog(IS_DEMO, IS_CLOUD, IS_ALLOWING_TRACKING, PH_TRACKING_ID) -%}
+    <script src="{{ url_for('static', filename='js/common/tracking.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+    {% if IS_DEMO or IS_CLOUD or IS_ALLOWING_TRACKING%}
+    <script>
+        !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="init capture register register_once register_for_session unregister unregister_for_session getFeatureFlag getFeatureFlagPayload isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey getNextSurveyStep identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException loadToolbar get_property getSessionProperty createPersonProfile opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing clear_opt_in_out_capturing debug".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
+        const _IS_ALLOWING_TRACKING = true
+        posthog.init('{{PH_TRACKING_ID}}',{
+            api_host:'https://eu.i.posthog.com', 
+            person_profiles: 'always', // 'always' to create profiles for anonymous users as well
+            defaults:'2025-05-24',
+            loaded: function (posthog) {
+                posthog_loaded(posthog)
+            }
+        })
+    </script>
+    {% else %}
+    <script>
+        const _IS_ALLOWING_TRACKING = false
+    </script>
+    {% endif %}
+{%- endmacro -%}

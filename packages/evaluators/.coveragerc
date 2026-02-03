@@ -1,0 +1,7 @@
+[run]
+omit =
+    tests/*
+    venv/*
+    tentacles/*
+    setup.py
+    demo.py

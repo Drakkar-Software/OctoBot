@@ -1,0 +1,12 @@
+numpy==2.4.2
+
+# Exchange connection requirements
+ccxt==4.5.28 # always ensure real exchanges tests (in tests_additional and authenticated exchange tests) are passing before changing the ccxt version
+
+cryptography # Never specify a version (managed by https://github.com/Drakkar-Software/OctoBot-PyPi-Linux-Deployer)
+
+# OrderBook requirement
+sortedcontainers==2.4.0
+
+# Caching
+cachetools>=5.5.0, <6

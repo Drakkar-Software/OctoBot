@@ -1,0 +1,44 @@
+{
+    "config": {
+        "crypto-currencies": {
+            "Bitcoin": {
+                "enabled": true,
+                "pairs": [
+                    "BTC/USDT"
+                ]
+            }
+        },
+        "exchanges": {
+            "binance": {
+                "enabled": true
+            }
+        },
+        "trader": {
+            "enabled": false,
+            "load-trade-history": true
+        },
+        "trader-simulator": {
+            "enabled": true,
+            "fees": {
+                "maker": 0.1,
+                "taker": 0.1
+            },
+            "starting-portfolio": {
+                "USDT": 10000
+            }
+        },
+        "trading": {
+            "reference-market": "USDT",
+            "risk": 0.5
+        }
+    },
+    "profile": {
+        "avatar": "default_profile.png",
+        "risk": 1,
+        "complexity": 1,
+        "description": "Non-Trading is a profile that does not trade. It will not create any order. Use this profile to run OctoBot without creating any order.",
+        "id": "default",
+        "name": "Non-Trading",
+        "read_only": true
+    }
+}

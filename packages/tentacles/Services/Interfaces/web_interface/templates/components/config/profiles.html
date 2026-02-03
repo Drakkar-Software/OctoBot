@@ -1,0 +1,462 @@
+{% macro profile_details(profile, tentacles_details, strategy_config, evaluator_config,
+get_profile_traded_pairs_by_currency, get_profile_exchanges, get_enabled_trader,
+get_filtered_list, read_only=False) %}
+<div class="profile-details d-flex pb-1" data-id="{{profile.profile_id}}">
+    <div class="flex-grow-1">
+        <h4>About
+            <span
+               id="profile-name-{{profile.profile_id}}"
+               data-pk="1"
+               data-type="text"
+               data-clear=false
+               data-onblur="submit"
+               data-highlight=true
+               data-emptytext="my profile"
+               class="{{'editable profile-name-editor' if not profile.read_only}}">{{ profile.name }}</span>
+            profile:
+        </h4>
+        <p>
+            <span class="large-editable">
+                <span
+                   id="profile-description-{{profile.profile_id}}"
+                   data-pk="1"
+                   data-type="textarea"
+                   data-clear=false
+                   data-onblur="submit"
+                   data-highlight=true
+                   data-emptytext="my description"
+                   data-inputclass="w-100"
+                   class="{{'editable profile-description-editor' if not profile.read_only}}">{{ profile.description }}</span>
+            </span>
+        </p>
+        <div class="d-flex justify-content-around">
+            <div>
+                {{ profile_auto_update(profile, read_only or profile.read_only) }}
+            </div>
+            <div>
+                {{ profile_complexity(profile, read_only or profile.read_only) }}
+            </div>
+            <div>
+                {{ profile_risk(profile, read_only or profile.read_only) }}
+            </div>
+        </div>
+    </div>
+    <div>
+        {% if not (read_only or profile.read_only) %}
+        <button id="save-profile-{{profile.profile_id}}"
+                data-url="{{url_for('profiles_management', action='update')}}"
+                class="btn btn-success rounded-circle waves-effect px-3 save-profile"
+                role="button" data-toggle="tooltip" title="Save" disabled>
+            <i class="fas fa-save" aria-hidden="true"></i>
+        </button>
+        {% endif %}
+    </div>
+</div>
+<div>
+    <h4>
+        Overview:
+        <span class="float-right"><span class="d-none d-md-inline">Built on OctoBot </span><span class="badge badge-light">{{tentacles_details["version"]}}</span></span>
+    </h4>
+    <div>
+        <div class="row">
+            <div class="card profile-card my-auto my-lg-2 px-0 mx-auto col-12 col-lg-5">
+                <div class="card-header">
+                    <h5>Traded pairs</h5>
+                </div>
+                <div class="card-body py-0 d-flex flex-wrap">
+                    {% for currency, pairs in get_profile_traded_pairs_by_currency(profile).items() %}
+                    <div class="row w-100 p-1">
+                        <div class="my-auto col-3">
+                            <div class="animated fadeIn img-fluid very-small-size">
+                                <img class="card-img-top currency-image"
+                                     src="{{ url_for('static', filename='img/svg/loading_currency.svg') }}"
+                                     alt="{{ currency }}"
+                                     data-name="{{currency.lower()}}">
+                            </div>
+                        </div>
+                        <div class="col-9 my-auto profile-overview-values px-2">
+                            {{pairs | join(', ')}}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="card profile-card my-1 my-lg-2 px-0 mx-auto col-12 col-lg-5">
+                <div class="card-header">
+                    <h5>
+                        Exchanges
+                        {% if get_enabled_trader(profile) %}
+                        <span class="float-right badge badge-info">
+                            {{ get_enabled_trader(profile)}}
+                        </span>
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body py-0 d-flex flex-wrap">
+                    {% for exchange in get_profile_exchanges(profile) %}
+                    <div class="my-auto p-1 p-md-3">
+                        <a href="" target="_blank" rel="noopener noreferrer" class="waves-effect">
+                            <img class="img-fluid product-logo" src="" alt="{{exchange}}" url="{{url_for('exchange_logo', name=exchange)}}">
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="card profile-card my-1 my-lg-2 px-0 mx-auto col-12 col-lg-11">
+                <div class="card-header">
+                    <h5>
+                        Tentacles configuration
+                    </h5>
+                </div>
+                <div class="card-body py-0 px-2 px-lg-4">
+                    {% set trading_modes = get_filtered_list(tentacles_details["activation"], strategy_config["trading-modes"]) %}
+                    {% if trading_modes %}
+                    <div class="my-1 my-md-3">
+                        <span class="profile-overview-explanation">Use </span>
+                        <span class="profile-overview-values">
+                        {% for tentacle in trading_modes %}
+                            <a href="#" class="profile-overview-values hover_anim"
+                               data-toggle="modal" data-target="#{{tentacle}}Modal">{{tentacle}}</a>
+                        {% endfor %}
+                        </span>
+                        <span class="profile-overview-explanation">as {{'a' if trading_modes | length == 1}} trading mode{{'s' if trading_modes | length > 1 }}</span>.
+                    </div>
+                    {% endif %}
+                    {% set strategies = get_filtered_list(tentacles_details["activation"], strategy_config["strategies"]) %}
+                    {% if strategies %}
+                    <div class="my-1 my-md-3">
+                        <span class="profile-overview-explanation">With </span>
+                        <span class="profile-overview-values">
+                        {% for tentacle in strategies %}
+                            <a href="#" class="profile-overview-values hover_anim"
+                               data-toggle="modal" data-target="#{{tentacle}}Modal">{{tentacle}}</a>
+                        {% endfor %}
+                        </span>
+                        <span class="profile-overview-explanation">as {{'a' if strategies | length == 1}} strateg{{'ies' if strategies | length > 1 else 'y'}} and</span>
+                        <ul>
+                            {% set TAs = get_filtered_list(tentacles_details["activation"], evaluator_config["ta"]) %}
+                            {% if TAs %}
+                            <li>
+                                <span class="profile-overview-values">
+                                    {% for tentacle in TAs %}
+                                        <a href="#" class="profile-overview-values hover_anim"
+                                           data-toggle="modal" data-target="#{{tentacle}}Modal">{{tentacle}}</a>
+                                    {% endfor %}
+                                </span>
+                                <span class="profile-overview-explanation">as {{'a' if TAs | length == 1}} technical evaluator{{'s' if TAs | length > 1}}.</span>
+                            </li>
+                            {% endif %}
+                            {% set socials = get_filtered_list(tentacles_details["activation"], evaluator_config["social"]) %}
+                            {% if socials %}
+                            <li>
+                                <span class="profile-overview-values">
+                                    {% for tentacle in socials %}
+                                        <a href="#" class="profile-overview-values hover_anim"
+                                           data-toggle="modal" data-target="#{{tentacle}}Modal">{{tentacle}}</a>
+                                    {% endfor %}
+                                </span>
+                                <span class="profile-overview-explanation">as {{'a' if socials | length == 1}} social evaluator{{'s' if socials | length > 1}}.</span>
+                            </li>
+                            {% endif %}
+                            {% set RTs = get_filtered_list(tentacles_details["activation"], evaluator_config["real-time"]) %}
+                            {% if RTs %}
+                            <li>
+                                <span class="profile-overview-values">
+                                    {% for tentacle in RTs %}
+                                        <a href="#" class="profile-overview-values hover_anim"
+                                           data-toggle="modal" data-target="#{{tentacle}}Modal">{{tentacle}}</a>
+                                    {% endfor %}
+                                </span>
+                                <span class="profile-overview-explanation">as {{'a' if RTs | length == 1}} real-time evaluator{{'s' if RTs | length > 1}}.</span>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+{% macro profile_auto_update(profile, read_only) %}
+<div class="{{'d-flex' if not read_only}}">
+    <label class="my-auto" for="{{profile.profile_id}}profile-auto-update">
+      Auto-update:
+    </label>
+    <span class="badge {{'text-light bg-rating-1' if profile.auto_update else 'badge-primary'}} my-auto">
+        {{'Enabled' if profile.auto_update else 'Disabled'}}
+    </span>
+</div>
+{% endmacro %}
+
+{% macro profile_complexity(profile, read_only) %}
+<div class="{{'d-flex' if not read_only}}">
+    <label class="my-auto" for="{{profile.profile_id}}profile-complexity">
+      Complexity:
+    </label>
+    {% if read_only %}
+    <span class="badge text-light bg-rating-{{profile.complexity.value}}">
+        {{profile.complexity.name | capitalize}}
+    </span>
+    {% else %}
+    <select id="{{profile.profile_id}}-profile-complexity" class="form-control profile-complexity-selector">
+        <option value="1" {{'selected' if profile.complexity.value == 1}}>
+            Easy
+        </option>
+        <option value="2" {{'selected' if profile.complexity.value == 2}}>
+            Medium
+        </option>
+        <option value="3" {{'selected' if profile.complexity.value == 3}}>
+            Difficult
+        </option>
+    </select>
+    {% endif %}
+</div>
+{% endmacro %}
+
+{% macro profile_risk(profile, read_only) %}
+<div class="{{'d-flex' if not read_only}}">
+    <label class="my-auto" for="{{profile.profile_id}}profile-risk">
+      Risk:
+    </label>
+    {% if read_only %}
+    <span class="badge text-light bg-rating-{{profile.risk.value}}">
+        {{profile.risk.name | capitalize}}
+    </span>
+    {% else %}
+    <select id="{{profile.profile_id}}-profile-risk" class="form-control profile-risk-selector">
+        <option value="1" {{'selected' if profile.risk.value == 1}}>
+            Low
+        </option>
+        <option value="2" {{'selected' if profile.risk.value == 2}}>
+            Moderate
+        </option>
+        <option value="3" {{'selected' if profile.risk.value == 3}}>
+            High
+        </option>
+    </select>
+    {% endif %}
+</div>
+{% endmacro %}
+
+{% macro profile_tab(current_profile, profile, tentacles_details, strategy_config, evaluator_config, get_profile_traded_pairs_by_currency, get_profile_exchanges, get_enabled_trader, get_filtered_list, OCTOBOT_DOCS_URL) %}
+<div class="tab-pane fade" id="panelProfile{{profile.profile_id}}" role="tabpanel"
+     aria-labelledby="panelExchanges-tab">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title" id="#profileModalLabel">
+                <span class="d-none d-md-inline">Profile: </span><span data-role="profile-name" data-profile-id="{{profile.profile_id}}"
+                               class="text-bold">{{profile.name}}</span>
+                <button class="btn btn-sm rounded-circle btn-primary waves-effect activate-profile-button align-middle"
+                        data-url="{{url_for('profile', select=profile.profile_id)}}"
+                        {{ 'disabled' if current_profile.profile_id == profile.profile_id else '' }}
+                        data-toggle="tooltip" title="Use this profile">
+                    <i class="fas fa-check" aria-hidden="true"></i>
+                </button>
+                <a class="float-right blue-text" target="_blank" rel="noopener" href="{{OCTOBOT_DOCS_URL}}/octobot-configuration/profiles?utm_source=octobot&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=profiles_config">
+                    &nbsp <i class="fa-solid fa-question"></i>
+                </a>
+            </h2>
+        </div>
+        <div class="card-body deck-container">
+            {{ profile_details(profile, tentacles_details, strategy_config, evaluator_config, get_profile_traded_pairs_by_currency, get_profile_exchanges, get_enabled_trader, get_filtered_list) }}
+        </div>
+        <div class="card-footer d-flex justify-content-between">
+            <div>
+                <button id="export-profile"
+                        data-url="{{url_for('profiles_management', action='export', profile_id=profile.profile_id)}}"
+                        class="btn btn-outline-primary waves-effect export-profile-button"
+                        data-toggle="tooltip" title="Share this profile">
+                    <i class="fas fa-share-square"></i> <span class="d-none d-md-inline">Share</span>
+                </button>
+            </div>
+
+            <button class="btn btn{{ '-outline' if current_profile.profile_id == profile.profile_id else '' }}-primary waves-effect activate-profile-button"
+                    data-url="{{url_for('profile', select=profile.profile_id)}}"
+                    {{ 'disabled' if current_profile.profile_id == profile.profile_id else '' }}>
+                <i class="fas fa-check" aria-hidden="true"></i> <span class="d-none d-md-inline">
+                    {{ 'This is your current profile' if current_profile.profile_id == profile.profile_id else 'Use this profile' }}
+                </span>
+            </button>
+            <div class="d-flex">
+                <button id="duplicate-profile"
+                        data-url="{{url_for('profiles_management', action='duplicate', profile_id=profile.profile_id)}}"
+                        class="btn btn-primary waves-effect duplicate-profile px-3">
+                    <i class="fas fa-copy" aria-hidden="true"></i> <span class="d-none d-md-inline">Duplicate</span>
+                </button>
+                {% if current_profile.profile_id != profile.profile_id and (profile.imported or not profile.read_only) %}
+                <button class="btn btn-outline-danger ml-2 px-3 waves-effect remove-profile-button"
+                        id="removeProfile{{profile.profile_id}}"
+                        data-profile-id="{{profile.profile_id}}"
+                        data-url="{{url_for('profiles_management', action='remove')}}">
+                    <i class="fa fa-ban" aria-hidden="true"></i> <span class="d-none d-md-inline">Remove</span>
+                </button>
+                {% endif %}
+            </div>
+        </div>
+        <div class="card-footer">
+            {% if profile.auto_update %}
+                <p>This profile is kept up-to-date from its OctoBot cloud equivalent. When an update occurs, your OctoBot might automatically restart to apply the new version of this profile. Duplicate it to disable this behavior.</p>
+            {% endif %}
+            {% if profile.read_only %}
+                <p><i class="fa fa-info"></i> This profile is ready only, press duplicate to create a copy to be able to edit it.</p>
+            {% endif %}
+        </div>
+    </div>
+    <div class="text-right mt-4">
+        <button class="btn btn-outline-primary waves-effect"
+                data-toggle="modal" data-target="#importProfileModal">
+            Import a profile
+        </button>
+    </div>
+</div>
+{% endmacro %}
+
+
+{% macro profile_import_modal(next=None) %}
+<div class="modal fade" id="importProfileModal" tabindex="-1" role="dialog" aria-labelledby="#importProfileModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+    <div class="modal-content modal-text">
+      <div class="modal-header primary-text">
+        <h5 class="modal-title" id="#importProfileModalLabel">Import a new profile</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body text-center">
+          <div>
+              <form class="form-inline profile-download-form"
+                    action="{{ url_for('profiles_management', action='download', next=next) }}" method="POST">
+                <div class="form-group mx-sm-3 mb-2 w-75">
+                  <label for="inputProfileLink" class="mr-2">Import from a profile link</label>
+                  <input type="text" class="form-control w-100 w-md-50" id="inputProfileLink" name="inputProfileLink"
+                         placeholder="https://profile-to-import-url.zip">
+                </div>
+                <button type="button" class="btn btn-primary waves-effect mb-2"
+                        data-role="download-profile-button">Import</button>
+              </form>
+          </div>
+      </div>
+      <div class="modal-footer">
+        <div>
+          <form class="d-none profile-import-form" action="{{ url_for('profiles_management', action='import', next=next) }}" method="POST"
+           enctype = "multipart/form-data">
+              <input class="profile-input" type="file" name="file" accept=".zip"/>
+          </form>
+          <button class="btn btn-outline-primary waves-effect import-profile-button">
+            <i class="fas fa-download"></i> Import a local profile
+          </button>
+        </div>
+        <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endmacro %}
+
+{% macro profile_overview(profile, current_profile, tentacles_details, strategy_config, evaluator_config,
+                          get_profile_traded_pairs_by_currency, get_profile_exchanges, get_enabled_trader,
+                          get_filtered_list, read_only=False, reboot=False, onboarding=False) -%}
+<div class="col-12 col-md-6 col-lg-4 px-1 profile-overview {{'profile-overview-selected' if profile.profile_id == current_profile.profile_id}}">
+    <div class="p-2 vertically-aligned">
+        <div class="row mx-0">
+            <div class="col-9">
+                <h4>{{ profile.name | safe }}</h4>
+            </div>
+            <div class="col-1 col-md-2 text-right">
+                {% if profile.profile_id == current_profile.profile_id %}
+                <h4>
+                    <span class="badge badge-danger float-right d-none d-md-block">active</span>
+                    <i class="fas fa-check d-md-none"
+                        data-toggle="tooltip" data-placement="top"
+                        title="Active"
+                    ></i>
+                </h4>
+                {% endif %}
+            </div>
+            <div class="col-1 text-right">
+                <h4>
+                {% if profile.imported %}
+                    <i class="fa-sharp fa-solid fa-cloud-arrow-down"
+                        data-toggle="tooltip" data-placement="top"
+                        title="Downloaded"></i>
+                {% elif profile.read_only %}
+                    <i class="fa-brands fa-octopus-deploy"
+                        data-toggle="tooltip" data-placement="top"
+                        title="Pre-installed"></i>
+                {% else %}
+                    <i class="fa-solid fa-user"
+                        data-toggle="tooltip" data-placement="top"
+                        title="Custom"></i>
+                {% endif %}
+                </h4>
+            </div>
+        </div>
+        </h4>
+        <div class="text-center">
+            <img src="{{url_for('profile_media', path=profile.avatar_path) if profile.avatar_path else url_for('static', filename='img/default_profile.png')}}"
+                 class="img-fluid profile-overview-image" alt="{{profile.name}}">
+        </div>
+        <p class="pt-2 text-center">
+            {{ profile.description | safe }}
+        </p>
+        <div class="d-flex justify-content-between px-2 px-md-4">
+            <div>
+                <button class="btn btn-outline-primary btn-md"
+                        data-toggle="modal" data-target="#{{profile.profile_id}}Modal">
+                    <i class="fas fa-ellipsis"></i>
+                </button>
+                {{ profile_details_modal(profile, tentacles_details, strategy_config, evaluator_config,
+                                         get_profile_traded_pairs_by_currency, get_profile_exchanges, get_enabled_trader,
+                                         get_filtered_list, read_only=read_only) }}
+            </div>
+            <div>
+                {% if profile.profile_id != current_profile.profile_id %}
+                <button class="btn btn-primary btn-md activate-profile-button"
+                        data-toggle="tooltip" data-placement="top"
+                        title="Select this profile"
+                        data-url="{{url_for('profile', select=profile.profile_id,
+                                    next=url_for('trading_type_selector', reboot=reboot, onboarding=onboarding))}}">
+                    <i class="fas fa-check"></i>
+                </button>
+                {% else %}
+                <button class="btn btn-outline-primary btn-md activate-profile-button"
+                        data-toggle="tooltip" data-placement="top"
+                        title="Proceed with this profile"
+                        data-url="{{url_for('profile', select=profile.profile_id,
+                                    next=url_for('trading_type_selector', reboot=False, onboarding=onboarding))}}">
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{%- endmacro %}
+
+{% macro profile_details_modal(profile, tentacles_details, strategy_config, evaluator_config,
+get_profile_traded_pairs_by_currency, get_profile_exchanges, get_enabled_trader,
+get_filtered_list, read_only=False) %}
+<div class="modal fade" id="{{profile.profile_id}}Modal" tabindex="-1" role="dialog"
+     aria-labelledby="#{{profile.profile_id}}ModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+    <div class="modal-content modal-text mt-4">
+      <div class="modal-header primary-text">
+          <h5 class="modal-title" id="{{profile.profile_id}}ModalLabel">
+              {{profile.name}}
+          </h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        {{ profile_details(profile, tentacles_details, strategy_config,
+          evaluator_config, get_profile_traded_pairs_by_currency, get_profile_exchanges,
+          get_enabled_trader, get_filtered_list, read_only=read_only) }}
+      </div>
+    </div>
+  </div>
+</div>
+{% endmacro %}

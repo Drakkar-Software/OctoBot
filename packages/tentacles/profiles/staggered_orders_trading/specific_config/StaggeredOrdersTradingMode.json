@@ -1,0 +1,44 @@
+{
+  "required_strategies": [],
+  "pair_settings": [
+    {
+    "pair": "BTC/USDT",
+    "mode": "mountain",
+    "spread_percent": 6,
+    "increment_percent": 3,
+    "lower_bound": 30000,
+    "upper_bound": 60000,
+    "allow_instant_fill": true,
+    "operational_depth": 100,
+    "mirror_order_delay": 0,
+    "ignore_exchange_fees": false,
+    "use_existing_orders_only": false
+    },
+  {
+    "pair": "ADA/ETH",
+    "mode": "mountain",
+    "spread_percent": 6,
+    "increment_percent": 3,
+    "lower_bound": 0.0003,
+    "upper_bound": 0.0007,
+    "allow_instant_fill": true,
+    "operational_depth": 50,
+    "mirror_order_delay": 0,
+    "ignore_exchange_fees": false,
+    "use_existing_orders_only": false
+  },
+  {
+    "pair": "ETH/USDT",
+    "mode": "mountain",
+    "spread_percent": 0.7,
+    "increment_percent": 0.3,
+    "lower_bound": 400,
+    "upper_bound": 500,
+    "allow_instant_fill": true,
+    "operational_depth": 50,
+    "mirror_order_delay": 0,
+    "ignore_exchange_fees": false,
+    "use_existing_orders_only": false
+  }
+  ]
+}

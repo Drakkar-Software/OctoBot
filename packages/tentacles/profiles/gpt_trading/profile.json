@@ -1,0 +1,47 @@
+{
+    "config": {
+        "crypto-currencies": {
+            "Bitcoin": {
+                "enabled": true,
+                "pairs": [
+                    "BTC/USDT"
+                ]
+            }
+        },
+        "exchanges": {
+            "binance": {
+                "enabled": true,
+                "exchange-type": "spot"
+            }
+        },
+        "trader": {
+            "enabled": false,
+            "load-trade-history": true
+        },
+        "trader-simulator": {
+            "enabled": true,
+            "fees": {
+                "maker": 0.1,
+                "taker": 0.1
+            },
+            "starting-portfolio": {
+                "USDT": 1000
+            }
+        },
+        "trading": {
+            "reference-market": "USDT",
+            "risk": 1
+        }
+    },
+    "profile": {
+        "avatar": "ChatGPT_logo.svg",
+        "complexity": 2,
+        "description": "GPT Smart DCA uses ChatGPT to predict the market. It can be used to trade directly based on the profile's DCA Trading mode configuration.\nConfigure the GPTEvaluator to customize the way market data are sent to ChatGPT and the DCATradingMode to change how entries and exits should be created.",
+        "id": "gpt_trading",
+        "imported": false,
+        "name": "GPT Trading",
+        "origin_url": null,
+        "read_only": true,
+        "risk": 3
+    }
+}

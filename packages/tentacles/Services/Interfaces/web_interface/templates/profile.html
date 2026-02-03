@@ -1,0 +1,548 @@
+{% extends "layout.html" %}
+{% set active_page = "profile" %}
+{% set startup_messages_added_classes = "justify-content-end px-4" %}
+{% set inner_startup_messages_added_classes = "offset-md-3 offset-lg-2 offset-1" %}
+{% import 'components/config/exchange_card.html' as m_config_exchange_card %}
+{% import 'components/config/currency_card.html' as m_config_currency_card %}
+{% import 'components/config/trader_card.html' as m_config_trader_card %}
+{% import 'components/config/evaluator_card.html' as m_config_evaluator_card %}
+{% import 'components/config/tentacle_card.html' as m_config_tentacle_card %}
+{% import 'components/config/profiles.html' as m_config_profile_tab %}
+{% import 'macros/tentacles.html' as m_tentacles %}
+{% import 'macros/flash_messages.html' as m_flash_messages %}
+
+{% set config_default_value = "Bitcoin" %}
+{% set config_default_symbol = "btc" %}
+{% set added_class = "new_element" %}
+
+
+{% block additional_style %}
+<link rel="stylesheet"
+      href="{{ url_for('static', filename='css/components/configuration.css', u=LAST_UPDATED_STATIC_FILES) }}">
+{% endblock additional_style %}
+
+{% block body %}
+
+<div class="row mt-md-4 mt-2">
+    <nav class="mt-md-4 mt-2 col-md-3 col-lg-2 col-1 d-block sidebar shadow">
+        <div class="sidebar-sticky mt-0 pt-0">
+            <div class="nav flex-column pt-0 mt-0 mt-md-4" id="v-tab" role="tablist"
+                 aria-orientation="vertical">
+                <span>
+                    <a class="nav-link pl-2 pl-sm-3 waves-effect d-flex justify-content-between dropdown-toggle collapsed"
+                       data-toggle="collapse"
+                       id="edit-profiles-button"
+                       href="#profilesSubmenu" role="tab" aria-expanded="false">
+                        <span class="d-flex">
+                            <i class="fas fa-users"></i><span class="d-none d-md-block pl-3">Edit profiles</span>
+                        </span>
+                    </a>
+                    <ul class="collapse nav" id="profilesSubmenu">
+                        {% for profile_id, profile in profiles.items() | sort(attribute='1.name') %}
+                        <li class="w-100">
+                            <a class="nav-link pl-2 pl-sm-4 waves-effect d-flex {{ 'font-weight-bold' if profile_id == current_profile.profile_id }}" id="profile-{{profile_id}}-tab"
+                               data-toggle="pill"
+                               href="#panelProfile{{profile_id}}" role="tab" aria-controls="panelProfile{{profile_id}}"
+                               aria-selected="false">
+                                <i class="fas {{'fa-user-lock' if profile.read_only else 'fa-user '}}"></i>
+                                <span class="d-none d-md-block pl-3" data-role="profile-name" data-profile-id="{{profile_id}}">{{profile.name}}</span>
+                                {% if profile_id == current_profile.profile_id %}
+                                <i class="fas fa-check ml-1 ml-md-2"></i>
+                                {% endif %}
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </span>
+                <span class="separator mb-2 mt-2 mt-md-4 pl-2 pl-sm-3">
+                    <span class="d-none d-md-block text-muted">
+                        Profile configuration
+                    </span>
+                </span>
+                <a class="nav-link pl-2 pl-sm-3 waves-effect d-flex" data-tab="default" id="panelStrategies-tab" data-toggle="pill"
+                   href="#panelStrategies" role="tab" aria-controls="panelStrategies" aria-selected="true">
+                    <i class="fab fa-octopus-deploy my-auto"></i><span class="d-none d-md-block pl-3">Strategies</span>
+                </a>
+                <a class="nav-link pl-2 pl-sm-3 waves-effect d-flex" id="panelCurrency-tab" data-toggle="pill"
+                   href="#panelCurrency" role="tab" aria-controls="panelCurrency" aria-selected="false">
+                    <i class="fab fa-bitcoin my-auto"></i><span class="d-none d-md-block pl-3">Currencies</span>
+                </a>
+                <a class="nav-link pl-2 pl-sm-3 waves-effect d-flex" id="panelExchanges-tab" data-toggle="pill"
+                   href="#panelExchanges" role="tab" aria-controls="panelExchanges" aria-selected="false">
+                    <i class="fas fa-exchange-alt my-auto"></i><span class="d-none d-md-block pl-3">Exchanges</span>
+                </a>
+                <a class="nav-link pl-2 pl-sm-3 waves-effect d-flex" id="panelTrading-tab" data-toggle="pill"
+                   href="#panelTrading" role="tab" aria-controls="panelTrading" aria-selected="false">
+                    <i class="fas fa-wallet my-auto"></i><span class="d-none d-md-block pl-3">Trading</span>
+                </a>
+                {% if config_tentacles_by_group or other_tentacles_config %}
+                <a class="nav-link pl-2 pl-sm-3 waves-effect d-flex" id="panelTentacles-tab" data-toggle="pill"
+                   href="#panelTentacles" role="tab" aria-controls="panelTentacles" aria-selected="false">
+                    <i class="fas fa-cogs my-auto"></i><span class="d-none d-md-block pl-3">Tentacles</span>
+                </a>
+                {% endif %}
+                {% if are_automations_enabled %}
+                <a class="nav-link pl-2 pl-sm-3 waves-effect d-flex" id="panelAutomations-tab" data-toggle="pill"
+                   href="#panelAutomations" role="tab" aria-controls="panelAutomations" aria-selected="false">
+                    <i class="fas fa-robot my-auto"></i><span class="d-none d-md-block pl-3">Automations</span>
+                </a>
+                {% endif %}
+            </div>
+            <button class="w-100 my-3 p-2 pl-sm-3 btn btn-lg btn-outline-primary waves-effect d-flex mx-0 mx-md-auto" id="save-config" href="#"
+               aria-selected="false" update-url="{{ url_for('config') }}">
+                <i class="fas fa-save my-auto"></i><span class="d-none d-md-block pl-2">Save</span>
+            </button>
+            <button class="w-100 my-3 p-2 pl-sm-3 btn btn-lg btn-outline-primary waves-effect d-flex mx-0 mx-md-auto" id="reset-config" href="#"
+               aria-selected="false">
+                <i class="fas fa-redo-alt my-auto"></i><span class="d-none d-md-block pl-2">Reset all</span>
+            </button>
+            <button class="w-100 my-3 p-2 pl-sm-3 btn btn-lg btn-outline-primary waves-effect d-flex mx-0 mx-md-auto mt-3 mt-mb-5 mb-5"
+                    id="save-config-and-restart" href="#" type="button" aria-selected="false"
+                    update-url="{{ url_for('config') }}">
+                <i class="fas fa-power-off my-auto"></i><span class="d-none d-md-block pl-2">Apply changes and restart</span>
+            </button>
+        </div>
+    </nav>
+    <main role="main" class="col-md-9 col-lg-10 col-11 ml-auto px-4">
+        <div>
+            {{ m_flash_messages.flash_messages() }}
+        </div>
+        {% if not strategy_config["trading-modes"] %}
+        <div class="alert alert-danger" role="alert">
+            <h4>Configuration issue</h4>
+            <p>
+                An error occurred when loading your configuration.
+                Editing your OctoBot configuration might currently be impossible.
+                Please report this error to the OctoBot team if you see it.
+            </p>
+        </div>
+        {% endif %}
+        <div class="tab-content" id="super-container">
+            <div class="card card-header ">
+                <h2>
+                    <span class="d-none d-md-inline-block">Current profile</span>
+                    <span class="font-weight-bold" data-role="profile-name" data-profile-id="{{current_profile.profile_id}}">{{current_profile.name}}</span>
+                    <a class="d-inline-block" data-profile-id="{{current_profile.profile_id}}" data-role="current-profile-selector">
+                        <button class="btn btn-sm btn-outline-primary align-middle">
+                            View profile
+                        </button>
+                    </a>
+                    <a class="btn btn-sm rounded-circle btn-primary waves-effect mx-1 mx-md-4 align-middle"
+                    href="{{url_for('profiles_selector')}}" data-toggle="tooltip"
+                    title="Select another profile"
+                    id="profile-selector-link"
+                    >
+                        <i class="fas fa-exchange-alt" aria-hidden="true"></i>
+                    </a>
+                </h2>
+            </div>
+            {% for profile_id, profile in profiles.items() %}
+            {{m_config_profile_tab.profile_tab(current_profile, profile, profiles_tentacles_details[profile_id], strategy_config, evaluator_config,
+                                               get_profile_traded_pairs_by_currency, get_profile_exchanges, get_enabled_trader, get_filtered_list, OCTOBOT_DOCS_URL)}}
+            {% endfor %}
+            <div class="tab-pane fade config-root show" id="panelStrategies" role="tabpanel"
+                 aria-labelledby="panelStrategies-tab">
+                {% if profiles_tentacles_details[current_profile.profile_id]["read_error"] %}
+                    <div class="alert alert-warning" role="alert">
+                        <h4>Configuration warning</h4>
+                        <p>
+                            An error occurred when loading this profile. More details in logs.
+                        </p>
+                    </div>
+                {% elif profiles_tentacles_details[current_profile.profile_id]["version"] != CURRENT_BOT_VERSION
+                    and not profiles_tentacles_details[current_profile.profile_id]["imported"]
+                    and profiles_tentacles_details[current_profile.profile_id]["require_exact_version"]%}
+                    <div class="alert alert-warning" role="alert">
+                        <h4>Profile version warning</h4>
+                        <p>
+                            Your current profile ({{ current_profile.name }}) has been imported from an OctoBot on version
+                            {{ profiles_tentacles_details[current_profile.profile_id]["version"] }}.
+                            Please make sure that this profile is compatible with OctoBot {{ CURRENT_BOT_VERSION }}
+                            or download a newer version.
+                        </p>
+                    </div>
+                {% endif %}
+
+                {% set trading_modes = strategy_config["trading-modes"].items() %}
+                {% set strategies = strategy_config["strategies"].items() %}
+
+                {% if not current_profile.read_only %}
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>
+                                Trading modes
+                                <a class="float-right blue-text" target="_blank" data-intro="profile" >
+                                    <i class="fa-solid fa-question"></i>
+                                </a>
+                            </h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="row config-container" id="trading-modes-config-root">
+                                {% for trading_mode_name, info in trading_modes %}
+                                    {{ m_config_evaluator_card.config_evaluator_card(trading_startup_config, trading_mode_name,
+                                    info, "trading_config", include_modal=False) }}
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <div class="quote px-2 font-weight-bold" id="selected-trading-mode-summary"></div>
+                        </div>
+                    </div>
+                    <br>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>
+                                Compatible evaluation strategies
+                            </h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-none row mx-3" id="no-strategy-info">
+                                <h4>This trading mode doesn't need any strategy.</h4>
+                            </div>
+                            <div class="d-none row config-container" id="evaluator-config-root">
+                                {% for evaluator_name, info in strategies %}
+                                    {{ m_config_evaluator_card.config_evaluator_card(evaluator_startup_config, evaluator_name,
+                                    info, "evaluator_config", strategy=True, include_modal=False) }}
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="card-footer" id="evaluator-config-root-footer">
+                            <div class="quote px-2 font-weight-bold">
+                                Customize the time frames to trade on in your strategy configuration.
+                            </div>
+                            <p class="mt-3 mb-0"><i class="fab fa-octopus-deploy"></i> Pro tip: customize evaluators to use with your strategy the
+                                <a href="{{ url_for('advanced.evaluator_config') }}">
+                                    advanced evaluators configuration
+                                </a>
+                            </p>
+                        </div>
+                    </div>
+                    <br>
+                    {{ m_tentacles.missing_tentacles_warning(missing_tentacles) }}
+                {% else %}
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>
+                                Profile strategy configuration
+                                <span
+                                    href=""
+                                    class="badge badge-info waves-effect align-top"
+                                    data-role="current-profile-selector"
+                                    data-toggle="tooltip"
+                                    title="Duplicate this profile to select other trading modes or evaluators"
+                                >read only</span>
+                                <a class="float-right blue-text" data-intro="profile">
+                                    <i class="fa-solid fa-question"></i>
+                                </a>
+                            </h2>
+                        </div>
+                        <div class="card-body mt-0 pt-2 mb-0 pb-0">
+                            {% for trading_mode_name, info in trading_modes %}
+                                {% if info['activation'] %}
+                                    <div class="card mb-4 border-primary">
+                                        <div class="card-header">
+                                            <h4>
+                                                {{ trading_mode_name }}
+                                                <a href="{{ url_for('config_tentacle', name=(trading_mode_name)) }}"
+                                                   class="align-top" role="button"><i class="fa fa-cog"></i></a>
+                                            </h4>
+                                        </div>
+
+                                        <div class="card-body pb-0">
+                                            <div class="row">
+                                                {{ m_tentacles.tentacle_horizontal_description_row_content(info, tentacle_type=="strategy", True) }}
+                                                <div class="col">
+                                                    <div class="alert alert-info" role="alert">
+                                                        <h4 class="alert-heading">Trading modes</h4>
+                                                        <p>
+                                                            Trading modes are responsible for creating, updating or cancelling orders.
+                                                            They can use strategy(ies) to receive signals and create orders accordingly.
+                                                        </p>
+                                                        <p>
+                                                            Lean more about OctoBot trading modes on
+                                                            <a target="_blank" rel="noopener"
+                                                               href="{{OCTOBOT_DOCS_URL}}/octobot-trading-modes/trading-modes?utm_source=octobot&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=read_only_profile">
+                                                                the trading modes guides
+                                                            </a>.
+                                                        </p>
+                                                    </div>
+                                                  </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+
+                            {% for evaluator_name, info in strategies %}
+                                {% if info['activation'] %}
+                                    <div class="card mb-4 border-warning">
+                                        <div class="card-header">
+                                            <h4>
+                                                {{ evaluator_name }}
+                                                <a href="{{ url_for('config_tentacle', name=(evaluator_name)) }}"
+                                                   class="align-top" role="button"><i class="fa fa-cog"></i></a>
+                                            </h4>
+                                        </div>
+
+                                        <div class="card-body pb-0">
+                                            <div class="row">
+                                                {{ m_tentacles.tentacle_horizontal_description_row_content(info, tentacle_type=="strategy", True) }}
+                                                <div class="col">
+                                                    <div class="alert alert-info" role="alert">
+                                                        <h4 class="alert-heading">Strategies</h4>
+                                                        Strategies create input signals for trading modes using technical, social and real time analysis provided by configured evaluators.<br>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        <div class="card-footer">
+                        </div>
+                    </div>
+                {% endif %}
+                {% if not has_open_source_package() %}
+                <div class="text-center">
+                    <i class="fa fa-info-circle"></i> The <a href="{{ url_for('extensions') }}">{{OCTOBOT_EXTENSION_PACKAGE_1_NAME}}</a> contains many other configuration profiles and enables
+                    your open source OctoBot to use and customize OctoBot cloud's <a target="_blank" rel="noopener" href="https://app.octobot.cloud/explore?utm_source=octobot&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=Profile">automatically configured indexes</a>.
+                </div>
+                {% endif %}
+            </div>
+            <div class="tab-pane fade config-root" id="panelCurrency" role="tabpanel"
+                 aria-labelledby="panelCurrency-tab">
+                <div class="card">
+                    <div class="card-header"><h2>Currencies</h2></div>
+                    <div class="card-body deck-container">
+                        {% if in_backtesting %}
+                        <div class="alert alert-warning" role="alert">
+                            OctoBot is currently running in backtesting analysis, information in this section may not be
+                            accurate and changes won't be saved.
+                        </div>
+                        {% endif %}
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="container-fluid row col-12">
+                                    <div class="col-md-6">
+                                        <label for="AddCurrencySelect">Add a cryptocurrency to trade:</label>
+                                        <select id="AddCurrencySelect" data-live-search="true" data-window-padding="25"
+                                                reference_market="{{ config_reference_market }}" data-fetch-url="{{ url_for('api.currency_list') }}">
+
+                                        </select>
+                                        <button type="button" id="AddCurrency"
+                                                class="btn btn-primary add-btn px-3 waves-effect"><i class="fa fa-plus pr-2"
+                                                                                                     aria-hidden="true"></i> Add
+                                        </button>
+                                    </div>
+                                    <div class="d-none d-md-inline-block col-md-6">
+                                        <div class="d-flex justify-content-end">
+                                            <button class="btn btn-outline-info btn-lg mx-1 waves-effect" id="export-currencies-button"
+                                                    update-url="{{ url_for('api.get_config_currency')}}">
+                                                <i class="fa fa-cloud-download-alt"></i> <span class="d-none d-md-inline-block">Export</span>
+                                            </button>
+                                            <input class="d-none" id="import-currencies-input" type="file" name="file" accept=".json"/>
+                                            <button class="btn btn-outline-info btn-lg mx-1 waves-effect" id="import-currencies-button"
+                                                    update-url="{{ url_for('api.set_config_currency') }}">
+                                                <i class="fa fa-cloud-upload-alt"></i> <span class="d-none d-md-inline-block">Import</span>
+                                            </button>
+                                        </div>
+
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <br>
+                        {% if not symbol_list_by_type %}
+                        <div class="alert alert-danger" role="alert">Can't find any symbol suggestion because no
+                            exchange were configured.
+                        </div>
+                        <br>
+                        {% endif %}
+                        {% if "future" in enabled_exchange_types %}
+                        <div class="alert alert-info" role="alert">
+                             <i class="fa-regular fa-lightbulb"></i>
+                            Only futures trading pairs can be traded on futures trading exchanges.
+                            Select pairs for the cryptocurrencies you wish to trade futures on using the trading pairs
+                            drop-down menu.
+                        </div>
+                        {% endif %}
+                        <!-- Card deck -->
+                        <div class="card-deck config-container" update-url="{{ url_for('config') }}">
+                            {% for crypto_currency in config_symbols %}
+                            {{ m_config_currency_card.config_currency_card(config_symbols, crypto_currency,
+                            filter_currency_pairs(crypto_currency, symbol_list_by_type, full_symbol_list, config_symbols),
+                            full_symbol_list, get_currency_id,
+                            symbol=config_symbols[crypto_currency]['pairs'][0].split('/')[0].lower() if
+                            config_symbols[crypto_currency]['pairs'])}}
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <i class="fab fa-octopus-deploy"></i> Pro tip: a pair you want to trade is not in the
+                        selector and your exchange is supporting it ? Just type it in and press enter.
+                        Data provided by <a href="https://www.coingecko.com/" target="_blank">CoinGecko</a>.
+                    </div>
+                </div>
+            </div>
+            <div class="tab-pane fade config-root" id="panelExchanges" role="tabpanel"
+                 aria-labelledby="panelExchanges-tab">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Exchanges
+                            <a class="float-right blue-text" target="_blank" rel="noopener"
+                               href="{{EXCHANGES_DOCS_URL}}">
+                                <i class="fa-solid fa-question"></i>
+                            </a>
+                        </h2>
+                    </div>
+                    <div class="card-body deck-container">
+                        {% if "future" in enabled_exchange_types %}
+                        <div class="alert alert-info" role="alert">
+                             <i class="fa-regular fa-lightbulb"></i>
+                            Select leverage to use in futures trading from your <a href="{{url_for('config_tentacle', name=get_enabled_tentacles(trading_modes))}}">trading mode configuration</a>.
+                        </div>
+                        {% endif %}
+                        <!-- Card deck -->
+                        <div class="card-deck config-container" id="exchange-container" update-url="{{ url_for('api.are_compatible_accounts') }}">
+                            {% for exchange in config_exchanges %}
+                            {{ m_config_exchange_card.config_exchange_card(config_exchanges,
+                            exchange,
+                            exchanges_details[exchange],
+                            is_supporting_future_trading,
+                            enabled=config_exchanges[exchange].get('enabled', True),
+                            sandboxed=config_exchanges[exchange].get('sandboxed', False),
+                            selected_exchange_type=config_exchanges[exchange].get('exchange-type', exchanges_details[exchange]['default_exchange_type']),
+                            full_config=False) }}
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="tab-pane fade config-root" id="panelTrading" role="tabpanel" aria-labelledby="panelTrading-tab">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>
+                            Trading
+                            <span class="float-right badge {{ 'badge-info' if real_trader_activated else 'badge-primary' }} waves-effect">
+                        {{ 'Real trader' if real_trader_activated else 'Simulator' }}
+                    </span>
+                        </h2>
+                    </div>
+                    <div class="card-body deck-container">
+                        <!-- Card deck -->
+                        <div class="card-deck config-container">
+                            {{ m_config_trader_card.config_trader_card(config_trading, "trading", "Trading settings",
+                            link=OCTOBOT_DOCS_URL+"/octobot-configuration/profile-configuration#trading") }}
+                            {{ m_config_trader_card.config_trader_card(config_trader, "trader", "Trader",
+                            link=OCTOBOT_DOCS_URL+"/octobot-usage/simulator#real-trader") }}
+                            {{ m_config_trader_card.config_trader_card(config_trader_simulator, "trader-simulator",
+                            "Trader simulator", link=OCTOBOT_DOCS_URL+"/octobot-usage/simulator?utm_source=octobot&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=simulator_config",
+                            footer_text="Changes in the simulated starting portfolio will reset enabled exchanges simulated portfolio history.") }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% if config_tentacles_by_group or other_tentacles_config %}
+            <div class="tab-pane fade config-root" id="panelTentacles" role="tabpanel"
+                 aria-labelledby="panelTentacles-tab">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="row config-container">
+                            {% for config_tentacle in other_tentacles_config %}
+                            {{ m_config_tentacle_card.config_tentacle_card(config_tentacle["name"], config_tentacle, False) }}
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                <br>
+                {% for group, config_tentacles in config_tentacles_by_group.items() %}
+                <div class="card">
+                    <div class="card-header text-capitalize">
+                        <h2>{{group.replace("_", " ")}}</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="row config-container" id="{{group}}-config-root">
+                            {% for config_tentacle in config_tentacles %}
+                            {{ m_config_tentacle_card.config_tentacle_card(config_tentacle["name"], config_tentacle, True) }}
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                <br>
+                {% endfor %}
+            </div>
+            {% endif %}
+            <div class="tab-pane fade config-root" id="panelAutomations" role="tabpanel"
+                 aria-labelledby="panelTentacles-tab">
+                <div class="card">
+                    <div class="card-header">
+                        <h4>
+                            Automations
+                        </h4>
+
+                    </div>
+                    <div class="card-body text-center">
+                        <div>
+                            Automations are actions that will be triggered automatically when something happens. You can have as many automations as you want.
+                        </div>
+                        <div class="text-center my-5">
+                            <div>
+                                <a type="button" class="btn btn-primary btn-lg"
+                                   href="{{ url_for('automations') }}">
+                                    Configure your profile automations
+                                </a>
+                            </div>
+                            <div>
+                                Your current profile has <strong>{{automations_count}}</strong> automation{{'s' if automations_count > 1 else ''}}.
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+                <br>
+            </div>
+        </div>
+    </main>
+</div>
+<span class="d-none" data-display-intro="{{display_intro}}"></span>
+
+<!-- Modals -->
+{% for trading_mode_name, info in strategy_config["trading-modes"].items() %}
+    {{ m_config_evaluator_card.evaluator_card_modal(trading_mode_name, info, False) }}
+{% endfor %}
+{% for evaluator_name, info in strategy_config["strategies"].items() %}
+    {{ m_config_evaluator_card.evaluator_card_modal(evaluator_name, info, True) }}
+{% endfor %}
+{% for evaluator_type_items in ['ta', 'social', 'real-time'] %}
+    {% for evaluator_name, info in evaluator_config[evaluator_type_items].items() %}
+        {{ m_config_evaluator_card.evaluator_card_modal(evaluator_name, info, True) }}
+    {% endfor %}
+{% endfor %}
+{{ m_config_profile_tab.profile_import_modal() }}
+<!-- Default cards -->
+<div class="d-none">
+    <!-- Currencies -->
+    <div id="AddCurrency-template-default">
+        {{ m_config_currency_card.config_currency_card( config_symbols={config_default_value: {"enabled": true, "pairs":
+        [] } },
+        crypto_currency=config_default_value,
+        symbol_list_by_type=symbol_list_by_type,
+        full_symbol_list=full_symbol_list,
+        get_currency_id=get_currency_id,
+        add_class=added_class,
+        no_select=True,
+        additional_classes="default",
+        symbol= config_default_symbol ) }}
+    </div>
+</div>
+<br>
+{% endblock %}
+
+{% block additional_scripts %}
+<script src="{{ url_for('static', filename='js/common/resources_rendering.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+<script src="{{ url_for('static', filename='js/common/exchange_accounts.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+<script src="{{ url_for('static', filename='js/components/configuration.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+<script src="{{ url_for('static', filename='js/components/profile_management.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+{% endblock additional_scripts %}

@@ -1,0 +1,8 @@
+{% macro critical_notifications_alert(critical_notifications, maxDisplayed=5) %}
+    {% for notification in critical_notifications[0:maxDisplayed] %}
+        <div class="alert alert-danger" role="alert">
+            <h4 class="alert-title">{{ notification["Title"] }}</h4>
+            <div>{{ notification["Message"] }}</div>
+        </div>
+    {% endfor %}
+{% endmacro %}

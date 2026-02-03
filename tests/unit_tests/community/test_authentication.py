@@ -196,7 +196,7 @@ async def test_fetch_bot_profile_data_without_tentacles_options(auth):
         )
         executed_product_details = community.ExecutedProductDetails(
             product_id="product_id_123",
-            started_at=1723659202.0, # not nested config: use bot created_at (2024-08-14T22:13:22.1111+04:00)
+            started_at=1723659202.1111, # not nested config: use bot created_at (2024-08-14T22:13:22.1111+04:00)
         )
         assert await auth.supabase_client.fetch_bot_profile_data("bot_id", {"mexc": "USDC"}) == (
             parsed_data, executed_product_details
@@ -292,7 +292,7 @@ async def test_fetch_bot_profile_data_with_tentacles_options(auth):
         )
         executed_product_details = community.ExecutedProductDetails(
             product_id="product_id_123",
-            started_at=1723644802.0, # not nested config: use bot created_at (2024-08-14T22:13:22.1111+08:00)
+            started_at=1723644802.1111, # not nested config: use bot created_at (2024-08-14T22:13:22.1111+08:00)
         )
         assert await auth.supabase_client.fetch_bot_profile_data("bot_id", {}) == (
             parsed_data, executed_product_details

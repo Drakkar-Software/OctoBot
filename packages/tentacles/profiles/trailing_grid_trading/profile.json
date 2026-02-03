@@ -1,0 +1,45 @@
+{
+    "config": {
+        "crypto-currencies": {
+            "Bitcoin": {
+                "enabled": true,
+                "pairs": [
+                    "BTC/USDT"
+                ]
+            }
+        },
+        "exchanges": {
+            "binance": {
+                "enabled": true
+            }
+        },
+        "trader": {
+            "enabled": false,
+            "load-trade-history": false
+        },
+        "trader-simulator": {
+            "enabled": true,
+            "fees": {
+                "maker": 0.1,
+                "taker": 0.1
+            },
+            "starting-portfolio": {
+                "BTC": 10,
+                "USDT": 1000
+            }
+        },
+        "trading": {
+            "reference-market": "USDT",
+            "risk": 0.5
+        }
+    },
+    "profile": {
+        "avatar": "default_profile.png",
+        "risk": 1,
+        "complexity": 1,
+        "description": "Trailing Grid Trading is a profile similar to the Grid Trading profile, except that it will create a trailing grid. When the BTC price will rise beyond the initial grid sell orders, the grid will automatically adapt to trade according to the updated price.",
+        "id": "trailing_grid_trading",
+        "name": "Trailing Grid Trading",
+        "read_only": true
+    }
+}

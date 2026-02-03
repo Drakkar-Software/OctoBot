@@ -22,7 +22,6 @@ import sentry_sdk
 import sentry_sdk.consts
 import sentry_sdk.utils
 import sentry_sdk.envelope
-import sentry_sdk.transport
 import sentry_sdk.types
 
 
@@ -146,7 +145,7 @@ class SentryAiohttpTransport(sentry_sdk.HttpTransport):
         return None
 
     def capture_event(
-        self, event  # type: sentry_sdk.types.Event
+        self, event: sentry_sdk.types.Event
     ) -> None:
         """
         DEPRECATED: Please use capture_envelope instead.
@@ -171,6 +170,8 @@ class SentryAiohttpTransport(sentry_sdk.HttpTransport):
         await self._worker.async_kill()
 
 class AiohttpWorker:
+    # do not inherit from sentry_sdk.worker.BackgroundWorker to avoid implementing all its methods
+    # only implement required methods
     def __init__(self, queue_size=sentry_sdk.consts.DEFAULT_QUEUE_SIZE):
         self.session = None
         self.call_tasks = []
