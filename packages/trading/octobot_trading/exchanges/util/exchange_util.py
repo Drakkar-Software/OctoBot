@@ -138,7 +138,7 @@ async def get_exchange_details(
             False,
         )
     except AttributeError as err:
-        raise KeyError from err
+        raise KeyError(err) from err
 
 
 def _is_exchange_candidate_matching(
