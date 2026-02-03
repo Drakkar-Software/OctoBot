@@ -41,11 +41,8 @@ jobs:
       matrix:
         # os: [ macos-13, windows-latest, ubuntu-latest ] # todo restore macos to latest once python major is updated
         os: [macos-latest, windows-latest, ubuntu-latest]
-        arch: [ x64 ]
-        # arch: [ x64, arm64 ]
+        arch: [ x64, arm64 ]
         exclude:
-          - os: macos-latest
-            arch: arm64
           - os: windows-latest
             arch: arm64
 
