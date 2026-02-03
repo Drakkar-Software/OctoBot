@@ -9,7 +9,41 @@ on:
   pull_request:
 
 jobs:
+  build:
+    name: ${{ matrix.os }}${{ matrix.arch }} - Python ${{ matrix.version }} - Build wheel
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest ]
+        arch: [ x64 ]
+        version: [ "3.13.x" ]
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.version }}
+          architecture: ${{ matrix.arch }}
+
+      - name: Install Pants
+        uses: pantsbuild/actions/init-pants@v10
+        with:
+          gha-cache-key: ${{ runner.os }}-pants-${{ matrix.package }}
+          named-caches-hash: ${{ hashFiles('pants.toml') }}
+
+      - name: Build wheel
+        run: pants package :OctoBot
+
+      - name: Upload wheel artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: octobot-wheel
+          path: dist/octobot-*.whl
+          if-no-files-found: error
+
   tests:
+    needs: [ build ]
     name: ${{ matrix.os }}${{ matrix.arch }} - Python ${{ matrix.version }} - ${{ matrix.package }}
     runs-on: ${{ matrix.os }}
     strategy:
@@ -30,7 +64,7 @@ jobs:
           - packages/trading_backend
 
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
 
     - name: Set up Python ${{ matrix.version }}
       uses: actions/setup-python@v6
@@ -38,15 +72,14 @@ jobs:
         python-version: ${{ matrix.version }}
         architecture: ${{ matrix.arch }}
 
-    - name: Install Pants
-      uses: pantsbuild/actions/init-pants@v10
+    - name: Download build wheel artifact
+      uses: actions/download-artifact@v4
       with:
-        gha-cache-key: ${{ runner.os }}-pants-${{ matrix.package }}
-        named-caches-hash: ${{ hashFiles('pants.toml') }}
+        name: octobot-wheel
+        path: dist/
 
     - name: Install OctoBot
       run: |
-        pants package :OctoBot
         pip3 install -r dev_requirements.txt
         pip3 install dist/octobot-*.whl
 
@@ -81,7 +114,7 @@ jobs:
 
   docker:
     name: Build & Push Docker images
-    needs: [ tests ]
+    needs: [ build, tests ]
     if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/dev' || startsWith(github.ref, 'refs/tags/')
     runs-on: ${{ matrix.os }}
     strategy:
@@ -89,9 +122,7 @@ jobs:
         os: [ ubuntu-latest ]
 
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      - uses: actions/checkout@v6
 
       - name: Run hadolint
         uses: reviewdog/action-hadolint@v1
@@ -151,14 +182,14 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Install Pants
-        uses: pantsbuild/actions/init-pants@v10
+      - name: Download build wheel artifact
+        uses: actions/download-artifact@v4
         with:
-          named-caches-hash: ${{ hashFiles('pants.toml', '**/*.lock') }}
+          name: octobot-wheel
+          path: dist/
 
       - name: Install OctoBot & tentacles
         run: |
-          pants package :OctoBot
           pip3 install -r dev_requirements.txt
           pip3 install dist/octobot-*.whl
           mkdir -p output
@@ -247,7 +278,7 @@ jobs:
           cache-to: type=local,dest=/tmp/.buildx-cache
   
   tentacles:
-    needs: [ tests ]
+    needs: [ build, tests ]
     if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/dev' || startsWith(github.ref, 'refs/tags/')
     name: ${{ matrix.os }}${{ matrix.arch }} - Python ${{ matrix.version }} - Upload Tentacles
     runs-on: ${{ matrix.os }}
@@ -258,7 +289,7 @@ jobs:
         version: [ "3.13.x" ]
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Set Environment Variables
         run: |
@@ -277,15 +308,14 @@ jobs:
           python-version: ${{ matrix.version }}
           architecture: ${{ matrix.arch }}
 
-      - name: Install Pants
-        uses: pantsbuild/actions/init-pants@v10
+      - name: Download build wheel artifact
+        uses: actions/download-artifact@v4
         with:
-          gha-cache-key: ${{ runner.os }}-pants-tentacles
-          named-caches-hash: ${{ hashFiles('pants.toml') }}
+          name: octobot-wheel
+          path: dist/
 
       - name: Install OctoBot
         run: |
-          pants package :OctoBot
           pip3 install -r dev_requirements.txt
           pip3 install dist/octobot-*.whl
 
@@ -325,7 +355,7 @@ jobs:
           python packages/tentacles/scripts/clear_cloudflare_cache.py stable
 
   version:
-    needs: [ tests ]
+    needs: [ build, tests ]
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
     name: Source distribution - Python ${{ matrix.version }} - Deploy
     runs-on: ${{ matrix.os }}
@@ -336,7 +366,7 @@ jobs:
         version: [ "3.13.x" ]
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Set up Python ${{ matrix.version }}
         uses: actions/setup-python@v6
@@ -359,8 +389,8 @@ jobs:
           python -m twine upload --repository-url ${{ secrets.PYPI_OFFICIAL_UPLOAD_URL }} -u __token__ -p ${{ secrets.PYPI_TOKEN }} --skip-existing dist/*
 
   binary:
-    needs: [ tests ]
-    name: ${{ matrix.os }} - ${{ matrix.arch }} - Python 3.13 - build
+    needs: [ build, tests ]
+    name: ${{ matrix.os }} - ${{ matrix.arch }} - binary
     if: github.event_name == 'push' || startsWith(github.ref, 'refs/tags')
     runs-on: ${{ matrix.os }}
     strategy:
@@ -375,9 +405,9 @@ jobs:
             arch: arm64
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v6
 
-    - name: Set up Python 3.13
+    - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.13.x'
@@ -571,6 +601,7 @@ jobs:
   notify:
     if: ${{ failure() }}
     needs:
+      - build
       - tests
       - docker
       - binary
