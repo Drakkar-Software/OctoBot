@@ -57,7 +57,7 @@ async def test_fetch_and_extract_tentacles_using_download_without_session():
 
 async def test_fetch_and_extract_tentacles_using_local_file():
     _cleanup()
-    await tentacles_manager_util.fetch_and_extract_tentacles(temp_dir, path.join("packages", "tentacles_manager", "tests", "static", "tentacles.zip"), None)
+    await tentacles_manager_util.fetch_and_extract_tentacles(temp_dir, path.join("tests", "static", "tentacles.zip"), None)
     _test_temp_tentacles()
     _cleanup()
 

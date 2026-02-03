@@ -37,19 +37,19 @@ pytestmark = pytest.mark.asyncio
 
 async def test_uninstall_two_tentacles(clean):
     _enable_loggers()
-    tentacles_path = os.path.join("packages", "tentacles_manager", "tests", "static", "tentacles.zip")
+    tentacles_path = os.path.join("tests", "static", "tentacles.zip")
     await fetch_and_extract_tentacles(TEMP_DIR, tentacles_path, None)
     install_worker = InstallWorker(TEMP_DIR, TENTACLES_PATH, DEFAULT_BOT_PATH, False, None)
     install_worker.tentacles_path_or_url = tentacles_path
     install_worker.tentacles_setup_manager.default_tentacle_config \
-        = os.path.join("packages", "tentacles_manager", "tests", "static", "default_tentacle_config.json")
+        = os.path.join("tests", "static", "default_tentacle_config.json")
     assert await install_worker.process() == 0
     tentacles_files_count_after_install = sum(1 for _ in os.walk(TENTACLES_PATH))
     assert tentacles_files_count_after_install > 62
 
     uninstall_worker = UninstallWorker(None, TENTACLES_PATH, DEFAULT_BOT_PATH, False, None)
     uninstall_worker.tentacles_setup_manager.default_tentacle_config = \
-        os.path.join("packages", "tentacles_manager", "tests", "static", "default_tentacle_config.json")
+        os.path.join("tests", "static", "default_tentacle_config.json")
     assert await uninstall_worker.process(["instant_fluctuations_evaluator", "generic_exchange_importer"]) == 0
     tentacles_files_count_after_uninstall = sum(1 for _ in os.walk(TENTACLES_PATH))
     # After uninstalling 2 tentacles, there should be fewer directories than after full install
@@ -86,12 +86,12 @@ async def test_uninstall_two_tentacles(clean):
 
 async def test_profiles_update(clean, fake_profiles):
     _enable_loggers()
-    tentacles_path = os.path.join("packages", "tentacles_manager", "tests", "static", "tentacles.zip")
+    tentacles_path = os.path.join("tests", "static", "tentacles.zip")
     await fetch_and_extract_tentacles(TEMP_DIR, tentacles_path, None)
     install_worker = InstallWorker(TEMP_DIR, TENTACLES_PATH, DEFAULT_BOT_PATH, False, None)
     install_worker.tentacles_path_or_url = tentacles_path
     install_worker.tentacles_setup_manager.default_tentacle_config \
-        = os.path.join("packages", "tentacles_manager", "tests", "static", "default_tentacle_config.json")
+        = os.path.join("tests", "static", "default_tentacle_config.json")
     assert await install_worker.process() == 0
     tentacles_files_count = sum(1 for _ in os.walk(TENTACLES_PATH))
     assert tentacles_files_count > 60
@@ -106,7 +106,7 @@ async def test_profiles_update(clean, fake_profiles):
 
     uninstall_worker = UninstallWorker(None, TENTACLES_PATH, DEFAULT_BOT_PATH, False, None)
     uninstall_worker.tentacles_setup_manager.default_tentacle_config = \
-        os.path.join("packages", "tentacles_manager", "tests", "static", "default_tentacle_config.json")
+        os.path.join("tests", "static", "default_tentacle_config.json")
     # uninstall 2 tentacles
     assert await uninstall_worker.process(["instant_fluctuations_evaluator", "generic_exchange_importer"]) == 0
 
@@ -127,19 +127,19 @@ async def test_profiles_update(clean, fake_profiles):
 
 async def test_uninstall_all_tentacles(clean):
     _enable_loggers()
-    tentacles_path = os.path.join("packages", "tentacles_manager", "tests", "static", "tentacles.zip")
+    tentacles_path = os.path.join("tests", "static", "tentacles.zip")
     await fetch_and_extract_tentacles(TEMP_DIR, tentacles_path, None)
     install_worker = InstallWorker(TEMP_DIR, TENTACLES_PATH, DEFAULT_BOT_PATH, False, None)
     install_worker.tentacles_path_or_url = tentacles_path
     install_worker.tentacles_setup_manager.default_tentacle_config = \
-        os.path.join("packages", "tentacles_manager", "tests", "static", "default_tentacle_config.json")
+        os.path.join("tests", "static", "default_tentacle_config.json")
     assert await install_worker.process() == 0
     tentacles_files_count = sum(1 for _ in os.walk(TENTACLES_PATH))
     assert tentacles_files_count > 60
 
     uninstall_worker = UninstallWorker(None, TENTACLES_PATH, DEFAULT_BOT_PATH, False, None)
     uninstall_worker.tentacles_setup_manager.default_tentacle_config = \
-        os.path.join("packages", "tentacles_manager", "tests", "static", "default_tentacle_config.json")
+        os.path.join("tests", "static", "default_tentacle_config.json")
     assert await uninstall_worker.process() == 0
     tentacles_files_count = sum(1 for _ in os.walk(TENTACLES_PATH))
     assert tentacles_files_count == CLEAN_TENTACLES_ARCHITECTURE_FILES_FOLDERS_COUNT

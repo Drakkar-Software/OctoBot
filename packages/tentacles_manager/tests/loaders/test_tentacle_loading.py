@@ -57,7 +57,7 @@ async def test_with_reload_tentacle_by_tentacle_class_installed_tentacles():
 
 
 def _tentacles_local_path():
-    return path.join("packages", "tentacles_manager", "tests", "static", "tentacles.zip")
+    return path.join("tests", "static", "tentacles.zip")
 
 
 def _cleanup():

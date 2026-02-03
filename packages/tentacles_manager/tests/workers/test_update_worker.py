@@ -38,19 +38,19 @@ pytestmark = pytest.mark.asyncio
 
 async def test_update_two_tentacles(clean):
     _enable_loggers()
-    await fetch_and_extract_tentacles(TEMP_DIR, path.join("packages", "tentacles_manager", "tests", "static", "tentacles.zip"), None)
+    await fetch_and_extract_tentacles(TEMP_DIR, path.join("tests", "static", "tentacles.zip"), None)
     install_worker = InstallWorker(TEMP_DIR, TENTACLES_PATH, DEFAULT_BOT_PATH, False, None)
     install_worker.tentacles_setup_manager.default_tentacle_config = \
-        path.join("packages", "tentacles_manager", "tests", "static", "default_tentacle_config.json")
+        path.join("tests", "static", "default_tentacle_config.json")
     await install_worker.process(["instant_fluctuations_evaluator",
                                   "generic_exchange_importer",
                                   "text_analysis"])
     rmtree(TEMP_DIR)
 
-    await fetch_and_extract_tentacles(TEMP_DIR, path.join("packages", "tentacles_manager", "tests", "static", "update_tentacles.zip"), None)
+    await fetch_and_extract_tentacles(TEMP_DIR, path.join("tests", "static", "update_tentacles.zip"), None)
     update_worker = UpdateWorker(TEMP_DIR, TENTACLES_PATH, DEFAULT_BOT_PATH, False, None)
     update_worker.tentacles_setup_manager.default_tentacle_config = \
-        path.join("packages", "tentacles_manager", "tests", "static", "default_tentacle_config.json")
+        path.join("tests", "static", "default_tentacle_config.json")
     assert await update_worker.process(["instant_fluctuations_evaluator", "generic_exchange_importer"]) == 0
 
     # test installed files
@@ -99,16 +99,16 @@ async def test_update_two_tentacles(clean):
 
 async def test_update_all_tentacles(clean):
     _enable_loggers()
-    await fetch_and_extract_tentacles(TEMP_DIR, path.join("packages", "tentacles_manager", "tests", "static", "tentacles.zip"), None)
+    await fetch_and_extract_tentacles(TEMP_DIR, path.join("tests", "static", "tentacles.zip"), None)
     install_worker = InstallWorker(TEMP_DIR, TENTACLES_PATH, DEFAULT_BOT_PATH, False, None)
     install_worker.tentacles_setup_manager.default_tentacle_config = \
-        path.join("packages", "tentacles_manager", "tests", "static", "default_tentacle_config.json")
+        path.join("tests", "static", "default_tentacle_config.json")
     await install_worker.process()
     rmtree(TEMP_DIR)
-    await fetch_and_extract_tentacles(TEMP_DIR, path.join("packages", "tentacles_manager", "tests", "static", "update_tentacles.zip"), None)
+    await fetch_and_extract_tentacles(TEMP_DIR, path.join("tests", "static", "update_tentacles.zip"), None)
     update_worker = UpdateWorker(TEMP_DIR, TENTACLES_PATH, DEFAULT_BOT_PATH, False, None)
     update_worker.tentacles_setup_manager.default_tentacle_config = \
-        path.join("packages", "tentacles_manager", "tests", "static", "default_tentacle_config.json")
+        path.join("tests", "static", "default_tentacle_config.json")
     assert await update_worker.process() == 0
 
     # check updated versions

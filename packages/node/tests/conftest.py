@@ -10,5 +10,5 @@ PACKAGE_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 def pytest_configure(config):
-    """Change working directory to package root before any tests run."""
+    """Change working directory to package root before any tests run, required to import tentacles."""
     os.chdir(PACKAGE_ROOT)
