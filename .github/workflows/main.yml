@@ -65,10 +65,10 @@ jobs:
 
     - name: Build OctoBot Binary on Linux arm64
       if: matrix.os == 'ubuntu-latest' && matrix.arch == 'arm64'
-      uses: uraimo/run-on-arch-action@v2.8.1
+      uses: uraimo/run-on-arch-action@v3.0.1
       with:
         arch: aarch64
-        distro: ubuntu22.04
+        distro: ubuntu24.04
         githubToken: ${{ github.token }}
         dockerRunArgs: |
           --volume "${PWD}/dist:/dist"
