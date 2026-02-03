@@ -402,11 +402,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        # os: [ macos-13, windows-latest, ubuntu-latest ] # todo restore macos to latest once python major is updated
-        os: [windows-latest, ubuntu-latest ]
+        os: [macos-latest, windows-latest, ubuntu-latest]
         arch: [ x64, arm64 ]
         exclude:
-          - os: macos-13
+          - os: ubuntu-latest  # todo fix ubuntu arm64 build
             arch: arm64
           - os: windows-latest
             arch: arm64
@@ -414,7 +413,13 @@ jobs:
     steps:
     - uses: actions/checkout@v6
 
-    - name: Set up Python
+    - name: Download wheel artifact
+      uses: actions/download-artifact@v7
+      with:
+        name: octobot-wheel
+        path: dist/
+
+    - name: Set up Python 3.13
       uses: actions/setup-python@v6
       with:
         python-version: '3.13.x'
@@ -422,22 +427,23 @@ jobs:
 
     - name: Build OctoBot Binary on Linux arm64
       if: matrix.os == 'ubuntu-latest' && matrix.arch == 'arm64'
-      uses: uraimo/run-on-arch-action@v2.8.1
+      uses: uraimo/run-on-arch-action@v3.0.1
       with:
         arch: aarch64
-        distro: ubuntu22.04
+        distro: ubuntu24.04
         githubToken: ${{ github.token }}
+        dockerRunArgs: |
+          --volume "${PWD}/dist:/dist"
         env: |
           OCTOBOT_REPOSITORY_DIR: OctoBot
           NLTK_DATA: nltk_data
           BUILD_ARCH: ${{ matrix.arch }}
-        run: |
+        run: |  # todo fix ubuntu arm64 build
           apt-get update
           apt-get install -y --no-install-recommends python3.13 python3-pip python3-dev git gcc musl-dev libc-dev build-essential zlib1g zlib1g-dev
-          curl --proto '=https' --tlsv1.2 -fsSL https://static.pantsbuild.org/setup/get-pants.sh | bash
           python3 -m pip install -U pip setuptools wheel
-          pants package :OctoBot
-          pip3 install dist/octobot-*.whl
+          python3 -m pip install -r packages/binary/requirements.txt
+          pip3 install /dist/octobot-*.whl
           bash ./packages/binary/build_scripts/unix.sh
 
     - name: Build OctoBot Binary on Linux
@@ -447,22 +453,20 @@ jobs:
         NLTK_DATA: nltk_data
         BUILD_ARCH: ${{ matrix.arch }}
       run: |
-        curl --proto '=https' --tlsv1.2 -fsSL https://static.pantsbuild.org/setup/get-pants.sh | bash
         python3 -m pip install -U pip setuptools wheel
-        pants package :OctoBot
+        python3 -m pip install -r packages/binary/requirements.txt
         pip3 install dist/octobot-*.whl
         bash ./packages/binary/build_scripts/unix.sh
 
     - name: Build OctoBot Binary on MacOS
-      if: matrix.os == 'macos-13'
+      if: matrix.os == 'macos-latest'
       env:
         OCTOBOT_REPOSITORY_DIR: OctoBot
         NLTK_DATA: nltk_data
         BUILD_ARCH: ${{ matrix.arch }}
       run: |
-        curl --proto '=https' --tlsv1.2 -fsSL https://static.pantsbuild.org/setup/get-pants.sh | bash
         python3 -m pip install -U pip setuptools wheel
-        pants package :OctoBot
+        python3 -m pip install -r packages/binary/requirements.txt
         pip3 install dist/octobot-*.whl
         bash ./packages/binary/build_scripts/unix.sh
 
@@ -472,19 +476,18 @@ jobs:
         OCTOBOT_REPOSITORY_DIR: OctoBot
         NLTK_DATA: nltk_data
       run: |
-        curl --proto '=https' --tlsv1.2 -fsSL https://static.pantsbuild.org/setup/get-pants.sh | bash
         python -m pip install -U pip setuptools wheel
-        pants package :OctoBot
-        python -m pip install dist/octobot-*.whl
+        python -m pip install -r packages\binary\requirements.txt
+        python -m pip install (Get-Item dist/octobot-*.whl).FullName
         .\packages\binary\build_scripts\windows.ps1
       shell: powershell
 
     - name: Upload OctoBot Binary on MacOS
       uses: actions/upload-artifact@v6
-      if: matrix.os == 'macos-13'
+      if: matrix.os == 'macos-latest'
       with:
         name: OctoBot_macos_${{ matrix.arch }}
-        path: OctoBot/OctoBot_${{ matrix.arch }}
+        path: OctoBot_${{ matrix.arch }}
         if-no-files-found: error
 
     - name: Upload OctoBot Binary on Linux
@@ -492,7 +495,7 @@ jobs:
       if: matrix.os == 'ubuntu-latest'
       with:
         name: OctoBot_linux_${{ matrix.arch }}
-        path: OctoBot/OctoBot_${{ matrix.arch }}
+        path: OctoBot_${{ matrix.arch }}
         if-no-files-found: error
 
     - name: Upload OctoBot Binary on Windows
@@ -500,7 +503,7 @@ jobs:
       if: matrix.os == 'windows-latest'
       with:
         name: OctoBot_windows_${{ matrix.arch }}.exe
-        path: OctoBot/dist/OctoBot_windows.exe
+        path: OctoBot_windows.exe
         if-no-files-found: error
 
   release:
@@ -528,14 +531,10 @@ jobs:
 
       - name: Compute hashes
         id: hashes
-        # run: |
-        #   echo ::set-output name=octobot_linux_x64_hash::$(openssl sha256 ./OctoBot_linux_x64 | awk '{print $2}')
-        #   echo ::set-output name=octobot_linux_arm64_hash::$(openssl sha256 ./OctoBot_linux_arm64 | awk '{print $2}')
-        #   echo ::set-output name=octobot_macos_x64_hash::$(openssl sha256 ./OctoBot_macos_x64 | awk '{print $2}')
-        #   echo ::set-output name=octobot_windows_x64_hash::$(openssl sha256 ./OctoBot_windows_x64.exe | awk '{print $2}')
-        run: |
+        run: | # todo add linux arm64 hash
           echo ::set-output name=octobot_linux_x64_hash::$(openssl sha256 ./OctoBot_linux_x64 | awk '{print $2}')
-          echo ::set-output name=octobot_linux_arm64_hash::$(openssl sha256 ./OctoBot_linux_arm64 | awk '{print $2}')
+          echo ::set-output name=octobot_macos_x64_hash::$(openssl sha256 ./OctoBot_macos_x64 | awk '{print $2}')
+          echo ::set-output name=octobot_macos_arm64_hash::$(openssl sha256 ./OctoBot_macos_arm64 | awk '{print $2}')
           echo ::set-output name=octobot_windows_x64_hash::$(openssl sha256 ./OctoBot_windows_x64.exe | awk '{print $2}')
 
       - name: Create Release
@@ -551,19 +550,13 @@ jobs:
           draft: true
           prerelease: false
           commitish: master
-          # body: |
-          #   | Binary        | Download link | SHA256        |
-          #   | ------------- |:-------------:|:-------------:|
-          #   | Windows x64 | [Download](https://github.com/${{ github.repository_owner }}/OctoBot/releases/download/${{ steps.vars.outputs.tag }}/OctoBot_windows_x64.exe) | ${{ steps.hashes.outputs.octobot_windows_x64_hash }} |
-          #   | Linux x64 | [Download](https://github.com/${{ github.repository_owner }}/OctoBot/releases/download/${{ steps.vars.outputs.tag }}/OctoBot_linux_x64) | ${{ steps.hashes.outputs.octobot_linux_x64_hash }} |
-          #   | Linux arm64 | [Download](https://github.com/${{ github.repository_owner }}/OctoBot/releases/download/${{ steps.vars.outputs.tag }}/OctoBot_linux_arm64) | ${{ steps.hashes.outputs.octobot_linux_arm64_hash }} |
-          #   | MacOS x64 | [Download](https://github.com/${{ github.repository_owner }}/OctoBot/releases/download/${{ steps.vars.outputs.tag }}/OctoBot_macos_x64) | ${{ steps.hashes.outputs.octobot_macos_x64_hash }} |
-          body: |
+          body: | # todo add linux arm64 hash
             | Binary        | Download link | SHA256        |
             | ------------- |:-------------:|:-------------:|
             | Windows x64 | [Download](https://github.com/${{ github.repository_owner }}/OctoBot/releases/download/${{ steps.vars.outputs.tag }}/OctoBot_windows_x64.exe) | ${{ steps.hashes.outputs.octobot_windows_x64_hash }} |
             | Linux x64 | [Download](https://github.com/${{ github.repository_owner }}/OctoBot/releases/download/${{ steps.vars.outputs.tag }}/OctoBot_linux_x64) | ${{ steps.hashes.outputs.octobot_linux_x64_hash }} |
-            | Linux arm64 | [Download](https://github.com/${{ github.repository_owner }}/OctoBot/releases/download/${{ steps.vars.outputs.tag }}/OctoBot_linux_arm64) | ${{ steps.hashes.outputs.octobot_linux_arm64_hash }} |
+            | MacOS x64 | [Download](https://github.com/${{ github.repository_owner }}/OctoBot/releases/download/${{ steps.vars.outputs.tag }}/OctoBot_macos_x64) | ${{ steps.hashes.outputs.octobot_macos_x64_hash }} |
+            | MacOS arm64 | [Download](https://github.com/${{ github.repository_owner }}/OctoBot/releases/download/${{ steps.vars.outputs.tag }}/OctoBot_macos_arm64) | ${{ steps.hashes.outputs.octobot_macos_arm64_hash }} |
 
       - name: Upload Release Asset - OctoBot_windows_x64
         uses: actions/upload-release-asset@v1
@@ -585,25 +578,35 @@ jobs:
           asset_name: OctoBot_linux_x64
           asset_content_type: application/x-binary
 
-      - name: Upload Release Asset - OctoBot_linux_arm64
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.AUTH_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./OctoBot_linux_arm64
-          asset_name: OctoBot_linux_arm64
-          asset_content_type: application/x-binary
-
-      # - name: Upload Release Asset - OctoBot_macos_x64
+      # - name: Upload Release Asset - OctoBot_linux_arm64
       #   uses: actions/upload-release-asset@v1
       #   env:
       #     GITHUB_TOKEN: ${{ secrets.AUTH_TOKEN }}
       #   with:
       #     upload_url: ${{ steps.create_release.outputs.upload_url }}
-      #     asset_path: ./OctoBot_macos_x64
-      #     asset_name: OctoBot_macos_x64
+      #     asset_path: ./OctoBot_linux_arm64
+      #     asset_name: OctoBot_linux_arm64
       #     asset_content_type: application/x-binary
+
+      - name: Upload Release Asset - OctoBot_macos_x64
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.AUTH_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./OctoBot_macos_x64
+          asset_name: OctoBot_macos_x64
+          asset_content_type: application/x-binary
+
+      - name: Upload Release Asset - OctoBot_macos_arm64
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.AUTH_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./OctoBot_macos_arm64
+          asset_name: OctoBot_macos_arm64
+          asset_content_type: application/x-binary
 
   notify:
     if: ${{ failure() }}
