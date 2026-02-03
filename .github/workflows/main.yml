@@ -56,7 +56,7 @@ jobs:
           pylint --rcfile=${{ matrix.package }}/standard.rc ${{ matrix.package }}
           if [ $? -ne 1 ]; then exit 0; fi
         else
-          pylint ${{ matrix.package }}
+          pylint --rcfile=standard.rc ${{ matrix.package }}
           if [ $? -ne 1 ]; then exit 0; fi
         fi
 

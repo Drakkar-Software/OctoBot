@@ -8,11 +8,6 @@ files(
     sources=["tests/static/**/*"],
 )
 
-python_source(
-    name="test_conftest",
-    source="tests/conftest.py",
-)
-
 python_sources(
     name="test_support_files",
     sources=["tests/**/*.py", "!tests/**/test_*.py", "!tests/conftest.py"],
@@ -27,7 +22,6 @@ python_tests(
         ":full_reqs",
         "//:dev_reqs",
         ":test_data",
-        ":test_conftest",
         ":test_support_files",
         "packages/commons:octobot_commons",
         "packages/commons:reqs",

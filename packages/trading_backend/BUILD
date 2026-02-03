@@ -2,11 +2,6 @@ python_requirements(name="reqs")
 
 python_sources(name="trading_backend", sources=["trading_backend/**/*.py"])
 
-python_source(
-    name="test_conftest",
-    source="tests/conftest.py",
-)
-
 python_sources(
     name="test_util",
     sources=["tests/**/*.py", "!tests/test_*.py", "!tests/conftest.py"],
@@ -19,7 +14,6 @@ python_tests(
         ":trading_backend",
         ":reqs",
         "//:dev_reqs",
-        ":test_conftest",
         ":test_util",
         "packages/commons:octobot_commons",
         "packages/commons:reqs",

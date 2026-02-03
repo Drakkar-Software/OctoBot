@@ -56,11 +56,6 @@ PACKAGE_FULL_REQS = [
 ]
 
 # Tests
-python_source(
-    name="test_conftest",
-    source="tests/conftest.py",
-)
-
 files(
     name="test_data",
     sources=["tests/static/**/*"],
@@ -100,7 +95,6 @@ python_tests(
         ":reqs",
         ":full_reqs",
         ":dev_reqs",
-        ":test_conftest",
         ":test_data",
         ":tentacles_test_data",
         ":test_utils",

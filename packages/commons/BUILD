@@ -8,11 +8,6 @@ files(
     sources=["tests/static/**/*"],
 )
 
-python_source(
-    name="test_conftest",
-    source="tests/conftest.py",
-)
-
 python_test_utils(
     name="test_profiles_utils",
     sources=["tests/profiles/__init__.py"],
@@ -21,5 +16,5 @@ python_test_utils(
 python_tests(
     name="tests",
     sources=["tests/**/test_*.py", "tests/profiles/**", "!tests/profiles/__init__.py"],
-    dependencies=[":octobot_commons", ":reqs", ":full_reqs", "//:dev_reqs", ":test_data", ":test_conftest", ":test_profiles_utils"],
+    dependencies=[":octobot_commons", ":reqs", ":full_reqs", "//:dev_reqs", ":test_data", ":test_profiles_utils"],
 )
