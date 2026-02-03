@@ -291,17 +291,6 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Set Environment Variables
-        run: |
-          echo "S3_API_KEY=${{ secrets.S3_API_KEY }}" >> $GITHUB_ENV
-          echo "S3_API_SECRET_KEY=${{ secrets.S3_API_SECRET_KEY }}" >> $GITHUB_ENV
-          echo "S3_REGION_NAME=${{ secrets.S3_REGION_NAME }}" >> $GITHUB_ENV
-          echo "S3_ENDPOINT_URL=${{ secrets.S3_ENDPOINT_URL }}" >> $GITHUB_ENV
-          echo "CLOUDFLARE_TOKEN=${{ secrets.CLOUDFLARE_TOKEN }}" >> $GITHUB_ENV
-          echo "CLOUDFLARE_ZONE=${{ secrets.CLOUDFLARE_ZONE }}" >> $GITHUB_ENV
-          TARGET_BRANCH=$([ "$GITHUB_HEAD_REF" == "" ] && echo ${GITHUB_REF##*/} || echo "$GITHUB_HEAD_REF")
-          echo "TARGET_BRANCH=${TARGET_BRANCH}" >> $GITHUB_ENV
-
       - name: Set up Python ${{ matrix.version }}
         uses: actions/setup-python@v6
         with:
@@ -327,6 +316,12 @@ jobs:
       - name: Publish tag tentacles
         if: startsWith(github.ref, 'refs/tags')
         env:
+          S3_API_KEY: ${{ secrets.S3_API_KEY }}
+          S3_API_SECRET_KEY: ${{ secrets.S3_API_SECRET_KEY }}
+          S3_REGION_NAME: ${{ secrets.S3_REGION_NAME }}
+          S3_ENDPOINT_URL: ${{ secrets.S3_ENDPOINT_URL }}
+          CLOUDFLARE_TOKEN: ${{ secrets.CLOUDFLARE_TOKEN }}
+          CLOUDFLARE_ZONE: ${{ secrets.CLOUDFLARE_ZONE }}
           S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
         run: |
           cp packages/tentacles/metadata.yaml ../metadata.yaml
@@ -337,6 +332,12 @@ jobs:
       - name: Publish latest tentacles
         if: github.ref == 'refs/heads/dev' && startsWith(github.ref, 'refs/tags') != true
         env:
+          S3_API_KEY: ${{ secrets.S3_API_KEY }}
+          S3_API_SECRET_KEY: ${{ secrets.S3_API_SECRET_KEY }}
+          S3_REGION_NAME: ${{ secrets.S3_REGION_NAME }}
+          S3_ENDPOINT_URL: ${{ secrets.S3_ENDPOINT_URL }}
+          CLOUDFLARE_TOKEN: ${{ secrets.CLOUDFLARE_TOKEN }}
+          CLOUDFLARE_ZONE: ${{ secrets.CLOUDFLARE_ZONE }}
           S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
         run: |
           cp packages/tentacles/metadata.yaml ../metadata.yaml
@@ -347,6 +348,12 @@ jobs:
       - name: Publish stable tentacles
         if: github.ref == 'refs/heads/master'
         env:
+          S3_API_KEY: ${{ secrets.S3_API_KEY }}
+          S3_API_SECRET_KEY: ${{ secrets.S3_API_SECRET_KEY }}
+          S3_REGION_NAME: ${{ secrets.S3_REGION_NAME }}
+          S3_ENDPOINT_URL: ${{ secrets.S3_ENDPOINT_URL }}
+          CLOUDFLARE_TOKEN: ${{ secrets.CLOUDFLARE_TOKEN }}
+          CLOUDFLARE_ZONE: ${{ secrets.CLOUDFLARE_ZONE }}
           S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
         run: |
           cp packages/tentacles/metadata.yaml ../metadata.yaml
