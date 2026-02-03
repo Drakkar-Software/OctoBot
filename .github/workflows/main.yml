@@ -44,22 +44,21 @@ jobs:
         gha-cache-key: ${{ runner.os }}-pants-${{ matrix.package }}
         named-caches-hash: ${{ hashFiles('pants.toml') }}
 
-    - name: Install pylint
-      run: pip install pylint
-
-    - name: Lint package
-      run: |
-        if [ -f "${{ matrix.package }}/standard.rc" ]; then
-          pylint --rcfile=${{ matrix.package }}/standard.rc ${{ matrix.package }} || true
-        else
-          pylint ${{ matrix.package }} || true
-        fi
-
     - name: Install OctoBot
       run: |
         pants package :OctoBot
         pip3 install -r dev_requirements.txt
         pip3 install dist/octobot-*.whl
+
+    - name: Lint package
+      run: |
+        if [ -f "${{ matrix.package }}/standard.rc" ]; then
+          pylint --rcfile=${{ matrix.package }}/standard.rc ${{ matrix.package }}
+          if [ $? -ne 1 ]; then exit 0; fi
+        else
+          pylint ${{ matrix.package }}
+          if [ $? -ne 1 ]; then exit 0; fi
+        fi
 
     - name: Install tentacles
       if:  matrix.package == 'octobot'
@@ -83,6 +82,7 @@ jobs:
   docker:
     name: Build & Push Docker images
     needs: [ tests ]
+    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/dev' || startsWith(github.ref, 'refs/tags/')
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
