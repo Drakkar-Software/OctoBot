@@ -42,11 +42,11 @@ jobs:
     strategy:
       matrix:
         # os: [ macos-13, windows-latest, ubuntu-latest ] # todo restore macos to latest once python major is updated
-        os: [windows-latest, ubuntu-latest]
+        os: [macos-latest, windows-latest, ubuntu-latest]
         arch: [ x64 ]
         # arch: [ x64, arm64 ]
         exclude:
-          - os: macos-13
+          - os: macos-latest
             arch: arm64
           - os: windows-latest
             arch: arm64
@@ -100,7 +100,7 @@ jobs:
         bash ./packages/binary/build_scripts/unix.sh
 
     - name: Build OctoBot Binary on MacOS
-      if: matrix.os == 'macos-13'
+      if: matrix.os == 'macos-latest'
       env:
         OCTOBOT_REPOSITORY_DIR: OctoBot
         NLTK_DATA: nltk_data
