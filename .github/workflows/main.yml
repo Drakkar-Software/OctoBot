@@ -398,7 +398,7 @@ jobs:
   binary:
     needs: [ build, tests ]
     name: ${{ matrix.os }} - ${{ matrix.arch }} - binary
-    if: github.event_name == 'push' || startsWith(github.ref, 'refs/tags')
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
