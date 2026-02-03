@@ -117,6 +117,12 @@ jobs:
           gha-cache-key: ${{ runner.os }}-pants-tentacles
           named-caches-hash: ${{ hashFiles('pants.toml') }}
 
+      - name: Install OctoBot
+        run: |
+          pants package :OctoBot
+          pip3 install -r dev_requirements.txt
+          pip3 install dist/octobot-*.whl
+
       - name: Prepare tentacles package
         run: |
           mkdir -p ../new_tentacles
@@ -129,7 +135,7 @@ jobs:
         run: |
           cp packages/tentacles/metadata.yaml ../metadata.yaml
           sed -i "s/VERSION_PLACEHOLDER/${TARGET_BRANCH#refs/*/}/g" ../metadata.yaml
-          pants run //:start -- tentacles -m "../metadata.yaml" -d "../new_tentacles" -p "../any_platform.zip" -ite -ute ${{ secrets.TENTACLES_OFFICIAL_PATH }}/tentacles -upe ${{ secrets.TENTACLES_OFFICIAL_PATH }}/packages/full/${{ secrets.TENTACLES_REPOSITORY_NAME }}/
+          OctoBot tentacles -m "../metadata.yaml" -d "../new_tentacles" -p "../any_platform.zip" -ite -ute ${{ secrets.TENTACLES_OFFICIAL_PATH }}/tentacles -upe ${{ secrets.TENTACLES_OFFICIAL_PATH }}/packages/full/${{ secrets.TENTACLES_REPOSITORY_NAME }}/
           python packages/tentacles/scripts/clear_cloudflare_cache.py ${TARGET_BRANCH#refs/*/}
 
       - name: Publish latest tentacles
@@ -139,7 +145,7 @@ jobs:
         run: |
           cp packages/tentacles/metadata.yaml ../metadata.yaml
           sed -i "s/VERSION_PLACEHOLDER/latest/g" ../metadata.yaml
-          pants run //:start -- tentacles -m "../metadata.yaml" -d "../new_tentacles" -p "../any_platform.zip" -upe ${{ secrets.TENTACLES_OFFICIAL_PATH }}/packages/full/${{ secrets.TENTACLES_REPOSITORY_NAME }}/
+          OctoBot tentacles -m "../metadata.yaml" -d "../new_tentacles" -p "../any_platform.zip" -upe ${{ secrets.TENTACLES_OFFICIAL_PATH }}/packages/full/${{ secrets.TENTACLES_REPOSITORY_NAME }}/
           python packages/tentacles/scripts/clear_cloudflare_cache.py latest
 
       - name: Publish stable tentacles
@@ -149,7 +155,7 @@ jobs:
         run: |
           cp packages/tentacles/metadata.yaml ../metadata.yaml
           sed -i "s/VERSION_PLACEHOLDER/stable/g" ../metadata.yaml
-          pants run //:start -- tentacles -m "../metadata.yaml" -d "../new_tentacles" -p "../any_platform.zip" -upe ${{ secrets.TENTACLES_OFFICIAL_PATH }}/packages/full/${{ secrets.TENTACLES_REPOSITORY_NAME }}/
+          OctoBot tentacles -m "../metadata.yaml" -d "../new_tentacles" -p "../any_platform.zip" -upe ${{ secrets.TENTACLES_OFFICIAL_PATH }}/packages/full/${{ secrets.TENTACLES_REPOSITORY_NAME }}/
           python packages/tentacles/scripts/clear_cloudflare_cache.py stable
 
   build_sdist:
