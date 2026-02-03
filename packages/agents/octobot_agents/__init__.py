@@ -57,6 +57,14 @@ from octobot_agents.storage import (
     execute_memory_tool,
 )
 
+from octobot_agents import utils
+from octobot_agents.utils import (
+    extract_json_from_content,
+    extract_json_between_braces,
+    extract_json_from_markdown,
+    extract_json_from_xml_tags,
+)
+
 from octobot_agents import team
 from octobot_agents.team import (
     AbstractAgentsTeamChannel,
@@ -174,6 +182,11 @@ __all__ = [
     # HITL utilities
     "create_interrupt_config",
     "build_hitl_decision",
+    # Utilities
+    "extract_json_from_content",
+    "extract_json_between_braces",
+    "extract_json_from_markdown",
+    "extract_json_from_xml_tags",
     # Deep Agents Team
     "AbstractDeepAgentsTeamChannel",
     "AbstractDeepAgentsTeamChannelConsumer",

@@ -16,23 +16,13 @@
 """
 Deep Agents Team implementation using LangChain Deep Agents.
 
-Provides AbstractDeepAgentsTeamChannelProducer which uses the Deep Agent
-supervisor pattern for team orchestration instead of the traditional
-channel-based execution.
-
 Features:
-- Subagent orchestration for context isolation
-- Human-in-the-loop (HITL) for tool approval
-- Skills for extensible capabilities
-- Long-term memory via /memories/ path
-
-See LangChain Deep Agents docs:
-- https://docs.langchain.com/oss/python/deepagents/subagents
-- https://docs.langchain.com/oss/python/deepagents/human-in-the-loop
-- https://docs.langchain.com/oss/python/deepagents/skills
-- https://docs.langchain.com/oss/python/deepagents/long-term-memory
+- SubAgentMiddleware for task delegation to workers
+- TodoListMiddleware for planning
+- CompositeBackend for long-term memory (/memories/)
+- Streaming support
+- Debug logging for agent operations
 """
-from __future__ import annotations
 
 import abc
 import typing
@@ -45,65 +35,50 @@ from octobot_agents.team.channels.agents_team import (
     AbstractAgentsTeamChannelConsumer,
     AbstractAgentsTeamChannelProducer,
 )
-from octobot_agents.agent.channels.ai_agent import (
-    AbstractAIAgentChannel,
-    AbstractAIAgentChannelProducer,
-)
 from octobot_agents.agent.channels.deep_agent import (
-    AbstractDeepAgentChannel,
-    AbstractDeepAgentChannelConsumer,
-    AbstractDeepAgentChannelProducer,
-    create_memory_backend,
+    DEEP_AGENTS_AVAILABLE,
     build_dictionary_subagent,
+    create_memory_backend,
     build_subagents_from_producers,
     create_supervisor_agent,
-    # HITL utilities
     create_interrupt_config,
     build_hitl_decision,
-    # Skills utilities
     discover_skills,
     create_skills_files_dict,
 )
 from octobot_agents.constants import (
     MEMORIES_PATH_PREFIX,
     AGENT_DEFAULT_TEMPERATURE,
-    # HITL
     HITL_DECISION_APPROVE,
     HITL_DECISION_REJECT,
     HITL_INTERRUPT_KEY,
-    # Skills
     SKILLS_PATH_PREFIX,
     SKILLS_DEFAULT_DIR,
 )
 from octobot_agents.errors import DeepAgentNotAvailableError
 import octobot_services.services.abstract_ai_service as abstract_ai_service
-from octobot_agents.utils.deep_agent_adapter import create_model_for_deep_agent
+
+logger = logging.getLogger(__name__)
 
 try:
     from deepagents import create_deep_agent, CompiledSubAgent
-    from langchain.chat_models import init_chat_model
+    from deepagents.backends import CompositeBackend, StateBackend, StoreBackend
+    from langchain.agents.middleware import TodoListMiddleware
+    from deepagents.middleware.subagents import SubAgentMiddleware
     from langgraph.store.memory import InMemoryStore
     from langgraph.checkpoint.memory import MemorySaver
     from langgraph.types import Command
     DEEP_AGENTS_AVAILABLE = True
-except ImportError:
+except ImportError as e:
     DEEP_AGENTS_AVAILABLE = False
-    create_deep_agent = None
-    init_chat_model = None
-    CompiledSubAgent = None
-    InMemoryStore = None
-    MemorySaver = None
-    Command = None
-    logging.getLogger(__name__).warning("deepagents not available - Deep Agent features disabled")
+    logger.warning(f"deepagents not available - Deep Agent features disabled: {e}")
 
 
 class AbstractDeepAgentsTeamChannel(AbstractAgentsTeamChannel):
-    """Channel for Deep Agents Team outputs."""
     __metaclass__ = abc.ABCMeta
 
 
 class AbstractDeepAgentsTeamChannelConsumer(AbstractAgentsTeamChannelConsumer):
-    """Consumer for Deep Agents Team outputs."""
     __metaclass__ = abc.ABCMeta
 
 
@@ -111,41 +86,24 @@ class AbstractDeepAgentsTeamChannelProducer(AbstractAgentsTeamChannelProducer, a
     """
     Team producer using LangChain Deep Agents with supervisor pattern.
     
-    Instead of traditional channel-based execution, this uses Deep Agents
-    where the manager is a supervisor that orchestrates worker subagents.
-    
-    Key differences from AbstractSyncAgentsTeamChannelProducer:
-    - Workers are Deep Agent subagents, not channel producers
-    - Manager is a supervisor that delegates via natural language
-    - Uses /memories/ path for persistent memory
-    - No DAG-based execution - Deep Agent handles orchestration
-    
     Features:
-    - Subagent orchestration for context isolation
-    - Human-in-the-loop (HITL) for tool approval workflows
-    - Skills for extensible agent capabilities
-    - Long-term memory via /memories/ path
-    
-    Subclasses should:
-    - Define TEAM_NAME and TEAM_CHANNEL
-    - Implement get_worker_definitions() to return worker configs
-    - Implement get_manager_instructions() for supervisor behavior
-    - Optionally override get_interrupt_config() for HITL
-    - Optionally override get_skills() for skills support
+    - SubAgentMiddleware for worker delegation
+    - TodoListMiddleware for planning
+    - CompositeBackend with /memories/ for persistent storage
+    - Streaming support
+    - Debug logging
     """
     
     TEAM_CHANNEL: typing.Type[AbstractDeepAgentsTeamChannel] = AbstractDeepAgentsTeamChannel
     TEAM_CONSUMER: typing.Type[AbstractDeepAgentsTeamChannelConsumer] = AbstractDeepAgentsTeamChannelConsumer
     
-    # Deep Agent specific
     MAX_ITERATIONS: int = 10
     ENABLE_DEBATE: bool = False
+    ENABLE_STREAMING: bool = False
     
-    # HITL configuration
     ENABLE_HITL: bool = False
     HITL_INTERRUPT_TOOLS: dict[str, typing.Any] = {}
     
-    # Skills configuration
     SKILLS_DIRS: list[str] = []
     
     def __init__(
@@ -161,31 +119,14 @@ class AbstractDeepAgentsTeamChannelProducer(AbstractAgentsTeamChannelProducer, a
         checkpointer: typing.Any = None,
         skills: list[str] | None = None,
         interrupt_on: dict[str, typing.Any] | None = None,
+        enable_streaming: bool | None = None,
     ):
-        """
-        Initialize the Deep Agents team producer.
-        
-        Args:
-            channel: Optional output channel for team results.
-            ai_service: The LLM service instance.
-            model: LLM model to use.
-            max_tokens: Maximum tokens for LLM responses.
-            temperature: Temperature for LLM randomness.
-            team_name: Override default team name.
-            team_id: Unique identifier for this team instance.
-            store: Optional memory store for Deep Agent.
-            checkpointer: Optional checkpointer for HITL (required for interrupts).
-            skills: Optional list of skill source paths.
-            interrupt_on: Optional tool interrupt configuration for HITL.
-        """
-        # We don't use the parent's agent/relations initialization
-        # Deep Agents handle orchestration internally
         self.channel = channel
         self.ai_service = ai_service
         self.model = model
         self.max_tokens = max_tokens
         self.temperature = temperature or AGENT_DEFAULT_TEMPERATURE
-        self.team_name = team_name or getattr(self.__class__, 'TEAM_NAME', self.__class__.__name__)
+        self.team_name = team_name or self.__class__.__dict__.get('TEAM_NAME', self.__class__.__name__)
         self.team_id = team_id
         
         self._store = store
@@ -193,13 +134,10 @@ class AbstractDeepAgentsTeamChannelProducer(AbstractAgentsTeamChannelProducer, a
         self._deep_agent = None
         self._workers: list[dict[str, typing.Any]] = []
         
-        # HITL configuration
         self._interrupt_on = interrupt_on or self.HITL_INTERRUPT_TOOLS
-        
-        # Skills configuration
         self._skills = skills or self.SKILLS_DIRS
+        self._enable_streaming = enable_streaming if enable_streaming is not None else self.ENABLE_STREAMING
         
-        # Thread management for HITL
         self._current_thread_id: str | None = None
         
         self.logger = logging.getLogger(f"{self.__class__.__name__}")
@@ -209,55 +147,16 @@ class AbstractDeepAgentsTeamChannelProducer(AbstractAgentsTeamChannelProducer, a
     
     @abc.abstractmethod
     def get_worker_definitions(self) -> list[dict[str, typing.Any]]:
-        """
-        Get worker subagent definitions for the team.
-        
-        Returns list of worker configs, each with:
-        - name: Unique worker name
-        - instructions: Worker's system prompt
-        - tools: Optional list of tool functions
-        - model: Optional model override
-        
-        Returns:
-            List of worker definition dictionaries.
-        """
         raise NotImplementedError("Subclasses must implement get_worker_definitions()")
     
     @abc.abstractmethod
     def get_manager_instructions(self) -> str:
-        """
-        Get the manager/supervisor instructions.
-        
-        These instructions tell the supervisor how to:
-        - Coordinate workers
-        - Handle the workflow
-        - Synthesize results
-        
-        Returns:
-            Manager instruction string.
-        """
         raise NotImplementedError("Subclasses must implement get_manager_instructions()")
     
     def get_manager_tools(self) -> list[typing.Callable] | None:
-        """
-        Get additional tools for the manager.
-        
-        Override to provide custom tools to the supervisor.
-        
-        Returns:
-            List of tool functions or None.
-        """
         return None
     
     def get_critic_config(self) -> dict[str, typing.Any] | None:
-        """
-        Get critic configuration for debate mode.
-        
-        Override to configure critic behavior when ENABLE_DEBATE is True.
-        
-        Returns:
-            Critic config dict or None.
-        """
         if not self.ENABLE_DEBATE:
             return None
         return {
@@ -266,62 +165,132 @@ class AbstractDeepAgentsTeamChannelProducer(AbstractAgentsTeamChannelProducer, a
         }
     
     def get_interrupt_config(self) -> dict[str, typing.Any]:
-        """
-        Get interrupt configuration for HITL.
-        
-        Override to customize which tools require approval.
-        
-        Returns:
-            Dict mapping tool names to interrupt configs.
-        """
         return self._interrupt_on
     
     def get_skills(self) -> list[str]:
-        """
-        Get skill source paths for this team.
-        
-        Override to provide custom skill directories.
-        
-        Returns:
-            List of skill source paths.
-        """
         return self._skills
     
+    def get_agent_skills(self, agent_name: str) -> list[str] | None:
+        """
+        Get skills for a specific worker agent.
+        Override to provide agent-specific skills.
+        
+        Args:
+            agent_name: Name of the worker agent
+            
+        Returns:
+            List of skill paths (e.g., ["./technical-analysis/"]) or None
+        """
+        return None
+    
+    def get_agent_skills_files(self, agent_name: str) -> dict[str, str] | None:
+        """
+        Get skill files for a specific worker agent.
+        Override to provide agent-specific skill files.
+        
+        Args:
+            agent_name: Name of the worker agent
+            
+        Returns:
+            Dict mapping virtual paths to file content or None
+        """
+        skills_dir = self.get_skills_resources_dir()
+        if not skills_dir:
+            return None
+        
+        # Try to find agent-specific skills directory
+        import os
+        agent_skills_dir = os.path.join(skills_dir, agent_name)
+        if os.path.isdir(agent_skills_dir):
+            return create_skills_files_dict(agent_skills_dir)
+        
+        return None
+    
+    def get_skills_resources_dir(self) -> str | None:
+        """
+        Get the tentacle's resources/skills directory path.
+        Override this to provide a custom skills directory.
+        By default, returns None (no auto-discovery).
+        
+        Example implementation in tentacle:
+            import os
+            return os.path.join(os.path.dirname(__file__), "resources", "skills")
+        """
+        return None
+    
+    def _create_memory_backend(self) -> typing.Callable:
+        def make_backend(runtime):
+            if not DEEP_AGENTS_AVAILABLE or not CompositeBackend:
+                return None
+            return CompositeBackend(
+                default=StateBackend(runtime),
+                routes={
+                    f"{MEMORIES_PATH_PREFIX}": StoreBackend(runtime)
+                }
+            )
+        return make_backend
+    
     def _get_or_create_store(self) -> typing.Any:
-        """Get or create the memory store."""
-        if self._store is None:
-            self._store = create_memory_backend()
+        if self._store is None and DEEP_AGENTS_AVAILABLE:
+            self._store = InMemoryStore()
         return self._store
     
     def _get_or_create_checkpointer(self) -> typing.Any:
-        """Get or create the checkpointer for HITL."""
         if self._checkpointer is None and DEEP_AGENTS_AVAILABLE:
             self._checkpointer = MemorySaver()
         return self._checkpointer
     
     def _build_deep_agent(self) -> typing.Any:
-        """Build the Deep Agent with supervisor pattern, HITL, and Skills."""
         if not DEEP_AGENTS_AVAILABLE:
             raise DeepAgentNotAvailableError("deep_agents package is required")
+        
+        self.logger.debug(f"[{self.team_name}] Building deep agent team...")
         
         workers = self.get_worker_definitions()
         self._workers = workers
         
-        # Build subagents from worker definitions
-        subagents = [
-            build_dictionary_subagent(
-                name=w.get("name", "unnamed"),
+        # Build subagents with their individual skills
+        subagents = []
+        for w in workers:
+            agent_name = w.get("name", "unnamed")
+            
+            # Get agent-specific skills
+            agent_skills = self.get_agent_skills(agent_name)
+            agent_files = self.get_agent_skills_files(agent_name)
+            
+            if agent_skills:
+                self.logger.debug(f"[{self.team_name}] Loading skills for {agent_name}: {agent_skills}")
+            if agent_files:
+                self.logger.debug(f"[{self.team_name}] Loading {len(agent_files)} skill files for {agent_name}")
+            
+            # Prefer using the default_model when available (it can be a BaseChatModel instance).
+            # If a worker overrides the model, build a concrete chat model instance so LangChain
+            # does not need to infer a provider from a raw model string.
+            subagent_model = w.get("model")
+            if subagent_model is None:
+                if self.ai_service is None:
+                    subagent_model = self.model
+                else:
+                    subagent_model = None
+            elif self.ai_service is not None and isinstance(subagent_model, str):
+                subagent_model = self.ai_service.init_chat_model(model=subagent_model)
+
+            subagent = build_dictionary_subagent(
+                name=agent_name,
                 instructions=w.get("instructions", ""),
                 description=w.get("description"),
                 tools=w.get("tools"),
-                model=w.get("model") or (self.ai_service.model if self.ai_service else self.model),
+                model=subagent_model,
+                model_provider=w.get("model_provider") or (self.ai_service.ai_provider.value if self.ai_service else None),
                 handoff_back=w.get("handoff_back", True),
                 interrupt_on=w.get("interrupt_on"),
+                skills=agent_skills,
+                files=agent_files,
             )
-            for w in workers
-        ]
+            subagents.append(subagent)
         
-        # Add critic if debate is enabled
+        self.logger.debug(f"[{self.team_name}] Created {len(subagents)} worker subagents")
+        
         critic_config = self.get_critic_config()
         if self.ENABLE_DEBATE and critic_config:
             critic_subagent = build_dictionary_subagent(
@@ -329,11 +298,12 @@ class AbstractDeepAgentsTeamChannelProducer(AbstractAgentsTeamChannelProducer, a
                 instructions=critic_config.get("instructions", ""),
                 description="Critiques analyses and suggests improvements",
                 tools=critic_config.get("tools"),
+                model_provider=critic_config.get("model_provider") or (self.ai_service.ai_provider.value if self.ai_service else None),
                 handoff_back=True,
             )
             subagents.append(critic_subagent)
+            self.logger.debug(f"[{self.team_name}] Added critic subagent for debate mode")
         
-        # Build supervisor instructions
         manager_instructions = self.get_manager_instructions()
         team_instructions = f"""
 You are the manager of the {self.team_name} team.
@@ -352,34 +322,50 @@ Workflow:
 Save important insights to /memories/ for future reference.
 """.strip()
         
-        model = create_model_for_deep_agent(self.ai_service, self.model)
+        self.logger.debug(f"[{self.team_name}] Initializing chat model from AI service")
+        model = None
+        if self.ai_service is not None:
+            model = self.ai_service.init_chat_model(model=self.model)
         
-        # Build agent kwargs
         agent_kwargs: dict[str, typing.Any] = {
             "model": model,
             "system_prompt": team_instructions,
             "tools": self.get_manager_tools() or [],
-            "subagents": subagents,
             "store": self._get_or_create_store(),
+            "backend": self._create_memory_backend(),
             "name": f"{self.team_name}_manager",
         }
         
-        # Add skills if configured
+        # Pass subagents directly - create_deep_agent will wrap them in SubAgentMiddleware
+        if subagents:
+            agent_kwargs["subagents"] = subagents
+            self.logger.debug(f"[{self.team_name}] Passing {len(subagents)} subagents to create_deep_agent")
+        
+        # Auto-discover skills from tentacle's resources/skills directory for manager
         skills = self.get_skills()
+        skills_dir = self.get_skills_resources_dir()
+        
+        if skills_dir:
+            discovered = discover_skills(skills_dir)
+            if discovered:
+                skills = (skills or []) + discovered
+                self.logger.debug(f"[{self.team_name}] Auto-discovered {len(discovered)} skills from {skills_dir}")
+        
         if skills:
             agent_kwargs["skills"] = skills
+            self.logger.debug(f"[{self.team_name}] Using skills: {skills}")
         
-        # Add HITL if configured
         interrupt_config = self.get_interrupt_config()
         if interrupt_config:
             checkpointer = self._get_or_create_checkpointer()
             agent_kwargs["interrupt_on"] = interrupt_config
             agent_kwargs["checkpointer"] = checkpointer
+            self.logger.debug(f"[{self.team_name}] HITL enabled for tools: {list(interrupt_config.keys())}")
         
+        self.logger.debug(f"[{self.team_name}] Deep agent team built successfully")
         return create_deep_agent(**agent_kwargs)
     
     def get_deep_agent(self, force_rebuild: bool = False) -> typing.Any:
-        """Get the Deep Agent, creating if necessary."""
         if self._deep_agent is None or force_rebuild:
             self._deep_agent = self._build_deep_agent()
         return self._deep_agent
@@ -390,18 +376,6 @@ Save important insights to /memories/ for future reference.
         thread_id: str | None = None,
         skills_files: dict[str, str] | None = None,
     ) -> typing.Dict[str, typing.Any]:
-        """
-        Execute the team using Deep Agent supervisor pattern.
-        
-        Args:
-            initial_data: Initial data to process.
-            thread_id: Optional thread ID for HITL state persistence.
-            skills_files: Optional dict of skill files for StateBackend.
-            
-        Returns:
-            Dict with team execution results. If HITL interrupt triggered,
-            contains "__interrupt__" key with pending actions.
-        """
         if not DEEP_AGENTS_AVAILABLE:
             return {"error": "Deep Agents not available"}
         
@@ -409,62 +383,92 @@ Save important insights to /memories/ for future reference.
         if agent is None:
             return {"error": "Failed to create Deep Agent"}
         
-        # Build input message
         message = self._build_input_message(initial_data)
         
-        # Use provided thread_id or generate new one
         if thread_id is None:
             thread_id = str(uuid.uuid4())
         self._current_thread_id = thread_id
         
         config = {"configurable": {"thread_id": thread_id}}
         
-        # Build invoke input
         invoke_input: dict[str, typing.Any] = {
             "messages": [{"role": "user", "content": message}]
         }
         
-        # Add skills files if provided (for StateBackend)
         if skills_files:
             invoke_input["files"] = skills_files
         
+        self.logger.debug(f"[{self.team_name}] Running team with input: {message[:100]}...")
+        
         try:
-            result = await agent.ainvoke(invoke_input, config=config)
+            if self._enable_streaming:
+                result = await self._run_with_streaming(agent, invoke_input, config)
+            else:
+                result = await agent.ainvoke(invoke_input, config=config)
             
-            # Check for HITL interrupt
             if self.is_interrupted(result):
-                return result  # Return raw result with interrupt info
+                return result
             
             parsed_result = self._parse_result(result)
             
-            # Push result if we have a channel
             if self.channel is not None:
                 await self.push(parsed_result)
             
+            self.logger.debug(f"[{self.team_name}] Team run complete")
             return parsed_result
             
         except Exception as e:
-            self.logger.error(f"Error running Deep Agent team: {e}")
+            self.logger.error(f"[{self.team_name}] Error running Deep Agent team: {e}")
             return {"error": str(e)}
     
-    # ========================================================================
-    # HITL Methods
-    # ========================================================================
+    async def _run_with_streaming(
+        self,
+        agent: typing.Any,
+        invoke_input: dict,
+        config: dict,
+    ) -> dict:
+        result = None
+        
+        self.logger.debug(f"[{self.team_name}] Starting streaming run")
+        
+        async for event in agent.astream(
+            invoke_input,
+            config=config,
+            stream_mode="updates",
+        ):
+            for node_name, node_output in event.items():
+                if node_name == "agent":
+                    messages = node_output.get("messages", [])
+                    for msg in messages:
+                        # Handle both dict-like messages and LangChain message objects
+                        tool_calls = msg.get("tool_calls") if isinstance(msg, dict) else getattr(msg, "tool_calls", None)
+                        if tool_calls:
+                            for tc in tool_calls:
+                                tool_name = tc["name"] if isinstance(tc, dict) else getattr(tc, "name", "unknown")
+                                self.logger.debug(f"[{self.team_name}] 🔧 Calling tool: {tool_name}")
+                        else:
+                            content = msg.get("content", "") if isinstance(msg, dict) else getattr(msg, "content", "")
+                            if content:
+                                content_preview = content[:100] if len(content) > 100 else content
+                                self.logger.debug(f"[{self.team_name}] 💭 Agent thinking: {content_preview}...")
+                
+                elif node_name == "tools":
+                    messages = node_output.get("messages", [])
+                    for msg in messages:
+                        msg_name = msg.get("name") if isinstance(msg, dict) else getattr(msg, "name", None)
+                        if msg_name:
+                            self.logger.debug(f"[{self.team_name}] ✅ Tool result from: {msg_name}")
+            
+            result = event
+        
+        state = await agent.aget_state(config)
+        self.logger.debug(f"[{self.team_name}] Streaming complete")
+        return {"messages": state.values.get("messages", [])}
     
     def is_interrupted(self, result: dict) -> bool:
-        """Check if the result contains an HITL interrupt."""
         return HITL_INTERRUPT_KEY in result
     
     def get_interrupt_info(self, result: dict) -> dict | None:
-        """
-        Get interrupt information from a result.
-        
-        Args:
-            result: Agent invocation result.
-        
-        Returns:
-            Dict with action_requests and review_configs, or None.
-        """
         if not self.is_interrupted(result):
             return None
         
@@ -472,28 +476,18 @@ Save important insights to /memories/ for future reference.
         if not interrupts:
             return None
         
-        return interrupts[0].value if hasattr(interrupts[0], 'value') else interrupts[0]
+        interrupt_obj = interrupts[0]
+        # Handle both dict and object types
+        if isinstance(interrupt_obj, dict):
+            return interrupt_obj.get('value', interrupt_obj)
+        else:
+            return getattr(interrupt_obj, 'value', interrupt_obj)
     
     async def resume_with_decisions(
         self,
         decisions: list[dict[str, typing.Any]],
         thread_id: str | None = None,
     ) -> dict:
-        """
-        Resume team execution after HITL interrupt with user decisions.
-        
-        Each decision should be one of:
-        - {"type": "approve"} - Execute tool with original args
-        - {"type": "edit", "edited_action": {"name": "...", "args": {...}}} - Execute with modified args
-        - {"type": "reject"} - Skip the tool call
-        
-        Args:
-            decisions: List of decisions, one per interrupted action.
-            thread_id: Thread ID to resume (uses current if not provided).
-        
-        Returns:
-            Team execution results.
-        """
         if not DEEP_AGENTS_AVAILABLE:
             return {"error": "Deep Agents not available"}
         
@@ -507,30 +501,29 @@ Save important insights to /memories/ for future reference.
         
         config = {"configurable": {"thread_id": thread_id}}
         
+        self.logger.debug(f"[{self.team_name}] Resuming with {len(decisions)} decisions")
+        
         try:
             result = await agent.ainvoke(
                 Command(resume={"decisions": decisions}),
                 config=config,
             )
             
-            # Check for another interrupt
             if self.is_interrupted(result):
                 return result
             
             parsed_result = self._parse_result(result)
             
-            # Push result if we have a channel
             if self.channel is not None:
                 await self.push(parsed_result)
             
             return parsed_result
             
         except Exception as e:
-            self.logger.error(f"Error resuming Deep Agent team: {e}")
+            self.logger.error(f"[{self.team_name}] Error resuming Deep Agent team: {e}")
             return {"error": str(e)}
     
     async def approve_all_interrupts(self, result: dict, thread_id: str | None = None) -> dict:
-        """Convenience method to approve all pending HITL interrupts."""
         interrupt_info = self.get_interrupt_info(result)
         if interrupt_info is None:
             return result
@@ -541,7 +534,6 @@ Save important insights to /memories/ for future reference.
         return await self.resume_with_decisions(decisions, thread_id)
     
     async def reject_all_interrupts(self, result: dict, thread_id: str | None = None) -> dict:
-        """Convenience method to reject all pending HITL interrupts."""
         interrupt_info = self.get_interrupt_info(result)
         if interrupt_info is None:
             return result
@@ -552,17 +544,6 @@ Save important insights to /memories/ for future reference.
         return await self.resume_with_decisions(decisions, thread_id)
     
     def _build_input_message(self, initial_data: typing.Dict[str, typing.Any]) -> str:
-        """
-        Build the input message for the supervisor.
-        
-        Override to customize message formatting.
-        
-        Args:
-            initial_data: The initial data dict.
-            
-        Returns:
-            Formatted message string.
-        """
         data_str = json.dumps(initial_data, indent=2, default=str)
         return f"""
 Process the following data with your team:
@@ -573,27 +554,18 @@ Coordinate with your workers and provide a final synthesized result.
 """.strip()
     
     def _parse_result(self, result: typing.Dict[str, typing.Any]) -> typing.Dict[str, typing.Any]:
-        """
-        Parse the Deep Agent result into a standard format.
-        
-        Override to customize result parsing.
-        
-        Args:
-            result: Raw Deep Agent result.
-            
-        Returns:
-            Parsed result dict.
-        """
         try:
             messages = result.get("messages", [])
             if not messages:
                 return {"error": "No response from agent"}
             
-            # Get the last assistant message
             last_message = messages[-1]
-            content = last_message.get("content", "") if isinstance(last_message, dict) else str(last_message)
+            # Handle both dict and LangChain message objects
+            if isinstance(last_message, dict):
+                content = last_message.get("content", "")
+            else:
+                content = getattr(last_message, "content", str(last_message))
             
-            # Try to parse as JSON
             try:
                 json_start = content.find("{")
                 json_end = content.rfind("}") + 1
@@ -603,7 +575,6 @@ Coordinate with your workers and provide a final synthesized result.
             except json.JSONDecodeError:
                 pass
             
-            # Return raw content
             return {"result": content}
             
         except Exception as e:
@@ -611,7 +582,6 @@ Coordinate with your workers and provide a final synthesized result.
             return {"error": str(e)}
     
     async def push(self, result: typing.Any) -> None:
-        """Push result to the team channel."""
         if self.channel is None:
             return
         
@@ -623,5 +593,4 @@ Coordinate with your workers and provide a final synthesized result.
             })
     
     def get_memory_path(self, memory_type: str = "data") -> str:
-        """Get the memory path for this team."""
         return f"{MEMORIES_PATH_PREFIX}{self.team_name}/{memory_type}"

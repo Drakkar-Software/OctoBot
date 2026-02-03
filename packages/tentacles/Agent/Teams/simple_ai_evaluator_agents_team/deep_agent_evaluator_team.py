@@ -30,6 +30,7 @@ from __future__ import annotations
 import typing
 import json
 import logging
+import os
 
 import octobot_commons.constants as common_constants
 
@@ -38,12 +39,10 @@ from octobot_agents.team.channels.deep_agents_team import (
     AbstractDeepAgentsTeamChannelConsumer,
     AbstractDeepAgentsTeamChannelProducer,
 )
-from octobot_agents.agent.channels.deep_agent import (
-    DEEP_AGENTS_AVAILABLE,
-    build_dictionary_subagent,
-)
-from octobot_agents.constants import MEMORIES_PATH_PREFIX
+from octobot_agents.utils.extractor import extract_json_from_content
 import octobot_services.services.abstract_ai_service as abstract_ai_service
+
+from . import models
 
 logger = logging.getLogger(__name__)
 
@@ -102,11 +101,19 @@ You are a Market Analysis Summarizer. Synthesize analyses from TA, Sentiment, an
 2. Resolve conflicting signals with clear reasoning
 3. Produce a final consensus recommendation
 
-Output your synthesis as JSON with:
-- eval_note: float -1 to 1 (final recommendation)
-- eval_note_description: comprehensive summary
-- confidence: float 0-1 (overall confidence)
-- key_factors: list of main decision factors
+IMPORTANT: Output ONLY valid JSON in this EXACT structure (no extra fields):
+```json
+{
+  "eval_note": <float between -1.0 and 1.0>,
+  "eval_note_description": "<comprehensive summary of analysis>",
+  "confidence": <float between 0.0 and 1.0>,
+  "trend": "uptrend" or "downtrend" or "ranging" or null,
+  "risk_level": "low" or "medium" or "high" or null,
+  "key_factors": ["factor1", "factor2"]
+}
+```
+
+Do NOT add extra fields like 'evaluation', 'recommendation', 'market_insights', etc.
 """
 
 MANAGER_INSTRUCTIONS = """
@@ -122,7 +129,17 @@ Workflow:
 1. Use write_todos to plan your approach
 2. Delegate to technical_analysis, sentiment_analysis, realtime_analysis (can run in parallel concept)
 3. After all three complete, send their outputs to summarization
-4. Return the final synthesized result
+4. Return ONLY the final JSON result from summarization (no modifications)
+
+CRITICAL: Your final output must be the exact JSON from summarization with this structure:
+{
+  "eval_note": <float -1 to 1>,
+  "eval_note_description": "<text>",
+  "confidence": <float 0-1>,
+  "trend": "uptrend"|"downtrend"|"ranging"|null,
+  "risk_level": "low"|"medium"|"high"|null,
+  "key_factors": ["..."]
+}
 
 Remember to save important insights to /memories/ for future reference.
 """
@@ -144,8 +161,11 @@ class DeepAgentEvaluatorTeam(AbstractDeepAgentsTeamChannelProducer):
     
     Inherits from AbstractDeepAgentsTeamChannelProducer which handles:
     - Deep Agent creation with supervisor pattern
-    - Worker subagent orchestration
-    - Memory backend via /memories/ path
+    - Worker subagent orchestration via SubAgentMiddleware
+    - Task planning via TodoListMiddleware
+    - Long-term memory via CompositeBackend (/memories/)
+    - Streaming support for real-time updates
+    - Debug logging for agent operations
     
     Usage:
         team = DeepAgentEvaluatorTeam(ai_service=llm_service)
@@ -159,6 +179,7 @@ class DeepAgentEvaluatorTeam(AbstractDeepAgentsTeamChannelProducer):
     
     MAX_ITERATIONS = 10
     ENABLE_DEBATE = False
+    ENABLE_STREAMING = False  # Enable streaming for real-time debug logs
     
     def __init__(
         self,
@@ -172,6 +193,7 @@ class DeepAgentEvaluatorTeam(AbstractDeepAgentsTeamChannelProducer):
         include_sentiment: bool = True,
         include_realtime: bool = True,
         enable_debate: bool = False,
+        enable_streaming: bool = False,
     ):
         """
         Initialize the Deep Agent evaluator team.
@@ -187,6 +209,7 @@ class DeepAgentEvaluatorTeam(AbstractDeepAgentsTeamChannelProducer):
             include_sentiment: Include sentiment analysis worker.
             include_realtime: Include realtime analysis worker.
             enable_debate: Enable debate workflow with critic.
+            enable_streaming: Enable streaming for real-time debug logs.
         """
         self.include_ta = include_ta
         self.include_sentiment = include_sentiment
@@ -201,6 +224,7 @@ class DeepAgentEvaluatorTeam(AbstractDeepAgentsTeamChannelProducer):
             temperature=temperature,
             team_name=self.TEAM_NAME,
             team_id=team_id,
+            enable_streaming=enable_streaming,
         )
     
     def get_worker_definitions(self) -> list[dict[str, typing.Any]]:
@@ -234,8 +258,28 @@ class DeepAgentEvaluatorTeam(AbstractDeepAgentsTeamChannelProducer):
         return workers
     
     def get_manager_instructions(self) -> str:
-        """Get the manager/supervisor instructions."""
         return MANAGER_INSTRUCTIONS
+    
+    def get_skills_resources_dir(self) -> str | None:
+        return os.path.join(os.path.dirname(__file__), "resources", "skills")
+    
+    def get_agent_skills(self, agent_name: str) -> list[str] | None:
+        """
+        Get skills for specific worker agents.
+        Each agent gets its own specialized skill.
+        """
+        skills_dir = self.get_skills_resources_dir()
+        if not skills_dir:
+            return None
+        
+        agent_skill_dir = os.path.join(skills_dir, agent_name)
+        if os.path.isdir(agent_skill_dir):
+            # Check if SKILL.md exists
+            skill_file = os.path.join(agent_skill_dir, "SKILL.md")
+            if os.path.isfile(skill_file):
+                return [f"./{agent_name}/"]
+        
+        return None
     
     def get_critic_config(self) -> dict[str, typing.Any] | None:
         """Get critic configuration for debate mode."""
@@ -279,55 +323,68 @@ Save any important market insights to /memories/market_insights/ for future refe
         return message
     
     def _parse_result(self, result: typing.Dict[str, typing.Any]) -> typing.Dict[str, typing.Any]:
-        """Parse the Deep Agent result."""
+        """
+        Parse and validate the Deep Agent result using DeepAgentEvaluationResult model.
+        
+        Extracts JSON from the response, validates structure, and returns consistent output.
+        """
         try:
             messages = result.get("messages", [])
             if not messages:
-                return {
-                    "eval_note": common_constants.START_PENDING_EVAL_NOTE,
-                    "eval_note_description": "No response from agent",
-                }
+                validated = models.DeepAgentEvaluationResult(
+                    eval_note=common_constants.START_PENDING_EVAL_NOTE,
+                    eval_note_description="No response from agent",
+                )
+                return validated.model_dump()
             
             # Get the last assistant message
             last_message = messages[-1]
-            content = last_message.get("content", "") if isinstance(last_message, dict) else str(last_message)
+            # Extract content from LangChain message object (has .content attribute)
+            # or dict (has "content" key), or convert to string as last resort
+            if hasattr(last_message, "content"):
+                content = str(last_message.content)
+            elif isinstance(last_message, dict):
+                content = str(last_message.get("content", ""))
+            else:
+                content = str(last_message)
             
-            # Try to parse as JSON
-            try:
-                json_start = content.find("{")
-                json_end = content.rfind("}") + 1
-                if json_start >= 0 and json_end > json_start:
-                    json_str = content[json_start:json_end]
-                    parsed = json.loads(json_str)
-                    
-                    eval_note = parsed.get("eval_note", common_constants.START_PENDING_EVAL_NOTE)
-                    if isinstance(eval_note, (int, float)):
-                        eval_note = max(-1, min(1, float(eval_note)))
-                    
-                    return {
-                        "eval_note": eval_note,
-                        "eval_note_description": parsed.get(
-                            "eval_note_description",
-                            parsed.get("description", content)
-                        ),
-                        "confidence": parsed.get("confidence", 0),
-                        "key_factors": parsed.get("key_factors", []),
-                    }
-            except json.JSONDecodeError:
-                pass
+            # Try to parse JSON from content
+            parsed_data = extract_json_from_content(content)
             
-            # Fallback
-            return {
-                "eval_note": common_constants.START_PENDING_EVAL_NOTE,
-                "eval_note_description": content,
-            }
+            if parsed_data:
+                try:
+                    # Validate against the model - this enforces structure
+                    validated = models.DeepAgentEvaluationResult.model_validate(parsed_data)
+                    return validated.model_dump(exclude_none=False)
+                except Exception as validation_error:
+                    logger.warning(
+                        f"Validation error for extracted JSON: {validation_error}. "
+                        f"Extracted data: {parsed_data}"
+                    )
+                    # Fall through to create minimal valid response
+            
+            # Fallback: create minimal valid response
+            validated = models.DeepAgentEvaluationResult(
+                eval_note=common_constants.START_PENDING_EVAL_NOTE,
+                eval_note_description=content[:500] if content else "Unable to parse response",
+            )
+            return validated.model_dump()
             
         except Exception as e:
-            logger.error(f"Error parsing result: {e}")
-            return {
-                "eval_note": common_constants.START_PENDING_EVAL_NOTE,
-                "eval_note_description": f"Error: {str(e)}",
-            }
+            logger.error(f"Error parsing result: {e}", exc_info=True)
+            try:
+                fallback = models.DeepAgentEvaluationResult(
+                    eval_note=common_constants.START_PENDING_EVAL_NOTE,
+                    eval_note_description=f"Error: {str(e)}",
+                )
+                return fallback.model_dump()
+            except Exception as fallback_error:
+                logger.error(f"Error creating fallback result: {fallback_error}")
+                return {
+                    "eval_note": common_constants.START_PENDING_EVAL_NOTE,
+                    "eval_note_description": f"Error: {str(e)}",
+                    "confidence": 0.0,
+                }
     
     async def run_with_data(
         self,
@@ -364,6 +421,7 @@ def create_evaluator_team(
     include_sentiment: bool = True,
     include_realtime: bool = True,
     enable_debate: bool = False,
+    enable_streaming: bool = False,
 ) -> DeepAgentEvaluatorTeam:
     """
     Factory function to create a Deep Agent evaluator team.
@@ -375,6 +433,7 @@ def create_evaluator_team(
         include_sentiment: Include sentiment analysis worker.
         include_realtime: Include realtime analysis worker.
         enable_debate: Enable debate workflow.
+        enable_streaming: Enable streaming for real-time debug logs.
     
     Returns:
         Configured DeepAgentEvaluatorTeam instance.
@@ -386,4 +445,5 @@ def create_evaluator_team(
         include_sentiment=include_sentiment,
         include_realtime=include_realtime,
         enable_debate=enable_debate,
+        enable_streaming=enable_streaming,
     )

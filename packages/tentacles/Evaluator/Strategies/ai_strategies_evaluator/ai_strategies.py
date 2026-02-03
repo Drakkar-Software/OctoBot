@@ -167,16 +167,35 @@ class BaseLLMAIStrategyEvaluator(evaluators.StrategyEvaluator):
             return common_constants.START_PENDING_EVAL_NOTE, "Error: No valid data available"
         
         # Create and run the team based on use_deep_agent config
-        team_class = DeepAgentEvaluatorTeam if self.use_deep_agent else SimpleAIEvaluatorAgentsTeam
-        team = team_class(
-            ai_service=ai_service,
-            model=self.model,
-            max_tokens=self.max_tokens,
-            temperature=self.temperature,
-            include_ta=include_ta,
-            include_sentiment=include_sentiment,
-            include_realtime=include_realtime,
-        )
+        if self.use_deep_agent:
+            # Deep agents require langchain service explicitly
+            team_class = DeepAgentEvaluatorTeam
+            # Get langchain service for deep agents
+            from tentacles.Services.Services_bases.langchain_service.langchain import LangChainService
+            langchain_service = await services_api.get_service(
+                LangChainService,
+                is_backtesting=self._is_in_backtesting()
+            )
+            team = team_class(
+                ai_service=langchain_service or ai_service,
+                model=self.model,
+                max_tokens=self.max_tokens,
+                temperature=self.temperature,
+                include_ta=include_ta,
+                include_sentiment=include_sentiment,
+                include_realtime=include_realtime,
+            )
+        else:
+            team_class = SimpleAIEvaluatorAgentsTeam
+            team = team_class(
+                ai_service=ai_service,
+                model=self.model,
+                max_tokens=self.max_tokens,
+                temperature=self.temperature,
+                include_ta=include_ta,
+                include_sentiment=include_sentiment,
+                include_realtime=include_realtime,
+            )
         
         try:
             eval_note, eval_note_description = await team.run_with_data(
