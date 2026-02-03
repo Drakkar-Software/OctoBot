@@ -36,9 +36,6 @@ jobs:
         distro: ubuntu22.04
         githubToken: ${{ github.token }}
         env: |
-          GH_REPO: Drakkar-Software/OctoBot-Tentacles
-          OCTOBOT_GH_REPO: https://github.com/Drakkar-Software/OctoBot.git
-          OCTOBOT_DEFAULT_BRANCH: dev
           OCTOBOT_REPOSITORY_DIR: OctoBot
           NLTK_DATA: nltk_data
           BUILD_ARCH: ${{ matrix.arch }}
@@ -46,43 +43,48 @@ jobs:
           apt-get update
           apt-get install -y --no-install-recommends python3.13 python3-pip python3-dev git gcc musl-dev libc-dev build-essential zlib1g zlib1g-dev
           curl --proto '=https' --tlsv1.2 -fsSL https://static.pantsbuild.org/setup/get-pants.sh | bash
+          python3 -m pip install -U pip setuptools wheel
+          pants package :OctoBot
+          pip3 install dist/octobot-*.whl
           bash ./packages/binary/build_scripts/unix.sh
 
     - name: Build OctoBot Binary on Linux
       if: matrix.os == 'ubuntu-22.04' && matrix.arch == 'x64'
       env:
-        GH_REPO: Drakkar-Software/OctoBot-Tentacles
-        OCTOBOT_GH_REPO: https://github.com/Drakkar-Software/OctoBot.git
-        OCTOBOT_DEFAULT_BRANCH: dev
         OCTOBOT_REPOSITORY_DIR: OctoBot
         NLTK_DATA: nltk_data
         BUILD_ARCH: ${{ matrix.arch }}
       run: |
         curl --proto '=https' --tlsv1.2 -fsSL https://static.pantsbuild.org/setup/get-pants.sh | bash
+        python3 -m pip install -U pip setuptools wheel
+        pants package :OctoBot
+        pip3 install dist/octobot-*.whl
         bash ./packages/binary/build_scripts/unix.sh
 
     - name: Build OctoBot Binary on MacOS
       if: matrix.os == 'macos-13'
       env:
-        GH_REPO: Drakkar-Software/OctoBot-Tentacles
-        OCTOBOT_GH_REPO: https://github.com/Drakkar-Software/OctoBot.git
-        OCTOBOT_DEFAULT_BRANCH: dev
         OCTOBOT_REPOSITORY_DIR: OctoBot
         NLTK_DATA: nltk_data
         BUILD_ARCH: ${{ matrix.arch }}
       run: |
         curl --proto '=https' --tlsv1.2 -fsSL https://static.pantsbuild.org/setup/get-pants.sh | bash
-        bash ./build_scripts/unix.sh
+        python3 -m pip install -U pip setuptools wheel
+        pants package :OctoBot
+        pip3 install dist/octobot-*.whl
+        bash ./packages/binary/build_scripts/unix.sh
 
     - name: Build OctoBot Binary on Windows
       if: matrix.os == 'windows-latest'
       env:
-        GH_REPO: Drakkar-Software/OctoBot-Tentacles
-        OCTOBOT_GH_REPO: https://github.com/Drakkar-Software/OctoBot.git
-        OCTOBOT_DEFAULT_BRANCH: dev
         OCTOBOT_REPOSITORY_DIR: OctoBot
         NLTK_DATA: nltk_data
-      run: .\packages\binary\build_scripts\windows.ps1
+      run: |
+        curl --proto '=https' --tlsv1.2 -fsSL https://static.pantsbuild.org/setup/get-pants.sh | bash
+        python -m pip install -U pip setuptools wheel
+        pants package :OctoBot
+        python -m pip install dist/octobot-*.whl
+        .\packages\binary\build_scripts\windows.ps1
       shell: powershell
 
     - name: Upload OctoBot Binary on MacOS

@@ -141,3 +141,6 @@ letsencrypt/
 
 # pants
 .pants.d/
+
+# bin
+nltk_data/
