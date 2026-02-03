@@ -39,7 +39,7 @@ class AbstractDistributionTester:
         async with web_interface_tests.get_web_interface(False, self.DISTRIBUTION) as web_interface_instance:
             async with aiohttp.ClientSession() as session:
                 await asyncio.gather(*[
-                    web_interface_tests.check_page_no_login_redirect(self._get_rule_url(rule), session)
+                    web_interface_tests.check_page_no_login_redirect(self._get_rule_url(rule, web_interface_instance.port), session)
                     for rule in self._get_all_native_rules(web_interface_instance, black_list=black_list)
                 ])
 
@@ -50,7 +50,7 @@ class AbstractDistributionTester:
         async with web_interface_tests.get_web_interface(True, self.DISTRIBUTION) as web_interface_instance:
             async with aiohttp.ClientSession() as session:
                 await asyncio.gather(*[
-                    web_interface_tests.check_page_login_redirect(self._get_rule_url(rule), session)
+                    web_interface_tests.check_page_login_redirect(self._get_rule_url(rule, web_interface_instance.port), session)
                     for rule in self._get_all_native_rules(web_interface_instance, black_list=black_list)
                 ])
 
@@ -62,31 +62,31 @@ class AbstractDistributionTester:
     ):
         async with web_interface_tests.get_web_interface(True, self.DISTRIBUTION) as web_interface_instance:
             async with aiohttp.ClientSession() as session:
-                await web_interface_tests.login_user_on_session(session)
+                await web_interface_tests.login_user_on_session(session, web_interface_instance.port)
                 # correctly display pages: session is logged in
                 await asyncio.gather(*[
-                    web_interface_tests.check_page_no_login_redirect(self._get_rule_url(rule), session)
+                    web_interface_tests.check_page_no_login_redirect(self._get_rule_url(rule, web_interface_instance.port), session)
                     for rule in self._get_all_native_rules(web_interface_instance, black_list=auth_black_list)
                 ])
             async with aiohttp.ClientSession() as unauthenticated_session:
                 # redirect to login page: session is not logged in
                 await asyncio.gather(*[
-                    web_interface_tests.check_page_login_redirect(self._get_rule_url(rule), unauthenticated_session)
+                    web_interface_tests.check_page_login_redirect(self._get_rule_url(rule, web_interface_instance.port), unauthenticated_session)
                     for rule in self._get_all_native_rules(web_interface_instance, black_list=unauth_black_list)
                 ])
 
     async def test_logout(self):
-        async with web_interface_tests.get_web_interface(True, self.DISTRIBUTION):
+        async with web_interface_tests.get_web_interface(True, self.DISTRIBUTION) as web_interface_instance:
             async with aiohttp.ClientSession() as session:
-                await web_interface_tests.login_user_on_session(session)
+                await web_interface_tests.login_user_on_session(session, web_interface_instance.port)
                 await web_interface_tests.check_page_no_login_redirect(
-                    f"{LOCAL_HOST_URL}{web_interface_tests.PORT}/", session
+                    f"{LOCAL_HOST_URL}{web_interface_instance.port}/", session
                 )
                 await web_interface_tests.check_page_login_redirect(
-                    f"{LOCAL_HOST_URL}{web_interface_tests.PORT}/logout",
+                    f"{LOCAL_HOST_URL}{web_interface_instance.port}/logout",
                     session)
                 await web_interface_tests.check_page_login_redirect(
-                    f"{LOCAL_HOST_URL}{web_interface_tests.PORT}/", session
+                    f"{LOCAL_HOST_URL}{web_interface_instance.port}/", session
                 )
 
     def _get_all_native_rules(self, web_interface_instance, black_list=None):
@@ -104,12 +104,12 @@ class AbstractDistributionTester:
             print(f"{self.__class__.__name__} Tested {len(rules)} rules: {rules}")
         return rules
 
-    def _get_rule_url(self, rule: str):
+    def _get_rule_url(self, rule: str, port: int):
         if rule in self.DOTTED_URLS:
             path = rule
         else:
             path = rule.replace('.', '/')
-        return f"{LOCAL_HOST_URL}{web_interface_tests.PORT}{path}"
+        return f"{LOCAL_HOST_URL}{port}{path}"
 
 
 def _has_no_empty_params(rule):
