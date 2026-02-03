@@ -103,7 +103,7 @@ jobs:
     - name: Run tests
       run: |
         if [ "${{ matrix.package }}" = "octobot" ]; then
-          pytest tests
+          pytest tests -n auto --dist loadfile
           pytest --ignore=tentacles/Trading/Exchange tentacles -n auto --dist loadfile
         else
           cd ${{ matrix.package }}
