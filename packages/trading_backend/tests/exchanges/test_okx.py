@@ -13,12 +13,12 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-import mock
 import pytest
 import ccxt.async_support
 import trading_backend.exchanges as exchanges
 import tests.util.create_order_tests as create_order_tests
 import tests.util.account_tests as account_tests
+import tests.util
 from tests import okx_exchange
 
 
@@ -29,14 +29,16 @@ def test_get_name(okx_exchange):
 @pytest.mark.asyncio
 async def test_get_orders_parameters(okx_exchange):
     exchange = exchanges.OKX(okx_exchange)
-    await create_order_tests.create_order_mocked_test_args(
-        exchange,
-        exchange_private_post_order_method_name="privatePostTradeBatchOrders",
-        exchange_request_referral_key="tag",
-        should_contains=False,
-        result_is_list=True,
-        post_order_mock_return_value={'data': [{}]}
-    )
+    with tests.util.mocked_load_markets(exchange) as load_markets_mock:
+        await create_order_tests.create_order_mocked_test_args(
+            exchange,
+            exchange_private_post_order_method_name="privatePostTradeBatchOrders",
+            exchange_request_referral_key="tag",
+            should_contains=False,
+            result_is_list=True,
+            post_order_mock_return_value={'data': [{}]}
+        )
+        assert load_markets_mock.call_count > 0
 
 
 @pytest.mark.asyncio

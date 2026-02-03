@@ -17,6 +17,7 @@ import pytest
 import ccxt.async_support
 
 import trading_backend.exchanges as exchanges
+import tests.util
 import tests.util.account_tests as account_tests
 from tests import hollaex_exchange
 
@@ -28,10 +29,14 @@ def test_get_name(hollaex_exchange):
 @pytest.mark.asyncio
 async def test_invalid_api_key(hollaex_exchange):
     exchange = exchanges.HollaEx(hollaex_exchange)
-    await account_tests.check_invalid_account(exchange)
+    with tests.util.mocked_load_markets(exchange) as load_markets_mock:
+        await account_tests.check_invalid_account(exchange)
+        assert load_markets_mock.call_count > 0
 
 
 @pytest.mark.asyncio
 async def test_invalid_api_key_get_api_key_rights(hollaex_exchange):
     exchange = exchanges.HollaEx(hollaex_exchange)
-    await account_tests.check_invalid_account_keys_rights(exchange)
+    with tests.util.mocked_load_markets(exchange) as load_markets_mock:
+        await account_tests.check_invalid_account_keys_rights(exchange)
+        assert load_markets_mock.call_count > 0
