@@ -319,6 +319,7 @@ class RestExchange(abstract_exchange.AbstractExchange):
     async def _order_operation(self, order_type, symbol, quantity, price, stop_price):
         try:
             yield
+            self.connector.clear_first_consecutive_authentication_error_at()
         except ccxt.InsufficientFunds as e:
             self._on_missing_funds_err(e, order_type, symbol, quantity, price, stop_price)
         except ccxt.MarketClosed as err:
@@ -327,6 +328,7 @@ class RestExchange(abstract_exchange.AbstractExchange):
             raise errors.NotSupported(err) from err
         except (errors.AuthenticationError, ccxt.AuthenticationError) as err:
             # invalid api key or missing trading rights
+            self.connector.set_first_consecutive_authentication_error_at_if_unset()
             raise errors.AuthenticationError(
                 f"Error when handling order {html_util.get_html_summary_if_relevant(err)}. "
                 f"Please make sure that trading permissions are on for this API key."
@@ -357,6 +359,7 @@ class RestExchange(abstract_exchange.AbstractExchange):
                 ) from e
             if self.is_api_permission_error(e):
                 # invalid api key or missing trading rights
+                self.connector.set_first_consecutive_authentication_error_at_if_unset()
                 raise errors.AuthenticationError(
                     f"Error when handling order {html_util.get_html_summary_if_relevant(e)}. "
                     f"Please make sure that trading permissions are on for this API key."
@@ -612,6 +615,9 @@ class RestExchange(abstract_exchange.AbstractExchange):
 
     def get_uniform_timestamp(self, timestamp):
         return self.connector.get_uniform_timestamp(timestamp)
+
+    def get_first_consecutive_authentication_error_at(self) -> typing.Optional[float]:
+        return self.connector.first_consecutive_authentication_error_at
 
     def _should_fix_market_status(self):
         return self.FIX_MARKET_STATUS

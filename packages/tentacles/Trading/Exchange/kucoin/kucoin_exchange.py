@@ -248,7 +248,7 @@ class Kucoin(exchanges.RestExchange):
         # It is currently impossible to fetch subaccounts account id, use a constant value to identify it.
         # updated: 21/05/2024
         try:
-            with self.connector.error_describer():
+            with self.connector.error_describer(True):
                 account_id = None
                 subaccount_id = None
                 sub_accounts = await self.connector.client.private_get_sub_accounts()

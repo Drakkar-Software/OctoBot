@@ -208,7 +208,7 @@ class Okx(exchanges.RestExchange):
     async def get_account_id(self, **kwargs: dict) -> str:
         accounts = await self.connector.client.fetch_accounts()
         try:
-            with self.connector.error_describer():
+            with self.connector.error_describer(True):
                 return accounts[0]["id"]
         except IndexError as err:
             # should never happen as at least one account should be available

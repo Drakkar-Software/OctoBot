@@ -491,7 +491,7 @@ class hollaex(exchanges.RestExchange):
         return 50
 
     async def get_account_id(self, **kwargs: dict) -> str:
-        with self.connector.error_describer():
+        with self.connector.error_describer(True):
             user_info = await self.connector.client.private_get_user()
             return user_info["id"]
 
