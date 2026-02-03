@@ -56,7 +56,6 @@ jobs:
         fi
 
     - name: Install OctoBot
-      if:  matrix.package == 'octobot'
       run: |
         pants package :OctoBot
         pip3 install -r dev_requirements.txt
@@ -75,7 +74,8 @@ jobs:
           pytest tests
           pytest --ignore=tentacles/Trading/Exchange tentacles
         else
-          pants --process-execution-local-parallelism=1 test ${{ matrix.package }}:tests
+          cd ${{ matrix.package }}
+          pytest tests
         fi
       env:
         DISABLE_SENTRY: True

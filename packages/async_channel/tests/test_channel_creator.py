@@ -60,7 +60,7 @@ async def test_create_all_subclasses_channel():
 
     channels.del_chan(tests.TEST_CHANNEL)
     await util.create_all_subclasses_channel(TestChannelClass, channels.set_chan)
-    assert len(channels.ChannelInstances.instance().channels) == 2  # (Test1Channel, Test2Channel)
+    assert len(channels.ChannelInstances.instance().channels) == 3  # (EmptyTestChannel, Test1Channel, Test2Channel)
     clean_channels()
     await util.create_all_subclasses_channel(TestChannelClass, channels.set_chan, is_synchronized=True)
     assert all(channels.get_chan(channel).is_synchronized for channel in channels.ChannelInstances.instance().channels)
