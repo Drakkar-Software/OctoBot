@@ -144,6 +144,57 @@ jobs:
         path: OctoBot_windows.exe
         if-no-files-found: error
 
+  release:
+    name: Create Release
+    needs: [ binary ]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest ]
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v7
+
+      - name: Set version as environement var
+        id: vars
+        run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
+
+      - name: Clean artifact names
+        run: |
+          sudo apt-get update
+          sudo apt-get install rename -y
+          find . -type f -exec bash -c 'mv $1 $(basename $(dirname $1)).tmp && rm -rf $(basename $(dirname $1)) && rename 's/\.tmp$//' *.tmp' _ {} \;
+
+      - name: Compute hashes
+        id: hashes
+        run: | # todo add linux arm64 hash
+          echo ::set-output name=octobot_linux_x64_hash::$(openssl sha256 ./OctoBot_linux_x64 | awk '{print $2}')
+          echo ::set-output name=octobot_macos_x64_hash::$(openssl sha256 ./OctoBot_macos_x64 | awk '{print $2}')
+          echo ::set-output name=octobot_macos_arm64_hash::$(openssl sha256 ./OctoBot_macos_arm64 | awk '{print $2}')
+          echo ::set-output name=octobot_windows_x64_hash::$(openssl sha256 ./OctoBot_windows_x64.exe | awk '{print $2}')
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.AUTH_TOKEN }}
+        with:
+          tag_name: ${{ steps.vars.outputs.tag }}
+          release_name: Release - ${{ steps.vars.outputs.tag }}
+          owner: ${{ github.repository_owner }}
+          repo: OctoBot
+          draft: true
+          prerelease: false
+          commitish: master
+          body: | # todo add linux arm64 hash
+            | Binary        | Download link | SHA256        |
+            | ------------- |:-------------:|:-------------:|
+            | Windows x64 | [Download](https://github.com/${{ github.repository_owner }}/OctoBot/releases/download/${{ steps.vars.outputs.tag }}/OctoBot_windows_x64.exe) | ${{ steps.hashes.outputs.octobot_windows_x64_hash }} |
+            | Linux x64 | [Download](https://github.com/${{ github.repository_owner }}/OctoBot/releases/download/${{ steps.vars.outputs.tag }}/OctoBot_linux_x64) | ${{ steps.hashes.outputs.octobot_linux_x64_hash }} |
+            | MacOS x64 | [Download](https://github.com/${{ github.repository_owner }}/OctoBot/releases/download/${{ steps.vars.outputs.tag }}/OctoBot_macos_x64) | ${{ steps.hashes.outputs.octobot_macos_x64_hash }} |
+            | MacOS arm64 | [Download](https://github.com/${{ github.repository_owner }}/OctoBot/releases/download/${{ steps.vars.outputs.tag }}/OctoBot_macos_arm64) | ${{ steps.hashes.outputs.octobot_macos_arm64_hash }} |
+
   notify:
     if: ${{ failure() }}
     needs:
