@@ -14,7 +14,7 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import logging
-import logging.config as config
+import logging.config
 import os
 import shutil
 import traceback
@@ -48,11 +48,11 @@ def _log_uncaught_exceptions(ex_cls, ex, tb):
     logging.exception("{0}: {1}".format(ex_cls, ex))
 
 
-def init_logger():
+def init_logger(logs_folder: str = constants.LOGS_FOLDER):
     try:
-        if not os.path.exists(constants.LOGS_FOLDER):
-            os.mkdir(constants.LOGS_FOLDER)
-        _load_logger_config()
+        if not os.path.exists(logs_folder):
+            os.mkdir(logs_folder)
+        _load_logger_config(logs_folder)
         init_bot_channel_logger()
     except KeyError:
         print(
@@ -84,24 +84,34 @@ def init_bot_channel_logger():
     BOT_CHANNEL_LOGGER = common_logging.get_logger("OctoBot Channel")
 
 
-def _load_logger_config():
+def _load_logger_config(logs_folder: str):
     try:
         # use local logging file to allow users to customize the log level
         if not os.path.isfile(configuration_manager.get_user_local_config_file()):
             if not os.path.exists(commons_constants.USER_FOLDER):
                 os.mkdir(commons_constants.USER_FOLDER)
             shutil.copyfile(constants.LOGGING_CONFIG_FILE, configuration_manager.get_user_local_config_file())
-        config.fileConfig(configuration_manager.get_user_local_config_file())
+        logging.config.fileConfig(configuration_manager.get_user_local_config_file())
+        logger = logging.getLogger("Logging Configuration")
+        logger.info(f"Saving logs in '{os.path.join(os.getcwd(), logs_folder)}' folder")
+        if logs_folder != constants.LOGS_FOLDER:
+            _set_log_folder(os.path.join(os.getcwd(), logs_folder))
         if constants.FORCED_LOG_LEVEL:
-            logging.getLogger("Logging Configuration").info(
+            logger.info(
                 f"Applying forced logging level {constants.FORCED_LOG_LEVEL}"
             )
             common_logging.set_global_logger_level(constants.FORCED_LOG_LEVEL)
     except Exception as ex:
-        config.fileConfig(constants.LOGGING_CONFIG_FILE)
+        logging.config.fileConfig(constants.LOGGING_CONFIG_FILE)
         logging.getLogger("Logging Configuration").warning(
             f"Impossible to initialize local logging configuration file, using default one. {ex}"
         )
+
+
+def _set_log_folder(logs_folder: str):
+    for handler in logging.getLogger().handlers:
+        if isinstance(handler, logging.FileHandler):
+            handler.baseFilename = os.path.join(logs_folder, os.path.basename(handler.baseFilename))
 
 
 async def init_exchange_chan_logger(exchange_id):
