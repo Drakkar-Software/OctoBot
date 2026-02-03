@@ -409,8 +409,6 @@ jobs:
         os: [macos-latest, windows-latest, ubuntu-latest]
         arch: [ x64, arm64 ]
         exclude:
-          - os: ubuntu-latest  # todo fix ubuntu arm64 build
-            arch: arm64
           - os: windows-latest
             arch: arm64
 
@@ -442,12 +440,14 @@ jobs:
           OCTOBOT_REPOSITORY_DIR: OctoBot
           NLTK_DATA: nltk_data
           BUILD_ARCH: ${{ matrix.arch }}
-        run: |  # todo fix ubuntu arm64 build
+        run: |
           apt-get update
-          apt-get install -y --no-install-recommends python3.13 python3-pip python3-dev git gcc musl-dev libc-dev build-essential zlib1g zlib1g-dev
-          python3 -m pip install -U pip setuptools wheel
-          python3 -m pip install -r packages/binary/requirements.txt
-          pip3 install /dist/octobot-*.whl
+          apt-get install -y --no-install-recommends python3.12 python3-pip python3-dev python3-venv git gcc musl-dev libc-dev build-essential zlib1g zlib1g-dev
+          python3 -m venv /opt/octobot_venv
+          source /opt/octobot_venv/bin/activate
+          python -m pip install -U pip setuptools wheel
+          python -m pip install -r packages/binary/requirements.txt
+          python -m pip install /dist/octobot-*.whl
           bash ./packages/binary/build_scripts/unix.sh
 
     - name: Build OctoBot Binary on Linux
@@ -535,8 +535,9 @@ jobs:
 
       - name: Compute hashes
         id: hashes
-        run: | # todo add linux arm64 hash
+        run: |
           echo ::set-output name=octobot_linux_x64_hash::$(openssl sha256 ./OctoBot_linux_x64 | awk '{print $2}')
+          echo ::set-output name=octobot_linux_arm64_hash::$(openssl sha256 ./OctoBot_linux_arm64 | awk '{print $2}')
           echo ::set-output name=octobot_macos_x64_hash::$(openssl sha256 ./OctoBot_macos_x64 | awk '{print $2}')
           echo ::set-output name=octobot_macos_arm64_hash::$(openssl sha256 ./OctoBot_macos_arm64 | awk '{print $2}')
           echo ::set-output name=octobot_windows_x64_hash::$(openssl sha256 ./OctoBot_windows_x64.exe | awk '{print $2}')
@@ -554,11 +555,12 @@ jobs:
           draft: true
           prerelease: false
           commitish: master
-          body: | # todo add linux arm64 hash
+          body: |
             | Binary        | Download link | SHA256        |
             | ------------- |:-------------:|:-------------:|
             | Windows x64 | [Download](https://github.com/${{ github.repository_owner }}/OctoBot/releases/download/${{ steps.vars.outputs.tag }}/OctoBot_windows_x64.exe) | ${{ steps.hashes.outputs.octobot_windows_x64_hash }} |
             | Linux x64 | [Download](https://github.com/${{ github.repository_owner }}/OctoBot/releases/download/${{ steps.vars.outputs.tag }}/OctoBot_linux_x64) | ${{ steps.hashes.outputs.octobot_linux_x64_hash }} |
+            | Linux arm64 | [Download](https://github.com/${{ github.repository_owner }}/OctoBot/releases/download/${{ steps.vars.outputs.tag }}/OctoBot_linux_arm64) | ${{ steps.hashes.outputs.octobot_linux_arm64_hash }} |
             | MacOS x64 | [Download](https://github.com/${{ github.repository_owner }}/OctoBot/releases/download/${{ steps.vars.outputs.tag }}/OctoBot_macos_x64) | ${{ steps.hashes.outputs.octobot_macos_x64_hash }} |
             | MacOS arm64 | [Download](https://github.com/${{ github.repository_owner }}/OctoBot/releases/download/${{ steps.vars.outputs.tag }}/OctoBot_macos_arm64) | ${{ steps.hashes.outputs.octobot_macos_arm64_hash }} |
 
@@ -582,15 +584,15 @@ jobs:
           asset_name: OctoBot_linux_x64
           asset_content_type: application/x-binary
 
-      # - name: Upload Release Asset - OctoBot_linux_arm64
-      #   uses: actions/upload-release-asset@v1
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.AUTH_TOKEN }}
-      #   with:
-      #     upload_url: ${{ steps.create_release.outputs.upload_url }}
-      #     asset_path: ./OctoBot_linux_arm64
-      #     asset_name: OctoBot_linux_arm64
-      #     asset_content_type: application/x-binary
+      - name: Upload Release Asset - OctoBot_linux_arm64
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.AUTH_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./OctoBot_linux_arm64
+          asset_name: OctoBot_linux_arm64
+          asset_content_type: application/x-binary
 
       - name: Upload Release Asset - OctoBot_macos_x64
         uses: actions/upload-release-asset@v1
