@@ -104,10 +104,14 @@ jobs:
       run: |
         if [ "${{ matrix.package }}" = "octobot" ]; then
           pytest tests
-          pytest --ignore=tentacles/Trading/Exchange tentacles
+          pytest --ignore=tentacles/Trading/Exchange tentacles -n auto --dist loadfile
         else
           cd ${{ matrix.package }}
-          pytest tests
+          if [ "${{ matrix.package }}" = "packages/tentacles_manager" ]; then
+            pytest tests
+          else
+            pytest tests -n auto --dist loadfile
+          fi
         fi
       env:
         DISABLE_SENTRY: True

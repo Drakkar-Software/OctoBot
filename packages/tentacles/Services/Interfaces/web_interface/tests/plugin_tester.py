@@ -31,7 +31,7 @@ class AbstractPluginTester:
             async with aiohttp.ClientSession() as session:
                 await asyncio.gather(
                     *[web_interface_tests.check_page_no_login_redirect(
-                        f"http://localhost:{web_interface_tests.PORT}{rule.replace('.', '/')}",
+                        f"http://localhost:{web_interface_instance.port}{rule.replace('.', '/')}",
                         session)
                         for rule in self._get_rules(web_interface_instance)])
 
@@ -40,25 +40,25 @@ class AbstractPluginTester:
             async with aiohttp.ClientSession() as session:
                 await asyncio.gather(
                     *[web_interface_tests.check_page_login_redirect(
-                        f"http://localhost:{web_interface_tests.PORT}{rule.replace('.', '/')}",
+                        f"http://localhost:{web_interface_instance.port}{rule.replace('.', '/')}",
                         session)
                         for rule in self._get_rules(web_interface_instance)])
 
     async def test_browse_all_pages_required_password_with_login(self):
         async with web_interface_tests.get_web_interface(True, self.DISTRIBUTION) as web_interface_instance:
             async with aiohttp.ClientSession() as session:
-                await web_interface_tests.login_user_on_session(session)
+                await web_interface_tests.login_user_on_session(session, web_interface_instance.port)
                 # correctly display pages: session is logged in
                 await asyncio.gather(
                     *[web_interface_tests.check_page_no_login_redirect(
-                        f"http://localhost:{web_interface_tests.PORT}{rule.replace('.', '/')}",
+                        f"http://localhost:{web_interface_instance.port}{rule.replace('.', '/')}",
                         session)
                         for rule in self._get_rules(web_interface_instance)])
             async with aiohttp.ClientSession() as unauthenticated_session:
                 # redirect to login page: session is not logged in
                 await asyncio.gather(
                     *[web_interface_tests.check_page_login_redirect(
-                        f"http://localhost:{web_interface_tests.PORT}{rule.replace('.', '/')}",
+                        f"http://localhost:{web_interface_instance.port}{rule.replace('.', '/')}",
                         unauthenticated_session)
                         for rule in self._get_rules(web_interface_instance)])
 
