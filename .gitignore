@@ -144,3 +144,4 @@ letsencrypt/
 
 # bin
 nltk_data/
+installer/
