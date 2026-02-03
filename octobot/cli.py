@@ -313,7 +313,9 @@ def start_octobot(args, default_config_file=None):
             print(constants.LONG_VERSION)
             return
 
-        logger = octobot_logger.init_logger()
+        # log folder can be overridden by the LOGS_FOLDER environment variable, 
+        # useful to run multiple bots from the same folder
+        logger = octobot_logger.init_logger(logs_folder=constants.LOGS_FOLDER)
         startup_messages = []
 
         # Version

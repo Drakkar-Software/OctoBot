@@ -48,7 +48,7 @@ def _log_uncaught_exceptions(ex_cls, ex, tb):
     logging.exception("{0}: {1}".format(ex_cls, ex))
 
 
-def init_logger(logs_folder: str = constants.LOGS_FOLDER):
+def init_logger(logs_folder: str = constants.DEFAULT_LOGS_FOLDER):
     try:
         if not os.path.exists(logs_folder):
             os.mkdir(logs_folder)
@@ -94,7 +94,7 @@ def _load_logger_config(logs_folder: str):
         logging.config.fileConfig(configuration_manager.get_user_local_config_file())
         logger = logging.getLogger("Logging Configuration")
         logger.info(f"Saving logs in '{os.path.join(os.getcwd(), logs_folder)}' folder")
-        if logs_folder != constants.LOGS_FOLDER:
+        if logs_folder != constants.DEFAULT_LOGS_FOLDER:
             _set_log_folder(os.path.join(os.getcwd(), logs_folder))
         if constants.FORCED_LOG_LEVEL:
             logger.info(
