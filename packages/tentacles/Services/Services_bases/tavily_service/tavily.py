@@ -34,7 +34,7 @@ from .models import (
 TAVILY_API_BASE = "https://api.tavily.com"
 
 
-class TavilyService(services.AbstractService):
+class TavilyService(services.AbstractWebSearchService):
 
     TAVILY_DOCS_URL = "https://docs.tavily.com/documentation/api-reference/introduction"
 
@@ -42,8 +42,6 @@ class TavilyService(services.AbstractService):
         super().__init__()
         self._api_key: Optional[str] = None
         self._headers: Dict[str, str] = {}
-        self._startup_message: str = ""
-        self._startup_healthy: bool = False
 
     async def _post(self, path: str, data: dict, timeout: float = 60) -> dict:
         if not self._api_key:
@@ -192,6 +190,73 @@ class TavilyService(services.AbstractService):
     async def search(
         self,
         query: str,
+        max_results: Optional[int] = None,
+        categories: Optional[Sequence[str]] = None,
+        language: Optional[str] = None,
+        time_range: Optional[str] = None,
+        include_domains: Optional[Sequence[str]] = None,
+        exclude_domains: Optional[Sequence[str]] = None,
+        timeout: Optional[float] = None,
+        # Tavily-specific parameters
+        search_depth: Optional[str] = None,
+        topic: Optional[str] = None,
+        include_answer: Optional[Union[bool, str]] = None,
+        include_raw_content: Optional[Union[bool, str]] = None,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+        days: Optional[int] = None,
+        include_images: Optional[bool] = None,
+        country: Optional[str] = None,
+        auto_parameters: Optional[bool] = None,
+        include_favicon: Optional[bool] = None,
+        include_usage: Optional[bool] = None,
+        chunks_per_source: Optional[int] = None,
+        **kwargs,
+    ) -> services.WebSearchResponse:
+        tavily_response = await self.search_tavily(
+            query=query,
+            search_depth=search_depth,
+            topic=topic,
+            max_results=max_results,
+            include_answer=include_answer,
+            include_raw_content=include_raw_content,
+            include_domains=include_domains,
+            exclude_domains=exclude_domains,
+            time_range=time_range,
+            start_date=start_date,
+            end_date=end_date,
+            days=days,
+            include_images=include_images,
+            country=country,
+            auto_parameters=auto_parameters,
+            include_favicon=include_favicon,
+            include_usage=include_usage,
+            chunks_per_source=chunks_per_source,
+            timeout=timeout or 60.0,
+        )
+        
+        web_results = []
+        for tavily_result in tavily_response.results:
+            web_results.append(services.WebSearchResult(
+                title=tavily_result.title,
+                url=tavily_result.url,
+                content=tavily_result.content,
+                score=tavily_result.score,
+                raw_content=tavily_result.raw_content,
+                favicon=tavily_result.favicon,
+            ))
+        
+        return services.WebSearchResponse(
+            query=tavily_response.query,
+            results=web_results,
+            answer=tavily_response.answer,
+            response_time=tavily_response.response_time,
+            total_results=len(web_results),
+        )
+
+    async def search_tavily(
+        self,
+        query: str,
         search_depth: Optional[str] = None,
         topic: Optional[str] = None,
         max_results: Optional[int] = None,
@@ -248,6 +313,26 @@ class TavilyService(services.AbstractService):
             data["chunks_per_source"] = chunks_per_source
         raw = await self._post("search", data, timeout=min(timeout, 120))
         return SearchResponse.from_dict(raw)
+
+    async def search_news(
+        self,
+        query: str,
+        max_results: Optional[int] = None,
+        language: Optional[str] = None,
+        time_range: Optional[str] = None,
+        timeout: Optional[float] = None,
+        **kwargs,
+    ) -> services.WebSearchResponse:
+        return await self.search(
+            query=query,
+            max_results=max_results,
+            categories=None,  # Not used by Tavily
+            language=language,
+            time_range=time_range or "week",  # Default to recent news
+            timeout=timeout,
+            topic="news",  # Tavily-specific: use news topic
+            **kwargs,
+        )
 
     async def extract(
         self,
