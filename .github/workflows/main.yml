@@ -9,7 +9,7 @@ on:
 
 jobs:
   build-wheel:
-    name: Build Python Wheel
+    name: Build Python WheelX
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
