@@ -13,10 +13,10 @@ jobs:
     if: github.event_name == 'push' || startsWith(github.ref, 'refs/tags')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
 
       - name: Set up Python 3.13
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
           python-version: '3.13.x'
           architecture: x64
@@ -28,7 +28,7 @@ jobs:
           pants package :OctoBot
 
       - name: Upload wheel artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: octobot-wheel
           path: dist/octobot-*.whl
@@ -55,13 +55,13 @@ jobs:
     - uses: actions/checkout@v6
 
     - name: Download wheel artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v7
       with:
         name: octobot-wheel
         path: dist/
 
     - name: Set up Python 3.13
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v6
       with:
         python-version: '3.13.x'
         architecture: x64
@@ -144,7 +144,7 @@ jobs:
       if: matrix.os == 'windows-latest'
       with:
         name: OctoBot_windows_${{ matrix.arch }}.exe
-        path: dist/OctoBot_windows.exe
+        path: OctoBot_windows.exe
         if-no-files-found: error
 
   notify:

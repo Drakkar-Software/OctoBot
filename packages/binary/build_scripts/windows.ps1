@@ -5,4 +5,4 @@ python packages/binary/scripts/fetch_nltk_data.py words $env:NLTK_DATA
 python -m PyInstaller bin/start.spec --workpath installer
 Rename-Item dist/OctoBot.exe OctoBot_windows.exe
 Copy-Item dist/OctoBot_windows.exe OctoBot_windows.exe
-dist/OctoBot_windows.exe --version
+OctoBot_windows.exe --version
