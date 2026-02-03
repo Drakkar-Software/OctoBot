@@ -298,8 +298,19 @@ class AIIndexTradingModeProducer(index_trading.IndexTradingModeProducer):
         
         # Create and run the team based on use_deep_agent config
         use_deep_agent = self.trading_mode.config.get(AIIndexTradingMode.USE_DEEP_AGENT_KEY, False)
-        team_class = DeepAgentTradingTeam if use_deep_agent else TradingAgentTeam
-        team = team_class(ai_service=ai_service)
+        if use_deep_agent:
+            # Deep agents require langchain service explicitly
+            team_class = DeepAgentTradingTeam
+            # Get langchain service for deep agents
+            from tentacles.Services.Services_bases.langchain_service.langchain import LangChainService
+            langchain_service = await services_api.get_service(
+                LangChainService,
+                is_backtesting=self.exchange_manager.is_backtesting
+            )
+            team = team_class(ai_service=langchain_service or ai_service)
+        else:
+            team_class = TradingAgentTeam
+            team = team_class(ai_service=ai_service)
         
         try:
             distribution_output = await team.run_with_state(state)

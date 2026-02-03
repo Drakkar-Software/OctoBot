@@ -99,4 +99,11 @@ Your bearish argument (short, one paragraph):"""
         ]
         response_data = await self._call_llm(messages, ai_service, json_output=True, response_schema=ResearchDebateOutput)
         out = ResearchDebateOutput(**response_data)
+        
+        # Check if the model contains an error
+        if out.error:
+            raise ValueError(f"LLM failed to return valid bearish research: {out.error}")
+        if not out.message:
+            raise ValueError("LLM returned empty message for bearish research")
+        
         return {"message": out.message, "reasoning": out.reasoning}

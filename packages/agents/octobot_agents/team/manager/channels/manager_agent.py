@@ -345,6 +345,11 @@ class AIToolsManagerAgentProducer(AIManagerAgentProducer):
         if response_data is None:
             raise ValueError("LLM did not return any tool calls. The manager agent requires tool calls to coordinate team execution.")
         
+        # Check if response contains an error instead of a valid tool call
+        if isinstance(response_data, dict) and "error" in response_data and "tool_name" not in response_data:
+            error_msg = response_data.get("error", "Unknown error")
+            raise ValueError(f"LLM failed to return valid tool calls: {error_msg}")
+        
         return ManagerToolCall.model_validate(response_data)
 
     def _get_tools_prompt(self) -> str:

@@ -51,5 +51,8 @@ class AIModelPolicy(enum.Enum):
 class AIProvider(enum.Enum):
     OPENAI = "openai"
     ANTHROPIC = "anthropic"
-    LOCAL = "local"
+    OLLAMA = "ollama"
+    GOOGLE = "google"
+    MICROSOFT = "microsoft"
+    AMAZON = "amazon"
     OTHER = "other"

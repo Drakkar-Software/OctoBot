@@ -17,7 +17,7 @@ import typing
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, TypedDict, Union
 
 import pydantic
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from octobot_agents import constants
 from octobot_agents.errors import AgentError
@@ -179,6 +179,16 @@ class RunAgentArgs(AgentBaseModel):
     # Allow agent_name to be optional here; manager may fill defaults or validate later.
     agent_name: Optional[str] = None  # Name of the agent to run
     instructions: Optional[Union[List[AgentInstruction], List[str]]] = None  # Instructions to send before execution
+    
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_instructions(cls, data: Any) -> Any:
+        if isinstance(data, dict) and "instructions" in data:
+            instructions = data["instructions"]
+            # If instructions is a string, wrap it in a list
+            if isinstance(instructions, str):
+                data["instructions"] = [instructions]
+        return data
 
 
 class RunDebateArgs(AgentBaseModel):

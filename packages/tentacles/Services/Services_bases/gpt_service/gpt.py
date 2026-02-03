@@ -884,6 +884,7 @@ class LLMService(services.AbstractAIService):
         tools: typing.Optional[list] = None,
         tool_choice: typing.Optional[typing.Union[str, dict]] = None,
         use_octobot_mcp: typing.Optional[bool] = None,
+        middleware: typing.Optional[typing.List[typing.Callable]] = None,
     ) -> typing.Union[str, dict, None]:
         """Get a completion from the LLM.
         
@@ -1041,6 +1042,7 @@ class LLMService(services.AbstractAIService):
         use_octobot_mcp: typing.Optional[bool] = None,
         max_tool_iterations: int = 3,
         return_tool_calls: bool = False,
+        middleware: typing.Optional[typing.List[typing.Callable]] = None,
     ) -> typing.Any:
         """
         Get a completion from the LLM with automatic tool calling orchestration.
@@ -1174,6 +1176,30 @@ class LLMService(services.AbstractAIService):
                 timeout=self.HTTP_TIMEOUT,
             )
         return self._client
+
+    def get_chat_model(
+        self,
+        model: typing.Optional[str] = None,
+        temperature: typing.Optional[float] = None,
+        max_tokens: typing.Optional[int] = None,
+        **kwargs
+    ) -> typing.Any:
+        """
+        Get a chat model instance for use with agents or other LLM components.
+        
+        For OpenAI-based services, this returns the AsyncOpenAI client.
+        For LangChain integration, use init_chat_model() instead.
+        
+        Args:
+            model: Optional model override (stored for reference, client uses self.model).
+            temperature: Optional temperature override (not applied to OpenAI client directly).
+            max_tokens: Optional max_tokens override (not applied to OpenAI client directly).
+            **kwargs: Additional keyword arguments (ignored for OpenAI).
+        
+        Returns:
+            openai.AsyncOpenAI: The OpenAI client instance.
+        """
+        return self._get_client()
 
     def _convert_messages_to_responses_input(self, messages: list) -> list:
         """Convert chat messages to Responses API input format.

@@ -106,6 +106,7 @@ class AbstractAIService(AbstractService, abc.ABC):
         tools: typing.Optional[list] = None,
         tool_choice: typing.Optional[typing.Union[str, dict]] = None,
         use_octobot_mcp: typing.Optional[bool] = None,
+        middleware: typing.Optional[typing.List[typing.Callable]] = None,
     ) -> typing.Union[str, dict, None]:
         """
         Get a completion from the LLM.
@@ -128,6 +129,9 @@ class AbstractAIService(AbstractService, abc.ABC):
                             If True, automatically discovers and includes tools from OctoBot MCP interface.
                             If None, uses default behavior (does not include OctoBot MCP).
                             If False, explicitly excludes OctoBot MCP tools.
+            middleware: Optional list of middleware callables to process the client before invocation.
+                       Each middleware should accept (client, messages, kwargs) and return modified client.
+                       This is primarily used by LangChain-based services; OpenAI-based services may ignore this.
         
         Returns:
             str: The completion text when no tools are used or tool_choice is "none".
@@ -160,6 +164,7 @@ class AbstractAIService(AbstractService, abc.ABC):
         use_octobot_mcp: typing.Optional[bool] = None,
         max_tool_iterations: int = 3,
         return_tool_calls: bool = False,
+        middleware: typing.Optional[typing.List[typing.Callable]] = None,
     ) -> typing.Any:
         """
         Get a completion from the LLM with automatic tool calling orchestration.
@@ -194,6 +199,9 @@ class AbstractAIService(AbstractService, abc.ABC):
                             If False, explicitly excludes OctoBot MCP tools.
             max_tool_iterations: Maximum number of tool calling rounds (default: 3).
                                 Prevents infinite loops if LLM keeps requesting tools.
+            middleware: Optional list of middleware callables to process the client before invocation.
+                       Each middleware should accept (client, messages, kwargs) and return modified client.
+                       This is primarily used by LangChain-based services; OpenAI-based services may ignore this.
         
         Returns:
             Final parsed response:
@@ -256,15 +264,18 @@ class AbstractAIService(AbstractService, abc.ABC):
         if response is None:
             raise ValueError("Response is None")
         
-        # Extract content from response
         if isinstance(response, dict):
             response_stripped = response.get("content", "").strip() if response.get("content") else str(response).strip()
         else:
             response_stripped = response.strip() if isinstance(response, str) else str(response)
         
-        # Parse JSON if requested
         if json_output:
-            parsed_response = json.loads(response_stripped)
+            try:
+                parsed_response = json.loads(response_stripped)
+            except json.JSONDecodeError:
+                return {
+                    "error": f"Error parsing JSON from response {response_stripped}",
+                }
         else:
             parsed_response = response_stripped
         
@@ -367,3 +378,53 @@ class AbstractAIService(AbstractService, abc.ABC):
         if not self.models_config:
             return None
         return self.models_config.get(policy)
+
+    def get_chat_model(
+        self,
+        model: typing.Optional[str] = None,
+        temperature: typing.Optional[float] = None,
+        max_tokens: typing.Optional[int] = None,
+        **kwargs
+    ) -> typing.Any:
+        """
+        Get a chat model instance for use with agents or other LLM components.
+        
+        This method provides direct access to the underlying model client,
+        allowing integration with agent frameworks like LangGraph.
+        
+        Args:
+            model: Optional model override. Uses service's configured model if not provided.
+            temperature: Optional temperature override.
+            max_tokens: Optional max_tokens override.
+            **kwargs: Additional keyword arguments passed to the chat model.
+        
+        Returns:
+            Chat model instance configured with the service's settings.
+        
+        Raises:
+            NotImplementedError: If the service doesn't support this method.
+        """
+        raise NotImplementedError("get_chat_model not implemented")
+
+    def init_chat_model(
+        self,
+        model: typing.Optional[str] = None,
+        **kwargs
+    ) -> typing.Any:
+        """
+        Initialize a chat model using the service's configuration.
+        
+        This method provides a way to create a chat model instance that can be
+        used with deep agents and other LLM orchestration frameworks.
+        
+        Args:
+            model: Model name. If None, uses service's configured model.
+            **kwargs: Additional keyword arguments passed to the model initialization.
+        
+        Returns:
+            Chat model instance.
+        
+        Raises:
+            NotImplementedError: If the service doesn't support this method.
+        """
+        raise NotImplementedError("init_chat_model not implemented")

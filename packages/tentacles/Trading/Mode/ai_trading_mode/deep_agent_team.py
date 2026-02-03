@@ -35,20 +35,17 @@ from __future__ import annotations
 import typing
 import json
 import logging
-
-import octobot_commons.constants as common_constants
+import os
 
 from octobot_agents.team.channels.deep_agents_team import (
     AbstractDeepAgentsTeamChannel,
     AbstractDeepAgentsTeamChannelConsumer,
     AbstractDeepAgentsTeamChannelProducer,
 )
-from octobot_agents.agent.channels.deep_agent import (
-    DEEP_AGENTS_AVAILABLE,
-    build_dictionary_subagent,
-)
-from octobot_agents.constants import MEMORIES_PATH_PREFIX
+from octobot_agents.utils.extractor import extract_json_from_content
 import octobot_services.services.abstract_ai_service as abstract_ai_service
+
+from . import models
 
 logger = logging.getLogger(__name__)
 
@@ -370,8 +367,28 @@ class DeepAgentTradingTeam(AbstractDeepAgentsTeamChannelProducer):
         return workers
     
     def get_manager_instructions(self) -> str:
-        """Get the manager/supervisor instructions."""
         return MANAGER_INSTRUCTIONS
+
+    def get_skills_resources_dir(self) -> str | None:
+        return os.path.join(os.path.dirname(__file__), "resources", "skills")
+    
+    def get_agent_skills(self, agent_name: str) -> list[str] | None:
+        """
+        Get skills for specific worker agents.
+        Each agent gets its own specialized skill.
+        """
+        skills_dir = self.get_skills_resources_dir()
+        if not skills_dir:
+            return None
+        
+        agent_skill_dir = os.path.join(skills_dir, agent_name)
+        if os.path.isdir(agent_skill_dir):
+            # Check if SKILL.md exists
+            skill_file = os.path.join(agent_skill_dir, "SKILL.md")
+            if os.path.isfile(skill_file):
+                return [f"./{agent_name}/"]
+        
+        return None
     
     def get_critic_config(self) -> dict[str, typing.Any] | None:
         """Get critic configuration for debate mode."""
@@ -419,47 +436,81 @@ Save important insights to /memories/trading_insights/ for future reference.
 """.strip()
     
     def _parse_result(self, result: typing.Dict[str, typing.Any]) -> typing.Dict[str, typing.Any]:
-        """Parse the Deep Agent result into trading output."""
+        """Parse the Deep Agent result into validated trading output."""
         try:
             messages = result.get("messages", [])
             if not messages:
-                return {
-                    "distribution": None,
-                    "error": "No response from agent",
-                }
+                error_result = models.TradingTeamResult(
+                    distribution=None,
+                    error="No response from agent",
+                )
+                return error_result.model_dump(exclude_none=False)
             
             # Get the last assistant message
             last_message = messages[-1]
-            content = last_message.get("content", "") if isinstance(last_message, dict) else str(last_message)
+            # Extract content from LangChain message object (has .content attribute)
+            # or dict (has "content" key), or convert to string as last resort
+            if hasattr(last_message, "content"):
+                content = str(last_message.content)
+            elif isinstance(last_message, dict):
+                content = str(last_message.get("content", ""))
+            else:
+                content = str(last_message)
             
-            # Try to parse as JSON
-            try:
-                json_start = content.find("{")
-                json_end = content.rfind("}") + 1
-                if json_start >= 0 and json_end > json_start:
-                    json_str = content[json_start:json_end]
-                    parsed = json.loads(json_str)
+            # Try to parse JSON from content
+            parsed_data = extract_json_from_content(content)
+            
+            if parsed_data:
+                try:
+                    # Validate distribution if present
+                    distribution = None
+                    if "distribution" in parsed_data:
+                        distribution = models.DistributionOutput.model_validate(parsed_data["distribution"])
                     
-                    return {
-                        "distribution": parsed.get("distribution"),
-                        "execution_plan": parsed.get("execution_plan"),
-                        "raw_output": parsed,
-                    }
-            except json.JSONDecodeError:
-                pass
+                    # Validate execution plan if present
+                    execution_plan = None
+                    if "execution_plan" in parsed_data:
+                        execution_plan = models.ExecutionPlan.model_validate(parsed_data["execution_plan"])
+                    
+                    result_obj = models.TradingTeamResult(
+                        distribution=distribution,
+                        execution_plan=execution_plan,
+                        raw_output=parsed_data,
+                    )
+                    return result_obj.model_dump(exclude_none=False)
+                except Exception as validation_error:
+                    logger.warning(
+                        f"Validation error for extracted JSON: {validation_error}. "
+                        f"Extracted data: {parsed_data}"
+                    )
+                    # Fall through to create result with raw output
+                    result_obj = models.TradingTeamResult(
+                        distribution=None,
+                        raw_output=parsed_data,
+                    )
+                    return result_obj.model_dump(exclude_none=False)
             
-            # Fallback
-            return {
-                "distribution": None,
-                "raw_output": content,
-            }
+            # Fallback: return raw content
+            result_obj = models.TradingTeamResult(
+                distribution=None,
+                raw_output={"raw_content": content},
+            )
+            return result_obj.model_dump(exclude_none=False)
             
         except Exception as e:
-            logger.error(f"Error parsing result: {e}")
-            return {
-                "distribution": None,
-                "error": str(e),
-            }
+            logger.error(f"Error parsing result: {e}", exc_info=True)
+            try:
+                error_result = models.TradingTeamResult(
+                    distribution=None,
+                    error=str(e),
+                )
+                return error_result.model_dump(exclude_none=False)
+            except Exception as fallback_error:
+                logger.error(f"Error creating fallback result: {fallback_error}")
+                return {
+                    "distribution": None,
+                    "error": str(e),
+                }
     
     async def run_with_portfolio(
         self,
@@ -470,21 +521,43 @@ Save important insights to /memories/trading_insights/ for future reference.
         """
         Convenience method to run the team with structured trading data.
         
+        Validates inputs against the TradingTeamInput model before execution.
+        
         Args:
             portfolio: Current portfolio state.
             market_data: Market data for analysis.
             strategy: Optional strategy configuration.
         
         Returns:
-            Dict with distribution recommendations.
+            Dict with validated distribution recommendations.
         """
-        initial_data = {
-            "portfolio": portfolio,
-            "market_data": market_data,
-            "strategy": strategy or {},
-        }
-        
-        return await self.run(initial_data)
+        try:
+            # Validate inputs
+            portfolio_obj = models.PortfolioState.model_validate(portfolio)
+            strategy_obj = models.StrategyConfig.model_validate(strategy) if strategy else None
+            
+            trading_input = models.TradingTeamInput(
+                portfolio=portfolio_obj,
+                market_data=market_data,
+                strategy=strategy_obj,
+            )
+            
+            initial_data = {
+                "portfolio": trading_input.portfolio.model_dump(),
+                "market_data": trading_input.market_data,
+                "strategy": trading_input.strategy.model_dump() if trading_input.strategy else {},
+            }
+            
+            return await self.run(initial_data)
+        except Exception as validation_error:
+            logger.warning(f"Input validation error: {validation_error}. Proceeding with raw data.")
+            # Fall back to raw execution if validation fails
+            initial_data = {
+                "portfolio": portfolio,
+                "market_data": market_data,
+                "strategy": strategy or {},
+            }
+            return await self.run(initial_data)
 
 
 def create_trading_team(
