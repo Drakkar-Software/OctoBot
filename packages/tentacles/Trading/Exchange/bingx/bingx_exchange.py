@@ -109,7 +109,7 @@ class Bingx(exchanges.RestExchange):
         return 'bingx'
 
     async def get_account_id(self, **kwargs: dict) -> str:
-        with self.connector.error_describer():
+        with self.connector.error_describer(True):
             resp = await self.connector.client.accountV1PrivateGetUid()
             return resp["data"]["uid"]
 

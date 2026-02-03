@@ -209,124 +209,228 @@ async def test_get_trade_fee(exchange_manager, future_trader_simulator_with_defa
            _get_fees("taker", "BTC", future_fees_value, decimal.Decimal("0.00018"))
 
 
-async def test_error_describer(ccxt_connector):
-    with pytest.raises(ZeroDivisionError, match="plop"):
-        # random error is just forwarded
-        with ccxt_connector.error_describer():
-            raise ZeroDivisionError("plop")
-    with pytest.raises(ccxt.DDoSProtection):
-        # forwarded ccxt error
-        with ccxt_connector.error_describer():
-            raise ccxt.DDoSProtection("plop")
-    with pytest.raises(octobot_trading.errors.FailedRequest):
-        # transformed ccxt error
-        with ccxt_connector.error_describer():
-            raise ccxt.InvalidNonce("plop")
-    with pytest.raises(octobot_trading.errors.NetworkError):
-        # transformed ccxt error
-        with ccxt_connector.error_describer():
-            raise ccxt.RequestTimeout("plop")
-    with pytest.raises(ccxt.ExchangeError):
-        # forwarded ccxt error
-        with ccxt_connector.error_describer():
-            raise ccxt.ExchangeError("plop")
-    with mock.patch.object(
-        ccxt_connector.exchange_manager.exchange, "is_authentication_error", mock.Mock(return_value=True)
-    ) as is_authentication_error_mock:
-        with pytest.raises(octobot_trading.errors.AuthenticationError):
-            # transformed ccxt error
-            with ccxt_connector.error_describer():
-                raise ccxt.ExchangeError("plop")
-        is_authentication_error_mock.assert_called_once()
+async def test_set_first_consecutive_authentication_error_at_if_unset(ccxt_connector):
+    assert ccxt_connector.first_consecutive_authentication_error_at is None
+    with mock.patch.object(ccxt_connector, 'get_exchange_current_time', return_value=123.456) as get_time_mock:
+        # sets the value when None
+        ccxt_connector.set_first_consecutive_authentication_error_at_if_unset()
+        assert ccxt_connector.first_consecutive_authentication_error_at == 123.456
+        get_time_mock.assert_called_once()
+        get_time_mock.reset_mock()
 
-    # proxied errors
-    with pytest.raises(octobot_trading.errors.AuthenticationError):
-        # transformed ccxt error
-        with ccxt_connector.error_describer():
-            raise ccxt.AuthenticationError("plop")
-    with pytest.raises(octobot_trading.errors.FailedRequest):
-        # transformed ccxt error
-        with ccxt_connector.error_describer():
-            raise ccxt.ExchangeNotAvailable("plop")
-    # default host, not using proxy exception for generic exception
-    with pytest.raises(octobot_trading.errors.AuthenticationError):
-        # proxy connection error
-        with ccxt_connector.error_describer():
-            raise ccxt.AuthenticationError from aiohttp.ClientConnectionError(
-                aiohttp.client_reqrep.ConnectionKey("host", 11, True, True, None, None, None), OSError("plop")
-            )
-    # default host, using proxy exception for proxy exception
-    with pytest.raises(octobot_trading.errors.ExchangeProxyError):
-        # proxy connection error
-        with ccxt_connector.error_describer():
-            raise ccxt.ExchangeError from aiohttp.ClientProxyConnectionError(
-                aiohttp.client_reqrep.ConnectionKey("host", 11, True, True, None, None, None), OSError("plop")
-            )
-    with pytest.raises(octobot_trading.errors.ExchangeProxyError):
-        # non retriable proxy client error
-        with ccxt_connector.error_describer():
-            raise ccxt.ExchangeError from aiohttp.ClientHttpProxyError(
-                aiohttp.client_reqrep.RequestInfo("www.google.com", "GET", {}, "www.google.com"), OSError("plop")
-            )
-    with pytest.raises(octobot_trading.errors.ExchangeProxyError):
-        # non retriable proxy client error
-        with ccxt_connector.error_describer():
-            raise ccxt.ExchangeError from aiohttp.ClientHttpProxyError(
-                aiohttp.client_reqrep.RequestInfo("www.google.com", "GET", {}, "www.google.com"),
-                OSError("plop"),
-                message="random"
-            )
-    with pytest.raises(octobot_trading.errors.RetriableExchangeProxyError):
-        # proxy client error
-        with ccxt_connector.error_describer():
-            raise ccxt.ExchangeError from aiohttp.ClientHttpProxyError(
-                aiohttp.client_reqrep.RequestInfo("www.google.com", "GET", {}, "www.google.com"),
-                OSError("plop"),
-                message=f"random{next(iter(octobot_trading.constants.RETRIABLE_EXCHANGE_PROXY_ERRORS_DESC))}"
-            )
-    with pytest.raises(octobot_trading.errors.ExchangeProxyError):
-        # socks proxy error
-        with ccxt_connector.error_describer():
-            raise ccxt.ExchangeError from ccxt_client_util.ProxyConnectionError(
-                aiohttp.client_reqrep.ConnectionKey("host", 11, True, True, None, None, None), OSError("plop")
-            )
-    ccxt_connector.exchange_manager.proxy_config.proxy_host = "host"
-    with pytest.raises(octobot_trading.errors.ExchangeProxyError):
-        # proxy connection error
-        with ccxt_connector.error_describer():
-            raise ccxt.AuthenticationError from ccxt_client_util.ProxyConnectionError(
-                aiohttp.client_reqrep.ConnectionKey("host", 11, True, True, None, None, None), OSError("plop")
-            )
-    with pytest.raises(octobot_trading.errors.ExchangeProxyError):
-        # proxy connection error
-        with ccxt_connector.error_describer():
-            raise ccxt_client_util.ProxyConnectionError(
-                aiohttp.client_reqrep.ConnectionKey("host", 11, True, True, None, None, None), OSError("plop")
-            )
+        # does not overwrite when already set
+        ccxt_connector.set_first_consecutive_authentication_error_at_if_unset()
+        assert ccxt_connector.first_consecutive_authentication_error_at == 123.456
+        get_time_mock.assert_not_called()
+
+
+async def test_clear_first_consecutive_authentication_error_at(ccxt_connector):
+    ccxt_connector.first_consecutive_authentication_error_at = 123.456
+    ccxt_connector.clear_first_consecutive_authentication_error_at()
+    assert ccxt_connector.first_consecutive_authentication_error_at is None
+    # calling again when already None is fine
+    ccxt_connector.clear_first_consecutive_authentication_error_at()
+    assert ccxt_connector.first_consecutive_authentication_error_at is None
+
+
+async def test_error_describer(ccxt_connector):
     with mock.patch.object(
-        ccxt_connector.exchange_manager.proxy_config, "get_last_proxied_request_url",
-            mock.Mock(return_value="https///plop.com/coucou")
-    ) as get_last_proxied_request_url_mock:
-        with pytest.raises(octobot_trading.errors.AuthenticationError, match="plop"):
-            # not proxied request error
-            with ccxt_connector.error_describer():
+        ccxt_connector, 'clear_first_consecutive_authentication_error_at', new=mock.Mock()
+    ) as clear_first_consecutive_authentication_error_at_mock, mock.patch.object(
+        ccxt_connector, 'set_first_consecutive_authentication_error_at_if_unset', new=mock.Mock()
+    ) as set_first_consecutive_authentication_error_at_if_unset_mock:
+        # test successful non-authenticated request: no mock called
+        with ccxt_connector.error_describer(is_authenticated_request=False):
+            pass
+        clear_first_consecutive_authentication_error_at_mock.assert_not_called()
+        set_first_consecutive_authentication_error_at_if_unset_mock.assert_not_called()
+
+        # test successful authenticated request: clear is called
+        with ccxt_connector.error_describer(is_authenticated_request=True):
+            pass
+        clear_first_consecutive_authentication_error_at_mock.assert_called_once()
+        set_first_consecutive_authentication_error_at_if_unset_mock.assert_not_called()
+        clear_first_consecutive_authentication_error_at_mock.reset_mock()
+
+        with pytest.raises(ZeroDivisionError, match="plop"):
+            # random error is just forwarded
+            with ccxt_connector.error_describer(is_authenticated_request=False):
+                raise ZeroDivisionError("plop")
+        clear_first_consecutive_authentication_error_at_mock.assert_not_called()
+        set_first_consecutive_authentication_error_at_if_unset_mock.assert_not_called()
+
+        with pytest.raises(ccxt.DDoSProtection):
+            # forwarded ccxt error
+            with ccxt_connector.error_describer(is_authenticated_request=True):
+                raise ccxt.DDoSProtection("plop")
+        clear_first_consecutive_authentication_error_at_mock.assert_not_called()
+        set_first_consecutive_authentication_error_at_if_unset_mock.assert_not_called()
+
+        with pytest.raises(octobot_trading.errors.FailedRequest):
+            # transformed ccxt error
+            with ccxt_connector.error_describer(is_authenticated_request=True):
+                raise ccxt.InvalidNonce("plop")
+        clear_first_consecutive_authentication_error_at_mock.assert_not_called()
+        set_first_consecutive_authentication_error_at_if_unset_mock.assert_not_called()
+
+        with pytest.raises(octobot_trading.errors.NetworkError):
+            # transformed ccxt error
+            with ccxt_connector.error_describer(is_authenticated_request=True):
+                raise ccxt.RequestTimeout("plop")
+        clear_first_consecutive_authentication_error_at_mock.assert_not_called()
+        set_first_consecutive_authentication_error_at_if_unset_mock.assert_not_called()
+
+        with pytest.raises(ccxt.ExchangeError):
+            # forwarded ccxt error
+            with ccxt_connector.error_describer(is_authenticated_request=True):
+                raise ccxt.ExchangeError("plop")
+        clear_first_consecutive_authentication_error_at_mock.assert_not_called()
+        set_first_consecutive_authentication_error_at_if_unset_mock.assert_not_called()
+
+        with mock.patch.object(
+            ccxt_connector.exchange_manager.exchange, "is_authentication_error", mock.Mock(return_value=True)
+        ) as is_authentication_error_mock:
+            with pytest.raises(octobot_trading.errors.AuthenticationError):
+                # transformed ccxt error into auth error: set is called
+                with ccxt_connector.error_describer(is_authenticated_request=True):
+                    raise ccxt.ExchangeError("plop")
+            is_authentication_error_mock.assert_called_once()
+            clear_first_consecutive_authentication_error_at_mock.assert_not_called()
+            set_first_consecutive_authentication_error_at_if_unset_mock.assert_called_once()
+            set_first_consecutive_authentication_error_at_if_unset_mock.reset_mock()
+
+        # proxied errors
+        with pytest.raises(octobot_trading.errors.AuthenticationError):
+            # transformed ccxt error: set is called on auth error
+            with ccxt_connector.error_describer(is_authenticated_request=True):
                 raise ccxt.AuthenticationError("plop")
-        get_last_proxied_request_url_mock.assert_called_once()
-        get_last_proxied_request_url_mock.reset_mock()
-        with pytest.raises(octobot_trading.errors.AuthenticationError, match="plop"):
-            # not proxied request error
-            ccxt_connector.client.last_request_url = "not_plop"
-            with ccxt_connector.error_describer():
-                raise ccxt.AuthenticationError("plop")
-        get_last_proxied_request_url_mock.assert_called_once()
-        get_last_proxied_request_url_mock.reset_mock()
-        with pytest.raises(octobot_trading.errors.AuthenticationError, match="\[Proxied\] plop"):
-            # proxied request error: add prefix
-            ccxt_connector.client.last_request_url = "https///plop.com/coucou"
-            with ccxt_connector.error_describer():
-                raise ccxt.AuthenticationError("plop")
-        get_last_proxied_request_url_mock.assert_called_once()
-        get_last_proxied_request_url_mock.reset_mock()
+        clear_first_consecutive_authentication_error_at_mock.assert_not_called()
+        set_first_consecutive_authentication_error_at_if_unset_mock.assert_called_once()
+        set_first_consecutive_authentication_error_at_if_unset_mock.reset_mock()
+
+        with pytest.raises(octobot_trading.errors.FailedRequest):
+            # transformed ccxt error
+            with ccxt_connector.error_describer(is_authenticated_request=True):
+                raise ccxt.ExchangeNotAvailable("plop")
+        clear_first_consecutive_authentication_error_at_mock.assert_not_called()
+        set_first_consecutive_authentication_error_at_if_unset_mock.assert_not_called()
+
+        # default host, not using proxy exception for generic exception
+        with pytest.raises(octobot_trading.errors.AuthenticationError):
+            # proxy connection error: set is called on auth error
+            with ccxt_connector.error_describer(is_authenticated_request=True):
+                raise ccxt.AuthenticationError from aiohttp.ClientConnectionError(
+                    aiohttp.client_reqrep.ConnectionKey("host", 11, True, True, None, None, None), OSError("plop")
+                )
+        clear_first_consecutive_authentication_error_at_mock.assert_not_called()
+        set_first_consecutive_authentication_error_at_if_unset_mock.assert_called_once()
+        set_first_consecutive_authentication_error_at_if_unset_mock.reset_mock()
+
+        # default host, using proxy exception for proxy exception
+        with pytest.raises(octobot_trading.errors.ExchangeProxyError):
+            # proxy connection error
+            with ccxt_connector.error_describer(is_authenticated_request=True):
+                raise ccxt.ExchangeError from aiohttp.ClientProxyConnectionError(
+                    aiohttp.client_reqrep.ConnectionKey("host", 11, True, True, None, None, None), OSError("plop")
+                )
+        clear_first_consecutive_authentication_error_at_mock.assert_not_called()
+        set_first_consecutive_authentication_error_at_if_unset_mock.assert_not_called()
+
+        with pytest.raises(octobot_trading.errors.ExchangeProxyError):
+            # non retriable proxy client error
+            with ccxt_connector.error_describer(is_authenticated_request=True):
+                raise ccxt.ExchangeError from aiohttp.ClientHttpProxyError(
+                    aiohttp.client_reqrep.RequestInfo("www.google.com", "GET", {}, "www.google.com"), OSError("plop")
+                )
+        clear_first_consecutive_authentication_error_at_mock.assert_not_called()
+        set_first_consecutive_authentication_error_at_if_unset_mock.assert_not_called()
+
+        with pytest.raises(octobot_trading.errors.ExchangeProxyError):
+            # non retriable proxy client error
+            with ccxt_connector.error_describer(is_authenticated_request=True):
+                raise ccxt.ExchangeError from aiohttp.ClientHttpProxyError(
+                    aiohttp.client_reqrep.RequestInfo("www.google.com", "GET", {}, "www.google.com"),
+                    OSError("plop"),
+                    message="random"
+                )
+        clear_first_consecutive_authentication_error_at_mock.assert_not_called()
+        set_first_consecutive_authentication_error_at_if_unset_mock.assert_not_called()
+
+        with pytest.raises(octobot_trading.errors.RetriableExchangeProxyError):
+            # proxy client error
+            with ccxt_connector.error_describer(is_authenticated_request=True):
+                raise ccxt.ExchangeError from aiohttp.ClientHttpProxyError(
+                    aiohttp.client_reqrep.RequestInfo("www.google.com", "GET", {}, "www.google.com"),
+                    OSError("plop"),
+                    message=f"random{next(iter(octobot_trading.constants.RETRIABLE_EXCHANGE_PROXY_ERRORS_DESC))}"
+                )
+        clear_first_consecutive_authentication_error_at_mock.assert_not_called()
+        set_first_consecutive_authentication_error_at_if_unset_mock.assert_not_called()
+
+        with pytest.raises(octobot_trading.errors.ExchangeProxyError):
+            # socks proxy error
+            with ccxt_connector.error_describer(is_authenticated_request=True):
+                raise ccxt.ExchangeError from ccxt_client_util.ProxyConnectionError(
+                    aiohttp.client_reqrep.ConnectionKey("host", 11, True, True, None, None, None), OSError("plop")
+                )
+        clear_first_consecutive_authentication_error_at_mock.assert_not_called()
+        set_first_consecutive_authentication_error_at_if_unset_mock.assert_not_called()
+
+        ccxt_connector.exchange_manager.proxy_config.proxy_host = "host"
+        with pytest.raises(octobot_trading.errors.ExchangeProxyError):
+            # proxy connection error
+            with ccxt_connector.error_describer(is_authenticated_request=True):
+                raise ccxt.AuthenticationError from ccxt_client_util.ProxyConnectionError(
+                    aiohttp.client_reqrep.ConnectionKey("host", 11, True, True, None, None, None), OSError("plop")
+                )
+        # no set call as it's a proxy error (not a real auth error)
+        clear_first_consecutive_authentication_error_at_mock.assert_not_called()
+        set_first_consecutive_authentication_error_at_if_unset_mock.assert_not_called()
+
+        with pytest.raises(octobot_trading.errors.ExchangeProxyError):
+            # proxy connection error
+            with ccxt_connector.error_describer(is_authenticated_request=True):
+                raise ccxt_client_util.ProxyConnectionError(
+                    aiohttp.client_reqrep.ConnectionKey("host", 11, True, True, None, None, None), OSError("plop")
+                )
+        clear_first_consecutive_authentication_error_at_mock.assert_not_called()
+        set_first_consecutive_authentication_error_at_if_unset_mock.assert_not_called()
+
+        with mock.patch.object(
+            ccxt_connector.exchange_manager.proxy_config, "get_last_proxied_request_url",
+                mock.Mock(return_value="https///plop.com/coucou")
+        ) as get_last_proxied_request_url_mock:
+            with pytest.raises(octobot_trading.errors.AuthenticationError, match="plop"):
+                # not proxied request error: set is called on auth error
+                with ccxt_connector.error_describer(is_authenticated_request=True):
+                    raise ccxt.AuthenticationError("plop")
+            get_last_proxied_request_url_mock.assert_called_once()
+            get_last_proxied_request_url_mock.reset_mock()
+            clear_first_consecutive_authentication_error_at_mock.assert_not_called()
+            set_first_consecutive_authentication_error_at_if_unset_mock.assert_called_once()
+            set_first_consecutive_authentication_error_at_if_unset_mock.reset_mock()
+
+            with pytest.raises(octobot_trading.errors.AuthenticationError, match="plop"):
+                # not proxied request error: set is called on auth error
+                ccxt_connector.client.last_request_url = "not_plop"
+                with ccxt_connector.error_describer(is_authenticated_request=True):
+                    raise ccxt.AuthenticationError("plop")
+            get_last_proxied_request_url_mock.assert_called_once()
+            get_last_proxied_request_url_mock.reset_mock()
+            clear_first_consecutive_authentication_error_at_mock.assert_not_called()
+            set_first_consecutive_authentication_error_at_if_unset_mock.assert_called_once()
+            set_first_consecutive_authentication_error_at_if_unset_mock.reset_mock()
+
+            with pytest.raises(octobot_trading.errors.AuthenticationError, match="\[Proxied\] plop"):
+                # proxied request error: add prefix, set is called on auth error
+                ccxt_connector.client.last_request_url = "https///plop.com/coucou"
+                with ccxt_connector.error_describer(is_authenticated_request=True):
+                    raise ccxt.AuthenticationError("plop")
+            get_last_proxied_request_url_mock.assert_called_once()
+            get_last_proxied_request_url_mock.reset_mock()
+            clear_first_consecutive_authentication_error_at_mock.assert_not_called()
+            set_first_consecutive_authentication_error_at_if_unset_mock.assert_called_once()
+            set_first_consecutive_authentication_error_at_if_unset_mock.reset_mock()
 
 
 

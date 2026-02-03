@@ -71,6 +71,7 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
         self.is_authenticated: bool = False
         self.rest_name: str = rest_name or self.exchange_manager.exchange_class_string
         self.force_authentication: bool = force_auth
+        self.first_consecutive_authentication_error_at: typing.Optional[float] = None
         
         self._force_next_market_reload: bool = False
 
@@ -117,7 +118,7 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
             await self._unauth_ensure_exchange_init()
 
     async def _unauth_ensure_exchange_init(self):
-        with self.error_describer():
+        with self.error_describer(False):
             # already called in _ensure_auth
             await self.load_symbol_markets(
                 reload=not self.exchange_manager.use_cached_markets,
@@ -210,6 +211,13 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
         """
         await self._filtered_if_necessary_load_markets(client, reload, market_filter)
 
+    def set_first_consecutive_authentication_error_at_if_unset(self):
+        if self.first_consecutive_authentication_error_at is None:
+            self.first_consecutive_authentication_error_at = self.get_exchange_current_time()
+
+    def clear_first_consecutive_authentication_error_at(self):
+        self.first_consecutive_authentication_error_at = None
+
     @ccxt_client_util.converted_ccxt_common_errors
     @connectors_util.retried_failed_network_request()
     async def load_symbol_markets(
@@ -241,6 +249,7 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
                 ccxt.AuthenticationError, ccxt.ArgumentsRequired, ccxt.static_dependencies.ecdsa.der.UnexpectedDER,
                 binascii.Error, AssertionError, IndexError
             ) as err:
+                self.set_first_consecutive_authentication_error_at_if_unset()
                 if self.force_authentication:
                     raise ccxt.AuthenticationError(
                         f"Invalid key format ({html_util.get_html_summary_if_relevant(err)})"
@@ -343,11 +352,13 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
             # load markets before calling _ensure_auth() to avoid fetching markets status while they are cached
             await self._unauth_ensure_exchange_init()
             await self.exchange_manager.exchange.get_balance()
+            self.clear_first_consecutive_authentication_error_at()
         except (
             octobot_trading.errors.AuthenticationError, 
             octobot_trading.errors.ExchangeProxyError, 
             ccxt.AuthenticationError
         ) as e:
+            self.set_first_consecutive_authentication_error_at_if_unset()
             await self.client.close()
             if self.force_authentication:
                 raise e
@@ -418,7 +429,7 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
         """
         if not kwargs:
             kwargs = {}
-        with self.error_describer():
+        with self.error_describer(True):
             return self.adapter.adapt_balance(
                 await self.client.fetch_balance(params=kwargs)
             )
@@ -442,7 +453,7 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
                                 since: int = None,
                                 **kwargs: dict) -> typing.Optional[list]:
         try:
-            with self.error_describer():
+            with self.error_describer(False):
                 return self.adapter.adapt_ohlcv(
                     await self.client.fetch_ohlcv(symbol, time_frame.value, limit=limit, since=since, params=kwargs)
                 )
@@ -462,7 +473,7 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
                               time_frame: octobot_commons.enums.TimeFrames,
                               **kwargs: dict) -> typing.Optional[list[list]]:
         try:
-            with self.error_describer():
+            with self.error_describer(False):
                 limit = kwargs.pop("limit", 1)
                 since = kwargs.pop("since", None)
                 return self.adapter.adapt_kline(
@@ -479,7 +490,7 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
     @ccxt_client_util.converted_ccxt_common_errors
     async def get_order_book(self, symbol: str, limit: int = 5, **kwargs: dict) -> typing.Optional[dict]:
         try:
-            with self.error_describer():
+            with self.error_describer(False):
                 return self.adapter.adapt_order_book(
                     await self.client.fetch_order_book(symbol, limit=limit, params=kwargs)
                 )
@@ -501,7 +512,7 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
         :return: a dict of order book by symbol
         """
         try:
-            with self.error_describer():
+            with self.error_describer(False):
                 book_by_symbol = await self.client.fetch_order_books(symbols=symbols, limit=limit, params=kwargs)
                 return {
                     symbol: self.adapter.adapt_order_book(book)
@@ -517,7 +528,7 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
     @ccxt_client_util.converted_ccxt_common_errors
     async def get_recent_trades(self, symbol: str, limit: int = 50, **kwargs: dict) -> typing.Optional[list[dict]]:
         try:
-            with self.error_describer():
+            with self.error_describer(False):
                 return self.adapter.adapt_public_recent_trades(
                     await self.client.fetch_trades(symbol, limit=limit, params=kwargs)
                 )
@@ -532,7 +543,7 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
     @ccxt_client_util.converted_ccxt_common_errors
     async def get_price_ticker(self, symbol: str, **kwargs: dict) -> typing.Optional[dict]:
         try:
-            with self.error_describer():
+            with self.error_describer(False):
                 return self.adapter.adapt_ticker(
                     await self.client.fetch_ticker(symbol, params=kwargs)
                 )
@@ -549,7 +560,7 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
     ) -> typing.Optional[dict[str, dict]]:
         try:
             symbols = kwargs.pop("symbols", None)
-            with self.error_describer():
+            with self.error_describer(False):
                 tickers = {
                     symbol: self.adapter.adapt_ticker(ticker)
                     for symbol, ticker in (await self.client.fetch_tickers(symbols, params=kwargs)).items()
@@ -602,7 +613,7 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
     async def get_order(self, exchange_order_id: str, symbol: str = None, **kwargs: dict) -> dict:
         if self.client.has['fetchOrder']:
             try:
-                with self.error_describer():
+                with self.error_describer(True):
                     order = await self.client.fetch_order(exchange_order_id, symbol, params=kwargs)
                     if order.get(ccxt_constants.CCXT_INFO):
                         return self.adapter.adapt_order(order, symbol=symbol)
@@ -638,7 +649,7 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
     async def get_all_orders(self, symbol: str = None, since: int = None,
                              limit: int = None, **kwargs: dict) -> list[dict]:
         if self.client.has['fetchOrders']:
-            with self.error_describer():
+            with self.error_describer(True):
                 return self.adapter.adapt_orders(
                     await self.client.fetch_orders(symbol=symbol, since=since, limit=limit, params=kwargs),
                     symbol=symbol
@@ -650,7 +661,7 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
     async def get_open_orders(self, symbol: str = None, since: int = None,
                               limit: int = None, **kwargs: dict) -> list[dict]:
         if self.client.has['fetchOpenOrders']:
-            with self.error_describer():
+            with self.error_describer(True):
                 return self.adapter.adapt_orders(
                     await self.client.fetch_open_orders(symbol=symbol, since=since, limit=limit, params=kwargs),
                     symbol=symbol
@@ -662,7 +673,7 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
     async def get_user_open_orders(self, user_id: str, symbol: str = None, since: int = None,
                                    limit: int = None, **kwargs: dict) -> list:
         if self.client.has['fetchUserOpenOrders']:
-            with self.error_describer():
+            with self.error_describer(False):
                 return self.adapter.adapt_orders(
                     await self.client.fetch_user_open_orders(user_id=user_id, symbol=symbol, since=since, limit=limit, params=kwargs),
                     symbol=symbol
@@ -671,7 +682,7 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
     @ccxt_client_util.converted_ccxt_common_errors
     async def get_closed_orders(self, symbol: str = None, since: int = None,
                                 limit: int = None, **kwargs: dict) -> list[dict]:
-        with self.error_describer():
+        with self.error_describer(True):
             return self.adapter.adapt_orders(
                 await self.client.fetch_closed_orders(symbol=symbol, since=since, limit=limit, params=kwargs),
                 symbol=symbol
@@ -680,7 +691,7 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
     @ccxt_client_util.converted_ccxt_common_errors
     async def get_cancelled_orders(self, symbol: str = None, since: int = None,
                                    limit: int = None, **kwargs: dict) -> list[dict]:
-        with self.error_describer():
+        with self.error_describer(True):
             method = self.client.fetch_canceled_orders if self.client.has['fetchCanceledOrders'] \
                 else (self.client.fetch_closed_orders if self.client.has['fetchClosedOrders'] else None)
             if method is None:
@@ -698,7 +709,7 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
     async def get_my_recent_trades(self, symbol: str = None, since: int = None,
                                    limit: int = None, **kwargs: dict) -> list[dict]:
         if self.client.has['fetchMyTrades'] or self.client.has['fetchTrades']:
-            with self.error_describer():
+            with self.error_describer(True):
                 method = self.client.fetch_my_trades if self.client.has['fetchMyTrades'] else self.client.fetch_trades
                 trades = self.adapter.adapt_trades(await method(symbol=symbol, since=since, limit=limit, params=kwargs))
                 if trades or not self.exchange_manager.exchange.ALLOW_TRADES_FROM_CLOSED_ORDERS:
@@ -717,7 +728,7 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
     async def get_user_recent_trades(self, user_id: str, symbol: str = None, since: int = None,
                                    limit: int = None, **kwargs: dict) -> list:
         if self.client.has['fetchUserRecentTrades']:
-            with self.error_describer():
+            with self.error_describer(False):
                 return self.adapter.adapt_trades(
                     await self.client.fetch_user_recent_trades(user_id=user_id, symbol=symbol, since=since, limit=limit, params=kwargs)
                 )
@@ -896,7 +907,7 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
     @ccxt_client_util.converted_ccxt_common_errors
     async def cancel_all_orders(self, symbol: str = None, **kwargs: dict) -> None:
         try:
-            with self.error_describer():
+            with self.error_describer(True):
                 await self.client.cancel_all_orders(symbol=symbol, params=kwargs)
         except (ccxt.NotSupported, octobot_trading.errors.NotSupported) as e:
             raise octobot_trading.errors.NotSupported(e) from e
@@ -914,7 +925,7 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
         self, exchange_order_id: str, symbol: str, order_type: enums.TraderOrderType, **kwargs: dict
     ) -> enums.OrderStatus:
         try:
-            with self.error_describer():
+            with self.error_describer(True):
                 try:
                     await self.client.cancel_order(exchange_order_id, symbol=symbol, params=kwargs)
                 except Exception as err:
@@ -1303,14 +1314,24 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
         # 15 pairs, each on 3 time frames
         return 45
 
-    def raise_or_prefix_proxy_error_if_relevant(self, cause_error: Exception, raised_error: typing.Optional[Exception]) -> None:
+    def raise_or_prefix_proxy_error_if_relevant(
+        self,
+        cause_error: Exception,
+        raised_error: typing.Optional[Exception]
+    ) -> None:
         """
         Will raise octobot_trading.errors.ExchangeProxyError when the error is linked to a proxy
         server of configuration issue.
         Will re-raise a "[Proxied request] " prefix given error message if relevant, otherwise will just raise the error
         """
         if proxy_error := ccxt_client_util.get_proxy_error_if_any(self, cause_error):
+            # this is a proxy error, raise the error as is
             raise ccxt_client_util.get_proxy_error_class(proxy_error)(proxy_error) from cause_error
+        if isinstance(cause_error, (
+            ccxt.AuthenticationError, octobot_trading.errors.AuthenticationError
+        )):
+            # this is an authentication error, register it
+            self.set_first_consecutive_authentication_error_at_if_unset()
         # when api key is wrong or proxy is unavailable
         ccxt_client_util.reraise_with_proxy_prefix_if_relevant(self, cause_error, raised_error)
         # reraise_with_proxy_prefix_if_relevant did not raise, raise the error as is
@@ -1329,9 +1350,11 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
         return self.client.last_request_url
 
     @contextlib.contextmanager
-    def error_describer(self):
+    def error_describer(self, is_authenticated_request: bool):
         try:
             yield
+            if is_authenticated_request:
+                self.clear_first_consecutive_authentication_error_at()
         except ccxt.DDoSProtection as err:
             # raised upon rate limit issues, last response data might have details on what is happening
             if self.exchange_manager.exchange.should_log_on_ddos_exception(err):
@@ -1348,6 +1371,8 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
                 if self.exchange_manager.exchange.is_ip_whitelist_error(err)
                 else octobot_trading.errors.AuthenticationError
             )
+            # note: raise_or_prefix_proxy_error_if_relevant will call
+            # set_first_consecutive_authentication_error_at_if_unset, no need to call it here
             self.raise_or_prefix_proxy_error_if_relevant(
                 err,
                 error_class(html_util.get_html_summary_if_relevant(err))
@@ -1364,6 +1389,7 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
                 raise octobot_trading.errors.InvalidAPIKeyIPWhitelistError(error_message) from err
             if self.exchange_manager.exchange.is_authentication_error(err):
                 # ensure this is not an unhandled authentication error
+                self.set_first_consecutive_authentication_error_at_if_unset()
                 raise octobot_trading.errors.AuthenticationError(error_message) from err
             # keep ccxt.ExchangeError, convert others into network error
             raised_error = None if isinstance(err, ccxt.ExchangeError) else octobot_trading.errors.NetworkError(

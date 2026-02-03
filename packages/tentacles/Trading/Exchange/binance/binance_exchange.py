@@ -150,7 +150,7 @@ class Binance(exchanges.RestExchange):
 
     async def get_account_id(self, **kwargs: dict) -> str:
         try:
-            with self.connector.error_describer():
+            with self.connector.error_describer(True):
                 if self.exchange_manager.is_future:
                     raw_binance_balance = await self.connector.client.fapiPrivateV3GetBalance()
                     # accountAlias = unique account code
