@@ -92,6 +92,7 @@ class TinyDBAdaptor(abstract_document_database_adaptor.AbstractDocumentDatabaseA
                 :type access_mode: str
                 """
 
+                # pylint: disable=W0233
                 tinydb.storages.Storage.__init__(self)
 
                 self._mode = access_mode

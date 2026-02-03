@@ -3,7 +3,6 @@
 pants_version = "2.30.0"
 backend_packages = [
     "pants.backend.python",
-    "pants.backend.python.lint.pylint",
     "pants.backend.docker"
 ]
 pants_ignore_use_gitignore = false

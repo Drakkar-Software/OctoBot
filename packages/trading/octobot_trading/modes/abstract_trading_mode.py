@@ -588,6 +588,7 @@ class AbstractTradingMode(abstract_tentacle.AbstractTentacle):
             except KeyError:
                 raise errors.ContractExistsError(f"Missing contract for {symbol}")
 
+    # pylint: disable=W0135
     @contextlib.asynccontextmanager
     async def remote_signal_publisher(self, symbol: str):
         async with signals.remote_signal_publisher(self.exchange_manager, symbol, self.should_emit_trading_signal()) \
@@ -595,7 +596,7 @@ class AbstractTradingMode(abstract_tentacle.AbstractTentacle):
             yield signal_builder
 
     async def create_order(
-        self, order, loaded: bool = False, params: dict = None,
+        self, order, loaded: bool = False, params: typing.Optional[dict] = None,
         wait_for_creation=True, creation_timeout=constants.INDIVIDUAL_ORDER_SYNC_TIMEOUT,
         dependencies: typing.Optional[commons_signals.SignalDependencies] = None
     ):

@@ -53,10 +53,10 @@ jobs:
     - name: Lint package
       run: |
         if [ -f "${{ matrix.package }}/standard.rc" ]; then
-          pylint --rcfile=${{ matrix.package }}/standard.rc ${{ matrix.package }}
+          pylint --rcfile=${{ matrix.package }}/standard.rc ${{ matrix.package }}/
           if [ $? -ne 1 ]; then exit 0; fi
         else
-          pylint --rcfile=standard.rc ${{ matrix.package }}
+          pylint --rcfile=standard.rc ${{ matrix.package }}/
           if [ $? -ne 1 ]; then exit 0; fi
         fi
 
