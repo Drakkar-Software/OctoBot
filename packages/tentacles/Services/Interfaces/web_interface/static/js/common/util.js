@@ -374,6 +374,23 @@ function validateJSONEditor(editor) {
     return errorsDesc;
 }
 
+function normalize_optional_number_field(config, key) {
+    if (!config || typeof config !== "object" || !(key in config)) {
+        return;
+    }
+    const value = config[key];
+    if (value === "" || value === null) {
+        delete config[key];
+        return;
+    }
+    if (typeof value === "string") {
+        const parsed = Number(value);
+        if (!Number.isNaN(parsed)) {
+            config[key] = parsed;
+        }
+    }
+}
+
 function getWebsiteUrl() {
     return $("#global-urls").data("website-url");
 }

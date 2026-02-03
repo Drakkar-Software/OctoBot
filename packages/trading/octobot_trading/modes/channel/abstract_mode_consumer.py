@@ -136,7 +136,7 @@ class AbstractTradingModeConsumer(modes_channel.ModeChannelConsumer):
         """
         For each trader call the creator to check if order creation is possible and create it.
         Will retry once on failure
-        :return: None
+        :return: list of orders to create
         """
         self.logger.debug(f"Entering create_order_if_possible for {symbol} on {self.exchange_manager.exchange_name}")
         try:

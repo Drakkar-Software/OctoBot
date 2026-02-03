@@ -27,14 +27,6 @@ import tentacles.Trading.Mode.index_trading_mode.rebalancer as rebalancer
 
 
 class SpotRebalancer(rebalancer.AbstractRebalancer):
-    """
-    Spot market rebalancer implementation.
-    Handles buying and selling assets directly.
-    """
-    
-    def __init__(self, trading_mode):
-        super().__init__(trading_mode)
-
     async def prepare_coin_rebalancing(self, coin: str):
         # Nothing to do in SPOT
         pass
@@ -98,6 +90,9 @@ class SpotRebalancer(rebalancer.AbstractRebalancer):
             created_orders.append(created_order)
         if created_orders:
             return created_orders
+        if self.trading_mode.allow_skip_asset:
+            self.logger.warning(f"Skipping {symbol} order creation...")
+            return []
         if orders_should_have_been_created:
             raise trading_errors.OrderCreationError()
         raise trading_errors.MissingMinimalExchangeTradeVolume()

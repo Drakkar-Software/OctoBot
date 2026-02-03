@@ -39,6 +39,7 @@ import tentacles.Services.Interfaces.web_interface.controllers.reboot
 import tentacles.Services.Interfaces.web_interface.controllers.welcome
 import tentacles.Services.Interfaces.web_interface.controllers.robots
 import tentacles.Services.Interfaces.web_interface.controllers.distributions.market_making
+import tentacles.Services.Interfaces.web_interface.controllers.distributions.prediction_market
 import tentacles.Services.Interfaces.web_interface.controllers.dsl
 
 
@@ -63,6 +64,8 @@ def register(blueprint, distribution: octobot.enums.OctoBotDistribution):
         tentacles.Services.Interfaces.web_interface.controllers.dsl.register(blueprint)
     elif distribution is octobot.enums.OctoBotDistribution.MARKET_MAKING:
         tentacles.Services.Interfaces.web_interface.controllers.distributions.market_making.register(blueprint)
+    elif distribution is octobot.enums.OctoBotDistribution.PREDICTION_MARKET:
+        tentacles.Services.Interfaces.web_interface.controllers.distributions.prediction_market.register(blueprint)
     # common routes
     tentacles.Services.Interfaces.web_interface.controllers.octobot_authentication.register(blueprint)
     tentacles.Services.Interfaces.web_interface.controllers.robots.register(blueprint)

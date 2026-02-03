@@ -45,6 +45,9 @@ def register(distribution: octobot.enums.OctoBotDistribution):
     elif distribution is octobot.enums.OctoBotDistribution.MARKET_MAKING:
         pass
 
+    elif distribution is octobot.enums.OctoBotDistribution.PREDICTION_MARKET:
+        pass
+
     # common routes
     tentacles.Services.Interfaces.web_interface.api.config.register(blueprint)
     tentacles.Services.Interfaces.web_interface.api.exchanges.register(blueprint)

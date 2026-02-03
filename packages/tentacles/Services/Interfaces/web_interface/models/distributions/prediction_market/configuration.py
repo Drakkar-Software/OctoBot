@@ -16,14 +16,13 @@
 import typing
 
 import tentacles.Services.Interfaces.web_interface.models.configuration as models_configuration
-import tentacles.Trading.Mode.market_making_trading_mode.market_making_trading as market_making_trading
 
 
-_MM_SERVICES = [
+_PM_SERVICES = [
     "telegram", "web"
 ]
 
-def save_market_making_configuration(
+def save_prediction_market_configuration(
     enabled_exchange: str,
     trading_pair: typing.Optional[str],
     exchange_configurations: list[dict],
@@ -32,15 +31,6 @@ def save_market_making_configuration(
     trading_mode_name: str,
     trading_mode_configuration: dict,
 ) -> None:
-    reference_exchange = trading_mode_configuration.get(
-        market_making_trading.MarketMakingTradingMode.REFERENCE_EXCHANGE
-    )
-    exchanges_to_enable = [
-        exchange
-        for exchange in (enabled_exchange, reference_exchange)
-        if exchange and exchange != market_making_trading.MarketMakingTradingMode.LOCAL_EXCHANGE_PRICE
-    ]
-    
     models_configuration.save_distribution_configuration(
         trading_mode_name=trading_mode_name,
         trading_mode_configuration=trading_mode_configuration,
@@ -49,13 +39,12 @@ def save_market_making_configuration(
         exchange_configurations=exchange_configurations,
         trading_simulator_configuration=trading_simulator_configuration,
         simulated_portfolio_configuration=simulated_portfolio_configuration,
-        exchanges_to_enable=exchanges_to_enable,
     )
 
 
-def get_market_making_services() -> dict:
+def get_prediction_market_services() -> dict:
     return {
         name: service
         for name, service in models_configuration.get_services_list().items()
-        if name in _MM_SERVICES
+        if name in _PM_SERVICES
     }

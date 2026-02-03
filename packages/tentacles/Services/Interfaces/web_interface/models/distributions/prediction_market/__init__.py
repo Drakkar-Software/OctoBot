@@ -14,21 +14,14 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-from tentacles.Services.Interfaces.web_interface.models.distributions import market_making
-from tentacles.Services.Interfaces.web_interface.models.distributions import prediction_market
+from tentacles.Services.Interfaces.web_interface.models.distributions.prediction_market import configuration
 
-from tentacles.Services.Interfaces.web_interface.models.distributions.market_making import (
-    save_market_making_configuration,
-    get_market_making_services,
-)
-from tentacles.Services.Interfaces.web_interface.models.distributions.prediction_market import (
+from tentacles.Services.Interfaces.web_interface.models.distributions.prediction_market.configuration import (
     save_prediction_market_configuration,
     get_prediction_market_services,
 )
 
 __all__ = [
-    "save_market_making_configuration",
-    "get_market_making_services",
     "save_prediction_market_configuration",
     "get_prediction_market_services",
 ]

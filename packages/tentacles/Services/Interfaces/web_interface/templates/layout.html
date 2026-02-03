@@ -98,6 +98,8 @@
 
         {% if get_distribution() == 'market_making' %}
             {% include "distributions/market_making/navbar.html" %}
+        {% elif get_distribution() == 'prediction_market' %}
+            {% include "distributions/prediction_market/navbar.html" %}
         {% else %}
             {% include "distributions/default/navbar.html" %}
         {% endif %}
@@ -161,6 +163,8 @@
 
         {% if get_distribution() == 'market_making' %}
             {% include "distributions/market_making/footer.html" %}
+        {% elif get_distribution() == 'prediction_market' %}
+            {% include "distributions/prediction_market/footer.html" %}
         {% else %}
             {% include "distributions/default/footer.html" %}
         {% endif %}

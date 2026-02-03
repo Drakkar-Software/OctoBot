@@ -34,3 +34,7 @@ class ColorModes(enum.Enum):
     LIGHT = "light"
     DARK = "dark"
     DEFAULT = "light"
+
+class ExchangeConnectionType(enum.Enum):
+    API_KEY = "api_key"
+    WALLET = "wallet"

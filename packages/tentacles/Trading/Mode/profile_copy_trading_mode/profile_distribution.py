@@ -51,7 +51,7 @@ def get_positions_to_consider(
 ) -> list[dict]:
     result = []
     for position in profile_positions:
-        if new_position_only and position.get(trading_enums.ExchangeConstantsPositionColumns.TIMESTAMP.value) is not None and position.get(trading_enums.ExchangeConstantsPositionColumns.TIMESTAMP.value) <= started_at.timestamp():
+        if new_position_only and position.get(trading_enums.ExchangeConstantsPositionColumns.TIMESTAMP.value) is not None and position.get(trading_enums.ExchangeConstantsPositionColumns.TIMESTAMP.value, 0) <= started_at.timestamp():
             # skip positions with timestamp at or before started_at (only include strictly after)
             continue
 

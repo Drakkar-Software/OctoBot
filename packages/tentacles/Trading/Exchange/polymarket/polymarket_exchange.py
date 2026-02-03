@@ -82,6 +82,17 @@ class Polymarket(exchanges.RestExchange):
             }
         }
     
+    async def get_price_ticker(self, symbol: str, **kwargs: dict) -> typing.Optional[dict]:
+        if 'token_id' not in kwargs:
+            try:
+                market = self.connector.client.market(symbol)
+                token_id = market.get('id')
+                if token_id:
+                    kwargs['token_id'] = token_id
+            except Exception as e:
+                self.logger.debug(f"Could not extract token_id for {symbol}: {e}")
+        return await super().get_price_ticker(symbol, **kwargs)
+
     async def get_symbol_leverage(self, symbol: str, **kwargs: dict):
         return decimal.Decimal(1)
     
