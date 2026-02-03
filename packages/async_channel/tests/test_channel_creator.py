@@ -14,8 +14,9 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import copy 
-
+import mock
 import pytest
+
 import async_channel.channels as channels
 import async_channel.util as util
 
@@ -59,9 +60,21 @@ async def test_create_all_subclasses_channel():
             channels.del_chan(channel)
 
     channels.del_chan(tests.TEST_CHANNEL)
-    await util.create_all_subclasses_channel(TestChannelClass, channels.set_chan)
-    assert len(channels.ChannelInstances.instance().channels) == 3  # (EmptyTestChannel, Test1Channel, Test2Channel)
-    clean_channels()
-    await util.create_all_subclasses_channel(TestChannelClass, channels.set_chan, is_synchronized=True)
-    assert all(channels.get_chan(channel).is_synchronized for channel in channels.ChannelInstances.instance().channels)
-    clean_channels()
+    with mock.patch.object(
+        TestChannelClass, '__subclasses__', mock.Mock(return_value=[Test1Channel, Test2Channel])
+    ) as mock_subclasses:
+        clean_channels()
+        await util.create_all_subclasses_channel(TestChannelClass, channels.set_chan)
+        assert sorted(channels.ChannelInstances.instance().channels) == sorted([
+            chan.get_name() for chan in [Test1Channel, Test2Channel]
+        ])
+        mock_subclasses.assert_called_once()
+        mock_subclasses.reset_mock()
+        clean_channels()
+        await util.create_all_subclasses_channel(TestChannelClass, channels.set_chan, is_synchronized=True)
+        sync_channels = channels.ChannelInstances.instance().channels
+        assert len(sync_channels) == 2
+        assert all(channels.get_chan(channel).is_synchronized for channel in sync_channels)
+        clean_channels()
+        mock_subclasses.assert_called_once()
+        mock_subclasses.reset_mock()
