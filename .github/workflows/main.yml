@@ -128,7 +128,7 @@ jobs:
       if: matrix.os == 'macos-13'
       with:
         name: OctoBot_macos_${{ matrix.arch }}
-        path: OctoBot/OctoBot_${{ matrix.arch }}
+        path: OctoBot/OctoBot/OctoBot_${{ matrix.arch }}
         if-no-files-found: error
 
     - name: Upload OctoBot Binary on Linux
@@ -136,7 +136,7 @@ jobs:
       if: matrix.os == 'ubuntu-latest'
       with:
         name: OctoBot_linux_${{ matrix.arch }}
-        path: OctoBot/OctoBot_${{ matrix.arch }}
+        path: OctoBot/OctoBot/OctoBot_${{ matrix.arch }}
         if-no-files-found: error
 
     - name: Upload OctoBot Binary on Windows
@@ -144,7 +144,7 @@ jobs:
       if: matrix.os == 'windows-latest'
       with:
         name: OctoBot_windows_${{ matrix.arch }}.exe
-        path: OctoBot/dist/OctoBot_windows.exe
+        path: OctoBot/OctoBot/dist/OctoBot_windows.exe
         if-no-files-found: error
 
   notify:
