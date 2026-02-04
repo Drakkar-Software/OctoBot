@@ -336,3 +336,38 @@ async def test_handle_market_making_orders_missing_funds_for_buy_orders():
             ])
             _get_reference_price_mock.reset_mock()
             submit_trading_evaluation_mock.reset_mock()
+
+
+async def test_register_on_reference_exchanges_if_required():
+    symbol = "BTC/USDT"
+    async with _get_tools(symbol) as (producer, consumer, exchange_manager):
+        with mock.patch.object(
+            producer, "_is_registered_on_all_reference_exchanges", mock.Mock()
+        ) as is_registered_mock, mock.patch.object(
+            producer, "_register_pair_requirement_on_reference_exchanges", mock.AsyncMock()
+        ) as register_mock:
+            # Test 1: Already registered - returns True immediately without calling register
+            is_registered_mock.return_value = True
+            result = await producer._register_on_reference_exchanges_if_required()
+            assert result is True
+            is_registered_mock.assert_called_once()
+            register_mock.assert_not_called()
+
+            is_registered_mock.reset_mock()
+
+            # Test 2: Not registered, registration succeeds - calls register and returns True
+            is_registered_mock.side_effect = [False, True]  # First call False, second call True
+            result = await producer._register_on_reference_exchanges_if_required()
+            assert result is True
+            assert is_registered_mock.call_count == 2
+            register_mock.assert_awaited_once()
+
+            is_registered_mock.reset_mock()
+            register_mock.reset_mock()
+
+            # Test 3: Not registered, registration fails - calls register and returns False
+            is_registered_mock.side_effect = [False, False]  # Both calls return False
+            result = await producer._register_on_reference_exchanges_if_required()
+            assert result is False
+            assert is_registered_mock.call_count == 2
+            register_mock.assert_awaited_once()
