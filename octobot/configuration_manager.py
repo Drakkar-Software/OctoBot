@@ -221,7 +221,12 @@ def migrate_from_previous_config(config):
 
 
 def get_distribution(config: dict) -> enums.OctoBotDistribution:
+    if constants.FORCED_DISTRIBUTION:
+        # if there is a forced distribution, use it
+        return enums.OctoBotDistribution(constants.FORCED_DISTRIBUTION)
     try:
+        # if there is no forced distribution, use the distribution from the config
         return enums.OctoBotDistribution(config[common_constants.CONFIG_DISTRIBUTION])
     except KeyError:
-        return enums.OctoBotDistribution.DEFAULT
+        # default distribution
+        return enums.OctoBotDistribution(common_constants.DEFAULT_DISTRIBUTION)

@@ -188,6 +188,9 @@ LOGS_FOLDER = os.getenv("LOGS_FOLDER", DEFAULT_LOGS_FOLDER)
 FORCED_LOG_LEVEL = os.getenv("FORCED_LOG_LEVEL", "")
 ENV_TRADING_ENABLE_DEBUG_LOGS = os_util.parse_boolean_environment_var("ENV_TRADING_ENABLE_DEBUG_LOGS", "False")
 
+# distribution
+FORCED_DISTRIBUTION = os.getenv("DISTRIBUTION")
+
 # system
 ENABLE_CLOCK_SYNCH = os_util.parse_boolean_environment_var("ENABLE_CLOCK_SYNCH", "True")
 ENABLE_SYSTEM_WATCHER = os_util.parse_boolean_environment_var("ENABLE_SYSTEM_WATCHER", "True")

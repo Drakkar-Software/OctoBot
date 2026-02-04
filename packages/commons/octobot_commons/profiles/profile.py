@@ -32,6 +32,7 @@ class Profile:
     """
 
     FULLY_MANAGED_ELEMENTS = [
+        constants.CONFIG_DISTRIBUTION,
         constants.CONFIG_CRYPTO_CURRENCIES,
         constants.CONFIG_TRADING,
         constants.CONFIG_TRADER,
@@ -114,7 +115,7 @@ class Profile:
         self.extra_backtesting_time_frames = profile_config.get(
             constants.CONFIG_EXTRA_BACKTESTING_TIME_FRAMES, []
         )
-        self.config = profile_dict[constants.PROFILE_CONFIG]
+        self.config = self.apply_default_values(profile_dict[constants.PROFILE_CONFIG])
         if self.avatar and self.path:
             avatar_path = os.path.join(self.path, self.avatar)
             if os.path.isfile(avatar_path):
@@ -433,3 +434,14 @@ class Profile:
             profile.profile_id
             for profile in Profile.get_all_profiles(profiles_path, ignore)
         ]
+
+    @staticmethod
+    def apply_default_values(config: dict) -> dict:
+        """
+        Apply default values to the given config
+        :param config: the config to apply default values to
+        :return: the config with default values applied
+        """
+        if constants.CONFIG_DISTRIBUTION not in config:
+            config[constants.CONFIG_DISTRIBUTION] = constants.DEFAULT_DISTRIBUTION
+        return config

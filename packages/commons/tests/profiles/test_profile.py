@@ -37,7 +37,9 @@ def test_read_config(profile):
     assert profile.avatar == "default_profile.png"
     assert profile.avatar_path == os.path.join(test_config.TEST_CONFIG_FOLDER, "default_profile.png")
     assert profile.origin_url == "https://default.url"
-    assert len(profile.config) == 5
+    # default value: distribution is not in profile config
+    assert profile.config[constants.CONFIG_DISTRIBUTION] == constants.DEFAULT_DISTRIBUTION
+    assert len(profile.config) == 6
     assert isinstance(profile.config, dict)
 
     profile.path = ""

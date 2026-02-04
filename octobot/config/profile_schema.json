@@ -43,6 +43,9 @@
     "config": {
       "type": "object",
       "properties": {
+        "distribution": {
+          "type": "string"
+        },
         "crypto-currencies": {
           "type": "object",
           "patternProperties": {
