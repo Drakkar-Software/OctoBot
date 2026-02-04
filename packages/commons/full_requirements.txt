@@ -1,8 +1,8 @@
 # Commons requirements
 jsonschema==4.26.0
-psutil==5.9.7
+psutil==7.2.2
 
-certifi==2024.02.02
+certifi==2026.1.4
 
 # async sqlite connection
 # update asap (0.19 working)
