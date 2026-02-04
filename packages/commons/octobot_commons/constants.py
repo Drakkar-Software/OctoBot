@@ -180,6 +180,7 @@ ALLOW_DEFAULT_CONFIG = "allow_default_config"
 CONFIG_ACCEPTED_TERMS = "accepted_terms"
 
 # distribution
+DEFAULT_DISTRIBUTION = "default"
 CONFIG_DISTRIBUTION = "distribution"
 
 # metrics

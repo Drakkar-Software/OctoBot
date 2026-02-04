@@ -28,6 +28,7 @@ from tests.profiles import get_profile_path, profile
 @pytest.fixture
 def profile_data_dict():
     return {
+        'distribution': 'not_default',
         'profile_details': {
             'name': 'profile_name 42',
             'id': 'default',
@@ -177,6 +178,7 @@ def min_profile_data_dict():
 def test_from_profile(profile):
     profile_data = profiles.ProfileData.from_profile(profile.read_config())
     # check one element per attribute to be sure it's all parsed
+    assert profile_data.distribution == "default"
     assert profile_data.profile_details.name == "default"
     assert profile_data.crypto_currencies[0].trading_pairs == ['BTC/USDT']
     assert profile_data.exchanges == []
@@ -218,6 +220,7 @@ def test_from_dict(profile_data_dict):
     # check one element per attribute to be sure it's all parsed
     assert profile_data.profile_details.name == "profile_name 42"
     assert profile_data.crypto_currencies[0].trading_pairs == ['BTC/USDT']
+    assert profile_data.distribution == "not_default"
     assert profile_data.future_exchange_data.default_leverage == 10
     assert profile_data.future_exchange_data.symbol_data[0].symbol == "BTC/USDT"
     assert profile_data.future_exchange_data.symbol_data[0].leverage == None
@@ -262,12 +265,14 @@ def test_from_min_dict(min_profile_data_dict):
     assert profile_data.tentacles[1].config["other"]["l"] == [1, 2]
     assert profile_data.options.values["jour"] == "nuit"
     assert profile_data.options.values["plop_key"] == "hola !!!"
+    assert profile_data.distribution == constants.DEFAULT_DISTRIBUTION
     full_profile_data_dict = profile_data.to_dict(include_default_values=True)
     assert len(full_profile_data_dict) > len(min_profile_data_dict)
     profile_data_dict = profile_data.to_dict(include_default_values=False)
-    # default values in values but: keys are present except for exchanges, which content is empty (default)
+    # default values in values but: keys are present except for exchanges & distribution, which content is empty (default)
     full_profile_data_dict_keys_without_exchange = list(full_profile_data_dict.keys())
     full_profile_data_dict_keys_without_exchange.remove("exchanges")
+    full_profile_data_dict_keys_without_exchange.remove("distribution")
     assert sorted(list(profile_data_dict.keys()) + ["_updated_fields", ]) == sorted(full_profile_data_dict_keys_without_exchange)
 
 

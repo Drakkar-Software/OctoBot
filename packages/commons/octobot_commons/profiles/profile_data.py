@@ -200,6 +200,7 @@ class ProfileData(
         default_factory=BacktestingContext
     )
     options: OptionsData = dataclasses.field(default_factory=OptionsData)
+    distribution: str = constants.DEFAULT_DISTRIBUTION
 
     # pylint: disable=E1134
     def __post_init__(self):
@@ -331,6 +332,7 @@ class ProfileData(
                     constants.CONFIG_TRADER_RISK: self.trading.risk,
                     constants.CONFIG_TRADER_PAUSED: self.trading.paused,
                 },
+                constants.CONFIG_DISTRIBUTION: self.distribution,
             },
             constants.CONFIG_PROFILE: dataclasses.asdict(self.profile_details),
         }
