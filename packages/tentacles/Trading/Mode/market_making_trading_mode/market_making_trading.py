@@ -1322,6 +1322,30 @@ class MarketMakingTradingModeProducer(trading_modes.AbstractTradingModeProducer)
         """
         await self._on_reference_price_update()
 
+    async def _register_pair_requirement_on_reference_exchanges(self):
+        local_exchange_name = self.exchange_manager.exchange_name
+        for exchange_id in trading_api.get_all_exchange_ids_with_same_matrix_id(
+            local_exchange_name, self.exchange_manager.id
+        ):
+            exchange_manager = trading_api.get_exchange_manager_from_exchange_id(exchange_id)
+            if exchange_manager.trading_modes and exchange_manager is not self.exchange_manager:
+                await self.sent_once_critical_notification(
+                    "Configuration issue",
+                    f"Multiple simultaneous trading exchanges is not supported on {self.trading_mode.get_name()}"
+                )
+            other_exchange_key = self.trading_mode.LOCAL_EXCHANGE_PRICE if (
+                self.trading_mode.LOCAL_EXCHANGE_PRICE == self.reference_price.exchange
+                and local_exchange_name == exchange_manager.exchange_name
+            ) else exchange_manager.exchange_name
+            if other_exchange_key != self.reference_price.exchange:
+                continue
+            if exchange_id not in self.subscribed_requirements_exchange_ids:
+                await self._subscribe_to_exchange_mark_price(exchange_id, exchange_manager)
+                self.subscribed_requirements_exchange_ids.add(exchange_id)
+    
+    def _is_registered_on_all_reference_exchanges(self) -> bool:
+        return len(self.subscribed_requirements_exchange_ids) == 1
+
     async def _subscribe_to_exchange_mark_price(self, exchange_id: str, exchange_manager):
         if not self.already_subscribed_to_channel(
             exchange_id, trading_constants.MARK_PRICE_CHANNEL, self._mark_price_callback, symbol=self.trading_mode.symbol
@@ -1342,27 +1366,27 @@ class MarketMakingTradingModeProducer(trading_modes.AbstractTradingModeProducer)
         consumers = chan.get_consumer_from_filters(filter_kwargs)
         return any(consumer.callback == callback for consumer in consumers)
 
+    async def _register_on_reference_exchanges_if_required(self) -> bool:
+        """
+        Returns True if all reference exchanges have already been registered
+        """
+        if self._is_registered_on_all_reference_exchanges():
+            return True
+        self.logger.debug(
+            f"Not all reference exchanges are registered for {self.symbol}. Skipping trigger for {self.symbol}"
+        )
+        await self._register_pair_requirement_on_reference_exchanges()
+        return self._is_registered_on_all_reference_exchanges()
+
     async def _get_reference_price(self) -> decimal.Decimal:
+        if not await self._register_on_reference_exchanges_if_required():
+            return trading_constants.ZERO
         local_exchange_name = self.exchange_manager.exchange_name
         price = trading_constants.ZERO
         for exchange_id in trading_api.get_all_exchange_ids_with_same_matrix_id(
             local_exchange_name, self.exchange_manager.id
         ):
             exchange_manager = trading_api.get_exchange_manager_from_exchange_id(exchange_id)
-            if exchange_manager.trading_modes and exchange_manager is not self.exchange_manager:
-                await self.sent_once_critical_notification(
-                    "Configuration issue",
-                    f"Multiple simultaneous trading exchanges is not supported on {self.trading_mode.get_name()}"
-                )
-            other_exchange_key = self.trading_mode.LOCAL_EXCHANGE_PRICE if (
-                self.trading_mode.LOCAL_EXCHANGE_PRICE == self.reference_price.exchange
-                and local_exchange_name == exchange_manager.exchange_name
-            ) else exchange_manager.exchange_name
-            if other_exchange_key != self.reference_price.exchange:
-                continue
-            if exchange_id not in self.subscribed_requirements_exchange_ids:
-                await self._subscribe_to_exchange_mark_price(exchange_id, exchange_manager)
-                self.subscribed_requirements_exchange_ids.add(exchange_id)
             try:
                 price, updated = trading_personal_data.get_potentially_outdated_price(
                     exchange_manager, self.reference_price.pair
@@ -1378,7 +1402,7 @@ class MarketMakingTradingModeProducer(trading_modes.AbstractTradingModeProducer)
                         self.exchange_manager.exchange.get_exchange_current_time() - self._started_at
                         > self.REFERENCE_PRICE_INIT_DELAY
                     )
-                    else self.logger.warning()
+                    else self.logger.warning
                 )
                 method(
                     f"No {exchange_manager.exchange_name} exchange symbol data for {self.symbol}, "
