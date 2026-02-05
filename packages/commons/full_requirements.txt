@@ -4,7 +4,7 @@ psutil==7.2.2
 
 certifi==2026.1.4
 
-tinydb==4.5.2
+tinydb==4.8.2
 
 # async sqlite connection
 # update asap (0.19 working)
