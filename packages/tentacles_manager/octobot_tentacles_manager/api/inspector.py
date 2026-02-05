@@ -132,8 +132,17 @@ def _load_tentacle_class(tentacle_name):
         except ImportError:
             pass
         try:
-            import tentacles.Services.Interfaces.web_interface.plugins as web_plugins
+            import octobot_services.services as services
             import tentacles.Services as tentacles_services
+            if tentacle_class := tentacles_management.get_class_from_string(
+                tentacle_name, services.AbstractAIService,
+                tentacles_services.Services_bases, tentacles_management.default_parents_inspection):
+                return tentacle_class
+            if tentacle_class := tentacles_management.get_class_from_string(
+                tentacle_name, services.AbstractWebSearchService,
+                tentacles_services.Services_bases, tentacles_management.default_parents_inspection):
+                return tentacle_class
+            import tentacles.Services.Interfaces.web_interface.plugins as web_plugins
             if tentacle_class := tentacles_management.get_class_from_string(
                 tentacle_name, web_plugins.AbstractWebInterfacePlugin,
                 tentacles_services.Interfaces, tentacles_management.default_parents_inspection):

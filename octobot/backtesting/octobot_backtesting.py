@@ -37,6 +37,8 @@ import octobot_evaluators.constants as evaluator_constants
 
 import octobot_services.api as service_api
 
+import octobot_tentacles_manager.api as tentacles_manager_api
+
 import octobot_trading.exchanges as exchanges
 import octobot_trading.exchange_data as exchange_data
 import octobot_trading.api as trading_api
@@ -128,11 +130,13 @@ class OctoBotBacktesting:
         self.logger.info(f"Configured backtesting from the {start_date} to the {end_date}")
         await self._init_exchanges()
         self._ensure_limits()
+        # Required to be created before social evaluators
+        await self._create_service_feeds()
         await self._create_evaluators()
+        await self._create_services()
         await self._fetch_backtesting_extra_data_if_any(
             min_timestamp, max_timestamp
         )
-        await self._create_service_feeds()
         await backtesting_api.start_backtesting(self.backtesting)
         if logger.BOT_CHANNEL_LOGGER is not None and self.enable_logs:
             await self.start_loggers()
@@ -305,11 +309,25 @@ class OctoBotBacktesting:
         await evaluator_api.create_evaluator_channels(self.matrix_id, is_backtesting=True)
 
     async def _init_service_feeds(self):
+        social_importers = self.backtesting.get_importers(importers.SocialDataImporter)
         service_feed_factory = service_api.create_service_feed_factory(self.backtesting_config,
                                                                        asyncio.get_event_loop(),
-                                                                       self.bot_id)
-        self.service_feeds = [service_feed_factory.create_service_feed(feed)
-                              for feed in service_feed_factory.get_available_service_feeds(True)]
+                                                                       self.bot_id,
+                                                                       self.backtesting)
+        self.service_feeds = []
+        for feed_class in service_feed_factory.get_available_service_feeds(True):
+            importer = self._get_matching_importer_for_feed(feed_class, social_importers)
+            feed = service_feed_factory.create_service_feed(feed_class, importer=importer)
+            self.service_feeds.append(feed)
+            
+    def _get_matching_importer_for_feed(self, feed_class, social_importers):
+        if not social_importers:
+            return None
+        expected_service_name = feed_class.get_name()
+        for importer in social_importers:
+            if importer.service_name and expected_service_name.lower() in importer.service_name.lower():
+                return importer
+        return None
 
     def _ensure_limits(self):
         for exchange_id in self.exchange_manager_ids:
@@ -324,6 +342,11 @@ class OctoBotBacktesting:
             )
 
     async def _create_evaluators(self):
+        if not self.exchange_manager_ids:
+            # No exchange managers to create evaluators for (e.g., when only social data files are used)
+            self.logger.info("No exchange managers found, skipping evaluator creation")
+            return
+        
         for exchange_id in self.exchange_manager_ids:
             exchange_configuration = trading_api.get_exchange_configuration_from_exchange_id(exchange_id)
             self.evaluators = await evaluator_api.create_and_start_all_type_evaluators(
@@ -340,9 +363,35 @@ class OctoBotBacktesting:
 
     async def _create_service_feeds(self):
         for feed in self.service_feeds:
-            if not await service_api.start_service_feed(feed, False, {}):
+            if not await service_api.start_service_feed(feed, True, {}):
                 self.logger.error(f"Failed to start {feed.get_name()}. Evaluators requiring this service feed "
                                   f"might not work properly")
+
+    async def _create_services(self):
+        if not self.evaluators:
+            return
+        required_service_classes = set()
+        handled_evaluator_classes = set()
+        for evaluator in list_util.flatten_list(self.evaluators):
+            if evaluator is None or evaluator.__class__ in handled_evaluator_classes:
+                continue
+            handled_evaluator_classes.add(evaluator.__class__)
+            try:
+                for required_class in tentacles_manager_api.get_tentacle_classes_requirements(evaluator.__class__):
+                    if required_class is not None and service_api.is_service_class(required_class):
+                        required_service_classes.add(required_class)
+            except Exception as e:
+                pass
+                continue
+        for service_class in required_service_classes:
+            try:
+                await service_api.get_service(service_class, True, self.services_config)
+                self.logger.info(f"Initialized {service_class.get_name()} service for backtesting")
+            except Exception as e:
+                self.logger.error(
+                    f"Failed to initialize {service_class.get_name()} service for backtesting: {e}. "
+                    f"Evaluators requiring this service might not work properly"
+                )
 
     async def _init_backtesting(self):
         if self.backtesting_data:
@@ -375,6 +424,7 @@ class OctoBotBacktesting:
         )
         return min_timestamp, max_timestamp
 
+    # TODO : deprecated, use Service fetch historical data instead
     async def _fetch_backtesting_extra_data_if_any(
         self, min_timestamp: float, max_timestamp: float
     ):
@@ -391,6 +441,7 @@ class OctoBotBacktesting:
             self.has_fetched_data = True
             await asyncio.gather(*coros)
 
+    # TODO : deprecated, use Service fetch historical data instead
     async def _fetch_gpt_history(self, evaluator, min_timestamp: float, max_timestamp: float):
         # prevent circular import
         import tentacles.Services.Services_bases.gpt_service as gpt_service
@@ -410,6 +461,7 @@ class OctoBotBacktesting:
                 max_timestamp
             )
 
+    # TODO : deprecated, use Service fetch historical data instead
     async def clear_fetched_data(self):
         if self.has_fetched_data:
             # prevent circular import

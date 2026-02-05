@@ -64,15 +64,22 @@ class SocialDataImporter(importers.DataImporter):
                     return out if isinstance(out, list) else []
                 except (json.JSONDecodeError, TypeError):
                     return []
+            sources = _list(row[3]) if len(row) > 3 else []
+            symbols = _list(row[4]) if len(row) > 4 else []
+            start_timestamp = row[5] if len(row) > 5 else 0
+            end_timestamp = row[6] if len(row) > 6 else 0
+            services = _list(row[7]) if len(row) > 7 else []
+            service_name = services[0] if services else ""
             return {
                 "timestamp": row[0],
                 "version": row[1],
                 "type": row[2],
-                "service_name": row[3] if len(row) > 3 else "",
-                "sources": _list(row[4]) if len(row) > 4 else [],
-                "symbols": _list(row[5]) if len(row) > 5 else [],
-                "start_timestamp": row[6] if len(row) > 6 else 0,
-                "end_timestamp": row[7] if len(row) > 7 else 0,
+                "service_name": service_name,
+                "sources": sources,
+                "symbols": symbols,
+                "start_timestamp": start_timestamp,
+                "end_timestamp": end_timestamp,
+                "services": services,
             }
         return {
             "timestamp": row[0],
@@ -82,6 +89,7 @@ class SocialDataImporter(importers.DataImporter):
             "symbols": [],
             "start_timestamp": 0,
             "end_timestamp": 0,
+            "services": [],
         }
 
     async def start(self) -> None:
@@ -160,7 +168,6 @@ class SocialDataImporter(importers.DataImporter):
             timestamps=timestamps,
             operations=operations
         )
-        # Parse JSON payloads
         result = []
         for event in events:
             event_dict = {
@@ -200,7 +207,7 @@ class SocialDataImporter(importers.DataImporter):
             )
             self.chronological_cache.set(
                 await set_cache_method(*init_cache_method_args),
-                0,
+                "timestamp",
                 cache_key
             )
         return self.chronological_cache.get(inferior_timestamp, superior_timestamp, cache_key)

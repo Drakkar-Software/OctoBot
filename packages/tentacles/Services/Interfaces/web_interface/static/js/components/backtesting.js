@@ -27,7 +27,7 @@ function get_selected_files(){
     ).eq(0);
     if(selectedRows){
         selectedRows.each(function( index ) {
-            selected_files.push(dataFilesTable.row( index ).data()[6]);
+            selected_files.push(dataFilesTable.row( index ).data()[7]);
         });
     }
     return selected_files;
@@ -143,6 +143,7 @@ const dataFilesTable = $('#dataFilesTable').DataTable({
     "columnDefs": [
       { "width": "20%", "targets": 2 },
       { "width": "8%", "targets": 5 },
+      { "width": "12%", "targets": 6 },
     ],
     "destroy": true
 });

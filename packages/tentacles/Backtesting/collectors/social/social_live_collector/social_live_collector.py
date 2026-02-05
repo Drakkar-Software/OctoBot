@@ -32,16 +32,17 @@ except ImportError:
 class SocialLiveDataCollector(collector.AbstractSocialLiveCollector):
     IMPORTER = None  # Live collectors typically don't need importers
 
-    def __init__(self, config, social_name, tentacles_setup_config, sources=None, symbols=None,
+    def __init__(self, config, services, tentacles_setup_config, sources=None, symbols=None,
                  service_feed_class=None, channel_name=None,
                  data_format=backtesting_enums.DataFormats.REGULAR_COLLECTOR_DATA):
-        super().__init__(config, social_name, sources=sources, symbols=symbols,
+        super().__init__(config, services, sources=sources, symbols=symbols,
                          data_format=data_format)
         self.tentacles_setup_config = tentacles_setup_config
         self.service_feed_class = service_feed_class
         self.channel_name = channel_name
         self.bot_id = "live_collector"  # Default bot_id for live collector
         self.consumers = []
+        self.feed_class = None
 
     async def start(self):
         await self.initialize()
@@ -55,7 +56,7 @@ class SocialLiveDataCollector(collector.AbstractSocialLiveCollector):
         
         if not feed_channels:
             self.logger.warning(
-                f"No service feed channels found for {self.social_name}. "
+                f"No service feed channels found for {self.services}. "
                 f"Make sure service feeds are running."
             )
             return
@@ -66,7 +67,7 @@ class SocialLiveDataCollector(collector.AbstractSocialLiveCollector):
             consumer = await channel.new_consumer(self._service_feed_callback)
             self.consumers.append(consumer)
 
-        self.logger.info(f"Started collecting live data from {self.social_name}")
+        self.logger.info(f"Started collecting live data from {self.services}")
         # Keep running until stopped
         await asyncio.gather(*asyncio.all_tasks(asyncio.get_event_loop()))
 
@@ -95,13 +96,11 @@ class SocialLiveDataCollector(collector.AbstractSocialLiveCollector):
             except (RuntimeError, KeyError) as err:
                 self.logger.warning(f"Could not get service feed {self.service_feed_class}: {err}")
         
-        # Try to find service feeds associated with the service name
+        # Try to find service feeds associated with the service class names
         available_feeds = service_feed_factory.ServiceFeedFactory.get_available_service_feeds(in_backtesting=False)
+        service_set = {svc.lower() for svc in self.services or []}
         for feed_class in available_feeds:
-            # Check if feed name matches social_name or is related
-            feed_name = feed_class.get_name().lower()
-            social_name_lower = self.social_name.lower()
-            if social_name_lower in feed_name or feed_name in social_name_lower:
+            if feed_class.get_name().lower() in service_set:
                 try:
                     service_feed = services_api.get_service_feed(feed_class, self.bot_id)
                     if service_feed and service_feed.FEED_CHANNEL:
@@ -122,7 +121,7 @@ class SocialLiveDataCollector(collector.AbstractSocialLiveCollector):
             event_data = data.get("data", data)
             
             # Extract metadata
-            service_name = self.social_name
+            service_name = (self.services[0] if self.services else "")
             channel = data.get("channel", "")
             symbol = event_data.get("symbol") if isinstance(event_data, dict) else None
             timestamp = event_data.get("timestamp", time.time() * 1000) if isinstance(event_data, dict) else time.time() * 1000

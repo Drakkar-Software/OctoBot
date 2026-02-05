@@ -17,6 +17,7 @@ import json
 import typing
 
 import octobot_commons.constants as common_constants
+from octobot_agents.constants import DEFAULT_AGENT_RESULT
 
 import octobot_agents as agent
 from octobot_agents.constants import RESULT_KEY, AGENT_NAME_KEY
@@ -57,7 +58,7 @@ class SummarizationAIAgentProducer(agent.AbstractAIAgentChannelProducer):
     AGENT_VERSION = "1.0.0"
     AGENT_CHANNEL = SummarizationAIAgentChannel
     AGENT_CONSUMER = SummarizationAIAgentConsumer
-    ENABLE_MEMORY = True
+    ENABLE_MEMORY = False
     DEFAULT_CONFIDENCE = 50  # Default confidence value (0-100 scale)
 
     def __init__(self, channel, synthesis_method: str = "weighted", **kwargs):
@@ -161,7 +162,7 @@ class SummarizationAIAgentProducer(agent.AbstractAIAgentChannelProducer):
     ) -> tuple[float | str, str]:
         """Combine multiple agent results into final evaluation."""
         if not input_data:
-            return common_constants.START_PENDING_EVAL_NOTE, "No agent results available"
+            return common_constants.START_PENDING_EVAL_NOTE, DEFAULT_AGENT_RESULT
 
         # Convert input to list, preserving dict for failure details if needed
         agent_results_dict: AgentResultsDict | None = None

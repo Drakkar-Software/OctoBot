@@ -19,6 +19,8 @@ AI team manager agent - uses LLM to decide execution flow.
 import typing
 from typing import TYPE_CHECKING
 
+import pydantic
+
 from octobot_agents.team.manager import (
     AIPlanManagerAgentChannel,
     AIPlanManagerAgentConsumer,
@@ -89,7 +91,39 @@ then create an execution plan. The plan can contain two kinds of steps:
      judge_agent_name (name of the judge agent), max_rounds (max debate rounds, e.g. 3)
    - For debate steps, agent_name can be a placeholder (e.g. "debate_1") for logging.
 
-You may include zero, one, or multiple debate steps in the plan. Debate steps run debators in rounds until the judge decides exit or max_rounds is reached. Order and instructions for agent steps, and whether to loop execution, should optimize for the team's goals while respecting dependencies."""
+You may include zero, one, or multiple debate steps in the plan. Debate steps run debators in rounds until the judge decides exit or max_rounds is reached. Order and instructions for agent steps, and whether to loop execution, should optimize for the team's goals while respecting dependencies.
+
+Critical requirements:
+- Every agent step MUST include a non-empty agent_name.
+- agent_name MUST be one of the provided agent names in the context. Do NOT invent new names.
+- Output ONLY valid JSON matching the ExecutionPlan schema. No markdown or extra text."""
+
+    def _repair_execution_plan(self, response_data: typing.Any) -> typing.Optional[ExecutionPlan]:
+        if not isinstance(response_data, dict):
+            return None
+        steps = response_data.get("steps")
+        if not isinstance(steps, list):
+            return None
+        repaired_steps = []
+        for step in steps:
+            if not isinstance(step, dict):
+                continue
+            step_type = step.get("step_type")
+            agent_name = step.get("agent_name")
+            if not agent_name and step_type in (None, "agent"):
+                agent_name = step.get("name") or step.get("agent")
+                if agent_name:
+                    step = {**step, "agent_name": agent_name}
+            if step_type in (None, "agent") and not step.get("agent_name"):
+                continue
+            repaired_steps.append(step)
+        if not repaired_steps:
+            return None
+        repaired = {**response_data, "steps": repaired_steps}
+        try:
+            return ExecutionPlan.model_validate(repaired)
+        except pydantic.ValidationError:
+            return None
     
     async def execute(
         self,
@@ -149,7 +183,9 @@ Relations: {self.format_data(relations_info)}
 Initial Data: {self.format_data(initial_data)}
 Instructions: {self.format_data(instructions) if instructions else "None"}
 
-Create an execution plan. Use agent steps (step_type "agent" or omit) for single-agent steps and debate steps (step_type "debate" with debate_config) when you want debators to argue and a judge to decide; you can include multiple debate steps if needed."""
+Create an execution plan. Use agent steps (step_type "agent" or omit) for single-agent steps and debate steps (step_type "debate" with debate_config) when you want debators to argue and a judge to decide; you can include multiple debate steps if needed.
+
+CRITICAL: agent_name MUST be exactly one of the provided agent names. Do NOT invent names."""
             },
         ]
         
@@ -160,19 +196,53 @@ Create an execution plan. Use agent steps (step_type "agent" or omit) for single
             json_output=True,
             response_schema=ExecutionPlan,
         )
+        allowed_agent_names = [agent["name"] for agent in agents_info]
+        try:
+            execution_plan = ExecutionPlan.model_validate_with_agent_names(
+                response_data,
+                allowed_agent_names,
+            )
+        except (pydantic.ValidationError, ValueError) as e:
+            repaired = self._repair_execution_plan(response_data)
+            if repaired is not None:
+                self.logger.warning("Recovered invalid execution plan by repairing steps.")
+                return repaired
+            self.logger.warning(f"Invalid execution plan. Retrying once. Error: {e}")
+            retry_messages = [
+                {"role": "system", "content": self.prompt},
+                {
+                    "role": "user",
+                    "content": f"""Analyze the following team structure and create an execution plan:
+
+Team: {team_producer.team_name}
+Agents: {self.format_data(agents_info)}
+Relations: {self.format_data(relations_info)}
+Initial Data: {self.format_data(initial_data)}
+Instructions: {self.format_data(instructions) if instructions else "None"}
+
+CRITICAL: Every agent step MUST include agent_name (non-empty string). 
+Create an execution plan. Use agent steps (step_type "agent" or omit) for single-agent steps and debate steps (step_type "debate" with debate_config) when you want debators to argue and a judge to decide; you can include multiple debate steps if needed."""
+                },
+            ]
+            response_data = await self._call_llm(
+                retry_messages,
+                ai_service,
+                json_output=True,
+                response_schema=ExecutionPlan,
+            )
+            try:
+                execution_plan = ExecutionPlan.model_validate_with_agent_names(
+                    response_data,
+                    allowed_agent_names,
+                )
+            except (pydantic.ValidationError, ValueError):
+                repaired = self._repair_execution_plan(response_data)
+                if repaired is not None:
+                    self.logger.warning("Recovered invalid execution plan by repairing steps after retry.")
+                    return repaired
+                raise
         
-        execution_plan = ExecutionPlan.model_validate(response_data)
-        
-        # Filter out debate steps if no judge agent is configured in the team
-        team_producer = input_data.get("team_producer")
-        if team_producer is None or team_producer.judge_agent is None:
-            filtered_steps = []
-            for step in execution_plan.steps:
-                if step.step_type == "debate":
-                    self.logger.debug(f"Skipping debate step '{step.agent_name}' - no judge agent configured in team")
-                    continue
-                filtered_steps.append(step)
-            execution_plan.steps = filtered_steps
+        # Debate step normalization is handled in the team executor
         
         self.logger.debug(f"Generated execution plan with {len(execution_plan.steps)} steps")
         

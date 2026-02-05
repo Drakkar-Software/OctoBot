@@ -19,6 +19,7 @@ AGENT_ID_KEY = "agent_id"
 TEAM_NAME_KEY = "team_name"
 TEAM_ID_KEY = "team_id"
 RESULT_KEY = "result"
+DEFAULT_AGENT_RESULT = "NO_OUTPUT_AVAILABLE"
 
 # Agent defaults
 AGENT_DEFAULT_VERSION = "1.0.0"

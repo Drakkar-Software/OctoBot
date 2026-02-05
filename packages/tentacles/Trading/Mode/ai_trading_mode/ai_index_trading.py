@@ -14,10 +14,6 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-"""
-AI Index Trading Mode module for OctoBot.
-Handles AI-driven portfolio rebalancing based on strategy evaluations and external agent instructions.
-"""
 import typing
 from datetime import datetime
 
@@ -25,15 +21,14 @@ import octobot_commons.enums as commons_enums
 import octobot_commons.constants as commons_constants
 import octobot_evaluators.enums as evaluators_enums
 from octobot_evaluators import matrix
+from octobot_evaluators.matrix.channel.matrix import MatrixChannel
 import octobot_evaluators.api as evaluators_api
 import octobot_commons.evaluators_util as evaluators_util
 import octobot_evaluators.constants as evaluators_constants
-import octobot_trading.enums as trading_enums
-import octobot_trading.modes as trading_modes
-import octobot_trading.constants as trading_constants
 import octobot_trading.api as trading_api
 import octobot_services.api.services as services_api
-import tentacles.Services.Services_bases
+import octobot_agents.constants as agents_constants
+import octobot_commons.constants as common_constants
 
 from tentacles.Trading.Mode.ai_trading_mode import ai_index_distribution
 from tentacles.Trading.Mode.index_trading_mode import index_trading
@@ -50,9 +45,9 @@ AI_INSTRUCTIONS_KEY = "ai_instructions"
 class AIIndexTradingModeProducer(index_trading.IndexTradingModeProducer):
     def __init__(self, channel, config, trading_mode, exchange_manager):
         super().__init__(channel, config, trading_mode, exchange_manager)
-        # Track global strategy data separately from crypto-specific data
         self._global_strategy_data = {}
         self._crypto_strategy_data = {}  # {cryptocurrency: strategy_data}
+        self.time_frame_filter = commons_constants.CONFIG_WILDCARD
 
     def get_channels_registration(self):
         """
@@ -72,31 +67,12 @@ class AIIndexTradingModeProducer(index_trading.IndexTradingModeProducer):
         time_frame,
         trigger_source: str,
     ) -> None:
-        """
-        Collect all strategy evaluations and trigger crypto-specific agent analysis.
-        Only triggers analysis when both global and crypto-specific data are available.
-        """
-        if cryptocurrency is None:
-            # This is a global evaluation
-            global_strategy_data = self._collect_global_strategy_data(matrix_id)
-            if global_strategy_data:
-                self._global_strategy_data = global_strategy_data
-        else:
-            # This is a cryptocurrency-specific evaluation
-            crypto_strategy_data = self._collect_crypto_strategy_data(
-                matrix_id, cryptocurrency, symbol, time_frame
-            )
-            if crypto_strategy_data:
-                self._crypto_strategy_data[cryptocurrency] = crypto_strategy_data
-                await self._trigger_crypto_analysis(
-                    crypto_strategy_data, cryptocurrency, symbol, time_frame
-                )
+        self._global_strategy_data = self._collect_global_strategy_data(matrix_id)
+        self._crypto_strategy_data = self._collect_crypto_strategy_data(matrix_id)
+        if self._global_strategy_data and self._crypto_strategy_data:
+            await self._trigger_crypto_analysis(cryptocurrency, symbol, time_frame)
 
     def _collect_global_strategy_data(self, matrix_id: str) -> dict:
-        """
-        Collect strategy data from global evaluations (cryptocurrency=None).
-        These come from GlobalLLMAIStrategyEvaluator.
-        """
         strategy_data = {}
         strategy_type = evaluators_enums.EvaluatorMatrixTypes.STRATEGIES.value
         tentacle_nodes = matrix.get_tentacle_nodes(
@@ -112,42 +88,42 @@ class AIIndexTradingModeProducer(index_trading.IndexTradingModeProducer):
             symbol=None,
             time_frame=None,
         ):
-            if evaluators_util.check_valid_eval_note(
-                evaluators_api.get_value(evaluated_strategy_node),
+            eval_note = evaluators_api.get_value(evaluated_strategy_node)
+            note_description = evaluators_api.get_description(evaluated_strategy_node)
+            if not note_description:
+                continue
+            is_valid = evaluators_util.check_valid_eval_note(
+                eval_note,
                 evaluators_api.get_type(evaluated_strategy_node),
                 evaluators_constants.EVALUATOR_EVAL_DEFAULT_TYPE,
+            )
+            if not is_valid and not (
+                eval_note == common_constants.START_PENDING_EVAL_NOTE
+                and note_description == agents_constants.DEFAULT_AGENT_RESULT
             ):
-                eval_note = evaluators_api.get_value(evaluated_strategy_node)
-                note_description = evaluators_api.get_description(evaluated_strategy_node)
-                note_metadata = evaluators_api.get_metadata(evaluated_strategy_node)
+                continue
+            note_metadata = evaluators_api.get_metadata(evaluated_strategy_node)
 
-                if strategy_type not in strategy_data:
-                    strategy_data[strategy_type] = []
+            if strategy_type not in strategy_data:
+                strategy_data[strategy_type] = []
 
-                strategy_data[strategy_type].append(
-                    {
-                        "eval_note": eval_note,
-                        "description": note_description,
-                        "metadata": note_metadata,
-                        "cryptocurrency": None,
-                        "symbol": None,
-                        "evaluation_type": "global",
-                    }
-                )
+            strategy_data[strategy_type].append(
+                {
+                    "eval_note": eval_note,
+                    "description": note_description,
+                    "metadata": note_metadata,
+                    MatrixChannel.CRYPTOCURRENCY_KEY: None,
+                    MatrixChannel.SYMBOL_KEY: None,
+                    "evaluation_type": "global",
+                }
+            )
 
         return strategy_data
 
     def _collect_crypto_strategy_data(
         self,
-        matrix_id: str,
-        cryptocurrency: str,
-        symbol: typing.Optional[str],
-        time_frame=None,
+        matrix_id: str
     ) -> dict:
-        """
-        Collect strategy data from cryptocurrency-specific evaluations.
-        These come from CryptoLLMAIStrategyEvaluator.
-        """
         strategy_data = {}
         strategy_type = evaluators_enums.EvaluatorMatrixTypes.STRATEGIES.value
         tentacle_nodes = matrix.get_tentacle_nodes(
@@ -155,37 +131,117 @@ class AIIndexTradingModeProducer(index_trading.IndexTradingModeProducer):
             exchange_name=self.exchange_name,
             tentacle_type=strategy_type,
         )
-        for evaluated_strategy_node in matrix.get_tentacles_value_nodes(
-            matrix_id,
-            tentacle_nodes,
-            cryptocurrency=cryptocurrency,
-            symbol=symbol,
-            time_frame=time_frame,
-        ):
-            if evaluators_util.check_valid_eval_note(
-                evaluators_api.get_value(evaluated_strategy_node),
-                evaluators_api.get_type(evaluated_strategy_node),
-                evaluators_constants.EVALUATOR_EVAL_DEFAULT_TYPE,
-            ):
-                eval_note = evaluators_api.get_value(evaluated_strategy_node)
-                note_description = evaluators_api.get_description(evaluated_strategy_node)
-                note_metadata = evaluators_api.get_metadata(evaluated_strategy_node)
+        try:
+            indexed_coins = list(self.trading_mode.indexed_coins)
+        except Exception:
+            indexed_coins = []
 
-                if strategy_type not in strategy_data:
-                    strategy_data[strategy_type] = []
-
-                strategy_data[strategy_type].append(
-                    {
-                        "eval_note": eval_note,
-                        "description": note_description,
-                        "metadata": note_metadata,
-                        "cryptocurrency": cryptocurrency,
-                        "symbol": symbol,
-                        "evaluation_type": "crypto_specific",
-                    }
+        for cryptocurrency in indexed_coins:
+            try:
+                symbols = matrix.get_available_symbols(
+                    matrix_id,
+                    self.exchange_name,
+                    strategy_type,
+                    cryptocurrency,
                 )
+            except Exception:
+                symbols = []
+            if not symbols:
+                symbols = [None]
+
+            for symbol in symbols:
+                try:
+                    if symbol is None:
+                        time_frames = [None]
+                    else:
+                        time_frames = matrix.get_available_time_frames(
+                            matrix_id,
+                            self.exchange_name,
+                            strategy_type,
+                            cryptocurrency,
+                            symbol,
+                        )
+                except Exception:
+                    time_frames = []
+                if not time_frames:
+                    time_frames = [None]
+
+                for time_frame in time_frames:
+                    for evaluated_strategy_node in matrix.get_tentacles_value_nodes(
+                        matrix_id,
+                        tentacle_nodes,
+                        cryptocurrency=cryptocurrency,
+                        symbol=symbol,
+                        time_frame=time_frame,
+                    ):
+                        eval_note = evaluators_api.get_value(evaluated_strategy_node)
+                        note_description = evaluators_api.get_description(evaluated_strategy_node)
+                        if not note_description:
+                            continue
+                        is_valid = evaluators_util.check_valid_eval_note(
+                            eval_note,
+                            evaluators_api.get_type(evaluated_strategy_node),
+                            evaluators_constants.EVALUATOR_EVAL_DEFAULT_TYPE,
+                        )
+                        if not is_valid and not (
+                            eval_note == common_constants.START_PENDING_EVAL_NOTE
+                            and note_description == agents_constants.DEFAULT_AGENT_RESULT
+                        ):
+                            continue
+                        note_metadata = evaluators_api.get_metadata(evaluated_strategy_node)
+
+                        if cryptocurrency not in strategy_data:
+                            strategy_data[cryptocurrency] = {strategy_type: []}
+                        elif strategy_type not in strategy_data[cryptocurrency]:
+                            strategy_data[cryptocurrency][strategy_type] = []
+
+                        strategy_data[cryptocurrency][strategy_type].append(
+                            {
+                                "eval_note": eval_note,
+                                "description": note_description,
+                                "metadata": note_metadata,
+                                MatrixChannel.CRYPTOCURRENCY_KEY: cryptocurrency,
+                                MatrixChannel.SYMBOL_KEY: symbol,
+                                MatrixChannel.TIME_FRAME_KEY: time_frame,
+                                "evaluation_type": "crypto_specific",
+                            }
+                        )
 
         return strategy_data
+
+    def _has_filtered_global_strategy_data(self) -> bool:
+        strategy_type = evaluators_enums.EvaluatorMatrixTypes.STRATEGIES.value
+        try:
+            entries = self._global_strategy_data.get(strategy_type, [])
+        except Exception:
+            return False
+        for entry in entries:
+            try:
+                if entry.get(MatrixChannel.CRYPTOCURRENCY_KEY) is None:
+                    return True
+            except Exception:
+                continue
+        return False
+
+    def _has_filtered_crypto_strategy_data(self, indexed_coins: list[str]) -> bool:
+        strategy_type = evaluators_enums.EvaluatorMatrixTypes.STRATEGIES.value
+        for coin in indexed_coins:
+            try:
+                strategy_data = self._crypto_strategy_data.get(coin, {})
+                entries = strategy_data.get(strategy_type, [])
+            except Exception:
+                return False
+            has_entries = False
+            for entry in entries:
+                try:
+                    if entry.get(MatrixChannel.CRYPTOCURRENCY_KEY) is not None:
+                        has_entries = True
+                        break
+                except Exception:
+                    continue
+            if not has_entries:
+                return False
+        return True
 
     def _collect_all_strategy_data(
         self, matrix_id: str, cryptocurrency: str, symbol: str, time_frame=None
@@ -208,68 +264,67 @@ class AIIndexTradingModeProducer(index_trading.IndexTradingModeProducer):
             symbol=symbol,
             time_frame=time_frame,
         ):
-            if evaluators_util.check_valid_eval_note(
-                evaluators_api.get_value(evaluated_strategy_node),
+            eval_note = evaluators_api.get_value(evaluated_strategy_node)
+            note_description = evaluators_api.get_description(evaluated_strategy_node)
+            if not note_description:
+                continue
+            is_valid = evaluators_util.check_valid_eval_note(
+                eval_note,
                 evaluators_api.get_type(evaluated_strategy_node),
                 evaluators_constants.EVALUATOR_EVAL_DEFAULT_TYPE,
+            )
+            if not is_valid and not (
+                eval_note == common_constants.START_PENDING_EVAL_NOTE
+                and note_description == agents_constants.DEFAULT_AGENT_RESULT
             ):
-                eval_note = evaluators_api.get_value(evaluated_strategy_node)
-                note_description = evaluators_api.get_description(evaluated_strategy_node)
-                note_metadata = evaluators_api.get_metadata(evaluated_strategy_node)
+                continue
+            note_metadata = evaluators_api.get_metadata(evaluated_strategy_node)
 
-                if strategy_type not in strategy_data:
-                    strategy_data[strategy_type] = []
+            if strategy_type not in strategy_data:
+                strategy_data[strategy_type] = []
 
-                strategy_data[strategy_type].append(
-                    {
-                        "eval_note": eval_note,
-                        "description": note_description,
-                        "metadata": note_metadata,
-                        "cryptocurrency": cryptocurrency,
-                        "symbol": symbol,
-                    }
-                )
+            strategy_data[strategy_type].append(
+                {
+                    "eval_note": eval_note,
+                    "description": note_description,
+                    "metadata": note_metadata,
+                    MatrixChannel.CRYPTOCURRENCY_KEY: cryptocurrency,
+                    MatrixChannel.SYMBOL_KEY: symbol,
+                }
+            )
 
         return strategy_data
 
     async def _trigger_crypto_analysis(
         self,
-        crypto_strategy_data: dict,
-        cryptocurrency: str,
+        cryptocurrency: typing.Optional[str],
         symbol: typing.Optional[str],
         time_frame,
-    ):
-        """
-        Handle cryptocurrency-specific strategy analysis from CryptoLLMAIStrategyEvaluator.
-        This is only triggered when both global and crypto-specific data are available.
-        Runs the AI agents sequentially to generate portfolio distribution decisions.
-        """
-        if not self._global_strategy_data or cryptocurrency not in self._crypto_strategy_data:
-            self.logger.debug(
-                f"Skipping crypto analysis for {cryptocurrency} as global strategy data is not available."
-            )
-            return
-        
-        # Check if all cryptocurrencies have been analyzed
+    ):       
+        # TODO Check if all cryptocurrencies have been analyzed
+
         # Only run the full agent team when we have data for all tracked coins
         if not self.trading_mode.indexed_coins:
             self.logger.debug("No indexed coins configured, skipping agent analysis.")
             return
         
-        # Check if we have crypto strategy data for all indexed coins
-        all_coins_ready = all(
-            coin in self._crypto_strategy_data 
-            for coin in self.trading_mode.indexed_coins
-        )
-        
-        if not all_coins_ready:
+        # Check if we have crypto strategy data for all indexed coins (exclude reference market)
+        reference_market = self.exchange_manager.exchange_personal_data.portfolio_manager.reference_market
+        indexed_coins = [coin for coin in self.trading_mode.indexed_coins if coin != reference_market]
+
+        if not self._has_filtered_global_strategy_data():
+            self.logger.debug("Waiting for filtered global strategy data.")
+            return
+
+        if not self._has_filtered_crypto_strategy_data(indexed_coins):
             self.logger.debug(
-                f"Waiting for all crypto strategy data. "
-                f"Have: {list(self._crypto_strategy_data.keys())}, "
-                f"Need: {self.trading_mode.indexed_coins}"
+                "Waiting for filtered crypto strategy data. Have: %s Need: %s",
+                list(self._crypto_strategy_data.keys()),
+                indexed_coins,
             )
             return
         
+        # TODO check if all coins are ready        
         self.logger.debug("All strategy data collected. Running AI agents...")
         
         try:
@@ -319,9 +374,12 @@ class AIIndexTradingModeProducer(index_trading.IndexTradingModeProducer):
             return
 
         # Structured logging of debate/judge outputs when present
-        if getattr(team, "last_debate_state", None):
+        try:
             debate_state = team.last_debate_state
-            if getattr(self.trading_mode, "log_ai_decisions", False):
+        except AttributeError:
+            debate_state = None
+        if debate_state:
+            if self.trading_mode.log_ai_decisions:
                 self.logger.info(
                     "Debate state: %s",
                     str(debate_state),

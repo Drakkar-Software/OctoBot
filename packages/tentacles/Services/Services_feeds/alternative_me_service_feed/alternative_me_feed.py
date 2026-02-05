@@ -43,8 +43,8 @@ class AlternativeMeServiceFeed(service_feeds.AbstractServiceFeed):
 
     API_RATE_LIMIT_SECONDS = 10
 
-    def __init__(self, config, main_async_loop, bot_id):
-        super().__init__(config, main_async_loop, bot_id)
+    def __init__(self, config, main_async_loop, bot_id, backtesting=None, importer=None):
+        super().__init__(config, main_async_loop, bot_id, backtesting=backtesting, importer=importer)
         self.alternative_me_topics = []
         self.data_cache = {}
         self.refresh_time_frame = commons_enums.TimeFrames.ONE_DAY
@@ -60,11 +60,54 @@ class AlternativeMeServiceFeed(service_feeds.AbstractServiceFeed):
     def _initialize(self):
         pass # Nothing to do
 
+    @staticmethod
+    def get_name() -> str:
+        return "AlternativeMeServiceFeed"
+
     def _something_to_watch(self):
         return bool(self.alternative_me_topics)
 
     def _get_sleep_time_before_next_wakeup(self):
         return commons_enums.TimeFramesMinutes[self.refresh_time_frame] * commons_constants.MINUTE_TO_SECONDS
+
+    @classmethod
+    def get_historical_sources(cls) -> list:
+        return [
+            services_constants.ALTERNATIVE_ME_TOPIC_FEAR_AND_GREED,
+        ]
+
+    async def get_historical_data(
+        self,
+        start_timestamp,
+        end_timestamp,
+        symbols=None,
+        source=None,
+        **kwargs
+    ) -> typing.AsyncIterator[list[dict]]:
+        if start_timestamp is not None and start_timestamp < 1e12:
+            start_timestamp = int(start_timestamp * 1000)
+        if end_timestamp is not None and end_timestamp < 1e12:
+            end_timestamp = int(end_timestamp * 1000)
+        topics = [source] if source else (self.alternative_me_topics or self.get_historical_sources())
+        async with aiohttp.ClientSession() as session:
+            for topic in topics:
+                events = []
+                if topic == services_constants.ALTERNATIVE_ME_TOPIC_FEAR_AND_GREED:
+                    result = await self._get_fear_and_greed_data(session)
+                    data = self.data_cache.get(services_constants.ALTERNATIVE_ME_TOPIC_FEAR_AND_GREED, []) if result else []
+                    for item in data:
+                        ts_ms = int(item.timestamp * 1000) if item.timestamp < 1e12 else int(item.timestamp)
+                        if start_timestamp <= ts_ms <= end_timestamp:
+                            events.append({
+                                "timestamp": ts_ms,
+                                "channel": topic,
+                                "symbol": "",
+                                "payload": dataclasses.asdict(item),
+                            })
+                if events:
+                    events.sort(key=lambda x: x["timestamp"])
+                    yield events
+                await asyncio.sleep(self.API_RATE_LIMIT_SECONDS)
 
     async def _get_fear_and_greed_data(self, session: aiohttp.ClientSession, limit: typing.Optional[int] = 100) -> bool:
         api_url = f"https://api.alternative.me/fng/?limit={limit}&format=json&date_format=us"
@@ -87,11 +130,22 @@ class AlternativeMeServiceFeed(service_feeds.AbstractServiceFeed):
         if self.data_cache is None:
             return None
 
+        # Normalize current_time to seconds for comparison
+        if current_time is not None and current_time > 1e12:
+            current_time = current_time / 1000
+
         if key is None:
             return self.data_cache
 
         if key == services_constants.ALTERNATIVE_ME_TOPIC_FEAR_AND_GREED and self.data_cache.get(services_constants.ALTERNATIVE_ME_TOPIC_FEAR_AND_GREED) is not None:
-            return [item for item in self.data_cache.get(services_constants.ALTERNATIVE_ME_TOPIC_FEAR_AND_GREED) if item.timestamp <= current_time]
+            def _to_seconds(value):
+                if hasattr(value, "timestamp"):
+                    return float(value.timestamp())
+                return value / 1000 if value > 1e12 else value
+            return [
+                item for item in self.data_cache.get(services_constants.ALTERNATIVE_ME_TOPIC_FEAR_AND_GREED)
+                if _to_seconds(item.timestamp) <= current_time
+            ]
         return None
 
     async def _push_update_and_wait(self, session: aiohttp.ClientSession):
@@ -133,4 +187,3 @@ class AlternativeMeServiceFeed(service_feeds.AbstractServiceFeed):
         if self.listener_task is not None:
             self.listener_task.cancel()
             self.listener_task = None
-

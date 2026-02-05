@@ -56,6 +56,7 @@ from octobot_agents.constants import (
     SKILLS_DEFAULT_DIR,
 )
 from octobot_agents.errors import DeepAgentNotAvailableError
+from octobot_agents.storage.history import create_analysis_storage
 import octobot_services.services.abstract_ai_service as abstract_ai_service
 
 logger = logging.getLogger(__name__)
@@ -120,6 +121,7 @@ class AbstractDeepAgentsTeamChannelProducer(AbstractAgentsTeamChannelProducer, a
         skills: list[str] | None = None,
         interrupt_on: dict[str, typing.Any] | None = None,
         enable_streaming: bool | None = None,
+        analysis_storage: typing.Optional[typing.Any] = None,
     ):
         self.channel = channel
         self.ai_service = ai_service
@@ -142,6 +144,12 @@ class AbstractDeepAgentsTeamChannelProducer(AbstractAgentsTeamChannelProducer, a
         
         self.logger = logging.getLogger(f"{self.__class__.__name__}")
         
+        # Initialize analysis storage
+        if analysis_storage is None:
+            self.analysis_storage = create_analysis_storage(storage_type="json")
+        else:
+            self.analysis_storage = analysis_storage
+        
         if not DEEP_AGENTS_AVAILABLE:
             self.logger.warning("deep_agents not available - team will not function")
     
@@ -152,6 +160,43 @@ class AbstractDeepAgentsTeamChannelProducer(AbstractAgentsTeamChannelProducer, a
     @abc.abstractmethod
     def get_manager_instructions(self) -> str:
         raise NotImplementedError("Subclasses must implement get_manager_instructions()")
+    
+    def save_analysis(
+        self,
+        agent_name: str,
+        result: typing.Any,
+    ) -> None:
+        """
+        Save analysis results to storage for debugging/audit purposes.
+        
+        Delegates to the analysis storage backend. Results are saved with metadata
+        for cross-agent access and debugging.
+        
+        Args:
+            agent_name: Name of the agent/worker producing the analysis.
+            result: The analysis result to save (dict, str, or other serializable).
+        """
+        try:
+            self.analysis_storage.save_analysis(
+                agent_name=agent_name,
+                result=result,
+                team_name=self.team_name,
+                team_id=self.team_id,
+            )
+        except Exception as e:
+            self.logger.warning(f"Failed to save analysis for {agent_name}: {e}")
+    
+    def clear_transient_files(self) -> None:
+        """
+        Clear analysis files from previous runs.
+        
+        Delegates to the analysis storage backend to ensure clean state
+        for the next execution.
+        """
+        try:
+            self.analysis_storage.clear_transient_files()
+        except Exception as e:
+            self.logger.warning(f"Failed to clear transient files: {e}")
     
     def get_manager_tools(self) -> list[typing.Callable] | None:
         return None
@@ -194,7 +239,7 @@ class AbstractDeepAgentsTeamChannelProducer(AbstractAgentsTeamChannelProducer, a
         Returns:
             Dict mapping virtual paths to file content or None
         """
-        skills_dir = self.get_skills_resources_dir()
+        skills_dir = self.get_skills_resources_dir()  # pylint: disable=assignment-from-none
         if not skills_dir:
             return None
         
@@ -255,8 +300,8 @@ class AbstractDeepAgentsTeamChannelProducer(AbstractAgentsTeamChannelProducer, a
             agent_name = w.get("name", "unnamed")
             
             # Get agent-specific skills
-            agent_skills = self.get_agent_skills(agent_name)
-            agent_files = self.get_agent_skills_files(agent_name)
+            agent_skills = self.get_agent_skills(agent_name)  # pylint: disable=assignment-from-none
+            agent_files = self.get_agent_skills_files(agent_name)  # pylint: disable=assignment-from-none
             
             if agent_skills:
                 self.logger.debug(f"[{self.team_name}] Loading skills for {agent_name}: {agent_skills}")
@@ -343,7 +388,7 @@ Save important insights to /memories/ for future reference.
         
         # Auto-discover skills from tentacle's resources/skills directory for manager
         skills = self.get_skills()
-        skills_dir = self.get_skills_resources_dir()
+        skills_dir = self.get_skills_resources_dir()  # pylint: disable=assignment-from-none
         
         if skills_dir:
             discovered = discover_skills(skills_dir)

@@ -21,11 +21,13 @@ import octobot_services.service_feeds as service_feeds
 
 
 class ServiceFeedFactory:
-    def __init__(self, config, main_async_loop, bot_id):
+    def __init__(self, config, main_async_loop, bot_id, backtesting=None, importer=None):
         self.logger = logging.get_logger(self.__class__.__name__)
         self.config = config
         self.main_async_loop = main_async_loop
         self.bot_id = bot_id
+        self.backtesting = backtesting
+        self.importer = importer
 
     @staticmethod
     def get_available_service_feeds(in_backtesting: bool) -> list:
@@ -33,10 +35,15 @@ class ServiceFeedFactory:
         if in_backtesting:
             feeds = [feed.SIMULATOR_CLASS
                      for feed in feeds
-                     if feed.SIMULATOR_CLASS is not None]
+                     if feed.SIMULATOR_CLASS is not None and feed.IS_SIMULATOR_CLASS]
+        else:
+            feeds = [feed
+                     for feed in feeds
+                     if feed.IS_SIMULATOR_CLASS is False]
         return feeds
 
-    def create_service_feed(self, service_feed_class) -> service_feeds.AbstractServiceFeed:
-        feed = service_feed_class(self.config, self.main_async_loop, self.bot_id)
+    def create_service_feed(self, service_feed_class, importer=None) -> service_feeds.AbstractServiceFeed:
+        feed = service_feed_class(self.config, self.main_async_loop, self.bot_id, 
+                                  backtesting=self.backtesting, importer=importer or self.importer)
         service_feeds.ServiceFeeds.instance().add_service_feed(self.bot_id, service_feed_class.get_name(), feed)
         return feed

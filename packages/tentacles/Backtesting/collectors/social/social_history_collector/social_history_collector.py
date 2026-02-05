@@ -34,30 +34,33 @@ except ImportError:
 class SocialHistoryDataCollector(collector.AbstractSocialHistoryCollector):
     IMPORTER = generic_social_importer.GenericSocialDataImporter
 
-    def __init__(self, config, social_name, tentacles_setup_config, sources=None, symbols=None,
+    def __init__(self, config, services, tentacles_setup_config, sources=None, symbols=None,
                  use_all_available_sources=False,
                  data_format=backtesting_enums.DataFormats.REGULAR_COLLECTOR_DATA,
                  start_timestamp=None,
                  end_timestamp=None):
-        super().__init__(config, social_name, tentacles_setup_config=tentacles_setup_config,
+        super().__init__(config, services, tentacles_setup_config=tentacles_setup_config,
                          sources=sources, symbols=symbols,
                          use_all_available_sources=use_all_available_sources,
                          data_format=data_format,
                          start_timestamp=start_timestamp, end_timestamp=end_timestamp)
         self.tentacles_setup_config = tentacles_setup_config
         self.feed_instance = None
+        self.feed_class = None
 
     async def start(self):
         self.should_stop = False
         should_stop_database = True
         try:
-            # Resolve feed class by name (social_name is feed name)
-            feed_class = self._get_feed_class_by_name(self.social_name)
+            # Resolve feed class by class name from services list
+            feed_class = self._get_feed_class_by_class_name(self.services)
             if feed_class is None:
                 available = [f.get_name() for f in services_api.get_available_backtestable_feeds()]
                 raise errors.DataCollectorError(
-                    f"Feed '{self.social_name}' not found. Available feeds: {available}"
+                    f"Feed class not found in services list {self.services}. Available feeds: {available}"
                 )
+            self.feed_class = feed_class
+            self._set_services_from_feed(feed_class)
 
             # Create feed instance and ensure required services exist for it
             main_loop = asyncio.get_running_loop()
@@ -85,17 +88,19 @@ class SocialHistoryDataCollector(collector.AbstractSocialHistoryCollector):
                 self.total_steps = 1
             self.in_progress = True
 
-            self.logger.info(f"Start collecting history on {self.social_name}")
+            self.logger.info(f"Start collecting history on {feed_class.get_name()}")
             for source_index, source in enumerate(self.sources or [None]):
                 if self.symbols:
                     for symbol_index, symbol in enumerate(self.symbols):
                         self.current_step_index = (source_index * len(self.symbols)) + symbol_index + 1
-                        self.logger.info(f"Collecting history for {self.social_name} source={source} symbol={symbol}...")
-                        await self.get_social_history(self.social_name, source, symbol)
+                        self.logger.info(
+                            f"Collecting history for {feed_class.get_name()} source={source} symbol={symbol}..."
+                        )
+                        await self.get_social_history(feed_class.get_name(), source, symbol)
                 else:
                     self.current_step_index = source_index + 1
-                    self.logger.info(f"Collecting history for {self.social_name} source={source}...")
-                    await self.get_social_history(self.social_name, source, None)
+                    self.logger.info(f"Collecting history for {feed_class.get_name()} source={source}...")
+                    await self.get_social_history(feed_class.get_name(), source, None)
         except Exception as err:
             await self.database.stop()
             should_stop_database = False
@@ -103,22 +108,35 @@ class SocialHistoryDataCollector(collector.AbstractSocialHistoryCollector):
             if os.path.isfile(self.temp_file_path):
                 os.remove(self.temp_file_path)
             if not self.should_stop:
-                self.logger.exception(err, True, f"Error when collecting {self.social_name} history: {err}")
+                self.logger.exception(err, True, f"Error when collecting {self.services} history: {err}")
                 raise errors.DataCollectorError(err)
         finally:
             await self.stop(should_stop_database=should_stop_database)
 
-    def _get_feed_class_by_name(self, feed_name):
-        """Find backtestable feed class by name."""
+    def _get_feed_class_by_class_name(self, services):
+        """Find backtestable feed class by class name from services list."""
+        if not services:
+            return None
         feeds = services_api.get_available_backtestable_feeds()
+        service_set = {svc.lower() for svc in services}
         for feed_class in feeds:
-            if feed_class.get_name() == feed_name or feed_class.get_name().lower() == feed_name.lower():
+            if feed_class.get_name().lower() in service_set:
                 return feed_class
         return None
 
     def _load_all_available_sources(self):
         # Override this if feed provides available sources
         pass
+
+    def _set_services_from_feed(self, feed_class):
+        services = []
+        if feed_class is not None:
+            services.append(feed_class.get_name())
+            for service_class in getattr(feed_class, "REQUIRED_SERVICES", []) or []:
+                services.append(service_class.__name__)
+        # Ensure uniqueness while preserving order
+        seen = set()
+        self.services = [svc for svc in services if not (svc in seen or seen.add(svc))]
 
     async def stop(self, should_stop_database=True):
         self.should_stop = True

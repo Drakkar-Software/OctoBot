@@ -422,7 +422,7 @@ async def matrix_callback(
         f"EVALUATOR = {evaluator_name} || EVALUATOR_TYPE = {evaluator_type} || "
         f"CRYPTOCURRENCY = {cryptocurrency} || SYMBOL = {symbol} || TF = {time_frame} "
         f"|| NOTE = {eval_note} [MATRIX id = {matrix_id}] "
-        f"|| DESCRIPTION = {eval_note_description}" if eval_note_description else ""
+        f"|| DESCRIPTION = {eval_note_description if eval_note_description else ''}"
     )
 
 

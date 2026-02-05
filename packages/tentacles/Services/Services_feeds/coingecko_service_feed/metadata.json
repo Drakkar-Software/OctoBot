@@ -1,6 +1,6 @@
 {
   "version": "1.2.0",
   "origin_package": "OctoBot-Default-Tentacles",
-  "tentacles": ["CoingeckoServiceFeed"],
+  "tentacles": ["CoingeckoServiceFeed", "CoingeckoServiceFeedSimulator"],
   "tentacles-requirements": ["coingecko_service"]
 }

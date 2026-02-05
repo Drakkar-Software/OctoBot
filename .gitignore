@@ -153,3 +153,6 @@ installer/
 
 # node
 *.db*
+
+# ai
+analysis/

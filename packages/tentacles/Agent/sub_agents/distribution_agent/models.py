@@ -18,7 +18,7 @@
 Pydantic models for distribution agent outputs.
 """
 from typing import Dict, List
-from pydantic import BaseModel, Field, field_validator, AliasChoices
+from pydantic import BaseModel, Field, field_validator, AliasChoices, model_validator
 
 from octobot_agents.models import AgentBaseModel
 
@@ -54,6 +54,16 @@ class AssetDistribution(AgentBaseModel):
     explanation: str = Field(
         description="Explanation for this allocation. Must be a descriptive string explaining the reasoning."
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_missing_action(cls, data):
+        try:
+            if "action" not in data:
+                data["action"] = "maintain"
+        except Exception:
+            return data
+        return data
     
     @field_validator("action")
     def validate_action(cls, v: str) -> str:
@@ -78,6 +88,50 @@ class DistributionOutput(AgentBaseModel):
     reasoning: str = Field(
         description="Overall reasoning for the distribution decisions."
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_input(cls, data):
+        wrapper_keys = {"distributions", "allocations", "rebalance_urgency", "reasoning"}
+        percentage_keys = {"percentage", "target_percentage", "target_allocation", "allocation", "weight", "ratio"}
+        recovered_reasoning = "Recovered from malformed distribution output."
+
+        if isinstance(data, list):
+            return {
+                "distributions": data,
+                "rebalance_urgency": "none",
+                "reasoning": recovered_reasoning,
+            }
+        if isinstance(data, str):
+            recovered = cls.recover_json_from_error(data)
+            if recovered:
+                return recovered
+        if isinstance(data, dict):
+            if "error" in data:
+                recovered = cls.recover_json_from_error(data.get("error"))
+                if recovered:
+                    return recovered
+                if not (wrapper_keys & set(data.keys())):
+                    return {
+                        "distributions": [],
+                        "rebalance_urgency": "none",
+                        "reasoning": "",
+                    }
+            has_wrapper_fields = bool(wrapper_keys & set(data.keys()))
+            is_single_distribution = (
+                "asset" in data
+                and bool(percentage_keys & set(data.keys()))
+            )
+            if not has_wrapper_fields and is_single_distribution:
+                return {
+                    "distributions": [data],
+                    "rebalance_urgency": "none",
+                    "reasoning": recovered_reasoning,
+                }
+            if "distributions" in data or "allocations" in data:
+                data.setdefault("rebalance_urgency", "none")
+                data.setdefault("reasoning", recovered_reasoning)
+        return data
     
     @field_validator("rebalance_urgency")
     def validate_urgency(cls, v: str) -> str:

@@ -22,11 +22,12 @@ Combines per-crypto analysis with overall market signal synthesis in a single ag
 import json
 import typing
 
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 from typing import List
 
 import octobot_agents as agent
 from octobot_agents.models import AgentBaseModel
+from octobot_agents.utils.extractor import extract_json_from_content
 from octobot_services.enums import AIModelPolicy
 
 from .state import AIAgentState
@@ -39,6 +40,14 @@ class SignalAgentOutput(AgentBaseModel):
     
     per_crypto_signals: List[CryptoSignalOutput]
     synthesis: SignalSynthesisOutput
+
+    @model_validator(mode="after")
+    def ensure_output_present(self):
+        if not self.per_crypto_signals:
+            raise ValueError("per_crypto_signals must not be empty")
+        if not self.synthesis:
+            raise ValueError("synthesis must not be empty")
+        return self
 
 
 class SignalAIAgentChannel(agent.AbstractAgentChannel):
@@ -129,6 +138,9 @@ Must be EXACTLY one of:
 - "conflicting": Opposing signals
 
 ⚠️ CRITICAL: "neutral" is NOT valid for consensus_level - use "weak" instead.
+⚠️ CRITICAL: "none", "null", "n/a", and "unknown" are NOT valid for consensus_level - use "weak" instead.
+
+If you would normally output "neutral", "none", "null", "n/a", or "unknown" for consensus_level, output "weak".
 
 ## Market Outlook (for "market_outlook" field)
 Must be EXACTLY one of:
@@ -136,6 +148,9 @@ Must be EXACTLY one of:
 - "bearish": Majority negative signals
 - "neutral": Balanced or low conviction
 - "mixed": Strong conflicting signals
+CRITICAL: market_outlook MUST be a single word enum value only.
+Do NOT output explanations like "neutral with bearish risks" in market_outlook.
+Put all nuance in "summary" instead.
 
 ## REQUIRED OUTPUT SCHEMA - STRICT ENFORCEMENT
 
@@ -150,6 +165,7 @@ The "synthesis" object MUST include ALL of these REQUIRED fields:
 - "summary" (string): REQUIRED - Summary text
 
 CRITICAL: Every field is REQUIRED. Do NOT omit any field. "strength" must be a NUMBER, NOT a string.
+CRITICAL: "synthesized_signals" MUST be a non-empty array. If you have low confidence, still provide entries with "neutral"/"weak" and low strength.
 
 Be precise, data-driven, and base all recommendations ONLY on provided data.
 """
@@ -168,6 +184,31 @@ Be precise, data-driven, and base all recommendations ONLY on provided data.
         portfolio = state.get("portfolio", {})
         orders = state.get("orders", {})
         current_distribution = state.get("current_distribution", {})
+
+        global_filtered = dict(global_strategy)
+        crypto_filtered = dict(crypto_strategy)
+        try:
+            global_entries = global_strategy.get("STRATEGIES", [])
+        except Exception:
+            global_entries = []
+        try:
+            crypto_entries = crypto_strategy.get("STRATEGIES", [])
+        except Exception:
+            crypto_entries = []
+
+        try:
+            global_filtered["STRATEGIES"] = [
+                entry for entry in global_entries if entry.get("cryptocurrency") is None
+            ]
+        except Exception:
+            pass
+
+        try:
+            crypto_filtered["STRATEGIES"] = [
+                entry for entry in crypto_entries if entry.get("cryptocurrency") is not None
+            ]
+        except Exception:
+            pass
         
         portfolio_str = json.dumps(portfolio, indent=2, default=str) if portfolio else "No portfolio data"
         orders_str = json.dumps(orders, indent=2, default=str) if orders else "No orders"
@@ -176,10 +217,10 @@ Be precise, data-driven, and base all recommendations ONLY on provided data.
 # Analyze All Cryptocurrencies and Synthesize Signals
 
 ## Global Strategy Data
-{self._format_strategy_data(global_strategy)}
+{self._format_strategy_data(global_filtered)}
 
 ## Per-Cryptocurrency Strategy Data
-{self._format_strategy_data(crypto_strategy)}
+{self._format_strategy_data(crypto_filtered)}
 
 ## Tracked Cryptocurrencies
 {json.dumps(cryptocurrencies, indent=2)}
@@ -260,6 +301,23 @@ Remember: Base ONLY on the provided data. Do not make allocation decisions - onl
                 json_output=True,
             )
             
+            try:
+                response_data.get("synthesis", {})
+            except AttributeError:
+                parsed = extract_json_from_content(str(response_data))
+                if parsed is None:
+                    raise ValueError("Failed to parse JSON response.")
+                response_data = parsed
+            if not isinstance(response_data, dict):
+                raise ValueError("Signal agent response must be a JSON object.")
+            if "synthesis" not in response_data:
+                # If the model omitted the expected wrapper, treat the whole
+                # object as synthesis payload without creating recursive dicts.
+                response_data = {
+                    "per_crypto_signals": response_data.get("per_crypto_signals", []),
+                    "synthesis": dict(response_data),
+                }
+
             # Process per-crypto signals
             signal_outputs = {"signals": {}}
             per_crypto = response_data.get("per_crypto_signals", [])
@@ -270,12 +328,12 @@ Remember: Base ONLY on the provided data. Do not make allocation decisions - onl
                     signal_output = CryptoSignalOutput(**signal_data)
                     signal_outputs["signals"][crypto] = signal_output
             
-            # Process synthesis with pre-validation normalization
+            # Process synthesis
             synthesis_data = response_data.get("synthesis", {})
             if synthesis_data:
                 synthesis_output = SignalSynthesisOutput(**synthesis_data)
             else:
-                synthesis_output = None
+                raise ValueError("Signal synthesis is missing or empty.")
             
             self.logger.debug(f"{self.name} completed successfully.")
             
@@ -286,7 +344,7 @@ Remember: Base ONLY on the provided data. Do not make allocation decisions - onl
             
         except Exception as e:
             self.logger.exception(f"Error in {self.name}: {e}")
-            return {}
+            raise
 
 
 async def run_signal_agent(state: AIAgentState, ai_service, agent_id: str = "signal-agent") -> dict:

@@ -32,8 +32,8 @@ def is_service_used_by_backtestable_feed(service_class) -> bool:
     return False
 
 
-def create_service_feed_factory(config, main_async_loop, bot_id) -> service_feeds.ServiceFeedFactory:
-    return service_feeds.ServiceFeedFactory(config, main_async_loop, bot_id)
+def create_service_feed_factory(config, main_async_loop, bot_id, backtesting=None, importer=None) -> service_feeds.ServiceFeedFactory:
+    return service_feeds.ServiceFeedFactory(config, main_async_loop, bot_id, backtesting, importer=importer)
 
 
 def get_service_feed(service_feed_class, bot_id) -> service_feeds.AbstractServiceFeed:

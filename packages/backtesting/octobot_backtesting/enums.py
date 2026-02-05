@@ -23,6 +23,7 @@ class DataFormats(enum.Enum):
 class DataFormatKeys(enum.Enum):
     SYMBOLS = "symbols"
     EXCHANGE = "exchange"
+    SERVICES = "services"
     DATE = "date"
     TIMESTAMP = "timestamp"
     START_TIMESTAMP = "start_timestamp"

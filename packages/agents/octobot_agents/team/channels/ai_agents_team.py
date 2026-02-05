@@ -30,6 +30,7 @@ from octobot_agents.team.channels.agents_team import (
     AbstractAgentsTeamChannelProducer,
 )
 from octobot_agents.errors import AgentConfigurationError
+from octobot_agents.storage.history import create_analysis_storage
 import octobot_services.services.abstract_ai_service as abstract_ai_service
 import octobot_agents.models as models
 
@@ -60,11 +61,26 @@ class AbstractSyncAgentsTeamChannelProducer(AbstractAgentsTeamChannelProducer):
         critic_agent: typing.Optional[AbstractCriticAgent] = None,
         memory_agent: typing.Optional[AbstractMemoryAgent] = None,
         judge_agent: typing.Optional["AbstractJudgeAgent"] = None,
+        analysis_storage: typing.Optional[typing.Any] = None,
     ):
         """
         Initialize the sync AI team producer.
 
         Uses CriticAgentClass / JudgeAgentClass attributes if defined, otherwise disabled.
+        
+        Args:
+            channel: The team's output channel (optional).
+            agents: List of agent producer instances.
+            relations: List of (SourceAgentChannel, TargetAgentChannel) edges.
+            ai_service: The AI service for LLM calls.
+            team_name: Name of the team (defaults to TEAM_NAME).
+            team_id: Unique identifier for this team instance.
+            manager: Optional team manager agent.
+            self_improving: Whether to enable automatic improvement after execution.
+            critic_agent: Optional critic agent for analysis.
+            memory_agent: Optional memory agent for storing improvements.
+            judge_agent: Optional judge agent for debate phases.
+            analysis_storage: Optional analysis storage instance. If None, uses JSONAnalysisStorage.
         """
         # Call parent init first - it handles critic/memory/judge agent instantiation via class attributes
         super().__init__(
@@ -80,6 +96,12 @@ class AbstractSyncAgentsTeamChannelProducer(AbstractAgentsTeamChannelProducer):
             memory_agent=memory_agent,
             judge_agent=judge_agent,
         )
+        
+        # Initialize analysis storage
+        if analysis_storage is None:
+            self.analysis_storage = create_analysis_storage(storage_type="json")
+        else:
+            self.analysis_storage = analysis_storage
     
     async def run(self, initial_data: typing.Dict[str, typing.Any]) -> typing.Dict[str, typing.Any]:
         """
@@ -106,6 +128,7 @@ class AbstractSyncAgentsTeamChannelProducer(AbstractAgentsTeamChannelProducer):
         # Get execution plan or terminal results from manager
         manager_result = await self.manager.execute(manager_input, self.ai_service)
         
+        terminal_results: typing.Dict[str, typing.Any]
         if isinstance(manager_result, models.ExecutionPlan):
             # Plan-driven manager: execute the plan
             self.last_execution_plan = manager_result
@@ -114,6 +137,8 @@ class AbstractSyncAgentsTeamChannelProducer(AbstractAgentsTeamChannelProducer):
             # Tools-driven manager: extract results from ManagerResult model
             terminal_results = manager_result.results
             self.last_execution_plan = None
+        else:
+            raise ValueError(f"Unexpected manager result type: {type(manager_result)}")
         
         self.last_execution_results = terminal_results
         
@@ -128,6 +153,44 @@ class AbstractSyncAgentsTeamChannelProducer(AbstractAgentsTeamChannelProducer):
             asyncio.create_task(self._self_improve_in_background(terminal_results))
         
         return terminal_results
+    
+    def save_analysis(
+        self,
+        agent_name: str,
+        result: typing.Any,
+    ) -> None:
+        """
+        Save analysis results to storage for debugging/audit purposes.
+        
+        Delegates to the analysis storage backend. Results are saved with metadata
+        for cross-agent access and debugging.
+        
+        Args:
+            agent_name: Name of the agent producing the analysis.
+            result: The analysis result to save (dict, str, or other serializable).
+        """
+        try:
+            self.analysis_storage.save_analysis(
+                agent_name=agent_name,
+                result=result,
+                team_name=self.team_name,
+                team_id=self.team_id,
+            )
+        except Exception as e:
+            self.logger.warning(f"Failed to save analysis for {agent_name}: {e}")
+    
+    def clear_transient_files(self) -> None:
+        """
+        Clear analysis files from previous runs.
+        
+        Delegates to the analysis storage backend to ensure clean state
+        for the next execution.
+        """
+        try:
+            self.analysis_storage.clear_transient_files()
+        except Exception as e:
+            self.logger.warning(f"Failed to clear transient files: {e}")
+
 
 
 class AbstractLiveAgentsTeamChannelProducer(AbstractAgentsTeamChannelProducer):

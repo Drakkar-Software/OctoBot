@@ -79,8 +79,8 @@ class ExchangeServiceFeed(service_feeds.AbstractServiceFeed):
 
     DEFAULT_REFRESH_TIME = 10
 
-    def __init__(self, config, main_async_loop, bot_id: str):
-        super().__init__(config, main_async_loop, bot_id)
+    def __init__(self, config, main_async_loop, bot_id: str, backtesting=None, importer=None):
+        super().__init__(config, main_async_loop, bot_id, backtesting=backtesting, importer=importer)
         self.exchange_profiles: typing.Dict[str, ExchangeProfile] = {}
 
     def _initialize(self):

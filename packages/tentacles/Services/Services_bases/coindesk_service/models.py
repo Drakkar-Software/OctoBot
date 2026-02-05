@@ -13,9 +13,40 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import dataclasses
+import datetime
 
-from .backtesting_results_critic_agent import BacktestingResultsAICriticAgentProducer
 
-__all__ = [
-    "BacktestingResultsAICriticAgentProducer",
-]
+@dataclasses.dataclass
+class CoindeskNews:
+    id: str
+    guid: str
+    published_on: datetime.datetime
+    image_url: str
+    title: str
+    url: str
+    source_id: str
+    body: str
+    keywords: str
+    lang: str
+    upvotes: int
+    downvotes: int
+    score: int
+    sentiment: str  # POSITIVE, NEGATIVE, NEUTRAL
+    status: str
+    source_name: str
+    source_key: str
+    source_url: str
+    source_lang: str
+    source_type: str
+    categories: str
+
+
+@dataclasses.dataclass
+class CoindeskMarketcap:
+    timestamp: datetime.datetime
+    open: float
+    close: float
+    high: float
+    low: float
+    top_tier_volume: float

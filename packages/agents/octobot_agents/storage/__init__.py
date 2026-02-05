@@ -14,13 +14,18 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
-from octobot_agents.storage import memory
+from octobot_agents.storage import memory, history
 from octobot_agents.storage.memory import (
     AbstractMemoryStorage,
     JSONMemoryStorage,
     create_memory_storage,
     get_memory_tools,
     execute_memory_tool,
+)
+from octobot_agents.storage.history import (
+    AbstractAnalysisStorage,
+    JSONAnalysisStorage,
+    create_analysis_storage,
 )
 
 __all__ = [
@@ -29,4 +34,8 @@ __all__ = [
     "create_memory_storage",
     "get_memory_tools",
     "execute_memory_tool",
+    "AbstractAnalysisStorage",
+    "JSONAnalysisStorage",
+    "create_analysis_storage",
 ]
+

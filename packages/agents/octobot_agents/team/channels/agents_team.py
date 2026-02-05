@@ -164,6 +164,7 @@ class AbstractAgentsTeamChannelProducer(AbstractAgentChannelProducer, abc.ABC):
 
         # Judge agent for debate phases (optional)
         if judge_agent is None and self.JudgeAgentClass is not None:
+            # pylint: disable=not-callable
             self.judge_agent = self.JudgeAgentClass()
             if self.judge_agent.logger is None:
                 self.judge_agent.logger = self.logger
@@ -449,6 +450,30 @@ class AbstractAgentsTeamChannelProducer(AbstractAgentChannelProducer, abc.ABC):
         results: typing.Dict[str, typing.Dict[str, typing.Any]] = {}
         completed_agents: typing.Set[str] = set()
         
+        # Normalize debate steps based on judge availability and cap excessive debate steps
+        debate_steps = [step for step in execution_plan.steps if step.step_type == StepType.DEBATE.value]
+        if self.judge_agent is None:
+            if debate_steps:
+                self.logger.debug(
+                    f"Skipping {len(debate_steps)} debate step(s) - no judge agent configured in team"
+                )
+            execution_plan.steps = [step for step in execution_plan.steps if step.step_type != StepType.DEBATE.value]
+        else:
+            max_debate_steps = 3
+            if len(debate_steps) > max_debate_steps:
+                kept = 0
+                filtered_steps = []
+                for step in execution_plan.steps:
+                    if step.step_type == StepType.DEBATE.value:
+                        kept += 1
+                        if kept > max_debate_steps:
+                            continue
+                    filtered_steps.append(step)
+                execution_plan.steps = filtered_steps
+                self.logger.debug(
+                    f"Capped debate steps to {max_debate_steps} (was {len(debate_steps)})"
+                )
+
         iteration = 0
         max_iterations = execution_plan.max_iterations or 1
         
@@ -548,6 +573,7 @@ class AbstractAgentsTeamChannelProducer(AbstractAgentChannelProducer, abc.ABC):
                 self.logger.debug(f"Loop condition: {execution_plan.loop_condition}")
                 # For now, we'll break after one iteration if loop_condition is set
                 # In a real implementation, this would evaluate the condition
+                break
         
         # Collect terminal results and all agent outputs for critic
         terminal_results: typing.Dict[str, typing.Any] = {}

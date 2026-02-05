@@ -155,7 +155,7 @@
                 <th scope="col">Symbol(s)</th>
                 <th scope="col">Date of recording</th>
                 <th scope="col">Candles</th>
-                <th scope="col">Exchange</th>
+                <th scope="col">Exchange / Services</th>
                 <th scope="col">Time frame(s)</th>
                 <th scope="col">File</th>
                 <th scope="col">Action</th>
@@ -176,7 +176,11 @@
                         <td data-order="{{description.timestamp}}">{{description.date}}</td>
                         <td>{{description.candles_length}}</td>
                     {% endif %}
+                    {% if description.data_type == "social" %}
+                    <td>{{", ".join(description.services)}}</td>
+                    {% else %}
                     <td>{{description.exchange}}</td>
+                    {% endif %}
                     <td>{{", ".join(description.time_frames)}}</td>
                     <td>{{file}}</td>
                     <td class="text-center">

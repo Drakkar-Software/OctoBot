@@ -38,6 +38,8 @@ from octobot_agents.constants import (
 import octobot_agents.models as models
 
 # Platform-specific file locking
+fcntl = None
+msvcrt = None
 try:
     if sys.platform != 'win32':
         import fcntl

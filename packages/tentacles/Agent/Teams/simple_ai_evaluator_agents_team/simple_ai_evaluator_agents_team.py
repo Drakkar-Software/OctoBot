@@ -109,7 +109,6 @@ class SimpleAIEvaluatorAgentsTeam(agent.AbstractSyncAgentsTeamChannelProducer):
             include_sentiment: Whether to include SentimentAnalysis agent.
             include_realtime: Whether to include RealTimeAnalysis agent.
         """
-        # Create agent producers
         agents = []
         relations = []
         
@@ -182,10 +181,8 @@ class SimpleAIEvaluatorAgentsTeam(agent.AbstractSyncAgentsTeamChannelProducer):
         Returns:
             Tuple of (eval_note, eval_note_description).
         """
-        # Clear transient files from previous runs
         self.clear_transient_files()
         
-        # Build input data for entry agents based on their type
         initial_data = {
             "aggregated_data": aggregated_data,
             "missing_data_types": missing_data_types or [],
@@ -201,8 +198,32 @@ class SimpleAIEvaluatorAgentsTeam(agent.AbstractSyncAgentsTeamChannelProducer):
         # Extract summarization result using the actual agent name
         summarization_result = results.get(self.summarization_producer.name)
         if summarization_result is None:
-            return common_constants.START_PENDING_EVAL_NOTE, "Error: Summarization agent did not produce output"
-        
+            # Retry summarization only once if output is missing
+            self.logger.warning(
+                "Summarization agent did not produce output. Retrying summarization only."
+            )
+            try:
+                available_types = list(aggregated_data.keys())
+                missing_types = missing_data_types or []
+                total_expected = list(dict.fromkeys(available_types + missing_types))
+                context_info = {
+                    "missing_data_types": missing_types,
+                    "available_data_types": available_types,
+                    "total_expected_types": total_expected,
+                }
+                return await self.summarization_producer.execute(
+                    results,
+                    ai_service=self.ai_service,
+                    context_info=context_info,
+                )
+            except Exception as e:
+                self.logger.error(f"Summarization retry failed: {e}")
+                return common_constants.START_PENDING_EVAL_NOTE, "Error: Summarization agent did not produce output"
+
+        # Unwrap team result wrapper if present
+        if isinstance(summarization_result, dict) and "result" in summarization_result:
+            summarization_result = summarization_result.get("result")
+
         # Handle tuple result from SummarizationAIAgentProducer
         if isinstance(summarization_result, tuple):
             return summarization_result
@@ -210,7 +231,10 @@ class SimpleAIEvaluatorAgentsTeam(agent.AbstractSyncAgentsTeamChannelProducer):
         # Handle dict result
         try:
             eval_note = summarization_result.get("eval_note", common_constants.START_PENDING_EVAL_NOTE)
-            description = summarization_result.get("eval_note_description", "")
+            description = summarization_result.get(
+                "eval_note_description",
+                summarization_result.get("description", ""),
+            )
             return eval_note, description
         except AttributeError:
             # Not a dict, return as-is

@@ -19,6 +19,7 @@ from octobot_agents.utils.extractor import (
     extract_json_between_braces,
     extract_json_from_markdown,
     extract_json_from_xml_tags,
+    preprocess_json_content,
 )
 
 __all__ = [
@@ -26,4 +27,5 @@ __all__ = [
     "extract_json_between_braces",
     "extract_json_from_markdown",
     "extract_json_from_xml_tags",
+    "preprocess_json_content",
 ]

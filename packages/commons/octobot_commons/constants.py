@@ -242,6 +242,9 @@ DB_SEPARATOR = "_"
 TINYDB_EXT = ".json"
 MAX_BACKTESTING_RUNS = 500000
 MAX_OPTIMIZER_RUNS = 50000
+FORCE_BACKTESTING_LOGS = parse_boolean_environment_var(
+    "FORCE_BACKTESTING_LOGS", "false"
+)
 
 # DSL interpreter
 BASE_OPERATORS_LIBRARY = "base"

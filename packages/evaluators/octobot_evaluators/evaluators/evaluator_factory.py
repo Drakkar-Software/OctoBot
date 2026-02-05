@@ -14,6 +14,7 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import typing
 
 import octobot_commons.tentacles_management as tentacles_management
 import octobot_commons.constants as common_constants
@@ -175,10 +176,10 @@ async def create_and_start_all_type_evaluators(
     matrix_id: str,
     exchange_name: str,
     bot_id: str,
-    symbols_by_crypto_currencies: dict = None,
-    symbols: list = None,
-    time_frames: list = None,
-    real_time_time_frames: list = None,
+    symbols_by_crypto_currencies: typing.Optional[dict] = None,
+    symbols: typing.Optional[list] = None,
+    time_frames: typing.Optional[list] = None,
+    real_time_time_frames: typing.Optional[list] = None,
     relevant_evaluators=common_constants.CONFIG_WILDCARD,
     config_by_evaluator=None,
 ) -> list:

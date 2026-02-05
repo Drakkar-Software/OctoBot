@@ -27,7 +27,8 @@ import octobot_commons.logging as logging
 from octobot_agents.constants import (
     AGENT_NAME_KEY,
     AGENT_ID_KEY,
-    AGENT_DEFAULT_VERSION
+    AGENT_DEFAULT_VERSION,
+    AGENT_DEFAULT_MAX_RETRIES,
 )
 
 
@@ -48,6 +49,7 @@ class AbstractAgentChannelProducer(producer.Producer):
     Producers execute agent logic and push results to consumers.
     """
     __metaclass__ = abc.ABCMeta
+    MAX_RETRIES: int = AGENT_DEFAULT_MAX_RETRIES
 
 
 class AbstractAgentChannel(channels.Channel):
