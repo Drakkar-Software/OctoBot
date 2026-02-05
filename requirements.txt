@@ -6,8 +6,10 @@ python-dotenv==1.2.1
 setuptools==79.0.1  # warning: setuptools>=80 breaks easy_install, need to find an alternative not to break installs
 # see https://community.palantir.com/t/important-update-on-setuptools-pinning-the-version-below-80-0-0/3872
 
+cachetools==6.2.6 # pyiceberg 0.10.0 requires cachetools<7.0,>=5.5
+
 # Community
-standard-imghdr # required by pgpy for image handling
+standard-imghdr==3.13.0 # required by pgpy for image handling
 pgpy==0.6.0
 
 # Error tracking
