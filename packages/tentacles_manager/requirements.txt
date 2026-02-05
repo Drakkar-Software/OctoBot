@@ -2,7 +2,7 @@
 setuptools
 
 # async files management
-aiofiles>=0.6.0, <0.7
+aiofiles==25.1.0
 
 # async http requests
 aiohttp>=3.9.5

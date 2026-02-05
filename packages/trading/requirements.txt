@@ -9,4 +9,4 @@ cryptography # Never specify a version (managed by https://github.com/Drakkar-So
 sortedcontainers==2.4.0
 
 # Caching
-cachetools>=5.5.0, <6
+cachetools>=6, <7 # pyiceberg 0.10.0 requires cachetools<7.0,>=5.5
