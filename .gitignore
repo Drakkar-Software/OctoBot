@@ -145,3 +145,6 @@ letsencrypt/
 # bin
 nltk_data/
 installer/
+
+# resources watcher
+*.dump

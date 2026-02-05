@@ -34,7 +34,7 @@ class SystemResourcesWatcher(singleton.Singleton):
     )
     CPU_WATCHING_SECONDS = 2
 
-    def __init__(self, dump_resources, watch_ram, output_file):
+    def __init__(self, dump_resources, watch_ram, output_file, dump_snapshot=False):
         super().__init__()
         self.watcher_job = None
         self.watcher_interval = self.DEFAULT_WATCHER_INTERVAL
@@ -42,6 +42,8 @@ class SystemResourcesWatcher(singleton.Singleton):
         self.watch_ram = watch_ram
         self.dump_resources = dump_resources
         self.output_file = output_file
+        self.dump_snapshot = dump_snapshot
+        self.snapshot_file = f"{output_file}_snapshot.dump"
         self.initialized_output = False
         self.first_memory_snapshot = None
         self.largest_peak = 0
@@ -106,6 +108,10 @@ class SystemResourcesWatcher(singleton.Singleton):
                 self._dump_resources(cpu, percent_ram, ram, process_ram)
             if self.watch_ram:
                 self._log_memory()
+            if self.dump_snapshot:
+                snapshot = tracemalloc.take_snapshot()
+                snapshot.dump(self.snapshot_file)
+                self.logger.debug(f"Memory snapshot dumped to {self.snapshot_file}")
         except Exception as err:
             self.logger.exception(err, False)
             self.logger.debug(f"Error when checking system resources: {err}")
@@ -155,7 +161,7 @@ class SystemResourcesWatcher(singleton.Singleton):
             execution_interval_delay=self.watcher_interval,
         )
         await self.watcher_job.run()
-        if self.watch_ram:
+        if self.watch_ram or self.dump_snapshot:
             self.logger.debug("RAM watched enabled")
             stored_frames = 5
             tracemalloc.start(stored_frames)
@@ -167,17 +173,22 @@ class SystemResourcesWatcher(singleton.Singleton):
         if self.watcher_job is not None and not self.watcher_job.is_stopped():
             self.logger.debug("Stopping system resources watcher")
             self.watcher_job.stop()
-        if self.watch_ram:
+        if self.watch_ram or self.dump_snapshot:
             self.logger.debug("Stopping RAM watcher")
             tracemalloc.stop()
 
 
-async def start_system_resources_watcher(dump_resources, watch_ram, output_file):
+async def start_system_resources_watcher(
+    dump_resources,
+    watch_ram,
+    output_file,
+    dump_snapshot=False
+):
     """
     Start the resources watcher loop
     """
     await SystemResourcesWatcher.instance(
-        dump_resources, watch_ram, output_file
+        dump_resources, watch_ram, output_file, dump_snapshot
     ).start()
 
 
@@ -186,3 +197,21 @@ async def stop_system_resources_watcher():
     Stop the watcher loop
     """
     return SystemResourcesWatcher.instance().stop()
+
+
+def analyze_dump(filename):
+    """
+    Analyze a memory snapshot dump file and print the top lines by memory consumption
+    """
+    try:
+        snapshot = tracemalloc.Snapshot.load(filename)
+        stats = snapshot.statistics('lineno')
+        print("Top 10 lines by memory consumption:")
+        for index, stat in enumerate(stats[:10]):
+            print(f"#{index+1}: {stat.size / 1024:.2f} KiB in {stat.count} blocks: {stat.traceback}")
+    except FileNotFoundError:
+        print(f"Error: Dump file '{filename}' not found.")
+    except Exception as e:
+        print(f"An error occurred while loading or analyzing the snapshot: {e}")
+
+#analyze_dump("system_resources.csv_snapshot.dump")
