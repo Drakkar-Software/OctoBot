@@ -17,8 +17,10 @@ import octobot_commons.os_util as os_util
 
 
 def test_get_cpu_and_ram_usage():
-    cpu, percent_ram, used_ram, process_ram = os_util.get_cpu_and_ram_usage(0.1)
+    cpu, percent_ram, used_ram, process_ram, virtual_ram, unique_ram = os_util.get_cpu_and_ram_usage(0.1)
     assert isinstance(cpu, float)
     assert percent_ram > 0
     assert used_ram > 0
     assert process_ram > 0
+    assert virtual_ram > 0
+    assert unique_ram > 0

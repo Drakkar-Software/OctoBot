@@ -37,7 +37,7 @@ class SystemResourcesWatcher(singleton.Singleton):
     def __init__(self, dump_resources, watch_ram, output_file, dump_snapshot=False):
         super().__init__()
         self.watcher_job = None
-        self.watcher_interval = self.DEFAULT_WATCHER_INTERVAL
+        self.watcher_interval: float = self.DEFAULT_WATCHER_INTERVAL
         self.logger = logging.get_logger(self.__class__.__name__)
         self.watch_ram = watch_ram
         self.dump_resources = dump_resources
@@ -97,12 +97,13 @@ class SystemResourcesWatcher(singleton.Singleton):
             # trigger garbage collector to get a fresh memory picture
             gc.collect()
             # warning: blocking to monitor CPU usage, to be used in a thread
-            cpu, percent_ram, ram, process_ram = os_util.get_cpu_and_ram_usage(
+            cpu, percent_ram, ram, process_ram, virtual_ram, unique_ram = os_util.get_cpu_and_ram_usage(
                 self.CPU_WATCHING_SECONDS
             )
             self.logger.debug(
-                f"Used system resources: {cpu}% CPU, {round(ram, 3)} GB in RAM ({percent_ram}% of total "
-                f"including {process_ram} GB from this process). "
+                f"Used system resources: {cpu}% CPU, {ram:,.3f} GB in RAM ({percent_ram}% of total) "
+                f"Process memory usage: {unique_ram:,.3f} unique (without shared), {process_ram:,.3f} "
+                f"total non-swapped, {virtual_ram:,.3f} total including swap - in GB."
             )
             if self.dump_resources:
                 self._dump_resources(cpu, percent_ram, ram, process_ram)
