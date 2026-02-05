@@ -40,13 +40,12 @@ except ImportError:
                 def __init__(self, *args):
                     raise ImportError("psutil not installed")
 
-                def memory_info(self):  # pylint: disable=missing-function-docstring
+                def memory_full_info(self):  # pylint: disable=missing-function-docstring
                     class MemoryInfo:
-                        def __init__(self, *args):
-                            pass
-
-                        def rss(self):  # pylint: disable=missing-function-docstring
-                            return 0
+                        def __init__(self, *args): # pylint: disable=unused-argument
+                            self.rss = 0
+                            self.vms = 0
+                            self.uss = 0
 
                     return MemoryInfo()
 
@@ -181,16 +180,24 @@ def parse_boolean_environment_var(env_key: str, default_value: str) -> bool:
     return constants.parse_boolean_environment_var(env_key, default_value)
 
 
-def get_cpu_and_ram_usage(cpu_watching_seconds):
+def get_cpu_and_ram_usage(
+    cpu_watching_seconds: float
+) -> tuple[float, float, float, float, float, float]:
     """
     WARNING: blocking the current thread for the given cpu_watching_seconds seconds
-    :return: the CPU usage percent, RAM usaage %, total RAM used and total RAM used by this process
+    :return: the CPU usage percent, RAM usaage %, total RAM used, shared RAM used,
+    virtual RAM used and unique RAM used by this process
     """
     mem_ret = psutil.virtual_memory()
-    process_used_ram = psutil.Process(os.getpid()).memory_info().rss
+    mem_info = psutil.Process(os.getpid()).memory_full_info()
+    process_shared_used_ram = mem_info.rss # Resident Set Size = physical RAM used
+    process_virtual_used_ram = mem_info.vms # Virtual Memory Size (ram + swap)
+    process_unique_used_ram = mem_info.uss # Unique Set Size (ram without sharedmemory from other processes)
     return (
         psutil.cpu_percent(cpu_watching_seconds),
         mem_ret[2],
         mem_ret[3] / constants.BYTES_BY_GB,
-        process_used_ram / constants.BYTES_BY_GB,
+        process_shared_used_ram / constants.BYTES_BY_GB,
+        process_virtual_used_ram / constants.BYTES_BY_GB,
+        process_unique_used_ram / constants.BYTES_BY_GB,
     )
