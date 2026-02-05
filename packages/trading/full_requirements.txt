@@ -1,2 +1,2 @@
 # Scripting requirements
-tinydb==4.5.2
+tinydb
