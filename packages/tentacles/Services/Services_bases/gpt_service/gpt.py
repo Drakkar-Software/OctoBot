@@ -120,6 +120,10 @@ class LLMService(services.AbstractAIService):
                     "When enabled, tools from configured MCP servers are automatically available. "
                     "Default: True."
                 ),
+                services_constants.CONFIG_LLM_TOOL_CALL_JSON_OUTPUT: (
+                    "Whether the model supports tool calling when JSON output is requested. "
+                    "If False, tool calls will be requested without JSON output."
+                ),
                 services_constants.CONFIG_LLM_AI_PROVIDER: "AI provider to use (openai, anthropic, local, other)",
                 services_constants.CONFIG_LLM_AUTH_TOKEN: "Authentication token for the AI service"
             }
@@ -137,6 +141,7 @@ class LLMService(services.AbstractAIService):
                 services_constants.CONFIG_LLM_REASONING_EFFORT: "",
                 services_constants.CONFIG_LLM_MCP_SERVERS: [],
                 services_constants.CONFIG_LLM_AUTO_INJECT_MCP_TOOLS: True,
+                services_constants.CONFIG_LLM_TOOL_CALL_JSON_OUTPUT: True,
                 services_constants.CONFIG_LLM_AI_PROVIDER: "",
                 services_constants.CONFIG_LLM_AUTH_TOKEN: "",
             }
@@ -175,6 +180,7 @@ class LLMService(services.AbstractAIService):
         self._octobot_mcp_tools: typing.Optional[list] = None
 
         self.ai_provider = enums.AIProvider.OPENAI
+        self._tool_call_json_output: bool = True
 
     def _load_model_from_config(self):
         """Load model from config if not overridden by environment variable."""
@@ -277,6 +283,22 @@ class LLMService(services.AbstractAIService):
         except (KeyError, TypeError):
             pass
         return True  # Default to True
+
+    def _load_tool_call_json_output_from_config(self) -> bool:
+        try:
+            config_tool_call_json_output = self.config[services_constants.CONFIG_CATEGORY_SERVICES][
+                self.get_type()
+            ].get(services_constants.CONFIG_LLM_TOOL_CALL_JSON_OUTPUT)
+            if config_tool_call_json_output is not None:
+                if isinstance(config_tool_call_json_output, str):
+                    return config_tool_call_json_output.lower() in ("true", "1", "yes")
+                return bool(config_tool_call_json_output)
+        except (KeyError, TypeError):
+            pass
+        return True
+
+    def supports_call_json_output(self) -> bool:
+        return self._tool_call_json_output
 
     def _load_mcp_servers_from_config(self) -> list:
         """Load MCP server configurations from config.
@@ -1089,6 +1111,10 @@ class LLMService(services.AbstractAIService):
             RateLimitError: If rate limits are exceeded.
             ValueError: If max_tool_iterations is exceeded or tool_executor is None when tool_calls are present.
         """
+        if return_tool_calls and not self._tool_call_json_output:
+            # Some providers/models ignore tool calls when JSON output is enforced.
+            json_output = False
+            response_schema = None
         # Create a copy of messages to avoid mutating the original
         conversation_messages = list(messages)
         
@@ -1610,6 +1636,7 @@ class LLMService(services.AbstractAIService):
             self._load_models_config()
             self._load_token_limit_from_config()
             self._load_ai_config_from_config()
+            self._tool_call_json_output = self._load_tool_call_json_output_from_config()
 
             if self._get_base_url():
                 self.logger.debug(f"Using custom LLM url: {self._get_base_url()}")

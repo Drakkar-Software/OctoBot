@@ -20,6 +20,9 @@ import async_channel.channels as channels
 
 import octobot_evaluators.evaluators as evaluator
 
+import octobot_services.api as service_api
+import octobot_trading.api as exchange_api
+
 
 class SocialEvaluator(evaluator.AbstractEvaluator):
     __metaclass__ = evaluator.AbstractEvaluator
@@ -42,19 +45,13 @@ class SocialEvaluator(evaluator.AbstractEvaluator):
             self.logger.error("SERVICE_FEED_CLASS is required to use a service feed. Consumer can't start.")
         else:
             await super().start(self.bot_id)
-            try:
-                import octobot_services.api as service_api
-                service_feed = service_api.get_service_feed(self.SERVICE_FEED_CLASS, self.bot_id)
-                if service_feed is not None:
-                    service_feed.update_feed_config(self.feed_config)
-                    await channels.get_chan(service_feed.FEED_CHANNEL.get_name()).new_consumer(self._feed_callback)
-                    # store exchange_id to use it later for evaluation timestamps
-                    import octobot_trading.api as exchange_api
-                    self.exchange_id = exchange_api.get_exchange_id_from_matrix_id(self.exchange_name, self.matrix_id)
-                    return True
-            except ImportError as e:
-                self.logger.exception(e, True, "Can't start: requires OctoBot-Services and OctoBot-Trading "
-                                               "package installed")
+            service_feed = service_api.get_service_feed(self.SERVICE_FEED_CLASS, self.bot_id)
+            if service_feed is not None:
+                service_feed.update_feed_config(self.feed_config)
+                await channels.get_chan(service_feed.FEED_CHANNEL.get_name()).new_consumer(self._feed_callback)
+                # store exchange_id to use it later for evaluation timestamps
+                self.exchange_id = exchange_api.get_exchange_id_from_matrix_id(self.exchange_name, self.matrix_id)
+                return True
         return False
 
     def get_data_cache(self, current_time: float, key: typing.Optional[str] = None):

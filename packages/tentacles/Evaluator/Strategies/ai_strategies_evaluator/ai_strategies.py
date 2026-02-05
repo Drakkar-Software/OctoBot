@@ -18,6 +18,8 @@ import typing
 import octobot_commons.constants as common_constants
 import octobot_commons.enums as commons_enums
 import octobot_commons.evaluators_util as evaluators_util
+import octobot_evaluators.api as evaluators_api
+import octobot_evaluators.constants as evaluators_constants
 import octobot_evaluators.matrix as matrix
 import octobot_evaluators.enums as evaluators_enums
 import octobot_evaluators.evaluators as evaluators
@@ -221,7 +223,6 @@ class CryptoLLMAIStrategyEvaluator(BaseLLMAIStrategyEvaluator):
         super().__init__(*args, **kwargs)
         self._pending_evaluations = {}  # {cryptocurrency: {(symbol, timeframe): data}}
         self._expected_symbols_timeframes = {}  # {cryptocurrency: set of (symbol, timeframe)}
-        self._completed_cryptocurrencies = set()  # Track which cryptocurrencies have been evaluated
 
     async def matrix_callback(
         self,
@@ -243,10 +244,6 @@ class CryptoLLMAIStrategyEvaluator(BaseLLMAIStrategyEvaluator):
 
         # Skip global evaluations (cryptocurrency=None) - those are for GlobalLLMAIStrategyEvaluator
         if cryptocurrency is None:
-            return
-
-        # Check if we have already completed evaluation for this cryptocurrency
-        if cryptocurrency in self._completed_cryptocurrencies:
             return
 
         # Initialize pending evaluations for this cryptocurrency if needed
@@ -303,9 +300,6 @@ class CryptoLLMAIStrategyEvaluator(BaseLLMAIStrategyEvaluator):
         exchange_name: str,
         cryptocurrency: str,
     ):
-        """
-        Perform evaluation for a specific cryptocurrency.
-        """
         # Aggregate data by evaluator type across all symbols and timeframes
         aggregated_data = {}
         missing_data_types = []
@@ -373,14 +367,21 @@ class CryptoLLMAIStrategyEvaluator(BaseLLMAIStrategyEvaluator):
 
                     all_evaluations.update(evaluations)
 
-                valid_evaluations = [
-                    {
-                        "eval_note": ev.node_value,
-                        "eval_note_description": ev.node_description or "",
-                    }
-                    for ev in all_evaluations.values()
-                    if evaluators_util.check_valid_eval_note(ev.node_value)
-                ]
+                valid_evaluations = []
+                for ev in all_evaluations.values():
+                    eval_note = evaluators_api.get_value(ev)
+                    eval_note_type = evaluators_api.get_type(ev)
+                    if evaluators_util.check_valid_eval_note(
+                        eval_note,
+                        eval_note_type,
+                        evaluators_constants.EVALUATOR_EVAL_DEFAULT_TYPE,
+                    ):
+                        valid_evaluations.append(
+                            {
+                                "eval_note": eval_note,
+                                "eval_note_description": evaluators_api.get_description(ev) or "",
+                            }
+                        )
                 if valid_evaluations:
                     aggregated_data[eval_type] = valid_evaluations
                 else:
@@ -395,7 +396,6 @@ class CryptoLLMAIStrategyEvaluator(BaseLLMAIStrategyEvaluator):
         if not ai_service:
             self.eval_note = 0
             final_eval_note_description = "Error: AIService not available"
-            self._completed_cryptocurrencies.add(cryptocurrency)
             await self.evaluation_completed(
                 cryptocurrency=cryptocurrency,
                 symbol=None,
@@ -411,9 +411,6 @@ class CryptoLLMAIStrategyEvaluator(BaseLLMAIStrategyEvaluator):
         self.eval_note, final_eval_note_description = await self._run_agents_analysis(
             aggregated_data, missing_data_types, ai_service
         )
-
-        # Mark this cryptocurrency as completed
-        self._completed_cryptocurrencies.add(cryptocurrency)
 
         # Publish evaluation on cryptocurrency level (no symbol, no timeframe)
         await self.evaluation_completed(

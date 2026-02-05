@@ -122,7 +122,7 @@ def register(blueprint):
             if action_type == "start_collector":
                 details = flask.request.get_json()
                 success, reply = models.collect_social_data_file(
-                    details["social_name"],
+                    details["services"],
                     details["sources"],
                     details.get("startTimestamp"),
                     details.get("endTimestamp")
@@ -144,8 +144,8 @@ def register(blueprint):
                     if target == "available_services":
                         return flask.jsonify(models.get_available_social_services())
                     elif target == "service_sources":
-                        service_name = flask.request.args.get('service_name')
-                        return flask.jsonify(models.get_service_sources(service_name))
+                        service_class_name = flask.request.args.get('service_name')
+                        return flask.jsonify(models.get_service_sources(service_class_name))
                     elif target == "status":
                         status, progress = models.get_social_data_collector_status()
                         return flask.jsonify({"status": status, "progress": progress})

@@ -76,21 +76,29 @@ async def get_database_description(database):
                 enums.DataFormatKeys.CANDLES_LENGTH.value: candles_length,
             }
         elif data_type == enums.DataType.SOCIAL.value:
-            symbols = []
-            if description[5]:
+            def _parse_list(value):
                 try:
-                    symbols = json.loads(description[5])
+                    parsed = json.loads(value) if value else []
+                    return parsed if isinstance(parsed, list) else []
                 except (json.JSONDecodeError, TypeError):
-                    pass
+                    return []
+
+            sources = _parse_list(description[3]) if len(description) > 3 else []
+            symbols = _parse_list(description[4]) if len(description) > 4 else []
+            start_timestamp = description[5] if len(description) > 5 else 0
+            end_timestamp = description[6] if len(description) > 6 else 0
+            services = _parse_list(description[7]) if len(description) > 7 else []
+            exchange = ""
             return {
                 enums.DataFormatKeys.TIMESTAMP.value: description[0],
                 enums.DataFormatKeys.VERSION.value: description[1],
                 enums.DataFormatKeys.DATA_TYPE.value: enums.DataType.SOCIAL.value,
-                enums.DataFormatKeys.EXCHANGE.value: description[3] if len(description) > 3 else "social",
+                enums.DataFormatKeys.EXCHANGE.value: exchange,
+                enums.DataFormatKeys.SERVICES.value: services,
                 enums.DataFormatKeys.SYMBOLS.value: symbols if isinstance(symbols, list) else [],
                 enums.DataFormatKeys.TIME_FRAMES.value: [],
-                enums.DataFormatKeys.START_TIMESTAMP.value: description[6] if len(description) > 6 else 0,
-                enums.DataFormatKeys.END_TIMESTAMP.value: description[7] if len(description) > 7 else 0,
+                enums.DataFormatKeys.START_TIMESTAMP.value: start_timestamp,
+                enums.DataFormatKeys.END_TIMESTAMP.value: end_timestamp,
                 enums.DataFormatKeys.CANDLES_LENGTH.value: 0,
             }
     elif version == "1.0":

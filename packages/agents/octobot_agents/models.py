@@ -40,6 +40,93 @@ class AgentBaseModel(BaseModel):
     """
     __strict_json_schema__: bool = False
 
+    @staticmethod
+    def normalize_agent_error(error: Any) -> Optional[str]:
+        """
+        Normalize common non-actionable error strings from LLM outputs.
+
+        Returns a cleaned error string, or None if the error should be ignored.
+        """
+        if error is None:
+            return None
+        error_value = str(error).strip()
+        if not error_value:
+            return None
+        lowered = error_value.lower()
+        ignorable_tokens = (
+            "invalid json",
+            "json output is invalid",
+            "error parsing json",
+            "no error",
+            "no error found",
+            "no",
+            "none",
+            "null",
+            "error",
+        )
+        if any(token in lowered for token in ignorable_tokens):
+            return None
+        return error_value
+
+    @staticmethod
+    def recover_json_from_error(error: Any) -> Optional[Dict[str, Any]]:
+        """
+        Try to extract JSON payloads from error strings produced by LLM parsers.
+        """
+        if error is None:
+            return None
+        error_text = str(error)
+        marker = "Error parsing JSON from response"
+        if marker in error_text:
+            error_text = error_text.split(marker, 1)[-1].strip()
+        if not error_text:
+            return None
+        from octobot_agents.utils.extractor import extract_json_from_content
+        return extract_json_from_content(error_text)
+
+    @staticmethod
+    def normalize_tool_call_response(
+        response_data: Any,
+        finish_tool_name: Optional[str] = None,
+    ) -> tuple[Any, Optional[str]]:
+        """
+        Normalize tool-call responses coming from LLMs.
+
+        Returns a tuple of (normalized_response, error_message_if_any).
+        """
+        if response_data is None:
+            return None, "LLM did not return any tool calls."
+
+        # If we got an error dict, try to recover JSON from it
+        if isinstance(response_data, dict) and "error" in response_data and "tool_name" not in response_data:
+            error_msg = response_data.get("error", "Unknown error")
+            if finish_tool_name and (not str(error_msg).strip()):
+                return {"tool_name": finish_tool_name, "arguments": {}}, None
+            if finish_tool_name and ("<finish>" in error_msg or "</finish>" in error_msg):
+                return {"tool_name": finish_tool_name, "arguments": {}}, None
+            extracted = AgentBaseModel.recover_json_from_error(error_msg)
+            if extracted:
+                response_data = extracted
+            else:
+                return None, error_msg
+
+        # If we got a raw string, try to extract JSON
+        if isinstance(response_data, str):
+            if finish_tool_name and not response_data.strip():
+                return {"tool_name": finish_tool_name, "arguments": {}}, None
+            if finish_tool_name and ("<finish>" in response_data or "</finish>" in response_data):
+                return {"tool_name": finish_tool_name, "arguments": {}}, None
+            extracted = AgentBaseModel.recover_json_from_error(response_data)
+            if extracted:
+                response_data = extracted
+
+        # Map finish-like payloads into a finish tool call
+        if isinstance(response_data, dict) and "tool_name" not in response_data and finish_tool_name:
+            if "team_name" in response_data or "current_results" in response_data:
+                return {"tool_name": finish_tool_name, "arguments": {}}, None
+
+        return response_data, None
+
 
 # ============================================================================
 # Execution Plan Models
@@ -130,6 +217,56 @@ class ExecutionPlan(AgentBaseModel):
     loop: bool = False  # Whether to loop execution
     loop_condition: Optional[str] = None  # Condition description for looping
     max_iterations: Optional[int] = None  # Maximum loop iterations
+
+    @classmethod
+    def model_validate_with_agent_names(
+        cls,
+        data: Any,
+        allowed_agent_names: List[str],
+    ) -> "ExecutionPlan":
+        plan = cls.model_validate(data)
+        allowed = set(allowed_agent_names)
+        allowed_map = {name.lower(): name for name in allowed_agent_names}
+        for step in plan.steps:
+            try:
+                step_type = step.step_type
+                agent_name = step.agent_name
+            except Exception:
+                continue
+            if step_type in (None, "agent") and agent_name not in allowed:
+                try:
+                    key = agent_name.lower()
+                except Exception:
+                    raise ValueError(f"Invalid agent_name: {agent_name}")
+                normalized = allowed_map.get(key)
+                if normalized is None:
+                    import difflib
+                    matches = difflib.get_close_matches(key, allowed_map.keys(), n=1, cutoff=0.6)
+                    if matches:
+                        normalized = allowed_map[matches[0]]
+                if normalized is None:
+                    raise ValueError(f"Invalid agent_name: {agent_name}")
+                step.agent_name = normalized
+        return plan
+
+    @pydantic.model_validator(mode="after")
+    def normalize_loop_settings(self) -> "ExecutionPlan":
+        # Clamp pathological or invalid max_iterations to a sane upper bound
+        max_cap = 3
+        if self.max_iterations is None:
+            return self
+        try:
+            max_iter = int(self.max_iterations)
+        except Exception:
+            self.max_iterations = 1
+            return self
+        if max_iter < 1:
+            self.max_iterations = 1
+        elif max_iter > max_cap:
+            self.max_iterations = max_cap
+        else:
+            self.max_iterations = max_iter
+        return self
     
     @classmethod
     def model_validate_or_self(cls, data: Any) -> "ExecutionPlan":
@@ -188,6 +325,37 @@ class RunAgentArgs(AgentBaseModel):
             # If instructions is a string, wrap it in a list
             if isinstance(instructions, str):
                 data["instructions"] = [instructions]
+            # If a single dict is provided, wrap it to normalize later
+            elif isinstance(instructions, dict):
+                # Ignore schema-like dicts accidentally passed as instructions
+                if "$ref" in instructions and "type" in instructions and \
+                        "modification_type" not in instructions and \
+                        "value" not in instructions and \
+                        "description" not in instructions:
+                    data["instructions"] = []
+                    return data
+                data["instructions"] = [instructions]
+            # Normalize list entries that only provide a description
+            elif isinstance(instructions, list):
+                normalized = []
+                for instr in instructions:
+                    if isinstance(instr, dict) and "$ref" in instr and "type" in instr and \
+                            "modification_type" not in instr and "value" not in instr and "description" not in instr:
+                        continue
+                    if isinstance(instr, dict) and "description" in instr and \
+                            "modification_type" not in instr and "value" not in instr:
+                        normalized.append({
+                            "modification_type": constants.MODIFICATION_ADDITIONAL_INSTRUCTIONS,
+                            "value": instr["description"],
+                        })
+                    elif isinstance(instr, dict) and "modification_type" not in instr and "value" not in instr:
+                        normalized.append({
+                            "modification_type": constants.MODIFICATION_ADDITIONAL_INSTRUCTIONS,
+                            "value": instr,
+                        })
+                    else:
+                        normalized.append(instr)
+                data["instructions"] = normalized
         return data
 
 
@@ -425,7 +593,10 @@ class MemoryInstruction(AgentBaseModel):
         
         # Only add guidance if very short (one sentence max)
         if self.guidance and len(self.guidance) < 100:
-            guidance_clean = self.guidance.strip()
+            try:
+                guidance_clean = self.guidance.strip()
+            except AttributeError:
+                guidance_clean = ""
             if guidance_clean:
                 content_parts.append(guidance_clean)
         

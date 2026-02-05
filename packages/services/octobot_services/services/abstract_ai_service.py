@@ -238,6 +238,14 @@ class AbstractAIService(AbstractService, abc.ABC):
             A dict with 'role' and 'content' keys.
         """
         raise NotImplementedError("create_message not implemented")
+
+    def supports_call_json_output(self) -> bool:
+        """
+        Whether the service supports tool calling when JSON output is requested.
+        
+        Defaults to True. Services can override to provide config-driven behavior.
+        """
+        return True
     
     @staticmethod
     def parse_completion_response(
@@ -273,9 +281,16 @@ class AbstractAIService(AbstractService, abc.ABC):
             try:
                 parsed_response = json.loads(response_stripped)
             except json.JSONDecodeError:
-                return {
-                    "error": f"Error parsing JSON from response {response_stripped}",
-                }
+                try:
+                    # Cannot be imported at the top level due to circular imports, TODO improve it
+                    import octobot_agents.utils as agents_utils
+                    parsed_response = agents_utils.extract_json_from_content(response_stripped)
+                except Exception:
+                    parsed_response = None
+                if parsed_response is None:
+                    return {
+                        "error": f"Error parsing JSON from response {response_stripped}",
+                    }
         else:
             parsed_response = response_stripped
         
@@ -363,7 +378,7 @@ class AbstractAIService(AbstractService, abc.ABC):
             }
         }
     
-    def get_model(self) -> str:
+    def get_model(self) -> typing.Optional[str]:
         return self.model
 
     def get_available_models(self) -> list:

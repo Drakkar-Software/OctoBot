@@ -333,7 +333,7 @@ class AbstractTradingModeProducer(modes_channel.ModeChannelProducer):
         :param symbol: the symbol
         :param time_frame: the time frame
         """
-        if time_frame is None or time_frame in self.time_frame_filter:
+        if time_frame is None or time_frame in self.time_frame_filter or self.is_time_frame_wildcard():
             await self.finalize(exchange_name=exchange_name, matrix_id=matrix_id, cryptocurrency=cryptocurrency,
                                 symbol=symbol, time_frame=time_frame,
                                 trigger_source=common_enums.TriggerSource.EVALUATION_MATRIX.value)

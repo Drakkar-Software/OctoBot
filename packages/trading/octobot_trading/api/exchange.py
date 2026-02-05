@@ -39,7 +39,7 @@ async def stop_exchange(exchange_manager) -> None:
     await exchange_manager.stop()
 
 
-def get_exchange_configurations_from_exchange_name(exchange_name: str) -> dict:
+def get_exchange_configurations_from_exchange_name(exchange_name: str) -> typing.Optional[dict]:
     return exchanges.Exchanges.instance().get_exchanges(exchange_name)
 
 
@@ -64,9 +64,12 @@ async def get_ccxt_exchange_available_time_frames(
     :return: the list of time frames
     """
     try:
-        # first try in available exchanges
-        for exchange_configuration in get_exchange_configurations_from_exchange_name(exchange_name).values():
-            return exchange_configuration.exchange_manager.client_time_frames
+        exchange_configurations = get_exchange_configurations_from_exchange_name(exchange_name)
+        if exchange_configurations:
+            # first try in available exchanges
+            for exchange_configuration in exchange_configurations.values():
+                return exchange_configuration.exchange_manager.client_time_frames
+        return []
     except KeyError:
         async with get_new_ccxt_client(exchange_name, {}, tentacles_setup_config, False) as ccxt_exchange:
             return ccxt_exchange.timeframes
@@ -118,7 +121,7 @@ def get_exchange_current_time(exchange_manager) -> float:
     return exchange_manager.exchange.get_exchange_current_time()
 
 
-def get_exchange_backtesting_time_window(exchange_manager) -> (float, float):
+def get_exchange_backtesting_time_window(exchange_manager) -> typing.Tuple[float, float]:
     return backtesting_api.get_backtesting_starting_time(
         exchange_manager.exchange.backtesting
     ), backtesting_api.get_backtesting_ending_time(
@@ -130,17 +133,27 @@ def get_exchange_allowed_time_lag(exchange_manager) -> float:
     return exchange_manager.exchange.allowed_time_lag
 
 
-def get_exchange_id_from_matrix_id(exchange_name: str, matrix_id: str) -> str:
-    for exchange_configuration in get_exchange_configurations_from_exchange_name(exchange_name).values():
-        if exchange_configuration.matrix_id == matrix_id:
-            return get_exchange_manager_id(exchange_configuration.exchange_manager)
+def get_exchange_id_from_matrix_id(exchange_name: typing.Optional[str], matrix_id: str) -> typing.Optional[str]:
+    if not exchange_name:
+        return None
+    
+    exchange_configurations = get_exchange_configurations_from_exchange_name(exchange_name)
+    if exchange_configurations:
+        for exchange_configuration in exchange_configurations.values():
+            if exchange_configuration.matrix_id == matrix_id:
+                return get_exchange_manager_id(exchange_configuration.exchange_manager)
     return None
 
 
-def get_matrix_id_from_exchange_id(exchange_name: str, exchange_id: str) -> str:
-    for exchange_configuration in get_exchange_configurations_from_exchange_name(exchange_name).values():
-        if exchange_configuration.id == exchange_id:
-            return exchange_configuration.matrix_id
+def get_matrix_id_from_exchange_id(exchange_name: typing.Optional[str], exchange_id: str) -> typing.Optional[str]:
+    if not exchange_name:
+        return None
+
+    exchange_configurations = get_exchange_configurations_from_exchange_name(exchange_name)
+    if exchange_configurations:
+        for exchange_configuration in exchange_configurations.values():
+            if exchange_configuration.id == exchange_id:
+                return exchange_configuration.matrix_id
     return None
 
 
@@ -303,7 +316,7 @@ def is_overloaded(exchange_manager) -> bool:
 
 
 async def is_compatible_account(exchange_name: str, exchange_config: dict, tentacles_setup_config, is_sandboxed: bool) \
-        -> (bool, bool, str):
+        -> typing.Tuple[bool, bool, str]:
     return await exchanges.is_compatible_account(exchange_name, exchange_config, tentacles_setup_config, is_sandboxed)
 
 

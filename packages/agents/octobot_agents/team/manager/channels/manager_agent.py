@@ -20,6 +20,7 @@ from typing import TYPE_CHECKING, Dict, Optional
 import octobot_commons.logging as logging
 
 from octobot_services.services.abstract_ai_service import AbstractAIService
+import octobot_services.enums as services_enums
 
 from octobot_agents.agent.channels.agent import (
     AbstractAgentChannel,
@@ -46,11 +47,12 @@ from octobot_agents.constants import (
     AGENT_NAME_KEY,
     RESULT_KEY,
 )
+from octobot_agents.models import AgentBaseModel
+from octobot_agents.utils.retry import retry_async
 
 if TYPE_CHECKING:
     from octobot_agents.models import ManagerInput
     from octobot_agents.agent.channels.ai_agent import AbstractAIAgentChannelProducer
-
 
 class AbstractTeamManagerAgent(abc.ABC):
     """
@@ -140,6 +142,7 @@ class AIManagerAgentProducer(ManagerAgentProducer, AbstractAIAgentChannelProduce
 
     AGENT_CHANNEL = AIManagerAgentChannel
     AGENT_CONSUMER = AIManagerAgentConsumer
+    MODEL_POLICY = services_enums.AIModelPolicy.REASONING
 
     def __init__(
         self,
@@ -310,9 +313,9 @@ class AIToolsManagerAgentProducer(AIManagerAgentProducer):
         context: typing.Dict[str, typing.Any],
         ai_service: typing.Any
     ) -> ManagerToolCall:
-        """Get tool call from LLM."""
+        system_prompt = self._get_tools_prompt()
         messages = [
-            {"role": "system", "content": self._get_tools_prompt()},
+            {"role": "system", "content": system_prompt},
             {"role": "user", "content": f"Context: {self.format_data(context)}"},
         ]
         
@@ -342,15 +345,22 @@ class AIToolsManagerAgentProducer(AIManagerAgentProducer):
             return_tool_calls=True,
         )
         
-        if response_data is None:
-            raise ValueError("LLM did not return any tool calls. The manager agent requires tool calls to coordinate team execution.")
-        
-        # Check if response contains an error instead of a valid tool call
-        if isinstance(response_data, dict) and "error" in response_data and "tool_name" not in response_data:
-            error_msg = response_data.get("error", "Unknown error")
+        response_data, error_msg = AgentBaseModel.normalize_tool_call_response(
+            response_data,
+            finish_tool_name=TOOL_FINISH,
+        )
+        if error_msg:
             raise ValueError(f"LLM failed to return valid tool calls: {error_msg}")
-        
         return ManagerToolCall.model_validate(response_data)
+
+    @retry_async(lambda self, agent, *args, **kwargs: agent.MAX_RETRIES)
+    async def _execute_agent_with_retry(
+        self,
+        agent: AbstractAIAgentChannelProducer,
+        agent_input: typing.Dict[str, typing.Any],
+        ai_service: typing.Any,
+    ) -> typing.Any:
+        return await agent.execute(agent_input, ai_service)
 
     def _get_tools_prompt(self) -> str:
         """Get the tools system prompt."""
@@ -363,7 +373,16 @@ Available tools:
 - run_debate: Run a debate between multiple agents with a judge to resolve complex decisions
 - finish: Complete execution when you have gathered sufficient results
 
-Important: Always run at least one agent before calling finish. Examine the available agents and determine which ones are needed to complete the task. Start by running key agents to gather information, then call finish when you have comprehensive results."""
+Important:
+- Always run at least one agent before calling finish.
+- Do NOT respond with plain text. You MUST respond with a tool call.
+- If unsure, call finish with empty arguments.
+
+Examples (tool calls only, no prose):
+- run_agent {\"agent_name\": \"SignalAIAgentProducer\"}
+- run_debate {\"debator_agent_names\": [\"BullResearchAIAgentProducer\", \"BearResearchAIAgentProducer\"], \"judge_agent_name\": \"RiskJudgeAIAgentProducer\", \"max_rounds\": 3}
+- finish {}
+"""
 
     async def _execute_tool(
         self,
@@ -430,8 +449,7 @@ Important: Always run at least one agent before calling finish. Examine the avai
             if run_args.instructions:
                 agent_input["instructions"] = run_args.instructions
         
-        result = await agent.execute(agent_input, ai_service)
-        
+        result = await self._execute_agent_with_retry(agent, agent_input, ai_service)
         state.completed_agents.append(run_args.agent_name)
         state.results[run_args.agent_name] = {
             "agent_name": run_args.agent_name,

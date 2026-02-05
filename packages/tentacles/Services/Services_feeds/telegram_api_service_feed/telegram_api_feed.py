@@ -29,8 +29,8 @@ class TelegramApiServiceFeed(service_feeds.AbstractServiceFeed):
     FEED_CHANNEL = TelegramApiServiceFeedChannel
     REQUIRED_SERVICES = [Services_bases.TelegramApiService]
 
-    def __init__(self, config, main_async_loop, bot_id):
-        super().__init__(config, main_async_loop, bot_id)
+    def __init__(self, config, main_async_loop, bot_id, backtesting=None, importer=None):
+        super().__init__(config, main_async_loop, bot_id, backtesting=backtesting, importer=importer)
         self.feed_config = {
             services_constants.CONFIG_TELEGRAM_ALL_CHANNEL: True,
         }

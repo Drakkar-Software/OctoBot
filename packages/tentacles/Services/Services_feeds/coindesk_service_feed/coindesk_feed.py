@@ -16,8 +16,6 @@
 import asyncio
 import aiohttp
 import typing
-import datetime
-import dataclasses
 
 import octobot_commons.enums as commons_enums
 import octobot_commons.constants as commons_constants
@@ -25,53 +23,22 @@ import octobot_services.channel as services_channel
 import octobot_services.constants as services_constants
 import octobot_services.service_feeds as service_feeds
 import tentacles.Services.Services_bases as Services_bases
+import tentacles.Services.Services_bases.coindesk_service.models as coindesk_models
 
 
 class CoindeskServiceFeedChannel(services_channel.AbstractServiceFeedChannel):
     pass
 
 
-@dataclasses.dataclass
-class CoindeskNews:
-    id: str
-    guid: str
-    published_on: datetime.datetime
-    image_url: str
-    title: str
-    url: str
-    source_id: str
-    body: str
-    keywords: str
-    lang: str
-    upvotes: int
-    downvotes: int
-    score: int
-    sentiment: str # POSITIVE, NEGATIVE, NEUTRAL
-    status: str
-    source_name: str
-    source_key: str
-    source_url: str
-    source_lang: str
-    source_type: str
-    categories: str
-
-@dataclasses.dataclass
-class CoindeskMarketcap:
-    timestamp: datetime.datetime
-    open: float
-    close: float
-    high: float
-    low: float
-    top_tier_volume: float
-
 class CoindeskServiceFeed(service_feeds.AbstractServiceFeed):
     FEED_CHANNEL = CoindeskServiceFeedChannel
     REQUIRED_SERVICES = [Services_bases.CoindeskService]
-    
-    API_RATE_LIMIT_SECONDS = 10
 
-    def __init__(self, config, main_async_loop, bot_id):
-        super().__init__(config, main_async_loop, bot_id)
+    API_RATE_LIMIT_SECONDS = 10
+    DEFAULT_HISTORICAL_LIMIT = 1000
+
+    def __init__(self, config, main_async_loop, bot_id, backtesting=None, importer=None):
+        super().__init__(config, main_async_loop, bot_id, backtesting=backtesting, importer=importer)
         self.coindesk_api_key = config.get(services_constants.CONFIG_COINDESK_API_KEY, None)
         self.coindesk_language = config.get(services_constants.CONFIG_COINDESK_LANGUAGE, "en")
         self.coindesk_topics = []
@@ -90,6 +57,10 @@ class CoindeskServiceFeed(service_feeds.AbstractServiceFeed):
     def _initialize(self):
         pass # Nothing to do
 
+    @staticmethod
+    def get_name() -> str:
+        return "CoindeskServiceFeed"
+
     def _something_to_watch(self):
         return bool(self.coindesk_topics)
 
@@ -105,7 +76,12 @@ class CoindeskServiceFeed(service_feeds.AbstractServiceFeed):
     def _get_marketcap_api_url(self, limit: typing.Optional[int] = 2000):
         return f"https://data-api.coindesk.com/overview/v1/historical/marketcap/all/assets/days?limit={limit}&response_format=JSON"
 
-    async def _get_marketcap_data(self, session: aiohttp.ClientSession) -> bool:
+    async def _get_marketcap_data(
+        self,
+        session: aiohttp.ClientSession,
+        start_timestamp: typing.Optional[float] = None,
+        end_timestamp: typing.Optional[float] = None,
+    ) -> bool:
         async with session.get(self._get_marketcap_api_url()) as response:
             if response.status != 200:
                 self.logger.error(f"Coindesk API request failed with status: {response.status}")
@@ -114,7 +90,7 @@ class CoindeskServiceFeed(service_feeds.AbstractServiceFeed):
             market_cap_data = await response.json()
 
             new_values = [
-                CoindeskMarketcap(
+                coindesk_models.CoindeskMarketcap(
                     timestamp=entry["TIMESTAMP"],
                     open=entry["OPEN"],
                     close=entry["CLOSE"],
@@ -126,14 +102,28 @@ class CoindeskServiceFeed(service_feeds.AbstractServiceFeed):
             self.data_cache[services_constants.COINDESK_TOPIC_MARKETCAP] = self._merge_cache_data(
                 services_constants.COINDESK_TOPIC_MARKETCAP, new_values, lambda x: x.timestamp
             )
+            if start_timestamp is not None and end_timestamp is not None:
+                def _marketcap_ts_ms(item):
+                    t = item.timestamp
+                    return int(t.timestamp() * 1000) if hasattr(t, "timestamp") else int(t)
+                self.data_cache[services_constants.COINDESK_TOPIC_MARKETCAP] = [
+                    item for item in self.data_cache[services_constants.COINDESK_TOPIC_MARKETCAP]
+                    if start_timestamp <= _marketcap_ts_ms(item) <= end_timestamp
+                ]
             return True
 
 
     def _get_news_api_url(self, limit: typing.Optional[int] = 10):
         return f"https://data-api.coindesk.com/news/v1/article/list?lang={self.coindesk_language}&limit={limit}"
 
-    async def _get_news_data(self, session: aiohttp.ClientSession) -> bool:
-        async with session.get(self._get_news_api_url()) as response:
+    async def _get_news_data(
+        self,
+        session: aiohttp.ClientSession,
+        limit: typing.Optional[int] = 10,
+        start_timestamp: typing.Optional[float] = None,
+        end_timestamp: typing.Optional[float] = None,
+    ) -> bool:
+        async with session.get(self._get_news_api_url(limit)) as response:
             if response.status != 200:
                 self.logger.error(f"API request failed with status: {response.status}")
                 return False
@@ -151,7 +141,7 @@ class CoindeskServiceFeed(service_feeds.AbstractServiceFeed):
                 category_data = article.get("CATEGORY_DATA", [])
                 categories_str = str([cat["NAME"] for cat in category_data])
 
-                values.append(CoindeskNews(
+                values.append(coindesk_models.CoindeskNews(
                     id=article["ID"],
                     guid=article["GUID"],
                     published_on=article["PUBLISHED_ON"],
@@ -178,19 +168,42 @@ class CoindeskServiceFeed(service_feeds.AbstractServiceFeed):
             self.data_cache[services_constants.COINDESK_TOPIC_NEWS] = self._merge_cache_data(
                 services_constants.COINDESK_TOPIC_NEWS, values, lambda x: x.id
             )
+            if start_timestamp is not None and end_timestamp is not None:
+                def _news_ts_ms(item):
+                    t = item.published_on
+                    return int(t.timestamp() * 1000) if hasattr(t, "timestamp") else int(t)
+                self.data_cache[services_constants.COINDESK_TOPIC_NEWS] = [
+                    item for item in self.data_cache[services_constants.COINDESK_TOPIC_NEWS]
+                    if start_timestamp <= _news_ts_ms(item) <= end_timestamp
+                ]
             return True
 
     def get_data_cache(self, current_time: float, key: typing.Optional[str] = None):
         if self.data_cache is None:
             return None
 
+        # Normalize current_time to seconds for comparisons
+        if current_time is not None and current_time > 1e12:
+            current_time = current_time / 1000
+
         if key is None:
             return self.data_cache
 
+        def _to_seconds(value):
+            if hasattr(value, "timestamp"):
+                return float(value.timestamp())
+            return value / 1000 if value > 1e12 else value
+
         if key == services_constants.COINDESK_TOPIC_NEWS and self.data_cache.get(services_constants.COINDESK_TOPIC_NEWS) is not None:
-            return [item for item in self.data_cache.get(services_constants.COINDESK_TOPIC_NEWS) if item.published_on <= current_time]
+            return [
+                item for item in self.data_cache.get(services_constants.COINDESK_TOPIC_NEWS)
+                if _to_seconds(item.published_on) <= current_time
+            ]
         elif key == services_constants.COINDESK_TOPIC_MARKETCAP and self.data_cache.get(services_constants.COINDESK_TOPIC_MARKETCAP) is not None:
-            return [item for item in self.data_cache.get(services_constants.COINDESK_TOPIC_MARKETCAP) if item.timestamp <= current_time]
+            return [
+                item for item in self.data_cache.get(services_constants.COINDESK_TOPIC_MARKETCAP)
+                if _to_seconds(item.timestamp) <= current_time
+            ]
         return None
         
     async def _push_update_and_wait(self, session: aiohttp.ClientSession):
@@ -228,6 +241,69 @@ class CoindeskServiceFeed(service_feeds.AbstractServiceFeed):
         except Exception as e:
             self.logger.exception(e, True, f"Error when initializing Coindesk feed: {e}")
             return False
+
+    async def get_historical_data(
+        self,
+        start_timestamp,
+        end_timestamp,
+        symbols=None,
+        source=None,
+        **kwargs
+    ) -> typing.AsyncIterator[list[dict]]:
+        if start_timestamp is not None and start_timestamp < 1e12:
+            start_timestamp = int(start_timestamp * 1000)
+        if end_timestamp is not None and end_timestamp < 1e12:
+            end_timestamp = int(end_timestamp * 1000)
+        if not self.services and self.REQUIRED_SERVICES:
+            self.services = [s.instance() for s in self.REQUIRED_SERVICES]
+        if not self.services:
+            return
+        service = self.services[0]
+        if source == services_constants.COINDESK_TOPIC_NEWS:
+            async with aiohttp.ClientSession() as session:
+                ok = await self._get_news_data(
+                    session,
+                    limit=self.DEFAULT_HISTORICAL_LIMIT,
+                    start_timestamp=start_timestamp,
+                    end_timestamp=end_timestamp,
+                )
+                await asyncio.sleep(self.API_RATE_LIMIT_SECONDS)
+            if not ok or not self.data_cache.get(services_constants.COINDESK_TOPIC_NEWS):
+                return
+            events = [
+                service._convert_news_to_event(item, source or services_constants.COINDESK_TOPIC_NEWS)
+                for item in self.data_cache[services_constants.COINDESK_TOPIC_NEWS]
+            ]
+            events = [e for e in events if e is not None]
+            if events:
+                events.sort(key=lambda x: x["timestamp"])
+                yield events
+        elif source == services_constants.COINDESK_TOPIC_MARKETCAP:
+            async with aiohttp.ClientSession() as session:
+                ok = await self._get_marketcap_data(
+                    session,
+                    start_timestamp=start_timestamp,
+                    end_timestamp=end_timestamp,
+                )
+                await asyncio.sleep(self.API_RATE_LIMIT_SECONDS)
+            if not ok or not self.data_cache.get(services_constants.COINDESK_TOPIC_MARKETCAP):
+                return
+            events = [
+                service._convert_marketcap_to_event(
+                    item, source or services_constants.COINDESK_TOPIC_MARKETCAP
+                )
+                for item in self.data_cache[services_constants.COINDESK_TOPIC_MARKETCAP]
+            ]
+            events = [e for e in events if e is not None]
+            if events:
+                events.sort(key=lambda x: x["timestamp"])
+                yield events
+        else:
+            raise ValueError(f"Invalid source: {source}")
+
+    @classmethod
+    def get_historical_sources(cls) -> list:
+        return [services_constants.COINDESK_TOPIC_NEWS, services_constants.COINDESK_TOPIC_MARKETCAP]
 
     async def stop(self):
         await super().stop()

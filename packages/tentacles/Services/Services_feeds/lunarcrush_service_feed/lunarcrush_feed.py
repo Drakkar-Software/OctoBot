@@ -59,8 +59,8 @@ class LunarCrushServiceFeed(service_feeds.AbstractServiceFeed):
     FEED_CHANNEL = LunarCrushServiceFeedChannel
     REQUIRED_SERVICES = [Services_bases.LunarCrushService]
 
-    def __init__(self, config, main_async_loop, bot_id):
-        super().__init__(config, main_async_loop, bot_id)
+    def __init__(self, config, main_async_loop, bot_id, backtesting=None, importer=None):
+        super().__init__(config, main_async_loop, bot_id, backtesting=backtesting, importer=importer)
         self.lunarcrush_coins = []
         self.data_cache = {}
         self.refresh_time_frame = commons_enums.TimeFrames.ONE_DAY
@@ -76,22 +76,82 @@ class LunarCrushServiceFeed(service_feeds.AbstractServiceFeed):
     def _initialize(self):
         pass # Nothing to do
 
+    @staticmethod
+    def get_name() -> str:
+        return "LunarCrushServiceFeed"
+
     def _something_to_watch(self):
         return bool(self.lunarcrush_coins)
 
     def _get_sleep_time_before_next_wakeup(self):
         return commons_enums.TimeFramesMinutes[self.refresh_time_frame] * commons_constants.MINUTE_TO_SECONDS
 
+    @classmethod
+    def get_historical_sources(cls) -> list:
+        return [
+            services_constants.LUNARCRUSH_COIN_METRICS,
+        ]
+
+    async def get_historical_data(
+        self,
+        start_timestamp,
+        end_timestamp,
+        symbols=None,
+        source=None,
+        **kwargs
+    ) -> typing.AsyncIterator[list[dict]]:
+        if start_timestamp is not None and start_timestamp < 1e12:
+            start_timestamp = int(start_timestamp * 1000)
+        if end_timestamp is not None and end_timestamp < 1e12:
+            end_timestamp = int(end_timestamp * 1000)
+        coins = symbols or self.lunarcrush_coins
+        if not coins:
+            return
+        start_date = datetime.datetime.fromtimestamp(start_timestamp / 1000, tz=datetime.timezone.utc)
+        end_date = datetime.datetime.fromtimestamp(end_timestamp / 1000, tz=datetime.timezone.utc)
+        headers = {}
+        if self.services:
+            headers = self.services[0].get_authentication_headers()
+        async with aiohttp.ClientSession(headers=headers) as session:
+            for coin in coins:
+                events = []
+                result = await self._get_coin_data(session, coin, start_date, end_date)
+                data_by_coin = self.data_cache.get(services_constants.LUNARCRUSH_COIN_METRICS, {}) if result else {}
+                coin_data = data_by_coin.get(coin, [])
+                for item in coin_data:
+                    ts_ms = int(item.time * 1000) if item.time < 1e12 else int(item.time)
+                    if start_timestamp <= ts_ms <= end_timestamp:
+                        payload = item.to_dict() if hasattr(item, "to_dict") else dataclasses.asdict(item)
+                        events.append({
+                            "timestamp": ts_ms,
+                            "channel": f"{coin};{services_constants.LUNARCRUSH_COIN_METRICS}",
+                            "symbol": coin,
+                            "payload": payload,
+                        })
+                if events:
+                    events.sort(key=lambda x: x["timestamp"])
+                    yield events
+                await asyncio.sleep(self.API_RATE_LIMIT_SECONDS)
+
     def get_data_cache(self, current_time: float, key: typing.Optional[str] = None):
         if self.data_cache is None:
             return None
+
+        # Normalize current_time to seconds for comparisons
+        if current_time is not None and current_time > 1e12:
+            current_time = current_time / 1000
 
         if key is None:
             return self.data_cache
 
         coin, topic = key.split(";")
         if topic == services_constants.LUNARCRUSH_COIN_METRICS and self.data_cache.get(services_constants.LUNARCRUSH_COIN_METRICS) is not None:
-            return [item for item in self.data_cache.get(services_constants.LUNARCRUSH_COIN_METRICS).get(coin) if item.time <= current_time]
+            def _to_seconds(value):
+                return value / 1000 if value > 1e12 else value
+            return [
+                item for item in self.data_cache.get(services_constants.LUNARCRUSH_COIN_METRICS).get(coin)
+                if _to_seconds(item.time) <= current_time
+            ]
         return None
 
     async def _get_coin_data(self, session: aiohttp.ClientSession, coin: str, start_date: datetime.datetime, end_date: datetime.datetime) -> bool:
@@ -148,4 +208,3 @@ class LunarCrushServiceFeed(service_feeds.AbstractServiceFeed):
         if self.listener_task is not None:
             self.listener_task.cancel()
             self.listener_task = None
-

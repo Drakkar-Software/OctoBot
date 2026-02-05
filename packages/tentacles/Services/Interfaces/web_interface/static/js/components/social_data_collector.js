@@ -19,7 +19,8 @@
 function start_social_collector(){
     lock_social_collector_ui();
     const request = {};
-    request["social_name"] = $('#socialNameSelect').val();
+    const selectedService = $('#socialNameSelect').val();
+    request["services"] = selectedService ? [selectedService] : [];
     request["sources"] = $('#sourcesSelect').val();
     request["startTimestamp"] = $("#startDate").val() ? new Date($("#startDate").val()).getTime() : null;
     request["endTimestamp"] = $("#endDate").val() ? new Date($("#endDate").val()).getTime() : null;
@@ -60,21 +61,32 @@ function check_social_date_input(){
 function update_available_services_list(url){
     $.get(url, {}, function(data, status){
         const serviceSelect = $("#socialNameSelect");
-        serviceSelect.empty(); // remove old options
-        const serviceSelectBox = serviceSelect[0];
-        $.each(data, function(key,value) {
-            serviceSelectBox.append(new Option(value,value));
-        });
         if (data && data.length > 0) {
+            serviceSelect.empty(); // remove old options
+            const serviceSelectBox = serviceSelect[0];
+            $.each(data, function(key,value) {
+                serviceSelectBox.append(new Option(value,value));
+            });
             serviceSelect.val(data[0]);
+        } else if (!serviceSelect.val() && serviceSelect.find("option").length > 0) {
+            serviceSelect.val(serviceSelect.find("option:first").val());
         }
         serviceSelect.selectpicker('refresh');
         serviceSelect.trigger('change');
+    }).fail(function(){
+        const serviceSelect = $("#socialNameSelect");
+        serviceSelect.selectpicker('refresh');
     });
 }
 
 function update_sources_list(service_name){
     const sourcesSelect = $("#sourcesSelect");
+    
+    // Clear existing selection and destroy select2
+    sourcesSelect.val(null).trigger('change');
+    if (sourcesSelect.data('select2')) {
+        sourcesSelect.select2('destroy');
+    }
     sourcesSelect.empty();
     const sourcesSelectBox = sourcesSelect[0];
     
@@ -86,22 +98,20 @@ function update_sources_list(service_name){
                 $.each(data, function(key,value) {
                     sourcesSelectBox.append(new Option(value,value));
                 });
-            } else {
-                // Fallback to common sources if service doesn't provide specific ones
-                const commonSources = ["topic_news", "topic_marketcap"];
-                $.each(commonSources, function(key,value) {
-                    sourcesSelectBox.append(new Option(value,value));
-                });
             }
-            sourcesSelect.trigger('change');
+            // Reinitialize select2 with updated options
+            sourcesSelect.select2({
+                closeOnSelect: false,
+                placeholder: "Sources/Topics"
+            });
+        }).fail(function(xhr, status, error) {
+            console.error("Failed to fetch sources:", error);
+            // Reinitialize select2 even on failure
+            sourcesSelect.select2({
+                closeOnSelect: false,
+                placeholder: "Sources/Topics"
+            });
         });
-    } else {
-        // Fallback to common sources
-        const commonSources = ["topic_news", "topic_marketcap"];
-        $.each(commonSources, function(key,value) {
-            sourcesSelectBox.append(new Option(value,value));
-        });
-        sourcesSelect.trigger('change');
     }
 }
 

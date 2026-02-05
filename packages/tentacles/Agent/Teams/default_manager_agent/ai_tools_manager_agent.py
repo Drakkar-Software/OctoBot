@@ -25,9 +25,13 @@ from octobot_agents.team.manager import (
     AIToolsManagerAgentProducer,
     AbstractTeamManagerAgent,
 )
+from tentacles.Agent.teams.default_manager_agent.ai_plan_manager_agent import (
+    AIPlanTeamManagerAgentProducer,
+)
 
 if TYPE_CHECKING:
     from octobot_agents.models import ManagerInput
+    import octobot_services as services
 
 
 class AIToolsTeamManagerAgentChannel(AIToolsManagerAgentChannel):
@@ -84,4 +88,39 @@ Available tools:
 - run_debate: Run a debate between multiple agents with a judge
 - finish: Complete execution and return current results
 
-Use these tools to coordinate the team execution. Call finish when you have sufficient results."""
+Use these tools to coordinate the team execution. Call finish when you have sufficient results.
+
+Important:
+- Do NOT respond with plain text. You MUST respond with a tool call.
+- If unsure, call finish with empty arguments.
+"""
+
+    async def execute(
+        self,
+        input_data: typing.Union["ManagerInput", typing.Dict[str, typing.Any]],
+        ai_service: "services.AIServiceBase",
+    ):
+        if not ai_service.supports_call_json_output():
+            self.logger.warning(
+                "tool-call-json-output is disabled. Switching to plan-based manager."
+            )
+            plan_manager = AIPlanTeamManagerAgentProducer(
+                channel=None,
+                model=self.model,
+                max_tokens=self.max_tokens,
+                temperature=self.temperature,
+            )
+            return await plan_manager.execute(input_data, ai_service)
+        try:
+            return await super().execute(input_data, ai_service)
+        except Exception as e:
+            self.logger.warning(
+                f"Tools-driven manager failed. Switching to plan-based manager. Error: {e}"
+            )
+            plan_manager = AIPlanTeamManagerAgentProducer(
+                channel=None,
+                model=self.model,
+                max_tokens=self.max_tokens,
+                temperature=self.temperature,
+            )
+            return await plan_manager.execute(input_data, ai_service)

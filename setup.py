@@ -35,8 +35,6 @@ PACKAGES = [
         for excluded_package in EXCLUDED_PACKAGES
     )
 ]
-# Include octobot_agents from packages/agents/octobot_agents
-PACKAGES.extend(find_packages(where='packages/agents'))
 
 # long description from README file
 with open('README.md', encoding='utf-8') as f:
@@ -61,7 +59,6 @@ setup(
     description='Cryptocurrencies alert / trading bot',
     py_modules=['start'],
     packages=PACKAGES,
-    package_dir={'octobot_agents': 'packages/agents/octobot_agents'},
     package_data={
         "": DATA_FILES,
     },

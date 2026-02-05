@@ -28,8 +28,8 @@ class TradingViewServiceFeed(service_feeds.AbstractServiceFeed):
     FEED_CHANNEL = TradingViewServiceFeedChannel
     REQUIRED_SERVICES = [Services_bases.WebHookService, Services_bases.TradingViewService]
 
-    def __init__(self, config, main_async_loop, bot_id):
-        super().__init__(config, main_async_loop, bot_id)
+    def __init__(self, config, main_async_loop, bot_id, backtesting=None, importer=None):
+        super().__init__(config, main_async_loop, bot_id, backtesting=backtesting, importer=importer)
         self.webhook_service_name = services_constants.TRADINGVIEW_WEBHOOK_SERVICE_NAME
         self.webhook_service_url = ""
 

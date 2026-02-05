@@ -195,7 +195,7 @@ class AbstractDeepAgentChannelProducer(AbstractAIAgentChannelProducer, abc.ABC):
         Returns:
             Dict mapping virtual paths to file content or None
         """
-        skills_dir = self.get_skills_resources_dir()
+        skills_dir = self.get_skills_resources_dir()  # pylint: disable=assignment-from-none
         if not skills_dir:
             return None
         
@@ -334,7 +334,7 @@ class AbstractDeepAgentChannelProducer(AbstractAIAgentChannelProducer, abc.ABC):
         
         # Auto-discover skills from tentacle's resources/skills directory
         skills = self.get_skills()
-        skills_dir = self.get_skills_resources_dir()
+        skills_dir = self.get_skills_resources_dir()  # pylint: disable=assignment-from-none
         
         if skills_dir:
             discovered = discover_skills(skills_dir)

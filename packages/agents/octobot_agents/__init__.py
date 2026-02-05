@@ -63,6 +63,7 @@ from octobot_agents.utils import (
     extract_json_between_braces,
     extract_json_from_markdown,
     extract_json_from_xml_tags,
+    preprocess_json_content,
 )
 
 from octobot_agents import team
@@ -187,6 +188,7 @@ __all__ = [
     "extract_json_between_braces",
     "extract_json_from_markdown",
     "extract_json_from_xml_tags",
+    "preprocess_json_content",
     # Deep Agents Team
     "AbstractDeepAgentsTeamChannel",
     "AbstractDeepAgentsTeamChannelConsumer",

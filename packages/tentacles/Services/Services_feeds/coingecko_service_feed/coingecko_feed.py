@@ -91,8 +91,8 @@ class CoingeckoServiceFeed(service_feeds.AbstractServiceFeed):
 
     API_RATE_LIMIT_SECONDS = 10
 
-    def __init__(self, config, main_async_loop, bot_id):
-        super().__init__(config, main_async_loop, bot_id)
+    def __init__(self, config, main_async_loop, bot_id, backtesting=None, importer=None):
+        super().__init__(config, main_async_loop, bot_id, backtesting=backtesting, importer=importer)
         self.coingecko_topics = []
         self.coingecko_coins = []
         self.data_cache = {}
@@ -129,11 +129,80 @@ class CoingeckoServiceFeed(service_feeds.AbstractServiceFeed):
     def _initialize(self):
         self._initialize_api_client()
 
+    @staticmethod
+    def get_name() -> str:
+        return "CoingeckoServiceFeed"
+
     def _something_to_watch(self):
         return bool(self.coingecko_topics)
 
     def _get_sleep_time_before_next_wakeup(self):
         return commons_enums.TimeFramesMinutes[self.refresh_time_frame] * commons_constants.MINUTE_TO_SECONDS
+
+    @classmethod
+    def get_historical_sources(cls) -> list:
+        return [
+            services_constants.COINGECKO_TOPIC_MARKETS,
+            services_constants.COINGECKO_TOPIC_TRENDING,
+            services_constants.COINGECKO_TOPIC_GLOBAL,
+        ]
+
+    async def get_historical_data(
+        self,
+        start_timestamp,
+        end_timestamp,
+        symbols=None,
+        source=None,
+        **kwargs
+    ) -> typing.AsyncIterator[list[dict]]:
+        if start_timestamp is not None and start_timestamp < 1e12:
+            start_timestamp = int(start_timestamp * 1000)
+        if end_timestamp is not None and end_timestamp < 1e12:
+            end_timestamp = int(end_timestamp * 1000)
+        if self.api_client is None:
+            self._initialize_api_client()
+
+        topics = [source] if source else (self.coingecko_topics or self.get_historical_sources())
+        for topic in topics:
+            events = []
+            result = False
+            if topic == services_constants.COINGECKO_TOPIC_MARKETS:
+                result = await self._get_markets_data()
+                data = self.data_cache.get(services_constants.COINGECKO_TOPIC_MARKETS, []) if result else []
+                for item in data:
+                    payload = item.to_dict() if hasattr(item, "to_dict") else dataclasses.asdict(item)
+                    events.append({
+                        "timestamp": end_timestamp,
+                        "channel": topic,
+                        "symbol": item.symbol if hasattr(item, "symbol") else "",
+                        "payload": payload,
+                    })
+            elif topic == services_constants.COINGECKO_TOPIC_TRENDING:
+                result = await self._get_trending_data()
+                data = self.data_cache.get(services_constants.COINGECKO_TOPIC_TRENDING, []) if result else []
+                for item in data:
+                    payload = item.to_dict() if hasattr(item, "to_dict") else dataclasses.asdict(item)
+                    events.append({
+                        "timestamp": end_timestamp,
+                        "channel": topic,
+                        "symbol": item.symbol if hasattr(item, "symbol") else "",
+                        "payload": payload,
+                    })
+            elif topic == services_constants.COINGECKO_TOPIC_GLOBAL:
+                result = await self._get_global_data()
+                data = self.data_cache.get(services_constants.COINGECKO_TOPIC_GLOBAL) if result else None
+                if data is not None:
+                    payload = data.to_dict() if hasattr(data, "to_dict") else dataclasses.asdict(data)
+                    events.append({
+                        "timestamp": end_timestamp,
+                        "channel": topic,
+                        "symbol": "",
+                        "payload": payload,
+                    })
+
+            if events:
+                yield events
+            await asyncio.sleep(self.API_RATE_LIMIT_SECONDS)
 
     async def _get_markets_data(self, per_page: int = 100) -> bool:
         try:
@@ -203,6 +272,9 @@ class CoingeckoServiceFeed(service_feeds.AbstractServiceFeed):
         try:
             self.logger.debug("Fetching coingecko global data...")
             global_data = await self.global_api.global_get()
+            if not global_data:
+                self.logger.error("Coingecko global API returned empty payload")
+                return False
             data = global_data.get('data', {})
             self.data_cache[services_constants.COINGECKO_TOPIC_GLOBAL] = CoingeckoGlobalData.from_dict({
                 'active_cryptocurrencies': data.get('active_cryptocurrencies', 0),

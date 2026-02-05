@@ -220,7 +220,8 @@ def _start_backtesting(files, source, reset_tentacle_config=False, run_on_common
                     end_timestamp=end_timestamp / 1000 if end_timestamp else None,
                     enable_logs=enable_logs,
                     stop_when_finished=auto_stop,
-                    name=name
+                    name=name,
+                    services_config=config
                 )
                 tools[constants.BOT_TOOLS_DATA_COLLECTOR] = None
             interfaces_util.run_in_bot_main_loop(
@@ -269,7 +270,8 @@ async def _collect_initialize_and_run_independent_backtesting(
                 end_timestamp=end_timestamp / 1000 if end_timestamp else None,
                 enable_logs=enable_logs,
                 stop_when_finished=auto_stop,
-                name=name
+                name=name,
+                services_config=config
             )
         except Exception as e:
             logger.exception(e, True, f"Error when initializing backtesting: {e}")
@@ -373,11 +375,11 @@ def stop_data_collector():
     return success, message
 
 
-def collect_social_data_file(social_name, sources, start_timestamp=None, end_timestamp=None):
+def collect_social_data_file(services, sources, start_timestamp=None, end_timestamp=None):
     """
     Start collecting social data from a backtestable feed.
     
-    :param social_name: Name of the feed (e.g., "CoindeskServiceFeed")
+    :param services: List of service class names (e.g., ["CoindeskServiceFeed", "SomeRequiredService"])
     :param sources: List of sources/topics to collect (e.g., ["topic_news", "topic_marketcap"])
     :param start_timestamp: Start timestamp in milliseconds
     :param end_timestamp: End timestamp in milliseconds
@@ -385,7 +387,7 @@ def collect_social_data_file(social_name, sources, start_timestamp=None, end_tim
     """
     if not is_backtesting_enabled():
         return False, "Backtesting is disabled."
-    if not social_name:
+    if not services:
         return False, "Please select a service."
     if not sources:
         return False, "Please select at least one source/topic."
@@ -394,10 +396,10 @@ def collect_social_data_file(social_name, sources, start_timestamp=None, end_tim
     if web_interface_root.WebInterface.tools[constants.BOT_TOOLS_SOCIAL_DATA_COLLECTOR] is None or \
             backtesting_api.is_data_collector_finished(
                 web_interface_root.WebInterface.tools[constants.BOT_TOOLS_SOCIAL_DATA_COLLECTOR]):
-        _background_collect_social_historical_data(social_name, sources, start_timestamp, end_timestamp)
-        return True, f"Social data collection started for {social_name}."
+        _background_collect_social_historical_data(services, sources, start_timestamp, end_timestamp)
+        return True, f"Social data collection started for {', '.join(services)}."
     else:
-        return False, f"Can't collect data for {social_name} (Social data collector is already running)"
+        return False, f"Can't collect data for {', '.join(services)} (Social data collector is already running)"
 
 
 def stop_social_data_collector():
@@ -415,10 +417,30 @@ def stop_social_data_collector():
     return success, message
 
 
-def _background_collect_social_historical_data(social_name, sources, start_timestamp, end_timestamp):
-    """Start social data collection in a background thread."""
+def _get_service_class_names_from_class_name(service_class_name):
+    try:
+        feeds = services_api.get_available_backtestable_feeds()
+        for feed_class in feeds:
+            if feed_class.__name__.lower() == service_class_name.lower():
+                services = [feed_class.__name__]
+                for service_class in getattr(feed_class, "REQUIRED_SERVICES", []) or []:
+                    services.append(service_class.__name__)
+                # Ensure uniqueness while preserving order
+                seen = set()
+                return [svc for svc in services if not (svc in seen or seen.add(svc))]
+    except ImportError:
+        pass
+    return []
+
+
+def _background_collect_social_historical_data(services, sources, start_timestamp, end_timestamp):
+    if isinstance(services, str):
+        services = [services]
+    if len(services) == 1:
+        expanded_services = _get_service_class_names_from_class_name(services[0])
+        services = expanded_services if expanded_services else services
     data_collector_instance = backtesting_api.social_historical_data_collector_factory(
-        social_name=social_name,
+        services=services,
         tentacles_setup_config=interfaces_util.get_bot_api().get_edited_tentacles_config(),
         sources=sources,
         symbols=None,  # Usually not applicable for social services
@@ -428,7 +450,7 @@ def _background_collect_social_historical_data(social_name, sources, start_times
     )
     web_interface_root.WebInterface.tools[constants.BOT_TOOLS_SOCIAL_DATA_COLLECTOR] = data_collector_instance
     coro = _start_social_collect_and_notify(data_collector_instance)
-    threading.Thread(target=asyncio.run, args=(coro,), name=f"SocialDataCollector{social_name}").start()
+    threading.Thread(target=asyncio.run, args=(coro,), name=f"SocialDataCollector{'-'.join(services)}").start()
 
 
 def get_available_social_services():
@@ -439,11 +461,11 @@ def get_available_social_services():
         return []
 
 
-def get_service_sources(service_name):
+def get_service_sources(service_class_name):
     try:
         feeds = services_api.get_available_backtestable_feeds()
         for feed_class in feeds:
-            if feed_class.get_name() == service_name:
+            if feed_class.get_name().lower() == service_class_name.lower():
                 return list(feed_class.get_historical_sources())
         return []
     except ImportError:

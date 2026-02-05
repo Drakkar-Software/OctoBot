@@ -44,6 +44,7 @@
                     <th scope="col">Candles</th>
                     <th scope="col">Exchange</th>
                     <th scope="col">Time frame(s)</th>
+                    <th scope="col">Service(s)</th>
                     <th scope="col">File</th>
                 </tr>
               </thead>
@@ -71,6 +72,11 @@
                         {% endif %}
                         <td>{{description.exchange}}</td>
                         <td>{{", ".join(description.time_frames)}}</td>
+                        {% if description.data_type == "social" %}
+                        <td>{{", ".join(description.services) if description.services else "-"}}</td>
+                        {% else %}
+                        <td>-</td>
+                        {% endif %}
                         <td>{{file}}</td>
                     </tr>
                 {% endfor %}

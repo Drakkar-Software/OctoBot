@@ -1,2 +1,3 @@
 from .alternative_me_feed import AlternativeMeServiceFeed
 from .alternative_me_feed import AlternativeMeFearAndGreed
+from .alternative_me_feed_simulator import AlternativeMeServiceFeedSimulator

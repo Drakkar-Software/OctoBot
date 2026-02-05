@@ -118,7 +118,8 @@ Output a JSON object with:
 - "rebalance_urgency" (string): EXACTLY one of "immediate", "soon", "low", "none" - REQUIRED
 - "reasoning" (string): Summary explanation - REQUIRED
 
-CRITICAL: Every field above is REQUIRED. Do NOT omit any field, especially "explanation" in each distribution object.
+CRITICAL: Every field above is REQUIRED. Do NOT omit any field, especially "action" and "explanation" in each distribution object.
+If an asset is the reference market (e.g., USDT/USD), you MUST still provide an action (usually "maintain").
 """
     
     def _build_user_prompt(self, state: AIAgentState) -> str:
@@ -235,70 +236,21 @@ Remember:
             Merged state dict with signal_synthesis and risk_output at top level.
         """
         
-        # Extract initial state if available (stored in _initial_state by team system)
-        initial_state = {}
-        if isinstance(input_data, dict) and "_initial_state" in input_data:
-            initial_state = input_data["_initial_state"]
-            # Create a copy of input_data without _initial_state for processing
-            input_data = {k: v for k, v in input_data.items() if k != "_initial_state"}
-        
-        # If input_data is already a state dict (has expected keys), use it directly
-        if isinstance(input_data, dict):
-            # Check if it's a state dict (has state keys) or predecessor outputs (has agent names)
-            state_keys = {"cryptocurrencies", "reference_market", "portfolio", "current_distribution"}
-            if state_keys.intersection(input_data.keys()):
-                # It's already a state dict
-                state = input_data.copy()
-                # Remove predecessor agent keys from state copy to avoid conflicts
-                # We'll merge their outputs properly below
-                agent_names = ["SignalAIAgentProducer", "RiskAIAgentProducer"]
-                for agent_name in agent_names:
-                    state.pop(agent_name, None)
-            elif initial_state:
-                # Use initial_state as base if available
-                state = initial_state.copy()
-            else:
-                # Fallback: It's only predecessor outputs
-                state = {}
-        
-        # Extract outputs from predecessor agents
-        # Signal agent output structure: {"signal_outputs": {...}, "signal_synthesis": {...}}
-        # Risk agent output structure: {"risk_output": {...}}
-        
-        # Check for Signal agent output
-        signal_agent_name = "SignalAIAgentProducer"
-        if signal_agent_name in input_data:
-            signal_result = input_data[signal_agent_name]
-            if isinstance(signal_result, dict):
-                # Extract RESULT_KEY if present (team system wraps results)
-                signal_output = signal_result.get(RESULT_KEY, signal_result)
-                if isinstance(signal_output, dict):
-                    # Merge signal outputs into state
-                    if "signal_outputs" in signal_output:
-                        state["signal_outputs"] = signal_output["signal_outputs"]
-                    if "signal_synthesis" in signal_output:
-                        state["signal_synthesis"] = signal_output["signal_synthesis"]
-        
-        # Check for Risk agent output
-        risk_agent_name = "RiskAIAgentProducer"
-        if risk_agent_name in input_data:
-            risk_result = input_data[risk_agent_name]
-            if isinstance(risk_result, dict):
-                # Extract RESULT_KEY if present
-                risk_output = risk_result.get(RESULT_KEY, risk_result)
-                if isinstance(risk_output, dict) and "risk_output" in risk_output:
-                    state["risk_output"] = risk_output["risk_output"]
-        
-        # If state is still empty, try to use input_data as state (fallback)
-        if not state and isinstance(input_data, dict):
-            state = input_data
-        
-        return state
+        try:
+            return dict(input_data)
+        except Exception:
+            return {}
     
     async def execute(self, input_data: typing.Any, ai_service) -> typing.Any:
         # Merge predecessor outputs into state
         state = self._merge_predecessor_outputs(input_data)
         self.logger.debug(f"Starting {self.name}...")
+
+        if not state.get("signal_synthesis") and not state.get("risk_output"):
+            self.logger.warning(
+                f"{self.name} missing signal_synthesis and risk_output; skipping distribution."
+            )
+            return {"distribution_output": None}
         
         try:
             messages = [
@@ -306,15 +258,27 @@ Remember:
                 {"role": "user", "content": self._build_user_prompt(state)},
             ]
             
-            response_data = await self._call_llm(
-                messages,
-                ai_service,
-                json_output=True,
-            )
-            distribution_output = DistributionOutput(**response_data)
+            try:
+                response_data = await self._call_llm(
+                    messages,
+                    ai_service,
+                    json_output=True,
+                    response_schema=DistributionOutput,
+                )
+                distribution_output = DistributionOutput(**response_data)
+            except Exception as e:
+                self.logger.warning(f"LLM call failed with error: {e}. Attempting to extract JSON from error message.")
+                extracted_json = DistributionOutput.recover_json_from_error(e)
+                if extracted_json:
+                    try:
+                        distribution_output = DistributionOutput(**extracted_json)
+                    except Exception as e2:
+                        self.logger.error(f"Failed to parse extracted JSON into DistributionOutput: {e2}")
+                        distribution_output = None
+                else:
+                    distribution_output = None
             
             self.logger.debug(f"{self.name} completed successfully.")
-            
             return {"distribution_output": distribution_output}
             
         except Exception as e:

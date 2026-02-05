@@ -17,7 +17,7 @@ import octobot_backtesting.collectors as collectors
 import octobot_commons.tentacles_management as tentacles_management
 
 
-def social_historical_data_collector_factory(social_name,
+def social_historical_data_collector_factory(services,
                                             tentacles_setup_config,
                                             sources=None,
                                             symbols=None,
@@ -26,7 +26,7 @@ def social_historical_data_collector_factory(social_name,
                                             config=None):
     """
     Factory function to create a social history data collector.
-    :param social_name: Name of the service (e.g., "TwitterService", "TelegramService")
+    :param services: List of service class names (feed class + required services)
     :param tentacles_setup_config: Tentacles setup configuration
     :param sources: Optional list of sources/channels to collect from
     :param symbols: Optional list of symbols to filter by
@@ -36,7 +36,7 @@ def social_historical_data_collector_factory(social_name,
     :return: SocialHistoryDataCollector instance
     """
     return _social_collector_factory(collectors.AbstractSocialHistoryCollector,
-                                    social_name,
+                                    services,
                                     tentacles_setup_config,
                                     sources,
                                     symbols,
@@ -45,7 +45,7 @@ def social_historical_data_collector_factory(social_name,
                                     config)
 
 
-def social_live_data_collector_factory(social_name,
+def social_live_data_collector_factory(services,
                                        tentacles_setup_config,
                                        sources=None,
                                        symbols=None,
@@ -54,7 +54,7 @@ def social_live_data_collector_factory(social_name,
                                        config=None):
     """
     Factory function to create a social live data collector.
-    :param social_name: Name of the service (e.g., "TwitterService", "TelegramService")
+    :param services: List of service class names (feed class + required services)
     :param tentacles_setup_config: Tentacles setup configuration
     :param sources: Optional list of sources/channels to collect from
     :param symbols: Optional list of symbols to filter by
@@ -68,7 +68,7 @@ def social_live_data_collector_factory(social_name,
     )
     collector_instance = collector_class(
         config or {},
-        social_name,
+        services,
         tentacles_setup_config,
         sources=sources,
         symbols=symbols,
@@ -78,12 +78,12 @@ def social_live_data_collector_factory(social_name,
     return collector_instance
 
 
-def _social_collector_factory(collector_parent_class, social_name, tentacles_setup_config,
+def _social_collector_factory(collector_parent_class, services, tentacles_setup_config,
                               sources, symbols, start_timestamp, end_timestamp, config):
     collector_class = tentacles_management.get_single_deepest_child_class(collector_parent_class)
     collector_instance = collector_class(
         config or {},
-        social_name,
+        services,
         tentacles_setup_config,
         sources=sources,
         symbols=symbols,

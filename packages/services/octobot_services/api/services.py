@@ -41,6 +41,8 @@ def get_available_ai_services() -> list[type[services.AbstractAIService]]:
 def get_available_web_search_services() -> list[type[services.AbstractWebSearchService]]:
     return services.ServiceFactory.get_available_web_search_services()
 
+def is_service_class(klass) -> bool:
+    return klass in get_available_services() + get_available_ai_services() + get_available_web_search_services()
 
 def get_available_backtestable_services() -> list:
     return [
@@ -51,29 +53,32 @@ def get_available_backtestable_services() -> list:
 async def _get_available_service_instance(
     get_available_services_func,
     service_type_name: str,
-    is_backtesting: bool = False
+    is_backtesting: bool = False,
+    config = None
 ):
     available_services = get_available_services_func()
     for service_class in available_services:
         try:
-            return await get_service(service_class, is_backtesting, None)
+            return await get_service(service_class, is_backtesting, config)
         except errors.CreationError:
             # Service is not running/initialized, skip it
             continue
     raise errors.CreationError(f"No {service_type_name} is currently running or available.")
 
-async def get_ai_service(is_backtesting=False) -> services.AbstractAIService:
+async def get_ai_service(is_backtesting=False, config = None) -> services.AbstractAIService:
     return await _get_available_service_instance(
         get_available_ai_services,
         "AI service",
-        is_backtesting
+        is_backtesting,
+        config
     )
 
-async def get_web_search_service(is_backtesting=False) -> services.AbstractWebSearchService:
+async def get_web_search_service(is_backtesting=False, config = None) -> services.AbstractWebSearchService:
     return await _get_available_service_instance(
         get_available_web_search_services,
         "web search service",
-        is_backtesting
+        is_backtesting,
+        config
     )
 
 
@@ -87,12 +92,15 @@ def is_service_available_in_backtesting(service_class) -> bool:
 async def get_service(service_class, is_backtesting, config=None):
     # prevent concurrent access when creating a service
     async with _service_async_lock(service_class):
-        created, error_message = await create_service_factory(
-            interfaces.get_startup_config(dict_only=True) if config is None else config
-        ).create_or_get_service(
+        # Use provided config, or fall back to interface config 
+        # when not backtesting as startup config shouldn't be used
+        if config is None and not is_backtesting:
+            config = interfaces.get_startup_config(dict_only=True)
+        
+        created, error_message = await create_service_factory(config).create_or_get_service(
             service_class,
             is_backtesting,
-            interfaces.get_edited_config(dict_only=True) if config is None else config
+            config
         )
         if created:
             service = service_class.instance()
