@@ -44,6 +44,7 @@ import octobot_trading.modes.mode_config as mode_config
 import octobot_trading.modes.modes_util as modes_util
 import octobot_trading.exchanges.util.exchange_util as exchange_util
 import octobot_trading.signals as signals
+import octobot_trading.personal_data.stops as stops
 
 
 class AbstractTradingMode(abstract_tentacle.AbstractTentacle):
@@ -239,6 +240,16 @@ class AbstractTradingMode(abstract_tentacle.AbstractTentacle):
         await self.reload_config(self.exchange_manager.bot_id, trading_config=trading_config)
         self.producers = await self.create_producers(auto_start)
         self.consumers = await self.create_consumers()
+
+    @classmethod
+    def get_stop_conditions(cls, config: dict) -> list[stops.StopConditionMixin]:
+        # override in subclass to return the stop conditions if supported
+        raise NotImplementedError("get_stop_conditions is not implemented")
+
+    async def stop_strategy_execution(self, stop_condition: typing.Optional[stops.StopConditionMixin]):
+        self.logger.error(
+            f"Stopping strategy execution is not implemented for {self.get_name()}"
+        )
 
     async def stop(self) -> None:
         """

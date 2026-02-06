@@ -28,10 +28,10 @@ import octobot_trading.constants as constants
 import octobot_trading.enums as enums
 import octobot_trading.errors as errors
 import octobot_trading.personal_data.orders.decimal_order_adapter as decimal_order_adapter
-import octobot_trading.exchanges.util.exchange_market_status_fixer as exchange_market_status_fixer
 import octobot_trading.personal_data.orders.states.fill_order_state as fill_order_state
 import octobot_trading.personal_data.orders.order as order_import
 import octobot_trading.personal_data.orders.triggers.price_trigger as price_trigger
+import octobot_trading.exchanges.util.exchange_market_status_fixer as exchange_market_status_fixer
 import octobot_trading.signals as signals
 from octobot_trading.enums import ExchangeConstantsMarketStatusColumns as Ecmsc
 

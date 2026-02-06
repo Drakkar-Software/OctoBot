@@ -317,5 +317,23 @@ def get_tentacles_data_exchange_config(
         raise ImportError(f"Import tentacles_exchanges failed: {err}")
 
 
+def get_deployment_error_status_from_stop_reason(
+    stop_reason: trading_enums.StopReason
+) -> backend_enums.BotDeploymentErrorsStatuses:
+    match stop_reason:
+        case trading_enums.StopReason.MISSING_API_KEY_TRADING_RIGHTS:
+            return backend_enums.BotDeploymentErrorsStatuses.MISSING_API_KEY_TRADING_RIGHTS
+        case trading_enums.StopReason.INVALID_EXCHANGE_CREDENTIALS:
+            return backend_enums.BotDeploymentErrorsStatuses.INVALID_EXCHANGE_CREDENTIALS
+        case trading_enums.StopReason.STOP_CONDITION_TRIGGERED:
+            return backend_enums.BotDeploymentErrorsStatuses.STOP_CONDITION_TRIGGERED
+        case trading_enums.StopReason.MISSING_MINIMAL_FUNDS:
+            return backend_enums.BotDeploymentErrorsStatuses.MISSING_MINIMAL_FUNDS
+        case trading_enums.StopReason.INVALID_CONFIG:
+            return backend_enums.BotDeploymentErrorsStatuses.INVALID_CONFIG
+        case _:
+            raise ValueError(f"Unhandled stop reason: {stop_reason}")
+
+
 def _get_logger():
     return commons_logging.get_logger("CommunityFormatter")

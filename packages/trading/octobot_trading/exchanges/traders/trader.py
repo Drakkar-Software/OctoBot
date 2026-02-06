@@ -14,13 +14,14 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-
+import asyncio
 import decimal
 import typing
 
 import octobot_commons.logging as logging
 import octobot_commons.html_util as html_util
 import octobot_commons.signals as commons_signals
+import octobot_commons.authentication as authentication
 import octobot_commons.constants
 
 import octobot_trading.personal_data.orders.order_factory as order_factory
@@ -32,6 +33,8 @@ import octobot_trading.constants
 import octobot_trading.errors as errors
 import octobot_trading.util as util
 import octobot_trading.signals as signals
+import octobot_trading.personal_data.stops as stops
+import octobot_trading.modes.modes_util as trading_modes_util
 
 
 def enabled_or_forced_only(func):
@@ -81,6 +84,7 @@ class Trader(util.Initializable):
             self.simulate: bool = False
         self.is_enabled: bool = self.__class__.enabled(self.config) and not self.__class__.is_paused(self.config)
         self.enable_inactive_orders: bool = not self.simulate
+        self.should_stop: bool = False
 
     def can_trade_if_not_paused(self) -> bool:
         """
@@ -130,6 +134,56 @@ class Trader(util.Initializable):
         else:
             self.risk = risk
         return self.risk
+
+    async def schedule_bot_stop(
+        self,
+        stop_reason: enums.StopReason,
+        stop_condition: typing.Optional[stops.StopConditionMixin],
+    ):
+        if self.should_stop:
+            self.logger.info(
+                f"Bot stop already scheduled, skipping scheduling bot stop again ({stop_reason.value})"
+            )
+            return
+        else:
+            self.logger.info(f"Scheduling bot. Error status: {stop_reason.value}")
+            self.should_stop = True
+        try:
+            await self.stop_all_trading_modes_and_pause_trader(stop_condition)
+        except Exception as err:
+            self.logger.exception(err, True, f"Error when stopping trading modes: {err}")
+        authenticator = authentication.Authenticator.instance()
+        try:
+            await authenticator.community_bot.schedule_bot_stop(stop_reason)
+        except Exception as err:
+            self.logger.exception(err, True, f"Error when scheduling bot stop: {err}")
+        if stop_condition is not None:
+            await authenticator.community_bot.insert_stopped_strategy_execution_log(
+                stop_condition.get_match_reason()
+            )
+
+    async def stop_all_trading_modes_and_pause_trader(
+        self, stop_condition: typing.Optional[stops.StopConditionMixin]
+    ):
+        if not self.exchange_manager.trading_modes:
+            self.set_is_enabled(False)
+            return
+        all_trading_modes = trading_modes_util.get_trading_modes_of_this_type_on_this_matrix(
+            self.exchange_manager.trading_modes[0]
+        )
+        # stop all market making trading modes of this bot, on all exchanges
+        self.logger.info(
+            f"Stopping all {len(all_trading_modes)} [{self.exchange_manager.exchange_name}] trading modes"
+        )
+        await asyncio.gather(*[
+            trading_mode.stop_strategy_execution(stop_condition) 
+            for trading_mode in all_trading_modes
+        ])
+        self.logger.info(
+            f"All {len(all_trading_modes)} trading modes have been stopped. Pausing [{self.exchange_manager.exchange_name}] trader"
+        )
+        # now that orders have been cancelled, disable trader to prevent further orders from being created
+        self.set_is_enabled(False)
 
     """
     Orders

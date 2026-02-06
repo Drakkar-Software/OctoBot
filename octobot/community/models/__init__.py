@@ -61,6 +61,7 @@ from octobot.community.models.formatters import (
     to_community_exchange_internal_name,
     get_tentacles_data_exchange_config,
     USD_LIKE,
+    get_deployment_error_status_from_stop_reason,
 )
 from octobot.community.models.community_public_data import (
     CommunityPublicData
@@ -98,6 +99,7 @@ __all__ = [
     "to_community_exchange_internal_name",
     "get_tentacles_data_exchange_config",
     "USD_LIKE",
+    "get_deployment_error_status_from_stop_reason",
     "CommunityPublicData",
     "StrategyData",
     "is_custom_category",
