@@ -36,6 +36,7 @@ import octobot.community.supabase_backend as supabase_backend
 import octobot.community.supabase_backend.enums as backend_enums
 import octobot.community.feeds as community_feeds
 import octobot.community.tentacles_packages as community_tentacles_packages
+import octobot.community.community_bot as community_bot
 import octobot_commons.constants as commons_constants
 import octobot_commons.enums as commons_enums
 import octobot_commons.authentication as authentication
@@ -105,23 +106,24 @@ class CommunityAuthentication(authentication.Authenticator):
 
     def __init__(self, config=None, backend_url=None, backend_key=None, use_as_singleton=True):
         super().__init__(use_as_singleton=use_as_singleton)
-        self.config = config
-        self.backend_url = backend_url or identifiers_provider.IdentifiersProvider.BACKEND_URL
-        self.backend_key = backend_key or identifiers_provider.IdentifiersProvider.BACKEND_KEY
-        self.configuration_storage = supabase_backend.ASyncConfigurationStorage(self.config)
-        self.supabase_client = self._create_client()
-        self.user_account = community_user_account.CommunityUserAccount()
-        self.public_data = community_public_data.CommunityPublicData()
-        self.successfully_fetched_tentacles_package_urls = False
-        self.silent_auth = False
-        self._community_feed = None
+        self.config: typing.Optional[commons_configuration.Configuration] = config
+        self.backend_url: str = backend_url or identifiers_provider.IdentifiersProvider.BACKEND_URL
+        self.backend_key: str = backend_key or identifiers_provider.IdentifiersProvider.BACKEND_KEY
+        self.configuration_storage: supabase_backend.ASyncConfigurationStorage = supabase_backend.ASyncConfigurationStorage(self.config)
+        self.supabase_client: supabase_backend.CommunitySupabaseClient = self._create_client()
+        self.user_account: community_user_account.CommunityUserAccount = community_user_account.CommunityUserAccount()
+        self.public_data: community_public_data.CommunityPublicData = community_public_data.CommunityPublicData()
+        self.community_bot: community_bot.CommunityBot = community_bot.CommunityBot(self)
+        self.successfully_fetched_tentacles_package_urls: bool = False
+        self.silent_auth: bool = False
+        self._community_feed: typing.Optional[community_feeds.AbstractFeed] = None
 
-        self.initialized_event = None
-        self._login_completed = None
-        self._fetched_private_data = None
-        self._startup_info = None
+        self.initialized_event: typing.Optional[asyncio.Event] = None
+        self._login_completed: typing.Optional[asyncio.Event] = None
+        self._fetched_private_data: typing.Optional[asyncio.Event] = None
+        self._startup_info: typing.Optional[startup_info.StartupInfo] = None
 
-        self._fetch_account_task = None
+        self._fetch_account_task: typing.Optional[asyncio.Task] = None
 
     @staticmethod
     def create(configuration: commons_configuration.Configuration, **kwargs):
@@ -577,6 +579,8 @@ class CommunityAuthentication(authentication.Authenticator):
         await self.supabase_client.aclose()
         if self._community_feed:
             await self._community_feed.stop()
+        if self.community_bot:
+            self.community_bot.clear()
         self.logger.debug("Stopped")
 
     def _update_supports(self, resp_status, json_data):

@@ -243,16 +243,18 @@ async def _get_authenticated_community_if_possible(config, logger):
 
 
 async def _async_load_community_data(community_auth, config, logger, is_first_startup):
-    if constants.IS_CLOUD_ENV and is_first_startup:
-        if not community_auth.is_logged_in():
-            raise authentication.FailedAuthentication(
-                "Impossible to load community data without an authenticated user account"
-            )
-        # auto config
-        if constants.USE_FETCHED_BOT_CONFIG:
-            await _apply_db_bot_config(logger, config, community_auth)
-        else:
-            await _apply_community_startup_info_to_config(logger, config, community_auth)
+    if constants.IS_CLOUD_ENV:
+        if is_first_startup:
+            if not community_auth.is_logged_in():
+                raise authentication.FailedAuthentication(
+                    "Impossible to load community data without an authenticated user account"
+                )
+            # auto config
+            if constants.USE_FETCHED_BOT_CONFIG:
+                await _apply_db_bot_config(logger, config, community_auth)
+            else:
+                await _apply_community_startup_info_to_config(logger, config, community_auth)
+        await community_auth.community_bot.on_started_bot()
 
 
 def _apply_forced_configs(community_auth, logger, config, is_first_startup):

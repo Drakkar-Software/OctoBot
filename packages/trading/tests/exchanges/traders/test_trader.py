@@ -34,7 +34,7 @@ from octobot_commons.asyncio_tools import wait_asyncio_next_cycle
 from octobot_commons.tests.test_config import load_test_config
 from octobot_trading.personal_data.orders import Order
 import octobot_trading.errors as errors
-from octobot_trading.enums import TraderOrderType, TradeOrderSide, TradeOrderType, OrderStatus, \
+from octobot_trading.enums import TraderOrderType, TradeOrderSide, TradeOrderType, OrderStatus, StopReason, \
     ExchangeConstantsPositionColumns, PositionMode, MarginType, TakeProfitStopLossMode, ExchangeSupportedElements, \
     ExchangeConstantsTransactionColumns
 from octobot_trading.exchanges.exchange_manager import ExchangeManager
@@ -60,36 +60,36 @@ from tests.exchanges.traders import future_trader_simulator_with_default_linear
 pytestmark = pytest.mark.asyncio
 
 
+async def init_default(simulated=True, is_future=False):
+    config = load_test_config()
+    exchange_manager = ExchangeManager(config,
+                                        DEFAULT_FUTURE_EXCHANGE_NAME if is_future else DEFAULT_EXCHANGE_NAME)
+    exchange_manager.is_simulated = simulated
+    exchange_manager.is_future = is_future
+    await exchange_manager.initialize(exchange_config_by_exchange=None)
+
+    trader = TraderSimulator(config, exchange_manager)
+    await trader.initialize()
+
+    # set afterwards backtesting attribute to force orders instant initialization
+    exchange_manager.is_backtesting = True
+    assert exchange_manager.trader is trader
+    assert trader.enabled(config) is True
+    assert trader.is_paused(config) is False
+    assert trader.is_enabled is True
+
+    return config, exchange_manager, trader
+
+
+async def stop(exchange_manager):
+    cancel_ccxt_throttle_task()
+    await exchange_manager.stop()
+    # let updaters gracefully shutdown
+    await wait_asyncio_next_cycle()
+
+
 class TestTrader:
     DEFAULT_SYMBOL = "BTC/USDT"
-
-    @staticmethod
-    async def init_default(simulated=True, is_future=False):
-        config = load_test_config()
-        exchange_manager = ExchangeManager(config,
-                                           DEFAULT_FUTURE_EXCHANGE_NAME if is_future else DEFAULT_EXCHANGE_NAME)
-        exchange_manager.is_simulated = simulated
-        exchange_manager.is_future = is_future
-        await exchange_manager.initialize(exchange_config_by_exchange=None)
-
-        trader = TraderSimulator(config, exchange_manager)
-        await trader.initialize()
-
-        # set afterwards backtesting attribute to force orders instant initialization
-        exchange_manager.is_backtesting = True
-        assert exchange_manager.trader is trader
-        assert trader.enabled(config) is True
-        assert trader.is_paused(config) is False
-        assert trader.is_enabled is True
-
-        return config, exchange_manager, trader
-
-    @staticmethod
-    async def stop(exchange_manager):
-        cancel_ccxt_throttle_task()
-        await exchange_manager.stop()
-        # let updaters gracefully shutdown
-        await wait_asyncio_next_cycle()
 
     async def test_init_paused(simulated=True, is_future=False):
         config = load_test_config()
@@ -113,19 +113,19 @@ class TestTrader:
         return config, exchange_manager, trader
 
     async def test_enabled(self):
-        config, exchange_manager, trader_inst = await self.init_default()
-        await self.stop(exchange_manager)
+        config, exchange_manager, trader_inst = await init_default()
+        await stop(exchange_manager)
 
         config[commons_constants.CONFIG_TRADER][commons_constants.CONFIG_ENABLED_OPTION] = True
         assert Trader.enabled(config)
 
         config[commons_constants.CONFIG_TRADER][commons_constants.CONFIG_ENABLED_OPTION] = False
         assert not Trader.enabled(config)
-        await self.stop(exchange_manager)
+        await stop(exchange_manager)
 
     async def test_is_paused(self):
-        config, exchange_manager, trader_inst = await self.init_default()
-        await self.stop(exchange_manager)
+        config, exchange_manager, trader_inst = await init_default()
+        await stop(exchange_manager)
 
         config[commons_constants.CONFIG_TRADING][commons_constants.CONFIG_TRADER_PAUSED] = True
         assert Trader.is_paused(config) is True
@@ -134,7 +134,7 @@ class TestTrader:
         assert Trader.is_paused(config) is False
 
     async def test_can_trade_if_not_paused(self):
-        config, exchange_manager, trader_inst = await self.init_default()
+        config, exchange_manager, trader_inst = await init_default()
 
         trader_inst.set_is_enabled(True)
         assert trader_inst.can_trade_if_not_paused() is True
@@ -160,29 +160,29 @@ class TestTrader:
         exchange_manager.is_trading = True
         assert trader_inst.can_trade_if_not_paused() is False # trader disabled and disabled in config, even if exchange is trading, trader won't be able to trade
 
-        await self.stop(exchange_manager)
+        await stop(exchange_manager)
 
     async def test_get_risk(self):
-        config, exchange_manager, trader_inst = await self.init_default()
-        await self.stop(exchange_manager)
+        config, exchange_manager, trader_inst = await init_default()
+        await stop(exchange_manager)
 
         config[commons_constants.CONFIG_TRADING][commons_constants.CONFIG_TRADER_RISK] = 0
         trader_1 = TraderSimulator(config, exchange_manager)
         assert round(trader_1.risk, 2) == decimal.Decimal(str(commons_constants.CONFIG_TRADER_RISK_MIN))
-        await self.stop(exchange_manager)
+        await stop(exchange_manager)
 
         config[commons_constants.CONFIG_TRADING][commons_constants.CONFIG_TRADER_RISK] = 2
         trader_2 = TraderSimulator(config, exchange_manager)
         assert trader_2.risk == decimal.Decimal(str(commons_constants.CONFIG_TRADER_RISK_MAX))
-        await self.stop(exchange_manager)
+        await stop(exchange_manager)
 
         config[commons_constants.CONFIG_TRADING][commons_constants.CONFIG_TRADER_RISK] = 0.5
         trader_2 = TraderSimulator(config, exchange_manager)
         assert trader_2.risk == decimal.Decimal(str(0.5))
-        await self.stop(exchange_manager)
+        await stop(exchange_manager)
 
     async def test_enabled_or_forced_only_methods(self):
-        _, exchange_manager, trader_inst = await self.init_default()
+        _, exchange_manager, trader_inst = await init_default()
         trader_inst.set_is_enabled(False)
         methods = [
             trader_inst.create_order,
@@ -214,7 +214,7 @@ class TestTrader:
                 await method(*args, force_if_disabled=True, **kwargs)
 
     async def test_enabled_or_forced_only(self):
-        _, exchange_manager, trader_inst = await self.init_default()
+        _, exchange_manager, trader_inst = await init_default()
         
         # Create a mock class with decorated methods that mimics Trader structure
         class MockTraderClass:
@@ -285,10 +285,10 @@ class TestTrader:
         assert "no_args_method" in info_message
         assert "execution is forced" in info_message
         
-        await self.stop(exchange_manager)
+        await stop(exchange_manager)
 
     async def test_cancel_limit_order(self):
-        _, exchange_manager, trader_inst = await self.init_default()
+        _, exchange_manager, trader_inst = await init_default()
         orders_manager = exchange_manager.exchange_personal_data.orders_manager
 
         # Test buy order
@@ -309,10 +309,10 @@ class TestTrader:
 
         assert limit_buy not in orders_manager.get_open_orders()
 
-        await self.stop(exchange_manager)
+        await stop(exchange_manager)
 
     async def test_cancel_stop_order(self):
-        _, exchange_manager, trader_inst = await self.init_default()
+        _, exchange_manager, trader_inst = await init_default()
         orders_manager = exchange_manager.exchange_personal_data.orders_manager
 
         # Test buy order
@@ -333,10 +333,10 @@ class TestTrader:
 
         assert stop_order not in orders_manager.get_open_orders()
 
-        await self.stop(exchange_manager)
+        await stop(exchange_manager)
 
     async def test_cancel_closed_order(self):
-        _, exchange_manager, trader_inst = await self.init_default()
+        _, exchange_manager, trader_inst = await init_default()
 
         # Test buy order
         limit_buy = BuyLimitOrder(trader_inst)
@@ -352,11 +352,11 @@ class TestTrader:
         # 2. re-cancel order: failure (already cancelled)
         assert await trader_inst.cancel_order(limit_buy) is False
 
-        await self.stop(exchange_manager)
+        await stop(exchange_manager)
 
 
     async def test_cancel_order_error(self):
-        _, exchange_manager, trader_inst = await self.init_default()
+        _, exchange_manager, trader_inst = await init_default()
 
         limit_buy = BuyLimitOrder(trader_inst)
         limit_buy.update(order_type=TraderOrderType.SELL_LIMIT,
@@ -419,7 +419,7 @@ class TestTrader:
 
 
     async def test_cancel_open_orders_default_symbol(self):
-        config, exchange_manager, trader_inst = await self.init_default()
+        config, exchange_manager, trader_inst = await init_default()
         orders_manager = exchange_manager.exchange_personal_data.orders_manager
         trades_manager = exchange_manager.exchange_personal_data.trades_manager
         portfolio_manager = exchange_manager.exchange_personal_data.portfolio_manager
@@ -475,10 +475,10 @@ class TestTrader:
             for currency in portfolio_manager.portfolio.portfolio.keys()
         )
 
-        await self.stop(exchange_manager)
+        await stop(exchange_manager)
 
     async def test_cancel_open_orders_multi_symbol(self):
-        config, exchange_manager, trader_inst = await self.init_default()
+        config, exchange_manager, trader_inst = await init_default()
         orders_manager = exchange_manager.exchange_personal_data.orders_manager
         trades_manager = exchange_manager.exchange_personal_data.trades_manager
 
@@ -536,10 +536,10 @@ class TestTrader:
         # added cancelled orders as cancelled trades
         assert len(trades_manager.trades) == 3
 
-        await self.stop(exchange_manager)
+        await stop(exchange_manager)
 
     async def test_cancel_all_open_orders_with_currency(self):
-        config, exchange_manager, trader_inst = await self.init_default()
+        config, exchange_manager, trader_inst = await init_default()
         orders_manager = exchange_manager.exchange_personal_data.orders_manager
         trades_manager = exchange_manager.exchange_personal_data.trades_manager
 
@@ -622,10 +622,10 @@ class TestTrader:
         # added cancelled orders as cancelled trades
         assert len(trades_manager.trades) == 4
 
-        await self.stop(exchange_manager)
+        await stop(exchange_manager)
 
     async def test_close_filled_order(self):
-        config, exchange_manager, trader_inst = await self.init_default()
+        config, exchange_manager, trader_inst = await init_default()
         orders_manager = exchange_manager.exchange_personal_data.orders_manager
         trades_manager = exchange_manager.exchange_personal_data.trades_manager
 
@@ -671,10 +671,10 @@ class TestTrader:
         assert trades_manager.get_trade(market_buy.order_id).status is OrderStatus.FILLED
         assert trades_manager.get_trade(limit_sell.order_id).status is OrderStatus.FILLED
 
-        await self.stop(exchange_manager)
+        await stop(exchange_manager)
 
     async def test_close_filled_buy_limit_order(self):
-        _, exchange_manager, trader_inst = await self.init_default()
+        _, exchange_manager, trader_inst = await init_default()
         portfolio_manager = exchange_manager.exchange_personal_data.portfolio_manager
         initial_portfolio = copy.deepcopy(portfolio_manager.portfolio.portfolio)
         orders_manager = exchange_manager.exchange_personal_data.orders_manager
@@ -702,10 +702,10 @@ class TestTrader:
         assert len(trades_manager.trades) == 1
         assert all(trade.status is limit_buy.status for trade in trades_manager.trades.values())
 
-        await self.stop(exchange_manager)
+        await stop(exchange_manager)
 
     async def test_close_filled_stop_sell_order(self):
-        _, exchange_manager, trader_inst = await self.init_default()
+        _, exchange_manager, trader_inst = await init_default()
         portfolio_manager = exchange_manager.exchange_personal_data.portfolio_manager
         initial_portfolio = copy.deepcopy(portfolio_manager.portfolio.portfolio)
         orders_manager = exchange_manager.exchange_personal_data.orders_manager
@@ -734,10 +734,10 @@ class TestTrader:
         assert len(trades_manager.trades) == 1
         assert all(trade.status is stop_order.status for trade in trades_manager.trades.values())
 
-        await self.stop(exchange_manager)
+        await stop(exchange_manager)
 
     async def test_close_filled_stop_buy_order(self):
-        _, exchange_manager, trader_inst = await self.init_default()
+        _, exchange_manager, trader_inst = await init_default()
         portfolio_manager = exchange_manager.exchange_personal_data.portfolio_manager
         initial_portfolio = copy.deepcopy(portfolio_manager.portfolio.portfolio)
         orders_manager = exchange_manager.exchange_personal_data.orders_manager
@@ -766,10 +766,10 @@ class TestTrader:
         assert len(trades_manager.trades) == 1
         assert all(trade.status is stop_order.status for trade in trades_manager.trades.values())
 
-        await self.stop(exchange_manager)
+        await stop(exchange_manager)
 
     async def test_close_filled_sell_limit_order_one_in_two(self):
-        _, exchange_manager, trader_inst = await self.init_default()
+        _, exchange_manager, trader_inst = await init_default()
         portfolio_manager = exchange_manager.exchange_personal_data.portfolio_manager
         initial_portfolio = copy.copy(portfolio_manager.portfolio)
         orders_manager = exchange_manager.exchange_personal_data.orders_manager
@@ -824,10 +824,10 @@ class TestTrader:
         assert portfolio_manager.portfolio.portfolio["BTC"].available == decimal.Decimal("0.5")
         assert portfolio_manager.portfolio.portfolio["BTC"].total == decimal.Decimal("2")
 
-        await self.stop(exchange_manager)
+        await stop(exchange_manager)
 
     async def test_close_filled_sell_limit_order(self):
-        _, exchange_manager, trader_inst = await self.init_default()
+        _, exchange_manager, trader_inst = await init_default()
         portfolio_manager = exchange_manager.exchange_personal_data.portfolio_manager
         initial_portfolio = copy.copy(portfolio_manager.portfolio)
         orders_manager = exchange_manager.exchange_personal_data.orders_manager
@@ -869,10 +869,10 @@ class TestTrader:
         assert portfolio_manager.portfolio.portfolio["SOL"].available == decimal.Decimal("9.9")
         assert portfolio_manager.portfolio.portfolio["SOL"].total == decimal.Decimal("9.9")
 
-        await self.stop(exchange_manager)
+        await stop(exchange_manager)
 
     async def test_close_filled_order_with_oco_orders(self):
-        config, exchange_manager, trader_inst = await self.init_default()
+        config, exchange_manager, trader_inst = await init_default()
         orders_manager = exchange_manager.exchange_personal_data.orders_manager
         trades_manager = exchange_manager.exchange_personal_data.trades_manager
 
@@ -926,10 +926,10 @@ class TestTrader:
         with pytest.raises(KeyError):
             trades_manager.get_trade(f"{market_buy.order_id}1")
 
-        await self.stop(exchange_manager)
+        await stop(exchange_manager)
 
     async def test_sell_all_currencies(self):
-        _, exchange_manager, trader_inst = await self.init_default()
+        _, exchange_manager, trader_inst = await init_default()
         portfolio_manager = exchange_manager.exchange_personal_data.portfolio_manager
 
         portfolio_manager.portfolio.portfolio["ADA"] = portfolio_assets.SpotAsset(
@@ -969,10 +969,10 @@ class TestTrader:
             # let market orders get filled before stopping exchange
             await wait_asyncio_next_cycle()
 
-        await self.stop(exchange_manager)
+        await stop(exchange_manager)
 
     async def test_sell_all(self):
-        _, exchange_manager, trader_inst = await self.init_default()
+        _, exchange_manager, trader_inst = await init_default()
         portfolio_manager = exchange_manager.exchange_personal_data.portfolio_manager
 
         portfolio_manager.portfolio.portfolio["ADA"] = portfolio_assets.SpotAsset(
@@ -1050,10 +1050,10 @@ class TestTrader:
                 orders = await trader_inst.sell_all(currencies_to_sell=["UNI"])
             assert len(orders) == 0
 
-        await self.stop(exchange_manager)
+        await stop(exchange_manager)
 
     async def test_parse_exchange_order_to_trade_instance(self):
-        _, exchange_manager, trader_inst = await self.init_default()
+        _, exchange_manager, trader_inst = await init_default()
 
         timestamp = time.time()
         order_to_test = Order(trader_inst)
@@ -1075,10 +1075,10 @@ class TestTrader:
         # assert order_to_test.fee == 0.001
         assert order_to_test.total_cost == decimal.Decimal("100.1444215411")
 
-        await self.stop(exchange_manager)
+        await stop(exchange_manager)
 
     async def test_parse_exchange_order_to_order_instance(self):
-        _, exchange_manager, trader_inst = await self.init_default()
+        _, exchange_manager, trader_inst = await init_default()
 
         timestamp = time.time()
 
@@ -1106,10 +1106,10 @@ class TestTrader:
         assert order_to_test.creation_time != constants.ZERO
         assert order_to_test.order_id == "1546541123"
 
-        await self.stop(exchange_manager)
+        await stop(exchange_manager)
 
     async def test_edit_order(self):
-        _, exchange_manager, trader_inst = await self.init_default()
+        _, exchange_manager, trader_inst = await init_default()
         portfolio_manager = exchange_manager.exchange_personal_data.portfolio_manager
         currency, market = commons_symbols.parse_symbol(self.DEFAULT_SYMBOL).base_and_quote()
         assert portfolio_manager.portfolio.portfolio[currency].available == decimal.Decimal(10)
@@ -1159,10 +1159,10 @@ class TestTrader:
         assert portfolio_manager.portfolio.portfolio[market].available == decimal.Decimal(832)
         limit_buy.clear()
 
-        await self.stop(exchange_manager)
+        await stop(exchange_manager)
 
     async def test_bundle_chained_order_with_uncreated_order(self):
-        _, exchange_manager, trader_inst = await self.init_default()
+        _, exchange_manager, trader_inst = await init_default()
 
         base_order = BuyLimitOrder(trader_inst)
         chained_order = SellLimitOrder(trader_inst)
@@ -1198,10 +1198,10 @@ class TestTrader:
         assert chained_order.is_waiting_for_chained_trigger is True
         assert chained_order.is_created() is False
 
-        await self.stop(exchange_manager)
+        await stop(exchange_manager)
 
     async def test_withdraw(self):
-        config, exchange_manager, trader_inst = await self.init_default()
+        config, exchange_manager, trader_inst = await init_default()
         
         asset = "BTC"
         amount = decimal.Decimal("0.1")
@@ -1257,7 +1257,220 @@ class TestTrader:
                 assert "Withdraw funds is not enabled" in str(exc_info.value)
                 _withdraw_on_exchange_mock.assert_not_called()
         
-        await self.stop(exchange_manager)
+        await stop(exchange_manager)
+
+    async def test_stop_all_trading_modes_and_pause_trader_no_trading_modes(self):
+        """Test stop_all_trading_modes_and_pause_trader returns early when no trading modes"""
+        config, exchange_manager, trader_inst = await init_default()
+        
+        # Ensure no trading modes
+        exchange_manager.trading_modes = []
+        
+        # Should return early without error
+        await trader_inst.stop_all_trading_modes_and_pause_trader(None)
+        
+        # Trader should still be disabled
+        assert trader_inst.is_enabled is False
+        
+        await stop(exchange_manager)
+
+    async def test_stop_all_trading_modes_and_pause_trader_with_trading_modes(self):
+        """Test stop_all_trading_modes_and_pause_trader stops all modes and pauses trader"""
+        config, exchange_manager, trader_inst = await init_default()
+        
+        # Create mock trading modes
+        mock_trading_mode_1 = mock.Mock()
+        mock_trading_mode_1.stop_strategy_execution = mock.AsyncMock()
+        mock_trading_mode_2 = mock.Mock()
+        mock_trading_mode_2.stop_strategy_execution = mock.AsyncMock()
+        
+        exchange_manager.trading_modes = [mock_trading_mode_1]
+        
+        # Mock get_trading_modes_of_this_type_on_this_matrix to return our mock trading modes
+        with mock.patch(
+            'octobot_trading.modes.modes_util.get_trading_modes_of_this_type_on_this_matrix',
+            return_value=[mock_trading_mode_1, mock_trading_mode_2]
+        ):
+            await trader_inst.stop_all_trading_modes_and_pause_trader(None)
+        
+        # Verify both trading modes were stopped
+        mock_trading_mode_1.stop_strategy_execution.assert_awaited_once_with(None)
+        mock_trading_mode_2.stop_strategy_execution.assert_awaited_once_with(None)
+        
+        # Trader should be disabled
+        assert trader_inst.is_enabled is False
+        
+        await stop(exchange_manager)
+
+    async def test_stop_all_trading_modes_and_pause_trader_with_stop_condition(self):
+        """Test stop_all_trading_modes_and_pause_trader passes stop_condition to trading modes"""
+        config, exchange_manager, trader_inst = await init_default()
+        
+        # Create mock trading mode
+        mock_trading_mode = mock.Mock()
+        mock_trading_mode.stop_strategy_execution = mock.AsyncMock()
+        
+        exchange_manager.trading_modes = [mock_trading_mode]
+        
+        # Create a mock stop condition
+        mock_stop_condition = mock.Mock()
+        
+        with mock.patch(
+            'octobot_trading.modes.modes_util.get_trading_modes_of_this_type_on_this_matrix',
+            return_value=[mock_trading_mode]
+        ):
+            await trader_inst.stop_all_trading_modes_and_pause_trader(mock_stop_condition)
+        
+        # Verify stop_condition was passed to stop_strategy_execution
+        mock_trading_mode.stop_strategy_execution.assert_awaited_once_with(mock_stop_condition)
+        
+        # Trader should be disabled
+        assert trader_inst.is_enabled is False
+        
+        await stop(exchange_manager)
+
+    async def test_stop_all_trading_modes_and_pause_trader_multiple_exchanges(self):
+        """Test stop_all_trading_modes_and_pause_trader stops modes across all exchanges"""
+        config, exchange_manager, trader_inst = await init_default()
+        
+        # Create mock trading modes from different symbols
+        mock_mode_symbol_1 = mock.Mock()
+        mock_mode_symbol_1.stop_strategy_execution = mock.AsyncMock()
+        mock_mode_symbol_2 = mock.Mock()
+        mock_mode_symbol_2.stop_strategy_execution = mock.AsyncMock()
+        mock_mode_symbol_3 = mock.Mock()
+        mock_mode_symbol_3.stop_strategy_execution = mock.AsyncMock()
+        
+        exchange_manager.trading_modes = [mock_mode_symbol_1]
+        
+        # Simulate multiple trading modes returned from different exchanges
+        with mock.patch(
+            'octobot_trading.modes.modes_util.get_trading_modes_of_this_type_on_this_matrix',
+            return_value=[mock_mode_symbol_1, mock_mode_symbol_2, mock_mode_symbol_3]
+        ):
+            await trader_inst.stop_all_trading_modes_and_pause_trader(None)
+        
+        # All trading modes should be stopped
+        mock_mode_symbol_1.stop_strategy_execution.assert_awaited_once_with(None)
+        mock_mode_symbol_2.stop_strategy_execution.assert_awaited_once_with(None)
+        mock_mode_symbol_3.stop_strategy_execution.assert_awaited_once_with(None)
+        
+        # Trader should be disabled
+        assert trader_inst.is_enabled is False
+        
+        await stop(exchange_manager)
+
+
+class TestScheduleBotStop:
+    """Tests for Trader.schedule_bot_stop"""
+
+    @pytest.fixture
+    def mock_authenticator_for_schedule_bot_stop(self):
+        """Fixture providing mock community_bot and authenticator for schedule_bot_stop tests."""
+        mock_community_bot = mock.Mock()
+        mock_community_bot.schedule_bot_stop = mock.AsyncMock()
+        mock_community_bot.insert_stopped_strategy_execution_log = mock.AsyncMock()
+        mock_authenticator = mock.Mock()
+        mock_authenticator.community_bot = mock_community_bot
+        return mock_community_bot, mock_authenticator
+
+    async def test_schedule_bot_stop_first_call_without_stop_condition(self, mock_authenticator_for_schedule_bot_stop):
+        """Test schedule_bot_stop sets should_stop and calls all required methods when stop_condition is None"""
+        mock_community_bot, mock_authenticator = mock_authenticator_for_schedule_bot_stop
+        config, exchange_manager, trader_inst = await init_default()
+        exchange_manager.trading_modes = []
+
+        with mock.patch(
+            'octobot_trading.exchanges.traders.trader.authentication.Authenticator.instance',
+            return_value=mock_authenticator
+        ):
+            await trader_inst.schedule_bot_stop(StopReason.INVALID_EXCHANGE_CREDENTIALS, None)
+
+        assert trader_inst.should_stop is True
+        assert trader_inst.is_enabled is False
+        mock_community_bot.schedule_bot_stop.assert_awaited_once_with(StopReason.INVALID_EXCHANGE_CREDENTIALS)
+        mock_community_bot.insert_stopped_strategy_execution_log.assert_not_called()
+
+        await stop(exchange_manager)
+
+    async def test_schedule_bot_stop_first_call_with_stop_condition(self, mock_authenticator_for_schedule_bot_stop):
+        """Test schedule_bot_stop calls insert_stopped_strategy_execution_log when stop_condition is provided"""
+        mock_community_bot, mock_authenticator = mock_authenticator_for_schedule_bot_stop
+        config, exchange_manager, trader_inst = await init_default()
+        exchange_manager.trading_modes = []
+
+        mock_stop_condition = mock.Mock()
+        mock_stop_condition.get_match_reason.return_value = "volatility_threshold_exceeded"
+
+        with mock.patch(
+            'octobot_trading.exchanges.traders.trader.authentication.Authenticator.instance',
+            return_value=mock_authenticator
+        ):
+            await trader_inst.schedule_bot_stop(StopReason.STOP_CONDITION_TRIGGERED, mock_stop_condition)
+
+        assert trader_inst.should_stop is True
+        mock_community_bot.schedule_bot_stop.assert_awaited_once_with(StopReason.STOP_CONDITION_TRIGGERED)
+        mock_community_bot.insert_stopped_strategy_execution_log.assert_awaited_once_with("volatility_threshold_exceeded")
+
+        await stop(exchange_manager)
+
+    async def test_schedule_bot_stop_skips_when_already_scheduled(self, mock_authenticator_for_schedule_bot_stop):
+        """Test schedule_bot_stop returns early when should_stop is already True"""
+        mock_community_bot, mock_authenticator = mock_authenticator_for_schedule_bot_stop
+        config, exchange_manager, trader_inst = await init_default()
+        trader_inst.should_stop = True
+        exchange_manager.trading_modes = []
+
+        with mock.patch(
+            'octobot_trading.exchanges.traders.trader.authentication.Authenticator.instance',
+            return_value=mock_authenticator
+        ):
+            with mock.patch.object(trader_inst, 'stop_all_trading_modes_and_pause_trader', mock.AsyncMock()) as stop_mock:
+                await trader_inst.schedule_bot_stop(StopReason.MISSING_MINIMAL_FUNDS, None)
+
+        stop_mock.assert_not_called()
+        mock_community_bot.schedule_bot_stop.assert_not_called()
+
+        await stop(exchange_manager)
+
+    async def test_schedule_bot_stop_continues_when_stop_modes_raises(self, mock_authenticator_for_schedule_bot_stop):
+        """Test schedule_bot_stop continues and calls community_bot even when stop_all_trading_modes raises"""
+        mock_community_bot, mock_authenticator = mock_authenticator_for_schedule_bot_stop
+        config, exchange_manager, trader_inst = await init_default()
+
+        with mock.patch(
+            'octobot_trading.exchanges.traders.trader.authentication.Authenticator.instance',
+            return_value=mock_authenticator
+        ):
+            with mock.patch.object(
+                trader_inst, 'stop_all_trading_modes_and_pause_trader',
+                mock.AsyncMock(side_effect=RuntimeError("stop error"))
+            ):
+                await trader_inst.schedule_bot_stop(StopReason.INVALID_CONFIG, None)
+
+        assert trader_inst.should_stop is True
+        mock_community_bot.schedule_bot_stop.assert_awaited_once_with(StopReason.INVALID_CONFIG)
+
+        await stop(exchange_manager)
+
+    async def test_schedule_bot_stop_continues_when_community_bot_schedule_raises(self, mock_authenticator_for_schedule_bot_stop):
+        """Test schedule_bot_stop does not re-raise when community_bot.schedule_bot_stop raises"""
+        mock_community_bot, mock_authenticator = mock_authenticator_for_schedule_bot_stop
+        mock_community_bot.schedule_bot_stop = mock.AsyncMock(side_effect=ConnectionError("network error"))
+        config, exchange_manager, trader_inst = await init_default()
+        exchange_manager.trading_modes = []
+
+        with mock.patch(
+            'octobot_trading.exchanges.traders.trader.authentication.Authenticator.instance',
+            return_value=mock_authenticator
+        ):
+            await trader_inst.schedule_bot_stop(StopReason.MISSING_API_KEY_TRADING_RIGHTS, None)
+
+        assert trader_inst.should_stop is True
+        assert trader_inst.is_enabled is False
+
+        await stop(exchange_manager)
+
 
 async def test_close_position(future_trader_simulator_with_default_linear):
     _, exchange_manager_inst, trader_inst, default_contract = future_trader_simulator_with_default_linear
