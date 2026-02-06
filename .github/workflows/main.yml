@@ -107,7 +107,7 @@ jobs:
           pytest --ignore=tentacles/Trading/Exchange tentacles -n auto --dist loadfile
         else
           cd ${{ matrix.package }}
-          if [ "${{ matrix.package }}" = "packages/tentacles_manager" ]; then
+          if [ "${{ matrix.package }}" = "packages/tentacles_manager" ] || [ "${{ matrix.package }}" = "packages/node" ]; then
             pytest tests
           else
             pytest tests -n auto --dist loadfile
