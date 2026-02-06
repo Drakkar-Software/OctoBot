@@ -18,6 +18,7 @@ import os
 import sys
 import multiprocessing
 import asyncio
+import traceback
 
 import packaging.version as packaging_version
 
@@ -51,6 +52,7 @@ try:
     import octobot.community.errors
     import octobot.limits as limits
 except ImportError as err:
+    traceback.print_exc()
     print(
         "Error importing OctoBot dependencies, please install OctoBot with the [full] option. "
         "Example: \"pip install -U octobot[full]\" "
