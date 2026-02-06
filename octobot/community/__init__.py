@@ -21,6 +21,8 @@ from octobot.community.errors import (
     BotError,
     BotNotFoundError,
     NoBotDeviceError,
+    MissingDeploymentError,
+    MissingProductsSubscriptionError,
 )
 from octobot.community import models
 from octobot.community.models import (
@@ -100,6 +102,9 @@ from octobot.community.history_backend import (
     ClickhouseHistoricalBackendClient,
     IcebergHistoricalBackendClient,
 )
+from octobot.community.community_bot import (
+    CommunityBot,
+)
 
 __all__ = [
     "RequestError",
@@ -155,4 +160,7 @@ __all__ = [
     "HistoricalBackendClient",
     "ClickhouseHistoricalBackendClient",
     "IcebergHistoricalBackendClient",
+    "CommunityBot",
+    "MissingDeploymentError",
+    "MissingProductsSubscriptionError",
 ]

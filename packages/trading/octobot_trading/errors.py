@@ -462,3 +462,9 @@ class MissingFeeDetailsError(OctoBotTradingError):
     """
     Raised when fee info are not available
     """
+
+
+class StopTriggered(OctoBotTradingError):
+    """
+    Raised when a stop condition is triggered
+    """

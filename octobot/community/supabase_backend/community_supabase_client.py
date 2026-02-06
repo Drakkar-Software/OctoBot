@@ -244,14 +244,14 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
     async def has_login_info(self) -> bool:
         return bool(await self.auth._storage.get_item(self.auth._storage_key))
 
-    async def update_metadata(self, metadata_update) -> dict:
+    async def update_metadata(self, metadata_update) -> dict[str, typing.Any]:
         return (
             await self.auth.update_user({
                 "data": metadata_update
             })
         ).user.model_dump()
 
-    async def get_user(self) -> dict:
+    async def get_user(self) -> dict[str, typing.Any]:
         try:
             user = await self._get_user()
             return user.model_dump()
@@ -305,7 +305,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         )
         return json.loads(json.loads(resp)["message"])
 
-    async def fetch_bot(self, bot_id) -> dict:
+    async def fetch_bot(self, bot_id: str) -> postgrest.types.JSON:
         with jwt_expired_auth_raiser():
             try:
                 # https://postgrest.org/en/stable/references/api/resource_embedding.html#hint-disambiguation
@@ -322,7 +322,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
                     "*,bot_deployment:bot_deployments!bots_current_deployment_id_fkey!inner(*)"
                 ).execute()).data
 
-    async def create_bot(self, deployment_type: enums.DeploymentTypes) -> dict:
+    async def create_bot(self, deployment_type: enums.DeploymentTypes) -> postgrest.types.JSON:
         created_bot = (await self.table("bots").insert({
             enums.BotKeys.USER_ID.value: (await self._get_user()).id
         }).execute()).data[0]
@@ -338,7 +338,9 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         # fetch bot to fetch embed elements (like deployments)
         return await self.fetch_bot(bot_id)
 
-    async def _create_deployment(self, deployment_type, bot_id, version):
+    async def _create_deployment(
+        self, deployment_type: enums.DeploymentTypes, bot_id: str, version: str
+    ) -> postgrest.types.JSON:
         current_time = time.time()
         return (await self.table("bot_deployments").insert({
             enums.BotDeploymentKeys.TYPE.value: deployment_type.value,
@@ -350,31 +352,40 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             )
         }).execute()).data[0]
 
-    async def update_bot(self, bot_id, bot_update) -> dict:
+    async def update_bot(self, bot_id: str, bot_update: dict) -> postgrest.types.JSON:
         await self.table("bots").update(bot_update).eq(enums.BotKeys.ID.value, bot_id).execute()
         # fetch bot to fetch embed elements (like deployments)
         return await self.fetch_bot(bot_id)
 
-    async def update_deployment(self, deployment_id, deployment_update: dict) -> dict:
+    async def update_deployment(self, deployment_id: str, deployment_update: dict) -> postgrest.types.JSON:
         return (await self.table("bot_deployments").update(deployment_update).eq(
             enums.BotDeploymentKeys.ID.value, deployment_id
         ).execute()).data[0]
 
-    def get_deployment_activity_update(self, last_activity: float, next_activity: float) -> dict:
+    def get_deployment_activity_update(self, last_activity: float, next_activity: float) -> dict[str, dict]:
         return {
             enums.BotDeploymentKeys.ACTIVITIES.value: self._get_activities_content(last_activity, next_activity)
         }
 
-    def _get_activities_content(self, last_activity: float, next_activity: float):
+    def _get_activities_content(self, last_activity: float, next_activity: float) -> dict[str, str]:
         return {
             enums.BotDeploymentActivitiesKeys.LAST_ACTIVITY.value: self.get_formatted_time(last_activity),
             enums.BotDeploymentActivitiesKeys.NEXT_ACTIVITY.value: self.get_formatted_time(next_activity)
         }
 
-    async def delete_bot(self, bot_id) -> list:
+    async def delete_bot(self, bot_id: str) -> list:
         return (await self.table("bots").delete().eq(enums.BotKeys.ID.value, bot_id).execute()).data
 
-    async def fetch_deployment_url(self, deployment_url_id) -> dict:
+    async def insert_bot_log(
+        self, bot_id: str, bot_log_type: enums.BotLogType, content: typing.Optional[dict]
+    ) -> postgrest.APIResponse:
+        return await self.table("bot_logs").insert({
+            "bot_id": bot_id,
+            "type": bot_log_type.value,
+            "content": content or None,
+        }).execute()
+
+    async def fetch_deployment_url(self, deployment_url_id: str) -> postgrest.types.JSON:
         try:
             return (await self.table("bot_deployment_urls").select("*").eq(
                 enums.BotDeploymentURLKeys.ID.value, deployment_url_id
@@ -382,11 +393,13 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
         except IndexError:
             raise errors.BotDeploymentURLNotFoundError(deployment_url_id)
 
-    async def fetch_startup_info(self, bot_id) -> dict:
+    async def fetch_startup_info(self, bot_id: str) -> postgrest.types.JSON:
         resp = await self.rpc("get_startup_info", {"bot_id": bot_id}).execute()
         return resp.data[0]
 
-    async def fetch_products(self, category_types: list[str], author_ids: typing.Optional[list[str]]) -> list:
+    async def fetch_products(
+        self, category_types: list[str], author_ids: typing.Optional[list[str]]
+    ) -> list[dict]:
         try:
             sanitized_authors = ",".join(map(
                 postgrest.utils.sanitize_param,
@@ -427,34 +440,41 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             commons_logging.get_logger(__name__).error(f"Error when fetching products: {err}")
             return []
 
-    async def fetch_subscribed_products_urls(self) -> list:
+    async def fetch_subscribed_products_urls(self) -> list[str]:
         resp = await self.rpc("get_subscribed_products_urls").execute()
         return resp.data or []
 
-    async def fetch_bot_products_subscription(self, bot_deployment_id: str) -> dict:
+    async def fetch_bot_products_subscription(self, bot_deployment_id: str) -> postgrest.types.JSON:
         return (await self.table("bot_deployments").select(
             "products_subscription:products_subscriptions!product_subscription_id(id, status, desired_status)"
         ).eq(
             enums.BotDeploymentKeys.ID.value, bot_deployment_id
         ).execute()).data[0]["products_subscription"]
 
-    async def fetch_trades(self, bot_id) -> list:
+    async def update_bot_products_subscription(
+        self, products_subscription_id: str, update: dict[str, typing.Any]
+    ) -> postgrest.APIResponse:
+        return await self.table("products_subscriptions").update(update).eq(
+            enums.ProductsSubscriptionsKeys.ID.value, products_subscription_id
+        ).execute()
+
+    async def fetch_trades(self, bot_id: str) -> list[postgrest.types.JSON]:
         # should be paginated to fetch all trades, will fetch the 1000 first ones only
         return (await self.table("bot_trades").select("*").eq(
             enums.TradeKeys.BOT_ID.value, bot_id
         ).execute()).data
 
-    async def reset_trades(self, bot_id):
+    async def reset_trades(self, bot_id: str) -> list[postgrest.types.JSON]:
         return (await self.table("bot_trades").delete().eq(
             enums.TradeKeys.BOT_ID.value, bot_id
         ).execute()).data
 
-    async def upsert_trades(self, formatted_trades) -> list:
+    async def upsert_trades(self, formatted_trades: list[dict]) -> list[postgrest.types.JSON]:
         return (await self.table("bot_trades").upsert(
             formatted_trades, on_conflict=f"{enums.TradeKeys.TRADE_ID.value},{enums.TradeKeys.TIME.value}"
         ).execute()).data
 
-    async def update_bot_orders(self, bot_id, formatted_orders) -> dict:
+    async def update_bot_orders(self, bot_id: str, formatted_orders: list[dict]) -> postgrest.types.JSON:
         bot_update = {
             enums.BotKeys.ORDERS.value: formatted_orders
         }
@@ -462,7 +482,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             bot_id, bot_update
         )
 
-    async def update_bot_positions(self, bot_id, formatted_positions) -> dict:
+    async def update_bot_positions(self, bot_id: str, formatted_positions: list[dict]) -> postgrest.types.JSON:
         bot_update = {
             enums.BotKeys.POSITIONS.value: formatted_positions
         }
@@ -928,7 +948,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             )
         )
 
-    async def fetch_exchanges_by_credential_ids(self, exchange_credential_ids: list) -> dict:
+    async def fetch_exchanges_by_credential_ids(self, exchange_credential_ids: list) -> dict[str, dict]:
         exchanges = (await self.table("exchange_credentials").select(
             "id,"
             f"exchange:exchanges("
@@ -997,7 +1017,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             enums.PortfolioKeys.ID.value, portfolio_update[enums.PortfolioKeys.ID.value]
         ).execute()).data
 
-    async def switch_portfolio(self, new_portfolio) -> dict:
+    async def switch_portfolio(self, new_portfolio) -> postgrest.types.JSON:
         # use a new current portfolio for the given bot
         bot_id = new_portfolio[enums.PortfolioKeys.BOT_ID.value]
         inserted_portfolio = (await self.table("bot_portfolios").insert(new_portfolio).execute()).data[0]
@@ -1037,7 +1057,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
     async def fetch_gpt_signals_history(
         self, exchange: typing.Union[str, None], symbol: str, time_frame: commons_enums.TimeFrames,
         first_open_time: float, last_open_time: float, version: str
-    ) -> dict:
+    ) -> dict[float, postgrest.types.JSON]:
         matcher = {
             "symbol": symbol,
             "time_frame": time_frame.value,
@@ -1179,7 +1199,7 @@ class CommunitySupabaseClient(supabase_client.AuthenticatedAsyncSupabaseClient):
             )
         return total_elements
 
-    def _format_gpt_signals(self, signals: list):
+    def _format_gpt_signals(self, signals: list[postgrest.types.JSON]) -> dict[float, postgrest.types.JSON]:
         return {
             self.get_parsed_time(signal["timestamp"]).timestamp(): signal["signal"]["content"]
             for signal in signals
