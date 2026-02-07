@@ -147,7 +147,7 @@ class InterfaceProducer(octobot_channels.OctoBotChannelProducer):
                tentacles_manager_api.is_tentacle_activated_in_tentacles_setup_config(
                    self.octobot.tentacles_setup_config,
                    interface_class.get_name()) and \
-               all(service.get_is_enabled(self.octobot.config) for service in interface_class.REQUIRED_SERVICES) and \
+               all(service.get_is_enabled(self.octobot.config) for service in (interface_class.REQUIRED_SERVICES or [])) and \
                (not backtesting_enabled or (
                            backtesting_enabled and service_api.is_enabled_in_backtesting(interface_class)))
 

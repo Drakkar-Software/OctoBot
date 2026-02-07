@@ -14,21 +14,4 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
-import logging
-
-from octobot_node.config import settings
-from octobot_node.scheduler.scheduler import Scheduler
-from octobot_node.scheduler.consumer import SchedulerConsumer
-
-scheduler_logger = logging.getLogger(__name__)
-
-SCHEDULER: Scheduler = Scheduler()
-SCHEDULER.create()
-CONSUMER: SchedulerConsumer = SchedulerConsumer(SCHEDULER)
-
-# Import tasks to register them with the scheduler
-from octobot_node.scheduler import tasks  # noqa: F401
-
-# Start the consumer automatically when the module is imported
-if settings.SCHEDULER_WORKERS > 0:
-    CONSUMER.start()
+from octobot_node.models import *

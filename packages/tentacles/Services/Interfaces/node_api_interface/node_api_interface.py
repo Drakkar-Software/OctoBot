@@ -14,7 +14,6 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 from contextlib import asynccontextmanager
-import os
 
 import sentry_sdk
 import uvicorn
@@ -24,13 +23,13 @@ from fastapi.routing import APIRoute
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.cors import CORSMiddleware
 
-import octobot_commons.constants as commons_constants
 import octobot_services.constants as services_constants
 import octobot_services.interfaces as services_interfaces
+import tentacles.Services.Services_bases as Service_bases
 from octobot_node import PROJECT_NAME
-from tentacles.Services.Interfaces.node_api.api.main import build_api_router
-from tentacles.Services.Interfaces.node_api.core.config import settings
-from tentacles.Services.Interfaces.node_api.utils import get_dist_directory
+from tentacles.Services.Interfaces.node_api_interface.api.main import build_api_router
+from octobot_node.config import settings
+from tentacles.Services.Interfaces.node_api_interface.utils import get_dist_directory
 
 
 def custom_generate_unique_id(route: APIRoute) -> str:
@@ -41,7 +40,7 @@ def custom_generate_unique_id(route: APIRoute) -> str:
 
 
 class NodeApiInterface(services_interfaces.AbstractInterface):
-    DEFAULT_PORT = 8000
+    REQUIRED_SERVICES = [Service_bases.NodeApiService]
 
     def __init__(self, config):
         super().__init__(config)
@@ -50,12 +49,28 @@ class NodeApiInterface(services_interfaces.AbstractInterface):
         self.app = None
         self.host = None
         self.port = None
-        self._init_api_settings()
+        self.node_api_service = None
 
     async def _inner_start(self) -> bool:
         return self.threaded_start()
 
     async def _async_run(self) -> bool:
+        if self.node_api_service is None:
+            self.node_api_service = Service_bases.NodeApiService.instance()
+        self.host = self.node_api_service.get_bind_host()
+        self.port = self.node_api_service.get_bind_port()
+        admin_username = self.node_api_service.get_admin_username()
+        admin_password = self.node_api_service.get_admin_password()
+        node_sqlite_file = self.node_api_service.get_node_sqlite_file()
+        node_redis_url = self.node_api_service.get_node_redis_url()
+        if admin_username:
+            settings.ADMIN_USERNAME = admin_username
+        if admin_password:
+            settings.ADMIN_PASSWORD = admin_password
+        if node_sqlite_file:
+            settings.SCHEDULER_SQLITE_FILE = node_sqlite_file
+        if node_redis_url is not None:
+            settings.SCHEDULER_REDIS_URL = node_redis_url
         host = self.host
         port = self.port
         self.app = self.create_app()
@@ -67,27 +82,6 @@ class NodeApiInterface(services_interfaces.AbstractInterface):
     async def stop(self):
         if self.server is not None:
             self.server.should_exit = True
-
-    @staticmethod
-    def enable(config, is_enabled, associated_config=services_constants.CONFIG_INTERFACES_NODE_WEB):
-        if services_constants.CONFIG_INTERFACES not in config:
-            config[services_constants.CONFIG_INTERFACES] = {}
-        if associated_config not in config[services_constants.CONFIG_INTERFACES]:
-            config[services_constants.CONFIG_INTERFACES][associated_config] = {}
-        config[services_constants.CONFIG_INTERFACES][associated_config][
-            commons_constants.CONFIG_ENABLED_OPTION
-        ] = is_enabled
-
-    @staticmethod
-    def is_enabled(config, associated_config=services_constants.CONFIG_INTERFACES_NODE_WEB):
-        return services_constants.CONFIG_INTERFACES in config \
-               and associated_config in config[services_constants.CONFIG_INTERFACES] \
-               and commons_constants.CONFIG_ENABLED_OPTION in config[services_constants.CONFIG_INTERFACES][
-                   associated_config
-               ] \
-               and config[services_constants.CONFIG_INTERFACES][associated_config][
-                   commons_constants.CONFIG_ENABLED_OPTION
-               ]
 
     @classmethod
     def create_app(cls) -> FastAPI:
@@ -165,23 +159,3 @@ class NodeApiInterface(services_interfaces.AbstractInterface):
                 raise HTTPException(status_code=404, detail="Frontend build not found")
 
         return app
-
-    def _init_api_settings(self):
-        config_services = self.config.get(services_constants.CONFIG_CATEGORY_SERVICES, {})
-        node_web_config = config_services.get(services_constants.CONFIG_NODE_WEB, {})
-
-        try:
-            self.host = node_web_config[services_constants.CONFIG_NODE_WEB_IP]
-        except KeyError:
-            self.host = services_constants.DEFAULT_SERVER_IP
-        try:
-            self.port = int(node_web_config[services_constants.CONFIG_NODE_WEB_PORT])
-        except KeyError:
-            self.port = self.DEFAULT_PORT
-
-        env_host = os.getenv(services_constants.ENV_NODE_WEB_ADDRESS)
-        env_port = os.getenv(services_constants.ENV_NODE_WEB_PORT)
-        if env_host:
-            self.host = env_host
-        if env_port:
-            self.port = int(env_port)

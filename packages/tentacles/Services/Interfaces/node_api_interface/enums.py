@@ -14,15 +14,4 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
-from fastapi import APIRouter
-
-from tentacles.Services.Interfaces.node_api.api.routes import login, nodes, users, tasks
-
-
-def build_api_router() -> APIRouter:
-    api_router = APIRouter()
-    api_router.include_router(login.router)
-    api_router.include_router(users.router, prefix="/users")
-    api_router.include_router(tasks.router, prefix="/tasks")
-    api_router.include_router(nodes.router, prefix="/nodes")
-    return api_router
+from octobot_node.enums import *

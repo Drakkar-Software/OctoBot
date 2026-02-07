@@ -149,7 +149,7 @@ python start.py --master
 Or directly with uvicorn:
 
 ```bash
-uvicorn tentacles.Services.Interfaces.node_api.node_api_interface:NodeApiInterface.create_app --factory --host 0.0.0.0 --port 8000
+uvicorn tentacles.Services.Interfaces.node_api_interface.node_api_interface:NodeApiInterface.create_app --factory --host 0.0.0.0 --port 8000
 ```
 
 - By default, the server runs on [http://localhost:8000](http://localhost:8000).
