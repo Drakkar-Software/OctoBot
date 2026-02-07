@@ -1,7 +1,0 @@
-{
-  "version": "1.2.0",
-  "origin_package": "OctoBot-Default-Tentacles",
-  "tentacles": ["NodeApiInterface"],
-  "tentacles-requirements": [],
-  "build": "python -c \"import json; from tentacles.Services.Interfaces.node_api.node_api_interface import NodeApiInterface; print(json.dumps(NodeApiInterface.create_app().openapi()))\" > ../node_web_interface/openapi.json"
-}

@@ -14,21 +14,15 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
-import logging
+from typing import Any
 
-from octobot_node.config import settings
-from octobot_node.scheduler.scheduler import Scheduler
-from octobot_node.scheduler.consumer import SchedulerConsumer
+from fastapi import APIRouter
 
-scheduler_logger = logging.getLogger(__name__)
+from tentacles.Services.Interfaces.node_api_interface.api.deps import CurrentUser
+from octobot_node.models import User
 
-SCHEDULER: Scheduler = Scheduler()
-SCHEDULER.create()
-CONSUMER: SchedulerConsumer = SchedulerConsumer(SCHEDULER)
+router = APIRouter(tags=["users"])
 
-# Import tasks to register them with the scheduler
-from octobot_node.scheduler import tasks  # noqa: F401
-
-# Start the consumer automatically when the module is imported
-if settings.SCHEDULER_WORKERS > 0:
-    CONSUMER.start()
+@router.get("/me", response_model=User)
+def read_user_me(current_user: CurrentUser) -> Any:
+    return current_user

@@ -86,7 +86,7 @@ class TestCSVEncryption:
         generate_and_save_keys(keys_file)
         
         # Set keys in settings
-        from tentacles.Services.Interfaces.node_api.core.config import settings
+        from octobot_node.config import settings
         from octobot_node.tools.csv_utils import set_keys_in_settings
         set_keys_in_settings(keys_file)
         

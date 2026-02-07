@@ -27,7 +27,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from tentacles.Services.Interfaces.node_api.core.config import settings
+from octobot_node.config import settings
 from octobot_node.tools.csv_utils import (
     decrypt_csv_file,
     load_keys,

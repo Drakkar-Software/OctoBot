@@ -17,6 +17,8 @@ import octobot_services.interfaces as services_interfaces
 
 
 class NodeWebInterface(services_interfaces.AbstractInterface):
+    REQUIRED_SERVICES = False
+
     async def _async_run(self) -> bool:
         return True
 

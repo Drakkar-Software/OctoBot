@@ -17,7 +17,7 @@
 import logging
 import threading
 
-from tentacles.Services.Interfaces.node_api.core.config import settings
+from octobot_node.config import settings
 
 from octobot_node.scheduler.scheduler import Scheduler
 from huey.constants import WORKER_THREAD

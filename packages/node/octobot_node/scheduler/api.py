@@ -18,7 +18,7 @@ import logging
 import uuid
 from typing import Any
 
-from tentacles.Services.Interfaces.node_api.core.config import settings
+from octobot_node.config import settings
 from octobot_node.scheduler import SCHEDULER, CONSUMER
 
 logger = logging.getLogger(__name__)

@@ -18,8 +18,8 @@ import pytest
 import mock
 
 from octobot_node.scheduler.task_context import encrypted_task
-from tentacles.Services.Interfaces.node_api.models import Task
-from tentacles.Services.Interfaces.node_api.enums import TaskResultKeys
+from octobot_node.models import Task
+from octobot_node.enums import TaskResultKeys
 
 
 class TestEncryptedTask:

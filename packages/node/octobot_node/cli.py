@@ -35,7 +35,7 @@ def start_server(args):
     port = args.port or 8000
     
     # This must be done before the scheduler module is imported
-    from tentacles.Services.Interfaces.node_api.core.config import settings
+    from octobot_node.config import settings
     
     if args.master:
         settings.IS_MASTER_MODE = True
@@ -72,10 +72,11 @@ def start_server(args):
         host = "127.0.0.1"
 
     # Ensure settings are loaded
-    from tentacles.Services.Interfaces.node_api.node_api_interface import NodeApiInterface
+    from octobot_tentacles_manager.api.inspector import get_tentacle_class_from_string
     
+    node_api_interface = get_tentacle_class_from_string("NodeApiInterface")
     uvicorn.run(
-        NodeApiInterface.create_app(),
+        node_api_interface.create_app(),
         host=host,
         port=port,
         log_level="info",
