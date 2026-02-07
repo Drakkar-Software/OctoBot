@@ -1,0 +1,7 @@
+{
+  "version": "1.2.0",
+  "origin_package": "OctoBot-Default-Tentacles",
+  "tentacles": ["NodeWebInterface"],
+  "tentacles-requirements": [],
+  "build": "npm install && npm run generate-client && npm run build"
+}

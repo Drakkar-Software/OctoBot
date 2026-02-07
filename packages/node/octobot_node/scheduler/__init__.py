@@ -16,7 +16,7 @@
 
 import logging
 
-from octobot_node.app.core.config import settings
+from tentacles.Services.Interfaces.node_api.core.config import settings
 from octobot_node.scheduler.scheduler import Scheduler
 from octobot_node.scheduler.consumer import SchedulerConsumer
 

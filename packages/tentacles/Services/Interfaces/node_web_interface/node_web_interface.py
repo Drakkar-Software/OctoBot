@@ -1,4 +1,4 @@
-#  Drakkar-Software OctoBot-Node
+#  Drakkar-Software OctoBot-Interfaces
 #  Copyright (c) Drakkar-Software, All rights reserved.
 #
 #  This library is free software; you can redistribute it and/or
@@ -13,3 +13,12 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import octobot_services.interfaces as services_interfaces
+
+
+class NodeWebInterface(services_interfaces.AbstractInterface):
+    async def _async_run(self) -> bool:
+        return True
+
+    async def stop(self):
+        return None

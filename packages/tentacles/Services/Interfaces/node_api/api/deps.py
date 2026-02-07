@@ -20,8 +20,8 @@ from typing import Annotated
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 
-from octobot_node.app.core.config import settings
-from octobot_node.app.models import User
+from tentacles.Services.Interfaces.node_api.core.config import settings
+from tentacles.Services.Interfaces.node_api.models import User
 
 security_basic = HTTPBasic()
 

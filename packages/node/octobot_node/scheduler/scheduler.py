@@ -21,9 +21,9 @@ from typing import Optional, Any
 import logging
 import pickle
 import json
-from octobot_node.app.models import Task, TaskType, TaskStatus
-from octobot_node.app.core.config import settings
-from octobot_node.app.enums import TaskResultKeys
+from tentacles.Services.Interfaces.node_api.models import Task, TaskType, TaskStatus
+from tentacles.Services.Interfaces.node_api.core.config import settings
+from tentacles.Services.Interfaces.node_api.enums import TaskResultKeys
 
 DEFAULT_NAME = "octobot_node"
 

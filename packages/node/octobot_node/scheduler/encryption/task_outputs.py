@@ -18,7 +18,7 @@ import json
 import base64
 
 from typing import Tuple, Optional
-from octobot_node.app.core.config import settings
+from tentacles.Services.Interfaces.node_api.core.config import settings
 from octobot_node.scheduler.encryption import (
     ENCRYPTED_AES_KEY_B64_METADATA_KEY, 
     IV_B64_METADATA_KEY, 

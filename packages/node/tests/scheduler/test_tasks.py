@@ -22,8 +22,8 @@ import json
 import octobot_node.scheduler
 import octobot_node.scheduler.tasks
 import octobot_node.scheduler.octobot_lib
-import octobot_node.app.models
-import octobot_node.app.enums
+import tentacles.Services.Interfaces.node_api.models
+import tentacles.Services.Interfaces.node_api.enums
 
 RUN_OCTOBOT_LIB_ELEMENTS_TESTS = True
 try:
@@ -55,7 +55,7 @@ def reschedule_maybe(result):
 
 @pytest.fixture
 def schedule_task():
-    return octobot_node.app.models.Task(
+    return tentacles.Services.Interfaces.node_api.models.Task(
         name="test_task",
         description="Test task",
         content=json.dumps(
@@ -71,7 +71,7 @@ def schedule_task():
                 },
             }
         ),
-        type=octobot_node.app.models.TaskType.EXECUTE_ACTIONS.value,
+        type=tentacles.Services.Interfaces.node_api.models.TaskType.EXECUTE_ACTIONS.value,
     )
 
 @pytest.fixture
@@ -163,8 +163,8 @@ class TestHueyTasks:
         assert mocked_octobot_action_job.call_count == 1
 
     def _assert_task_result(self, result: dict, expected_result: dict):
-        assert result[octobot_node.app.enums.TaskResultKeys.STATUS.value] == octobot_node.app.models.TaskStatus.COMPLETED.value
-        task_result = result[octobot_node.app.enums.TaskResultKeys.RESULT.value]
+        assert result[tentacles.Services.Interfaces.node_api.enums.TaskResultKeys.STATUS.value] == tentacles.Services.Interfaces.node_api.models.TaskStatus.COMPLETED.value
+        task_result = result[tentacles.Services.Interfaces.node_api.enums.TaskResultKeys.RESULT.value]
         encrypted_result = not isinstance(task_result, dict)
         if encrypted_result:
             # result is encrypted, check it's a string and it's not empty
@@ -173,9 +173,9 @@ class TestHueyTasks:
         else:
             assert task_result == expected_result
         if encrypted_result:
-            assert isinstance(json.loads(result[octobot_node.app.enums.TaskResultKeys.METADATA.value]), dict)
-            assert result[octobot_node.app.enums.TaskResultKeys.METADATA.value]
+            assert isinstance(json.loads(result[tentacles.Services.Interfaces.node_api.enums.TaskResultKeys.METADATA.value]), dict)
+            assert result[tentacles.Services.Interfaces.node_api.enums.TaskResultKeys.METADATA.value]
         else:
-            assert result[octobot_node.app.enums.TaskResultKeys.METADATA.value] is None
-        assert result[octobot_node.app.enums.TaskResultKeys.TASK.value] == {"name": "test_task"}
-        assert result[octobot_node.app.enums.TaskResultKeys.ERROR.value] is None
+            assert result[tentacles.Services.Interfaces.node_api.enums.TaskResultKeys.METADATA.value] is None
+        assert result[tentacles.Services.Interfaces.node_api.enums.TaskResultKeys.TASK.value] == {"name": "test_task"}
+        assert result[tentacles.Services.Interfaces.node_api.enums.TaskResultKeys.ERROR.value] is None

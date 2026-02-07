@@ -2,7 +2,7 @@ import { defineConfig } from "@hey-api/openapi-ts"
 
 export default defineConfig({
   input: "./openapi.json",
-  output: "./octobot_node/ui/src/client",
+  output: "./src/client",
 
   plugins: [
     "legacy/axios",

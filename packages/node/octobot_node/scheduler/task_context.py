@@ -20,9 +20,9 @@ import json
 from typing import Any
 
 from octobot_node.scheduler.encryption import decrypt_task_content, encrypt_task_result
-from octobot_node.app.core.config import settings
-from octobot_node.app.models import Task
-from octobot_node.app.enums import TaskResultKeys
+from tentacles.Services.Interfaces.node_api.core.config import settings
+from tentacles.Services.Interfaces.node_api.models import Task
+from tentacles.Services.Interfaces.node_api.enums import TaskResultKeys
 from octobot_node.scheduler.encryption import MissingMetadataError
 
 logger = logging.getLogger(__name__)
