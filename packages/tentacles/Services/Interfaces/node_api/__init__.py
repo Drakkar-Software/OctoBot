@@ -13,3 +13,7 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
+
+import octobot_commons.constants as commons_constants
+if not commons_constants.USE_MINIMAL_LIBS:
+    from .node_api_interface import NodeApiInterface

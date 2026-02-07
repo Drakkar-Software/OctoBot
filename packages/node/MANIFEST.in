@@ -2,5 +2,3 @@ include README.md
 include LICENSE
 include CHANGELOG.md
 include requirements.txt
-
-recursive-include octobot_node/ui/dist *

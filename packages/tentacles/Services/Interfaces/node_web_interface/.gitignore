@@ -239,7 +239,7 @@ openapi.json
 
 
 # Don't ignore the frontend lib directory
-!octobot_node/ui/src/lib
+!src/lib
 
 *.db
 *.db-*

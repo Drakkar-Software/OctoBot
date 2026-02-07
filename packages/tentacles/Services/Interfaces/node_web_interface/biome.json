@@ -6,9 +6,9 @@
       "**",
       "!**/dist/**/*",
       "!**/node_modules/**/*",
-      "!**/octobot_node/ui/src/routeTree.gen.ts",
-      "!**/octobot_node/ui/src/client/**/*",
-      "!**/octobot_node/ui/src/components/ui/**/*"
+      "!**/src/routeTree.gen.ts",
+      "!**/src/client/**/*",
+      "!**/src/components/ui/**/*"
     ]
   },
   "linter": {

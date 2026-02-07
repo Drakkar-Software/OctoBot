@@ -24,9 +24,9 @@ import time
 
 from octobot_node.scheduler import SCHEDULER
 from octobot_node.scheduler.task_context import encrypted_task
-from octobot_node.app.models import Task, TaskType
-from octobot_node.app.enums import TaskResultKeys
-from octobot_node.app.models import TaskStatus
+from tentacles.Services.Interfaces.node_api.models import Task, TaskType
+from tentacles.Services.Interfaces.node_api.enums import TaskResultKeys
+from tentacles.Services.Interfaces.node_api.models import TaskStatus
 
 import octobot_node.scheduler.octobot_lib as octobot_lib
 

@@ -14,15 +14,16 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Any
+from typing import Any, List
 
 from fastapi import APIRouter
 
-from octobot_node.app.api.deps import CurrentUser
-from octobot_node.app.models import User
+from tentacles.Services.Interfaces.node_api.models import Node
+from octobot_node.scheduler.api import get_node_status
 
-router = APIRouter(tags=["users"])
+router = APIRouter(tags=["nodes"])
 
-@router.get("/me", response_model=User)
-def read_user_me(current_user: CurrentUser) -> Any:
-    return current_user
+@router.get("/me", response_model=Node)
+def get_current_node() -> Any:
+    status = get_node_status()
+    return Node(**status)

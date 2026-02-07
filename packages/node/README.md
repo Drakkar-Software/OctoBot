@@ -5,7 +5,7 @@
 [![YouTube](https://img.shields.io/youtube/channel/views/UC2YAaBeWY8y_Olqs79b_X8A?label=youtube&style=social)](https://www.youtube.com/@octobot1134)
 
 <p align="middle">
-<img src="public/assets/images/octobot_node_256.png" height="256" alt="OctoBot Node logo">
+<img src="../tentacles/Services/Interfaces/node_web_interface/public/assets/images/octobot_node_256.png" height="256" alt="OctoBot Node logo">
 </p>
 
 <p align="center">
@@ -122,16 +122,16 @@ After building, start the FastAPI server. The static Web UI will be available at
 If you plan to actively develop or modify the Web UI, use the dynamic development mode. This provides hot-reload and the latest changes instantly.
 To run the Web UI in development mode, use:
 ```bash
-npm run ui:dev
+npm --prefix ../tentacles/Services/Interfaces/node_web_interface run ui:dev
 ```
 This will start the development server, typically available at [http://localhost:3000](http://localhost:3000). You can access the UI separately while developing.
 For API integration during development, make sure your FastAPI backend server is running simultaneously. The development server will proxy API requests to the backend as configured.
 
 ### OpenAPI
 
-Whenever you update or add routes in `octobot_node/app/api`, you need to regenerate the [OpenAPI specification](https://github.com/OAI/OpenAPI-Specification) and the UI OpenAPI client. This can be done easily with the provided script:
+Whenever you update or add routes in `tentacles/Services/Interfaces/node_api/api`, you need to regenerate the [OpenAPI specification](https://github.com/OAI/OpenAPI-Specification) and the UI OpenAPI client. This can be done easily with the provided script:
 ```bash
-bash ./generate-client.sh
+bash ../tentacles/Services/Interfaces/node_web_interface/generate-client.sh
 ```
 
 ### API Server
@@ -149,7 +149,7 @@ python start.py --master
 Or directly with uvicorn:
 
 ```bash
-uvicorn octobot_node.app.main:app --host 0.0.0.0 --port 8000
+uvicorn tentacles.Services.Interfaces.node_api.node_api_interface:NodeApiInterface.create_app --factory --host 0.0.0.0 --port 8000
 ```
 
 - By default, the server runs on [http://localhost:8000](http://localhost:8000).

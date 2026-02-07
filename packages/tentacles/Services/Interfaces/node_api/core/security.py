@@ -20,7 +20,7 @@ from typing import Any
 import jwt
 from passlib.context import CryptContext
 
-from octobot_node.app.core.config import settings
+from tentacles.Services.Interfaces.node_api.core.config import settings
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 

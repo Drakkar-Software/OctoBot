@@ -5,7 +5,6 @@
   "type": "module",
   "scripts": {
     "ui:dev": "vite",
-    "api:dev": "fastapi run --workers 4 octobot_node/app/main.py",
     "build": "tsc -p tsconfig.build.json && vite build",
     "lint": "biome check --write --unsafe --no-errors-on-unmatched --files-ignore-unknown=true ./",
     "preview": "vite preview",

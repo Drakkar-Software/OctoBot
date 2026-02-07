@@ -35,7 +35,7 @@ from octobot_node.scheduler.encryption.task_outputs import (
 )
 
 ################################################################################
-# This file is used to test the functions inside octobot_node/ui/src/lib/csv.ts
+# This file is used to test the functions inside node_web_interface/src/lib/csv.ts
 # It provides Python implementations of the CSV column merging logic to verify
 # that the TypeScript implementation behaves correctly.
 ################################################################################
@@ -110,7 +110,7 @@ def set_key_from_file_or_env(
         IOError: If a key file cannot be read
         ValueError: If neither file path nor environment variable is available
     """
-    from octobot_node.app.core.config import settings
+    from tentacles.Services.Interfaces.node_api.core.config import settings
     
     if key_file_path:
         key = load_key_file(key_file_path)
@@ -376,12 +376,12 @@ def set_key_from_string(key_string: str, settings_key_name: str) -> None:
         key_string: Key as string (PEM format)
         settings_key_name: Name of the settings attribute to set
     """
-    from octobot_node.app.core.config import settings
+    from tentacles.Services.Interfaces.node_api.core.config import settings
     setattr(settings, settings_key_name, key_string.encode('utf-8') if key_string else None)
 
 
 def set_keys_in_settings(keys_file_path: str = DEFAULT_KEYS_FILE) -> None:
-    from octobot_node.app.core.config import settings
+    from tentacles.Services.Interfaces.node_api.core.config import settings
     
     keys = load_keys(keys_file_path)
     
@@ -407,7 +407,7 @@ def encrypt_csv_content(
     csv_rows: List[Dict[str, str]],
     content_column: str = "content"
 ) -> List[Dict[str, str]]:
-    from octobot_node.app.core.config import settings
+    from tentacles.Services.Interfaces.node_api.core.config import settings
     
     if settings.TASKS_INPUTS_RSA_PUBLIC_KEY is None or settings.TASKS_INPUTS_ECDSA_PRIVATE_KEY is None:
         raise ValueError(
@@ -525,7 +525,7 @@ def merge_and_encrypt_csv(
     if keys_file_path:
         set_keys_in_settings(keys_file_path)
     elif keys:
-        from octobot_node.app.core.config import settings
+        from tentacles.Services.Interfaces.node_api.core.config import settings
         
         def to_bytes(key_value: str) -> bytes:
             if isinstance(key_value, bytes):
@@ -561,7 +561,7 @@ def encrypt_result_csv_content(
     csv_rows: List[Dict[str, str]],
     result_column: str = "result"
 ) -> List[Dict[str, str]]:
-    from octobot_node.app.core.config import settings
+    from tentacles.Services.Interfaces.node_api.core.config import settings
     
     if settings.TASKS_OUTPUTS_RSA_PUBLIC_KEY is None or settings.TASKS_OUTPUTS_ECDSA_PRIVATE_KEY is None:
         raise ValueError(

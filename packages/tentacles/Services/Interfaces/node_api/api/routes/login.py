@@ -18,8 +18,8 @@ from typing import Any
 
 from fastapi import APIRouter
 
-from octobot_node.app.api.deps import CurrentUser
-from octobot_node.app.models import User
+from tentacles.Services.Interfaces.node_api.api.deps import CurrentUser
+from tentacles.Services.Interfaces.node_api.models import User
 
 router = APIRouter(tags=["login"])
 

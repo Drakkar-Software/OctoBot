@@ -18,7 +18,7 @@ from typing import Any, List, Tuple
 import uuid
 from fastapi import APIRouter
 
-from octobot_node.app.models import Task
+from tentacles.Services.Interfaces.node_api.models import Task
 from octobot_node.scheduler.api import get_all_tasks, get_task_metrics
 from octobot_node.scheduler.tasks import trigger_task
 
