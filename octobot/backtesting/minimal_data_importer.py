@@ -52,6 +52,9 @@ class MinimalDataImporter(octobot_backtesting.importers.ExchangeDataImporter):
         # nothing to do
         pass
 
+    async def stop(self) -> None:
+        self.should_stop = True
+
     async def get_data_timestamp_interval(self, time_frame=None):
         return self._min_timestamp, self._max_timestamp
 
