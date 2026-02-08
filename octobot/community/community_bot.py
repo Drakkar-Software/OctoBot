@@ -22,8 +22,7 @@ import octobot.community.supabase_backend.enums as supabase_enums
 import octobot.community.models.formatters as formatters
 import octobot.constants
 import octobot_commons.logging as commons_logging
-
-import octobot_trading.enums as trading_enums
+import octobot_commons.enums as commons_enums
 
 if typing.TYPE_CHECKING:
     import octobot.community.authentication as community_authentication
@@ -93,7 +92,7 @@ class CommunityBot:
 
     @initialized_bot_id
     async def schedule_bot_stop(
-        self, stop_reason: typing.Optional[trading_enums.StopReason]
+        self, stop_reason: typing.Optional[commons_enums.StopReason]
     ):
         if stop_reason is not None:
             await self._update_deployment_error_status(

@@ -90,6 +90,15 @@
         <script src="{{ url_for('static', filename='js/common/feedback.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
         <script src="https://tally.so/widgets/embed.js"></script>
         <script src="{{ url_for('static', filename='js/components/navbar.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+        {{ m_user_details.user_details(
+            USER_EMAIL,
+            USER_SELECTED_BOT_ID,
+            has_open_source_package,
+            PROFILE_NAME,
+            TRADING_MODE_NAME,
+            EXCHANGE_NAMES,
+            IS_REAL_TRADING
+        ) }}
         {{ m_user_details.posthog(IS_DEMO, IS_CLOUD, IS_ALLOWING_TRACKING, PH_TRACKING_ID) }}
 
         {% set show_nab_bar = show_nab_bar|default(True) -%}
@@ -178,14 +187,5 @@
         {% block additional_scripts %}
         {% endblock additional_scripts %}
         <script src="{{ url_for('static', filename='js/common/on_load.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
-        {{ m_user_details.user_details(
-            USER_EMAIL,
-            USER_SELECTED_BOT_ID,
-            has_open_source_package,
-            PROFILE_NAME,
-            TRADING_MODE_NAME,
-            EXCHANGE_NAMES,
-            IS_REAL_TRADING
-        ) }}
     </body>
 </html>

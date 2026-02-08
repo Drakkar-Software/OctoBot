@@ -1,4 +1,4 @@
-#  Drakkar-Software OctoBot-Trading
+#  Drakkar-Software OctoBot-Tentacles
 #  Copyright (c) Drakkar-Software, All rights reserved.
 #
 #  This library is free software; you can redistribute it and/or
@@ -13,22 +13,3 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-
-from octobot_trading.personal_data.stops.stop_conditions import (
-    HoldingStopCondition,
-    HistoricalMinAndMaxPrice,
-    VolatilityStopCondition,
-    StopConditionMixin,
-)
-
-from octobot_trading.personal_data.stops.stop_watcher import (
-    StopWatcher,
-)
-
-__all__ = [
-    "HoldingStopCondition",
-    "HistoricalMinAndMaxPrice",
-    "VolatilityStopCondition",
-    "StopConditionMixin",
-    "StopWatcher",
-]

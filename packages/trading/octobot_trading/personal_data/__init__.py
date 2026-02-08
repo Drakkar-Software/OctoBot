@@ -252,14 +252,6 @@ from octobot_trading.personal_data import exchange_personal_data
 from octobot_trading.personal_data.exchange_personal_data import (
     ExchangePersonalData,
 )
-from octobot_trading.personal_data import stops
-from octobot_trading.personal_data.stops import (
-    HoldingStopCondition,
-    HistoricalMinAndMaxPrice,
-    VolatilityStopCondition,
-    StopConditionMixin,
-    StopWatcher,
-)
 
 AUTHENTICATED_UPDATER_PRODUCERS = [
     BalanceUpdater,
@@ -516,9 +508,4 @@ __all__ = [
     "FilledOrderUpdateEvent",
     "TransactionUpdateEvent",
     "PortfolioUpdateEvent",
-    "HoldingStopCondition",
-    "HistoricalMinAndMaxPrice",
-    "VolatilityStopCondition",
-    "StopConditionMixin",
-    "StopWatcher",
 ]

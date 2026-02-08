@@ -19,5 +19,11 @@ import octobot.automation.bases.automation_step as automation_step
 
 
 class AbstractCondition(automation_step.AutomationStep, abc.ABC):
+    async def call_evaluate(self):
+        if await self.evaluate():
+            self.update_last_execution_details()
+            return True
+        return False
+
     async def evaluate(self) -> bool:
         raise NotImplementedError

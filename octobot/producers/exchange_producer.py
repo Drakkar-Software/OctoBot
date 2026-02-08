@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import asyncio
+import typing
 
 import octobot_commons.enums as common_enums
 
@@ -21,6 +22,7 @@ import octobot_trading.api as trading_api
 import octobot_trading.octobot_channel_consumer as trading_channel_consumer
 
 import octobot.channels as octobot_channel
+import octobot.automation as automation
 
 
 class ExchangeProducer(octobot_channel.OctoBotChannelProducer):
@@ -47,6 +49,33 @@ class ExchangeProducer(octobot_channel.OctoBotChannelProducer):
         if len(self.exchange_manager_ids) == self.to_create_exchanges_count:
             self.created_all_exchanges.set()
             self.logger.debug(f"Exchange(s) created")
+
+    async def stop_all_trading_modes_and_pause_trader(
+        self, execution_details: typing.Optional[automation.ExecutionDetails]
+    ):
+        self.logger.info(f"{self.exchange_manager_ids=}")
+        for exchange_manager in trading_api.get_exchange_managers_from_exchange_ids(
+            self.exchange_manager_ids
+        ):
+            all_trading_modes = trading_api.get_trading_modes(exchange_manager)
+            if not all_trading_modes:
+                trading_api.set_trading_enabled(exchange_manager, False)
+                continue
+            exchange_name = trading_api.get_exchange_name(exchange_manager)
+            # stop all market making trading modes of this bot, on all exchanges
+            self.logger.info(
+                f"Stopping all {len(all_trading_modes)} [{exchange_name}] trading modes"
+            )
+            details = execution_details.description if execution_details else None
+            await asyncio.gather(*[
+                trading_api.stop_strategy_execution(trading_mode, details) 
+                for trading_mode in all_trading_modes
+            ])
+            self.logger.info(
+                f"All {len(all_trading_modes)} trading modes have been stopped. Pausing [{exchange_name}] trader"
+            )
+            # now that orders have been cancelled, disable trader to prevent further orders from being created
+            trading_api.set_trading_enabled(exchange_manager, False)
 
     async def stop(self):
         self.logger.debug("Stopping ...")

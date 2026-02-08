@@ -18,15 +18,19 @@ import asyncio
 import octobot_commons.configuration as configuration
 import octobot_trading.api as trading_api
 import octobot.automation.bases.abstract_action as abstract_action
+import octobot.automation.bases.execution_details as execution_details
 
 
 class SellAllCurrencies(abstract_action.AbstractAction):
-    async def process(self):
+    async def process(
+        self, execution_details: execution_details.ExecutionDetails
+    ) -> bool:
         exchange_managers = trading_api.get_exchange_managers_from_exchange_ids(trading_api.get_exchange_ids())
         await asyncio.gather(*(
             trading_api.sell_all_everything_for_reference_market(exchange_manager)
             for exchange_manager in exchange_managers
         ))
+        return True
 
     @staticmethod
     def get_description() -> str:

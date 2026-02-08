@@ -13,16 +13,35 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
+import typing
+
 import octobot.constants as constants
 import octobot.commands as commands
 import octobot_commons.constants as commons_constants
 import octobot.automation as automation
+import octobot_commons.singleton as singleton
+import octobot_commons.enums as commons_enums
+
+
+class OctoBotAPIProvider(singleton.Singleton):
+    def __init__(self):
+        self.octobot_api_by_bot_id: dict[str, "OctoBotAPI"] = {}
+
+    def get_api(self, bot_id: str) -> "OctoBotAPI":
+        return self.octobot_api_by_bot_id[bot_id]
+
+    def register_api(self, bot_id: str, octobot_api: "OctoBotAPI"):
+        self.octobot_api_by_bot_id[bot_id] = octobot_api
+
+    def unregister_api(self, bot_id: str):
+        self.octobot_api_by_bot_id.pop(bot_id)
 
 
 class OctoBotAPI:
 
     def __init__(self, octobot):
         self._octobot = octobot
+        OctoBotAPIProvider.instance().register_api(self._octobot.bot_id, self)
 
     def is_initialized(self) -> bool:
         return self._octobot.initialized
@@ -77,12 +96,22 @@ class OctoBotAPI:
             if isinstance(interface, interface_class):
                 return interface
 
-    def run_in_main_asyncio_loop(self, coroutine, log_exceptions=True,
-                                 timeout=commons_constants.DEFAULT_FUTURE_TIMEOUT):
-        return self._octobot.run_in_main_asyncio_loop(coroutine, log_exceptions=log_exceptions, timeout=timeout)
+    def run_in_main_asyncio_loop(
+        self, coroutine, log_exceptions=True, timeout=commons_constants.DEFAULT_FUTURE_TIMEOUT
+    ):
+        return self._octobot.run_in_main_asyncio_loop(
+            coroutine, log_exceptions=log_exceptions, timeout=timeout
+        )
 
     def run_in_async_executor(self, coroutine):
         return self._octobot.task_manager.run_in_async_executor(coroutine)
+
+    def stop_all_trading_modes_and_pause_traders(
+        self,
+        stop_reason: commons_enums.StopReason,
+        execution_details: typing.Optional[automation.ExecutionDetails]
+    ):
+        return self._octobot.stop_all_trading_modes_and_pause_traders(stop_reason, execution_details)
 
     def stop_tasks(self) -> None:
         self._octobot.task_manager.stop_tasks()
@@ -96,3 +125,6 @@ class OctoBotAPI:
 
     def update_bot(self) -> None:
         commands.update_bot(self)
+
+    def clear(self):
+        OctoBotAPIProvider.instance().unregister_api(self._octobot.bot_id)

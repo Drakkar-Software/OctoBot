@@ -73,6 +73,7 @@ from octobot_trading.api.exchange import (
     create_exchange_builder,
     get_exchange_configurations_from_exchange_name,
     get_exchange_manager_from_exchange_name_and_id,
+    get_exchange_managers_from_exchange_name,
     get_ccxt_exchange_available_time_frames,
     get_exchange_available_required_time_frames,
     get_exchange_configuration_from_exchange_id,
@@ -141,6 +142,7 @@ from octobot_trading.api.modes import (
     get_activated_trading_mode,
     create_trading_modes,
     create_trading_mode,
+    stop_strategy_execution,
 )
 from octobot_trading.api.trader import (
     get_trader,
@@ -284,6 +286,7 @@ __all__ = [
     "create_exchange_builder",
     "get_exchange_configurations_from_exchange_name",
     "get_exchange_manager_from_exchange_name_and_id",
+    "get_exchange_managers_from_exchange_name",
     "get_ccxt_exchange_available_time_frames",
     "get_exchange_available_required_time_frames",
     "get_exchange_configuration_from_exchange_id",
@@ -350,6 +353,7 @@ __all__ = [
     "get_activated_trading_mode",
     "create_trading_modes",
     "create_trading_mode",
+    "stop_strategy_execution",
     "get_trader",
     "has_trader",
     "is_trader_enabled_in_config_from_exchange_manager",

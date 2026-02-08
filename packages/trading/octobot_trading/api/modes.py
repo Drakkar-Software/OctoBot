@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import typing
 
 import octobot_trading.modes as modes
 import octobot_commons.constants as commons_constants
@@ -68,3 +69,7 @@ async def create_trading_mode(trading_mode_class: modes.AbstractTradingMode.__cl
                                            symbol=symbol,
                                            time_frame=time_frame,
                                            bot_id=bot_id)
+
+
+async def stop_strategy_execution(trading_mode, reason_description: typing.Optional[str]):
+    await trading_mode.stop_strategy_execution(reason_description)

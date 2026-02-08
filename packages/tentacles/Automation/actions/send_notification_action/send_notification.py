@@ -18,6 +18,7 @@ import octobot_commons.configuration as configuration
 import octobot_services.enums as services_enums
 import octobot_services.api as services_api
 import octobot.automation.bases.abstract_action as abstract_action
+import octobot.automation.bases.execution_details as execution_details
 
 
 class SendNotification(abstract_action.AbstractAction):
@@ -27,13 +28,16 @@ class SendNotification(abstract_action.AbstractAction):
         super().__init__()
         self.notification_message = None
 
-    async def process(self):
+    async def process(
+        self, execution_details: execution_details.ExecutionDetails
+    ) -> bool:
         await services_api.send_notification(
             services_api.create_notification(
                 self.notification_message,
                 category=services_enums.NotificationCategory.OTHER
             )
         )
+        return True
 
     @staticmethod
     def get_description() -> str:

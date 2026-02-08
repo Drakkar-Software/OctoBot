@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import asyncio
+import typing
 
 import octobot_commons.enums as commons_enums
 import octobot_commons.configuration as configuration
@@ -33,7 +34,7 @@ class PeriodicCheck(abstract_trigger_event.AbstractTriggerEvent):
         if self.waiter_task is not None and not self.waiter_task.done():
             self.waiter_task.cancel()
 
-    async def _get_next_event(self):
+    async def _get_next_event(self) -> typing.Optional[str]:
         if self.should_stop:
             raise StopIteration
         self.waiter_task = asyncio.create_task(asyncio.sleep(self.waiting_time))
