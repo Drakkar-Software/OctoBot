@@ -684,11 +684,3 @@ class TradingModeActivityType(enum.Enum):
 class ActiveOrderSwapTriggerPriceConfiguration(enum.Enum):
     FILLING_PRICE = "filling_price"
     ORDER_PARAMS_ONLY = "order_params_only"
-
-
-class StopReason(enum.Enum):
-    MISSING_API_KEY_TRADING_RIGHTS = "missing_api_key_trading_rights"
-    INVALID_EXCHANGE_CREDENTIALS = "invalid_exchange_credentials"
-    STOP_CONDITION_TRIGGERED = "stop_condition_triggered"
-    MISSING_MINIMAL_FUNDS = "missing_minimal_funds"
-    INVALID_CONFIG = "invalid_config"

@@ -368,8 +368,6 @@ class MarketMakingTradingModeConsumer(trading_modes.AbstractTradingModeConsumer)
                 try:
                     await self.trading_mode.cancel_order(action.order)
                     cancelled_orders.append(action.order.order_id)
-                except trading_errors.AuthenticationError:
-                    raise
                 except trading_errors.UnexpectedExchangeSideOrderStateError as err:
                     self.logger.warning(f"Skipped order cancel: {err}, order: {str(action.order)}")
                 except trading_errors.OrderCancelError as err:
@@ -447,8 +445,6 @@ class MarketMakingTradingModeConsumer(trading_modes.AbstractTradingModeConsumer)
                     f"Limits: {symbol_market[trading_enums.ExchangeConstantsMarketStatusColumns.LIMITS.value]}"
                 )
         except (SkippedAction, trading_errors.MissingFunds):
-            raise
-        except trading_errors.AuthenticationError:
             raise
         except Exception as err:
             self.logger.error(f"Failed to create order : {err}. Order: {order_data}")

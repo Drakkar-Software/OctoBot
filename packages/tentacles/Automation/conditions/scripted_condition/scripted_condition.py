@@ -20,8 +20,9 @@ import octobot_trading.api as trading_api
 import octobot_commons.enums as commons_enums
 import octobot.automation.bases.abstract_condition as abstract_condition
 import octobot_commons.dsl_interpreter as dsl_interpreter
-
+import octobot.errors as errors
 import tentacles.Meta.DSL_operators as dsl_operators
+
 
 
 class ScriptedCondition(abstract_condition.AbstractCondition):
@@ -39,7 +40,7 @@ class ScriptedCondition(abstract_condition.AbstractCondition):
         if self._dsl_interpreter:
             script_result = await self._dsl_interpreter.interprete(self.script)
             return bool(script_result)
-        raise ValueError("Scripted condition is not properly configured, the script is likely invalid.")
+        raise errors.InvalidAutomationConfigError("Scripted condition is not properly configured, the script is likely invalid.", self.get_name())
 
     @staticmethod
     def get_description() -> str:
@@ -54,7 +55,7 @@ class ScriptedCondition(abstract_condition.AbstractCondition):
                 parent_input_name=step_name,
             ),
             self.EXCHANGE: UI.user_input(
-                self.EXCHANGE, commons_enums.UserInputTypes.OPTIONS, exchanges[0], inputs,
+                self.EXCHANGE, commons_enums.UserInputTypes.OPTIONS, exchanges[0] if exchanges[0] else "binance", inputs,
                 options=exchanges,
                 title="Exchange: the name of the exchange to use for the condition.",
                 parent_input_name=step_name,
@@ -100,4 +101,4 @@ class ScriptedCondition(abstract_condition.AbstractCondition):
             exchange_manager = trading_api.get_exchange_manager_from_exchange_id(exchange_id)
             if exchange_manager.exchange_name == self.exchange_name and exchange_manager.is_backtesting == False:
                 return exchange_manager
-        raise ValueError(f"No exchange manager found for exchange name: {self.exchange_name}")
+        raise errors.InvalidAutomationConfigError(f"No exchange manager found for exchange name: {self.exchange_name}", self.get_name())

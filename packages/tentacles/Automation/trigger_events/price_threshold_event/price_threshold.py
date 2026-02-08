@@ -13,19 +13,15 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
-import asyncio
 import decimal
 
-import async_channel.enums as channel_enums
 import octobot_commons.enums as commons_enums
 import octobot_commons.configuration as configuration
 import octobot_commons.channels_name as channels_name
-import octobot.automation.bases.abstract_trigger_event as abstract_trigger_event
-import octobot_trading.exchange_channel as exchanges_channel
-import octobot_trading.api as trading_api
+import octobot.automation.bases.abstract_channel_based_trigger_event as abstract_channel_based_trigger_event
 
 
-class PriceThreshold(abstract_trigger_event.AbstractTriggerEvent):
+class PriceThreshold(abstract_channel_based_trigger_event.AbstractChannelBasedTriggerEvent):
     TARGET_PRICE = "target_price"
     SYMBOL = "symbol"
     TRIGGER_ONLY_ONCE = "trigger_only_once"
@@ -33,30 +29,19 @@ class PriceThreshold(abstract_trigger_event.AbstractTriggerEvent):
 
     def __init__(self):
         super().__init__()
-        self.waiter_task = None
-        self.symbol = None
-        self.target_price = None
-        self.last_price = None
-        self.trigger_event = asyncio.Event()
-        self.registered_consumer = False
-        self.consumers = []
+        # config
+        self.symbol: str = None # type: ignore
+        self.target_price: decimal.Decimal = None # type: ignore
+        self.last_price: decimal.Decimal = None # type: ignore
 
-    async def _register_consumer(self):
-        self.registered_consumer = True
-        for exchange_id in trading_api.get_exchange_ids():
-            self.consumers.append(
-                await exchanges_channel.get_chan(
-                    channels_name.OctoBotTradingChannelsName.MARK_PRICE_CHANNEL.value,
-                    exchange_id
-                ).new_consumer(
-                    self.mark_price_callback,
-                    priority_level=channel_enums.ChannelConsumerPriorityLevels.MEDIUM.value,
-                    symbol=self.symbol
-                )
-            )
+    async def register_consumer(self):
+        await self._register_exchange_channel_consumer(
+            channel_name=channels_name.OctoBotTradingChannelsName.MARK_PRICE_CHANNEL.value,
+            symbol=self.symbol,
+        )
 
-    async def mark_price_callback(
-            self, exchange: str, exchange_id: str, cryptocurrency: str, symbol: str, mark_price
+    async def channel_callback(
+        self, exchange: str, exchange_id: str, cryptocurrency: str, symbol: str, mark_price
     ):
         if self.should_stop:
             # do not go any further if the action has been stopped
@@ -72,30 +57,15 @@ class PriceThreshold(abstract_trigger_event.AbstractTriggerEvent):
             return
         if mark_price >= self.target_price > self.last_price or mark_price <= self.target_price < self.last_price:
             # mark_price crossed self.target_price threshold
-            self.trigger_event.set()
-
-    async def stop(self):
-        await super().stop()
-        if self.waiter_task is not None and not self.waiter_task.done():
-            self.waiter_task.cancel()
-        for consumer in self.consumers:
-            await consumer.stop()
-        self.consumers = []
-
-    async def _get_next_event(self):
-        if self.should_stop:
-            raise StopIteration
-        if not self.registered_consumer:
-            await self._register_consumer()
-        self.waiter_task = asyncio.create_task(asyncio.wait_for(self.trigger_event.wait(), timeout=None))
-        await self.waiter_task
-        self.trigger_event.clear()
+            self.trigger(description=f"Price crossed {self.target_price} threshold")
 
     @staticmethod
     def get_description() -> str:
         return "Will trigger when the price of the given symbol crosses the given price."
 
-    def get_user_inputs(self, UI: configuration.UserInputFactory, inputs: dict, step_name: str) -> dict:
+    def get_user_inputs(
+        self, UI: configuration.UserInputFactory, inputs: dict, step_name: str
+    ) -> dict:
         return {
             self.SYMBOL: UI.user_input(
                 self.SYMBOL, commons_enums.UserInputTypes.TEXT, "BTC/USDT", inputs,
@@ -122,8 +92,8 @@ class PriceThreshold(abstract_trigger_event.AbstractTriggerEvent):
         }
 
     def apply_config(self, config):
-        self.trigger_event.clear()
-        self.last_price = None
+        self.clear_future()
+        self.last_price = None # type: ignore
         self.symbol = config[self.SYMBOL]
         self.target_price = decimal.Decimal(str(config[self.TARGET_PRICE]))
         self.trigger_only_once = config[self.TRIGGER_ONLY_ONCE]

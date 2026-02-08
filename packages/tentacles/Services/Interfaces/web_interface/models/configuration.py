@@ -56,6 +56,7 @@ import octobot_commons.aiohttp_util as aiohttp_util
 import octobot_commons.html_util as html_util
 import octobot_commons
 import octobot_backtesting.api as backtesting_api
+import octobot.errors as errors
 import octobot.community as community
 import octobot.constants as octobot_constants
 import octobot.enums as octobot_enums
@@ -496,6 +497,8 @@ def update_tentacle_config(tentacle_name, config_update, tentacle_class=None, te
             config_update
         )
         return True, f"{tentacle_name} updated"
+    except errors.InvalidAutomationConfigError:
+        raise # propagate the error to the caller
     except Exception as e:
         _get_logger().exception(e, False)
         return False, f"Error when updating tentacle config: {e}"
