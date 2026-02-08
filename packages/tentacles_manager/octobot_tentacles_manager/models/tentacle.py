@@ -16,6 +16,7 @@
 import json
 import os.path as path
 
+import typing
 import aiofiles
 
 import octobot_tentacles_manager.models.artifact as artifact
@@ -37,6 +38,8 @@ class Tentacle(artifact.Artifact):
         self.tentacles_requirements = None
         self.tentacle_group = self.name
         self.in_dev_mode = False
+        self.build_command: typing.Optional[typing.List[str]] = None
+        self.include_patterns: typing.Optional[typing.List[str]] = None
         self.metadata = {}
 
     async def initialize(self) -> None:
@@ -108,6 +111,10 @@ class Tentacle(artifact.Artifact):
         self.tentacle_group = self.metadata.get(constants.METADATA_TENTACLES_GROUP, self.name)
         if constants.METADATA_DEV_MODE in self.metadata:
             self.in_dev_mode = self.metadata[constants.METADATA_DEV_MODE]
+        # Read optional build command
+        self.build_command = self.metadata.get(constants.METADATA_BUILD, None)
+        # Read optional include patterns
+        self.include_patterns = self.metadata.get(constants.METADATA_INCLUDE, None)
 
     @staticmethod
     def _parse_requirements(requirement) -> list:

@@ -1,11 +1,6 @@
 fastapi[standard]
-python-multipart
 passlib[bcrypt]
-tenacity
 pydantic
-alembic
-psycopg[binary]
-sqlmodel
 pyjwt
 
 redis

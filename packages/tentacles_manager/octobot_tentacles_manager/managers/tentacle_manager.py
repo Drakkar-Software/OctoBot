@@ -82,6 +82,12 @@ class TentacleManager:
     async def _update_tentacle_folder(self, target_tentacle_path):
         reference_tentacle_path = path.join(self.tentacle.tentacle_path, self.tentacle.name)
         await util.find_or_create(target_tentacle_path)
-        for tentacle_file_entry in os.scandir(reference_tentacle_path):
-            await util.replace_with_remove_or_rename(tentacle_file_entry,
-                                                     path.join(target_tentacle_path, tentacle_file_entry.name))
+        if self.tentacle.include_patterns:
+            await util.copy_with_include_filter(
+                reference_tentacle_path, target_tentacle_path, self.tentacle.include_patterns
+            )
+        else:
+            for tentacle_file_entry in os.scandir(reference_tentacle_path):
+                await util.replace_with_remove_or_rename(tentacle_file_entry,
+                                                         path.join(target_tentacle_path,
+                                                                   tentacle_file_entry.name))

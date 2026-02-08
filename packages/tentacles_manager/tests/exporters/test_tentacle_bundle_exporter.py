@@ -13,8 +13,10 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import json
 import os
 import shutil
+import tempfile
 
 import pytest
 import yaml
@@ -131,3 +133,352 @@ async def test_tentacle_bundle_exporter_with_metadata_injection(install_tentacle
         assert metadata_content[constants.ARTIFACT_METADATA_AUTHOR] == "DrakkarSoftware"
         assert metadata_content[constants.ARTIFACT_METADATA_REPOSITORY] == "TEST-TM"
         assert metadata_content[constants.ARTIFACT_METADATA_VERSION] == "1.5.57"
+
+
+
+async def test_metadata_build_and_include_parsing():
+    temp_dir = tempfile.mkdtemp()
+    
+    try:
+        # ===== Test 1: Tentacle WITHOUT build and include =====
+        evaluator_dir = os.path.join(temp_dir, constants.TENTACLES_EVALUATOR_PATH)
+        simple_path = os.path.join(evaluator_dir, "SimpleTentacle")
+        os.makedirs(simple_path)
+        
+        simple_metadata = {
+            "version": "1.0.0",
+            "origin_package": "Test-Package",
+            "tentacles": ["SimpleTentacle"],
+            "tentacles-requirements": []
+        }
+        
+        with open(os.path.join(simple_path, "metadata.json"), "w") as f:
+            json.dump(simple_metadata, f)
+        with open(os.path.join(simple_path, "__init__.py"), "w") as f:
+            f.write("# Simple tentacle\n")
+        with open(os.path.join(simple_path, "simple.py"), "w") as f:
+            f.write("class SimpleTentacle:\n    pass\n")
+        
+        simple_tentacle = models.Tentacle(
+            tentacle_root_path=temp_dir,
+            name="SimpleTentacle",
+            tentacle_type=models.TentacleType(constants.TENTACLES_EVALUATOR_PATH)
+        )
+        simple_tentacle.tentacle_module_path = simple_path
+        simple_tentacle.sync_initialize()
+        
+        # Verify build_command and include_patterns are None
+        assert simple_tentacle.build_command is None, "build_command should be None when not in metadata"
+        assert simple_tentacle.include_patterns is None, "include_patterns should be None when not in metadata"
+        
+        # Export and verify all files are included (no filtering)
+        exporter = exporters.TentacleExporter(
+            artifact=simple_tentacle,
+            tentacles_folder=temp_dir,
+            should_zip=False,
+            use_package_as_file_name=True
+        )
+        result = await exporter.export()
+        assert result == 0, "Export should succeed"
+        
+        export_path = simple_tentacle.output_path
+        exported_files = []
+        for root, dirs, files in os.walk(export_path):
+            for file in files:
+                rel_path = os.path.relpath(os.path.join(root, file), export_path)
+                exported_files.append(rel_path)
+        
+        assert "metadata.json" in exported_files
+        assert "__init__.py" in exported_files
+        assert "simple.py" in exported_files, "All files should be included when no include patterns"
+        
+        # ===== Test 2: Tentacle WITH build and include =====
+        advanced_path = os.path.join(evaluator_dir, "AdvancedTentacle")
+        os.makedirs(advanced_path)
+        
+        build_commands = ["npm install", "npm run build"]
+        include_patterns = ["dist/**/*", "*.js", "README.md"]
+        
+        advanced_metadata = {
+            "version": "2.0.0",
+            "origin_package": "Test-Package",
+            "tentacles": ["AdvancedTentacle"],
+            "tentacles-requirements": [],
+            "build": build_commands,
+            "include": include_patterns
+        }
+        
+        with open(os.path.join(advanced_path, "metadata.json"), "w") as f:
+            json.dump(advanced_metadata, f)
+        with open(os.path.join(advanced_path, "__init__.py"), "w") as f:
+            f.write("# Advanced tentacle\n")
+        
+        advanced_tentacle = models.Tentacle(
+            tentacle_root_path=temp_dir,
+            name="AdvancedTentacle",
+            tentacle_type=models.TentacleType(constants.TENTACLES_EVALUATOR_PATH)
+        )
+        advanced_tentacle.tentacle_module_path = advanced_path
+        advanced_tentacle.sync_initialize()
+        
+        # Verify build_command and include_patterns were properly parsed
+        assert advanced_tentacle.build_command == build_commands, "build_command should match metadata"
+        assert advanced_tentacle.include_patterns == include_patterns, "include_patterns should match metadata"
+        
+    finally:
+        shutil.rmtree(temp_dir, ignore_errors=True)
+        if os.path.exists(constants.DEFAULT_EXPORT_DIR):
+            shutil.rmtree(constants.DEFAULT_EXPORT_DIR, ignore_errors=True)
+
+
+@pytest.fixture
+def setup_package_with_build_and_include_tentacle():
+    temp_dir = tempfile.mkdtemp()
+    output_dir = os.path.join(temp_dir, "output")
+    os.makedirs(output_dir)
+
+    tentacles_dir = os.path.join(temp_dir, "tentacles")
+
+    # Create Services/Interfaces/node_test_tentacle (with build + include)
+    node_tentacle_path = os.path.join(tentacles_dir, "Services", "Interfaces", "node_test_tentacle")
+    os.makedirs(node_tentacle_path)
+    metadata_with_build = {
+        "version": "1.0.0",
+        "origin_package": "Test-Package",
+        "tentacles": ["NodeTestTentacle"],
+        "tentacles-requirements": [],
+        "build": ["mkdir -p dist", "echo 'built content' > dist/bundle.js"],
+        "include": ["dist/**/*", "node_test_tentacle.py"]
+    }
+    with open(os.path.join(node_tentacle_path, "metadata.json"), "w") as f:
+        json.dump(metadata_with_build, f)
+    with open(os.path.join(node_tentacle_path, "__init__.py"), "w") as f:
+        f.write("# Node test tentacle\n")
+    with open(os.path.join(node_tentacle_path, "node_test_tentacle.py"), "w") as f:
+        f.write("class NodeTestTentacle:\n    pass\n")
+    # Files/dirs that should be EXCLUDED by include patterns
+    with open(os.path.join(node_tentacle_path, "package.json"), "w") as f:
+        f.write('{"name": "test"}')
+    os.makedirs(os.path.join(node_tentacle_path, "src"))
+    with open(os.path.join(node_tentacle_path, "src", "app.ts"), "w") as f:
+        f.write("// source code\n")
+    os.makedirs(os.path.join(node_tentacle_path, "node_modules", "some-pkg"))
+    with open(os.path.join(node_tentacle_path, "node_modules", "some-pkg", "index.js"), "w") as f:
+        f.write("// dependency\n")
+
+    simple_tentacle_path = os.path.join(tentacles_dir, "Evaluator", "simple_test_tentacle")
+    os.makedirs(simple_tentacle_path)
+    metadata_simple = {
+        "version": "1.0.0",
+        "origin_package": "Test-Package",
+        "tentacles": ["SimpleTestTentacle"],
+        "tentacles-requirements": []
+    }
+    with open(os.path.join(simple_tentacle_path, "metadata.json"), "w") as f:
+        json.dump(metadata_simple, f)
+    with open(os.path.join(simple_tentacle_path, "__init__.py"), "w") as f:
+        f.write("# Simple tentacle\n")
+    with open(os.path.join(simple_tentacle_path, "simple_evaluator.py"), "w") as f:
+        f.write("class SimpleTestTentacle:\n    pass\n")
+    with open(os.path.join(simple_tentacle_path, "helper.py"), "w") as f:
+        f.write("# helper module\n")
+
+    yield tentacles_dir, output_dir, node_tentacle_path, simple_tentacle_path
+
+    shutil.rmtree(temp_dir, ignore_errors=True)
+    if os.path.exists(constants.TENTACLES_PACKAGE_CREATOR_TEMP_FOLDER):
+        shutil.rmtree(constants.TENTACLES_PACKAGE_CREATOR_TEMP_FOLDER, ignore_errors=True)
+
+
+async def test_package_exporter_build_command_execution(setup_package_with_build_and_include_tentacle):
+    tentacles_dir, output_dir, node_tentacle_path, simple_tentacle_path = \
+        setup_package_with_build_and_include_tentacle
+
+    tentacle_package = models.TentaclePackage("test-package")
+    exporter = exporters.TentaclePackageExporter(
+        artifact=tentacle_package,
+        tentacles_folder=tentacles_dir,
+        exported_tentacles_package=None,
+        output_dir=output_dir,
+        should_zip=False,
+        with_dev_mode=False,
+    )
+    result = await exporter.export()
+    assert result == 0, "Export should succeed"
+
+    # Build output should have been created in the SOURCE directory
+    dist_file = os.path.join(node_tentacle_path, "dist", "bundle.js")
+    assert os.path.exists(dist_file), \
+        f"Build command should create dist/bundle.js in source dir. Files: {os.listdir(node_tentacle_path)}"
+    with open(dist_file) as f:
+        assert "built content" in f.read()
+
+
+async def test_package_exporter_include_filtering(setup_package_with_build_and_include_tentacle):
+    tentacles_dir, output_dir, node_tentacle_path, simple_tentacle_path = \
+        setup_package_with_build_and_include_tentacle
+
+    tentacle_package = models.TentaclePackage("test-package")
+    exporter = exporters.TentaclePackageExporter(
+        artifact=tentacle_package,
+        tentacles_folder=tentacles_dir,
+        exported_tentacles_package=None,
+        output_dir=output_dir,
+        should_zip=False,
+        with_dev_mode=False,
+    )
+    result = await exporter.export()
+    assert result == 0, "Export should succeed"
+
+    # Check the node_test_tentacle in the output
+    exported_node_tentacle = os.path.join(
+        exporter.working_folder, "Services", "Interfaces", "node_test_tentacle"
+    )
+    assert os.path.isdir(exported_node_tentacle), \
+        f"node_test_tentacle should exist in output. Contents: {os.listdir(exporter.working_folder)}"
+
+    # Collect all files in the exported node tentacle
+    exported_files = []
+    for root, dirs, files in os.walk(exported_node_tentacle):
+        for file in files:
+            rel_path = os.path.relpath(os.path.join(root, file), exported_node_tentacle)
+            exported_files.append(rel_path.replace(os.sep, '/'))
+
+    # Files that MUST be included (always-included + matching include patterns)
+    assert "metadata.json" in exported_files, "metadata.json should always be included"
+    assert "__init__.py" in exported_files, "__init__.py should always be included"
+    assert "node_test_tentacle.py" in exported_files, "node_test_tentacle.py matches include pattern"
+    assert "dist/bundle.js" in exported_files, "dist/bundle.js matches dist/**/* pattern"
+
+    # Files that MUST be excluded
+    assert "package.json" not in exported_files, "package.json should NOT be included"
+    assert not any("src" in f for f in exported_files), "src/ directory should NOT be included"
+    assert not any("node_modules" in f for f in exported_files), "node_modules/ should NOT be included"
+
+
+async def test_package_exporter_no_include_keeps_all(setup_package_with_build_and_include_tentacle):
+    tentacles_dir, output_dir, node_tentacle_path, simple_tentacle_path = \
+        setup_package_with_build_and_include_tentacle
+
+    tentacle_package = models.TentaclePackage("test-package")
+    exporter = exporters.TentaclePackageExporter(
+        artifact=tentacle_package,
+        tentacles_folder=tentacles_dir,
+        exported_tentacles_package=None,
+        output_dir=output_dir,
+        should_zip=False,
+        with_dev_mode=False,
+    )
+    result = await exporter.export()
+    assert result == 0, "Export should succeed"
+
+    # Check the simple_test_tentacle in the output (no include patterns)
+    exported_simple_tentacle = os.path.join(
+        exporter.working_folder, "Evaluator", "simple_test_tentacle"
+    )
+    assert os.path.isdir(exported_simple_tentacle), \
+        f"simple_test_tentacle should exist in output"
+
+    exported_files = []
+    for root, dirs, files in os.walk(exported_simple_tentacle):
+        for file in files:
+            rel_path = os.path.relpath(os.path.join(root, file), exported_simple_tentacle)
+            exported_files.append(rel_path.replace(os.sep, '/'))
+
+    # ALL files should be present (no filtering)
+    assert "metadata.json" in exported_files
+    assert "__init__.py" in exported_files
+    assert "simple_evaluator.py" in exported_files
+    assert "helper.py" in exported_files, "All files should be kept when no include patterns"
+
+
+async def test_wildcard_patterns():
+    """Test edge cases with various wildcard patterns like *.py and **/*.js"""
+    temp_dir = tempfile.mkdtemp()
+    
+    try:
+        # Create tentacle with wildcard patterns
+        evaluator_dir = os.path.join(temp_dir, constants.TENTACLES_EVALUATOR_PATH)
+        tentacle_path = os.path.join(evaluator_dir, "WildcardTentacle")
+        os.makedirs(tentacle_path)
+        
+        # Create metadata with wildcard patterns
+        metadata = {
+            "version": "1.0.0",
+            "origin_package": "Test-Package",
+            "tentacles": ["WildcardTentacle"],
+            "tentacles-requirements": [],
+            "include": ["*.py", "config/*.json", "**/*.md"]  # Various patterns
+        }
+        
+        with open(os.path.join(tentacle_path, "metadata.json"), "w") as f:
+            json.dump(metadata, f)
+        with open(os.path.join(tentacle_path, "__init__.py"), "w") as f:
+            f.write("# init\n")
+        
+        # Top-level .py files (should match *.py)
+        with open(os.path.join(tentacle_path, "main.py"), "w") as f:
+            f.write("# main\n")
+        
+        # config/*.json (should match config/*.json)
+        config_dir = os.path.join(tentacle_path, "config")
+        os.makedirs(config_dir)
+        with open(os.path.join(config_dir, "settings.json"), "w") as f:
+            f.write("{}\n")
+        
+        # Nested .md files (should match **/*.md)
+        docs_dir = os.path.join(tentacle_path, "docs", "api")
+        os.makedirs(docs_dir)
+        with open(os.path.join(docs_dir, "README.md"), "w") as f:
+            f.write("# Docs\n")
+        
+        # Files that should NOT match
+        with open(os.path.join(tentacle_path, "data.txt"), "w") as f:
+            f.write("data\n")
+        sub_dir = os.path.join(tentacle_path, "utils")
+        os.makedirs(sub_dir)
+        with open(os.path.join(sub_dir, "helper.py"), "w") as f:  # *.py only matches top-level
+            f.write("# helper\n")
+        
+        # Export using TentacleExporter
+        tentacle = models.Tentacle(
+            tentacle_root_path=temp_dir,
+            name="WildcardTentacle",
+            tentacle_type=models.TentacleType(constants.TENTACLES_EVALUATOR_PATH)
+        )
+        tentacle.tentacle_module_path = tentacle_path
+        tentacle.sync_initialize()
+        
+        exporter = exporters.TentacleExporter(
+            artifact=tentacle,
+            tentacles_folder=temp_dir,
+            should_zip=False,
+            use_package_as_file_name=True
+        )
+        result = await exporter.export()
+        assert result == 0
+        
+        # Collect exported files
+        export_path = tentacle.output_path
+        exported_files = []
+        for root, dirs, files in os.walk(export_path):
+            for file in files:
+                rel_path = os.path.relpath(os.path.join(root, file), export_path)
+                exported_files.append(rel_path.replace(os.sep, '/'))
+        
+        # Verify matches
+        assert "metadata.json" in exported_files  # Always included
+        assert "__init__.py" in exported_files  # Always included
+        assert "main.py" in exported_files, "*.py should match top-level .py files"
+        assert "config/settings.json" in exported_files, "config/*.json should match"
+        assert "docs/api/README.md" in exported_files, "**/*.md should match nested .md files"
+        
+        # Verify non-matches
+        assert "data.txt" not in exported_files, "data.txt should not match any pattern"
+        assert "utils/helper.py" not in exported_files, "*.py should not match nested .py files"
+        
+    finally:
+        shutil.rmtree(temp_dir, ignore_errors=True)
+        if os.path.exists(constants.DEFAULT_EXPORT_DIR):
+            shutil.rmtree(constants.DEFAULT_EXPORT_DIR, ignore_errors=True)
+

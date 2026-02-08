@@ -47,6 +47,11 @@ METADATA_ORIGIN_PACKAGE = "origin_package"
 METADATA_DEV_MODE = "dev_mode"
 METADATA_TENTACLES_REQUIREMENTS = "tentacles-requirements"
 METADATA_TENTACLES_GROUP = "tentacles_group"
+METADATA_BUILD = "build"
+METADATA_INCLUDE = "include"
+
+# Files that should always be included in tentacles export
+ALWAYS_INCLUDED_TENTACLE_FILES = ["metadata.json", "__init__.py"]
 
 # Artifact metadata
 ARTIFACT_METADATA_FILE = "metadata.yaml"
