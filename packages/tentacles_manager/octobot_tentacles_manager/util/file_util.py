@@ -22,6 +22,7 @@ import shutil
 
 import octobot_commons.logging as commons_logging
 import octobot_tentacles_manager.constants as constants
+from octobot_tentacles_manager.util.tentacle_filter import should_include_ignore_function
 
 
 def get_file_creation_time(file_path) -> str:
@@ -96,6 +97,23 @@ async def replace_with_remove_or_rename(new_file_or_dir_entry, dest_file_or_dir)
         shutil.copyfile(new_file_or_dir_entry, dest_file_or_dir)
     else:
         shutil.copytree(new_file_or_dir_entry, dest_file_or_dir)
+
+
+async def copy_with_include_filter(source_path, dest_path, include_patterns):    
+    ignore_func = should_include_ignore_function(source_path, include_patterns)
+    
+    for entry in os.scandir(source_path):
+        if entry.name in ignore_func(source_path, [entry.name]):
+            continue
+        
+        dest = path.join(dest_path, entry.name)
+        
+        if entry.is_file():
+            await replace_with_remove_or_rename(entry, dest)
+        else:
+            if path.exists(dest):
+                shutil.rmtree(dest)
+            shutil.copytree(entry, dest, ignore=ignore_func)
 
 
 def merge_folders(to_merge_folder, dest_folder, ignore_func=None):

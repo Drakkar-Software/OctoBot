@@ -36,6 +36,7 @@ class NodeApiService(services.AbstractService):
         self.node_api_url = None
         self.node_sqlite_file = None
         self.node_redis_url = None
+        self.backend_cors_origins = None
 
     def get_fields_description(self):
         return {
@@ -45,6 +46,7 @@ class NodeApiService(services.AbstractService):
             services_constants.NODE_API_URL: "Base URL used by the Node Web UI to reach the Node API.",
             services_constants.NODE_SQLITE_FILE: "SQLite database file path for the Node scheduler.",
             services_constants.NODE_REDIS_URL: "Redis URI for the Node scheduler (optional).",
+            services_constants.BACKEND_CORS_ALLOWED_ORIGINS: "Allowed CORS origins for the Node API backend.",
         }
 
     def get_default_value(self):
@@ -55,6 +57,7 @@ class NodeApiService(services.AbstractService):
             services_constants.NODE_API_URL: self._get_default_node_api_url(),
             services_constants.NODE_SQLITE_FILE: "tasks.db",
             services_constants.NODE_REDIS_URL: None,
+            services_constants.BACKEND_CORS_ALLOWED_ORIGINS: services_constants.DEFAULT_BACKEND_CORS_ALLOWED_ORIGINS,
         }
 
     def get_required_config(self):
@@ -102,12 +105,14 @@ class NodeApiService(services.AbstractService):
             self.node_api_url = node_config.get(services_constants.NODE_API_URL)
             self.node_sqlite_file = node_config.get(services_constants.NODE_SQLITE_FILE)
             self.node_redis_url = node_config.get(services_constants.NODE_REDIS_URL)
+            self.backend_cors_origins = node_config.get(services_constants.BACKEND_CORS_ALLOWED_ORIGINS)
         except KeyError:
             self.admin_username = None
             self.admin_password = None
             self.node_api_url = None
             self.node_sqlite_file = None
             self.node_redis_url = None
+            self.backend_cors_origins = None
 
         defaults = self.get_default_value()
         updated_config = {}
@@ -126,6 +131,9 @@ class NodeApiService(services.AbstractService):
         if self.node_redis_url is None:
             self.node_redis_url = defaults[services_constants.NODE_REDIS_URL]
             updated_config[services_constants.NODE_REDIS_URL] = self.node_redis_url
+        if not self.backend_cors_origins:
+            self.backend_cors_origins = defaults[services_constants.BACKEND_CORS_ALLOWED_ORIGINS]
+            updated_config[services_constants.BACKEND_CORS_ALLOWED_ORIGINS] = self.backend_cors_origins
 
         if updated_config:
             self.save_service_config(services_constants.CONFIG_NODE_WEB, updated_config, update=True)
@@ -178,3 +186,6 @@ class NodeApiService(services.AbstractService):
 
     def get_node_redis_url(self):
         return os.getenv(services_constants.ENV_NODE_REDIS_URL, self.node_redis_url)
+
+    def get_backend_cors_origins(self):
+        return os.getenv(services_constants.ENV_BACKEND_CORS_ALLOWED_ORIGINS, self.backend_cors_origins)

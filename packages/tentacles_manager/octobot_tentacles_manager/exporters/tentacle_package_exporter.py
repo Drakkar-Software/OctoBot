@@ -13,9 +13,11 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import asyncio
 import os
 
 import aiofiles
+import octobot_commons.logging as logging
 import octobot_commons.constants as commons_constants
 try:
     import yaml
@@ -33,6 +35,7 @@ import octobot_tentacles_manager.exporters.artifact_exporter as artifact_exporte
 import octobot_tentacles_manager.models as models
 import octobot_tentacles_manager.constants as constants
 import octobot_tentacles_manager.util as util
+import octobot_tentacles_manager.util.tentacle_processing as tentacle_processing
 
 
 class TentaclePackageExporter(artifact_exporter.ArtifactExporter):
@@ -74,6 +77,11 @@ class TentaclePackageExporter(artifact_exporter.ArtifactExporter):
                 with_dev_mode=self.with_dev_mode,
                 package_filter=self.exported_tentacles_package
             )
+
+        # Execute build commands for tentacles that have them
+        for tentacle in (self.tentacles_white_list or []):
+            if tentacle.build_command:
+                await tentacle_processing.execute_tentacle_build(tentacle, self.logger)
 
         # filter tentacles
         self.tentacles_filter = util.TentacleFilter(self.tentacles, self.tentacles_white_list)

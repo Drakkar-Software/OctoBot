@@ -42,10 +42,12 @@ from octobot_tentacles_manager.util.file_util import (
     find_or_create,
     find_or_create_with_empty_init_file,
     replace_with_remove_or_rename,
+    copy_with_include_filter,
     merge_folders,
 )
 from octobot_tentacles_manager.util.tentacle_filter import (
     TentacleFilter,
+    should_include_ignore_function,
     filter_tentacles_by_dev_mode_and_package,
 )
 from octobot_tentacles_manager.util.tentacle_cleaner import (
@@ -76,8 +78,10 @@ __all__ = [
     "find_or_create",
     "find_or_create_with_empty_init_file",
     "replace_with_remove_or_rename",
+    "copy_with_include_filter",
     "merge_folders",
     "TentacleFilter",
+    "should_include_ignore_function",
     "remove_unnecessary_files",
     "remove_non_tentacles_files",
     "filter_tentacles_by_dev_mode_and_package",

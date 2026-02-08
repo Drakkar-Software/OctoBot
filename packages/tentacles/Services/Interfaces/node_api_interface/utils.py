@@ -18,17 +18,6 @@ from pathlib import Path
 
 
 def get_dist_directory() -> Path | None:
-    """
-    Get the path to the dist directory containing the built frontend assets.
-    
-    The dist directory is always located at
-    tentacles/Services/Interfaces/node_web_interface/dist,
-    both in development and when installed as a package.
-    
-    Returns:
-        Path to dist directory if found, None otherwise.
-    """
-    # Locate node_web_interface module directory
     try:
         import tentacles.Services.Interfaces.node_web_interface as node_web_interface
         interface_path = Path(node_web_interface.__file__).resolve().parent

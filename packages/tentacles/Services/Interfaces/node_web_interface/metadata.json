@@ -3,5 +3,6 @@
   "origin_package": "OctoBot-Default-Tentacles",
   "tentacles": ["NodeWebInterface"],
   "tentacles-requirements": ["node_api_interface"],
-  "build": "npm install && npm run generate-client && npm run build"
+  "build": ["npm install", "npm run generate-client", "npm run build"],
+  "include": ["dist/**/*", "node_web_interface.py"]
 }

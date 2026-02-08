@@ -15,11 +15,15 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
 from typing import Any
-
 from fastapi import APIRouter
 
-from tentacles.Services.Interfaces.node_api_interface.api.deps import CurrentUser
 from octobot_node.models import User
+
+# Import from tentacles package (runtime) or fallback to direct imports (build)
+try:
+    from tentacles.Services.Interfaces.node_api_interface.api.deps import CurrentUser
+except ImportError:
+    from api.deps import CurrentUser
 
 router = APIRouter(tags=["users"])
 

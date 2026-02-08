@@ -14,10 +14,14 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
+import fnmatch
+import os
 import os.path as path
+from pathlib import PurePath
 
 import octobot_tentacles_manager.constants as constants
 import octobot_tentacles_manager.util.tentacle_explorer as explorer
+import octobot_tentacles_manager.util.tentacle_processing as tentacle_processing
 
 
 def filter_tentacles_by_dev_mode_and_package(tentacles: list,
@@ -39,6 +43,35 @@ def _filter_in_dev_tentacles(tentacles):
     ]
 
 
+def should_ignore_by_include(element_path, element_name, tentacle_root, include_patterns):
+    if element_name in constants.ALWAYS_INCLUDED_TENTACLE_FILES:
+        return False
+
+    rel_dir = path.relpath(element_path, tentacle_root)
+    rel_path = element_name if rel_dir == "." else path.join(rel_dir, element_name)
+    rel_path = rel_path.replace(os.sep, '/')
+
+    if path.isdir(path.join(element_path, element_name)):
+        return not any(
+            tentacle_processing.could_match_under_dir(rel_path, pattern)
+            for pattern in include_patterns
+        )
+    else:
+        return not any(
+            tentacle_processing.matches_pattern(rel_path, pattern)
+            for pattern in include_patterns
+        )
+
+
+def should_include_ignore_function(tentacle_root, include_patterns):
+    def _ignore(folder_path, names):
+        return {
+            name for name in names
+            if should_ignore_by_include(folder_path, name, tentacle_root, include_patterns)
+        }
+    return _ignore
+
+
 class TentacleFilter:
     def __init__(self, full_tentacles_list, tentacles_white_list):
         self.tentacles_white_list = tentacles_white_list
@@ -49,6 +82,12 @@ class TentacleFilter:
             if tentacle not in self.tentacles_white_list
         ]
         self.ignored_elements = constants.TENTACLES_PACKAGE_IGNORED_ELEMENTS
+        # Build mapping: tentacle_module_path -> include_patterns
+        self.tentacle_include_map = {}
+        if self.tentacles_white_list:
+            for tentacle in self.tentacles_white_list:
+                if tentacle.include_patterns:
+                    self.tentacle_include_map[tentacle.tentacle_module_path] = tentacle.include_patterns
 
     def should_ignore(self, folder_path, names):
         return [name
@@ -60,5 +99,25 @@ class TentacleFilter:
             return True
         if self.tentacles_white_list is not None:
             candidate_path = path.join(element_path, element_name)
-            return path.isdir(candidate_path) and candidate_path in self.tentacle_paths_black_list
+            if path.isdir(candidate_path) and candidate_path in self.tentacle_paths_black_list:
+                return True
+        
+        # Check if we're inside a tentacle with include patterns
+        # by checking if any tentacle_module_path is a parent of element_path
+        for tentacle_path, include_patterns in self.tentacle_include_map.items():
+            if self._is_path_inside_tentacle(element_path, tentacle_path):
+                return should_ignore_by_include(
+                    element_path, element_name, tentacle_path, include_patterns
+                )
         return False
+
+    @staticmethod
+    def _is_path_inside_tentacle(element_path, tentacle_path):
+        try:
+            # Get the relative path; if it doesn't start with .., then it's inside
+            rel = path.relpath(element_path, tentacle_path)
+            return not rel.startswith('..')
+        except ValueError:
+            # Different drives on Windows
+            return False
+

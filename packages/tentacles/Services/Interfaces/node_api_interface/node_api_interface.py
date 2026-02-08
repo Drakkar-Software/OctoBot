@@ -15,7 +15,6 @@
 #  License along with this library.
 from contextlib import asynccontextmanager
 
-import sentry_sdk
 import uvicorn
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse
@@ -23,14 +22,26 @@ from fastapi.routing import APIRoute
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.cors import CORSMiddleware
 
-import octobot_services.constants as services_constants
 import octobot_services.interfaces as services_interfaces
-import tentacles.Services.Services_bases as Service_bases
-from octobot_node import PROJECT_NAME
-from tentacles.Services.Interfaces.node_api_interface.api.main import build_api_router
-from octobot_node.config import settings
-from tentacles.Services.Interfaces.node_api_interface.utils import get_dist_directory
+import octobot_node.config as node_config
+from octobot_node.scheduler import scheduler  # noqa: F401
+from octobot_node.scheduler import SCHEDULER, CONSUMER
 
+# Service_bases is only needed at runtime, not for build
+try:
+    import tentacles.Services.Services_bases as Service_bases
+except ImportError:
+    Service_bases = None
+
+# Import from tentacles package (runtime) or fallback to direct imports (build)
+try:
+    from tentacles.Services.Interfaces.node_api_interface.utils import get_dist_directory
+    from tentacles.Services.Interfaces.node_api_interface.api.main import build_api_router
+except ImportError:
+    import utils
+    import api.main
+    get_dist_directory = utils.get_dist_directory
+    build_api_router = api.main.build_api_router
 
 def custom_generate_unique_id(route: APIRoute) -> str:
     if route.tags:
@@ -40,8 +51,14 @@ def custom_generate_unique_id(route: APIRoute) -> str:
 
 
 class NodeApiInterface(services_interfaces.AbstractInterface):
-    REQUIRED_SERVICES = [Service_bases.NodeApiService]
+    API_NAME = "OctoBot Node API"
 
+    try:
+        REQUIRED_SERVICES = [Service_bases.NodeApiService]
+    except AttributeError:
+        # fallback to empty array (build time)
+        REQUIRED_SERVICES = []
+    
     def __init__(self, config):
         super().__init__(config)
         self.logger = self.get_logger()
@@ -64,16 +81,27 @@ class NodeApiInterface(services_interfaces.AbstractInterface):
         node_sqlite_file = self.node_api_service.get_node_sqlite_file()
         node_redis_url = self.node_api_service.get_node_redis_url()
         if admin_username:
-            settings.ADMIN_USERNAME = admin_username
+            node_config.settings.ADMIN_USERNAME = admin_username
         if admin_password:
-            settings.ADMIN_PASSWORD = admin_password
+            node_config.settings.ADMIN_PASSWORD = admin_password
         if node_sqlite_file:
-            settings.SCHEDULER_SQLITE_FILE = node_sqlite_file
+            node_config.settings.SCHEDULER_SQLITE_FILE = node_sqlite_file
         if node_redis_url is not None:
-            settings.SCHEDULER_REDIS_URL = node_redis_url
+            node_config.settings.SCHEDULER_REDIS_URL = node_redis_url
         host = self.host
         port = self.port
         self.app = self.create_app()
+        # Set CORS from service config
+        cors_origins_str = self.node_api_service.get_backend_cors_origins()
+        if cors_origins_str:
+            cors_origins = [i.strip() for i in cors_origins_str.split(",") if i.strip()]
+            self.app.add_middleware(
+                CORSMiddleware,
+                allow_origins=cors_origins,
+                allow_credentials=True,
+                allow_methods=["*"],
+                allow_headers=["*"],
+            )
         config = uvicorn.Config(self.app, host=host, port=port, log_level="info")
         self.server = uvicorn.Server(config)
         await self.server.serve()
@@ -85,43 +113,21 @@ class NodeApiInterface(services_interfaces.AbstractInterface):
 
     @classmethod
     def create_app(cls) -> FastAPI:
-        if settings.SENTRY_DSN and settings.ENVIRONMENT != "local":
-            sentry_sdk.init(
-                dsn=str(settings.SENTRY_DSN),
-                enable_tracing=True,
-                include_local_variables=False,   # careful not to upload sensitive data
-            )
-
         @asynccontextmanager
         async def lifespan(app: FastAPI):
-            """Manage application lifespan: startup and shutdown events."""
-            # Startup - scheduler starts automatically on import
-            # Import scheduler module to ensure it's initialized
-            from octobot_node.scheduler import scheduler  # noqa: F401
-            from octobot_node.scheduler import SCHEDULER, CONSUMER
             yield
             # Shutdown
             SCHEDULER.stop()
             CONSUMER.stop()
 
         app = FastAPI(
-            title=PROJECT_NAME,
-            openapi_url=f"{settings.API_V1_STR}/openapi.json",
+            title=cls.API_NAME,
+            openapi_url=f"{node_config.settings.API_V1_STR}/openapi.json",
             generate_unique_id_function=custom_generate_unique_id,
             lifespan=lifespan,
         )
 
-        # Set all CORS enabled origins
-        if settings.all_cors_origins:
-            app.add_middleware(
-                CORSMiddleware,
-                allow_origins=settings.all_cors_origins,
-                allow_credentials=True,
-                allow_methods=["*"],
-                allow_headers=["*"],
-            )
-
-        app.include_router(build_api_router(), prefix=settings.API_V1_STR)
+        app.include_router(build_api_router(), prefix=node_config.settings.API_V1_STR)
 
         # Get the path to the dist folder (works for both development and installed packages)
         dist_dir = get_dist_directory()
@@ -144,10 +150,6 @@ class NodeApiInterface(services_interfaces.AbstractInterface):
             # Serve SPA for /app routes
             @app.get("/app/{path:path}")
             async def serve_spa_app(request: Request, path: str):
-                """
-                Serve the React app for /app routes.
-                This enables client-side routing.
-                """
                 # Don't interfere with assets (already handled by mount)
                 if path.startswith("assets/"):
                     raise HTTPException(status_code=404)
