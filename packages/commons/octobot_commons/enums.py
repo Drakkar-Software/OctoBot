@@ -525,3 +525,12 @@ class ProfileType(enum.Enum):
 
 class SignalHistoryTypes(enum.Enum):
     GPT = "gpt"
+
+
+class StopReason(enum.Enum):
+    MISSING_API_KEY_TRADING_RIGHTS = "missing_api_key_trading_rights"
+    INVALID_EXCHANGE_CREDENTIALS = "invalid_exchange_credentials"
+    STOP_CONDITION_TRIGGERED = "stop_condition_triggered"
+    MISSING_MINIMAL_FUNDS = "missing_minimal_funds"
+    INVALID_CONFIG = "invalid_config"
+    UNKNOWN = "unknown"

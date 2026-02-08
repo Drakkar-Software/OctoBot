@@ -18,7 +18,7 @@ import mock
 
 import octobot.community.errors as errors
 import octobot.community.supabase_backend.enums as supabase_enums
-import octobot_trading.enums as trading_enums
+import octobot_commons.enums as commons_enums
 
 from octobot.community.community_bot import (
     CommunityBot,
@@ -211,7 +211,7 @@ class TestScheduleBotStop:
         bot._update_deployment_error_status = mock.AsyncMock()
         bot._update_product_subscription_desired_status = mock.AsyncMock()
 
-        stop_reason = trading_enums.StopReason.MISSING_MINIMAL_FUNDS
+        stop_reason = commons_enums.StopReason.MISSING_MINIMAL_FUNDS
 
         await bot.schedule_bot_stop(stop_reason)
 

@@ -13,6 +13,20 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
+import typing
 
 class DisabledError(Exception):
+    pass
+
+
+class AutomationError(Exception):
+    pass
+
+
+class InvalidAutomationConfigError(AutomationError):
+    def __init__(self, message: str, step_name: typing.Optional[str] = None):
+        super().__init__(f"[{step_name}] {message}" if step_name else message)
+
+
+class AutomationStopped(AutomationError):
     pass

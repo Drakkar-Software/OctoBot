@@ -13,23 +13,19 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
-import asyncio
 import decimal
 import time
 import sortedcontainers
 
-import async_channel.enums as channel_enums
 import octobot_commons.enums as commons_enums
 import octobot_commons.constants as commons_constants
 import octobot_commons.configuration as configuration
 import octobot_commons.channels_name as channels_name
-import octobot.automation.bases.abstract_trigger_event as abstract_trigger_event
-import octobot_trading.exchange_channel as exchanges_channel
-import octobot_trading.api as trading_api
 import octobot_trading.constants as trading_constants
+import octobot.automation.bases.abstract_channel_based_trigger_event as abstract_channel_based_trigger_event
 
 
-class ProfitabilityThreshold(abstract_trigger_event.AbstractTriggerEvent):
+class ProfitabilityThreshold(abstract_channel_based_trigger_event.AbstractChannelBasedTriggerEvent):
     PERCENT_CHANGE = "percent_change"
     TIME_PERIOD = "time_period"
     TRIGGER_ONLY_ONCE = "trigger_only_once"
@@ -37,35 +33,24 @@ class ProfitabilityThreshold(abstract_trigger_event.AbstractTriggerEvent):
 
     def __init__(self):
         super().__init__()
-        self.waiter_task = None
-        self.percent_change = None
-        self.time_period = None
-        self.profitability_by_time = None
-        self.trigger_event = asyncio.Event()
-        self.registered_consumer = False
-        self.consumers = []
+        self.percent_change: decimal.Decimal = None # type: ignore
+        self.time_period: int = None # type: ignore
+        self.profitability_by_time: sortedcontainers.SortedDict = None # type: ignore
 
-    async def _register_consumer(self):
-        self.registered_consumer = True
-        for exchange_id in trading_api.get_exchange_ids():
-            self.consumers.append(
-                await exchanges_channel.get_chan(
-                    channels_name.OctoBotTradingChannelsName.BALANCE_PROFITABILITY_CHANNEL.value,
-                    exchange_id
-                ).new_consumer(
-                    self.balance_profitability_callback,
-                    priority_level=channel_enums.ChannelConsumerPriorityLevels.MEDIUM.value
-                )
-            )
+    async def register_consumer(self):
+        # no exchange filter: register consumer for all exchanges
+        await self._register_exchange_channel_consumer(
+            channel_name=channels_name.OctoBotTradingChannelsName.BALANCE_PROFITABILITY_CHANNEL.value,
+        )
 
-    async def balance_profitability_callback(
-            self,
-            exchange: str,
-            exchange_id: str,
-            profitability,
-            profitability_percent,
-            market_profitability_percent,
-            initial_portfolio_current_profitability,
+    async def channel_callback(
+        self,
+        exchange: str,
+        exchange_id: str,
+        profitability,
+        profitability_percent,
+        market_profitability_percent,
+        initial_portfolio_current_profitability,
     ):
         if self.should_stop:
             # do not go any further if the action has been stopped
@@ -84,27 +69,10 @@ class ProfitabilityThreshold(abstract_trigger_event.AbstractTriggerEvent):
         oldest_compared_profitability = next(iter(self.profitability_by_time.values()))
         if trading_constants.ZERO < self.percent_change <= profitability_percent - oldest_compared_profitability:
             # profitability_percent reached or when above self.percent_change
-            self.trigger_event.set()
+            self.trigger(description=f"Profitability reached {self.percent_change}%")
         if trading_constants.ZERO > self.percent_change >= profitability_percent - oldest_compared_profitability:
             # profitability_percent reached or when bellow self.percent_change
-            self.trigger_event.set()
-
-    async def stop(self):
-        await super().stop()
-        if self.waiter_task is not None and not self.waiter_task.done():
-            self.waiter_task.cancel()
-        for consumer in self.consumers:
-            await consumer.stop()
-        self.consumers = []
-
-    async def _get_next_event(self):
-        if self.should_stop:
-            raise StopIteration
-        if not self.registered_consumer:
-            await self._register_consumer()
-        self.waiter_task = asyncio.create_task(asyncio.wait_for(self.trigger_event.wait(), timeout=None))
-        await self.waiter_task
-        self.trigger_event.clear()
+            self.trigger(description=f"Profitability reached {self.percent_change}%")
 
     @staticmethod
     def get_description() -> str:
@@ -140,7 +108,7 @@ class ProfitabilityThreshold(abstract_trigger_event.AbstractTriggerEvent):
         }
 
     def apply_config(self, config):
-        self.trigger_event.clear()
+        self.clear_future()
         self.profitability_by_time = sortedcontainers.SortedDict()
         self.percent_change = decimal.Decimal(str(config[self.PERCENT_CHANGE]))
         self.time_period = config[self.TIME_PERIOD] * commons_constants.MINUTE_TO_SECONDS

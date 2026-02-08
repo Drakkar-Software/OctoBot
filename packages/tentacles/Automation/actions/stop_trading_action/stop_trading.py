@@ -16,20 +16,24 @@
 import octobot_commons.constants as commons_constants
 import octobot_services.interfaces.util as interfaces_util
 import tentacles.Automation.actions.cancel_open_order_action as cancel_open_orders
+import octobot.automation.bases.execution_details as execution_details
 
 
 class StopTrading(cancel_open_orders.CancelOpenOrders):
     PROFILE_ID = commons_constants.DEFAULT_PROFILE  # non trading profile
 
-    async def process(self):
+    async def process(
+        self, execution_details: execution_details.ExecutionDetails
+    ) -> bool:
         # cancel all open orders
-        await super().process()
+        await super().process(execution_details)
         # select non trading profile
         config = interfaces_util.get_edited_config(dict_only=False)
         config.select_profile(self.PROFILE_ID)
         config.save()
         # reboot
         interfaces_util.get_bot_api().restart_bot()
+        return True
 
     @staticmethod
     def get_description() -> str:

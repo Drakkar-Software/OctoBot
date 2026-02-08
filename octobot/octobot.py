@@ -16,6 +16,7 @@
 import asyncio
 import time
 import uuid
+import typing
 
 import octobot_commons.constants as commons_constants
 import octobot_commons.enums as commons_enums
@@ -36,6 +37,7 @@ import octobot_trading.api as trading_api
 import octobot.logger as logger
 import octobot.community as community
 import octobot.constants as constants
+import octobot.enums as enums
 import octobot.configuration_manager as configuration_manager
 import octobot.task_manager as task_manager
 import octobot.octobot_channel_consumer as octobot_channel_consumer
@@ -84,14 +86,14 @@ class OctoBot:
         self.community_auth = community_authenticator or community.CommunityAuthentication.create(community_config)
         self.community_auth.update(community_config)
 
-        # octobot_api to request the current instance
-        self.octobot_api = octobot_api.OctoBotAPI(self)
-
         # octobot channel global consumer
         self.global_consumer = octobot_channel_consumer.OctoBotChannelGlobalConsumer(self)
 
         # octobot instance id
         self.bot_id = str(uuid.uuid4())
+
+        # octobot_api to request the current instance
+        self.octobot_api = octobot_api.OctoBotAPI(self)
 
         # Logger
         self.logger = logging.get_logger(self.__class__.__name__)
@@ -204,6 +206,25 @@ class OctoBot:
         except Exception as err:
             self.logger.exception(err, True, f"Error when storing live metadata: {err}")
 
+    async def stop_all_trading_modes_and_pause_traders(
+        self,
+        stop_reason: commons_enums.StopReason,
+        execution_details: typing.Optional[automation.ExecutionDetails],
+    ):
+        try:
+            self.logger.info(f"Scheduling bot stop. Error status: {stop_reason.value}: {execution_details=}")
+            await self.exchange_producer.stop_all_trading_modes_and_pause_trader(execution_details)
+        except Exception as err:
+            self.logger.exception(err, True, f"Error when stopping trading modes: {err}")
+        try:
+            await self.community_auth.community_bot.schedule_bot_stop(stop_reason)
+        except Exception as err:
+            self.logger.exception(err, True, f"Error when scheduling bot stop: {err}")
+        if execution_details is not None:
+            await self.community_auth.community_bot.insert_stopped_strategy_execution_log(
+                execution_details.description
+            )
+
     async def stop(self):
         try:
             self.logger.debug("Stopping ...")
@@ -223,7 +244,8 @@ class OctoBot:
             if self.automation is not None:
                 await self.automation.stop()
             await self.global_consumer.stop()
-
+            self.octobot_api.clear()
+        
         finally:
             self.stopped.set()
             self.logger.info("Stopped, now shutting down.")

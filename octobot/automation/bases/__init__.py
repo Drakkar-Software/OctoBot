@@ -38,9 +38,16 @@ from octobot.automation.bases.automation_step import (
     AutomationStep,
 )
 
+from octobot.automation.bases import execution_details
+
+from octobot.automation.bases.execution_details import (
+    ExecutionDetails,
+)
+
 __all__ = [
     "AbstractAction",
     "AbstractCondition",
     "AbstractTriggerEvent",
     "AutomationStep",
+    "ExecutionDetails",
 ]

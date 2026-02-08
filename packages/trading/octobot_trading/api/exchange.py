@@ -43,8 +43,15 @@ def get_exchange_configurations_from_exchange_name(exchange_name: str) -> dict:
     return exchanges.Exchanges.instance().get_exchanges(exchange_name)
 
 
-def get_exchange_manager_from_exchange_name_and_id(exchange_name: str, exchange_id: str) -> object:
+def get_exchange_manager_from_exchange_name_and_id(exchange_name: str, exchange_id: str) -> "exchanges.ExchangeManager":
     return exchanges.Exchanges.instance().get_exchange(exchange_name, exchange_id).exchange_manager
+
+
+def get_exchange_managers_from_exchange_name(exchange_name: str) -> list["exchanges.ExchangeManager"]:
+    return [
+        exchange_configuration.exchange_manager
+        for exchange_configuration in get_exchange_configurations_from_exchange_name(exchange_name).values()
+    ]
 
 
 async def get_ccxt_exchange_available_time_frames(

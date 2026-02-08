@@ -23,6 +23,7 @@ import tentacles.Services.Interfaces.web_interface.models as models
 import tentacles.Services.Interfaces.web_interface.flask_util as flask_util
 import octobot.automation as bot_automation
 import octobot.constants as constants
+import octobot.errors as errors
 
 
 def register(blueprint):
@@ -51,7 +52,12 @@ def register(blueprint):
                 success, response = models.reset_automation_config_to_default()
                 restart = True
             if restart:
-                models.restart_global_automations()
+                try:
+                    models.restart_global_automations()
+                except errors.InvalidAutomationConfigError as err:
+                    return util.get_rest_reply(
+                        f"Invalid automation configuration: {err}", 400
+                    )
             if success:
                 return util.get_rest_reply(flask.jsonify(response))
             else:

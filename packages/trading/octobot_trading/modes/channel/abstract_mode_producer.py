@@ -44,7 +44,6 @@ import octobot_trading.modes.mode_activity as mode_activity
 import octobot_trading.modes.abstract_trading_mode as abstract_trading_mode
 import octobot_trading.modes.modes_util as modes_util
 import octobot_trading.storage.util as storage_util
-import octobot_trading.personal_data.stops as stops
 
 
 class AbstractTradingModeProducer(modes_channel.ModeChannelProducer):
@@ -107,9 +106,6 @@ class AbstractTradingModeProducer(modes_channel.ModeChannelProducer):
         self._sent_critical_notifications: set[str] = set()
 
         self.last_activity: mode_activity.TradingModeActivity = mode_activity.TradingModeActivity()
-
-        # optional stop watcher to handle stop conditions
-        self._stop_watcher: typing.Optional[stops.StopWatcher] = None
 
     def on_reload_config(self):
         """
@@ -291,8 +287,6 @@ class AbstractTradingModeProducer(modes_channel.ModeChannelProducer):
                 except (KeyError, ImportError):
                     self.logger.error(f"Can't unregister {channel_name} channel on {self.exchange_name}")
             self.delete_producer_exchange_wide_lock(self.exchange_manager)
-        if self._stop_watcher is not None:
-            await self._stop_watcher.stop()
         self.flush()
 
     def flush(self) -> None:
@@ -303,7 +297,6 @@ class AbstractTradingModeProducer(modes_channel.ModeChannelProducer):
         self.exchange_manager = None # type: ignore
         self.evaluator_consumers = []
         self.trading_consumers = []
-        self._stop_watcher = None
 
     async def ohlcv_callback(self, exchange: str, exchange_id: str, cryptocurrency: str, symbol: str,
                              time_frame: str, candle: dict):
@@ -614,39 +607,6 @@ class AbstractTradingModeProducer(modes_channel.ModeChannelProducer):
                     symbols=self.trading_mode.get_init_symbols()
                 )
             await script_keywords.set_leverage(context, await script_keywords.user_select_leverage(context))
-
-    def get_stop_conditions_config(self) -> dict:
-        # implement in subclass to return the stop conditions config
-        raise NotImplementedError("get_stop_conditions_config not implemented")
-
-    async def _initialize_stop_watcher(self):
-        """
-        Initialize the stop watcher, call it relevant
-        """
-        try:
-            stop_conditions = self.trading_mode.get_stop_conditions(self.get_stop_conditions_config())
-        except KeyError:
-            self.logger.error("Skipped stop watcher: no stop watcher config")
-            return
-        if stop_conditions:
-            self._stop_watcher = stops.StopWatcher(
-                stop_conditions,
-                self.exchange_manager,
-                self._on_stop_triggered
-            )
-            await self._stop_watcher.start()
-        else:
-            self.logger.debug("Skipped stop watcher: no stop condition")
-
-    async def _on_stop_triggered(self, stop_condition: stops.StopConditionMixin):
-        """
-        Called when a stop condition is met
-        """
-        self.logger.info(f"Emergency stop triggered: {stop_condition} is met, stopping strategy execution.")
-        await self.exchange_manager.trader.schedule_bot_stop(
-            enums.StopReason.STOP_CONDITION_TRIGGERED,
-            stop_condition
-        )
 
     async def _wait_for_symbol_prices_and_profitability_init(self, timeout) -> bool:
         try:
