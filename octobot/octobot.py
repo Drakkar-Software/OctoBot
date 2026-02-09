@@ -206,25 +206,6 @@ class OctoBot:
         except Exception as err:
             self.logger.exception(err, True, f"Error when storing live metadata: {err}")
 
-    async def stop_all_trading_modes_and_pause_traders(
-        self,
-        stop_reason: commons_enums.StopReason,
-        execution_details: typing.Optional[automation.ExecutionDetails],
-    ):
-        try:
-            self.logger.info(f"Scheduling bot stop. Error status: {stop_reason.value}: {execution_details=}")
-            await self.exchange_producer.stop_all_trading_modes_and_pause_trader(execution_details)
-        except Exception as err:
-            self.logger.exception(err, True, f"Error when stopping trading modes: {err}")
-        try:
-            await self.community_auth.community_bot.schedule_bot_stop(stop_reason)
-        except Exception as err:
-            self.logger.exception(err, True, f"Error when scheduling bot stop: {err}")
-        if execution_details is not None:
-            await self.community_auth.community_bot.insert_stopped_strategy_execution_log(
-                execution_details.description
-            )
-
     async def stop(self):
         try:
             self.logger.debug("Stopping ...")

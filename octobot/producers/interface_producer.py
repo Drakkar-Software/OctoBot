@@ -79,10 +79,12 @@ class InterfaceProducer(octobot_channels.OctoBotChannelProducer):
 
     async def _create_interfaces(self, in_backtesting):
         # do not overwrite data in case of inner bots init (backtesting)
-        if service_interfaces.get_bot_api() is None:
-            service_api.initialize_global_project_data(self.octobot.octobot_api,
-                                                       constants.PROJECT_NAME,
-                                                       constants.LONG_VERSION)
+        try: 
+            service_interfaces.get_bot_api()
+        except KeyError:
+            service_api.initialize_global_project_data(
+                self.octobot.bot_id, constants.PROJECT_NAME, constants.LONG_VERSION
+            )
         interface_factory = service_api.create_interface_factory(self.octobot.config)
         interface_list = interface_factory.get_available_interfaces()
         for interface_class in interface_list:

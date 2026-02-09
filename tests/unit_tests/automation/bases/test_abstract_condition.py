@@ -16,6 +16,7 @@
 import pytest
 
 from octobot.automation.bases.abstract_condition import AbstractCondition
+from octobot.automation.bases.execution_details import ExecutionDetails
 
 
 class PassingCondition(AbstractCondition):
@@ -29,7 +30,7 @@ class PassingCondition(AbstractCondition):
     def apply_config(self, config):
         pass
 
-    async def evaluate(self) -> bool:
+    async def process(self, execution_details: ExecutionDetails) -> bool:
         return True
 
 
@@ -44,7 +45,7 @@ class FailingCondition(AbstractCondition):
     def apply_config(self, config):
         pass
 
-    async def evaluate(self) -> bool:
+    async def process(self, execution_details: ExecutionDetails) -> bool:
         return False
 
 
@@ -53,23 +54,33 @@ pytestmark = pytest.mark.asyncio
 
 
 class TestAbstractCondition:
-    async def test_call_evaluate_returns_true_when_evaluate_passes(self):
+    async def test_call_process_returns_true_when_evaluate_passes(self):
         condition = PassingCondition()
-        result = await condition.call_evaluate()
+        result = await condition.call_process(ExecutionDetails(0, None, None))
         assert result is True
 
-    async def test_call_evaluate_returns_false_when_evaluate_fails(self):
+    async def test_call_process_returns_false_when_evaluate_fails(self):
         condition = FailingCondition()
-        result = await condition.call_evaluate()
+        result = await condition.call_process(ExecutionDetails(0, None, None))
         assert result is False
 
-    async def test_call_evaluate_updates_last_execution_details_on_success(self):
+    async def test_call_process_updates_last_execution_details_on_success(self):
         condition = PassingCondition()
-        await condition.call_evaluate()
-        assert condition.last_execution_details.timestamp > 0
+        condition.last_execution_details.timestamp = 123
+        input_execution_details = ExecutionDetails(0, None, None)
+        await condition.call_process(input_execution_details)
+        # input_execution_details should not be modified
+        assert input_execution_details.timestamp == 0
+        # last exec details is updated
+        assert condition.last_execution_details.timestamp > 123
 
-    async def test_call_evaluate_does_not_update_last_execution_details_on_failure(self):
+    async def test_call_process_does_not_update_last_execution_details_on_failure(self):
         condition = FailingCondition()
+        condition.last_execution_details.timestamp = 123
         initial_timestamp = condition.last_execution_details.timestamp
-        await condition.call_evaluate()
+        input_execution_details = ExecutionDetails(0, None, None)
+        await condition.call_process(input_execution_details)
+        # input_execution_details should not be modified
+        assert input_execution_details.timestamp == 0
+        # last exec details is updated
         assert condition.last_execution_details.timestamp == initial_timestamp
