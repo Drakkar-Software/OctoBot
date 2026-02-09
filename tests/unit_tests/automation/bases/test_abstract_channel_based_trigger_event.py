@@ -16,12 +16,36 @@
 import asyncio
 
 import pytest
-from mock import patch, AsyncMock
+from mock import patch, AsyncMock, Mock
 
 from octobot.automation.bases.abstract_channel_based_trigger_event import (
     AbstractChannelBasedTriggerEvent,
 )
 import octobot.errors as errors
+
+TRADING_API_PATCH = "octobot.automation.bases.abstract_channel_based_trigger_event.trading_api"
+
+
+class TriggerWithBaseRegisterConsumer(AbstractChannelBasedTriggerEvent):
+    """Uses base _register_exchange_channel_consumer for testing."""
+
+    @staticmethod
+    def get_description() -> str:
+        return "Trigger with base register"
+
+    def get_user_inputs(self, UI, inputs: dict, step_name: str) -> dict:
+        return {}
+
+    def apply_config(self, config):
+        pass
+
+    async def channel_callback(self, *args, **kwargs):
+        pass
+
+    async def register_consumers(self, exchange_id: str):
+        consumer = Mock()
+        consumer.stop = AsyncMock()
+        return [consumer]
 
 
 class ConcreteChannelBasedTrigger(AbstractChannelBasedTriggerEvent):
@@ -38,7 +62,7 @@ class ConcreteChannelBasedTrigger(AbstractChannelBasedTriggerEvent):
     async def channel_callback(self, *args, **kwargs):
         pass
 
-    async def register_consumer(self):
+    async def _register_exchange_channel_consumer(self):
         pass
 
 
@@ -55,23 +79,7 @@ class TestAbstractChannelBasedTriggerEvent:
         assert trigger._waiter_future is None
         assert trigger.should_stop is False
 
-    async def test_channel_callback_raises_not_implemented_on_base(self):
-        class IncompleteTrigger(AbstractChannelBasedTriggerEvent):
-            @staticmethod
-            def get_description() -> str:
-                return "Incomplete"
-
-            def get_user_inputs(self, UI, inputs, step_name): return {}
-
-            def apply_config(self, config): pass
-
-            async def register_consumer(self): pass
-
-        trigger = IncompleteTrigger()
-        with pytest.raises(NotImplementedError):
-            await trigger.channel_callback()
-
-    async def test_register_consumer_raises_not_implemented_on_base(self):
+    async def test_register_consumers_raises_not_implemented_on_base(self):
         class IncompleteTrigger(AbstractChannelBasedTriggerEvent):
             @staticmethod
             def get_description() -> str:
@@ -85,7 +93,7 @@ class TestAbstractChannelBasedTriggerEvent:
 
         trigger = IncompleteTrigger()
         with pytest.raises(NotImplementedError):
-            await trigger.register_consumer()
+            await trigger.register_consumers("exchange_id")
 
     async def test_trigger_sets_future_result(self):
         trigger = ConcreteChannelBasedTrigger()
@@ -132,7 +140,7 @@ class TestAbstractChannelBasedTriggerEvent:
         trigger = ConcreteChannelBasedTrigger()
         assert trigger._registered_consumer is False
 
-        with patch.object(trigger, "register_consumer", new_callable=AsyncMock) as mock_register:
+        with patch.object(trigger, "_register_exchange_channel_consumer", new_callable=AsyncMock) as mock_register:
             with patch.object(trigger, "check_initial_event", new_callable=AsyncMock):
                 async def set_result_soon():
                     await asyncio.sleep(0)
@@ -149,11 +157,11 @@ class TestAbstractChannelBasedTriggerEvent:
         # Should complete without error
 
     async def test_check_initial_event_called_on_first_get_next_event(self):
-        """check_initial_event is called after register_consumer on first _get_next_event call."""
+        """check_initial_event is called after _register_exchange_channel_consumer on first _get_next_event call."""
         trigger = ConcreteChannelBasedTrigger()
         assert trigger._registered_consumer is False
 
-        with patch.object(trigger, "register_consumer", new_callable=AsyncMock):
+        with patch.object(trigger, "_register_exchange_channel_consumer", new_callable=AsyncMock):
             with patch.object(trigger, "check_initial_event", new_callable=AsyncMock) as mock_check:
                 async def set_result_soon():
                     await asyncio.sleep(0)
@@ -164,11 +172,11 @@ class TestAbstractChannelBasedTriggerEvent:
                 mock_check.assert_awaited_once()
 
     async def test_check_initial_event_skipped_when_already_registered(self):
-        """check_initial_event is not called when _registered_consumer is already True."""
+        """check_initial_event is not called when _register_exchange_channel_consumer is already True."""
         trigger = ConcreteChannelBasedTrigger()
         trigger._registered_consumer = True
 
-        with patch.object(trigger, "register_consumer", new_callable=AsyncMock) as mock_register:
+        with patch.object(trigger, "_register_exchange_channel_consumer", new_callable=AsyncMock) as mock_register:
             with patch.object(trigger, "check_initial_event", new_callable=AsyncMock) as mock_check:
                 async def set_result_soon():
                     await asyncio.sleep(0)
@@ -187,7 +195,7 @@ class TestAbstractChannelBasedTriggerEvent:
         async def trigger_during_check():
             trigger.trigger("initial event detected")
 
-        with patch.object(trigger, "register_consumer", new_callable=AsyncMock):
+        with patch.object(trigger, "_register_exchange_channel_consumer", new_callable=AsyncMock):
             with patch.object(trigger, "check_initial_event", side_effect=trigger_during_check):
                 result = await trigger._get_next_event()
                 assert result == "initial event detected"
@@ -199,146 +207,154 @@ class TestAbstractChannelBasedTriggerEvent:
         assert trigger._consumers == []
         assert trigger._registered_consumer is False
 
-    async def test_register_exchange_channel_consumer_with_exchange_and_id(self):
-        trigger = ConcreteChannelBasedTrigger()
-        mock_exchange_manager = object()
-        mock_consumer = AsyncMock()
 
-        with patch("octobot.automation.bases.abstract_channel_based_trigger_event.trading_api") as mock_trading_api:
-            with patch("octobot.automation.bases.abstract_channel_based_trigger_event.exchanges_channel") as mock_exchanges_channel:
-                mock_trading_api.get_exchange_manager_from_exchange_name_and_id.return_value = mock_exchange_manager
-                mock_trading_api.get_exchange_manager_id.return_value = "manager_id"
-                mock_chan = AsyncMock()
-                mock_chan.new_consumer = AsyncMock(return_value=mock_consumer)
-                mock_exchanges_channel.get_chan.return_value = mock_chan
+class TestRegisterExchangeChannelConsumer:
+    """Tests for _register_exchange_channel_consumer."""
 
-                await trigger._register_exchange_channel_consumer(
-                    "test_channel",
-                    exchange="binance",
-                    exchange_id="exchange_1"
-                )
+    async def test_sets_registered_consumer_to_true(self):
+        trigger = TriggerWithBaseRegisterConsumer()
+        trigger.exchange = "binance"
+        trigger.exchange_id = "exchange_1"
+        mock_exchange_manager = Mock()
 
-                mock_trading_api.get_exchange_manager_from_exchange_name_and_id.assert_called_once_with(
-                    "binance", "exchange_1"
-                )
-                mock_trading_api.get_exchange_manager_id.assert_called_once_with(mock_exchange_manager)
-                assert trigger._registered_consumer is True
-                assert trigger._consumers == [mock_consumer]
+        with patch(TRADING_API_PATCH) as mock_trading_api:
+            mock_trading_api.get_exchange_manager_from_exchange_name_and_id.return_value = mock_exchange_manager
+            mock_trading_api.get_exchange_manager_id.return_value = "exchange_1"
+            await trigger._register_exchange_channel_consumer()
 
-    async def test_register_exchange_channel_consumer_with_exchange_id_only(self):
-        trigger = ConcreteChannelBasedTrigger()
-        mock_exchange_manager = object()
-        mock_consumer = AsyncMock()
+        assert trigger._registered_consumer is True
 
-        with patch("octobot.automation.bases.abstract_channel_based_trigger_event.trading_api") as mock_trading_api:
-            with patch("octobot.automation.bases.abstract_channel_based_trigger_event.exchanges_channel") as mock_exchanges_channel:
-                mock_trading_api.get_exchange_manager_from_exchange_id.return_value = mock_exchange_manager
-                mock_trading_api.get_exchange_manager_id.return_value = "manager_id"
-                mock_chan = AsyncMock()
-                mock_chan.new_consumer = AsyncMock(return_value=mock_consumer)
-                mock_exchanges_channel.get_chan.return_value = mock_chan
+    async def test_exchange_and_exchange_id_uses_get_exchange_manager_from_name_and_id(self):
+        trigger = TriggerWithBaseRegisterConsumer()
+        trigger.exchange = "binance"
+        trigger.exchange_id = "exchange_1"
+        mock_exchange_manager = Mock()
 
-                await trigger._register_exchange_channel_consumer(
-                    "test_channel",
-                    exchange_id="exchange_1"
-                )
+        with patch(TRADING_API_PATCH) as mock_trading_api:
+            mock_trading_api.get_exchange_manager_from_exchange_name_and_id.return_value = mock_exchange_manager
+            mock_trading_api.get_exchange_manager_id.return_value = "exchange_1"
+            await trigger._register_exchange_channel_consumer()
 
-                mock_trading_api.get_exchange_manager_from_exchange_id.assert_called_once_with("exchange_1")
-                assert trigger._registered_consumer is True
-                assert trigger._consumers == [mock_consumer]
+        mock_trading_api.get_exchange_manager_from_exchange_name_and_id.assert_called_once_with(
+            "binance", "exchange_1"
+        )
+        mock_trading_api.get_exchange_manager_from_exchange_id.assert_not_called()
+        mock_trading_api.get_exchange_managers_from_exchange_name.assert_not_called()
 
-    async def test_register_exchange_channel_consumer_with_exchange_only_single_manager(self):
-        trigger = ConcreteChannelBasedTrigger()
-        mock_exchange_manager = object()
-        mock_consumer = AsyncMock()
+    async def test_exchange_id_only_uses_get_exchange_manager_from_exchange_id(self):
+        trigger = TriggerWithBaseRegisterConsumer()
+        trigger.exchange_id = "exchange_1"
+        mock_exchange_manager = Mock()
 
-        with patch("octobot.automation.bases.abstract_channel_based_trigger_event.trading_api") as mock_trading_api:
-            with patch("octobot.automation.bases.abstract_channel_based_trigger_event.exchanges_channel") as mock_exchanges_channel:
-                mock_trading_api.get_exchange_managers_from_exchange_name.return_value = [mock_exchange_manager]
-                mock_trading_api.get_exchange_manager_id.return_value = "manager_id"
-                mock_chan = AsyncMock()
-                mock_chan.new_consumer = AsyncMock(return_value=mock_consumer)
-                mock_exchanges_channel.get_chan.return_value = mock_chan
-
-                await trigger._register_exchange_channel_consumer(
-                    "test_channel",
-                    exchange="binance"
-                )
-
-                mock_trading_api.get_exchange_managers_from_exchange_name.assert_called_once_with("binance")
-                assert trigger._registered_consumer is True
-                assert trigger._consumers == [mock_consumer]
-
-    async def test_register_exchange_channel_consumer_with_exchange_only_multiple_managers_raises(self):
-        trigger = ConcreteChannelBasedTrigger()
-        mock_exchange_managers = [object(), object()]
-
-        with patch("octobot.automation.bases.abstract_channel_based_trigger_event.trading_api") as mock_trading_api:
-            mock_trading_api.get_exchange_managers_from_exchange_name.return_value = mock_exchange_managers
-
-            with pytest.raises(ValueError, match="Expected 1 exchange manager for exchange binance, got 2"):
-                await trigger._register_exchange_channel_consumer(
-                    "test_channel",
-                    exchange="binance"
-                )
-
-    async def test_register_exchange_channel_consumer_for_all_exchanges(self):
-        trigger = ConcreteChannelBasedTrigger()
-        mock_exchange_manager = object()
-        mock_consumer = AsyncMock()
-
-        with patch("octobot.automation.bases.abstract_channel_based_trigger_event.trading_api") as mock_trading_api:
-            with patch("octobot.automation.bases.abstract_channel_based_trigger_event.exchanges_channel") as mock_exchanges_channel:
-                mock_trading_api.get_exchange_ids.return_value = ["id_1", "id_2"]
-                mock_trading_api.get_exchange_manager_from_exchange_id.return_value = mock_exchange_manager
-                mock_trading_api.get_exchange_manager_id.return_value = "manager_id"
-                mock_chan = AsyncMock()
-                mock_chan.new_consumer = AsyncMock(return_value=mock_consumer)
-                mock_exchanges_channel.get_chan.return_value = mock_chan
-
-                await trigger._register_exchange_channel_consumer("test_channel")
-
-                mock_trading_api.get_exchange_ids.assert_called_once()
-                assert mock_trading_api.get_exchange_manager_from_exchange_id.call_count == 2
-                assert trigger._registered_consumer is True
-                assert len(trigger._consumers) == 2
-
-    async def test_register_exchange_channel_consumer_with_valid_symbol(self):
-        trigger = ConcreteChannelBasedTrigger()
-        mock_exchange_manager = object()
-        mock_consumer = AsyncMock()
-
-        with patch("octobot.automation.bases.abstract_channel_based_trigger_event.trading_api") as mock_trading_api:
-            with patch("octobot.automation.bases.abstract_channel_based_trigger_event.exchanges_channel") as mock_exchanges_channel:
-                mock_trading_api.get_exchange_manager_from_exchange_id.return_value = mock_exchange_manager
-                mock_trading_api.get_exchange_manager_id.return_value = "manager_id"
-                mock_trading_api.get_trading_pairs.return_value = ["BTC/USDT", "ETH/USDT"]
-                mock_chan = AsyncMock()
-                mock_chan.new_consumer = AsyncMock(return_value=mock_consumer)
-                mock_exchanges_channel.get_chan.return_value = mock_chan
-
-                await trigger._register_exchange_channel_consumer(
-                    "test_channel",
-                    exchange_id="exchange_1",
-                    symbol="BTC/USDT"
-                )
-
-                mock_chan.new_consumer.assert_called_once()
-                call_kwargs = mock_chan.new_consumer.call_args[1]
-                assert call_kwargs["symbol"] == "BTC/USDT"
-
-    async def test_register_exchange_channel_consumer_with_invalid_symbol_raises(self):
-        trigger = ConcreteChannelBasedTrigger()
-        mock_exchange_manager = object()
-
-        with patch("octobot.automation.bases.abstract_channel_based_trigger_event.trading_api") as mock_trading_api:
+        with patch(TRADING_API_PATCH) as mock_trading_api:
             mock_trading_api.get_exchange_manager_from_exchange_id.return_value = mock_exchange_manager
-            mock_trading_api.get_trading_pairs.return_value = ["ETH/USDT"]
+            mock_trading_api.get_exchange_manager_id.return_value = "exchange_1"
+            await trigger._register_exchange_channel_consumer()
 
-            with pytest.raises(ValueError, match="Symbol BTC/USDT not found"):
-                await trigger._register_exchange_channel_consumer(
-                    "test_channel",
-                    exchange="binance",
-                    exchange_id="exchange_1",
-                    symbol="BTC/USDT"
-                )
+        mock_trading_api.get_exchange_manager_from_exchange_id.assert_called_once_with("exchange_1")
+        mock_trading_api.get_exchange_manager_from_exchange_name_and_id.assert_not_called()
+        mock_trading_api.get_exchange_managers_from_exchange_name.assert_not_called()
+
+    async def test_exchange_only_single_manager_succeeds(self):
+        trigger = TriggerWithBaseRegisterConsumer()
+        trigger.exchange = "binance"
+        mock_exchange_manager = Mock()
+
+        with patch(TRADING_API_PATCH) as mock_trading_api:
+            mock_trading_api.get_exchange_managers_from_exchange_name.return_value = [mock_exchange_manager]
+            mock_trading_api.get_exchange_manager_id.return_value = "exchange_1"
+            await trigger._register_exchange_channel_consumer()
+
+        mock_trading_api.get_exchange_managers_from_exchange_name.assert_called_once_with("binance")
+        mock_trading_api.get_exchange_manager_from_exchange_id.assert_not_called()
+
+    async def test_exchange_only_multiple_managers_raises_value_error(self):
+        trigger = TriggerWithBaseRegisterConsumer()
+        trigger.exchange = "binance"
+        mock_exchange_manager_1 = Mock()
+        mock_exchange_manager_2 = Mock()
+
+        with patch(TRADING_API_PATCH) as mock_trading_api:
+            mock_trading_api.get_exchange_managers_from_exchange_name.return_value = [
+                mock_exchange_manager_1,
+                mock_exchange_manager_2,
+            ]
+            with pytest.raises(ValueError, match="Expected 1 exchange manager for exchange binance, got 2"):
+                await trigger._register_exchange_channel_consumer()
+
+    async def test_no_exchange_nor_exchange_id_registers_for_all_exchange_ids(self):
+        trigger = TriggerWithBaseRegisterConsumer()
+        mock_exchange_manager = Mock()
+
+        with patch(TRADING_API_PATCH) as mock_trading_api:
+            mock_trading_api.get_exchange_ids.return_value = ["id_1", "id_2"]
+            mock_trading_api.get_exchange_manager_from_exchange_id.return_value = mock_exchange_manager
+            mock_trading_api.get_exchange_manager_id.return_value = "exchange_1"
+            await trigger._register_exchange_channel_consumer()
+
+        mock_trading_api.get_exchange_ids.assert_called_once()
+        assert mock_trading_api.get_exchange_manager_from_exchange_id.call_count == 2
+        mock_trading_api.get_exchange_manager_from_exchange_id.assert_any_call("id_1")
+        mock_trading_api.get_exchange_manager_from_exchange_id.assert_any_call("id_2")
+
+    async def test_symbol_not_in_trading_pairs_raises_value_error(self):
+        trigger = TriggerWithBaseRegisterConsumer()
+        trigger.exchange = "binance"
+        trigger.exchange_id = "exchange_1"
+        trigger.symbol = "BTC/USDT"
+        mock_exchange_manager = Mock()
+
+        with patch(TRADING_API_PATCH) as mock_trading_api:
+            mock_trading_api.get_exchange_manager_from_exchange_name_and_id.return_value = mock_exchange_manager
+            mock_trading_api.get_trading_pairs.return_value = ["ETH/USDT", "SOL/USDT"]
+            with pytest.raises(ValueError, match="Symbol BTC/USDT not found on binance"):
+                await trigger._register_exchange_channel_consumer()
+
+    async def test_symbol_in_trading_pairs_calls_register_consumers(self):
+        trigger = TriggerWithBaseRegisterConsumer()
+        trigger.exchange = "binance"
+        trigger.exchange_id = "exchange_1"
+        trigger.symbol = "BTC/USDT"
+        mock_exchange_manager = Mock()
+
+        with patch(TRADING_API_PATCH) as mock_trading_api:
+            mock_trading_api.get_exchange_manager_from_exchange_name_and_id.return_value = mock_exchange_manager
+            mock_trading_api.get_trading_pairs.return_value = ["BTC/USDT", "ETH/USDT"]
+            mock_trading_api.get_exchange_manager_id.return_value = "exchange_1"
+            await trigger._register_exchange_channel_consumer()
+
+        mock_trading_api.get_trading_pairs.assert_called_once_with(mock_exchange_manager)
+        assert len(trigger._consumers) == 1
+
+    async def test_extends_consumers_from_register_consumers(self):
+        trigger = TriggerWithBaseRegisterConsumer()
+        trigger.exchange = "binance"
+        trigger.exchange_id = "exchange_1"
+        mock_exchange_manager = Mock()
+
+        with patch(TRADING_API_PATCH) as mock_trading_api:
+            mock_trading_api.get_exchange_manager_from_exchange_name_and_id.return_value = mock_exchange_manager
+            mock_trading_api.get_exchange_manager_id.return_value = "exchange_1"
+            await trigger._register_exchange_channel_consumer()
+
+        assert len(trigger._consumers) == 1
+        assert trigger._consumers[0].stop is not None
+
+    async def test_parameters_override_instance_attributes(self):
+        trigger = TriggerWithBaseRegisterConsumer()
+        trigger.exchange = "binance"
+        trigger.exchange_id = "wrong_id"
+        mock_exchange_manager = Mock()
+
+        with patch(TRADING_API_PATCH) as mock_trading_api:
+            mock_trading_api.get_exchange_manager_from_exchange_name_and_id.return_value = mock_exchange_manager
+            mock_trading_api.get_exchange_manager_id.return_value = "exchange_1"
+            await trigger._register_exchange_channel_consumer(
+                exchange="kraken",
+                exchange_id="kraken_1",
+            )
+
+        mock_trading_api.get_exchange_manager_from_exchange_name_and_id.assert_called_once_with(
+            "kraken", "kraken_1"
+        )
+

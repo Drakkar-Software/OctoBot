@@ -46,7 +46,7 @@ class TestCondition(octobot.automation.AbstractCondition):
         super().__init__()
         self.evaluate_mock = mock.AsyncMock()
 
-    async def evaluate(self) -> bool:
+    async def process(self, execution_details: execution_details.ExecutionDetails) -> bool:
         await self.evaluate_mock()
         return True
 

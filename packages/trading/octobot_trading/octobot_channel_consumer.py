@@ -26,6 +26,7 @@ import octobot_trading.errors as errors
 import octobot_trading.exchanges as exchanges
 import octobot_trading.modes as modes
 import octobot_trading.util as util
+import octobot_trading.api as trading_api
 
 OCTOBOT_CHANNEL_TRADING_CONSUMER_LOGGER_TAG = "OctoBotChannelTradingConsumer"
 
@@ -36,6 +37,7 @@ class OctoBotChannelTradingActions(enum.Enum):
     """
 
     EXCHANGE = "exchange"
+    STOP_EXCHANGE_TRADING_MODES_AND_PAUSE_TRADER = "stop_exchange_trading_modes_and_pause_trader"
 
 
 class OctoBotChannelTradingDataKeys(enum.Enum):
@@ -50,6 +52,7 @@ class OctoBotChannelTradingDataKeys(enum.Enum):
     MATRIX_ID = "matrix_id"
     TENTACLES_SETUP_CONFIG = "tentacles_setup_config"
     ENABLE_REALTIME_DATA_FETCHING = "enable_realtime_data_fetching"
+    REASON = "reason"
 
 
 async def octobot_channel_callback(bot_id, subject, action, data) -> None:
@@ -62,6 +65,16 @@ async def octobot_channel_callback(bot_id, subject, action, data) -> None:
     """
     if subject == enums.OctoBotChannelSubjects.CREATION.value:
         await _handle_creation(bot_id, action, data)
+    elif subject == enums.OctoBotChannelSubjects.UPDATE.value:
+        await _handle_update(bot_id, action, data)
+
+
+async def _handle_update(bot_id, action, data):
+    if action == OctoBotChannelTradingActions.STOP_EXCHANGE_TRADING_MODES_AND_PAUSE_TRADER.value:
+        exchange_id = data.get(OctoBotChannelTradingDataKeys.EXCHANGE_ID.value, None)
+        reason = data.get(OctoBotChannelTradingDataKeys.REASON.value, None)
+        exchange_manager = trading_api.get_exchange_manager_from_exchange_id(exchange_id)
+        await trading_api.stop_all_trading_modes_and_pause_trader(exchange_manager, reason)
 
 
 async def _handle_creation(bot_id, action, data):

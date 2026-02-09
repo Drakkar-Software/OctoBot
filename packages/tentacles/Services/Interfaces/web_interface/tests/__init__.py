@@ -99,13 +99,13 @@ async def get_web_interface(
     web_interface_instance = None
     try:
         with mock.patch.object(configuration_storage.SyncConfigurationStorage, "_save_value_in_config", mock.Mock()):
+            bot = await _init_bot(distribution)
+            interfaces.AbstractInterface.bot_id = bot.bot_id
             web_interface_instance = web_interface.WebInterface({})
             web_interface_instance.port = get_new_port()
             web_interface_instance.should_open_web_interface = False
             web_interface_instance.set_requires_password(require_password)
             web_interface_instance.password_hash = configuration.get_password_hash(PASSWORD)
-            bot = await _init_bot(distribution)
-            interfaces.AbstractInterface.bot_api = bot.octobot_api
             first_exchange = next(iter(bot.config[commons_constants.CONFIG_EXCHANGES]))
             with mock.patch.object(web_interface_instance, "_register_on_channels", new=mock.AsyncMock()), \
                  mock.patch.object(models, "get_current_exchange", mock.Mock(return_value=first_exchange)):

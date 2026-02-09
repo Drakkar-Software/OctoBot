@@ -15,11 +15,13 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import decimal
 
+import async_channel
+import async_channel.enums as channel_enums
 import octobot_commons.enums as commons_enums
 import octobot_commons.configuration as configuration
 import octobot_commons.channels_name as channels_name
+import octobot_trading.exchange_channel as exchanges_channel
 import octobot.automation.bases.abstract_channel_based_trigger_event as abstract_channel_based_trigger_event
-
 
 class PriceThreshold(abstract_channel_based_trigger_event.AbstractChannelBasedTriggerEvent):
     TARGET_PRICE = "target_price"
@@ -30,17 +32,20 @@ class PriceThreshold(abstract_channel_based_trigger_event.AbstractChannelBasedTr
     def __init__(self):
         super().__init__()
         # config
-        self.symbol: str = None # type: ignore
         self.target_price: decimal.Decimal = None # type: ignore
         self.last_price: decimal.Decimal = None # type: ignore
 
-    async def register_consumer(self):
-        await self._register_exchange_channel_consumer(
-            channel_name=channels_name.OctoBotTradingChannelsName.MARK_PRICE_CHANNEL.value,
-            symbol=self.symbol,
-        )
+    async def register_consumers(self, exchange_id: str) -> list[async_channel.Consumer]:
+        return [
+            await exchanges_channel.get_chan(
+                channels_name.OctoBotTradingChannelsName.MARK_PRICE_CHANNEL.value, exchange_id
+            ).new_consumer(
+                self.mark_price_callback,
+                priority_level=channel_enums.ChannelConsumerPriorityLevels.HIGH.value,
+            )
+        ]
 
-    async def channel_callback(
+    async def mark_price_callback(
         self, exchange: str, exchange_id: str, cryptocurrency: str, symbol: str, mark_price
     ):
         if self.should_stop:

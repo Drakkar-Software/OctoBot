@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import abc
+import typing
 
 import octobot_commons.channels_name as channels_names
 import async_channel.util as channel_creator
@@ -22,17 +23,19 @@ import octobot_services.channel as service_channels
 import octobot_services.abstract_service_user as abstract_service_user
 import octobot_services.util as util
 
+if typing.TYPE_CHECKING:
+    import octobot.octobot_api as octobot_api
 
 class AbstractInterface(abstract_service_user.AbstractServiceUser, util.ReturningStartable, util.ExchangeWatcher):
     __metaclass__ = abc.ABCMeta
     # The service required to run this interface
     REQUIRED_SERVICES = None
 
-    # References that will be shared by interfaces
-    bot_api = None
-    project_name = None
-    project_version = None
-    enabled = True
+    # Constants that will be used by all interfaces
+    bot_id: str = None # type: ignore
+    project_name: str = None # type: ignore
+    project_version: str = None # type: ignore
+    enabled: bool = True
 
     def __init__(self, config):
         abstract_service_user.AbstractServiceUser.__init__(self, config)
@@ -45,22 +48,34 @@ class AbstractInterface(abstract_service_user.AbstractServiceUser, util.Returnin
         return False
 
     @staticmethod
-    def initialize_global_project_data(bot_api, project_name, project_version):
-        AbstractInterface.bot_api = bot_api
+    def initialize_global_project_data(
+        bot_id: str, project_name: str, project_version: str
+    ):
+        AbstractInterface.bot_id = bot_id
         AbstractInterface.project_name = project_name
         AbstractInterface.project_version = project_version
 
     @staticmethod
+    def get_bot_api() -> "octobot_api.OctoBotAPI":
+        try:
+            import octobot.octobot_api as octobot_api
+            return octobot_api.OctoBotAPIProvider.instance().get_api(AbstractInterface.bot_id)
+        except ImportError as err:
+            raise ImportError("The OctoBot package is not installed") from err
+
+    @staticmethod
     def get_exchange_managers():
         try:
-            import octobot_trading.api as api
-            return api.get_exchange_managers_from_exchange_ids(AbstractInterface.bot_api.get_exchange_manager_ids())
+            import octobot_trading.api
+            return octobot_trading.api.get_exchange_managers_from_exchange_ids(
+                AbstractInterface.get_bot_api().get_exchange_manager_ids()
+            )
         except ImportError:
             AbstractInterface.get_logger().error("AbstractInterface requires OctoBot-Trading package installed")
 
     @staticmethod
     def is_bot_ready():
-        return AbstractInterface.bot_api.is_initialized()
+        return AbstractInterface.get_bot_api().is_initialized()
 
     @abc.abstractmethod
     async def stop(self):

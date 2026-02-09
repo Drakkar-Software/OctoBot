@@ -22,6 +22,14 @@ import octobot_commons.configuration as configuration
 import octobot.automation.bases.execution_details as execution_details
 
 
+def last_execution_details_updater(func):
+    async def last_execution_details_updater_wrapper(self, *args, **kwargs):
+        if result := await func(self, *args, **kwargs):
+            self.update_last_execution_details()
+        return result
+    return last_execution_details_updater_wrapper
+
+
 class AutomationStep:
     def __init__(self):
         self.logger = logging.get_logger(self.get_name())

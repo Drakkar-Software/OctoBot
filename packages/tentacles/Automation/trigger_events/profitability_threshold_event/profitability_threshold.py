@@ -17,11 +17,14 @@ import decimal
 import time
 import sortedcontainers
 
+import async_channel
+import async_channel.enums as channel_enums
 import octobot_commons.enums as commons_enums
 import octobot_commons.constants as commons_constants
 import octobot_commons.configuration as configuration
 import octobot_commons.channels_name as channels_name
 import octobot_trading.constants as trading_constants
+import octobot_trading.exchange_channel as exchanges_channel
 import octobot.automation.bases.abstract_channel_based_trigger_event as abstract_channel_based_trigger_event
 
 
@@ -37,13 +40,17 @@ class ProfitabilityThreshold(abstract_channel_based_trigger_event.AbstractChanne
         self.time_period: int = None # type: ignore
         self.profitability_by_time: sortedcontainers.SortedDict = None # type: ignore
 
-    async def register_consumer(self):
-        # no exchange filter: register consumer for all exchanges
-        await self._register_exchange_channel_consumer(
-            channel_name=channels_name.OctoBotTradingChannelsName.BALANCE_PROFITABILITY_CHANNEL.value,
-        )
+    async def register_consumers(self, exchange_id: str) -> list[async_channel.Consumer]:
+        return [
+            await exchanges_channel.get_chan(
+                channels_name.OctoBotTradingChannelsName.BALANCE_PROFITABILITY_CHANNEL.value, exchange_id
+            ).new_consumer(
+                self.profitability_callback,
+                priority_level=channel_enums.ChannelConsumerPriorityLevels.HIGH.value,
+            )
+        ]
 
-    async def channel_callback(
+    async def profitability_callback(
         self,
         exchange: str,
         exchange_id: str,

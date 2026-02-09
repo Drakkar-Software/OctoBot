@@ -15,10 +15,11 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import octobot_commons.configuration as configuration
 import octobot.automation.bases.abstract_condition as abstract_condition
+import octobot.automation.bases.execution_details as execution_details
 
 
 class NoCondition(abstract_condition.AbstractCondition):
-    async def evaluate(self) -> bool:
+    async def process(self, execution_details: execution_details.ExecutionDetails) -> bool:
         return True
 
     @staticmethod
