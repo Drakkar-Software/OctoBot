@@ -22,8 +22,8 @@ import octobot_services.managers as managers
 import octobot_services.api.service_feeds as service_feeds_api
 
 
-def initialize_global_project_data(bot_api: object, project_name: str, project_version: str) -> None:
-    interfaces.AbstractInterface.initialize_global_project_data(bot_api, project_name, project_version)
+def initialize_global_project_data(bot_id: str, project_name: str, project_version: str) -> None:
+    interfaces.AbstractInterface.initialize_global_project_data(bot_id, project_name, project_version)
 
 
 def create_interface_factory(config: dict) -> interfaces.InterfaceFactory:

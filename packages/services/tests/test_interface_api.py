@@ -22,9 +22,9 @@ from octobot_services.interfaces.abstract_interface import AbstractInterface
 
 
 def test_initialize_global_project_data():
-    bot_api = "bot"
-    initialize_global_project_data(bot_api, "1", "2")
-    assert AbstractInterface.bot_api is bot_api
+    bot_id = "bot"
+    initialize_global_project_data(bot_id, "1", "2")
+    assert AbstractInterface.bot_id is bot_id
     assert AbstractInterface.project_name == "1"
     assert AbstractInterface.project_version == "2"
 

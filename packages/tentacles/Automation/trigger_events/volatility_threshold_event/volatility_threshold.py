@@ -18,6 +18,8 @@ import decimal
 import time
 import typing
 
+import async_channel
+import async_channel.enums as channel_enums
 import octobot_commons.enums as commons_enums
 import octobot_commons.configuration as configuration
 import octobot_commons.constants as commons_constants
@@ -25,6 +27,7 @@ import octobot_commons.channels_name as channels_name
 import octobot_commons.data_util as commons_data_util
 import octobot.automation.bases.abstract_channel_based_trigger_event as abstract_channel_based_trigger_event
 import octobot_trading.constants as trading_constants
+import octobot_trading.exchange_channel as exchanges_channel
 import octobot.errors as errors
 
 
@@ -132,7 +135,6 @@ class VolatilityThreshold(abstract_channel_based_trigger_event.AbstractChannelBa
     def __init__(self):
         super().__init__()
         # config
-        self.exchange: typing.Optional[str] = None # all exchanges if None
         self.volatility_threshold_checker: VolatilityThresholdChecker = VolatilityThresholdChecker(
             symbol=None, # type: ignore
             period_in_minutes=None, # type: ignore
@@ -187,7 +189,8 @@ class VolatilityThreshold(abstract_channel_based_trigger_event.AbstractChannelBa
     def apply_config(self, config: dict) -> None:
         self.clear_future()
         self.exchange = config[self.EXCHANGE] or None
-        self.volatility_threshold_checker.symbol = config[self.SYMBOL] # type: ignore
+        self.symbol = config[self.SYMBOL]
+        self.volatility_threshold_checker.symbol = self.symbol # type: ignore
         self.volatility_threshold_checker.period_in_minutes = config[self.PERIOD_IN_MINUTES]
         self.volatility_threshold_checker.max_allowed_positive_percentage_change = decimal.Decimal(str(
             config[self.MAX_ALLOWED_POSITIVE_PERCENTAGE_CHANGE]
@@ -197,14 +200,18 @@ class VolatilityThreshold(abstract_channel_based_trigger_event.AbstractChannelBa
         ))
         self.volatility_threshold_checker.validate_config()
 
-    async def register_consumer(self):
-        await self._register_exchange_channel_consumer(
-            channel_name=channels_name.OctoBotTradingChannelsName.MARK_PRICE_CHANNEL.value,
-            exchange=self.exchange,
-            symbol=self.volatility_threshold_checker.symbol,
-        )
+    async def register_consumers(self, exchange_id: str) -> list[async_channel.Consumer]:
+        return [
+            await exchanges_channel.get_chan(
+                channels_name.OctoBotTradingChannelsName.MARK_PRICE_CHANNEL.value, exchange_id
+            ).new_consumer(
+                self.mark_price_callback,
+                priority_level=channel_enums.ChannelConsumerPriorityLevels.HIGH.value,
+                symbol=self.volatility_threshold_checker.symbol,
+            )
+        ]
 
-    async def channel_callback(
+    async def mark_price_callback(
         self, exchange: str, exchange_id: str, cryptocurrency: str, symbol: str, mark_price
     ):
         if self.should_stop:
@@ -212,4 +219,5 @@ class VolatilityThreshold(abstract_channel_based_trigger_event.AbstractChannelBa
             return
         is_threshold_met, reason = self.volatility_threshold_checker.on_new_price(decimal.Decimal(str(mark_price)))
         if is_threshold_met:
+            self.logger.info(f"Volatility threshold met for {exchange}: {reason}")
             self.trigger(description=reason)

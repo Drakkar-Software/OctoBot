@@ -142,7 +142,6 @@ from octobot_trading.api.modes import (
     get_activated_trading_mode,
     create_trading_modes,
     create_trading_mode,
-    stop_strategy_execution,
 )
 from octobot_trading.api.trader import (
     get_trader,
@@ -159,6 +158,7 @@ from octobot_trading.api.trader import (
     sell_all_everything_for_reference_market,
     sell_currency_for_reference_market,
     get_current_bot_live_id,
+    stop_all_trading_modes_and_pause_trader,
 )
 from octobot_trading.api.portfolio import (
     get_portfolio,
@@ -353,7 +353,6 @@ __all__ = [
     "get_activated_trading_mode",
     "create_trading_modes",
     "create_trading_mode",
-    "stop_strategy_execution",
     "get_trader",
     "has_trader",
     "is_trader_enabled_in_config_from_exchange_manager",
@@ -368,6 +367,7 @@ __all__ = [
     "sell_all_everything_for_reference_market",
     "sell_currency_for_reference_market",
     "get_current_bot_live_id",
+    "stop_all_trading_modes_and_pause_trader",
     "get_portfolio",
     "get_portfolio_historical_values",
     "get_portfolio_reference_market",

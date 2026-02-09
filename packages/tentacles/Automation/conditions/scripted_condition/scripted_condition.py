@@ -22,6 +22,7 @@ import octobot.automation.bases.abstract_condition as abstract_condition
 import octobot_commons.dsl_interpreter as dsl_interpreter
 import octobot.errors as errors
 import tentacles.Meta.DSL_operators as dsl_operators
+import octobot.automation.bases.execution_details as execution_details
 
 
 
@@ -36,7 +37,7 @@ class ScriptedCondition(abstract_condition.AbstractCondition):
 
         self._dsl_interpreter: typing.Optional[dsl_interpreter.Interpreter] = None
 
-    async def evaluate(self) -> bool:
+    async def process(self, execution_details: execution_details.ExecutionDetails) -> bool:
         if self._dsl_interpreter:
             script_result = await self._dsl_interpreter.interprete(self.script)
             return bool(script_result)

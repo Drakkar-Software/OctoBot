@@ -295,7 +295,7 @@ class Automation(tentacles_management.AbstractTentacle):
         execution_details: execution_details.ExecutionDetails
     ) -> bool:
         for condition in automation_detail.conditions:
-            if not await condition.call_evaluate():
+            if not await condition.call_process(execution_details):
                 # not all conditions are valid, skip event
                 self.logger.debug(f"{condition.get_name()} is not valid: skipping "
                                   f"{automation_detail.trigger_event.get_name()} event")

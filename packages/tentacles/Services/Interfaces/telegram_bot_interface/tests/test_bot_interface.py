@@ -54,9 +54,10 @@ async def create_minimalist_unconnected_octobot():
 # use context manager instead of fixture to prevent pytest threads issues
 @contextlib.asynccontextmanager
 async def get_bot_interface():
+    bot = await create_minimalist_unconnected_octobot()
     bot_interface = interfaces.AbstractBotInterface({})
     interfaces.AbstractInterface.initialize_global_project_data(
-        (await create_minimalist_unconnected_octobot()).octobot_api,
+        bot.bot_id,
         "octobot",
         "x.y.z-alpha42")
     yield bot_interface

@@ -50,32 +50,24 @@ class ExchangeProducer(octobot_channel.OctoBotChannelProducer):
             self.created_all_exchanges.set()
             self.logger.debug(f"Exchange(s) created")
 
-    async def stop_all_trading_modes_and_pause_trader(
+    async def stop_all_trading_modes_and_pause_traders(
         self, execution_details: typing.Optional[automation.ExecutionDetails]
     ):
-        self.logger.info(f"{self.exchange_manager_ids=}")
-        for exchange_manager in trading_api.get_exchange_managers_from_exchange_ids(
-            self.exchange_manager_ids
-        ):
-            all_trading_modes = trading_api.get_trading_modes(exchange_manager)
-            if not all_trading_modes:
-                trading_api.set_trading_enabled(exchange_manager, False)
-                continue
-            exchange_name = trading_api.get_exchange_name(exchange_manager)
-            # stop all market making trading modes of this bot, on all exchanges
-            self.logger.info(
-                f"Stopping all {len(all_trading_modes)} [{exchange_name}] trading modes"
-            )
-            details = execution_details.description if execution_details else None
-            await asyncio.gather(*[
-                trading_api.stop_strategy_execution(trading_mode, details) 
-                for trading_mode in all_trading_modes
-            ])
-            self.logger.info(
-                f"All {len(all_trading_modes)} trading modes have been stopped. Pausing [{exchange_name}] trader"
-            )
-            # now that orders have been cancelled, disable trader to prevent further orders from being created
-            trading_api.set_trading_enabled(exchange_manager, False)
+        for exchange_id in self.exchange_manager_ids:
+            await self._stop_exchange_trading_modes_and_pause_trader(exchange_id, execution_details)
+            
+    async def _stop_exchange_trading_modes_and_pause_trader(
+        self, exchange_id: str, execution_details: typing.Optional[automation.ExecutionDetails]
+    ):
+        await self.send(
+            bot_id=self.octobot.bot_id,
+            subject=common_enums.OctoBotChannelSubjects.UPDATE.value,
+            action=trading_channel_consumer.OctoBotChannelTradingActions.STOP_EXCHANGE_TRADING_MODES_AND_PAUSE_TRADER.value,
+            data={
+                trading_channel_consumer.OctoBotChannelTradingDataKeys.EXCHANGE_ID.value: exchange_id,
+                trading_channel_consumer.OctoBotChannelTradingDataKeys.REASON.value: execution_details.description if execution_details else None,
+            }
+        )
 
     async def stop(self):
         self.logger.debug("Stopping ...")
@@ -84,18 +76,20 @@ class ExchangeProducer(octobot_channel.OctoBotChannelProducer):
         self.logger.debug("Stopped")
 
     async def create_exchange(self, exchange_name, backtesting):
-        await self.send(bot_id=self.octobot.bot_id,
-                        subject=common_enums.OctoBotChannelSubjects.CREATION.value,
-                        action=trading_channel_consumer.OctoBotChannelTradingActions.EXCHANGE.value,
-                        data={
-                            trading_channel_consumer.OctoBotChannelTradingDataKeys.TENTACLES_SETUP_CONFIG.value:
-                                self.octobot.tentacles_setup_config,
-                            trading_channel_consumer.OctoBotChannelTradingDataKeys.MATRIX_ID.value:
-                                self.octobot.evaluator_producer.matrix_id,
-                            trading_channel_consumer.OctoBotChannelTradingDataKeys.ENABLE_REALTIME_DATA_FETCHING.value: 
-                                self.octobot.evaluator_producer.has_real_time_evaluators_configured,
-                            trading_channel_consumer.OctoBotChannelTradingDataKeys.BACKTESTING.value: backtesting,
-                            trading_channel_consumer.OctoBotChannelTradingDataKeys.EXCHANGE_CONFIG.value:
-                                self.octobot.config,
-                            trading_channel_consumer.OctoBotChannelTradingDataKeys.EXCHANGE_NAME.value: exchange_name,
-                        })
+        await self.send(
+            bot_id=self.octobot.bot_id,
+            subject=common_enums.OctoBotChannelSubjects.CREATION.value,
+            action=trading_channel_consumer.OctoBotChannelTradingActions.EXCHANGE.value,
+            data={
+                trading_channel_consumer.OctoBotChannelTradingDataKeys.TENTACLES_SETUP_CONFIG.value:
+                    self.octobot.tentacles_setup_config,
+                trading_channel_consumer.OctoBotChannelTradingDataKeys.MATRIX_ID.value:
+                    self.octobot.evaluator_producer.matrix_id,
+                trading_channel_consumer.OctoBotChannelTradingDataKeys.ENABLE_REALTIME_DATA_FETCHING.value: 
+                    self.octobot.evaluator_producer.has_real_time_evaluators_configured,
+                trading_channel_consumer.OctoBotChannelTradingDataKeys.BACKTESTING.value: backtesting,
+                trading_channel_consumer.OctoBotChannelTradingDataKeys.EXCHANGE_CONFIG.value:
+                    self.octobot.config,
+                trading_channel_consumer.OctoBotChannelTradingDataKeys.EXCHANGE_NAME.value: exchange_name,
+            }
+        )

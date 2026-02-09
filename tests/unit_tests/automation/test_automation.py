@@ -21,11 +21,68 @@ from octobot.automation.bases.abstract_trigger_event import AbstractTriggerEvent
 from octobot.automation.bases.abstract_condition import AbstractCondition
 from octobot.automation.bases.abstract_action import AbstractAction
 from octobot.automation.bases.execution_details import ExecutionDetails
+from octobot.automation.bases import automation_step
 import octobot.errors as errors
 
 
 # All test coroutines will be treated as marked.
 pytestmark = pytest.mark.asyncio
+
+
+class TestLastExecutionDetailsUpdater:
+    """Tests for automation_step.last_execution_details_updater decorator."""
+
+    async def test_updates_last_execution_details_when_result_is_truthy(self):
+        class StepWithDecorator:
+            def __init__(self):
+                self.last_execution_details = ExecutionDetails(0, None, None)
+
+            def update_last_execution_details(self, description=None, source=None):
+                self.update_called = True
+
+            @automation_step.last_execution_details_updater
+            async def do_something(self):
+                return True
+
+        step = StepWithDecorator()
+        step.update_called = False
+        result = await step.do_something()
+        assert result is True
+        assert step.update_called is True
+
+    async def test_does_not_update_when_result_is_falsy(self):
+        class StepWithDecorator:
+            def __init__(self):
+                self.last_execution_details = ExecutionDetails(0, None, None)
+
+            def update_last_execution_details(self, description=None, source=None):
+                self.update_called = True
+
+            @automation_step.last_execution_details_updater
+            async def do_something(self):
+                return False
+
+        step = StepWithDecorator()
+        step.update_called = False
+        result = await step.do_something()
+        assert result is False
+        assert step.update_called is False
+
+    async def test_preserves_return_value(self):
+        class StepWithDecorator:
+            def __init__(self):
+                self.last_execution_details = ExecutionDetails(0, None, None)
+
+            def update_last_execution_details(self, description=None, source=None):
+                pass
+
+            @automation_step.last_execution_details_updater
+            async def do_something(self):
+                return {"key": "value"}
+
+        step = StepWithDecorator()
+        result = await step.do_something()
+        assert result == {"key": "value"}
 
 
 class MockTriggerEvent(AbstractTriggerEvent):
@@ -50,7 +107,7 @@ class MockCondition(AbstractCondition):
 
     def apply_config(self, config): pass
 
-    async def evaluate(self) -> bool:
+    async def process(self, execution_details: ExecutionDetails) -> bool:
         return True
 
 
@@ -196,7 +253,7 @@ class TestAutomation:
 
             def apply_config(self, config): pass
 
-            async def evaluate(self) -> bool:
+            async def process(self, execution_details: ExecutionDetails) -> bool:
                 return False
 
         trigger = MockTriggerEvent()

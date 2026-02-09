@@ -17,11 +17,14 @@ import decimal
 import typing
 import asyncio
 
+import async_channel
+import async_channel.enums as channel_enums
 import octobot_commons.constants as commons_constants
 import octobot_commons.enums as commons_enums
 import octobot_commons.configuration as configuration
 import octobot_commons.channels_name as channels_name
 import octobot_trading.api as trading_api
+import octobot_trading.exchange_channel as exchanges_channel
 import octobot_trading.constants as trading_constants
 import octobot_trading.util as trading_util
 import octobot.automation.bases.abstract_channel_based_trigger_event as abstract_channel_based_trigger_event
@@ -43,7 +46,6 @@ class HoldingThreshold(abstract_channel_based_trigger_event.AbstractChannelBased
     def __init__(self):
         super().__init__()
         # config
-        self.exchange: typing.Optional[str] = None # all exchanges if None
         self.asset_name: str = None # type: ignore
         self.amount: decimal.Decimal = trading_constants.ZERO
         self.stop_on_inferior: bool = False
@@ -111,11 +113,21 @@ class HoldingThreshold(abstract_channel_based_trigger_event.AbstractChannelBased
             f"{'lower' if self.stop_on_inferior else 'higher'} than the {float(self.amount)} threshold."
         )
 
-    async def register_consumer(self):
-        await self._register_exchange_channel_consumer(
-            channel_name=channels_name.OctoBotTradingChannelsName.BALANCE_CHANNEL.value,
-            exchange=self.exchange,
-        )
+    async def register_consumers(self, exchange_id: str) -> list[async_channel.Consumer]:
+        return [
+            await exchanges_channel.get_chan(
+                channels_name.OctoBotTradingChannelsName.BALANCE_CHANNEL.value, exchange_id
+            ).new_consumer(
+                self.balance_callback,
+                priority_level=channel_enums.ChannelConsumerPriorityLevels.HIGH.value,
+            )
+        ]
+
+    async def balance_callback(self, exchange: str, exchange_id: str, balance):
+        if self.should_stop:
+            # do not go any further if the action has been stopped
+            return
+        await self.perform_check(exchange_id)
 
     async def check_initial_event(self):
         exchange_manager_ids = [trading_api.get_exchange_manager_id(
@@ -132,12 +144,6 @@ class HoldingThreshold(abstract_channel_based_trigger_event.AbstractChannelBased
                 await self.perform_check(exchange_id=exchange_id)
             except asyncio.TimeoutError:
                 self.logger.error(f"Initialization of balance for {exchange_manager.exchange_name} took more than {INITIALIZATION_TIMEOUT} seconds, skipping initial check")
-
-    async def channel_callback(self, exchange: str, exchange_id: str, balance):
-        if self.should_stop:
-            # do not go any further if the action has been stopped
-            return
-        await self.perform_check(exchange_id)
 
     async def perform_check(self, exchange_id: str):
         exchange_manager = trading_api.get_exchange_manager_from_exchange_name_and_id(

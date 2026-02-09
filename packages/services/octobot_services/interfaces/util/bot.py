@@ -14,12 +14,15 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
+import typing
 import octobot_services.interfaces as interfaces
 
 
-def get_bot_api():
-    return interfaces.AbstractInterface.bot_api
+if typing.TYPE_CHECKING:
+    import octobot.octobot_api as octobot_api
 
+def get_bot_api() -> "octobot_api.OctoBotAPI":
+    return interfaces.AbstractInterface.get_bot_api()
 
 def get_exchange_manager_ids():
     return get_bot_api().get_exchange_manager_ids()
