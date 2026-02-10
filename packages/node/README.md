@@ -1,5 +1,4 @@
 # OctoBot Node
-[![PyPI](https://img.shields.io/pypi/v/octobot_node.svg?logo=pypi)](https://pypi.org/project/octobot_node)
 [![OctoBot-Node-CI](https://github.com/Drakkar-Software/OctoBot-Node/workflows/OctoBot-Node-CI/badge.svg)](https://github.com/Drakkar-Software/OctoBot-Node/actions)
 [![Telegram](https://img.shields.io/badge/Telegram-grey.svg?logo=telegram)](https://t.me/OctoBot_Project)
 [![Twitter](https://img.shields.io/twitter/follow/DrakkarsOctobot.svg?label=twitter&style=social)](https://x.com/DrakkarsOctoBot)
