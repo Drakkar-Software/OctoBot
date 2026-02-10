@@ -1,6 +1,5 @@
-# OctoBot-Evaluators [1.10.1](https://github.com/Drakkar-Software/OctoBot-Evaluators/blob/master/CHANGELOG.md)
+# OctoBot-Evaluators
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/a0c08eab5d4c440aa6e3fc3061ad0520)](https://app.codacy.com/gh/Drakkar-Software/OctoBot-Evaluators?utm_source=github.com&utm_medium=referral&utm_content=Drakkar-Software/OctoBot-Evaluators&utm_campaign=Badge_Grade_Dashboard)
-[![PyPI](https://img.shields.io/pypi/v/OctoBot-Evaluators.svg)](https://pypi.python.org/pypi/OctoBot-Evaluators/)
 [![Coverage Status](https://coveralls.io/repos/github/Drakkar-Software/OctoBot-Evaluators/badge.svg)](https://coveralls.io/github/Drakkar-Software/OctoBot-Evaluators)
 [![Github-Action-CI](https://github.com/Drakkar-Software/OctoBot-Evaluators/workflows/OctoBot-Evaluators-CI/badge.svg)](https://github.com/Drakkar-Software/OctoBot-Evaluators/actions)
 [![Build Status](https://cloud.drone.io/api/badges/Drakkar-Software/OctoBot-Evaluators/status.svg)](https://cloud.drone.io/Drakkar-Software/OctoBot-Evaluators)
