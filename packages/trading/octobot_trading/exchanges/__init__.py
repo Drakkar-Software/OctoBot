@@ -80,6 +80,7 @@ from octobot_trading.exchanges.util import (
     is_error_on_this_type,
     force_disable_web_socket,
     check_web_socket_config,
+    is_proxy_config_compatible_with_websocket_connector,
     search_websocket_class,
     supports_websocket,
 )
@@ -192,6 +193,7 @@ __all__ = [
     "AbstractWebsocketExchange",
     "force_disable_web_socket",
     "check_web_socket_config",
+    "is_proxy_config_compatible_with_websocket_connector",
     "search_websocket_class",
     "supports_websocket",
     "CCXTConnector",

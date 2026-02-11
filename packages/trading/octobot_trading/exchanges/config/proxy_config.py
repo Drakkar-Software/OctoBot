@@ -25,9 +25,12 @@ class ProxyConfig:
     http_proxy_callback: typing.Optional[typing.Callable[[str, str, dict, typing.Any], typing.Optional[str]]] = None
     https_proxy: typing.Optional[str] = None
     https_proxy_callback: typing.Optional[typing.Callable[[str, str, dict, typing.Any], typing.Optional[str]]] = None
-    # Websocket proxy
     socks_proxy : typing.Optional[str] = None
     socks_proxy_callback: typing.Optional[typing.Callable[[str, str, dict, typing.Any], typing.Optional[str]]] = None
+    # Websocket proxy
+    ws_proxy: typing.Optional[str] = None
+    wss_proxy: typing.Optional[str] = None
+    ws_socks_proxy: typing.Optional[str] = None
     # enable trust_env in exchange's aiohttp.ClientSession
     aiohttp_trust_env: bool = octobot_trading.constants.ENABLE_EXCHANGE_HTTP_PROXY_FROM_ENV
     # if set, will be called when exchange stops
@@ -44,4 +47,19 @@ class ProxyConfig:
             http_proxy=octobot_trading.constants.EXCHANGE_HTTP_PROXY_AUTHENTICATED_URL or None,
             https_proxy=octobot_trading.constants.EXCHANGE_HTTPS_PROXY_AUTHENTICATED_URL or None,
             socks_proxy=octobot_trading.constants.EXCHANGE_SOCKS_PROXY_AUTHENTICATED_URL or None,
+            ws_proxy=octobot_trading.constants.EXCHANGE_WS_PROXY_AUTHENTICATED_URL or None,
+            wss_proxy=octobot_trading.constants.EXCHANGE_WSS_PROXY_AUTHENTICATED_URL or None,
+            ws_socks_proxy=octobot_trading.constants.EXCHANGE_WS_SOCKS_PROXY_AUTHENTICATED_URL or None,
         )
+    
+    def has_rest_proxy(self) -> bool:
+        return bool(
+            self.http_proxy or self.https_proxy or self.socks_proxy or 
+            self.http_proxy_callback or self.https_proxy_callback or self.socks_proxy_callback
+        )
+    
+    def has_websocket_proxy(self) -> bool:
+        return bool(self.ws_proxy or self.wss_proxy or self.ws_socks_proxy)
+    
+    def has_proxy(self) -> bool:
+        return self.has_rest_proxy() or self.has_websocket_proxy()

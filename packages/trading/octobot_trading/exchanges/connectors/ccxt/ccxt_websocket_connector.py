@@ -52,6 +52,8 @@ class CCXTWebsocketConnector(abstract_websocket_exchange.AbstractWebsocketExchan
     # one when the exchange is disconnected
     USE_REST_CONNECTOR_ADDITIONAL_CONFIG = False # if True, the additional config from the associated rest connector will be used
     FIX_CANDLES_TIMEZONE_IF_NEEDED: bool = False  # if True, the candles timestamps will be fixed to the UTC timezone, used when WS is returning candle timestamps in a non UTC timezone
+    REQUIRES_PROXY_IF_REST_PROXY_ENABLED: bool = False # if True, the ws connector will require a proxy if the rest proxy is enabled.
+    # If not provided, the ws connector won't be used
 
     IGNORED_FEED_PAIRS = {
         # When ticker or future index is available : no need to calculate mark price from recent trades
