@@ -34,6 +34,8 @@ import octobot_trading.exchanges as exchanges
 
 import tentacles.Trading.Mode as Mode
 import tentacles.Trading.Mode.profile_copy_trading_mode.profile_copy_trading as profile_copy_trading
+import tentacles.Trading.Mode.profile_copy_trading_mode.profile_distribution as profile_distribution
+import tentacles.Trading.Mode.index_trading_mode.index_distribution as index_distribution
 
 import tests.test_utils.config as test_utils_config
 import tests.test_utils.test_exchanges as test_exchanges
@@ -117,6 +119,32 @@ async def test_validate_portfolio_allocation_feasibility_valid_cases(tools):
     mode.per_exchange_profile_portfolio_ratio = decimal.Decimal("0.1")
     mode.exchange_profile_ids = ["profile1"]
     mode._validate_portfolio_allocation_feasibility()
+
+    # update_global_distribution should convert reserved reference market ratio to tradable ratio
+    mode.per_exchange_profile_portfolio_ratio = decimal.Decimal("0.45")
+    mode.exchange_profile_ids = ["profile1", "profile2"]
+    mode.distribution_per_exchange_profile = {
+        "profile1": {
+            profile_distribution.DISTRIBUTION_KEY: [
+                {
+                    index_distribution.DISTRIBUTION_NAME: "BTC/USDT",
+                    index_distribution.DISTRIBUTION_VALUE: 100.0,
+                }
+            ],
+            profile_distribution.TRADABLE_RATIO: decimal.Decimal("1"),
+        },
+        "profile2": {
+            profile_distribution.DISTRIBUTION_KEY: [
+                {
+                    index_distribution.DISTRIBUTION_NAME: "ETH/USDT",
+                    index_distribution.DISTRIBUTION_VALUE: 100.0,
+                }
+            ],
+            profile_distribution.TRADABLE_RATIO: decimal.Decimal("1"),
+        },
+    }
+    mode.update_global_distribution()
+    assert mode.reference_market_ratio == decimal.Decimal("0.9")
 
 
 async def test_validate_portfolio_allocation_feasibility_invalid_cases(tools):

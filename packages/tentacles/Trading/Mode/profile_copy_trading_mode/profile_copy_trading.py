@@ -216,7 +216,13 @@ class ProfileCopyTradingMode(index_trading_mode.IndexTradingMode):
         self.total_ratio_per_asset = global_distribution[profile_distribution.TOTAL_RATIO_PER_ASSET]
         self.indexed_coins = global_distribution[profile_distribution.INDEXED_COINS]
         self.indexed_coins_prices = global_distribution[profile_distribution.INDEXED_COINS_PRICES]
-        self.reference_market_ratio = global_distribution[profile_distribution.REFERENCE_MARKET_RATIO]
+        # IndexTradingMode consumes reference_market_ratio as the tradable portfolio ratio.
+        # Profile distribution returns the reserved reference-market ratio, so convert it.
+        reference_market_reserved_ratio = global_distribution[profile_distribution.REFERENCE_MARKET_RATIO]
+        self.reference_market_ratio = max(
+            trading_constants.ZERO,
+            min(trading_constants.ONE, trading_constants.ONE - reference_market_reserved_ratio)
+        )
 
 
 class ProfileCopyTradingModeConsumer(index_trading_mode.IndexTradingModeConsumer):
