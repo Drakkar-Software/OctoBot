@@ -1067,7 +1067,7 @@ class polymarket(Exchange, ImplicitAPI):
     - API: GET /last-trade-price(see https://docs.polymarket.com/api-reference/trades/get-last-trade-price)
         """
         await self.load_markets()
-        market: Market = None
+        market = None
         try:
             market = self.market(symbol)
         except Exception as e:
@@ -1081,7 +1081,7 @@ class polymarket(Exchange, ImplicitAPI):
                 market = self.safe_market_with_fallback(fallbackId, None, params)
             except Exception as e:
                 market = None
-        marketInfo = self.safe_dict(market, 'info', {}) if market else {}
+        marketInfo = self.safe_dict(market, 'info', {}) if (market is not None) else {}
         # Get token ID from params or market
         # Use market['id'] which is the specific token ID for self outcome(YES/NO)
         # Do NOT use clobTokenIds[0] always picks the first outcome regardless of symbol
@@ -2609,6 +2609,7 @@ class polymarket(Exchange, ImplicitAPI):
             'delayed': 'open',      # order marketable, but subject to matching delay
             'unmatched': 'open',    # order marketable, but failure delaying, placement successful
             'canceled': 'canceled',  # CCXT unified status for canceled orders
+            'invalid': 'rejected',
         }
         normalizedStatus = status.lower()
         return self.safe_string(statuses, normalizedStatus, normalizedStatus)
