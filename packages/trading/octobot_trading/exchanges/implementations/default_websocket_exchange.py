@@ -17,6 +17,7 @@
 import octobot_trading.exchanges.connectors.ccxt.ccxt_websocket_connector as ccxt_websocket_connector
 import octobot_trading.exchanges.types as exchanges_types
 import octobot_tentacles_manager.api as api
+import octobot_trading.exchanges.util.websockets_util as websockets_util
 
 
 class DefaultWebSocketExchange(exchanges_types.WebSocketExchange):
@@ -24,11 +25,14 @@ class DefaultWebSocketExchange(exchanges_types.WebSocketExchange):
 
     @classmethod
     def get_exchange_connector_class(cls, exchange_manager):
-        return api.get_class_from_name_with_activated_required_tentacles(
+        candidate_connector_class = api.get_class_from_name_with_activated_required_tentacles(
             name=exchange_manager.exchange.get_associated_websocket_exchange_name(),
             tentacles_setup_config=exchange_manager.tentacles_setup_config,
             parent_class=cls.DEFAULT_CONNECTOR_CLASS
         )
+        if candidate_connector_class and websockets_util.is_proxy_config_compatible_with_websocket_connector(candidate_connector_class, exchange_manager.proxy_config):
+            return candidate_connector_class
+        return None
 
     def create_feeds(self):
         try:

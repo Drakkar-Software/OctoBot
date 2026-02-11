@@ -343,6 +343,12 @@ def _use_proxy_if_necessary(client, proxy_config: proxy_config_import.ProxyConfi
         client.https_proxy = proxy_config.https_proxy
     if proxy_config.https_proxy_callback:
         client.https_proxy_callback = proxy_config.https_proxy_callback
+    if proxy_config.ws_proxy:
+        client.ws_proxy = proxy_config.ws_proxy
+    if proxy_config.wss_proxy:
+        client.wss_proxy = proxy_config.wss_proxy
+    if proxy_config.ws_socks_proxy:
+        client.ws_socks_proxy = proxy_config.ws_socks_proxy
     if proxy_config.socks_proxy:
         client.socks_proxy = proxy_config.socks_proxy
     if proxy_config.socks_proxy_callback:
