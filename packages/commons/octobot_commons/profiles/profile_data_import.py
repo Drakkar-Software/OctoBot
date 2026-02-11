@@ -186,12 +186,16 @@ def _get_tentacles_setup_config(
 ):
     try:
         import octobot_tentacles_manager.api
+        import octobot_tentacles_manager.constants
 
         classes = [
             octobot_tentacles_manager.api.get_tentacle_class_from_string(
                 tentacle_data.name
             ).__name__
             for tentacle_data in profile_data.tentacles
+            if tentacle_data.name not in (
+                octobot_tentacles_manager.constants.IGNORED_TENTACLES_NAMES_IN_TENTACLES_SETUP_CONFIG
+            )
         ]
         config_path = os.path.join(output_path, constants.CONFIG_TENTACLES_FILE)
         tentacles_setup_config = (

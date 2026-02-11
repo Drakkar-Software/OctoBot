@@ -234,6 +234,11 @@ TENTACLE_TYPES = [
     TENTACLES_TRADING_PATH
 ]
 
+
+IGNORED_TENTACLES_NAMES_IN_TENTACLES_SETUP_CONFIG = [
+    "Automation", # special case for the automation tentacle config: it's storing all automations config under the same name: Automation (it's not a normal tentacle class name)
+]
+
 # compiled tentacles paths
 PLATFORM_TO_DOWNLOAD_PATH = {
     enums.PlatformsName.WINDOWS: "windows",
