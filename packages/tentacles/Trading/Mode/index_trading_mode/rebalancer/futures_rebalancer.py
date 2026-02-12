@@ -63,7 +63,8 @@ class FuturesRebalancer(rebalancer.AbstractRebalancer):
         
         order_target_price = ideal_price if ideal_price is not None else current_price
         current_position_size = position.size if not position.is_idle() else trading_constants.ZERO
-        size_difference = ideal_amount - current_position_size
+        effective_current_position_size = current_position_size + self.get_pending_open_quantity(symbol)
+        size_difference = ideal_amount - effective_current_position_size
         
         if size_difference <= trading_constants.ZERO:
             return []

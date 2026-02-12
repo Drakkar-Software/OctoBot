@@ -24,6 +24,8 @@ import octobot_trading.modes as trading_modes
 import octobot_commons.symbols.symbol_util as symbol_util
 import octobot_trading.errors as trading_errors
 import octobot_trading.enums as trading_enums
+import octobot_trading.api as trading_api
+
 import tentacles.Trading.Mode.index_trading_mode.index_trading as index_trading
 
 
@@ -144,3 +146,15 @@ class AbstractRebalancer:
                 ],
                 return_exceptions=True
             )
+
+    def get_pending_open_quantity(self, symbol: str) -> decimal.Decimal:
+        pending_quantity = decimal.Decimal(0)
+        for order in trading_api.get_open_orders(self.trading_mode.exchange_manager, symbol=symbol):
+            remaining_quantity = order.origin_quantity - order.filled_quantity
+            if remaining_quantity <= decimal.Decimal(0):
+                continue
+            if order.side is trading_enums.TradeOrderSide.BUY:
+                pending_quantity += remaining_quantity
+            elif order.side is trading_enums.TradeOrderSide.SELL:
+                pending_quantity -= remaining_quantity
+        return pending_quantity
