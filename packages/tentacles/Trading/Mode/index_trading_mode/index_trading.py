@@ -665,7 +665,7 @@ class IndexTradingModeProducer(trading_modes.AbstractTradingModeProducer):
             if symbol.quote not in self.trading_mode.indexed_coins
         ):
             ratio = decimal.Decimal(str(
-                self.get_holdings_ratio(quote, traded_symbols_only=True)
+                self.get_holdings_ratio(quote, traded_symbols_only=True, include_assets_in_open_orders=True)
             ))
             if quote == reference_market and reference_market_ratio > trading_constants.ZERO:
                 # Only the excess above the desired reference market reserve counts toward triggering
