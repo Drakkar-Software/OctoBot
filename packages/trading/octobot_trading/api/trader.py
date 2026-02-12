@@ -90,6 +90,13 @@ def get_current_bot_live_id(config: dict) -> str:
     return util.get_current_bot_live_id(config)
 
 
+def are_all_trading_modes_stoppped_and_trader_paused(exchange_manager: "octobot_trading.exchanges.ExchangeManager") -> bool:
+    return all(
+        trading_mode.stopped_strategy_execution()
+        for trading_mode in exchange_manager.trading_modes
+    ) and not exchange_manager.trader.is_enabled
+
+
 async def stop_all_trading_modes_and_pause_trader(exchange_manager: "octobot_trading.exchanges.ExchangeManager", reason_description: typing.Optional[str]):
     all_trading_modes = exchange_manager.trading_modes
     if not all_trading_modes:

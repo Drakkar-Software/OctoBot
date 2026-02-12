@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
+import time
 import pytest
 import mock
 
@@ -25,6 +26,7 @@ from octobot.community.community_bot import (
     CommunityBot,
     suppressed_local_env_bot_error,
     caught_global_exceptions,
+    _STOPPED_STRATEGY_EXECUTION_LOG_MAX_PERIOD,
 )
 
 
@@ -275,7 +277,7 @@ class TestOnTradingModesStoppedAndTradersPaused:
 
         bot.schedule_bot_stop.assert_not_awaited()
         bot.update_deployment_error_status_for_stop_reason.assert_awaited_once_with(commons_enums.StopReason.MISSING_MINIMAL_FUNDS)
-        bot.insert_stopped_strategy_execution_log.assert_awaited_once_with("user requested stop")
+        bot.insert_stopped_strategy_execution_log.assert_awaited_once_with("user requested stop", max_period=_STOPPED_STRATEGY_EXECUTION_LOG_MAX_PERIOD)
 
     async def test_logs_error_when_scheduling_bot_stop_and_log_insert_fails(self, authenticator):
         bot = CommunityBot(authenticator)
@@ -297,7 +299,7 @@ class TestOnTradingModesStoppedAndTradersPaused:
 
             bot.schedule_bot_stop.assert_awaited_once_with(commons_enums.StopReason.MISSING_MINIMAL_FUNDS)
             bot.update_deployment_error_status_for_stop_reason.assert_not_awaited()
-            bot.insert_stopped_strategy_execution_log.assert_awaited_once_with("user requested stop")
+            bot.insert_stopped_strategy_execution_log.assert_awaited_once_with("user requested stop", max_period=_STOPPED_STRATEGY_EXECUTION_LOG_MAX_PERIOD)
 
 
 class TestUpdateDeploymentErrorStatusForStopReason:
@@ -390,6 +392,28 @@ class TestInsertStoppedStrategyExecutionLog:
             supabase_enums.BotLogType.STOPPED_STRATEGY_EXECUTION,
             {supabase_enums.BotLogContentKeys.REASON.value: "user requested stop"},
         )
+
+    async def test_skips_call_within_max_period(self, authenticator):
+        bot = CommunityBot(authenticator)
+        bot.insert_bot_log = mock.AsyncMock()
+
+        # no max_period: call re-call instantly
+        await bot.insert_stopped_strategy_execution_log("user requested stop")
+        bot.insert_bot_log.assert_awaited_once()
+        bot.insert_bot_log.reset_mock()
+
+        # max_period: calls are skipped after 1st call
+        await bot.insert_stopped_strategy_execution_log("user requested stop", max_period=1)
+        bot.insert_bot_log.assert_awaited_once()
+        bot.insert_bot_log.reset_mock()
+        for _ in range(10):
+            await bot.insert_stopped_strategy_execution_log("user requested stop", max_period=1)
+            bot.insert_bot_log.assert_not_called()
+
+        with mock.patch("time.time", return_value=time.time() + 1.1):
+            await bot.insert_stopped_strategy_execution_log("user requested stop", max_period=1)
+            # now that time has passed, the call can be executed again
+            bot.insert_bot_log.assert_awaited_once()
 
 
 class TestInsertBotLog:

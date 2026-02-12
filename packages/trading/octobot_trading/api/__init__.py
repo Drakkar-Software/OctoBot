@@ -159,6 +159,7 @@ from octobot_trading.api.trader import (
     sell_currency_for_reference_market,
     get_current_bot_live_id,
     stop_all_trading_modes_and_pause_trader,
+    are_all_trading_modes_stoppped_and_trader_paused,
 )
 from octobot_trading.api.portfolio import (
     get_portfolio,
@@ -368,6 +369,7 @@ __all__ = [
     "sell_currency_for_reference_market",
     "get_current_bot_live_id",
     "stop_all_trading_modes_and_pause_trader",
+    "are_all_trading_modes_stoppped_and_trader_paused",
     "get_portfolio",
     "get_portfolio_historical_values",
     "get_portfolio_reference_market",
