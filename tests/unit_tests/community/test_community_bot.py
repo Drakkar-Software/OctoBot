@@ -19,6 +19,7 @@ import mock
 import octobot.community.errors as errors
 import octobot.community.supabase_backend.enums as supabase_enums
 import octobot_commons.enums as commons_enums
+import octobot.automation as automation
 
 from octobot.community.community_bot import (
     CommunityBot,
@@ -233,6 +234,82 @@ class TestScheduleBotStop:
         bot._update_product_subscription_desired_status.assert_awaited_once_with(
             supabase_enums.ProductSubscriptionDesiredStatus.CANCELED
         )
+
+class TestOnTradingModesStoppedAndTradersPaused:
+    async def test_schedules_bot_stop_when_schedule_bot_stop_is_true(self, authenticator):
+        bot = CommunityBot(authenticator)
+        bot.schedule_bot_stop = mock.AsyncMock()
+        bot.update_deployment_error_status_for_stop_reason = mock.AsyncMock()
+        bot.insert_stopped_strategy_execution_log = mock.AsyncMock()
+
+        await bot.on_trading_modes_stopped_and_traders_paused(commons_enums.StopReason.MISSING_MINIMAL_FUNDS, None, True)
+
+        bot.schedule_bot_stop.assert_awaited_once_with(commons_enums.StopReason.MISSING_MINIMAL_FUNDS)
+        bot.update_deployment_error_status_for_stop_reason.assert_not_awaited()
+        bot.insert_stopped_strategy_execution_log.assert_not_awaited()
+
+    async def test_updates_deployment_error_status_when_schedule_bot_stop_is_false(self, authenticator):
+        bot = CommunityBot(authenticator)
+        bot.schedule_bot_stop = mock.AsyncMock()
+        bot.update_deployment_error_status_for_stop_reason = mock.AsyncMock()
+        bot.insert_stopped_strategy_execution_log = mock.AsyncMock()
+
+        await bot.on_trading_modes_stopped_and_traders_paused(commons_enums.StopReason.MISSING_MINIMAL_FUNDS, None, False)
+
+        bot.schedule_bot_stop.assert_not_awaited()
+        bot.update_deployment_error_status_for_stop_reason.assert_awaited_once_with(commons_enums.StopReason.MISSING_MINIMAL_FUNDS)
+        bot.insert_stopped_strategy_execution_log.assert_not_awaited()
+
+    async def test_inserts_stopped_strategy_execution_log_when_execution_details_is_provided(self, authenticator):
+        bot = CommunityBot(authenticator)
+        bot.schedule_bot_stop = mock.AsyncMock()
+        bot.update_deployment_error_status_for_stop_reason = mock.AsyncMock()
+        bot.insert_stopped_strategy_execution_log = mock.AsyncMock()
+
+        await bot.on_trading_modes_stopped_and_traders_paused(
+            commons_enums.StopReason.MISSING_MINIMAL_FUNDS, automation.ExecutionDetails(
+                timestamp=1, description="user requested stop", source=None
+            ),
+            False
+        )
+
+        bot.schedule_bot_stop.assert_not_awaited()
+        bot.update_deployment_error_status_for_stop_reason.assert_awaited_once_with(commons_enums.StopReason.MISSING_MINIMAL_FUNDS)
+        bot.insert_stopped_strategy_execution_log.assert_awaited_once_with("user requested stop")
+
+    async def test_logs_error_when_scheduling_bot_stop_and_log_insert_fails(self, authenticator):
+        bot = CommunityBot(authenticator)
+        bot.schedule_bot_stop = mock.AsyncMock(side_effect=Exception("boom1"))
+        bot.update_deployment_error_status_for_stop_reason = mock.AsyncMock()
+        bot.insert_stopped_strategy_execution_log = mock.AsyncMock(side_effect=Exception("boom2"))
+        logger = mock.Mock()
+        with mock.patch.object(CommunityBot, "get_logger", return_value=logger):
+            await bot.on_trading_modes_stopped_and_traders_paused(
+                commons_enums.StopReason.MISSING_MINIMAL_FUNDS,
+                automation.ExecutionDetails(
+                    timestamp=1, description="user requested stop", source=None
+                ),
+                True
+            )
+            assert logger.exception.call_count == 2
+            assert logger.exception.mock_calls[0].args[0].args[0] == "boom1"
+            assert logger.exception.mock_calls[1].args[0].args[0] == "boom2"
+
+            bot.schedule_bot_stop.assert_awaited_once_with(commons_enums.StopReason.MISSING_MINIMAL_FUNDS)
+            bot.update_deployment_error_status_for_stop_reason.assert_not_awaited()
+            bot.insert_stopped_strategy_execution_log.assert_awaited_once_with("user requested stop")
+
+
+class TestUpdateDeploymentErrorStatusForStopReason:
+    async def test_updates_deployment_error_status_for_stop_reason(self, authenticator):
+        bot = CommunityBot(authenticator)
+        bot._update_deployment_error_status = mock.AsyncMock()
+
+        await bot.update_deployment_error_status_for_stop_reason(commons_enums.StopReason.MISSING_MINIMAL_FUNDS)
+
+        bot._update_deployment_error_status.assert_awaited_once_with(
+            supabase_enums.BotDeploymentErrorsStatuses.MISSING_MINIMAL_FUNDS
+        )   
 
 
 class TestUpdateDeploymentErrorStatus:
