@@ -17,6 +17,7 @@
 import typing
 import contextlib
 
+import octobot_commons.cache_util as cache_util
 import octobot.community.errors as errors
 import octobot.community.supabase_backend.enums as supabase_enums
 import octobot.community.models.formatters as formatters
@@ -27,6 +28,9 @@ import octobot.automation
 
 if typing.TYPE_CHECKING:
     import octobot.community.authentication as community_authentication
+
+
+_STOPPED_STRATEGY_EXECUTION_LOG_MAX_PERIOD = 60
 
 
 def suppressed_local_env_bot_error(f):
@@ -108,8 +112,9 @@ class CommunityBot:
                 await self.update_deployment_error_status_for_stop_reason(stop_reason)
         if execution_details is not None:
             with caught_global_exceptions("insert_stopped_strategy_execution_log"):
-                await self.insert_stopped_strategy_execution_log(
-                    execution_details.description
+                await self.insert_stopped_strategy_execution_log(  # pylint: disable=unexpected-keyword-arg
+                    execution_details.description,
+                    max_period=_STOPPED_STRATEGY_EXECUTION_LOG_MAX_PERIOD # type: ignore
                 )
 
     @initialized_bot_id
@@ -129,6 +134,7 @@ class CommunityBot:
             formatters.get_deployment_error_status_from_stop_reason(stop_reason)
         )
 
+    @cache_util.prevented_multiple_calls
     async def insert_stopped_strategy_execution_log(self, reason: typing.Optional[str]):
         await self.insert_bot_log(
             supabase_enums.BotLogType.STOPPED_STRATEGY_EXECUTION, {

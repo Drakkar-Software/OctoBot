@@ -241,9 +241,20 @@ class AbstractTradingMode(abstract_tentacle.AbstractTentacle):
         self.consumers = await self.create_consumers()
 
     async def stop_strategy_execution(self, reason_description: typing.Optional[str]):
+        # Override this method in subclasses to stop strategy execution if other actions are required
         self.logger.error(
             f"Stopping strategy execution is not implemented for {self.get_name()}"
         )
+        # should set self.should_stop for all producers while execution is stopped.
+        # Do it in default implementation to ensure consistency when no other action is required.
+        for producer in self.producers:
+            producer.should_stop = True
+
+    def stopped_strategy_execution(self) -> bool:
+        for producer in self.producers:
+            if not producer.should_stop:
+                return False
+        return True
 
     async def stop(self) -> None:
         """

@@ -37,8 +37,6 @@ class ExchangeProducer(octobot_channel.OctoBotChannelProducer):
         self.to_create_exchanges_count: int = 0
         self.created_all_exchanges: asyncio.Event = asyncio.Event()
         
-        self.stopped_trading_modes_and_traders: bool = False
-
     async def start(self):
         self.to_create_exchanges_count = 0
         self.created_all_exchanges.clear()
@@ -52,12 +50,19 @@ class ExchangeProducer(octobot_channel.OctoBotChannelProducer):
             self.created_all_exchanges.set()
             self.logger.debug(f"Exchange(s) created")
 
+    def are_all_trading_modes_stoppped_and_traders_paused(self) -> bool:
+        return all(
+            trading_api.are_all_trading_modes_stoppped_and_trader_paused(exchange_manager)
+            for exchange_manager in trading_api.get_exchange_managers_from_exchange_ids(
+                self.exchange_manager_ids
+            )
+        )
+
     async def stop_all_trading_modes_and_pause_traders(
         self, execution_details: typing.Optional[automation.ExecutionDetails]
     ):
         for exchange_id in self.exchange_manager_ids:
             await self._stop_exchange_trading_modes_and_pause_trader(exchange_id, execution_details)
-        self.stopped_trading_modes_and_traders = True
             
     async def _stop_exchange_trading_modes_and_pause_trader(
         self, exchange_id: str, execution_details: typing.Optional[automation.ExecutionDetails]
@@ -76,7 +81,6 @@ class ExchangeProducer(octobot_channel.OctoBotChannelProducer):
         self.logger.debug("Stopping ...")
         for exchange_manager in trading_api.get_exchange_managers_from_exchange_ids(self.exchange_manager_ids):
             await trading_api.stop_exchange(exchange_manager)
-        self.stopped_trading_modes_and_traders = True
         self.logger.debug("Stopped")
 
     async def create_exchange(self, exchange_name, backtesting):
@@ -97,4 +101,3 @@ class ExchangeProducer(octobot_channel.OctoBotChannelProducer):
                 trading_channel_consumer.OctoBotChannelTradingDataKeys.EXCHANGE_NAME.value: exchange_name,
             }
         )
-        self.stopped_trading_modes_and_traders = False

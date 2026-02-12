@@ -113,7 +113,7 @@ class OctoBotAPI:
         schedule_bot_stop: bool,
     ):
         stop_details = f"Error status: {stop_reason.value}: {execution_details=}"
-        if self._octobot.exchange_producer.stopped_trading_modes_and_traders:
+        if self._octobot.exchange_producer.are_all_trading_modes_stoppped_and_traders_paused():
             self._octobot.logger.debug(
                 f"Skipping stop all trading modes and pause traders request. {stop_details}"
             )
