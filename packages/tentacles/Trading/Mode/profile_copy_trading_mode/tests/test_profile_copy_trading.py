@@ -18,6 +18,7 @@ import datetime
 import pytest
 import pytest_asyncio
 import decimal
+import mock
 
 import async_channel.util as channel_util
 
@@ -31,11 +32,13 @@ import octobot_tentacles_manager.api as tentacles_manager_api
 import octobot_trading.api as trading_api
 import octobot_trading.exchange_channel as exchanges_channel
 import octobot_trading.exchanges as exchanges
+import octobot_trading.enums as trading_enums
 
 import tentacles.Trading.Mode as Mode
 import tentacles.Trading.Mode.profile_copy_trading_mode.profile_copy_trading as profile_copy_trading
 import tentacles.Trading.Mode.profile_copy_trading_mode.profile_distribution as profile_distribution
 import tentacles.Trading.Mode.index_trading_mode.index_distribution as index_distribution
+import tentacles.Trading.Mode.index_trading_mode.index_trading as index_trading
 
 import tests.test_utils.config as test_utils_config
 import tests.test_utils.test_exchanges as test_exchanges
@@ -246,3 +249,31 @@ async def test_init_sets_defaults_for_new_position_only_and_started_at(tools):
     assert isinstance(mode.started_at, datetime.datetime)
     # started_at should be set to current time (approximately)
     assert (datetime.datetime.now() - mode.started_at).total_seconds() < 5
+
+async def test_rebalance_with_pending_open_orders(tools):
+    mode, producer, _, _ = await _init_mode(tools, _get_config(tools, {}))
+    mode.indexed_coins = ["BTC"]
+    mode.ratio_per_asset = {
+        "BTC": {
+            index_distribution.DISTRIBUTION_NAME: "BTC",
+            index_distribution.DISTRIBUTION_VALUE: decimal.Decimal("100"),
+        }
+    }
+    mode.total_ratio_per_asset = decimal.Decimal("100")
+    mode.reference_market_ratio = decimal.Decimal("1")
+    mode.quote_asset_rebalance_ratio_threshold = decimal.Decimal("0.1")
+    mode.rebalance_trigger_min_ratio = decimal.Decimal("0.05")
+
+    def _fake_get_holdings_ratio(currency, traded_symbols_only=False, include_assets_in_open_orders=False, coins_whitelist=None):
+        if currency == "BTC":
+            return decimal.Decimal("1")
+        if currency == "USDT":
+            return decimal.Decimal("0") if include_assets_in_open_orders else decimal.Decimal("0.2")
+        return decimal.Decimal("0")
+
+    with mock.patch.object(producer, "get_holdings_ratio", mock.Mock(side_effect=_fake_get_holdings_ratio)):
+        should_rebalance, details = producer._get_rebalance_details()
+    # Without open orders we should have rebalanced
+    # As we have open orders using USDT, the rebalance should not be triggered as the current ratio is 0.2 which is above the threshold of 0.1
+    assert should_rebalance is False
+    assert details[index_trading.RebalanceDetails.FORCED_REBALANCE.value] is False
