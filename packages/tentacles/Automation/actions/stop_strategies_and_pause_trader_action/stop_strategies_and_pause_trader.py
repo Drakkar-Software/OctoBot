@@ -51,6 +51,7 @@ class StopStrategiesAndPauseTrader(abstract_action.AbstractAction):
     ) -> bool:
         await interfaces_util.get_bot_api().stop_all_trading_modes_and_pause_traders(
             self.stop_reason,
-            execution_details=execution_details.get_initial_execution_details()
+            execution_details=execution_details.get_initial_execution_details(),
+            schedule_bot_stop=False,
         )
         return True

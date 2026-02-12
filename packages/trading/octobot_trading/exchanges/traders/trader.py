@@ -167,7 +167,9 @@ class Trader(util.Initializable):
         self, reason: octobot_commons.enums.StopReason, message: str
     ):
         if self.should_stop:
-            self.logger.info(f"Bot stop already scheduled, skipping scheduling bot stop again")
+            self.logger.info(
+                f"Bot stop already scheduled, skipping scheduling bot stop again"
+            )
             return
         self.logger.error(message)
         self.should_stop = True
@@ -177,7 +179,7 @@ class Trader(util.Initializable):
             asyncio.create_task(
                 octobot_api.OctoBotAPIProvider.instance().get_api(
                     self.exchange_manager.bot_id
-                ).stop_all_trading_modes_and_pause_traders(reason, None)
+                ).stop_all_trading_modes_and_pause_traders(reason, None, True)
             )
         except ImportError as err:
             self.logger.error(

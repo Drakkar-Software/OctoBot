@@ -109,21 +109,27 @@ class OctoBotAPI:
     async def stop_all_trading_modes_and_pause_traders(
         self,
         stop_reason: commons_enums.StopReason,
-        execution_details: typing.Optional[automation.ExecutionDetails]
+        execution_details: typing.Optional[automation.ExecutionDetails],
+        schedule_bot_stop: bool,
     ):
+        stop_details = f"Error status: {stop_reason.value}: {execution_details=}"
+        if self._octobot.exchange_producer.stopped_trading_modes_and_traders:
+            self._octobot.logger.debug(
+                f"Skipping stop all trading modes and pause traders request. {stop_details}"
+            )
+            return
         try:
-            self._octobot.logger.info(f"Scheduling bot stop. Error status: {stop_reason.value}: {execution_details=}")
+            self._octobot.logger.info(
+                f"Scheduling bot stop. {stop_details}"
+            )
             await self._octobot.exchange_producer.stop_all_trading_modes_and_pause_traders(execution_details)
         except Exception as err:
             self._octobot.logger.exception(err, True, f"Error when stopping trading modes: {err}")
-        try:
-            await self._octobot.community_auth.community_bot.schedule_bot_stop(stop_reason)
-        except Exception as err:
-            self._octobot.logger.exception(err, True, f"Error when scheduling bot stop: {err}")
-        if execution_details is not None:
-            await self._octobot.community_auth.community_bot.insert_stopped_strategy_execution_log(
-                execution_details.description
-            )
+        await self._octobot.community_auth.community_bot.on_trading_modes_stopped_and_traders_paused(
+            stop_reason,
+            execution_details,
+            schedule_bot_stop,
+        )
 
     def stop_tasks(self) -> None:
         self._octobot.task_manager.stop_tasks()

@@ -23,6 +23,7 @@ import octobot.community.models.formatters as formatters
 import octobot.constants
 import octobot_commons.logging as commons_logging
 import octobot_commons.enums as commons_enums
+import octobot.automation
 
 if typing.TYPE_CHECKING:
     import octobot.community.authentication as community_authentication
@@ -90,19 +91,45 @@ class CommunityBot:
             await self._insert_bot_started_log()
             await self._ensure_clear_deployment_error_status()
 
+    async def on_trading_modes_stopped_and_traders_paused(
+        self,
+        stop_reason: commons_enums.StopReason,
+        execution_details: typing.Optional[octobot.automation.ExecutionDetails],
+        schedule_bot_stop: bool,
+    ):
+        with caught_global_exceptions(
+            f"on_trading_modes_stopped_and_traders_paused: {stop_reason=}"
+        ):
+            if schedule_bot_stop:
+                # schedule bot stop: bot will pause trading and be stopped
+                await self.schedule_bot_stop(stop_reason)
+            elif stop_reason is not None:
+                # only update error status: bot will pause trading but remain on
+                await self.update_deployment_error_status_for_stop_reason(stop_reason)
+        if execution_details is not None:
+            with caught_global_exceptions("insert_stopped_strategy_execution_log"):
+                await self.insert_stopped_strategy_execution_log(
+                    execution_details.description
+                )
+
     @initialized_bot_id
     async def schedule_bot_stop(
         self, stop_reason: typing.Optional[commons_enums.StopReason]
     ):
         if stop_reason is not None:
-            await self._update_deployment_error_status(
-                formatters.get_deployment_error_status_from_stop_reason(stop_reason)
-            )
+            await self.update_deployment_error_status_for_stop_reason(stop_reason)
         await self._update_product_subscription_desired_status(
             supabase_enums.ProductSubscriptionDesiredStatus.CANCELED
         )
 
-    async def insert_stopped_strategy_execution_log(self, reason: str):
+    async def update_deployment_error_status_for_stop_reason(
+        self, stop_reason: commons_enums.StopReason
+    ):
+        await self._update_deployment_error_status(
+            formatters.get_deployment_error_status_from_stop_reason(stop_reason)
+        )
+
+    async def insert_stopped_strategy_execution_log(self, reason: typing.Optional[str]):
         await self.insert_bot_log(
             supabase_enums.BotLogType.STOPPED_STRATEGY_EXECUTION, {
                 supabase_enums.BotLogContentKeys.REASON.value: reason
