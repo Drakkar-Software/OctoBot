@@ -48,7 +48,8 @@ class SpotRebalancer(rebalancer.AbstractRebalancer):
         # ideally use the expected reference_market_available_holdings ratio, fallback to available
         # holdings if necessary
         target_quantity = min(ideal_amount, current_market_holding / order_target_price)
-        ideal_quantity = target_quantity - current_symbol_holding
+        effective_current_symbol_holding = current_symbol_holding + self.get_pending_open_quantity(symbol)
+        ideal_quantity = target_quantity - effective_current_symbol_holding
         if ideal_quantity <= trading_constants.ZERO:
             return []
         quantity = trading_personal_data.decimal_adapt_order_quantity_because_fees(

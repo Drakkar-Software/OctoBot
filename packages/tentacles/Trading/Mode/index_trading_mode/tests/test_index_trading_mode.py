@@ -2675,6 +2675,44 @@ async def test_buy_coin(trading_tools):
 
 
 @pytest.mark.parametrize("trading_tools", ["spot", "futures"], indirect=True)
+async def test_buy_coin_does_not_duplicate_with_pending_open_orders(trading_tools):
+    update = {}
+    mode, _, consumer, trader = await _init_mode(trading_tools, _get_config(trading_tools, update))
+    dependencies = trading_signals.get_orders_dependencies([mock.Mock(order_id="123")])
+    is_futures = trader.exchange_manager.is_future
+    positions_manager = trader.exchange_manager.exchange_personal_data.positions_manager
+    orders_manager = trader.exchange_manager.exchange_personal_data.orders_manager
+    portfolio = trader.exchange_manager.exchange_personal_data.portfolio_manager.portfolio.portfolio
+
+    pending_buy_order = mock.Mock(
+        symbol="BTC/USDT",
+        origin_quantity=decimal.Decimal("2"),
+        filled_quantity=decimal.Decimal("0"),
+        side=trading_enums.TradeOrderSide.BUY,
+    )
+    portfolio["BTC"].available = decimal.Decimal("0")
+    with mock.patch.object(mode, "create_order", mock.AsyncMock(side_effect=lambda x, **kwargs: x)) as create_order_mock, \
+        mock.patch.object(
+            orders_manager, "get_open_orders", mock.Mock(return_value=[pending_buy_order])
+        ), \
+        mock.patch.object(
+            order_util, "get_futures_max_order_size", mock.Mock(return_value=(decimal.Decimal("10"), True))
+        ):
+        def _get_symbol_position(symbol, side=None):
+            return _create_position_mock(
+                symbol, trader, is_futures,
+                is_idle=True,
+            )
+        with mock.patch.object(
+            positions_manager, "get_symbol_position", mock.Mock(side_effect=_get_symbol_position)
+        ):
+            orders = await consumer.trading_mode.rebalancer.buy_coin("BTC/USDT", decimal.Decimal("2"), None, dependencies)
+
+    assert orders == [] # order already exists, we should not create a new one
+    create_order_mock.assert_not_called()
+
+
+@pytest.mark.parametrize("trading_tools", ["spot", "futures"], indirect=True)
 async def test_buy_coin_using_limit_order(trading_tools):
     update = {}
     mode, producer, consumer, trader = await _init_mode(trading_tools, _get_config(trading_tools, update))
