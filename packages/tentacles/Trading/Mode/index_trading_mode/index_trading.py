@@ -194,6 +194,7 @@ class IndexTradingModeConsumer(trading_modes.AbstractTradingModeConsumer):
         dependencies: typing.Optional[commons_signals.SignalDependencies]
     ) -> list:
         orders = []
+        await self.trading_mode.rebalancer.pre_cancel_conflicting_orders(details, dependencies, trading_enums.TradeOrderSide.SELL)
         ref_market = self.exchange_manager.exchange_personal_data.portfolio_manager.reference_market
         coins_prices = self.trading_mode.indexed_coins_prices
         if details[RebalanceDetails.SWAP.value] or is_simple_buy_without_selling:

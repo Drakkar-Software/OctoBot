@@ -116,6 +116,7 @@ class AbstractRebalancer:
         details: dict, 
         dependencies: typing.Optional[commons_signals.SignalDependencies]
     ) -> list:
+        await self.pre_cancel_conflicting_orders(details, dependencies, trading_enums.TradeOrderSide.BUY)
         removed_coins_to_sell_orders = await self.get_removed_coins_to_sell_orders(details, dependencies)
         await self.validate_sold_removed_assets(details, removed_coins_to_sell_orders)
         coins_to_sell_orders = await self.get_coins_to_sell_orders(details, dependencies)
@@ -126,9 +127,6 @@ class AbstractRebalancer:
         return orders
 
     def get_coins_to_sell(self, details: dict) -> list:
-        """
-        Gets the list of coins to sell based on rebalance details.
-        """
         return list(details[index_trading.RebalanceDetails.SWAP.value]) or (
             self.trading_mode.indexed_coins
         )
@@ -158,3 +156,61 @@ class AbstractRebalancer:
             elif order.side is trading_enums.TradeOrderSide.SELL:
                 pending_quantity -= remaining_quantity
         return pending_quantity
+
+    async def cancel_symbol_open_orders(
+        self,
+        symbol: str,
+        dependencies: typing.Optional[commons_signals.SignalDependencies],
+        allowed_sides: typing.Optional[set[trading_enums.TradeOrderSide]] = None
+    ) -> typing.Optional[commons_signals.SignalDependencies]:
+        cancelled_dependencies = commons_signals.SignalDependencies()
+        for order in trading_api.get_open_orders(self.trading_mode.exchange_manager, symbol=symbol):
+            if isinstance(order, trading_personal_data.MarketOrder):
+                continue
+            if allowed_sides and order.side not in allowed_sides:
+                continue
+            try:
+                is_cancelled, dependency = await self.trading_mode.cancel_order(order)
+                if is_cancelled and dependency is not None:
+                    cancelled_dependencies.extend(dependency)
+            except trading_errors.UnexpectedExchangeSideOrderStateError as err:
+                self.logger.warning(f"Skipped order cancel: {err}, order: {order}")
+        if dependencies is not None:
+            dependencies.extend(cancelled_dependencies)
+        return cancelled_dependencies or None
+
+    async def pre_cancel_conflicting_orders(
+        self,
+        details: dict,
+        dependencies: typing.Optional[commons_signals.SignalDependencies],
+        side: trading_enums.TradeOrderSide
+    ) -> None:
+        symbols_to_cleanup = self.get_pre_cancel_order_symbols(details, side)
+        for symbol in symbols_to_cleanup:
+            await self.cancel_symbol_open_orders(
+                symbol,
+                dependencies=dependencies,
+                allowed_sides={side}
+            )
+
+    def get_pre_cancel_order_symbols(self, details: dict, side: trading_enums.TradeOrderSide) -> set[str]:
+        symbols_to_cleanup: set[str] = set()
+        keys = self.get_rebalance_details_keys_for_side(side)
+        
+        for key in keys:
+            for coin_or_symbol in details.get(key, {}):
+                symbols_to_cleanup.add(self.get_symbol_and_base_asset(coin_or_symbol)[0])
+        return symbols_to_cleanup
+
+    def get_rebalance_details_keys_for_side(self, side: trading_enums.TradeOrderSide) -> list[str]:
+        if side == trading_enums.TradeOrderSide.BUY:
+            return [index_trading.RebalanceDetails.REMOVE.value, index_trading.RebalanceDetails.SELL_SOME.value]
+        if side == trading_enums.TradeOrderSide.SELL:
+            return [index_trading.RebalanceDetails.ADD.value, index_trading.RebalanceDetails.BUY_MORE.value]
+        raise ValueError(f"Unsupported side: {side}")
+
+    def get_symbol_and_base_asset(self, coin_or_symbol: str) -> tuple[str, str]:
+        if symbol_util.is_symbol(coin_or_symbol):
+            return coin_or_symbol, symbol_util.parse_symbol(coin_or_symbol).base
+        ref_market = self.trading_mode.exchange_manager.exchange_personal_data.portfolio_manager.reference_market
+        return symbol_util.merge_currencies(coin_or_symbol, ref_market), coin_or_symbol
