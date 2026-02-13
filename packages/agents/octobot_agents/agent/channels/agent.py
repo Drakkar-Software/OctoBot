@@ -24,12 +24,7 @@ import async_channel.producer as producer
 
 import octobot_commons.logging as logging
 
-from octobot_agents.constants import (
-    AGENT_NAME_KEY,
-    AGENT_ID_KEY,
-    AGENT_DEFAULT_VERSION,
-    AGENT_DEFAULT_MAX_RETRIES,
-)
+import octobot_agents.constants as constants
 
 
 class AbstractAgentChannelConsumer(consumer.Consumer):
@@ -49,7 +44,7 @@ class AbstractAgentChannelProducer(producer.Producer):
     Producers execute agent logic and push results to consumers.
     """
     __metaclass__ = abc.ABCMeta
-    MAX_RETRIES: int = AGENT_DEFAULT_MAX_RETRIES
+    MAX_RETRIES: int = constants.AGENT_DEFAULT_MAX_RETRIES
 
 
 class AbstractAgentChannel(channels.Channel):
@@ -66,7 +61,7 @@ class AbstractAgentChannel(channels.Channel):
     PRODUCER_CLASS = AbstractAgentChannelProducer
     CONSUMER_CLASS = AbstractAgentChannelConsumer
     
-    VERSION = AGENT_DEFAULT_VERSION
+    VERSION = constants.AGENT_DEFAULT_VERSION
     
     OUTPUT_SCHEMA: typing.Optional[typing.Type] = None
     
@@ -102,6 +97,7 @@ class AbstractAgentChannel(channels.Channel):
         """
         return cls.OUTPUT_SCHEMA
     
+    # pylint: disable=arguments-renamed
     async def new_consumer(
         self,
         callback: typing.Callable = None,
@@ -157,10 +153,11 @@ class AbstractAgentChannel(channels.Channel):
             List of matching consumer instances.
         """
         return self.get_consumer_from_filters({
-            AGENT_NAME_KEY: agent_name,
-            AGENT_ID_KEY: agent_id,
+            constants.AGENT_NAME_KEY: agent_name,
+            constants.AGENT_ID_KEY: agent_id,
         })
     
+    # pylint: disable=arguments-renamed
     async def _add_new_consumer_and_run(
         self,
         consumer_inst: "AbstractAgentChannelConsumer",
@@ -179,8 +176,8 @@ class AbstractAgentChannel(channels.Channel):
         self.add_new_consumer(
             consumer_inst,
             {
-                AGENT_NAME_KEY: agent_name,
-                AGENT_ID_KEY: agent_id,
+                constants.AGENT_NAME_KEY: agent_name,
+                constants.AGENT_ID_KEY: agent_id,
             },
         )
         await consumer_inst.run(with_task=not self.is_synchronized)

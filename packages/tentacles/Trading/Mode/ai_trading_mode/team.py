@@ -30,15 +30,9 @@ The Distribution agent receives inputs from Signal and Risk Judge.
 import typing
 
 import octobot_agents as agent
-from octobot_agents.constants import (
-    AGENT_NAME_KEY,
-    AGENT_ID_KEY,
-    RESULT_KEY,
-    MODIFICATION_ADDITIONAL_INSTRUCTIONS,
-    MODIFICATION_CUSTOM_PROMPT,
-    MODIFICATION_EXECUTION_HINTS,
-)
-from octobot_agents.enums import StepType
+import octobot_agents.constants as agent_constants
+import octobot_agents.enums as agent_enums
+import octobot_agents.models as agent_models
 
 from tentacles.Agent.sub_agents.signal_agent import (
     SignalAIAgentChannel,
@@ -51,7 +45,7 @@ from tentacles.Agent.sub_agents.bull_bear_research_agent import (
     BearResearchAIAgentProducer,
 )
 from tentacles.Agent.sub_agents.risk_judge_agent import RiskJudgeAIAgentProducer
-from octobot_agents.team.judge.channels.judge_agent import AIJudgeAgentChannel
+import octobot_agents.team.judge.channels.judge_agent as agent_judge_channels
 from tentacles.Agent.sub_agents.distribution_agent import (
     DistributionAIAgentChannel,
     DistributionAIAgentProducer,
@@ -166,10 +160,10 @@ class TradingAgentTeam(agent.AbstractSyncAgentsTeamChannelProducer):
         relations = [
             (SignalAIAgentChannel, BullResearchAIAgentChannel),
             (SignalAIAgentChannel, BearResearchAIAgentChannel),
-            (BullResearchAIAgentChannel, AIJudgeAgentChannel),
-            (BearResearchAIAgentChannel, AIJudgeAgentChannel),
+            (BullResearchAIAgentChannel, agent_judge_channels.AIJudgeAgentChannel),
+            (BearResearchAIAgentChannel, agent_judge_channels.AIJudgeAgentChannel),
             (SignalAIAgentChannel, DistributionAIAgentChannel),
-            (AIJudgeAgentChannel, DistributionAIAgentChannel),
+            (agent_judge_channels.AIJudgeAgentChannel, DistributionAIAgentChannel),
         ]
         
         super().__init__(
@@ -229,13 +223,13 @@ class TradingAgentTeam(agent.AbstractSyncAgentsTeamChannelProducer):
 
         try:
             signal_entry = results.get("SignalAIAgentProducer", {})
-            signal_result = signal_entry.get(RESULT_KEY, signal_entry)
+            signal_result = signal_entry.get(agent_constants.RESULT_KEY, signal_entry)
         except Exception:
             signal_result = {}
 
         try:
             risk_entry = results.get("RiskJudgeAIAgentProducer", {}) or results.get("RiskAIAgentProducer", {})
-            risk_result = risk_entry.get(RESULT_KEY, risk_entry)
+            risk_result = risk_entry.get(agent_constants.RESULT_KEY, risk_entry)
         except Exception:
             risk_result = {}
 
@@ -264,7 +258,7 @@ class TradingAgentTeam(agent.AbstractSyncAgentsTeamChannelProducer):
 
     async def _execute_plan(
         self,
-        execution_plan: agent.models.ExecutionPlan,
+        execution_plan: agent_models.ExecutionPlan,
         initial_data: typing.Dict[str, typing.Any],
     ) -> typing.Dict[str, typing.Any]:
         incoming_edges, _ = self._build_dag()
@@ -273,20 +267,20 @@ class TradingAgentTeam(agent.AbstractSyncAgentsTeamChannelProducer):
         results: typing.Dict[str, typing.Dict[str, typing.Any]] = {}
         completed_agents: typing.Set[str] = set()
 
-        debate_steps = [step for step in execution_plan.steps if step.step_type == StepType.DEBATE.value]
+        debate_steps = [step for step in execution_plan.steps if step.step_type == agent_enums.StepType.DEBATE.value]
         if self.judge_agent is None:
             if debate_steps:
                 self.logger.debug(
                     f"Skipping {len(debate_steps)} debate step(s) - no judge agent configured in team"
                 )
-            execution_plan.steps = [step for step in execution_plan.steps if step.step_type != StepType.DEBATE.value]
+            execution_plan.steps = [step for step in execution_plan.steps if step.step_type != agent_enums.StepType.DEBATE.value]
         else:
             max_debate_steps = 3
             if len(debate_steps) > max_debate_steps:
                 kept = 0
                 filtered_steps = []
                 for step in execution_plan.steps:
-                    if step.step_type == StepType.DEBATE.value:
+                    if step.step_type == agent_enums.StepType.DEBATE.value:
                         kept += 1
                         if kept > max_debate_steps:
                             continue
@@ -312,9 +306,9 @@ class TradingAgentTeam(agent.AbstractSyncAgentsTeamChannelProducer):
                     self.logger.debug(f"Skipping agent: {step.agent_name}")
                     continue
 
-                step_type = step.step_type or StepType.AGENT.value
+                step_type = step.step_type or agent_enums.StepType.AGENT.value
                 debate_config = step.debate_config
-                if step_type == StepType.DEBATE.value and debate_config is not None:
+                if step_type == agent_enums.StepType.DEBATE.value and debate_config is not None:
                     results, completed_agents = await self._run_debate(
                         debate_config, initial_data, results, completed_agents, incoming_edges
                     )
@@ -333,12 +327,12 @@ class TradingAgentTeam(agent.AbstractSyncAgentsTeamChannelProducer):
                 if step.instructions:
                     instruction_dict: typing.Dict[str, typing.Any] = {}
                     for instruction in step.instructions:
-                        if instruction.modification_type == MODIFICATION_ADDITIONAL_INSTRUCTIONS:
-                            instruction_dict[MODIFICATION_ADDITIONAL_INSTRUCTIONS] = instruction.value
-                        elif instruction.modification_type == MODIFICATION_CUSTOM_PROMPT:
-                            instruction_dict[MODIFICATION_CUSTOM_PROMPT] = instruction.value
-                        elif instruction.modification_type == MODIFICATION_EXECUTION_HINTS:
-                            instruction_dict[MODIFICATION_EXECUTION_HINTS] = instruction.value
+                            if instruction.modification_type == agent_constants.MODIFICATION_ADDITIONAL_INSTRUCTIONS:
+                                instruction_dict[agent_constants.MODIFICATION_ADDITIONAL_INSTRUCTIONS] = instruction.value
+                            elif instruction.modification_type == agent_constants.MODIFICATION_CUSTOM_PROMPT:
+                                instruction_dict[agent_constants.MODIFICATION_CUSTOM_PROMPT] = instruction.value
+                            elif instruction.modification_type == agent_constants.MODIFICATION_EXECUTION_HINTS:
+                                instruction_dict[agent_constants.MODIFICATION_EXECUTION_HINTS] = instruction.value
 
                     if instruction_dict:
                         await self.manager.send_instruction_to_agent(agent_obj, instruction_dict)
@@ -358,9 +352,9 @@ class TradingAgentTeam(agent.AbstractSyncAgentsTeamChannelProducer):
                         if pred_agent and pred_agent.name in results:
                             pred_result = results[pred_agent.name]
                             agent_input[pred_agent.name] = {
-                                AGENT_NAME_KEY: pred_agent.name,
-                                AGENT_ID_KEY: "",
-                                RESULT_KEY: pred_result.get(RESULT_KEY),
+                                agent_constants.AGENT_NAME_KEY: pred_agent.name,
+                                agent_constants.AGENT_ID_KEY: "",
+                                agent_constants.RESULT_KEY: pred_result.get(agent_constants.RESULT_KEY),
                             }
 
                     if isinstance(initial_data, dict):
@@ -373,9 +367,9 @@ class TradingAgentTeam(agent.AbstractSyncAgentsTeamChannelProducer):
                 try:
                     result = await agent_obj.execute(agent_input, self.ai_service)
                     results[agent_obj.name] = {
-                        AGENT_NAME_KEY: agent_obj.name,
-                        AGENT_ID_KEY: "",
-                        RESULT_KEY: result,
+                        agent_constants.AGENT_NAME_KEY: agent_obj.name,
+                        agent_constants.AGENT_ID_KEY: "",
+                        agent_constants.RESULT_KEY: result,
                     }
                     completed_agents.add(agent_obj.name)
                 except Exception as e:
@@ -393,7 +387,7 @@ class TradingAgentTeam(agent.AbstractSyncAgentsTeamChannelProducer):
         all_agent_outputs: typing.Dict[str, typing.Any] = {}
         for agent_obj in self.agents:
             if agent_obj.name in results:
-                agent_result = results[agent_obj.name].get(RESULT_KEY)
+                agent_result = results[agent_obj.name].get(agent_constants.RESULT_KEY)
                 all_agent_outputs[agent_obj.name] = agent_result
                 if agent_obj in terminal_agents:
                     terminal_results[agent_obj.name] = agent_result

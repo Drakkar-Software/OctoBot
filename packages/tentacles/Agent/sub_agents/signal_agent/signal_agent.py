@@ -25,16 +25,16 @@ import typing
 from pydantic import BaseModel, model_validator
 from typing import List
 
-import octobot_agents as agent
-from octobot_agents.models import AgentBaseModel
-from octobot_agents.utils.extractor import extract_json_from_content
+import octobot_agents.agent.channels.ai_agent as ai_agent_channels
+import octobot_agents.models as agent_models
+import octobot_agents.utils.extractor as agent_extractor
 from octobot_services.enums import AIModelPolicy
 
 from .state import AIAgentState
 from .models import CryptoSignalOutput, SignalSynthesisOutput
 
 
-class SignalAgentOutput(AgentBaseModel):
+class SignalAgentOutput(agent_models.AgentBaseModel):
     """Output schema for SignalAIAgentProducer."""
     __strict_json_schema__ = True
     
@@ -50,17 +50,15 @@ class SignalAgentOutput(AgentBaseModel):
         return self
 
 
-class SignalAIAgentChannel(agent.AbstractAgentChannel):
-    """Channel for SignalAIAgentProducer."""
+class SignalAIAgentChannel(ai_agent_channels.AbstractAIAgentChannel):
     OUTPUT_SCHEMA = SignalAgentOutput
 
 
-class SignalAIAgentConsumer(agent.AbstractAIAgentChannelConsumer):
-    """Consumer for SignalAIAgentProducer."""
+class SignalAIAgentConsumer(ai_agent_channels.AbstractAIAgentChannelConsumer):
     pass
 
 
-class SignalAIAgentProducer(agent.AbstractAIAgentChannelProducer):
+class SignalAIAgentProducer(ai_agent_channels.AbstractAIAgentChannelProducer):
     """
     Signal agent producer that analyzes all cryptocurrencies and synthesizes signals.
     
@@ -304,7 +302,7 @@ Remember: Base ONLY on the provided data. Do not make allocation decisions - onl
             try:
                 response_data.get("synthesis", {})
             except AttributeError:
-                parsed = extract_json_from_content(str(response_data))
+                parsed = agent_extractor.extract_json_from_content(str(response_data))
                 if parsed is None:
                     raise ValueError("Failed to parse JSON response.")
                 response_data = parsed

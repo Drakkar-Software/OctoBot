@@ -15,7 +15,7 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
 from octobot_agents.team.manager.channels.manager_agent import (
-    AbstractTeamManagerAgent,
+    TeamManagerMixin,
     ManagerAgentChannel,
     ManagerAgentConsumer,
     ManagerAgentProducer,
@@ -31,7 +31,7 @@ from octobot_agents.team.manager.channels.manager_agent import (
 )
 
 __all__ = [
-    "AbstractTeamManagerAgent",
+    "TeamManagerMixin",
     "ManagerAgentChannel",
     "ManagerAgentConsumer",
     "ManagerAgentProducer",

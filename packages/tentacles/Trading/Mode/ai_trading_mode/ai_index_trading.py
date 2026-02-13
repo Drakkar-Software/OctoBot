@@ -27,7 +27,7 @@ import octobot_commons.evaluators_util as evaluators_util
 import octobot_evaluators.constants as evaluators_constants
 import octobot_trading.api as trading_api
 import octobot_services.api.services as services_api
-import octobot_agents.constants as agents_constants
+import octobot_agents.constants as agent_constants
 import octobot_commons.constants as common_constants
 
 from tentacles.Trading.Mode.ai_trading_mode import ai_index_distribution
@@ -99,7 +99,7 @@ class AIIndexTradingModeProducer(index_trading.IndexTradingModeProducer):
             )
             if not is_valid and not (
                 eval_note == common_constants.START_PENDING_EVAL_NOTE
-                and note_description == agents_constants.DEFAULT_AGENT_RESULT
+                and note_description == agent_constants.DEFAULT_AGENT_RESULT
             ):
                 continue
             note_metadata = evaluators_api.get_metadata(evaluated_strategy_node)
@@ -185,7 +185,7 @@ class AIIndexTradingModeProducer(index_trading.IndexTradingModeProducer):
                         )
                         if not is_valid and not (
                             eval_note == common_constants.START_PENDING_EVAL_NOTE
-                            and note_description == agents_constants.DEFAULT_AGENT_RESULT
+                            and note_description == agent_constants.DEFAULT_AGENT_RESULT
                         ):
                             continue
                         note_metadata = evaluators_api.get_metadata(evaluated_strategy_node)
@@ -275,7 +275,7 @@ class AIIndexTradingModeProducer(index_trading.IndexTradingModeProducer):
             )
             if not is_valid and not (
                 eval_note == common_constants.START_PENDING_EVAL_NOTE
-                and note_description == agents_constants.DEFAULT_AGENT_RESULT
+                            and note_description == agent_constants.DEFAULT_AGENT_RESULT
             ):
                 continue
             note_metadata = evaluators_api.get_metadata(evaluated_strategy_node)

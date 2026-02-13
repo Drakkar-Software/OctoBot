@@ -30,42 +30,19 @@ import json
 import logging
 import uuid
 
-from octobot_agents.team.channels.agents_team import (
-    AbstractAgentsTeamChannel,
-    AbstractAgentsTeamChannelConsumer,
-    AbstractAgentsTeamChannelProducer,
-)
-from octobot_agents.agent.channels.deep_agent import (
-    DEEP_AGENTS_AVAILABLE,
-    build_dictionary_subagent,
-    create_memory_backend,
-    build_subagents_from_producers,
-    create_supervisor_agent,
-    create_interrupt_config,
-    build_hitl_decision,
-    discover_skills,
-    create_skills_files_dict,
-)
-from octobot_agents.constants import (
-    MEMORIES_PATH_PREFIX,
-    AGENT_DEFAULT_TEMPERATURE,
-    HITL_DECISION_APPROVE,
-    HITL_DECISION_REJECT,
-    HITL_INTERRUPT_KEY,
-    SKILLS_PATH_PREFIX,
-    SKILLS_DEFAULT_DIR,
-)
-from octobot_agents.errors import DeepAgentNotAvailableError
-from octobot_agents.storage.history import create_analysis_storage
+import octobot_agents.team.channels.agents_team as agents_team
+import octobot_agents.agent.channels.agent as agent_channels
+import octobot_agents.agent.channels.deep_agent as deep_agent
+import octobot_agents.constants as constants
+import octobot_agents.errors as errors
+import octobot_agents.storage.history as history
 import octobot_services.services.abstract_ai_service as abstract_ai_service
 
 logger = logging.getLogger(__name__)
 
 try:
-    from deepagents import create_deep_agent, CompiledSubAgent
+    from deepagents import create_deep_agent
     from deepagents.backends import CompositeBackend, StateBackend, StoreBackend
-    from langchain.agents.middleware import TodoListMiddleware
-    from deepagents.middleware.subagents import SubAgentMiddleware
     from langgraph.store.memory import InMemoryStore
     from langgraph.checkpoint.memory import MemorySaver
     from langgraph.types import Command
@@ -75,15 +52,15 @@ except ImportError as e:
     logger.warning(f"deepagents not available - Deep Agent features disabled: {e}")
 
 
-class AbstractDeepAgentsTeamChannel(AbstractAgentsTeamChannel):
+class AbstractDeepAgentsTeamChannel(agents_team.AbstractAgentsTeamChannel):
     __metaclass__ = abc.ABCMeta
 
 
-class AbstractDeepAgentsTeamChannelConsumer(AbstractAgentsTeamChannelConsumer):
+class AbstractDeepAgentsTeamChannelConsumer(agents_team.AbstractAgentsTeamChannelConsumer):
     __metaclass__ = abc.ABCMeta
 
 
-class AbstractDeepAgentsTeamChannelProducer(AbstractAgentsTeamChannelProducer, abc.ABC):
+class AbstractDeepAgentsTeamChannelProducer(agents_team.AbstractAgentsTeamChannelProducer, abc.ABC):
     """
     Team producer using LangChain Deep Agents with supervisor pattern.
     
@@ -123,11 +100,12 @@ class AbstractDeepAgentsTeamChannelProducer(AbstractAgentsTeamChannelProducer, a
         enable_streaming: bool | None = None,
         analysis_storage: typing.Optional[typing.Any] = None,
     ):
-        self.channel = channel
+        # pylint: disable=super-init-not-called,non-parent-init-called
+        agent_channels.AbstractAgentChannelProducer.__init__(self, channel)
         self.ai_service = ai_service
         self.model = model
         self.max_tokens = max_tokens
-        self.temperature = temperature or AGENT_DEFAULT_TEMPERATURE
+        self.temperature = temperature or constants.AGENT_DEFAULT_TEMPERATURE
         self.team_name = team_name or self.__class__.__dict__.get('TEAM_NAME', self.__class__.__name__)
         self.team_id = team_id
         
@@ -146,11 +124,11 @@ class AbstractDeepAgentsTeamChannelProducer(AbstractAgentsTeamChannelProducer, a
         
         # Initialize analysis storage
         if analysis_storage is None:
-            self.analysis_storage = create_analysis_storage(storage_type="json")
+            self.analysis_storage = history.create_analysis_storage()
         else:
             self.analysis_storage = analysis_storage
         
-        if not DEEP_AGENTS_AVAILABLE:
+        if not deep_agent.DEEP_AGENTS_AVAILABLE:
             self.logger.warning("deep_agents not available - team will not function")
     
     @abc.abstractmethod
@@ -247,7 +225,7 @@ class AbstractDeepAgentsTeamChannelProducer(AbstractAgentsTeamChannelProducer, a
         import os
         agent_skills_dir = os.path.join(skills_dir, agent_name)
         if os.path.isdir(agent_skills_dir):
-            return create_skills_files_dict(agent_skills_dir)
+            return deep_agent.create_skills_files_dict(agent_skills_dir)
         
         return None
     
@@ -265,29 +243,29 @@ class AbstractDeepAgentsTeamChannelProducer(AbstractAgentsTeamChannelProducer, a
     
     def _create_memory_backend(self) -> typing.Callable:
         def make_backend(runtime):
-            if not DEEP_AGENTS_AVAILABLE or not CompositeBackend:
+            if not deep_agent.DEEP_AGENTS_AVAILABLE or not CompositeBackend:
                 return None
             return CompositeBackend(
                 default=StateBackend(runtime),
                 routes={
-                    f"{MEMORIES_PATH_PREFIX}": StoreBackend(runtime)
+                    f"{constants.MEMORIES_PATH_PREFIX}": StoreBackend(runtime)
                 }
             )
         return make_backend
     
     def _get_or_create_store(self) -> typing.Any:
-        if self._store is None and DEEP_AGENTS_AVAILABLE:
+        if self._store is None and deep_agent.DEEP_AGENTS_AVAILABLE:
             self._store = InMemoryStore()
         return self._store
     
     def _get_or_create_checkpointer(self) -> typing.Any:
-        if self._checkpointer is None and DEEP_AGENTS_AVAILABLE:
+        if self._checkpointer is None and deep_agent.DEEP_AGENTS_AVAILABLE:
             self._checkpointer = MemorySaver()
         return self._checkpointer
     
     def _build_deep_agent(self) -> typing.Any:
-        if not DEEP_AGENTS_AVAILABLE:
-            raise DeepAgentNotAvailableError("deep_agents package is required")
+        if not deep_agent.DEEP_AGENTS_AVAILABLE:
+            raise errors.DeepAgentNotAvailableError("deep_agents package is required")
         
         self.logger.debug(f"[{self.team_name}] Building deep agent team...")
         
@@ -320,7 +298,7 @@ class AbstractDeepAgentsTeamChannelProducer(AbstractAgentsTeamChannelProducer, a
             elif self.ai_service is not None and isinstance(subagent_model, str):
                 subagent_model = self.ai_service.init_chat_model(model=subagent_model)
 
-            subagent = build_dictionary_subagent(
+            subagent = deep_agent.build_dictionary_subagent(
                 name=agent_name,
                 instructions=w.get("instructions", ""),
                 description=w.get("description"),
@@ -338,7 +316,7 @@ class AbstractDeepAgentsTeamChannelProducer(AbstractAgentsTeamChannelProducer, a
         
         critic_config = self.get_critic_config()
         if self.ENABLE_DEBATE and critic_config:
-            critic_subagent = build_dictionary_subagent(
+            critic_subagent = deep_agent.build_dictionary_subagent(
                 name=critic_config.get("name", "critic"),
                 instructions=critic_config.get("instructions", ""),
                 description="Critiques analyses and suggests improvements",
@@ -391,7 +369,7 @@ Save important insights to /memories/ for future reference.
         skills_dir = self.get_skills_resources_dir()  # pylint: disable=assignment-from-none
         
         if skills_dir:
-            discovered = discover_skills(skills_dir)
+            discovered = deep_agent.discover_skills(skills_dir)
             if discovered:
                 skills = (skills or []) + discovered
                 self.logger.debug(f"[{self.team_name}] Auto-discovered {len(discovered)} skills from {skills_dir}")
@@ -421,7 +399,7 @@ Save important insights to /memories/ for future reference.
         thread_id: str | None = None,
         skills_files: dict[str, str] | None = None,
     ) -> typing.Dict[str, typing.Any]:
-        if not DEEP_AGENTS_AVAILABLE:
+        if not deep_agent.DEEP_AGENTS_AVAILABLE:
             return {"error": "Deep Agents not available"}
         
         agent = self.get_deep_agent()
@@ -472,7 +450,6 @@ Save important insights to /memories/ for future reference.
         invoke_input: dict,
         config: dict,
     ) -> dict:
-        result = None
         
         self.logger.debug(f"[{self.team_name}] Starting streaming run")
         
@@ -504,20 +481,20 @@ Save important insights to /memories/ for future reference.
                         if msg_name:
                             self.logger.debug(f"[{self.team_name}] ✅ Tool result from: {msg_name}")
             
-            result = event
+            result = event  # pylint: disable=unused-variable
         
         state = await agent.aget_state(config)
         self.logger.debug(f"[{self.team_name}] Streaming complete")
         return {"messages": state.values.get("messages", [])}
     
     def is_interrupted(self, result: dict) -> bool:
-        return HITL_INTERRUPT_KEY in result
+        return constants.HITL_INTERRUPT_KEY in result
     
     def get_interrupt_info(self, result: dict) -> dict | None:
         if not self.is_interrupted(result):
             return None
         
-        interrupts = result[HITL_INTERRUPT_KEY]
+        interrupts = result[constants.HITL_INTERRUPT_KEY]
         if not interrupts:
             return None
         
@@ -533,7 +510,7 @@ Save important insights to /memories/ for future reference.
         decisions: list[dict[str, typing.Any]],
         thread_id: str | None = None,
     ) -> dict:
-        if not DEEP_AGENTS_AVAILABLE:
+        if not deep_agent.DEEP_AGENTS_AVAILABLE:
             return {"error": "Deep Agents not available"}
         
         agent = self.get_deep_agent()
@@ -574,7 +551,7 @@ Save important insights to /memories/ for future reference.
             return result
         
         action_requests = interrupt_info.get("action_requests", [])
-        decisions = [{"type": HITL_DECISION_APPROVE} for _ in action_requests]
+        decisions = [{"type": constants.HITL_DECISION_APPROVE} for _ in action_requests]
         
         return await self.resume_with_decisions(decisions, thread_id)
     
@@ -584,7 +561,7 @@ Save important insights to /memories/ for future reference.
             return result
         
         action_requests = interrupt_info.get("action_requests", [])
-        decisions = [{"type": HITL_DECISION_REJECT} for _ in action_requests]
+        decisions = [{"type": constants.HITL_DECISION_REJECT} for _ in action_requests]
         
         return await self.resume_with_decisions(decisions, thread_id)
     
@@ -638,4 +615,4 @@ Coordinate with your workers and provide a final synthesized result.
             })
     
     def get_memory_path(self, memory_type: str = "data") -> str:
-        return f"{MEMORIES_PATH_PREFIX}{self.team_name}/{memory_type}"
+        return f"{constants.MEMORIES_PATH_PREFIX}{self.team_name}/{memory_type}"

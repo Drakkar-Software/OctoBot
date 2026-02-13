@@ -21,23 +21,21 @@ Takes the bullish side in a research debate: argues for higher allocation / more
 import json
 import typing
 
-import octobot_agents as agent
+import octobot_agents.agent.channels.ai_agent as ai_agent_channels
 from octobot_services.enums import AIModelPolicy
 
 from .models import ResearchDebateOutput
 
 
-class BullResearchAIAgentChannel(agent.AbstractAgentChannel):
-    """Channel for BullResearchAIAgentProducer."""
+class BullResearchAIAgentChannel(ai_agent_channels.AbstractAIAgentChannel):
     OUTPUT_SCHEMA = ResearchDebateOutput
 
 
-class BullResearchAIAgentConsumer(agent.AbstractAIAgentChannelConsumer):
-    """Consumer for BullResearchAIAgentProducer."""
+class BullResearchAIAgentConsumer(ai_agent_channels.AbstractAIAgentChannelConsumer):
     pass
 
 
-class BullResearchAIAgentProducer(agent.AbstractAIAgentChannelProducer):
+class BullResearchAIAgentProducer(ai_agent_channels.AbstractAIAgentChannelProducer):
     """
     Bull researcher: argues the bullish case in a research debate.
     Uses strategy data, portfolio context, and debate history to make a short argument.

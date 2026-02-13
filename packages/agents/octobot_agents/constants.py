@@ -53,6 +53,9 @@ MEMORY_CONTENT_MAX_LENGTH = 500
 MEMORY_FOLDER_NAME = "agents"
 MEMORY_FILE_EXTENSION = ".json"
 
+# Analysis constants
+DEFAULT_ANALYSIS_DIR = "analysis/"
+
 # Team modification constants
 MODIFICATION_ADDITIONAL_INSTRUCTIONS = "additional_instructions"
 MODIFICATION_CUSTOM_PROMPT = "custom_prompt"

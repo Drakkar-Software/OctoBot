@@ -16,7 +16,7 @@
 
 from octobot_agents.agent.memory import channels
 from octobot_agents.agent.memory.channels import (
-    AbstractMemoryAgent,
+    MemoryAgentMixin,
     MemoryAgentChannel,
     MemoryAgentConsumer,
     MemoryAgentProducer,
@@ -25,14 +25,9 @@ from octobot_agents.agent.memory.channels import (
     AIMemoryAgentProducer,
 )
 
-from octobot_agents.agent.memory import util
-from octobot_agents.agent.memory.util import export_memories, import_memories
-
 
 __all__ = [
-    "export_memories",
-    "import_memories",
-    "AbstractMemoryAgent",
+    "MemoryAgentMixin",
     "MemoryAgentChannel",
     "MemoryAgentConsumer",
     "MemoryAgentProducer",

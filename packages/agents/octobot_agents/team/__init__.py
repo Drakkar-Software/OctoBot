@@ -27,14 +27,14 @@ from octobot_agents.team.channels import (
 )
 
 from octobot_agents.team import critic
-from octobot_agents.team.critic import AbstractCriticAgent
+from octobot_agents.team.critic import CriticAgentMixin
 
 from octobot_agents.team import judge
-from octobot_agents.team.judge import AbstractJudgeAgent
+from octobot_agents.team.judge import JudgeAgentMixin
 
 from octobot_agents.team import manager
 from octobot_agents.team.manager import (
-    AbstractTeamManagerAgent,
+    TeamManagerMixin,
 )
 
 from octobot_agents.constants import (
@@ -53,10 +53,10 @@ __all__ = [
     "AbstractDeepAgentsTeamChannel",
     "AbstractDeepAgentsTeamChannelConsumer",
     "AbstractDeepAgentsTeamChannelProducer",
-    "AbstractTeamManagerAgent",
+    "TeamManagerMixin",
     "MODIFICATION_ADDITIONAL_INSTRUCTIONS",
     "MODIFICATION_CUSTOM_PROMPT",
     "MODIFICATION_EXECUTION_HINTS",
-    "AbstractCriticAgent",
-    "AbstractJudgeAgent",
+    "CriticAgentMixin",
+    "JudgeAgentMixin",
 ]

@@ -16,12 +16,8 @@
 
 import typing
 
-from octobot_agents.agent.memory import (
-    AIMemoryAgentChannel,
-    AIMemoryAgentConsumer,
-    AIMemoryAgentProducer,
-)
-import octobot_agents.models as models
+import octobot_agents.agent.memory as memory
+import octobot_agents.models as agent_models
 from octobot_services.enums import AIModelPolicy
 
 MEMORY_TITLE_MAX_LENGTH = 100
@@ -29,17 +25,15 @@ MEMORY_CONTEXT_MAX_LENGTH = 300
 MEMORY_CONTENT_MAX_LENGTH = 1000
 
 
-class DefaultAIMemoryAgentChannel(AIMemoryAgentChannel):
-    """Channel for default AI memory agent."""
-    __slots__ = ()
+class DefaultAIMemoryAgentChannel(memory.AIMemoryAgentChannel):
+    pass
 
 
-class DefaultAIMemoryAgentConsumer(AIMemoryAgentConsumer):
-    """Consumer for default AI memory agent."""
-    __slots__ = ()
+class DefaultAIMemoryAgentConsumer(memory.AIMemoryAgentConsumer):
+    pass
 
 
-class DefaultAIMemoryAgentProducer(AIMemoryAgentProducer):
+class DefaultAIMemoryAgentProducer(memory.AIMemoryAgentProducer):
     """
     AI-powered memory agent that transforms critic feedback into structured memory instructions.
     
@@ -58,8 +52,8 @@ class DefaultAIMemoryAgentProducer(AIMemoryAgentProducer):
     such as MemoryBank, LONGMEM, Reflexion and Generative Agents.
     """
     
-    AGENT_CHANNEL: typing.Type[AIMemoryAgentChannel] = DefaultAIMemoryAgentChannel
-    AGENT_CONSUMER: typing.Type[AIMemoryAgentConsumer] = DefaultAIMemoryAgentConsumer
+    AGENT_CHANNEL: typing.Type[memory.AIMemoryAgentChannel] = DefaultAIMemoryAgentChannel
+    AGENT_CONSUMER: typing.Type[memory.AIMemoryAgentConsumer] = DefaultAIMemoryAgentConsumer
     MODEL_POLICY = AIModelPolicy.REASONING
     
     def __init__(
@@ -130,9 +124,9 @@ instructions that would have helped avoid the issues or replicate the successes.
     
     async def execute(
         self,
-        input_data: typing.Union[models.MemoryInput, typing.Dict[str, typing.Any]],
+        input_data: typing.Union[agent_models.MemoryInput, typing.Dict[str, typing.Any]],
         ai_service: typing.Any,
-    ) -> models.MemoryOperation:
+    ) -> agent_models.MemoryOperation:
         """
         Execute memory operations using LLM.
         
@@ -148,7 +142,7 @@ instructions that would have helped avoid the issues or replicate the successes.
         execution_metadata = input_data.get("execution_metadata", {}) if isinstance(input_data, dict) else {}
         
         if not critic_analysis:
-            return models.MemoryOperation(
+            return agent_models.MemoryOperation(
                 success=False,
                 operations=[],
                 memory_ids=[],
@@ -158,12 +152,12 @@ instructions that would have helped avoid the issues or replicate the successes.
                 message="No critic analysis provided",
             )
         
-        critic_analysis = models.CriticAnalysis.model_validate_or_self(critic_analysis)
+        critic_analysis = agent_models.CriticAnalysis.model_validate_or_self(critic_analysis)
         agent_improvements = critic_analysis.get_agent_improvements()
         agents_to_process = list(agent_improvements.keys())
         
         if not agents_to_process:
-            return models.MemoryOperation(
+            return agent_models.MemoryOperation(
                 success=True,
                 operations=[],
                 memory_ids=[],
@@ -175,7 +169,7 @@ instructions that would have helped avoid the issues or replicate the successes.
         
         improvements_summary = []
         for agent_name, improvement in agent_improvements.items():
-            improvement = models.AgentImprovement.model_validate_or_self(improvement)
+            improvement = agent_models.AgentImprovement.model_validate_or_self(improvement)
             improvements_summary.append(
                 {
                     "agent_name": agent_name,
@@ -228,11 +222,11 @@ have at least one behavioral or strategic issue to learn from.""",
                 messages,
                 ai_service,
                 json_output=True,
-                response_schema=models.AgentMemoryInstructionsList,
+                response_schema=agent_models.AgentMemoryInstructionsList,
                 input_data=input_data,
             )
             
-            instructions_list_model = models.AgentMemoryInstructionsList.model_validate(response_data)
+            instructions_list_model = agent_models.AgentMemoryInstructionsList.model_validate(response_data)
             
             operations: typing.List[str] = []
             memory_ids: typing.List[str] = []
@@ -249,7 +243,7 @@ have at least one behavioral or strategic issue to learn from.""",
             
             for agent_name in agents_to_process:
                 improvement = agent_improvements[agent_name]
-                improvement = models.AgentImprovement.model_validate_or_self(improvement)
+                improvement = agent_models.AgentImprovement.model_validate_or_self(improvement)
                 
                 agent = None
                 if team_producer:
@@ -289,7 +283,7 @@ have at least one behavioral or strategic issue to learn from.""",
                     agents_skipped.append(agent_name)
                     continue
                 
-                memory_instruction = models.MemoryInstruction.model_validate_or_self(agent_instructions)
+                memory_instruction = agent_models.MemoryInstruction.model_validate_or_self(agent_instructions)
                 title = memory_instruction.title
                 context_text = memory_instruction.context
                 content = memory_instruction.build_content()
@@ -319,7 +313,7 @@ have at least one behavioral or strategic issue to learn from.""",
                 
                 agents_processed.append(agent_name)
             
-            return models.MemoryOperation(
+            return agent_models.MemoryOperation(
                 success=True,
                 operations=operations,
                 memory_ids=memory_ids,
@@ -331,7 +325,7 @@ have at least one behavioral or strategic issue to learn from.""",
         
         except Exception as e:
             self.logger.error(f"DefaultAIMemoryAgentProducer error executing memory operations: {e}")
-            return models.MemoryOperation(
+            return agent_models.MemoryOperation(
                 success=False,
                 operations=[],
                 memory_ids=[],

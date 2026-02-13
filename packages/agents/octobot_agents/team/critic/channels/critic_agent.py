@@ -13,38 +13,23 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
-import abc
 import typing
 
 import octobot_commons.logging as logging
 
 import octobot_agents.models as models
-from octobot_agents.agent.channels.agent import (
-    AbstractAgentChannel,
-    AbstractAgentChannelConsumer,
-    AbstractAgentChannelProducer,
-)
-from octobot_agents.agent.channels.ai_agent import (
-    AbstractAIAgentChannel,
-    AbstractAIAgentChannelConsumer,
-    AbstractAIAgentChannelProducer,
-)
+import octobot_agents.agent.channels.agent as agent_channels
+import octobot_agents.agent.channels.ai_agent as ai_agent_channels
 import octobot_services.services.abstract_ai_service as abstract_ai_service
 
 
-class AbstractCriticAgent(abc.ABC):
+class CriticAgentMixin:
     """
-    Base interface for all critic agents.
+    Mixin that provides critic agent functionality.
 
     Critic agents analyze team execution to find issues, improvements, errors, and inconsistencies.
     """
 
-    def __init__(self, self_improving: bool = True):
-        """Initialize the critic agent."""
-        self.self_improving = self_improving
-        self.logger = None  # Will be set by subclasses
-
-    @abc.abstractmethod
     async def execute(
         self,
         input_data: typing.Union[models.CriticInput, typing.Dict[str, typing.Any]],
@@ -63,54 +48,40 @@ class AbstractCriticAgent(abc.ABC):
         raise NotImplementedError("execute must be implemented by subclasses")
 
 
-# -----------------------------------------------------------------------------
-# Base (non-AI) channel classes
-# -----------------------------------------------------------------------------
-
-
-class CriticAgentChannel(AbstractAgentChannel):
-    """Base channel for critic agents."""
-    __slots__ = ()
+class CriticAgentChannel(agent_channels.AbstractAgentChannel):
     OUTPUT_SCHEMA = models.CriticAnalysis
 
 
-class CriticAgentConsumer(AbstractAgentChannelConsumer):
-    """Base consumer for critic agent channels."""
-    __slots__ = ()
+class CriticAgentConsumer(agent_channels.AbstractAgentChannelConsumer):
+    pass
 
 
-class CriticAgentProducer(AbstractAgentChannelProducer, AbstractCriticAgent):
-    """Base producer for critic agents. Subclasses implement execute()."""
-    __slots__ = ()
+class CriticAgentProducer(CriticAgentMixin, agent_channels.AbstractAgentChannelProducer):
 
     AGENT_CHANNEL = CriticAgentChannel
     AGENT_CONSUMER = CriticAgentConsumer
 
-    def __init__(self, channel: typing.Optional[CriticAgentChannel] = None, self_improving: bool = True):
-        AbstractCriticAgent.__init__(self, self_improving=self_improving)
-        AbstractAgentChannelProducer.__init__(self, channel)
+    def __init__(
+        self,
+        channel: typing.Optional[CriticAgentChannel] = None,
+        self_improving: bool = True,
+        **kwargs,
+    ):
+        super().__init__(channel, **kwargs)
+        self.self_improving = self_improving
         self.name = self.__class__.__name__
         self.logger = logging.get_logger(self.__class__.__name__)
 
 
-# -----------------------------------------------------------------------------
-# AI channel classes (inherit from base AND AI abstracts)
-# -----------------------------------------------------------------------------
+class AICriticAgentChannel(CriticAgentChannel, ai_agent_channels.AbstractAIAgentChannel):
+    pass
 
 
-class AICriticAgentChannel(CriticAgentChannel, AbstractAIAgentChannel):
-    """AI channel for critic agents."""
-    __slots__ = ()
+class AICriticAgentConsumer(CriticAgentConsumer, ai_agent_channels.AbstractAIAgentChannelConsumer):
+    pass
 
 
-class AICriticAgentConsumer(CriticAgentConsumer, AbstractAIAgentChannelConsumer):
-    """AI consumer for critic agent channels."""
-    __slots__ = ()
-
-
-class AICriticAgentProducer(CriticAgentProducer, AbstractAIAgentChannelProducer):
-    """AI producer for critic agents. Tentacles extend this and implement execute() with LLM."""
-    __slots__ = ()
+class AICriticAgentProducer(CriticAgentProducer, ai_agent_channels.AbstractAIAgentChannelProducer):
 
     AGENT_CHANNEL = AICriticAgentChannel
     AGENT_CONSUMER = AICriticAgentConsumer
@@ -124,9 +95,12 @@ class AICriticAgentProducer(CriticAgentProducer, AbstractAIAgentChannelProducer)
         self_improving: bool = True,
         **kwargs,
     ):
-        AbstractCriticAgent.__init__(self, self_improving=self_improving)
-        AbstractAIAgentChannelProducer.__init__(
-            self, channel, model=model, max_tokens=max_tokens, temperature=temperature, **kwargs
+        super().__init__(
+            channel=channel,
+            model=model,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            self_improving=self_improving,
+            **kwargs
         )
         self.name = self.__class__.__name__
-        self.logger = logging.get_logger(self.__class__.__name__)

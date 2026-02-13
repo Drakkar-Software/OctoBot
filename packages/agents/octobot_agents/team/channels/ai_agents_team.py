@@ -16,26 +16,21 @@
 import asyncio
 import typing
 
-from octobot_agents.agent import (
-    AbstractAIAgentChannel,
-    AbstractAIAgentChannelProducer,
-    AbstractAIAgentChannelConsumer,
-)
-from octobot_agents.constants import AGENT_NAME_KEY, AGENT_ID_KEY, RESULT_KEY
-from octobot_agents.team.manager import AbstractTeamManagerAgent
-from octobot_agents.team.critic import AbstractCriticAgent
-from octobot_agents.agent.memory.channels import AbstractMemoryAgent
-from octobot_agents.team.channels.agents_team import (
-    AbstractAgentsTeamChannel,
-    AbstractAgentsTeamChannelProducer,
-)
-from octobot_agents.errors import AgentConfigurationError
-from octobot_agents.storage.history import create_analysis_storage
+import octobot_agents.agent as agent
+import octobot_agents.constants as constants
+import octobot_agents.team.manager as team_manager
+import octobot_agents.team.critic as team_critic
+import octobot_agents.team.judge as team_judge
+import octobot_agents.agent.memory.channels as memory_channels
+import octobot_agents.team.channels.agents_team as agents_team
+import octobot_agents.errors as errors
+import octobot_agents.storage.history as storage_history
+import octobot_agents.storage.history.abstract_analysis_storage as abstract_analysis_storage
 import octobot_services.services.abstract_ai_service as abstract_ai_service
 import octobot_agents.models as models
 
 
-class AbstractSyncAgentsTeamChannelProducer(AbstractAgentsTeamChannelProducer):
+class AbstractSyncAgentsTeamChannelProducer(agents_team.AbstractAgentsTeamChannelProducer):
     """
     Sync (one-shot) team producer for direct sequential execution.
     
@@ -50,18 +45,18 @@ class AbstractSyncAgentsTeamChannelProducer(AbstractAgentsTeamChannelProducer):
     
     def __init__(
         self,
-        channel: typing.Optional[AbstractAgentsTeamChannel],
-        agents: typing.List[AbstractAIAgentChannelProducer],
-        relations: typing.List[typing.Tuple[typing.Type[AbstractAIAgentChannel], typing.Type[AbstractAIAgentChannel]]],
+        channel: typing.Optional[agents_team.AbstractAgentsTeamChannel],
+        agents: typing.List[agent.AbstractAIAgentChannelProducer],
+        relations: typing.List[typing.Tuple[typing.Type[agent.AbstractAIAgentChannel], typing.Type[agent.AbstractAIAgentChannel]]],
         ai_service: abstract_ai_service.AbstractAIService,
         team_name: typing.Optional[str] = None,
         team_id: typing.Optional[str] = None,
-        manager: typing.Optional[AbstractTeamManagerAgent] = None,
+        manager: typing.Optional[team_manager.ManagerAgentProducer] = None,
         self_improving: bool = False,
-        critic_agent: typing.Optional[AbstractCriticAgent] = None,
-        memory_agent: typing.Optional[AbstractMemoryAgent] = None,
-        judge_agent: typing.Optional["AbstractJudgeAgent"] = None,
-        analysis_storage: typing.Optional[typing.Any] = None,
+        critic_agent: typing.Optional[team_critic.CriticAgentProducer] = None,
+        memory_agent: typing.Optional[memory_channels.MemoryAgentProducer] = None,
+        judge_agent: typing.Optional[team_judge.JudgeAgentProducer] = None,
+        analysis_storage: typing.Optional[abstract_analysis_storage.AbstractAnalysisStorage] = None,
     ):
         """
         Initialize the sync AI team producer.
@@ -99,7 +94,7 @@ class AbstractSyncAgentsTeamChannelProducer(AbstractAgentsTeamChannelProducer):
         
         # Initialize analysis storage
         if analysis_storage is None:
-            self.analysis_storage = create_analysis_storage(storage_type="json")
+            self.analysis_storage = storage_history.create_analysis_storage()
         else:
             self.analysis_storage = analysis_storage
     
@@ -193,7 +188,7 @@ class AbstractSyncAgentsTeamChannelProducer(AbstractAgentsTeamChannelProducer):
 
 
 
-class AbstractLiveAgentsTeamChannelProducer(AbstractAgentsTeamChannelProducer):
+class AbstractLiveAgentsTeamChannelProducer(agents_team.AbstractAgentsTeamChannelProducer):
     """
     Live (long-running) team producer with full channel-based execution.
     
@@ -208,17 +203,17 @@ class AbstractLiveAgentsTeamChannelProducer(AbstractAgentsTeamChannelProducer):
     
     def __init__(
         self,
-        channel: typing.Optional[AbstractAgentsTeamChannel],
-        agents: typing.List[AbstractAIAgentChannelProducer],
-        relations: typing.List[typing.Tuple[typing.Type[AbstractAIAgentChannel], typing.Type[AbstractAIAgentChannel]]],
+        channel: typing.Optional[agents_team.AbstractAgentsTeamChannel],
+        agents: typing.List[agent.AbstractAIAgentChannelProducer],
+        relations: typing.List[typing.Tuple[typing.Type[agent.AbstractAIAgentChannel], typing.Type[agent.AbstractAIAgentChannel]]],
         ai_service: abstract_ai_service.AbstractAIService,
         team_name: typing.Optional[str] = None,
         team_id: typing.Optional[str] = None,
-        manager: typing.Optional[AbstractTeamManagerAgent] = None,
+        manager: typing.Optional[team_manager.ManagerAgentProducer] = None,
         self_improving: bool = False,
-        critic_agent: typing.Optional[AbstractCriticAgent] = None,
-        memory_agent: typing.Optional[AbstractMemoryAgent] = None,
-        judge_agent: typing.Optional["AbstractJudgeAgent"] = None,
+        critic_agent: typing.Optional[team_critic.CriticAgentProducer] = None,
+        memory_agent: typing.Optional[memory_channels.MemoryAgentProducer] = None,
+        judge_agent: typing.Optional[team_judge.JudgeAgentProducer] = None,
     ):
         """
         Initialize the live AI team producer.
@@ -241,9 +236,9 @@ class AbstractLiveAgentsTeamChannelProducer(AbstractAgentsTeamChannelProducer):
         )
 
         # Live-specific state
-        self._channels: typing.Dict[typing.Type[AbstractAIAgentChannel], AbstractAIAgentChannel] = {}
-        self._entry_agents: typing.List[AbstractAIAgentChannelProducer] = []
-        self._terminal_agents: typing.List[AbstractAIAgentChannelProducer] = []
+        self._channels: typing.Dict[typing.Type[agent.AbstractAIAgentChannel], agent.AbstractAIAgentChannel] = {}
+        self._entry_agents: typing.List[agent.AbstractAIAgentChannelProducer] = []
+        self._terminal_agents: typing.List[agent.AbstractAIAgentChannelProducer] = []
         self._terminal_results: typing.Dict[str, typing.Any] = {}
         self._completion_event: typing.Optional[asyncio.Event] = None
     
@@ -257,14 +252,14 @@ class AbstractLiveAgentsTeamChannelProducer(AbstractAgentsTeamChannelProducer):
         3. Identifies terminal agents (no outgoing edges in relations)
         4. For each relation (A, B): registers B's consumer on A's channel
         """
-        incoming_edges, outgoing_edges = self._build_dag()
+        incoming_edges, _ = self._build_dag()
         
         # Create channels and map producers
-        for agent in self.agents:
-            if agent.AGENT_CHANNEL is None:
-                raise AgentConfigurationError(f"Agent {agent.__class__.__name__} has no AGENT_CHANNEL defined")
+        for agent_inst in self.agents:
+            if agent_inst.AGENT_CHANNEL is None:
+                raise errors.AgentConfigurationError(f"Agent {agent_inst.__class__.__name__} has no AGENT_CHANNEL defined")
             
-            channel_type = agent.AGENT_CHANNEL
+            channel_type = agent_inst.AGENT_CHANNEL
             # Pass team_name and team_id to channels
             channel_instance = channel_type(
                 team_name=self.team_name,
@@ -273,8 +268,8 @@ class AbstractLiveAgentsTeamChannelProducer(AbstractAgentsTeamChannelProducer):
             self._channels[channel_type] = channel_instance
             
             # Set the channel on the producer
-            agent.channel = channel_instance
-            agent.ai_service = self.ai_service
+            agent_inst.channel = channel_instance
+            agent_inst.ai_service = self.ai_service
         
         # Identify entry and terminal agents
         self._entry_agents = self._get_entry_agents()
@@ -296,7 +291,7 @@ class AbstractLiveAgentsTeamChannelProducer(AbstractAgentsTeamChannelProducer):
             expected_inputs = len(incoming_edges[target_channel_type])
             
             # Create consumer for the target that listens on source's channel
-            consumer_class = target_producer.AGENT_CONSUMER or AbstractAIAgentChannelConsumer
+            consumer_class = target_producer.AGENT_CONSUMER or agent.AbstractAIAgentChannelConsumer
             consumer_instance = consumer_class(
                 callback=self._create_consumer_callback(target_producer, target_channel_type),
                 expected_inputs=expected_inputs,
@@ -325,8 +320,8 @@ class AbstractLiveAgentsTeamChannelProducer(AbstractAgentsTeamChannelProducer):
     
     def _create_consumer_callback(
         self,
-        target_producer: AbstractAIAgentChannelProducer,
-        target_channel_type: typing.Type[AbstractAIAgentChannel],
+        target_producer: agent.AbstractAIAgentChannelProducer,
+        target_channel_type: typing.Type[agent.AbstractAIAgentChannel],
     ) -> typing.Callable:
         """Create a callback that aggregates inputs and triggers the producer."""
         
@@ -336,15 +331,15 @@ class AbstractLiveAgentsTeamChannelProducer(AbstractAgentsTeamChannelProducer):
         expected_count = len(incoming_edges.get(target_channel_type, []))
         
         async def callback(data: dict) -> None:
-            source_name = data.get(AGENT_NAME_KEY, "unknown")
-            source_id = data.get(AGENT_ID_KEY, "")
-            result = data.get(RESULT_KEY)
+            source_name = data.get(constants.AGENT_NAME_KEY, "unknown")
+            source_id = data.get(constants.AGENT_ID_KEY, "")
+            result = data.get(constants.RESULT_KEY)
             
             # Store with both name and id for full context
             received_inputs[source_name] = {
-                AGENT_NAME_KEY: source_name,
-                AGENT_ID_KEY: source_id,
-                RESULT_KEY: result,
+                constants.AGENT_NAME_KEY: source_name,
+                constants.AGENT_ID_KEY: source_id,
+                constants.RESULT_KEY: result,
             }
             
             self.logger.debug(
@@ -369,12 +364,12 @@ class AbstractLiveAgentsTeamChannelProducer(AbstractAgentsTeamChannelProducer):
     
     def _create_terminal_callback(
         self,
-        terminal_agent: AbstractAIAgentChannelProducer,
+        terminal_agent: agent.AbstractAIAgentChannelProducer,
     ) -> typing.Callable:
         """Create a callback that collects terminal agent results."""
         
         async def callback(data: dict) -> None:
-            result = data.get(RESULT_KEY)
+            result = data.get(constants.RESULT_KEY)
             self._terminal_results[terminal_agent.name] = result
             
             self.logger.debug(
@@ -417,7 +412,7 @@ class AbstractLiveAgentsTeamChannelProducer(AbstractAgentsTeamChannelProducer):
         
         entry_tasks = []
         for entry_agent in self._entry_agents:
-            async def run_entry(agent: AbstractAIAgentChannelProducer) -> None:
+            async def run_entry(agent: agent.AbstractAIAgentChannelProducer) -> None:  # pylint: disable=redefined-outer-name
                 try:
                     result = await agent.execute(initial_data, self.ai_service)
                     await agent.push(result)

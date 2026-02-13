@@ -17,41 +17,29 @@
 AI team manager agent - uses LLM to decide execution flow.
 """
 import typing
-from typing import TYPE_CHECKING
 
 import pydantic
 
-from octobot_agents.team.manager import (
-    AIPlanManagerAgentChannel,
-    AIPlanManagerAgentConsumer,
-    AIPlanManagerAgentProducer,
-    AbstractTeamManagerAgent,
-)
-from octobot_agents.models import ExecutionPlan
+import octobot_agents.team.manager as agent_manager
+import octobot_agents.models as agent_models
 
-if TYPE_CHECKING:
-    from octobot_agents.models import ManagerInput
+class AIPlanTeamManagerAgentChannel(agent_manager.AIPlanManagerAgentChannel):
+    pass
 
 
-class AIPlanTeamManagerAgentChannel(AIPlanManagerAgentChannel):
-    """Channel for AI plan team manager."""
-    __slots__ = ()
+class AIPlanTeamManagerAgentConsumer(agent_manager.AIPlanManagerAgentConsumer):
+    pass
 
 
-class AIPlanTeamManagerAgentConsumer(AIPlanManagerAgentConsumer):
-    """Consumer for AI plan team manager."""
-    __slots__ = ()
-
-
-class AIPlanTeamManagerAgentProducer(AIPlanManagerAgentProducer):
+class AIPlanTeamManagerAgentProducer(agent_manager.AIPlanManagerAgentProducer):
     """
     AI plan team manager agent - uses LLM to decide execution flow.
     
     Inherits from AIPlanManagerAgentProducer. Has Channel, Producer, Consumer components (as all AI agents do).
     """
     
-    AGENT_CHANNEL: typing.Type[AIPlanManagerAgentChannel] = AIPlanTeamManagerAgentChannel
-    AGENT_CONSUMER: typing.Type[AIPlanManagerAgentConsumer] = AIPlanTeamManagerAgentConsumer
+    AGENT_CHANNEL: typing.Type[agent_manager.AIPlanManagerAgentChannel] = AIPlanTeamManagerAgentChannel
+    AGENT_CONSUMER: typing.Type[agent_manager.AIPlanManagerAgentConsumer] = AIPlanTeamManagerAgentConsumer
     
     def __init__(
         self,
@@ -98,7 +86,7 @@ Critical requirements:
 - agent_name MUST be one of the provided agent names in the context. Do NOT invent new names.
 - Output ONLY valid JSON matching the ExecutionPlan schema. No markdown or extra text."""
 
-    def _repair_execution_plan(self, response_data: typing.Any) -> typing.Optional[ExecutionPlan]:
+    def _repair_execution_plan(self, response_data: typing.Any) -> typing.Optional[agent_models.ExecutionPlan]:
         if not isinstance(response_data, dict):
             return None
         steps = response_data.get("steps")
@@ -121,15 +109,15 @@ Critical requirements:
             return None
         repaired = {**response_data, "steps": repaired_steps}
         try:
-            return ExecutionPlan.model_validate(repaired)
+            return agent_models.ExecutionPlan.model_validate(repaired)
         except pydantic.ValidationError:
             return None
     
     async def execute(
         self,
-        input_data: typing.Union["ManagerInput", typing.Dict[str, typing.Any]],
+        input_data: typing.Union[agent_models.ManagerInput, typing.Dict[str, typing.Any]],
         ai_service: typing.Any  # AbstractAIService - type not available at runtime
-    ) -> ExecutionPlan:
+    ) -> agent_models.ExecutionPlan:
         """
         Build execution plan using LLM.
         
@@ -194,11 +182,11 @@ CRITICAL: agent_name MUST be exactly one of the provided agent names. Do NOT inv
             messages,
             ai_service,
             json_output=True,
-            response_schema=ExecutionPlan,
+            response_schema=agent_models.ExecutionPlan,
         )
         allowed_agent_names = [agent["name"] for agent in agents_info]
         try:
-            execution_plan = ExecutionPlan.model_validate_with_agent_names(
+            execution_plan = agent_models.ExecutionPlan.model_validate_with_agent_names(
                 response_data,
                 allowed_agent_names,
             )
@@ -228,10 +216,10 @@ Create an execution plan. Use agent steps (step_type "agent" or omit) for single
                 retry_messages,
                 ai_service,
                 json_output=True,
-                response_schema=ExecutionPlan,
+                response_schema=agent_models.ExecutionPlan,
             )
             try:
-                execution_plan = ExecutionPlan.model_validate_with_agent_names(
+                execution_plan = agent_models.ExecutionPlan.model_validate_with_agent_names(
                     response_data,
                     allowed_agent_names,
                 )

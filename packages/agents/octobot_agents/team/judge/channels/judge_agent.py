@@ -19,39 +19,25 @@ Abstract judge agent interface and base channel classes for debate phases.
 Judge agents decide whether a debate should continue or exit and optionally
 provide a synthesis summary when exiting.
 """
-import abc
 import typing
 
 import octobot_commons.logging as logging
 
 import octobot_agents.models as models
-from octobot_agents.agent.channels.agent import (
-    AbstractAgentChannel,
-    AbstractAgentChannelConsumer,
-    AbstractAgentChannelProducer,
-)
-from octobot_agents.agent.channels.ai_agent import (
-    AbstractAIAgentChannel,
-    AbstractAIAgentChannelConsumer,
-    AbstractAIAgentChannelProducer,
-)
+import octobot_agents.agent.channels.agent as agent_channels
+import octobot_agents.agent.channels.ai_agent as ai_agent_channels
 import octobot_services.services.abstract_ai_service as abstract_ai_service
 
 
-class AbstractJudgeAgent(abc.ABC):
+class JudgeAgentMixin:
     """
-    Base interface for all judge agents.
+    Mixin that provides judge agent functionality.
 
     Judge agents are used in debate phases: they receive debate history
     (messages from debator agents) and decide whether to continue the debate
     or exit with an optional synthesis summary.
     """
 
-    def __init__(self):
-        """Initialize the judge agent."""
-        self.logger = None  # Will be set by subclasses
-
-    @abc.abstractmethod
     async def execute(
         self,
         input_data: typing.Union[typing.Dict[str, typing.Any], models.JudgeInput],
@@ -72,50 +58,37 @@ class AbstractJudgeAgent(abc.ABC):
         raise NotImplementedError("execute must be implemented by subclasses")
 
 
-class JudgeAgentChannel(AbstractAgentChannel):
-    """Base channel for judge agents."""
-    __slots__ = ()
+class JudgeAgentChannel(agent_channels.AbstractAgentChannel):
     OUTPUT_SCHEMA = models.JudgeDecision
 
 
-class JudgeAgentConsumer(AbstractAgentChannelConsumer):
-    """Base consumer for judge agent channels."""
-    __slots__ = ()
+class JudgeAgentConsumer(agent_channels.AbstractAgentChannelConsumer):
+    pass
 
 
-class JudgeAgentProducer(AbstractAgentChannelProducer, AbstractJudgeAgent):
-    """Base producer for judge agents. Subclasses implement execute()."""
-    __slots__ = ()
-
+class JudgeAgentProducer(JudgeAgentMixin, agent_channels.AbstractAgentChannelProducer):
     AGENT_CHANNEL = JudgeAgentChannel
     AGENT_CONSUMER = JudgeAgentConsumer
 
-    def __init__(self, channel: typing.Optional[JudgeAgentChannel] = None):
-        AbstractJudgeAgent.__init__(self)
-        AbstractAgentChannelProducer.__init__(self, channel)
+    def __init__(
+        self,
+        channel: typing.Optional[JudgeAgentChannel] = None,
+        **kwargs,
+    ):
+        super().__init__(channel, **kwargs)
         self.name = self.__class__.__name__
         self.logger = logging.get_logger(self.__class__.__name__)
 
 
-# -----------------------------------------------------------------------------
-# AI channel classes (inherit from base AND AI abstracts)
-# -----------------------------------------------------------------------------
+class AIJudgeAgentChannel(JudgeAgentChannel, ai_agent_channels.AbstractAIAgentChannel):
+    pass
 
 
-class AIJudgeAgentChannel(JudgeAgentChannel, AbstractAIAgentChannel):
-    """AI channel for judge agents."""
-    __slots__ = ()
+class AIJudgeAgentConsumer(JudgeAgentConsumer, ai_agent_channels.AbstractAIAgentChannelConsumer):
+    pass
 
 
-class AIJudgeAgentConsumer(JudgeAgentConsumer, AbstractAIAgentChannelConsumer):
-    """AI consumer for judge agent channels."""
-    __slots__ = ()
-
-
-class AIJudgeAgentProducer(JudgeAgentProducer, AbstractAIAgentChannelProducer):
-    """AI producer for judge agents. Tentacles extend this and implement execute() with LLM."""
-    __slots__ = ()
-
+class AIJudgeAgentProducer(JudgeAgentProducer, ai_agent_channels.AbstractAIAgentChannelProducer):
     AGENT_CHANNEL = AIJudgeAgentChannel
     AGENT_CONSUMER = AIJudgeAgentConsumer
 
@@ -127,9 +100,11 @@ class AIJudgeAgentProducer(JudgeAgentProducer, AbstractAIAgentChannelProducer):
         temperature: typing.Optional[float] = None,
         **kwargs,
     ):
-        AbstractJudgeAgent.__init__(self)
-        AbstractAIAgentChannelProducer.__init__(
-            self, channel, model=model, max_tokens=max_tokens, temperature=temperature, **kwargs
+        super().__init__(
+            channel=channel,
+            model=model,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            **kwargs
         )
         self.name = self.__class__.__name__
-        self.logger = logging.get_logger(self.__class__.__name__)

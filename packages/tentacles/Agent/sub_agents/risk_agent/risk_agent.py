@@ -21,7 +21,7 @@ Evaluates portfolio risk using trading API data.
 import json
 import typing
 
-import octobot_agents as agent
+import octobot_agents.agent.channels.ai_agent as ai_agent_channels
 from octobot_services.enums import AIModelPolicy
 
 from tentacles.Agent.sub_agents.signal_agent.state import AIAgentState
@@ -29,17 +29,15 @@ from tentacles.Agent.sub_agents.signal_agent.models import CryptoSignalOutput
 from .models import RiskAssessmentOutput
 
 
-class RiskAIAgentChannel(agent.AbstractAgentChannel):
-    """Channel for RiskAIAgentProducer."""
+class RiskAIAgentChannel(ai_agent_channels.AbstractAIAgentChannel):
     OUTPUT_SCHEMA = RiskAssessmentOutput
 
 
-class RiskAIAgentConsumer(agent.AbstractAIAgentChannelConsumer):
-    """Consumer for RiskAIAgentProducer."""
+class RiskAIAgentConsumer(ai_agent_channels.AbstractAIAgentChannelConsumer):
     pass
 
 
-class RiskAIAgentProducer(agent.AbstractAIAgentChannelProducer):
+class RiskAIAgentProducer(ai_agent_channels.AbstractAIAgentChannelProducer):
     """
     Risk assessment agent producer that evaluates portfolio risk.
     Uses portfolio data from trading API to assess concentration, volatility, and liquidity risks.

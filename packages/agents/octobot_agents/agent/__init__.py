@@ -54,9 +54,7 @@ from octobot_agents.storage import (
 
 from octobot_agents.agent import memory
 from octobot_agents.agent.memory import (
-    export_memories,
-    import_memories,
-    AbstractMemoryAgent,
+    MemoryAgentMixin,
 )
 
 __all__ = [
@@ -68,9 +66,7 @@ __all__ = [
     "AbstractAIAgentChannelProducer",
     "AbstractMemoryStorage",
     "JSONMemoryStorage",
-    "export_memories",
-    "import_memories",
-    "AbstractMemoryAgent",
+    "MemoryAgentMixin",
     "create_memory_storage",
     # Deep Agent
     "DEEP_AGENTS_AVAILABLE",

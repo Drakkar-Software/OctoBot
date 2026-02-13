@@ -20,10 +20,10 @@ Pydantic models for sentiment analysis agent outputs.
 from typing import List, Optional
 from pydantic import BaseModel, Field, field_validator
 
-from octobot_agents.models import AgentBaseModel
+import octobot_agents.models as agent_models
 
 
-class SentimentMetrics(AgentBaseModel):
+class SentimentMetrics(agent_models.AgentBaseModel):
     __strict_json_schema__ = True
     """Sentiment analysis metrics."""
     sentiment_score: float = Field(
@@ -37,7 +37,7 @@ class SentimentMetrics(AgentBaseModel):
         return max(-1.0, min(1.0, v))
 
 
-class SentimentAnalysisOutput(AgentBaseModel):
+class SentimentAnalysisOutput(agent_models.AgentBaseModel):
     """Output from the sentiment analysis agent."""
     __strict_json_schema__ = True
     

@@ -17,10 +17,8 @@ import json
 import typing
 
 import octobot_commons.constants as common_constants
-from octobot_agents.constants import DEFAULT_AGENT_RESULT
-
-import octobot_agents as agent
-from octobot_agents.constants import RESULT_KEY, AGENT_NAME_KEY
+import octobot_agents.constants as agent_constants
+import octobot_agents.agent.channels.ai_agent as ai_agent_channels
 
 from .models import SummarizationOutput
 
@@ -42,17 +40,15 @@ AgentResultsList = list[AgentResult]
 AgentResultsInput = AgentResultsDict | AgentResultsList
 
 
-class SummarizationAIAgentChannel(agent.AbstractAgentChannel):
-    """Channel for SummarizationAIAgentProducer."""
+class SummarizationAIAgentChannel(ai_agent_channels.AbstractAIAgentChannel):
     OUTPUT_SCHEMA = SummarizationOutput
 
 
-class SummarizationAIAgentConsumer(agent.AbstractAIAgentChannelConsumer):
-    """Consumer for SummarizationAIAgentProducer."""
+class SummarizationAIAgentConsumer(ai_agent_channels.AbstractAIAgentChannelConsumer):
     pass
 
 
-class SummarizationAIAgentProducer(agent.AbstractAIAgentChannelProducer):
+class SummarizationAIAgentProducer(ai_agent_channels.AbstractAIAgentChannelProducer):
     """Producer specialized in combining multiple evaluations into a final recommendation."""
     
     AGENT_VERSION = "1.0.0"
@@ -140,8 +136,8 @@ class SummarizationAIAgentProducer(agent.AbstractAIAgentChannelProducer):
         Team passes results as: {"agent_name": ..., "agent_id": ..., "result": {...}}
         We need to extract the inner result dict which contains eval_note, etc.
         """
-        result_key = RESULT_KEY
-        agent_name_key = AGENT_NAME_KEY
+        result_key = agent_constants.RESULT_KEY
+        agent_name_key = agent_constants.AGENT_NAME_KEY
         
         try:
             inner_result = result[result_key]
@@ -162,7 +158,7 @@ class SummarizationAIAgentProducer(agent.AbstractAIAgentChannelProducer):
     ) -> tuple[float | str, str]:
         """Combine multiple agent results into final evaluation."""
         if not input_data:
-            return common_constants.START_PENDING_EVAL_NOTE, DEFAULT_AGENT_RESULT
+            return common_constants.START_PENDING_EVAL_NOTE, agent_constants.DEFAULT_AGENT_RESULT
 
         # Convert input to list, preserving dict for failure details if needed
         agent_results_dict: AgentResultsDict | None = None

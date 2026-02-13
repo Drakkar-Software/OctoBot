@@ -22,25 +22,23 @@ Uses ai_index_distribution functions to apply changes.
 import json
 import typing
 
-import octobot_agents as agent
-from octobot_agents.constants import RESULT_KEY
+import octobot_agents.agent.channels.ai_agent as ai_agent_channels
+import octobot_agents.constants as agent_constants
 from octobot_services.enums import AIModelPolicy
 
 from tentacles.Agent.sub_agents.signal_agent.state import AIAgentState
 from .models import DistributionOutput
 
 
-class DistributionAIAgentChannel(agent.AbstractAgentChannel):
-    """Channel for DistributionAIAgentProducer."""
+class DistributionAIAgentChannel(ai_agent_channels.AbstractAIAgentChannel):
     OUTPUT_SCHEMA = DistributionOutput
 
 
-class DistributionAIAgentConsumer(agent.AbstractAIAgentChannelConsumer):
-    """Consumer for DistributionAIAgentProducer."""
+class DistributionAIAgentConsumer(ai_agent_channels.AbstractAIAgentChannelConsumer):
     pass
 
 
-class DistributionAIAgentProducer(agent.AbstractAIAgentChannelProducer):
+class DistributionAIAgentProducer(ai_agent_channels.AbstractAIAgentChannelProducer):
     """
     Distribution agent producer that makes final portfolio allocation decisions.
     Combines signal synthesis and risk assessment to determine target distribution.

@@ -18,9 +18,9 @@
 Pydantic models for distribution agent outputs.
 """
 from typing import Dict, List
-from pydantic import BaseModel, Field, field_validator, AliasChoices, model_validator
+from pydantic import Field, field_validator, AliasChoices, model_validator
 
-from octobot_agents.models import AgentBaseModel
+import octobot_agents.models as agent_models
 
 from .constants import (
     INSTRUCTION_ACTION,
@@ -34,7 +34,7 @@ from .constants import (
 )
 
 
-class AssetDistribution(AgentBaseModel):
+class AssetDistribution(agent_models.AgentBaseModel):
     """Distribution allocation for a single asset.
     
     Strict schema enforcement: All fields are required with correct types.
@@ -74,7 +74,7 @@ class AssetDistribution(AgentBaseModel):
         return v_lower
 
 
-class DistributionOutput(AgentBaseModel):
+class DistributionOutput(agent_models.AgentBaseModel):
     """Output from the distribution agent - final portfolio distribution."""
     __strict_json_schema__ = True
     

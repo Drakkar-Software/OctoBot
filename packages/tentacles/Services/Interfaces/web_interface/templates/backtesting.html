@@ -22,17 +22,11 @@
     <div class="card-body">
         {% if data_files %}
             <div class="text-center">
-                            <a href="{{ url_for('data_collector') }}"
-                               id="data-collector-link"
-                               class="btn btn-outline-info waves-effect">
-                                <i class="fa fa-cloud-download-alt"></i> Get historical data
-                            </a>
-                            <a href="{{ url_for('social_data_collector') }}"
-                               id="social-data-collector-link"
-                               class="btn btn-outline-info waves-effect ml-2">
-                                <i class="fa fa-download"></i> Download social data
-                            </a>
-
+                <a href="{{ url_for('data_collector') }}"
+                    id="data-collector-link"
+                    class="btn btn-outline-info waves-effect">
+                    <i class="fa fa-cloud-download-alt"></i> Get historical data
+                </a>
             </div>
             <table class="table table-striped table-sm table-responsive-xs" id="dataFilesTable">
               <caption>Select data file(s) to use</caption>

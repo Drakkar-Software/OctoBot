@@ -15,22 +15,20 @@
 #  License along with this library.
 import json
 
-import octobot_agents as agent
+import octobot_agents.agent.channels.ai_agent as ai_agent_channels
 
 from .models import RealTimeAnalysisOutput
 
 
-class RealTimeAnalysisAIAgentChannel(agent.AbstractAgentChannel):
-    """Channel for RealTimeAnalysisAIAgentProducer."""
+class RealTimeAnalysisAIAgentChannel(ai_agent_channels.AbstractAIAgentChannel):
     OUTPUT_SCHEMA = RealTimeAnalysisOutput
 
 
-class RealTimeAnalysisAIAgentConsumer(agent.AbstractAIAgentChannelConsumer):
-    """Consumer for RealTimeAnalysisAIAgentProducer."""
+class RealTimeAnalysisAIAgentConsumer(ai_agent_channels.AbstractAIAgentChannelConsumer):
     pass
 
 
-class RealTimeAnalysisAIAgentProducer(agent.AbstractAIAgentChannelProducer):
+class RealTimeAnalysisAIAgentProducer(ai_agent_channels.AbstractAIAgentChannelProducer):
     """Producer specialized in real-time market analysis."""
     
     AGENT_VERSION = "1.0.0"
@@ -109,7 +107,7 @@ class RealTimeAnalysisAIAgentProducer(agent.AbstractAIAgentChannelProducer):
                 "confidence": int(confidence * 100),  # Convert to 0-100 range
             }
         except Exception as e:
-            self.logger.exception(f"Error in real-time analysis: {e}")
+            self.logger.error(f"Error in real-time analysis: {e}")
             return {
                 "eval_note": 0,
                 "eval_note_description": f"Error in real-time analysis: {str(e)}",

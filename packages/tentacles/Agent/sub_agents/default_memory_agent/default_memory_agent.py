@@ -16,25 +16,19 @@
 
 import typing
 
-from octobot_agents.agent.memory import (
-    MemoryAgentChannel,
-    MemoryAgentConsumer,
-    MemoryAgentProducer,
-)
-import octobot_agents.models as models
+import octobot_agents.agent.memory as memory
+import octobot_agents.models as agent_models
 
 
-class DefaultMemoryAgentChannel(MemoryAgentChannel):
-    """Channel for default memory agent."""
-    __slots__ = ()
+class DefaultMemoryAgentChannel(memory.MemoryAgentChannel):
+    pass
 
 
-class DefaultMemoryAgentConsumer(MemoryAgentConsumer):
-    """Consumer for default memory agent."""
-    __slots__ = ()
+class DefaultMemoryAgentConsumer(memory.MemoryAgentConsumer):
+    pass
 
 
-class DefaultMemoryAgentProducer(MemoryAgentProducer):
+class DefaultMemoryAgentProducer(memory.MemoryAgentProducer):
     """
     Default memory agent - simple rule-based memory management.
     
@@ -50,7 +44,7 @@ class DefaultMemoryAgentProducer(MemoryAgentProducer):
     
     def __init__(
         self,
-        channel: typing.Optional[MemoryAgentChannel] = None,
+        channel: typing.Optional[memory.MemoryAgentChannel] = None,
         model: typing.Optional[str] = None,
         max_tokens: typing.Optional[int] = None,
         temperature: typing.Optional[float] = None,
@@ -68,9 +62,9 @@ class DefaultMemoryAgentProducer(MemoryAgentProducer):
     
     async def execute(
         self,
-        input_data: typing.Union[models.MemoryInput, typing.Dict[str, typing.Any]],
+        input_data: typing.Union[agent_models.MemoryInput, typing.Dict[str, typing.Any]],
         ai_service: typing.Any,
-    ) -> models.MemoryOperation:
+    ) -> agent_models.MemoryOperation:
         """
         Execute memory operations using simple heuristics.
         
@@ -85,7 +79,7 @@ class DefaultMemoryAgentProducer(MemoryAgentProducer):
         critic_analysis = input_data.get("critic_analysis") if isinstance(input_data, dict) else None
         
         if not critic_analysis:
-            return models.MemoryOperation(
+            return agent_models.MemoryOperation(
                 success=False,
                 operations=[],
                 memory_ids=[],
@@ -96,13 +90,13 @@ class DefaultMemoryAgentProducer(MemoryAgentProducer):
             )
         
         # Convert to model if needed
-        critic_analysis = models.CriticAnalysis.model_validate_or_self(critic_analysis)
+            critic_analysis = agent_models.CriticAnalysis.model_validate_or_self(critic_analysis)
         
         # Get agent improvements
         agent_improvements = critic_analysis.get_agent_improvements()
         
         if not agent_improvements:
-            return models.MemoryOperation(
+            return agent_models.MemoryOperation(
                 success=True,
                 operations=[],
                 memory_ids=[],
@@ -112,7 +106,7 @@ class DefaultMemoryAgentProducer(MemoryAgentProducer):
                 message="No agents need memory updates",
             )
         
-        return models.MemoryOperation(
+        return agent_models.MemoryOperation(
             success=True,
             operations=["heuristic_processed"],
             memory_ids=[],

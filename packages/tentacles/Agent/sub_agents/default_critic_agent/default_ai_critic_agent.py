@@ -14,25 +14,16 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import typing
-from typing import TYPE_CHECKING, List
+from typing import List
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
-from octobot_agents.models import AgentBaseModel
-from octobot_agents.team.critic import (
-    AICriticAgentChannel,
-    AICriticAgentConsumer,
-    AICriticAgentProducer,
-    AbstractCriticAgent,
-)
+import octobot_agents.team.critic as critic
 from .default_critic_agent import DefaultCriticAgentProducer
-import octobot_agents.models as models
-
-if TYPE_CHECKING:
-    from octobot_agents.models import CriticInput
+import octobot_agents.models as agent_models
 
 
-class QualityEvaluationOutput(AgentBaseModel):
+class QualityEvaluationOutput(agent_models.AgentBaseModel):
     """
     Output schema for LLM-based quality evaluation.
     
@@ -54,17 +45,15 @@ class QualityEvaluationOutput(AgentBaseModel):
     )
 
 
-class DefaultAICriticAgentChannel(AICriticAgentChannel):
-    """Channel for default AI critic agent."""
-    __slots__ = ()
+class DefaultAICriticAgentChannel(critic.AICriticAgentChannel):
+    pass
 
 
-class DefaultAICriticAgentConsumer(AICriticAgentConsumer):
-    """Consumer for default AI critic agent."""
-    __slots__ = ()
+class DefaultAICriticAgentConsumer(critic.AICriticAgentConsumer):
+    pass
 
 
-class DefaultAICriticAgentProducer(AICriticAgentProducer):
+class DefaultAICriticAgentProducer(critic.AICriticAgentProducer):
     """
     Default AI critic agent - hybrid rule-based + LLM analysis.
     
@@ -79,8 +68,8 @@ class DefaultAICriticAgentProducer(AICriticAgentProducer):
     - Enhanced improvement suggestions
     """
     
-    AGENT_CHANNEL: typing.Type[AICriticAgentChannel] = DefaultAICriticAgentChannel
-    AGENT_CONSUMER: typing.Type[AICriticAgentConsumer] = DefaultAICriticAgentConsumer
+    AGENT_CHANNEL: typing.Type[critic.AICriticAgentChannel] = DefaultAICriticAgentChannel
+    AGENT_CONSUMER: typing.Type[critic.AICriticAgentConsumer] = DefaultAICriticAgentConsumer
     
     def __init__(
         self,
@@ -262,9 +251,9 @@ agent's decisions, strategies, or risk management, not its output schema."""
     
     async def execute(
         self,
-        input_data: typing.Union[models.CriticInput, typing.Dict[str, typing.Any]],
+        input_data: typing.Union[agent_models.CriticInput, typing.Dict[str, typing.Any]],
         ai_service: typing.Any
-    ) -> models.CriticAnalysis:
+    ) -> agent_models.CriticAnalysis:
         """
         Execute critic analysis using hybrid rule-based + LLM evaluation.
         
@@ -362,7 +351,7 @@ agent's decisions, strategies, or risk management, not its output schema."""
                 reasoning += " - capturing learnings"
                 
                 # For successful results, capture positive behavioral pattern
-                agent_improvements[agent_name] = models.AgentImprovement(
+                agent_improvements[agent_name] = agent_models.AgentImprovement(
                     agent_name=agent_name,
                     improvements=["Capture successful execution patterns"],
                     issues=[],
@@ -380,7 +369,7 @@ agent's decisions, strategies, or risk management, not its output schema."""
                 if llm_reasoning:
                     combined_reasoning += f". Analysis: {llm_reasoning}"
                 
-                agent_improvements[agent_name] = models.AgentImprovement(
+                agent_improvements[agent_name] = agent_models.AgentImprovement(
                     agent_name=agent_name,
                     # Focus memory on behavioral improvements, not schema fixes.
                     improvements=["Improve result quality, correctness, and completeness"],
@@ -402,7 +391,7 @@ agent's decisions, strategies, or risk management, not its output schema."""
             f"{quality_issue_count} agents with quality issues identified (hybrid evaluation)."
         )
         
-        return models.CriticAnalysis(
+        return agent_models.CriticAnalysis(
             issues=issues,
             errors=errors,
             inconsistencies=inconsistencies,

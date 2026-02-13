@@ -73,7 +73,7 @@ class IndexTradingModeConsumer(trading_modes.AbstractTradingModeConsumer):
         super().__init__(trading_mode)
         self._already_logged_aborted_rebalance_error = False
 
-    async def create_new_orders(self, symbol, _, state, **kwargs):
+    async def create_new_orders(self, symbol, final_note, state, **kwargs):
         details = kwargs[self.CREATE_ORDER_DATA_PARAM]
         dependencies = kwargs.get(self.CREATE_ORDER_DEPENDENCIES_PARAM, None)
         if state == trading_enums.EvaluatorStates.NEUTRAL.value:

@@ -22,32 +22,22 @@ Teams follow the same channel pattern as individual agents, enabling:
 """
 import abc
 import typing
-from collections import defaultdict
+import collections
 
 import octobot_commons.logging as logging
 
-from octobot_agents.constants import AGENT_NAME_KEY, AGENT_ID_KEY, RESULT_KEY
-from octobot_agents.agent import (
-    AbstractAgentChannel,
-    AbstractAgentChannelConsumer,
-    AbstractAgentChannelProducer,
-    AbstractAIAgentChannelProducer,
-)
-from octobot_agents.team.manager import AbstractTeamManagerAgent
-from octobot_agents.team.critic import AbstractCriticAgent
-from octobot_agents.team.judge import AbstractJudgeAgent
-from octobot_agents.agent.memory.channels import AbstractMemoryAgent
-from octobot_agents.enums import JudgeDecisionType, StepType
-from octobot_agents.errors import MissingManagerError
+import octobot_agents.constants as constants
+import octobot_agents.agent.channels as agent_channels
+import octobot_agents.team.manager as team_manager
+import octobot_agents.team.critic as team_critic
+import octobot_agents.team.judge as team_judge
+import octobot_agents.agent.memory.channels as memory_channels
+import octobot_agents.enums as enums
+import octobot_agents.errors as errors
 import octobot_agents.models as models
-from octobot_agents.constants import (
-    MODIFICATION_ADDITIONAL_INSTRUCTIONS,
-    MODIFICATION_CUSTOM_PROMPT,
-    MODIFICATION_EXECUTION_HINTS,
-)
 import octobot_services.services.abstract_ai_service as abstract_ai_service
 
-class AbstractAgentsTeamChannelConsumer(AbstractAgentChannelConsumer):
+class AbstractAgentsTeamChannelConsumer(agent_channels.AbstractAgentChannelConsumer):
     """
     Consumer for team outputs.
     
@@ -56,7 +46,7 @@ class AbstractAgentsTeamChannelConsumer(AbstractAgentChannelConsumer):
     __metaclass__ = abc.ABCMeta
 
 
-class AbstractAgentsTeamChannelProducer(AbstractAgentChannelProducer, abc.ABC):
+class AbstractAgentsTeamChannelProducer(agent_channels.AbstractAgentChannelProducer, abc.ABC):
     """
     Base producer for agent teams with common DAG logic.
     
@@ -82,24 +72,24 @@ class AbstractAgentsTeamChannelProducer(AbstractAgentChannelProducer, abc.ABC):
     # Class attributes for critic, memory, manager, and judge agent classes
     # Teams can override these to specify which implementations to use
     # If None, the feature is disabled
-    CriticAgentClass: typing.Optional[typing.Type["AbstractCriticAgent"]] = None
-    MemoryAgentClass: typing.Optional[typing.Type["AbstractMemoryAgent"]] = None
-    ManagerAgentClass: typing.Optional[typing.Type[AbstractTeamManagerAgent]] = None
-    JudgeAgentClass: typing.Optional[typing.Type["AbstractJudgeAgent"]] = None
+    CriticAgentClass: typing.Optional[typing.Type[team_critic.CriticAgentProducer]] = None
+    MemoryAgentClass: typing.Optional[typing.Type[memory_channels.MemoryAgentProducer]] = None
+    ManagerAgentClass: typing.Optional[typing.Type[team_manager.ManagerAgentProducer]] = None
+    JudgeAgentClass: typing.Optional[typing.Type[team_judge.JudgeAgentProducer]] = None
 
     def __init__(
         self,
         channel: typing.Optional["AbstractAgentsTeamChannel"],
-        agents: typing.List[AbstractAIAgentChannelProducer],
-        relations: typing.List[typing.Tuple[typing.Type[AbstractAgentChannel], typing.Type[AbstractAgentChannel]]],
+        agents: typing.List[agent_channels.AbstractAIAgentChannelProducer],
+        relations: typing.List[typing.Tuple[typing.Type[agent_channels.AbstractAgentChannel], typing.Type[agent_channels.AbstractAgentChannel]]],
         ai_service: abstract_ai_service.AbstractAIService,
         team_name: typing.Optional[str] = None,
         team_id: typing.Optional[str] = None,
-        manager: typing.Optional[AbstractTeamManagerAgent] = None,
+        manager: typing.Optional[team_manager.ManagerAgentProducer] = None,
         self_improving: bool = False,
-        critic_agent: typing.Optional[AbstractCriticAgent] = None,
-        memory_agent: typing.Optional[AbstractMemoryAgent] = None,
-        judge_agent: typing.Optional[AbstractJudgeAgent] = None,
+        critic_agent: typing.Optional[team_critic.CriticAgentProducer] = None,
+        memory_agent: typing.Optional[memory_channels.MemoryAgentProducer] = None,
+        judge_agent: typing.Optional[team_judge.JudgeAgentProducer] = None,
     ):
         """
         Initialize the agent team producer.
@@ -133,7 +123,7 @@ class AbstractAgentsTeamChannelProducer(AbstractAgentChannelProducer, abc.ABC):
             if self.ManagerAgentClass is not None:
                 self.manager = self.ManagerAgentClass(channel=None)
             else:
-                raise MissingManagerError(
+                raise errors.MissingManagerError(
                     f"{self.__class__.__name__} requires a manager. "
                     f"Either set ManagerAgentClass class attribute or pass manager parameter."
                 )
@@ -175,14 +165,14 @@ class AbstractAgentsTeamChannelProducer(AbstractAgentChannelProducer, abc.ABC):
         self.last_execution_results: typing.Dict[str, typing.Any] = {}
         self.last_debate_state: typing.Optional[typing.Dict[str, typing.Any]] = None  # debate_history, judge_decisions for logging
         
-        self._producer_by_channel: typing.Dict[typing.Type[AbstractAgentChannel], AbstractAIAgentChannelProducer] = {}
-        self._producer_by_name: typing.Dict[str, AbstractAIAgentChannelProducer] = {}
+        self._producer_by_channel: typing.Dict[typing.Type[agent_channels.AbstractAgentChannel], agent_channels.AbstractAIAgentChannelProducer] = {}
+        self._producer_by_name: typing.Dict[str, agent_channels.AbstractAIAgentChannelProducer] = {}
         for agent in self.agents:
             if agent.AGENT_CHANNEL is not None:
                 self._producer_by_channel[agent.AGENT_CHANNEL] = agent
             self._producer_by_name[agent.name] = agent
     
-    def get_manager(self) -> typing.Optional[AbstractTeamManagerAgent]:
+    def get_manager(self) -> typing.Optional[team_manager.ManagerAgentProducer]:
         """
         Get the team manager.
         
@@ -191,7 +181,7 @@ class AbstractAgentsTeamChannelProducer(AbstractAgentChannelProducer, abc.ABC):
         """
         return self.manager
     
-    def get_agent_by_name(self, name: str) -> typing.Optional[AbstractAIAgentChannelProducer]:
+    def get_agent_by_name(self, name: str) -> typing.Optional[agent_channels.AbstractAIAgentChannelProducer]:
         """
         Get an agent by name.
         
@@ -204,8 +194,8 @@ class AbstractAgentsTeamChannelProducer(AbstractAgentChannelProducer, abc.ABC):
         return self._producer_by_name.get(name)
     
     def _build_dag(self) -> typing.Tuple[
-        typing.Dict[typing.Type[AbstractAgentChannel], typing.List[typing.Type[AbstractAgentChannel]]],
-        typing.Dict[typing.Type[AbstractAgentChannel], typing.List[typing.Type[AbstractAgentChannel]]]
+        typing.Dict[typing.Type[agent_channels.AbstractAgentChannel], typing.List[typing.Type[agent_channels.AbstractAgentChannel]]],
+        typing.Dict[typing.Type[agent_channels.AbstractAgentChannel], typing.List[typing.Type[agent_channels.AbstractAgentChannel]]]
     ]:
         """
         Build DAG edge mappings from relations.
@@ -215,8 +205,8 @@ class AbstractAgentsTeamChannelProducer(AbstractAgentChannelProducer, abc.ABC):
             - incoming_edges[B] = [A, ...] means B receives from A
             - outgoing_edges[A] = [B, ...] means A sends to B
         """
-        incoming_edges: typing.Dict[typing.Type[AbstractAgentChannel], typing.List[typing.Type[AbstractAgentChannel]]] = defaultdict(list)
-        outgoing_edges: typing.Dict[typing.Type[AbstractAgentChannel], typing.List[typing.Type[AbstractAgentChannel]]] = defaultdict(list)
+        incoming_edges: typing.Dict[typing.Type[agent_channels.AbstractAgentChannel], typing.List[typing.Type[agent_channels.AbstractAgentChannel]]] = collections.defaultdict(list)
+        outgoing_edges: typing.Dict[typing.Type[agent_channels.AbstractAgentChannel], typing.List[typing.Type[agent_channels.AbstractAgentChannel]]] = collections.defaultdict(list)
         
         for source_channel, target_channel in self.relations:
             incoming_edges[target_channel].append(source_channel)
@@ -224,13 +214,7 @@ class AbstractAgentsTeamChannelProducer(AbstractAgentChannelProducer, abc.ABC):
         
         return incoming_edges, outgoing_edges
     
-    def _get_entry_agents(self) -> typing.List[AbstractAIAgentChannelProducer]:
-        """
-        Get agents with no incoming edges (entry points).
-        
-        Returns:
-            List of agent producers that have no dependencies.
-        """
+    def _get_entry_agents(self) -> typing.List[agent_channels.AbstractAIAgentChannelProducer]:
         incoming_edges, _ = self._build_dag()
         entry_agents = []
         
@@ -244,13 +228,7 @@ class AbstractAgentsTeamChannelProducer(AbstractAgentChannelProducer, abc.ABC):
         
         return entry_agents
     
-    def _get_terminal_agents(self) -> typing.List[AbstractAIAgentChannelProducer]:
-        """
-        Get agents with no outgoing edges (terminal points).
-        
-        Returns:
-            List of agent producers that have no dependents.
-        """
+    def _get_terminal_agents(self) -> typing.List[agent_channels.AbstractAIAgentChannelProducer]:
         _, outgoing_edges = self._build_dag()
         terminal_agents = []
         
@@ -264,30 +242,22 @@ class AbstractAgentsTeamChannelProducer(AbstractAgentChannelProducer, abc.ABC):
         
         return terminal_agents
     
-    def _get_execution_order(self) -> typing.List[AbstractAIAgentChannelProducer]:
-        """
-        Get topological order of agents for sequential execution.
-        
-        Uses Kahn's algorithm for topological sorting.
-        
-        Returns:
-            List of agent producers in execution order.
-        """
+    def _get_execution_order(self) -> typing.List[agent_channels.AbstractAIAgentChannelProducer]:
         incoming_edges, outgoing_edges = self._build_dag()
         
         # Count incoming edges for each node
-        in_degree: typing.Dict[typing.Type[AbstractAgentChannel], int] = defaultdict(int)
+        in_degree: typing.Dict[typing.Type[agent_channels.AbstractAgentChannel], int] = collections.defaultdict(int)
         for agent in self.agents:
             channel_type = agent.AGENT_CHANNEL
             if channel_type is not None:
                 in_degree[channel_type] = len(incoming_edges.get(channel_type, []))
         
         # Start with nodes that have no incoming edges
-        queue: typing.List[typing.Type[AbstractAgentChannel]] = [
+        queue: typing.List[typing.Type[agent_channels.AbstractAgentChannel]] = [
             channel_type for channel_type, degree in in_degree.items() if degree == 0
         ]
         
-        ordered_channels: typing.List[typing.Type[AbstractAgentChannel]] = []
+        ordered_channels: typing.List[typing.Type[agent_channels.AbstractAgentChannel]] = []
         
         while queue:
             current = queue.pop(0)
@@ -304,7 +274,6 @@ class AbstractAgentsTeamChannelProducer(AbstractAgentChannelProducer, abc.ABC):
 
     @staticmethod
     def _get_debate_message(result: typing.Union[typing.Dict[str, typing.Any], typing.Any]) -> str:
-        """Extract message text from a debator result (dict or object with message/reasoning)."""
         if isinstance(result, dict):
             return result.get("message", result.get("reasoning", result.get("content", str(result))))
         msg = getattr(result, "message", None)
@@ -321,7 +290,7 @@ class AbstractAgentsTeamChannelProducer(AbstractAgentChannelProducer, abc.ABC):
         initial_data: typing.Dict[str, typing.Any],
         results: typing.Dict[str, typing.Dict[str, typing.Any]],
         completed_agents: typing.Set[str],
-        incoming_edges: typing.Dict[typing.Type[AbstractAgentChannel], typing.List[typing.Type[AbstractAgentChannel]]],
+        incoming_edges: typing.Dict[typing.Type[agent_channels.AbstractAgentChannel], typing.List[typing.Type[agent_channels.AbstractAgentChannel]]],
     ) -> typing.Tuple[typing.Dict[str, typing.Dict[str, typing.Any]], typing.Set[str]]:
         """
         Run a debate phase: debators take turns each round, then judge decides continue or exit.
@@ -337,7 +306,6 @@ class AbstractAgentsTeamChannelProducer(AbstractAgentChannelProducer, abc.ABC):
         judge_decisions: typing.List[typing.Dict[str, typing.Any]] = []
         debator_names = list(debate_config.debator_agent_names)
         max_rounds = debate_config.max_rounds
-        judge_name = debate_config.judge_agent_name
 
         for round_num in range(1, max_rounds + 1):
             # Run each debator in order this round
@@ -363,9 +331,9 @@ class AbstractAgentsTeamChannelProducer(AbstractAgentChannelProducer, abc.ABC):
                         if pred_agent and pred_agent.name in results:
                             pred_result = results[pred_agent.name]
                             agent_input[pred_agent.name] = {
-                                AGENT_NAME_KEY: pred_agent.name,
-                                AGENT_ID_KEY: "",
-                                RESULT_KEY: pred_result.get(RESULT_KEY),
+                                constants.AGENT_NAME_KEY: pred_agent.name,
+                                constants.AGENT_ID_KEY: "",
+                                constants.RESULT_KEY: pred_result.get(constants.RESULT_KEY),
                             }
                 if not agent_input.get("_initial_state") and not predecessors:
                     agent_input = initial_data if isinstance(initial_data, dict) else agent_input
@@ -373,7 +341,7 @@ class AbstractAgentsTeamChannelProducer(AbstractAgentChannelProducer, abc.ABC):
                 try:
                     result = await agent.execute(agent_input, self.ai_service)
                 except Exception as e:
-                    self.logger.exception(f"Debator {debator_name} execution failed: {e}")
+                    self.logger.error(f"Debator {debator_name} execution failed: {e}")
                     raise
                 # Extract message text for debate history (agent-specific)
                 message = self._get_debate_message(result)
@@ -383,9 +351,9 @@ class AbstractAgentsTeamChannelProducer(AbstractAgentChannelProducer, abc.ABC):
                     "round": round_num,
                 })
                 results[debator_name] = {
-                    AGENT_NAME_KEY: debator_name,
-                    AGENT_ID_KEY: "",
-                    RESULT_KEY: result,
+                    constants.AGENT_NAME_KEY: debator_name,
+                    constants.AGENT_ID_KEY: "",
+                    constants.RESULT_KEY: result,
                 }
                 completed_agents.add(debator_name)
 
@@ -401,16 +369,16 @@ class AbstractAgentsTeamChannelProducer(AbstractAgentChannelProducer, abc.ABC):
             try:
                 judge_out = await self.judge_agent.execute(judge_input, self.ai_service)
             except Exception as e:
-                self.logger.exception(f"Judge execution failed: {e}")
+                self.logger.error(f"Judge execution failed: {e}")
                 raise
             if isinstance(judge_out, dict):
                 judge_dict = judge_out
             else:
                 _dump = getattr(judge_out, "model_dump", None) or getattr(judge_out, "dict", None)
-                judge_dict = _dump() if _dump else {"decision": JudgeDecisionType.EXIT.value, "reasoning": str(judge_out), "summary": None}
+                judge_dict = _dump() if _dump else {"decision": enums.JudgeDecisionType.EXIT.value, "reasoning": str(judge_out), "summary": None}
             judge_decisions.append({
                 "round": round_num,
-                "decision": judge_dict.get("decision", JudgeDecisionType.EXIT.value),
+                "decision": judge_dict.get("decision", enums.JudgeDecisionType.EXIT.value),
                 "reasoning": judge_dict.get("reasoning", ""),
                 "summary": judge_dict.get("summary"),
             })
@@ -419,7 +387,7 @@ class AbstractAgentsTeamChannelProducer(AbstractAgentChannelProducer, abc.ABC):
                     f"Debate round {round_num}: judge decision={judge_dict.get('decision', 'exit')} "
                     f"reasoning={judge_dict.get('reasoning', '')[:100]}..."
                 )
-            if judge_dict.get("decision") == JudgeDecisionType.EXIT.value or round_num >= max_rounds:
+            if judge_dict.get("decision") == enums.JudgeDecisionType.EXIT.value or round_num >= max_rounds:
                 break
 
         self.last_debate_state = {
@@ -433,16 +401,6 @@ class AbstractAgentsTeamChannelProducer(AbstractAgentChannelProducer, abc.ABC):
         execution_plan: models.ExecutionPlan,
         initial_data: typing.Dict[str, typing.Any],
     ) -> typing.Dict[str, typing.Any]:
-        """
-        Execute an ExecutionPlan.
-        
-        Args:
-            execution_plan: The execution plan to execute
-            initial_data: Initial data to pass to entry agents
-            
-        Returns:
-            Dict with results from terminal agents
-        """
         incoming_edges, _ = self._build_dag()
         terminal_agents = self._get_terminal_agents()
         
@@ -451,20 +409,20 @@ class AbstractAgentsTeamChannelProducer(AbstractAgentChannelProducer, abc.ABC):
         completed_agents: typing.Set[str] = set()
         
         # Normalize debate steps based on judge availability and cap excessive debate steps
-        debate_steps = [step for step in execution_plan.steps if step.step_type == StepType.DEBATE.value]
+        debate_steps = [step for step in execution_plan.steps if step.step_type == enums.StepType.DEBATE.value]
         if self.judge_agent is None:
             if debate_steps:
                 self.logger.debug(
                     f"Skipping {len(debate_steps)} debate step(s) - no judge agent configured in team"
                 )
-            execution_plan.steps = [step for step in execution_plan.steps if step.step_type != StepType.DEBATE.value]
+            execution_plan.steps = [step for step in execution_plan.steps if step.step_type != enums.StepType.DEBATE.value]
         else:
             max_debate_steps = 3
             if len(debate_steps) > max_debate_steps:
                 kept = 0
                 filtered_steps = []
                 for step in execution_plan.steps:
-                    if step.step_type == StepType.DEBATE.value:
+                    if step.step_type == enums.StepType.DEBATE.value:
                         kept += 1
                         if kept > max_debate_steps:
                             continue
@@ -488,9 +446,9 @@ class AbstractAgentsTeamChannelProducer(AbstractAgentChannelProducer, abc.ABC):
                     continue
 
                 # Debate step: run debators and judge with rounds
-                step_type = step.step_type or StepType.AGENT.value
+                step_type = step.step_type or enums.StepType.AGENT.value
                 debate_config = step.debate_config
-                if step_type == StepType.DEBATE.value and debate_config is not None:
+                if step_type == enums.StepType.DEBATE.value and debate_config is not None:
                     results, completed_agents = await self._run_debate(
                         debate_config, initial_data, results, completed_agents, incoming_edges
                     )
@@ -513,12 +471,12 @@ class AbstractAgentsTeamChannelProducer(AbstractAgentChannelProducer, abc.ABC):
                 if step.instructions:
                     instruction_dict: typing.Dict[str, typing.Any] = {}
                     for instruction in step.instructions:
-                        if instruction.modification_type == MODIFICATION_ADDITIONAL_INSTRUCTIONS:
-                            instruction_dict[MODIFICATION_ADDITIONAL_INSTRUCTIONS] = instruction.value
-                        elif instruction.modification_type == MODIFICATION_CUSTOM_PROMPT:
-                            instruction_dict[MODIFICATION_CUSTOM_PROMPT] = instruction.value
-                        elif instruction.modification_type == MODIFICATION_EXECUTION_HINTS:
-                            instruction_dict[MODIFICATION_EXECUTION_HINTS] = instruction.value
+                        if instruction.modification_type == constants.MODIFICATION_ADDITIONAL_INSTRUCTIONS:
+                            instruction_dict[constants.MODIFICATION_ADDITIONAL_INSTRUCTIONS] = instruction.value
+                        elif instruction.modification_type == constants.MODIFICATION_CUSTOM_PROMPT:
+                            instruction_dict[constants.MODIFICATION_CUSTOM_PROMPT] = instruction.value
+                        elif instruction.modification_type == constants.MODIFICATION_EXECUTION_HINTS:
+                            instruction_dict[constants.MODIFICATION_EXECUTION_HINTS] = instruction.value
                     
                     if instruction_dict:
                         await self.manager.send_instruction_to_agent(agent, instruction_dict)
@@ -541,9 +499,9 @@ class AbstractAgentsTeamChannelProducer(AbstractAgentChannelProducer, abc.ABC):
                         if pred_agent and pred_agent.name in results:
                             pred_result = results[pred_agent.name]
                             agent_input[pred_agent.name] = {
-                                AGENT_NAME_KEY: pred_agent.name,
-                                AGENT_ID_KEY: "",
-                                RESULT_KEY: pred_result.get(RESULT_KEY),
+                                constants.AGENT_NAME_KEY: pred_agent.name,
+                                constants.AGENT_ID_KEY: "",
+                                constants.RESULT_KEY: pred_result.get(constants.RESULT_KEY),
                             }
                     
                     # Store initial_data in a special key for agents that need it (like distribution agent)
@@ -555,9 +513,9 @@ class AbstractAgentsTeamChannelProducer(AbstractAgentChannelProducer, abc.ABC):
                 try:
                     result = await agent.execute(agent_input, self.ai_service)
                     results[agent.name] = {
-                        AGENT_NAME_KEY: agent.name,
-                        AGENT_ID_KEY: "",
-                        RESULT_KEY: result,
+                        constants.AGENT_NAME_KEY: agent.name,
+                        constants.AGENT_ID_KEY: "",
+                        constants.RESULT_KEY: result,
                     }
                     completed_agents.add(agent.name)
                 except Exception as e:
@@ -580,7 +538,7 @@ class AbstractAgentsTeamChannelProducer(AbstractAgentChannelProducer, abc.ABC):
         all_agent_outputs: typing.Dict[str, typing.Any] = {}
         for agent in self.agents:
             if agent.name in results:
-                agent_result = results[agent.name].get(RESULT_KEY)
+                agent_result = results[agent.name].get(constants.RESULT_KEY)
                 all_agent_outputs[agent.name] = agent_result
                 if agent in terminal_agents:
                     terminal_results[agent.name] = agent_result
@@ -591,12 +549,6 @@ class AbstractAgentsTeamChannelProducer(AbstractAgentChannelProducer, abc.ABC):
         return terminal_results
     
     def _get_agent_outputs_from_execution(self) -> typing.Dict[str, typing.Any]:
-        """
-        Collect agent outputs from last execution.
-        
-        Returns:
-            Dict mapping agent names to their outputs.
-        """
         outputs = {}
         for agent in self.agents:
             # Try to get output from execution results
@@ -694,13 +646,13 @@ class AbstractAgentsTeamChannelProducer(AbstractAgentChannelProducer, abc.ABC):
             agent_id=agent_id or self.team_id,
         ):
             await consumer_instance.queue.put({
-                AGENT_NAME_KEY: team_name,
-                AGENT_ID_KEY: agent_id or self.team_id,
-                RESULT_KEY: result,
+                constants.AGENT_NAME_KEY: team_name,
+                constants.AGENT_ID_KEY: agent_id or self.team_id,
+                constants.RESULT_KEY: result,
             })
 
 
-class AbstractAgentsTeamChannel(AbstractAgentChannel):
+class AbstractAgentsTeamChannel(agent_channels.AbstractAgentChannel):
     """
     Channel for team outputs.
     

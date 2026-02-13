@@ -13,64 +13,30 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
-import abc
 import typing
-from typing import TYPE_CHECKING, Dict, Optional
 
 import octobot_commons.logging as logging
 
-from octobot_services.services.abstract_ai_service import AbstractAIService
 import octobot_services.enums as services_enums
 
-from octobot_agents.agent.channels.agent import (
-    AbstractAgentChannel,
-    AbstractAgentChannelConsumer,
-    AbstractAgentChannelProducer,
-)
-from octobot_agents.agent.channels.ai_agent import (
-    AbstractAIAgentChannel,
-    AbstractAIAgentChannelConsumer,
-    AbstractAIAgentChannelProducer,
-)
-from octobot_agents.models import ExecutionPlan
-from octobot_agents.models import (
-    ManagerState,
-    ManagerResult,
-    ManagerToolCall,
-    RunAgentArgs,
-    RunDebateArgs,
-)
-from octobot_agents.constants import (
-    TOOL_RUN_AGENT,
-    TOOL_RUN_DEBATE,
-    TOOL_FINISH,
-    AGENT_NAME_KEY,
-    RESULT_KEY,
-)
-from octobot_agents.models import AgentBaseModel
-from octobot_agents.utils.retry import retry_async
+import octobot_agents.agent.channels.agent as agent_channels
+import octobot_agents.agent.channels.ai_agent as ai_agent_channels
+import octobot_agents.models as models
+import octobot_agents.constants as constants
+import octobot_agents.utils.retry as retry_utils
 
-if TYPE_CHECKING:
-    from octobot_agents.models import ManagerInput
-    from octobot_agents.agent.channels.ai_agent import AbstractAIAgentChannelProducer
-
-class AbstractTeamManagerAgent(abc.ABC):
+class TeamManagerMixin:
     """
-    Base interface for all team managers.
+    Mixin that provides team manager functionality.
 
     Both managers are agents and follow the agent pattern with channels.
     """
 
-    def __init__(self):
-        """Initialize the team manager agent."""
-        self.logger = logging.get_logger(self.__class__.__name__)
-
-    @abc.abstractmethod
     async def execute(
         self,
-        input_data: typing.Union["ManagerInput", typing.Dict[str, typing.Any]],
-        ai_service: typing.Any  # AbstractAIService - type not available at runtime
-    ) -> typing.Union[ExecutionPlan, ManagerResult]:
+        input_data: typing.Union[models.ManagerInput, typing.Dict[str, typing.Any]],
+        ai_service: typing.Any
+    ) -> typing.Union[models.ExecutionPlan, models.ManagerResult]:
         """
         Execute the manager's logic and return an execution plan or terminal results.
 
@@ -79,14 +45,14 @@ class AbstractTeamManagerAgent(abc.ABC):
             ai_service: The AI service instance (for AI managers)
 
         Returns:
-            ExecutionPlan with steps for team execution (plan-driven) or ManagerResult with terminal results (tools-driven)
+            ExecutionPlan with steps for team execution (plan-driven) or models.ManagerResult with terminal results (tools-driven)
         """
         raise NotImplementedError("execute must be implemented by subclasses")
 
     async def send_instruction_to_agent(
         self,
-        agent: "AbstractAIAgentChannelProducer",
-        instruction: Dict[str, typing.Any],
+        agent: ai_agent_channels.AbstractAIAgentChannelProducer,
+        instruction: typing.Dict[str, typing.Any],
     ) -> None:
         """
         Send instruction to an agent via channel.modify().
@@ -102,43 +68,37 @@ class AbstractTeamManagerAgent(abc.ABC):
         await agent.channel.modify(**instruction)
 
 
-class ManagerAgentChannel(AbstractAgentChannel):
-    """Base channel for manager agents."""
-    __slots__ = ()
-    OUTPUT_SCHEMA = ExecutionPlan
+class ManagerAgentChannel(agent_channels.AbstractAgentChannel):
+    OUTPUT_SCHEMA = models.ExecutionPlan
 
 
-class ManagerAgentConsumer(AbstractAgentChannelConsumer):
-    """Base consumer for manager agent channels."""
-    __slots__ = ()
+class ManagerAgentConsumer(agent_channels.AbstractAgentChannelConsumer):
+    pass
 
 
-class ManagerAgentProducer(AbstractAgentChannelProducer, AbstractTeamManagerAgent):
-    """Base producer for manager agents. Subclasses implement execute()."""
-    __slots__ = ()
-
+class ManagerAgentProducer(TeamManagerMixin, agent_channels.AbstractAgentChannelProducer):
     AGENT_CHANNEL = ManagerAgentChannel
     AGENT_CONSUMER = ManagerAgentConsumer
 
-    def __init__(self, channel: Optional[ManagerAgentChannel] = None):
-        AbstractTeamManagerAgent.__init__(self)
-        AbstractAgentChannelProducer.__init__(self, channel)
+    def __init__(
+        self,
+        channel: typing.Optional[ManagerAgentChannel] = None,
+        **kwargs,
+    ):
+        super().__init__(channel, **kwargs)
         self.name = self.__class__.__name__
+        self.logger = logging.get_logger(self.__class__.__name__)
 
 
-class AIManagerAgentChannel(ManagerAgentChannel, AbstractAIAgentChannel):
-    """AI channel for manager agents."""
-    __slots__ = ()
+class AIManagerAgentChannel(ManagerAgentChannel, ai_agent_channels.AbstractAIAgentChannel):
+    pass
 
 
-class AIManagerAgentConsumer(ManagerAgentConsumer, AbstractAIAgentChannelConsumer):
-    """AI consumer for manager agent channels."""
-    __slots__ = ()
+class AIManagerAgentConsumer(ManagerAgentConsumer, ai_agent_channels.AbstractAIAgentChannelConsumer):
+    pass
 
 
-class AIManagerAgentProducer(ManagerAgentProducer, AbstractAIAgentChannelProducer):
-    """AI producer for manager agents. Tentacles extend this and implement execute() with LLM."""
-    __slots__ = ()
+class AIManagerAgentProducer(ManagerAgentProducer, ai_agent_channels.AbstractAIAgentChannelProducer):
 
     AGENT_CHANNEL = AIManagerAgentChannel
     AGENT_CONSUMER = AIManagerAgentConsumer
@@ -146,43 +106,41 @@ class AIManagerAgentProducer(ManagerAgentProducer, AbstractAIAgentChannelProduce
 
     def __init__(
         self,
-        channel: Optional[AIManagerAgentChannel] = None,
-        model: Optional[str] = None,
-        max_tokens: Optional[int] = None,
-        temperature: Optional[float] = None,
+        channel: typing.Optional[AIManagerAgentChannel] = None,
+        model: typing.Optional[str] = None,
+        max_tokens: typing.Optional[int] = None,
+        temperature: typing.Optional[float] = None,
         **kwargs,
     ):
-        AbstractTeamManagerAgent.__init__(self)
-        AbstractAIAgentChannelProducer.__init__(
-            self, channel, model=model, max_tokens=max_tokens, temperature=temperature, **kwargs
+        super().__init__(
+            channel=channel,
+            model=model,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            **kwargs
         )
         self.name = self.__class__.__name__
-        self.logger = logging.get_logger(self.__class__.__name__)
 
 
 class AIPlanManagerAgentChannel(AIManagerAgentChannel):
-    """Plan-driven AI channel for manager agents."""
-    __slots__ = ()
+    pass
 
 
 class AIPlanManagerAgentConsumer(AIManagerAgentConsumer):
-    """Plan-driven AI consumer for manager agent channels."""
-    __slots__ = ()
+    pass
 
 
 class AIPlanManagerAgentProducer(AIManagerAgentProducer):
-    """Plan-driven AI producer for manager agents. execute() returns ExecutionPlan."""
-    __slots__ = ()
 
     AGENT_CHANNEL = AIPlanManagerAgentChannel
     AGENT_CONSUMER = AIPlanManagerAgentConsumer
 
     def __init__(
         self,
-        channel: Optional[AIPlanManagerAgentChannel] = None,
-        model: Optional[str] = None,
-        max_tokens: Optional[int] = None,
-        temperature: Optional[float] = None,
+        channel: typing.Optional[AIPlanManagerAgentChannel] = None,
+        model: typing.Optional[str] = None,
+        max_tokens: typing.Optional[int] = None,
+        temperature: typing.Optional[float] = None,
         **kwargs,
     ):
         super().__init__(
@@ -193,36 +151,26 @@ class AIPlanManagerAgentProducer(AIManagerAgentProducer):
             **kwargs
         )
 
-
-# -----------------------------------------------------------------------------
-# Tools-driven AI manager agent classes
-# -----------------------------------------------------------------------------
-
-
 class AIToolsManagerAgentChannel(AIManagerAgentChannel):
-    """Tools-driven AI channel for manager agents."""
-    __slots__ = ()
+    pass
 
 
 class AIToolsManagerAgentConsumer(AIManagerAgentConsumer):
-    """Tools-driven AI consumer for manager agent channels."""
-    __slots__ = ()
+    pass
 
 
 class AIToolsManagerAgentProducer(AIManagerAgentProducer):
-    """Tools-driven AI producer for manager agents. execute() returns terminal results with internal tool loop."""
-    __slots__ = ()
 
     AGENT_CHANNEL = AIToolsManagerAgentChannel
     AGENT_CONSUMER = AIToolsManagerAgentConsumer
 
     def __init__(
         self,
-        channel: Optional[AIToolsManagerAgentChannel] = None,
-        model: Optional[str] = None,
-        max_tokens: Optional[int] = None,
-        temperature: Optional[float] = None,
-        max_tool_calls: Optional[int] = None,
+        channel: typing.Optional[AIToolsManagerAgentChannel] = None,
+        model: typing.Optional[str] = None,
+        max_tokens: typing.Optional[int] = None,
+        temperature: typing.Optional[float] = None,
+        max_tool_calls: typing.Optional[int] = None,
         **kwargs,
     ):
         super().__init__(
@@ -236,13 +184,13 @@ class AIToolsManagerAgentProducer(AIManagerAgentProducer):
 
     async def execute(
         self,
-        input_data: typing.Union["ManagerInput", typing.Dict[str, typing.Any]],
-        ai_service: AbstractAIService
-    ) -> ManagerResult:
+        input_data: typing.Union[models.ManagerInput, typing.Dict[str, typing.Any]],
+        ai_service: typing.Any
+    ) -> models.ManagerResult:
         """
         Execute tools-driven management with internal tool loop.
         
-        Returns ManagerResult with terminal results instead of ExecutionPlan.
+        Returns models.ManagerResult with terminal results instead of ExecutionPlan.
         """       
         team_producer = input_data.get("team_producer")
         initial_data = input_data.get("initial_data", {})
@@ -252,7 +200,7 @@ class AIToolsManagerAgentProducer(AIManagerAgentProducer):
             raise ValueError("team_producer is required in input_data")
         
         # Initialize state
-        state = ManagerState(
+        state = models.ManagerState(
             completed_agents=[],
             results={},
             initial_data=initial_data,
@@ -268,7 +216,7 @@ class AIToolsManagerAgentProducer(AIManagerAgentProducer):
             # Get tool call from LLM
             tool_call = await self._get_tool_call(context, ai_service)
             
-            if tool_call.tool_name == TOOL_FINISH:
+            if tool_call.tool_name == constants.TOOL_FINISH:
                 # Finish tool called - return current results
                 break
             
@@ -278,7 +226,7 @@ class AIToolsManagerAgentProducer(AIManagerAgentProducer):
             tool_call_count += 1
             state.tool_call_history.append(tool_call)
         
-        return ManagerResult(
+        return models.ManagerResult(
             completed_agents=state.completed_agents,
             results=state.results,
             tool_calls_used=tool_call_count,
@@ -287,7 +235,7 @@ class AIToolsManagerAgentProducer(AIManagerAgentProducer):
     def _build_tools_context(
         self,
         team_producer: typing.Any,
-        state: ManagerState,
+        state: models.ManagerState,
         instructions: typing.Optional[str]
     ) -> typing.Dict[str, typing.Any]:
         """Build context dict for LLM tool call."""
@@ -312,7 +260,7 @@ class AIToolsManagerAgentProducer(AIManagerAgentProducer):
         self,
         context: typing.Dict[str, typing.Any],
         ai_service: typing.Any
-    ) -> ManagerToolCall:
+    ) -> models.ManagerToolCall:
         system_prompt = self._get_tools_prompt()
         messages = [
             {"role": "system", "content": system_prompt},
@@ -321,17 +269,17 @@ class AIToolsManagerAgentProducer(AIManagerAgentProducer):
         
         tools = [
             ai_service.format_tool_definition(
-                name=TOOL_RUN_AGENT,
+                name=constants.TOOL_RUN_AGENT,
                 description="Run a specific agent and get its result",
-                parameters=RunAgentArgs.model_json_schema(),
+                parameters=models.RunAgentArgs.model_json_schema(),
             ),
             ai_service.format_tool_definition(
-                name=TOOL_RUN_DEBATE,
+                name=constants.TOOL_RUN_DEBATE,
                 description="Run a debate between agents with a judge",
-                parameters=RunDebateArgs.model_json_schema(),
+                parameters=models.RunDebateArgs.model_json_schema(),
             ),
             ai_service.format_tool_definition(
-                name=TOOL_FINISH,
+                name=constants.TOOL_FINISH,
                 description="Finish execution and return current results",
                 parameters={},
             ),
@@ -345,18 +293,18 @@ class AIToolsManagerAgentProducer(AIManagerAgentProducer):
             return_tool_calls=True,
         )
         
-        response_data, error_msg = AgentBaseModel.normalize_tool_call_response(
+        response_data, error_msg = models.AgentBaseModel.normalize_tool_call_response(
             response_data,
-            finish_tool_name=TOOL_FINISH,
+            finish_tool_name=constants.TOOL_FINISH,
         )
         if error_msg:
             raise ValueError(f"LLM failed to return valid tool calls: {error_msg}")
-        return ManagerToolCall.model_validate(response_data)
+        return models.ManagerToolCall.model_validate(response_data)
 
-    @retry_async(lambda self, agent, *args, **kwargs: agent.MAX_RETRIES)
+    @retry_utils.retry_async(lambda self, agent, *args, **kwargs: agent.MAX_RETRIES)
     async def _execute_agent_with_retry(
         self,
-        agent: AbstractAIAgentChannelProducer,
+        agent: ai_agent_channels.AbstractAIAgentChannelProducer,
         agent_input: typing.Dict[str, typing.Any],
         ai_service: typing.Any,
     ) -> typing.Any:
@@ -386,15 +334,15 @@ Examples (tool calls only, no prose):
 
     async def _execute_tool(
         self,
-        tool_call: ManagerToolCall,
+        tool_call: models.ManagerToolCall,
         team_producer: typing.Any,
-        state: ManagerState,
+        state: models.ManagerState,
         ai_service: typing.Any
     ) -> None:
         """Execute a tool and update state."""
-        if tool_call.tool_name == TOOL_RUN_AGENT:
+        if tool_call.tool_name == constants.TOOL_RUN_AGENT:
             await self._tool_run_agent(tool_call.arguments, team_producer, state, ai_service)
-        elif tool_call.tool_name == TOOL_RUN_DEBATE:
+        elif tool_call.tool_name == constants.TOOL_RUN_DEBATE:
             await self._tool_run_debate(tool_call.arguments, team_producer, state, ai_service)
         else:
             self.logger.warning(f"Unknown tool: {tool_call.tool_name}")
@@ -403,12 +351,12 @@ Examples (tool calls only, no prose):
         self,
         args: typing.Dict[str, typing.Any],
         team_producer: typing.Any,
-        state: ManagerState,
+        state: models.ManagerState,
         ai_service: typing.Any
     ) -> None:
         """Run a single agent with proper input structure for team execution."""
-        run_args = RunAgentArgs.model_validate(args)
-        agent = team_producer._producer_by_name.get(run_args.agent_name)
+        run_args = models.RunAgentArgs.model_validate(args)
+        agent = team_producer._producer_by_name.get(run_args.agent_name)  # pylint: disable=protected-access
         
         if agent is None:
             self.logger.warning(f"Agent {run_args.agent_name} not found")
@@ -419,7 +367,7 @@ Examples (tool calls only, no prose):
         # For non-entry agents: pass dict with predecessor results keyed by agent name
         
         # Check if agent is an entry agent (has no predecessors in the team)
-        incoming_edges, _ = team_producer._build_dag()
+        incoming_edges, _ = team_producer._build_dag()  # pylint: disable=protected-access
         agent_channel_type = agent.AGENT_CHANNEL
         predecessors = incoming_edges.get(agent_channel_type, [])
         
@@ -435,12 +383,12 @@ Examples (tool calls only, no prose):
             # Add each predecessor's result in the expected format
             for pred_channel_type in predecessors:
                 # Find the predecessor agent by channel type
-                pred_agent = team_producer._producer_by_channel.get(pred_channel_type)
+                pred_agent = team_producer._producer_by_channel.get(pred_channel_type)  # pylint: disable=protected-access
                 if pred_agent and pred_agent.name in state.results:
                     pred_result_entry = state.results[pred_agent.name]
                     agent_input[pred_agent.name] = {
-                        AGENT_NAME_KEY: pred_agent.name,
-                        RESULT_KEY: pred_result_entry.get("result"),
+                        constants.AGENT_NAME_KEY: pred_agent.name,
+                        constants.RESULT_KEY: pred_result_entry.get("result"),
                     }
             
             # Also preserve initial_state for agents that need it
@@ -460,14 +408,14 @@ Examples (tool calls only, no prose):
         self,
         args: typing.Dict[str, typing.Any],
         team_producer: typing.Any,
-        state: ManagerState,
+        state: models.ManagerState,
         ai_service: typing.Any
     ) -> None:
         """Run a debate."""
-        debate_args = RunDebateArgs.model_validate(args)
+        debate_args = models.RunDebateArgs.model_validate(args)
         
         # Use team's debate method
-        debate_results, completed = await team_producer._run_debate(
+        debate_results, completed = await team_producer._run_debate(  # pylint: disable=protected-access
             debate_config={
                 "debator_agent_names": debate_args.debator_agent_names,
                 "judge_agent_name": debate_args.judge_agent_name,

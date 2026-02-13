@@ -17,42 +17,31 @@
 AI tools team manager agent - uses LLM with tools to decide execution flow.
 """
 import typing
-from typing import TYPE_CHECKING
 
-from octobot_agents.team.manager import (
-    AIToolsManagerAgentChannel,
-    AIToolsManagerAgentConsumer,
-    AIToolsManagerAgentProducer,
-    AbstractTeamManagerAgent,
-)
+import octobot_agents.team.manager as agent_manager
 from tentacles.Agent.teams.default_manager_agent.ai_plan_manager_agent import (
     AIPlanTeamManagerAgentProducer,
 )
-
-if TYPE_CHECKING:
-    from octobot_agents.models import ManagerInput
-    import octobot_services as services
+import octobot_agents.models as agent_models
 
 
-class AIToolsTeamManagerAgentChannel(AIToolsManagerAgentChannel):
-    """Channel for AI tools team manager."""
-    __slots__ = ()
+class AIToolsTeamManagerAgentChannel(agent_manager.AIToolsManagerAgentChannel):
+    pass
 
 
-class AIToolsTeamManagerAgentConsumer(AIToolsManagerAgentConsumer):
-    """Consumer for AI tools team manager."""
-    __slots__ = ()
+class AIToolsTeamManagerAgentConsumer(agent_manager.AIToolsManagerAgentConsumer):
+    pass
 
 
-class AIToolsTeamManagerAgentProducer(AIToolsManagerAgentProducer):
+class AIToolsTeamManagerAgentProducer(agent_manager.AIToolsManagerAgentProducer):
     """
     AI tools team manager agent - uses LLM with tools to decide execution flow.
     
     Inherits from AIToolsManagerAgentProducer. Has Channel, Producer, Consumer components (as all AI agents do).
     """
     
-    AGENT_CHANNEL: typing.Type[AIToolsManagerAgentChannel] = AIToolsTeamManagerAgentChannel
-    AGENT_CONSUMER: typing.Type[AIToolsManagerAgentConsumer] = AIToolsTeamManagerAgentConsumer
+    AGENT_CHANNEL: typing.Type[agent_manager.AIToolsManagerAgentChannel] = AIToolsTeamManagerAgentChannel
+    AGENT_CONSUMER: typing.Type[agent_manager.AIToolsManagerAgentConsumer] = AIToolsTeamManagerAgentConsumer
     
     def __init__(
         self,
@@ -97,8 +86,8 @@ Important:
 
     async def execute(
         self,
-        input_data: typing.Union["ManagerInput", typing.Dict[str, typing.Any]],
-        ai_service: "services.AIServiceBase",
+        input_data: typing.Union[agent_models.ManagerInput, typing.Dict[str, typing.Any]],
+        ai_service: typing.Any,  # AbstractAIService - type not available at runtime
     ):
         if not ai_service.supports_call_json_output():
             self.logger.warning(

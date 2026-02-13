@@ -14,10 +14,16 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
+from octobot_agents.storage.history import abstract_analysis_storage
+from octobot_agents.storage.history.abstract_analysis_storage import AbstractAnalysisStorage
+
+from octobot_agents.storage.history import json_analysis_storage
+from octobot_agents.storage.history.json_analysis_storage import (
+    JSONAnalysisStorage,
+)
+
 from octobot_agents.storage.history import storage
 from octobot_agents.storage.history.storage import (
-    AbstractAnalysisStorage,
-    JSONAnalysisStorage,
     create_analysis_storage,
 )
 

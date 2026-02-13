@@ -37,22 +37,14 @@ import json
 import logging
 import os
 
-from octobot_agents.team.channels.deep_agents_team import (
-    AbstractDeepAgentsTeamChannel,
-    AbstractDeepAgentsTeamChannelConsumer,
-    AbstractDeepAgentsTeamChannelProducer,
-)
-from octobot_agents.utils.extractor import extract_json_from_content
+import octobot_agents.team.channels.deep_agents_team as agent_deep_team
+import octobot_agents.utils.extractor as agent_extractor
 import octobot_services.services.abstract_ai_service as abstract_ai_service
 
 from . import models
 
 logger = logging.getLogger(__name__)
 
-
-# =============================================================================
-# Worker Agent Prompts
-# =============================================================================
 
 SIGNAL_AGENT_INSTRUCTIONS = """
 You are a Signal Analysis AI expert for cryptocurrency trading.
@@ -248,17 +240,17 @@ Important:
 """
 
 
-class DeepAgentTradingTeamChannel(AbstractDeepAgentsTeamChannel):
+class DeepAgentTradingTeamChannel(agent_deep_team.AbstractDeepAgentsTeamChannel):
     """Channel for DeepAgentTradingTeam outputs."""
     pass
 
 
-class DeepAgentTradingTeamConsumer(AbstractDeepAgentsTeamChannelConsumer):
+class DeepAgentTradingTeamConsumer(agent_deep_team.AbstractDeepAgentsTeamChannelConsumer):
     """Consumer for DeepAgentTradingTeam outputs."""
     pass
 
 
-class DeepAgentTradingTeam(AbstractDeepAgentsTeamChannelProducer):
+class DeepAgentTradingTeam(agent_deep_team.AbstractDeepAgentsTeamChannelProducer):
     """
     Trading team using LangChain Deep Agents with supervisor pattern.
     
@@ -458,7 +450,7 @@ Save important insights to /memories/trading_insights/ for future reference.
                 content = str(last_message)
             
             # Try to parse JSON from content
-            parsed_data = extract_json_from_content(content)
+            parsed_data = agent_extractor.extract_json_from_content(content)
             
             if parsed_data:
                 try:
