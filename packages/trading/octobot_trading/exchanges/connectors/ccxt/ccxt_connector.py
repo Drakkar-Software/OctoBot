@@ -354,9 +354,12 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
             await self.exchange_manager.exchange.get_balance()
             self.clear_first_consecutive_authentication_error_at()
         except (
+            # octobot auth & proxy related errors
             octobot_trading.errors.AuthenticationError, 
             octobot_trading.errors.ExchangeProxyError, 
-            ccxt.AuthenticationError
+            # ccxt signature related errors
+            ccxt.ArgumentsRequired, ccxt.static_dependencies.ecdsa.der.UnexpectedDER,
+            binascii.Error, AssertionError, IndexError,
         ) as e:
             self.set_first_consecutive_authentication_error_at_if_unset()
             await self.client.close()
