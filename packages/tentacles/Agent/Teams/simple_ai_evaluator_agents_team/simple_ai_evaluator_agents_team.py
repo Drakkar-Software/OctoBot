@@ -27,7 +27,9 @@ import typing
 
 import octobot_commons.constants as common_constants
 
-import octobot_agents as agent
+import octobot_agents.team.channels.agents_team as agents_team
+import octobot_agents.team.channels.ai_agents_team as ai_agents_team
+import octobot_agents.agent.channels.ai_agent as ai_agent_channels
 
 from tentacles.Agent.sub_agents.technical_analysis_agent import (
     TechnicalAnalysisAIAgentChannel,
@@ -50,17 +52,15 @@ from tentacles.Agent.teams.default_manager_agent import AIPlanTeamManagerAgentPr
 from tentacles.Agent.sub_agents.default_memory_agent import DefaultAIMemoryAgentProducer
 
 
-class SimpleAIEvaluatorAgentsTeamChannel(agent.AbstractAgentsTeamChannel):
-    """Channel for SimpleAIEvaluatorAgentsTeam outputs."""
+class SimpleAIEvaluatorAgentsTeamChannel(agents_team.AbstractAgentsTeamChannel):
     pass
 
 
-class SimpleAIEvaluatorAgentsTeamConsumer(agent.AbstractAgentsTeamChannelConsumer):
-    """Consumer for SimpleAIEvaluatorAgentsTeam outputs."""
+class SimpleAIEvaluatorAgentsTeamConsumer(agents_team.AbstractAgentsTeamChannelConsumer):
     pass
 
 
-class SimpleAIEvaluatorAgentsTeam(agent.AbstractSyncAgentsTeamChannelProducer):
+class SimpleAIEvaluatorAgentsTeam(ai_agents_team.AbstractSyncAgentsTeamChannelProducer):
     """
     Sync team that orchestrates evaluator agents.
     

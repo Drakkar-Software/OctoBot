@@ -20,10 +20,10 @@ Pydantic models for real-time analysis agent outputs.
 from typing import List, Optional
 from pydantic import BaseModel, Field, field_validator
 
-from octobot_agents.models import AgentBaseModel
+import octobot_agents.models as agent_models
 
 
-class RealTimeAnalysisOutput(AgentBaseModel):
+class RealTimeAnalysisOutput(agent_models.AgentBaseModel):
     __strict_json_schema__ = True
     """Output from the real-time analysis agent."""
     eval_note: float = Field(

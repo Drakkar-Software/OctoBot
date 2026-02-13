@@ -66,6 +66,7 @@ def _test_temp_tentacles(missing_tentacles=None):
     missing_tentacles = missing_tentacles or []
     expected_tentacles_types = copy.copy(constants.TENTACLE_TYPES)
     expected_tentacles_types.remove(constants.TENTACLES_AUTOMATION_PATH)    # no automation tentacles in test file
+    expected_tentacles_types.remove(constants.TENTACLES_AGENTS_PATH)       # no agent tentacles in test file
     assert all(path.isdir(_tentacle_path(tentacle_type))
                for tentacle_type in expected_tentacles_types
                if tentacle_type not in missing_tentacles)

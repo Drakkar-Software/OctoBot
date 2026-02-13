@@ -21,7 +21,7 @@ from enum import Enum
 from typing import List, Literal
 from pydantic import BaseModel, Field, AliasChoices, field_validator, model_validator
 
-from octobot_agents.models import AgentBaseModel
+import octobot_agents.models as agent_models
 
 
 class SignalDirection(str, Enum):
@@ -44,7 +44,7 @@ class MarketOutlook(str, Enum):
     MIXED = "mixed"
 
 
-class SignalRecommendation(AgentBaseModel):
+class SignalRecommendation(agent_models.AgentBaseModel):
     """A trading signal recommendation for an asset."""
     __strict_json_schema__ = True
     action: Literal["buy", "sell", "hold", "increase", "decrease"] = Field(
@@ -61,7 +61,7 @@ class SignalRecommendation(AgentBaseModel):
     )
 
 
-class CryptoSignalOutput(AgentBaseModel):
+class CryptoSignalOutput(agent_models.AgentBaseModel):
     """Output from a cryptocurrency signal agent."""
     __strict_json_schema__ = True
 
@@ -74,7 +74,7 @@ class CryptoSignalOutput(AgentBaseModel):
     )
 
 
-class SynthesizedSignal(AgentBaseModel):
+class SynthesizedSignal(agent_models.AgentBaseModel):
     """A synthesized signal for an asset combining multiple signal sources.
 
     Strict schema enforcement: All fields are required with correct types.
@@ -127,7 +127,7 @@ class SynthesizedSignal(AgentBaseModel):
         return direction
 
 
-class SignalSynthesisOutput(AgentBaseModel):
+class SignalSynthesisOutput(agent_models.AgentBaseModel):
     """Output from the signal manager agent - synthesizes all signals."""
     __strict_json_schema__ = True
 

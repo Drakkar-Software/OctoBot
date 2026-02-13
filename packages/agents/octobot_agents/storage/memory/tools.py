@@ -15,21 +15,12 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import typing
 
-from octobot_services.services.abstract_ai_service import AbstractAIService
+import octobot_services.services.abstract_ai_service as abstract_ai_service
 
-from octobot_agents.storage.memory.abstract_memory_storage import AbstractMemoryStorage
+import octobot_agents.storage.memory.abstract_memory_storage as abstract_memory_storage
 
 
-def get_memory_tools(memory_manager: AbstractMemoryStorage, ai_service: AbstractAIService) -> typing.List[dict]:
-    """
-    Get memory tool definitions for LLM function calling.
-    
-    Args:
-        memory_manager: The memory manager instance.
-        
-    Returns:
-        List of tool definitions in OpenAI function calling format.
-    """
+def get_memory_tools(memory_manager: abstract_memory_storage.AbstractMemoryStorage, ai_service: abstract_ai_service.AbstractAIService) -> typing.List[dict]:
     if not memory_manager or not memory_manager.is_enabled():
         return []
     
@@ -69,21 +60,10 @@ def get_memory_tools(memory_manager: AbstractMemoryStorage, ai_service: Abstract
 
 
 def execute_memory_tool(
-    memory_manager: AbstractMemoryStorage,
+    memory_manager: abstract_memory_storage.AbstractMemoryStorage,
     tool_name: str,
     arguments: dict,
 ) -> typing.Any:
-    """
-    Execute a memory tool call.
-    
-    Args:
-        memory_manager: The memory manager instance.
-        tool_name: Name of the tool to execute.
-        arguments: Tool arguments.
-        
-    Returns:
-        Tool execution result.
-    """
     if not memory_manager or not memory_manager.is_enabled():
         return {"error": "Memory is not enabled"}
     

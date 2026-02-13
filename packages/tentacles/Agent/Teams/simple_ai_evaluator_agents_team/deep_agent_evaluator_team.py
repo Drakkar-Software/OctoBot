@@ -34,12 +34,8 @@ import os
 
 import octobot_commons.constants as common_constants
 
-from octobot_agents.team.channels.deep_agents_team import (
-    AbstractDeepAgentsTeamChannel,
-    AbstractDeepAgentsTeamChannelConsumer,
-    AbstractDeepAgentsTeamChannelProducer,
-)
-from octobot_agents.utils.extractor import extract_json_from_content
+import octobot_agents.team.channels.deep_agents_team as agent_deep_team
+import octobot_agents.utils.extractor as agent_extractor
 import octobot_services.services.abstract_ai_service as abstract_ai_service
 
 from . import models
@@ -145,17 +141,15 @@ Remember to save important insights to /memories/ for future reference.
 """
 
 
-class DeepAgentEvaluatorTeamChannel(AbstractDeepAgentsTeamChannel):
-    """Channel for DeepAgentEvaluatorTeam outputs."""
+class DeepAgentEvaluatorTeamChannel(agent_deep_team.AbstractDeepAgentsTeamChannel):
     pass
 
 
-class DeepAgentEvaluatorTeamConsumer(AbstractDeepAgentsTeamChannelConsumer):
-    """Consumer for DeepAgentEvaluatorTeam outputs."""
+class DeepAgentEvaluatorTeamConsumer(agent_deep_team.AbstractDeepAgentsTeamChannelConsumer):
     pass
 
 
-class DeepAgentEvaluatorTeam(AbstractDeepAgentsTeamChannelProducer):
+class DeepAgentEvaluatorTeam(agent_deep_team.AbstractDeepAgentsTeamChannelProducer):
     """
     Evaluator team using LangChain Deep Agents with supervisor pattern.
     
@@ -349,7 +343,7 @@ Save any important market insights to /memories/market_insights/ for future refe
                 content = str(last_message)
             
             # Try to parse JSON from content
-            parsed_data = extract_json_from_content(content)
+            parsed_data = agent_extractor.extract_json_from_content(content)
             
             if parsed_data:
                 try:

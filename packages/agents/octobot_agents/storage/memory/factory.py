@@ -13,25 +13,23 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
-import typing
-
-from octobot_agents.storage.memory.abstract_memory_storage import AbstractMemoryStorage
-from octobot_agents.enums import MemoryStorageType
-from octobot_agents.storage.memory.json_memory_storage import JSONMemoryStorage
-from octobot_agents.constants import DEFAULT_MAX_MEMORIES
-from octobot_agents.errors import UnsupportedStorageTypeError
+import octobot_agents.storage.memory.abstract_memory_storage as abstract_memory_storage
+import octobot_agents.enums as enums
+import octobot_agents.storage.memory.json_memory_storage as json_memory_storage
+import octobot_agents.constants as constants
+import octobot_agents.errors as errors
 
 
 def create_memory_storage(
-    storage_type: MemoryStorageType,
+    storage_type: enums.MemoryStorageType,
     agent_name: str,
     agent_version: str,
     enabled: bool = True,
     search_limit: int = 5,
     storage_enabled: bool = True,
     agent_id_key: str = "agent_id",
-    max_memories: int = DEFAULT_MAX_MEMORIES,
-) -> AbstractMemoryStorage:
+    max_memories: int = constants.DEFAULT_MAX_MEMORIES,
+) -> abstract_memory_storage.AbstractMemoryStorage:
     """
     Factory function to create a memory storage instance based on storage type.
     
@@ -51,8 +49,8 @@ def create_memory_storage(
     Raises:
         ValueError: If storage_type is not supported.
     """
-    if storage_type == MemoryStorageType.JSON:
-        return JSONMemoryStorage(
+    if storage_type == enums.MemoryStorageType.JSON:
+        return json_memory_storage.JSONMemoryStorage(
             agent_name=agent_name,
             agent_version=agent_version,
             enabled=enabled,
@@ -62,4 +60,4 @@ def create_memory_storage(
             max_memories=max_memories,
         )
     else:
-        raise UnsupportedStorageTypeError(f"Unsupported memory storage type: {storage_type}")
+        raise errors.UnsupportedStorageTypeError(f"Unsupported memory storage type: {storage_type}")

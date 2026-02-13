@@ -17,24 +17,20 @@ import enum
 
 
 class MemoryStorageType(enum.Enum):
-    """Enum for memory storage types."""
     JSON = "json"
 
 
 class StepType(enum.Enum):
-    """Enum for execution step type (agent vs debate)."""
     AGENT = "agent"
     DEBATE = "debate"
 
 
 class JudgeDecisionType(enum.Enum):
-    """Enum for judge decision in a debate step (continue or exit)."""
     CONTINUE = "continue"
     EXIT = "exit"
 
 
 class AgentRole(enum.Enum):
-    """Role of an agent in a team."""
     MANAGER = "manager"           # Orchestrates other agents
     WORKER = "worker"             # Performs specialized tasks
     CRITIC = "critic"             # Critiques and validates
@@ -43,28 +39,24 @@ class AgentRole(enum.Enum):
 
 
 class SubagentMode(enum.Enum):
-    """Mode of subagent execution."""
     SEQUENTIAL = "sequential"     # Execute one at a time
     PARALLEL = "parallel"         # Execute concurrently
     DAG = "dag"                   # Execute following dependency graph
 
 
 class ToolCallMode(enum.Enum):
-    """How tool calls are handled."""
     SYNC = "sync"                 # Wait for result
     ASYNC = "async"               # Fire and forget
     STREAMING = "streaming"       # Stream results
 
 
 class MemoryScope(enum.Enum):
-    """Scope of memory storage."""
     AGENT = "agent"               # Private to single agent
     TEAM = "team"                 # Shared within team
     GLOBAL = "global"             # Shared across all agents
 
 
 class ExecutionStatus(enum.Enum):
-    """Status of agent execution."""
     PENDING = "pending"
     RUNNING = "running"
     COMPLETED = "completed"

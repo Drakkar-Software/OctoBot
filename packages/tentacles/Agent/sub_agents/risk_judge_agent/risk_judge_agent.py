@@ -21,15 +21,15 @@ Implements AIJudgeAgentProducer: evaluates risk debate history and decides conti
 import typing
 
 import octobot_commons.logging as logging
-import octobot_agents.models as models
-from octobot_agents.enums import JudgeDecisionType
+import octobot_agents.models as agent_models
+import octobot_agents.enums as agent_enums
 import octobot_services.services.abstract_ai_service as abstract_ai_service
 
 from octobot_services.enums import AIModelPolicy
-from octobot_agents.team.judge import AIJudgeAgentProducer
+import octobot_agents.team.judge as agent_judge
 
 
-class RiskJudgeAIAgentProducer(AIJudgeAgentProducer):
+class RiskJudgeAIAgentProducer(agent_judge.AIJudgeAgentProducer):
     """
     Risk judge agent: evaluates debate history from risk debators (e.g. risky/safe/neutral)
     and decides whether to continue the debate or exit with a risk synthesis summary.
@@ -70,17 +70,17 @@ Output a JSON object with:
 
     async def execute(
         self,
-        input_data: typing.Union[models.JudgeInput, typing.Dict[str, typing.Any]],
+        input_data: typing.Union[agent_models.JudgeInput, typing.Dict[str, typing.Any]],
         ai_service: abstract_ai_service.AbstractAIService,
-    ) -> models.JudgeDecision:
+    ) -> agent_models.JudgeDecision:
         debate_history = input_data.get("debate_history", [])
         debator_agent_names = input_data.get("debator_agent_names", [])
         current_round = input_data.get("current_round", 1)
         max_rounds = input_data.get("max_rounds", 3)
 
         if not debate_history:
-            return models.JudgeDecision(
-                decision=JudgeDecisionType.EXIT.value,
+            return agent_models.JudgeDecision(
+                decision=agent_enums.JudgeDecisionType.EXIT.value,
                 reasoning="No debate history; exiting.",
                 summary="No risk debate content.",
             )
@@ -101,23 +101,23 @@ Decide: continue the debate or exit with a risk synthesis?"""
         ]
 
         try:
-            response = await self._call_llm(
+                response = await self._call_llm(
                 messages,
                 ai_service,
                 json_output=True,
-                response_schema=models.JudgeDecision,
+                response_schema=agent_models.JudgeDecision,
             )
         except Exception as e:
             self.logger.exception(f"Risk judge LLM call failed: {e}")
-            return models.JudgeDecision(
-                decision=JudgeDecisionType.EXIT.value,
+            return agent_models.JudgeDecision(
+                decision=agent_enums.JudgeDecisionType.EXIT.value,
                 reasoning=f"Error: {e}",
                 summary=None,
             )
 
         if isinstance(response, dict):
-            return models.JudgeDecision(
-                decision=response.get("decision", JudgeDecisionType.EXIT.value),
+            return agent_models.JudgeDecision(
+                decision=response.get("decision", agent_enums.JudgeDecisionType.EXIT.value),
                 reasoning=response.get("reasoning", ""),
                 summary=response.get("summary"),
             )

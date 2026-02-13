@@ -200,6 +200,8 @@ class OctoBotBacktesting:
             evaluator_api.del_matrix(self.matrix_id)
             for service_feed in self.service_feeds:
                 await service_api.stop_service_feed(service_feed)
+            await service_api.clear_bot_id_feeds(self.bot_id)
+            self.service_feeds = []
         except Exception as e:
             self.logger.exception(e, True, f"Error when stopping independent backtesting: {e}")
             if should_raise:
@@ -382,7 +384,6 @@ class OctoBotBacktesting:
                         required_service_classes.add(required_class)
             except Exception as e:
                 pass
-                continue
         for service_class in required_service_classes:
             try:
                 await service_api.get_service(service_class, True, self.services_config)

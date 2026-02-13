@@ -16,28 +16,18 @@
 
 import typing
 
-from octobot_agents.storage.history.abstract_analysis_storage import AbstractAnalysisStorage
-from octobot_agents.storage.history.json_analysis_storage import JSONAnalysisStorage
+import octobot_agents.enums as enums
+import octobot_agents.constants as constants
+import octobot_agents.storage.history.json_analysis_storage as json_storage
 
+if typing.TYPE_CHECKING:
+    import octobot_agents.storage.history.abstract_analysis_storage as abstract_storage
 
 def create_analysis_storage(
-    storage_type: str = "json",
-    analysis_dir: str = "analysis",
-) -> AbstractAnalysisStorage:
-    """
-    Create an analysis storage instance.
-    
-    Args:
-        storage_type: Type of storage to create (default: "json").
-        analysis_dir: Directory name for storing analysis files (default: "analysis").
-        
-    Returns:
-        An AbstractAnalysisStorage instance.
-        
-    Raises:
-        ValueError: If storage_type is not recognized.
-    """
-    if storage_type == "json":
-        return JSONAnalysisStorage(analysis_dir=analysis_dir)
+    storage_type: enums.MemoryStorageType = enums.MemoryStorageType.JSON,
+    analysis_dir: str = constants.DEFAULT_ANALYSIS_DIR,
+) -> "abstract_storage.AbstractAnalysisStorage":
+    if storage_type == enums.MemoryStorageType.JSON:
+        return json_storage.JSONAnalysisStorage(analysis_dir=analysis_dir)
     else:
         raise ValueError(f"Unknown storage type: {storage_type}")

@@ -92,7 +92,7 @@ class AbstractServiceFeed(abstract_service_user.AbstractServiceUser,
         channel = channels.get_chan(self.FEED_CHANNEL.get_name())
         await channel.register_producer(self)
         if self.is_backtesting:
-            await self._resume_time_consumer()
+            await self._register_time_consumer()
 
     # Call _notify_consumers to send data to consumers
     def _notify_consumers(self, data):
@@ -185,12 +185,12 @@ class AbstractServiceFeed(abstract_service_user.AbstractServiceUser,
             pass
         self.time_consumer = None
 
-    async def _resume_time_consumer(self) -> None:
+    async def _register_time_consumer(self) -> None:
         if self.time_consumer is None:
             self.time_consumer = await self._get_time_channel().new_consumer(self.handle_timestamp)
 
     async def handle_timestamp(self, timestamp, **kwargs) -> None:
-        pass
+        self.logger.error("Received timestamp in feed but no handler implemented, this should not happen")
 
     async def get_historical_data(
         self,

@@ -19,10 +19,10 @@ Pydantic models for summarization agent outputs.
 """
 from pydantic import BaseModel, Field
 
-from octobot_agents.models import AgentBaseModel
+import octobot_agents.models as agent_models
 
 
-class SummarizationOutput(AgentBaseModel):
+class SummarizationOutput(agent_models.AgentBaseModel):
     __strict_json_schema__ = True
     """Output from the summarization agent."""
     eval_note: float = Field(

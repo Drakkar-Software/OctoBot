@@ -20,29 +20,15 @@ import typing
 
 import octobot_commons.logging as logging
 
-from octobot_agents.agent.channels.agent import (
-    AbstractAgentChannel,
-    AbstractAgentChannelConsumer,
-    AbstractAgentChannelProducer,
-)
-from octobot_agents.constants import (
-    AGENT_DEFAULT_MAX_TOKENS,
-    AGENT_DEFAULT_MAX_RETRIES,
-    AGENT_DEFAULT_TEMPERATURE,
-    MEMORY_AGENT_ID_KEY,
-)
-from octobot_agents.storage import (
-    AbstractMemoryStorage,
-    create_memory_storage,
-    get_memory_tools,
-    execute_memory_tool,
-)
-from octobot_agents.enums import MemoryStorageType
+import octobot_agents.agent.channels.agent as agent_channels
+import octobot_agents.constants as constants
+import octobot_agents.storage as storage
+import octobot_agents.enums as enums
 import octobot_services.services as services
-import octobot_services.enums as enums
+import octobot_services.enums as services_enums
 import octobot_services.errors as services_errors
 
-class AbstractAIAgentChannel(AbstractAgentChannel):
+class AbstractAIAgentChannel(agent_channels.AbstractAgentChannel):
     """
     Channel for AI agents.
     
@@ -51,7 +37,7 @@ class AbstractAIAgentChannel(AbstractAgentChannel):
     __metaclass__ = abc.ABCMeta
 
 
-class AbstractAIAgentChannelConsumer(AbstractAgentChannelConsumer):
+class AbstractAIAgentChannelConsumer(agent_channels.AbstractAgentChannelConsumer):
     """
     Consumer for AI agent channels with input aggregation support.
     
@@ -64,7 +50,7 @@ class AbstractAIAgentChannelConsumer(AbstractAgentChannelConsumer):
         self,
         callback: typing.Optional[typing.Callable] = None,
         size: int = 0,
-        priority_level: int = AbstractAgentChannel.DEFAULT_PRIORITY_LEVEL,
+        priority_level: int = agent_channels.AbstractAgentChannel.DEFAULT_PRIORITY_LEVEL,
         expected_inputs: int = 1,
     ):
         """
@@ -103,7 +89,7 @@ class AbstractAIAgentChannelConsumer(AbstractAgentChannelConsumer):
         self.received_inputs.clear()
 
 
-class AbstractAIAgentChannelProducer(AbstractAgentChannelProducer, abc.ABC):
+class AbstractAIAgentChannelProducer(agent_channels.AbstractAgentChannelProducer, abc.ABC):
     """
     Producer for AI agents with LLM calling capabilities and optional memory management.
     
@@ -119,24 +105,24 @@ class AbstractAIAgentChannelProducer(AbstractAgentChannelProducer, abc.ABC):
     
     AGENT_VERSION: str = "1.0.0"
     DEFAULT_MODEL: typing.Optional[str] = None
-    DEFAULT_MAX_TOKENS: int = AGENT_DEFAULT_MAX_TOKENS
-    DEFAULT_TEMPERATURE: float = AGENT_DEFAULT_TEMPERATURE
-    MAX_RETRIES: int = AGENT_DEFAULT_MAX_RETRIES
+    DEFAULT_MAX_TOKENS: int = constants.AGENT_DEFAULT_MAX_TOKENS
+    DEFAULT_TEMPERATURE: float = constants.AGENT_DEFAULT_TEMPERATURE
+    MAX_RETRIES: int = constants.AGENT_DEFAULT_MAX_RETRIES
     # Model policy for multi-model config: fast (analysts, debators) or reasoning (judge, final step). None = use self.model.
-    MODEL_POLICY: typing.Optional[enums.AIModelPolicy] = None
+    MODEL_POLICY: typing.Optional[services_enums.AIModelPolicy] = None
 
     # Memory configuration
     ENABLE_MEMORY: bool = False
     MEMORY_SEARCH_LIMIT: int = 5
     MEMORY_STORAGE_ENABLED: bool = True
-    MEMORY_AGENT_ID_KEY: str = MEMORY_AGENT_ID_KEY
+    MEMORY_AGENT_ID_KEY: str = constants.MEMORY_AGENT_ID_KEY
     
-    AGENT_CHANNEL: typing.Optional[typing.Type[AbstractAgentChannel]] = None
+    AGENT_CHANNEL: typing.Optional[typing.Type[agent_channels.AbstractAgentChannel]] = None
     AGENT_CONSUMER: typing.Optional[typing.Type[AbstractAIAgentChannelConsumer]] = None
     
     def __init__(
         self,
-        channel: typing.Optional[AbstractAgentChannel],
+        channel: typing.Optional[agent_channels.AbstractAgentChannel],
         ai_service: typing.Optional[services.AbstractAIService] = None,
         model: typing.Optional[str] = None,
         max_tokens: typing.Optional[int] = None,
@@ -164,8 +150,8 @@ class AbstractAIAgentChannelProducer(AbstractAgentChannelProducer, abc.ABC):
         
         # Initialize memory storage if memory is enabled
         memory_enabled = enable_memory if enable_memory is not None else self.ENABLE_MEMORY
-        self.memory_manager: AbstractMemoryStorage = create_memory_storage(
-            MemoryStorageType.JSON,
+        self.memory_manager: storage.AbstractMemoryStorage = storage.create_memory_storage(
+            enums.MemoryStorageType.JSON,
             agent_name=self.__class__.__name__,
             agent_version=self.AGENT_VERSION,
             enabled=memory_enabled,
@@ -277,7 +263,7 @@ class AbstractAIAgentChannelProducer(AbstractAgentChannelProducer, abc.ABC):
             (tool_name: str, arguments: dict) -> Any
         """
         def executor(tool_name: str, arguments: dict) -> typing.Any:
-            return execute_memory_tool(self.memory_manager, tool_name, arguments)
+            return storage.execute_memory_tool(self.memory_manager, tool_name, arguments)
         
         yield executor
     
@@ -316,7 +302,7 @@ class AbstractAIAgentChannelProducer(AbstractAgentChannelProducer, abc.ABC):
         # Register memory tools if memory is enabled, and merge with custom tools
         all_tools = []
         if self.memory_manager.is_enabled():
-            all_tools.extend(get_memory_tools(self.memory_manager, llm_service))
+            all_tools.extend(storage.get_memory_tools(self.memory_manager, llm_service))
         if tools:
             all_tools.extend(tools)
         

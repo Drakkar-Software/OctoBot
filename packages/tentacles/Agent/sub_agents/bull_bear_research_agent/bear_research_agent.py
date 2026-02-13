@@ -21,23 +21,21 @@ Takes the bearish side in a research debate: argues for caution, lower allocatio
 import json
 import typing
 
-import octobot_agents as agent
+import octobot_agents.agent.channels.ai_agent as ai_agent_channels
 from octobot_services.enums import AIModelPolicy
 
 from .models import ResearchDebateOutput
 
 
-class BearResearchAIAgentChannel(agent.AbstractAgentChannel):
-    """Channel for BearResearchAIAgentProducer."""
+class BearResearchAIAgentChannel(ai_agent_channels.AbstractAIAgentChannel):
     OUTPUT_SCHEMA = ResearchDebateOutput
 
 
-class BearResearchAIAgentConsumer(agent.AbstractAIAgentChannelConsumer):
-    """Consumer for BearResearchAIAgentProducer."""
+class BearResearchAIAgentConsumer(ai_agent_channels.AbstractAIAgentChannelConsumer):
     pass
 
 
-class BearResearchAIAgentProducer(agent.AbstractAIAgentChannelProducer):
+class BearResearchAIAgentProducer(ai_agent_channels.AbstractAIAgentChannelProducer):
     """
     Bear researcher: argues the bearish case in a research debate.
     Uses strategy data, portfolio context, and debate history to argue for caution.

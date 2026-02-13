@@ -14,31 +14,20 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import typing
-from typing import TYPE_CHECKING
 
-from octobot_agents.team.critic import (
-    CriticAgentChannel,
-    CriticAgentConsumer,
-    CriticAgentProducer,
-    AbstractCriticAgent,
-)
-import octobot_agents.models as models
-
-if TYPE_CHECKING:
-    from octobot_agents.models import CriticInput
+import octobot_agents.team.critic as critic
+import octobot_agents.models as agent_models
 
 
-class DefaultCriticAgentChannel(CriticAgentChannel):
-    """Channel for default critic agent."""
-    __slots__ = ()
+class DefaultCriticAgentChannel(critic.CriticAgentChannel):
+    pass
 
 
-class DefaultCriticAgentConsumer(CriticAgentConsumer):
-    """Consumer for default critic agent."""
-    __slots__ = ()
+class DefaultCriticAgentConsumer(critic.CriticAgentConsumer):
+    pass
 
 
-class DefaultCriticAgentProducer(CriticAgentProducer):
+class DefaultCriticAgentProducer(critic.CriticAgentProducer):
     """
     Default critic agent - simple rule-based analysis.
     
@@ -49,8 +38,8 @@ class DefaultCriticAgentProducer(CriticAgentProducer):
     use AICriticAgentProducer which uses LLM-based analysis.
     """
     
-    AGENT_CHANNEL: typing.Type[CriticAgentChannel] = DefaultCriticAgentChannel
-    AGENT_CONSUMER: typing.Type[CriticAgentConsumer] = DefaultCriticAgentConsumer
+    AGENT_CHANNEL: typing.Type[critic.CriticAgentChannel] = DefaultCriticAgentChannel
+    AGENT_CONSUMER: typing.Type[critic.CriticAgentConsumer] = DefaultCriticAgentConsumer
     
     def __init__(
         self,
@@ -120,9 +109,9 @@ class DefaultCriticAgentProducer(CriticAgentProducer):
     
     async def execute(
         self,
-        input_data: typing.Union[models.CriticInput, typing.Dict[str, typing.Any]],
+        input_data: typing.Union[agent_models.CriticInput, typing.Dict[str, typing.Any]],
         ai_service: typing.Any  # AbstractAIService - type not available at runtime
-    ) -> models.CriticAnalysis:
+    ) -> agent_models.CriticAnalysis:
         """
         Execute critic analysis using simple heuristics.
         
@@ -204,7 +193,7 @@ class DefaultCriticAgentProducer(CriticAgentProducer):
             if has_memory_enabled:
                 if is_quality_ok:
                     # Agent has quality result and memory enabled - capture learnings
-                    agent_improvements[agent_name] = models.AgentImprovement(
+                    agent_improvements[agent_name] = agent_models.AgentImprovement(
                         agent_name=agent_name,
                         improvements=["Capture successful execution patterns"],
                         issues=[],
@@ -213,7 +202,7 @@ class DefaultCriticAgentProducer(CriticAgentProducer):
                     )
                 else:
                     # Agent has result but quality issues - include with issues for improvement
-                    agent_improvements[agent_name] = models.AgentImprovement(
+                    agent_improvements[agent_name] = agent_models.AgentImprovement(
                         agent_name=agent_name,
                         improvements=["Improve result quality and completeness"],
                         issues=quality_issues,
@@ -234,7 +223,7 @@ class DefaultCriticAgentProducer(CriticAgentProducer):
             f"{quality_issue_count} agents with quality issues identified."
         )
         
-        return models.CriticAnalysis(
+        return agent_models.CriticAnalysis(
             issues=issues,
             errors=errors,
             inconsistencies=inconsistencies,

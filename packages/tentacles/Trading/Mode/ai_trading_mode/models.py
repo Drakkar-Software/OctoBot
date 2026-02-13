@@ -25,10 +25,6 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 
-# ============================================================================
-# Input Models
-# ============================================================================
-
 class PortfolioState(BaseModel):
     """Current portfolio state for trading analysis."""
     model_config = ConfigDict(extra="allow")
@@ -59,10 +55,6 @@ class TradingTeamInput(BaseModel):
     strategy: Optional[StrategyConfig] = Field(default=None, description="Trading strategy configuration")
 
 
-# ============================================================================
-# Signal Models
-# ============================================================================
-
 class Signal(BaseModel):
     """Single trading signal."""
     model_config = ConfigDict(extra="forbid")
@@ -82,10 +74,6 @@ class SignalAnalysisOutput(BaseModel):
     signals: List[Signal] = Field(default_factory=list, description="List of signals")
     market_overview: str = Field(default="", description="General market conditions summary")
 
-
-# ============================================================================
-# Research Models
-# ============================================================================
 
 class ResearchArgument(BaseModel):
     """Single research argument."""
@@ -107,10 +95,6 @@ class ResearchOutput(BaseModel):
     risk_assessment: str = Field(default="", description="Risk assessment for this position")
 
 
-# ============================================================================
-# Risk Judgment Models
-# ============================================================================
-
 class RiskJudgment(BaseModel):
     """Risk judgment comparing bull and bear arguments."""
     model_config = ConfigDict(extra="forbid")
@@ -125,10 +109,6 @@ class RiskJudgment(BaseModel):
     )
     rationale: str = Field(default="", description="Detailed rationale for verdict")
 
-
-# ============================================================================
-# Distribution/Allocation Models
-# ============================================================================
 
 class Allocation(BaseModel):
     """Single portfolio allocation decision."""
@@ -167,10 +147,6 @@ class DistributionOutput(BaseModel):
     )
     execution_plan: Optional[ExecutionPlan] = Field(default=None, description="Execution plan")
 
-
-# ============================================================================
-# Output Models
-# ============================================================================
 
 class TradingTeamResult(BaseModel):
     """Final result from Deep Agent trading team."""

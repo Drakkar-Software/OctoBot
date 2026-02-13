@@ -15,7 +15,7 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
 from octobot_agents.team.judge.channels.judge_agent import (
-    AbstractJudgeAgent,
+    JudgeAgentMixin,
     JudgeAgentChannel,
     JudgeAgentConsumer,
     JudgeAgentProducer,
@@ -25,7 +25,7 @@ from octobot_agents.team.judge.channels.judge_agent import (
 )
 
 __all__ = [
-    "AbstractJudgeAgent",
+    "JudgeAgentMixin",
     "JudgeAgentChannel",
     "JudgeAgentConsumer",
     "JudgeAgentProducer",

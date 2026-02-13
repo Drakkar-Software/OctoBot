@@ -15,22 +15,20 @@
 #  License along with this library.
 import json
 
-import octobot_agents as agent
+import octobot_agents.agent.channels.ai_agent as ai_agent_channels
 
 from .models import SentimentAnalysisOutput
 
 
-class SentimentAnalysisAIAgentChannel(agent.AbstractAgentChannel):
-    """Channel for SentimentAnalysisAIAgentProducer."""
+class SentimentAnalysisAIAgentChannel(ai_agent_channels.AbstractAIAgentChannel):
     OUTPUT_SCHEMA = SentimentAnalysisOutput
 
 
-class SentimentAnalysisAIAgentConsumer(agent.AbstractAIAgentChannelConsumer):
-    """Consumer for SentimentAnalysisAIAgentProducer."""
+class SentimentAnalysisAIAgentConsumer(ai_agent_channels.AbstractAIAgentChannelConsumer):
     pass
 
 
-class SentimentAnalysisAIAgentProducer(agent.AbstractAIAgentChannelProducer):
+class SentimentAnalysisAIAgentProducer(ai_agent_channels.AbstractAIAgentChannelProducer):
     """Producer specialized in sentiment analysis evaluation."""
     
     AGENT_VERSION = "1.0.0"

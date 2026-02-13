@@ -15,7 +15,7 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
 from octobot_agents.team.critic.channels.critic_agent import (
-    AbstractCriticAgent,
+    CriticAgentMixin,
     CriticAgentChannel,
     CriticAgentConsumer,
     CriticAgentProducer,
@@ -26,7 +26,7 @@ from octobot_agents.team.critic.channels.critic_agent import (
 
 
 __all__ = [
-    "AbstractCriticAgent",
+    "CriticAgentMixin",
     "CriticAgentChannel",
     "CriticAgentConsumer",
     "CriticAgentProducer",

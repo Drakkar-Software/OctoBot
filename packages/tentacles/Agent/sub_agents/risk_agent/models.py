@@ -20,10 +20,10 @@ Pydantic models for risk agent outputs.
 from typing import Dict, List, Optional
 from pydantic import BaseModel, Field, field_validator
 
-from octobot_agents.models import AgentBaseModel
+import octobot_agents.models as agent_models
 
 
-class RiskMetrics(AgentBaseModel):
+class RiskMetrics(agent_models.AgentBaseModel):
     """Portfolio risk metrics."""
     __strict_json_schema__ = True
     overall_risk_level: str = Field(
@@ -54,7 +54,7 @@ class RiskMetrics(AgentBaseModel):
         return v_lower
 
 
-class RiskAssessmentOutput(AgentBaseModel):
+class RiskAssessmentOutput(agent_models.AgentBaseModel):
     """Output from the risk assessment agent."""
     __strict_json_schema__ = True
     

@@ -14,21 +14,18 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import typing
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, TypedDict, Union
+from typing import Any, Dict, List, Optional, Union, TypedDict
 
 import pydantic
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict
 
-from octobot_agents import constants
-from octobot_agents.errors import AgentError
+import octobot_agents.constants as constants
+import octobot_agents.errors as errors
+import octobot_agents.utils as utils
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from octobot_agents.team.channels.agents_team import AbstractAgentsTeamChannelProducer
 
-
-# ============================================================================
-# Base Model for JSON Schema Strict Mode Control
-# ============================================================================
 
 class AgentBaseModel(BaseModel):
     """
@@ -81,8 +78,7 @@ class AgentBaseModel(BaseModel):
             error_text = error_text.split(marker, 1)[-1].strip()
         if not error_text:
             return None
-        from octobot_agents.utils.extractor import extract_json_from_content
-        return extract_json_from_content(error_text)
+        return utils.extract_json_from_content(error_text)
 
     @staticmethod
     def normalize_tool_call_response(
@@ -126,11 +122,6 @@ class AgentBaseModel(BaseModel):
                 return {"tool_name": finish_tool_name, "arguments": {}}, None
 
         return response_data, None
-
-
-# ============================================================================
-# Execution Plan Models
-# ============================================================================
 
 class AgentInstruction(AgentBaseModel):
     """Instruction to send to an agent via channel.modify()"""
@@ -297,10 +288,6 @@ class ExecutionPlan(AgentBaseModel):
             return self.dict()
 
 
-# ============================================================================
-# Tools-driven Manager Models
-# ============================================================================
-
 class ManagerToolCall(AgentBaseModel):
     """Tool call from LLM in tools-driven manager."""
     model_config = ConfigDict(extra="forbid")
@@ -317,7 +304,7 @@ class RunAgentArgs(AgentBaseModel):
     agent_name: Optional[str] = None  # Name of the agent to run
     instructions: Optional[Union[List[AgentInstruction], List[str]]] = None  # Instructions to send before execution
     
-    @model_validator(mode="before")
+    @pydantic.model_validator(mode="before")
     @classmethod
     def normalize_instructions(cls, data: Any) -> Any:
         if isinstance(data, dict) and "instructions" in data:
@@ -386,10 +373,6 @@ class ManagerResult(AgentBaseModel):
     results: Dict[str, Any]  # Results from completed agents (agent_name -> result)
     tool_calls_used: int  # Number of tool calls made during execution
 
-
-# ============================================================================
-# Critic Models
-# ============================================================================
 
 class AgentImprovement(AgentBaseModel):
     """Improvements needed for a specific agent."""
@@ -474,10 +457,6 @@ class CriticAnalysis(AgentBaseModel):
         return self.issues
 
 
-# ============================================================================
-# Memory Models
-# ============================================================================
-
 class MemoryOperation(AgentBaseModel):
     """Result of a memory operation."""
     success: bool
@@ -539,7 +518,7 @@ class MemoryStorageModel(AgentBaseModel):
     def validate_not_empty(cls, v: str) -> str:
         """Ensure fields are not just whitespace."""
         if not v or not v.strip():
-            raise AgentError("Field cannot be empty or whitespace only")
+            raise errors.AgentError("Field cannot be empty or whitespace only")
         return v.strip()
     
     @pydantic.field_validator('content')

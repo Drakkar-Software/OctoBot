@@ -15,21 +15,17 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import pytest
 
-from octobot_agents.agent.channels.ai_agent import AbstractAIAgentChannelProducer
-from octobot_agents.agent.channels.agent import AbstractAgentChannel
-from octobot_agents.constants import (
-    AGENT_DEFAULT_MAX_TOKENS,
-    AGENT_DEFAULT_TEMPERATURE,
-    AGENT_DEFAULT_MAX_RETRIES,
-)
+import octobot_agents.agent.channels.ai_agent as ai_agent_channels
+import octobot_agents.agent.channels.agent as agent_channels
+import octobot_agents.constants as agent_constants
 
 
-class TestAgentChannel(AbstractAgentChannel):
+class TestAgentChannel(agent_channels.AbstractAgentChannel):
     """Test channel for testing."""
     pass
 
 
-class TestAIAgentProducer(AbstractAIAgentChannelProducer):
+class TestAIAgentProducer(ai_agent_channels.AbstractAIAgentChannelProducer):
     """Test agent producer for testing."""
     
     AGENT_CHANNEL = TestAgentChannel
@@ -55,9 +51,9 @@ def test_agent_default_values():
     channel = TestAgentChannel()
     agent = TestAIAgentProducer(channel)
     
-    assert agent.max_tokens == AGENT_DEFAULT_MAX_TOKENS
-    assert agent.temperature == AGENT_DEFAULT_TEMPERATURE
-    assert agent.MAX_RETRIES == AGENT_DEFAULT_MAX_RETRIES
+    assert agent.max_tokens == agent_constants.AGENT_DEFAULT_MAX_TOKENS
+    assert agent.temperature == agent_constants.AGENT_DEFAULT_TEMPERATURE
+    assert agent.MAX_RETRIES == agent_constants.AGENT_DEFAULT_MAX_RETRIES
 
 
 def test_agent_custom_values():

@@ -15,7 +15,7 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
 from octobot_agents.agent.memory.channels.memory_agent import (
-    AbstractMemoryAgent,
+    MemoryAgentMixin,
     MemoryAgentChannel,
     MemoryAgentConsumer,
     MemoryAgentProducer,
@@ -25,7 +25,7 @@ from octobot_agents.agent.memory.channels.memory_agent import (
 )
 
 __all__ = [
-    "AbstractMemoryAgent",
+    "MemoryAgentMixin",
     "MemoryAgentChannel",
     "MemoryAgentConsumer",
     "MemoryAgentProducer",

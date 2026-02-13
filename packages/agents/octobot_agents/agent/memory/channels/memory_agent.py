@@ -13,39 +13,23 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
-import abc
 import typing
-from typing import TYPE_CHECKING, Optional
 
 import octobot_commons.logging as logging
 
-from octobot_agents.agent.channels.agent import (
-    AbstractAgentChannel,
-    AbstractAgentChannelConsumer,
-    AbstractAgentChannelProducer,
-)
-from octobot_agents.agent.channels.ai_agent import (
-    AbstractAIAgentChannel,
-    AbstractAIAgentChannelConsumer,
-    AbstractAIAgentChannelProducer,
-)
+import octobot_agents.agent.channels.agent as agent_channels
+import octobot_agents.agent.channels.ai_agent as ai_agent_channels
 import octobot_agents.models as models
 import octobot_services.services.abstract_ai_service as abstract_ai_service
 
 
-class AbstractMemoryAgent(abc.ABC):
+class MemoryAgentMixin:
     """
-    Base interface for all memory agents.
+    Mixin that provides memory agent functionality.
 
     Memory agents are responsible for managing agent memories based on critic analysis.
     """
 
-    def __init__(self, self_improving: bool = True):
-        """Initialize the memory agent."""
-        self.self_improving = self_improving
-        self.logger = None  # Will be set by subclasses
-
-    @abc.abstractmethod
     async def execute(
         self,
         input_data: typing.Union[models.MemoryInput, typing.Dict[str, typing.Any]],
@@ -67,7 +51,7 @@ class AbstractMemoryAgent(abc.ABC):
     def _get_agent_from_team(
         team_producer: typing.Optional[typing.Any],
         agent_name: str
-    ) -> Optional["AbstractAIAgentChannelProducer"]:
+    ) -> typing.Optional[ai_agent_channels.AbstractAIAgentChannelProducer]:
         """
         Get agent instance from team producer (manager or regular agent).
 
@@ -111,74 +95,59 @@ class AbstractMemoryAgent(abc.ABC):
         return all_agent_names
 
 
-# -----------------------------------------------------------------------------
-# Base (non-AI) channel classes
-# -----------------------------------------------------------------------------
-
-
-class MemoryAgentChannel(AbstractAgentChannel):
-    """Base channel for memory agents."""
-    __slots__ = ()
+class MemoryAgentChannel(agent_channels.AbstractAgentChannel):
     OUTPUT_SCHEMA = models.MemoryOperation
 
 
-class MemoryAgentConsumer(AbstractAgentChannelConsumer):
-    """Base consumer for memory agent channels."""
-    __slots__ = ()
+class MemoryAgentConsumer(agent_channels.AbstractAgentChannelConsumer):
+    pass
 
 
-class MemoryAgentProducer(AbstractAgentChannelProducer, AbstractMemoryAgent):
-    """Base producer for memory agents. Subclasses implement execute()."""
-    __slots__ = ()
+class MemoryAgentProducer(MemoryAgentMixin, agent_channels.AbstractAgentChannelProducer):
 
     AGENT_CHANNEL = MemoryAgentChannel
     AGENT_CONSUMER = MemoryAgentConsumer
 
-    def __init__(self, channel: Optional[MemoryAgentChannel] = None, self_improving: bool = True):
-        AbstractMemoryAgent.__init__(self, self_improving=self_improving)
-        AbstractAgentChannelProducer.__init__(self, channel)
+    def __init__(
+        self,
+        channel: typing.Optional[MemoryAgentChannel] = None,
+        self_improving: bool = True,
+        **kwargs,
+    ):
+        super().__init__(channel, **kwargs)
+        self.self_improving = self_improving
         self.name = self.__class__.__name__
         self.logger = logging.get_logger(self.__class__.__name__)
 
 
-# -----------------------------------------------------------------------------
-# AI channel classes (inherit from base AND AI abstracts)
-# -----------------------------------------------------------------------------
+class AIMemoryAgentChannel(MemoryAgentChannel, ai_agent_channels.AbstractAIAgentChannel):
+    pass
 
 
-class AIMemoryAgentChannel(MemoryAgentChannel, AbstractAIAgentChannel):
-    """AI channel for memory agents."""
-    __slots__ = ()
+class AIMemoryAgentConsumer(MemoryAgentConsumer, ai_agent_channels.AbstractAIAgentChannelConsumer):
+    pass
 
 
-class AIMemoryAgentConsumer(MemoryAgentConsumer, AbstractAIAgentChannelConsumer):
-    """AI consumer for memory agent channels."""
-    __slots__ = ()
-
-
-class AIMemoryAgentProducer(MemoryAgentProducer, AbstractAIAgentChannelProducer):
-    """AI producer for memory agents. Tentacles extend this and implement execute() with LLM."""
-    __slots__ = ()
+class AIMemoryAgentProducer(MemoryAgentProducer, ai_agent_channels.AbstractAIAgentChannelProducer):
 
     AGENT_CHANNEL = AIMemoryAgentChannel
     AGENT_CONSUMER = AIMemoryAgentConsumer
 
     def __init__(
         self,
-        channel: Optional[AIMemoryAgentChannel] = None,
-        model: Optional[str] = None,
-        max_tokens: Optional[int] = None,
-        temperature: Optional[float] = None,
+        channel: typing.Optional[AIMemoryAgentChannel] = None,
+        model: typing.Optional[str] = None,
+        max_tokens: typing.Optional[int] = None,
+        temperature: typing.Optional[float] = None,
         self_improving: bool = True,
         **kwargs,
     ):
-        AbstractMemoryAgent.__init__(self, self_improving=self_improving)
-        AbstractAIAgentChannelProducer.__init__(
-            self, channel, model=model, max_tokens=max_tokens, temperature=temperature, **kwargs
+        super().__init__(
+            channel=channel,
+            model=model,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            self_improving=self_improving,
+            **kwargs
         )
         self.name = self.__class__.__name__
-        self.logger = logging.get_logger(self.__class__.__name__)
-
-
-if TYPE_CHECKING:
-    from octobot_agents.agent.channels.ai_agent import AbstractAIAgentChannelProducer

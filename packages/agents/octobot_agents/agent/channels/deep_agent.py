@@ -35,23 +35,9 @@ import typing
 import logging
 import uuid
 
-from octobot_agents.agent.channels.ai_agent import (
-    AbstractAIAgentChannel,
-    AbstractAIAgentChannelConsumer,
-    AbstractAIAgentChannelProducer,
-)
-from octobot_agents.errors import DeepAgentNotAvailableError
-from octobot_agents.constants import (
-    MEMORIES_PATH_PREFIX,
-    AGENT_NAME_KEY,
-    HITL_DECISION_APPROVE,
-    HITL_DECISION_EDIT,
-    HITL_DECISION_REJECT,
-    HITL_ALLOWED_DECISIONS,
-    HITL_INTERRUPT_KEY,
-    SKILLS_PATH_PREFIX,
-    SKILLS_MANIFEST_FILE,
-)
+import octobot_agents.agent.channels.ai_agent as ai_agent_channels
+import octobot_agents.errors as errors
+import octobot_agents.constants as constants
 import octobot_services.services as services
 
 logger = logging.getLogger(__name__)
@@ -70,18 +56,18 @@ except ImportError as e:
     logger.warning(f"deepagents not available - Deep Agent features disabled: {e}")
 
 
-class AbstractDeepAgentChannel(AbstractAIAgentChannel):
+class AbstractDeepAgentChannel(ai_agent_channels.AbstractAIAgentChannel):
     __metaclass__ = abc.ABCMeta
 
 
-class AbstractDeepAgentChannelConsumer(AbstractAIAgentChannelConsumer):
+class AbstractDeepAgentChannelConsumer(ai_agent_channels.AbstractAIAgentChannelConsumer):
     __metaclass__ = abc.ABCMeta
     
     def __init__(
         self,
         callback: typing.Optional[typing.Callable] = None,
         size: int = 0,
-        priority_level: int = AbstractAIAgentChannel.DEFAULT_PRIORITY_LEVEL,
+        priority_level: int = ai_agent_channels.AbstractAIAgentChannel.DEFAULT_PRIORITY_LEVEL,
         expected_inputs: int = 1,
     ):
         super().__init__(
@@ -102,7 +88,7 @@ class AbstractDeepAgentChannelConsumer(AbstractAIAgentChannelConsumer):
         self.subagent_results.clear()
 
 
-class AbstractDeepAgentChannelProducer(AbstractAIAgentChannelProducer, abc.ABC):
+class AbstractDeepAgentChannelProducer(ai_agent_channels.AbstractAIAgentChannelProducer, abc.ABC):
     """
     Producer for Deep Agents with supervisor pattern and subagent orchestration.
     
@@ -286,7 +272,7 @@ class AbstractDeepAgentChannelProducer(AbstractAIAgentChannelProducer, abc.ABC):
             return CompositeBackend(
                 default=StateBackend(runtime),
                 routes={
-                    f"{MEMORIES_PATH_PREFIX}": StoreBackend(runtime)
+                    f"{constants.MEMORIES_PATH_PREFIX}": StoreBackend(runtime)
                 }
             )
         return make_backend
@@ -306,7 +292,7 @@ class AbstractDeepAgentChannelProducer(AbstractAIAgentChannelProducer, abc.ABC):
         additional_tools: list[typing.Callable] | None = None,
     ) -> typing.Any:
         if not DEEP_AGENTS_AVAILABLE:
-            raise DeepAgentNotAvailableError("deep_agents package is required")
+            raise errors.DeepAgentNotAvailableError("deep_agents package is required")
         
         logger.debug(f"[{self.name}] Building deep agent...")
         
@@ -404,7 +390,6 @@ class AbstractDeepAgentChannelProducer(AbstractAIAgentChannelProducer, abc.ABC):
         config: dict,
     ) -> dict:
         """Invoke agent with streaming, logging events as they occur."""
-        result = None
         
         logger.debug(f"[{self.name}] Starting streaming invocation")
         
@@ -433,21 +418,20 @@ class AbstractDeepAgentChannelProducer(AbstractAIAgentChannelProducer, abc.ABC):
                         msg_name = msg.get("name")
                         if msg_name:
                             logger.debug(f"[{self.name}] ✅ Tool result from: {msg_name}")
-            
-            result = event
+
         
         state = await agent.aget_state(config)
         logger.debug(f"[{self.name}] Streaming complete")
         return {"messages": state.values.get("messages", [])}
     
     def is_interrupted(self, result: dict) -> bool:
-        return HITL_INTERRUPT_KEY in result
+        return constants.HITL_INTERRUPT_KEY in result
     
     def get_interrupt_info(self, result: dict) -> dict | None:
         if not self.is_interrupted(result):
             return None
         
-        interrupts = result[HITL_INTERRUPT_KEY]
+        interrupts = result[constants.HITL_INTERRUPT_KEY]
         if not interrupts:
             return None
         
@@ -489,7 +473,7 @@ class AbstractDeepAgentChannelProducer(AbstractAIAgentChannelProducer, abc.ABC):
             return result
         
         action_requests = interrupt_info.get("action_requests", [])
-        decisions = [{"type": HITL_DECISION_APPROVE} for _ in action_requests]
+        decisions = [{"type": constants.HITL_DECISION_APPROVE} for _ in action_requests]
         
         return await self.resume_with_decisions(decisions, thread_id)
     
@@ -499,26 +483,22 @@ class AbstractDeepAgentChannelProducer(AbstractAIAgentChannelProducer, abc.ABC):
             return result
         
         action_requests = interrupt_info.get("action_requests", [])
-        decisions = [{"type": HITL_DECISION_REJECT} for _ in action_requests]
+        decisions = [{"type": constants.HITL_DECISION_REJECT} for _ in action_requests]
         
         return await self.resume_with_decisions(decisions, thread_id)
 
 
-# ============================================================================
-# Utility Functions
-# ============================================================================
-
 def create_memory_backend(
-    memories_path_prefix: str = MEMORIES_PATH_PREFIX,
+    memories_path_prefix: str = constants.MEMORIES_PATH_PREFIX,
 ) -> typing.Any:
     if not DEEP_AGENTS_AVAILABLE:
-        raise DeepAgentNotAvailableError("deep_agents is required for memory backend")
+        raise errors.DeepAgentNotAvailableError("deep_agents is required for memory backend")
     
     return InMemoryStore()
 
 
 def get_agent_memory_path(agent_name: str, memory_type: str = "data") -> str:
-    return f"{MEMORIES_PATH_PREFIX}{agent_name}/{memory_type}"
+    return f"{constants.MEMORIES_PATH_PREFIX}{agent_name}/{memory_type}"
 
 
 def build_dictionary_subagent(
@@ -607,7 +587,7 @@ def build_subagents_from_agents(
 ) -> list[dict[str, typing.Any]]:
     return [
         build_dictionary_subagent(
-            name=agent.get("name", agent.get(AGENT_NAME_KEY, "unnamed")),
+            name=agent.get("name", agent.get(constants.AGENT_NAME_KEY, "unnamed")),
             instructions=agent.get("instructions", agent.get("system_prompt", agent.get("prompt", ""))),
             description=agent.get("description"),
             tools=agent.get("tools"),
@@ -622,7 +602,7 @@ def build_subagents_from_agents(
 
 
 def build_subagents_from_producers(
-    producers: list[AbstractAIAgentChannelProducer],
+    producers: list[ai_agent_channels.AbstractAIAgentChannelProducer],
     include_descriptions: bool = True,
 ) -> list[dict[str, typing.Any]]:
     subagents = []
@@ -674,7 +654,7 @@ def create_deep_agent_safe(
     def make_backend(runtime):
         return CompositeBackend(
             default=StateBackend(runtime),
-            routes={f"{MEMORIES_PATH_PREFIX}": StoreBackend(runtime)}
+            routes={f"{constants.MEMORIES_PATH_PREFIX}": StoreBackend(runtime)}
         )
     
     return create_deep_agent(
@@ -775,13 +755,9 @@ Workflow:
     )
 
 
-# ============================================================================
-# Skills Utilities
-# ============================================================================
-
 def load_skill_from_file(skill_path: str) -> dict[str, typing.Any] | None:
     try:
-        with open(skill_path, 'r') as f:
+        with open(skill_path, 'r', encoding='utf-8') as f:
             content = f.read()
         
         if content.startswith('---'):
@@ -819,7 +795,7 @@ def discover_skills(skills_dir: str) -> list[str]:
             return []
         
         for entry in os.listdir(skills_dir):
-            skill_manifest = os.path.join(skills_dir, entry, SKILLS_MANIFEST_FILE)
+            skill_manifest = os.path.join(skills_dir, entry, constants.SKILLS_MANIFEST_FILE)
             if os.path.isfile(skill_manifest):
                 skill_paths.append(f"./{entry}/")
         
@@ -845,8 +821,8 @@ def create_skills_files_dict(skills_dir: str) -> dict[str, str]:
             for filename in os.listdir(skill_folder):
                 file_path = os.path.join(skill_folder, filename)
                 if os.path.isfile(file_path):
-                    virtual_path = f"{SKILLS_PATH_PREFIX}{entry}/{filename}"
-                    with open(file_path, 'r') as f:
+                    virtual_path = f"{constants.SKILLS_PATH_PREFIX}{entry}/{filename}"
+                    with open(file_path, 'r', encoding='utf-8') as f:
                         files[virtual_path] = f.read()
         
     except Exception as e:
@@ -854,10 +830,6 @@ def create_skills_files_dict(skills_dir: str) -> dict[str, str]:
     
     return files
 
-
-# ============================================================================
-# HITL Utilities
-# ============================================================================
 
 def create_interrupt_config(
     high_risk_tools: list[str] | None = None,
@@ -868,12 +840,12 @@ def create_interrupt_config(
     
     for tool_name in (high_risk_tools or []):
         config[tool_name] = {
-            "allowed_decisions": [HITL_DECISION_APPROVE, HITL_DECISION_EDIT, HITL_DECISION_REJECT]
+            "allowed_decisions": [constants.HITL_DECISION_APPROVE, constants.HITL_DECISION_EDIT, constants.HITL_DECISION_REJECT]
         }
     
     for tool_name in (medium_risk_tools or []):
         config[tool_name] = {
-            "allowed_decisions": [HITL_DECISION_APPROVE, HITL_DECISION_REJECT]
+            "allowed_decisions": [constants.HITL_DECISION_APPROVE, constants.HITL_DECISION_REJECT]
         }
     
     for tool_name in (low_risk_tools or []):
@@ -886,12 +858,12 @@ def build_hitl_decision(
     decision_type: str,
     edited_action: dict[str, typing.Any] | None = None,
 ) -> dict[str, typing.Any]:
-    if decision_type not in HITL_ALLOWED_DECISIONS:
-        raise ValueError(f"Invalid decision type: {decision_type}. Must be one of {HITL_ALLOWED_DECISIONS}")
+    if decision_type not in constants.HITL_ALLOWED_DECISIONS:
+        raise ValueError(f"Invalid decision type: {decision_type}. Must be one of {constants.HITL_ALLOWED_DECISIONS}")
     
     decision: dict[str, typing.Any] = {"type": decision_type}
     
-    if decision_type == HITL_DECISION_EDIT:
+    if decision_type == constants.HITL_DECISION_EDIT:
         if edited_action is None:
             raise ValueError("edited_action required for edit decision")
         decision["edited_action"] = edited_action

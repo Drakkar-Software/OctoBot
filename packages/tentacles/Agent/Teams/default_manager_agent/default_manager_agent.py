@@ -17,40 +17,30 @@
 Default team manager agent - simple agent that executes in topological order.
 """
 import typing
-from typing import TYPE_CHECKING, List, Optional
+from typing import List, Optional
 
-from octobot_agents.team.manager import (
-    ManagerAgentChannel,
-    ManagerAgentConsumer,
-    ManagerAgentProducer,
-    AbstractTeamManagerAgent,
-)
-from octobot_agents.enums import StepType
-from octobot_agents.models import DebatePhaseConfig, ExecutionPlan, ExecutionStep
-
-if TYPE_CHECKING:
-    from octobot_agents.models import ManagerInput
+import octobot_agents.team.manager as agent_manager
+import octobot_agents.enums as agent_enums
+import octobot_agents.models as agent_models
 
 
-class DefaultTeamManagerAgentChannel(ManagerAgentChannel):
-    """Channel for default team manager."""
-    __slots__ = ()
+class DefaultTeamManagerAgentChannel(agent_manager.ManagerAgentChannel):
+    pass
 
 
-class DefaultTeamManagerAgentConsumer(ManagerAgentConsumer):
-    """Consumer for default team manager."""
-    __slots__ = ()
+class DefaultTeamManagerAgentConsumer(agent_manager.ManagerAgentConsumer):
+    pass
 
 
-class DefaultTeamManagerAgentProducer(ManagerAgentProducer):
+class DefaultTeamManagerAgentProducer(agent_manager.ManagerAgentProducer):
     """
     Default team manager agent - simple agent that executes in topological order.
     
     Inherits from ManagerAgentProducer. Has Channel, Producer, Consumer components (as all agents do).
     """
     
-    AGENT_CHANNEL: typing.Type[ManagerAgentChannel] = DefaultTeamManagerAgentChannel
-    AGENT_CONSUMER: typing.Type[ManagerAgentConsumer] = DefaultTeamManagerAgentConsumer
+    AGENT_CHANNEL: typing.Type[agent_manager.ManagerAgentChannel] = DefaultTeamManagerAgentChannel
+    AGENT_CONSUMER: typing.Type[agent_manager.ManagerAgentConsumer] = DefaultTeamManagerAgentConsumer
     
     def __init__(
         self,
@@ -60,9 +50,9 @@ class DefaultTeamManagerAgentProducer(ManagerAgentProducer):
     
     async def execute(
         self,
-        input_data: typing.Union["ManagerInput", typing.Dict[str, typing.Any]],
+        input_data: typing.Union[agent_models.ManagerInput, typing.Dict[str, typing.Any]],
         ai_service: typing.Any  # AbstractAIService - type not available at runtime
-    ) -> ExecutionPlan:
+    ) -> agent_models.ExecutionPlan:
         """
         Build execution plan from topological sort.
         
@@ -82,7 +72,7 @@ class DefaultTeamManagerAgentProducer(ManagerAgentProducer):
         incoming_edges, _ = team_producer._build_dag()
         
         # Build ExecutionPlan
-        steps: List[ExecutionStep] = []
+        steps: List[agent_models.ExecutionStep] = []
         for agent in execution_order:
             # Get predecessors for wait_for
             channel_type = agent.AGENT_CHANNEL
@@ -98,7 +88,7 @@ class DefaultTeamManagerAgentProducer(ManagerAgentProducer):
                     if pred_agent:
                         wait_for.append(pred_agent.name)
             
-            step = ExecutionStep(
+            step = agent_models.ExecutionStep(
                 agent_name=agent.name,
                 instructions=None,  # No instructions by default
                 wait_for=wait_for,
@@ -111,17 +101,17 @@ class DefaultTeamManagerAgentProducer(ManagerAgentProducer):
         debate_phases = initial_data.get("debate_phases") if isinstance(initial_data, dict) else None
         if isinstance(debate_phases, list) and debate_phases:
             for idx, phase in enumerate(debate_phases):
-                config = DebatePhaseConfig.model_validate(phase) if not isinstance(phase, DebatePhaseConfig) else phase
+                config = agent_models.DebatePhaseConfig.model_validate(phase) if not isinstance(phase, agent_models.DebatePhaseConfig) else phase
                 steps.append(
-                    ExecutionStep(
+                    agent_models.ExecutionStep(
                         agent_name=f"debate_{idx + 1}",
-                        step_type=StepType.DEBATE.value,
+                        step_type=agent_enums.StepType.DEBATE.value,
                         debate_config=config,
                         skip=False,
                     )
                 )
 
-        return ExecutionPlan(
+        return agent_models.ExecutionPlan(
             steps=steps,
             loop=False,
             loop_condition=None,

@@ -15,22 +15,20 @@
 #  License along with this library.
 import json
 
-import octobot_agents as agent
+import octobot_agents.agent.channels.ai_agent as ai_agent_channels
 
 from .models import TechnicalAnalysisOutput
 
 
-class TechnicalAnalysisAIAgentChannel(agent.AbstractAgentChannel):
-    """Channel for TechnicalAnalysisAIAgentProducer."""
+class TechnicalAnalysisAIAgentChannel(ai_agent_channels.AbstractAIAgentChannel):
     OUTPUT_SCHEMA = TechnicalAnalysisOutput
 
 
-class TechnicalAnalysisAIAgentConsumer(agent.AbstractAIAgentChannelConsumer):
-    """Consumer for TechnicalAnalysisAIAgentProducer."""
+class TechnicalAnalysisAIAgentConsumer(ai_agent_channels.AbstractAIAgentChannelConsumer):
     pass
 
 
-class TechnicalAnalysisAIAgentProducer(agent.AbstractAIAgentChannelProducer):
+class TechnicalAnalysisAIAgentProducer(ai_agent_channels.AbstractAIAgentChannelProducer):
     """Producer specialized in technical analysis evaluation."""
     
     AGENT_VERSION = "1.0.0"

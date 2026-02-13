@@ -211,7 +211,7 @@ async def test_collect_multi_pair():
             assert len(ohlcv) > 19316
             h_ohlcv = await database.select(enums.ExchangeDataTables.OHLCV, time_frame="4h")
             assert len(h_ohlcv) == len(symbols) * BINANCEUS_MAX_CANDLES_COUNT
-            symbols_description = json.loads((await database.select(enums.DataTables.DESCRIPTION))[0][3])
+            symbols_description = json.loads((await database.select(enums.DataTables.DESCRIPTION))[0][4])
             assert all(symbol in symbols_description for symbol in symbols)
             eth_btc_ohlcv = await database.select(enums.ExchangeDataTables.OHLCV, symbol="ETH/BTC")
             assert len(eth_btc_ohlcv) > 6598
