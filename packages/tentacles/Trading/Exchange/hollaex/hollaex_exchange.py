@@ -27,6 +27,7 @@ import octobot_trading.enums as trading_enums
 import octobot_trading.constants as trading_constants
 import octobot_trading.exchanges as exchanges
 import octobot_trading.errors as errors
+import octobot_trading.exchanges.connectors.ccxt.constants as ccxt_constants
 import octobot_trading.exchanges.connectors.ccxt.enums as ccxt_enums
 import octobot_trading.exchanges.connectors.ccxt.ccxt_clients_cache as ccxt_clients_cache
 
@@ -437,7 +438,10 @@ class hollaex(exchanges.RestExchange):
 
     def get_additional_connector_config(self):
         return {
-            ccxt_enums.ExchangeColumns.URLS.value: self.get_patched_urls(self.get_api_url())
+            ccxt_enums.ExchangeColumns.URLS.value: self.get_patched_urls(self.get_api_url()),
+            ccxt_constants.CCXT_OPTIONS: {
+                "api-expires": int(trading_constants.DEFAULT_REQUEST_TIMEOUT / 1000)
+            },
         }
 
     def get_api_url(self):
