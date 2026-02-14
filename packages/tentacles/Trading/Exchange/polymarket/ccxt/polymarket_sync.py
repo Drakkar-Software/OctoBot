@@ -2826,6 +2826,28 @@ class polymarket(Exchange, ImplicitAPI):
             'active': False,  # Mark since it's closed
             'contract': True,
             'linear': True,
+            'precision': {
+                'amount': 6,  # https://github.com/Polymarket/clob-client/blob/main/src/config.ts
+                'price': 6,  # https://github.com/Polymarket/clob-client/blob/main/src/config.ts
+            },
+            'limits': {
+                'leverage': {
+                    'min': None,
+                    'max': None,
+                },
+                'amount': {
+                    'min': 5,  # Minimum order size
+                    'max': None,
+                },
+                'price': {
+                    'min': 1e-6,  # Prediction markets are >0 and <1
+                    'max': 1,  # Prediction markets are 0-1
+                },
+                'cost': {
+                    'min': None,
+                    'max': None,
+                },
+            },
             'info': {
                 'conditionId': conditionId,
                 'slug': slug,
