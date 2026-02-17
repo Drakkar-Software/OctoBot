@@ -74,8 +74,9 @@ class InterfaceProducer(octobot_channels.OctoBotChannelProducer):
             await service_api.process_pending_notifications()
 
     async def _register_existing_exchanges(self, instance):
-        for exchange_id in self.octobot.exchange_producer.exchange_manager_ids:
-            await self._register_exchange(instance, exchange_id)
+        if self.octobot.exchange_producer is not None:
+            for exchange_id in self.octobot.exchange_producer.exchange_manager_ids:
+                await self._register_exchange(instance, exchange_id)
 
     async def _create_interfaces(self, in_backtesting):
         # do not overwrite data in case of inner bots init (backtesting)

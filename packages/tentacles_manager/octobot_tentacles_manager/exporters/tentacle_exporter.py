@@ -15,7 +15,7 @@
 #  License along with this library.
 
 import os
-from pathlib import PurePath
+import shutil
 
 import octobot_tentacles_manager.exporters.artifact_exporter as artifact_exporter
 import octobot_tentacles_manager.models as models
@@ -100,7 +100,6 @@ class TentacleExporter(artifact_exporter.ArtifactExporter):
             os.makedirs(os.path.dirname(dest_file), exist_ok=True)
             
             if os.path.isfile(src_file):
-                import shutil
                 shutil.copy2(src_file, dest_file)
 
     async def after_export(self):

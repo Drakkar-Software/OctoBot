@@ -14,10 +14,8 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-import fnmatch
 import os
 import os.path as path
-from pathlib import PurePath
 
 import octobot_tentacles_manager.constants as constants
 import octobot_tentacles_manager.util.tentacle_explorer as explorer

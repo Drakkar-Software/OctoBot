@@ -245,4 +245,6 @@ openapi.json
 *.db-*
 /tentacles
 
+.tanstack
+
 *.gen.ts

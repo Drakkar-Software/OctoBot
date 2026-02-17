@@ -54,7 +54,7 @@ const filters = [
   { value: "hard", label: "Hard" },
 ]
 
-export const Route = createFileRoute("/_layout/octobots/new/strategies")({
+export const Route = createFileRoute("/_layout/octobots/new/presets")({
   component: StrategyChooser,
   head: () => ({
     meta: [{ title: "Pre-configured strategies" }],
