@@ -78,3 +78,4 @@ class OctoBotDistribution(enum.Enum):
     DEFAULT = common_constants.DEFAULT_DISTRIBUTION
     MARKET_MAKING = "market_making"
     PREDICTION_MARKET = "prediction_market"
+    NODE = "node"

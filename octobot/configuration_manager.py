@@ -95,6 +95,7 @@ def config_health_check(config: configuration.Configuration, in_backtesting: boo
 
     # 3 inform about configuration issues
     if not (in_backtesting or
+            get_distribution(config.config) == enums.OctoBotDistribution.NODE or
             trading_api.is_trader_enabled_in_config(config.config) or
             trading_api.is_trader_simulator_enabled_in_config(config.config)):
         logger.error(f"Real trader and trader simulator are deactivated in configuration. This will prevent OctoBot "
