@@ -46,7 +46,7 @@ function NewOctobot() {
               Pre-configured setup
             </CardTitle>
             <CardDescription>
-              Easy. Start fast with curated presets. Ideal
+              Start fast with curated presets. Ideal
               for quick launches with minimal setup.
             </CardDescription>
           </CardHeader>
@@ -60,11 +60,11 @@ function NewOctobot() {
               <TooltipContent>Easy to setup</TooltipContent>
             </Tooltip>
             <Button asChild>
-              <Link to="/octobots/new/strategies">Browse presets</Link>
+              <Link to="/octobots/new/presets">Browse presets</Link>
             </Button>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="cursor-not-allowed bg-muted/50 opacity-50">
           <CardHeader className="flex-1">
             <div className="flex justify-center">
               <img
@@ -77,7 +77,7 @@ function NewOctobot() {
               Your own rules
             </CardTitle>
             <CardDescription>
-              Easy to medium. Build with your own rules.
+              Build with your own rules.
               Available soon on octobot.cloud and from the mobile app.
             </CardDescription>
           </CardHeader>
@@ -92,7 +92,9 @@ function NewOctobot() {
               <TooltipContent>Easy to medium setup</TooltipContent>
             </Tooltip>
             <Button variant="outline" disabled>
-              Build my OctoBot
+              <Link to="/octobots/new/builder">
+                Build my OctoBot
+              </Link>
             </Button>
           </CardContent>
         </Card>
@@ -109,7 +111,7 @@ function NewOctobot() {
               Custom configuration
             </CardTitle>
             <CardDescription>
-              Hard. Full control with advanced options. You’ll configure everything
+              Full control with advanced options. You’ll configure everything
               after start, including each parameter.
             </CardDescription>
           </CardHeader>
@@ -124,7 +126,9 @@ function NewOctobot() {
               </TooltipTrigger>
               <TooltipContent>Advanced setup</TooltipContent>
             </Tooltip>
-            <Button variant="outline">Start with defaults</Button>
+            <Button variant="outline">
+              <Link to="/octobots/new/defaults">Start with defaults</Link>
+            </Button>
           </CardContent>
         </Card>
       </div>

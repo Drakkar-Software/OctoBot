@@ -45,7 +45,7 @@ export function UserMenu() {
             Manage tentacles
           </Link>
         </DropdownMenuItem> */}
-        <DropdownMenuSeparator />
+        {/* <DropdownMenuSeparator /> */}
         <DropdownMenuItem asChild>
           <Link to="/settings">
             <Settings className="size-4" />

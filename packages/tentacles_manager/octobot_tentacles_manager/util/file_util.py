@@ -22,7 +22,7 @@ import shutil
 
 import octobot_commons.logging as commons_logging
 import octobot_tentacles_manager.constants as constants
-from octobot_tentacles_manager.util.tentacle_filter import should_include_ignore_function
+import octobot_tentacles_manager.util.tentacle_filter as tentacle_filter
 
 
 def get_file_creation_time(file_path) -> str:
@@ -100,8 +100,7 @@ async def replace_with_remove_or_rename(new_file_or_dir_entry, dest_file_or_dir)
 
 
 async def copy_with_include_filter(source_path, dest_path, include_patterns):    
-    ignore_func = should_include_ignore_function(source_path, include_patterns)
-    
+    ignore_func = tentacle_filter.should_include_ignore_function(source_path, include_patterns)
     for entry in os.scandir(source_path):
         if entry.name in ignore_func(source_path, [entry.name]):
             continue

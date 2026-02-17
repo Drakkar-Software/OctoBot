@@ -32,6 +32,10 @@ jobs:
           gha-cache-key: ${{ runner.os }}-pants-${{ matrix.package }}
           named-caches-hash: ${{ hashFiles('pants.toml') }}
 
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
       - name: Build wheel
         run: pants package :OctoBot
 

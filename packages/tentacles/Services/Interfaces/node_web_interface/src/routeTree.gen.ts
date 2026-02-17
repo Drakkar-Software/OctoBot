@@ -14,9 +14,12 @@ import { Route as LayoutRouteImport } from './routes/_layout'
 import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
 import { Route as LayoutOctobotsRouteImport } from './routes/_layout/octobots'
+import { Route as LayoutOctobotsIndexRouteImport } from './routes/_layout/octobots/index'
 import { Route as LayoutOctobotsNewRouteImport } from './routes/_layout/octobots/new'
 import { Route as LayoutOctobotsImportRouteImport } from './routes/_layout/octobots/import'
-import { Route as LayoutOctobotsNewStrategiesRouteImport } from './routes/_layout/octobots/new/strategies'
+import { Route as LayoutOctobotsNewPresetsRouteImport } from './routes/_layout/octobots/new/presets'
+import { Route as LayoutOctobotsNewDefaultsRouteImport } from './routes/_layout/octobots/new/defaults'
+import { Route as LayoutOctobotsNewBuilderRouteImport } from './routes/_layout/octobots/new/builder'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -42,6 +45,11 @@ const LayoutOctobotsRoute = LayoutOctobotsRouteImport.update({
   path: '/octobots',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutOctobotsIndexRoute = LayoutOctobotsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => LayoutOctobotsRoute,
+} as any)
 const LayoutOctobotsNewRoute = LayoutOctobotsNewRouteImport.update({
   id: '/new',
   path: '/new',
@@ -52,10 +60,22 @@ const LayoutOctobotsImportRoute = LayoutOctobotsImportRouteImport.update({
   path: '/import',
   getParentRoute: () => LayoutOctobotsRoute,
 } as any)
-const LayoutOctobotsNewStrategiesRoute =
-  LayoutOctobotsNewStrategiesRouteImport.update({
-    id: '/strategies',
-    path: '/strategies',
+const LayoutOctobotsNewPresetsRoute =
+  LayoutOctobotsNewPresetsRouteImport.update({
+    id: '/presets',
+    path: '/presets',
+    getParentRoute: () => LayoutOctobotsNewRoute,
+  } as any)
+const LayoutOctobotsNewDefaultsRoute =
+  LayoutOctobotsNewDefaultsRouteImport.update({
+    id: '/defaults',
+    path: '/defaults',
+    getParentRoute: () => LayoutOctobotsNewRoute,
+  } as any)
+const LayoutOctobotsNewBuilderRoute =
+  LayoutOctobotsNewBuilderRouteImport.update({
+    id: '/builder',
+    path: '/builder',
     getParentRoute: () => LayoutOctobotsNewRoute,
   } as any)
 
@@ -66,16 +86,21 @@ export interface FileRoutesByFullPath {
   '/': typeof LayoutIndexRoute
   '/octobots/import': typeof LayoutOctobotsImportRoute
   '/octobots/new': typeof LayoutOctobotsNewRouteWithChildren
-  '/octobots/new/strategies': typeof LayoutOctobotsNewStrategiesRoute
+  '/octobots/': typeof LayoutOctobotsIndexRoute
+  '/octobots/new/builder': typeof LayoutOctobotsNewBuilderRoute
+  '/octobots/new/defaults': typeof LayoutOctobotsNewDefaultsRoute
+  '/octobots/new/presets': typeof LayoutOctobotsNewPresetsRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
-  '/octobots': typeof LayoutOctobotsRouteWithChildren
   '/settings': typeof LayoutSettingsRoute
   '/': typeof LayoutIndexRoute
   '/octobots/import': typeof LayoutOctobotsImportRoute
   '/octobots/new': typeof LayoutOctobotsNewRouteWithChildren
-  '/octobots/new/strategies': typeof LayoutOctobotsNewStrategiesRoute
+  '/octobots': typeof LayoutOctobotsIndexRoute
+  '/octobots/new/builder': typeof LayoutOctobotsNewBuilderRoute
+  '/octobots/new/defaults': typeof LayoutOctobotsNewDefaultsRoute
+  '/octobots/new/presets': typeof LayoutOctobotsNewPresetsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -86,7 +111,10 @@ export interface FileRoutesById {
   '/_layout/': typeof LayoutIndexRoute
   '/_layout/octobots/import': typeof LayoutOctobotsImportRoute
   '/_layout/octobots/new': typeof LayoutOctobotsNewRouteWithChildren
-  '/_layout/octobots/new/strategies': typeof LayoutOctobotsNewStrategiesRoute
+  '/_layout/octobots/': typeof LayoutOctobotsIndexRoute
+  '/_layout/octobots/new/builder': typeof LayoutOctobotsNewBuilderRoute
+  '/_layout/octobots/new/defaults': typeof LayoutOctobotsNewDefaultsRoute
+  '/_layout/octobots/new/presets': typeof LayoutOctobotsNewPresetsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -97,16 +125,21 @@ export interface FileRouteTypes {
     | '/'
     | '/octobots/import'
     | '/octobots/new'
-    | '/octobots/new/strategies'
+    | '/octobots/'
+    | '/octobots/new/builder'
+    | '/octobots/new/defaults'
+    | '/octobots/new/presets'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
-    | '/octobots'
     | '/settings'
     | '/'
     | '/octobots/import'
     | '/octobots/new'
-    | '/octobots/new/strategies'
+    | '/octobots'
+    | '/octobots/new/builder'
+    | '/octobots/new/defaults'
+    | '/octobots/new/presets'
   id:
     | '__root__'
     | '/_layout'
@@ -116,7 +149,10 @@ export interface FileRouteTypes {
     | '/_layout/'
     | '/_layout/octobots/import'
     | '/_layout/octobots/new'
-    | '/_layout/octobots/new/strategies'
+    | '/_layout/octobots/'
+    | '/_layout/octobots/new/builder'
+    | '/_layout/octobots/new/defaults'
+    | '/_layout/octobots/new/presets'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -161,6 +197,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutOctobotsRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/octobots/': {
+      id: '/_layout/octobots/'
+      path: '/'
+      fullPath: '/octobots/'
+      preLoaderRoute: typeof LayoutOctobotsIndexRouteImport
+      parentRoute: typeof LayoutOctobotsRoute
+    }
     '/_layout/octobots/new': {
       id: '/_layout/octobots/new'
       path: '/new'
@@ -175,22 +218,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutOctobotsImportRouteImport
       parentRoute: typeof LayoutOctobotsRoute
     }
-    '/_layout/octobots/new/strategies': {
-      id: '/_layout/octobots/new/strategies'
-      path: '/strategies'
-      fullPath: '/octobots/new/strategies'
-      preLoaderRoute: typeof LayoutOctobotsNewStrategiesRouteImport
+    '/_layout/octobots/new/presets': {
+      id: '/_layout/octobots/new/presets'
+      path: '/presets'
+      fullPath: '/octobots/new/presets'
+      preLoaderRoute: typeof LayoutOctobotsNewPresetsRouteImport
+      parentRoute: typeof LayoutOctobotsNewRoute
+    }
+    '/_layout/octobots/new/defaults': {
+      id: '/_layout/octobots/new/defaults'
+      path: '/defaults'
+      fullPath: '/octobots/new/defaults'
+      preLoaderRoute: typeof LayoutOctobotsNewDefaultsRouteImport
+      parentRoute: typeof LayoutOctobotsNewRoute
+    }
+    '/_layout/octobots/new/builder': {
+      id: '/_layout/octobots/new/builder'
+      path: '/builder'
+      fullPath: '/octobots/new/builder'
+      preLoaderRoute: typeof LayoutOctobotsNewBuilderRouteImport
       parentRoute: typeof LayoutOctobotsNewRoute
     }
   }
 }
 
 interface LayoutOctobotsNewRouteChildren {
-  LayoutOctobotsNewStrategiesRoute: typeof LayoutOctobotsNewStrategiesRoute
+  LayoutOctobotsNewBuilderRoute: typeof LayoutOctobotsNewBuilderRoute
+  LayoutOctobotsNewDefaultsRoute: typeof LayoutOctobotsNewDefaultsRoute
+  LayoutOctobotsNewPresetsRoute: typeof LayoutOctobotsNewPresetsRoute
 }
 
 const LayoutOctobotsNewRouteChildren: LayoutOctobotsNewRouteChildren = {
-  LayoutOctobotsNewStrategiesRoute: LayoutOctobotsNewStrategiesRoute,
+  LayoutOctobotsNewBuilderRoute: LayoutOctobotsNewBuilderRoute,
+  LayoutOctobotsNewDefaultsRoute: LayoutOctobotsNewDefaultsRoute,
+  LayoutOctobotsNewPresetsRoute: LayoutOctobotsNewPresetsRoute,
 }
 
 const LayoutOctobotsNewRouteWithChildren =
@@ -199,11 +260,13 @@ const LayoutOctobotsNewRouteWithChildren =
 interface LayoutOctobotsRouteChildren {
   LayoutOctobotsImportRoute: typeof LayoutOctobotsImportRoute
   LayoutOctobotsNewRoute: typeof LayoutOctobotsNewRouteWithChildren
+  LayoutOctobotsIndexRoute: typeof LayoutOctobotsIndexRoute
 }
 
 const LayoutOctobotsRouteChildren: LayoutOctobotsRouteChildren = {
   LayoutOctobotsImportRoute: LayoutOctobotsImportRoute,
   LayoutOctobotsNewRoute: LayoutOctobotsNewRouteWithChildren,
+  LayoutOctobotsIndexRoute: LayoutOctobotsIndexRoute,
 }
 
 const LayoutOctobotsRouteWithChildren = LayoutOctobotsRoute._addFileChildren(

@@ -223,7 +223,7 @@ EXIT_BEFORE_TENTACLES_AUTO_REINSTALL = os_util.parse_boolean_environment_var("EX
 # Store the path of the octobot directory from this file since it can change depending on the installation path
 # (local sources, python site-packages, ...)
 OCTOBOT_FOLDER = pathlib.Path(__file__).parent.absolute()
-CONFIG_FOLDER = f"{OCTOBOT_FOLDER}/config"
+CONFIG_FOLDER = f"{OCTOBOT_FOLDER}/{octobot_commons.constants.CONFIG_FOLDER}"
 SCHEMA = "schema"
 CONFIG_FILE_SCHEMA = f"{CONFIG_FOLDER}/config_{SCHEMA}.json"
 PROFILE_FILE_SCHEMA = f"{CONFIG_FOLDER}/profile_{SCHEMA}.json"

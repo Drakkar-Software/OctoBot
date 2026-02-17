@@ -212,15 +212,19 @@ class OctoBot:
             if self._init_metadata_run_task is not None and not self._init_metadata_run_task.done():
                 self._init_metadata_run_task.cancel()
             signals.SignalPublisher.instance().stop()
-            await self.evaluator_producer.stop()
-            await self.exchange_producer.stop()
+            if self.evaluator_producer is not None:
+                await self.evaluator_producer.stop()
+            if self.exchange_producer is not None:
+                await self.exchange_producer.stop()
             await self.community_auth.stop()
-            await self.service_feed_producer.stop()
+            if self.service_feed_producer is not None:
+                await self.service_feed_producer.stop()
             await profiles.stop_profile_synchronizer()
             await os_clock_sync.stop_clock_synchronizer()
             await system_resources_watcher.stop_system_resources_watcher()
             await service_api.stop_services()
-            await self.interface_producer.stop()
+            if self.interface_producer is not None:
+                await self.interface_producer.stop()
             await databases.close_bot_storage(self.bot_id)
             if self.automation is not None:
                 await self.automation.stop()

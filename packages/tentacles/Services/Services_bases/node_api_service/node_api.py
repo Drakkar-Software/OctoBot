@@ -40,7 +40,7 @@ class NodeApiService(services.AbstractService):
 
     def get_fields_description(self):
         return {
-            services_constants.CONFIG_NODE_WEB_PORT: "Port to access the OctoBot Node web interface from.",
+            services_constants.CONFIG_NODE_API_PORT: "Port to access the OctoBot Node API interface from.",
             services_constants.ADMIN_USERNAME: "Admin username (email format) for Node API basic authentication.",
             services_constants.ADMIN_PASSWORD: "Admin password for Node API basic authentication.",
             services_constants.NODE_API_URL: "Base URL used by the Node Web UI to reach the Node API.",
@@ -51,7 +51,7 @@ class NodeApiService(services.AbstractService):
 
     def get_default_value(self):
         return {
-            services_constants.CONFIG_NODE_WEB_PORT: services_constants.DEFAULT_NODE_WEB_PORT,
+            services_constants.CONFIG_NODE_API_PORT: services_constants.DEFAULT_NODE_API_PORT,
             services_constants.ADMIN_USERNAME: "admin@example.com",
             services_constants.ADMIN_PASSWORD: "changethis",
             services_constants.NODE_API_URL: self._get_default_node_api_url(),
@@ -61,24 +61,21 @@ class NodeApiService(services.AbstractService):
         }
 
     def get_required_config(self):
-        return [services_constants.CONFIG_NODE_WEB_PORT]
+        return [services_constants.CONFIG_NODE_API_PORT]
 
     @staticmethod
     def is_setup_correctly(config):
-        return services_constants.CONFIG_NODE_WEB in config[services_constants.CONFIG_CATEGORY_SERVICES] \
+        return services_constants.CONFIG_NODE_API in config[services_constants.CONFIG_CATEGORY_SERVICES] \
                and services_constants.CONFIG_SERVICE_INSTANCE in config[services_constants.CONFIG_CATEGORY_SERVICES][
-                   services_constants.CONFIG_NODE_WEB
+                   services_constants.CONFIG_NODE_API
                ]
 
     @staticmethod
     def get_is_enabled(config):
         # allow to disable node api interface from config, enabled by default otherwise
-        try:
-            return config[services_constants.CONFIG_CATEGORY_SERVICES][services_constants.CONFIG_NODE_WEB][
-                commons_constants.CONFIG_ENABLED_OPTION
-            ]
-        except KeyError:
-            return True
+        return config.get(services_constants.CONFIG_CATEGORY_SERVICES, {}).get(services_constants.CONFIG_NODE_API, {}).get(
+            commons_constants.CONFIG_ENABLED_OPTION, True
+        )
 
     def has_required_configuration(self):
         return self.get_is_enabled(self.config)
@@ -87,7 +84,7 @@ class NodeApiService(services.AbstractService):
         return self.api_app
 
     def get_type(self) -> None:
-        return services_constants.CONFIG_NODE_WEB
+        return services_constants.CONFIG_NODE_API
 
     @staticmethod
     def get_should_warn():
@@ -99,7 +96,7 @@ class NodeApiService(services.AbstractService):
 
     async def prepare(self) -> None:
         try:
-            node_config = self.config[services_constants.CONFIG_CATEGORY_SERVICES][services_constants.CONFIG_NODE_WEB]
+            node_config = self.config[services_constants.CONFIG_CATEGORY_SERVICES][services_constants.CONFIG_NODE_API]
             self.admin_username = node_config.get(services_constants.ADMIN_USERNAME)
             self.admin_password = node_config.get(services_constants.ADMIN_PASSWORD)
             self.node_api_url = node_config.get(services_constants.NODE_API_URL)
@@ -136,27 +133,27 @@ class NodeApiService(services.AbstractService):
             updated_config[services_constants.BACKEND_CORS_ALLOWED_ORIGINS] = self.backend_cors_origins
 
         if updated_config:
-            self.save_service_config(services_constants.CONFIG_NODE_WEB, updated_config, update=True)
+            self.save_service_config(services_constants.CONFIG_NODE_API, updated_config, update=True)
 
     def _get_default_node_api_url(self):
-        port = self._get_node_web_server_port()
+        port = self._get_node_api_server_port()
         return f"http://{LOCAL_HOST_IP}:{port}"
 
-    def _get_node_web_server_port(self):
+    def _get_node_api_server_port(self) -> str:
         try:
             return os.getenv(
-                services_constants.ENV_NODE_WEB_PORT,
-                self.config[services_constants.CONFIG_CATEGORY_SERVICES][services_constants.CONFIG_NODE_WEB][
-                    services_constants.CONFIG_NODE_WEB_PORT
-                ],
+                services_constants.ENV_NODE_API_PORT,
+                self.config.get(services_constants.CONFIG_CATEGORY_SERVICES, {}).get(services_constants.CONFIG_NODE_API, {}).get(
+                    services_constants.CONFIG_NODE_API_PORT, services_constants.DEFAULT_NODE_API_PORT
+                ),
             )
-        except KeyError:
-            return os.getenv(services_constants.ENV_NODE_WEB_PORT, services_constants.DEFAULT_NODE_WEB_PORT)
+        except (KeyError, ValueError, AttributeError) as err:
+            return services_constants.DEFAULT_NODE_API_PORT
 
-    def _get_node_web_server_url(self):
-        port = self._get_node_web_server_port()
+    def _get_node_api_server_url(self):
+        port = self._get_node_api_server_port()
         try:
-            return f"{os.getenv(services_constants.ENV_NODE_WEB_ADDRESS, socket.gethostbyname(socket.gethostname()))}:{port}"
+            return f"{os.getenv(services_constants.ENV_NODE_API_ADDRESS, socket.gethostbyname(socket.gethostname()))}:{port}"
         except OSError as err:
             self.logger.warning(
                 f"Impossible to find local node web interface url, using default instead: {err} ({err.__class__.__name__})"
@@ -164,13 +161,13 @@ class NodeApiService(services.AbstractService):
         return f"{LOCAL_HOST_IP}:{port}"
 
     def get_successful_startup_message(self):
-        return f"Node API interface successfully initialized and accessible at: http://{self._get_node_web_server_url()}.", True
+        return f"Node API interface successfully initialized and accessible at: http://{self._get_node_api_server_url()}.", True
 
     def get_bind_host(self):
-        return os.getenv(services_constants.ENV_NODE_WEB_ADDRESS, services_constants.DEFAULT_NODE_WEB_IP)
+        return os.getenv(services_constants.ENV_NODE_API_ADDRESS, services_constants.DEFAULT_NODE_API_IP)
 
     def get_bind_port(self):
-        return int(self._get_node_web_server_port())
+        return int(self._get_node_api_server_port())
 
     def get_admin_username(self):
         return os.getenv(services_constants.ENV_ADMIN_USERNAME, self.admin_username)
