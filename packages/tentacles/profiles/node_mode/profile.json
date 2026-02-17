@@ -1,0 +1,32 @@
+{
+    "config": {
+        "crypto-currencies": {},
+        "exchanges": {},
+        "trader": {
+            "enabled": false,
+            "load-trade-history": true
+        },
+        "trader-simulator": {
+            "enabled": false,
+            "fees": {
+                "maker": 0.1,
+                "taker": 0.1
+            },
+            "starting-portfolio": {
+                "USDT": 10000
+            }
+        },
+        "trading": {
+            "reference-market": "USDT",
+            "risk": 0.5
+        }
+    },
+    "profile": {
+        "avatar": "default_profile.png",
+        "description": "Node mode starts OctoBot as a node to orchestrate other OctoBot instances. It does not execute any trading logic and only serves as a central hub for other OctoBot instances.",
+        "id": "node",
+        "name": "Node mode",
+        "read_only": true
+    },
+    "distribution": "node"
+}
