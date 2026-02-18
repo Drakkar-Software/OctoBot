@@ -49,7 +49,7 @@ try:
     DEEP_AGENTS_AVAILABLE = True
 except ImportError as e:
     DEEP_AGENTS_AVAILABLE = False
-    logger.warning(f"deepagents not available - Deep Agent features disabled: {e}")
+    logger.debug(f"deepagents not available - Deep Agent features disabled: {e}")
 
 
 class AbstractDeepAgentsTeamChannel(agents_team.AbstractAgentsTeamChannel):
