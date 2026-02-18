@@ -210,6 +210,13 @@ async def test_get_deposit_address_with_params(test_wallet):
     assert result[enums.ExchangeConstantsDepositAddressColumns.ADDRESS.value] == test_wallet.wallet_descriptor.address
 
 
+@pytest.mark.asyncio
+async def test_open(test_wallet):
+    # open does nothing by default
+    async with test_wallet.open() as opened_wallet:
+        assert opened_wallet is test_wallet
+
+
 def test_apply_blockchain_wallet_specific_config(test_wallet):
     config = {"some_key": {"some_value": "test"}}
     

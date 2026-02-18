@@ -71,7 +71,7 @@ class BlockchainWalletSimulator(blockchain_wallet.BlockchainWallet):
     @classmethod
     def init_user_inputs_from_class(cls, inputs: dict) -> None:
         """
-        Called at constructor, should define all the exchange's user inputs.
+        Called at constructor, should define all the blockchain wallet's user inputs.
         """
         assets = [{
             BlockchainWalletSimulatorConfigurationKeys.ASSETS.value: cls.CLASS_UI.user_input(

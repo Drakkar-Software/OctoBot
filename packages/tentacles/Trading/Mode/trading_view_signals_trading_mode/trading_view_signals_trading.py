@@ -658,11 +658,11 @@ class TradingViewSignalsModeProducer(daily_trading_mode.DailyTradingModeProducer
 
     async def ensure_blockchain_wallet_balance(self, parsed_data: dict) -> decimal.Decimal:
         ensure_blockchain_wallet_balance_params = actions_params.EnsureBlockchainWalletBalanceParams.from_dict(parsed_data)
-        wallet = trading_api.create_blockchain_wallet(
+        async with trading_api.blockchain_wallet_context(
             ensure_blockchain_wallet_balance_params.wallet_details, 
             self.exchange_manager.trader
-        )
-        wallet_balance = await wallet.get_balance()
+        ) as wallet:
+            wallet_balance = await wallet.get_balance()
         balance = wallet_balance[ensure_blockchain_wallet_balance_params.asset][
             trading_constants.CONFIG_PORTFOLIO_FREE
         ] if ensure_blockchain_wallet_balance_params.asset in wallet_balance else trading_constants.ZERO
@@ -703,26 +703,26 @@ class TradingViewSignalsModeProducer(daily_trading_mode.DailyTradingModeProducer
     
     async def transfer_funds(self, parsed_data: dict) -> dict:
         transfer_funds_params = actions_params.TransferFundsParams.from_dict(parsed_data)
-        wallet = trading_api.create_blockchain_wallet(
+        async with trading_api.blockchain_wallet_context(
             transfer_funds_params.wallet_details, 
             self.exchange_manager.trader
-        )
-        if transfer_funds_params.address:
-            address = transfer_funds_params.address
-        elif transfer_funds_params.destination_exchange == self.exchange_manager.exchange_name:
-            address = (
-                await self.exchange_manager.trader.get_deposit_address(transfer_funds_params.asset)
-            )[trading_enums.ExchangeConstantsDepositAddressColumns.ADDRESS.value]
-        else:
-            raise trading_errors.InvalidArgumentError(
-                f"Unsupported destination exchange: {transfer_funds_params.destination_exchange}"
+        ) as wallet:
+            if transfer_funds_params.address:
+                address = transfer_funds_params.address
+            elif transfer_funds_params.destination_exchange == self.exchange_manager.exchange_name:
+                address = (
+                    await self.exchange_manager.trader.get_deposit_address(transfer_funds_params.asset)
+                )[trading_enums.ExchangeConstantsDepositAddressColumns.ADDRESS.value]
+            else:
+                raise trading_errors.InvalidArgumentError(
+                    f"Unsupported destination exchange: {transfer_funds_params.destination_exchange}"
+                )
+            # requires ALLOW_FUNDS_TRANSFER env to be True (disabled by default to protect funds)
+            transaction = await wallet.withdraw(
+                transfer_funds_params.asset,
+                decimal.Decimal(str(transfer_funds_params.amount)),
+                transfer_funds_params.wallet_details.blockchain_descriptor.network,
+                address,
             )
-        # requires ALLOW_FUNDS_TRANSFER env to be True (disabled by default to protect funds)
-        transaction = await wallet.withdraw(
-            transfer_funds_params.asset,
-            decimal.Decimal(str(transfer_funds_params.amount)),
-            transfer_funds_params.wallet_details.blockchain_descriptor.network,
-            address,
-        )
         self.logger.info(f"Transferred {transfer_funds_params.amount} {transfer_funds_params.asset}: {transaction}")
         return transaction
