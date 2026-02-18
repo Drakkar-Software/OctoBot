@@ -1105,14 +1105,14 @@ async def test_ensure_blockchain_wallet_balance(tools, blockchain_wallet_details
         "holdings": 5.0,
         "wallet_details": blockchain_wallet_details,
     }
-    wallet = trading_api.create_blockchain_wallet(blockchain_wallet_details, exchange_manager.trader)
+    async with trading_api.blockchain_wallet_context(blockchain_wallet_details, exchange_manager.trader) as wallet:
     
-    with mock.patch.object(producer.logger, "info") as logger_info_mock:
-        await producer.ensure_blockchain_wallet_balance(parsed_data)
-        
-        logger_info_mock.assert_called_once()
-        assert "Enough" in str(logger_info_mock.call_args)
-        assert BLOCKCHAIN_WALLET_ASSET in str(logger_info_mock.call_args)
+        with mock.patch.object(producer.logger, "info") as logger_info_mock:
+            await producer.ensure_blockchain_wallet_balance(parsed_data)
+            
+            logger_info_mock.assert_called_once()
+            assert "Enough" in str(logger_info_mock.call_args)
+            assert BLOCKCHAIN_WALLET_ASSET in str(logger_info_mock.call_args)
     
     # Test with insufficient balance
     blockchain_wallet_details.wallet_descriptor.specific_config = {
@@ -1122,25 +1122,25 @@ async def test_ensure_blockchain_wallet_balance(tools, blockchain_wallet_details
                 blockchain_wallet_simulator.BlockchainWalletSimulatorConfigurationKeys.AMOUNT.value: 2.0
             }
         ]}
-    wallet = trading_api.create_blockchain_wallet(blockchain_wallet_details, exchange_manager.trader)
+    async with trading_api.blockchain_wallet_context(blockchain_wallet_details, exchange_manager.trader) as wallet:
     
-    with pytest.raises(trading_view_signals_trading_mode_errors.MissingFundsError) as exc_info:
-        await producer.ensure_blockchain_wallet_balance(parsed_data)
-    assert "Not enough" in str(exc_info.value)
-    assert BLOCKCHAIN_WALLET_ASSET in str(exc_info.value)
-    assert "available: 2" in str(exc_info.value)
-    assert "required: 5" in str(exc_info.value)
+        with pytest.raises(trading_view_signals_trading_mode_errors.MissingFundsError) as exc_info:
+            await producer.ensure_blockchain_wallet_balance(parsed_data)
+        assert "Not enough" in str(exc_info.value)
+        assert BLOCKCHAIN_WALLET_ASSET in str(exc_info.value)
+        assert "available: 2" in str(exc_info.value)
+        assert "required: 5" in str(exc_info.value)
     
     # Test when asset not in wallet balance
     blockchain_wallet_details.wallet_descriptor.specific_config = {
         blockchain_wallet_simulator.BlockchainWalletSimulatorConfigurationKeys.ASSETS.value: []
     }
-    wallet = trading_api.create_blockchain_wallet(blockchain_wallet_details, exchange_manager.trader)
+    async with trading_api.blockchain_wallet_context(blockchain_wallet_details, exchange_manager.trader) as wallet:
     
-    with pytest.raises(trading_view_signals_trading_mode_errors.MissingFundsError) as exc_info:
-        await producer.ensure_blockchain_wallet_balance(parsed_data)
-    assert "Not enough" in str(exc_info.value)
-    assert "available: 0" in str(exc_info.value)
+        with pytest.raises(trading_view_signals_trading_mode_errors.MissingFundsError) as exc_info:
+            await producer.ensure_blockchain_wallet_balance(parsed_data)
+        assert "Not enough" in str(exc_info.value)
+        assert "available: 0" in str(exc_info.value)
 
 
 async def test_withdraw_funds(tools):

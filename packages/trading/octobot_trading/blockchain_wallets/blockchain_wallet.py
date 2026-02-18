@@ -15,6 +15,8 @@
 #  License along with this library.
 import decimal
 import asyncio
+import contextlib
+import typing
 
 import octobot_commons.logging as commons_logging
 import octobot_trading.constants as constants
@@ -40,6 +42,11 @@ class BlockchainWallet(octobot_trading.accounts.AbstractAccount):
         )
         if self.wallet_descriptor.specific_config :
             self.apply_blockchain_wallet_specific_config(self.wallet_descriptor.specific_config)
+
+    @contextlib.asynccontextmanager
+    async def open(self) -> typing.AsyncGenerator["BlockchainWallet", None]:
+        # nothing to do by default, implement in subclass if necessary
+        yield self
 
     async def get_balance(self, **kwargs: dict) -> dict[str, dict]:
         balances = {

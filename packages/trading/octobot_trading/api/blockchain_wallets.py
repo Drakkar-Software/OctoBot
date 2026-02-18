@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import typing
+import contextlib
 
 import octobot_trading.blockchain_wallets as blockchain_wallets
 
@@ -21,8 +22,11 @@ if typing.TYPE_CHECKING:
     import octobot_trading.exchanges
 
 
-def create_blockchain_wallet(
+@contextlib.asynccontextmanager
+async def blockchain_wallet_context(
     parameters: blockchain_wallets.BlockchainWalletParameters,
     trader: "octobot_trading.exchanges.Trader"
-) -> blockchain_wallets.BlockchainWallet:
-    return blockchain_wallets.create_blockchain_wallet(parameters, trader)
+) -> typing.AsyncGenerator[blockchain_wallets.BlockchainWallet, None]:
+    wallet = blockchain_wallets.create_blockchain_wallet(parameters, trader)
+    async with wallet.open() as wallet:
+        yield wallet

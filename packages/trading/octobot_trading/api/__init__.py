@@ -245,7 +245,7 @@ from octobot_trading.api.storage import (
     get_account_type_from_exchange_manager,
 )
 from octobot_trading.api.blockchain_wallets import (
-    create_blockchain_wallet,
+    blockchain_wallet_context,
 )
 __all__ = [
     "get_symbol_data",
@@ -440,5 +440,5 @@ __all__ = [
     "clear_portfolio_storage_history",
     "clear_orders_storage_history",
     "get_fees_only_asset_deltas_from_orders",
-    "create_blockchain_wallet",
+    "blockchain_wallet_context",
 ]

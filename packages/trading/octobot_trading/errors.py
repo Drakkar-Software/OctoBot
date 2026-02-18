@@ -171,6 +171,12 @@ class BlockchainWalletNativeCoinSymbolUndefinedError(BlockchainWalletConfigurati
     """
 
 
+class BlockchainWalletCallError(BlockchainWalletError):
+    """
+    Raised when a blockchain wallet call fails
+    """
+
+
 class NotSupported(OctoBotTradingError):
     """
     Raised when an exchange doesn't support the required element
