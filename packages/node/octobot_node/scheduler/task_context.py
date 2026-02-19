@@ -17,19 +17,17 @@
 import contextlib
 import logging
 import json
-from typing import Any
 
-from octobot_node.scheduler.encryption import decrypt_task_content, encrypt_task_result
-from octobot_node.config import settings
-from octobot_node.models import Task
-from octobot_node.enums import TaskResultKeys
-from octobot_node.scheduler.encryption import MissingMetadataError
+import octobot_node.config
+import octobot_node.models
+import octobot_node.enums
+import octobot_node.scheduler.encryption as encryption
 
 logger = logging.getLogger(__name__)
 
 
 @contextlib.contextmanager
-def encrypted_task(task: Task):
+def encrypted_task(task: octobot_node.models.Task):
     """
     Context manager for automatically decrypting task content and encrypting task results.
     It first decrypts task.content if TASKS_INPUTS_RSA_PRIVATE_KEY is provided.
@@ -40,11 +38,11 @@ def encrypted_task(task: Task):
     
     try:
         # Decrypt content if encryption keys are configured
-        if settings.TASKS_INPUTS_RSA_PRIVATE_KEY and settings.TASKS_INPUTS_ECDSA_PUBLIC_KEY:
+        if octobot_node.config.settings.TASKS_INPUTS_RSA_PRIVATE_KEY and octobot_node.config.settings.TASKS_INPUTS_ECDSA_PUBLIC_KEY:
             try:
                 if not task.content_metadata:
-                    raise MissingMetadataError("No metadata provided for content decryption")
-                decrypted_content = decrypt_task_content(task.content, task.content_metadata)
+                    raise encryption.MissingMetadataError("No metadata provided for content decryption")
+                decrypted_content = encryption.decrypt_task_content(task.content, task.content_metadata)
                 task.content = decrypted_content
             except Exception as e:
                 logger.error(f"Failed to decrypt content: {e}")
@@ -59,17 +57,17 @@ def encrypted_task(task: Task):
         if task.result is not None:
             if decryption_error:
                 task.result = {
-                    TaskResultKeys.STATUS.value: "failed", 
-                    TaskResultKeys.TASK.value: {"name": task.name}, 
-                    TaskResultKeys.RESULT.value: {}, 
-                    TaskResultKeys.ERROR.value: str(decryption_error)
+                    octobot_node.enums.TaskResultKeys.STATUS.value: "failed", 
+                    octobot_node.enums.TaskResultKeys.TASK.value: {"name": task.name}, 
+                    octobot_node.enums.TaskResultKeys.RESULT.value: {}, 
+                    octobot_node.enums.TaskResultKeys.ERROR.value: str(decryption_error)
                 }
 
             # Encrypt result if encryption keys are configured
-            if settings.TASKS_OUTPUTS_RSA_PUBLIC_KEY and settings.TASKS_OUTPUTS_ECDSA_PRIVATE_KEY:
+            if octobot_node.config.settings.TASKS_OUTPUTS_RSA_PUBLIC_KEY and octobot_node.config.settings.TASKS_OUTPUTS_ECDSA_PRIVATE_KEY:
                 try:
                     result_json = json.dumps(task.result)
-                    encrypted_result, metadata = encrypt_task_result(result_json)
+                    encrypted_result, metadata = encryption.encrypt_task_result(result_json)
                     task.result = encrypted_result
                     task.result_metadata = metadata
                 except Exception as e:
