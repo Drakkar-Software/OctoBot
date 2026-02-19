@@ -16,27 +16,27 @@
 
 import logging
 import uuid
-from typing import Any
+import typing
 
-from octobot_node.config import settings
-from octobot_node.scheduler import SCHEDULER, CONSUMER
+import octobot_node.config
+import octobot_node.scheduler
 
 logger = logging.getLogger(__name__)
 
 
 def get_node_status() -> dict[str, str | int | None | uuid.UUID]:
-    consumer_running = CONSUMER.is_started() # TODO use: CONSUMER.is_running()
-    is_running = settings.IS_MASTER_MODE or consumer_running
+    consumer_running = octobot_node.scheduler.CONSUMER.is_started() # TODO use: octobot_node.scheduler.CONSUMER.is_running()
+    is_running = octobot_node.config.settings.IS_MASTER_MODE or consumer_running
     status = "running" if is_running else "stopped"
 
-    backend_type = "redis" if settings.SCHEDULER_REDIS_URL else "sqlite"
-    workers = CONSUMER.workers if settings.SCHEDULER_WORKERS > 0 else None
+    backend_type = "redis" if octobot_node.config.settings.SCHEDULER_REDIS_URL else "sqlite"
+    workers = octobot_node.scheduler.CONSUMER.workers if octobot_node.config.settings.SCHEDULER_WORKERS > 0 else None
 
-    if settings.IS_MASTER_MODE and settings.SCHEDULER_WORKERS > 0:
+    if octobot_node.config.settings.IS_MASTER_MODE and octobot_node.config.settings.SCHEDULER_WORKERS > 0:
         node_type = "both"
-    elif settings.IS_MASTER_MODE:
+    elif octobot_node.config.settings.IS_MASTER_MODE:
         node_type = "master"
-    elif settings.SCHEDULER_WORKERS > 0:
+    elif octobot_node.config.settings.SCHEDULER_WORKERS > 0:
         node_type = "consumer"
     else:
         node_type = "none"
@@ -46,20 +46,20 @@ def get_node_status() -> dict[str, str | int | None | uuid.UUID]:
         "backend_type": backend_type,
         "workers": workers,
         "status": status,
-        "redis_url": str(settings.SCHEDULER_REDIS_URL) if settings.SCHEDULER_REDIS_URL else None,
-        "sqlite_file": settings.SCHEDULER_SQLITE_FILE if not settings.SCHEDULER_REDIS_URL else None,
+        "redis_url": str(octobot_node.config.settings.SCHEDULER_REDIS_URL) if octobot_node.config.settings.SCHEDULER_REDIS_URL else None,
+        "sqlite_file": octobot_node.config.settings.SCHEDULER_SQLITE_FILE if not octobot_node.config.settings.SCHEDULER_REDIS_URL else None,
     }
 
 
 def get_task_metrics() -> dict[str, int]:
     try:
-        huey_instance = SCHEDULER.INSTANCE
+        huey_instance = octobot_node.scheduler.SCHEDULER.INSTANCE
         if huey_instance is None:
             logger.warning("Scheduler instance not initialized")
             return {"pending": 0, "scheduled": 0, "results": 0}
 
         scheduled_count = huey_instance.scheduled_count()
-        periodic_tasks = SCHEDULER.get_periodic_tasks()
+        periodic_tasks = octobot_node.scheduler.SCHEDULER.get_periodic_tasks()
         scheduled_count += len(periodic_tasks)
 
         return {
@@ -72,19 +72,19 @@ def get_task_metrics() -> dict[str, int]:
         return {"pending": 0, "scheduled": 0, "results": 0}
 
 
-def get_all_tasks() -> list[dict[str, Any]]:
-    tasks: list[dict[str, Any]] = []
+def get_all_tasks() -> list[dict[str, typing.Any]]:
+    tasks: list[dict[str, typing.Any]] = []
     try:
-        periodic_tasks = SCHEDULER.get_periodic_tasks()
+        periodic_tasks = octobot_node.scheduler.SCHEDULER.get_periodic_tasks()
         tasks.extend(periodic_tasks)
 
-        pending_tasks = SCHEDULER.get_pending_tasks()
+        pending_tasks = octobot_node.scheduler.SCHEDULER.get_pending_tasks()
         tasks.extend(pending_tasks)
 
-        scheduled_tasks = SCHEDULER.get_scheduled_tasks()
+        scheduled_tasks = octobot_node.scheduler.SCHEDULER.get_scheduled_tasks()
         tasks.extend(scheduled_tasks)
 
-        results = SCHEDULER.get_results()
+        results = octobot_node.scheduler.SCHEDULER.get_results()
         tasks.extend(results)
     except Exception as e:
         logger.error("Failed to retrieve tasks from scheduler: %s", e)
@@ -94,7 +94,7 @@ def get_all_tasks() -> list[dict[str, Any]]:
 
 
 async def get_task_result(task_id: str):
-    res = SCHEDULER.INSTANCE.result(task_id)
+    res = octobot_node.scheduler.SCHEDULER.INSTANCE.result(task_id)
 
     if res is None:
         return {"error": "task not found"}

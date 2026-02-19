@@ -15,20 +15,17 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
 import functools
-import datetime
 import asyncio
 import json
 import logging
 import time
 
-
-from octobot_node.scheduler import SCHEDULER
-from octobot_node.scheduler.task_context import encrypted_task
-from octobot_node.models import Task, TaskType
-from octobot_node.enums import TaskResultKeys
-from octobot_node.models import TaskStatus
-
+import octobot_node.scheduler.task_context
+import octobot_node.models
+import octobot_node.enums
 import octobot_node.scheduler.octobot_lib as octobot_lib
+
+from octobot_node.scheduler import SCHEDULER # prevent circular import
 
 
 def async_task(func):
@@ -51,21 +48,21 @@ def async_task(func):
 
 
 @SCHEDULER.INSTANCE.task()
-def start_octobot(task: Task):
-    with encrypted_task(task):
+def start_octobot(task: octobot_node.models.Task):
+    with octobot_node.scheduler.task_context.encrypted_task(task):
         # TODO
         task.result = "ok"
     return {
-        TaskResultKeys.STATUS.value: TaskStatus.COMPLETED.value,
-        TaskResultKeys.RESULT.value: task.result, 
-        TaskResultKeys.METADATA.value: task.result_metadata,
-        TaskResultKeys.TASK.value: {"name": task.name},
-        TaskResultKeys.ERROR.value: None
+        octobot_node.enums.TaskResultKeys.STATUS.value: octobot_node.models.TaskStatus.COMPLETED.value,
+        octobot_node.enums.TaskResultKeys.RESULT.value: task.result, 
+        octobot_node.enums.TaskResultKeys.METADATA.value: task.result_metadata,
+        octobot_node.enums.TaskResultKeys.TASK.value: {"name": task.name},
+        octobot_node.enums.TaskResultKeys.ERROR.value: None
     }
 
 
 def _reshedule_octobot_execution(
-    task: Task, next_actions_description: octobot_lib.OctoBotActionsJobDescription
+    task: octobot_node.models.Task, next_actions_description: octobot_lib.OctoBotActionsJobDescription
 ):
     task.content = json.dumps(next_actions_description.to_dict(include_default_values=False))
     next_execution_time = next_actions_description.get_next_execution_time()
@@ -82,9 +79,9 @@ def _reshedule_octobot_execution(
 
 @SCHEDULER.INSTANCE.task()
 @async_task
-async def execute_octobot(task: Task):
-    with encrypted_task(task):
-        if task.type == TaskType.EXECUTE_ACTIONS.value:
+async def execute_octobot(task: octobot_node.models.Task):
+    with octobot_node.scheduler.task_context.encrypted_task(task):
+        if task.type == octobot_node.models.TaskType.EXECUTE_ACTIONS.value:
             logging.getLogger("octobot_node.scheduler.tasks").info(f"Executing task '{task.name}' with content: {task.content} ...")
             result: octobot_lib.OctoBotActionsJobResult = await octobot_lib.OctoBotActionsJob(
                 task.content
@@ -98,35 +95,35 @@ async def execute_octobot(task: Task):
         else:
             raise ValueError(f"Invalid task type: {task.type}")
     return {
-        TaskResultKeys.STATUS.value: TaskStatus.COMPLETED.value,
-        TaskResultKeys.RESULT.value: task.result, 
-        TaskResultKeys.METADATA.value: task.result_metadata,
-        TaskResultKeys.TASK.value: {"name": task.name},
-        TaskResultKeys.ERROR.value: None
+        octobot_node.enums.TaskResultKeys.STATUS.value: octobot_node.models.TaskStatus.COMPLETED.value,
+        octobot_node.enums.TaskResultKeys.RESULT.value: task.result, 
+        octobot_node.enums.TaskResultKeys.METADATA.value: task.result_metadata,
+        octobot_node.enums.TaskResultKeys.TASK.value: {"name": task.name},
+        octobot_node.enums.TaskResultKeys.ERROR.value: None
     }
 
 
 @SCHEDULER.INSTANCE.task()
-def stop_octobot(task: Task):
-    with encrypted_task(task):
+def stop_octobot(task: octobot_node.models.Task):
+    with octobot_node.scheduler.task_context.encrypted_task(task):
         # TODO
         task.result = "ok"
     return {
-        TaskResultKeys.STATUS.value: TaskStatus.COMPLETED.value,
-        TaskResultKeys.RESULT.value: task.result, 
-        TaskResultKeys.METADATA.value: task.result_metadata,
-        TaskResultKeys.TASK.value: {"name": task.name},
-        TaskResultKeys.ERROR.value: None
+        octobot_node.enums.TaskResultKeys.STATUS.value: octobot_node.models.TaskStatus.COMPLETED.value,
+        octobot_node.enums.TaskResultKeys.RESULT.value: task.result, 
+        octobot_node.enums.TaskResultKeys.METADATA.value: task.result_metadata,
+        octobot_node.enums.TaskResultKeys.TASK.value: {"name": task.name},
+        octobot_node.enums.TaskResultKeys.ERROR.value: None
     }
 
-def trigger_task(task: Task) -> bool:
-    if task.type == TaskType.START_OCTOBOT.value:
+def trigger_task(task: octobot_node.models.Task) -> bool:
+    if task.type == octobot_node.models.TaskType.START_OCTOBOT.value:
         start_octobot.schedule(args=[task], delay=1)
         return True
-    elif task.type == TaskType.STOP_OCTOBOT.value:
+    elif task.type == octobot_node.models.TaskType.STOP_OCTOBOT.value:
         stop_octobot.schedule(args=[task], delay=1)
         return True
-    elif task.type == TaskType.EXECUTE_ACTIONS.value:
+    elif task.type == octobot_node.models.TaskType.EXECUTE_ACTIONS.value:
         execute_octobot.schedule(args=[task], delay=1)
         return True
     else:

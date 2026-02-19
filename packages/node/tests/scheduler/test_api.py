@@ -39,8 +39,8 @@ class TestGetNodeStatus:
         mock_consumer = mock.Mock()
         mock_consumer.is_started.return_value = False
 
-        with mock.patch("octobot_node.scheduler.api.settings", mock_settings), \
-             mock.patch("octobot_node.scheduler.api.CONSUMER", mock_consumer):
+        with mock.patch("octobot_node.config.settings", mock_settings), \
+             mock.patch("octobot_node.scheduler.CONSUMER", mock_consumer):
             result = get_node_status()
 
             assert result["node_type"] == "master"
@@ -62,8 +62,8 @@ class TestGetNodeStatus:
         mock_consumer.is_started.return_value = True
         mock_consumer.workers = 4
 
-        with mock.patch("octobot_node.scheduler.api.settings", mock_settings), \
-             mock.patch("octobot_node.scheduler.api.CONSUMER", mock_consumer):
+        with mock.patch("octobot_node.config.settings", mock_settings), \
+             mock.patch("octobot_node.scheduler.CONSUMER", mock_consumer):
             result = get_node_status()
 
             assert result["node_type"] == "consumer"
@@ -85,8 +85,8 @@ class TestGetNodeStatus:
         mock_consumer.is_started.return_value = False
         mock_consumer.workers = 4
 
-        with mock.patch("octobot_node.scheduler.api.settings", mock_settings), \
-             mock.patch("octobot_node.scheduler.api.CONSUMER", mock_consumer):
+        with mock.patch("octobot_node.config.settings", mock_settings), \
+             mock.patch("octobot_node.scheduler.CONSUMER", mock_consumer):
             result = get_node_status()
 
             assert result["node_type"] == "consumer"
@@ -104,8 +104,8 @@ class TestGetNodeStatus:
         mock_consumer = mock.Mock()
         mock_consumer.is_started.return_value = False
 
-        with mock.patch("octobot_node.scheduler.api.settings", mock_settings), \
-             mock.patch("octobot_node.scheduler.api.CONSUMER", mock_consumer):
+        with mock.patch("octobot_node.config.settings", mock_settings), \
+             mock.patch("octobot_node.scheduler.CONSUMER", mock_consumer):
             result = get_node_status()
 
             assert result["status"] == "running"
@@ -123,8 +123,8 @@ class TestGetNodeStatus:
         mock_consumer.is_started.return_value = True
         mock_consumer.workers = 4
 
-        with mock.patch("octobot_node.scheduler.api.settings", mock_settings), \
-             mock.patch("octobot_node.scheduler.api.CONSUMER", mock_consumer):
+        with mock.patch("octobot_node.config.settings", mock_settings), \
+             mock.patch("octobot_node.scheduler.CONSUMER", mock_consumer):
             result = get_node_status()
 
             assert result["node_type"] == "both"
@@ -143,8 +143,8 @@ class TestGetNodeStatus:
         mock_consumer = mock.Mock()
         mock_consumer.is_started.return_value = False
 
-        with mock.patch("octobot_node.scheduler.api.settings", mock_settings), \
-             mock.patch("octobot_node.scheduler.api.CONSUMER", mock_consumer):
+        with mock.patch("octobot_node.config.settings", mock_settings), \
+             mock.patch("octobot_node.scheduler.CONSUMER", mock_consumer):
             result = get_node_status()
 
             assert result["node_type"] == "none"
@@ -169,7 +169,7 @@ class TestGetTaskMetrics:
             {"id": "task2"},
         ]
 
-        with mock.patch("octobot_node.scheduler.api.SCHEDULER", mock_scheduler):
+        with mock.patch("octobot_node.scheduler.SCHEDULER", mock_scheduler):
             result = get_task_metrics()
 
             assert result["pending"] == 5
@@ -185,7 +185,7 @@ class TestGetTaskMetrics:
         mock_scheduler = mock.Mock()
         mock_scheduler.INSTANCE = None
 
-        with mock.patch("octobot_node.scheduler.api.SCHEDULER", mock_scheduler):
+        with mock.patch("octobot_node.scheduler.SCHEDULER", mock_scheduler):
             result = get_task_metrics()
 
             assert result == {"pending": 0, "scheduled": 0, "results": 0}
@@ -196,7 +196,7 @@ class TestGetTaskMetrics:
         mock_scheduler.INSTANCE = mock.Mock()
         mock_scheduler.INSTANCE.pending_count.side_effect = Exception("Database error")
 
-        with mock.patch("octobot_node.scheduler.api.SCHEDULER", mock_scheduler):
+        with mock.patch("octobot_node.scheduler.SCHEDULER", mock_scheduler):
             result = get_task_metrics()
 
             assert result == {"pending": 0, "scheduled": 0, "results": 0}
@@ -212,7 +212,7 @@ class TestGetTaskMetrics:
         mock_scheduler.INSTANCE = mock_huey
         mock_scheduler.get_periodic_tasks.return_value = []
 
-        with mock.patch("octobot_node.scheduler.api.SCHEDULER", mock_scheduler):
+        with mock.patch("octobot_node.scheduler.SCHEDULER", mock_scheduler):
             result = get_task_metrics()
 
             assert result["pending"] == 2
@@ -236,7 +236,7 @@ class TestGetAllTasks:
         mock_scheduler.get_scheduled_tasks.return_value = scheduled_tasks
         mock_scheduler.get_results.return_value = result_tasks
 
-        with mock.patch("octobot_node.scheduler.api.SCHEDULER", mock_scheduler):
+        with mock.patch("octobot_node.scheduler.SCHEDULER", mock_scheduler):
             result = get_all_tasks()
 
             assert len(result) == 4
@@ -257,7 +257,7 @@ class TestGetAllTasks:
         mock_scheduler.get_scheduled_tasks.return_value = []
         mock_scheduler.get_results.return_value = []
 
-        with mock.patch("octobot_node.scheduler.api.SCHEDULER", mock_scheduler):
+        with mock.patch("octobot_node.scheduler.SCHEDULER", mock_scheduler):
             result = get_all_tasks()
 
             assert result == []
@@ -267,7 +267,7 @@ class TestGetAllTasks:
         mock_scheduler = mock.Mock()
         mock_scheduler.get_periodic_tasks.side_effect = Exception("Database error")
 
-        with mock.patch("octobot_node.scheduler.api.SCHEDULER", mock_scheduler):
+        with mock.patch("octobot_node.scheduler.SCHEDULER", mock_scheduler):
             result = get_all_tasks()
 
             assert result == []
@@ -283,7 +283,7 @@ class TestGetAllTasks:
         mock_scheduler.get_scheduled_tasks.side_effect = Exception("Error")
         mock_scheduler.get_results.return_value = []
 
-        with mock.patch("octobot_node.scheduler.api.SCHEDULER", mock_scheduler):
+        with mock.patch("octobot_node.scheduler.SCHEDULER", mock_scheduler):
             result = get_all_tasks()
 
             assert len(result) == 2
@@ -308,7 +308,7 @@ class TestGetTaskResult:
         mock_scheduler.INSTANCE = mock.Mock()
         mock_scheduler.INSTANCE.result.return_value = mock_result
 
-        with mock.patch("octobot_node.scheduler.api.SCHEDULER", mock_scheduler):
+        with mock.patch("octobot_node.scheduler.SCHEDULER", mock_scheduler):
             result = await get_task_result(task_id)
 
             assert result["status"] == "completed"
@@ -329,7 +329,7 @@ class TestGetTaskResult:
         mock_scheduler.INSTANCE = mock.Mock()
         mock_scheduler.INSTANCE.result.return_value = mock_result
 
-        with mock.patch("octobot_node.scheduler.api.SCHEDULER", mock_scheduler):
+        with mock.patch("octobot_node.scheduler.SCHEDULER", mock_scheduler):
             result = await get_task_result(task_id)
 
             assert result["status"] == "pending or running"
@@ -347,7 +347,7 @@ class TestGetTaskResult:
         mock_scheduler.INSTANCE = mock.Mock()
         mock_scheduler.INSTANCE.result.return_value = None
 
-        with mock.patch("octobot_node.scheduler.api.SCHEDULER", mock_scheduler):
+        with mock.patch("octobot_node.scheduler.SCHEDULER", mock_scheduler):
             result = await get_task_result(task_id)
 
             assert result == {"error": "task not found"}
@@ -365,7 +365,7 @@ class TestGetTaskResult:
         mock_scheduler.INSTANCE = mock.Mock()
         mock_scheduler.INSTANCE.result.return_value = mock_result
 
-        with mock.patch("octobot_node.scheduler.api.SCHEDULER", mock_scheduler):
+        with mock.patch("octobot_node.scheduler.SCHEDULER", mock_scheduler):
             result = await get_task_result(task_id)
 
             assert result["status"] == "pending or running"

@@ -30,7 +30,7 @@ class TestEncryptedTask:
         mock_settings.TASKS_OUTPUTS_RSA_PUBLIC_KEY = None
         mock_settings.TASKS_OUTPUTS_ECDSA_PRIVATE_KEY = None
 
-        with mock.patch("octobot_node.scheduler.task_context.settings", mock_settings):
+        with mock.patch("octobot_node.config.settings", mock_settings):
             task = Task(
                 name="test_task",
                 content="plain content",
@@ -70,9 +70,9 @@ class TestEncryptedTask:
         mock_encrypt = mock.Mock(return_value=(encrypted_result, result_metadata))
         mock_json_dumps = mock.Mock(return_value='{"status": "success"}')
 
-        with mock.patch("octobot_node.scheduler.task_context.settings", mock_settings), \
-             mock.patch("octobot_node.scheduler.task_context.decrypt_task_content", mock_decrypt), \
-             mock.patch("octobot_node.scheduler.task_context.encrypt_task_result", mock_encrypt), \
+        with mock.patch("octobot_node.config.settings", mock_settings), \
+             mock.patch("octobot_node.scheduler.encryption.decrypt_task_content", mock_decrypt), \
+             mock.patch("octobot_node.scheduler.encryption.encrypt_task_result", mock_encrypt), \
              mock.patch("octobot_node.scheduler.task_context.json.dumps", mock_json_dumps):
             with encrypted_task(task):
                 # Content should be decrypted
@@ -105,8 +105,8 @@ class TestEncryptedTask:
         mock_decrypt = mock.Mock(side_effect=decryption_error)
         mock_logger = mock.Mock()
 
-        with mock.patch("octobot_node.scheduler.task_context.settings", mock_settings), \
-             mock.patch("octobot_node.scheduler.task_context.decrypt_task_content", mock_decrypt), \
+        with mock.patch("octobot_node.config.settings", mock_settings), \
+             mock.patch("octobot_node.scheduler.encryption.decrypt_task_content", mock_decrypt), \
              mock.patch("octobot_node.scheduler.task_context.logger", mock_logger):
             with encrypted_task(task):
                 # Content should remain unchanged on error
@@ -138,8 +138,8 @@ class TestEncryptedTask:
 
         mock_encrypt = mock.Mock()
 
-        with mock.patch("octobot_node.scheduler.task_context.settings", mock_settings), \
-             mock.patch("octobot_node.scheduler.task_context.encrypt_task_result", mock_encrypt):
+        with mock.patch("octobot_node.config.settings", mock_settings), \
+             mock.patch("octobot_node.scheduler.encryption.encrypt_task_result", mock_encrypt):
             with encrypted_task(task):
                 # Don't set result
                 pass
@@ -164,8 +164,8 @@ class TestEncryptedTask:
 
         mock_decrypt = mock.Mock(return_value=decrypted_content)
 
-        with mock.patch("octobot_node.scheduler.task_context.settings", mock_settings), \
-             mock.patch("octobot_node.scheduler.task_context.decrypt_task_content", mock_decrypt):
+        with mock.patch("octobot_node.config.settings", mock_settings), \
+             mock.patch("octobot_node.scheduler.encryption.decrypt_task_content", mock_decrypt):
             # Exception should propagate, but content should be restored
             with pytest.raises(ValueError, match="Test exception"):
                 with encrypted_task(task):

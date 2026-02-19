@@ -17,14 +17,14 @@
 import logging
 import threading
 
-from octobot_node.config import settings
+import octobot_node.config
+import octobot_node.scheduler.scheduler
 
-from octobot_node.scheduler.scheduler import Scheduler
 from huey.constants import WORKER_THREAD
 
 class SchedulerConsumer:
-    def __init__(self, scheduler: Scheduler):
-        self.scheduler: Scheduler = scheduler
+    def __init__(self, scheduler: "octobot_node.scheduler.scheduler.Scheduler"):
+        self.scheduler: octobot_node.scheduler.scheduler.Scheduler = scheduler
         self.consumer = None
         self.thread = None
         self.lock = threading.Lock()
@@ -49,12 +49,12 @@ class SchedulerConsumer:
             self.logger.debug(f"ValueError ignored when starting consumer: {e}")
 
     def start_thread(self) -> None:
-        if settings.SCHEDULER_WORKERS <= 0:
+        if octobot_node.config.settings.SCHEDULER_WORKERS <= 0:
             self.logger.info("Consumers are disabled.")
             self.workers = None
             return
-        self.logger.info(f"Starting {settings.SCHEDULER_WORKERS} scheduler consumer")
-        self.workers = settings.SCHEDULER_WORKERS
+        self.logger.info(f"Starting {octobot_node.config.settings.SCHEDULER_WORKERS} scheduler consumer")
+        self.workers = octobot_node.config.settings.SCHEDULER_WORKERS
         config_values = {
             "worker_type": WORKER_THREAD,
             "workers": self.workers,
