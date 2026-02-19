@@ -5,5 +5,8 @@
     "CryptoLLMAIStrategyEvaluator",
     "GlobalLLMAIStrategyEvaluator"
   ],
-  "tentacles-requirements": ["gpt_service"]
+  "tentacles-requirements": [
+    "gpt_service",
+    "simple_ai_evaluator_agents_team"
+  ]
 }
