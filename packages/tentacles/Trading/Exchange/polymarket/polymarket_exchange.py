@@ -143,6 +143,13 @@ class Polymarket(exchanges.RestExchange):
 
 def _parse_end_date(end_date: str) -> typing.Optional[datetime.datetime]:
     try:
+        # Date-only strings (e.g. "2026-02-19") have no time component.
+        # fromisoformat would parse them as midnight (00:00:00), making positions
+        # appear expired all day even if the market is still active
+        # Treat date-only strings as end-of-day so they only expire after the day ends.
+        if 'T' not in end_date and ':' not in end_date:
+            parsed_date = datetime.datetime.fromisoformat(end_date)
+            return parsed_date.replace(hour=23, minute=59, second=59)
         parsed_date = datetime.datetime.fromisoformat(end_date.replace('Z', '+00:00'))
         if parsed_date.tzinfo is not None:
             parsed_date = parsed_date.astimezone(datetime.timezone.utc).replace(tzinfo=None)
