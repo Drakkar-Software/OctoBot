@@ -88,6 +88,11 @@ class CommunityBot:
             ):
                 # bot should be running and didn't trigger stop condition yet
                 return True
+        self.get_logger().warning(
+            f"Bot {self.authenticator.user_account.bot_id} should not trade: "
+            f"products_subscription_desired_status={products_subscription[supabase_enums.ProductsSubscriptionsKeys.DESIRED_STATUS.value]}, "
+            f"deployment_error_status={self.authenticator.user_account.get_selected_bot_deployment_error_status()}"
+        )
         return False
     
     async def on_started_bot(self):
@@ -165,8 +170,10 @@ class CommunityBot:
 
     def _is_product_subscription_desired_status_active(self, products_subscription: dict) -> bool:
         return (
-            products_subscription[supabase_enums.ProductsSubscriptionsKeys.DESIRED_STATUS.value] 
-            == supabase_enums.ProductSubscriptionDesiredStatus.ACTIVE.value
+            products_subscription[supabase_enums.ProductsSubscriptionsKeys.DESIRED_STATUS.value] in (
+                supabase_enums.ProductSubscriptionDesiredStatus.ACTIVE.value,
+                supabase_enums.ProductSubscriptionDesiredStatus.RESTARTING.value,
+            )
         )
 
     def _is_deployment_error_status_in(
