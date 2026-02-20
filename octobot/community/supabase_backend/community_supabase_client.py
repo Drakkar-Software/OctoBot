@@ -51,10 +51,10 @@ import octobot.community.supabase_backend.supabase_client as supabase_client
 import octobot.community.supabase_backend.configuration_storage as configuration_storage
 import octobot.community.identifiers_provider as identifiers_provider
 
-# Experimental to prevent httpx.PoolTimeout
+
 _INTERNAL_LOGGERS = [
-    # "httpx", "httpx._client",
-    # "httpcore.http11", "httpcore.http2", "httpcore.proxy", "httpcore.socks", "httpcore.connection"
+    "httpx", "asyncio",
+    "httpcore.http11", "httpcore.connection",
 ]
 # disable httpx info logs as it logs every request
 commons_logging.set_logging_level(_INTERNAL_LOGGERS, logging.WARNING)

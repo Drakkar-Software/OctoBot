@@ -85,6 +85,8 @@ class BotDeploymentStatus(enum.Enum):
 class ProductSubscriptionDesiredStatus(enum.Enum):
     ACTIVE = 'active'
     CANCELED = "canceled"
+    RESTARTING = "restarting"
+    STOPPING = "stopping"
 
 
 class BotDeploymentErrorsStatuses(enum.Enum):
