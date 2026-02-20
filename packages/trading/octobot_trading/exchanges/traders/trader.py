@@ -34,6 +34,9 @@ import octobot_trading.errors as errors
 import octobot_trading.util as util
 import octobot_trading.signals as signals
 
+if typing.TYPE_CHECKING:
+    import octobot_trading.personal_data.orders.order as order_import
+
 
 def enabled_or_forced_only(func):
     """
@@ -194,7 +197,7 @@ class Trader(util.Initializable):
     async def create_order(
         self, order, loaded: bool = False, params: dict = None, wait_for_creation=True, raise_all_creation_error=False,
         creation_timeout=octobot_trading.constants.INDIVIDUAL_ORDER_SYNC_TIMEOUT
-    ):
+    ) -> typing.Optional["order_import.Order"]:
         """
         Create a new order from an OrderFactory created order, update portfolio, registers order in order manager and
         notifies order channel.
@@ -245,7 +248,7 @@ class Trader(util.Initializable):
         emit_trading_signals=False, wait_for_creation=True,
         creation_timeout=octobot_trading.constants.INDIVIDUAL_ORDER_SYNC_TIMEOUT,
         dependencies: typing.Optional[commons_signals.SignalDependencies] = None
-    ):
+    ) -> typing.Optional["order_import.Order"]:
         """
         Creates an OctoBot managed order (managed orders example: stop loss that is not published on the exchange and
         that is maintained internally).
