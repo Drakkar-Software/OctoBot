@@ -127,6 +127,7 @@ temp_config.json
 *.ods
 *.c
 *.h
+.DS_Store
 
 # OctoBot logs
 logs
