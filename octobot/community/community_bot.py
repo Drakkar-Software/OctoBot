@@ -16,6 +16,8 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import typing
 import contextlib
+import time
+import datetime
 
 import octobot_commons.cache_util as cache_util
 import octobot.community.errors as errors
@@ -79,14 +81,18 @@ class CommunityBot:
     def __init__(self, authenticator: "community_authentication.CommunityAuthentication"):
         self.authenticator: "community_authentication.CommunityAuthentication" = authenticator
 
-    async def should_trade_according_to_products_subscription_and_deployment_error_status(self) -> bool:
+    async def should_trade_according_to_products_subscription_and_deployment_error_status(
+        self,
+        new_deployment_timeout: float = octobot.constants.DEFAULT_NEW_DEPLOYMENT_TIMEOUT
+    ) -> bool:
         products_subscription = await self._fetch_products_subscription()
         if self._is_product_subscription_desired_status_active(products_subscription):
+            # bot should be running, now check error status if not just deployed
             # don't fetch deployment error status if bot should not trade
-            if not self._is_deployment_error_status_in(
+            if self.has_just_been_deployed(new_deployment_timeout) or not self._is_deployment_error_status_in(
                 [supabase_enums.BotDeploymentErrorsStatuses.STOP_CONDITION_TRIGGERED]
             ):
-                # bot should be running and didn't trigger stop condition yet
+                # bot has just been deployed or didn't trigger stop condition yet
                 return True
         self.get_logger().warning(
             f"Bot {self.authenticator.user_account.bot_id} should not trade: "
@@ -233,6 +239,24 @@ class CommunityBot:
         self.get_logger().info(
             f"Updated product_subscription.desired_status to {desired_status.value} [{products_subscription_id=}]"
         )
+
+    @staticmethod
+    def has_just_been_deployed(
+        new_deployment_timeout: float = octobot.constants.DEFAULT_NEW_DEPLOYMENT_TIMEOUT
+    ) -> bool:
+        if deployment_time := CommunityBot.get_deployment_time():
+            # bot has been deployed within the last new_deployment_timeout seconds
+            return time.time() < deployment_time + new_deployment_timeout
+        return False
+
+    @staticmethod
+    def get_deployment_time() -> typing.Optional[float]:
+        if raw_deployment_time := octobot.constants.DEPLOYMENT_TIME:
+            try:
+                return datetime.datetime.fromisoformat(raw_deployment_time).timestamp()
+            except ValueError:
+                CommunityBot.get_logger().error(f"Invalid deployment time: {raw_deployment_time}")
+        return None
 
     @classmethod
     def get_logger(cls):
