@@ -56,13 +56,20 @@ class FearAndGreedIndexEvaluator(evaluators.SocialEvaluator):
     
     async def _feed_callback(self, data):
         if self._is_interested_by_this_notification(data[services_constants.FEED_METADATA]):
-            fear_and_greed_history = self.get_data_cache(self.get_current_exchange_time(), key=services_constants.ALTERNATIVE_ME_TOPIC_FEAR_AND_GREED)
-            if fear_and_greed_history is not None and len(fear_and_greed_history) > 0:
-                fear_and_greed_history_values = [item.value for item in fear_and_greed_history]
-                self.eval_note = self.stats_analyser.get_trend(fear_and_greed_history_values, self.trend_averages)
-                await self.evaluation_completed(cryptocurrency=None, 
-                                                eval_time=self.get_current_exchange_time(), 
-                                                eval_note_description="Latest values: " + ", ".join([str(v) for v in fear_and_greed_history_values[-5:]]))
+            await self.evaluate(None, None, None, current_time=self.get_current_exchange_time())
+
+    async def evaluate(self, cryptocurrency, symbol, time_frame, current_time=None):
+        if current_time is None:
+            current_time = self.get_current_exchange_time()
+        fear_and_greed_history = self.get_data_cache(current_time, key=services_constants.ALTERNATIVE_ME_TOPIC_FEAR_AND_GREED)
+        if fear_and_greed_history is not None and len(fear_and_greed_history) > 0:
+            fear_and_greed_history_values = [item.value for item in fear_and_greed_history]
+            if self.stats_analyser is None:
+                await self.prepare()
+            self.eval_note = self.stats_analyser.get_trend(fear_and_greed_history_values, self.trend_averages)
+            await self.evaluation_completed(cryptocurrency=None, 
+                                            eval_time=self.get_current_exchange_time(), 
+                                            eval_note_description="Latest values: " + ", ".join([str(v) for v in fear_and_greed_history_values[-5:]]))
 
     def _is_interested_by_this_notification(self, notification_description):
         return notification_description == services_constants.ALTERNATIVE_ME_TOPIC_FEAR_AND_GREED
@@ -98,11 +105,15 @@ class SocialScoreEvaluator(evaluators.SocialEvaluator):
 
     async def _feed_callback(self, data):
         if self._is_interested_by_this_notification(data[services_constants.FEED_METADATA]):
-            coin, _ = data[services_constants.FEED_METADATA].split(";")
-            coin_data = self.get_data_cache(self.get_current_exchange_time(), key=f"{coin};{services_constants.LUNARCRUSH_COIN_METRICS}")
-            if coin_data is not None and len(coin_data) > 0:
-                self.eval_note = coin_data[-1].sentiment
-                await self.evaluation_completed(cryptocurrency=self.cryptocurrency, eval_time=self.get_current_exchange_time())
+            await self.evaluate(self.cryptocurrency, None, None, current_time=self.get_current_exchange_time())
+
+    async def evaluate(self, cryptocurrency, symbol, time_frame, current_time=None):
+        if current_time is None:
+            current_time = self.get_current_exchange_time()
+        coin_data = self.get_data_cache(current_time, key=f"{self.cryptocurrency};{services_constants.LUNARCRUSH_COIN_METRICS}")
+        if coin_data is not None and len(coin_data) > 0:
+            self.eval_note = coin_data[-1].sentiment
+            await self.evaluation_completed(cryptocurrency=self.cryptocurrency, eval_time=self.get_current_exchange_time())
 
     def _is_interested_by_this_notification(self, notification_description):
         try:

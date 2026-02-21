@@ -82,6 +82,9 @@ class TAEvaluator(evaluator.AbstractEvaluator):
         # To be used to trigger an evaluation when a new candle in closed or a re-evaluation is required
         pass
 
+    async def evaluate(self, cryptocurrency, symbol, time_frame, candle_data=None, candle=None, inc_in_construction_data=False):
+        raise NotImplementedError("evaluate is not implemented")
+
     async def evaluator_ohlcv_callback(self, exchange: str, exchange_id: str, cryptocurrency: str, symbol: str,
                                        time_frame: str, candle: dict):
         if not self.get_is_symbol_wildcard():

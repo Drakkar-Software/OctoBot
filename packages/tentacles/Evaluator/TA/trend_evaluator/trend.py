@@ -58,74 +58,74 @@ class SuperTrendEvaluator(evaluators.TAEvaluator):
 
     async def ohlcv_callback(self, exchange: str, exchange_id: str, cryptocurrency: str,
                              symbol: str, time_frame, candle, inc_in_construction_data):
-        exchange_symbol_data = self.get_exchange_symbol_data(exchange, exchange_id, symbol)
-        high = trading_api.get_symbol_high_candles(exchange_symbol_data, time_frame,
-                                                   include_in_construction=inc_in_construction_data)
-        low = trading_api.get_symbol_low_candles(exchange_symbol_data, time_frame,
-                                                 include_in_construction=inc_in_construction_data)
-        close = trading_api.get_symbol_close_candles(exchange_symbol_data, time_frame,
-                                                     include_in_construction=inc_in_construction_data)
+        await self.evaluate(cryptocurrency, symbol, time_frame, candle=candle, inc_in_construction_data=inc_in_construction_data)
+
+    async def evaluate(self, cryptocurrency, symbol, time_frame, candle_data=None, candle=None, inc_in_construction_data=False):
         self.eval_note = commons_constants.START_PENDING_EVAL_NOTE
+        exchange_id = trading_api.get_exchange_id_from_matrix_id(self.exchange_name, self.matrix_id)
+        exchange_symbol_data = self.get_exchange_symbol_data(self.exchange_name, exchange_id, symbol)
+
+        high = trading_api.get_symbol_high_candles(exchange_symbol_data, time_frame, include_in_construction=inc_in_construction_data)
+        low = trading_api.get_symbol_low_candles(exchange_symbol_data, time_frame, include_in_construction=inc_in_construction_data)
+        close = trading_api.get_symbol_close_candles(exchange_symbol_data, time_frame, include_in_construction=inc_in_construction_data)
+
         if len(close) > self.length:
-            await self.evaluate(cryptocurrency, symbol, time_frame, candle, high, low, close)
+            hl2 = EvaluatorUtil.CandlesUtil.HL2(high, low)[-1]
+            atr = tulipy.atr(high, low, close, self.length)[-1]
+
+            previous_value = self.get_previous_value(symbol, time_frame)
+
+            upper_band = hl2 + self.factor * atr
+            lower_band = hl2 - self.factor * atr
+            prev_upper_band = previous_value.get(self.PREV_UPPER_BAND, 0)
+            prev_lower_band = previous_value.get(self.PREV_LOWER_BAND, 0)
+
+            # compute latest lower and upper band values
+            latest_lower_band = lower_band if (lower_band > prev_lower_band or close[-2] < prev_lower_band) else prev_lower_band
+            latest_upper_band = upper_band if (upper_band < prev_upper_band or close[-2] > prev_upper_band) else prev_upper_band
+
+            prev_super_trend = previous_value.get(self.PREV_SUPERTREND, 0)
+
+            signal = -1
+            is_reversal = False
+            if previous_value.get(self.PREV_ATR, None) is None:
+                # not enough data to compute supertrend evaluation
+                signal = -1
+            else:
+                # there is a previous value: check if the latest close is above or below ATR
+                # and select the correct band to use
+                if prev_super_trend == prev_upper_band:
+                    # previous bearish trend: previous super trend used the upper band
+                    # bullish if the latest close is above latest upper band
+                    bullish_switch = close[-1] > latest_upper_band
+                    if bullish_switch:
+                        # bullish switch of the trend
+                        signal = -1
+                        is_reversal = True
+                    else:
+                        # bearish continuation of the trend
+                        signal = 1
+                else:
+                    # previous bullish trend: previous super trend used the lower band
+                    # bearsish if the latest close is bellow latest lower band
+                    bearish_switch = close[-1] < latest_lower_band
+                    if bearish_switch:
+                        # bearish switch of the trend
+                        signal = 1
+                        is_reversal = True
+                    else:
+                        # bullish continuation of the trend
+                        signal = -1
+
+            previous_value[self.PREV_ATR] = atr
+            previous_value[self.PREV_UPPER_BAND] = latest_upper_band
+            previous_value[self.PREV_LOWER_BAND] = latest_lower_band
+            # store the latest used super trend band: bullish = lower band, bearish = upper band
+            previous_value[self.PREV_SUPERTREND] = latest_lower_band if signal == -1 else latest_upper_band
+            self.eval_note = signal if is_reversal or not self.reversals_only else commons_constants.START_PENDING_EVAL_NOTE
         await self.evaluation_completed(cryptocurrency, symbol, time_frame,
                                         eval_time=evaluators_util.get_eval_time(full_candle=candle,
                                                                                 time_frame=time_frame))
-
-    async def evaluate(self, cryptocurrency, symbol, time_frame, candle, high, low, close):
-        hl2 = EvaluatorUtil.CandlesUtil.HL2(high, low)[-1]
-        atr = tulipy.atr(high, low, close, self.length)[-1]
-
-        previous_value = self.get_previous_value(symbol, time_frame)
-
-        upper_band = hl2 + self.factor * atr
-        lower_band = hl2 - self.factor * atr
-        prev_upper_band = previous_value.get(self.PREV_UPPER_BAND, 0)
-        prev_lower_band = previous_value.get(self.PREV_LOWER_BAND, 0)
-
-        # compute latest lower and upper band values
-        latest_lower_band = lower_band if (lower_band > prev_lower_band or close[-2] < prev_lower_band) else prev_lower_band
-        latest_upper_band = upper_band if (upper_band < prev_upper_band or close[-2] > prev_upper_band) else prev_upper_band
-
-        prev_super_trend = previous_value.get(self.PREV_SUPERTREND, 0)
-
-        signal = -1
-        is_reversal = False
-        if previous_value.get(self.PREV_ATR, None) is None:
-            # not enough data to compute supertrend evaluation
-            signal = -1
-        else:
-            # there is a previous value: check if the latest close is above or below ATR
-            # and select the correct band to use
-            if prev_super_trend == prev_upper_band:
-                # previous bearish trend: previous super trend used the upper band 
-                # bullish if the latest close is above latest upper band
-                bullish_switch = close[-1] > latest_upper_band
-                if bullish_switch:
-                    # bullish switch of the trend
-                    signal = -1
-                    is_reversal = True
-                else:
-                    # bearish continuation of the trend
-                    signal = 1
-            else:
-                # previous bullish trend: previous super trend used the lower band
-                # bearsish if the latest close is bellow latest lower band
-                bearish_switch = close[-1] < latest_lower_band
-                if bearish_switch:
-                    # bearish switch of the trend
-                    signal = 1
-                    is_reversal = True
-                else:
-                    # bullish continuation of the trend
-                    signal = -1
-
-        previous_value[self.PREV_ATR] = atr
-        previous_value[self.PREV_UPPER_BAND] = latest_upper_band
-        previous_value[self.PREV_LOWER_BAND] = latest_lower_band
-        # store the latest used super trend band: bullish = lower band, bearish = upper band
-        previous_value[self.PREV_SUPERTREND] = latest_lower_band if signal == -1 else latest_upper_band
-        self.eval_note = signal if is_reversal or not self.reversals_only else commons_constants.START_PENDING_EVAL_NOTE
 
     def get_previous_value(self, symbol, time_frame):
         try:
@@ -170,53 +170,78 @@ class DeathAndGoldenCrossEvaluator(evaluators.TAEvaluator):
 
     async def ohlcv_callback(self, exchange: str, exchange_id: str,
                              cryptocurrency: str, symbol: str, time_frame, candle, inc_in_construction_data):
+        await self.evaluate(cryptocurrency, symbol, time_frame, candle=candle, inc_in_construction_data=inc_in_construction_data)
 
-        close = trading_api.get_symbol_close_candles(self.get_exchange_symbol_data(exchange, exchange_id, symbol),
-                                                     time_frame,
-                                                     include_in_construction=inc_in_construction_data)
-        volume = trading_api.get_symbol_volume_candles(self.get_exchange_symbol_data(exchange, exchange_id, symbol),
-                                                       time_frame,
-                                                       include_in_construction=inc_in_construction_data)
+    async def evaluate(self, cryptocurrency, symbol, time_frame, candle_data=None, candle=None, inc_in_construction_data=False):
         self.eval_note = commons_constants.START_PENDING_EVAL_NOTE
-        if len(close) > max(self.slow_length, self.fast_length):
-            await self.evaluate(cryptocurrency, symbol, time_frame, candle, close, volume)
+        exchange_id = trading_api.get_exchange_id_from_matrix_id(self.exchange_name, self.matrix_id)
+        exchange_symbol_data = self.get_exchange_symbol_data(self.exchange_name, exchange_id, symbol)
+
+        close_data = trading_api.get_symbol_close_candles(exchange_symbol_data, time_frame, include_in_construction=inc_in_construction_data)
+        volume_data = trading_api.get_symbol_volume_candles(exchange_symbol_data, time_frame, include_in_construction=inc_in_construction_data)
+
+        fast_ma = []
+        slow_ma = []
+        if len(close_data) > self.slow_length:
+            if self.fast_ma_type == "vwma":
+                fast_ma = tulipy.vwma(close_data, volume_data, self.fast_length)
+            elif self.fast_ma_type == "lsma":
+                fast_ma = tulipy.linreg(close_data, self.fast_length)
+            elif self.fast_ma_type == "ema":
+                fast_ma = tulipy.ema(close_data, self.fast_length)
+            elif self.fast_ma_type == "wma":
+                fast_ma = tulipy.wma(close_data, self.fast_length)
+            elif self.fast_ma_type == "sma":
+                fast_ma = tulipy.sma(close_data, self.fast_length)
+            elif self.fast_ma_type == "kama":
+                fast_ma = tulipy.kama(close_data, self.fast_length)
+            elif self.fast_ma_type == "dema":
+                fast_ma = tulipy.dema(close_data, self.fast_length)
+            elif self.fast_ma_type == "tema":
+                fast_ma = tulipy.tema(close_data, self.fast_length)
+            else:
+                fast_ma = []
+
+            if self.slow_ma_type == "vwma":
+                slow_ma = tulipy.vwma(close_data, volume_data, self.slow_length)
+            elif self.slow_ma_type == "lsma":
+                slow_ma = tulipy.linreg(close_data, self.slow_length)
+            elif self.slow_ma_type == "ema":
+                slow_ma = tulipy.ema(close_data, self.slow_length)
+            elif self.slow_ma_type == "wma":
+                slow_ma = tulipy.wma(close_data, self.slow_length)
+            elif self.slow_ma_type == "sma":
+                slow_ma = tulipy.sma(close_data, self.slow_length)
+            elif self.slow_ma_type == "kama":
+                slow_ma = tulipy.kama(close_data, self.slow_length)
+            elif self.slow_ma_type == "dema":
+                slow_ma = tulipy.dema(close_data, self.slow_length)
+            elif self.slow_ma_type == "tema":
+                slow_ma = tulipy.tema(close_data, self.slow_length)
+            else:
+                slow_ma = []
+
+        if min(len(fast_ma), len(slow_ma)) >= 2:
+            just_crossed = (
+                fast_ma[-1] > slow_ma[-1] and fast_ma[-2] < slow_ma[-2]
+            ) or (
+                fast_ma[-1] < slow_ma[-1] and fast_ma[-2] > slow_ma[-2]
+            )
+            if just_crossed:
+                # crosses happen when the fast_ma and fast_ma just crossed, therefore when it happened on the last candle
+                if fast_ma[-1] > slow_ma[-1]:
+                    # golden cross
+                    self.eval_note = -1
+                elif fast_ma[-1] < slow_ma[-1]:
+                    # death cross
+                    self.eval_note = 1
+        else: 
+            # can't compute crosses: not enough data
+            self.logger.debug(f"Not enough data to compute crosses, skipping {symbol} {time_frame} evaluation")
+
         await self.evaluation_completed(cryptocurrency, symbol, time_frame,
                                         eval_time=evaluators_util.get_eval_time(full_candle=candle,
                                                                                 time_frame=time_frame))
-
-    async def evaluate(self, cryptocurrency, symbol, time_frame, candle, candle_data, volume_data):
-        if self.fast_ma_type == "vwma":
-            fast_ma = tulipy.vwma(candle_data, volume_data, self.fast_length)
-        elif self.fast_ma_type == "lsma":
-            fast_ma = tulipy.linreg(candle_data, self.fast_length)
-        else:
-            fast_ma = getattr(tulipy, self.fast_ma_type)(candle_data, self.fast_length)
-
-        if self.slow_ma_type == "vwma":
-            slow_ma = tulipy.vwma(candle_data, volume_data, self.slow_length)
-        elif self.slow_ma_type == "lsma":
-            slow_ma = tulipy.linreg(candle_data, self.slow_length)
-        else:
-            slow_ma = getattr(tulipy, self.slow_ma_type)(candle_data, self.slow_length)
-
-        if min(len(fast_ma), len(slow_ma)) < 2:
-            # can't compute crosses: not enough data
-            self.logger.debug(f"Not enough data to compute crosses, skipping {symbol} {time_frame} evaluation")
-            return
-
-        just_crossed = (
-            fast_ma[-1] > slow_ma[-1] and fast_ma[-2] < slow_ma[-2]
-        ) or (
-            fast_ma[-1] < slow_ma[-1] and fast_ma[-2] > slow_ma[-2]
-        )
-        if just_crossed:
-            # crosses happen when the fast_ma and fast_ma just crossed, therefore when it happened on the last candle
-            if fast_ma[-1] > slow_ma[-1]:
-                # golden cross
-                self.eval_note = -1
-            elif fast_ma[-1] < slow_ma[-1]:
-                # death cross
-                self.eval_note = 1
 
 
 # evaluates position of the current (2 unit) average trend relatively to the 5 units average and 10 units average trend
@@ -240,12 +265,13 @@ class DoubleMovingAverageTrendEvaluator(evaluators.TAEvaluator):
 
     async def ohlcv_callback(self, exchange: str, exchange_id: str,
                              cryptocurrency: str, symbol: str, time_frame, candle, inc_in_construction_data):
-        candle_data = trading_api.get_symbol_close_candles(self.get_exchange_symbol_data(exchange, exchange_id, symbol),
-                                                           time_frame,
-                                                           include_in_construction=inc_in_construction_data)
-        await self.evaluate(cryptocurrency, symbol, time_frame, candle_data, candle)
+        await self.evaluate(cryptocurrency, symbol, time_frame, candle=candle, inc_in_construction_data=inc_in_construction_data)
 
-    async def evaluate(self, cryptocurrency, symbol, time_frame, candle_data, candle):
+    async def evaluate(self, cryptocurrency, symbol, time_frame, candle_data=None, candle=None, inc_in_construction_data=False):
+        if candle_data is None:
+            exchange_id = trading_api.get_exchange_id_from_matrix_id(self.exchange_name, self.matrix_id)
+            candle_data = trading_api.get_symbol_close_candles(self.get_exchange_symbol_data(self.exchange_name, exchange_id, symbol),
+                                                               time_frame, include_in_construction=inc_in_construction_data)
         self.eval_note = commons_constants.START_PENDING_EVAL_NOTE
         if len(candle_data) >= max(self.slow_period_length, self.fast_period_length):
             current_moving_average = tulipy.sma(candle_data, 2)
@@ -327,15 +353,15 @@ class EMADivergenceTrendEvaluator(evaluators.TAEvaluator):
         self.short_value = self.UI.user_input("short_value", enums.UserInputTypes.INT, self.short_value,
                                               inputs, title="Short threshold: Minimum % price difference from EMA "
                                                             "consider a short signal. Should be negative in most cases")
-
     async def ohlcv_callback(self, exchange: str, exchange_id: str,
                              cryptocurrency: str, symbol: str, time_frame, candle, inc_in_construction_data):
-        candle_data = trading_api.get_symbol_close_candles(self.get_exchange_symbol_data(exchange, exchange_id, symbol),
-                                                           time_frame,
-                                                           include_in_construction=inc_in_construction_data)
-        await self.evaluate(cryptocurrency, symbol, time_frame, candle_data, candle)
+        await self.evaluate(cryptocurrency, symbol, time_frame, candle=candle, inc_in_construction_data=inc_in_construction_data)
 
-    async def evaluate(self, cryptocurrency, symbol, time_frame, candle_data, candle):
+    async def evaluate(self, cryptocurrency, symbol, time_frame, candle_data=None, candle=None, inc_in_construction_data=False):
+        if candle_data is None:
+            exchange_id = trading_api.get_exchange_id_from_matrix_id(self.exchange_name, self.matrix_id)
+            candle_data = trading_api.get_symbol_close_candles(self.get_exchange_symbol_data(self.exchange_name, exchange_id, symbol),
+                                                               time_frame, include_in_construction=inc_in_construction_data)
         self.eval_note = commons_constants.START_PENDING_EVAL_NOTE
         if len(candle_data) >= self.period:
             current_ema = tulipy.ema(candle_data, self.period)[-1]

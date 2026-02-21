@@ -116,13 +116,20 @@ class MarketCapEvaluator(evaluators.SocialEvaluator):
 
     async def _feed_callback(self, data):
         if self._is_interested_by_this_notification(data[services_constants.FEED_METADATA]):
-            marketcap_data = self.get_data_cache(self.get_current_exchange_time(), key=services_constants.COINDESK_TOPIC_MARKETCAP)
-            if marketcap_data is not None and len(marketcap_data) > 0:
-                marketcap_history = [item.close for item in marketcap_data]
-                self.eval_note = self.stats_analyser.get_trend(marketcap_history, self.trend_averages)
-                await self.evaluation_completed(cryptocurrency=None, 
-                                                eval_time=self.get_current_exchange_time(),
-                                                eval_note_description="Latest market cap values: " + ", ".join([str(v) for v in marketcap_history[-5:]]))
+            await self.evaluate(None, None, None, current_time=self.get_current_exchange_time())
+
+    async def evaluate(self, cryptocurrency, symbol, time_frame, current_time=None):
+        if current_time is None:
+            current_time = self.get_current_exchange_time()
+        marketcap_data = self.get_data_cache(current_time, key=services_constants.COINDESK_TOPIC_MARKETCAP)
+        if marketcap_data is not None and len(marketcap_data) > 0:
+            marketcap_history = [item.close for item in marketcap_data]
+            if self.stats_analyser is None:
+                await self.prepare()
+            self.eval_note = self.stats_analyser.get_trend(marketcap_history, self.trend_averages)
+            await self.evaluation_completed(cryptocurrency=None, 
+                                            eval_time=self.get_current_exchange_time(),
+                                            eval_note_description="Latest market cap values: " + ", ".join([str(v) for v in marketcap_history[-5:]]))
 
     def _is_interested_by_this_notification(self, notification_description):
         return notification_description == services_constants.COINDESK_TOPIC_MARKETCAP

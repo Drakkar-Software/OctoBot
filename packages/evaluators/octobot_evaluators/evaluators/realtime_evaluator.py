@@ -55,3 +55,6 @@ class RealTimeEvaluator(evaluator.AbstractEvaluator):
         # by default time frame registration only for the timeframe of this real-time evaluator
         return currencies, symbols, to_handle_time_frames
 
+
+    async def evaluate(self, cryptocurrency, symbol, time_frame, time=None):
+        raise NotImplementedError("evaluate is not implemented")

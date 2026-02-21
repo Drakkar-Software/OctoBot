@@ -217,26 +217,31 @@ class CryptoNewsEvaluator(evaluators.SocialEvaluator):
 
     async def _feed_callback(self, data):
         if self._is_interested_by_this_notification(data[services_constants.FEED_METADATA]):
-            latest_news = self.get_data_cache(self.get_current_exchange_time(), key=services_constants.COINDESK_TOPIC_NEWS)
-            if latest_news is not None and len(latest_news) > 0:
-                sentiment_sum = 0
-                news_count = 0
-                news_titles = []
-                for news in latest_news:
-                    sentiment = news.sentiment
-                    sentiment_sum += 0 if sentiment is None else -1 if sentiment == "NEGATIVE" else 1 if sentiment == "POSITIVE" else 0
-                    news_count += 1
-                    news_titles.append(news.title)
-                
-                if news_count > 0:  
-                    self.eval_note = sentiment_sum / news_count
-                    await self.evaluation_completed(
-                        cryptocurrency=None,
-                        eval_time=self.get_current_exchange_time(), 
-                        eval_note_description=f"Overall news sentiment: {'POSITIVE' if self.eval_note > 0 else 'NEGATIVE' if self.eval_note < 0 else 'NEUTRAL'}. News titles: " + "; ".join(news_titles)
-                    )
-                else:
-                    self.debug(f"No news found")
+            await self.evaluate(None, None, None, current_time=self.get_current_exchange_time())
+
+    async def evaluate(self, cryptocurrency, symbol, time_frame, current_time=None):
+        if current_time is None:
+            current_time = self.get_current_exchange_time()
+        latest_news = self.get_data_cache(current_time, key=services_constants.COINDESK_TOPIC_NEWS)
+        if latest_news is not None and len(latest_news) > 0:
+            sentiment_sum = 0
+            news_count = 0
+            news_titles = []
+            for news in latest_news:
+                sentiment = news.sentiment
+                sentiment_sum += 0 if sentiment is None else -1 if sentiment == "NEGATIVE" else 1 if sentiment == "POSITIVE" else 0
+                news_count += 1
+                news_titles.append(news.title)
+            
+            if news_count > 0:  
+                self.eval_note = sentiment_sum / news_count
+                await self.evaluation_completed(
+                    cryptocurrency=None,
+                    eval_time=self.get_current_exchange_time(), 
+                    eval_note_description=f"Overall news sentiment: {'POSITIVE' if self.eval_note > 0 else 'NEGATIVE' if self.eval_note < 0 else 'NEUTRAL'}. News titles: " + "; ".join(news_titles)
+                )
+            else:
+                self.debug(f"No news found")
 
     def _is_interested_by_this_notification(self, notification_description):
         return notification_description == services_constants.COINDESK_TOPIC_NEWS

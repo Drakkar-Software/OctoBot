@@ -88,8 +88,8 @@ class InstantFluctuationsEvaluator(evaluators.RealTimeEvaluator):
         try:
             self.last_volume = volume_data[-1]
             self.last_price = close_data[-1]
-            await self._trigger_evaluation(cryptocurrency, symbol,
-                                           evaluators_util.get_eval_time(full_candle=candle, time_frame=time_frame))
+            await self.evaluate(cryptocurrency, symbol, time_frame,
+                                time=evaluators_util.get_eval_time(full_candle=candle, time_frame=time_frame))
         except IndexError:
             # candles data history is probably not yet available
             self.logger.debug(f"Impossible to evaluate, no historical data for {symbol} on {time_frame}")
@@ -98,14 +98,14 @@ class InstantFluctuationsEvaluator(evaluators.RealTimeEvaluator):
                              cryptocurrency: str, symbol: str, time_frame, kline):
         self.last_volume = kline[commons_enums.PriceIndexes.IND_PRICE_VOL.value]
         self.last_price = kline[commons_enums.PriceIndexes.IND_PRICE_CLOSE.value]
-        await self._trigger_evaluation(cryptocurrency, symbol, evaluators_util.get_eval_time(kline=kline))
+        await self.evaluate(cryptocurrency, symbol, time_frame, time=evaluators_util.get_eval_time(kline=kline))
 
-    async def _trigger_evaluation(self, cryptocurrency, symbol, time):
+    async def evaluate(self, cryptocurrency, symbol, time_frame, time=None):
         self.evaluate_volume_fluctuations()
         if self.something_is_happening and self.eval_note != commons_constants.START_PENDING_EVAL_NOTE:
             if abs(self.last_notification_eval - self.eval_note) >= self.MIN_TRIGGERING_DELTA:
                 self.last_notification_eval = self.eval_note
-                await self.evaluation_completed(cryptocurrency, symbol, self.available_time_frame,
+                await self.evaluation_completed(cryptocurrency, symbol, time_frame,
                                                 eval_time=time)
             self.something_is_happening = False
         else:
@@ -221,9 +221,8 @@ class InstantMAEvaluator(evaluators.RealTimeEvaluator):
             if len(self.last_candle_data[symbol]) > self.period:
                 self.last_moving_average_values[symbol] = tulipy.sma(self.last_candle_data[symbol],
                                                                      self.period)
-                await self._evaluate_current_price(self.last_candle_data[symbol][-1], cryptocurrency, symbol,
-                                                   evaluators_util.get_eval_time(full_candle=candle,
-                                                                                 time_frame=time_frame))
+                self._current_price = self.last_candle_data[symbol][-1]
+                await self.evaluate(cryptocurrency, symbol, time_frame, time=evaluators_util.get_eval_time(full_candle=candle, time_frame=time_frame))
 
     async def kline_callback(self, exchange: str, exchange_id: str,
                              cryptocurrency: str, symbol: str, time_frame, kline):
@@ -231,10 +230,11 @@ class InstantMAEvaluator(evaluators.RealTimeEvaluator):
             self.eval_note = 0
             last_price = kline[commons_enums.PriceIndexes.IND_PRICE_CLOSE.value]
             if last_price != self.last_candle_data[symbol][-1]:
-                await self._evaluate_current_price(last_price, cryptocurrency, symbol,
-                                                   evaluators_util.get_eval_time(kline=kline))
+                self._current_price = last_price
+                await self.evaluate(cryptocurrency, symbol, time_frame, time=evaluators_util.get_eval_time(kline=kline))
 
-    async def _evaluate_current_price(self, last_price, cryptocurrency, symbol, time):
+    async def evaluate(self, cryptocurrency, symbol, time_frame, time=None):
+        last_price = self._current_price or 0
         last_ma_value = self.last_moving_average_values[symbol][-1]
         if last_ma_value == 0:
             self.eval_note = 0

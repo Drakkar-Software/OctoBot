@@ -87,6 +87,11 @@ async def current_candle_price(context, symbol=None, time_frame=None):
     return candles_manager.get_symbol_close_candles(1)[-1]
 
 
+async def current_candle(context, symbol=None, time_frame=None):
+    candles_manager = await _get_candle_manager(context, symbol, time_frame, False)
+    return candles_manager.get_symbol_prices(1)[-1]
+
+
 # Use capital letters to avoid python native lib conflicts
 async def Open(context, symbol=None, time_frame=None, limit=-1, max_history=False):
     candles_manager = await _get_candle_manager(context, symbol, time_frame, max_history)

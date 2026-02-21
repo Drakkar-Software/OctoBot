@@ -50,12 +50,13 @@ class StochasticRSIVolatilityEvaluator(evaluators.TAEvaluator):
 
     async def ohlcv_callback(self, exchange: str, exchange_id: str,
                              cryptocurrency: str, symbol: str, time_frame, candle, inc_in_construction_data):
-        candle_data = trading_api.get_symbol_close_candles(self.get_exchange_symbol_data(exchange, exchange_id, symbol),
-                                                           time_frame,
-                                                           include_in_construction=inc_in_construction_data)
-        await self.evaluate(cryptocurrency, symbol, time_frame, candle_data, candle)
+        await self.evaluate(cryptocurrency, symbol, time_frame, candle=candle, inc_in_construction_data=inc_in_construction_data)
 
-    async def evaluate(self, cryptocurrency, symbol, time_frame, candle_data, candle):
+    async def evaluate(self, cryptocurrency, symbol, time_frame, candle_data=None, candle=None, inc_in_construction_data=False):
+        if candle_data is None:
+            exchange_id = trading_api.get_exchange_id_from_matrix_id(self.exchange_name, self.matrix_id)
+            candle_data = trading_api.get_symbol_close_candles(self.get_exchange_symbol_data(self.exchange_name, exchange_id, symbol),
+                                                               time_frame, include_in_construction=inc_in_construction_data)
         try:
             if len(candle_data) >= self.period * 2:
                 stochrsi_value = tulipy.stochrsi(data_util.drop_nan(candle_data), self.period)[-1]

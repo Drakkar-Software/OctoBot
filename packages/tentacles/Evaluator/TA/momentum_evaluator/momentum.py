@@ -95,12 +95,14 @@ class RSIMomentumEvaluator(evaluators.TAEvaluator):
 
     async def ohlcv_callback(self, exchange: str, exchange_id: str,
                              cryptocurrency: str, symbol: str, time_frame, candle, inc_in_construction_data):
-        candle_data = trading_api.get_symbol_close_candles(self.get_exchange_symbol_data(exchange, exchange_id, symbol),
-                                                           time_frame,
-                                                           include_in_construction=inc_in_construction_data)
-        await self.evaluate(cryptocurrency, symbol, time_frame, candle_data, candle)
+        await self.evaluate(cryptocurrency, symbol, time_frame, candle=candle, inc_in_construction_data=inc_in_construction_data)
 
-    async def evaluate(self, cryptocurrency, symbol, time_frame, candle_data, candle):
+    async def evaluate(self, cryptocurrency, symbol, time_frame, candle_data=None, candle=None, inc_in_construction_data=False):
+        if candle_data is None:
+            exchange_id = trading_api.get_exchange_id_from_matrix_id(self.exchange_name, self.matrix_id)
+            candle_data = trading_api.get_symbol_close_candles(self.get_exchange_symbol_data(self.exchange_name, exchange_id, symbol),
+                                                               time_frame, include_in_construction=inc_in_construction_data)
+
         updated_value = False
         if candle_data is not None and len(candle_data) > self.period_length:
             rsi_v = tulipy.rsi(candle_data, period=self.period_length)
@@ -278,40 +280,31 @@ class RSIWeightMomentumEvaluator(evaluators.TAEvaluator):
             self.logger.error(f"Error when reading from config file: missing {e}")
         return None, None
 
-    async def ohlcv_callback(self, exchange: str, exchange_id: str,
-                             cryptocurrency: str, symbol: str, time_frame, candle, inc_in_construction_data):
+    async def evaluate(self, cryptocurrency, symbol, time_frame, candle_data=None, candle=None, inc_in_construction_data=False):
+        exchange_id = trading_api.get_exchange_id_from_matrix_id(self.exchange_name, self.matrix_id)
+        symbol_candles = self.get_exchange_symbol_data(self.exchange_name, exchange_id, symbol)
+        slow_rsi, fast_rsi, rsi_v = self._get_rsi_averages(symbol_candles, time_frame, inc_in_construction_data)
+        current_candle_time = trading_api.get_symbol_time_candles(symbol_candles, time_frame, include_in_construction=inc_in_construction_data)[-1]
+        self.eval_note = commons_constants.START_PENDING_EVAL_NOTE
         try:
-            symbol_candles = self.get_exchange_symbol_data(exchange, exchange_id, symbol)
-            # compute the slow and fast RSI average
-            slow_rsi, fast_rsi, rsi_v = self._get_rsi_averages(symbol_candles, time_frame,
-                                                               include_in_construction=inc_in_construction_data)
-            current_candle_time = trading_api.get_symbol_time_candles(symbol_candles, time_frame,
-                                                                      include_in_construction=inc_in_construction_data)[
-                -1]
-            await self.evaluate(cryptocurrency, symbol, time_frame, slow_rsi,
-                                fast_rsi, rsi_v, current_candle_time, candle)
+            if slow_rsi is not None and fast_rsi is not None and rsi_v is not None:
+                last_rsi_values_to_consider = 5
+                analysed_rsi = rsi_v[-last_rsi_values_to_consider:]
+                peak_reached = EvaluatorUtil.TrendAnalysis.min_has_just_been_reached(analysed_rsi, acceptance_window=0.95,
+                                                                                    delay=2)
+                if peak_reached:
+                    price_weight, volume_weight = self._analyse_dip_weight(slow_rsi, fast_rsi, rsi_v[-1])
+                    if price_weight is not None and volume_weight is not None:
+                        self.eval_note = {
+                            "price_weight": price_weight,
+                            "volume_weight": volume_weight,
+                            "current_candle_time": current_candle_time
+                        }
+            await self.evaluation_completed(cryptocurrency, symbol, time_frame,
+                                            eval_time=evaluators_util.get_eval_time(full_candle=candle,
+                                                                                    time_frame=time_frame))
         except IndexError:
             self.eval_note = commons_constants.START_PENDING_EVAL_NOTE
-
-    async def evaluate(self, cryptocurrency, symbol, time_frame, slow_rsi,
-                       fast_rsi, rsi_v, current_candle_time, candle):
-        self.eval_note = commons_constants.START_PENDING_EVAL_NOTE
-        if slow_rsi is not None and fast_rsi is not None and rsi_v is not None:
-            last_rsi_values_to_consider = 5
-            analysed_rsi = rsi_v[-last_rsi_values_to_consider:]
-            peak_reached = EvaluatorUtil.TrendAnalysis.min_has_just_been_reached(analysed_rsi, acceptance_window=0.95,
-                                                                                 delay=2)
-            if peak_reached:
-                price_weight, volume_weight = self._analyse_dip_weight(slow_rsi, fast_rsi, rsi_v[-1])
-                if price_weight is not None and volume_weight is not None:
-                    self.eval_note = {
-                        "price_weight": price_weight,
-                        "volume_weight": volume_weight,
-                        "current_candle_time": current_candle_time
-                    }
-        await self.evaluation_completed(cryptocurrency, symbol, time_frame,
-                                        eval_time=evaluators_util.get_eval_time(full_candle=candle,
-                                                                                time_frame=time_frame))
 
 
 # bollinger_bands
@@ -328,13 +321,15 @@ class BBMomentumEvaluator(evaluators.TAEvaluator):
 
     async def ohlcv_callback(self, exchange: str, exchange_id: str,
                              cryptocurrency: str, symbol: str, time_frame, candle, inc_in_construction_data):
-        candle_data = trading_api.get_symbol_close_candles(self.get_exchange_symbol_data(exchange, exchange_id, symbol),
-                                                           time_frame,
-                                                           self.period_length,
-                                                           include_in_construction=inc_in_construction_data)
-        await self.evaluate(cryptocurrency, symbol, time_frame, candle_data, candle)
+        await self.evaluate(cryptocurrency, symbol, time_frame, candle=candle, inc_in_construction_data=inc_in_construction_data)
 
-    async def evaluate(self, cryptocurrency, symbol, time_frame, candle_data, candle):
+    async def evaluate(self, cryptocurrency, symbol, time_frame, candle_data=None, candle=None, inc_in_construction_data=False):
+        if candle_data is None:
+            exchange_id = trading_api.get_exchange_id_from_matrix_id(self.exchange_name, self.matrix_id)
+            candle_data = trading_api.get_symbol_close_candles(self.get_exchange_symbol_data(self.exchange_name, exchange_id, symbol),
+                                                               time_frame,
+                                                               self.period_length,
+                                                               include_in_construction=inc_in_construction_data)
         self.eval_note = commons_constants.START_PENDING_EVAL_NOTE
         if len(candle_data) >= self.period_length:
             # compute bollinger bands
@@ -431,13 +426,15 @@ class EMAMomentumEvaluator(evaluators.TAEvaluator):
 
     async def ohlcv_callback(self, exchange: str, exchange_id: str,
                              cryptocurrency: str, symbol: str, time_frame, candle, inc_in_construction_data):
-        candle_data = trading_api.get_symbol_close_candles(self.get_exchange_symbol_data(exchange, exchange_id, symbol),
-                                                           time_frame,
-                                                           self.period_length,
-                                                           include_in_construction=inc_in_construction_data)
-        await self.evaluate(cryptocurrency, symbol, time_frame, candle_data, candle)
+        await self.evaluate(cryptocurrency, symbol, time_frame, candle=candle, inc_in_construction_data=inc_in_construction_data)
 
-    async def evaluate(self, cryptocurrency, symbol, time_frame, candle_data, candle):
+    async def evaluate(self, cryptocurrency, symbol, time_frame, candle_data=None, candle=None, inc_in_construction_data=False):
+        if candle_data is None:
+            exchange_id = trading_api.get_exchange_id_from_matrix_id(self.exchange_name, self.matrix_id)
+            candle_data = trading_api.get_symbol_close_candles(self.get_exchange_symbol_data(self.exchange_name, exchange_id, symbol),
+                                                               time_frame,
+                                                               self.period_length,
+                                                               include_in_construction=inc_in_construction_data)
         self.eval_note = 0
         if len(candle_data) >= self.period_length:
             # compute ema
@@ -476,24 +473,17 @@ class ADXMomentumEvaluator(evaluators.TAEvaluator):
     # idea: adx > 30 => strong trend, < 20 => trend change to come
     async def ohlcv_callback(self, exchange: str, exchange_id: str,
                              cryptocurrency: str, symbol: str, time_frame, candle, inc_in_construction_data):
-        symbol_candles = self.get_exchange_symbol_data(exchange, exchange_id, symbol)
-        close_candles = trading_api.get_symbol_close_candles(symbol_candles, time_frame,
-                                                             include_in_construction=inc_in_construction_data)
-        if len(close_candles) > self._get_minimal_data():
-            high_candles = trading_api.get_symbol_high_candles(symbol_candles, time_frame,
-                                                               include_in_construction=inc_in_construction_data)
-            low_candles = trading_api.get_symbol_low_candles(symbol_candles, time_frame,
-                                                             include_in_construction=inc_in_construction_data)
-            await self.evaluate(cryptocurrency, symbol, time_frame, close_candles, high_candles, low_candles, candle)
-        else:
-            self.eval_note = commons_constants.START_PENDING_EVAL_NOTE
-            await self.evaluation_completed(cryptocurrency, symbol, time_frame,
-                                            eval_time=evaluators_util.get_eval_time(full_candle=candle,
-                                                                                    time_frame=time_frame))
+        await self.evaluate(cryptocurrency, symbol, time_frame, candle=candle, inc_in_construction_data=inc_in_construction_data)
 
-    async def evaluate(self, cryptocurrency, symbol, time_frame, close_candles, high_candles, low_candles, candle):
+    async def evaluate(self, cryptocurrency, symbol, time_frame, candle_data=None, candle=None, inc_in_construction_data=False):
+        exchange_id = trading_api.get_exchange_id_from_matrix_id(self.exchange_name, self.matrix_id)
+        symbol_candles = self.get_exchange_symbol_data(self.exchange_name, exchange_id, symbol)
+
+        close_candles = candle_data if candle_data is not None else trading_api.get_symbol_close_candles(symbol_candles, time_frame, include_in_construction=inc_in_construction_data)
         self.eval_note = commons_constants.START_PENDING_EVAL_NOTE
-        if len(close_candles) >= self._get_minimal_data():
+        if len(close_candles) > self._get_minimal_data():
+            high_candles = trading_api.get_symbol_high_candles(symbol_candles, time_frame, include_in_construction=inc_in_construction_data)
+            low_candles = trading_api.get_symbol_low_candles(symbol_candles, time_frame, include_in_construction=inc_in_construction_data)
             min_adx = 7.5
             max_adx = 45
             neutral_adx = 25
@@ -598,12 +588,13 @@ class MACDMomentumEvaluator(evaluators.TAEvaluator):
 
     async def ohlcv_callback(self, exchange: str, exchange_id: str,
                              cryptocurrency: str, symbol: str, time_frame, candle, inc_in_construction_data):
-        candle_data = trading_api.get_symbol_close_candles(self.get_exchange_symbol_data(exchange, exchange_id, symbol),
-                                                           time_frame,
-                                                           include_in_construction=inc_in_construction_data)
-        await self.evaluate(cryptocurrency, symbol, time_frame, candle_data, candle)
+        await self.evaluate(cryptocurrency, symbol, time_frame, candle=candle, inc_in_construction_data=inc_in_construction_data)
 
-    async def evaluate(self, cryptocurrency, symbol, time_frame, candle_data, candle):
+    async def evaluate(self, cryptocurrency, symbol, time_frame, candle_data=None, candle=None, inc_in_construction_data=False):
+        if candle_data is None:
+            exchange_id = trading_api.get_exchange_id_from_matrix_id(self.exchange_name, self.matrix_id)
+            candle_data = trading_api.get_symbol_close_candles(self.get_exchange_symbol_data(self.exchange_name, exchange_id, symbol),
+                                                               time_frame, include_in_construction=inc_in_construction_data)
         self.eval_note = commons_constants.START_PENDING_EVAL_NOTE
         if len(candle_data) > self.long_period_length:
             macd, macd_signal, macd_hist = tulipy.macd(candle_data, self.short_period_length,
@@ -661,59 +652,50 @@ class KlingerOscillatorMomentumEvaluator(evaluators.TAEvaluator):
 
     async def ohlcv_callback(self, exchange: str, exchange_id: str,
                              cryptocurrency: str, symbol: str, time_frame, candle, inc_in_construction_data):
-        symbol_candles = self.get_exchange_symbol_data(exchange, exchange_id, symbol)
-        high_candles = trading_api.get_symbol_high_candles(symbol_candles, time_frame,
-                                                           include_in_construction=inc_in_construction_data)
+        await self.evaluate(cryptocurrency, symbol, time_frame, candle=candle, inc_in_construction_data=inc_in_construction_data)
+
+    async def evaluate(self, cryptocurrency, symbol, time_frame, candle_data=None, candle=None, inc_in_construction_data=False):
+        import octobot_trading.api as trading_api
+        exchange_id = trading_api.get_exchange_id_from_matrix_id(self.exchange_name, self.matrix_id)
+        symbol_candles = self.get_exchange_symbol_data(self.exchange_name, exchange_id, symbol)
+
+        high_candles = trading_api.get_symbol_high_candles(symbol_candles, time_frame, include_in_construction=inc_in_construction_data)
+        self.eval_note = commons_constants.START_PENDING_EVAL_NOTE
         if len(high_candles) >= self.short_period:
-            low_candles = trading_api.get_symbol_low_candles(symbol_candles, time_frame,
-                                                             include_in_construction=inc_in_construction_data)
-            close_candles = trading_api.get_symbol_close_candles(symbol_candles, time_frame,
-                                                                 include_in_construction=inc_in_construction_data)
-            volume_candles = trading_api.get_symbol_volume_candles(symbol_candles, time_frame,
-                                                                   include_in_construction=inc_in_construction_data)
-            await self.evaluate(cryptocurrency, symbol, time_frame, high_candles, low_candles,
-                                close_candles, volume_candles, candle)
-        else:
-            self.eval_note = commons_constants.START_PENDING_EVAL_NOTE
-            await self.evaluation_completed(cryptocurrency, symbol, time_frame,
-                                            eval_time=evaluators_util.get_eval_time(full_candle=candle,
-                                                                                    time_frame=time_frame))
+            low_candles = trading_api.get_symbol_low_candles(symbol_candles, time_frame, include_in_construction=inc_in_construction_data)
+            close_candles = trading_api.get_symbol_close_candles(symbol_candles, time_frame, include_in_construction=inc_in_construction_data)
+            volume_candles = trading_api.get_symbol_volume_candles(symbol_candles, time_frame, include_in_construction=inc_in_construction_data)
+            kvo = tulipy.kvo(high_candles,
+                             low_candles,
+                             close_candles,
+                             volume_candles,
+                             self.short_period,
+                             self.long_period)
+            kvo = data_util.drop_nan(kvo)
+            if len(kvo) >= self.ema_signal_period:
+                kvo_ema = tulipy.ema(kvo, self.ema_signal_period)
 
-    async def evaluate(self, cryptocurrency, symbol, time_frame, high_candles, low_candles,
-                       close_candles, volume_candles, candle):
-        eval_proposition = commons_constants.START_PENDING_EVAL_NOTE
-        kvo = tulipy.kvo(high_candles,
-                         low_candles,
-                         close_candles,
-                         volume_candles,
-                         self.short_period,
-                         self.long_period)
-        kvo = data_util.drop_nan(kvo)
-        if len(kvo) >= self.ema_signal_period:
-            kvo_ema = tulipy.ema(kvo, self.ema_signal_period)
+                ema_difference = kvo - kvo_ema
 
-            ema_difference = kvo - kvo_ema
+                if len(ema_difference) > 1:
+                    zero_crossing_indexes = EvaluatorUtil.TrendAnalysis.get_threshold_change_indexes(ema_difference, 0)
 
-            if len(ema_difference) > 1:
-                zero_crossing_indexes = EvaluatorUtil.TrendAnalysis.get_threshold_change_indexes(ema_difference, 0)
+                    current_difference = ema_difference[-1]
+                    significant_move_threshold = numpy.std(ema_difference)
 
-                current_difference = ema_difference[-1]
-                significant_move_threshold = numpy.std(ema_difference)
+                    factor = 0.2
 
-                factor = 0.2
+                    if EvaluatorUtil.TrendAnalysis.peak_has_been_reached_already(
+                            ema_difference[zero_crossing_indexes[-1]:]):
+                        if abs(current_difference) > significant_move_threshold:
+                            factor = 1
+                        else:
+                            factor = 0.5
 
-                if EvaluatorUtil.TrendAnalysis.peak_has_been_reached_already(
-                        ema_difference[zero_crossing_indexes[-1]:]):
-                    if abs(current_difference) > significant_move_threshold:
-                        factor = 1
-                    else:
-                        factor = 0.5
+                    self.eval_note = current_difference * factor / significant_move_threshold
 
-                eval_proposition = current_difference * factor / significant_move_threshold
-
-                if abs(eval_proposition) > 1:
-                    eval_proposition = 1 if eval_proposition > 0 else -1
-        self.eval_note = eval_proposition
+                    if abs(self.eval_note) > 1:
+                        self.eval_note = 1 if self.eval_note > 0 else -1
         await self.evaluation_completed(cryptocurrency, symbol, time_frame,
                                         eval_time=evaluators_util.get_eval_time(full_candle=candle,
                                                                                 time_frame=time_frame))
@@ -749,27 +731,18 @@ class KlingerOscillatorReversalConfirmationMomentumEvaluator(evaluators.TAEvalua
 
     async def ohlcv_callback(self, exchange: str, exchange_id: str,
                              cryptocurrency: str, symbol: str, time_frame, candle, inc_in_construction_data):
-        symbol_candles = self.get_exchange_symbol_data(exchange, exchange_id, symbol)
-        high_candles = trading_api.get_symbol_high_candles(symbol_candles, time_frame,
-                                                           include_in_construction=inc_in_construction_data)
-        if len(high_candles) >= self.short_period:
-            low_candles = trading_api.get_symbol_low_candles(symbol_candles, time_frame,
-                                                             include_in_construction=inc_in_construction_data)
-            close_candles = trading_api.get_symbol_close_candles(symbol_candles, time_frame,
-                                                                 include_in_construction=inc_in_construction_data)
-            volume_candles = trading_api.get_symbol_volume_candles(symbol_candles, time_frame,
-                                                                   include_in_construction=inc_in_construction_data)
-            await self.evaluate(cryptocurrency, symbol, time_frame, high_candles, low_candles,
-                                close_candles, volume_candles, candle)
-        else:
-            self.eval_note = False
-            await self.evaluation_completed(cryptocurrency, symbol, time_frame,
-                                            eval_time=evaluators_util.get_eval_time(full_candle=candle,
-                                                                                    time_frame=time_frame))
+        await self.evaluate(cryptocurrency, symbol, time_frame, candle=candle, inc_in_construction_data=inc_in_construction_data)
 
-    async def evaluate(self, cryptocurrency, symbol, time_frame, high_candles, low_candles,
-                       close_candles, volume_candles, candle):
+    async def evaluate(self, cryptocurrency, symbol, time_frame, candle_data=None, candle=None, inc_in_construction_data=False):
+        exchange_id = trading_api.get_exchange_id_from_matrix_id(self.exchange_name, self.matrix_id)
+        symbol_candles = self.get_exchange_symbol_data(self.exchange_name, exchange_id, symbol)
+
+        high_candles = trading_api.get_symbol_high_candles(symbol_candles, time_frame, include_in_construction=inc_in_construction_data)
+        self.eval_note = False
         if len(high_candles) >= self.short_period:
+            low_candles = trading_api.get_symbol_low_candles(symbol_candles, time_frame, include_in_construction=inc_in_construction_data)
+            close_candles = candle_data if candle_data is not None else trading_api.get_symbol_close_candles(symbol_candles, time_frame, include_in_construction=inc_in_construction_data)
+            volume_candles = trading_api.get_symbol_volume_candles(symbol_candles, time_frame, include_in_construction=inc_in_construction_data)
             kvo = tulipy.kvo(high_candles,
                              low_candles,
                              close_candles,

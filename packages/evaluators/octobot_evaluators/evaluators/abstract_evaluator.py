@@ -141,6 +141,12 @@ class AbstractEvaluator(tentacles_management.AbstractTentacle):
         """
         raise NotImplementedError("evaluator_manual_callback is not implemented")
 
+    async def evaluate(self, *args, **kwargs):
+        """
+        Main method that computes evaluation
+        """
+        raise NotImplementedError("evaluate is not implemented for this evaluator")
+
     @staticmethod
     def get_eval_type():
         """

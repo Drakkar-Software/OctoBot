@@ -153,12 +153,6 @@ class BaseLLMAIStrategyEvaluator(evaluators.StrategyEvaluator):
         missing_data_types: list,
         ai_service,
     ) -> tuple[float | str, str]:
-        """
-        Run strategy agents on aggregated data using the SimpleAIEvaluatorAgentsTeam.
-        
-        Returns:
-            Tuple of (eval_note, eval_note_description).
-        """
         # Determine which agents to include based on available data
         include_ta = evaluators_enums.EvaluatorMatrixTypes.TA.value in aggregated_data
         include_sentiment = evaluators_enums.EvaluatorMatrixTypes.SOCIAL.value in aggregated_data
@@ -389,6 +383,9 @@ class CryptoLLMAIStrategyEvaluator(BaseLLMAIStrategyEvaluator):
             else:
                 missing_data_types.append(eval_type)
 
+        await self.evaluate(aggregated_data, missing_data_types, cryptocurrency)
+
+    async def evaluate(self, aggregated_data, missing_data_types, cryptocurrency):
         if not aggregated_data:
             return
 
@@ -432,11 +429,9 @@ class CryptoLLMAIStrategyEvaluator(BaseLLMAIStrategyEvaluator):
 
 
 class GlobalLLMAIStrategyEvaluator(BaseLLMAIStrategyEvaluator):
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._is_evaluating = False
-
 
     @classmethod
     def get_is_cryptocurrencies_wildcard(cls) -> bool:
@@ -502,6 +497,9 @@ class GlobalLLMAIStrategyEvaluator(BaseLLMAIStrategyEvaluator):
             else:
                 missing_data_types.append(eval_type)
 
+        await self.evaluate(aggregated_data, missing_data_types)
+
+    async def evaluate(self, aggregated_data, missing_data_types):
         if not aggregated_data:
             return
 

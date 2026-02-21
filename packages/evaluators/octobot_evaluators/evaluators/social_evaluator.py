@@ -66,6 +66,9 @@ class SocialEvaluator(evaluator.AbstractEvaluator):
             self.logger.exception(e, True, "Can't get data cache: requires OctoBot-Services package installed")
         return None
 
+    async def evaluate(self, cryptocurrency, symbol, time_frame, current_time=None):
+        raise NotImplementedError("evaluate is not implemented")
+
     def get_current_exchange_time(self):
         try:
             import octobot_trading.api as exchange_api

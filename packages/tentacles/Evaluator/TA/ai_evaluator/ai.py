@@ -176,10 +176,12 @@ class GPTEvaluator(evaluators.TAEvaluator):
 
     async def ohlcv_callback(self, exchange: str, exchange_id: str,
                              cryptocurrency: str, symbol: str, time_frame, candle, inc_in_construction_data):
-        candle_data = self.get_candles_data(exchange, exchange_id, symbol, time_frame, inc_in_construction_data)
-        await self.evaluate(cryptocurrency, symbol, time_frame, candle_data, candle)
+        await self.evaluate(cryptocurrency, symbol, time_frame, candle=candle, inc_in_construction_data=inc_in_construction_data)
 
-    async def evaluate(self, cryptocurrency, symbol, time_frame, candle_data, candle):
+    async def evaluate(self, cryptocurrency, symbol, time_frame, candle_data=None, candle=None, inc_in_construction_data=False):
+        if candle_data is None:
+            exchange_id = trading_api.get_exchange_id_from_matrix_id(self.exchange_name, self.matrix_id)
+            candle_data = self.get_candles_data(self.exchange_name, exchange_id, symbol, time_frame, inc_in_construction_data)
         async with self.async_evaluation():
             self.eval_note = commons_constants.START_PENDING_EVAL_NOTE
             if self._check_timeframe(time_frame):
