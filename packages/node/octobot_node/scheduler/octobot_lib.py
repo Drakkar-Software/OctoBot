@@ -21,6 +21,8 @@ import logging
 import octobot_commons.list_util as list_util
 import octobot_commons.dataclasses
 
+import octobot_tentacles_manager.api
+
 try:
     import mini_octobot
     import mini_octobot.environment
@@ -29,6 +31,9 @@ try:
 
     # ensure environment is initialized
     mini_octobot.environment.initialize_environment(True)
+    # reload tentacles info to ensure mini-octobot tentacles are loaded
+    octobot_tentacles_manager.api.reload_tentacle_info()
+
 
 except ImportError:
     logging.getLogger("octobot_node.scheduler.octobot_lib").warning("OctoBot is not installed, OctoBot actions will not be available")
@@ -117,14 +122,14 @@ class OctoBotActionsJobResult:
 
 
 class OctoBotActionsJob:
-    def __init__(self, description: str):
+    def __init__(self, description: typing.Union[str, dict]):
         parsed_description = self._parse_description(description)
         self.description: OctoBotActionsJobDescription = OctoBotActionsJobDescription.from_dict(
             parsed_description
         )
         self.after_execution_state = None
 
-    def _parse_description(self, description: str) -> dict:
+    def _parse_description(self, description: typing.Union[str, dict]) -> dict:
         if isinstance(description, dict):
             # normal Non-init case
             parsed_description = description

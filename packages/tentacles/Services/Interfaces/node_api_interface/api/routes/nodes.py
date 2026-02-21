@@ -14,16 +14,16 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Any, List
+import typing
 
 from fastapi import APIRouter
 
-from octobot_node.models import Node
-from octobot_node.scheduler.api import get_node_status
+import octobot_node.models
+import octobot_node.scheduler.api
 
 router = APIRouter(tags=["nodes"])
 
-@router.get("/me", response_model=Node)
-def get_current_node() -> Any:
-    status = get_node_status()
-    return Node(**status)
+@router.get("/me", response_model=octobot_node.models.Node)
+def get_current_node() -> typing.Any:
+    status = octobot_node.scheduler.api.get_node_status()
+    return octobot_node.models.Node(**status)

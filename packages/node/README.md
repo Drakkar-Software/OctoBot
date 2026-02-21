@@ -162,7 +162,7 @@ uvicorn tentacles.Services.Interfaces.node_api_interface.node_api_interface:Node
 ##### Environment Variables
 
 Some key `.env` variables:
-- `SCHEDULER_REDIS_URL` (if using Redis as backend)
+- `SCHEDULER_POSTGRES_URL` (if using Postgres as backend)
 - `SCHEDULER_SQLITE_FILE` (if using SQLite, default: "tasks.db")
 - `SCHEDULER_WORKERS` (number of consumer workers, default: 0, can be overridden with --consumers)
 - `ENVIRONMENT` (environment mode: "local" or "production", default: "production")
@@ -175,10 +175,10 @@ See `.env.sample` for all options, and adjust as needed.
 
 #### Scheduler
 
-The task scheduler is automatically started together with the FastAPI server through import of the `octobot_node/scheduler` module. The scheduler uses [Huey](https://github.com/coleifer/huey) for task queue management.
+The task scheduler is automatically started together with the FastAPI server through import of the `octobot_node/scheduler` module. The scheduler uses [DBOS](https://docs.dbos.dev/) for durable workflow and task queue management.
 
 - **No manual launch needed** — scheduler and consumers are managed automatically on startup.
-- Configuration for the scheduler backend (Redis or SQLite) is picked up from environment variables.
+- Configuration for the scheduler backend (Postgres or SQLite) is picked up from environment variables.
 - Consumer workers are started automatically if `SCHEDULER_WORKERS > 0` (or `--consumers N` is used).
 - Master mode is enabled via the `--master` CLI flag and allows the node to schedule tasks.
 - A node can be both a master (schedules tasks) and run consumer workers simultaneously.

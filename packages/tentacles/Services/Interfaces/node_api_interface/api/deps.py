@@ -15,13 +15,13 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
 import uuid
-from typing import Annotated
+import typing
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 
-from octobot_node.config import settings
-from octobot_node.models import User
+import octobot_node.config
+import octobot_node.models
 
 security_basic = HTTPBasic()
 
@@ -29,24 +29,24 @@ _BASIC_AUTH_USER_ID = uuid.uuid4()
 
 # TODO: support other auth methods (like supabase, jwt, etc.)
 
-def get_current_user(credentials: Annotated[HTTPBasicCredentials, Depends(security_basic)]) -> User:
-    if credentials.username != settings.ADMIN_USERNAME:
+def get_current_user(credentials: typing.Annotated[HTTPBasicCredentials, Depends(security_basic)]) -> octobot_node.models.User:
+    if credentials.username != octobot_node.config.settings.ADMIN_USERNAME:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Basic"},
         )
     
-    if credentials.password != settings.ADMIN_PASSWORD:
+    if credentials.password != octobot_node.config.settings.ADMIN_PASSWORD:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Basic"},
         )
 
-    user = User(
+    user = octobot_node.models.User(
         id=_BASIC_AUTH_USER_ID,
-        email=settings.ADMIN_USERNAME,
+        email=octobot_node.config.settings.ADMIN_USERNAME,
         is_active=True,
         is_superuser=True,
         full_name=None,
@@ -54,10 +54,10 @@ def get_current_user(credentials: Annotated[HTTPBasicCredentials, Depends(securi
     return user
 
 
-CurrentUser = Annotated[User, Depends(get_current_user)]
+CurrentUser = typing.Annotated[octobot_node.models.User, Depends(get_current_user)]
 
 
-def get_current_active_superuser(current_user: CurrentUser) -> User:
+def get_current_active_superuser(current_user: CurrentUser) -> octobot_node.models.User:
     if not current_user.is_superuser:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

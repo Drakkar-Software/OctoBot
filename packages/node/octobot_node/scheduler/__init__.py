@@ -16,19 +16,20 @@
 
 import logging
 
-from octobot_node.config import settings
-from octobot_node.scheduler.scheduler import Scheduler
-from octobot_node.scheduler.consumer import SchedulerConsumer
+import octobot_node.scheduler.scheduler as scheduler_lib
+import octobot_node.scheduler.workflows
 
 scheduler_logger = logging.getLogger(__name__)
 
-SCHEDULER: Scheduler = Scheduler()
-SCHEDULER.create()
-CONSUMER: SchedulerConsumer = SchedulerConsumer(SCHEDULER)
+SCHEDULER: scheduler_lib.Scheduler = scheduler_lib.Scheduler()
 
-# Import tasks to register them with the scheduler
-from octobot_node.scheduler import tasks  # noqa: F401
 
-# Start the consumer automatically when the module is imported
-if settings.SCHEDULER_WORKERS > 0:
-    CONSUMER.start()
+def is_enabled() -> bool:
+    return SCHEDULER.is_enabled()
+
+
+def initialize_scheduler():
+    scheduler_logger.info("Initializing scheduler")
+    SCHEDULER.create()
+    octobot_node.scheduler.workflows.register_workflows()
+    SCHEDULER.start()

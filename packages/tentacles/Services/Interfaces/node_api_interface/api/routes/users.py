@@ -14,10 +14,10 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Any
+import typing
 from fastapi import APIRouter
 
-from octobot_node.models import User
+import octobot_node.models
 
 # Import from tentacles package (runtime) or fallback to direct imports (build)
 try:
@@ -27,6 +27,6 @@ except ImportError:
 
 router = APIRouter(tags=["users"])
 
-@router.get("/me", response_model=User)
-def read_user_me(current_user: CurrentUser) -> Any:
+@router.get("/me", response_model=octobot_node.models.User)
+def read_user_me(current_user: CurrentUser) -> typing.Any:
     return current_user

@@ -3,5 +3,4 @@ passlib[bcrypt]
 pydantic
 pyjwt
 
-redis
-huey
+dbos==2.13.0

@@ -67,7 +67,7 @@ DEFAULT_SERVER_PORT = 5001
 DEFAULT_BACKEND_CORS_ALLOWED_ORIGINS = "http://localhost,http://localhost:5173,http://localhost:8000,https://localhost,https://localhost:5173"
 
 # Node API service
-CONFIG_NODE_API = "node_api"
+CONFIG_NODE_API = "node-api"
 CONFIG_NODE_API_IP = "ip"
 CONFIG_NODE_API_PORT = "port"
 ENV_NODE_API_PORT = "NODE_API_PORT"
@@ -85,7 +85,7 @@ NODE_SQLITE_FILE = "node-sqlite-file"
 NODE_REDIS_URL = "node-redis-url"
 BACKEND_CORS_ALLOWED_ORIGINS = "backend-cors-allowed-origins"
 ENV_NODE_SQLITE_FILE = "ENV_NODE_SQLITE_FILE"
-ENV_NODE_REDIS_URL = "ENV_NODE_REDIS_URL"
+ENV_NODE_POSTGRES_URL = "ENV_NODE_POSTGRES_URL"
 
 # Webhook
 CONFIG_WEBHOOK = "webhook"

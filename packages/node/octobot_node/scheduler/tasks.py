@@ -13,118 +13,43 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
-
-import functools
-import asyncio
-import json
-import logging
-import time
-
-import octobot_node.scheduler.task_context
+import uuid
 import octobot_node.models
-import octobot_node.enums
-import octobot_node.scheduler.octobot_lib as octobot_lib
-
-from octobot_node.scheduler import SCHEDULER # prevent circular import
-
-
-def async_task(func):
-    """
-    Decorator to ensure that the function it wraps is a non-async function that can then use asyncio.run(), e.g. Huey tasks.
-    Huey tasks will be called in one of 2 contexts: either they are the top-level function(ish) in the process, and there is no loop yet, or we are running tests in an an async context already and we need to re-use the current loop.
-    """
-
-    @functools.wraps(func)
-    def wrapper_decorator(*args, **kwargs):
-        try:
-            loop = asyncio.get_event_loop()
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-        task = loop.create_task(func(*args, **kwargs))
-        return loop.run_until_complete(task)
-
-    return wrapper_decorator
+import octobot_node.scheduler.workflows.base as workflow_base
+import octobot_commons.dataclasses.minimizable_dataclass as minimizable_dataclass
+from octobot_node.scheduler import SCHEDULER # avoid circular import
 
 
-@SCHEDULER.INSTANCE.task()
-def start_octobot(task: octobot_node.models.Task):
-    with octobot_node.scheduler.task_context.encrypted_task(task):
-        # TODO
-        task.result = "ok"
-    return {
-        octobot_node.enums.TaskResultKeys.STATUS.value: octobot_node.models.TaskStatus.COMPLETED.value,
-        octobot_node.enums.TaskResultKeys.RESULT.value: task.result, 
-        octobot_node.enums.TaskResultKeys.METADATA.value: task.result_metadata,
-        octobot_node.enums.TaskResultKeys.TASK.value: {"name": task.name},
-        octobot_node.enums.TaskResultKeys.ERROR.value: None
-    }
+def _generate_instance_name() -> str:
+    # names can't be re-used: ensure each are unique not to mix
+    # workflow attributes on recovery
+    return str(uuid.uuid4())
 
 
-def _reshedule_octobot_execution(
-    task: octobot_node.models.Task, next_actions_description: octobot_lib.OctoBotActionsJobDescription
-):
-    task.content = json.dumps(next_actions_description.to_dict(include_default_values=False))
-    next_execution_time = next_actions_description.get_next_execution_time()
-    now_time = time.time()
-    if next_execution_time == 0 or next_execution_time < now_time:
-        delay = 0
-    else:
-        delay = next_execution_time - now_time
-    logging.getLogger("octobot_node.scheduler.tasks").info(
-        f"Scheduling task '{task.name}' for execution in {delay} seconds"
-    )
-    return execute_octobot.schedule(args=[task], delay=delay)
-
-
-@SCHEDULER.INSTANCE.task()
-@async_task
-async def execute_octobot(task: octobot_node.models.Task):
-    with octobot_node.scheduler.task_context.encrypted_task(task):
-        if task.type == octobot_node.models.TaskType.EXECUTE_ACTIONS.value:
-            logging.getLogger("octobot_node.scheduler.tasks").info(f"Executing task '{task.name}' with content: {task.content} ...")
-            result: octobot_lib.OctoBotActionsJobResult = await octobot_lib.OctoBotActionsJob(
-                task.content
-            ).run()
-            task.result = {
-                "orders": result.get_created_orders(),
-                "transfers": result.get_deposit_and_withdrawal_details(),
-            }
-            if result.next_actions_description:
-                _reshedule_octobot_execution(task, result.next_actions_description)
-        else:
-            raise ValueError(f"Invalid task type: {task.type}")
-    return {
-        octobot_node.enums.TaskResultKeys.STATUS.value: octobot_node.models.TaskStatus.COMPLETED.value,
-        octobot_node.enums.TaskResultKeys.RESULT.value: task.result, 
-        octobot_node.enums.TaskResultKeys.METADATA.value: task.result_metadata,
-        octobot_node.enums.TaskResultKeys.TASK.value: {"name": task.name},
-        octobot_node.enums.TaskResultKeys.ERROR.value: None
-    }
-
-
-@SCHEDULER.INSTANCE.task()
-def stop_octobot(task: octobot_node.models.Task):
-    with octobot_node.scheduler.task_context.encrypted_task(task):
-        # TODO
-        task.result = "ok"
-    return {
-        octobot_node.enums.TaskResultKeys.STATUS.value: octobot_node.models.TaskStatus.COMPLETED.value,
-        octobot_node.enums.TaskResultKeys.RESULT.value: task.result, 
-        octobot_node.enums.TaskResultKeys.METADATA.value: task.result_metadata,
-        octobot_node.enums.TaskResultKeys.TASK.value: {"name": task.name},
-        octobot_node.enums.TaskResultKeys.ERROR.value: None
-    }
-
-def trigger_task(task: octobot_node.models.Task) -> bool:
+async def trigger_task(task: octobot_node.models.Task) -> bool:
+    import octobot_node.scheduler.workflows.bot_workflow as bot_workflow
+    import octobot_node.scheduler.workflows.full_bot_workflow as full_bot_workflow
+    delay = 1
+    handle = None
+    # enqueue workflow instead of starting it to dispatch them to multiple workers if possible
     if task.type == octobot_node.models.TaskType.START_OCTOBOT.value:
-        start_octobot.schedule(args=[task], delay=1)
-        return True
+        handle = await SCHEDULER.BOT_WORKFLOW_QUEUE.enqueue_async(
+            full_bot_workflow.FullBotWorkflow.start,
+            t=workflow_base.Tracker(name=f"{task.name}_{_generate_instance_name()}"),
+            inputs=full_bot_workflow.FullBotWorkflowStartInputs(task=task, delay=delay).to_dict(include_default_values=False)
+        )
     elif task.type == octobot_node.models.TaskType.STOP_OCTOBOT.value:
-        stop_octobot.schedule(args=[task], delay=1)
-        return True
+        handle = await SCHEDULER.BOT_WORKFLOW_QUEUE.enqueue_async(
+            full_bot_workflow.FullBotWorkflow.stop,
+            t=workflow_base.Tracker(name=f"{task.name}_{_generate_instance_name()}"),
+            inputs=full_bot_workflow.FullBotWorkflowStopInputs(task=task, delay=delay).to_dict(include_default_values=False)
+        )
     elif task.type == octobot_node.models.TaskType.EXECUTE_ACTIONS.value:
-        execute_octobot.schedule(args=[task], delay=1)
-        return True
+        handle = await SCHEDULER.BOT_WORKFLOW_QUEUE.enqueue_async(
+            bot_workflow.BotWorkflow.execute_octobot,
+            t=workflow_base.Tracker(name=f"{task.name}_{_generate_instance_name()}"),
+            inputs=bot_workflow.BotWorkflowInputs(task=task, delay=delay).to_dict(include_default_values=False)
+        )
     else:
         raise ValueError(f"Invalid task type: {task.type}")
+    return handle is not None

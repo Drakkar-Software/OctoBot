@@ -19,6 +19,7 @@ import octobot_node.scheduler.octobot_lib as octobot_lib
 import octobot_commons.constants as common_constants
 RUN_TESTS = True
 try:
+    raise ImportError("test")
     import octobot_trading.constants
     import octobot_trading.errors
 

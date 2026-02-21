@@ -24,8 +24,7 @@ from starlette.middleware.cors import CORSMiddleware
 
 import octobot_services.interfaces as services_interfaces
 import octobot_node.config as node_config
-from octobot_node.scheduler import scheduler  # noqa: F401
-from octobot_node.scheduler import SCHEDULER, CONSUMER
+import octobot_node.scheduler as scheduler # noqa: F401
 
 # Service_bases is only needed at runtime, not for build
 try:
@@ -79,15 +78,15 @@ class NodeApiInterface(services_interfaces.AbstractInterface):
         admin_username = self.node_api_service.get_admin_username()
         admin_password = self.node_api_service.get_admin_password()
         node_sqlite_file = self.node_api_service.get_node_sqlite_file()
-        node_redis_url = self.node_api_service.get_node_redis_url()
+        node_postgres_url = self.node_api_service.get_node_postgres_url()
         if admin_username:
             node_config.settings.ADMIN_USERNAME = admin_username
         if admin_password:
             node_config.settings.ADMIN_PASSWORD = admin_password
         if node_sqlite_file:
             node_config.settings.SCHEDULER_SQLITE_FILE = node_sqlite_file
-        if node_redis_url is not None:
-            node_config.settings.SCHEDULER_REDIS_URL = node_redis_url
+        if node_postgres_url is not None:
+            node_config.settings.SCHEDULER_POSTGRES_URL = node_postgres_url
         host = self.host
         port = self.port
         self.app = self.create_app()
@@ -117,8 +116,7 @@ class NodeApiInterface(services_interfaces.AbstractInterface):
         async def lifespan(app: FastAPI):
             yield
             # Shutdown
-            SCHEDULER.stop()
-            CONSUMER.stop()
+            scheduler.SCHEDULER.stop()
 
         app = FastAPI(
             title=cls.API_NAME,

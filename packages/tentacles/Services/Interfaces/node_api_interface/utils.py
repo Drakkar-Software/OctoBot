@@ -14,13 +14,13 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
-from pathlib import Path
+import pathlib
 
 
-def get_dist_directory() -> Path | None:
+def get_dist_directory() -> pathlib.Path | None:
     try:
         import tentacles.Services.Interfaces.node_web_interface as node_web_interface
-        interface_path = Path(node_web_interface.__file__).resolve().parent
+        interface_path = pathlib.Path(node_web_interface.__file__).resolve().parent
         dist_path = interface_path / "dist"
         if dist_path.exists() and dist_path.is_dir():
             return dist_path
@@ -29,7 +29,7 @@ def get_dist_directory() -> Path | None:
     
     # Fallback: try relative to current file (for development if module not found)
     # Go up from node_api/utils.py -> node_api -> Interfaces -> node_web_interface -> dist
-    current_file = Path(__file__).resolve()
+    current_file = pathlib.Path(__file__).resolve()
     interface_path = current_file.parent.parent / "node_web_interface"
     dist_path = interface_path / "dist"
     
