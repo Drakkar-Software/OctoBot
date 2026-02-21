@@ -14,14 +14,33 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.*
 import dataclasses
+import pydantic
+import enum
+import datetime
+import typing
 
 import octobot_commons.dataclasses
+
+
+class JobType(enum.Enum):
+    FULL_TIME = "full-time"
+    PART_TIME = "part-time"
+
+
+class Job(pydantic.BaseModel):
+    id: int = 0
+    name: str = ""
+    description: typing.Optional[str] = None
+    type: JobType = JobType.FULL_TIME
+    created_at: datetime.datetime = datetime.datetime.now()
+    updated_at: typing.Optional[datetime.datetime] = None
 
 
 @dataclasses.dataclass
 class TestPersonClass(octobot_commons.dataclasses.FlexibleDataclass):
     name: str = ""
     age: int = 0
+    job: Job = dataclasses.field(default_factory=Job)
     likes: list = dataclasses.field(default_factory=list)
 
 
@@ -40,11 +59,13 @@ class TestPersonGroupClass(octobot_commons.dataclasses.FlexibleDataclass):
 
 
 def test_from_dict():
-    person_1 = TestPersonClass(name="rhombur", age=33)
+    person_1 = TestPersonClass(
+        name="rhombur", age=33, job=Job(id=1, name="prince", description="Ixian prince", type=JobType.PART_TIME, created_at=datetime.datetime(2026, 1, 1, 12, 0, 0))
+    )
     dict_1 = dataclasses.asdict(person_1)
     person_1_1 = TestPersonClass.from_dict(dict_1)
-    assert list(person_1_1.get_field_names()) == list(person_1.get_field_names()) == ['name', 'age', 'likes']
-    assert person_1 == person_1_1
+    assert list(person_1_1.get_field_names()) == list(person_1.get_field_names()) == ['name', 'age', 'job', 'likes']
+    assert person_1 == person_1_1 # ensure parsing is working
     person_1_1.name = "leto"
 
     group_1 = TestPersonGroupClass(identifier="plop", absent_people=[person_1], leader=person_1_1)
@@ -77,6 +98,6 @@ def test_get_field_names():
     group_1 = TestPersonGroupClass()
     group_2 = TestPersonGroupClass()
 
-    assert list(person_1.get_field_names()) == list(person_2.get_field_names()) == ['name', 'age', 'likes']
+    assert list(person_1.get_field_names()) == list(person_2.get_field_names()) == ['name', 'age', 'job', 'likes']
     assert list(group_1.get_field_names()) == list(group_2.get_field_names()) == \
        ['identifier', 'present_people', 'absent_people', 'leader']
