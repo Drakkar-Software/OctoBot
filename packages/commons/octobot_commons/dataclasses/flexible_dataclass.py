@@ -14,7 +14,13 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import dataclasses
+import types
 import typing
+
+try:
+    from pydantic import BaseModel as PydanticBaseModel
+except ImportError:
+    PydanticBaseModel = None
 
 
 @dataclasses.dataclass
@@ -57,8 +63,28 @@ class FlexibleDataclass:
         return cls._class_field_cache.keys()
 
 
+def _resolve_target_type(target_type):
+    """Resolve Optional/Union to the concrete type for nested parsing."""
+    origin = typing.get_origin(target_type)
+    union_type = getattr(types, "UnionType", type(None))
+    if origin is typing.Union or origin is union_type:
+        args = typing.get_args(target_type)
+        # Get the non-None type from Union[X, None] or X | None
+        for arg in args:
+            if arg is not None:
+                return arg
+    return target_type
+
+
 def _get_nested_class(value, target_type):
     # does not support lists or dicts
-    if isinstance(target_type, type) and issubclass(target_type, FlexibleDataclass):
-        return target_type.from_dict(value)
+    if value is None:
+        return value
+    resolved_type = _resolve_target_type(target_type)
+    if not isinstance(resolved_type, type):
+        return value
+    if issubclass(resolved_type, FlexibleDataclass):
+        return resolved_type.from_dict(value)
+    if PydanticBaseModel is not None and issubclass(resolved_type, PydanticBaseModel):
+        return resolved_type.model_validate(value)
     return value
