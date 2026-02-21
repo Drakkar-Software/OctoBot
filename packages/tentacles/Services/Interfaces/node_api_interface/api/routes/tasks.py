@@ -14,22 +14,22 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Any, List, Tuple
+import typing
 import uuid
 from fastapi import APIRouter
 
-from octobot_node.models import Task
-from octobot_node.scheduler.api import get_all_tasks, get_task_metrics
-from octobot_node.scheduler.tasks import trigger_task
+import octobot_node.models
+import octobot_node.scheduler.api
+import octobot_node.scheduler.tasks
 
 router = APIRouter(tags=["tasks"])
 
-@router.post("/", response_model=Tuple[int, int])
-def create_tasks(tasks: List[Task]) -> Tuple[int, int]:
+@router.post("/", response_model=tuple[int, int])
+async def create_tasks(tasks: list[octobot_node.models.Task]) -> tuple[int, int]:
     success_count = 0
     error_count = 0
     for task in tasks:
-        is_scheduled = trigger_task(task)
+        is_scheduled = await octobot_node.scheduler.tasks.trigger_task(task)
         if is_scheduled:
             success_count += 1
         else:
@@ -38,20 +38,20 @@ def create_tasks(tasks: List[Task]) -> Tuple[int, int]:
 
 
 @router.get("/metrics")
-def get_metrics() -> Any:
-    return get_task_metrics()
+async def get_metrics() -> typing.Any:
+    return await octobot_node.scheduler.api.get_task_metrics()
 
-@router.get("/", response_model=List[Task])
-def get_tasks(page: int = 1, limit: int = 100) -> Any:
-    tasks_data = get_all_tasks()
+@router.get("/", response_model=list[octobot_node.models.Task])
+async def get_tasks(page: int = 1, limit: int = 100) -> typing.Any:
+    tasks_data = await octobot_node.scheduler.api.get_all_tasks()
     
     start_idx = (page - 1) * limit
     end_idx = start_idx + limit
     paginated_tasks = tasks_data[start_idx:end_idx]
     return paginated_tasks
 
-@router.put("/", response_model=Task)
-def update_task(taskId: uuid.UUID, task: Task) -> Any:
+@router.put("/", response_model=octobot_node.models.Task)
+def update_task(taskId: uuid.UUID, task: octobot_node.models.Task) -> typing.Any:
     # TODO
     return task
 

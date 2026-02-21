@@ -84,11 +84,12 @@ class Settings(BaseSettings):
         ]
 
     SENTRY_DSN: HttpUrl | None = None
-    SCHEDULER_REDIS_URL: AnyUrl | None = None
-    SCHEDULER_SQLITE_FILE: str = "tasks.db"
-    SCHEDULER_WORKERS: int = 0  # 0 disables consumers, >0 enables consumers
+    SCHEDULER_POSTGRES_URL: AnyUrl | None = None  # examplee: postgresql://postgres:password@localhost:5432/dbos_example
+    SCHEDULER_SQLITE_FILE: str = "tasks.db" # example tasks.db
+    CONSUMER_ONLY: bool = False  # True: start OctoBot Node in consumer mode only (requires a postgres database)
+    SCHEDULER_MAX_EXECUTOR_THREADS: int = 200 #todo reduce after dbos 2.13.0 is released
     IS_MASTER_MODE: bool = False  # Enable master node mode
-    REDIS_STORAGE_CERTS_PATH: str | None = None
+    POSTGRES_STORAGE_CERTS_PATH: str | None = None
 
     ADMIN_USERNAME: EmailStr = DEFAULT_ADMIN_USERNAME
     ADMIN_PASSWORD: str = DEFAULT_ADMIN_PASSWORD

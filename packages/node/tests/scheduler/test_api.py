@@ -16,7 +16,6 @@
 
 import pytest
 import mock
-
 from octobot_node.scheduler.api import (
     get_node_status,
     get_task_metrics,
@@ -24,346 +23,311 @@ from octobot_node.scheduler.api import (
     get_task_result,
 )
 
+from tests.scheduler import temp_dbos_scheduler
+
 
 class TestGetNodeStatus:
     """Tests for get_node_status function."""
 
-    def test_get_node_status_master_node_with_redis(self) -> None:
-        """Test node status for master node with Redis backend."""
+    def test_get_node_status_master_node_with_postgres(self) -> None:
+        """Test node status for master node with Postgres backend."""
         mock_settings = mock.Mock()
         mock_settings.IS_MASTER_MODE = True
-        mock_settings.SCHEDULER_REDIS_URL = "redis://localhost:6379"
+        mock_settings.SCHEDULER_POSTGRES_URL = "postgresql://localhost/db"
         mock_settings.SCHEDULER_SQLITE_FILE = "tasks.db"
-        mock_settings.SCHEDULER_WORKERS = 0
 
-        mock_consumer = mock.Mock()
-        mock_consumer.is_started.return_value = False
-
-        with mock.patch("octobot_node.config.settings", mock_settings), \
-             mock.patch("octobot_node.scheduler.CONSUMER", mock_consumer):
+        with mock.patch("octobot_node.config.settings", mock_settings):
             result = get_node_status()
 
-            assert result["node_type"] == "master"
-            assert result["backend_type"] == "redis"
-            assert result["workers"] is None
-            assert result["status"] == "running"
-            assert result["redis_url"] == "redis://localhost:6379"
-            assert result["sqlite_file"] is None
-
-    def test_get_node_status_slave_node_with_sqlite(self) -> None:
-        """Test node status for consumer node with SQLite backend."""
-        mock_settings = mock.Mock()
-        mock_settings.IS_MASTER_MODE = False
-        mock_settings.SCHEDULER_REDIS_URL = None
-        mock_settings.SCHEDULER_SQLITE_FILE = "tasks.db"
-        mock_settings.SCHEDULER_WORKERS = 4
-
-        mock_consumer = mock.Mock()
-        mock_consumer.is_started.return_value = True
-        mock_consumer.workers = 4
-
-        with mock.patch("octobot_node.config.settings", mock_settings), \
-             mock.patch("octobot_node.scheduler.CONSUMER", mock_consumer):
-            result = get_node_status()
-
-            assert result["node_type"] == "consumer"
-            assert result["backend_type"] == "sqlite"
-            assert result["workers"] == 4
+            assert result["node_type"] == "both"
+            assert result["backend_type"] == "postgres"
+            assert result["workers"] == 1
             assert result["status"] == "running"
             assert result["redis_url"] is None
-            assert result["sqlite_file"] == "tasks.db"
-
-    def test_get_node_status_slave_node_stopped(self) -> None:
-        """Test node status for consumer node when consumer is stopped."""
-        mock_settings = mock.Mock()
-        mock_settings.IS_MASTER_MODE = False
-        mock_settings.SCHEDULER_REDIS_URL = None
-        mock_settings.SCHEDULER_SQLITE_FILE = "tasks.db"
-        mock_settings.SCHEDULER_WORKERS = 4
-
-        mock_consumer = mock.Mock()
-        mock_consumer.is_started.return_value = False
-        mock_consumer.workers = 4
-
-        with mock.patch("octobot_node.config.settings", mock_settings), \
-             mock.patch("octobot_node.scheduler.CONSUMER", mock_consumer):
-            result = get_node_status()
-
-            assert result["node_type"] == "consumer"
-            assert result["status"] == "stopped"
-            assert result["workers"] == 4
+            assert result["sqlite_file"] is None
 
     def test_get_node_status_master_node_always_running(self) -> None:
         """Test that master node is always running regardless of consumer state."""
         mock_settings = mock.Mock()
         mock_settings.IS_MASTER_MODE = True
-        mock_settings.SCHEDULER_REDIS_URL = None
+        mock_settings.SCHEDULER_POSTGRES_URL = None
         mock_settings.SCHEDULER_SQLITE_FILE = "tasks.db"
-        mock_settings.SCHEDULER_WORKERS = 0
 
-        mock_consumer = mock.Mock()
-        mock_consumer.is_started.return_value = False
+        mock_scheduler = mock.Mock()
+        mock_scheduler.INSTANCE = mock.Mock(_launched=False)
 
         with mock.patch("octobot_node.config.settings", mock_settings), \
-             mock.patch("octobot_node.scheduler.CONSUMER", mock_consumer):
+             mock.patch("octobot_node.scheduler.SCHEDULER", mock_scheduler):
             result = get_node_status()
 
             assert result["status"] == "running"
-            assert result["node_type"] == "master"
+            assert result["node_type"] == "both"
 
     def test_get_node_status_both_master_and_consumers(self) -> None:
         """Test node status when both master mode and consumers are enabled."""
         mock_settings = mock.Mock()
         mock_settings.IS_MASTER_MODE = True
-        mock_settings.SCHEDULER_REDIS_URL = "redis://localhost:6379"
+        mock_settings.SCHEDULER_POSTGRES_URL = "postgresql://localhost/db"
         mock_settings.SCHEDULER_SQLITE_FILE = "tasks.db"
-        mock_settings.SCHEDULER_WORKERS = 4
 
-        mock_consumer = mock.Mock()
-        mock_consumer.is_started.return_value = True
-        mock_consumer.workers = 4
-
-        with mock.patch("octobot_node.config.settings", mock_settings), \
-             mock.patch("octobot_node.scheduler.CONSUMER", mock_consumer):
+        with mock.patch("octobot_node.config.settings", mock_settings):
             result = get_node_status()
 
             assert result["node_type"] == "both"
-            assert result["backend_type"] == "redis"
-            assert result["workers"] == 4
+            assert result["backend_type"] == "postgres"
+            assert result["workers"] == 1 # multi workers are not supported yet
             assert result["status"] == "running"
 
     def test_get_node_status_none(self) -> None:
         """Test node status when neither master mode nor consumers are enabled."""
         mock_settings = mock.Mock()
         mock_settings.IS_MASTER_MODE = False
-        mock_settings.SCHEDULER_REDIS_URL = None
+        mock_settings.CONSUMER_ONLY = False
+        mock_settings.SCHEDULER_POSTGRES_URL = None
         mock_settings.SCHEDULER_SQLITE_FILE = "tasks.db"
-        mock_settings.SCHEDULER_WORKERS = 0
 
-        mock_consumer = mock.Mock()
-        mock_consumer.is_started.return_value = False
-
-        with mock.patch("octobot_node.config.settings", mock_settings), \
-             mock.patch("octobot_node.scheduler.CONSUMER", mock_consumer):
+        with mock.patch("octobot_node.config.settings", mock_settings):
             result = get_node_status()
 
             assert result["node_type"] == "none"
             assert result["status"] == "stopped"
-            assert result["workers"] is None
+            assert result["workers"] is 0
 
 
 class TestGetTaskMetrics:
     """Tests for get_task_metrics function."""
 
-    def test_get_task_metrics_success(self) -> None:
+    @pytest.mark.asyncio
+    async def test_get_task_metrics_success(self, temp_dbos_scheduler) -> None:
         """Test successful retrieval of task metrics."""
-        mock_huey = mock.Mock()
-        mock_huey.pending_count.return_value = 5
-        mock_huey.scheduled_count.return_value = 3
-        mock_huey.result_count.return_value = 10
+        call_responses = [[mock.Mock()] * 5, [mock.Mock()] * 10]
+        call_idx = [0]
 
-        mock_scheduler = mock.Mock()
-        mock_scheduler.INSTANCE = mock_huey
-        mock_scheduler.get_periodic_tasks.return_value = [
+        async def mock_list_workflows(*args, **kwargs):
+            result = call_responses[call_idx[0]]
+            call_idx[0] += 1
+            return result
+
+        mock_get_periodic = mock.AsyncMock(return_value=[
             {"id": "task1"},
             {"id": "task2"},
-        ]
+        ])
 
-        with mock.patch("octobot_node.scheduler.SCHEDULER", mock_scheduler):
-            result = get_task_metrics()
+        with mock.patch.object(
+            temp_dbos_scheduler.INSTANCE, "list_workflows_async", side_effect=mock_list_workflows
+        ), mock.patch.object(temp_dbos_scheduler, "get_periodic_tasks", mock_get_periodic):
+            result = await get_task_metrics()
 
             assert result["pending"] == 5
-            assert result["scheduled"] == 5  # 3 + 2 periodic tasks
+            assert result["scheduled"] == 2
             assert result["results"] == 10
-            mock_huey.pending_count.assert_called_once()
-            mock_huey.scheduled_count.assert_called_once()
-            mock_huey.result_count.assert_called_once()
-            mock_scheduler.get_periodic_tasks.assert_called_once()
+            mock_get_periodic.assert_called_once()
 
-    def test_get_task_metrics_uninitialized_scheduler(self) -> None:
+    @pytest.mark.asyncio
+    async def test_get_task_metrics_uninitialized_scheduler(self) -> None:
         """Test task metrics when scheduler is not initialized."""
         mock_scheduler = mock.Mock()
         mock_scheduler.INSTANCE = None
 
         with mock.patch("octobot_node.scheduler.SCHEDULER", mock_scheduler):
-            result = get_task_metrics()
+            result = await get_task_metrics()
 
             assert result == {"pending": 0, "scheduled": 0, "results": 0}
 
-    def test_get_task_metrics_exception_handling(self) -> None:
+    @pytest.mark.asyncio
+    async def test_get_task_metrics_exception_handling(self) -> None:
         """Test task metrics when an exception occurs."""
+        mock_instance = mock.AsyncMock()
+        mock_instance.list_workflows_async.side_effect = Exception("Database error")
+
         mock_scheduler = mock.Mock()
-        mock_scheduler.INSTANCE = mock.Mock()
-        mock_scheduler.INSTANCE.pending_count.side_effect = Exception("Database error")
+        mock_scheduler.INSTANCE = mock_instance
+        mock_scheduler.get_periodic_tasks = mock.AsyncMock(return_value=[])
 
         with mock.patch("octobot_node.scheduler.SCHEDULER", mock_scheduler):
-            result = get_task_metrics()
+            result = await get_task_metrics()
 
             assert result == {"pending": 0, "scheduled": 0, "results": 0}
 
-    def test_get_task_metrics_no_periodic_tasks(self) -> None:
+    @pytest.mark.asyncio
+    async def test_get_task_metrics_no_periodic_tasks(self) -> None:
         """Test task metrics when there are no periodic tasks."""
-        mock_huey = mock.Mock()
-        mock_huey.pending_count.return_value = 2
-        mock_huey.scheduled_count.return_value = 1
-        mock_huey.result_count.return_value = 5
+        call_responses = [[mock.Mock()] * 2, [mock.Mock()] * 5]
+        call_idx = [0]
+
+        async def mock_list_workflows(*args, **kwargs):
+            result = call_responses[call_idx[0]]
+            call_idx[0] += 1
+            return result
+
+        mock_instance = mock.AsyncMock()
+        mock_instance.list_workflows_async.side_effect = mock_list_workflows
 
         mock_scheduler = mock.Mock()
-        mock_scheduler.INSTANCE = mock_huey
-        mock_scheduler.get_periodic_tasks.return_value = []
+        mock_scheduler.INSTANCE = mock_instance
+        mock_scheduler.get_periodic_tasks = mock.AsyncMock(return_value=[])
 
         with mock.patch("octobot_node.scheduler.SCHEDULER", mock_scheduler):
-            result = get_task_metrics()
+            result = await get_task_metrics()
 
             assert result["pending"] == 2
-            assert result["scheduled"] == 1
+            assert result["scheduled"] == 0
             assert result["results"] == 5
 
 
 class TestGetAllTasks:
     """Tests for get_all_tasks function."""
 
-    def test_get_all_tasks_success(self) -> None:
+    @pytest.mark.asyncio
+    async def test_get_all_tasks_success(self, temp_dbos_scheduler) -> None:
         """Test successful retrieval of all tasks."""
         periodic_tasks = [{"id": "periodic1", "status": "periodic"}]
         pending_tasks = [{"id": "pending1", "status": "pending"}]
         scheduled_tasks = [{"id": "scheduled1", "status": "scheduled"}]
         result_tasks = [{"id": "result1", "status": "completed"}]
 
-        mock_scheduler = mock.Mock()
-        mock_scheduler.get_periodic_tasks.return_value = periodic_tasks
-        mock_scheduler.get_pending_tasks.return_value = pending_tasks
-        mock_scheduler.get_scheduled_tasks.return_value = scheduled_tasks
-        mock_scheduler.get_results.return_value = result_tasks
-
-        with mock.patch("octobot_node.scheduler.SCHEDULER", mock_scheduler):
-            result = get_all_tasks()
+        with mock.patch.object(
+            temp_dbos_scheduler, "get_periodic_tasks", mock.AsyncMock(return_value=periodic_tasks)
+        ), mock.patch.object(
+            temp_dbos_scheduler, "get_pending_tasks", mock.AsyncMock(return_value=pending_tasks)
+        ), mock.patch.object(
+            temp_dbos_scheduler, "get_scheduled_tasks", mock.AsyncMock(return_value=scheduled_tasks)
+        ), mock.patch.object(
+            temp_dbos_scheduler, "get_results", mock.AsyncMock(return_value=result_tasks)
+        ):
+            result = await get_all_tasks()
 
             assert len(result) == 4
             assert periodic_tasks[0] in result
             assert pending_tasks[0] in result
             assert scheduled_tasks[0] in result
             assert result_tasks[0] in result
-            mock_scheduler.get_periodic_tasks.assert_called_once()
-            mock_scheduler.get_pending_tasks.assert_called_once()
-            mock_scheduler.get_scheduled_tasks.assert_called_once()
-            mock_scheduler.get_results.assert_called_once()
 
-    def test_get_all_tasks_empty(self) -> None:
+    @pytest.mark.asyncio
+    async def test_get_all_tasks_empty(self) -> None:
         """Test get_all_tasks when there are no tasks."""
         mock_scheduler = mock.Mock()
-        mock_scheduler.get_periodic_tasks.return_value = []
-        mock_scheduler.get_pending_tasks.return_value = []
-        mock_scheduler.get_scheduled_tasks.return_value = []
-        mock_scheduler.get_results.return_value = []
+        mock_scheduler.get_periodic_tasks = mock.AsyncMock(return_value=[])
+        mock_scheduler.get_pending_tasks = mock.AsyncMock(return_value=[])
+        mock_scheduler.get_scheduled_tasks = mock.AsyncMock(return_value=[])
+        mock_scheduler.get_results = mock.AsyncMock(return_value=[])
 
         with mock.patch("octobot_node.scheduler.SCHEDULER", mock_scheduler):
-            result = get_all_tasks()
+            result = await get_all_tasks()
 
             assert result == []
 
-    def test_get_all_tasks_exception_handling(self) -> None:
+    @pytest.mark.asyncio
+    async def test_get_all_tasks_exception_handling(self) -> None:
         """Test get_all_tasks when an exception occurs."""
         mock_scheduler = mock.Mock()
-        mock_scheduler.get_periodic_tasks.side_effect = Exception("Database error")
+        mock_scheduler.get_periodic_tasks = mock.AsyncMock(side_effect=Exception("Database error"))
+        mock_scheduler.get_pending_tasks = mock.AsyncMock(return_value=[])
+        mock_scheduler.get_scheduled_tasks = mock.AsyncMock(return_value=[])
+        mock_scheduler.get_results = mock.AsyncMock(return_value=[])
 
         with mock.patch("octobot_node.scheduler.SCHEDULER", mock_scheduler):
-            result = get_all_tasks()
+            result = await get_all_tasks()
 
             assert result == []
 
-    def test_get_all_tasks_partial_exception(self) -> None:
-        """Test get_all_tasks when some methods fail but others succeed."""
+    @pytest.mark.asyncio
+    async def test_get_all_tasks_partial_exception(self) -> None:
+        """Test get_all_tasks when one method fails - gather fails entirely, returns []."""
         periodic_tasks = [{"id": "periodic1"}]
         pending_tasks = [{"id": "pending1"}]
 
         mock_scheduler = mock.Mock()
-        mock_scheduler.get_periodic_tasks.return_value = periodic_tasks
-        mock_scheduler.get_pending_tasks.return_value = pending_tasks
-        mock_scheduler.get_scheduled_tasks.side_effect = Exception("Error")
-        mock_scheduler.get_results.return_value = []
+        mock_scheduler.get_periodic_tasks = mock.AsyncMock(return_value=periodic_tasks)
+        mock_scheduler.get_pending_tasks = mock.AsyncMock(return_value=pending_tasks)
+        mock_scheduler.get_scheduled_tasks = mock.AsyncMock(side_effect=Exception("Error"))
+        mock_scheduler.get_results = mock.AsyncMock(return_value=[])
 
         with mock.patch("octobot_node.scheduler.SCHEDULER", mock_scheduler):
-            result = get_all_tasks()
+            result = await get_all_tasks()
 
-            assert len(result) == 2
-            assert periodic_tasks[0] in result
-            assert pending_tasks[0] in result
+            assert result == []
 
 
 class TestGetTaskResult:
     """Tests for get_task_result function."""
 
     @pytest.mark.asyncio
-    async def test_get_task_result_completed(self) -> None:
+    async def test_get_task_result_completed(self, temp_dbos_scheduler) -> None:
         """Test get_task_result for a completed task."""
         task_id = "task-123"
         result_data = {"status": "success", "output": "completed"}
 
-        mock_result = mock.Mock()
-        mock_result.ready.return_value = True
-        mock_result.get.return_value = result_data
+        mock_handle = mock.AsyncMock()
+        mock_handle.get_status = mock.AsyncMock(return_value=mock.Mock(status="SUCCESS"))
+        mock_handle.get_result = mock.AsyncMock(return_value=result_data)
 
-        mock_scheduler = mock.Mock()
-        mock_scheduler.INSTANCE = mock.Mock()
-        mock_scheduler.INSTANCE.result.return_value = mock_result
+        mock_retrieve = mock.AsyncMock(return_value=mock_handle)
 
-        with mock.patch("octobot_node.scheduler.SCHEDULER", mock_scheduler):
+        with mock.patch.object(
+            temp_dbos_scheduler.INSTANCE, "retrieve_workflow_async", mock_retrieve
+        ):
             result = await get_task_result(task_id)
 
             assert result["status"] == "completed"
             assert result["data"] == result_data
-            mock_scheduler.INSTANCE.result.assert_called_once_with(task_id)
-            mock_result.ready.assert_called_once()
-            mock_result.get.assert_called_once()
+            mock_retrieve.assert_called_once_with(task_id)
+            mock_handle.get_status.assert_called_once()
+            mock_handle.get_result.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_get_task_result_pending(self) -> None:
         """Test get_task_result for a pending task."""
         task_id = "task-456"
 
-        mock_result = mock.Mock()
-        mock_result.ready.return_value = False
+        mock_handle = mock.AsyncMock()
+        mock_handle.get_status = mock.AsyncMock(return_value=mock.Mock(status="PENDING"))
+
+        mock_instance = mock.AsyncMock()
+        mock_instance.retrieve_workflow_async = mock.AsyncMock(return_value=mock_handle)
 
         mock_scheduler = mock.Mock()
-        mock_scheduler.INSTANCE = mock.Mock()
-        mock_scheduler.INSTANCE.result.return_value = mock_result
+        mock_scheduler.INSTANCE = mock_instance
 
         with mock.patch("octobot_node.scheduler.SCHEDULER", mock_scheduler):
             result = await get_task_result(task_id)
 
             assert result["status"] == "pending or running"
             assert "data" not in result
-            mock_scheduler.INSTANCE.result.assert_called_once_with(task_id)
-            mock_result.ready.assert_called_once()
-            mock_result.get.assert_not_called()
+            mock_instance.retrieve_workflow_async.assert_called_once_with(task_id)
+            mock_handle.get_status.assert_called_once()
+            mock_handle.get_result.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_get_task_result_not_found(self) -> None:
         """Test get_task_result for a task that doesn't exist."""
         task_id = "task-789"
 
+        mock_instance = mock.AsyncMock()
+        mock_instance.retrieve_workflow_async = mock.AsyncMock(side_effect=Exception("not found"))
+
         mock_scheduler = mock.Mock()
-        mock_scheduler.INSTANCE = mock.Mock()
-        mock_scheduler.INSTANCE.result.return_value = None
+        mock_scheduler.INSTANCE = mock_instance
 
         with mock.patch("octobot_node.scheduler.SCHEDULER", mock_scheduler):
             result = await get_task_result(task_id)
 
             assert result == {"error": "task not found"}
-            mock_scheduler.INSTANCE.result.assert_called_once_with(task_id)
+            mock_instance.retrieve_workflow_async.assert_called_once_with(task_id)
 
     @pytest.mark.asyncio
     async def test_get_task_result_running(self) -> None:
         """Test get_task_result for a running task."""
         task_id = "task-running"
 
-        mock_result = mock.Mock()
-        mock_result.ready.return_value = False
+        mock_handle = mock.AsyncMock()
+        mock_handle.get_status = mock.AsyncMock(return_value=mock.Mock(status="PENDING"))
+
+        mock_instance = mock.AsyncMock()
+        mock_instance.retrieve_workflow_async = mock.AsyncMock(return_value=mock_handle)
 
         mock_scheduler = mock.Mock()
-        mock_scheduler.INSTANCE = mock.Mock()
-        mock_scheduler.INSTANCE.result.return_value = mock_result
+        mock_scheduler.INSTANCE = mock_instance
 
         with mock.patch("octobot_node.scheduler.SCHEDULER", mock_scheduler):
             result = await get_task_result(task_id)

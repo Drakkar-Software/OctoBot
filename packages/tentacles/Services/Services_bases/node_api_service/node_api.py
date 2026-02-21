@@ -20,6 +20,7 @@ import socket
 import octobot_commons.constants as commons_constants
 import octobot_services.constants as services_constants
 import octobot_services.services as services
+import octobot_node.scheduler
 
 
 LOCAL_HOST_IP = "127.0.0.1"
@@ -47,6 +48,7 @@ class NodeApiService(services.AbstractService):
             services_constants.NODE_SQLITE_FILE: "SQLite database file path for the Node scheduler.",
             services_constants.NODE_REDIS_URL: "Redis URI for the Node scheduler (optional).",
             services_constants.BACKEND_CORS_ALLOWED_ORIGINS: "Allowed CORS origins for the Node API backend.",
+            commons_constants.CONFIG_ENABLED_OPTION: "Enable the Node API interface.",
         }
 
     def get_default_value(self):
@@ -58,6 +60,7 @@ class NodeApiService(services.AbstractService):
             services_constants.NODE_SQLITE_FILE: "tasks.db",
             services_constants.NODE_REDIS_URL: None,
             services_constants.BACKEND_CORS_ALLOWED_ORIGINS: services_constants.DEFAULT_BACKEND_CORS_ALLOWED_ORIGINS,
+            commons_constants.CONFIG_ENABLED_OPTION: False,
         }
 
     def get_required_config(self):
@@ -110,7 +113,11 @@ class NodeApiService(services.AbstractService):
             self.node_sqlite_file = None
             self.node_redis_url = None
             self.backend_cors_origins = None
+        self._sync_config()
+        if self.get_is_enabled(self.config) and not octobot_node.scheduler.is_enabled():
+            octobot_node.scheduler.initialize_scheduler()
 
+    def _sync_config(self):
         defaults = self.get_default_value()
         updated_config = {}
         if not self.admin_username:
@@ -181,8 +188,8 @@ class NodeApiService(services.AbstractService):
     def get_node_sqlite_file(self):
         return os.getenv(services_constants.ENV_NODE_SQLITE_FILE, self.node_sqlite_file)
 
-    def get_node_redis_url(self):
-        return os.getenv(services_constants.ENV_NODE_REDIS_URL, self.node_redis_url)
+    def get_node_postgres_url(self):
+        return os.getenv(services_constants.ENV_NODE_POSTGRES_URL, self.node_redis_url)
 
     def get_backend_cors_origins(self):
         return os.getenv(services_constants.ENV_BACKEND_CORS_ALLOWED_ORIGINS, self.backend_cors_origins)

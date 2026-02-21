@@ -61,7 +61,7 @@ def encrypted_task(task: octobot_node.models.Task):
                     octobot_node.enums.TaskResultKeys.TASK.value: {"name": task.name}, 
                     octobot_node.enums.TaskResultKeys.RESULT.value: {}, 
                     octobot_node.enums.TaskResultKeys.ERROR.value: str(decryption_error)
-                }
+                } # type: ignore
 
             # Encrypt result if encryption keys are configured
             if octobot_node.config.settings.TASKS_OUTPUTS_RSA_PUBLIC_KEY and octobot_node.config.settings.TASKS_OUTPUTS_ECDSA_PRIVATE_KEY:

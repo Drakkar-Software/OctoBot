@@ -14,9 +14,10 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
+import asyncio
 import logging
-import uuid
 import typing
+import uuid
 
 import octobot_node.config
 import octobot_node.scheduler
@@ -25,66 +26,69 @@ logger = logging.getLogger(__name__)
 
 
 def get_node_status() -> dict[str, str | int | None | uuid.UUID]:
-    consumer_running = octobot_node.scheduler.CONSUMER.is_started() # TODO use: octobot_node.scheduler.CONSUMER.is_running()
+    consumer_running = (
+        octobot_node.scheduler.SCHEDULER.INSTANCE 
+        and octobot_node.scheduler.SCHEDULER.INSTANCE._launched
+    )
     is_running = octobot_node.config.settings.IS_MASTER_MODE or consumer_running
     status = "running" if is_running else "stopped"
 
-    backend_type = "redis" if octobot_node.config.settings.SCHEDULER_REDIS_URL else "sqlite"
-    workers = octobot_node.scheduler.CONSUMER.workers if octobot_node.config.settings.SCHEDULER_WORKERS > 0 else None
+    backend_type = "postgres" if octobot_node.config.settings.SCHEDULER_POSTGRES_URL else "sqlite"
+    workers = 1
 
-    if octobot_node.config.settings.IS_MASTER_MODE and octobot_node.config.settings.SCHEDULER_WORKERS > 0:
+    if octobot_node.config.settings.IS_MASTER_MODE:
         node_type = "both"
-    elif octobot_node.config.settings.IS_MASTER_MODE:
-        node_type = "master"
-    elif octobot_node.config.settings.SCHEDULER_WORKERS > 0:
+    elif octobot_node.config.settings.CONSUMER_ONLY:
         node_type = "consumer"
     else:
+        # no worker should run
         node_type = "none"
+        workers = 0
 
     return {
         "node_type": node_type,
         "backend_type": backend_type,
         "workers": workers,
         "status": status,
-        "redis_url": str(octobot_node.config.settings.SCHEDULER_REDIS_URL) if octobot_node.config.settings.SCHEDULER_REDIS_URL else None,
-        "sqlite_file": octobot_node.config.settings.SCHEDULER_SQLITE_FILE if not octobot_node.config.settings.SCHEDULER_REDIS_URL else None,
+        "redis_url": None,
+        "sqlite_file": octobot_node.config.settings.SCHEDULER_SQLITE_FILE if not octobot_node.config.settings.SCHEDULER_POSTGRES_URL else None,
     }
 
 
-def get_task_metrics() -> dict[str, int]:
+async def get_task_metrics() -> dict[str, int]:
     try:
-        huey_instance = octobot_node.scheduler.SCHEDULER.INSTANCE
-        if huey_instance is None:
+        instance = octobot_node.scheduler.SCHEDULER.INSTANCE
+        if instance is None:
             logger.warning("Scheduler instance not initialized")
-            return {"pending": 0, "scheduled": 0, "results": 0}
-
-        scheduled_count = huey_instance.scheduled_count()
-        periodic_tasks = octobot_node.scheduler.SCHEDULER.get_periodic_tasks()
-        scheduled_count += len(periodic_tasks)
-
+            pending, completed, periodic = [], [], []
+        else:
+            pending, completed, periodic = await asyncio.gather(
+                instance.list_workflows_async(status=["ENQUEUED", "PENDING"]),
+                instance.list_workflows_async(status=["SUCCESS", "ERROR"]),
+                octobot_node.scheduler.SCHEDULER.get_periodic_tasks()
+            )
         return {
-            "pending": huey_instance.pending_count(),
-            "scheduled": scheduled_count,
-            "results": huey_instance.result_count(),
+            "pending": len(pending),
+            "scheduled": len(periodic),
+            "results": len(completed),
         }
     except Exception as e:
-        logger.error("Failed to retrieve task metrics from scheduler: %s", e)
+        logger.error(f"Failed to retrieve task metrics from scheduler: {e}")
         return {"pending": 0, "scheduled": 0, "results": 0}
 
 
-def get_all_tasks() -> list[dict[str, typing.Any]]:
+async def get_all_tasks() -> list[dict[str, typing.Any]]:
     tasks: list[dict[str, typing.Any]] = []
     try:
-        periodic_tasks = octobot_node.scheduler.SCHEDULER.get_periodic_tasks()
+        periodic_tasks, pending_tasks, scheduled_tasks, results = await asyncio.gather(
+            octobot_node.scheduler.SCHEDULER.get_periodic_tasks(),
+            octobot_node.scheduler.SCHEDULER.get_pending_tasks(),
+            octobot_node.scheduler.SCHEDULER.get_scheduled_tasks(),
+            octobot_node.scheduler.SCHEDULER.get_results(),
+        )
         tasks.extend(periodic_tasks)
-
-        pending_tasks = octobot_node.scheduler.SCHEDULER.get_pending_tasks()
         tasks.extend(pending_tasks)
-
-        scheduled_tasks = octobot_node.scheduler.SCHEDULER.get_scheduled_tasks()
         tasks.extend(scheduled_tasks)
-
-        results = octobot_node.scheduler.SCHEDULER.get_results()
         tasks.extend(results)
     except Exception as e:
         logger.error("Failed to retrieve tasks from scheduler: %s", e)
@@ -94,15 +98,25 @@ def get_all_tasks() -> list[dict[str, typing.Any]]:
 
 
 async def get_task_result(task_id: str):
-    res = octobot_node.scheduler.SCHEDULER.INSTANCE.result(task_id)
-
-    if res is None:
+    try:
+        handle = await octobot_node.scheduler.SCHEDULER.INSTANCE.retrieve_workflow_async(task_id)
+    except Exception:
         return {"error": "task not found"}
 
-    # True if finished
-    if res.ready():          
-        # blocks if not ready, or returns the value                        
-        result_data = res.get()
-        return {"status": "completed", "data": result_data}
-    else:
-        return {"status": "pending or running"}
+    try:
+        status = await handle.get_status()
+        if status is None:
+            return {"error": "task not found"}
+        wf_status = getattr(status, "status", None) or getattr(status, "workflow_status", None)
+        if wf_status == "SUCCESS":
+            result_data = await handle.get_result()
+            return {"status": "completed", "data": result_data}
+        if wf_status == "ERROR":
+            try:
+                result_data = await handle.get_result()
+            except Exception as e:
+                result_data = {"error": str(e)}
+            return {"status": "completed", "data": result_data}
+    except Exception as e:
+        logger.debug(f"Workflow {task_id} not yet complete: {e}")
+    return {"status": "pending or running"}

@@ -532,25 +532,24 @@ def _register_node_arguments(parser):
     )
     parser.add_argument(
         '--master',
-        help='Enable master node mode (schedules tasks, UI enabled by default).',
+        help='Enable master node mode (schedules and executes tasks, UI enabled by default).',
         action='store_true'
     )
     parser.add_argument(
-        '--consumers',
-        help='Number of consumer worker threads (0 disables consumers, default: 0). Can be used with --master.',
-        type=int,
-        default=0
+        '--consumer_only',
+        help='Start OctoBot Node in consumer only mode, in case the master node is not enough (requires a postgres database).',
+        type=bool,
+        default=False
     )
 
 
 def start_node(args, default_config_file=None):
-    import octobot_node.config as node_config
+    import octobot_node.config
 
     constants.FORCED_DISTRIBUTION = enums.OctoBotDistribution.NODE.value
     if args.master:
-        node_config.IS_MASTER_MODE = True
-    if args.consumers is not None:
-        node_config.SCHEDULER_WORKERS = args.consumers
+        octobot_node.config.settings.IS_MASTER_MODE = True
+    octobot_node.config.settings.CONSUMER_ONLY = args.consumer_only
     start_octobot(args, default_config_file)
 
 

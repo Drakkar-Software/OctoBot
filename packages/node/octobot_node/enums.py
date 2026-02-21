@@ -22,3 +22,7 @@ class TaskResultKeys(enum.Enum):
     RESULT = "result"
     ERROR = "error"
     METADATA = "metadata"
+
+
+class SchedulerQueues(enum.Enum):
+    BOT_WORKFLOW_QUEUE = "bot_workflow_queue"
