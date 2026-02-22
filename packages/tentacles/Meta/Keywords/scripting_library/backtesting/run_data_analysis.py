@@ -204,6 +204,9 @@ def _evaluate_portfolio(portfolio, price_data, use_start_value):
 
     vals = {}
     for pair, candles in price_data.items():
+        if not candles:
+            # Ignore symbols without candles to avoid crashing report generation on partial datasets.
+            continue
         candle = candles[0 if use_start_value else len(candles) - 1]
         symbol, ref_market = symbol_util.parse_symbol(pair).base_and_quote()
         if symbol not in handled_currencies:
