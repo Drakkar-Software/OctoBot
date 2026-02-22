@@ -93,7 +93,9 @@ async def get_backtesting_report_template(run_data, backtesting_analysis_setting
     performance_summary = ""
     reference_market = metadata[commons_enums.DBRows.REFERENCE_MARKET.value]
     if backtesting_analysis_settings.get("display_backtest_details_performances", True):
-        start_portfolio_value, end_portfolio_value = await run_data_analysis.get_portfolio_values(run_data)
+        start_portfolio_value, end_portfolio_value = await run_data_analysis.get_portfolio_values(
+            run_data, historical_values=historical_values
+        )
         gains = f"{pretty_printer.get_min_string_from_number(metadata[commons_enums.BacktestingMetadata.GAINS.value])} " \
                 f"({pretty_printer.get_min_string_from_number(metadata[commons_enums.BacktestingMetadata.PERCENT_GAINS.value])}%)"
         performance_summary \
