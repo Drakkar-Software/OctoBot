@@ -1581,8 +1581,7 @@ class LLMService(services.AbstractAIService):
         )
 
     def check_required_config(self, config):
-        env_base_url = os.getenv(services_constants.ENV_LLM_CUSTOM_BASE_URL, None)
-        if env_base_url or self._get_base_url():
+        if self._get_base_url():
             return True
         return self._get_api_key(config) is not None
 
@@ -1637,12 +1636,15 @@ class LLMService(services.AbstractAIService):
     def _get_base_url(self):
         if self._env_base_url:
             return self._env_base_url
-        value = self.config[services_constants.CONFIG_CATEGORY_SERVICES][
-            self.get_type()
-        ].get(services_constants.CONFIG_LLM_CUSTOM_BASE_URL)
-        if fields_utils.has_invalid_default_config_value(value):
+        try:
+            value = self.config.get(services_constants.CONFIG_CATEGORY_SERVICES, {}).get(
+                self.get_type(), {}
+            ).get(services_constants.CONFIG_LLM_CUSTOM_BASE_URL, None)
+            if fields_utils.has_invalid_default_config_value(value):
+                return None
+            return value or None
+        except Exception:
             return None
-        return value or None
 
     async def prepare(self) -> None:
         try:
