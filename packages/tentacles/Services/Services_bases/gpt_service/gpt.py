@@ -83,11 +83,12 @@ class LLMService(services.AbstractAIService):
                 services_constants.CONFIG_OPENAI_SECRET_KEY: "Your openai API secret key",
                 services_constants.CONFIG_LLM_CUSTOM_BASE_URL: (
                     "Custom LLM base url to use. Leave empty to use openai.com. For Ollama models, "
-                    "add /v1 to the url (such as: http://localhost:11434/v1)"
+                    "add /v1 to the url (such as: http://localhost:11434/v1). "
+                    "Can be overridden by LLM_CUSTOM_BASE_URL environment variable."
                 ),
                 services_constants.CONFIG_LLM_MODEL: (
                     f"LLM model to use (default: {self.DEFAULT_MODEL}). "
-                    "Can be overridden by GPT_MODEL environment variable."
+                    "Can be overridden by GPT_MODEL or LLM_MODEL environment variable."
                 ),
                 services_constants.CONFIG_LLM_MODEL_FAST: (
                     "Model for 'fast' policy (e.g. analysts, debators). Leave empty to use main model."
@@ -153,8 +154,14 @@ class LLMService(services.AbstractAIService):
         self._env_secret_key: typing.Optional[str] = (
             os.getenv(services_constants.ENV_OPENAI_SECRET_KEY, None) or None
         )
+        self._env_base_url: typing.Optional[str] = (
+            os.getenv(services_constants.ENV_LLM_CUSTOM_BASE_URL, None) or None
+        )
         # Model priority: env var > config > default
-        env_model = os.getenv(services_constants.ENV_GPT_MODEL, None)
+        env_model = (
+            os.getenv(services_constants.ENV_GPT_MODEL, None)
+            or os.getenv(services_constants.ENV_LLM_MODEL, None)
+        )
         self.model: str = env_model or self.DEFAULT_MODEL
 
         self.models: list[str] = []
@@ -184,7 +191,10 @@ class LLMService(services.AbstractAIService):
 
     def _load_model_from_config(self):
         """Load model from config if not overridden by environment variable."""
-        if os.getenv(services_constants.ENV_GPT_MODEL, None):
+        if (
+            os.getenv(services_constants.ENV_GPT_MODEL, None)
+            or os.getenv(services_constants.ENV_LLM_MODEL, None)
+        ):
             # Environment variable takes precedence
             return
         try:
@@ -1571,31 +1581,25 @@ class LLMService(services.AbstractAIService):
         )
 
     def check_required_config(self, config):
-        if self._env_secret_key is not None or self._get_base_url():
+        env_base_url = os.getenv(services_constants.ENV_LLM_CUSTOM_BASE_URL, None)
+        if env_base_url or self._get_base_url():
             return True
-        try:
-            config_key = config[services_constants.CONFIG_OPENAI_SECRET_KEY]
-            return (
-                bool(config_key)
-                and config_key not in commons_constants.DEFAULT_CONFIG_VALUES
-            )
-        except KeyError:
-            return False
+        return self._get_api_key(config) is not None
 
     def has_required_configuration(self):
         try:
-            return self.check_required_config(
-                self.config[services_constants.CONFIG_CATEGORY_SERVICES].get(
-                    self.get_type(), {}
-                )
+            service_config = self.config.get(services_constants.CONFIG_CATEGORY_SERVICES, {}).get(
+                self.get_type(), {}
             )
-        except KeyError:
-            return False
+            return self.check_required_config(service_config)
+        except Exception:
+            return self.check_required_config({})
 
     def get_required_config(self):
-        return (
-            [] if self._env_secret_key else [services_constants.CONFIG_OPENAI_SECRET_KEY]
-        )
+        env_base_url = os.getenv(services_constants.ENV_LLM_CUSTOM_BASE_URL, None)
+        if env_base_url or self._get_base_url() or self._get_api_key() is not None:
+            return []
+        return [services_constants.CONFIG_OPENAI_SECRET_KEY]
 
     @classmethod
     def get_help_page(cls) -> str:
@@ -1610,18 +1614,29 @@ class LLMService(services.AbstractAIService):
     def get_logo(self):
         return "https://upload.wikimedia.org/wikipedia/commons/0/04/ChatGPT_logo.svg"
 
-    def _get_api_key(self):
-        key = self._env_secret_key or self.config[
-            services_constants.CONFIG_CATEGORY_SERVICES
-        ][self.get_type()].get(services_constants.CONFIG_OPENAI_SECRET_KEY, None)
+    def _get_api_key(self, config: typing.Optional[dict] = None):
+        env_secret_key = os.getenv(services_constants.ENV_OPENAI_SECRET_KEY, None)
+        key = env_secret_key if env_secret_key else None
+        if key is None:
+            try:
+                if config is None:
+                    config = self.config.get(services_constants.CONFIG_CATEGORY_SERVICES, {}).get(
+                        self.get_type(), {}
+                    )
+                if config:
+                    key = config.get(services_constants.CONFIG_OPENAI_SECRET_KEY, None)
+            except Exception:
+                pass
         if key and not fields_utils.has_invalid_default_config_value(key):
             return key
         if self._get_base_url():
             # no key and custom base url: use random key
             return uuid.uuid4().hex
-        return key
+        return None
 
     def _get_base_url(self):
+        if self._env_base_url:
+            return self._env_base_url
         value = self.config[services_constants.CONFIG_CATEGORY_SERVICES][
             self.get_type()
         ].get(services_constants.CONFIG_LLM_CUSTOM_BASE_URL)
@@ -1916,30 +1931,23 @@ class LLMSignalService(LLMService):
         return f"{community.IdentifiersProvider.COMMUNITY_URL}/features/chatgpt-trading"
 
     def check_required_config(self, config):
+        env_base_url = os.getenv(services_constants.ENV_LLM_CUSTOM_BASE_URL, None)
         if (
-            self._env_secret_key is not None
+            env_base_url
             or self.use_stored_signals_only()
             or self._get_base_url()
         ):
             return True
-        try:
-            config_key = config[services_constants.CONFIG_OPENAI_SECRET_KEY]
-            return (
-                bool(config_key)
-                and config_key not in commons_constants.DEFAULT_CONFIG_VALUES
-            )
-        except KeyError:
-            return False
+        return self._get_api_key(config) is not None
 
     def has_required_configuration(self):
         try:
             if self.use_stored_signals_only():
                 return True
-            return self.check_required_config(
-                self.config[services_constants.CONFIG_CATEGORY_SERVICES].get(
-                    services_constants.CONFIG_GPT, {}
-                )
+            service_config = self.config[services_constants.CONFIG_CATEGORY_SERVICES].get(
+                services_constants.CONFIG_GPT, {}
             )
+            return self.check_required_config(service_config)
         except KeyError:
             return False
 
