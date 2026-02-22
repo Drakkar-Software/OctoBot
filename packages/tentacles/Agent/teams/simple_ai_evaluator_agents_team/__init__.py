@@ -3,7 +3,6 @@ from .simple_ai_evaluator_agents_team import (
     SimpleAIEvaluatorAgentsTeamConsumer,
     SimpleAIEvaluatorAgentsTeam,
 )
-
 from .deep_agent_evaluator_team import (
     DeepAgentEvaluatorTeamChannel,
     DeepAgentEvaluatorTeamConsumer,
