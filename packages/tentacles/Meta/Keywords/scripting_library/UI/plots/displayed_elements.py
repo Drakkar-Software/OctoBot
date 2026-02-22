@@ -67,6 +67,10 @@ class DisplayedElements(display.DisplayTranslator):
                 meta_db.get_trades_db(account_type, exchange_name),
                 meta_db.get_symbol_db(exchange_name, symbol)
             ]
+            try:
+                run_start_time, run_end_time = await self._get_run_window(run_db)
+            except IndexError:
+                run_start_time = run_end_time = 0
             for index, db in enumerate(dbs):
                 for table_name in await db.tables():
                     display_data = await db.all(table_name)
@@ -80,7 +84,8 @@ class DisplayedElements(display.DisplayTranslator):
                         try:
                             filter_symbol = index != len(dbs) - 1   # don't filter symbol for symbol db
                             filtered_data = self._filter_and_adapt_displayed_elements(
-                                display_data, symbol, time_frame, table_name, filter_symbol
+                                display_data, symbol, time_frame, table_name, filter_symbol,
+                                run_start_time, run_end_time
                             )
                             chart = display_data[0][commons_enums.DisplayedElementTypes.CHART.value]
                             if chart is None:
@@ -92,10 +97,6 @@ class DisplayedElements(display.DisplayTranslator):
                         except (IndexError, KeyError):
                             # some table have no chart
                             pass
-            try:
-                run_start_time, run_end_time = await self._get_run_window(meta_db.get_run_db())
-            except IndexError:
-                run_start_time = run_end_time = 0
             first_candle_time, last_candle_time = \
                 await self._add_candles(graphs_by_parts, candles, exchange_name, exchange_id, symbol, time_frame,
                                         run_start_time, run_end_time)
@@ -261,18 +262,46 @@ class DisplayedElements(display.DisplayTranslator):
                     commons_enums.PlotCharts.MAIN_CHART.value
         return filtered_elements
 
-    def _filter_and_adapt_displayed_elements(self, elements, symbol, time_frame, table_name, filter_symbol):
+    @staticmethod
+    def _to_ms(value):
+        if value in (None, ""):
+            return None
+        try:
+            timestamp = float(value)
+        except (TypeError, ValueError):
+            return None
+        return timestamp if timestamp >= 100_000_000_000 else timestamp * 1000
+
+    def _is_in_run_window(self, display_element, run_start_time, run_end_time):
+        if run_start_time == run_end_time == 0:
+            return True
+        start_ms = self._to_ms(run_start_time)
+        end_ms = self._to_ms(run_end_time)
+        if start_ms is None or end_ms is None:
+            return True
+        origin = display_element.get(trading_constants.STORAGE_ORIGIN_VALUE, {})
+        element_ts = (
+            self._to_ms(display_element.get(commons_enums.PlotAttributes.X.value))
+            or self._to_ms(display_element.get("timestamp"))
+            or self._to_ms(origin.get(trading_enums.ExchangeConstantsOrderColumns.TIMESTAMP.value))
+        )
+        return element_ts is None or start_ms <= element_ts <= end_ms
+
+    def _filter_and_adapt_displayed_elements(self, elements, symbol, time_frame, table_name, filter_symbol,
+                                             run_start_time, run_end_time):
         default_symbol = None if filter_symbol else symbol
         filtered_elements = [
             display_element
             for display_element in elements
             if (
-                display_element.get(commons_enums.DBRows.SYMBOL.value, default_symbol) == symbol
-                and display_element.get(commons_enums.DBRows.TIME_FRAME.value) == time_frame
-            ) or (
-                display_element.get(trading_constants.STORAGE_ORIGIN_VALUE, {})
-                .get(trading_enums.ExchangeConstantsOrderColumns.SYMBOL.value, default_symbol) == symbol
-            )
+                (
+                    display_element.get(commons_enums.DBRows.SYMBOL.value, default_symbol) == symbol
+                    and display_element.get(commons_enums.DBRows.TIME_FRAME.value) == time_frame
+                ) or (
+                    display_element.get(trading_constants.STORAGE_ORIGIN_VALUE, {})
+                    .get(trading_enums.ExchangeConstantsOrderColumns.SYMBOL.value, default_symbol) == symbol
+                )
+            ) and self._is_in_run_window(display_element, run_start_time, run_end_time)
         ]
         return self._adapt_for_display(table_name, filtered_elements)
 
