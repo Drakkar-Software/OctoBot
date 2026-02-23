@@ -370,6 +370,7 @@ async def test_get_holdings_ratio_with_include_assets_in_open_orders(backtesting
     portfolio_manager = exchange_manager.exchange_personal_data.portfolio_manager
     portfolio_value_holder = portfolio_manager.portfolio_value_holder
     symbol = "BTC/USDT"
+    full_symbol = "slug/USDC:USDC-260331-0-YES"
     has_eth_position = False
     exchange_manager.client_symbols = [symbol]
     exchange_manager.exchange_config.traded_symbols = [commons_symbols.parse_symbol("BTC/USDT")]
@@ -407,6 +408,9 @@ async def test_get_holdings_ratio_with_include_assets_in_open_orders(backtesting
         elif symbol == "ETH/BTC:BTC":
             mock_pos.margin = decimal.Decimal("1") if has_eth_position else constants.ZERO # 1 BTC margin (settlement is BTC)
             mock_pos.is_idle.return_value = False
+        elif symbol == full_symbol:
+            mock_pos.margin = constants.ZERO
+            mock_pos.is_idle.return_value = True
         else:
             raise errors.ContractExistsError(f"Contract {symbol} does not exist")
         return mock_pos
@@ -509,6 +513,44 @@ async def test_get_holdings_ratio_with_include_assets_in_open_orders(backtesting
         assert portfolio_value_holder.get_holdings_ratio(
             "BTC", traded_symbols_only=True, include_assets_in_open_orders=True
         ) == decimal.Decimal('0.9166666666666666666666666667')
+
+        # Test inflated ratio when a buy order is open but its fill has not yet been confirmed
+        if exchange_manager.is_future or exchange_manager.is_option:
+            order_quantity = decimal.Decimal("100")
+            order_price = decimal.Decimal("0.3")
+            pending_order_value = order_quantity * order_price  # = 30 USDC
+            portfolio_value_holder.portfolio_current_value = decimal.Decimal("70")
+            buy_order = personal_data.BuyLimitOrder(trader)
+            buy_order.update(
+                order_type=enums.TraderOrderType.BUY_LIMIT,
+                symbol=full_symbol,
+                current_price=order_price,
+                quantity=order_quantity,
+                price=order_price,
+            )
+            buy_order.filled_quantity = constants.ZERO
+            # position IDLE, no open orders → ratio is zero
+            assert portfolio_value_holder.get_holdings_ratio(
+                full_symbol, include_assets_in_open_orders=False
+            ) == constants.ZERO
+            assert portfolio_value_holder.get_holdings_ratio(
+                full_symbol, include_assets_in_open_orders=True
+            ) == constants.ZERO
+            with mock.patch.object(
+                exchange_manager.exchange_personal_data.orders_manager,
+                "get_open_orders",
+                return_value=[buy_order],
+            ):
+                # include_assets_in_open_orders=False → position still idle, ratio stays zero
+                assert portfolio_value_holder.get_holdings_ratio(
+                    full_symbol, include_assets_in_open_orders=False
+                ) == constants.ZERO
+                # include_assets_in_open_orders=True → denominator must absorb the pending buy cost
+                ratio = portfolio_value_holder.get_holdings_ratio(
+                    full_symbol, include_assets_in_open_orders=True
+                )
+                assert ratio == decimal.Decimal("30") / decimal.Decimal("100")
+                assert ratio != pending_order_value / portfolio_value_holder.portfolio_current_value
 
 
 @pytest.mark.parametrize("backtesting_exchange_manager", ["spot", "margin", "futures", "options"], indirect=True)

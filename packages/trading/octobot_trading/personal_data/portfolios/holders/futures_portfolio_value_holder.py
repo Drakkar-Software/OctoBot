@@ -69,6 +69,10 @@ class FuturesPortfolioValueHolder(portfolio_value_holder.PortfolioValueHolder):
                 # For full symbols get orders by exact symbol
                 pending_order_value = self._get_open_orders_value_for_symbol(symbol)
                 position_value += pending_order_value
+                # When there is a net open buy order, the cost was already deducted from the portfolio
+                # balance when the order was placed. We must add it back to the denominator to avoid inflating the ratio
+                if pending_order_value > constants.ZERO:
+                    total_portfolio_value += pending_order_value
             else:
                 # For simple currencies (e.g., "ETH"), use currency-based matching
                 pending_order_holdings = self._get_total_holdings_in_open_orders(currency)
