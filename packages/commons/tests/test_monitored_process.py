@@ -390,6 +390,45 @@ async def test_exited_error_includes_stderr():
     assert exc_info.value.exit_code == 3
 
 
+async def test_log_output_logs_last_lines_from_buffers():
+    """log_output logs the last N lines from stdout and stderr buffers."""
+    proc = _make_mock_process(
+        stdout_lines=["ready", "line2", "line3", "line4"],
+        stderr_lines=["err1", "err2", "err3"],
+    )
+    with mock.patch("asyncio.create_subprocess_exec", return_value=proc):
+        async with _SimpleProcess() as p:
+            await asyncio.sleep(0.05)
+            with mock.patch.object(p._logger, "info") as mock_info:
+                p.log_output(last_lines=2)
+            mock_info.assert_any_call(
+                "%s last %s lines from stdout and stderr outputs:\n",
+                p.__class__.__name__,
+                2,
+            )
+            mock_info.assert_any_call("stdout:\n%s", "line3\nline4")
+            mock_info.assert_any_call("stderr:\n%s", "err2\nerr3")
+
+
+async def test_log_output_handles_empty_buffers():
+    """log_output does not log stdout/stderr sections when buffers are empty."""
+    proc = _make_mock_process(stdout_lines=["ready"])
+    with mock.patch("asyncio.create_subprocess_exec", return_value=proc):
+        async with _SimpleProcess() as p:
+            await asyncio.sleep(0.05)
+            p._stderr_buffer.clear()
+            with mock.patch.object(p._logger, "info") as mock_info:
+                p.log_output(last_lines=5)
+            # Header + stdout only (stderr buffer was cleared)
+            assert mock_info.call_count == 2
+            mock_info.assert_any_call(
+                "%s last %s lines from stdout and stderr outputs:\n",
+                p.__class__.__name__,
+                5,
+            )
+            mock_info.assert_any_call("stdout:\n%s", "ready")
+
+
 async def test_empty_readiness_string_never_fires_ready():
     """When READINESS_STRING is empty, the ready event is never set by output."""
 

@@ -26,10 +26,10 @@ if typing.TYPE_CHECKING:
 
 
 @functools.lru_cache(maxsize=1)
-def _get_blockchain_wallet_class_by_name() -> dict[str, type[blockchain_wallet.BlockchainWallet]]:
+def get_blockchain_wallet_class_by_blockchain() -> dict[str, type[blockchain_wallet.BlockchainWallet]]:
     # cached to avoid re-scanning the tentacles for each wallet creation
     return {
-        wallet_class.__name__: wallet_class 
+        wallet_class.BLOCKCHAIN: wallet_class 
         for wallet_class in tentacles_management.get_all_classes_from_parent(blockchain_wallet.BlockchainWallet)
     }
 
@@ -43,10 +43,12 @@ def create_blockchain_wallet(
     :param parameters: the parameters of the wallet to create
     :return: the created wallet
     """
-    if trader.simulate:
-        # use simulator wallet with trader callbacks to interact with simulated exchange wallet
-        return blockchain_wallet_simulator.BlockchainWalletSimulator(parameters, trader=trader)
     try:
-        return _get_blockchain_wallet_class_by_name()[parameters.blockchain_descriptor.wallet_type](parameters)
-    except KeyError as err:
-        raise ValueError(f"Blockchain {parameters.blockchain_descriptor.wallet_type} not supported") from err
+        return get_blockchain_wallet_class_by_blockchain()[
+            parameters.blockchain_descriptor.blockchain
+        ](parameters)
+    except (KeyError, TypeError) as err:
+        if trader.simulate:
+            # use simulator wallet with trader callbacks to interact with simulated exchange wallet
+            return blockchain_wallet_simulator.BlockchainWalletSimulator(parameters, trader=trader)
+        raise ValueError(f"Blockchain {parameters.blockchain_descriptor.blockchain} not supported") from err

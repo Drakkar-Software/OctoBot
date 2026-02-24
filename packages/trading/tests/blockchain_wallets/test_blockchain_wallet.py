@@ -77,7 +77,7 @@ def blockchain_descriptor_with_tokens():
         contract_address="0x1234567890123456789012345678901234567890"
     )
     return octobot_trading.blockchain_wallets.BlockchainDescriptor(
-        wallet_type=octobot_trading.blockchain_wallets.BlockchainWalletSimulator.__name__,
+        blockchain=octobot_trading.blockchain_wallets.BlockchainWalletSimulator.BLOCKCHAIN,
         network=constants.SIMULATED_BLOCKCHAIN_NETWORK,
         native_coin_symbol="ETH",
         tokens=[token]
@@ -124,7 +124,7 @@ async def test_get_balance_with_tokens(test_wallet_with_tokens):
 @pytest.mark.asyncio
 async def test_get_balance_no_native_coin():
     blockchain_descriptor = octobot_trading.blockchain_wallets.BlockchainDescriptor(
-        wallet_type=octobot_trading.blockchain_wallets.BlockchainWalletSimulator.__name__,
+        blockchain=octobot_trading.blockchain_wallets.BlockchainWalletSimulator.BLOCKCHAIN,
         network=constants.SIMULATED_BLOCKCHAIN_NETWORK,
         native_coin_symbol=None
     )
@@ -215,14 +215,3 @@ async def test_open(test_wallet):
     # open does nothing by default
     async with test_wallet.open() as opened_wallet:
         assert opened_wallet is test_wallet
-
-
-def test_apply_blockchain_wallet_specific_config(test_wallet):
-    config = {"some_key": {"some_value": "test"}}
-    
-    with mock.patch.object(test_wallet.logger, 'error') as logger_error_mock:
-        test_wallet.apply_blockchain_wallet_specific_config(config)
-        
-        logger_error_mock.assert_called_once()
-        assert "apply_blockchain_wallet_specific_config is not implemented" in str(logger_error_mock.call_args)
-        assert test_wallet.__class__.__name__ in str(logger_error_mock.call_args)

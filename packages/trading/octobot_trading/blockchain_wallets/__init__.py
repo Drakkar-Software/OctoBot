@@ -26,6 +26,7 @@ from octobot_trading.blockchain_wallets.adapter import (
 from octobot_trading.blockchain_wallets import blockchain_wallet_factory
 from octobot_trading.blockchain_wallets.blockchain_wallet_factory import (
     create_blockchain_wallet,
+    get_blockchain_wallet_class_by_blockchain,
 )
 
 from octobot_trading.blockchain_wallets import blockchain_wallet
@@ -58,4 +59,5 @@ __all__ = [
     "BlockchainDescriptor",
     "WalletDescriptor",
     "TokenDescriptor",
+    "get_blockchain_wallet_class_by_blockchain",
 ]

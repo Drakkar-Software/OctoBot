@@ -368,3 +368,11 @@ class MonitoredProcess:  # pylint: disable=too-many-instance-attributes
             asyncio.create_task(read_stream(self._process.stderr, "stderr")),
             asyncio.create_task(watch_exit()),
         ]
+
+    def log_output(self, last_lines: int) -> None:
+        """Log the stdout and stderr buffers."""
+        self._logger.info("%s last %s lines from stdout and stderr outputs:\n", self.__class__.__name__, last_lines)
+        if self._stdout_buffer:
+            self._logger.info("stdout:\n%s", '\n'.join(self._stdout_buffer[-last_lines:]))
+        if self._stderr_buffer:
+            self._logger.info("stderr:\n%s", '\n'.join(self._stderr_buffer[-last_lines:]))

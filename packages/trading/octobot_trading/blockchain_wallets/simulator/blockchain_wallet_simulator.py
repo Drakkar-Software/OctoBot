@@ -47,6 +47,9 @@ class BlockchainWalletSimulator(blockchain_wallet.BlockchainWallet):
     This wallet is stateless: it can be re-created at any time as its state only 
     depends on its initial configuration and the trader's transactions history.
     """
+    BLOCKCHAIN: str = "simulated"
+    IS_SIMULATED = True
+
     def __init__(
         self,
         parameters: blockchain_wallet_parameters.BlockchainWalletParameters,
@@ -67,6 +70,8 @@ class BlockchainWalletSimulator(blockchain_wallet.BlockchainWallet):
         } if parameters.blockchain_descriptor.native_coin_symbol else {}
         self._trader: "octobot_trading.exchanges.Trader" = trader
         super().__init__(parameters)
+        if parameters.wallet_descriptor.specific_config:
+            self._apply_wallet_descriptor_specific_config(parameters.wallet_descriptor.specific_config)
 
     @classmethod
     def init_user_inputs_from_class(cls, inputs: dict) -> None:
@@ -74,8 +79,8 @@ class BlockchainWalletSimulator(blockchain_wallet.BlockchainWallet):
         Called at constructor, should define all the blockchain wallet's user inputs.
         """
         assets = [{
-            BlockchainWalletSimulatorConfigurationKeys.ASSETS.value: cls.CLASS_UI.user_input(
-                BlockchainWalletSimulatorConfigurationKeys.ASSETS.value, commons_enums.UserInputTypes.TEXT, "ETH", inputs,
+            BlockchainWalletSimulatorConfigurationKeys.ASSET.value: cls.CLASS_UI.user_input(
+                BlockchainWalletSimulatorConfigurationKeys.ASSET.value, commons_enums.UserInputTypes.TEXT, "ETH", inputs,
                 parent_input_name=BlockchainWalletSimulatorConfigurationKeys.ASSETS.value,
                 title=f"Name of the assets to simulate in wallet.",
             ),
@@ -114,8 +119,20 @@ class BlockchainWalletSimulator(blockchain_wallet.BlockchainWallet):
             raise octobot_trading.errors.BlockchainWalletNativeCoinSymbolUndefinedError(
                 f"Native coin symbol not found in {self.__class__.__name__} blockchain descriptor"
             )
+    
+    @staticmethod
+    def create_wallet_descriptor_specific_config(**kwargs) -> dict:
+        return {
+            BlockchainWalletSimulatorConfigurationKeys.ASSETS.value: {
+                BlockchainWalletSimulatorConfigurationKeys.ASSET.value: asset,
+                BlockchainWalletSimulatorConfigurationKeys.AMOUNT.value: amount,
+            }
+            for asset, amount in kwargs.get(
+                BlockchainWalletSimulatorConfigurationKeys.ASSETS.value, {}
+            ).items()
+        }
 
-    def apply_blockchain_wallet_specific_config(self, specific_config: dict):
+    def _apply_wallet_descriptor_specific_config(self, specific_config: dict):
         """
         Used to populate the simulated blockchain wallet holdings
         """

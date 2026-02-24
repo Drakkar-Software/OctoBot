@@ -23,6 +23,8 @@ import octobot_commons.dataclasses
 
 import octobot_tentacles_manager.api
 
+import octobot_node.config
+
 try:
     import mini_octobot
     import mini_octobot.environment
@@ -82,7 +84,9 @@ class OctoBotActionsJobDescription(octobot_commons.dataclasses.MinimizableDatacl
             self._parse_actions_plan(self.params)
 
     def _parse_actions_plan(self, params: dict) -> None:
-        action_bundles: list[list[mini_octobot.BotActionDetails]] = mini_octobot.parsers.BotActionBundleParser(params).parse()
+        action_bundles: list[list[mini_octobot.BotActionDetails]] = mini_octobot.parsers.BotActionBundleParser(params).parse(
+            octobot_node.config.settings.BLOCKCHAIN_WALLETS_EXTRA_CONFIG
+        )
         if not action_bundles:
             raise ValueError("No action bundles found in params")
         self.immediate_actions = action_bundles[0]
@@ -95,14 +99,30 @@ class OctoBotActionsJobDescription(octobot_commons.dataclasses.MinimizableDatacl
         )
 
 
+def required_actions(func):
+    def get_required_actions_wrapper(self, *args, **kwargs):
+        if self.processed_actions is None:
+            raise ValueError("No bot actions were executed yet")
+        return func(self, *args, **kwargs)
+    return get_required_actions_wrapper
+
+
 @dataclasses.dataclass
 class OctoBotActionsJobResult:
     processed_actions: list[mini_octobot.BotActionDetails]
     next_actions_description: typing.Optional[OctoBotActionsJobDescription] = None
 
+    @required_actions
+    def get_failed_actions(self) -> list[dict]:
+        failed_actions = [
+            action.result
+            for action in self.processed_actions
+            if action.result and isinstance(action.result, dict) and "error" in action.result
+        ]
+        return failed_actions
+
+    @required_actions
     def get_created_orders(self) -> list[dict]:
-        if self.processed_actions is None:
-            raise ValueError("No bot actions were executed yet")
         order_lists = [
             action.result.get("orders", [])
             for action in self.processed_actions
@@ -110,9 +130,8 @@ class OctoBotActionsJobResult:
         ]
         return list_util.flatten_list(order_lists) if order_lists else []
     
+    @required_actions
     def get_deposit_and_withdrawal_details(self) -> list[dict]:
-        if self.processed_actions is None:
-            raise ValueError("No bot actions were executed yet")
         withdrawal_lists = [
             action.result
             for action in self.processed_actions

@@ -13,6 +13,8 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import typing
+
 import octobot_trading.exchanges.adapters as adapters
 import octobot_trading.personal_data as personal_data
 import octobot_trading.constants as constants
@@ -32,6 +34,14 @@ class BlockchainWalletAdapter(adapters.AbstractAdapter):
         }
         return personal_data.parse_decimal_portfolio(portfolio)
 
+    def _parse_fee(self, fee: typing.Optional[types.Fee], **kwargs) -> typing.Optional[dict]:
+        if fee:
+            return {
+                enums.FeePropertyColumns.CURRENCY.value: fee.currency,
+                enums.FeePropertyColumns.COST.value: fee.cost,
+            }
+        return None
+
     def parse_transaction(self, fixed: types.Transaction, **kwargs) -> dict:
         # CCXT standard transaction parsing logic
         return {
@@ -45,7 +55,7 @@ class BlockchainWalletAdapter(adapters.AbstractAdapter):
             enums.ExchangeConstantsTransactionColumns.AMOUNT.value: fixed.amount,
             enums.ExchangeConstantsTransactionColumns.CURRENCY.value: fixed.currency,
             enums.ExchangeConstantsTransactionColumns.STATUS.value: fixed.status,
-            enums.ExchangeConstantsTransactionColumns.FEE.value: fixed.fee,
+            enums.ExchangeConstantsTransactionColumns.FEE.value: self._parse_fee(fixed.fee, **kwargs),
             enums.ExchangeConstantsTransactionColumns.NETWORK.value: fixed.network,
             enums.ExchangeConstantsTransactionColumns.COMMENT.value: fixed.comment,
             enums.ExchangeConstantsTransactionColumns.INTERNAL.value: fixed.internal,

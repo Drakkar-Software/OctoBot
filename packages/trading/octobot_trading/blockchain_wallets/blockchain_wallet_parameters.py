@@ -34,7 +34,9 @@ class BlockchainDescriptor(octobot_commons.dataclasses.FlexibleDataclass):
     """
     Descriptor for a blockchain
     """
-    wallet_type: str # name of the BlockchainWallet subclass to use for this blockchain
+    # Name of the blockchain to use for this BlockchainWallet.
+    # ex: "ethereum" for Ethereum, "bitcoin" for Bitcoin, "simulated" for a simulated blockchain
+    blockchain: str
     # network: configured network of the blockchain, ex: "Ethereum" or "Polygon Mainnet".
     # This value is used for internal references and logs.
     # The network connection details (such as the RPC URL) are defined in the specific_config attribute.
@@ -55,8 +57,9 @@ class WalletDescriptor(octobot_commons.dataclasses.FlexibleDataclass):
     """
     Descriptor for a wallet to use for this blockchain
     """
-    address: str # public address of the wallet
+    address: typing.Optional[str] = None # public address of the wallet
     private_key: typing.Optional[str] = None # private key of the wallet
+    mnemonic_seed: typing.Optional[str] = None # mnemonic seed of the wallet
     # extra configuration for the user's wallet, notably used to initialize simulator wallets holdings
     specific_config: typing.Optional[dict[str, typing.Any]] = None
 

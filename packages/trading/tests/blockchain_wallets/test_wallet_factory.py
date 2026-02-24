@@ -66,7 +66,7 @@ def test_create_blockchain_wallet_simulated_wrong_network(mock_trader_simulate, 
 
 def test_create_blockchain_wallet_real_trader_unsupported_blockchain(mock_trader_real, wallet_descriptor):
     blockchain_descriptor = octobot_trading.blockchain_wallets.BlockchainDescriptor(
-        wallet_type="unsupported_blockchain",
+        blockchain="unsupported_blockchain",
         network="Ethereum",
         native_coin_symbol="ETH"
     )
@@ -94,8 +94,8 @@ def test_create_blockchain_wallet_real_trader_supported_blockchain(mock_trader_r
     
     # Mock the wallet class lookup to return our mock wallet class
     with mock.patch.object(
-        blockchain_wallet_factory, '_get_blockchain_wallet_class_by_name',
-        return_value={blockchain_descriptor_real.wallet_type: mock_wallet_class}
+        blockchain_wallet_factory, 'get_blockchain_wallet_class_by_blockchain',
+        return_value={blockchain_descriptor_real.blockchain: mock_wallet_class}
     ):
         wallet = octobot_trading.blockchain_wallets.create_blockchain_wallet(parameters, mock_trader_real)
         

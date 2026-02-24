@@ -117,7 +117,7 @@ class Scheduler:
                     wf_status = w.status
                     if wf_status == "SUCCESS":
                         if step := await workflow_base.get_current_step(w.workflow_id):
-                            description = f"{step.previous_step}: {step.previous_step_details}"
+                            description = f"{step.previous_step_details}"
                         else:
                             description = "Task completed"
                         status = octobot_node.models.TaskStatus.COMPLETED

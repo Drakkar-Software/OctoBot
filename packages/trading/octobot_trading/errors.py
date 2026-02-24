@@ -177,6 +177,12 @@ class BlockchainWalletCallError(BlockchainWalletError):
     """
 
 
+class BlockchainWalletConnectionError(BlockchainWalletError):
+    """
+    Raised when a blockchain wallet connection fails
+    """
+
+
 class NotSupported(OctoBotTradingError):
     """
     Raised when an exchange doesn't support the required element

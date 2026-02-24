@@ -122,7 +122,7 @@ BLOCKCHAIN_WALLET_ASSET = "ETH"
 @pytest.fixture
 def blockchain_wallet_details():
     blockchain_descriptor = blockchain_wallets.BlockchainDescriptor(
-        wallet_type=blockchain_wallets.BlockchainWalletSimulator.__name__,
+        blockchain=blockchain_wallets.BlockchainWalletSimulator.BLOCKCHAIN,
         network=trading_constants.SIMULATED_BLOCKCHAIN_NETWORK,
         native_coin_symbol="ETH"
     )
