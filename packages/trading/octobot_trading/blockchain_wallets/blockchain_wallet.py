@@ -31,6 +31,8 @@ class BlockchainWallet(octobot_trading.accounts.AbstractAccount):
     Base class for all blockchain wallets, to be implemented by specific blockchain wallet subclasses.
     """
     ADAPTER_CLASS = blockchain_wallet_adapter.BlockchainWalletAdapter
+    BLOCKCHAIN: str = None # type: ignore # ex: "ethereum" for Ethereum
+    IS_SIMULATED = False
 
     def __init__(self, parameters: blockchain_wallet_parameters.BlockchainWalletParameters):
         super().__init__()
@@ -40,8 +42,6 @@ class BlockchainWallet(octobot_trading.accounts.AbstractAccount):
         self.logger: commons_logging.BotLogger = commons_logging.get_logger(
             f"{self.__class__.__name__}[{self.blockchain_descriptor.network}]"
         )
-        if self.wallet_descriptor.specific_config :
-            self.apply_blockchain_wallet_specific_config(self.wallet_descriptor.specific_config)
 
     @contextlib.asynccontextmanager
     async def open(self) -> typing.AsyncGenerator["BlockchainWallet", None]:
@@ -73,6 +73,8 @@ class BlockchainWallet(octobot_trading.accounts.AbstractAccount):
         network: str,
         address: str, 
     ) -> dict:
+        if constants.SIMULATED_DEPOSIT_ADDRESS in address and not self.IS_SIMULATED:
+            raise errors.InvalidArgumentError("Simulated addresses are not allowed on a real wallet")
         if not constants.ALLOW_FUNDS_TRANSFER:
             raise errors.DisabledFundsTransferError("Funds transfer is not enabled")
         self.logger.info(f"Transferring {amount} {asset} from {self.wallet_descriptor.address} to {address}")
@@ -91,14 +93,15 @@ class BlockchainWallet(octobot_trading.accounts.AbstractAccount):
             )
         )
 
+    @staticmethod
+    def create_blockchain_descriptor_specific_config(**kwargs) -> dict:
+        # override if necessary
+        return {}
 
-    def apply_blockchain_wallet_specific_config(self, specific_config: dict):
-        # implement if necessary
-        self.logger.error(
-            f"Incomplete implementation: apply_blockchain_wallet_specific_config is not "
-            f"implemented to handle configuration for {self.__class__.__name__} blockchain wallet. "
-            f"Ignored given configuration."
-        )
+    @staticmethod
+    def create_wallet_descriptor_specific_config(**kwargs) -> dict:
+        # override if necessary
+        return {}
 
     async def get_native_coin_balance(self) -> blockchain_wallet_adapter.Balance:
         raise NotImplementedError("get_native_coin_balance is not implemented")

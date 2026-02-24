@@ -23,7 +23,7 @@ import octobot_trading.blockchain_wallets.simulator.blockchain_wallet_simulator 
 @pytest.fixture
 def blockchain_descriptor_simulated():
     return blockchain_wallet_parameters.BlockchainDescriptor(
-        wallet_type=blockchain_wallet_simulator.BlockchainWalletSimulator.__name__,
+        blockchain=blockchain_wallet_simulator.BlockchainWalletSimulator.BLOCKCHAIN,
         network=constants.SIMULATED_BLOCKCHAIN_NETWORK,
         native_coin_symbol="ETH"
     )
@@ -32,7 +32,7 @@ def blockchain_descriptor_simulated():
 @pytest.fixture
 def blockchain_descriptor_real():
     return blockchain_wallet_parameters.BlockchainDescriptor(
-        wallet_type="ImplementedBlockchainWallet",
+        blockchain="ImplementedBlockchainWallet",
         network="Ethereum",
         native_coin_symbol="ETH"
     )

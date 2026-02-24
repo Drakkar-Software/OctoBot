@@ -126,7 +126,10 @@ class BotWorkflow(workflow_base.DBOSWorkflowHelperMixin):
 
     @staticmethod
     def _format_octobot_actions_job_result(result: octobot_lib.OctoBotActionsJobResult) -> dict:
-        return {
+        result_dict = {
             "orders": result.get_created_orders(),
             "transfers": result.get_deposit_and_withdrawal_details(),
         }
+        if failed_actions := result.get_failed_actions():
+            result_dict["errors"] = failed_actions
+        return result_dict

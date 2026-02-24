@@ -26,6 +26,7 @@ from pydantic import (
     HttpUrl,
     computed_field,
     model_validator,
+    Field,
 )
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing_extensions import Self
@@ -93,6 +94,8 @@ class Settings(BaseSettings):
 
     ADMIN_USERNAME: EmailStr = DEFAULT_ADMIN_USERNAME
     ADMIN_PASSWORD: str = DEFAULT_ADMIN_PASSWORD
+
+    BLOCKCHAIN_WALLETS_EXTRA_CONFIG: dict[str, Any] = Field(default_factory=dict)
 
     # Used to decrypt inputs and encrypt outputs
     TASKS_INPUTS_RSA_PRIVATE_KEY: Annotated[bytes | None, BeforeValidator(parse_key_to_bytes)] = None
