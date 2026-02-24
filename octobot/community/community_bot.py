@@ -34,6 +34,20 @@ if typing.TYPE_CHECKING:
 
 _STOPPED_STRATEGY_EXECUTION_LOG_MAX_PERIOD = 60
 
+# deployment error statuses that should be cleared by the bot during startup
+_CLEARABLE_DEPLOYMENT_ERROR_STATUSES: list[supabase_enums.BotDeploymentErrorsStatuses] = [
+    supabase_enums.BotDeploymentErrorsStatuses.MISSING_API_KEY_TRADING_RIGHTS,
+    supabase_enums.BotDeploymentErrorsStatuses.INVALID_EXCHANGE_CREDENTIALS,
+    supabase_enums.BotDeploymentErrorsStatuses.MISSING_MINIMAL_FUNDS,
+    supabase_enums.BotDeploymentErrorsStatuses.INTERNAL_SERVER_ERROR,
+]
+_NEW_BOT_DEPLOYMENT_CLEARABLE_ERROR_STATUSES: list[supabase_enums.BotDeploymentErrorsStatuses] = (
+    _CLEARABLE_DEPLOYMENT_ERROR_STATUSES + [
+        # also clear stop condition triggered error status if the bot has just been deployed
+        supabase_enums.BotDeploymentErrorsStatuses.STOP_CONDITION_TRIGGERED,
+    ]
+)
+
 
 def suppressed_local_env_bot_error(f):
     async def _suppressed_local_env_bot_error_wrapper(*args, **kwargs):
@@ -70,16 +84,10 @@ class CommunityBot:
     """
     Bot utility methods to update the community bot representation in database
     """
-    # deployment error statuses that should be cleared by the bot during startup
-    CLEARABLE_DEPLOYMENT_ERROR_STATUSES: list[supabase_enums.BotDeploymentErrorsStatuses] = [
-        supabase_enums.BotDeploymentErrorsStatuses.MISSING_API_KEY_TRADING_RIGHTS,
-        supabase_enums.BotDeploymentErrorsStatuses.INVALID_EXCHANGE_CREDENTIALS,
-        supabase_enums.BotDeploymentErrorsStatuses.MISSING_MINIMAL_FUNDS,
-        supabase_enums.BotDeploymentErrorsStatuses.INTERNAL_SERVER_ERROR,
-    ]
 
     def __init__(self, authenticator: "community_authentication.CommunityAuthentication"):
         self.authenticator: "community_authentication.CommunityAuthentication" = authenticator
+        self._has_just_been_deployed: bool = False
 
     async def should_trade_according_to_products_subscription_and_deployment_error_status(
         self,
@@ -89,7 +97,7 @@ class CommunityBot:
         if self._is_product_subscription_desired_status_active(products_subscription):
             # bot should be running, now check error status if not just deployed
             # don't fetch deployment error status if bot should not trade
-            if self.has_just_been_deployed(new_deployment_timeout) or not self._is_deployment_error_status_in(
+            if self.had_just_been_deployed_during_startup(new_deployment_timeout) or not self._is_deployment_error_status_in(
                 [supabase_enums.BotDeploymentErrorsStatuses.STOP_CONDITION_TRIGGERED]
             ):
                 # bot has just been deployed or didn't trigger stop condition yet
@@ -216,7 +224,11 @@ class CommunityBot:
     @suppressed_local_env_bot_error
     async def _ensure_clear_deployment_error_status(self):
         with caught_global_exceptions("ensure_clear_deployment_error_status"):
-            if self._is_deployment_error_status_in(self.CLEARABLE_DEPLOYMENT_ERROR_STATUSES):
+            clearable_error_statuses = (
+                _NEW_BOT_DEPLOYMENT_CLEARABLE_ERROR_STATUSES if self.had_just_been_deployed_during_startup()
+                else _CLEARABLE_DEPLOYMENT_ERROR_STATUSES
+            )
+            if self._is_deployment_error_status_in(clearable_error_statuses):
                 await self._update_deployment_error_status(supabase_enums.BotDeploymentErrorsStatuses.NO_ERROR)
 
     async def _fetch_products_subscription(self) -> dict:
@@ -240,14 +252,16 @@ class CommunityBot:
             f"Updated product_subscription.desired_status to {desired_status.value} [{products_subscription_id=}]"
         )
 
-    @staticmethod
-    def has_just_been_deployed(
-        new_deployment_timeout: float = octobot.constants.DEFAULT_NEW_DEPLOYMENT_TIMEOUT
+    def had_just_been_deployed_during_startup(
+        self, new_deployment_timeout: float = octobot.constants.DEFAULT_NEW_DEPLOYMENT_TIMEOUT
     ) -> bool:
+        if self._has_just_been_deployed:
+            return True
         if deployment_time := CommunityBot.get_deployment_time():
             # bot has been deployed within the last new_deployment_timeout seconds
-            return time.time() < deployment_time + new_deployment_timeout
-        return False
+            # store the result to avoid side effects if the method is called multiple times
+            self._has_just_been_deployed = time.time() < deployment_time + new_deployment_timeout
+        return self._has_just_been_deployed
 
     @staticmethod
     def get_deployment_time() -> typing.Optional[float]:

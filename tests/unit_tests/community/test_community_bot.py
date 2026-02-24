@@ -21,6 +21,7 @@ import octobot.community.errors as errors
 import octobot.community.supabase_backend.enums as supabase_enums
 import octobot_commons.enums as commons_enums
 import octobot.automation as automation
+import octobot.community.community_bot as community_bot
 
 from octobot.community.community_bot import (
     CommunityBot,
@@ -352,7 +353,7 @@ class TestEnsureClearDeploymentErrorStatus:
             await bot._ensure_clear_deployment_error_status()
 
         bot._is_deployment_error_status_in.assert_called_once_with(
-            CommunityBot.CLEARABLE_DEPLOYMENT_ERROR_STATUSES
+            community_bot._CLEARABLE_DEPLOYMENT_ERROR_STATUSES
         )
         bot._update_deployment_error_status.assert_awaited_once_with(
             supabase_enums.BotDeploymentErrorsStatuses.NO_ERROR
@@ -368,7 +369,7 @@ class TestEnsureClearDeploymentErrorStatus:
             await bot._ensure_clear_deployment_error_status()
 
         bot._is_deployment_error_status_in.assert_called_once_with(
-            CommunityBot.CLEARABLE_DEPLOYMENT_ERROR_STATUSES
+            community_bot._CLEARABLE_DEPLOYMENT_ERROR_STATUSES
         )
         bot._update_deployment_error_status.assert_not_awaited()
 
