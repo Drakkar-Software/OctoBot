@@ -97,6 +97,55 @@ def portfolio_to_float(portfolio, use_wallet_balance_on_futures=False):
     return float_portfolio
 
 
+def from_raw_to_formatted_portfolio(
+    raw_portfolio_content: dict[str, dict[str, typing.Union[float, decimal.Decimal]]], as_float=True
+) -> dict[str, dict[str, typing.Union[float, decimal.Decimal]]]:
+    """
+    Converts a raw exchange portfolio content (with total and free amounts) 
+    to a formatted portfolio content with available and total amounts
+    """
+    return {
+        asset: {
+            commons_constants.PORTFOLIO_AVAILABLE: (float if as_float else decimal.Decimal)(str(
+                portfolio_element[constants.CONFIG_PORTFOLIO_FREE]
+                if isinstance(portfolio_element, dict) else portfolio_element
+            )),
+            commons_constants.PORTFOLIO_TOTAL: (float if as_float else decimal.Decimal)(str(
+                portfolio_element[commons_constants.PORTFOLIO_TOTAL]
+                if isinstance(portfolio_element, dict) else portfolio_element
+            ))
+        }
+        for asset, portfolio_element in raw_portfolio_content.items()
+    }
+
+
+def get_balance_asset_summary(
+    fetched_balance_asset_values: dict[str, decimal.Decimal], use_exchange_format: bool
+) -> dict[str, typing.Union[float, str]]:
+    available_key = constants.CONFIG_PORTFOLIO_FREE if use_exchange_format else commons_constants.PORTFOLIO_AVAILABLE
+    try:
+        return {
+            constants.CONFIG_PORTFOLIO_FREE: float(fetched_balance_asset_values[available_key]),
+            constants.CONFIG_PORTFOLIO_TOTAL: float(fetched_balance_asset_values[constants.CONFIG_PORTFOLIO_TOTAL]),
+        }
+    except TypeError:
+        return {
+            # use str to avoid invalid values issues
+            constants.CONFIG_PORTFOLIO_FREE: str(fetched_balance_asset_values[available_key]),
+            constants.CONFIG_PORTFOLIO_TOTAL: str(fetched_balance_asset_values[constants.CONFIG_PORTFOLIO_TOTAL]),
+        }
+
+
+def get_balance_summary(
+    fetched_balance: dict[str, dict[str, decimal.Decimal]],
+    use_exchange_format: bool = True,
+) -> dict[str, dict[str, typing.Union[float, str]]]:
+    return {
+        asset: get_balance_asset_summary(values, use_exchange_format)
+        for asset, values in fetched_balance.items()
+    }
+
+
 def format_dict_portfolio_values(
     portfolio: dict[str, dict[str, typing.Union[float, decimal.Decimal]]], as_decimal: bool
 ) -> dict[str, dict[str, typing.Union[float, decimal.Decimal]]]:

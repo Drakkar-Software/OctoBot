@@ -153,6 +153,42 @@ def format_orders(orders: list, exchange_name: str) -> list:
     ]
 
 
+def from_community_order_to_trading_order(community_order: dict) -> dict:
+    bot_order_type = community_order[backend_enums.OrderKeys.TYPE.value]
+    trade_order_type = trading_personal_data.get_trade_order_type(trading_enums.TraderOrderType(bot_order_type))
+    try:
+        order_side = trading_enums.TradeOrderSide(
+            community_order[backend_enums.OrderKeys.SIDE.value]
+        )
+    except KeyError:
+        # for retro-compatibility
+        order_side = trading_enums.TradeOrderSide.SELL if "sell" in bot_order_type.lower() else \
+            trading_enums.TradeOrderSide.BUY
+    order_time = community_order.get(backend_enums.OrderKeys.TIME.value, 0)
+    exchange_id = community_order.get(backend_enums.OrderKeys.EXCHANGE_ID.value, str(order_time))
+    return {
+        trading_enums.ExchangeConstantsOrderColumns.ID.value: f"local-{exchange_id}",
+        trading_enums.ExchangeConstantsOrderColumns.EXCHANGE_ID.value: exchange_id,
+        trading_enums.ExchangeConstantsOrderColumns.TYPE.value: trade_order_type.value,
+        trading_enums.ExchangeConstantsOrderColumns.STATUS.value: trading_enums.OrderStatus.OPEN.value,
+        trading_enums.ExchangeConstantsOrderColumns.SIDE.value: order_side.value,
+        trading_enums.ExchangeConstantsOrderColumns.TRIGGER_ABOVE.value: community_order.get(
+            backend_enums.OrderKeys.TRIGGER_ABOVE.value
+        ),
+        trading_enums.ExchangeConstantsOrderColumns.AMOUNT.value: community_order[backend_enums.OrderKeys.QUANTITY.value],
+        trading_enums.ExchangeConstantsOrderColumns.FILLED.value: community_order.get(backend_enums.OrderKeys.FILLED.value, 0),
+        trading_enums.ExchangeConstantsOrderColumns.PRICE.value: community_order[backend_enums.OrderKeys.PRICE.value],
+        trading_enums.ExchangeConstantsOrderColumns.SYMBOL.value: community_order[backend_enums.OrderKeys.SYMBOL.value],
+        trading_enums.ExchangeConstantsOrderColumns.TIMESTAMP.value: order_time,
+        trading_enums.ExchangeConstantsOrderColumns.REDUCE_ONLY.value: community_order.get(
+            backend_enums.OrderKeys.REDUCE_ONLY.value, False
+        ),
+        trading_enums.ExchangeConstantsOrderColumns.IS_ACTIVE.value: community_order.get(
+            backend_enums.OrderKeys.IS_ACTIVE.value, True
+        ),
+    }
+
+
 def _get_order_type(order_or_trade):
     order_type = order_or_trade[trading_enums.ExchangeConstantsOrderColumns.TYPE.value]
     try:
