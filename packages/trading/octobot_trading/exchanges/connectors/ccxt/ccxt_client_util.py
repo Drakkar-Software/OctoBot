@@ -356,6 +356,8 @@ def _use_proxy_if_necessary(client, proxy_config: proxy_config_import.ProxyConfi
     if proxy_config.socks_proxy or proxy_config.socks_proxy_callback:
         # rewrite of async_ccxt.exchange.client.fetch() ProxyConnector creation
         _init_ccxt_client_session_requirements(client)
+        if proxy_config.get_proxy_url is None:
+            raise ValueError("Proxy .get_proxy_url() must be set to use a socks proxy")
         proxy_url = proxy_config.get_proxy_url()
         if (client.socks_proxy_sessions is None):
             client.socks_proxy_sessions = {}
