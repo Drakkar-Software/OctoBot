@@ -43,6 +43,7 @@ from octobot.community.models import (
     get_master_and_nested_product_slug_from_profile_name,
     get_tentacles_data_exchange_config,
     USD_LIKE,
+    from_community_order_to_trading_order,
 )
 from octobot.community.supabase_backend import (
     SyncConfigurationStorage,
@@ -136,6 +137,7 @@ __all__ = [
     "get_master_and_nested_product_slug_from_profile_name",
     "get_tentacles_data_exchange_config",
     "USD_LIKE",
+    "from_community_order_to_trading_order",
     "SyncConfigurationStorage",
     "ASyncConfigurationStorage",
     "AuthenticatedAsyncSupabaseClient",

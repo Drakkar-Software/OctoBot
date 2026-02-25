@@ -825,3 +825,20 @@ async def wait_for_order_fill(order, timeout, wait_for_portfolio_update):
         logging.get_logger(LOGGER_NAME).error(f"Unexpected: order is still open, order {order}")
     else:
         logging.get_logger(LOGGER_NAME).info(f"Successfully filled order: {order}.")
+
+
+def get_short_order_summary(order: typing.Union[dict, order_import.Order]) -> str:
+    if isinstance(order, order_import.Order):
+        cost = order.origin_price * order.origin_quantity
+        filled = f" [{float(order.filled_quantity)} filled]" if order.filled_quantity else ""
+        return (
+            f"{order.order_type.value} {float(order.origin_quantity)}{filled} {order.symbol} "
+            f"at {float(order.origin_price)} cost: {round(float(cost), 8)}"
+        )
+    cost = order[enums.ExchangeConstantsOrderColumns.PRICE.value] * order[enums.ExchangeConstantsOrderColumns.AMOUNT.value]
+    filled_amount = order.get(enums.ExchangeConstantsOrderColumns.FILLED.value, 0)
+    filled = f" [{filled_amount} filled]" if filled_amount else ""
+    return (
+        f"{order[enums.ExchangeConstantsOrderColumns.TYPE.value]} {order[enums.ExchangeConstantsOrderColumns.AMOUNT.value]}{filled} "
+        f"{order[enums.ExchangeConstantsOrderColumns.SYMBOL.value]} at {order[enums.ExchangeConstantsOrderColumns.PRICE.value]} cost: {round(cost, 8)}"
+    )

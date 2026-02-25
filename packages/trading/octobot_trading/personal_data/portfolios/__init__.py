@@ -101,6 +101,9 @@ from octobot_trading.personal_data.portfolios.portfolio_util import (
     get_master_checked_sub_portfolio_update,
     get_assets_delta_from_orders,
     get_fees_only_asset_deltas_from_orders,
+    from_raw_to_formatted_portfolio,
+    get_balance_asset_summary,
+    get_balance_summary,
 )
 from octobot_trading.personal_data.portfolios.history import (
     create_historical_asset_value_from_dict_like_object,
@@ -163,6 +166,9 @@ __all__ = [
     "get_master_checked_sub_portfolio_update",
     "get_assets_delta_from_orders",
     "get_fees_only_asset_deltas_from_orders",
+    "from_raw_to_formatted_portfolio",
+    "get_balance_asset_summary",
+    "get_balance_summary",
     "create_historical_asset_value_from_dict_like_object",
     "get_draw_down",
     "HistoricalAssetValue",

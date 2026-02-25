@@ -15,6 +15,7 @@
 #  License along with this library.
 import dataclasses
 import typing
+import decimal
 
 import octobot_commons.dataclasses
 import octobot_commons.enums as common_enums
@@ -93,22 +94,22 @@ class MarketDetails(octobot_commons.dataclasses.FlexibleDataclass, octobot_commo
 
 @dataclasses.dataclass
 class OrdersDetails(octobot_commons.dataclasses.FlexibleDataclass, octobot_commons.dataclasses.UpdatableDataclass):
-    open_orders: list[dict] = dataclasses.field(default_factory=list)
-    missing_orders: list[dict] = dataclasses.field(default_factory=list)
+    open_orders: list[dict[str, typing.Any]] = dataclasses.field(default_factory=list)
+    missing_orders: list[dict[str, typing.Any]] = dataclasses.field(default_factory=list)
 
 
 @dataclasses.dataclass
 class PortfolioDetails(octobot_commons.dataclasses.FlexibleDataclass, octobot_commons.dataclasses.UpdatableDataclass):
     initial_value: float = 0    # value of the portfolio content (not the full_content)
-    content: dict = dataclasses.field(default_factory=dict) # might be a subset of global_content
-    full_content: dict = dataclasses.field(default_factory=dict)  # full exchange portfolio
+    content: dict[str, dict[str, typing.Union[float, decimal.Decimal]]] = dataclasses.field(default_factory=dict) # might be a subset of global_content
+    full_content: dict[str, dict[str, typing.Union[float, decimal.Decimal]]] = dataclasses.field(default_factory=dict)  # full exchange portfolio
     asset_values: dict[str, float] = dataclasses.field(default_factory=dict)    # unitary value of each asset in reference market
 
 
 @dataclasses.dataclass
 class PositionDetails(octobot_commons.dataclasses.FlexibleDataclass, octobot_commons.dataclasses.UpdatableDataclass):
-    position: dict = dataclasses.field(default_factory=dict)
-    contract: dict = dataclasses.field(default_factory=dict)
+    position: dict[str, typing.Any] = dataclasses.field(default_factory=dict)
+    contract: dict[str, typing.Any] = dataclasses.field(default_factory=dict)
 
 
 @dataclasses.dataclass
@@ -118,7 +119,7 @@ class ExchangeData(octobot_commons.dataclasses.MinimizableDataclass, octobot_com
     markets: list[MarketDetails] = dataclasses.field(default_factory=list)
     portfolio_details: PortfolioDetails = dataclasses.field(default_factory=PortfolioDetails)
     orders_details: OrdersDetails = dataclasses.field(default_factory=OrdersDetails)
-    trades: list[dict] = dataclasses.field(default_factory=list)
+    trades: list[dict[str, typing.Any]] = dataclasses.field(default_factory=list)
     positions: list[PositionDetails] = dataclasses.field(default_factory=list)
 
     # pylint: disable=E1134
