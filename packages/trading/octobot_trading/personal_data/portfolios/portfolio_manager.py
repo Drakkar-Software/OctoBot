@@ -378,10 +378,12 @@ class PortfolioManager(util.Initializable):
                 }
         self._forced_portfolio = forced_portfolio_initial_config
 
-    def apply_forced_portfolio(self):
+    def apply_forced_portfolio(self, forced_portfolio_config: typing.Optional[dict[str, typing.Any]] = None):
         """
         Load new portfolio from config settings
         """
+        if forced_portfolio_config:
+            self.set_forced_portfolio_initial_config(forced_portfolio_config)
         portfolio_amount_dict = personal_data.parse_decimal_config_portfolio(self._forced_portfolio)
         self.handle_balance_update(self.portfolio.get_portfolio_from_amount_dict(portfolio_amount_dict))
 

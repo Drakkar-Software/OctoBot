@@ -141,6 +141,7 @@ from octobot_trading.personal_data.orders.order_util import (
     get_order_size_portfolio_percent,
     generate_order_id,
     wait_for_order_fill,
+    get_short_order_summary,
 )
 from octobot_trading.personal_data.orders import orders_storage_operations
 from octobot_trading.personal_data.orders.orders_storage_operations import (
@@ -222,6 +223,7 @@ __all__ = [
     "get_order_size_portfolio_percent",
     "generate_order_id",
     "wait_for_order_fill",
+    "get_short_order_summary",
     "apply_order_storage_details_if_any",
     "create_missing_virtual_orders_from_storage_order_groups",
     "is_associated_pending_order",

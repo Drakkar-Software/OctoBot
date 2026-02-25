@@ -62,6 +62,7 @@ from octobot.community.models.formatters import (
     get_tentacles_data_exchange_config,
     USD_LIKE,
     get_deployment_error_status_from_stop_reason,
+    from_community_order_to_trading_order,
 )
 from octobot.community.models.community_public_data import (
     CommunityPublicData
@@ -106,4 +107,5 @@ __all__ = [
     "get_custom_strategy_name",
     "is_custom_strategy_profile",
     "ExecutedProductDetails",
+    "from_community_order_to_trading_order",
 ]
