@@ -149,6 +149,8 @@ def blockchain_wallet_details():
 async def test_parse_signal_data():
     errors = []
     exchange_name = "binance"
+    exchange_type = trading_enums.ExchangeTypes.SPOT
+    reference_market = "USDT"
     assert Mode.TradingViewSignalsTradingMode.parse_signal_data(
         """
         
@@ -161,6 +163,8 @@ async def test_parse_signal_data():
         PLOp=true
         """,
         exchange_name,
+        exchange_type,
+        reference_market,
         errors
     ) == {
         "KEY": "value",
@@ -173,6 +177,8 @@ async def test_parse_signal_data():
     assert Mode.TradingViewSignalsTradingMode.parse_signal_data(
         "KEY=value\nEXCHANGE=1\n\n\n\nPLOp=false\n",
         exchange_name,
+        exchange_type,
+        reference_market,
         errors
     ) == {
         "KEY": "value",
@@ -185,6 +191,8 @@ async def test_parse_signal_data():
     assert Mode.TradingViewSignalsTradingMode.parse_signal_data(
         "KEY=value\\nEXCHANGE=1\\nPLOp=ABC",
         exchange_name,
+        exchange_type,
+        reference_market,
         errors
     ) == {
         "KEY": "value",
@@ -197,6 +205,8 @@ async def test_parse_signal_data():
     assert Mode.TradingViewSignalsTradingMode.parse_signal_data(
         "KEY=value\\nEXCHANGE\\nPLOp=ABC",
         exchange_name,
+        exchange_type,
+        reference_market,
         errors
     ) == {
         "KEY": "value",
@@ -211,6 +221,8 @@ async def test_parse_signal_data():
     assert Mode.TradingViewSignalsTradingMode.parse_signal_data(
         "KEY=value;EXCHANGE;;;;;PLOp=ABC;TAKE_PROFIT_PRICE=1;;TAKE_PROFIT_PRICE_2=3",
         exchange_name,
+        exchange_type,
+        reference_market,
         errors
     ) == {
         "KEY": "value",
@@ -227,6 +239,8 @@ async def test_parse_signal_data():
     assert Mode.TradingViewSignalsTradingMode.parse_signal_data(
         ";KEY=value;EXCHANGE\nPLOp=ABC\\nGG=HIHI;LEVERAGE=3",
         exchange_name,
+        exchange_type,
+        reference_market,
         errors
     ) == {
         "KEY": "value",
@@ -244,52 +258,80 @@ async def test_parse_signal_data():
 async def test_parse_signal_data_with_generic_usd_stablecoin_symbol():
     errors = []
     exchange_name = "binance"
+    exchange_type = trading_enums.ExchangeTypes.SPOT
+    reference_market = "USDT"
+
+    # Dict input: returns deep copy without modification (no _adapt_symbol)
+    input_dict = {"SYMBOL": "USD*", "EXCHANGE": "binance"}
+    result = Mode.TradingViewSignalsTradingMode.parse_signal_data(
+        input_dict, exchange_name, exchange_type, reference_market, errors
+    )
+    assert result == {"SYMBOL": "USD*", "EXCHANGE": "binance"}
+    assert result is not input_dict
+
+    # Generic USD stablecoin: no exchange, leave as is
     assert Mode.TradingViewSignalsTradingMode.parse_signal_data(
-        "SYMBOL=USD*", None, errors
+        "SYMBOL=USD*", None, exchange_type, reference_market, errors
     ) == {
-        "SYMBOL": "USD*", # no exchange, leave as is
+        "SYMBOL": "USD*",
     }
     assert Mode.TradingViewSignalsTradingMode.parse_signal_data(
-        "NO_SYMBOL=USD*", "", errors
+        "NO_SYMBOL=USD*", "", exchange_type, reference_market, errors
     ) == {
-        "NO_SYMBOL": "USD*", # no exchange, leave as is
+        "NO_SYMBOL": "USD*",
+    }
+
+    # Generic USD stablecoin: SPOT with exchange - use exchange default reference market
+    assert Mode.TradingViewSignalsTradingMode.parse_signal_data(
+        "SYMBOL=USD*", exchange_name, exchange_type, reference_market, errors
+    ) == {
+        "SYMBOL": "USDC",
     }
     assert Mode.TradingViewSignalsTradingMode.parse_signal_data(
-        "SYMBOL=USD*", exchange_name, errors
+        "NO_SYMBOL=USD*", exchange_name, exchange_type, reference_market, errors
     ) == {
-        "SYMBOL": "USDC", # default reference market for binance, as defined in 
-        # tentacles.Meta.Keywords.scripting_library.configuration.exchanges_configuration
-        # (case insensitive)
+        "NO_SYMBOL": "USD*",
     }
     assert Mode.TradingViewSignalsTradingMode.parse_signal_data(
-        "NO_SYMBOL=USD*", exchange_name, errors
+        "SYMBOL=USD*;EXCHANGE=BiNance", exchange_name, exchange_type, reference_market, errors
     ) == {
-        "NO_SYMBOL": "USD*", # no symbol, leave as is
-    }
-    assert Mode.TradingViewSignalsTradingMode.parse_signal_data(
-        "SYMBOL=USD*;EXCHANGE=BiNance", exchange_name, errors
-    ) == {
-        "SYMBOL": "USDC", # default reference market for binance, as defined in 
-        # tentacles.Meta.Keywords.scripting_library.configuration.exchanges_configuration
-        # (case insensitive)
+        "SYMBOL": "USDC",
         "EXCHANGE": "BiNance",
     }
+
+    # Generic USD stablecoin: FUTURE with reference_market - use reference_market
     assert Mode.TradingViewSignalsTradingMode.parse_signal_data(
-        "SYMBOL=USD*", "mexc", errors
+        "SYMBOL=USD*", exchange_name, trading_enums.ExchangeTypes.FUTURE, reference_market, errors
     ) == {
-        "SYMBOL": commons_constants.DEFAULT_REFERENCE_MARKET, # no default reference market for mexc, use default
+        "SYMBOL": "USDT",
+    }
+
+    # Generic USD stablecoin: unknown exchange - use DEFAULT_REFERENCE_MARKET
+    assert Mode.TradingViewSignalsTradingMode.parse_signal_data(
+        "SYMBOL=USD*", "mexc", exchange_type, reference_market, errors
+    ) == {
+        "SYMBOL": commons_constants.DEFAULT_REFERENCE_MARKET,
     }
     assert Mode.TradingViewSignalsTradingMode.parse_signal_data(
-        "SYMBOL=USD*;EXCHANGE=????", "????", errors
+        "SYMBOL=USD*;EXCHANGE=????", "????", exchange_type, reference_market, errors
     ) == {
-        "SYMBOL": commons_constants.DEFAULT_REFERENCE_MARKET, # unknown exchange, use default
+        "SYMBOL": commons_constants.DEFAULT_REFERENCE_MARKET,
         "EXCHANGE": "????",
     }
+
+    # TradingView futures suffix (.P): strip suffix from symbol
     assert Mode.TradingViewSignalsTradingMode.parse_signal_data(
-        "SYMBOL=USD*", None, errors
+        "SYMBOL=BTCUSD.P", exchange_name, exchange_type, reference_market, errors
     ) == {
-        "SYMBOL": "USD*", # no exchange, leave as is
+        "SYMBOL": "BTCUSD",
     }
+    # Futures suffix then USD* replacement: USD*.P -> USD* -> USDC
+    assert Mode.TradingViewSignalsTradingMode.parse_signal_data(
+        "SYMBOL=USD*.P", exchange_name, exchange_type, reference_market, errors
+    ) == {
+        "SYMBOL": "USDC",
+    }
+
     assert errors == []
 
 
