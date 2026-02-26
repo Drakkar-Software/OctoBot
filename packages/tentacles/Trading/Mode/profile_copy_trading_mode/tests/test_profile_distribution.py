@@ -67,6 +67,12 @@ class TradableRatioTestCase(typing.NamedTuple):
     expected_tradable_ratio: decimal.Decimal
 
 
+class PositionSizeTestCase(typing.NamedTuple):
+    min_position_size: typing.Optional[decimal.Decimal]
+    positions: typing.List[typing.Dict]
+    expected_symbols: typing.List[str]
+
+
 class NewPositionOnlyTestCase(typing.NamedTuple):
     new_position_only: bool
     expected_btc_present: bool
@@ -400,7 +406,7 @@ def test_update_distribution_based_on_profile_data_respects_new_position_only(
     assert (btc_dist is not None) == expected_btc_present
     assert (eth_dist is not None) == expected_eth_present
 
-def _position(symbol: str, collateral: float, unrealized_pnl: float, initial_margin: float = None, entry_price: float = 50000.0, mark_price: float = None) -> dict:
+def _position(symbol: str, collateral: float, unrealized_pnl: float, initial_margin: float = None, entry_price: float = 50000.0, mark_price: float = None, size: float = None) -> dict:
     m = {
         trading_enums.ExchangeConstantsPositionColumns.SYMBOL.value: symbol,
         trading_enums.ExchangeConstantsPositionColumns.COLLATERAL.value: collateral,
@@ -410,6 +416,8 @@ def _position(symbol: str, collateral: float, unrealized_pnl: float, initial_mar
     }
     if mark_price is not None:
         m[trading_enums.ExchangeConstantsPositionColumns.MARK_PRICE.value] = mark_price
+    if size is not None:
+        m[trading_enums.ExchangeConstantsPositionColumns.SIZE.value] = size
     return m
 
 
@@ -510,6 +518,56 @@ def test_get_positions_to_consider_min_max_mark_price(test_case: MarkPriceTestCa
         min_mark_price=test_case.min_mark_price, max_mark_price=test_case.max_mark_price,
     )
     assert [p[trading_enums.ExchangeConstantsPositionColumns.SYMBOL.value] for p in result] == test_case.expected_symbols
+
+
+@pytest.mark.parametrize(
+    "test_case",
+    [
+        PositionSizeTestCase(
+            min_position_size=trading_constants.ZERO,
+            positions=[_position("A", 100.0, 5.0, size=1.0), _position("B", 100.0, 5.0, size=5.0)],
+            expected_symbols=["A", "B"],
+        ),
+        PositionSizeTestCase(
+            min_position_size=decimal.Decimal("3"),
+            positions=[_position("A", 100.0, 5.0, size=1.0), _position("B", 100.0, 5.0, size=5.0)],
+            expected_symbols=["B"],
+        ),
+        PositionSizeTestCase(
+            min_position_size=decimal.Decimal("5"),
+            positions=[_position("A", 100.0, 5.0, size=3.0), _position("B", 100.0, 5.0, size=5.0), _position("C", 100.0, 5.0, size=10.0)],
+            expected_symbols=["B", "C"],
+        ),
+        PositionSizeTestCase(
+            min_position_size=decimal.Decimal("3"),
+            positions=[_position("A", 100.0, 5.0), _position("B", 100.0, 5.0)],  # no size field -> treated as 0
+            expected_symbols=[],
+        ),
+    ],
+)
+def test_get_positions_to_consider_min_position_size(test_case: PositionSizeTestCase):
+    started_at = datetime.datetime(2024, 1, 1, 12, 0, 0)
+    result = profile_distribution.get_positions_to_consider(
+        test_case.positions, new_position_only=False, started_at=started_at,
+        min_position_size=test_case.min_position_size,
+    )
+    assert [p[trading_enums.ExchangeConstantsPositionColumns.SYMBOL.value] for p in result] == test_case.expected_symbols
+
+
+def test_get_smoothed_distribution_from_profile_data_respects_min_position_size():
+    profile_data = MockProfileData("p1", [
+        _position("BTC/USDT", 100.0, 5.0, size=10.0),
+        _position("ETH/USDT", 100.0, 5.0, size=2.0),
+    ])
+    started_at = datetime.datetime(2024, 1, 1, 12, 0, 0)
+    result, tradable_ratio, source = profile_distribution.get_smoothed_distribution_from_profile_data(
+        profile_data, new_position_only=False, started_at=started_at,
+        min_position_size=decimal.Decimal("5"),
+    )
+    symbols = [d[index_distribution.DISTRIBUTION_NAME] for d in result]
+    assert "BTC/USDT" in symbols
+    assert "ETH/USDT" not in symbols
+    assert tradable_ratio == decimal.Decimal("0.5")
 
 
 @pytest.mark.parametrize(
