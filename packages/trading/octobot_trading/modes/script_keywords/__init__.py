@@ -51,6 +51,7 @@ from octobot_trading.modes.script_keywords import context_management
 from octobot_trading.modes.script_keywords.context_management import (
     get_base_context,
     get_full_context,
+    get_base_context_from_exchange_manager,
     Context,
 )
 
@@ -83,5 +84,6 @@ __all__ = [
     "set_plot_orders",
     "get_base_context",
     "get_full_context",
+    "get_base_context_from_exchange_manager",
     "Context",
 ]

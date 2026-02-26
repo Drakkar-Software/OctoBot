@@ -47,10 +47,10 @@ class Trade:
         self.symbol: str = None # type: ignore
         self.currency: typing.Optional[str] = None
         self.market: typing.Optional[str] = None
-        self.taker_or_maker: str = None # type: ignore
+        self.taker_or_maker: typing.Optional[str] = None
         self.origin_price: decimal.Decimal = constants.ZERO
         self.origin_quantity: decimal.Decimal = constants.ZERO
-        self.trade_type: typing.Optional[enums.TradeOrderType] = None
+        self.trade_type: typing.Optional[enums.TraderOrderType] = None
         self.side: enums.TradeOrderSide = None # type: ignore
         self.executed_quantity: decimal.Decimal = constants.ZERO
         self.canceled_time: float = 0
@@ -60,15 +60,21 @@ class Trade:
         self.trade_profitability: decimal.Decimal = constants.ZERO
         self.total_cost: decimal.Decimal = constants.ZERO
         self.reduce_only: bool = False
-        self.tag: str = None # type: ignore
-        self.quantity_currency: str = None # type: ignore
+        self.tag: typing.Optional[str] = None
+        self.quantity_currency: typing.Optional[str] = None
         self.associated_entry_ids: typing.Optional[list[str]] = None
         self.broker_applied: bool = False
 
         # raw exchange trade type, used to create trade dict
         self.exchange_trade_type: typing.Optional[enums.TradeOrderType] = None
 
-    def update_from_order(self, order, creation_time=0, canceled_time=0, executed_time=0, exchange_trade_id=None):
+    def update_from_order(
+        self, order: "order_import.Order", 
+        creation_time: float=0, 
+        canceled_time: float=0, 
+        executed_time: float=0, 
+        exchange_trade_id: typing.Optional[str]=None
+    ) -> None:
         self.currency = order.currency
         self.market = order.market
         self.taker_or_maker = order.taker_or_maker

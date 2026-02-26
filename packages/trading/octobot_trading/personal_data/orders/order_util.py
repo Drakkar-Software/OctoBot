@@ -30,10 +30,14 @@ import octobot_trading.errors as errors
 import octobot_trading.personal_data.orders.decimal_order_adapter as decimal_order_adapter
 import octobot_trading.personal_data.orders.states.fill_order_state as fill_order_state
 import octobot_trading.personal_data.orders.order as order_import
+import octobot_trading.personal_data.orders.order_factory as order_factory
 import octobot_trading.personal_data.orders.triggers.price_trigger as price_trigger
 import octobot_trading.exchanges.util.exchange_market_status_fixer as exchange_market_status_fixer
 import octobot_trading.signals as signals
 from octobot_trading.enums import ExchangeConstantsMarketStatusColumns as Ecmsc
+
+if typing.TYPE_CHECKING:
+    import octobot_trading.exchanges
 
 
 LOGGER_NAME = "order_util"
@@ -797,6 +801,41 @@ async def adapt_chained_order_before_creation(base_order, chained_order):
     # ensure price is not outdated
     await chained_order.update_price_if_outdated()
     return can_be_created
+
+
+async def create_and_register_chained_order_on_base_order(
+    base_order: order_import.Order,
+    price: decimal.Decimal, order_type: enums.TraderOrderType, side: enums.TradeOrderSide,
+    quantity: typing.Optional[decimal.Decimal] = None, allow_bundling: bool = True,
+    tag: typing.Optional[str] = None, reduce_only: bool = False,
+    update_with_triggering_order_fees: typing.Optional[bool] = None
+) -> tuple[dict, order_import.Order]:
+    exchange_manager = base_order.exchange_manager
+    chained_order = order_factory.create_order_instance(
+        trader=exchange_manager.trader,
+        order_type=order_type,
+        symbol=base_order.symbol,
+        current_price=price,
+        quantity=quantity or base_order.origin_quantity,
+        price=price,
+        side=side,
+        associated_entry_id=base_order.order_id,
+        reduce_only=reduce_only,
+        tag=tag,
+    )
+    params = {}
+    # do not reduce chained order amounts to account for fees when trading futures
+    if update_with_triggering_order_fees is None:
+        update_with_triggering_order_fees = not exchange_manager.is_future
+    if allow_bundling:
+        params = await exchange_manager.trader.bundle_chained_order_with_uncreated_order(
+            base_order, chained_order, update_with_triggering_order_fees
+        )
+    else:
+        await exchange_manager.trader.chain_order(
+            base_order, chained_order, update_with_triggering_order_fees, False
+        )
+    return params, chained_order
 
 
 async def wait_for_order_fill(order, timeout, wait_for_portfolio_update):

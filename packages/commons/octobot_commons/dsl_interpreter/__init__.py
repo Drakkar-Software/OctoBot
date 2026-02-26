@@ -24,7 +24,10 @@ from octobot_commons.dsl_interpreter.dictionnaries import (
     get_all_operators,
     clear_get_all_operators_cache,
 )
-from octobot_commons.dsl_interpreter.operator_parameter import OperatorParameter
+from octobot_commons.dsl_interpreter.operator_parameter import (
+    OperatorParameter,
+    UNINITIALIZED_VALUE,
+)
 from octobot_commons.dsl_interpreter.operator_docs import OperatorDocs
 from octobot_commons.dsl_interpreter.operators import (
     BinaryOperator,
@@ -34,6 +37,7 @@ from octobot_commons.dsl_interpreter.operators import (
     CallOperator,
     NameOperator,
     ExpressionOperator,
+    PreComputingCallOperator,
 )
 from octobot_commons.dsl_interpreter.interpreter_dependency import InterpreterDependency
 
@@ -43,6 +47,7 @@ __all__ = [
     "Interpreter",
     "Operator",
     "OperatorParameter",
+    "UNINITIALIZED_VALUE",
     "OperatorDocs",
     "BinaryOperator",
     "UnaryOperator",
@@ -51,5 +56,6 @@ __all__ = [
     "CallOperator",
     "NameOperator",
     "ExpressionOperator",
+    "PreComputingCallOperator",
     "InterpreterDependency",
 ]

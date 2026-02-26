@@ -18,15 +18,20 @@ import dataclasses
 import typing
 
 
+UNSET_VALUE = "UNSET_VALUE"
+UNINITIALIZED_VALUE = object()
+
+
 @dataclasses.dataclass
 class OperatorParameter:
     name: str
     description: str
     required: bool
     type: typing.Type[typing.Any]
+    default: typing.Any = UNSET_VALUE
 
     def __repr__(self) -> str:
-        return f"{self.name}{' (required)' if self.required else ''}[{self.type.__name__}] - {self.description}"
+        return f"{self.name}{' (required)' if self.required else (f' (default: {self.default})' if self.default is not UNSET_VALUE else '')}[{self.type.__name__}] - {self.description}"
 
     def to_json(self) -> dict:
         """
@@ -37,4 +42,5 @@ class OperatorParameter:
             "description": self.description,
             "required": self.required,
             "type": self.type.__name__,
+            "default": self.default,
         }

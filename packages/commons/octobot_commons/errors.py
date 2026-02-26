@@ -151,3 +151,9 @@ class InvalidParametersError(DSLInterpreterError):
     """
     Raised when the parameters of an operator are invalid
     """
+
+
+class MissingDefaultValueError(InvalidParametersError):
+    """
+    Raised when a parameter has no default value
+    """

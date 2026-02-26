@@ -43,17 +43,13 @@ class ExchangeDataDependency(dsl_interpreter.InterpreterDependency):
 
 
 class OHLCVOperator(exchange_operator.ExchangeOperator):
-    def __init__(self, *parameters: dsl_interpreter.OperatorParameterType, **kwargs: typing.Any):
-        super().__init__(*parameters, **kwargs)
-        self.value: dsl_interpreter_operator.ComputedOperatorParameterType = exchange_operator.UNINITIALIZED_VALUE # type: ignore
-
     @staticmethod
     def get_library() -> str:
         # this is a contextual operator, so it should not be included by default in the get_all_operators function return values
         return octobot_commons.constants.CONTEXTUAL_OPERATORS_LIBRARY
 
-    @staticmethod
-    def get_parameters() -> list[dsl_interpreter.OperatorParameter]:
+    @classmethod
+    def get_parameters(cls) -> list[dsl_interpreter.OperatorParameter]:
         return [
             dsl_interpreter.OperatorParameter(name="symbol", description="the symbol to get the OHLCV data for", required=False, type=str),
             dsl_interpreter.OperatorParameter(name="time_frame", description="the time frame to get the OHLCV data for", required=False, type=str),
@@ -68,12 +64,6 @@ class OHLCVOperator(exchange_operator.ExchangeOperator):
                 str(time_frame) if time_frame is not None else None
             )
         return None, None
-
-    def compute(self) -> dsl_interpreter.ComputedOperatorParameterType:
-        if self.value is exchange_operator.UNINITIALIZED_VALUE:
-            raise octobot_commons.errors.DSLInterpreterError("{self.__class__.__name__} has not been initialized")
-        return self.value
-
 
 def create_ohlcv_operators(
     exchange_manager: typing.Optional[octobot_trading.exchanges.ExchangeManager],

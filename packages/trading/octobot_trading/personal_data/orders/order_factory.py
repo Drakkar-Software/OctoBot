@@ -13,21 +13,33 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import decimal
+import typing
+
 import octobot_commons.logging as logging
 
 import octobot_trading.personal_data as personal_data
 import octobot_trading.enums as enums
 import octobot_trading.constants as constants
 
+if typing.TYPE_CHECKING:
+    import octobot_trading.exchanges
 
-def create_order_from_raw(trader, raw_order):
+
+def create_order_from_raw(
+    trader: "octobot_trading.exchanges.Trader",
+    raw_order: dict,
+) -> "personal_data.Order":
     _, order_type = personal_data.parse_order_type(raw_order)
     return create_order_from_type(trader, order_type)
 
 
 def create_order_instance_from_raw(
-    trader, raw_order, force_open_or_pending_creation=False, has_just_been_created=False
-):
+    trader: "octobot_trading.exchanges.Trader",
+    raw_order: dict,
+    force_open_or_pending_creation: bool = False,
+    has_just_been_created: bool = False,
+) -> "personal_data.Order":
     try:
         order = create_order_from_raw(trader, raw_order)
         order.update_from_raw(raw_order)
@@ -45,47 +57,49 @@ def create_order_instance_from_raw(
         raise
 
 
-def create_order_from_type(trader, order_type, side=None):
+def create_order_from_type(
+    trader: "octobot_trading.exchanges.Trader",
+    order_type: enums.TraderOrderType,
+    side: typing.Optional[enums.TradeOrderSide] = None,
+) -> "personal_data.Order":
     if side is None:
         return personal_data.TraderOrderTypeClasses[order_type](trader)
     return personal_data.TraderOrderTypeClasses[order_type](trader, side=side)
 
 
 def create_order_instance(
-    trader,
-    order_type,
-    symbol,
-    current_price,
-    quantity,
-    price=constants.ZERO,
-    stop_price=constants.ZERO,
+    trader: "octobot_trading.exchanges.Trader",
+    order_type: enums.TraderOrderType,
+    symbol: str,
+    current_price: decimal.Decimal,
+    quantity: decimal.Decimal,
+    price: decimal.Decimal = constants.ZERO,
+    stop_price: decimal.Decimal = constants.ZERO,
     status: enums.OrderStatus = enums.OrderStatus.OPEN,
-    order_id=None,
-    exchange_order_id=None,
-    filled_price=constants.ZERO,
-    average_price=constants.ZERO,
-    quantity_filled=constants.ZERO,
-    total_cost=constants.ZERO,
-    timestamp=0,
-    side=None,
-    trigger_above=None,
-    fees_currency_side=None,
-    group=None,
-    tag=None,
-    reduce_only=None,
-    quantity_currency=None,
-    close_position=False,
-    exchange_creation_params=None,
-    associated_entry_id=None,
-    trailing_profile=None,
-    is_active=None,
-    active_trigger_price=None,
-    active_trigger_above=None,
-    cancel_policy=None,
-):
-    order = create_order_from_type(trader=trader,
-                                   order_type=order_type,
-                                   side=side)
+    order_id: typing.Optional[str] = None,
+    exchange_order_id: typing.Optional[str] = None,
+    filled_price: decimal.Decimal = constants.ZERO,
+    average_price: decimal.Decimal = constants.ZERO,
+    quantity_filled: decimal.Decimal = constants.ZERO,
+    total_cost: decimal.Decimal = constants.ZERO,
+    timestamp: int = 0,
+    side: typing.Optional[enums.TradeOrderSide] = None,
+    trigger_above: typing.Optional[bool] = None,
+    fees_currency_side: typing.Optional[str] = None,
+    group: typing.Optional[str] = None,
+    tag: typing.Optional[str] = None,
+    reduce_only: typing.Optional[bool] = None,
+    quantity_currency: typing.Optional[str] = None,
+    close_position: bool = False,
+    exchange_creation_params: typing.Optional[dict] = None,
+    associated_entry_id: typing.Optional[str] = None,
+    trailing_profile: typing.Optional["personal_data.TrailingProfile"] = None,
+    is_active: typing.Optional[bool] = None,
+    active_trigger_price: typing.Optional[decimal.Decimal] = None,
+    active_trigger_above: typing.Optional[bool] = None,
+    cancel_policy: typing.Optional["personal_data.OrderCancelPolicy"] = None,
+) -> "personal_data.Order":
+    order = create_order_from_type(trader, order_type, side=side)
     order.update(
         order_type=order_type,
         symbol=symbol,
@@ -120,7 +134,10 @@ def create_order_instance(
     return order
 
 
-def create_order_from_dict(trader, order_dict):
+def create_order_from_dict(
+    trader: "octobot_trading.exchanges.Trader",
+    order_dict: dict,
+) -> "personal_data.Order":
     """
     :param trader: the trader to associate the order to
     :param order_dict: a dict formatted as from order.to_dict()
@@ -146,7 +163,11 @@ def create_order_from_dict(trader, order_dict):
     )
 
 
-async def create_order_from_order_storage_details(order_storage_details, exchange_manager, pending_groups: dict):
+async def create_order_from_order_storage_details(
+    order_storage_details: dict,
+    exchange_manager: "octobot_trading.exchanges.ExchangeManager",
+    pending_groups: dict,
+) -> "personal_data.Order":
     order = create_order_from_dict(
         exchange_manager.trader,
         order_storage_details[constants.STORAGE_ORIGIN_VALUE]
@@ -158,7 +179,12 @@ async def create_order_from_order_storage_details(order_storage_details, exchang
     return order
 
 
-async def restore_chained_orders_from_storage_order_details(order, order_details, exchange_manager, pending_groups):
+async def restore_chained_orders_from_storage_order_details(
+    order: "personal_data.Order",
+    order_details: dict,
+    exchange_manager: "octobot_trading.exchanges.ExchangeManager",
+    pending_groups: dict,
+) -> None:
     chained_orders = order_details.get(enums.StoredOrdersAttr.CHAINED_ORDERS.value, None)
     if chained_orders:
         for chained_order in chained_orders:

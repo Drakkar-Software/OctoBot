@@ -44,6 +44,7 @@ from octobot_trading.personal_data.orders.active_order_swap_strategies import (
     ActiveOrderSwapStrategy,
     StopFirstActiveOrderSwapStrategy,
     TakeProfitFirstActiveOrderSwapStrategy,
+    create_active_order_swap_strategy,
 )
 from octobot_trading.personal_data.orders import cancel_policies
 from octobot_trading.personal_data.orders.cancel_policies import (
@@ -114,7 +115,7 @@ from octobot_trading.personal_data.orders.order_util import (
     get_fees_for_currency,
     get_order_locked_amount,
     get_orders_locked_amounts_by_asset,
-    parse_raw_fees,
+    parse_raw_fees, 
     parse_order_status,
     parse_is_cancelled,
     parse_is_pending_cancel,
@@ -142,6 +143,7 @@ from octobot_trading.personal_data.orders.order_util import (
     generate_order_id,
     wait_for_order_fill,
     get_short_order_summary,
+    create_and_register_chained_order_on_base_order,
 )
 from octobot_trading.personal_data.orders import orders_storage_operations
 from octobot_trading.personal_data.orders.orders_storage_operations import (
@@ -224,6 +226,7 @@ __all__ = [
     "generate_order_id",
     "wait_for_order_fill",
     "get_short_order_summary",
+    "create_and_register_chained_order_on_base_order",
     "apply_order_storage_details_if_any",
     "create_missing_virtual_orders_from_storage_order_groups",
     "is_associated_pending_order",
@@ -241,6 +244,7 @@ __all__ = [
     "TrailingProfileTypes",
     "create_trailing_profile",
     "create_filled_take_profit_trailing_profile",
+    "create_active_order_swap_strategy",
     "ActiveOrderSwapStrategy",
     "StopFirstActiveOrderSwapStrategy",
     "TakeProfitFirstActiveOrderSwapStrategy",

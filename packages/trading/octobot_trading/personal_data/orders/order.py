@@ -159,8 +159,8 @@ class Order(util.Initializable):
         fee=None, total_cost=constants.ZERO, timestamp=None,
         order_type=None, reduce_only=None, close_position=None, position_side=None, fees_currency_side=None,
         group=None, tag=None, quantity_currency=None, exchange_creation_params=None,
-        associated_entry_id=None, trigger_above=None, trailing_profile: trailing_profiles.TrailingProfile=None,
-        is_active=None, active_trigger: base_trigger_import.BaseTrigger = None,
+        associated_entry_id=None, trigger_above=None, trailing_profile: typing.Optional[trailing_profiles.TrailingProfile]=None,
+        is_active=None, active_trigger: typing.Optional[base_trigger_import.BaseTrigger] = None,
         cancel_policy: typing.Optional[order_cancel_policy_import.OrderCancelPolicy] = None,
     ) -> bool:
         changed: bool = False
@@ -1137,7 +1137,7 @@ class Order(util.Initializable):
             self.exchange_manager.exchange_personal_data.orders_manager.enable_order_auto_synchronization
         )
 
-    def to_dict(self):
+    def to_dict(self) -> dict[str, typing.Any]:
         filled_price = self.filled_price if self.filled_price > 0 else self.origin_price
         return {
             enums.ExchangeConstantsOrderColumns.ID.value: self.order_id,

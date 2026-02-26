@@ -1,4 +1,4 @@
-# pylint: disable=missing-class-docstring,missing-function-docstring
+# pylint: disable=R0801
 #  Drakkar-Software OctoBot-Commons
 #  Copyright (c) Drakkar-Software, All rights reserved.
 #
@@ -14,17 +14,11 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-import octobot_commons.dsl_interpreter
 
-
-EXCHANGE_LIBRARY = "exchange"
-
-
-class ExchangeOperator(octobot_commons.dsl_interpreter.PreComputingCallOperator):
-
-    @staticmethod
-    def get_library() -> str:
-        """
-        Get the library of the operator.
-        """
-        return EXCHANGE_LIBRARY
+import tentacles.Meta.DSL_operators.blockchain_wallet_operators.blockchain_wallet_ops
+from tentacles.Meta.DSL_operators.blockchain_wallet_operators.blockchain_wallet_ops import (
+    create_blockchain_wallet_operators,
+)
+__all__ = [
+    "create_blockchain_wallet_operators",
+]

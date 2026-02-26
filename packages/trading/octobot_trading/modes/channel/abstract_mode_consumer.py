@@ -289,31 +289,17 @@ class AbstractTradingModeConsumer(modes_channel.ModeChannelConsumer):
         self, main_order, price, order_type, side, quantity=None, allow_bundling=True, tag=None, reduce_only=False,
         update_with_triggering_order_fees=None
     ) -> tuple:
-        chained_order = personal_data.create_order_instance(
-            trader=self.exchange_manager.trader,
-            order_type=order_type,
-            symbol=main_order.symbol,
-            current_price=price,
-            quantity=quantity or main_order.origin_quantity,
-            price=price,
-            side=side,
-            associated_entry_id=main_order.order_id,
-            reduce_only=reduce_only,
+        return await personal_data.create_and_register_chained_order_on_base_order(
+            main_order,
+            price,
+            order_type,
+            side,
+            quantity=quantity,
+            allow_bundling=allow_bundling,
             tag=tag,
+            reduce_only=reduce_only,
+            update_with_triggering_order_fees=update_with_triggering_order_fees
         )
-        params = {}
-        # do not reduce chained order amounts to account for fees when trading futures
-        if update_with_triggering_order_fees is None:
-            update_with_triggering_order_fees = not self.exchange_manager.is_future
-        if allow_bundling:
-            params = await self.exchange_manager.trader.bundle_chained_order_with_uncreated_order(
-                main_order, chained_order, update_with_triggering_order_fees
-            )
-        else:
-            await self.exchange_manager.trader.chain_order(
-                main_order, chained_order, update_with_triggering_order_fees, False
-            )
-        return params, chained_order
 
 
 def check_factor(min_val, max_val, factor):

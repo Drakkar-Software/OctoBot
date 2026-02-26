@@ -63,8 +63,8 @@ class RSIOperator(ta_operator.TAOperator):
     def get_name() -> str:
         return "rsi"
 
-    @staticmethod
-    def get_parameters() -> list[dsl_interpreter.OperatorParameter]:
+    @classmethod
+    def get_parameters(cls) -> list[dsl_interpreter.OperatorParameter]:
         return [
             dsl_interpreter.OperatorParameter(name="data", description="the data to compute the RSI on", required=True, type=list),
             dsl_interpreter.OperatorParameter(name="period", description="the period to use for the RSI", required=True, type=int),
@@ -84,8 +84,8 @@ class MACDOperator(ta_operator.TAOperator):
     def get_name() -> str:
         return "macd"
 
-    @staticmethod
-    def get_parameters() -> list[dsl_interpreter.OperatorParameter]:
+    @classmethod
+    def get_parameters(cls) -> list[dsl_interpreter.OperatorParameter]:
         return [
             dsl_interpreter.OperatorParameter(name="data", description="the data to compute the MACD on", required=True, type=list),
             dsl_interpreter.OperatorParameter(name="short_period", description="the short period to use for the MACD", required=True, type=int),
@@ -110,8 +110,8 @@ class MAOperator(ta_operator.TAOperator):
     def get_name() -> str:
         return "ma"
 
-    @staticmethod
-    def get_parameters() -> list[dsl_interpreter.OperatorParameter]:
+    @classmethod
+    def get_parameters(cls) -> list[dsl_interpreter.OperatorParameter]:
         return [
             dsl_interpreter.OperatorParameter(name="data", description="the data to compute the moving average on", required=True, type=list),
             dsl_interpreter.OperatorParameter(name="period", description="the period to use for the moving average", required=True, type=int),
@@ -131,8 +131,8 @@ class EMAOperator(ta_operator.TAOperator):
     def get_name() -> str:
         return "ema"
 
-    @staticmethod
-    def get_parameters() -> list[dsl_interpreter.OperatorParameter]:
+    @classmethod
+    def get_parameters(cls) -> list[dsl_interpreter.OperatorParameter]:
         return [
             dsl_interpreter.OperatorParameter(name="data", description="the data to compute the exponential moving average on", required=True, type=list),
             dsl_interpreter.OperatorParameter(name="period", description="the period to use for the exponential moving average", required=True, type=int),
@@ -152,8 +152,8 @@ class VWMAOperator(ta_operator.TAOperator):
     def get_name() -> str:
         return "vwma"
 
-    @staticmethod
-    def get_parameters() -> list[dsl_interpreter.OperatorParameter]:
+    @classmethod
+    def get_parameters(cls) -> list[dsl_interpreter.OperatorParameter]:
         return [
             dsl_interpreter.OperatorParameter(name="data", description="the data to compute the volume weighted moving average on", required=True, type=list),
             dsl_interpreter.OperatorParameter(name="volume", description="the volume data to use for the volume weighted moving average", required=True, type=list),

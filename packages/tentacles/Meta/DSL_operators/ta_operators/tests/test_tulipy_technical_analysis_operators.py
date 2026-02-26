@@ -16,7 +16,7 @@
 import pytest
 
 import octobot_commons.errors
-from tentacles.Meta.DSL_operators.exchange_operators.tests import (
+from tentacles.Meta.DSL_operators.exchange_operators.tests.exchange_public_data_operators import (
     historical_prices,
     historical_volume,
     historical_times,
