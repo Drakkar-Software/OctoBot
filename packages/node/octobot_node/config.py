@@ -95,8 +95,6 @@ class Settings(BaseSettings):
     ADMIN_USERNAME: EmailStr = DEFAULT_ADMIN_USERNAME
     ADMIN_PASSWORD: str = DEFAULT_ADMIN_PASSWORD
 
-    BLOCKCHAIN_WALLETS_EXTRA_CONFIG: dict[str, Any] = Field(default_factory=dict)
-
     # Used to decrypt inputs and encrypt outputs
     TASKS_INPUTS_RSA_PRIVATE_KEY: Annotated[bytes | None, BeforeValidator(parse_key_to_bytes)] = None
     TASKS_INPUTS_ECDSA_PUBLIC_KEY: Annotated[bytes | None, BeforeValidator(parse_key_to_bytes)] = None

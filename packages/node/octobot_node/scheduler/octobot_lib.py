@@ -84,9 +84,7 @@ class OctoBotActionsJobDescription(octobot_commons.dataclasses.MinimizableDatacl
             self._parse_actions_plan(self.params)
 
     def _parse_actions_plan(self, params: dict) -> None:
-        action_bundles: list[list[mini_octobot.BotActionDetails]] = mini_octobot.parsers.BotActionBundleParser(params).parse(
-            octobot_node.config.settings.BLOCKCHAIN_WALLETS_EXTRA_CONFIG
-        )
+        action_bundles: list[list[mini_octobot.BotActionDetails]] = mini_octobot.parsers.BotActionBundleParser(params).parse()
         if not action_bundles:
             raise ValueError("No action bundles found in params")
         self.immediate_actions = action_bundles[0]
