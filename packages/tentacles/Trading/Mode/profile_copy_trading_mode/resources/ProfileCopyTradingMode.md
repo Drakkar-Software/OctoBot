@@ -70,7 +70,7 @@ Filter positions based on their unrealized profit/loss ratio relative to their c
 
 **Maximum Unrealized PnL Percent**: Only copy positions that have at most this unrealized profit/loss ratio. For example, set to `0.5` to avoid copying positions with more than 50% unrealized profit (might be too risky), or set to `0.2` to cap at 20% unrealized profit and limit exposure to highly profitable positions.
 
-Set either parameter to `None` to disable that filter.
+Set either parameter to `0` to disable that filter.
 
 #### Mark Price
 
@@ -80,7 +80,13 @@ Filter positions based on their mark price (current market price). Useful for fi
 
 **Maximum Mark Price**: Only copy positions with a mark price less than or equal to this value. For example, set to `0.8` to focus on lower-value markets and only copy positions in markets priced at $0.80 or lower, or set to `0.9` to filter out positions near certainty.
 
-Set either parameter to `None` to disable that filter.
+Set either parameter to `0` to disable that filter.
+
+#### Position Size
+
+**Minimum Position Size**: Only copy positions with a size greater than or equal to this value. For example, set to `10` to only copy positions with a size of 10 or more contracts/units.
+
+Set to `0` to disable this filter.
 
 ### Portfolio Allocation Validation
 

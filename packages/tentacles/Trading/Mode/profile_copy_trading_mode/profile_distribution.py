@@ -47,7 +47,8 @@ def get_positions_to_consider(
     min_unrealized_pnl_percent: typing.Optional[float] = None,
     max_unrealized_pnl_percent: typing.Optional[float] = None,
     min_mark_price: typing.Optional[decimal.Decimal] = None,
-    max_mark_price: typing.Optional[decimal.Decimal] = None
+    max_mark_price: typing.Optional[decimal.Decimal] = None,
+    min_position_size: typing.Optional[decimal.Decimal] = None,
 ) -> list[dict]:
     result = []
     for position in profile_positions:
@@ -63,7 +64,7 @@ def get_positions_to_consider(
         ))
 
         # Check unrealized pnl ratio only when margin > 0 (otherwise ratio is undefined; include position)
-        if margin > decimal.Decimal(0) and (min_unrealized_pnl_percent is not None or max_unrealized_pnl_percent is not None):
+        if margin > trading_constants.ZERO and (min_unrealized_pnl_percent is not None or max_unrealized_pnl_percent is not None):
             unrealized_pnl = decimal.Decimal(str(position.get(
                 trading_enums.ExchangeConstantsPositionColumns.UNREALIZED_PNL.value, 0
             ) or 0))
@@ -82,6 +83,14 @@ def get_positions_to_consider(
                 continue
             if max_mark_price is not None and mark_price > max_mark_price:
                 continue
+
+        # check position size
+        if min_position_size is not None and min_position_size > trading_constants.ZERO:
+            size = decimal.Decimal(str(position.get(
+                trading_enums.ExchangeConstantsPositionColumns.SIZE.value, 0
+            ) or 0))
+            if size < min_position_size:
+                continue
         result.append(position)
     return result
 
@@ -92,14 +101,15 @@ def get_smoothed_distribution_from_profile_data(
     min_unrealized_pnl_percent: typing.Optional[float] = None,
     max_unrealized_pnl_percent: typing.Optional[float] = None,
     min_mark_price: typing.Optional[decimal.Decimal] = None,
-    max_mark_price: typing.Optional[decimal.Decimal] = None
+    max_mark_price: typing.Optional[decimal.Decimal] = None,
+    min_position_size: typing.Optional[decimal.Decimal] = None,
 ) -> typing.Tuple[typing.List, decimal.Decimal, str]:
     # If profile has positions, use position-based distribution
     if profile_data.positions:
         return _get_distribution_from_positions(
             profile_data, new_position_only, started_at,
             min_unrealized_pnl_percent, max_unrealized_pnl_percent,
-            min_mark_price, max_mark_price
+            min_mark_price, max_mark_price, min_position_size
         )
     
     # If profile has portfolio but no positions, use portfolio-based distribution
@@ -116,7 +126,8 @@ def _get_distribution_from_positions(
     min_unrealized_pnl_percent: typing.Optional[float] = None,
     max_unrealized_pnl_percent: typing.Optional[float] = None,
     min_mark_price: typing.Optional[decimal.Decimal] = None,
-    max_mark_price: typing.Optional[decimal.Decimal] = None
+    max_mark_price: typing.Optional[decimal.Decimal] = None,
+    min_position_size: typing.Optional[decimal.Decimal] = None,
 ) -> typing.Tuple[typing.List, decimal.Decimal, str]:
     # Calculate total_initial_margin from ALL positions (before filtering)
     total_initial_margin = decimal.Decimal(sum(
@@ -132,7 +143,8 @@ def _get_distribution_from_positions(
 
     tradable_positions: list[dict] = get_positions_to_consider(
         profile_data.positions, new_position_only, started_at,
-        min_unrealized_pnl_percent, max_unrealized_pnl_percent, min_mark_price, max_mark_price
+        min_unrealized_pnl_percent, max_unrealized_pnl_percent, min_mark_price, max_mark_price,
+        min_position_size
     )
     if not tradable_positions:
         return [], trading_constants.ZERO, DistributionSource.POSITIONS.value
@@ -206,11 +218,13 @@ def update_distribution_based_on_profile_data(
     min_unrealized_pnl_percent: typing.Optional[float] = None,
     max_unrealized_pnl_percent: typing.Optional[float] = None,
     min_mark_price: typing.Optional[decimal.Decimal] = None,
-    max_mark_price: typing.Optional[decimal.Decimal] = None
+    max_mark_price: typing.Optional[decimal.Decimal] = None,
+    min_position_size: typing.Optional[decimal.Decimal] = None,
 ) -> dict[str, dict]:
     distribution, tradable_ratio, source = get_smoothed_distribution_from_profile_data(
         profile_data, new_position_only, started_at,
-        min_unrealized_pnl_percent, max_unrealized_pnl_percent, min_mark_price, max_mark_price
+        min_unrealized_pnl_percent, max_unrealized_pnl_percent, min_mark_price, max_mark_price,
+        min_position_size
     )
     distribution_per_exchange_profile[profile_data.profile_id] = {
         DISTRIBUTION_KEY: distribution,
