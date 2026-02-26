@@ -28,7 +28,7 @@ import tentacles.Meta.DSL_operators.exchange_operators as exchange_operators
 import tentacles.Meta.DSL_operators.exchange_operators.exchange_public_data_operators.ohlcv_operators as ohlcv_operators
 
 
-from tentacles.Meta.DSL_operators.exchange_operators.tests import (
+from tentacles.Meta.DSL_operators.exchange_operators.tests.exchange_public_data_operators import (
     SYMBOL,
     TIME_FRAME,
     KLINE_SIGNATURE,

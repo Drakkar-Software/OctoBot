@@ -16,6 +16,7 @@
 import typing
 import pytest
 import ast
+import re
 
 import octobot_commons.dsl_interpreter as dsl_interpreter
 import octobot_commons.enums as commons_enums
@@ -50,8 +51,8 @@ class SumPlusXOperatorWithPreCompute(dsl_interpreter.NaryOperator):
     def get_name() -> str:
         return "plus_x"
 
-    @staticmethod
-    def get_parameters() -> list[dsl_interpreter.OperatorParameter]:
+    @classmethod
+    def get_parameters(cls) -> list[dsl_interpreter.OperatorParameter]:
         return [
             dsl_interpreter.OperatorParameter(name="data", description="the data to compute the sum of", required=True, type=int),
             dsl_interpreter.OperatorParameter(name="data2", description="the data to compute the sum of", required=False, type=int),
@@ -96,8 +97,8 @@ class Add2Operator(dsl_interpreter.CallOperator):
     def get_name() -> str:
         return "add2"
 
-    @staticmethod
-    def get_parameters() -> list[dsl_interpreter.OperatorParameter]:
+    @classmethod
+    def get_parameters(cls) -> list[dsl_interpreter.OperatorParameter]:
         return [
             dsl_interpreter.OperatorParameter(name="left", description="the left operand", required=True, type=int),
             dsl_interpreter.OperatorParameter(name="right", description="the right operand", required=True, type=int),
@@ -107,12 +108,92 @@ class Add2Operator(dsl_interpreter.CallOperator):
         left, right = self.get_computed_left_and_right_parameters()
         return left + right
 
+class PreComputeSumOperator(dsl_interpreter.PreComputingCallOperator):
+    @staticmethod
+    def get_name() -> str:
+        return "pre_compute_sum"
+
+    @classmethod
+    def get_parameters(cls) -> list[dsl_interpreter.OperatorParameter]:
+        return [
+            dsl_interpreter.OperatorParameter(name="a", description="first value", required=True, type=int),
+            dsl_interpreter.OperatorParameter(name="b", description="second value", required=True, type=int),
+        ]
+
+    async def pre_compute(self) -> None:
+        await super().pre_compute()
+        value_by_parameter = self.get_computed_value_by_parameter()
+        self.value = value_by_parameter["a"] + value_by_parameter["b"]
+
+
+class CallWithDefaultParametersOperator(dsl_interpreter.CallOperator):
+    @staticmethod
+    def get_name() -> str:
+        return "call_with_default_parameters"
+
+    @classmethod
+    def get_parameters(cls) -> list[dsl_interpreter.OperatorParameter]:
+        return [
+            dsl_interpreter.OperatorParameter(name="value1", description="the first value", required=True, type=int),
+            dsl_interpreter.OperatorParameter(name="value2", description="the second value", required=False, type=int, default=0),
+            dsl_interpreter.OperatorParameter(name="added_extra_value", description="value to add to the result", required=False, type=int, default=0),
+            dsl_interpreter.OperatorParameter(name="substracted_extra_value", description="value to substract from the result", required=False, type=int, default=0),
+        ]
+
+    def compute(self) -> dsl_interpreter.ComputedOperatorParameterType:
+        value_by_parameter = self.get_computed_value_by_parameter()
+        return (
+            value_by_parameter["value1"]
+            + value_by_parameter["value2"]
+            + value_by_parameter["added_extra_value"]
+            - value_by_parameter["substracted_extra_value"]
+        )
+
+    
+class ParamMerger(dsl_interpreter.CallOperator):
+    @staticmethod
+    def get_name() -> str:
+        return "param_merger"
+
+    @classmethod
+    def get_parameters(cls) -> list[dsl_interpreter.OperatorParameter]:
+        return [
+            dsl_interpreter.OperatorParameter(name="p1", description="the first value", required=True, type=int),
+            dsl_interpreter.OperatorParameter(name="p2", description="the second value", required=True, type=int),
+        ]
+
+    def compute(self) -> dsl_interpreter.ComputedOperatorParameterType:
+        value_by_parameter = self.get_computed_value_by_parameter()
+        return str(value_by_parameter)
+
+
+class NestedDictSumOperator(dsl_interpreter.CallOperator):
+    @staticmethod
+    def get_name() -> str:
+        return "nested_dict_sum"
+
+    @classmethod
+    def get_parameters(cls) -> list[dsl_interpreter.OperatorParameter]:
+        return [
+            dsl_interpreter.OperatorParameter(name="values", description="the dictionary to sum the values of", required=True, type=dict),
+        ]
+
+    def nested_sum(self, values: dict) -> float:
+        return sum(
+            self.nested_sum(value) if isinstance(value, dict) else float(value)
+            for value in values.values()
+        )
+
+    def compute(self) -> dsl_interpreter.ComputedOperatorParameterType:
+        value_by_parameter = self.get_computed_value_by_parameter()
+        return self.nested_sum(value_by_parameter["values"])
+
 
 @pytest.fixture
 def interpreter():
     return dsl_interpreter.Interpreter(
         dsl_interpreter.get_all_operators() + [
-            SumPlusXOperatorWithoutInit, SumPlusXOperatorWithPreCompute, TimeFrameToSecondsOperator, AddOperator, Add2Operator
+            SumPlusXOperatorWithoutInit, SumPlusXOperatorWithPreCompute, TimeFrameToSecondsOperator, AddOperator, Add2Operator, PreComputeSumOperator, CallWithDefaultParametersOperator, NestedDictSumOperator, ParamMerger
         ]
     )
 
@@ -131,22 +212,72 @@ async def test_interpreter_basic_operations(interpreter):
 
 
 @pytest.mark.asyncio
+async def test_interpreter_basic_operations_with_named_parameters(interpreter):
+    assert await interpreter.interprete("param_merger(1, 2)") == "{'p1': 1, 'p2': 2}"
+    assert await interpreter.interprete("param_merger(1, p2=2)") == "{'p1': 1, 'p2': 2}"
+    assert await interpreter.interprete("param_merger(p1=1, p2=2)") == "{'p1': 1, 'p2': 2}"
+    assert await interpreter.interprete("param_merger(p2=1, p1=2)") == "{'p1': 2, 'p2': 1}"
+
+
+@pytest.mark.asyncio
+async def test_pre_computing_call_operator(interpreter):
+    assert await interpreter.interprete("pre_compute_sum(1, 2)") == 3
+    assert await interpreter.interprete("pre_compute_sum(10, 20)") == 30
+    assert await interpreter.interprete("pre_compute_sum(1 + 1, 2 + 2)") == 6
+    with pytest.raises(commons_errors.DSLInterpreterError, match="has not been pre_computed"):
+        operator = PreComputeSumOperator(1, 2)
+        operator.compute()
+
+
+@pytest.mark.asyncio
+async def test_interpreter_call_with_default_parameters(interpreter):
+    assert await interpreter.interprete("call_with_default_parameters(1)") == 1
+    assert await interpreter.interprete("call_with_default_parameters(1, 2)") == 3
+    assert await interpreter.interprete("call_with_default_parameters(1, 2, 3)") == 6
+    assert await interpreter.interprete("call_with_default_parameters(1, 2, 3, 4)") == 2
+    assert await interpreter.interprete("call_with_default_parameters(1, 2, added_extra_value=3)") == 6
+    assert await interpreter.interprete("call_with_default_parameters(1, 2, 3, substracted_extra_value=4)") == 2
+    assert await interpreter.interprete("call_with_default_parameters(1, 2, substracted_extra_value=3)") == 0
+    assert await interpreter.interprete("call_with_default_parameters(1, 2, added_extra_value=4, substracted_extra_value=5)") == 2
+    with pytest.raises(commons_errors.InvalidParametersError, match="call_with_default_parameters requires at least 1 parameter"):
+        await interpreter.interprete("call_with_default_parameters()")
+    with pytest.raises(commons_errors.InvalidParametersError, match="call_with_default_parameters supports up to 4 parameters:"):
+        await interpreter.interprete("call_with_default_parameters(1, 2, 3, 4, 5)")
+    with pytest.raises(commons_errors.InvalidParametersError, match=re.escape("Parameter(s) 'added_extra_value' have multiple values")):
+        await interpreter.interprete("call_with_default_parameters(1, 2, 3, 4, added_extra_value=5)")
+
+
+@pytest.mark.asyncio
+async def test_interpreter_nested_dict_sum(interpreter):
+    assert await interpreter.interprete("nested_dict_sum({})") == 0
+    assert await interpreter.interprete("nested_dict_sum({'a': 1})") == 1
+    assert await interpreter.interprete("nested_dict_sum({'a': 1 + 1})") == 2
+    assert await interpreter.interprete("nested_dict_sum({'a': 1, 'b': 2})") == 3
+    assert await interpreter.interprete("nested_dict_sum({'a': 1, 'b': {'c': 2, 'd': 3}})") == 6
+    assert await interpreter.interprete("nested_dict_sum({'a': 1, 'b': {'c': 2, 'd': {'e': 3}}})") == 6
+    assert await interpreter.interprete("nested_dict_sum({'a': 1, 'b': {'c': 2, 'd': {'e': 3, 'f': {'g': 4}}}})") == 10
+    assert await interpreter.interprete("nested_dict_sum({'a': 1, 'b': {'c': 2, 'd': {'e': 3, 'f': {'g': 4, 'h': {'i': 5}}}}})") == 15
+    assert await interpreter.interprete("nested_dict_sum({'a': 1, 'b': {'c': 2, 'd': {'e': 3, 'f': {'g': 4, 'h': {'i': 5, 'j': {'k': 6}}}}}})") == 21
+    assert await interpreter.interprete("nested_dict_sum({'a': 1, 'b': {'c': 2, 'd': {'e': 3, 'f': {'g': 4, 'h': {'i': 5, 'j': {'k': 6, 'l': {'m': 7}}}}}}})") == 28
+    assert await interpreter.interprete("nested_dict_sum({'a': 1, 'b': {'c': 2, 'd': {'e': 3, 'f': {'g': 4, 'h': {'i': 5, 'j': {'k': 6, 'l': {'m': 7, 'n': {'o': 8}}}}}}, 'p': 9 + 0.1}})") == 45.1
+
+@pytest.mark.asyncio
 async def test_interpreter_invalid_parameters(interpreter):
-    with pytest.raises(commons_errors.InvalidParametersError, match="plus_x requires at least 1 parameter\(s\): 1: data"):
+    with pytest.raises(commons_errors.InvalidParametersError, match=re.escape("plus_x requires at least 1 parameter(s): 1: data")):
         interpreter.prepare("plus_x()")
-    with pytest.raises(commons_errors.InvalidParametersError, match="plus_x requires at least 1 parameter\(s\): 1: data"):
+    with pytest.raises(commons_errors.InvalidParametersError, match=re.escape("plus_x requires at least 1 parameter(s): 1: data")):
         await interpreter.interprete("plus_x()")
-    with pytest.raises(commons_errors.InvalidParametersError, match="add2 requires at least 2 parameter\(s\): 1: left"):
+    with pytest.raises(commons_errors.InvalidParametersError, match=re.escape("add2 requires at least 2 parameter(s): 1: left")):
         interpreter.prepare("add2()")
-    with pytest.raises(commons_errors.InvalidParametersError, match="add2 requires at least 2 parameter\(s\): 1: left"):
+    with pytest.raises(commons_errors.InvalidParametersError, match=re.escape("add2 requires at least 2 parameter(s): 1: left")):
         await interpreter.interprete("add2()")
     with pytest.raises(commons_errors.InvalidParametersError, match="add2 supports up to 2 parameters:"):
         interpreter.prepare("add2(1, 2, 3)")
     with pytest.raises(commons_errors.InvalidParametersError, match="add2 supports up to 2 parameters:"):
         await interpreter.interprete("add2(1, 2, 3)")
-    with pytest.raises(commons_errors.InvalidParametersError, match="time_frame_to_seconds requires at least 1 parameter\(s\)"):
+    with pytest.raises(commons_errors.InvalidParametersError, match=re.escape("time_frame_to_seconds requires at least 1 parameter(s)")):
         interpreter.prepare("time_frame_to_seconds()")
-    with pytest.raises(commons_errors.InvalidParametersError, match="time_frame_to_seconds requires at least 1 parameter\(s\)"):
+    with pytest.raises(commons_errors.InvalidParametersError, match=re.escape("time_frame_to_seconds requires at least 1 parameter(s)")):
         await interpreter.interprete("time_frame_to_seconds()")
     with pytest.raises(commons_errors.InvalidParametersError, match="time_frame_to_seconds supports up to 1 parameters"):
         interpreter.prepare("time_frame_to_seconds(1, 2, 3)")
@@ -188,8 +319,8 @@ class OperatorWithParameters(dsl_interpreter.Operator):
     def get_name() -> str:
         return "param_op"
     
-    @staticmethod
-    def get_parameters() -> list[dsl_interpreter.OperatorParameter]:
+    @classmethod
+    def get_parameters(cls) -> list[dsl_interpreter.OperatorParameter]:
         return [
             dsl_interpreter.OperatorParameter(name="x", description="first parameter", required=True, type=int),
             dsl_interpreter.OperatorParameter(name="y", description="second parameter", required=False, type=int),

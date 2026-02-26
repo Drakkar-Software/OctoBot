@@ -18,6 +18,10 @@ from octobot_trading.personal_data.orders.active_order_swap_strategies import ac
 from octobot_trading.personal_data.orders.active_order_swap_strategies.active_order_swap_strategy import (
     ActiveOrderSwapStrategy,
 )
+from octobot_trading.personal_data.orders.active_order_swap_strategies import active_order_swap_strategy_factory
+from octobot_trading.personal_data.orders.active_order_swap_strategies.active_order_swap_strategy_factory import (
+    create_active_order_swap_strategy,
+)
 
 from octobot_trading.personal_data.orders.active_order_swap_strategies import stop_first_active_order_swap_strategy
 from octobot_trading.personal_data.orders.active_order_swap_strategies.stop_first_active_order_swap_strategy import (
@@ -34,4 +38,5 @@ __all__ = [
     "ActiveOrderSwapStrategy",
     "StopFirstActiveOrderSwapStrategy",
     "TakeProfitFirstActiveOrderSwapStrategy",
+    "create_active_order_swap_strategy",
 ]

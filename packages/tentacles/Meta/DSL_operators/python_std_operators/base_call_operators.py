@@ -122,8 +122,8 @@ class RoundOperator(dsl_interpreter.CallOperator):
     def get_name() -> str:
         return "round"
 
-    @staticmethod
-    def get_parameters() -> list[dsl_interpreter.OperatorParameter]:
+    @classmethod
+    def get_parameters(cls) -> list[dsl_interpreter.OperatorParameter]:
         return [
             dsl_interpreter.OperatorParameter(name="value", description="the value to round", required=True, type=list),
             dsl_interpreter.OperatorParameter(name="digits", description="the number of digits to round to", required=False, type=int),

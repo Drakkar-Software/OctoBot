@@ -38,6 +38,28 @@ def get_base_context(trading_mode, symbol=None, init_call=False):
     return get_full_context(trading_mode, None, None, symbol, None, None, None, None, None, init_call=init_call)
 
 
+def get_base_context_from_exchange_manager(exchange_manager, symbol):
+    context = Context(
+        modes.AbstractTradingMode,
+        exchange_manager,
+        exchange_manager.trader,
+        exchange_manager.exchange_name,
+        symbol,
+        None,
+        None,
+        None,
+        exchange_manager.logger,
+        modes.AbstractTradingMode,
+        None,
+        None,
+        None,
+        None,
+        None,
+    )
+    context.enable_trading = True
+    return context
+
+
 def get_full_context(trading_mode, matrix_id, cryptocurrency, symbol, time_frame, trigger_source, trigger_cache_timestamp,
                      candle, kline, init_call=False):
     context = Context(

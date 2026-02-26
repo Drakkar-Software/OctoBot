@@ -159,7 +159,26 @@ class Interpreter:
                     )
                     for arg in node.args
                 ]
-                return operator_class(*args)
+                kwargs = {}
+                for kw in node.keywords:
+                    value = (
+                        self._get_value_from_constant_node(kw.value)
+                        if isinstance(kw.value, ast.Constant)
+                        else self._visit_node(kw.value)
+                    )
+                    if kw.arg is not None:
+                        kwargs[kw.arg] = value
+                    else:
+                        if isinstance(value, dict):
+                            kwargs.update(value)
+                        else:
+                            raise octobot_commons.errors.UnsupportedOperatorError(
+                                f"**kwargs must unpack a dict, got {type(value).__name__}"
+                            )
+                args, kwargs = self._merge_named_parameters_for_operator(
+                    operator_class, args, kwargs
+                )
+                return operator_class(*args, **kwargs)
             raise octobot_commons.errors.UnsupportedOperatorError(
                 f"Unknown operator: {func_name}"
             )
@@ -259,6 +278,23 @@ class Interpreter:
                 operands = [self._visit_node(operand) for operand in node.elts]
                 return operator_class(*operands)
 
+        if isinstance(node, ast.Dict):
+            # Dict: {"a": 1, "b": 2} or {"a": 1, **other}
+            op_name = ast.Dict.__name__
+            result = {}
+            for key, value in zip(node.keys, node.values):
+                if key is not None:
+                    result[self._visit_node(key)] = self._visit_node(value)
+                else:
+                    unpacked = self._visit_node(value)
+                    if isinstance(unpacked, dict):
+                        result.update(unpacked)
+                    else:
+                        raise octobot_commons.errors.UnsupportedOperatorError(
+                            f"** unpacking in dict requires a dict, got {type(unpacked).__name__}"
+                        )
+            return result
+
         if isinstance(node, ast.Slice):
             # Slice: slice(1, 2, 3)
             op_name = ast.Slice.__name__
@@ -272,6 +308,44 @@ class Interpreter:
         raise octobot_commons.errors.UnsupportedOperatorError(
             f"Unsupported AST node type: {type(node).__name__}"
         )
+
+    def _merge_named_parameters_for_operator(
+        self,
+        operator_class: typing.Type[dsl_interpreter_operator.Operator],
+        args: typing.List,
+        kwargs: typing.Dict[str, typing.Any],
+    ) -> typing.Tuple[typing.List, typing.Dict[str, typing.Any]]:
+        """
+        For operators with get_parameters(), merge positional args and kwargs
+        into a single args tuple in parameter order. This ensures validation
+        passes when using named parameters (e.g. xyz(1, p2=2) where p2 is a required parameter).
+        """
+        expected_params = operator_class.get_parameters()
+        if not expected_params:
+            return args, kwargs
+
+        max_params = len(expected_params)
+        merged_args = []
+        args_index = 0
+        remaining_kwargs = dict(kwargs)
+
+        for param in expected_params:
+            if args_index < len(args):
+                merged_args.append(args[args_index])
+                args_index += 1
+            elif param.name in remaining_kwargs:
+                merged_args.append(remaining_kwargs.pop(param.name))
+            else:
+                # Parameter not provided - leave for Operator's default handling
+                break
+
+        if args_index < len(args):
+            raise octobot_commons.errors.InvalidParametersError(
+                f"{operator_class.get_name()} supports up to {max_params} "
+                f"parameters: {operator_class.get_parameters_description()}"
+            )
+
+        return merged_args, remaining_kwargs
 
     def _get_name_from_node(self, node: ast.AST) -> str:
         """Extract the name from a function node."""
@@ -289,7 +363,7 @@ class Interpreter:
         """Extract a literal value from an AST constant node."""
         value = node.value
         # Filter out unsupported types like complex numbers or Ellipsis
-        if isinstance(value, (str, int, float, bool, type(None))):
+        if isinstance(value, (str, int, float, bool, type(None), dict)):
             return value
         raise octobot_commons.errors.UnsupportedOperatorError(
             f"Unsupported constant type: {type(value).__name__}"
