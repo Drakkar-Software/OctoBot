@@ -103,6 +103,10 @@ class CoinexCCXTAdapter(exchanges.CCXTAdapter):
                 # order partially executed and then canceled
                 fixed[trading_enums.ExchangeConstantsOrderColumns.STATUS.value] = \
                     trading_enums.OrderStatus.CANCELED.value
+            order_type = (fixed.get(trading_enums.ExchangeConstantsOrderColumns.TYPE.value) or "").lower()
+            if order_type == "maker_only":
+                # maker_only is currently not converted by ccxt
+                fixed[trading_enums.ExchangeConstantsOrderColumns.TYPE.value] = trading_enums.TradeOrderType.LIMIT_MAKER.value
         except KeyError:
             pass
         return fixed
