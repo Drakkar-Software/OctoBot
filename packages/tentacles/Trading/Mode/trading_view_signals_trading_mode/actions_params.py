@@ -30,11 +30,13 @@ class EnsureExchangeBalanceParams(octobot_commons.dataclasses.FlexibleDataclass)
 class EnsureBlockchainWalletBalanceParams(octobot_commons.dataclasses.FlexibleDataclass):
     asset: str
     holdings: float
-    wallet_details: blockchain_wallets.BlockchainWalletParameters # details of the wallet to transfer from
+    blockchain_descriptor: blockchain_wallets.BlockchainDescriptor # details of the blockchain to transfer from
+    wallet_descriptor: blockchain_wallets.WalletDescriptor # details of the wallet to transfer from
 
 
 @dataclasses.dataclass
 class WithdrawFundsParams(octobot_commons.dataclasses.FlexibleDataclass):
+    # mapped to DSL "withdraw" parameters
     asset: str
     network: str # network to withdraw to
     address: str # recipient address of the withdrawal
@@ -45,8 +47,10 @@ class WithdrawFundsParams(octobot_commons.dataclasses.FlexibleDataclass):
 
 @dataclasses.dataclass
 class TransferFundsParams(octobot_commons.dataclasses.FlexibleDataclass):
+    # mapped to DSL "blockchain_wallet_transfer" parameters
     asset: str
     amount: float
     address: typing.Optional[str] # recipient address of the transfer
-    wallet_details: blockchain_wallets.BlockchainWalletParameters # details of the wallet to transfer from
+    blockchain_descriptor: blockchain_wallets.BlockchainDescriptor # details of the blockchain to transfer from
+    wallet_descriptor: blockchain_wallets.WalletDescriptor # details of the wallet to transfer from
     destination_exchange: typing.Optional[str] = None # recipient address of the transfer on the exchange

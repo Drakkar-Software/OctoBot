@@ -22,6 +22,7 @@ import octobot_commons.errors
 import octobot_commons.enums
 import octobot_commons.constants
 import octobot_commons.logging
+import octobot_commons.dsl_interpreter as dsl_interpreter
 import octobot_trading.api
 import octobot_trading.constants
 import tentacles.Meta.DSL_operators.exchange_operators as exchange_operators
@@ -43,6 +44,7 @@ from tentacles.Meta.DSL_operators.exchange_operators.tests.exchange_public_data_
     interpreter_with_exchange_manager_and_klines,
     interpreter_with_exchange_manager_and_new_candle_klines,
     interpreter,
+    interpreter_without_exchange_data,
 )
 
 
@@ -198,52 +200,63 @@ async def test_ohlcv_operators_basic_calls_with_new_candle_klines(
         assert "kline time (1000) is not equal to last candle time not the last time" in bot_log_mock.error.call_args[0][0]
 
 
-@pytest.mark.asyncio
-@pytest.mark.parametrize("operator", [
-    ("open"),
-    ("high"),
-    ("low"),
-    ("close"), 
-    ("volume"),
-    ("time")
-])
-async def test_ohlcv_operators_dependencies(interpreter, operator, exchange_manager_with_candles):
-    interpreter.prepare(f"{operator}")
-    assert interpreter.get_dependencies() == [
-        exchange_operators.ExchangeDataDependency(
-            exchange_manager_id=octobot_trading.api.get_exchange_manager_id(exchange_manager_with_candles),
-            symbol=SYMBOL,
-            time_frame=TIME_FRAME,
-            data_source=octobot_trading.constants.OHLCV_CHANNEL
-        )
-    ]
+class TestGetDependencies:
+    """Tests for get_dependencies using DSL syntax and the interpreter."""
 
-    # same dependency for all operators
-    interpreter.prepare(f"{operator} + close + volume")
-    assert interpreter.get_dependencies() == [
-        exchange_operators.ExchangeDataDependency(
-            exchange_manager_id=octobot_trading.api.get_exchange_manager_id(exchange_manager_with_candles),
-            symbol=SYMBOL,
-            time_frame=TIME_FRAME,
-            data_source=octobot_trading.constants.OHLCV_CHANNEL
-        )
-    ]
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("operator", [
+        "open",
+        "high",
+        "low",
+        "close",
+        "volume",
+        "time"
+    ])
+    async def test_ohlcv_operators_dependencies(
+        self, interpreter, interpreter_without_exchange_data, operator
+    ):
+        interpreter.prepare(f"{operator}")
+        assert interpreter.get_dependencies() == [
+            exchange_operators.ExchangeDataDependency(
+                symbol=SYMBOL,
+                time_frame=TIME_FRAME,
+                data_source=octobot_trading.constants.OHLCV_CHANNEL
+            )
+        ]
 
-    # SYMBOL + ETH/USDT dependency
-    # => dynamic dependencies are not yet supported. Update this test when supported.
-    interpreter.prepare(f"{operator} + close('ETH/USDT') + volume")
-    assert interpreter.get_dependencies() == [
-        exchange_operators.ExchangeDataDependency(
-            exchange_manager_id=octobot_trading.api.get_exchange_manager_id(exchange_manager_with_candles),
-            symbol=SYMBOL,
-            time_frame=TIME_FRAME,
-            data_source=octobot_trading.constants.OHLCV_CHANNEL
-        ),
-        # not identified as a dependency
-        # exchange_operators.ExchangeDataDependency(
-        #     exchange_manager_id=octobot_trading.api.get_exchange_manager_id(exchange_manager_with_candles),
-        #     symbol="ETH/USDT",
-        #     time_frame=TIME_FRAME,
-        #     data_source=octobot_trading.constants.OHLCV_CHANNEL
-        # ),
-    ]
+        # same dependency for all operators
+        interpreter.prepare(f"{operator} + close + volume")
+        assert interpreter.get_dependencies() == [
+            exchange_operators.ExchangeDataDependency(
+                symbol=SYMBOL,
+                time_frame=TIME_FRAME,
+                data_source=octobot_trading.constants.OHLCV_CHANNEL
+            )
+        ]
+
+        # SYMBOL + ETH/USDT dependency
+        interpreter.prepare(f"{operator} + close('ETH/USDT') + volume")
+        assert interpreter.get_dependencies() == [
+            exchange_operators.ExchangeDataDependency(
+                symbol=SYMBOL,
+                time_frame=TIME_FRAME,
+                data_source=octobot_trading.constants.OHLCV_CHANNEL
+            ),
+            exchange_operators.ExchangeDataDependency(
+                symbol="ETH/USDT",
+                time_frame=None,
+                data_source=octobot_trading.constants.OHLCV_CHANNEL
+            ),
+        ]
+
+        # now without exchange manager: SYMBOL is not returned as a dependency: only dynamic dependencies are returned
+        interpreter_without_exchange_data.prepare(f"{operator}")
+        assert interpreter_without_exchange_data.get_dependencies() == []
+        interpreter_without_exchange_data.prepare(f"{operator} + close('ETH/USDT') + volume")
+        assert interpreter_without_exchange_data.get_dependencies() == [
+            exchange_operators.ExchangeDataDependency(
+                symbol="ETH/USDT",
+                time_frame=None,
+                data_source=octobot_trading.constants.OHLCV_CHANNEL
+            ),
+        ]

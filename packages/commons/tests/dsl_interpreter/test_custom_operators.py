@@ -244,6 +244,8 @@ async def test_interpreter_call_with_default_parameters(interpreter):
     with pytest.raises(commons_errors.InvalidParametersError, match="call_with_default_parameters supports up to 4 parameters:"):
         await interpreter.interprete("call_with_default_parameters(1, 2, 3, 4, 5)")
     with pytest.raises(commons_errors.InvalidParametersError, match=re.escape("Parameter(s) 'added_extra_value' have multiple values")):
+        await interpreter.interprete("call_with_default_parameters(1, 2, 3, added_extra_value=4)")
+    with pytest.raises(commons_errors.InvalidParametersError, match=re.escape("call_with_default_parameters supports up to 4 parameters:")):
         await interpreter.interprete("call_with_default_parameters(1, 2, 3, 4, added_extra_value=5)")
 
 
@@ -283,6 +285,56 @@ async def test_interpreter_invalid_parameters(interpreter):
         interpreter.prepare("time_frame_to_seconds(1, 2, 3)")
     with pytest.raises(commons_errors.InvalidParametersError, match="time_frame_to_seconds supports up to 1 parameters"):
         await interpreter.interprete("time_frame_to_seconds(1, 2, 3)")
+
+
+def test_get_input_value_by_parameter():
+    # Positional arguments
+    operator = ParamMerger(1, 2)
+    assert operator.get_input_value_by_parameter() == {"p1": 1, "p2": 2}
+
+    # Keyword arguments
+    operator = ParamMerger(p1=10, p2=20)
+    assert operator.get_input_value_by_parameter() == {"p1": 10, "p2": 20}
+
+    # Mixed positional and keyword
+    operator = ParamMerger(1, p2=2)
+    assert operator.get_input_value_by_parameter() == {"p1": 1, "p2": 2}
+
+    # Reversed keyword order
+    operator = ParamMerger(p2=100, p1=200)
+    assert operator.get_input_value_by_parameter() == {"p1": 200, "p2": 100}
+
+    # Default values for optional parameters
+    operator = CallWithDefaultParametersOperator(42)
+    assert operator.get_input_value_by_parameter() == {
+        "value1": 42,
+        "value2": 0,
+        "added_extra_value": 0,
+        "substracted_extra_value": 0,
+    }
+
+    # Nested operator as raw (uncomputed) parameter
+    nested_add = AddOperator(1, 2)
+    operator = Add2Operator(nested_add, 3)
+    value_by_param = operator.get_input_value_by_parameter()
+    assert value_by_param["left"] is nested_add
+    assert value_by_param["right"] == 3
+
+    # Dict parameter
+    operator = NestedDictSumOperator({"a": 1, "b": 2})
+    assert operator.get_input_value_by_parameter() == {"values": {"a": 1, "b": 2}}
+
+    # Unknown parameters raise InvalidParametersError
+    with pytest.raises(
+        commons_errors.InvalidParametersError,
+        match=re.escape("Parameter(s) 'unknown_param' are unknown. Supported parameters: p1, p2"),
+    ):
+        ParamMerger(1, unknown_param=3).get_input_value_by_parameter()
+    with pytest.raises(
+        commons_errors.InvalidParametersError,
+        match=re.escape("param_merger supports up to 2 parameters"),
+    ):
+        ParamMerger(p1=1, p2=2, extra=99, another=1).get_input_value_by_parameter()
 
 
 class OperatorWithName(dsl_interpreter.Operator):

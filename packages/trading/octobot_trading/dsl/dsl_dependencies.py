@@ -1,5 +1,4 @@
-# pylint: disable=R0801
-#  Drakkar-Software OctoBot-Commons
+#  Drakkar-Software OctoBot-Trading
 #  Copyright (c) Drakkar-Software, All rights reserved.
 #
 #  This library is free software; you can redistribute it and/or
@@ -14,13 +13,13 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import dataclasses
+import typing
 
-import tentacles.Meta.DSL_operators.blockchain_wallet_operators.blockchain_wallet_ops
-from tentacles.Meta.DSL_operators.blockchain_wallet_operators.blockchain_wallet_ops import (
-    create_blockchain_wallet_operators,
-    CREATED_TRANSACTIONS_KEY,
-)
-__all__ = [
-    "create_blockchain_wallet_operators",
-    "CREATED_TRANSACTIONS_KEY",
-]
+import octobot_commons.dsl_interpreter as dsl_interpreter
+
+
+@dataclasses.dataclass
+class SymbolDependency(dsl_interpreter.InterpreterDependency):
+    symbol: str
+    time_frame: typing.Optional[str] = None

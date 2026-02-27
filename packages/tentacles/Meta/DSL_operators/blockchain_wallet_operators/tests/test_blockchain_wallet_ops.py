@@ -135,7 +135,10 @@ class TestBlockchainWalletTransferOperator:
 
         assert operator.value is not None
         assert isinstance(operator.value, dict)
-        assert octobot_trading.enums.ExchangeConstantsTransactionColumns.TXID.value in operator.value
+        assert "created_transactions" in operator.value
+        assert len(operator.value["created_transactions"]) == 1
+        tx = operator.value["created_transactions"][0]
+        assert octobot_trading.enums.ExchangeConstantsTransactionColumns.TXID.value in tx
 
     @pytest.mark.asyncio
     async def test_pre_compute_with_destination_exchange(self, blockchain_wallet_operators):
@@ -154,7 +157,10 @@ class TestBlockchainWalletTransferOperator:
 
         assert operator.value is not None
         assert isinstance(operator.value, dict)
-        assert octobot_trading.enums.ExchangeConstantsTransactionColumns.TXID.value in operator.value
+        assert "created_transactions" in operator.value
+        assert len(operator.value["created_transactions"]) == 1
+        tx = operator.value["created_transactions"][0]
+        assert octobot_trading.enums.ExchangeConstantsTransactionColumns.TXID.value in tx
 
     @pytest.mark.asyncio
     async def test_pre_compute_unsupported_destination_exchange(self, blockchain_wallet_operators):
@@ -189,14 +195,18 @@ class TestBlockchainWalletTransferOperator:
         result = await interpreter.interprete(
             f"blockchain_wallet_transfer({blockchain_descriptor}, {wallet_descriptor}, 'ETH', 0.1, address='0xrecipient123')"
         )
-        assert result[octobot_trading.enums.ExchangeConstantsTransactionColumns.TXID.value]
-        assert result[octobot_trading.enums.ExchangeConstantsTransactionColumns.ADDRESS_FROM.value] == "0x1234567890123456789012345678901234567890"
-        assert result[octobot_trading.enums.ExchangeConstantsTransactionColumns.ADDRESS_TO.value] == "0xrecipient123"
-        assert result[octobot_trading.enums.ExchangeConstantsTransactionColumns.AMOUNT.value] == decimal.Decimal('0.1')
-        assert result[octobot_trading.enums.ExchangeConstantsTransactionColumns.CURRENCY.value] == "ETH"
-        assert result[octobot_trading.enums.ExchangeConstantsTransactionColumns.FEE.value] is None
-        assert result[octobot_trading.enums.ExchangeConstantsTransactionColumns.INTERNAL.value] is False
+        assert "created_transactions" in result
+        assert len(result["created_transactions"]) == 1
+        tx = result["created_transactions"][0]
+        assert tx[octobot_trading.enums.ExchangeConstantsTransactionColumns.TXID.value]
+        assert tx[octobot_trading.enums.ExchangeConstantsTransactionColumns.ADDRESS_FROM.value] == "0x1234567890123456789012345678901234567890"
+        assert tx[octobot_trading.enums.ExchangeConstantsTransactionColumns.ADDRESS_TO.value] == "0xrecipient123"
+        assert tx[octobot_trading.enums.ExchangeConstantsTransactionColumns.AMOUNT.value] == decimal.Decimal('0.1')
+        assert tx[octobot_trading.enums.ExchangeConstantsTransactionColumns.CURRENCY.value] == "ETH"
+        assert tx[octobot_trading.enums.ExchangeConstantsTransactionColumns.FEE.value] is None
+        assert tx[octobot_trading.enums.ExchangeConstantsTransactionColumns.INTERNAL.value] is False
         result = await interpreter.interprete(
             f"blockchain_wallet_transfer({blockchain_descriptor}, {wallet_descriptor}, 'ETH', 0.1, destination_exchange='binanceus')"
         )
         assert result and isinstance(result, dict)
+        assert "created_transactions" in result

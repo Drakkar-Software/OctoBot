@@ -28,6 +28,9 @@ import octobot_trading.api
 import tentacles.Meta.DSL_operators.exchange_operators.exchange_operator as exchange_operator
 
 
+CREATED_WITHDRAWALS_KEY = "created_withdrawals"
+
+
 @dataclasses.dataclass
 class WithdrawFundsParams(octobot_commons.dataclasses.FlexibleDataclass):
     asset: str
@@ -56,6 +59,10 @@ def create_portfolio_operators(
 ) -> typing.List[type[PortfolioOperator]]:
 
     def _get_asset_holdings(asset: str) -> octobot_trading.personal_data.Asset:
+        if exchange_manager is None:
+            raise octobot_commons.errors.DSLInterpreterError(
+                "exchange_manager is required for portfolio operators"
+            )
         return octobot_trading.api.get_portfolio_currency(exchange_manager, asset)
 
     class _TotalOperator(PortfolioOperator):
@@ -106,12 +113,16 @@ def create_portfolio_operators(
 
         async def pre_compute(self) -> None:
             await super().pre_compute()
+            if exchange_manager is None:
+                raise octobot_commons.errors.DSLInterpreterError(
+                    "exchange_manager is required for withdraw operator"
+                )
             param_by_name = self.get_computed_value_by_parameter()
             withdraw_funds_params = WithdrawFundsParams.from_dict(param_by_name)
             amount = withdraw_funds_params.amount or (
                 octobot_trading.api.get_portfolio_currency(exchange_manager, withdraw_funds_params.asset).available
             )
-            self.value = await exchange_manager.trader.withdraw(
+            created_withdrawal = await exchange_manager.trader.withdraw(
                 withdraw_funds_params.asset,
                 decimal.Decimal(str(amount)),
                 withdraw_funds_params.network,
@@ -119,5 +130,6 @@ def create_portfolio_operators(
                 tag=withdraw_funds_params.tag,
                 params=withdraw_funds_params.params
             )
+            self.value = {CREATED_WITHDRAWALS_KEY: [created_withdrawal]}
 
-    return [_TotalOperator, _AvailableOperator]
+    return [_TotalOperator, _AvailableOperator, _WithdrawOperator]

@@ -18,6 +18,8 @@ import dbos
 import json
 import logging
 import typing
+import decimal
+import enum
 
 import octobot_node.config
 import octobot_node.enums
@@ -35,6 +37,18 @@ _BASE_CONFIG = dbos.DBOSConfig(
     max_executor_threads=octobot_node.config.settings.SCHEDULER_MAX_EXECUTOR_THREADS,
     application_version=VERSION,
 )
+
+
+def _sanitize(result: typing.Any) -> typing.Any:
+    if isinstance(result, decimal.Decimal):
+        return float(result)
+    if isinstance(result, enum.Enum):
+        return result.value
+    if isinstance(result, dict):
+        return {k: _sanitize(v) for k, v in result.items()}
+    elif isinstance(result, list):
+        return [_sanitize(v) for v in result]
+    return result
 
 
 class Scheduler:
@@ -152,7 +166,7 @@ class Scheduler:
                         "name": self.get_task_name(result_obj, w.workflow_id),
                         "description": description,
                         "status": status,
-                        "result": json.dumps(result) if result is not None else "",
+                        "result": json.dumps(_sanitize(result)) if result is not None else "",
                         "result_metadata": metadata,
                         "scheduled_at": w.created_at,
                         "started_at": None,

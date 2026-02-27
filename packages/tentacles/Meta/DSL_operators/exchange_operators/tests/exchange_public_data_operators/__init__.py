@@ -239,6 +239,14 @@ def interpreter(exchange_manager_with_candles):
 
 
 @pytest.fixture
+def interpreter_without_exchange_data():
+    return dsl_interpreter.Interpreter(
+        dsl_interpreter.get_all_operators() + 
+        exchange_operators.create_ohlcv_operators(None, None, None, None)
+    )
+
+
+@pytest.fixture
 def interpreter_with_exchange_manager_and_klines(exchange_manager_with_candles_and_klines):
     return dsl_interpreter.Interpreter(
         dsl_interpreter.get_all_operators() + 

@@ -14,6 +14,8 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
+import octobot_trading.enums
+
 
 class OctoBotTradingError(Exception):
     """
@@ -187,6 +189,18 @@ class NotSupported(OctoBotTradingError):
     """
     Raised when an exchange doesn't support the required element
     """
+
+class NotSupportedOrderTypeError(NotSupported):
+    """
+    Raised when an exchange doesn't support the required order type
+    """
+    def __init__(
+        self,
+        message: str,
+        order_type: octobot_trading.enums.TraderOrderType
+    ):
+        self.order_type: octobot_trading.enums.TraderOrderType = order_type
+        super().__init__(message)
 
 
 class UnSupportedSymbolError(NotSupported):

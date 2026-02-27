@@ -31,7 +31,11 @@ class OperatorParameter:
     default: typing.Any = UNSET_VALUE
 
     def __repr__(self) -> str:
-        return f"{self.name}{' (required)' if self.required else (f' (default: {self.default})' if self.default is not UNSET_VALUE else '')}[{self.type.__name__}] - {self.description}"
+        default_str = f' (default: {self.default})' if self.default is not UNSET_VALUE else ''
+        return (
+            f"{self.name}{' (required)' if self.required else default_str}"
+            f"[{self.type.__name__}] - {self.description}"
+        )
 
     def to_json(self) -> dict:
         """

@@ -21,9 +21,11 @@ import pytest_asyncio
 import octobot_commons.errors
 import octobot_commons.dsl_interpreter as dsl_interpreter
 import octobot_trading.enums
+import octobot_trading.errors as trading_errors
 import octobot_trading.personal_data as trading_personal_data
+import octobot_trading.dsl
 
-import tentacles.Meta.DSL_operators.exchange_operators.exchange_private_data_operators.cancel_order_operators as cancel_order_operators
+import tentacles.Meta.DSL_operators.exchange_operators.exchange_personal_data_operators.cancel_order_operators as cancel_order_operators
 
 from tentacles.Meta.DSL_operators.exchange_operators.tests import (
     backtesting_config,
@@ -53,11 +55,49 @@ async def cancel_order_operators_list(backtesting_trader):
 
 
 @pytest_asyncio.fixture
+async def cancel_order_operators_with_trading_mode(backtesting_trader):
+    _config, exchange_manager, _trader = backtesting_trader
+    mock_trading_mode = mock.Mock()
+    mock_trading_mode.cancel_order = mock.AsyncMock(return_value=(True, None))
+    mock_dependencies = mock.Mock()
+    operators_list = cancel_order_operators.create_cancel_order_operators(
+        exchange_manager,
+        trading_mode=mock_trading_mode,
+        dependencies=mock_dependencies,
+    )
+    return operators_list, mock_trading_mode, mock_dependencies
+
+
+@pytest_asyncio.fixture
 async def interpreter(cancel_order_operators_list):
     return dsl_interpreter.Interpreter(
         dsl_interpreter.get_all_operators()
         + cancel_order_operators_list
     )
+
+
+@pytest_asyncio.fixture
+async def no_exchange_manager_cancel_order_operators_list():
+    return cancel_order_operators.create_cancel_order_operators(None)
+
+
+@pytest_asyncio.fixture
+async def no_exchange_manager_interpreter(no_exchange_manager_cancel_order_operators_list):
+    return dsl_interpreter.Interpreter(
+        dsl_interpreter.get_all_operators()
+        + no_exchange_manager_cancel_order_operators_list
+    )
+
+
+@pytest_asyncio.fixture
+async def maybe_exchange_manager_interpreter(request, interpreter, no_exchange_manager_interpreter):
+    """Parametrized fixture that yields either interpreter or no_exchange_manager_interpreter."""
+    selected_value = request.param
+    if selected_value == "interpreter":
+        return interpreter
+    elif selected_value == "no_exchange_manager_interpreter":
+        return no_exchange_manager_interpreter
+    raise ValueError(f"Invalid selected_value: {selected_value}")
 
 
 class TestCancelOrderOperator:
@@ -85,7 +125,7 @@ class TestCancelOrderOperator:
             )
             await operator.pre_compute()
 
-            assert operator.value == ["order-1", "order-2"]
+            assert operator.value == {"cancelled_orders": ["order-1", "order-2"]}
             assert cancel_order_mock.await_count == 2
 
     @pytest.mark.asyncio
@@ -106,9 +146,12 @@ class TestCancelOrderOperator:
                 SYMBOL,
                 exchange_order_ids=["order-1"],
             )
-            await operator.pre_compute()
+            with pytest.raises(
+                trading_errors.OrderDescriptionNotFoundError,
+                match="No .* order found matching",
+            ):
+                await operator.pre_compute()
 
-            assert operator.value == []
             cancel_order_mock.assert_not_awaited()
 
     @pytest.mark.asyncio
@@ -136,7 +179,7 @@ class TestCancelOrderOperator:
             )
             await operator.pre_compute()
 
-            assert operator.value == ["order-1", "order-3"]
+            assert operator.value == {"cancelled_orders": ["order-1", "order-3"]}
             assert cancel_order_mock.await_count == 2
 
     @pytest.mark.asyncio
@@ -164,7 +207,7 @@ class TestCancelOrderOperator:
             )
             await operator.pre_compute()
 
-            assert operator.value == ["order-1"]
+            assert operator.value == {"cancelled_orders": ["order-1"]}
             cancel_order_mock.assert_awaited_once_with(buy_order, wait_for_cancelling=True)
 
     @pytest.mark.asyncio
@@ -192,7 +235,7 @@ class TestCancelOrderOperator:
             )
             await operator.pre_compute()
 
-            assert operator.value == ["order-2"]
+            assert operator.value == {"cancelled_orders": ["order-2"]}
             cancel_order_mock.assert_awaited_once_with(order2, wait_for_cancelling=True)
 
     @pytest.mark.asyncio
@@ -220,7 +263,7 @@ class TestCancelOrderOperator:
             )
             await operator.pre_compute()
 
-            assert operator.value == ["order-2"]
+            assert operator.value == {"cancelled_orders": ["order-2"]}
             cancel_order_mock.assert_awaited_once_with(order2, wait_for_cancelling=True)
 
     @pytest.mark.asyncio
@@ -247,7 +290,7 @@ class TestCancelOrderOperator:
             )
             await operator.pre_compute()
 
-            assert operator.value == ["order-2"]
+            assert operator.value == {"cancelled_orders": ["order-2"]}
             assert cancel_order_mock.await_count == 2
 
     def test_compute_without_pre_compute(self, cancel_order_operators_list):
@@ -261,6 +304,35 @@ class TestCancelOrderOperator:
             match="has not been pre_computed",
         ):
             operator.compute()
+
+    @pytest.mark.asyncio
+    async def test_pre_compute_uses_trading_mode_when_provided(
+        self, cancel_order_operators_with_trading_mode, backtesting_trader
+    ):
+        _config, exchange_manager, _trader = backtesting_trader
+        operators_list, mock_trading_mode, mock_dependencies = cancel_order_operators_with_trading_mode
+        cancel_order_op_class, = operators_list
+
+        order1 = _create_mock_order("order-1")
+        mock_orders = [order1]
+
+        with mock.patch.object(
+            exchange_manager.exchange_personal_data.orders_manager,
+            "get_open_orders",
+            return_value=mock_orders,
+        ):
+            operator = cancel_order_op_class(
+                SYMBOL,
+                exchange_order_ids=["order-1"],
+            )
+            await operator.pre_compute()
+
+            assert operator.value == {"cancelled_orders": ["order-1"]}
+            mock_trading_mode.cancel_order.assert_awaited_once()
+            call_args = mock_trading_mode.cancel_order.call_args
+            assert call_args[0][0] == order1
+            assert call_args[1]["wait_for_cancelling"] is True
+            assert call_args[1]["dependencies"] is mock_dependencies
 
     @pytest.mark.asyncio
     async def test_cancel_order_call_as_dsl(self, interpreter, backtesting_trader):
@@ -289,7 +361,7 @@ class TestCancelOrderOperator:
         result = await interpreter.interprete(
             f"cancel_order('{SYMBOL}', exchange_order_ids=['{EXCHANGE_ORDER_ID}'])"
         )
-        assert result == [EXCHANGE_ORDER_ID]
+        assert result == {"cancelled_orders": [EXCHANGE_ORDER_ID]}
 
         open_orders_after = exchange_manager.exchange_personal_data.orders_manager.get_open_orders(symbol=SYMBOL)
         assert len(open_orders_after) == 0
@@ -314,4 +386,30 @@ class TestCancelOrderOperator:
             result = await interpreter.interprete(
                 f"cancel_order('{SYMBOL}', side='buy', exchange_order_ids=['order-buy'])"
             )
-            assert result == ["order-buy"]
+            assert result == {"cancelled_orders": ["order-buy"]}
+
+
+class TestGetDependencies:
+    """Tests for get_dependencies using DSL syntax and the interpreter."""
+
+    @pytest.mark.parametrize(
+        "maybe_exchange_manager_interpreter",
+        ["interpreter", "no_exchange_manager_interpreter"],
+        indirect=True,
+    )
+    def test_cancel_order_get_dependencies_from_interpreter(
+        self, maybe_exchange_manager_interpreter
+    ):
+        maybe_exchange_manager_interpreter.prepare(
+            f"cancel_order('{SYMBOL}', exchange_order_ids=['{EXCHANGE_ORDER_ID}'])"
+        )
+        assert maybe_exchange_manager_interpreter.get_dependencies() == [
+            octobot_trading.dsl.SymbolDependency(symbol=SYMBOL),
+        ]
+        symbol = "ETH/USDT"
+        maybe_exchange_manager_interpreter.prepare(
+            f"cancel_order('{symbol}', tag='my_tag')"
+        )
+        assert maybe_exchange_manager_interpreter.get_dependencies() == [
+            octobot_trading.dsl.SymbolDependency(symbol=symbol),
+        ]
