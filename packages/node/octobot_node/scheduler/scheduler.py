@@ -51,6 +51,18 @@ def _sanitize(result: typing.Any) -> typing.Any:
     return result
 
 
+def _sanitize(result: typing.Any) -> typing.Any:
+    if isinstance(result, decimal.Decimal):
+        return float(result)
+    if isinstance(result, enum.Enum):
+        return result.value
+    if isinstance(result, dict):
+        return {k: _sanitize(v) for k, v in result.items()}
+    elif isinstance(result, list):
+        return [_sanitize(v) for v in result]
+    return result
+
+
 class Scheduler:
     INSTANCE: dbos.DBOS = None # type: ignore
     BOT_WORKFLOW_QUEUE: dbos.Queue = None # type: ignore
