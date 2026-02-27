@@ -1835,18 +1835,18 @@ class polymarket(Exchange, ImplicitAPI):
             nowSeconds = int(math.floor(self.milliseconds()) / 1000)
             defaultExpirationDays = self.safe_integer(self.options, 'defaultExpirationDays', 30)
             expiration = nowSeconds + (defaultExpirationDays * 24 * 60 * 60)
-        # Get nonce(default: current timestamp in seconds)
+        # Get nonce(default: current timestamp in seconds to ensure uniqueness)
         nonce = self.safe_integer(params, 'nonce')
         if nonce is None:
-            nonce = 0  # Default nonce is 0
+            # Use current timestamp to ensure uniqueness per order
+            nonce = int(math.floor(self.milliseconds()) / 1000)
         # Get signer address(default: maker address)
         signer = self.safe_string(params, 'signer')
         if signer is None:
             signer = self.get_main_wallet_address()
         normalizedSigner = self.normalize_address(signer)
-        # Generate salt(unique integer based on microseconds)
-        # Using microseconds for better uniqueness without relying on Math.random()
-        salt = int(math.floor(self.milliseconds()) / 1000)
+        # Generate salt(unique integer based on milliseconds for better uniqueness)
+        salt = self.milliseconds()
         # Calculate makerAmount and takerAmount from size and price
         # Key steps: 1) Round down size first, 2) Calculate other amount, 3) Round if needed, 4) Convert to smallest units
         # Get precision from market info or use defaults(USDC: 6 decimals, Tokens: 18 decimals)
