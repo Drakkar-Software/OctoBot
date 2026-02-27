@@ -203,3 +203,19 @@ async def test_interpreter_insupported_operations(interpreter):
         await interpreter.interprete("oscillate(100, 10, -1)")
     with pytest.raises(octobot_commons.errors.InvalidParametersError):
         await interpreter.interprete("oscillate(100, 10, 0)")
+
+
+@pytest.mark.asyncio
+async def test_error_operator(interpreter):
+    assert "error" in interpreter.operators_by_name
+
+    with pytest.raises(octobot_commons.errors.ErrorStatementEncountered, match="123-error"):
+        await interpreter.interprete("error('123-error')")
+
+    with pytest.raises(octobot_commons.errors.ErrorStatementEncountered):
+        await interpreter.interprete("error")
+
+    with pytest.raises(octobot_commons.errors.ErrorStatementEncountered, match="123-error"):
+        await interpreter.interprete("error('123-error') if True else 'ok'")
+
+    assert await interpreter.interprete("error('123-error') if False else 'ok'") == "ok"

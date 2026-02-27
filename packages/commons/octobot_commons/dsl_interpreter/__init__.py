@@ -39,7 +39,14 @@ from octobot_commons.dsl_interpreter.operators import (
     ExpressionOperator,
     PreComputingCallOperator,
 )
-from octobot_commons.dsl_interpreter.interpreter_dependency import InterpreterDependency
+from octobot_commons.dsl_interpreter.interpreter_dependency import (
+    InterpreterDependency,
+)
+from octobot_commons.dsl_interpreter.parameters_util import (
+    format_parameter_value,
+    resove_operator_params,
+)
+from octobot_commons.dsl_interpreter.dsl_call_result import DSLCallResult
 
 __all__ = [
     "get_all_operators",
@@ -58,4 +65,7 @@ __all__ = [
     "ExpressionOperator",
     "PreComputingCallOperator",
     "InterpreterDependency",
+    "format_parameter_value",
+    "resove_operator_params",
+    "DSLCallResult",
 ]

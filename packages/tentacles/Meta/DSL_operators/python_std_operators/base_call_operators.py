@@ -262,3 +262,17 @@ class OscillatorOperator(dsl_interpreter.CallOperator):
         oscillation_value = oscillation_range * oscillation
 
         return base_value + oscillation_value
+
+
+class ErrorOperator(dsl_interpreter.CallOperator):
+    NAME = "error"
+    DESCRIPTION = "Raises a ErrorStatementEncountered exception with the given parameters."
+    EXAMPLE = "error('123-error')"
+
+    @staticmethod
+    def get_name() -> str:
+        return "error"
+
+    def compute(self):
+        params = self.get_computed_parameters()
+        raise octobot_commons.errors.ErrorStatementEncountered(*params)

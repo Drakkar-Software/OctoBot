@@ -25,17 +25,22 @@ class PreComputingCallOperator(
 ):  # pylint: disable=abstract-method
     """
     Base class for pre-computing call operators (function calls).
-    Pre-computing call operators are call operators that must be pre-computed before being computed.
+    Pre-computing call operators are call operators that must be 
+    pre-computed before being computed.
     """
     def __init__(self, *parameters: dsl_interpreter_operator.OperatorParameterType, **kwargs: typing.Any):
         super().__init__(*parameters, **kwargs)
-        self.value: dsl_interpreter_operator.ComputedOperatorParameterType = dsl_interpreter_operator_parameter.UNINITIALIZED_VALUE # type: ignore
-    
+        self.value: dsl_interpreter_operator.ComputedOperatorParameterType = (
+            dsl_interpreter_operator_parameter.UNINITIALIZED_VALUE
+        ) # type: ignore
+
     async def pre_compute(self) -> None:
         await super().pre_compute()
         self.value = dsl_interpreter_operator_parameter.UNINITIALIZED_VALUE  # type: ignore
 
     def compute(self) -> dsl_interpreter_operator.ComputedOperatorParameterType:
         if self.value is dsl_interpreter_operator_parameter.UNINITIALIZED_VALUE:
-            raise octobot_commons.errors.DSLInterpreterError("{self.__class__.__name__} has not been pre_computed")
+            raise octobot_commons.errors.DSLInterpreterError(
+                "{self.__class__.__name__} has not been pre_computed"
+            )
         return self.value

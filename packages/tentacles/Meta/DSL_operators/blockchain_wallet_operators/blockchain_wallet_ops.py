@@ -46,6 +46,8 @@ class TransferFundsParams(octobot_commons.dataclasses.FlexibleDataclass):
 
 BLOCKCHAIN_WALLET_LIBRARY = "blockchain_wallet"
 
+CREATED_TRANSACTIONS_KEY = "created_transactions"
+
 
 class BlockchainWalletOperator(dsl_interpreter.PreComputingCallOperator):
     @staticmethod
@@ -67,7 +69,7 @@ def create_blockchain_wallet_operators(
 
     class _BlockchainWalletBalanceOperator(BlockchainWalletOperator):
         DESCRIPTION = "Returns the balance of the asset in the blockchain wallet"
-        EXAMPLE = "blockchain_wallet_balance('BTC')"
+        EXAMPLE = "blockchain_wallet_balance({blockchain_descriptor}, {wallet_descriptor}, 'BTC')"
 
         @staticmethod
         def get_name() -> str:
@@ -82,6 +84,10 @@ def create_blockchain_wallet_operators(
 
         async def pre_compute(self) -> None:
             await super().pre_compute()
+            if exchange_manager is None:
+                raise octobot_commons.errors.DSLInterpreterError(
+                    "exchange_manager is required for blockchain_wallet_balance operator"
+                )
             param_by_name = self.get_computed_value_by_parameter()
             blockchain_wallet_balance_params = BlockchainWalletBalanceParams.from_dict(param_by_name)
             async with octobot_trading.api.blockchain_wallet_context(
@@ -100,7 +106,7 @@ def create_blockchain_wallet_operators(
 
     class _BlockchainWalletTransferOperator(BlockchainWalletOperator):
         DESCRIPTION = "Withdraws an asset from the exchange's portfolio. requires ALLOW_FUNDS_TRANSFER env to be True (disabled by default to protect funds)"
-        EXAMPLE = "blockchain_wallet_transfer('BTC', 'ethereum', '0x1234567890abcdef1234567890abcdef12345678', 0.1)"
+        EXAMPLE = "blockchain_wallet_transfer({blockchain_descriptor}, {wallet_descriptor}, 'BTC', 0.1, '{address}')"
 
         @staticmethod
         def get_name() -> str:
@@ -118,6 +124,10 @@ def create_blockchain_wallet_operators(
 
         async def pre_compute(self) -> None:
             await super().pre_compute()
+            if exchange_manager is None:
+                raise octobot_commons.errors.DSLInterpreterError(
+                    "exchange_manager is required for blockchain_wallet_transfer operator"
+                )
             param_by_name = self.get_computed_value_by_parameter()
             transfer_funds_params = TransferFundsParams.from_dict(param_by_name)
             async with octobot_trading.api.blockchain_wallet_context(
@@ -138,11 +148,12 @@ def create_blockchain_wallet_operators(
                         f"Unsupported destination exchange: {transfer_funds_params.destination_exchange}"
                     )
                 # requires ALLOW_FUNDS_TRANSFER env to be True (disabled by default to protect funds)
-                self.value = await wallet.withdraw(
+                created_transaction = await wallet.withdraw(
                     transfer_funds_params.asset,
                     decimal.Decimal(str(transfer_funds_params.amount)),
                     transfer_funds_params.blockchain_descriptor.network,
                     address,
                 )
+                self.value = {CREATED_TRANSACTIONS_KEY: [created_transaction]}
 
     return [_BlockchainWalletBalanceOperator, _BlockchainWalletTransferOperator]

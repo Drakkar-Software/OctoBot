@@ -20,7 +20,7 @@ import pytest_asyncio
 import octobot_commons.errors
 import octobot_commons.dsl_interpreter as dsl_interpreter
 
-import tentacles.Meta.DSL_operators.exchange_operators.exchange_private_data_operators.futures_contracts_operators as futures_contracts_operators
+import tentacles.Meta.DSL_operators.exchange_operators.exchange_personal_data_operators.futures_contracts_operators as futures_contracts_operators
 
 from tentacles.Meta.DSL_operators.exchange_operators.tests import (
     backtesting_config,

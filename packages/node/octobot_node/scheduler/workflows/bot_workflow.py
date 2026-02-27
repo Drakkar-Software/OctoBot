@@ -82,6 +82,7 @@ class BotWorkflow(workflow_base.DBOSWorkflowHelperMixin):
         next_iteration_time = None
         task_output = {}
         next_task = copy.copy(task)
+        error = None
         with octobot_node.scheduler.task_context.encrypted_task(task):
             current_step = INIT_STEP
             if task.type == octobot_node.models.TaskType.EXECUTE_ACTIONS.value:
@@ -89,7 +90,13 @@ class BotWorkflow(workflow_base.DBOSWorkflowHelperMixin):
                 result: octobot_lib.OctoBotActionsJobResult = await octobot_lib.OctoBotActionsJob(
                     task.content
                 ).run()
-                current_step = ", ".join([str(action.config) for action in result.processed_actions]) if result.processed_actions else None
+                if result.processed_actions:
+                    current_step = ", ".join([str(action.dsl_script) for action in result.processed_actions])
+                    for action in result.processed_actions:
+                        if action.error_status is not None:
+                            error = action.error_status
+                else:
+                    current_step = None
                 task_output = BotWorkflow._format_octobot_actions_job_result(result)
                 if result.next_actions_description:
                     next_iteration_time = result.next_actions_description.get_next_execution_time()
@@ -105,7 +112,7 @@ class BotWorkflow(workflow_base.DBOSWorkflowHelperMixin):
             await t.set_current_step(workflow_base.ProgressStatus(
                 previous_step=current_step,
                 previous_step_details=task_output,
-                next_step=", ".join([str(action.config) for action in result.next_actions_description.immediate_actions]) if result.next_actions_description else None,
+                next_step=", ".join([str(action.dsl_script) for action in result.next_actions_description.immediate_actions]) if result.next_actions_description else None,
                 next_step_at=result.next_actions_description.get_next_execution_time() if result.next_actions_description else None,
                 remaining_steps=len(result.next_actions_description.pending_actions) + 1 if result.next_actions_description else (
                     1 if result.next_actions_description else 0
@@ -116,7 +123,7 @@ class BotWorkflow(workflow_base.DBOSWorkflowHelperMixin):
             octobot_node.enums.TaskResultKeys.RESULT.value: task_output,
             octobot_node.enums.TaskResultKeys.METADATA.value: task.result_metadata,
             octobot_node.enums.TaskResultKeys.TASK.value: {"name": task.name},
-            octobot_node.enums.TaskResultKeys.ERROR.value: None,
+            octobot_node.enums.TaskResultKeys.ERROR.value: error,
         }
         return BotIterationResult(
             task_result=task_result,

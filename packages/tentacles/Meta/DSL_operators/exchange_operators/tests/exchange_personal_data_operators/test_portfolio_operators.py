@@ -13,6 +13,8 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import decimal
+import mock
 import octobot_commons.constants as commons_constants
 import pytest
 import pytest_asyncio
@@ -21,7 +23,7 @@ import octobot_commons.errors
 import octobot_commons.dsl_interpreter as dsl_interpreter
 import octobot_trading.constants
 
-import tentacles.Meta.DSL_operators.exchange_operators.exchange_private_data_operators.portfolio_operators as portfolio_operators
+import tentacles.Meta.DSL_operators.exchange_operators.exchange_personal_data_operators.portfolio_operators as portfolio_operators
 
 from tentacles.Meta.DSL_operators.exchange_operators.tests import (
     backtesting_config,
@@ -67,7 +69,7 @@ class TestTotalOperator:
     @pytest.mark.asyncio
     async def test_pre_compute(self, portfolio_operators_list, backtesting_trader):
         _config, exchange_manager, _trader = backtesting_trader
-        total_op_class, _ = portfolio_operators_list
+        total_op_class, _, _ = portfolio_operators_list
 
         _ensure_portfolio_config(backtesting_trader, {ASSET_BTC: 1.5, ASSET_USDT: 1000})
 
@@ -78,7 +80,7 @@ class TestTotalOperator:
     @pytest.mark.asyncio
     async def test_pre_compute_asset_not_in_portfolio(self, portfolio_operators_list, backtesting_trader):
         _config, exchange_manager, _trader = backtesting_trader
-        total_op_class, _ = portfolio_operators_list
+        total_op_class, _, _ = portfolio_operators_list
 
         _ensure_portfolio_config(backtesting_trader, {ASSET_BTC: 1.5, ASSET_USDT: 1000})
 
@@ -87,7 +89,7 @@ class TestTotalOperator:
         assert operator.value == float(octobot_trading.constants.ZERO)
 
     def test_compute_without_pre_compute(self, portfolio_operators_list):
-        total_op_class, _ = portfolio_operators_list
+        total_op_class, _, _ = portfolio_operators_list
         operator = total_op_class(ASSET_BTC)
         with pytest.raises(
             octobot_commons.errors.DSLInterpreterError,
@@ -108,7 +110,7 @@ class TestAvailableOperator:
     @pytest.mark.asyncio
     async def test_pre_compute(self, portfolio_operators_list, backtesting_trader):
         _config, exchange_manager, _trader = backtesting_trader
-        _, available_op_class = portfolio_operators_list
+        _, available_op_class, _ = portfolio_operators_list
 
         _ensure_portfolio_config(backtesting_trader, {ASSET_BTC: 1.5, ASSET_USDT: 1000})
 
@@ -119,7 +121,7 @@ class TestAvailableOperator:
     @pytest.mark.asyncio
     async def test_pre_compute_asset_not_in_portfolio(self, portfolio_operators_list, backtesting_trader):
         _config, exchange_manager, _trader = backtesting_trader
-        _, available_op_class = portfolio_operators_list
+        _, available_op_class, _ = portfolio_operators_list
 
         _ensure_portfolio_config(backtesting_trader, {ASSET_BTC: 1.5, ASSET_USDT: 1000})
 
@@ -128,7 +130,7 @@ class TestAvailableOperator:
         assert operator.value == float(octobot_trading.constants.ZERO)
 
     def test_compute_without_pre_compute(self, portfolio_operators_list):
-        _, available_op_class = portfolio_operators_list
+        _, available_op_class, _ = portfolio_operators_list
         operator = available_op_class(ASSET_BTC)
         with pytest.raises(
             octobot_commons.errors.DSLInterpreterError,
@@ -143,3 +145,121 @@ class TestAvailableOperator:
         assert await interpreter.interprete(f"available('{ASSET_BTC}')") == 3.0
         assert await interpreter.interprete(f"available('{ASSET_USDT}')") == 2000.0
         assert await interpreter.interprete(f"available('{ASSET_ETH}')") == 0.0
+
+
+class TestWithdrawOperator:
+    NETWORK = "ethereum"
+    ADDRESS = "0x1234567890abcdef1234567890abcdef12345678"
+    WITHDRAW_RESULT = {"id": "withdrawal-123", "status": "ok"}
+
+    @pytest.mark.asyncio
+    async def test_pre_compute(self, portfolio_operators_list, backtesting_trader):
+        _config, exchange_manager, _trader = backtesting_trader
+        _, _, withdraw_op_class = portfolio_operators_list
+        _ensure_portfolio_config(backtesting_trader, {ASSET_BTC: 1.0, ASSET_USDT: 1000})
+
+        with mock.patch.object(
+            exchange_manager.trader,
+            "withdraw",
+            mock.AsyncMock(return_value=self.WITHDRAW_RESULT),
+        ) as withdraw_mock:
+            operator = withdraw_op_class(ASSET_BTC, self.NETWORK, self.ADDRESS, 0.1)
+            await operator.pre_compute()
+
+        assert operator.value == {"created_withdrawals": [self.WITHDRAW_RESULT]}
+        withdraw_mock.assert_awaited_once_with(
+            ASSET_BTC,
+            decimal.Decimal("0.1"),
+            self.NETWORK,
+            self.ADDRESS,
+            tag=None,
+            params={},
+        )
+
+    @pytest.mark.asyncio
+    async def test_pre_compute_uses_available_balance_when_amount_omitted(
+        self, portfolio_operators_list, backtesting_trader
+    ):
+        _config, exchange_manager, _trader = backtesting_trader
+        _, _, withdraw_op_class = portfolio_operators_list
+        _ensure_portfolio_config(backtesting_trader, {ASSET_BTC: 0.5, ASSET_USDT: 1000})
+
+        with mock.patch.object(
+            exchange_manager.trader,
+            "withdraw",
+            mock.AsyncMock(return_value=self.WITHDRAW_RESULT),
+        ) as withdraw_mock:
+            operator = withdraw_op_class(ASSET_BTC, self.NETWORK, self.ADDRESS)
+            await operator.pre_compute()
+
+        assert operator.value == {"created_withdrawals": [self.WITHDRAW_RESULT]}
+        withdraw_mock.assert_awaited_once_with(
+            ASSET_BTC,
+            decimal.Decimal("0.5"),
+            self.NETWORK,
+            self.ADDRESS,
+            tag=None,
+            params={},
+        )
+
+    @pytest.mark.asyncio
+    async def test_pre_compute_with_tag_and_params(
+        self, portfolio_operators_list, backtesting_trader
+    ):
+        _config, exchange_manager, _trader = backtesting_trader
+        _, _, withdraw_op_class = portfolio_operators_list
+        _ensure_portfolio_config(backtesting_trader, {ASSET_BTC: 1.0})
+        tag = "memo-123"
+        params = {"fee": "low"}
+
+        with mock.patch.object(
+            exchange_manager.trader,
+            "withdraw",
+            mock.AsyncMock(return_value=self.WITHDRAW_RESULT),
+        ) as withdraw_mock:
+            operator = withdraw_op_class(
+                ASSET_BTC, self.NETWORK, self.ADDRESS, 0.1, tag=tag, params=params
+            )
+            await operator.pre_compute()
+
+        withdraw_mock.assert_awaited_once_with(
+            ASSET_BTC,
+            decimal.Decimal("0.1"),
+            self.NETWORK,
+            self.ADDRESS,
+            tag=tag,
+            params=params,
+        )
+
+    def test_compute_without_pre_compute(self, portfolio_operators_list):
+        _, _, withdraw_op_class = portfolio_operators_list
+        operator = withdraw_op_class(ASSET_BTC, self.NETWORK, self.ADDRESS, 0.1)
+        with pytest.raises(
+            octobot_commons.errors.DSLInterpreterError,
+            match="has not been pre_computed",
+        ):
+            operator.compute()
+
+    @pytest.mark.asyncio
+    async def test_withdraw_call_as_dsl(self, interpreter, backtesting_trader):
+        _config, exchange_manager, _trader = backtesting_trader
+        _ensure_portfolio_config(backtesting_trader, {ASSET_BTC: 2.0, ASSET_USDT: 1000})
+
+        with mock.patch.object(
+            exchange_manager.trader,
+            "withdraw",
+            mock.AsyncMock(return_value={"id": "wd-456", "status": "ok"}),
+        ) as withdraw_mock:
+            result = await interpreter.interprete(
+                f"withdraw('{ASSET_BTC}', '{self.NETWORK}', '{self.ADDRESS}', 1.5)"
+            )
+
+        assert result == {"created_withdrawals": [{"id": "wd-456", "status": "ok"}]}
+        withdraw_mock.assert_awaited_once_with(
+            ASSET_BTC,
+            decimal.Decimal("1.5"),
+            self.NETWORK,
+            self.ADDRESS,
+            tag=None,
+            params={},
+        )

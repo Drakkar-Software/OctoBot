@@ -23,11 +23,10 @@ import octobot_commons.dataclasses
 
 import octobot_tentacles_manager.api
 
-import octobot_node.config
-
 try:
     import mini_octobot
     import mini_octobot.environment
+    import mini_octobot.enums
     import mini_octobot.parsers
     # Requires mini_octobot import and importable tentacles folder
 
@@ -35,6 +34,8 @@ try:
     mini_octobot.environment.initialize_environment(True)
     # reload tentacles info to ensure mini-octobot tentacles are loaded
     octobot_tentacles_manager.api.reload_tentacle_info()
+    import tentacles.Meta.DSL_operators.exchange_operators as exchange_operators
+    import tentacles.Meta.DSL_operators.blockchain_wallet_operators as blockchain_wallet_operators
 
 
 except ImportError:
@@ -65,17 +66,17 @@ class OctoBotActionsJobDescription(octobot_commons.dataclasses.MinimizableDatacl
     state: dict = dataclasses.field(default_factory=dict)
     auth_details: dict = dataclasses.field(default_factory=dict)
     params: dict = dataclasses.field(default_factory=dict)
-    immediate_actions: list[mini_octobot.BotActionDetails] = dataclasses.field(default_factory=list)
-    pending_actions: list[list[mini_octobot.BotActionDetails]] = dataclasses.field(default_factory=list)
+    immediate_actions: list[mini_octobot.AbstractBotActionDetails] = dataclasses.field(default_factory=list)
+    pending_actions: list[list[mini_octobot.AbstractBotActionDetails]] = dataclasses.field(default_factory=list)
 
     def __post_init__(self):
         if self.immediate_actions and isinstance(self.immediate_actions[0], dict):
             self.immediate_actions = [
-                mini_octobot.BotActionDetails.from_dict(action) for action in self.immediate_actions
+                mini_octobot.parse_bot_action_details(action) for action in self.immediate_actions
             ]
         if self.pending_actions and self.pending_actions[0] and isinstance(self.pending_actions[0][0], dict):
             self.pending_actions = [
-                [mini_octobot.BotActionDetails.from_dict(action) for action in bundle] 
+                [mini_octobot.parse_bot_action_details(action) for action in bundle] 
                 for bundle in self.pending_actions
             ]
         if self.params:
@@ -84,7 +85,7 @@ class OctoBotActionsJobDescription(octobot_commons.dataclasses.MinimizableDatacl
             self._parse_actions_plan(self.params)
 
     def _parse_actions_plan(self, params: dict) -> None:
-        action_bundles: list[list[mini_octobot.BotActionDetails]] = mini_octobot.parsers.BotActionBundleParser(params).parse()
+        action_bundles: list[list[mini_octobot.AbstractBotActionDetails]] = mini_octobot.parsers.BotActionBundleParser(params).parse()
         if not action_bundles:
             raise ValueError("No action bundles found in params")
         self.immediate_actions = action_bundles[0]
@@ -107,7 +108,7 @@ def required_actions(func):
 
 @dataclasses.dataclass
 class OctoBotActionsJobResult:
-    processed_actions: list[mini_octobot.BotActionDetails]
+    processed_actions: list[mini_octobot.AbstractBotActionDetails]
     next_actions_description: typing.Optional[OctoBotActionsJobDescription] = None
 
     @required_actions
@@ -115,14 +116,14 @@ class OctoBotActionsJobResult:
         failed_actions = [
             action.result
             for action in self.processed_actions
-            if action.result and isinstance(action.result, dict) and "error" in action.result
+            if action.error_status is not mini_octobot.enums.BotActionErrorStatus.NO_ERROR.value
         ]
         return failed_actions
 
     @required_actions
     def get_created_orders(self) -> list[dict]:
         order_lists = [
-            action.result.get("orders", [])
+            action.result.get(exchange_operators.CREATED_ORDERS_KEY, [])
             for action in self.processed_actions
             if action.result
         ]
@@ -131,11 +132,14 @@ class OctoBotActionsJobResult:
     @required_actions
     def get_deposit_and_withdrawal_details(self) -> list[dict]:
         withdrawal_lists = [
-            action.result
+            action.result.get(exchange_operators.CREATED_WITHDRAWALS_KEY, []) + action.result.get(blockchain_wallet_operators.CREATED_TRANSACTIONS_KEY, [])
             for action in self.processed_actions
-            if action.result and isinstance(action.result, dict) and "network" in action.result
+            if action.result and isinstance(action.result, dict) and (
+                exchange_operators.CREATED_WITHDRAWALS_KEY in action.result or
+                blockchain_wallet_operators.CREATED_TRANSACTIONS_KEY in action.result
+            )
         ]
-        return withdrawal_lists
+        return list_util.flatten_list(withdrawal_lists) if withdrawal_lists else []
 
 
 class OctoBotActionsJob:

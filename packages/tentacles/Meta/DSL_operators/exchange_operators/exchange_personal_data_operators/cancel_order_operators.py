@@ -16,21 +16,31 @@
 import typing
 
 import octobot_commons.constants
+import octobot_commons.errors
 import octobot_commons.dsl_interpreter as dsl_interpreter
+import octobot_commons.signals
 import octobot_trading.exchanges
 import octobot_trading.enums
+import octobot_trading.errors
+import octobot_trading.modes.abstract_trading_mode
+import octobot_trading.dsl
 
 import tentacles.Meta.DSL_operators.exchange_operators.exchange_operator as exchange_operator
 
 
+CANCELLED_ORDERS_KEY = "cancelled_orders"
+
+
 def create_cancel_order_operators(
     exchange_manager: typing.Optional[octobot_trading.exchanges.ExchangeManager],
+    trading_mode: typing.Optional[octobot_trading.modes.abstract_trading_mode.AbstractTradingMode] = None,
+    dependencies: typing.Optional[octobot_commons.signals.SignalDependencies] = None,
     wait_for_cancelling: bool = True,
 ) -> list:
 
     class _CancelOrderOperator(exchange_operator.ExchangeOperator):
         DESCRIPTION = "Cancels one or many orders"
-        EXAMPLE = "cancel_order('1234567890')"
+        EXAMPLE = "cancel_order('BTC/USDT', side='buy')"
 
         @staticmethod
         def get_name() -> str:
@@ -50,8 +60,18 @@ def create_cancel_order_operators(
                 dsl_interpreter.OperatorParameter(name="exchange_order_ids", description="the exchange id of the orders to cancel", required=False, type=list[str], default=None),
             ]
 
+        def get_dependencies(self) -> typing.List[dsl_interpreter.InterpreterDependency]:
+            local_dependencies = []
+            if symbol := self.get_input_value_by_parameter().get("symbol"):
+                local_dependencies.append(octobot_trading.dsl.SymbolDependency(symbol=symbol))
+            return super().get_dependencies() + local_dependencies
+
         async def pre_compute(self) -> None:
             await super().pre_compute()
+            if exchange_manager is None:
+                raise octobot_commons.errors.DSLInterpreterError(
+                    "exchange_manager is required for cancel_order operator"
+                )
             cancelled_order_ids = []
             param_by_name = self.get_computed_value_by_parameter()
             if side := param_by_name.get("side"):
@@ -69,11 +89,22 @@ def create_cancel_order_operators(
                 )
             ]
             for order in to_cancel:
-                if await exchange_manager.trader.cancel_order(
-                    order, wait_for_cancelling=wait_for_cancelling
-                ):
+                if trading_mode:
+                    cancelled, _ = await trading_mode.cancel_order(
+                        order, wait_for_cancelling=wait_for_cancelling, dependencies=dependencies
+                    )
+                else:
+                    cancelled = await exchange_manager.trader.cancel_order(
+                        order, wait_for_cancelling=wait_for_cancelling
+                    )
+                if cancelled:
                     cancelled_order_ids.append(order.exchange_order_id)
-            self.value = cancelled_order_ids
+            if not cancelled_order_ids:
+                description = {k: v for k, v in param_by_name.items() if v}
+                raise octobot_trading.errors.OrderDescriptionNotFoundError(
+                    f"No [{exchange_manager.exchange_name}] order found matching {description}"
+                )
+            self.value = {CANCELLED_ORDERS_KEY: cancelled_order_ids}
 
 
     return [

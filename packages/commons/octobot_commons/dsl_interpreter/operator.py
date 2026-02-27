@@ -50,7 +50,7 @@ class Operator:
     EXAMPLE: str = ""  # example of the operator in the DSL
 
     def __init__(self, *parameters: OperatorParameterType, **kwargs: typing.Any):
-        self._validate_parameters(parameters)
+        self._validate_parameters(parameters, kwargs)
         self.parameters = parameters
         self.kwargs = kwargs
 
@@ -69,7 +69,7 @@ class Operator:
         return octobot_commons.constants.BASE_OPERATORS_LIBRARY
 
     def _validate_parameters(
-        self, parameters: list[OperatorParameterType]
+        self, parameters: list[OperatorParameterType], kwargs: dict[str, OperatorParameterType]
     ) -> None:
         """
         Validate the parameters of the operator.
@@ -85,12 +85,13 @@ class Operator:
         if expected_parameters := self.get_parameters():
             min_params = len(tuple(p for p in expected_parameters if p.required))
             max_params = len(tuple(p for p in expected_parameters))
-            if len(parameters) < min_params:
+            total_params = len(parameters) + len(kwargs)
+            if total_params < min_params:
                 raise octobot_commons.errors.InvalidParametersError(
                     f"{self.get_name()} requires at least {min_params} "
                     f"parameter(s): {self.get_parameters_description()}"
                 )
-            if max_params is not None and len(parameters) > max_params:
+            if max_params is not None and total_params > max_params:
                 raise octobot_commons.errors.InvalidParametersError(
                     f"{self.get_name()} supports up to {max_params} "
                     f"parameters: {self.get_parameters_description()}"
@@ -150,9 +151,9 @@ class Operator:
     def _get_computed_parameter(self, parameter: OperatorParameterType) -> ComputedOperatorParameterType:
         if isinstance(parameter, Operator):
             return parameter.compute()
-        elif isinstance(parameter, dict):
+        if isinstance(parameter, dict):
             return {self._get_computed_parameter(k): self._get_computed_parameter(v) for k, v in parameter.items()}
-        elif isinstance(parameter, list):
+        if isinstance(parameter, list):
             return [self._get_computed_parameter(v) for v in parameter]
         return parameter
 
@@ -165,42 +166,62 @@ class Operator:
             for kw, value in self.kwargs.items()
         }
 
-    # def get_parameter_default_value(self, parameter_name: str) -> ComputedOperatorParameterType:
-    #     """
-    #     Get the default value of a parameter.
-    #     """
-    #     for parameter in self.get_parameters():
-    #         if parameter.name == parameter_name:
-    #             if parameter.default is dsl_interpreter_operator_parameter.UNSET_VALUE:
-    #                 raise octobot_commons.errors.MissingDefaultValueError(f"Parameter {parameter_name} has no default value")
-    #             return parameter.default
-    #     raise octobot_commons.errors.InvalidParametersError(f"Parameter {parameter_name} not found")
-
     def get_computed_value_by_parameter(self) -> dict[str, ComputedOperatorParameterType]:
         """
-        Get the value of each parameter by its name. If a value is not provided, the default value will be used if available, otherwise the parameter will be skipped.
+        Get the COMPUTED value of each parameter by its name.
         """
-        value_by_parameter = {}
         computed_parameters_queue = collections.deque(self.get_computed_parameters())
         computed_kwargs = self.get_computed_kwargs()
+        return self._get_value_by_parameter(computed_parameters_queue, computed_kwargs) # type: ignore
+
+    def get_input_value_by_parameter(self) -> dict[str, OperatorParameterType]:
+        """
+        Get the raw input (uncomputed) value of each parameter by its name.
+        """
+        return self._get_value_by_parameter(
+            collections.deque(self.parameters), dict(self.kwargs)
+        )
+
+    def _get_value_by_parameter(
+        self,
+        args: collections.deque[OperatorParameterType],
+        kwargs: dict[str, OperatorParameterType]
+    ) -> dict[str, OperatorParameterType]:
+        """
+        Get the value of each parameter by its name. 
+        If a value is not provided, the default value will be used if available, 
+        otherwise the parameter will be skipped.
+        """
+        value_by_parameter = {}
         for parameter in self.get_parameters():
-            # 1. non kw parameters are first 
-            if computed_parameters_queue:
-                value_by_parameter[parameter.name] = computed_parameters_queue.popleft()
+            # 1. non kw parameters are first
+            if args:
+                value_by_parameter[parameter.name] = args.popleft()
             else:
                 # 2. no more non kw parameters, explore kw parameters
-                if parameter.name in computed_kwargs:
+                if parameter.name in kwargs:
                     if parameter.name in value_by_parameter:
-                        raise octobot_commons.errors.InvalidParametersError(f"Parameter {parameter.name} has multiple values")
-                    value_by_parameter[parameter.name] = computed_kwargs[parameter.name]
-                    computed_kwargs.pop(parameter.name)
+                        raise octobot_commons.errors.InvalidParametersError(
+                            f"Parameter {parameter.name} has multiple values"
+                        )
+                    value_by_parameter[parameter.name] = kwargs[parameter.name]
+                    kwargs.pop(parameter.name)
                 else:
                     # 3. try to get the default value if set
                     if parameter.default is not dsl_interpreter_operator_parameter.UNSET_VALUE:
                         value_by_parameter[parameter.name] = parameter.default
-        if computed_kwargs:
+        if kwargs:
+            parameter_names = [p.name for p in self.get_parameters()] # use a list to preserve order
+            if unknown_parameters := {
+                k: v for k, v in kwargs.items() if k not in parameter_names
+            }:
+                raise octobot_commons.errors.InvalidParametersError(
+                    f"Parameter(s) {', '.join(f"'{k}'" for k in unknown_parameters.keys())} "
+                    f"are unknown. Supported parameters: {', '.join(parameter_names)}"
+                )
             raise octobot_commons.errors.InvalidParametersError(
-                f"Parameter(s) {', '.join(f"'{k}'" for k in computed_kwargs.keys())} have multiple values"
+                f"Parameter(s) {', '.join(f"'{k}'" for k in kwargs.keys())} "
+                f"have multiple values"
             )
         return value_by_parameter
 

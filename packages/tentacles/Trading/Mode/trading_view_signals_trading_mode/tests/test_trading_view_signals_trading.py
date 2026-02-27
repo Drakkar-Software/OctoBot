@@ -24,7 +24,9 @@ import async_channel.util as channel_util
 import octobot_backtesting.api as backtesting_api
 import octobot_commons.asyncio_tools as asyncio_tools
 import octobot_commons.constants as commons_constants
+import octobot_commons.errors as commons_errors
 import octobot_commons.symbols as commons_symbols
+import octobot_commons.dsl_interpreter as dsl_interpreter
 import octobot_commons.tests.test_config as test_config
 import octobot_trading.constants as trading_constants
 import octobot_trading.api as trading_api
@@ -419,9 +421,7 @@ async def test_trading_view_signal_callback(tools):
             await mode._trading_view_signal_callback({"metadata": signal})
             signal_callback_mock.assert_awaited_once_with({
                 mode.EXCHANGE_KEY: exchange_manager.exchange_name,
-                mode.SYMBOL_KEY: commons_symbols.parse_symbol(symbol).merged_str_base_and_quote_only_symbol(
-                    market_separator=""
-                ),
+                mode.SYMBOL_KEY: str(commons_symbols.parse_symbol(symbol)),
                 mode.SIGNAL_KEY: "BUY",
                 "HEELLO": True,
                 "PLOP": False,
@@ -500,84 +500,72 @@ async def test_trading_view_signal_callback(tools):
                 signal_callback_mock.reset_mock()
                 logger_info_mock.reset_mock()
 
+            # Test WITHDRAW_FUNDS signal with full params - relevant signal, calls signal_callback
+            with mock.patch('octobot_trading.constants.ALLOW_FUNDS_TRANSFER', True):
+                signal = f"""
+                    EXCHANGE={exchange_manager.exchange_name}
+                    SYMBOL={symbol}
+                    SIGNAL={mode.WITHDRAW_FUNDS_SIGNAL}
+                    ASSET=BTC
+                    AMOUNT=0.1
+                    NETWORK=bitcoin
+                    ADDRESS=1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa
+                """
+                await mode._trading_view_signal_callback({"metadata": signal})
+                signal_callback_mock.assert_awaited_once()
+                call_args = signal_callback_mock.call_args[0][0]
+                assert call_args[mode.SIGNAL_KEY] == mode.WITHDRAW_FUNDS_SIGNAL
+                assert call_args["ASSET"] == "BTC"
+                assert call_args["AMOUNT"] == "0.1"
+                assert call_args["NETWORK"] == "bitcoin"
+                signal_callback_mock.reset_mock()
+
+            # Test TRANSFER_FUNDS signal with full params - requires SYMBOL for is_relevant_signal
+            # (non-order signals with missing EXCHANGE/SYMBOL go to _process_or_ignore_non_order_signal)
+            with mock.patch('octobot_trading.constants.ALLOW_FUNDS_TRANSFER', True):
+                signal = f"""
+                    EXCHANGE={exchange_manager.exchange_name}
+                    SYMBOL={symbol}
+                    SIGNAL={mode.TRANSFER_FUNDS_SIGNAL}
+                """
+                await mode._trading_view_signal_callback({"metadata": signal})
+                signal_callback_mock.assert_awaited_once()
+                call_args = signal_callback_mock.call_args[0][0]
+                assert call_args[mode.SIGNAL_KEY] == mode.TRANSFER_FUNDS_SIGNAL
+                signal_callback_mock.reset_mock()
+
 
 async def test_signal_callback(tools):
     exchange_manager, symbol, mode, producer, consumer = tools
     context = script_keywords.get_base_context(producer.trading_mode)
-    with mock.patch.object(producer, "_set_state", mock.AsyncMock()) as _set_state_mock, \
-        mock.patch.object(mode, "set_leverage", mock.AsyncMock()) as set_leverage_mock:
+    with mock.patch.object(dsl_interpreter.Interpreter, "compute_expression", mock.AsyncMock()) as compute_expression_mock:
         await producer.signal_callback({
             mode.EXCHANGE_KEY: exchange_manager.exchange_name,
-            mode.SYMBOL_KEY: "unused",
+            mode.SYMBOL_KEY: "BTC/USDT",
             mode.SIGNAL_KEY: "BUY",
+            mode.VOLUME_KEY: "0.0001",
         }, context)
-        _set_state_mock.assert_awaited_once()
-        set_leverage_mock.assert_not_called()
-        assert _set_state_mock.await_args[0][1] == symbol
-        assert _set_state_mock.await_args[0][2] == trading_view_signals_trading.SignalActions.CREATE_ORDERS
-        assert _set_state_mock.await_args[0][3] == trading_enums.EvaluatorStates.VERY_LONG
-        assert compare_dict_with_nan(_set_state_mock.await_args[0][4], {
-            consumer.PRICE_KEY: trading_constants.ZERO,
-            consumer.VOLUME_KEY: trading_constants.ZERO,
-            consumer.STOP_PRICE_KEY: decimal.Decimal(math.nan),
-            consumer.STOP_ONLY: False,
-            consumer.TAKE_PROFIT_PRICE_KEY: decimal.Decimal(math.nan),
-            consumer.ADDITIONAL_TAKE_PROFIT_PRICES_KEY: [],
-            consumer.ADDITIONAL_TAKE_PROFIT_VOLUME_RATIOS_KEY: [],
-            consumer.REDUCE_ONLY_KEY: False,
-            consumer.TAG_KEY: None,
-            consumer.TRAILING_PROFILE: None,
-            consumer.EXCHANGE_ORDER_IDS: None,
-            consumer.LEVERAGE: None,
-            consumer.ORDER_EXCHANGE_CREATION_PARAMS: {},
-            consumer.CANCEL_POLICY: None,
-            consumer.CANCEL_POLICY_PARAMS: None,
-        })
-        assert compare_dict_with_nan(_set_state_mock.await_args[0][5], {
-            mode.EXCHANGE_KEY: exchange_manager.exchange_name,
-            mode.SYMBOL_KEY: "unused",
-            mode.SIGNAL_KEY: "BUY",
-        })
-        _set_state_mock.reset_mock()
+        assert mode.dsl_script == "market('buy', 'BTC/USDT', '0.0001')"
+        compute_expression_mock.assert_awaited_once()
+        compute_expression_mock.reset_mock()
 
         await producer.signal_callback({
             mode.EXCHANGE_KEY: exchange_manager.exchange_name,
             mode.SYMBOL_KEY: "unused",
             mode.SIGNAL_KEY: "SELL",
             mode.ORDER_TYPE_SIGNAL: "stop",
-            mode.STOP_PRICE_KEY: 25000,
+            mode.STOP_PRICE_KEY: "-5%",
             mode.VOLUME_KEY: "12%",
             mode.TAG_KEY: "stop_1_tag",
             mode.CANCEL_POLICY: trading_personal_data.ExpirationTimeOrderCancelPolicy.__name__,
             mode.CANCEL_POLICY_PARAMS: {
                 "expiration_time": 1000.0,
             },
-            consumer.EXCHANGE_ORDER_IDS: None,
-
+            mode.EXCHANGE_ORDER_IDS: None,
         }, context)
-        set_leverage_mock.assert_not_called()
-        _set_state_mock.assert_awaited_once()
-        assert _set_state_mock.await_args[0][1] == symbol
-        assert _set_state_mock.await_args[0][2] == trading_view_signals_trading.SignalActions.CREATE_ORDERS
-        assert _set_state_mock.await_args[0][3] == trading_enums.EvaluatorStates.SHORT
-        assert compare_dict_with_nan(_set_state_mock.await_args[0][4], {
-            consumer.PRICE_KEY: trading_constants.ZERO,
-            consumer.VOLUME_KEY: decimal.Decimal("1.2"),
-            consumer.STOP_PRICE_KEY: decimal.Decimal("25000"),
-            consumer.STOP_ONLY: True,
-            consumer.TAKE_PROFIT_PRICE_KEY: decimal.Decimal(math.nan),
-            consumer.ADDITIONAL_TAKE_PROFIT_PRICES_KEY: [],
-            consumer.ADDITIONAL_TAKE_PROFIT_VOLUME_RATIOS_KEY: [],
-            consumer.REDUCE_ONLY_KEY: False,
-            consumer.TAG_KEY: "stop_1_tag",
-            consumer.EXCHANGE_ORDER_IDS: None,
-            consumer.TRAILING_PROFILE: None,
-            consumer.LEVERAGE: None,
-            consumer.ORDER_EXCHANGE_CREATION_PARAMS: {},
-            consumer.CANCEL_POLICY: trading_personal_data.ExpirationTimeOrderCancelPolicy.__name__,
-            consumer.CANCEL_POLICY_PARAMS: {'expiration_time': 1000.0},
-        })
-        _set_state_mock.reset_mock()
+        assert mode.dsl_script == "stop_loss('sell', 'unused', '12%', '-5%', tag='stop_1_tag', cancel_policy='ExpirationTimeOrderCancelPolicy', cancel_policy_params={'expiration_time': 1000.0})"
+        compute_expression_mock.assert_awaited_once()
+        compute_expression_mock.reset_mock()
 
         await producer.signal_callback({
             mode.EXCHANGE_KEY: exchange_manager.exchange_name,
@@ -591,38 +579,14 @@ async def test_signal_callback(tools):
             mode.TAKE_PROFIT_PRICE_KEY: "22222",
             mode.EXCHANGE_ORDER_IDS: ["ab1", "aaaaa"],
             mode.CANCEL_POLICY: "chainedorderfillingpriceordercancelpolicy",
-            consumer.LEVERAGE: 22,
+            mode.LEVERAGE: 22,
             "PARAM_TAG_1": "ttt",
             "PARAM_Plop": False,
         }, context)
-        set_leverage_mock.assert_called_once()
-        assert set_leverage_mock.mock_calls[0].args[2] == decimal.Decimal(22)
-        set_leverage_mock.reset_mock()
-        _set_state_mock.assert_awaited_once()
-        assert _set_state_mock.await_args[0][1] == symbol
-        assert _set_state_mock.await_args[0][2] == trading_view_signals_trading.SignalActions.CREATE_ORDERS
-        assert _set_state_mock.await_args[0][3] == trading_enums.EvaluatorStates.SHORT
-        assert compare_dict_with_nan(_set_state_mock.await_args[0][4], {
-            consumer.PRICE_KEY: decimal.Decimal("123"),
-            consumer.VOLUME_KEY: decimal.Decimal("1.2"),
-            consumer.STOP_PRICE_KEY: decimal.Decimal("12"),
-            consumer.STOP_ONLY: False,
-            consumer.TAKE_PROFIT_PRICE_KEY: decimal.Decimal("22222"),
-            consumer.ADDITIONAL_TAKE_PROFIT_PRICES_KEY: [],
-            consumer.ADDITIONAL_TAKE_PROFIT_VOLUME_RATIOS_KEY: [],
-            consumer.REDUCE_ONLY_KEY: True,
-            consumer.TAG_KEY: None,
-            mode.EXCHANGE_ORDER_IDS: ["ab1", "aaaaa"],
-            consumer.TRAILING_PROFILE: None,
-            consumer.LEVERAGE: 22,
-            consumer.ORDER_EXCHANGE_CREATION_PARAMS: {
-                "TAG_1": "ttt",
-                "Plop": False,
-            },
-            consumer.CANCEL_POLICY: trading_personal_data.ChainedOrderFillingPriceOrderCancelPolicy.__name__,
-            consumer.CANCEL_POLICY_PARAMS: None,
-        })
-        _set_state_mock.reset_mock()
+        expected_dsl = "limit('sell', 'unused', '12%', '123', reduce_only=True, take_profit_prices=['22222'], stop_loss_price='12', cancel_policy='chainedorderfillingpriceordercancelpolicy', params={'TAG_1': 'ttt', 'Plop': False})"
+        assert mode.dsl_script == expected_dsl
+        compute_expression_mock.assert_awaited_once()
+        compute_expression_mock.reset_mock()
 
         # with trailing profile and TP volume
         await producer.signal_callback({
@@ -639,39 +603,15 @@ async def test_signal_callback(tools):
             mode.EXCHANGE_ORDER_IDS: ["ab1", "aaaaa"],
             mode.TRAILING_PROFILE: "fiLLED_take_profit",
             mode.CANCEL_POLICY: "expirationtimeordercancelpolicy",
-            mode.CANCEL_POLICY_PARAMS: "{'expiration_time': 1000.0}",
-            consumer.LEVERAGE: 22,
+            mode.CANCEL_POLICY_PARAMS: {"expiration_time": 1000.0},
+            mode.LEVERAGE: 22,
             "PARAM_TAG_1": "ttt",
             "PARAM_Plop": False,
         }, context)
-        set_leverage_mock.assert_called_once()
-        assert set_leverage_mock.mock_calls[0].args[2] == decimal.Decimal(22)
-        set_leverage_mock.reset_mock()
-        _set_state_mock.assert_awaited_once()
-        assert _set_state_mock.await_args[0][1] == symbol
-        assert _set_state_mock.await_args[0][2] == trading_view_signals_trading.SignalActions.CREATE_ORDERS
-        assert _set_state_mock.await_args[0][3] == trading_enums.EvaluatorStates.SHORT
-        assert compare_dict_with_nan(_set_state_mock.await_args[0][4], {
-            consumer.PRICE_KEY: decimal.Decimal("123"),
-            consumer.VOLUME_KEY: decimal.Decimal("1.2"),
-            consumer.STOP_PRICE_KEY: decimal.Decimal("12"),
-            consumer.STOP_ONLY: False,
-            consumer.TAKE_PROFIT_PRICE_KEY: decimal.Decimal("22222"),
-            consumer.ADDITIONAL_TAKE_PROFIT_PRICES_KEY: [],
-            consumer.ADDITIONAL_TAKE_PROFIT_VOLUME_RATIOS_KEY: [decimal.Decimal(1)],
-            consumer.REDUCE_ONLY_KEY: True,
-            consumer.TAG_KEY: None,
-            mode.EXCHANGE_ORDER_IDS: ["ab1", "aaaaa"],
-            consumer.LEVERAGE: 22,
-            consumer.TRAILING_PROFILE: "filled_take_profit",
-            consumer.ORDER_EXCHANGE_CREATION_PARAMS: {
-                "TAG_1": "ttt",
-                "Plop": False,
-            },
-            consumer.CANCEL_POLICY: trading_personal_data.ExpirationTimeOrderCancelPolicy.__name__,
-            consumer.CANCEL_POLICY_PARAMS: {'expiration_time': 1000.0},
-        })
-        _set_state_mock.reset_mock()
+        expected_dsl = "limit('sell', 'unused', '12%', '123', reduce_only=True, take_profit_prices=['22222'], take_profit_volume_percents=[1.0], stop_loss_price='12', trailing_profile='fiLLED_take_profit', cancel_policy='expirationtimeordercancelpolicy', cancel_policy_params={'expiration_time': 1000.0}, params={'TAG_1': 'ttt', 'Plop': False})"
+        assert mode.dsl_script == expected_dsl
+        compute_expression_mock.assert_awaited_once()
+        compute_expression_mock.reset_mock()
 
         # future exchange: call set_leverage
         exchange_manager.is_future = True
@@ -697,414 +637,418 @@ async def test_signal_callback(tools):
             f"{mode.TAKE_PROFIT_VOLUME_RATIO_KEY}_1": "1.122",
             f"{mode.TAKE_PROFIT_VOLUME_RATIO_KEY}_2": "0.2222",
             mode.EXCHANGE_ORDER_IDS: ["ab1", "aaaaa"],
-            consumer.LEVERAGE: 22,
+            mode.LEVERAGE: 22,
             "PARAM_TAG_1": "ttt",
             "PARAM_Plop": False,
         }, context)
-        set_leverage_mock.assert_called_once()
-        assert set_leverage_mock.mock_calls[0].args[2] == decimal.Decimal("22")
-        _set_state_mock.assert_awaited_once()
-        assert _set_state_mock.await_args[0][1] == symbol
-        assert _set_state_mock.await_args[0][2] == trading_view_signals_trading.SignalActions.CREATE_ORDERS
-        assert _set_state_mock.await_args[0][3] == trading_enums.EvaluatorStates.SHORT
-        assert compare_dict_with_nan(_set_state_mock.await_args[0][4], {
-            consumer.PRICE_KEY: decimal.Decimal("123"),
-            consumer.VOLUME_KEY: decimal.Decimal("0.8130081300813008130081300813"),
-            consumer.STOP_PRICE_KEY: decimal.Decimal("6308.27549999"),
-            consumer.STOP_ONLY: False,
-            consumer.TAKE_PROFIT_PRICE_KEY: decimal.Decimal("nan"), # only additional TP orders are provided
-            consumer.ADDITIONAL_TAKE_PROFIT_PRICES_KEY: [
-                decimal.Decimal("7129.52833333"), decimal.Decimal("7131.52833333"), decimal.Decimal('11453.19499999')
-            ],
-            consumer.ADDITIONAL_TAKE_PROFIT_VOLUME_RATIOS_KEY: [
-                decimal.Decimal("1"), decimal.Decimal("1.122"), decimal.Decimal("0.2222"),
-            ],
-            consumer.REDUCE_ONLY_KEY: False,
-            consumer.TAG_KEY: None,
-            mode.EXCHANGE_ORDER_IDS: ["ab1", "aaaaa"],
-            consumer.TRAILING_PROFILE: None,
-            consumer.LEVERAGE: 22,
-            consumer.ORDER_EXCHANGE_CREATION_PARAMS: {
-                "TAG_1": "ttt",
-                "Plop": False,
-            },
-            consumer.CANCEL_POLICY: None,
-            consumer.CANCEL_POLICY_PARAMS: None,
-        })
-        _set_state_mock.reset_mock()
-        set_leverage_mock.reset_mock()
+        expected_dsl = "limit('sell', 'unused', '100q', '123@', reduce_only=False, take_profit_prices=['120.333333333333333d', '122.333333333333333d', '4444d'], take_profit_volume_percents=[1.0, 1.122, 0.2222], stop_loss_price='-10%', params={'TAG_1': 'ttt', 'Plop': False})"
+        assert mode.dsl_script == expected_dsl
+        compute_expression_mock.assert_awaited_once()
+        compute_expression_mock.reset_mock()
+        exchange_manager.is_future = False
 
-        with pytest.raises(errors.MissingFunds):
+        with pytest.raises(commons_errors.DSLInterpreterError, match="market requires at least 3 parameter"):
             await producer.signal_callback({
                 mode.EXCHANGE_KEY: exchange_manager.exchange_name,
-                mode.SYMBOL_KEY: "unused",
                 mode.SIGNAL_KEY: "SelL",
-                mode.PRICE_KEY: "123000q",  # price = 123
-                mode.VOLUME_KEY: "11111b",  # base amount: not enough funds
-                mode.REDUCE_ONLY_KEY: True,
-                mode.ORDER_TYPE_SIGNAL: "LiMiT",
-                mode.STOP_PRICE_KEY: "-10%",  # price - 10%
-                mode.TAKE_PROFIT_PRICE_KEY: "120.333333333333333d",   # price  + 120.333333333333333
-                mode.EXCHANGE_ORDER_IDS: ["ab1", "aaaaa"],
-                mode.LEVERAGE: None,
-                "PARAM_TAG_1": "ttt",
-                "PARAM_Plop": False,
             }, context)
-        set_leverage_mock.assert_not_called()
-        _set_state_mock.assert_not_called()
 
-        with pytest.raises(errors.InvalidArgumentError):
+        # Unknown signal: translates to "None" (no-op), no exception
+        await producer.signal_callback({
+            mode.EXCHANGE_KEY: exchange_manager.exchange_name,
+            mode.SYMBOL_KEY: "unused",
+            mode.SIGNAL_KEY: "DSDSDDSS",
+            mode.PRICE_KEY: "123",
+            mode.VOLUME_KEY: "0.001",
+        }, context)
+        assert mode.dsl_script == "None"
+        compute_expression_mock.assert_awaited_once()
+        compute_expression_mock.reset_mock()
+
+        # WITHDRAW_FUNDS signal
+        with mock.patch('octobot_trading.constants.ALLOW_FUNDS_TRANSFER', True):
             await producer.signal_callback({
                 mode.EXCHANGE_KEY: exchange_manager.exchange_name,
-                mode.SYMBOL_KEY: "unused",
-                mode.SIGNAL_KEY: "DSDSDDSS",
-                mode.PRICE_KEY: "123000q",  # price = 123
-                mode.VOLUME_KEY: "11111b",  # base amount: not enough funds
-                mode.REDUCE_ONLY_KEY: True,
-                mode.ORDER_TYPE_SIGNAL: "LiMiT",
-                mode.STOP_PRICE_KEY: "-10%",  # price - 10%
-                mode.TAKE_PROFIT_PRICE_KEY: "120.333333333333333d",   # price  + 120.333333333333333
-                mode.EXCHANGE_ORDER_IDS: ["ab1", "aaaaa"],
-                mode.LEVERAGE: None,
-                "PARAM_TAG_1": "ttt",
-                "PARAM_Plop": False,
+                mode.SYMBOL_KEY: symbol,
+                mode.SIGNAL_KEY: mode.WITHDRAW_FUNDS_SIGNAL,
+                "asset": "BTC",
+                "amount": 0.1,
+                "network": "bitcoin",
+                "address": "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa",
             }, context)
-        set_leverage_mock.assert_not_called()
-        _set_state_mock.assert_not_called()
+            assert mode.dsl_script == "withdraw('BTC', 'bitcoin', '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa', amount=0.1)"
+            compute_expression_mock.assert_awaited_once()
+            compute_expression_mock.reset_mock()
 
-        with pytest.raises(errors.InvalidCancelPolicyError):
-            await producer.signal_callback({
-                mode.EXCHANGE_KEY: exchange_manager.exchange_name,
-                mode.SYMBOL_KEY: "unused",
-                mode.SIGNAL_KEY: "SelL",
-                mode.CANCEL_POLICY: "unknown_cancel_policy",
-            }, context)
-        set_leverage_mock.assert_not_called()
-        _set_state_mock.assert_not_called()
-
-        # Test meta action only signal - should return early without calling _parse_order_details or _set_state
-        _set_state_mock.reset_mock()
+        # Test meta action only signal - signal_callback still calls call_dsl_script for all signals
         prev_value = set(mode.META_ACTION_ONLY_SIGNALS)
         try:
             mode.META_ACTION_ONLY_SIGNALS.add("buy")
-            with mock.patch.object(producer, "_parse_order_details", mock.AsyncMock()) as _parse_order_details_mock, \
-                mock.patch.object(producer, "apply_cancel_policies", mock.AsyncMock(return_value=(True, None))) as apply_cancel_policies_mock, \
-                mock.patch.object(producer, "_process_pre_state_update_actions", mock.AsyncMock()) as _process_pre_state_update_actions_mock, \
-                mock.patch.object(producer, "_process_meta_actions", mock.AsyncMock()) as _process_meta_actions_mock:
+            with mock.patch.object(producer, "apply_cancel_policies", mock.AsyncMock(return_value=(True, None))) as apply_cancel_policies_mock:
                 await producer.signal_callback({
                     mode.EXCHANGE_KEY: exchange_manager.exchange_name,
                     mode.SYMBOL_KEY: "unused",
                     mode.SIGNAL_KEY: "BUY",
+                    mode.VOLUME_KEY: "0.001",
                 }, context)
-                # Should call apply_cancel_policies, _process_pre_state_update_actions, and _process_meta_actions
                 apply_cancel_policies_mock.assert_awaited_once()
-                _process_pre_state_update_actions_mock.assert_awaited_once()
-                _process_meta_actions_mock.assert_awaited_once()
-                # Should NOT call _parse_order_details or _set_state (early return)
-                _parse_order_details_mock.assert_not_awaited()
-                _set_state_mock.assert_not_awaited()
+                assert mode.dsl_script == "market('buy', 'unused', '0.001')"
+                compute_expression_mock.assert_awaited_once()
         finally:
             mode.__class__.META_ACTION_ONLY_SIGNALS = prev_value
+
+
+async def test_signal_callback_transfer_funds_signal(tools, blockchain_wallet_details):
+    exchange_manager, symbol, mode, producer, consumer = tools
+    context = script_keywords.get_base_context(producer.trading_mode)
+    with mock.patch('octobot_trading.constants.ALLOW_FUNDS_TRANSFER', True), \
+            mock.patch.object(dsl_interpreter.Interpreter, "compute_expression", mock.AsyncMock()) as compute_expression_mock:
+        blockchain_descriptor = {
+            "blockchain": blockchain_wallet_details.blockchain_descriptor.blockchain,
+            "network": blockchain_wallet_details.blockchain_descriptor.network,
+            "native_coin_symbol": blockchain_wallet_details.blockchain_descriptor.native_coin_symbol,
+        }
+        wallet_descriptor = {
+            "address": blockchain_wallet_details.wallet_descriptor.address,
+            "private_key": blockchain_wallet_details.wallet_descriptor.private_key,
+            "specific_config": blockchain_wallet_details.wallet_descriptor.specific_config,
+        }
+        await producer.signal_callback({
+            mode.EXCHANGE_KEY: exchange_manager.exchange_name,
+            mode.SYMBOL_KEY: symbol,
+            mode.SIGNAL_KEY: mode.TRANSFER_FUNDS_SIGNAL,
+            "blockchain_descriptor": blockchain_descriptor,
+            "wallet_descriptor": wallet_descriptor,
+            "asset": BLOCKCHAIN_WALLET_ASSET,
+            "amount": 1.0,
+            "address": "0x1234567890123456789012345678901234567890",
+        }, context)
+        assert mode.dsl_script == (
+            "blockchain_wallet_transfer({'blockchain': 'simulated', 'network': 'SIMULATED', 'native_coin_symbol': 'ETH'}, {'address': '0x1234567890123456789012345678901234567890', 'private_key': '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890', 'specific_config': {'assets': [{'asset': 'ETH', 'amount': 10.0}]}}, 'ETH', 1.0, address='0x1234567890123456789012345678901234567890')"
+        )
+        compute_expression_mock.assert_awaited_once()
 
 
 async def test_signal_callback_with_meta_actions(tools):
     exchange_manager, symbol, mode, producer, consumer = tools
     mode.CANCEL_PREVIOUS_ORDERS = True
     context = script_keywords.get_base_context(producer.trading_mode)
-    with mock.patch.object(producer, "_set_state", mock.AsyncMock()) as _set_state_mock, \
-        mock.patch.object(mode, "set_leverage", mock.AsyncMock()) as set_leverage_mock, \
-        mock.patch.object(producer, "cancel_symbol_open_orders", mock.AsyncMock()) as cancel_symbol_open_orders_mock:
+    with mock.patch.object(producer, "cancel_symbol_open_orders", mock.AsyncMock()) as cancel_symbol_open_orders_mock, \
+            mock.patch.object(dsl_interpreter.Interpreter, "compute_expression", mock.AsyncMock()) as compute_expression_mock:
         await producer.signal_callback({
             mode.SIGNAL_KEY: mode.ENSURE_EXCHANGE_BALANCE_SIGNAL,
         }, context)
-        _set_state_mock.assert_awaited_once()
-        set_leverage_mock.assert_not_called()
-        cancel_symbol_open_orders_mock.assert_not_called() # not called for meta actions even when CANCEL_PREVIOUS_ORDERS is True
-        assert _set_state_mock.await_args[0][1] == symbol
-        assert _set_state_mock.await_args[0][2] == trading_view_signals_trading.SignalActions.ENSURE_EXCHANGE_BALANCE
-        assert _set_state_mock.await_args[0][3] == trading_enums.EvaluatorStates.NEUTRAL
-        assert compare_dict_with_nan(_set_state_mock.await_args[0][4], {
-            consumer.PRICE_KEY: trading_constants.ZERO,
-            consumer.VOLUME_KEY: trading_constants.ZERO,
-            consumer.STOP_PRICE_KEY: decimal.Decimal(math.nan),
-            consumer.STOP_ONLY: False,
-            consumer.TAKE_PROFIT_PRICE_KEY: decimal.Decimal(math.nan),
-            consumer.ADDITIONAL_TAKE_PROFIT_PRICES_KEY: [],
-            consumer.ADDITIONAL_TAKE_PROFIT_VOLUME_RATIOS_KEY: [],
-            consumer.REDUCE_ONLY_KEY: False,
-            consumer.TAG_KEY: None,
-            consumer.TRAILING_PROFILE: None,
-            consumer.EXCHANGE_ORDER_IDS: None,
-            consumer.LEVERAGE: None,
-            consumer.ORDER_EXCHANGE_CREATION_PARAMS: {},
-            consumer.CANCEL_POLICY: None,
-            consumer.CANCEL_POLICY_PARAMS: None,
-        })
-        assert compare_dict_with_nan(_set_state_mock.await_args[0][5], {
-            mode.SIGNAL_KEY: mode.ENSURE_EXCHANGE_BALANCE_SIGNAL,
-        })
-        _set_state_mock.reset_mock()
+        cancel_symbol_open_orders_mock.assert_not_called()  # not called for meta actions even when CANCEL_PREVIOUS_ORDERS is True
+        assert mode.dsl_script == "None"  # ensure_exchange_balance has no DSL operator
+        compute_expression_mock.assert_awaited_once()
 
 
 async def test_signal_callback_with_cancel_policies(tools):
     exchange_manager, symbol, mode, producer, consumer = tools
     context = script_keywords.get_base_context(producer.trading_mode)
     mode.CANCEL_PREVIOUS_ORDERS = True
-    print(f"{mode.META_ACTION_ONLY_SIGNALS=}")
 
     async def _apply_cancel_policies(*args, **kwargs):
         return True, trading_signals.get_orders_dependencies([mock.Mock(order_id="123"), mock.Mock(order_id="456-cancel_policy")])
     async def _cancel_symbol_open_orders(*args, **kwargs):
         return True, trading_signals.get_orders_dependencies([mock.Mock(order_id="456-cancel_symbol_open_orders")])
 
-    with mock.patch.object(producer, "_set_state", mock.AsyncMock()) as _set_state_mock, \
-        mock.patch.object(producer, "_process_pre_state_update_actions", mock.AsyncMock()) as _process_pre_state_update_actions_mock, \
-        mock.patch.object(producer, "_parse_order_details", mock.AsyncMock(return_value=(
-            trading_view_signals_trading.SignalActions.CREATE_ORDERS,
-            trading_enums.EvaluatorStates.LONG,
-            {}
-        ))) as _parse_order_details_mock, \
-        mock.patch.object(producer, "apply_cancel_policies", mock.AsyncMock(side_effect=_apply_cancel_policies)) as apply_cancel_policies_mock, \
-        mock.patch.object(producer, "cancel_symbol_open_orders", mock.AsyncMock(side_effect=_cancel_symbol_open_orders)) as cancel_symbol_open_orders_mock:
+    with mock.patch.object(producer, "apply_cancel_policies", mock.AsyncMock(side_effect=_apply_cancel_policies)) as apply_cancel_policies_mock, \
+        mock.patch.object(producer, "cancel_symbol_open_orders", mock.AsyncMock(side_effect=_cancel_symbol_open_orders)) as cancel_symbol_open_orders_mock, \
+        mock.patch.object(dsl_interpreter.Interpreter, "compute_expression", mock.AsyncMock()) as compute_expression_mock:
         await producer.signal_callback({
             mode.EXCHANGE_KEY: exchange_manager.exchange_name,
             mode.SYMBOL_KEY: "unused",
             mode.SIGNAL_KEY: "BUY",
+            mode.VOLUME_KEY: "0.001",
         }, context)
-        _process_pre_state_update_actions_mock.assert_awaited_once()
-        _parse_order_details_mock.assert_awaited_once()
         apply_cancel_policies_mock.assert_awaited_once()
         cancel_symbol_open_orders_mock.assert_awaited_once()
-        _set_state_mock.assert_awaited_once()
-        assert _set_state_mock.mock_calls[0].kwargs["dependencies"] == trading_signals.get_orders_dependencies([
-            mock.Mock(order_id="123"), 
-            mock.Mock(order_id="456-cancel_policy"), 
-            mock.Mock(order_id="456-cancel_symbol_open_orders")
-        ])
+        assert mode.dsl_script == "market('buy', 'unused', '0.001')"
+        compute_expression_mock.assert_awaited_once()
+
     mode.CANCEL_PREVIOUS_ORDERS = False
-    with mock.patch.object(producer, "_set_state", mock.AsyncMock()) as _set_state_mock, \
-        mock.patch.object(producer, "_process_pre_state_update_actions", mock.AsyncMock()) as _process_pre_state_update_actions_mock, \
-        mock.patch.object(producer, "_parse_order_details", mock.AsyncMock(return_value=(trading_view_signals_trading.SignalActions.CREATE_ORDERS, trading_enums.EvaluatorStates.LONG, {}))) as _parse_order_details_mock, \
-        mock.patch.object(producer, "apply_cancel_policies", mock.AsyncMock(side_effect=_apply_cancel_policies)) as apply_cancel_policies_mock, \
-        mock.patch.object(producer, "cancel_symbol_open_orders", mock.AsyncMock(side_effect=_cancel_symbol_open_orders)) as cancel_symbol_open_orders_mock:
+    with mock.patch.object(producer, "apply_cancel_policies", mock.AsyncMock(side_effect=_apply_cancel_policies)) as apply_cancel_policies_mock, \
+        mock.patch.object(producer, "cancel_symbol_open_orders", mock.AsyncMock(side_effect=_cancel_symbol_open_orders)) as cancel_symbol_open_orders_mock, \
+        mock.patch.object(dsl_interpreter.Interpreter, "compute_expression", mock.AsyncMock()) as compute_expression_mock:
         await producer.signal_callback({
             mode.EXCHANGE_KEY: exchange_manager.exchange_name,
             mode.SYMBOL_KEY: "unused",
             mode.SIGNAL_KEY: "BUY",
+            mode.VOLUME_KEY: "0.001",
         }, context)
-        _process_pre_state_update_actions_mock.assert_awaited_once()
-        _parse_order_details_mock.assert_awaited_once()
         apply_cancel_policies_mock.assert_awaited_once()
-        cancel_symbol_open_orders_mock.assert_not_called() # CANCEL_PREVIOUS_ORDERS is False
-        _set_state_mock.assert_awaited_once()
-        assert _set_state_mock.mock_calls[0].kwargs["dependencies"] == trading_signals.get_orders_dependencies([
-            mock.Mock(order_id="123"), 
-            mock.Mock(order_id="456-cancel_policy"),
-        ])
+        cancel_symbol_open_orders_mock.assert_not_called()  # CANCEL_PREVIOUS_ORDERS is False
+        assert mode.dsl_script == "market('buy', 'unused', '0.001')"
+        compute_expression_mock.assert_awaited_once()
 
 
-async def test_set_state(tools):
-    exchange_manager, symbol, mode, producer, consumer = tools
-    cryptocurrency = mode.cryptocurrency
-    order_data = {
-        consumer.PRICE_KEY: decimal.Decimal("100"),
-        consumer.VOLUME_KEY: decimal.Decimal("1.0"),
-    }
+async def test_before_signal_processing(tools):
+    _exchange_manager, symbol, mode, producer, consumer = tools
     parsed_data = {
-        mode.EXCHANGE_KEY: exchange_manager.exchange_name,
+        mode.EXCHANGE_KEY: _exchange_manager.exchange_name,
         mode.SYMBOL_KEY: symbol,
-        mode.SIGNAL_KEY: "BUY",
+        mode.SIGNAL_KEY: "buy",
     }
-    dependencies = trading_signals.get_orders_dependencies([mock.Mock(order_id="test_order")])
+    mock_dependencies = trading_signals.get_orders_dependencies([mock.Mock(order_id="dep-1")])
 
-    # Test CREATE_ORDERS action - should call submit_trading_evaluation
-    exchange_manager.is_backtesting = False
-    with mock.patch.object(producer, "submit_trading_evaluation", mock.AsyncMock()) as submit_mock, \
-        mock.patch.object(producer, "_send_alert_notification", mock.AsyncMock()) as send_notification_mock, \
-        mock.patch.object(producer.logger, "info") as logger_info_mock:
-        producer.state = trading_enums.EvaluatorStates.NEUTRAL
-        producer.final_eval = -0.5
-        
-        await producer._set_state(
-            cryptocurrency,
-            symbol,
-            trading_view_signals_trading.SignalActions.CREATE_ORDERS,
-            trading_enums.EvaluatorStates.LONG,
-            order_data,
-            parsed_data,
-            dependencies=dependencies
-        )
-        
-        # State should be updated
-        assert producer.state == trading_enums.EvaluatorStates.LONG
-        logger_info_mock.assert_called()
-        assert "new state" in str(logger_info_mock.call_args_list).lower()
-        
-        # Should call submit_trading_evaluation
-        submit_mock.assert_awaited_once()
-        call_args = submit_mock.await_args
-        assert call_args.kwargs["cryptocurrency"] == cryptocurrency
-        assert call_args.kwargs["symbol"] == symbol
-        assert call_args.kwargs["time_frame"] is None
-        assert call_args.kwargs["final_note"] == producer.final_eval
-        assert call_args.kwargs["state"] == trading_enums.EvaluatorStates.LONG
-        assert call_args.kwargs["data"] == order_data
-        assert call_args.kwargs["dependencies"] == dependencies
-        
-        send_notification_mock.assert_awaited_once_with(symbol, trading_enums.EvaluatorStates.LONG)
-        exchange_manager.is_backtesting = True
-        submit_mock.reset_mock()
-        logger_info_mock.reset_mock()
+    with mock.patch.object(
+        producer, "_updated_orders_to_cancel", mock.AsyncMock(return_value=mock_dependencies)
+    ) as updated_orders_mock, mock.patch.object(
+        producer, "_update_leverage_if_necessary", mock.AsyncMock()
+    ) as update_leverage_mock:
+        result = await producer._before_signal_processing(parsed_data)
 
-    # Test ENSURE_EXCHANGE_BALANCE action - should call process_non_creating_orders_actions
-    with mock.patch.object(producer, "process_non_creating_orders_actions", mock.AsyncMock()) as process_actions_mock, \
-        mock.patch.object(producer, "submit_trading_evaluation", mock.AsyncMock()) as submit_mock:
-        producer.state = trading_enums.EvaluatorStates.NEUTRAL
-        
-        await producer._set_state(
-            cryptocurrency,
-            symbol,
-            trading_view_signals_trading.SignalActions.ENSURE_EXCHANGE_BALANCE,
-            trading_enums.EvaluatorStates.NEUTRAL,
-            order_data,
-            parsed_data,
-            dependencies=dependencies
-        )
-        
-        # Should call process_non_creating_orders_actions
-        process_actions_mock.assert_awaited_once_with(
-            trading_view_signals_trading.SignalActions.ENSURE_EXCHANGE_BALANCE,
-            symbol,
-            order_data,
-            parsed_data
-        )
-        # Should not call submit_trading_evaluation
-        submit_mock.assert_not_awaited()
-        process_actions_mock.reset_mock()
-
-    # Test CANCEL_ORDERS action - should call process_non_creating_orders_actions
-    with mock.patch.object(producer, "process_non_creating_orders_actions", mock.AsyncMock()) as process_actions_mock, \
-        mock.patch.object(producer, "submit_trading_evaluation", mock.AsyncMock()) as submit_mock:
-        await producer._set_state(
-            cryptocurrency,
-            symbol,
-            trading_view_signals_trading.SignalActions.CANCEL_ORDERS,
-            trading_enums.EvaluatorStates.NEUTRAL,
-            order_data,
-            parsed_data,
-            dependencies=dependencies
-        )
-        
-        process_actions_mock.assert_awaited_once_with(
-            trading_view_signals_trading.SignalActions.CANCEL_ORDERS,
-            symbol,
-            order_data,
-            parsed_data
-        )
-        submit_mock.assert_not_awaited()
-        process_actions_mock.reset_mock()
-
-    # Test with None dependencies
-    with mock.patch.object(producer, "submit_trading_evaluation", mock.AsyncMock()) as submit_mock:
-        await producer._set_state(
-            cryptocurrency,
-            symbol,
-            trading_view_signals_trading.SignalActions.CREATE_ORDERS,
-            trading_enums.EvaluatorStates.LONG,
-            order_data,
-            parsed_data,
-            dependencies=None
-        )
-        
-        submit_mock.assert_awaited_once()
-        assert submit_mock.await_args.kwargs["dependencies"] is None
+        updated_orders_mock.assert_awaited_once_with(parsed_data)
+        update_leverage_mock.assert_awaited_once_with(parsed_data)
+        assert result is mock_dependencies
 
 
-async def test_process_non_creating_orders_actions(tools):
-    exchange_manager, symbol, mode, producer, consumer = tools
-    order_data = {
-        consumer.EXCHANGE_ORDER_IDS: ["order_1", "order_2"],
-        consumer.TAG_KEY: "test_tag",
-    }
+async def test_before_signal_processing_update_leverage_calls_set_leverage(tools):
+    _exchange_manager, symbol, mode, producer, consumer = tools
     parsed_data = {
-        mode.EXCHANGE_KEY: exchange_manager.exchange_name,
+        mode.EXCHANGE_KEY: _exchange_manager.exchange_name,
         mode.SYMBOL_KEY: symbol,
+        mode.SIGNAL_KEY: "buy",
+        mode.LEVERAGE: 5,
     }
 
-    # Test CANCEL_ORDERS action
-    with mock.patch.object(producer, "cancel_orders_from_order_data", mock.AsyncMock(return_value=(True, None))) \
-        as cancel_orders_mock:
-        await producer.process_non_creating_orders_actions(
-            trading_view_signals_trading.SignalActions.CANCEL_ORDERS,
-            symbol,
-            order_data,
-            parsed_data
-        )
-        cancel_orders_mock.assert_awaited_once_with(symbol, order_data, parsed_data)
-        cancel_orders_mock.reset_mock()
+    with mock.patch.object(
+        producer, "_updated_orders_to_cancel", mock.AsyncMock(return_value=None)
+    ), mock.patch.object(
+        mode, "set_leverage", mock.AsyncMock()
+    ) as set_leverage_mock:
+        await producer._before_signal_processing(parsed_data)
 
-    # Test ENSURE_EXCHANGE_BALANCE action
-    with mock.patch.object(producer, "ensure_exchange_balance", mock.AsyncMock()) as ensure_exchange_mock:
-        await producer.process_non_creating_orders_actions(
-            trading_view_signals_trading.SignalActions.ENSURE_EXCHANGE_BALANCE,
-            symbol,
-            order_data,
-            parsed_data
-        )
-        ensure_exchange_mock.assert_awaited_once_with(parsed_data)
-        ensure_exchange_mock.reset_mock()
-
-    # Test ENSURE_BLOCKCHAIN_WALLET_BALANCE action
-    with mock.patch.object(producer, "ensure_blockchain_wallet_balance", mock.AsyncMock()) \
-        as ensure_blockchain_mock:
-        await producer.process_non_creating_orders_actions(
-            trading_view_signals_trading.SignalActions.ENSURE_BLOCKCHAIN_WALLET_BALANCE,
-            symbol,
-            order_data,
-            parsed_data
-        )
-        ensure_blockchain_mock.assert_awaited_once_with(parsed_data)
-        ensure_blockchain_mock.reset_mock()
-
-    # Test WITHDRAW_FUNDS action
-    with mock.patch.object(producer, "withdraw_funds", mock.AsyncMock()) as withdraw_funds_mock:
-        await producer.process_non_creating_orders_actions(
-            trading_view_signals_trading.SignalActions.WITHDRAW_FUNDS,
-            symbol,
-            order_data,
-            parsed_data
-        )
-        withdraw_funds_mock.assert_awaited_once_with(parsed_data)
-        withdraw_funds_mock.reset_mock()
-
-    # Test TRANSFER_FUNDS action
-    with mock.patch.object(producer, "transfer_funds", mock.AsyncMock()) as transfer_funds_mock:
-        await producer.process_non_creating_orders_actions(
-            trading_view_signals_trading.SignalActions.TRANSFER_FUNDS,
-            symbol,
-            order_data,
-            parsed_data
-        )
-        transfer_funds_mock.assert_awaited_once_with(parsed_data)
-        transfer_funds_mock.reset_mock()
-
-    # Test unknown action - should raise InvalidArgumentError
-    with pytest.raises(errors.InvalidArgumentError, match="Unknown action"):
-        await producer.process_non_creating_orders_actions(
-            trading_view_signals_trading.SignalActions.NO_ACTION,
-            symbol,
-            order_data,
-            parsed_data
+        set_leverage_mock.assert_awaited_once_with(
+            symbol, None, decimal.Decimal("5")
         )
 
-    # Test CREATE_ORDERS action - should raise InvalidArgumentError (not handled by this method)
-        with pytest.raises(errors.InvalidArgumentError, match="Unknown action"):
-            await producer.process_non_creating_orders_actions(
-                trading_view_signals_trading.SignalActions.CREATE_ORDERS,
-                symbol,
-                order_data,
-                parsed_data
-            )
+
+async def test_before_signal_processing_update_leverage_skips_when_no_symbol(tools):
+    _exchange_manager, symbol, mode, producer, consumer = tools
+    parsed_data = {
+        mode.EXCHANGE_KEY: _exchange_manager.exchange_name,
+        mode.SIGNAL_KEY: "buy",
+        mode.LEVERAGE: 5,
+    }
+
+    with mock.patch.object(
+        producer, "_updated_orders_to_cancel", mock.AsyncMock(return_value=None)
+    ), mock.patch.object(
+        mode, "set_leverage", mock.AsyncMock()
+    ) as set_leverage_mock, mock.patch.object(
+        producer.logger, "error"
+    ) as logger_error_mock:
+        await producer._before_signal_processing(parsed_data)
+
+        set_leverage_mock.assert_not_awaited()
+        logger_error_mock.assert_called_once()
+        assert "symbol" in str(logger_error_mock.call_args).lower()
+
+
+# async def test_set_state(tools):
+#     exchange_manager, symbol, mode, producer, consumer = tools
+#     cryptocurrency = mode.cryptocurrency
+#     order_data = {
+#         consumer.PRICE_KEY: decimal.Decimal("100"),
+#         consumer.VOLUME_KEY: decimal.Decimal("1.0"),
+#     }
+#     parsed_data = {
+#         mode.EXCHANGE_KEY: exchange_manager.exchange_name,
+#         mode.SYMBOL_KEY: symbol,
+#         mode.SIGNAL_KEY: "BUY",
+#     }
+#     dependencies = trading_signals.get_orders_dependencies([mock.Mock(order_id="test_order")])
+
+#     # Test CREATE_ORDERS action - should call submit_trading_evaluation
+#     exchange_manager.is_backtesting = False
+#     with mock.patch.object(producer, "submit_trading_evaluation", mock.AsyncMock()) as submit_mock, \
+#         mock.patch.object(producer, "_send_alert_notification", mock.AsyncMock()) as send_notification_mock, \
+#         mock.patch.object(producer.logger, "info") as logger_info_mock:
+#         producer.state = trading_enums.EvaluatorStates.NEUTRAL
+#         producer.final_eval = -0.5
+        
+#         await producer._set_state(
+#             cryptocurrency,
+#             symbol,
+#             trading_view_signals_trading.SignalActions.CREATE_ORDERS,
+#             trading_enums.EvaluatorStates.LONG,
+#             order_data,
+#             parsed_data,
+#             dependencies=dependencies
+#         )
+        
+#         # State should be updated
+#         assert producer.state == trading_enums.EvaluatorStates.LONG
+#         logger_info_mock.assert_called()
+#         assert "new state" in str(logger_info_mock.call_args_list).lower()
+        
+#         # Should call submit_trading_evaluation
+#         submit_mock.assert_awaited_once()
+#         call_args = submit_mock.await_args
+#         assert call_args.kwargs["cryptocurrency"] == cryptocurrency
+#         assert call_args.kwargs["symbol"] == symbol
+#         assert call_args.kwargs["time_frame"] is None
+#         assert call_args.kwargs["final_note"] == producer.final_eval
+#         assert call_args.kwargs["state"] == trading_enums.EvaluatorStates.LONG
+#         assert call_args.kwargs["data"] == order_data
+#         assert call_args.kwargs["dependencies"] == dependencies
+        
+#         send_notification_mock.assert_awaited_once_with(symbol, trading_enums.EvaluatorStates.LONG)
+#         exchange_manager.is_backtesting = True
+#         submit_mock.reset_mock()
+#         logger_info_mock.reset_mock()
+
+#     # Test ENSURE_EXCHANGE_BALANCE action - should call process_non_creating_orders_actions
+#     with mock.patch.object(producer, "process_non_creating_orders_actions", mock.AsyncMock()) as process_actions_mock, \
+#         mock.patch.object(producer, "submit_trading_evaluation", mock.AsyncMock()) as submit_mock:
+#         producer.state = trading_enums.EvaluatorStates.NEUTRAL
+        
+#         await producer._set_state(
+#             cryptocurrency,
+#             symbol,
+#             trading_view_signals_trading.SignalActions.ENSURE_EXCHANGE_BALANCE,
+#             trading_enums.EvaluatorStates.NEUTRAL,
+#             order_data,
+#             parsed_data,
+#             dependencies=dependencies
+#         )
+        
+#         # Should call process_non_creating_orders_actions
+#         process_actions_mock.assert_awaited_once_with(
+#             trading_view_signals_trading.SignalActions.ENSURE_EXCHANGE_BALANCE,
+#             symbol,
+#             order_data,
+#             parsed_data
+#         )
+#         # Should not call submit_trading_evaluation
+#         submit_mock.assert_not_awaited()
+#         process_actions_mock.reset_mock()
+
+#     # Test CANCEL_ORDERS action - should call process_non_creating_orders_actions
+#     with mock.patch.object(producer, "process_non_creating_orders_actions", mock.AsyncMock()) as process_actions_mock, \
+#         mock.patch.object(producer, "submit_trading_evaluation", mock.AsyncMock()) as submit_mock:
+#         await producer._set_state(
+#             cryptocurrency,
+#             symbol,
+#             trading_view_signals_trading.SignalActions.CANCEL_ORDERS,
+#             trading_enums.EvaluatorStates.NEUTRAL,
+#             order_data,
+#             parsed_data,
+#             dependencies=dependencies
+#         )
+        
+#         process_actions_mock.assert_awaited_once_with(
+#             trading_view_signals_trading.SignalActions.CANCEL_ORDERS,
+#             symbol,
+#             order_data,
+#             parsed_data
+#         )
+#         submit_mock.assert_not_awaited()
+#         process_actions_mock.reset_mock()
+
+#     # Test with None dependencies
+#     with mock.patch.object(producer, "submit_trading_evaluation", mock.AsyncMock()) as submit_mock:
+#         await producer._set_state(
+#             cryptocurrency,
+#             symbol,
+#             trading_view_signals_trading.SignalActions.CREATE_ORDERS,
+#             trading_enums.EvaluatorStates.LONG,
+#             order_data,
+#             parsed_data,
+#             dependencies=None
+#         )
+        
+#         submit_mock.assert_awaited_once()
+#         assert submit_mock.await_args.kwargs["dependencies"] is None
+
+
+# async def test_process_non_creating_orders_actions(tools):
+#     exchange_manager, symbol, mode, producer, consumer = tools
+#     order_data = {
+#         consumer.EXCHANGE_ORDER_IDS: ["order_1", "order_2"],
+#         consumer.TAG_KEY: "test_tag",
+#     }
+#     parsed_data = {
+#         mode.EXCHANGE_KEY: exchange_manager.exchange_name,
+#         mode.SYMBOL_KEY: symbol,
+#     }
+
+#     # Test CANCEL_ORDERS action
+#     with mock.patch.object(producer, "cancel_orders_from_order_data", mock.AsyncMock(return_value=(True, None))) \
+#         as cancel_orders_mock:
+#         await producer.process_non_creating_orders_actions(
+#             trading_view_signals_trading.SignalActions.CANCEL_ORDERS,
+#             symbol,
+#             order_data,
+#             parsed_data
+#         )
+#         cancel_orders_mock.assert_awaited_once_with(symbol, order_data, parsed_data)
+#         cancel_orders_mock.reset_mock()
+
+#     # Test ENSURE_EXCHANGE_BALANCE action
+#     with mock.patch.object(producer, "ensure_exchange_balance", mock.AsyncMock()) as ensure_exchange_mock:
+#         await producer.process_non_creating_orders_actions(
+#             trading_view_signals_trading.SignalActions.ENSURE_EXCHANGE_BALANCE,
+#             symbol,
+#             order_data,
+#             parsed_data
+#         )
+#         ensure_exchange_mock.assert_awaited_once_with(parsed_data)
+#         ensure_exchange_mock.reset_mock()
+
+#     # Test ENSURE_BLOCKCHAIN_WALLET_BALANCE action
+#     with mock.patch.object(producer, "ensure_blockchain_wallet_balance", mock.AsyncMock()) \
+#         as ensure_blockchain_mock:
+#         await producer.process_non_creating_orders_actions(
+#             trading_view_signals_trading.SignalActions.ENSURE_BLOCKCHAIN_WALLET_BALANCE,
+#             symbol,
+#             order_data,
+#             parsed_data
+#         )
+#         ensure_blockchain_mock.assert_awaited_once_with(parsed_data)
+#         ensure_blockchain_mock.reset_mock()
+
+#     # Test WITHDRAW_FUNDS action
+#     with mock.patch.object(producer, "withdraw_funds", mock.AsyncMock()) as withdraw_funds_mock:
+#         await producer.process_non_creating_orders_actions(
+#             trading_view_signals_trading.SignalActions.WITHDRAW_FUNDS,
+#             symbol,
+#             order_data,
+#             parsed_data
+#         )
+#         withdraw_funds_mock.assert_awaited_once_with(parsed_data)
+#         withdraw_funds_mock.reset_mock()
+
+#     # Test TRANSFER_FUNDS action
+#     with mock.patch.object(producer, "transfer_funds", mock.AsyncMock()) as transfer_funds_mock:
+#         await producer.process_non_creating_orders_actions(
+#             trading_view_signals_trading.SignalActions.TRANSFER_FUNDS,
+#             symbol,
+#             order_data,
+#             parsed_data
+#         )
+#         transfer_funds_mock.assert_awaited_once_with(parsed_data)
+#         transfer_funds_mock.reset_mock()
+
+#     # Test unknown action - should raise InvalidArgumentError
+#     with pytest.raises(errors.InvalidArgumentError, match="Unknown action"):
+#         await producer.process_non_creating_orders_actions(
+#             trading_view_signals_trading.SignalActions.NO_ACTION,
+#             symbol,
+#             order_data,
+#             parsed_data
+#         )
+
+#     # Test CREATE_ORDERS action - should raise InvalidArgumentError (not handled by this method)
+#         with pytest.raises(errors.InvalidArgumentError, match="Unknown action"):
+#             await producer.process_non_creating_orders_actions(
+#                 trading_view_signals_trading.SignalActions.CREATE_ORDERS,
+#                 symbol,
+#                 order_data,
+#                 parsed_data
+#             )
 
 
 async def test_ensure_exchange_balance(tools):
@@ -1145,7 +1089,8 @@ async def test_ensure_blockchain_wallet_balance(tools, blockchain_wallet_details
     parsed_data = {
         "asset": BLOCKCHAIN_WALLET_ASSET,
         "holdings": 5.0,
-        "wallet_details": blockchain_wallet_details,
+        "blockchain_descriptor": blockchain_wallet_details.blockchain_descriptor,
+        "wallet_descriptor": blockchain_wallet_details.wallet_descriptor,
     }
     async with trading_api.blockchain_wallet_context(blockchain_wallet_details, exchange_manager.trader) as wallet:
     
@@ -1185,72 +1130,72 @@ async def test_ensure_blockchain_wallet_balance(tools, blockchain_wallet_details
         assert "available: 0" in str(exc_info.value)
 
 
-async def test_withdraw_funds(tools):
-    exchange_manager, symbol, mode, producer, consumer = tools
-    asset = "BTC"
-    amount = 0.1
-    network = "bitcoin"
-    address = "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"
-    tag = "test_tag"
-    params = {"test_param": "test_value"}
+# async def test_withdraw_funds(tools):
+#     exchange_manager, symbol, mode, producer, consumer = tools
+#     asset = "BTC"
+#     amount = 0.1
+#     network = "bitcoin"
+#     address = "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"
+#     tag = "test_tag"
+#     params = {"test_param": "test_value"}
     
-    parsed_data = {
-        "asset": asset,
-        "amount": amount,
-        "network": network,
-        "address": address,
-        "tag": tag,
-        "params": params,
-    }
+#     parsed_data = {
+#         "asset": asset,
+#         "amount": amount,
+#         "network": network,
+#         "address": address,
+#         "tag": tag,
+#         "params": params,
+#     }
     
-    # Set portfolio balance to have enough for withdrawal
-    portfolio = exchange_manager.exchange_personal_data.portfolio_manager.portfolio
-    portfolio._update_portfolio_data(asset, total_value=decimal.Decimal("1.0"), available_value=decimal.Decimal("1.0"), replace_value=True)
+#     # Set portfolio balance to have enough for withdrawal
+#     portfolio = exchange_manager.exchange_personal_data.portfolio_manager.portfolio
+#     portfolio._update_portfolio_data(asset, total_value=decimal.Decimal("1.0"), available_value=decimal.Decimal("1.0"), replace_value=True)
     
-    # Test successful withdrawal
-    with mock.patch('octobot_trading.constants.ALLOW_FUNDS_TRANSFER', True), \
-        mock.patch.object(producer.logger, "info") as logger_info_mock, \
-        mock.patch.object(producer.exchange_manager.trader, "_withdraw_on_exchange", mock.AsyncMock(wraps=producer.exchange_manager.trader._withdraw_on_exchange)) as _withdraw_on_exchange_mock:
-        await producer.withdraw_funds(parsed_data)
-        _withdraw_on_exchange_mock.assert_awaited_once_with(asset, decimal.Decimal(str(amount)), network, address, tag=tag, params=params)
-        logger_info_mock.assert_called_once()
-        assert "Withdrawn" in str(logger_info_mock.call_args)
-        assert asset in str(logger_info_mock.call_args)
-        _withdraw_on_exchange_mock.reset_mock()
-        logger_info_mock.reset_mock()
+#     # Test successful withdrawal
+#     with mock.patch('octobot_trading.constants.ALLOW_FUNDS_TRANSFER', True), \
+#         mock.patch.object(producer.logger, "info") as logger_info_mock, \
+#         mock.patch.object(producer.exchange_manager.trader, "_withdraw_on_exchange", mock.AsyncMock(wraps=producer.exchange_manager.trader._withdraw_on_exchange)) as _withdraw_on_exchange_mock:
+#         await producer.withdraw_funds(parsed_data)
+#         _withdraw_on_exchange_mock.assert_awaited_once_with(asset, decimal.Decimal(str(amount)), network, address, tag=tag, params=params)
+#         logger_info_mock.assert_called_once()
+#         assert "Withdrawn" in str(logger_info_mock.call_args)
+#         assert asset in str(logger_info_mock.call_args)
+#         _withdraw_on_exchange_mock.reset_mock()
+#         logger_info_mock.reset_mock()
     
-        # Test when ALLOW_FUNDS_TRANSFER is False - should raise DisabledFundsTransferError
-        with mock.patch('octobot_trading.constants.ALLOW_FUNDS_TRANSFER', False):
-            with pytest.raises(errors.DisabledFundsTransferError):
-                await producer.withdraw_funds(parsed_data)
-        _withdraw_on_exchange_mock.assert_not_awaited()
+#         # Test when ALLOW_FUNDS_TRANSFER is False - should raise DisabledFundsTransferError
+#         with mock.patch('octobot_trading.constants.ALLOW_FUNDS_TRANSFER', False):
+#             with pytest.raises(errors.DisabledFundsTransferError):
+#                 await producer.withdraw_funds(parsed_data)
+#         _withdraw_on_exchange_mock.assert_not_awaited()
 
-async def test_transfer_funds(tools, blockchain_wallet_details):
-    exchange_manager, symbol, mode, producer, consumer = tools
-    amount = 1.0
-    address = "0x1234567890123456789012345678901234567890"    
+# async def test_transfer_funds(tools, blockchain_wallet_details):
+#     exchange_manager, symbol, mode, producer, consumer = tools
+#     amount = 1.0
+#     address = "0x1234567890123456789012345678901234567890"    
     
-    parsed_data = {
-        "asset": BLOCKCHAIN_WALLET_ASSET,
-        "amount": amount,
-        "address": address,
-        "wallet_details": blockchain_wallet_details,
-    }
+#     parsed_data = {
+#         "asset": BLOCKCHAIN_WALLET_ASSET,
+#         "amount": amount,
+#         "address": address,
+#         "wallet_details": blockchain_wallet_details,
+#     }
     
-    # Test successful transfer
-    with mock.patch('octobot_trading.constants.ALLOW_FUNDS_TRANSFER', True), \
-        mock.patch.object(producer.logger, "info") as logger_info_mock, \
-        mock.patch.object(blockchain_wallets.BlockchainWalletSimulator, "withdraw", mock.AsyncMock()) as withdraw_mock:
-        await producer.transfer_funds(parsed_data)
-        withdraw_mock.assert_awaited_once_with(
-            BLOCKCHAIN_WALLET_ASSET, decimal.Decimal(str(amount)), trading_constants.SIMULATED_BLOCKCHAIN_NETWORK, address
-        )
+#     # Test successful transfer
+#     with mock.patch('octobot_trading.constants.ALLOW_FUNDS_TRANSFER', True), \
+#         mock.patch.object(producer.logger, "info") as logger_info_mock, \
+#         mock.patch.object(blockchain_wallets.BlockchainWalletSimulator, "withdraw", mock.AsyncMock()) as withdraw_mock:
+#         await producer.transfer_funds(parsed_data)
+#         withdraw_mock.assert_awaited_once_with(
+#             BLOCKCHAIN_WALLET_ASSET, decimal.Decimal(str(amount)), trading_constants.SIMULATED_BLOCKCHAIN_NETWORK, address
+#         )
         
-        logger_info_mock.assert_called_once()
-        assert "Transferred" in str(logger_info_mock.call_args)
-        assert BLOCKCHAIN_WALLET_ASSET in str(logger_info_mock.call_args)
-        withdraw_mock.reset_mock()
-        logger_info_mock.reset_mock()
+#         logger_info_mock.assert_called_once()
+#         assert "Transferred" in str(logger_info_mock.call_args)
+#         assert BLOCKCHAIN_WALLET_ASSET in str(logger_info_mock.call_args)
+#         withdraw_mock.reset_mock()
+#         logger_info_mock.reset_mock()
 
 
 async def test_is_non_order_signal(tools):
@@ -1308,6 +1253,43 @@ async def test_is_meta_action_only(tools):
         }) is True
     finally:
         mode.__class__.META_ACTION_ONLY_SIGNALS = prev_value
+
+
+async def test_functional_limit_buy_signal_end_to_end(tools):
+    """
+    Functional test: backtesting exchange_manager receives a limit buy signal,
+    processes it, and the resulting order is created and verified.
+    """
+    exchange_manager, symbol, mode, _producer, _consumer = tools
+
+    limit_price = 6900
+    order_volume = 0.01
+
+    initial_orders = trading_api.get_open_orders(exchange_manager, symbol=symbol)
+    assert len(initial_orders) == 0
+
+    limit_buy_signal = f"""
+        EXCHANGE={exchange_manager.exchange_name}
+        SYMBOL={symbol}
+        SIGNAL=BUY
+        ORDER_TYPE=limit
+        PRICE={limit_price}
+        VOLUME={order_volume}
+    """
+
+    await mode._trading_view_signal_callback({"metadata": limit_buy_signal})
+
+    await asyncio_tools.wait_asyncio_next_cycle()
+
+    orders = trading_api.get_open_orders(exchange_manager, symbol=symbol)
+    assert len(orders) == 1, f"Expected 1 order, got {len(orders)}: {orders}"
+
+    created_order = orders[0]
+    assert isinstance(created_order, trading_personal_data.BuyLimitOrder)
+    assert created_order.symbol == symbol
+    assert created_order.side == trading_enums.TradeOrderSide.BUY
+    assert created_order.origin_price == decimal.Decimal(str(limit_price))
+    assert created_order.origin_quantity == decimal.Decimal(str(order_volume))
 
 
 def compare_dict_with_nan(d_1, d_2):

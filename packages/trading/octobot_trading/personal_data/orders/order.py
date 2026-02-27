@@ -494,7 +494,7 @@ class Order(util.Initializable):
         await self._ensure_inactive_order_watcher()
 
     def should_become_active(self, price_time: float, current_price: decimal.Decimal) -> bool:
-        if self.is_active:
+        if self.is_active or self.active_trigger is None:
             return False
         if price_time >= self.creation_time:
             return self.active_trigger.triggers(current_price)

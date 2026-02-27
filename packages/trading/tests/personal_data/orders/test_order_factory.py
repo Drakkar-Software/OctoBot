@@ -14,18 +14,30 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import decimal
+import mock
 
 import pytest
 from octobot_commons.tests.test_config import load_test_config
 
 from tests import event_loop
 import octobot_trading.personal_data as personal_data
+import octobot_trading.modes.script_keywords as script_keywords
+import octobot_trading.personal_data.orders.order_factory as order_factory_module
 import octobot_trading.storage.orders_storage as orders_storage
+import octobot_trading.constants as constants
 import octobot_trading.enums as enums
-from octobot_trading.enums import TradeOrderSide, TradeOrderType, TraderOrderType, StoredOrdersAttr
+import octobot_trading.errors as trading_errors
+from octobot_trading.enums import (
+    ExchangeConstantsMarketStatusColumns as Ecmsc,
+    TradeOrderSide,
+    TradeOrderType,
+    TraderOrderType,
+    StoredOrdersAttr,
+)
 from octobot_trading.exchanges.exchange_manager import ExchangeManager
 from octobot_trading.exchanges.traders.trader_simulator import TraderSimulator
 from octobot_trading.api.exchange import cancel_ccxt_throttle_task
+from tests.personal_data.orders import created_order
 
 pytestmark = pytest.mark.asyncio
 
@@ -406,3 +418,390 @@ class TestOrderFactory:
         assert second_level_chained_orders[0].trailing_profile is None  
         assert second_level_chained_orders[0].cancel_policy is None
         await self.stop(exchange_manager)
+
+
+def _symbol_market():
+    return {
+        Ecmsc.LIMITS.value: {
+            Ecmsc.LIMITS_AMOUNT.value: {
+                Ecmsc.LIMITS_AMOUNT_MIN.value: 0.5,
+                Ecmsc.LIMITS_AMOUNT_MAX.value: 1000,
+            },
+            Ecmsc.LIMITS_COST.value: {
+                Ecmsc.LIMITS_COST_MIN.value: 1,
+                Ecmsc.LIMITS_COST_MAX.value: 2000000000,
+            },
+            Ecmsc.LIMITS_PRICE.value: {
+                Ecmsc.LIMITS_PRICE_MIN.value: 0.5,
+                Ecmsc.LIMITS_PRICE_MAX.value: 5000000,
+            },
+        },
+        Ecmsc.PRECISION.value: {
+            Ecmsc.PRECISION_PRICE.value: 8,
+            Ecmsc.PRECISION_AMOUNT.value: 8,
+        },
+    }
+
+
+class TestOrderFactoryClass:
+    DEFAULT_SYMBOL = "BTC/USDT"
+    EXCHANGE_MANAGER_CLASS_STRING = "binanceus"
+
+    @staticmethod
+    async def init_default():
+        config = load_test_config()
+        exchange_manager = ExchangeManager(config, TestOrderFactoryClass.EXCHANGE_MANAGER_CLASS_STRING)
+        await exchange_manager.initialize(exchange_config_by_exchange=None)
+        trader = TraderSimulator(config, exchange_manager)
+        await trader.initialize()
+        return config, exchange_manager, trader
+
+    @staticmethod
+    async def stop(exchange_manager):
+        cancel_ccxt_throttle_task()
+        await exchange_manager.stop()
+
+    def test_order_factory_validate_raises_when_exchange_manager_none(self):
+        factory = order_factory_module.OrderFactory(None, None, None, False, False)
+        with pytest.raises(ValueError) as exc_info:
+            factory.validate()
+        assert "exchange_manager is required" in str(exc_info.value)
+
+    def test_order_factory_validate_succeeds_when_exchange_manager_set(self):
+        exchange_manager = mock.Mock()
+        factory = order_factory_module.OrderFactory(exchange_manager, None, None, False, False)
+        factory.validate()
+
+    def test_order_factory_get_validated_amounts_and_prices_returns_adapted(self):
+        exchange_manager = mock.Mock(exchange_name="test_exchange")
+        factory = order_factory_module.OrderFactory(exchange_manager, None, None, False, False)
+        symbol_market = _symbol_market()
+        amount = decimal.Decimal("1")
+        price = decimal.Decimal("2")
+        result = factory._get_validated_amounts_and_prices(
+            "BTC/USDT", amount, price, symbol_market
+        )
+        assert result == [(decimal.Decimal("1"), decimal.Decimal("2"))]
+
+    def test_order_factory_get_validated_amounts_and_prices_raises_min_amount(self):
+        exchange_manager = mock.Mock(exchange_name="test_exchange")
+        factory = order_factory_module.OrderFactory(exchange_manager, None, None, False, False)
+        symbol_market = _symbol_market()
+        amount = decimal.Decimal("0.1")
+        price = decimal.Decimal("100")
+        with pytest.raises(trading_errors.MissingMinimalExchangeTradeVolume) as exc_info:
+            factory._get_validated_amounts_and_prices(
+                "BTC/USDT", amount, price, symbol_market
+            )
+        assert "too small" in str(exc_info.value)
+        assert "amount" in str(exc_info.value).lower()
+
+    def test_order_factory_get_validated_amounts_and_prices_raises_min_cost(self):
+        exchange_manager = mock.Mock(exchange_name="test_exchange")
+        factory = order_factory_module.OrderFactory(exchange_manager, None, None, False, False)
+        symbol_market = _symbol_market()
+        amount = decimal.Decimal("0.5")
+        price = decimal.Decimal("1")
+        with pytest.raises(trading_errors.MissingMinimalExchangeTradeVolume) as exc_info:
+            factory._get_validated_amounts_and_prices(
+                "BTC/USDT", amount, price, symbol_market
+            )
+        assert "cost" in str(exc_info.value).lower()
+
+    def test_order_factory_ensure_supported_order_type_raises(self):
+        exchange = mock.Mock(is_supported_order_type=mock.Mock(return_value=False))
+        exchange_manager = mock.Mock(exchange=exchange, exchange_name="test_exchange")
+        factory = order_factory_module.OrderFactory(exchange_manager, None, None, False, False)
+        with pytest.raises(trading_errors.NotSupportedOrderTypeError) as exc_info:
+            factory._ensure_supported_order_type(enums.TraderOrderType.STOP_LOSS)
+        assert exc_info.value.order_type == enums.TraderOrderType.STOP_LOSS
+
+    def test_order_factory_ensure_supported_order_type_succeeds(self):
+        exchange = mock.Mock(is_supported_order_type=mock.Mock(return_value=True))
+        exchange_manager = mock.Mock(exchange=exchange, exchange_name="test_exchange")
+        factory = order_factory_module.OrderFactory(exchange_manager, None, None, False, False)
+        factory._ensure_supported_order_type(enums.TraderOrderType.STOP_LOSS)
+
+    @pytest.mark.asyncio
+    async def test_order_factory_get_computed_price(self):
+        exchange_manager = mock.Mock(exchange_name="test_exchange")
+        factory = order_factory_module.OrderFactory(exchange_manager, None, None, False, False)
+        ctx = mock.Mock()
+        order_price = "50000"
+        expected_price = decimal.Decimal("50100")
+        mock_get_price = mock.AsyncMock(return_value=expected_price)
+        with mock.patch.object(script_keywords, "get_price_with_offset", mock_get_price):
+            result = await factory._get_computed_price(ctx, order_price)
+        assert result == expected_price
+        mock_get_price.assert_called_once_with(
+            ctx, order_price, use_delta_type_as_flat_value=True
+        )
+
+    @pytest.mark.asyncio
+    async def test_order_factory_get_computed_quantity_returns_zero_for_empty_input(self):
+        exchange_manager = mock.Mock()
+        factory = order_factory_module.OrderFactory(exchange_manager, None, None, False, False)
+        ctx = mock.Mock()
+        for input_amount in ("", "0"):
+            result = await factory._get_computed_quantity(
+                ctx, input_amount,
+                enums.TradeOrderSide.BUY,
+                decimal.Decimal("50000"),
+                reduce_only=False,
+                allow_holdings_adaptation=False,
+            )
+            assert result == constants.ZERO
+
+    @pytest.mark.asyncio
+    async def test_order_factory_get_computed_quantity_delegates_to_get_amount_from_input_amount(self):
+        exchange_manager = mock.Mock()
+        factory = order_factory_module.OrderFactory(exchange_manager, None, None, False, False)
+        ctx = mock.Mock()
+        expected_amount = decimal.Decimal("2")
+        mock_get_amount = mock.AsyncMock(return_value=expected_amount)
+        with mock.patch.object(script_keywords, "get_amount_from_input_amount", mock_get_amount):
+            result = await factory._get_computed_quantity(
+                ctx, "2", enums.TradeOrderSide.BUY, decimal.Decimal("50000"),
+                reduce_only=False, allow_holdings_adaptation=False,
+            )
+        assert result == expected_amount
+        mock_get_amount.assert_called_once_with(
+            context=ctx,
+            input_amount="2",
+            side="buy",
+            reduce_only=False,
+            is_stop_order=False,
+            use_total_holding=False,
+            target_price=decimal.Decimal("50000"),
+            allow_holdings_adaptation=False,
+        )
+
+    @pytest.mark.asyncio
+    async def test_order_factory_create_stop_orders_early_return_when_no_stop_loss_price(self):
+        exchange_manager = mock.Mock()
+        factory = order_factory_module.OrderFactory(exchange_manager, None, None, False, False)
+        ctx = mock.Mock()
+        base_order = mock.Mock()
+        symbol_market = _symbol_market()
+        params = {}
+        chained_orders = []
+        await factory._create_stop_orders(ctx, base_order, symbol_market, params, chained_orders)
+        assert chained_orders == []
+        assert params == {}
+
+    @pytest.mark.asyncio
+    async def test_order_factory_create_stop_orders_creates_chained_order_when_stop_loss_price_set(self):
+        _, exchange_manager, trader_inst = await self.init_default()
+        try:
+            base_order = created_order(
+                personal_data.BuyLimitOrder, enums.TraderOrderType.BUY_LIMIT, trader_inst,
+            )
+            base_order.update(
+                order_type=enums.TraderOrderType.BUY_LIMIT,
+                symbol=self.DEFAULT_SYMBOL,
+                current_price=decimal.Decimal("50000"),
+                quantity=decimal.Decimal("1"),
+                price=decimal.Decimal("50000"),
+            )
+            factory = order_factory_module.OrderFactory(exchange_manager, None, None, False, False)
+            ctx = script_keywords.get_base_context_from_exchange_manager(exchange_manager, self.DEFAULT_SYMBOL)
+            symbol_market = _symbol_market()
+            params = {}
+            chained_orders = []
+            stop_loss_price = decimal.Decimal("45000")
+            adapted_price = decimal.Decimal("45000")
+            with mock.patch.object(
+                exchange_manager.exchange, "is_supported_order_type", mock.Mock(return_value=True)
+            ), mock.patch.object(factory, "_get_computed_price", mock.AsyncMock(return_value=adapted_price)):
+                await factory._create_stop_orders(
+                    ctx, base_order, symbol_market, params, chained_orders,
+                    stop_loss_price=stop_loss_price,
+                )
+            assert len(chained_orders) == 1
+            chained_order = chained_orders[0]
+            assert chained_order.order_type == enums.TraderOrderType.STOP_LOSS
+            assert chained_order.side == enums.TradeOrderSide.SELL
+            assert chained_order.origin_quantity == base_order.origin_quantity
+            assert chained_order.origin_price == adapted_price
+            assert chained_order.symbol == self.DEFAULT_SYMBOL
+        finally:
+            await self.stop(exchange_manager)
+
+    @pytest.mark.asyncio
+    async def test_order_factory_create_take_profit_orders_early_return_when_no_take_profit_prices(self):
+        exchange_manager = mock.Mock()
+        factory = order_factory_module.OrderFactory(exchange_manager, None, None, False, False)
+        ctx = mock.Mock()
+        base_order = mock.Mock()
+        symbol_market = _symbol_market()
+        params = {}
+        chained_orders = []
+        await factory._create_take_profit_orders(ctx, base_order, symbol_market, params, chained_orders)
+        assert chained_orders == []
+        assert params == {}
+
+    @pytest.mark.asyncio
+    async def test_order_factory_create_take_profit_orders_invalid_volume_percents(self):
+        exchange_manager = mock.Mock(exchange_name="test_exchange")
+        factory = order_factory_module.OrderFactory(exchange_manager, None, None, False, False)
+        ctx = mock.Mock()
+        base_order = mock.Mock(side=enums.TradeOrderSide.BUY, origin_quantity=decimal.Decimal("1"), tag="tag")
+        symbol_market = _symbol_market()
+        params = {}
+        chained_orders = []
+        take_profit_prices = [decimal.Decimal("1"), decimal.Decimal("2")]
+        take_profit_volume_percents = [decimal.Decimal("50")]
+        with pytest.raises(trading_errors.InvalidArgumentError) as exc_info:
+            await factory._create_take_profit_orders(
+                ctx, base_order, symbol_market, params, chained_orders,
+                take_profit_prices=take_profit_prices,
+                take_profit_volume_percents=take_profit_volume_percents,
+            )
+        assert "take profit volume percents" in str(exc_info.value)
+
+    def test_order_factory_create_active_order_swap_strategy(self):
+        exchange_manager = mock.Mock()
+        factory = order_factory_module.OrderFactory(exchange_manager, None, None, False, False)
+        strategy_type = "StopFirstActiveOrderSwapStrategy"
+        strategy_params = {"swap_timeout": 123}
+        result_strategy = mock.Mock()
+        with mock.patch.object(
+            personal_data, "create_active_order_swap_strategy",
+            return_value=result_strategy,
+        ) as create_mock:
+            result = factory._create_active_order_swap_strategy(strategy_type, strategy_params)
+        assert result is result_strategy
+        create_mock.assert_called_once_with(strategy_type, **strategy_params)
+
+    def test_order_factory_create_active_order_swap_strategy_with_none_params(self):
+        exchange_manager = mock.Mock()
+        factory = order_factory_module.OrderFactory(exchange_manager, None, None, False, False)
+        result_strategy = mock.Mock()
+        with mock.patch.object(
+            personal_data, "create_active_order_swap_strategy",
+            return_value=result_strategy,
+        ) as create_mock:
+            result = factory._create_active_order_swap_strategy("SomeStrategy", None)
+        assert result is result_strategy
+        create_mock.assert_called_once_with("SomeStrategy", **{})
+
+    @pytest.mark.asyncio
+    async def test_order_factory_create_order_on_exchange_with_trading_mode(self):
+        order = mock.Mock()
+        created_order = mock.Mock()
+        trading_mode = mock.Mock()
+        trading_mode.create_order = mock.AsyncMock(return_value=created_order)
+        exchange_manager = mock.Mock()
+        dependencies = mock.Mock()
+        factory = order_factory_module.OrderFactory(
+            exchange_manager, trading_mode, dependencies, wait_for_creation=True, try_to_handle_unconfigured_symbol=False
+        )
+        result = await factory.create_order_on_exchange(order)
+        assert result is created_order
+        trading_mode.create_order.assert_called_once_with(
+            order, dependencies=dependencies, wait_for_creation=True
+        )
+
+    @pytest.mark.asyncio
+    async def test_order_factory_create_order_on_exchange_without_trading_mode(self):
+        order = mock.Mock()
+        created_order = mock.Mock()
+        trader = mock.Mock()
+        trader.create_order = mock.AsyncMock(return_value=created_order)
+        exchange_manager = mock.Mock(trader=trader)
+        factory = order_factory_module.OrderFactory(
+            exchange_manager, None, None, wait_for_creation=False, try_to_handle_unconfigured_symbol=False
+        )
+        result = await factory.create_order_on_exchange(order)
+        assert result is created_order
+        trader.create_order.assert_called_once_with(order, wait_for_creation=False)
+
+    @pytest.mark.asyncio
+    async def test_order_factory_create_base_orders_unsupported_symbol(self):
+        _, exchange_manager, _ = await self.init_default()
+        try:
+            factory = order_factory_module.OrderFactory(
+                exchange_manager, None, None, False, try_to_handle_unconfigured_symbol=False
+            )
+            with pytest.raises(trading_errors.UnSupportedSymbolError) as exc_info:
+                await factory.create_base_orders_and_associated_elements(
+                    enums.TraderOrderType.BUY_MARKET,
+                    "INVALID/XYZ",
+                    enums.TradeOrderSide.BUY,
+                    "1",
+                )
+            assert "INVALID/XYZ" in str(exc_info.value) or "not found" in str(exc_info.value).lower()
+        finally:
+            await self.stop(exchange_manager)
+
+    @pytest.mark.asyncio
+    async def test_order_factory_create_base_orders_try_to_handle_unconfigured_symbol(self):
+        _, exchange_manager, _ = await self.init_default()
+        try:
+            factory = order_factory_module.OrderFactory(
+                exchange_manager, None, None, False, try_to_handle_unconfigured_symbol=True
+            )
+            with pytest.raises(NotImplementedError) as exc_info:
+                await factory.create_base_orders_and_associated_elements(
+                    enums.TraderOrderType.BUY_MARKET,
+                    "INVALID/XYZ",
+                    enums.TradeOrderSide.BUY,
+                    "1",
+                )
+            assert "try_to_handle_unconfigured_symbol" in str(exc_info.value)
+        finally:
+            await self.stop(exchange_manager)
+
+    @pytest.mark.asyncio
+    async def test_order_factory_create_base_orders_and_associated_elements_success(self):
+        _, real_exchange_manager, _ = await self.init_default()
+        try:
+            symbol = "BTC/USDT"
+            symbol_market = _symbol_market()
+            current_price = decimal.Decimal("50000")
+            portfolio_manager = real_exchange_manager.exchange_personal_data.portfolio_manager
+            portfolio_manager.portfolio.portfolio["USDT"] = personal_data.SpotAsset(
+                name="USDT",
+                available=decimal.Decimal("100000"),
+                total=decimal.Decimal("100000"),
+            )
+            symbol_data = mock.Mock()
+            symbol_data.prices_manager.get_mark_price = mock.AsyncMock(return_value=float(current_price))
+            exchange_symbols_data = mock.Mock(
+                exchange_symbol_data={symbol: symbol_data},
+                get_exchange_symbol_data=mock.Mock(return_value=symbol_data),
+            )
+            exchange = mock.Mock(
+                get_market_status=mock.Mock(return_value=symbol_market),
+                get_exchange_current_time=mock.Mock(return_value=1234567890),
+            )
+            exchange_manager = mock.Mock(
+                bot_id=None,
+                is_margin=False,
+                exchange=exchange,
+                exchange_symbols_data=exchange_symbols_data,
+                trader=real_exchange_manager.trader,
+                exchange_name=real_exchange_manager.exchange_name,
+                is_future=real_exchange_manager.is_future,
+                logger=real_exchange_manager.logger,
+                exchange_personal_data=real_exchange_manager.exchange_personal_data,
+                exchange_config=real_exchange_manager.exchange_config,
+            )
+            factory = order_factory_module.OrderFactory(
+                exchange_manager, None, None, False, try_to_handle_unconfigured_symbol=False
+            )
+            result = await factory.create_base_orders_and_associated_elements(
+                enums.TraderOrderType.BUY_MARKET,
+                symbol,
+                enums.TradeOrderSide.BUY,
+                "1",
+            )
+            assert len(result) == 1
+            base_order = result[0]
+            assert base_order.order_type == enums.TraderOrderType.BUY_MARKET
+            assert base_order.symbol == symbol
+            assert base_order.origin_quantity == decimal.Decimal("1")
+            assert base_order.origin_price == decimal.Decimal("50000")
+            assert base_order.side == enums.TradeOrderSide.BUY
+        finally:
+            await self.stop(real_exchange_manager)

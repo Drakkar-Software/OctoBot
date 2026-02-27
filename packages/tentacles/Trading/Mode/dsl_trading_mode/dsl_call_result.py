@@ -1,5 +1,4 @@
-# pylint: disable=R0801
-#  Drakkar-Software OctoBot-Commons
+#  Drakkar-Software OctoBot
 #  Copyright (c) Drakkar-Software, All rights reserved.
 #
 #  This library is free software; you can redistribute it and/or
@@ -15,12 +14,13 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-import tentacles.Meta.DSL_operators.blockchain_wallet_operators.blockchain_wallet_ops
-from tentacles.Meta.DSL_operators.blockchain_wallet_operators.blockchain_wallet_ops import (
-    create_blockchain_wallet_operators,
-    CREATED_TRANSACTIONS_KEY,
-)
-__all__ = [
-    "create_blockchain_wallet_operators",
-    "CREATED_TRANSACTIONS_KEY",
-]
+import dataclasses
+import typing
+import octobot_commons.dataclasses
+
+@dataclasses.dataclass
+class DSLCallResult(octobot_commons.dataclasses.FlexibleDataclass):
+    statement: str
+    success: typing.Optional[bool] = None
+    result: typing.Optional[octobot_commons.dataclasses.FlexibleDataclass] = None
+    error: typing.Optional[str] = None

@@ -1,4 +1,3 @@
-# pylint: disable=too-many-branches,too-many-return-statements
 #  Drakkar-Software OctoBot-Commons
 #  Copyright (c) Drakkar-Software, All rights reserved.
 #

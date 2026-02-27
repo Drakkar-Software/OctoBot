@@ -157,3 +157,15 @@ class MissingDefaultValueError(InvalidParametersError):
     """
     Raised when a parameter has no default value
     """
+
+
+class InvalidParameterFormatError(InvalidParametersError):
+    """
+    Raised when the format of a parameter is invalid
+    """
+
+
+class ErrorStatementEncountered(DSLInterpreterError):
+    """
+    Raised when a error statement is encountered when executing a script
+    """

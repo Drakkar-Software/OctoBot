@@ -17,6 +17,7 @@ import typing
 import decimal
 
 import octobot_commons.constants
+import octobot_commons.errors
 import octobot_commons.dsl_interpreter as dsl_interpreter
 import octobot_trading.exchanges
 
@@ -51,6 +52,10 @@ def create_futures_contracts_operators(
 
         async def pre_compute(self) -> None:
             await super().pre_compute()
+            if exchange_manager is None:
+                raise octobot_commons.errors.DSLInterpreterError(
+                    "exchange_manager is required for set_leverage operator"
+                )
             param_by_name = self.get_computed_value_by_parameter()
             leverage = decimal.Decimal(str(param_by_name["leverage"]))
             await exchange_manager.trader.set_leverage(
