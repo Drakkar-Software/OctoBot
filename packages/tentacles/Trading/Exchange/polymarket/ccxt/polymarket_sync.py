@@ -1793,6 +1793,7 @@ class polymarket(Exchange, ImplicitAPI):
         :param str [params.signer]: signer address(default: maker address)
         :param number [params.signatureType]: signature type(default: from options.signatureType or options.signatureTypes.EOA).
         :param str [params.orderType]: order type: 'GTC', 'IOC', 'FOK', 'GTD'(default: 'GTC' for limit orders, 'FOK' for market orders)
+        :param boolean [params.negRisk]: True if the market is a neg risk(multi-outcome) market; overrides market.info.neg_risk
         :returns dict: signed order object ready for submission
         """
         # Get zero address constant(matches py-clob-client ZERO_ADDRESS)
@@ -1829,17 +1830,26 @@ class polymarket(Exchange, ImplicitAPI):
             # Fallback to default fee rate from options if not found in market
             if feeRateBps is None:
                 feeRateBps = self.safe_integer(self.options, 'defaultFeeRateBps', 200)
-        # Get expiration(default: from options.defaultExpirationDays, or 30 days from now in seconds)
+        # Get expiration: GTC/IOC/FOK orders must have expiration = 0(no expiration).
+        # Only GTD orders use a future timestamp. buildOrder enforces self for normal flows,
+        # but buildAndSignOrder may also be called directly, so we apply the same rule here.
         expiration = self.safe_integer(params, 'expiration')
         if expiration is None:
-            nowSeconds = int(math.floor(self.milliseconds()) / 1000)
-            defaultExpirationDays = self.safe_integer(self.options, 'defaultExpirationDays', 30)
-            expiration = nowSeconds + (defaultExpirationDays * 24 * 60 * 60)
-        # Get nonce(default: current timestamp in seconds to ensure uniqueness)
+            timeInForce = self.safe_string(params, 'timeInForce', 'GTC')
+            timeInForceUpper = timeInForce.upper()
+            if timeInForceUpper == 'GTD':
+                nowSeconds = int(math.floor(self.milliseconds()) / 1000)
+                defaultExpirationDays = self.safe_integer(self.options, 'defaultExpirationDays', 30)
+                expiration = nowSeconds + (defaultExpirationDays * 24 * 60 * 60)
+            else:
+                expiration = 0
+        # Get nonce(default: 0 for regular orders)
+        # The nonce is used for on-chain batch cancellation: all orders sharing a non-zero nonce
+        # can be cancelled together. 0 means "no group" and is required for standard orders.
+        # See https://github.com/Polymarket/clob-order-utils/blob/main/src/order-builder/builder.ts
         nonce = self.safe_integer(params, 'nonce')
         if nonce is None:
-            # Use current timestamp to ensure uniqueness per order
-            nonce = int(math.floor(self.milliseconds()) / 1000)
+            nonce = 0
         # Get signer address(default: maker address)
         signer = self.safe_string(params, 'signer')
         if signer is None:
@@ -1946,7 +1956,25 @@ class polymarket(Exchange, ImplicitAPI):
         orderDomainName = self.safe_string(self.options, 'orderDomainName')
         orderDomainVersion = self.safe_string(self.options, 'orderDomainVersion')
         contractConfig = self.get_contract_config(chainId)
-        verifyingContract = self.normalize_address(self.safe_string(contractConfig, 'exchange'))
+        # Select verifyingContract based on neg_risk status:
+        # - Standard(binary) markets use CTF Exchange(exchange)
+        # - Neg risk(multi-outcome) markets use Neg Risk CTF Exchange(negRiskExchange)
+        # See https://github.com/Polymarket/py-clob-client/blob/main/py_clob_client/order_builder/builder.py
+        # Priority: params.negRisk > market.info.negRisk(camelCase, Gamma API) > market.info.neg_risk(snake_case, CLOB API) > fetch from CLOB
+        negRisk = self.safe_bool(params, 'negRisk')
+        if negRisk is None:
+            # Gamma API uses camelCase; CLOB orderbook uses snake_case — check both
+            negRisk = self.safe_bool(orderMarketInfo, 'negRisk')
+        if negRisk is None:
+            negRisk = self.safe_bool(orderMarketInfo, 'neg_risk')
+        if negRisk is None and tokenId is not None:
+            # Authoritative fallback: query the CLOB /neg-risk endpoint
+            negRiskResponse = self.clob_public_get_neg_risk({'token_id': tokenId})
+            negRisk = self.safe_bool(negRiskResponse, 'neg_risk')
+        contractKey = 'exchange'
+        if negRisk:
+            contractKey = 'negRiskExchange'
+        verifyingContract = self.normalize_address(self.safe_string(contractConfig, contractKey))
         # Domain must match exactly what server expects for signature validation
         domain = {
             'name': orderDomainName,
@@ -2102,7 +2130,7 @@ class polymarket(Exchange, ImplicitAPI):
         :param str [params.clientOrderId]: a unique id for the order
         :param boolean [params.postOnly]: if True, the order will only be posted to the order book and not executed immediately
         :param number [params.expiration]: expiration timestamp in seconds(default: 30 days from now)
-        :param number [params.nonce]: order nonce(default: current timestamp)
+        :param number [params.nonce]: order nonce for batch cancellation grouping(default: 0)
         :param number [params.feeRateBps]: fee rate in basis points(default: fetched from API)
         :returns dict: an `order structure <https://docs.ccxt.com/#/?id=order-structure>`
         """
