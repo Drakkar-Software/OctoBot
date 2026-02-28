@@ -17,10 +17,41 @@ import datetime
 import decimal
 import typing
 
+import octobot_trading.constants as trading_constants
 import octobot_trading.enums as enums
 import octobot_trading.exchanges as exchanges
 import octobot_trading.exchanges.connectors.ccxt.constants as ccxt_constants
 import octobot_trading.exchanges.connectors.ccxt.enums as ccxt_enums
+import octobot_trading.blockchain_wallets as blockchain_wallets
+
+POLYGON_PORTFOLIO_STABLECOIN_SYMBOL = "USDC.e"
+POLYGON_PORTFOLIO_ASSET_ALIASES = {
+    POLYGON_PORTFOLIO_STABLECOIN_SYMBOL: "USDC",
+}
+_PORTFOLIO_BALANCE_FIELDS = (
+    trading_constants.CONFIG_PORTFOLIO_FREE,
+    trading_constants.CONFIG_PORTFOLIO_USED,
+    trading_constants.CONFIG_PORTFOLIO_TOTAL,
+)
+
+
+def _convert_portfolio_assets(portfolio: typing.Optional[dict[str, dict]]) -> typing.Optional[dict[str, dict]]:
+    if portfolio is None:
+        return None
+    converted_portfolio = {}
+    for asset, balance in portfolio.items():
+        target_asset = POLYGON_PORTFOLIO_ASSET_ALIASES.get(asset, asset)
+        if target_asset in converted_portfolio and isinstance(converted_portfolio[target_asset], dict):
+            merged_balance = dict(converted_portfolio[target_asset])
+            for field in _PORTFOLIO_BALANCE_FIELDS:
+                merged_balance[field] = (
+                    decimal.Decimal(str(merged_balance.get(field, trading_constants.ZERO)))
+                    + decimal.Decimal(str(balance.get(field, trading_constants.ZERO)))
+                )
+            converted_portfolio[target_asset] = merged_balance
+        else:
+            converted_portfolio[target_asset] = dict(balance)
+    return converted_portfolio
 
 
 class PolymarketConnector(exchanges.CCXTConnector):
@@ -39,6 +70,32 @@ class PolymarketConnector(exchanges.CCXTConnector):
         creds.private_key = creds.secret
         creds.api_key = creds.secret = creds.password = None
         return creds
+
+    async def get_user_balance(self, user_id: str, **kwargs: dict):
+        try:
+            import tentacles.Trading.Blockchain_wallet.evm.evm_blockchain_wallet as evm_blockchain_wallet
+            usdc_token = next(
+                t for t in evm_blockchain_wallet.POLYGON_MAINNET_STABLECOINS
+                if t.symbol == POLYGON_PORTFOLIO_STABLECOIN_SYMBOL
+            )
+            parameters = blockchain_wallets.BlockchainWalletParameters(
+                blockchain_descriptor=blockchain_wallets.BlockchainDescriptor(
+                    blockchain=evm_blockchain_wallet.EVMBlockchainWallet.BLOCKCHAIN,
+                    network=evm_blockchain_wallet.POLYGON_MAINNET_CONFIG.network,
+                    native_coin_symbol=None,
+                    specific_config={
+                        evm_blockchain_wallet.EVMBlockchainSpecificConfigurationKeys.RPC_URL.value:
+                            evm_blockchain_wallet.POLYGON_MAINNET_CONFIG.default_rpc_url,
+                    },
+                    tokens=[usdc_token],
+                ),
+                wallet_descriptor=blockchain_wallets.WalletDescriptor(address=user_id),
+            )
+            wallet = evm_blockchain_wallet.EVMBlockchainWallet(parameters)
+            async with wallet.open():
+                return _convert_portfolio_assets(await wallet.get_balance())
+        except ImportError:
+            self.logger.warning(f"Impossible to fetch user balance as EVM Blockchain Wallet can't be imported.")
 
     async def get_user_positions(self, user_id: str, symbols=None, **kwargs: dict) -> list:
         positions = []

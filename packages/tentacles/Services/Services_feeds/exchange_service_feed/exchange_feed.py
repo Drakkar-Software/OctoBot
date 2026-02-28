@@ -121,9 +121,10 @@ class ExchangeServiceFeed(service_feeds.AbstractServiceFeed):
         if exchange_has_positions:
             current_profile.positions = await exchange_manager.exchange.get_user_positions(current_profile.profile_id)
             updated = True
-        else:
-            # TODO later: Update portfolio to support SPOT copy trading
-            pass
+        try:
+            current_profile.portfolio = await exchange_manager.exchange.get_user_balance(current_profile.profile_id)
+        except NotImplementedError:
+            self._get_logger().warning(f"get_user_balance is not implemented")
 
         # TODO Later: should we also fetch orders and trades ?
         return updated
