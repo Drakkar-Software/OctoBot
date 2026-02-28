@@ -14,7 +14,9 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import datetime
+import decimal
 
+import octobot_trading.constants as trading_constants
 import tentacles.Trading.Exchange.polymarket.polymarket_exchange as polymarket_exchange
 
 
@@ -74,3 +76,50 @@ def test_is_position_expired_celtic_fc_regression():
     parsed = polymarket_exchange._parse_end_date("2026-02-19")
     assert parsed is not None
     assert parsed >= simulated_now
+
+
+def test_convert_portfolio_assets_aliases_polygon_usdc_e_to_usdc():
+    portfolio = {
+        "USDC.e": {
+            trading_constants.CONFIG_PORTFOLIO_FREE: decimal.Decimal("42"),
+            trading_constants.CONFIG_PORTFOLIO_USED: decimal.Decimal("0"),
+            trading_constants.CONFIG_PORTFOLIO_TOTAL: decimal.Decimal("42"),
+        }
+    }
+
+    converted = polymarket_exchange._convert_portfolio_assets(portfolio)
+
+    assert "USDC.e" not in converted
+    assert converted["USDC"] == portfolio["USDC.e"]
+
+
+def test_convert_portfolio_assets_merges_alias_into_existing_usdc():
+    portfolio = {
+        "USDC": {
+            trading_constants.CONFIG_PORTFOLIO_FREE: decimal.Decimal("3"),
+            trading_constants.CONFIG_PORTFOLIO_USED: decimal.Decimal("1"),
+            trading_constants.CONFIG_PORTFOLIO_TOTAL: decimal.Decimal("4"),
+        },
+        "USDC.e": {
+            trading_constants.CONFIG_PORTFOLIO_FREE: decimal.Decimal("2"),
+            trading_constants.CONFIG_PORTFOLIO_USED: decimal.Decimal("4"),
+            trading_constants.CONFIG_PORTFOLIO_TOTAL: decimal.Decimal("6"),
+        },
+        "DAI": {
+            trading_constants.CONFIG_PORTFOLIO_FREE: decimal.Decimal("10"),
+            trading_constants.CONFIG_PORTFOLIO_USED: decimal.Decimal("0"),
+            trading_constants.CONFIG_PORTFOLIO_TOTAL: decimal.Decimal("10"),
+        },
+    }
+
+    converted = polymarket_exchange._convert_portfolio_assets(portfolio)
+
+    assert "USDC.e" not in converted
+    assert converted["USDC"][trading_constants.CONFIG_PORTFOLIO_FREE] == decimal.Decimal("5")
+    assert converted["USDC"][trading_constants.CONFIG_PORTFOLIO_USED] == decimal.Decimal("5")
+    assert converted["USDC"][trading_constants.CONFIG_PORTFOLIO_TOTAL] == decimal.Decimal("10")
+    assert converted["DAI"] == portfolio["DAI"]
+
+
+def test_convert_portfolio_assets_none_portfolio():
+    assert polymarket_exchange._convert_portfolio_assets(None) is None

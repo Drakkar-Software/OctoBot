@@ -41,9 +41,11 @@ class polymarket(polymarket):
             'options': {
                 'wsMarketChannelType': 'MARKET',
                 'wsUserChannelType': 'USER',
-                'headers': {'Origin': 'https://polymarket.com'},
-                'ping': True,
-                'keepalive': True,
+                'ws': {
+                    'options': {
+                        'headers': {'Origin': 'https://polymarket.com'},
+                    },
+                },
             },
             'streaming': {
             },
@@ -847,11 +849,7 @@ class polymarket(polymarket):
                 # Store individual subscription info for message routing
                 if not (subscribeHash in client.subscriptions):
                     client.subscriptions[subscribeHash] = subscription
-        params = {}
-        params['headers'] = self.options['headers']
-        params['ping'] = self.options['ping']
-        params['keepalive'] = self.options['keepalive']
-        return await super(polymarket, self).watch(url, messageHash, message, subscribeHash, subscription, params)
+        return await super(polymarket, self).watch(url, messageHash, message, subscribeHash, subscription)
 
     async def subscribe_to_asset_ids(self, asset_ids: List[str], params={}):
         """
