@@ -40,6 +40,7 @@ class PortfolioTestCase(typing.NamedTuple):
     expected_symbols: typing.List[str]
     excluded_symbols: typing.List[str]
     weight_assertion: typing.Optional[str]
+    reference_market: str = "USDT"
 
 
 class TimestampTestCase(typing.NamedTuple):
@@ -394,7 +395,7 @@ def test_update_distribution_based_on_profile_data_respects_new_position_only(
     ])
     
     result = profile_distribution.update_distribution_based_on_profile_data(
-        profile_data, {}, new_position_only=new_position_only, started_at=started_at
+        profile_data, {}, new_position_only=new_position_only, started_at=started_at, reference_market="USDT"
     )
     
     assert "profile1" in result
@@ -651,7 +652,7 @@ def test_tradable_ratio_with_new_position_only():
             weight_assertion=None,  # No weight assertion
         ),
         PortfolioTestCase(
-            name="prefers_positions_over_portfolio",
+            name="positions_with_portfolio_reduce_tradable_ratio",
             positions=[  # Has positions
                 {
                     trading_enums.ExchangeConstantsPositionColumns.SYMBOL.value: "SOL/USDT",
@@ -659,12 +660,12 @@ def test_tradable_ratio_with_new_position_only():
                     trading_enums.ExchangeConstantsPositionColumns.ENTRY_PRICE.value: 100.0,
                 },
             ],
-            portfolio={"BTC": decimal.Decimal("1.0"), "ETH": decimal.Decimal("10.0")},  # Has portfolio too
+            portfolio={"USDT": decimal.Decimal("400.0")},  # 400 free + 100 in positions = 500 total
             expected_source=profile_distribution.DistributionSource.POSITIONS.value,
-            expected_tradable_ratio=trading_constants.ONE,
+            expected_tradable_ratio=decimal.Decimal("0.2"),  # 100 / (100 + 400)
             expected_symbols=["SOL/USDT"],
-            excluded_symbols=["BTC", "ETH"],  # These should NOT be present
-            weight_assertion=None,  # No weight assertion
+            excluded_symbols=["USDT"],  # Reference-market currency not in distribution symbols
+            weight_assertion=None,
         ),
         PortfolioTestCase(
             name="empty_profile",
@@ -694,9 +695,10 @@ def test_get_smoothed_distribution_portfolio_scenarios(test_case: PortfolioTestC
     
     started_at = datetime.datetime.now()
     result, tradable_ratio, source = profile_distribution.get_smoothed_distribution_from_profile_data(
-        profile_data, new_position_only=False, started_at=started_at
+        profile_data, new_position_only=False, started_at=started_at,
+        reference_market=test_case.reference_market,
     )
-    
+
     assert source == test_case.expected_source
     assert tradable_ratio == test_case.expected_tradable_ratio
     
@@ -769,3 +771,28 @@ def test_update_global_distribution_allocation_padding_allows_more_usage():
     
     # Same result since tradable_ratio < 1 anyway
     assert result_with_padding[profile_distribution.REFERENCE_MARKET_RATIO] == decimal.Decimal("0.75")
+
+
+def test_get_reference_market_balance():
+    # None → ZERO
+    assert profile_distribution._get_reference_market_balance(None, "USDC") == trading_constants.ZERO
+    # Portfolio object: only reference market currency returned, other assets (ETH) ignored
+    portfolio = MockPortfolio({"USDC": decimal.Decimal("500"), "ETH": decimal.Decimal("100")})
+    assert profile_distribution._get_reference_market_balance(portfolio, "USDC") == decimal.Decimal("500")
+
+
+def test_position_value_uses_notional_when_initial_margin_is_zero():
+    position = {
+        trading_enums.ExchangeConstantsPositionColumns.SYMBOL.value: "EVENT/USDC:USDC-YES",
+        trading_enums.ExchangeConstantsPositionColumns.INITIAL_MARGIN.value: 0,
+        trading_enums.ExchangeConstantsPositionColumns.NOTIONAL.value: 45.47,
+        trading_enums.ExchangeConstantsPositionColumns.ENTRY_PRICE.value: 0.53,
+    }
+    profile_data = MockProfileData("p1", [position])
+    started_at = datetime.datetime.now()
+    result, tradable_ratio, _ = profile_distribution.get_smoothed_distribution_from_profile_data(
+        profile_data, new_position_only=False, started_at=started_at
+    )
+    assert len(result) == 1
+    assert result[0][profile_distribution.index_distribution.DISTRIBUTION_NAME] == "EVENT/USDC:USDC-YES"
+    assert tradable_ratio == trading_constants.ONE

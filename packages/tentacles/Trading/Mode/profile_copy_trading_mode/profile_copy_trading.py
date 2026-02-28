@@ -254,7 +254,9 @@ class ProfileCopyTradingModeProducer(index_trading_mode.IndexTradingModeProducer
     async def profile_callback(self, profile_data: exchange_service_feed.ExchangeProfile, ctx):
         self.trading_mode.distribution_per_exchange_profile = profile_distribution.update_distribution_based_on_profile_data(
             profile_data, self.trading_mode.distribution_per_exchange_profile, self.trading_mode.new_position_only,
-            self.trading_mode.started_at, self.trading_mode.min_unrealized_pnl_percent,
+            self.trading_mode.started_at,
+            self.exchange_manager.exchange_personal_data.portfolio_manager.reference_market,
+            self.trading_mode.min_unrealized_pnl_percent,
             self.trading_mode.max_unrealized_pnl_percent, self.trading_mode.min_mark_price,
             self.trading_mode.max_mark_price, self.trading_mode.min_position_size
         )

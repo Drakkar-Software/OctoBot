@@ -1,2 +1,4 @@
 # Scripting requirements
 tinydb
+# Blockchain wallet
+web3==7.14.1
