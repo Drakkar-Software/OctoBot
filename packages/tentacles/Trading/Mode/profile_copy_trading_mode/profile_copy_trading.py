@@ -38,15 +38,23 @@ except ImportError:
             class ExchangeServiceFeed:
                 def get_name(self, *args, **kwargs):
                     raise ImportError("exchange_service_feed not installed")
+
         exchange_service_feed = ExchangeServiceFeedImportMock()
 
+
 class ProfileCopyTradingMode(index_trading_mode.IndexTradingMode):
-    SERVICE_FEED_CLASS = exchange_service_feed.ExchangeServiceFeed if hasattr(exchange_service_feed, 'ExchangeServiceFeed') else None
+    SERVICE_FEED_CLASS = (
+        exchange_service_feed.ExchangeServiceFeed
+        if hasattr(exchange_service_feed, "ExchangeServiceFeed")
+        else None
+    )
 
     def __init__(self, config, exchange_manager):
         super().__init__(config, exchange_manager)
         self.exchange_profile_ids: list[str] = []
-        self.per_exchange_profile_portfolio_ratio: decimal.Decimal = trading_constants.ONE
+        self.per_exchange_profile_portfolio_ratio: decimal.Decimal = (
+            trading_constants.ONE
+        )
         self.allocation_padding_ratio: decimal.Decimal = trading_constants.ZERO
         self.new_position_only: bool = False
         self.min_unrealized_pnl_percent: typing.Optional[decimal.Decimal] = None
@@ -54,6 +62,7 @@ class ProfileCopyTradingMode(index_trading_mode.IndexTradingMode):
         self.min_mark_price: typing.Optional[decimal.Decimal] = None
         self.max_mark_price: typing.Optional[decimal.Decimal] = None
         self.min_position_size: typing.Optional[decimal.Decimal] = None
+        self.close_positions_when_filtered_out: bool = False
         self.started_at: datetime.datetime = datetime.datetime.now()
         self.distribution_per_exchange_profile: dict[str, list] = {}
 
@@ -62,72 +71,136 @@ class ProfileCopyTradingMode(index_trading_mode.IndexTradingMode):
         self.exchange_profile_ids = self.UI.user_input(
             ProfileCopyTradingModeProducer.EXCHANGE_PROFILE_IDS,
             commons_enums.UserInputTypes.STRING_ARRAY,
-            self.exchange_profile_ids, 
-            inputs, 
+            self.exchange_profile_ids,
+            inputs,
             other_schema_values={"uniqueItems": True},
             array_indexes=[0],
             item_title="Exchange profile id",
-            title="Exchange profile ids to copy"
+            title="Exchange profile ids to copy",
         )
-        self.per_exchange_profile_portfolio_ratio = decimal.Decimal(str(self.UI.user_input(
-            ProfileCopyTradingModeProducer.PER_PROFILE_PORTFOLIO_RATIO, commons_enums.UserInputTypes.FLOAT,
-            float(self.per_exchange_profile_portfolio_ratio * trading_constants.ONE_HUNDRED), inputs,
-            min_val=0, max_val=100,
-            title="Percentage of the portfolio to allocate to each exchange profile.",
-        ))) / trading_constants.ONE_HUNDRED
-        self.allocation_padding_ratio = decimal.Decimal(str(self.UI.user_input(
-            ProfileCopyTradingModeProducer.ALLOCATION_PADDING_RATIO, commons_enums.UserInputTypes.FLOAT,
-            float(self.allocation_padding_ratio * trading_constants.ONE_HUNDRED), inputs,
-            min_val=0, max_val=100,
-            title="Allocation padding: Allow trading up to X% more than the configured portfolio ratio. "
-                  "Useful when the copied profile increases its position count. "
-                  "E.g., 20% padding on 50% allocation allows up to 60% usage.",
-        ))) / trading_constants.ONE_HUNDRED
+        self.per_exchange_profile_portfolio_ratio = (
+            decimal.Decimal(
+                str(
+                    self.UI.user_input(
+                        ProfileCopyTradingModeProducer.PER_PROFILE_PORTFOLIO_RATIO,
+                        commons_enums.UserInputTypes.FLOAT,
+                        float(
+                            self.per_exchange_profile_portfolio_ratio
+                            * trading_constants.ONE_HUNDRED
+                        ),
+                        inputs,
+                        min_val=0,
+                        max_val=100,
+                        title="Percentage of the portfolio to allocate to each exchange profile.",
+                    )
+                )
+            )
+            / trading_constants.ONE_HUNDRED
+        )
+        self.allocation_padding_ratio = (
+            decimal.Decimal(
+                str(
+                    self.UI.user_input(
+                        ProfileCopyTradingModeProducer.ALLOCATION_PADDING_RATIO,
+                        commons_enums.UserInputTypes.FLOAT,
+                        float(
+                            self.allocation_padding_ratio
+                            * trading_constants.ONE_HUNDRED
+                        ),
+                        inputs,
+                        min_val=0,
+                        max_val=100,
+                        title="Allocation padding: Allow trading up to X% more than the configured portfolio ratio. "
+                        "Useful when the copied profile increases its position count. "
+                        "E.g., 20% padding on 50% allocation allows up to 60% usage.",
+                    )
+                )
+            )
+            / trading_constants.ONE_HUNDRED
+        )
         self.new_position_only = self.UI.user_input(
-            ProfileCopyTradingModeProducer.NEW_POSITION_ONLY, commons_enums.UserInputTypes.BOOLEAN,
-            self.new_position_only, inputs,
+            ProfileCopyTradingModeProducer.NEW_POSITION_ONLY,
+            commons_enums.UserInputTypes.BOOLEAN,
+            self.new_position_only,
+            inputs,
             title="New position only: When enabled, only new positions will be taken into account for the portfolio allocation.",
         )
         min_unrealized_pnl_percent = self.UI.user_input(
-            ProfileCopyTradingModeProducer.MIN_UNREALIZED_PNL_PERCENT, commons_enums.UserInputTypes.FLOAT,
-            float(self.min_unrealized_pnl_percent) if self.min_unrealized_pnl_percent is not None else None, inputs,
-            min_val=-999, max_val=999,
+            ProfileCopyTradingModeProducer.MIN_UNREALIZED_PNL_PERCENT,
+            commons_enums.UserInputTypes.FLOAT,
+            float(self.min_unrealized_pnl_percent)
+            if self.min_unrealized_pnl_percent is not None
+            else None,
+            inputs,
+            min_val=-999,
+            max_val=999,
             title="Minimum unrealized PnL ratio: Only copy positions with at least this ratio of unrealized PnL on collateral (0.1 = 10%). Set to None to disable.",
         )
-        self.min_unrealized_pnl_percent = None if min_unrealized_pnl_percent is None else decimal.Decimal(str(min_unrealized_pnl_percent))
+        self.min_unrealized_pnl_percent = (
+            None
+            if min_unrealized_pnl_percent is None
+            else decimal.Decimal(str(min_unrealized_pnl_percent))
+        )
         max_unrealized_pnl_percent = self.UI.user_input(
-            ProfileCopyTradingModeProducer.MAX_UNREALIZED_PNL_PERCENT, commons_enums.UserInputTypes.FLOAT,
-            float(self.max_unrealized_pnl_percent) if self.max_unrealized_pnl_percent is not None else None, inputs,
-            min_val=-999, max_val=999,
+            ProfileCopyTradingModeProducer.MAX_UNREALIZED_PNL_PERCENT,
+            commons_enums.UserInputTypes.FLOAT,
+            float(self.max_unrealized_pnl_percent)
+            if self.max_unrealized_pnl_percent is not None
+            else None,
+            inputs,
+            min_val=-999,
+            max_val=999,
             title="Maximum unrealized PnL ratio: Only copy positions with at most this ratio of unrealized PnL on collateral (0.1 = 10%). Set to None to disable.",
         )
-        self.max_unrealized_pnl_percent = None if max_unrealized_pnl_percent is None else decimal.Decimal(str(max_unrealized_pnl_percent))
+        self.max_unrealized_pnl_percent = (
+            None
+            if max_unrealized_pnl_percent is None
+            else decimal.Decimal(str(max_unrealized_pnl_percent))
+        )
         min_mark_price = self.UI.user_input(
-            ProfileCopyTradingModeProducer.MIN_MARK_PRICE, commons_enums.UserInputTypes.FLOAT,
-            float(self.min_mark_price) if self.min_mark_price is not None else None, inputs,
+            ProfileCopyTradingModeProducer.MIN_MARK_PRICE,
+            commons_enums.UserInputTypes.FLOAT,
+            float(self.min_mark_price) if self.min_mark_price is not None else None,
+            inputs,
             min_val=0,
             title="Minimum mark price: Only copy positions with mark price >= this value.",
         )
-        self.min_mark_price = None if min_mark_price is None else decimal.Decimal(str(min_mark_price))
+        self.min_mark_price = (
+            None if min_mark_price is None else decimal.Decimal(str(min_mark_price))
+        )
         max_mark_price = self.UI.user_input(
-            ProfileCopyTradingModeProducer.MAX_MARK_PRICE, commons_enums.UserInputTypes.FLOAT,
-            float(self.max_mark_price) if self.max_mark_price is not None else None, inputs,
+            ProfileCopyTradingModeProducer.MAX_MARK_PRICE,
+            commons_enums.UserInputTypes.FLOAT,
+            float(self.max_mark_price) if self.max_mark_price is not None else None,
+            inputs,
             min_val=0,
             title="Maximum mark price: Only copy positions with mark price <= this value.",
         )
-        self.max_mark_price = None if max_mark_price is None else decimal.Decimal(str(max_mark_price))
+        self.max_mark_price = (
+            None if max_mark_price is None else decimal.Decimal(str(max_mark_price))
+        )
         min_position_size = self.UI.user_input(
-            ProfileCopyTradingModeProducer.MIN_POSITION_SIZE, commons_enums.UserInputTypes.FLOAT,
-            float(self.min_position_size) if self.min_position_size is not None else None, inputs,
+            ProfileCopyTradingModeProducer.MIN_POSITION_SIZE,
+            commons_enums.UserInputTypes.FLOAT,
+            float(self.min_position_size)
+            if self.min_position_size is not None
+            else None,
+            inputs,
             min_val=0,
             title="Minimum position size: Only copy positions with size >= this value. Set to 0 to disable.",
         )
-        self.min_position_size = None if min_position_size is None else decimal.Decimal(str(min_position_size))
+        self.min_position_size = (
+            None
+            if min_position_size is None
+            else decimal.Decimal(str(min_position_size))
+        )
         self._validate_portfolio_allocation_feasibility()
 
     def _validate_portfolio_allocation_feasibility(self):
         # Validate that the percentage of the portfolio * exchange profile count is equal or inferior to 100%
-        total_allocation = self.per_exchange_profile_portfolio_ratio * decimal.Decimal(len(self.exchange_profile_ids))
+        total_allocation = self.per_exchange_profile_portfolio_ratio * decimal.Decimal(
+            len(self.exchange_profile_ids)
+        )
         if total_allocation > decimal.Decimal(1):
             raise ValueError(
                 f"Total portfolio allocation exceeds 100%: "
@@ -148,7 +221,9 @@ class ProfileCopyTradingMode(index_trading_mode.IndexTradingMode):
         ]
 
     def get_current_state(self) -> typing.Tuple[str, float]:
-        return super().get_current_state()[0] if self.producers[0].state is None else self.producers[0].state.name, self.producers[0].final_eval
+        return super().get_current_state()[0] if self.producers[
+            0
+        ].state is None else self.producers[0].state.name, self.producers[0].final_eval
 
     def get_mode_producer_classes(self) -> list:
         return [ProfileCopyTradingModeProducer]
@@ -166,21 +241,30 @@ class ProfileCopyTradingMode(index_trading_mode.IndexTradingMode):
             else:
                 raise ImportError("ExchangeServiceFeed not installed")
         else:
-            service_feed = services_api.get_service_feed(self.SERVICE_FEED_CLASS, self.bot_id)
+            service_feed = services_api.get_service_feed(
+                self.SERVICE_FEED_CLASS, self.bot_id
+            )
             if service_feed is not None:
                 feed_config: dict = {
                     services_constants.CONFIG_EXCHANGE_PROFILES: [
-                        {
-                            services_constants.CONFIG_EXCHANGE_PROFILE_ID: profile_id
-                        } for profile_id in self.exchange_profile_ids
+                        {services_constants.CONFIG_EXCHANGE_PROFILE_ID: profile_id}
+                        for profile_id in self.exchange_profile_ids
                     ]
                 }
-                service_feed.update_feed_config(feed_config, self.exchange_manager.id, self.exchange_manager.exchange_name)
-                feed_consumer = [await channels.get_chan(service_feed.FEED_CHANNEL.get_name()).new_consumer(
-                    self._exchange_service_feed_callback
-                )]
+                service_feed.update_feed_config(
+                    feed_config,
+                    self.exchange_manager.id,
+                    self.exchange_manager.exchange_name,
+                )
+                feed_consumer = [
+                    await channels.get_chan(
+                        service_feed.FEED_CHANNEL.get_name()
+                    ).new_consumer(self._exchange_service_feed_callback)
+                ]
             else:
-                self.logger.error("Impossible to find the Exchange service feed, this trading mode can't work.")
+                self.logger.error(
+                    "Impossible to find the Exchange service feed, this trading mode can't work."
+                )
         return feed_consumer
 
     async def create_consumers(self) -> list:
@@ -188,18 +272,31 @@ class ProfileCopyTradingMode(index_trading_mode.IndexTradingMode):
         return consumers + await self._get_feed_consumers()
 
     async def _exchange_service_feed_callback(self, data):
-        profile_data: exchange_service_feed.ExchangeProfile = data.get(services_constants.FEED_METADATA, "")
+        profile_data: exchange_service_feed.ExchangeProfile = data.get(
+            services_constants.FEED_METADATA, ""
+        )
         errors = []
         for error in errors:
             self.logger.error(error)
         try:
-            await self.producers[0].profile_callback(profile_data, script_keywords.get_base_context(self))
-        except (trading_errors.InvalidArgumentError, trading_errors.InvalidCancelPolicyError) as e:
-            self.logger.error(f"Error when processing exchange profile: {e} (profile: {profile_data})")
+            await self.producers[0].profile_callback(
+                profile_data, script_keywords.get_base_context(self)
+            )
+        except (
+            trading_errors.InvalidArgumentError,
+            trading_errors.InvalidCancelPolicyError,
+        ) as e:
+            self.logger.error(
+                f"Error when processing exchange profile: {e} (profile: {profile_data})"
+            )
         except trading_errors.MissingFunds as e:
-            self.logger.error(f"Error when processing exchange profile: not enough funds: {e} (profile: {profile_data})")
+            self.logger.error(
+                f"Error when processing exchange profile: not enough funds: {e} (profile: {profile_data})"
+            )
         except KeyError as e:
-            self.logger.error(f"Error when processing exchange profile: missing {e} required value (profile: {profile_data})")
+            self.logger.error(
+                f"Error when processing exchange profile: missing {e} required value (profile: {profile_data})"
+            )
         except Exception as e:
             self.logger.error(
                 f"Unexpected error when processing exchange profile: {e} {e.__class__.__name__} (profile: {profile_data})"
@@ -218,23 +315,33 @@ class ProfileCopyTradingMode(index_trading_mode.IndexTradingMode):
             self.distribution_per_exchange_profile,
             self.per_exchange_profile_portfolio_ratio,
             self.exchange_profile_ids,
-            self.allocation_padding_ratio
+            self.allocation_padding_ratio,
         )
         self.ratio_per_asset = global_distribution[profile_distribution.RATIO_PER_ASSET]
-        self.total_ratio_per_asset = global_distribution[profile_distribution.TOTAL_RATIO_PER_ASSET]
+        self.total_ratio_per_asset = global_distribution[
+            profile_distribution.TOTAL_RATIO_PER_ASSET
+        ]
         self.indexed_coins = global_distribution[profile_distribution.INDEXED_COINS]
-        self.indexed_coins_prices = global_distribution[profile_distribution.INDEXED_COINS_PRICES]
+        self.indexed_coins_prices = global_distribution[
+            profile_distribution.INDEXED_COINS_PRICES
+        ]
         # IndexTradingMode consumes reference_market_ratio as the tradable portfolio ratio.
         # Profile distribution returns the reserved reference-market ratio, so convert it.
-        reference_market_reserved_ratio = global_distribution[profile_distribution.REFERENCE_MARKET_RATIO]
+        reference_market_reserved_ratio = global_distribution[
+            profile_distribution.REFERENCE_MARKET_RATIO
+        ]
         self.reference_market_ratio = max(
             trading_constants.ZERO,
-            min(trading_constants.ONE, trading_constants.ONE - reference_market_reserved_ratio)
+            min(
+                trading_constants.ONE,
+                trading_constants.ONE - reference_market_reserved_ratio,
+            ),
         )
 
 
 class ProfileCopyTradingModeConsumer(index_trading_mode.IndexTradingModeConsumer):
     pass
+
 
 class ProfileCopyTradingModeProducer(index_trading_mode.IndexTradingModeProducer):
     EXCHANGE_PROFILE_IDS = "exchange_profile_ids"
@@ -251,29 +358,53 @@ class ProfileCopyTradingModeProducer(index_trading_mode.IndexTradingModeProducer
         super().__init__(channel, config, trading_mode, exchange_manager)
         self.requires_initializing_appropriate_coins_distribution = False
 
-    async def profile_callback(self, profile_data: exchange_service_feed.ExchangeProfile, ctx):
+    async def profile_callback(
+        self, profile_data: exchange_service_feed.ExchangeProfile, ctx
+    ):
         self.trading_mode.distribution_per_exchange_profile = profile_distribution.update_distribution_based_on_profile_data(
-            profile_data, self.trading_mode.distribution_per_exchange_profile, self.trading_mode.new_position_only,
+            profile_data,
+            self.trading_mode.distribution_per_exchange_profile,
+            self.trading_mode.new_position_only,
             self.trading_mode.started_at,
             self.exchange_manager.exchange_personal_data.portfolio_manager.reference_market,
             self.trading_mode.min_unrealized_pnl_percent,
-            self.trading_mode.max_unrealized_pnl_percent, self.trading_mode.min_mark_price,
-            self.trading_mode.max_mark_price, self.trading_mode.min_position_size
+            self.trading_mode.max_unrealized_pnl_percent,
+            self.trading_mode.min_mark_price,
+            self.trading_mode.max_mark_price,
+            self.trading_mode.min_position_size,
         )
         if profile_distribution.has_distribution_for_all_exchange_profiles(
-            self.trading_mode.distribution_per_exchange_profile, self.trading_mode.exchange_profile_ids
+            self.trading_mode.distribution_per_exchange_profile,
+            self.trading_mode.exchange_profile_ids,
         ):
             self.trading_mode.update_global_distribution()
             await self._check_index_if_necessary()
         else:
-            self.logger.warning(f"Distribution for all exchange profiles are not yet available, skipping copy...")
+            self.logger.warning(
+                f"Distribution for all exchange profiles are not yet available, skipping copy..."
+            )
 
-    async def ohlcv_callback(self, exchange: str, exchange_id: str, cryptocurrency: str, symbol: str,
-                             time_frame: str, candle: dict, init_call: bool = False):
-        # Nothing to do
+    async def ohlcv_callback(
+        self,
+        exchange: str,
+        exchange_id: str,
+        cryptocurrency: str,
+        symbol: str,
+        time_frame: str,
+        candle: dict,
+        init_call: bool = False,
+    ):
+        # Nothing to do
         pass
 
-    async def kline_callback(self, exchange: str, exchange_id: str, cryptocurrency: str, symbol: str,
-                             time_frame, kline: dict):
-        # Nothing to do
+    async def kline_callback(
+        self,
+        exchange: str,
+        exchange_id: str,
+        cryptocurrency: str,
+        symbol: str,
+        time_frame,
+        kline: dict,
+    ):
+        # Nothing to do
         pass

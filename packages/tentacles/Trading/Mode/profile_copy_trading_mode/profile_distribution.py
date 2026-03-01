@@ -40,6 +40,9 @@ TRADABLE_RATIO = "tradable_ratio"
 DISTRIBUTION_KEY = "distribution"
 DISTRIBUTION_SOURCE = "distribution_source"
 
+FILTERED_OUT_POSITIONS = "filtered_out_positions"
+
+
 def get_positions_to_consider(
     profile_positions: list[dict],
     new_position_only: bool,
@@ -49,50 +52,109 @@ def get_positions_to_consider(
     min_mark_price: typing.Optional[decimal.Decimal] = None,
     max_mark_price: typing.Optional[decimal.Decimal] = None,
     min_position_size: typing.Optional[decimal.Decimal] = None,
-) -> list[dict]:
-    result = []
+) -> tuple[list[dict], list[dict]]:
+    positions_to_consider = []
+    filtered_out_positions = []
     for position in profile_positions:
-        if new_position_only and position.get(trading_enums.ExchangeConstantsPositionColumns.TIMESTAMP.value) is not None and position.get(trading_enums.ExchangeConstantsPositionColumns.TIMESTAMP.value, 0) <= started_at.timestamp():
+        if (
+            new_position_only
+            and position.get(
+                trading_enums.ExchangeConstantsPositionColumns.TIMESTAMP.value
+            )
+            is not None
+            and position.get(
+                trading_enums.ExchangeConstantsPositionColumns.TIMESTAMP.value, 0
+            )
+            <= started_at.timestamp()
+        ):
             # skip positions with timestamp at or before started_at (only include strictly after)
             continue
 
+        is_filtered_out = False
+
         # Use COLLATERAL or INITIAL_MARGIN as fallback for margin-derived checks (e.g. unrealized pnl ratio)
-        margin = decimal.Decimal(str(
-            position.get(trading_enums.ExchangeConstantsPositionColumns.COLLATERAL.value)
-            or position.get(trading_enums.ExchangeConstantsPositionColumns.INITIAL_MARGIN.value)
-            or 0
-        ))
+        margin = decimal.Decimal(
+            str(
+                position.get(
+                    trading_enums.ExchangeConstantsPositionColumns.COLLATERAL.value
+                )
+                or position.get(
+                    trading_enums.ExchangeConstantsPositionColumns.INITIAL_MARGIN.value
+                )
+                or 0
+            )
+        )
 
         # Check unrealized pnl ratio only when margin > 0 (otherwise ratio is undefined; include position)
-        if margin > trading_constants.ZERO and (min_unrealized_pnl_percent is not None or max_unrealized_pnl_percent is not None):
-            unrealized_pnl = decimal.Decimal(str(position.get(
-                trading_enums.ExchangeConstantsPositionColumns.UNREALIZED_PNL.value, 0
-            ) or 0))
+        if margin > trading_constants.ZERO and (
+            min_unrealized_pnl_percent is not None
+            or max_unrealized_pnl_percent is not None
+        ):
+            unrealized_pnl = decimal.Decimal(
+                str(
+                    position.get(
+                        trading_enums.ExchangeConstantsPositionColumns.UNREALIZED_PNL.value,
+                        0,
+                    )
+                    or 0
+                )
+            )
             unrealized_pnl_ratio = unrealized_pnl / margin
-            if min_unrealized_pnl_percent is not None and unrealized_pnl_ratio < decimal.Decimal(str(min_unrealized_pnl_percent)):
-                continue
-            if max_unrealized_pnl_percent is not None and unrealized_pnl_ratio > decimal.Decimal(str(max_unrealized_pnl_percent)):
-                continue
+            if (
+                min_unrealized_pnl_percent is not None
+                and unrealized_pnl_ratio
+                < decimal.Decimal(str(min_unrealized_pnl_percent))
+            ):
+                is_filtered_out = True
+            elif (
+                max_unrealized_pnl_percent is not None
+                and unrealized_pnl_ratio
+                > decimal.Decimal(str(max_unrealized_pnl_percent))
+            ):
+                is_filtered_out = True
 
         # check mark_price
-        if min_mark_price is not None or max_mark_price is not None:
-            mark_price = decimal.Decimal(str(position.get(
-                trading_enums.ExchangeConstantsPositionColumns.MARK_PRICE.value, 0
-            ) or 0))
+        if not is_filtered_out and (
+            min_mark_price is not None or max_mark_price is not None
+        ):
+            mark_price = decimal.Decimal(
+                str(
+                    position.get(
+                        trading_enums.ExchangeConstantsPositionColumns.MARK_PRICE.value,
+                        0,
+                    )
+                    or 0
+                )
+            )
             if min_mark_price is not None and mark_price < min_mark_price:
-                continue
-            if max_mark_price is not None and mark_price > max_mark_price:
-                continue
+                is_filtered_out = True
+            elif max_mark_price is not None and mark_price > max_mark_price:
+                is_filtered_out = True
 
         # check position size
-        if min_position_size is not None and min_position_size > trading_constants.ZERO:
-            size = decimal.Decimal(str(position.get(
-                trading_enums.ExchangeConstantsPositionColumns.SIZE.value, 0
-            ) or 0))
+        if (
+            not is_filtered_out
+            and min_position_size is not None
+            and min_position_size > trading_constants.ZERO
+        ):
+            size = decimal.Decimal(
+                str(
+                    position.get(
+                        trading_enums.ExchangeConstantsPositionColumns.SIZE.value, 0
+                    )
+                    or 0
+                )
+            )
             if size < min_position_size:
-                continue
-        result.append(position)
-    return result
+                is_filtered_out = True
+
+        if is_filtered_out:
+            filtered_out_positions.append(position)
+        else:
+            positions_to_consider.append(position)
+
+    return positions_to_consider, filtered_out_positions
+
 
 def get_smoothed_distribution_from_profile_data(
     profile_data: "exchange_service_feed.ExchangeProfile",
@@ -104,7 +166,7 @@ def get_smoothed_distribution_from_profile_data(
     min_mark_price: typing.Optional[decimal.Decimal] = None,
     max_mark_price: typing.Optional[decimal.Decimal] = None,
     min_position_size: typing.Optional[decimal.Decimal] = None,
-) -> typing.Tuple[typing.List, decimal.Decimal, str]:
+) -> typing.Tuple[typing.List, decimal.Decimal, str, list[dict]]:
     # If profile has positions, use position-based distribution
     if profile_data.positions:
         reference_market_balance = (
@@ -113,29 +175,47 @@ def get_smoothed_distribution_from_profile_data(
             else trading_constants.ZERO
         )
         return _get_distribution_from_positions(
-            profile_data, new_position_only, started_at,
-            min_unrealized_pnl_percent, max_unrealized_pnl_percent,
-            min_mark_price, max_mark_price, min_position_size,
+            profile_data,
+            new_position_only,
+            started_at,
+            min_unrealized_pnl_percent,
+            max_unrealized_pnl_percent,
+            min_mark_price,
+            max_unrealized_pnl_percent,
+            min_position_size,
             reference_market_balance=reference_market_balance,
         )
 
     # If profile has portfolio but no positions, use portfolio-based distribution
     if profile_data.portfolio is not None:
-        return _get_distribution_from_portfolio(profile_data.portfolio)
+        distribution, tradable_ratio, source = _get_distribution_from_portfolio(
+            profile_data.portfolio
+        )
+        return distribution, tradable_ratio, source, []
 
-    return [], trading_constants.ZERO, DistributionSource.POSITIONS.value
+    return [], trading_constants.ZERO, DistributionSource.POSITIONS.value, []
 
 
 def _get_position_value(position: dict) -> decimal.Decimal:
     """Get position value in quote currency: initial_margin with notional as fallback."""
-    value = decimal.Decimal(str(
-        position.get(trading_enums.ExchangeConstantsPositionColumns.INITIAL_MARGIN.value, 0) or 0
-    ))
+    value = decimal.Decimal(
+        str(
+            position.get(
+                trading_enums.ExchangeConstantsPositionColumns.INITIAL_MARGIN.value, 0
+            )
+            or 0
+        )
+    )
     if value > trading_constants.ZERO:
         return value
-    return decimal.Decimal(str(
-        position.get(trading_enums.ExchangeConstantsPositionColumns.NOTIONAL.value, 0) or 0
-    ))
+    return decimal.Decimal(
+        str(
+            position.get(
+                trading_enums.ExchangeConstantsPositionColumns.NOTIONAL.value, 0
+            )
+            or 0
+        )
+    )
 
 
 def _get_distribution_from_positions(
@@ -148,31 +228,39 @@ def _get_distribution_from_positions(
     max_mark_price: typing.Optional[decimal.Decimal] = None,
     min_position_size: typing.Optional[decimal.Decimal] = None,
     reference_market_balance: decimal.Decimal = trading_constants.ZERO,
-) -> typing.Tuple[typing.List, decimal.Decimal, str]:
+) -> typing.Tuple[typing.List, decimal.Decimal, str, list[dict]]:
     # Calculate total position value from ALL positions (before filtering)
-    total_position_value = decimal.Decimal(sum(
-        _get_position_value(position)
-        for position in profile_data.positions
-    ))
+    total_position_value = decimal.Decimal(
+        sum(_get_position_value(position) for position in profile_data.positions)
+    )
 
     # Total portfolio value = positions + free reference-market balance
     total_portfolio_value = total_position_value + reference_market_balance
 
     if total_portfolio_value <= trading_constants.ZERO:
-        return [], trading_constants.ZERO, DistributionSource.POSITIONS.value
+        return [], trading_constants.ZERO, DistributionSource.POSITIONS.value, []
 
-    tradable_positions: list[dict] = get_positions_to_consider(
-        profile_data.positions, new_position_only, started_at,
-        min_unrealized_pnl_percent, max_unrealized_pnl_percent, min_mark_price, max_mark_price,
-        min_position_size
+    tradable_positions, filtered_out_positions = get_positions_to_consider(
+        profile_data.positions,
+        new_position_only,
+        started_at,
+        min_unrealized_pnl_percent,
+        max_unrealized_pnl_percent,
+        min_mark_price,
+        max_mark_price,
+        min_position_size,
     )
     if not tradable_positions:
-        return [], trading_constants.ZERO, DistributionSource.POSITIONS.value
+        return (
+            [],
+            trading_constants.ZERO,
+            DistributionSource.POSITIONS.value,
+            filtered_out_positions,
+        )
 
-    tradable_position_value = decimal.Decimal(sum(
-        _get_position_value(position)
-        for position in tradable_positions
-    ))
+    tradable_position_value = decimal.Decimal(
+        sum(_get_position_value(position) for position in tradable_positions)
+    )
 
     # tradable_ratio: fraction of total portfolio value that is in tradable positions
     tradable_ratio = tradable_position_value / total_portfolio_value
@@ -183,10 +271,14 @@ def _get_distribution_from_positions(
     for position in tradable_positions:
         symbol = position[trading_enums.ExchangeConstantsPositionColumns.SYMBOL.value]
         position_value = _get_position_value(position)
-        price_by_coin[symbol] = decimal.Decimal(str(position.get(
-            trading_enums.ExchangeConstantsPositionColumns.ENTRY_PRICE.value,
-            0
-        ) or 0))
+        price_by_coin[symbol] = decimal.Decimal(
+            str(
+                position.get(
+                    trading_enums.ExchangeConstantsPositionColumns.ENTRY_PRICE.value, 0
+                )
+                or 0
+            )
+        )
         if symbol in value_by_coin:
             value_by_coin[symbol] += position_value
         else:
@@ -196,7 +288,12 @@ def _get_distribution_from_positions(
     for symbol, value in value_by_coin.items():
         weight_by_coin[symbol] = value / tradable_position_value
 
-    return index_distribution.get_smoothed_distribution(weight_by_coin, price_by_coin), tradable_ratio, DistributionSource.POSITIONS.value
+    return (
+        index_distribution.get_smoothed_distribution(weight_by_coin, price_by_coin),
+        tradable_ratio,
+        DistributionSource.POSITIONS.value,
+        filtered_out_positions,
+    )
 
 
 def _get_reference_market_balance(portfolio, reference_market: str) -> decimal.Decimal:
@@ -209,7 +306,7 @@ def _get_reference_market_balance(portfolio, reference_market: str) -> decimal.D
 
 
 def _get_distribution_from_portfolio(
-    portfolio
+    portfolio,
 ) -> typing.Tuple[typing.List, decimal.Decimal, str]:
     if not portfolio.portfolio:
         return [], trading_constants.ZERO, DistributionSource.PORTFOLIO.value
@@ -231,7 +328,11 @@ def _get_distribution_from_portfolio(
         weight_by_coin[currency] = value / total_value
 
     price_by_coin = {}
-    return index_distribution.get_smoothed_distribution(weight_by_coin, price_by_coin), trading_constants.ONE, DistributionSource.PORTFOLIO.value
+    return (
+        index_distribution.get_smoothed_distribution(weight_by_coin, price_by_coin),
+        trading_constants.ONE,
+        DistributionSource.PORTFOLIO.value,
+    )
 
 
 def update_distribution_based_on_profile_data(
@@ -246,22 +347,30 @@ def update_distribution_based_on_profile_data(
     max_mark_price: typing.Optional[decimal.Decimal] = None,
     min_position_size: typing.Optional[decimal.Decimal] = None,
 ) -> dict[str, dict]:
-    distribution, tradable_ratio, source = get_smoothed_distribution_from_profile_data(
-        profile_data, new_position_only, started_at, reference_market,
-        min_unrealized_pnl_percent, max_unrealized_pnl_percent, min_mark_price, max_mark_price,
-        min_position_size
+    distribution, tradable_ratio, source, filtered_out_positions = (
+        get_smoothed_distribution_from_profile_data(
+            profile_data,
+            new_position_only,
+            started_at,
+            reference_market,
+            min_unrealized_pnl_percent,
+            max_unrealized_pnl_percent,
+            min_mark_price,
+            max_mark_price,
+            min_position_size,
+        )
     )
     distribution_per_exchange_profile[profile_data.profile_id] = {
         DISTRIBUTION_KEY: distribution,
         TRADABLE_RATIO: tradable_ratio,
         DISTRIBUTION_SOURCE: source,
+        FILTERED_OUT_POSITIONS: filtered_out_positions,
     }
     return distribution_per_exchange_profile
 
 
 def has_distribution_for_all_exchange_profiles(
-    distribution_per_exchange_profile: dict[str, dict],
-    exchange_profile_ids: list[str]
+    distribution_per_exchange_profile: dict[str, dict], exchange_profile_ids: list[str]
 ) -> bool:
     return all(
         profile_id in distribution_per_exchange_profile
@@ -273,55 +382,75 @@ def update_global_distribution(
     distribution_per_exchange_profile: dict[str, dict],
     per_exchange_profile_portfolio_ratio: decimal.Decimal,
     exchange_profile_ids: list[str],
-    allocation_padding_ratio: decimal.Decimal = trading_constants.ZERO
+    allocation_padding_ratio: decimal.Decimal = trading_constants.ZERO,
 ) -> dict:
     merged_ratio_per_asset = {}
     price_weighted_sum_per_asset = {}
     distribution_value_sum_per_asset = {}
     total_effective_allocation = trading_constants.ZERO
-    max_profile_allocation = per_exchange_profile_portfolio_ratio * (trading_constants.ONE + allocation_padding_ratio)
+    max_profile_allocation = per_exchange_profile_portfolio_ratio * (
+        trading_constants.ONE + allocation_padding_ratio
+    )
 
     for profile_data in distribution_per_exchange_profile.values():
         distribution = profile_data.get(DISTRIBUTION_KEY, [])
         tradable_ratio = profile_data.get(TRADABLE_RATIO, trading_constants.ONE)
         effective_profile_ratio = min(
             per_exchange_profile_portfolio_ratio * tradable_ratio,
-            max_profile_allocation
+            max_profile_allocation,
         )
         total_effective_allocation += effective_profile_ratio
 
         ratio_per_asset = {
-            asset[index_distribution.DISTRIBUTION_NAME]: asset
-            for asset in distribution
+            asset[index_distribution.DISTRIBUTION_NAME]: asset for asset in distribution
         }
 
         for asset_name, asset_dict in ratio_per_asset.items():
-            distribution_value = decimal.Decimal(str(asset_dict[index_distribution.DISTRIBUTION_VALUE]))
+            distribution_value = decimal.Decimal(
+                str(asset_dict[index_distribution.DISTRIBUTION_VALUE])
+            )
             weighted_value = distribution_value * effective_profile_ratio
             distribution_price = asset_dict.get(index_distribution.DISTRIBUTION_PRICE)
 
             if asset_name in merged_ratio_per_asset:
-                existing_value = decimal.Decimal(str(merged_ratio_per_asset[asset_name][index_distribution.DISTRIBUTION_VALUE]))
-                merged_ratio_per_asset[asset_name][index_distribution.DISTRIBUTION_VALUE] = existing_value + weighted_value
+                existing_value = decimal.Decimal(
+                    str(
+                        merged_ratio_per_asset[asset_name][
+                            index_distribution.DISTRIBUTION_VALUE
+                        ]
+                    )
+                )
+                merged_ratio_per_asset[asset_name][
+                    index_distribution.DISTRIBUTION_VALUE
+                ] = existing_value + weighted_value
             else:
                 merged_ratio_per_asset[asset_name] = {
-                    index_distribution.DISTRIBUTION_NAME: asset_dict[index_distribution.DISTRIBUTION_NAME],
-                    index_distribution.DISTRIBUTION_VALUE: weighted_value
+                    index_distribution.DISTRIBUTION_NAME: asset_dict[
+                        index_distribution.DISTRIBUTION_NAME
+                    ],
+                    index_distribution.DISTRIBUTION_VALUE: weighted_value,
                 }
 
             if distribution_price is not None:
                 real_price = decimal.Decimal(str(distribution_price))
                 if asset_name in price_weighted_sum_per_asset:
-                    price_weighted_sum_per_asset[asset_name] += real_price * distribution_value
+                    price_weighted_sum_per_asset[asset_name] += (
+                        real_price * distribution_value
+                    )
                     distribution_value_sum_per_asset[asset_name] += distribution_value
                 else:
-                    price_weighted_sum_per_asset[asset_name] = real_price * distribution_value
+                    price_weighted_sum_per_asset[asset_name] = (
+                        real_price * distribution_value
+                    )
                     distribution_value_sum_per_asset[asset_name] = distribution_value
 
     merged_price_per_asset = {}
     for asset_name in price_weighted_sum_per_asset:
         if distribution_value_sum_per_asset[asset_name] > decimal.Decimal(0):
-            merged_price_per_asset[asset_name] = price_weighted_sum_per_asset[asset_name] / distribution_value_sum_per_asset[asset_name]
+            merged_price_per_asset[asset_name] = (
+                price_weighted_sum_per_asset[asset_name]
+                / distribution_value_sum_per_asset[asset_name]
+            )
 
     ratio_per_asset = merged_ratio_per_asset
     total_ratio_per_asset = sum(
@@ -335,7 +464,7 @@ def update_global_distribution(
 
     reference_market_ratio = max(
         trading_constants.ZERO,
-        min(trading_constants.ONE, trading_constants.ONE - total_effective_allocation)
+        min(trading_constants.ONE, trading_constants.ONE - total_effective_allocation),
     )
 
     return {
