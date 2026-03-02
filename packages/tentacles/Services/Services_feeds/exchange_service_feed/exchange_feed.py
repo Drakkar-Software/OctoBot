@@ -122,9 +122,13 @@ class ExchangeServiceFeed(service_feeds.AbstractServiceFeed):
             current_profile.positions = await exchange_manager.exchange.get_user_positions(current_profile.profile_id)
             updated = True
         try:
-            current_profile.portfolio = await exchange_manager.exchange.get_user_balance(current_profile.profile_id)
+            balance = await exchange_manager.exchange.get_user_balance(current_profile.profile_id)
+            if balance is not None:
+                portfolio = personal_data.create_portfolio_from_exchange_manager(exchange_manager)
+                portfolio.update_portfolio_from_balance(balance)
+                current_profile.portfolio = portfolio
         except NotImplementedError:
-            self._get_logger().warning(f"get_user_balance is not implemented")
+            self.logger.warning(f"get_user_balance is not implemented")
 
         # TODO Later: should we also fetch orders and trades ?
         return updated

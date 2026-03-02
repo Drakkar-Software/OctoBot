@@ -57,6 +57,7 @@ class RebalanceDetails(enum.Enum):
 class SynchronizationPolicy(enum.Enum):
     SELL_REMOVED_INDEX_COINS_ON_RATIO_REBALANCE = "sell_removed_index_coins_on_ratio_rebalance"
     SELL_REMOVED_INDEX_COINS_AS_SOON_AS_POSSIBLE = "sell_removed_index_coins_as_soon_as_possible"
+    SELL_REMOVED_DYNAMIC_INDEX_COINS_AS_SOON_AS_POSSIBLE = "sell_removed_dynamic_index_coins_as_soon_as_possible"
 
 
 DEFAULT_QUOTE_ASSET_REBALANCE_TRIGGER_MIN_RATIO = 0.1  # 10%
@@ -583,7 +584,10 @@ class IndexTradingModeProducer(trading_modes.AbstractTradingModeProducer):
         )
 
         # compute rebalance details for current coins distribution
-        if self.trading_mode.synchronization_policy == SynchronizationPolicy.SELL_REMOVED_INDEX_COINS_AS_SOON_AS_POSSIBLE:
+        if self.trading_mode.synchronization_policy in (
+            SynchronizationPolicy.SELL_REMOVED_INDEX_COINS_AS_SOON_AS_POSSIBLE,
+            SynchronizationPolicy.SELL_REMOVED_DYNAMIC_INDEX_COINS_AS_SOON_AS_POSSIBLE,
+        ):
             should_rebalance = self._register_removed_coin(rebalance_details, available_traded_bases)
         should_rebalance = self._register_coins_update(rebalance_details) or should_rebalance
         should_rebalance = self._register_quote_asset_rebalance(rebalance_details) or should_rebalance
@@ -1172,6 +1176,14 @@ class IndexTradingMode(trading_modes.AbstractTradingMode):
                     if asset_name not in current_coins and asset_name != ref_market:
                         removed_coins_from_historical_configs.add(asset_name)
             return list(removed_coins_from_historical_configs.union(removed_coins))
+        elif self.synchronization_policy == SynchronizationPolicy.SELL_REMOVED_DYNAMIC_INDEX_COINS_AS_SOON_AS_POSSIBLE:
+            # For modes with a dynamic index (no static INDEX_CONTENT config), derive removed coins
+            # directly from the current indexed_coins without relying on previous_trading_config.
+            ref_market = self.exchange_manager.exchange_personal_data.portfolio_manager.reference_market
+            return [
+                coin for coin in available_traded_bases
+                if coin not in self.indexed_coins and coin != ref_market
+            ]
         else:
             self.logger.error(f"Unknown synchronization policy: {self.synchronization_policy}")
             return []
