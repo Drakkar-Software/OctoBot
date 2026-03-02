@@ -54,6 +54,7 @@ class ProfileCopyTradingMode(index_trading_mode.IndexTradingMode):
         self.min_mark_price: typing.Optional[decimal.Decimal] = None
         self.max_mark_price: typing.Optional[decimal.Decimal] = None
         self.min_position_size: typing.Optional[decimal.Decimal] = None
+        self.close_positions_when_filtered_out: bool = False
         self.started_at: datetime.datetime = datetime.datetime.now()
         self.distribution_per_exchange_profile: dict[str, list] = {}
 
@@ -123,6 +124,14 @@ class ProfileCopyTradingMode(index_trading_mode.IndexTradingMode):
             title="Minimum position size: Only copy positions with size >= this value. Set to 0 to disable.",
         )
         self.min_position_size = None if min_position_size is None else decimal.Decimal(str(min_position_size))
+        self.close_positions_when_filtered_out = self.UI.user_input(
+            ProfileCopyTradingModeProducer.CLOSE_POSITIONS_WHEN_FILTERED_OUT,
+            commons_enums.UserInputTypes.BOOLEAN,
+            self.close_positions_when_filtered_out, inputs,
+            title="Close positions when filtered out: When enabled, positions that no longer pass the "
+                  "configured filters are immediately closed. When disabled (default), filtered positions "
+                  "continue to be tracked.",
+        )
         self._validate_portfolio_allocation_feasibility()
 
     def _validate_portfolio_allocation_feasibility(self):
@@ -246,10 +255,12 @@ class ProfileCopyTradingModeProducer(index_trading_mode.IndexTradingModeProducer
     MIN_MARK_PRICE = "min_mark_price"
     MAX_MARK_PRICE = "max_mark_price"
     MIN_POSITION_SIZE = "min_position_size"
+    CLOSE_POSITIONS_WHEN_FILTERED_OUT = "close_positions_when_filtered_out"
 
     def __init__(self, channel, config, trading_mode, exchange_manager):
         super().__init__(channel, config, trading_mode, exchange_manager)
         self.requires_initializing_appropriate_coins_distribution = False
+        self.trading_mode.synchronization_policy = index_trading_mode.SynchronizationPolicy.SELL_REMOVED_DYNAMIC_INDEX_COINS_AS_SOON_AS_POSSIBLE
 
     async def profile_callback(self, profile_data: exchange_service_feed.ExchangeProfile, ctx):
         self.trading_mode.distribution_per_exchange_profile = profile_distribution.update_distribution_based_on_profile_data(
@@ -258,7 +269,8 @@ class ProfileCopyTradingModeProducer(index_trading_mode.IndexTradingModeProducer
             self.exchange_manager.exchange_personal_data.portfolio_manager.reference_market,
             self.trading_mode.min_unrealized_pnl_percent,
             self.trading_mode.max_unrealized_pnl_percent, self.trading_mode.min_mark_price,
-            self.trading_mode.max_mark_price, self.trading_mode.min_position_size
+            self.trading_mode.max_mark_price, self.trading_mode.min_position_size,
+            close_positions_when_filtered_out=self.trading_mode.close_positions_when_filtered_out,
         )
         if profile_distribution.has_distribution_for_all_exchange_profiles(
             self.trading_mode.distribution_per_exchange_profile, self.trading_mode.exchange_profile_ids

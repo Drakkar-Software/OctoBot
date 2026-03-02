@@ -41,6 +41,7 @@ REFERENCE_MARKET_RATIO = "reference_market_ratio"
 TRADABLE_RATIO = "tradable_ratio"
 DISTRIBUTION_KEY = "distribution"
 DISTRIBUTION_SOURCE = "distribution_source"
+TRACKED_POSITION_SYMBOLS = "tracked_position_symbols"
 
 def get_positions_to_consider(
     profile_positions: list[dict],
@@ -107,7 +108,28 @@ def get_smoothed_distribution_from_profile_data(
     max_mark_price: typing.Optional[decimal.Decimal] = None,
     min_position_size: typing.Optional[decimal.Decimal] = None,
 ) -> typing.Tuple[typing.List, decimal.Decimal, str]:
-    # If profile has positions, use position-based distribution
+    distribution, tradable_ratio, source, _ = _get_distribution_with_tracking(
+        profile_data, new_position_only, started_at, reference_market,
+        min_unrealized_pnl_percent, max_unrealized_pnl_percent,
+        min_mark_price, max_mark_price, min_position_size,
+        frozenset(), False,
+    )
+    return distribution, tradable_ratio, source
+
+
+def _get_distribution_with_tracking(
+    profile_data: "exchange_service_feed.ExchangeProfile",
+    new_position_only: bool,
+    started_at: datetime.datetime,
+    reference_market: str,
+    min_unrealized_pnl_percent: typing.Optional[float],
+    max_unrealized_pnl_percent: typing.Optional[float],
+    min_mark_price: typing.Optional[decimal.Decimal],
+    max_mark_price: typing.Optional[decimal.Decimal],
+    min_position_size: typing.Optional[decimal.Decimal],
+    previously_tracked_symbols: frozenset,
+    close_positions_when_filtered_out: bool,
+) -> typing.Tuple[typing.List, decimal.Decimal, str, frozenset]:
     if profile_data.positions:
         reference_market_balance = (
             _get_reference_market_balance(profile_data.portfolio, reference_market)
@@ -119,13 +141,15 @@ def get_smoothed_distribution_from_profile_data(
             min_unrealized_pnl_percent, max_unrealized_pnl_percent,
             min_mark_price, max_mark_price, min_position_size,
             reference_market_balance=reference_market_balance,
+            previously_tracked_symbols=previously_tracked_symbols,
+            close_positions_when_filtered_out=close_positions_when_filtered_out,
         )
 
-    # If profile has portfolio but no positions, use portfolio-based distribution
     if profile_data.portfolio is not None:
-        return _get_distribution_from_portfolio(profile_data.portfolio)
+        distribution, tradable_ratio, source = _get_distribution_from_portfolio(profile_data.portfolio)
+        return distribution, tradable_ratio, source, frozenset()
 
-    return [], trading_constants.ZERO, DistributionSource.POSITIONS.value
+    return [], trading_constants.ZERO, DistributionSource.POSITIONS.value, frozenset()
 
 
 def _get_position_value(position: dict) -> decimal.Decimal:
@@ -149,7 +173,9 @@ def _get_distribution_from_positions(
     max_mark_price: typing.Optional[decimal.Decimal] = None,
     min_position_size: typing.Optional[decimal.Decimal] = None,
     reference_market_balance: decimal.Decimal = trading_constants.ZERO,
-) -> typing.Tuple[typing.List, decimal.Decimal, str]:
+    previously_tracked_symbols: frozenset = frozenset(),
+    close_positions_when_filtered_out: bool = False,
+) -> typing.Tuple[typing.List, decimal.Decimal, str, frozenset]:
     # Calculate total position value from ALL positions (before filtering)
     total_position_value = decimal.Decimal(sum(
         _get_position_value(position)
@@ -160,15 +186,37 @@ def _get_distribution_from_positions(
     total_portfolio_value = total_position_value + reference_market_balance
 
     if total_portfolio_value <= trading_constants.ZERO:
-        return [], trading_constants.ZERO, DistributionSource.POSITIONS.value
+        return [], trading_constants.ZERO, DistributionSource.POSITIONS.value, frozenset()
 
-    tradable_positions: list[dict] = get_positions_to_consider(
+    passing_positions: list[dict] = get_positions_to_consider(
         profile_data.positions, new_position_only, started_at,
         min_unrealized_pnl_percent, max_unrealized_pnl_percent, min_mark_price, max_mark_price,
         min_position_size
     )
+    passing_symbols: frozenset = frozenset(
+        p[trading_enums.ExchangeConstantsPositionColumns.SYMBOL.value] for p in passing_positions
+    )
+    current_profile_symbols: frozenset = frozenset(
+        p[trading_enums.ExchangeConstantsPositionColumns.SYMBOL.value] for p in profile_data.positions
+    )
+
+    if close_positions_when_filtered_out:
+        new_tracked_symbols: frozenset = passing_symbols & current_profile_symbols
+        tradable_positions: list[dict] = passing_positions
+    else:
+        # Keep tracking positions that were previously in the distribution and are still held by the
+        # profile, even if they no longer pass the filters. This ensures the bot follows the profile's
+        # close signal instead of ignoring filtered positions indefinitely.
+        new_tracked_symbols = (passing_symbols | previously_tracked_symbols) & current_profile_symbols
+        tracked_but_filtered: list[dict] = [
+            p for p in profile_data.positions
+            if p[trading_enums.ExchangeConstantsPositionColumns.SYMBOL.value] in previously_tracked_symbols
+            and p[trading_enums.ExchangeConstantsPositionColumns.SYMBOL.value] not in passing_symbols
+        ]
+        tradable_positions = passing_positions + tracked_but_filtered
+
     if not tradable_positions:
-        return [], trading_constants.ZERO, DistributionSource.POSITIONS.value
+        return [], trading_constants.ZERO, DistributionSource.POSITIONS.value, new_tracked_symbols
 
     tradable_position_value = decimal.Decimal(sum(
         _get_position_value(position)
@@ -197,7 +245,12 @@ def _get_distribution_from_positions(
     for symbol, value in value_by_coin.items():
         weight_by_coin[symbol] = value / tradable_position_value
 
-    return index_distribution.get_smoothed_distribution(weight_by_coin, price_by_coin), tradable_ratio, DistributionSource.POSITIONS.value
+    return (
+        index_distribution.get_smoothed_distribution(weight_by_coin, price_by_coin),
+        tradable_ratio,
+        DistributionSource.POSITIONS.value,
+        new_tracked_symbols,
+    )
 
 
 def _get_reference_market_balance(portfolio, reference_market: str) -> decimal.Decimal:
@@ -246,16 +299,20 @@ def update_distribution_based_on_profile_data(
     min_mark_price: typing.Optional[decimal.Decimal] = None,
     max_mark_price: typing.Optional[decimal.Decimal] = None,
     min_position_size: typing.Optional[decimal.Decimal] = None,
+    close_positions_when_filtered_out: bool = False,
 ) -> dict[str, dict]:
-    distribution, tradable_ratio, source = get_smoothed_distribution_from_profile_data(
+    previous = distribution_per_exchange_profile.get(profile_data.profile_id, {})
+    previously_tracked_symbols: frozenset = previous.get(TRACKED_POSITION_SYMBOLS, frozenset())
+    distribution, tradable_ratio, source, tracked_symbols = _get_distribution_with_tracking(
         profile_data, new_position_only, started_at, reference_market,
         min_unrealized_pnl_percent, max_unrealized_pnl_percent, min_mark_price, max_mark_price,
-        min_position_size
+        min_position_size, previously_tracked_symbols, close_positions_when_filtered_out,
     )
     distribution_per_exchange_profile[profile_data.profile_id] = {
         DISTRIBUTION_KEY: distribution,
         TRADABLE_RATIO: tradable_ratio,
         DISTRIBUTION_SOURCE: source,
+        TRACKED_POSITION_SYMBOLS: tracked_symbols,
     }
     return distribution_per_exchange_profile
 

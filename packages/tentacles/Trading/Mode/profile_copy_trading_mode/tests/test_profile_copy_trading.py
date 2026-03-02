@@ -244,11 +244,25 @@ async def _stop(exchange_manager):
 
 async def test_init_sets_defaults_for_new_position_only_and_started_at(tools):
     mode, trader = tools
-    
+
     assert mode.new_position_only is False
     assert isinstance(mode.started_at, datetime.datetime)
     # started_at should be set to current time (approximately)
     assert (datetime.datetime.now() - mode.started_at).total_seconds() < 5
+
+
+async def test_close_positions_when_filtered_out_default_is_false(tools):
+    mode, trader = tools
+    assert mode.close_positions_when_filtered_out is False
+
+
+async def test_dynamic_synchronization_policy_removes_coins_not_in_indexed_coins(tools):
+    mode, producer, _, _ = await _init_mode(tools, _get_config(tools, {}))
+    assert mode.synchronization_policy == index_trading.SynchronizationPolicy.SELL_REMOVED_DYNAMIC_INDEX_COINS_AS_SOON_AS_POSSIBLE
+    mode.indexed_coins = ["BTC"]
+    # USDT is the reference market and must be excluded; ETH is in traded bases but not indexed
+    removed = mode.get_removed_coins_from_config({"BTC", "ETH", "USDT"})
+    assert removed == ["ETH"]
 
 async def test_rebalance_with_pending_open_orders(tools):
     mode, producer, _, _ = await _init_mode(tools, _get_config(tools, {}))

@@ -781,6 +781,196 @@ def test_get_reference_market_balance():
     assert profile_distribution._get_reference_market_balance(portfolio, "USDC") == decimal.Decimal("500")
 
 
+def _get_distribution_symbols(distribution: list) -> list[str]:
+    return [d[index_distribution.DISTRIBUTION_NAME] for d in distribution]
+
+
+def test_update_distribution_tracks_passing_positions():
+    started_at = datetime.datetime(2024, 1, 1, 12, 0, 0)
+    profile_data = MockProfileData("p1", [
+        _position("BTC/USDT", 100.0, 5.0, mark_price=200.0),
+        _position("ETH/USDT", 100.0, 5.0, mark_price=200.0),
+    ])
+    result = profile_distribution.update_distribution_based_on_profile_data(
+        profile_data, {}, new_position_only=False, started_at=started_at,
+        reference_market="USDT", min_mark_price=decimal.Decimal("150"),
+    )
+    tracked = result["p1"][profile_distribution.TRACKED_POSITION_SYMBOLS]
+    assert "BTC/USDT" in tracked
+    assert "ETH/USDT" in tracked
+
+
+def test_update_distribution_keeps_tracked_filtered_positions_in_distribution():
+    started_at = datetime.datetime(2024, 1, 1, 12, 0, 0)
+    positions = [
+        _position("BTC/USDT", 100.0, 5.0, mark_price=200.0),
+        _position("ETH/USDT", 100.0, 5.0, mark_price=200.0),
+    ]
+    profile_data = MockProfileData("p1", positions)
+
+    # both positions pass filter
+    dist_map = profile_distribution.update_distribution_based_on_profile_data(
+        profile_data, {}, new_position_only=False, started_at=started_at,
+        reference_market="USDT", min_mark_price=decimal.Decimal("150"),
+    )
+    assert "ETH/USDT" in _get_distribution_symbols(dist_map["p1"][profile_distribution.DISTRIBUTION_KEY])
+
+    # ETH mark_price drops below filter threshold but profile still holds it
+    positions_eth_filtered = [
+        _position("BTC/USDT", 100.0, 5.0, mark_price=200.0),
+        _position("ETH/USDT", 100.0, -15.0, mark_price=100.0),  # below min_mark_price=150
+    ]
+    profile_data_2 = MockProfileData("p1", positions_eth_filtered)
+    dist_map = profile_distribution.update_distribution_based_on_profile_data(
+        profile_data_2, dist_map, new_position_only=False, started_at=started_at,
+        reference_market="USDT", min_mark_price=decimal.Decimal("150"),
+    )
+    symbols = _get_distribution_symbols(dist_map["p1"][profile_distribution.DISTRIBUTION_KEY])
+    assert "BTC/USDT" in symbols
+    assert "ETH/USDT" in symbols  # still tracked despite being filtered
+
+
+def test_update_distribution_removes_tracked_position_when_profile_closes_it():
+    started_at = datetime.datetime(2024, 1, 1, 12, 0, 0)
+    positions_all_pass = [
+        _position("BTC/USDT", 100.0, 5.0, mark_price=200.0),
+        _position("ETH/USDT", 100.0, 5.0, mark_price=200.0),
+    ]
+
+    # both pass
+    dist_map = profile_distribution.update_distribution_based_on_profile_data(
+        MockProfileData("p1", positions_all_pass), {}, new_position_only=False,
+        started_at=started_at, reference_market="USDT", min_mark_price=decimal.Decimal("150"),
+    )
+
+    # ETH filtered (profile still holds it)
+    dist_map = profile_distribution.update_distribution_based_on_profile_data(
+        MockProfileData("p1", [
+            _position("BTC/USDT", 100.0, 5.0, mark_price=200.0),
+            _position("ETH/USDT", 100.0, -15.0, mark_price=100.0),
+        ]),
+        dist_map, new_position_only=False, started_at=started_at,
+        reference_market="USDT", min_mark_price=decimal.Decimal("150"),
+    )
+    assert "ETH/USDT" in _get_distribution_symbols(dist_map["p1"][profile_distribution.DISTRIBUTION_KEY])
+
+    # profile closes ETH (removes it from positions entirely)
+    dist_map = profile_distribution.update_distribution_based_on_profile_data(
+        MockProfileData("p1", [_position("BTC/USDT", 100.0, 5.0, mark_price=200.0)]),
+        dist_map, new_position_only=False, started_at=started_at,
+        reference_market="USDT", min_mark_price=decimal.Decimal("150"),
+    )
+    symbols = _get_distribution_symbols(dist_map["p1"][profile_distribution.DISTRIBUTION_KEY])
+    assert "BTC/USDT" in symbols
+    assert "ETH/USDT" not in symbols  # removed when profile closed it
+    assert "ETH/USDT" not in dist_map["p1"][profile_distribution.TRACKED_POSITION_SYMBOLS]
+
+
+def test_update_distribution_does_not_track_new_filtered_positions():
+    # Positions that fail the filter from the very first call must never be opened by the bot.
+    started_at = datetime.datetime(2024, 1, 1, 12, 0, 0)
+    profile_data = MockProfileData("p1", [
+        _position("BTC/USDT", 100.0, 5.0, mark_price=200.0),
+        _position("ETH/USDT", 100.0, 5.0, mark_price=100.0),  # never passes filter
+    ])
+    dist_map = profile_distribution.update_distribution_based_on_profile_data(
+        profile_data, {}, new_position_only=False, started_at=started_at,
+        reference_market="USDT", min_mark_price=decimal.Decimal("150"),
+    )
+    symbols = _get_distribution_symbols(dist_map["p1"][profile_distribution.DISTRIBUTION_KEY])
+    assert "BTC/USDT" in symbols
+    assert "ETH/USDT" not in symbols
+    assert "ETH/USDT" not in dist_map["p1"][profile_distribution.TRACKED_POSITION_SYMBOLS]
+
+
+def test_update_distribution_close_when_filtered_out_true_immediately_drops_filtered():
+    started_at = datetime.datetime(2024, 1, 1, 12, 0, 0)
+    positions_all_pass = [
+        _position("BTC/USDT", 100.0, 5.0, mark_price=200.0),
+        _position("ETH/USDT", 100.0, 5.0, mark_price=200.0),
+    ]
+
+    # both pass
+    dist_map = profile_distribution.update_distribution_based_on_profile_data(
+        MockProfileData("p1", positions_all_pass), {}, new_position_only=False,
+        started_at=started_at, reference_market="USDT", min_mark_price=decimal.Decimal("150"),
+        close_positions_when_filtered_out=True,
+    )
+    assert "ETH/USDT" in _get_distribution_symbols(dist_map["p1"][profile_distribution.DISTRIBUTION_KEY])
+
+    # ETH drops below filter, profile still holds it — but close_positions_when_filtered_out=True
+    dist_map = profile_distribution.update_distribution_based_on_profile_data(
+        MockProfileData("p1", [
+            _position("BTC/USDT", 100.0, 5.0, mark_price=200.0),
+            _position("ETH/USDT", 100.0, -15.0, mark_price=100.0),
+        ]),
+        dist_map, new_position_only=False, started_at=started_at,
+        reference_market="USDT", min_mark_price=decimal.Decimal("150"),
+        close_positions_when_filtered_out=True,
+    )
+    symbols = _get_distribution_symbols(dist_map["p1"][profile_distribution.DISTRIBUTION_KEY])
+    assert "BTC/USDT" in symbols
+    assert "ETH/USDT" not in symbols  # immediately dropped, not kept
+
+
+def test_tradable_ratio_includes_tracked_filtered_positions():
+    # With close_positions_when_filtered_out=False (default), tracked-but-filtered positions
+    # contribute to tradable_position_value, raising tradable_ratio.
+    started_at = datetime.datetime(2024, 1, 1, 12, 0, 0)
+    positions_all_pass = [
+        _position("BTC/USDT", 100.0, 5.0, mark_price=200.0),
+        _position("ETH/USDT", 100.0, 5.0, mark_price=200.0),
+    ]
+
+    dist_map = profile_distribution.update_distribution_based_on_profile_data(
+        MockProfileData("p1", positions_all_pass), {}, new_position_only=False,
+        started_at=started_at, reference_market="USDT", min_mark_price=decimal.Decimal("150"),
+    )
+
+    # ETH filtered but tracked → both count as tradable → ratio = 200/200 = 1.0
+    dist_map_default = profile_distribution.update_distribution_based_on_profile_data(
+        MockProfileData("p1", [
+            _position("BTC/USDT", 100.0, 5.0, mark_price=200.0),
+            _position("ETH/USDT", 100.0, -15.0, mark_price=100.0),
+        ]),
+        dict(dist_map), new_position_only=False, started_at=started_at,
+        reference_market="USDT", min_mark_price=decimal.Decimal("150"),
+        close_positions_when_filtered_out=False,
+    )
+    assert dist_map_default["p1"][profile_distribution.TRADABLE_RATIO] == trading_constants.ONE
+
+    # With close_positions_when_filtered_out=True: only BTC tradable → ratio = 100/200 = 0.5
+    dist_map_close = profile_distribution.update_distribution_based_on_profile_data(
+        MockProfileData("p1", [
+            _position("BTC/USDT", 100.0, 5.0, mark_price=200.0),
+            _position("ETH/USDT", 100.0, -15.0, mark_price=100.0),
+        ]),
+        dict(dist_map), new_position_only=False, started_at=started_at,
+        reference_market="USDT", min_mark_price=decimal.Decimal("150"),
+        close_positions_when_filtered_out=True,
+    )
+    assert dist_map_close["p1"][profile_distribution.TRADABLE_RATIO] == decimal.Decimal("0.5")
+
+
+def test_total_portfolio_value_includes_all_positions():
+    # total_portfolio_value (denominator of tradable_ratio) must include ALL positions,
+    # even those that never pass the filter and are never tracked.
+    started_at = datetime.datetime(2024, 1, 1, 12, 0, 0)
+    # BTC passes, ETH never passes and is never tracked.
+    dist_map = profile_distribution.update_distribution_based_on_profile_data(
+        MockProfileData("p1", [
+            _position("BTC/USDT", 100.0, 5.0, mark_price=200.0),
+            _position("ETH/USDT", 100.0, 5.0, mark_price=100.0),
+        ]),
+        {}, new_position_only=False, started_at=started_at,
+        reference_market="USDT", min_mark_price=decimal.Decimal("150"),
+    )
+    # tradable_position_value = 100 (BTC only)
+    # total_portfolio_value    = 200 (BTC + ETH, all positions)
+    # tradable_ratio           = 100 / 200 = 0.5
+    assert dist_map["p1"][profile_distribution.TRADABLE_RATIO] == decimal.Decimal("0.5")
+
+
 def test_position_value_uses_notional_when_initial_margin_is_zero():
     position = {
         trading_enums.ExchangeConstantsPositionColumns.SYMBOL.value: "EVENT/USDC:USDC-YES",
