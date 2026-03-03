@@ -40,7 +40,7 @@ import octobot_agents.errors as errors
 import octobot_agents.constants as constants
 import octobot_services.services as services
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__.split(".")[-1])
 
 try:
     from deepagents import create_deep_agent, CompiledSubAgent

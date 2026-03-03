@@ -157,8 +157,8 @@ class EVMBlockchainWallet(blockchain_wallets.BlockchainWallet):
         self._get_rpc_url()  # validate early — raises BlockchainWalletConfigurationError if missing
         self._address: str = self._resolve_address()
         # Disable web3.py logging
-        logging.getLogger("web3").setLevel(logging.WARNING)
-        logging.getLogger("urllib3").setLevel(logging.WARNING)
+        for logger_name in ["web3", "urllib3", "rlp.codec"]:
+            logging.getLogger(logger_name).setLevel(logging.WARNING)
 
     def _resolve_address(self) -> str:
         descriptor = self.wallet_descriptor
