@@ -38,7 +38,7 @@ import octobot_agents.errors as errors
 import octobot_agents.storage.history as history
 import octobot_services.services.abstract_ai_service as abstract_ai_service
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__.split(".")[-1])
 
 try:
     from deepagents import create_deep_agent

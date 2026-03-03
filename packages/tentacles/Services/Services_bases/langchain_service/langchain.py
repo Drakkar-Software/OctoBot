@@ -45,13 +45,13 @@ try:
     from langchain_core.messages import SystemMessage, HumanMessage, AIMessage, ToolMessage
     LANGCHAIN_CORE_AVAILABLE = True
 except ImportError:
-    logging.getLogger(__name__).debug("langchain_core not available")
+    logging.getLogger(__name__.split(".")[-1]).debug("langchain_core not available")
 
 try:
     from langchain.chat_models import init_chat_model
     LANGCHAIN_AVAILABLE = True
 except ImportError:
-    logging.getLogger(__name__).debug("langchain not available - init_chat_model disabled")
+    logging.getLogger(__name__.split(".")[-1]).debug("langchain not available - init_chat_model disabled")
 
 # Provider-specific client classes (imported on demand)
 LANGCHAIN_CLIENTS: typing.Dict[enums.AIProvider, typing.Any] = {}
