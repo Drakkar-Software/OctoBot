@@ -320,7 +320,7 @@ jobs:
       - name: Prepare tentacles package
         run: |
           mkdir -p ../new_tentacles
-          cp -r packages/tentacles/Automation packages/tentacles/Backtesting packages/tentacles/Evaluator packages/tentacles/Meta packages/tentacles/Services packages/tentacles/Trading packages/tentacles/profiles ../new_tentacles/
+          cp -r packages/tentacles/Agent packages/tentacles/Automation packages/tentacles/Backtesting packages/tentacles/Evaluator packages/tentacles/Meta packages/tentacles/Services packages/tentacles/Trading packages/tentacles/profiles ../new_tentacles/
 
       - name: Publish tag tentacles
         if: startsWith(github.ref, 'refs/tags')
