@@ -102,7 +102,6 @@ DISPLAYED_ELEMENTS_KEY = "displayed_elements"
 # tentacles from which configuration is not handled in strategies / evaluators configuration and that can be groupped
 GROUPPABLE_NON_TRADING_STRATEGY_RELATED_TENTACLES = [
     tentacles_manager_constants.TENTACLES_BACKTESTING_PATH,
-    tentacles_manager_constants.TENTACLES_SERVICES_PATH,
     tentacles_manager_constants.TENTACLES_TRADING_PATH
 ]
 # tentacles for which configuration can be done in the tentacles tab of profile config
