@@ -19,6 +19,7 @@ import typing
 import decimal
 import enum
 import os
+import logging
 
 import web3 as web3_lib
 import web3.exceptions as web3_exceptions
@@ -36,8 +37,8 @@ class EthereumLayer2Network(enum.StrEnum):
 
 
 class EthereumNativeCurrency(enum.StrEnum):
-    ETH = "ETH"   # Ethereum Layer 1 mainnet
-    POL = "POL"   # Polygon mainnet (formerly MATIC)
+    ETH = "ETH"  # Ethereum Layer 1 mainnet
+    POL = "POL"  # Polygon mainnet (formerly MATIC)
 
 
 class EthereumDefaultRPCURL(enum.StrEnum):
@@ -49,7 +50,7 @@ class EVMBlockchainSpecificConfigurationKeys(enum.StrEnum):
     RPC_URL = "rpc_url"
 
 
-WEI_PER_ETH = decimal.Decimal(10 ** 18)
+WEI_PER_ETH = decimal.Decimal(10**18)
 
 # Minimal ERC-20 ABI for balanceOf
 ERC20_BALANCE_ABI = [
@@ -143,20 +144,21 @@ def converted_web3_error(f):
                     f"Connection error: {err} ({err.__class__.__name__})"
                 ) from err
             raise
+
     return converted_web3_error_wrapper
 
 
 class EVMBlockchainWallet(blockchain_wallets.BlockchainWallet):
     BLOCKCHAIN: str = "ethereum"
 
-    def __init__(
-        self,
-        parameters: blockchain_wallets.BlockchainWalletParameters
-    ):
+    def __init__(self, parameters: blockchain_wallets.BlockchainWalletParameters):
         super().__init__(parameters)
         self._w3: typing.Optional[web3_lib.AsyncWeb3] = None
         self._get_rpc_url()  # validate early — raises BlockchainWalletConfigurationError if missing
         self._address: str = self._resolve_address()
+        # Disable web3.py logging
+        logging.getLogger("web3").setLevel(logging.WARNING)
+        logging.getLogger("urllib3").setLevel(logging.WARNING)
 
     def _resolve_address(self) -> str:
         descriptor = self.wallet_descriptor
@@ -185,7 +187,9 @@ class EVMBlockchainWallet(blockchain_wallets.BlockchainWallet):
     @property
     def w3(self) -> web3_lib.AsyncWeb3:
         if self._w3 is None:
-            raise ValueError("Web3 not initialized, call this function inside the open() context manager")
+            raise ValueError(
+                "Web3 not initialized, call this function inside the open() context manager"
+            )
         return self._w3
 
     @converted_web3_error
@@ -200,12 +204,16 @@ class EVMBlockchainWallet(blockchain_wallets.BlockchainWallet):
         self, token_descriptor: blockchain_wallets.TokenDescriptor
     ) -> blockchain_wallets.Balance:
         contract = self.w3.eth.contract(
-            address=web3_lib.Web3.to_checksum_address(token_descriptor.contract_address),
+            address=web3_lib.Web3.to_checksum_address(
+                token_descriptor.contract_address
+            ),
             abi=ERC20_BALANCE_ABI,
         )
         address = web3_lib.Web3.to_checksum_address(self._address)
         balance_raw = await contract.functions.balanceOf(address).call()
-        balance = decimal.Decimal(balance_raw) / decimal.Decimal(10 ** token_descriptor.decimals)
+        balance = decimal.Decimal(balance_raw) / decimal.Decimal(
+            10**token_descriptor.decimals
+        )
         return blockchain_wallets.Balance(free=balance)
 
     async def transfer_native_coin(
@@ -219,7 +227,9 @@ class EVMBlockchainWallet(blockchain_wallets.BlockchainWallet):
         amount: decimal.Decimal,
         to_address: str,
     ) -> blockchain_wallets.Transaction:
-        raise NotImplementedError("transfer_custom_token is not yet implemented for EVM")
+        raise NotImplementedError(
+            "transfer_custom_token is not yet implemented for EVM"
+        )
 
     @staticmethod
     def create_blockchain_descriptor_specific_config(**kwargs) -> dict:
@@ -251,5 +261,3 @@ class EVMBlockchainWallet(blockchain_wallets.BlockchainWallet):
             f"ETH mainnet: use {EthereumDefaultRPCURL.ETHEREUM_MAINNET}, "
             f"Polygon mainnet: use {EthereumDefaultRPCURL.POLYGON_MAINNET}."
         )
-
-

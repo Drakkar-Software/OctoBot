@@ -13,4 +13,7 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-from .evm_blockchain_wallet import *
+import octobot_commons.constants as commons_constants
+
+if not commons_constants.USE_MINIMAL_LIBS:
+    from .evm_blockchain_wallet import *
