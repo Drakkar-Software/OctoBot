@@ -49,7 +49,8 @@ class DataComparator:
                                      symbols: list,
                                      time_frames: list,
                                      start_timestamp,
-                                     end_timestamp) -> bool:
+                                     end_timestamp,
+                                     **kwargs) -> bool:
         # 1. data type
         if description.get(enums.DataFormatKeys.DATA_TYPE.value) != enums.DataType.EXCHANGE.value:
             return False
@@ -82,7 +83,8 @@ class DataComparator:
                                    services: list,
                                    symbols: list,
                                    start_timestamp,
-                                   end_timestamp) -> bool:
+                                   end_timestamp,
+                                   **kwargs) -> bool:
         # 1. data type
         if description.get(enums.DataFormatKeys.DATA_TYPE.value) != enums.DataType.SOCIAL.value:
             return False
