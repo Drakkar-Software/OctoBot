@@ -2637,6 +2637,7 @@ class polymarket(Exchange, ImplicitAPI):
             'delayed': 'open',      # order marketable, but subject to matching delay
             'unmatched': 'open',    # order marketable, but failure delaying, placement successful
             'canceled': 'canceled',  # CCXT unified status for canceled orders
+            'canceled_market_resolved': 'canceled',  # order voided because the market resolved before it was filled
             'invalid': 'rejected',
         }
         normalizedStatus = status.lower()

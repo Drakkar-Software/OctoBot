@@ -32,7 +32,6 @@ import octobot_tentacles_manager.api as tentacles_manager_api
 import octobot_trading.api as trading_api
 import octobot_trading.exchange_channel as exchanges_channel
 import octobot_trading.exchanges as exchanges
-import octobot_trading.enums as trading_enums
 
 import tentacles.Trading.Mode as Mode
 import tentacles.Trading.Mode.profile_copy_trading_mode.profile_copy_trading as profile_copy_trading
