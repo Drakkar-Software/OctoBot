@@ -39,7 +39,7 @@ octobot_node
 - `--port PORT`: Port to bind the server to (default: 8000)
 - `--master`: Enable master node mode (schedules tasks)
 - `--consumers N`: Number of consumer worker threads (0 disables consumers, default: 0). Can be used with --master
-- `--environment {local,production}`: Environment mode (default: from ENVIRONMENT environment variable). Auto-reload is enabled automatically when environment is local
+- `--environment {local,production}`: Environment mode (default: from NODE_ENVIRONMENT environment variable). Auto-reload is enabled automatically when environment is local
 - `--admin-username EMAIL`: Admin username in email format (default: from ADMIN_USERNAME environment variable)
 - `--admin-password PASSWORD`: Admin password (default: from ADMIN_PASSWORD environment variable)
 
@@ -165,7 +165,7 @@ Some key `.env` variables:
 - `SCHEDULER_POSTGRES_URL` (if using Postgres as backend)
 - `SCHEDULER_SQLITE_FILE` (if using SQLite, default: "tasks.db")
 - `SCHEDULER_WORKERS` (number of consumer workers, default: 0, can be overridden with --consumers)
-- `ENVIRONMENT` (environment mode: "local" or "production", default: "production")
+- `NODE_ENVIRONMENT` (environment mode: "local" or "production", default: "production")
 - `ADMIN_USERNAME` (admin username in email format, can be overridden with --admin-username)
 - `ADMIN_PASSWORD` (admin password, can be overridden with --admin-password)
 
