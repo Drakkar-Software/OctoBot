@@ -69,9 +69,9 @@ class Settings(BaseSettings):
     SECRET_KEY: str = secrets.token_urlsafe(32)
     # 60 minutes * 24 hours * 8 days = 8 days
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
-    ENVIRONMENT: Literal["local", "production"] = "production"
+    NODE_ENVIRONMENT: Literal["local", "production"] = "production"
     BACKEND_HOST: str = "http://localhost:8000"
-    FRONTEND_HOST: str = "http://localhost:5173" if ENVIRONMENT == "local" else BACKEND_HOST
+    FRONTEND_HOST: str = "http://localhost:5173" if NODE_ENVIRONMENT == "local" else BACKEND_HOST
 
     BACKEND_CORS_ORIGINS: Annotated[
         list[AnyUrl] | str, BeforeValidator(parse_cors)
@@ -113,7 +113,7 @@ class Settings(BaseSettings):
                 f'The value of {var_name} is "{default_value}", '
                 "for security, please change it, at least for deployments."
             )
-            if self.ENVIRONMENT == "local":
+            if self.NODE_ENVIRONMENT == "local":
                 logging.getLogger("Settings").warning(message)
             else:
                 raise ValueError(message)
