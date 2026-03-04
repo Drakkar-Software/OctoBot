@@ -1986,7 +1986,9 @@ async def test_sell_indexed_coins_for_reference_market(trading_tools):
         get_symbol_position_mock.assert_called_once_with("BTC/USDT", trading_enums.PositionSide.BOTH)
         get_pre_order_data_mock.assert_called_once()
         get_open_orders_mock.assert_called_once_with(mode.exchange_manager, symbol="BTC/USDT")
-        cancel_symbol_open_orders_mock.assert_not_called()
+        cancel_symbol_open_orders_mock.assert_called_once_with(
+            "BTC/USDT", dependencies, allowed_sides={trading_enums.TradeOrderSide.SELL}
+        )
         create_order_mock.assert_called_once_with(orders[0], dependencies=dependencies)
         wait_for_order_fill_mock.assert_called_once()
     else:
@@ -2166,6 +2168,110 @@ async def test_sell_some_reduces_or_closes_position(trading_tools):
             }
             orders = await consumer.trading_mode.rebalancer.sell_indexed_coins_for_reference_market(details, dependencies)
             assert orders == []
+
+
+async def test_close_position_refreshes_stale_internal_state(futures_tools):
+    """
+    When a filled BUY order's portfolio-update event times out, the
+    internal positions_manager still shows an idle (empty) position. On the next
+    rebalance _close_symbol_position must refresh the position from the exchange before
+    deciding there is nothing to sell, otherwise the real holding is silently abandoned.
+    """
+    mode, producer, consumer, trader = await _init_mode(futures_tools, _get_config(futures_tools, {}))
+    mode.indexed_coins = ["BTC/USDT"]
+    positions_manager = trader.exchange_manager.exchange_personal_data.positions_manager
+    symbol_market = trader.exchange_manager.exchange.get_market_status("BTC/USDT", with_fixer=False)
+    dependencies = trading_signals.get_orders_dependencies([mock.Mock(order_id="123")])
+
+    stale_position = _create_position_mock("BTC/USDT", trader, True, is_idle=True)
+    fresh_position = _create_position_mock(
+        "BTC/USDT", trader, True, is_idle=False,
+        size=decimal.Decimal("2"),
+        side=trading_enums.PositionSide.LONG,
+    )
+
+    refresh_calls = []
+
+    async def _mock_refresh(position, force_job_execution=False):
+        refresh_calls.append(position)
+
+    with mock.patch.object(
+        positions_manager, "get_symbol_position",
+        side_effect=[stale_position, fresh_position]
+    ), mock.patch.object(
+        positions_manager, "refresh_real_trader_position",
+        side_effect=_mock_refresh
+    ) as refresh_mock, mock.patch.object(
+        trading_personal_data, "get_pre_order_data", mock.AsyncMock(return_value=(
+            decimal.Decimal("0"), decimal.Decimal("0"), decimal.Decimal("0"),
+            decimal.Decimal("1000"), symbol_market
+        ))
+    ), mock.patch.object(
+        trading_api, "get_open_orders", mock.Mock(return_value=[])
+    ), mock.patch.object(
+        consumer.trading_mode.rebalancer, "cancel_symbol_open_orders", mock.AsyncMock()
+    ) as cancel_mock, mock.patch.object(
+        mode, "create_order", mock.AsyncMock(side_effect=lambda order, **kwargs: order)
+    ) as create_order_mock:
+        details = {
+            index_trading.RebalanceDetails.REMOVE.value: {"BTC/USDT": None},
+            index_trading.RebalanceDetails.SWAP.value: {},
+        }
+        orders = await consumer.trading_mode.rebalancer.get_coins_to_sell_orders(details, dependencies)
+
+    assert refresh_calls, "refresh_real_trader_position was not called when internal position was idle"
+    assert orders, "no sell order was placed after the position refresh revealed the real holding"
+    cancel_mock.assert_called_once_with(
+        "BTC/USDT", dependencies, allowed_sides={trading_enums.TradeOrderSide.SELL}
+    )
+
+
+async def test_close_position_cancels_stuck_sell_orders(futures_tools):
+    """
+    The rebalancer must cancel the stuck order before placing a fresh one at the current market price.
+    """
+    mode, producer, consumer, trader = await _init_mode(futures_tools, _get_config(futures_tools, {}))
+    mode.indexed_coins = ["BTC/USDT"]
+    positions_manager = trader.exchange_manager.exchange_personal_data.positions_manager
+    symbol_market = trader.exchange_manager.exchange.get_market_status("BTC/USDT", with_fixer=False)
+    dependencies = trading_signals.get_orders_dependencies([mock.Mock(order_id="123")])
+
+    position_mock = _create_position_mock(
+        "BTC/USDT", trader, True, is_idle=False,
+        size=decimal.Decimal("2"),
+        side=trading_enums.PositionSide.LONG,
+    )
+
+    cancel_calls = []
+
+    async def _mock_cancel(sym, deps, allowed_sides=None):
+        cancel_calls.append((sym, allowed_sides))
+
+    with mock.patch.object(
+        positions_manager, "get_symbol_position", mock.Mock(return_value=position_mock)
+    ), mock.patch.object(
+        trading_personal_data, "get_pre_order_data", mock.AsyncMock(return_value=(
+            decimal.Decimal("0"), decimal.Decimal("0"), decimal.Decimal("0"),
+            decimal.Decimal("1000"), symbol_market
+        ))
+    ), mock.patch.object(
+        # cancel_symbol_open_orders is mocked, so get_open_orders only sees post-cancel state (no stuck orders)
+        trading_api, "get_open_orders", mock.Mock(return_value=[])
+    ), mock.patch.object(
+        consumer.trading_mode.rebalancer, "cancel_symbol_open_orders",
+        mock.AsyncMock(side_effect=_mock_cancel)
+    ), mock.patch.object(
+        mode, "create_order", mock.AsyncMock(side_effect=lambda order, **kwargs: order)
+    ) as create_order_mock:
+        details = {
+            index_trading.RebalanceDetails.REMOVE.value: {"BTC/USDT": None},
+            index_trading.RebalanceDetails.SWAP.value: {},
+        }
+        orders = await consumer.trading_mode.rebalancer.get_coins_to_sell_orders(details, dependencies)
+
+    assert cancel_calls, "cancel_symbol_open_orders was not called — stuck GTC sell order would stay open"
+    assert cancel_calls[0] == ("BTC/USDT", {trading_enums.TradeOrderSide.SELL})
+    assert orders, "no fresh sell order was placed after cancelling the stuck one"
 
 
 def _cleanup_rebalance_details(

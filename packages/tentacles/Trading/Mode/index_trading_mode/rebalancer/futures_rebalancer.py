@@ -153,14 +153,25 @@ class FuturesRebalancer(rebalancer.AbstractRebalancer):
         positions_manager = self.trading_mode.exchange_manager.exchange_personal_data.positions_manager
         position = positions_manager.get_symbol_position(symbol, trading_enums.PositionSide.BOTH)
         if position.is_idle():
-            await self.cancel_symbol_open_orders(symbol, dependencies=dependencies)
-            return []
+            # Force a refresh from the exchange before concluding there is nothing to sell.
+            await positions_manager.refresh_real_trader_position(position, force_job_execution=True)
+            position = positions_manager.get_symbol_position(symbol, trading_enums.PositionSide.BOTH)
+            if position.is_idle():
+                await self.cancel_symbol_open_orders(symbol, dependencies=dependencies)
+                return []
 
         _, _, _, current_price, symbol_market = await trading_personal_data.get_pre_order_data(
             self.trading_mode.exchange_manager,
             symbol=symbol,
             timeout=trading_constants.ORDER_DATA_FETCHING_TIMEOUT
         )
+        # Cancel open close-side orders BEFORE computing effective position size so that a stuck
+        # IOC→GTC order from a previous cycle does not subtract from pending_open_quantity and wrongly suppress the fresh close order.
+        close_side = (
+            trading_enums.TradeOrderSide.BUY if position.is_short()
+            else trading_enums.TradeOrderSide.SELL
+        )
+        await self.cancel_symbol_open_orders(symbol, dependencies, allowed_sides={close_side})
         pending_open_quantity = self.get_pending_open_quantity(symbol)
         position_size = decimal.Decimal(str(position.size))
         if position.is_short():
