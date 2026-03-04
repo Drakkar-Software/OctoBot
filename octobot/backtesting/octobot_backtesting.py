@@ -318,9 +318,10 @@ class OctoBotBacktesting:
                                                                        self.backtesting)
         self.service_feeds = []
         for feed_class in service_feed_factory.get_available_service_feeds(True):
-            importer = self._get_matching_importer_for_feed(feed_class, social_importers)
-            feed = service_feed_factory.create_service_feed(feed_class, importer=importer)
-            self.service_feeds.append(feed)
+            if all (service.get_is_enabled(self.backtesting_config) for service in feed_class.REQUIRED_SERVICES):
+                importer = self._get_matching_importer_for_feed(feed_class, social_importers)
+                feed = service_feed_factory.create_service_feed(feed_class, importer=importer)
+                self.service_feeds.append(feed)
             
     def _get_matching_importer_for_feed(self, feed_class, social_importers):
         if not social_importers:
