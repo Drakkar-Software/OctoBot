@@ -19,7 +19,7 @@ import decimal
 
 import octobot_commons.dataclasses
 import octobot_commons.enums as common_enums
-import octobot_trading.exchanges
+import octobot_trading.exchanges.util.symbol_details as symbol_details_import
 
 
 @dataclasses.dataclass
@@ -62,8 +62,8 @@ class ExchangeDetails(octobot_commons.dataclasses.FlexibleDataclass, octobot_com
 class MarketDetails(octobot_commons.dataclasses.FlexibleDataclass, octobot_commons.dataclasses.UpdatableDataclass):
     id: str = ""
     symbol: str = ""
-    details: octobot_trading.exchanges.SymbolDetails = \
-        dataclasses.field(default_factory=octobot_trading.exchanges.SymbolDetails)
+    details: symbol_details_import.SymbolDetails = \
+        dataclasses.field(default_factory=symbol_details_import.SymbolDetails)
     time_frame: str = ""
     close: list[float] = dataclasses.field(default_factory=list)
     open: list[float] = dataclasses.field(default_factory=list)

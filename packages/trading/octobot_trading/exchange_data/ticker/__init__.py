@@ -28,6 +28,9 @@ from octobot_trading.exchange_data.ticker.channel import (
     MiniTickerProducer,
     MiniTickerChannel,
 )
+from octobot_trading.exchange_data.ticker.ticker_cache import (
+    TickerCache,
+)
 
 __all__ = [
     "TickerManager",
@@ -37,4 +40,5 @@ __all__ = [
     "MiniTickerProducer",
     "MiniTickerChannel",
     "TickerUpdaterSimulator",
+    "TickerCache",
 ]

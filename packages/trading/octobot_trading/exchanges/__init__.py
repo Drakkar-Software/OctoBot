@@ -83,6 +83,12 @@ from octobot_trading.exchanges.util import (
     is_proxy_config_compatible_with_websocket_connector,
     search_websocket_class,
     supports_websocket,
+    force_set_mark_price,
+    get_traded_assets,
+)
+from octobot_trading.exchanges import market_filters
+from octobot_trading.exchanges.market_filters.market_filter_factory import (
+    create_market_filter,
 )
 from octobot_trading.exchanges import exchange_websocket_factory
 from octobot_trading.exchanges.exchange_websocket_factory import (
@@ -170,6 +176,8 @@ __all__ = [
     "get_auto_filled_exchange_names",
     "get_exchange_details",
     "is_error_on_this_type",
+    "force_set_mark_price",
+    "get_traded_assets",
     "AbstractExchange",
     "is_channel_managed_by_websocket",
     "is_channel_fully_managed_by_websocket",
@@ -202,4 +210,5 @@ __all__ = [
     "ExchangeSimulatorAdapter",
     "retried_failed_network_request",
     "ExchangeDetails",
+    "create_market_filter",
 ]

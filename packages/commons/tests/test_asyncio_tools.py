@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import asyncio
+import mock
 import pytest
 
 import octobot_commons.asyncio_tools as asyncio_tools
@@ -253,6 +254,52 @@ async def test_RLock_error_setup_2():
     with pytest.raises(RuntimeError):
         async with lock:
             pass
+
+
+async def test_logged_waiter_cancels_task_on_quick_exit():
+    mock_self = mock.Mock()
+    mock_self.logger = mock.Mock()
+
+    with asyncio_tools.logged_waiter(mock_self, "quick op", sleep_time=30):
+        await asyncio.sleep(0.001)
+
+    mock_self.logger.info.assert_not_called()
+
+
+async def test_logged_waiter_logs_when_body_runs_long():
+    mock_self = mock.Mock()
+    mock_self.logger = mock.Mock()
+
+    with asyncio_tools.logged_waiter(mock_self, "long op", sleep_time=0.05):
+        await asyncio.sleep(0.15)
+
+    assert mock_self.logger.info.call_count >= 1
+    call_args = mock_self.logger.info.call_args[0][0]
+    assert "long op" in call_args
+    assert "is still processing" in call_args
+
+
+async def test_logged_waiter_cancels_on_exception():
+    mock_self = mock.Mock()
+    mock_self.logger = mock.Mock()
+
+    with pytest.raises(ValueError, match="body failed"):
+        with asyncio_tools.logged_waiter(mock_self, "failing op", sleep_time=30):
+            raise ValueError("body failed")
+
+    mock_self.logger.info.assert_not_called()
+
+
+async def test_logged_waiter_uses_custom_sleep_time():
+    mock_self = mock.Mock()
+    mock_self.logger = mock.Mock()
+
+    with mock.patch.object(asyncio, "sleep", wraps=asyncio.sleep) as mock_sleep:
+        with asyncio_tools.logged_waiter(mock_self, "custom sleep", sleep_time=0.1):
+            await asyncio.sleep(0.2)
+
+    sleep_calls = [c[0][0] for c in mock_sleep.call_args_list]
+    assert 0.1 in sleep_calls
 
 
 def _exception_raiser():

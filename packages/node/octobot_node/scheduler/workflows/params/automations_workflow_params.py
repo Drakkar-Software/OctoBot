@@ -1,4 +1,4 @@
-#  Drakkar-Software OctoBot
+#  Drakkar-Software OctoBot-Node
 #  Copyright (c) Drakkar-Software, All rights reserved.
 #
 #  This library is free software; you can redistribute it and/or
@@ -13,18 +13,22 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-
 import dataclasses
 import typing
 
-import octobot_commons.dataclasses
+import octobot_commons.dataclasses.minimizable_dataclass
+import octobot_node.models
+import octobot_node.scheduler.workflows.params.base_params as base_params
 
 
 @dataclasses.dataclass
-class DSLCallResult(octobot_commons.dataclasses.FlexibleDataclass):
-    statement: str
-    result: typing.Optional[typing.Any] = None
-    error: typing.Optional[str] = None
+class AutomationsWorkflowInputs(octobot_commons.dataclasses.minimizable_dataclass.MinimizableDataclass):
+    task: octobot_node.models.Task
+    progress_status: typing.Optional[base_params.ProgressStatus] = None
+    delay: float = 0
 
-    def succeeded(self) -> bool:
-        return self.error is None
+
+@dataclasses.dataclass
+class AutomationsWorkflowIterationResult(octobot_commons.dataclasses.minimizable_dataclass.MinimizableDataclass):
+    progress_status: base_params.ProgressStatus
+    next_iteration_description: typing.Optional[dict]

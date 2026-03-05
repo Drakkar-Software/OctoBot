@@ -25,7 +25,7 @@ except ImportError:
 
 @dataclasses.dataclass
 class FlexibleDataclass:
-    _class_field_cache: typing.ClassVar[dict] = {}
+    _class_field_cache: typing.ClassVar[dict] = dataclasses.field(default={}, repr=False)
     """
     Implements from_dict which can be called to instantiate a new instance of this class from a dict. Using from_dict 
     ignores any additional key from the given dict that is not defined as a dataclass field.

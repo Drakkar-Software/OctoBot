@@ -25,4 +25,4 @@ class TaskResultKeys(enum.Enum):
 
 
 class SchedulerQueues(enum.Enum):
-    BOT_WORKFLOW_QUEUE = "bot_workflow_queue"
+    AUTOMATIONS_WORKFLOW_QUEUE = "automations_workflow_queue"

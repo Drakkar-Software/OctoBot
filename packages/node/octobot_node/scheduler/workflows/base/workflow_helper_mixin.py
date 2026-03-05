@@ -13,11 +13,9 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-import typing
 import dbos as dbos_lib
-import time
 
-import octobot_node.scheduler.workflows.base.workflow_tracking as workflow_tracking
+import octobot_node.scheduler.workflows.params.base_params as base_params
 
 
 class DBOSWorkflowHelperMixin:
@@ -25,21 +23,12 @@ class DBOSWorkflowHelperMixin:
     def get_name(workflow_status: dbos_lib.WorkflowStatus) -> str:
         if workflow_status.input:
             for input in list(workflow_status.input.get("args", [])) + list(workflow_status.input.get("kwargs", {}).values()):
-                if isinstance(input, workflow_tracking.Tracker):
+                if isinstance(input, base_params.Tracker):
                     return input.name
         raise ValueError(f"No Tracker found in workflow status: {workflow_status}")
-
-    @staticmethod
-    async def register_delayed_start_step(t: workflow_tracking.Tracker, delay: float, next_step: str) -> None:
-        await t.set_current_step(workflow_tracking.ProgressStatus(
-            previous_step="delayed_start",
-            previous_step_details={"delay": delay},
-            next_step=next_step,
-            next_step_at=time.time() + delay,
-        ))
         
     @staticmethod
-    async def sleep_if_needed(t: workflow_tracking.Tracker, delay: float) -> None:
+    async def sleep_if_needed(t: base_params.Tracker, delay: float) -> None:
         if delay > 0:
             t.logger.info(f"Sleeping for {delay} seconds ...")
             await dbos_lib.DBOS.sleep_async(delay)
