@@ -25,7 +25,8 @@ class LunarCrushService(services.AbstractService):
 
     @staticmethod
     def get_is_enabled(config):
-        return True
+        return services_constants.CONFIG_CATEGORY_SERVICES in config \
+               and services_constants.CONFIG_LUNARCRUSH in config[services_constants.CONFIG_CATEGORY_SERVICES]
 
     def has_required_configuration(self):
         return services_constants.CONFIG_CATEGORY_SERVICES in self.config \
