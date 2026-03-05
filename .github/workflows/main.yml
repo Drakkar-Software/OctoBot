@@ -8,6 +8,8 @@ on:
       - '*'
   pull_request:
 
+permissions: read-all
+
 jobs:
   build:
     name: ${{ matrix.os }}${{ matrix.arch }} - Python ${{ matrix.version }} - Build wheel
@@ -125,6 +127,9 @@ jobs:
     name: Build & Push Docker images
     needs: [ build, tests ]
     if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/dev' || startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: read
+      packages: write
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -207,7 +212,7 @@ jobs:
 
       - name: Build latest
         if: github.event_name != 'push'
-        uses: docker/build-push-action@master
+        uses: docker/build-push-action@v6
         with:
           context: .
           builder: ${{ steps.buildx.outputs.name }}
@@ -244,7 +249,7 @@ jobs:
 
       - name: Build and push latest
         if: github.event_name == 'push' && !startsWith(github.ref, 'refs/tags') && github.ref == 'refs/heads/dev'
-        uses: docker/build-push-action@master
+        uses: docker/build-push-action@v6
         with:
           context: .
           builder: ${{ steps.buildx.outputs.name }}
@@ -258,7 +263,7 @@ jobs:
 
       - name: Build and push staging
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-        uses: docker/build-push-action@master
+        uses: docker/build-push-action@v6
         with:
           context: .
           builder: ${{ steps.buildx.outputs.name }}
@@ -272,7 +277,7 @@ jobs:
 
       - name: Build and push on tag
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
-        uses: docker/build-push-action@master
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
@@ -521,6 +526,8 @@ jobs:
     name: Create Release
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
     needs: [ binary, docker, tentacles ]
+    permissions:
+      contents: write
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
