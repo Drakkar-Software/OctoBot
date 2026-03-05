@@ -16,6 +16,7 @@
 import contextlib
 import typing
 import ccxt
+import decimal
 import trading_backend
 
 import octobot_commons.logging as logging
@@ -36,6 +37,8 @@ import octobot_trading.exchanges.connectors.ccxt.ccxt_client_util as ccxt_client
 import octobot_trading.exchanges.exchange_details as exchange_details
 import octobot_trading.exchanges.exchange_builder as exchange_builder
 
+if typing.TYPE_CHECKING:
+    import octobot_trading.exchanges.exchange_manager
 
 def get_rest_exchange_class(
     exchange_name: str, tentacles_setup_config, exchange_config_by_exchange: typing.Optional[dict[str, dict]]
@@ -486,3 +489,23 @@ def is_error_on_this_type(error: BaseException, descriptions: typing.List[typing
         if all(identifier in lower_error for identifier in identifiers):
             return True
     return False
+
+
+def get_traded_assets(exchange_manager: "octobot_trading.exchanges.exchange_manager.ExchangeManager") -> list:
+    # use list to maintain order
+    assets = []
+    for symbol in exchange_manager.exchange_config.traded_symbols:
+        if symbol.base not in assets:
+            assets.append(symbol.base)
+        if symbol.quote not in assets:
+            assets.append(symbol.quote)
+    return assets
+
+
+def force_set_mark_price(
+    exchange_manager: "octobot_trading.exchanges.exchange_manager.ExchangeManager",
+    symbol: str,
+    price: typing.Union[float, decimal.Decimal]
+) -> None:
+    exchange_manager.exchange_symbols_data.get_exchange_symbol_data(symbol).prices_manager.\
+        set_mark_price(decimal.Decimal(str(price)), enums.MarkPriceSources.EXCHANGE_MARK_PRICE.value)

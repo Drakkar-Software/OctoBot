@@ -172,6 +172,20 @@ def create_order_from_dict(
     )
 
 
+def create_order_from_order_raw_in_storage_details_without_related_elements(
+    exchange_manager: "octobot_trading.exchanges.ExchangeManager",
+    order_details: dict
+) -> "personal_data.Order":
+    """
+    unlike create_order_from_order_storage_details, will not create related elements and will 
+    parse order from raw dict
+    """
+    order_dict = order_details[constants.STORAGE_ORIGIN_VALUE]
+    order = personal_data.create_order_instance_from_raw(exchange_manager.trader, order_dict)
+    order.update_from_storage_order_details(order_details)
+    return order
+
+
 async def create_order_from_order_storage_details(
     order_storage_details: dict,
     exchange_manager: "octobot_trading.exchanges.ExchangeManager",

@@ -243,6 +243,8 @@ MAX_TRADES_COUNT = int(os.getenv("MAX_TRADES_COUNT", "10000"))    # larger value
 # History
 DEFAULT_SAVED_HISTORICAL_TIMEFRAMES = [commons_enums.TimeFrames.ONE_DAY]
 HISTORICAL_CANDLES_FETCH_DEFAULT_TIMEOUT = 30
+MIN_CANDLES_HISTORY_SIZE = 2  # ensure that at least 2 candles are fetch to avoid issues were candles are not yet
+# available on exchange ending up in empty candles fetch
 
 # 946742400 is 01/01/2000, if trade time is lower, there is an issue.
 MINIMUM_VAL_TRADE_TIME = 946688400

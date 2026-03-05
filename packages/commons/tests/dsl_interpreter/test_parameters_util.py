@@ -16,6 +16,7 @@
 import mock
 import pytest
 
+import octobot_commons.constants as constants
 import octobot_commons.dsl_interpreter.parameters_util as parameters_util
 import octobot_commons.dsl_interpreter.operator_parameter as operator_parameter
 import octobot_commons.errors as commons_errors
@@ -282,3 +283,80 @@ class TestResolveOperatorArgsAndKwargs:
         )
         assert args == [1]
         assert kwargs == {}
+
+
+class TestApplyResolvedParameterValue:
+    def test_replaces_single_parameter_with_int(self):
+        script = f"op(x=1, y={constants.UNRESOLVED_PARAMETER_PLACEHOLDER})"
+        result = parameters_util.apply_resolved_parameter_value(script, "y", 42)
+        assert result == "op(x=1, y=42)"
+
+    def test_replaces_single_parameter_with_string(self):
+        script = f"op(name={constants.UNRESOLVED_PARAMETER_PLACEHOLDER})"
+        result = parameters_util.apply_resolved_parameter_value(script, "name", "hello")
+        assert result == "op(name='hello')"
+
+    def test_replaces_single_parameter_with_bool(self):
+        script = f"op(flag={constants.UNRESOLVED_PARAMETER_PLACEHOLDER})"
+        result = parameters_util.apply_resolved_parameter_value(script, "flag", True)
+        assert result == "op(flag=True)"
+
+    def test_replaces_single_parameter_with_list(self):
+        script = f"op(items={constants.UNRESOLVED_PARAMETER_PLACEHOLDER})"
+        result = parameters_util.apply_resolved_parameter_value(script, "items", [1, 2])
+        assert result == "op(items=[1, 2])"
+
+    def test_replaces_single_parameter_with_dict(self):
+        script = f"op(config={constants.UNRESOLVED_PARAMETER_PLACEHOLDER})"
+        result = parameters_util.apply_resolved_parameter_value(
+            script, "config", {"a": 1}
+        )
+        assert result == "op(config={'a': 1})"
+
+    def test_replaces_single_parameter_with_none(self):
+        script = f"op(val={constants.UNRESOLVED_PARAMETER_PLACEHOLDER})"
+        result = parameters_util.apply_resolved_parameter_value(script, "val", None)
+        assert result == "op(val=None)"
+
+    def test_raises_when_parameter_not_found(self):
+        script = "op(x=1, y=2)"
+        with pytest.raises(commons_errors.ResolvedParameterNotFoundError, match="Parameter z not found in script"):
+            parameters_util.apply_resolved_parameter_value(script, "z", 42)
+
+    def test_raises_when_placeholder_not_in_script_for_parameter(self):
+        script = f"op(x={constants.UNRESOLVED_PARAMETER_PLACEHOLDER}, y=2)"
+        with pytest.raises(commons_errors.ResolvedParameterNotFoundError, match="Parameter z not found in script"):
+            parameters_util.apply_resolved_parameter_value(script, "z", 42)
+
+    def test_replaces_only_exact_parameter_pattern(self):
+        script = f"op(a=1, b={constants.UNRESOLVED_PARAMETER_PLACEHOLDER})"
+        result = parameters_util.apply_resolved_parameter_value(script, "b", 100)
+        assert result == "op(a=1, b=100)"
+        # Ensure 'a' was not touched
+        assert "a=1" in result
+
+
+class TestHasUnresolvedParameters:
+    def test_returns_true_when_placeholder_present(self):
+        script = f"op(x={constants.UNRESOLVED_PARAMETER_PLACEHOLDER})"
+        assert parameters_util.has_unresolved_parameters(script) is True
+
+    def test_returns_true_when_multiple_placeholders(self):
+        placeholder = constants.UNRESOLVED_PARAMETER_PLACEHOLDER
+        script = f"op(a={placeholder}, b={placeholder})"
+        assert parameters_util.has_unresolved_parameters(script) is True
+
+    def test_returns_false_when_no_placeholder(self):
+        script = "op(x=1, y=2)"
+        assert parameters_util.has_unresolved_parameters(script) is False
+
+    def test_returns_false_for_empty_script(self):
+        assert parameters_util.has_unresolved_parameters("") is False
+
+    def test_returns_true_when_placeholder_part_of_larger_string(self):
+        script = f"op(x='prefix_{constants.UNRESOLVED_PARAMETER_PLACEHOLDER}_suffix')"
+        assert parameters_util.has_unresolved_parameters(script) is True
+
+    def test_returns_true_when_placeholder_alone(self):
+        script = constants.UNRESOLVED_PARAMETER_PLACEHOLDER
+        assert parameters_util.has_unresolved_parameters(script) is True

@@ -44,12 +44,10 @@ class TaskStatus(str, Enum):
 
 
 class TaskType(str, Enum):
-    START_OCTOBOT = "start_octobot"
     EXECUTE_ACTIONS = "execute_actions"
-    STOP_OCTOBOT = "stop_octobot"
 
 class Task(BaseModel):
-    id: uuid.UUID = uuid.uuid4()
+    id: str = str(uuid.uuid4())
     name: typing.Optional[str] = None
     description: typing.Optional[str] = None
     content: typing.Optional[str] = None

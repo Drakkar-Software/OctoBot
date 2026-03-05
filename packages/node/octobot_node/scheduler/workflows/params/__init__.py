@@ -1,4 +1,4 @@
-#  Drakkar-Software OctoBot-Trading
+#  Drakkar-Software OctoBot-Node
 #  Copyright (c) Drakkar-Software, All rights reserved.
 #
 #  This library is free software; you can redistribute it and/or
@@ -13,20 +13,20 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-import typing
-import contextlib
+from .base_params import (
+    Tracker,
+    ProgressStatus,
+    BaseHistory,
+)
+from .automations_workflow_params import (
+    AutomationsWorkflowInputs,
+    AutomationsWorkflowIterationResult,
+)
 
-import octobot_trading.blockchain_wallets as blockchain_wallets
-
-if typing.TYPE_CHECKING:
-    import octobot_trading.exchanges
-
-
-@contextlib.asynccontextmanager
-async def blockchain_wallet_context(
-    parameters: blockchain_wallets.BlockchainWalletParameters,
-    trader: typing.Optional["octobot_trading.exchanges.Trader"],
-) -> typing.AsyncGenerator[blockchain_wallets.BlockchainWallet, None]:
-    wallet = blockchain_wallets.create_blockchain_wallet(parameters, trader)
-    async with wallet.open() as wallet:
-        yield wallet
+__all__ = [
+    "Tracker",
+    "AutomationsWorkflowInputs",
+    "AutomationsWorkflowIterationResult",
+    "ProgressStatus",
+    "BaseHistory",
+]

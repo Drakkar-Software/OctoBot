@@ -15,5 +15,4 @@
 #  License along with this library.
 
 def register_workflows():
-    import octobot_node.scheduler.workflows.bot_workflow
-    import octobot_node.scheduler.workflows.full_bot_workflow
+    import octobot_node.scheduler.workflows.automations_workflow

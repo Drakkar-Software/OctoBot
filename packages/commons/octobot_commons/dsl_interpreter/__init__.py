@@ -45,6 +45,8 @@ from octobot_commons.dsl_interpreter.interpreter_dependency import (
 from octobot_commons.dsl_interpreter.parameters_util import (
     format_parameter_value,
     resove_operator_params,
+    apply_resolved_parameter_value,
+    has_unresolved_parameters,
 )
 from octobot_commons.dsl_interpreter.dsl_call_result import DSLCallResult
 
@@ -67,5 +69,7 @@ __all__ = [
     "InterpreterDependency",
     "format_parameter_value",
     "resove_operator_params",
+    "apply_resolved_parameter_value",
     "DSLCallResult",
+    "has_unresolved_parameters",
 ]

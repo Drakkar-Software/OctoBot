@@ -14,8 +14,11 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import asyncio
+import contextlib
+import time
 import traceback
 import concurrent.futures
+import typing
 
 import octobot_commons.constants as constants
 import octobot_commons.logging as logging_util
@@ -115,6 +118,24 @@ async def gather_waiting_for_all_before_raising(*coros):
             raise maybe_exception
     # no exception returned: all futures completed successfully: return their values
     return maybe_exceptions
+
+
+@contextlib.contextmanager
+def logged_waiter(self, name: str, sleep_time: float = 30) -> typing.Generator[None, None, None]:
+    async def _waiter() -> None:
+        t0 = time.time()
+        try:
+            await asyncio.sleep(sleep_time)
+            self.logger.info(f"{name} is still processing [{time.time() - t0:.2f} seconds] ...")
+        except asyncio.CancelledError:
+            pass
+    task = None
+    try:
+        task = asyncio.create_task(_waiter())
+        yield
+    finally:
+        if task is not None and not task.done():
+            task.cancel()
 
 
 class RLock(asyncio.Lock):

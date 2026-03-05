@@ -18,6 +18,7 @@ import json
 
 import octobot_commons.dsl_interpreter.operator as dsl_interpreter_operator
 import octobot_commons.errors
+import octobot_commons.constants
 
 
 def format_parameter_value(value: typing.Any) -> str: # pylint: disable=too-many-return-statements
@@ -111,3 +112,21 @@ def resolve_operator_args_and_kwargs(
         )
 
     return merged_args, remaining_kwargs
+
+
+def apply_resolved_parameter_value(script: str, parameter: str, value: typing.Any):
+    """
+    Apply a resolved parameter value to a DSL script.
+    """
+    to_replace = f"{parameter}={octobot_commons.constants.UNRESOLVED_PARAMETER_PLACEHOLDER}"
+    if to_replace not in script:
+        raise octobot_commons.errors.ResolvedParameterNotFoundError(f"Parameter {parameter} not found in script: {script}")
+    new_value = f"{parameter}={format_parameter_value(value)}"
+    return script.replace(to_replace, new_value)
+
+
+def has_unresolved_parameters(script: str) -> bool:
+    """
+    Check if a DSL script has unresolved parameters.
+    """
+    return octobot_commons.constants.UNRESOLVED_PARAMETER_PLACEHOLDER in script

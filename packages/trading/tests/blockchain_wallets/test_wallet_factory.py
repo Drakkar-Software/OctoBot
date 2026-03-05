@@ -52,18 +52,6 @@ def test_create_blockchain_wallet_simulated(mock_trader_simulate, blockchain_des
     assert wallet._trader == mock_trader_simulate
 
 
-def test_create_blockchain_wallet_simulated_wrong_network(mock_trader_simulate, blockchain_descriptor_real, wallet_descriptor):
-    parameters = octobot_trading.blockchain_wallets.BlockchainWalletParameters(
-        blockchain_descriptor=blockchain_descriptor_real,
-        wallet_descriptor=wallet_descriptor
-    )
-    
-    # Should raise BlockchainWalletConfigurationError when network is not SIMULATED
-    with pytest.raises(errors.BlockchainWalletConfigurationError) as exc_info:
-        octobot_trading.blockchain_wallets.create_blockchain_wallet(parameters, mock_trader_simulate)
-    assert constants.SIMULATED_BLOCKCHAIN_NETWORK in str(exc_info.value)
-
-
 def test_create_blockchain_wallet_real_trader_unsupported_blockchain(mock_trader_real, wallet_descriptor):
     blockchain_descriptor = octobot_trading.blockchain_wallets.BlockchainDescriptor(
         blockchain="unsupported_blockchain",

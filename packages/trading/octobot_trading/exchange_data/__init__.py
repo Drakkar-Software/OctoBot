@@ -93,6 +93,7 @@ from octobot_trading.exchange_data.ticker import (
     MiniTickerProducer,
     MiniTickerChannel,
     TickerUpdaterSimulator,
+    TickerCache,
 )
 from octobot_trading.exchange_data import contracts
 from octobot_trading.exchange_data.contracts import (
@@ -211,6 +212,7 @@ __all__ = [
     "MiniTickerProducer",
     "MiniTickerChannel",
     "TickerUpdaterSimulator",
+    "TickerCache",
     "Contract",
     "MarginContract",
     "FutureContract",

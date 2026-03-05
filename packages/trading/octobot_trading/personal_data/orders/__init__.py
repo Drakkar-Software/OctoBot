@@ -144,6 +144,8 @@ from octobot_trading.personal_data.orders.order_util import (
     wait_for_order_fill,
     get_short_order_summary,
     create_and_register_chained_order_on_base_order,
+    get_enriched_orders_by_exchange_id,
+    get_symbol_count,
 )
 from octobot_trading.personal_data.orders import orders_storage_operations
 from octobot_trading.personal_data.orders.orders_storage_operations import (
@@ -183,6 +185,7 @@ from octobot_trading.personal_data.orders.order_factory import (
     create_order_instance,
     create_order_from_dict,
     create_order_from_order_storage_details,
+    create_order_from_order_raw_in_storage_details_without_related_elements,
     OrderFactory,
 )
 
@@ -280,6 +283,7 @@ __all__ = [
     "create_order_instance",
     "create_order_from_dict",
     "create_order_from_order_storage_details",
+    "create_order_from_order_raw_in_storage_details_without_related_elements",
     "OrderFactory",
     "OrdersProducer",
     "OrdersChannel",
@@ -306,4 +310,6 @@ __all__ = [
     "TakeProfitLimitOrder",
     "TrailingStopOrder",
     "TrailingStopLimitOrder",
+    "get_enriched_orders_by_exchange_id",
+    "get_symbol_count",
 ]
