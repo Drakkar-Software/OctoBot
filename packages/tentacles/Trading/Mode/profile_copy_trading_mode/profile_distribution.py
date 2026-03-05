@@ -21,6 +21,7 @@ import enum
 import octobot_trading.constants as trading_constants
 import octobot_trading.enums as trading_enums
 import octobot_commons.constants as commons_constants
+import octobot_commons.symbols as symbols_util
 
 import tentacles.Trading.Mode.index_trading_mode.index_distribution as index_distribution
 
@@ -55,6 +56,11 @@ def get_positions_to_consider(
 ) -> list[dict]:
     result = []
     for position in profile_positions:
+        parsed_symbol = symbols_util.parse_symbol(
+            position.get(trading_enums.ExchangeConstantsPositionColumns.SYMBOL.value, "")
+        )
+        if parsed_symbol.base == parsed_symbol.quote:
+            continue
         if new_position_only and position.get(trading_enums.ExchangeConstantsPositionColumns.TIMESTAMP.value) is not None and position.get(trading_enums.ExchangeConstantsPositionColumns.TIMESTAMP.value, 0) <= started_at.timestamp():
             # skip positions with timestamp at or before started_at (only include strictly after)
             continue
