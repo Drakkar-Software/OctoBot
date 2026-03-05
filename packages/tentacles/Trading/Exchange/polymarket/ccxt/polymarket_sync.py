@@ -993,11 +993,15 @@ class polymarket(Exchange, ImplicitAPI):
             metadata: dict = {}
             if tickSize is not None:
                 metadata['tick_size'] = tickSize
-                # Update market precision with tick_size if available
+                # Update market precision and info with tick_size if available
                 if self.markets is not None and symbol in self.markets:
                     market = self.markets[symbol]
                     if market['precision']['price'] is None or market['precision']['price'] == 6:
                         market['precision']['price'] = self.parse_number(tickSize)
+                    # Also keep market['info']['tick_size'] in sync so buildAndSignOrder uses the
+                    # correct rounding config(prevents price like 0.003956 rounding to 0.00)
+                    if market['info']['tick_size'] is None:
+                        market['info']['tick_size'] = tickSize
             if negRisk is not None:
                 metadata['neg_risk'] = negRisk
             if minOrderSize is not None:
@@ -1885,6 +1889,19 @@ class polymarket(Exchange, ImplicitAPI):
             raise ArgumentsRequired(self.id + ' buildAndSignOrder() requires a price parameter or params.marketPrice')
         # Round price and size first, then calculate amounts(same logic for limit and market orders)
         rawPrice = self.round_normal(orderPrice, priceDecimals)
+        # If the rounded price is zero(price is below tick resolution), auto-detect the needed
+        # decimal precision from the actual price value to avoid submitting a zero makerAmount.
+        if self.parse_number(rawPrice) == 0:
+            orderPriceStr = self.number_to_string(orderPrice)
+            dotIndex = orderPriceStr.find('.')
+            neededDecimals = priceDecimals
+            if dotIndex >= 0:
+                nonZeroPos = dotIndex + 1
+                while(nonZeroPos < len(orderPriceStr) and orderPriceStr[nonZeroPos] == '0'):
+                    nonZeroPos += 1
+                neededDecimals = nonZeroPos - dotIndex
+            if neededDecimals > priceDecimals:
+                rawPrice = self.round_normal(orderPrice, neededDecimals)
         # Check if self is a market order for special decimal handling
         orderType = self.safe_string(params, 'orderType', 'limit')
         isMarketOrder = (orderType == 'market')
