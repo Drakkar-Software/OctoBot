@@ -986,3 +986,20 @@ def test_position_value_uses_notional_when_initial_margin_is_zero():
     assert len(result) == 1
     assert result[0][profile_distribution.index_distribution.DISTRIBUTION_NAME] == "EVENT/USDC:USDC-YES"
     assert tradable_ratio == trading_constants.ONE
+
+
+def test_get_positions_to_consider_excludes_spot_symbols():
+    """Spot symbols like USDC/USDC (collateral positions) must be excluded to avoid Invalid contract errors."""
+    started_at = datetime.datetime(2024, 1, 1, 12, 0, 0)
+    positions = [
+        _position("BTC/USDT", 100.0, 5.0),
+        _position("USDC/USDC", 500.0, 0.0),  # spot collateral position — must be excluded
+        _position("ETH/USDT", 50.0, 2.0),
+    ]
+    result = profile_distribution.get_positions_to_consider(
+        positions, new_position_only=False, started_at=started_at
+    )
+    result_symbols = [p[trading_enums.ExchangeConstantsPositionColumns.SYMBOL.value] for p in result]
+    assert "USDC/USDC" not in result_symbols
+    assert "BTC/USDT" in result_symbols
+    assert "ETH/USDT" in result_symbols
