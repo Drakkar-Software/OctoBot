@@ -249,6 +249,7 @@ FORCE_BACKTESTING_LOGS = parse_boolean_environment_var(
 # DSL interpreter
 BASE_OPERATORS_LIBRARY = "base"
 CONTEXTUAL_OPERATORS_LIBRARY = "contextual"
+UNRESOLVED_PARAMETER_PLACEHOLDER = "UNRESOLVED_PARAMETER"
 
 # Logging
 EXCEPTION_DESC = "exception_desc"

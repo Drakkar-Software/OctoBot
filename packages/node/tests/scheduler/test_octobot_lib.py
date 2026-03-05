@@ -14,18 +14,23 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import pytest
+import decimal
+import dataclasses
 
-import octobot_node.scheduler.octobot_lib as octobot_lib
 import octobot_commons.constants as common_constants
-RUN_TESTS = True
-try:
-    raise ImportError("test")
-    import octobot_trading.constants
-    import octobot_trading.errors
+import octobot_trading.constants
+import octobot_trading.errors
+import octobot_trading.enums as trading_enums
+import octobot_node.scheduler.octobot_lib as octobot_lib
 
-    import octobot_wrapper.keywords.internal.overrides.custom_action_trading_mode as custom_action_trading_mode
-    import octobot_wrapper.keywords.internal.constants as kw_constants
-    import octobot_wrapper.keywords.internal.enums as kw_enums
+RUN_TESTS = True
+
+
+try:
+    import mini_octobot.entities
+    import mini_octobot.enums
+
+    import tentacles.Meta.DSL_operators as DSL_operators
 
     BLOCKCHAIN = octobot_trading.constants.SIMULATED_BLOCKCHAIN_NETWORK
 except ImportError:
@@ -226,12 +231,18 @@ class TestOctoBotActionsJob:
         octobot_trading.constants.ALLOW_FUNDS_TRANSFER = False
 
     async def test_run_market_order_action(self, market_order_action):
-        # step 1: configure the task
+        # step 1: configure the job
         job = octobot_lib.OctoBotActionsJob(market_order_action)
         result = await job.run()
-        assert len(result.processed_actions) == 1
-        assert result.processed_actions[0].config[kw_constants.CUSTOM_ACTION_OPEN_SOURCE_FORMAT_KEY][custom_action_trading_mode.CustomActionTradingMode.SIGNAL_KEY] == kw_enums.CustomActionExclusiveFormattedContentConfigKeys.APPLY_CONFIGURATION.value
-        pre_trade_portfolio = job.after_execution_state.bots[0].exchange_account_elements.portfolio.content
+        assert len(result.processed_actions_by_automation_id) == 1
+        processed_actions = next(iter(result.processed_actions_by_automation_id.values()))
+        assert len(processed_actions) == 1
+        assert isinstance(processed_actions[0], mini_octobot.entities.ConfiguredActionDetails)
+        assert processed_actions[0].action == mini_octobot.enums.ActionType.APPLY_CONFIGURATION.value
+        assert processed_actions[0].config is not None
+        assert len(processed_actions[0].config["automations"]) == 1
+        assert isinstance(processed_actions[0].config["exchange_account_details"], dict)
+        pre_trade_portfolio = job.after_execution_state.automations[0].client_exchange_account_elements.portfolio.content
         assert pre_trade_portfolio["BTC"] == {
             common_constants.PORTFOLIO_AVAILABLE: 1,
             common_constants.PORTFOLIO_TOTAL: 1,
@@ -240,14 +251,20 @@ class TestOctoBotActionsJob:
         # step 2: run the trade action
         next_actions_description = result.next_actions_description
         assert next_actions_description is not None
-        assert len(next_actions_description.immediate_actions) == 1
-        assert next_actions_description.immediate_actions[0].config[kw_constants.CUSTOM_ACTION_OPEN_SOURCE_FORMAT_KEY][custom_action_trading_mode.CustomActionTradingMode.SIGNAL_KEY] == custom_action_trading_mode.CustomActionTradingMode.BUY_SIGNAL
+        parsed_state = mini_octobot.AutomationsState.from_dict(next_actions_description.state)
+        next_actions = parsed_state.automations[0].actions_dag.get_executable_actions()
+        assert len(next_actions) == 1
+        assert isinstance(next_actions[0], mini_octobot.entities.DSLScriptActionDetails)
+        assert next_actions[0].dsl_script == "market('buy', 'ETH/BTC', 1)"
         job2 = octobot_lib.OctoBotActionsJob(
             next_actions_description.to_dict(include_default_values=False)
         )
         result = await job2.run()
-        assert len(result.processed_actions) == 1
-        assert result.processed_actions[0].config[kw_constants.CUSTOM_ACTION_OPEN_SOURCE_FORMAT_KEY][custom_action_trading_mode.CustomActionTradingMode.SIGNAL_KEY] == custom_action_trading_mode.CustomActionTradingMode.BUY_SIGNAL
+        assert len(result.processed_actions_by_automation_id) == 1
+        processed_actions = next(iter(result.processed_actions_by_automation_id.values()))
+        assert len(processed_actions) == 1
+        assert isinstance(processed_actions[0], mini_octobot.entities.DSLScriptActionDetails)
+        assert processed_actions[0].dsl_script == "market('buy', 'ETH/BTC', 1)"
         assert len(result.get_created_orders()) == 1
         order = result.get_created_orders()[0]
         assert order["symbol"] == "ETH/BTC"
@@ -257,7 +274,7 @@ class TestOctoBotActionsJob:
         assert result.next_actions_description is None # no more actions to execute
 
         # ensure deposit is successful
-        post_deposit_portfolio = job2.after_execution_state.bots[0].exchange_account_elements.portfolio.content
+        post_deposit_portfolio = job2.after_execution_state.automations[0].client_exchange_account_elements.portfolio.content
         assert post_deposit_portfolio["BTC"][common_constants.PORTFOLIO_AVAILABLE] < pre_trade_portfolio["BTC"][common_constants.PORTFOLIO_AVAILABLE]
         assert post_deposit_portfolio["BTC"][common_constants.PORTFOLIO_TOTAL] < pre_trade_portfolio["BTC"][common_constants.PORTFOLIO_TOTAL]
 
@@ -266,12 +283,18 @@ class TestOctoBotActionsJob:
         assert post_deposit_portfolio["ETH"][common_constants.PORTFOLIO_TOTAL] == 0.999
 
     async def test_run_limit_order_action(self, limit_order_action):
-        # step 1: configure the task
+        # step 1: configure the job
         job = octobot_lib.OctoBotActionsJob(limit_order_action)
         result = await job.run()
-        assert len(result.processed_actions) == 1
-        assert result.processed_actions[0].config[kw_constants.CUSTOM_ACTION_OPEN_SOURCE_FORMAT_KEY][custom_action_trading_mode.CustomActionTradingMode.SIGNAL_KEY] == kw_enums.CustomActionExclusiveFormattedContentConfigKeys.APPLY_CONFIGURATION.value
-        pre_trade_portfolio = job.after_execution_state.bots[0].exchange_account_elements.portfolio.content
+        assert len(result.processed_actions_by_automation_id) == 1
+        processed_actions = next(iter(result.processed_actions_by_automation_id.values()))
+        assert len(processed_actions) == 1
+        assert isinstance(processed_actions[0], mini_octobot.entities.ConfiguredActionDetails)
+        assert processed_actions[0].action == mini_octobot.enums.ActionType.APPLY_CONFIGURATION.value
+        assert processed_actions[0].config is not None
+        assert len(processed_actions[0].config["automations"]) == 1
+        assert isinstance(processed_actions[0].config["exchange_account_details"], dict)
+        pre_trade_portfolio = job.after_execution_state.automations[0].client_exchange_account_elements.portfolio.content
         assert pre_trade_portfolio["BTC"] == {
             common_constants.PORTFOLIO_AVAILABLE: 1,
             common_constants.PORTFOLIO_TOTAL: 1,
@@ -280,30 +303,42 @@ class TestOctoBotActionsJob:
         # step 2: run the trade action
         next_actions_description = result.next_actions_description
         assert next_actions_description is not None
-        assert len(next_actions_description.immediate_actions) == 1
-        assert next_actions_description.immediate_actions[0].config[kw_constants.CUSTOM_ACTION_OPEN_SOURCE_FORMAT_KEY][custom_action_trading_mode.CustomActionTradingMode.SIGNAL_KEY] == custom_action_trading_mode.CustomActionTradingMode.BUY_SIGNAL
+        parsed_state = mini_octobot.AutomationsState.from_dict(next_actions_description.state)
+        next_actions = parsed_state.automations[0].actions_dag.get_executable_actions()
+        assert len(next_actions) == 1
+        assert isinstance(next_actions[0], mini_octobot.entities.DSLScriptActionDetails)
+        assert next_actions[0].dsl_script == "limit('buy', 'ETH/BTC', 1, '-10%')"
         job2 = octobot_lib.OctoBotActionsJob(
             next_actions_description.to_dict(include_default_values=False)
         )
         result = await job2.run()
-        assert len(result.processed_actions) == 1
-        assert result.processed_actions[0].config[kw_constants.CUSTOM_ACTION_OPEN_SOURCE_FORMAT_KEY][custom_action_trading_mode.CustomActionTradingMode.SIGNAL_KEY] == custom_action_trading_mode.CustomActionTradingMode.BUY_SIGNAL
+        assert len(result.processed_actions_by_automation_id) == 1
+        processed_actions = next(iter(result.processed_actions_by_automation_id.values()))
+        assert len(processed_actions) == 1
+        assert isinstance(processed_actions[0], mini_octobot.entities.DSLScriptActionDetails)
+        assert processed_actions[0].dsl_script == "limit('buy', 'ETH/BTC', 1, '-10%')"
         assert len(result.get_created_orders()) == 1
         order = result.get_created_orders()[0]
         assert order["symbol"] == "ETH/BTC"
-        assert order["amount"] == 1
-        assert 0.001 < order["limit_price"] < 0.2
+        assert order["amount"] == decimal.Decimal("1")
+        assert decimal.Decimal("0.001") < order["price"] < decimal.Decimal("0.2")
         assert order["type"] == "limit"
         assert order["side"] == "buy"
         assert result.next_actions_description is None # no more actions to execute
 
     async def test_run_stop_loss_order_action(self, stop_loss_order_action):
-        # step 1: configure the task
+        # step 1: configure the job
         job = octobot_lib.OctoBotActionsJob(stop_loss_order_action)
         result = await job.run()
-        assert len(result.processed_actions) == 1
-        assert result.processed_actions[0].config[kw_constants.CUSTOM_ACTION_OPEN_SOURCE_FORMAT_KEY][custom_action_trading_mode.CustomActionTradingMode.SIGNAL_KEY] == kw_enums.CustomActionExclusiveFormattedContentConfigKeys.APPLY_CONFIGURATION.value
-        pre_trade_portfolio = job.after_execution_state.bots[0].exchange_account_elements.portfolio.content
+        assert len(result.processed_actions_by_automation_id) == 1
+        processed_actions = next(iter(result.processed_actions_by_automation_id.values()))
+        assert len(processed_actions) == 1
+        assert isinstance(processed_actions[0], mini_octobot.entities.ConfiguredActionDetails)
+        assert processed_actions[0].action == mini_octobot.enums.ActionType.APPLY_CONFIGURATION.value
+        assert processed_actions[0].config is not None
+        assert len(processed_actions[0].config["automations"]) == 1
+        assert isinstance(processed_actions[0].config["exchange_account_details"], dict)
+        pre_trade_portfolio = job.after_execution_state.automations[0].client_exchange_account_elements.portfolio.content
         assert pre_trade_portfolio["ETH"] == {
             common_constants.PORTFOLIO_AVAILABLE: 1,
             common_constants.PORTFOLIO_TOTAL: 1,
@@ -312,30 +347,42 @@ class TestOctoBotActionsJob:
         # step 2: run the trade action
         next_actions_description = result.next_actions_description
         assert next_actions_description is not None
-        assert len(next_actions_description.immediate_actions) == 1
-        assert next_actions_description.immediate_actions[0].config[kw_constants.CUSTOM_ACTION_OPEN_SOURCE_FORMAT_KEY][custom_action_trading_mode.CustomActionTradingMode.SIGNAL_KEY] == custom_action_trading_mode.CustomActionTradingMode.SELL_SIGNAL
+        parsed_state = mini_octobot.AutomationsState.from_dict(next_actions_description.state)
+        next_actions = parsed_state.automations[0].actions_dag.get_executable_actions()
+        assert len(next_actions) == 1
+        assert isinstance(next_actions[0], mini_octobot.entities.DSLScriptActionDetails)
+        assert next_actions[0].dsl_script.startswith("stop_loss('sell', 'ETH/BTC', '10%', '-10%')")
         job2 = octobot_lib.OctoBotActionsJob(
             next_actions_description.to_dict(include_default_values=False)
         )
         result = await job2.run()
-        assert len(result.processed_actions) == 1
-        assert result.processed_actions[0].config[kw_constants.CUSTOM_ACTION_OPEN_SOURCE_FORMAT_KEY][custom_action_trading_mode.CustomActionTradingMode.SIGNAL_KEY] == custom_action_trading_mode.CustomActionTradingMode.SELL_SIGNAL
+        assert len(result.processed_actions_by_automation_id) == 1
+        processed_actions = next(iter(result.processed_actions_by_automation_id.values()))
+        assert len(processed_actions) == 1
+        assert isinstance(processed_actions[0], mini_octobot.entities.DSLScriptActionDetails)
+        assert processed_actions[0].dsl_script.startswith("stop_loss('sell', 'ETH/BTC', '10%', '-10%')")
         assert len(result.get_created_orders()) == 1
         order = result.get_created_orders()[0]
         assert order["symbol"] == "ETH/BTC"
-        assert order["amount"] == 0.1 # 10% of 1 ETH
-        assert 0.001 < order["limit_price"] < 0.2
+        assert order["amount"] == decimal.Decimal("0.1") # 10% of 1 ETH
+        assert decimal.Decimal("0.001") < order["price"] < decimal.Decimal("0.2")
         assert order["type"] == "stop_loss"
         assert order["side"] == "sell"
         assert result.next_actions_description is None # no more actions to execute
 
     async def test_run_cancel_limit_order_action(self, create_limit_and_cancel_order_action):
-        # step 1: configure the task
+        # step 1: configure the job
         job = octobot_lib.OctoBotActionsJob(create_limit_and_cancel_order_action)
         result = await job.run()
-        assert len(result.processed_actions) == 1
-        assert result.processed_actions[0].config[kw_constants.CUSTOM_ACTION_OPEN_SOURCE_FORMAT_KEY][custom_action_trading_mode.CustomActionTradingMode.SIGNAL_KEY] == kw_enums.CustomActionExclusiveFormattedContentConfigKeys.APPLY_CONFIGURATION.value
-        pre_trade_portfolio = job.after_execution_state.bots[0].exchange_account_elements.portfolio.content
+        assert len(result.processed_actions_by_automation_id) == 1
+        processed_actions = next(iter(result.processed_actions_by_automation_id.values()))
+        assert len(processed_actions) == 1
+        assert isinstance(processed_actions[0], mini_octobot.entities.ConfiguredActionDetails)
+        assert processed_actions[0].action == mini_octobot.enums.ActionType.APPLY_CONFIGURATION.value
+        assert processed_actions[0].config is not None
+        assert len(processed_actions[0].config["automations"]) == 1
+        assert isinstance(processed_actions[0].config["exchange_account_details"], dict)
+        pre_trade_portfolio = job.after_execution_state.automations[0].client_exchange_account_elements.portfolio.content
         assert pre_trade_portfolio["BTC"] == {
             common_constants.PORTFOLIO_AVAILABLE: 1,
             common_constants.PORTFOLIO_TOTAL: 1,
@@ -344,19 +391,25 @@ class TestOctoBotActionsJob:
         # step 2: run the trade action
         next_actions_description = result.next_actions_description
         assert next_actions_description is not None
-        assert len(next_actions_description.immediate_actions) == 1
-        assert next_actions_description.immediate_actions[0].config[kw_constants.CUSTOM_ACTION_OPEN_SOURCE_FORMAT_KEY][custom_action_trading_mode.CustomActionTradingMode.SIGNAL_KEY] == custom_action_trading_mode.CustomActionTradingMode.BUY_SIGNAL
+        parsed_state = mini_octobot.AutomationsState.from_dict(next_actions_description.state)
+        next_actions = parsed_state.automations[0].actions_dag.get_executable_actions()
+        assert len(next_actions) == 1
+        assert isinstance(next_actions[0], mini_octobot.entities.DSLScriptActionDetails)
+        assert next_actions[0].dsl_script == "limit('buy', 'ETH/BTC', 1, '-10%')"
         job2 = octobot_lib.OctoBotActionsJob(
             next_actions_description.to_dict(include_default_values=False)
         )
         result = await job2.run()
-        assert len(result.processed_actions) == 1
-        assert result.processed_actions[0].config[kw_constants.CUSTOM_ACTION_OPEN_SOURCE_FORMAT_KEY][custom_action_trading_mode.CustomActionTradingMode.SIGNAL_KEY] == custom_action_trading_mode.CustomActionTradingMode.BUY_SIGNAL
+        assert len(result.processed_actions_by_automation_id) == 1
+        processed_actions = next(iter(result.processed_actions_by_automation_id.values()))
+        assert len(processed_actions) == 1
+        assert isinstance(processed_actions[0], mini_octobot.entities.DSLScriptActionDetails)
+        assert processed_actions[0].dsl_script.startswith("limit(")
         assert len(result.get_created_orders()) == 1
         order = result.get_created_orders()[0]
         assert order["symbol"] == "ETH/BTC"
-        assert order["amount"] == 1
-        assert 0.001 < order["limit_price"] < 0.2
+        assert order["amount"] == decimal.Decimal("1")
+        assert decimal.Decimal("0.001") < order["price"] < decimal.Decimal("0.2")
         assert order["type"] == "limit"
         assert order["side"] == "buy"
         assert result.next_actions_description is not None
@@ -364,24 +417,38 @@ class TestOctoBotActionsJob:
         # step 3: run the cancel action
         next_actions_description = result.next_actions_description
         assert next_actions_description is not None
-        assert len(next_actions_description.immediate_actions) == 1
-        assert next_actions_description.immediate_actions[0].config[kw_constants.CUSTOM_ACTION_OPEN_SOURCE_FORMAT_KEY][custom_action_trading_mode.CustomActionTradingMode.SIGNAL_KEY] == custom_action_trading_mode.CustomActionTradingMode.CANCEL_SIGNAL
+        parsed_state = mini_octobot.AutomationsState.from_dict(next_actions_description.state)
+        next_actions = parsed_state.automations[0].actions_dag.get_executable_actions()
+        assert len(next_actions) == 1
+        assert isinstance(next_actions[0], mini_octobot.entities.DSLScriptActionDetails)
+        assert next_actions[0].dsl_script == "cancel_order('ETH/BTC', side='buy')"
         job3 = octobot_lib.OctoBotActionsJob(
             next_actions_description.to_dict(include_default_values=False)
         )
         result = await job3.run()
-        assert len(result.processed_actions) == 1
-        assert result.processed_actions[0].config[kw_constants.CUSTOM_ACTION_OPEN_SOURCE_FORMAT_KEY][custom_action_trading_mode.CustomActionTradingMode.SIGNAL_KEY] == custom_action_trading_mode.CustomActionTradingMode.CANCEL_SIGNAL
-        assert result.processed_actions[0].result["cancelled_orders_count"] == 1
+        assert len(result.processed_actions_by_automation_id) == 1
+        processed_actions = next(iter(result.processed_actions_by_automation_id.values()))
+        assert len(processed_actions) == 1
+        assert isinstance(processed_actions[0], mini_octobot.entities.DSLScriptActionDetails)
+        assert processed_actions[0].dsl_script.startswith("cancel_order(")
+        assert processed_actions[0].result is not None
+        assert len(processed_actions[0].result[DSL_operators.CANCELLED_ORDERS_KEY]) == len(result.get_cancelled_orders()) == 1
         assert result.next_actions_description is None # no more actions to execute
 
+    @pytest.mark.skip(reason="restore once polymarket is fully supported")
     async def test_polymarket_trade_action(self, polymarket_order_action): # TODO: update once polymarket is fullly supported
-        # step 1: configure the task
+        # step 1: configure the job
         job = octobot_lib.OctoBotActionsJob(polymarket_order_action)
         result = await job.run()
-        assert len(result.processed_actions) == 1
-        assert result.processed_actions[0].config[kw_constants.CUSTOM_ACTION_OPEN_SOURCE_FORMAT_KEY][custom_action_trading_mode.CustomActionTradingMode.SIGNAL_KEY] == kw_enums.CustomActionExclusiveFormattedContentConfigKeys.APPLY_CONFIGURATION.value
-        pre_trade_portfolio = job.after_execution_state.bots[0].exchange_account_elements.portfolio.content
+        assert len(result.processed_actions_by_automation_id) == 1
+        processed_actions = next(iter(result.processed_actions_by_automation_id.values()))
+        assert len(processed_actions) == 1
+        assert isinstance(processed_actions[0], mini_octobot.entities.ConfiguredActionDetails)
+        assert processed_actions[0].action == mini_octobot.enums.ActionType.APPLY_CONFIGURATION.value
+        assert processed_actions[0].config is not None
+        assert len(processed_actions[0].config["automations"]) == 1
+        assert isinstance(processed_actions[0].config["exchange_account_details"], dict)
+        pre_trade_portfolio = job.after_execution_state.automations[0].client_exchange_account_elements.portfolio.content
         assert pre_trade_portfolio["USDC"] == {
             common_constants.PORTFOLIO_AVAILABLE: 100,
             common_constants.PORTFOLIO_TOTAL: 100,
@@ -390,29 +457,41 @@ class TestOctoBotActionsJob:
         # step 2: run the trade action
         next_actions_description = result.next_actions_description
         assert next_actions_description is not None
-        assert len(next_actions_description.immediate_actions) == 1
-        assert next_actions_description.immediate_actions[0].config[kw_constants.CUSTOM_ACTION_OPEN_SOURCE_FORMAT_KEY][custom_action_trading_mode.CustomActionTradingMode.SIGNAL_KEY] == custom_action_trading_mode.CustomActionTradingMode.BUY_SIGNAL
+        parsed_state = mini_octobot.AutomationsState.from_dict(next_actions_description.state)
+        next_actions = parsed_state.automations[0].actions_dag.get_executable_actions()
+        assert len(next_actions) == 1
+        assert isinstance(next_actions[0], mini_octobot.entities.DSLScriptActionDetails)
+        assert next_actions[0].dsl_script.startswith("market(")
         job2 = octobot_lib.OctoBotActionsJob(
             next_actions_description.to_dict(include_default_values=False)
         )
         with pytest.raises(octobot_trading.errors.FailedRequest): # TODO: update once supported
             result = await job2.run()
-            assert len(result.processed_actions) == 1
-            assert result.processed_actions[0].config[kw_constants.CUSTOM_ACTION_OPEN_SOURCE_FORMAT_KEY][custom_action_trading_mode.CustomActionTradingMode.SIGNAL_KEY] == custom_action_trading_mode.CustomActionTradingMode.BUY_SIGNAL
+            assert len(result.processed_actions_by_automation_id) == 1
+            processed_actions = next(iter(result.processed_actions_by_automation_id.values()))
+            assert len(processed_actions) == 1
+            assert isinstance(processed_actions[0], mini_octobot.entities.DSLScriptActionDetails)
+            assert processed_actions[0].dsl_script.startswith("market(")
             assert len(result.get_created_orders()) == 1
             order = result.get_created_orders()[0]
             assert order["symbol"] == "what-price-will-bitcoin-hit-in-january-2026/USDC:USDC-260131-0-YES"
-            assert order["amount"] == 1
+            assert order["amount"] == decimal.Decimal("1")
             assert order["type"] == "market"
             assert order["side"] == "buy"
 
     async def test_run_deposit_action(self, deposit_action):
-        # step 1: configure the task
+        # step 1: configure the job
         job = octobot_lib.OctoBotActionsJob(deposit_action)
         result = await job.run()
-        assert len(result.processed_actions) == 1
-        assert result.processed_actions[0].config[kw_constants.CUSTOM_ACTION_OPEN_SOURCE_FORMAT_KEY][custom_action_trading_mode.CustomActionTradingMode.SIGNAL_KEY] == kw_enums.CustomActionExclusiveFormattedContentConfigKeys.APPLY_CONFIGURATION.value
-        pre_deposit_portfolio = job.after_execution_state.bots[0].exchange_account_elements.portfolio.content
+        assert len(result.processed_actions_by_automation_id) == 1
+        processed_actions = next(iter(result.processed_actions_by_automation_id.values()))
+        assert len(processed_actions) == 1
+        assert isinstance(processed_actions[0], mini_octobot.entities.ConfiguredActionDetails)
+        assert processed_actions[0].action == mini_octobot.enums.ActionType.APPLY_CONFIGURATION.value
+        assert processed_actions[0].config is not None
+        assert len(processed_actions[0].config["automations"]) == 1
+        assert isinstance(processed_actions[0].config["exchange_account_details"], dict)
+        pre_deposit_portfolio = job.after_execution_state.automations[0].client_exchange_account_elements.portfolio.content
         assert pre_deposit_portfolio["BTC"] == {
             common_constants.PORTFOLIO_AVAILABLE: 0.01,
             common_constants.PORTFOLIO_TOTAL: 0.01,
@@ -421,30 +500,42 @@ class TestOctoBotActionsJob:
         # step 2: run the deposit action
         next_actions_description = result.next_actions_description
         assert next_actions_description is not None
-        assert len(next_actions_description.immediate_actions) == 1
-        assert next_actions_description.immediate_actions[0].config[kw_constants.CUSTOM_ACTION_OPEN_SOURCE_FORMAT_KEY][custom_action_trading_mode.CustomActionTradingMode.SIGNAL_KEY] == custom_action_trading_mode.CustomActionTradingMode.TRANSFER_FUNDS_SIGNAL
+        parsed_state = mini_octobot.AutomationsState.from_dict(next_actions_description.state)
+        next_actions = parsed_state.automations[0].actions_dag.get_executable_actions()
+        assert len(next_actions) == 1
+        assert isinstance(next_actions[0], mini_octobot.entities.DSLScriptActionDetails)
+        assert next_actions[0].dsl_script is not None and "blockchain_wallet_transfer" in next_actions[0].dsl_script
         job2 = octobot_lib.OctoBotActionsJob(
             next_actions_description.to_dict(include_default_values=False)
         )
         result = await job2.run()
-        assert len(result.processed_actions) == 1
-        assert result.processed_actions[0].config[kw_constants.CUSTOM_ACTION_OPEN_SOURCE_FORMAT_KEY][custom_action_trading_mode.CustomActionTradingMode.SIGNAL_KEY] == custom_action_trading_mode.CustomActionTradingMode.TRANSFER_FUNDS_SIGNAL
+        assert len(result.processed_actions_by_automation_id) == 1
+        processed_actions = next(iter(result.processed_actions_by_automation_id.values()))
+        assert len(processed_actions) == 1
+        assert isinstance(processed_actions[0], mini_octobot.entities.DSLScriptActionDetails)
+        assert processed_actions[0].dsl_script is not None and "blockchain_wallet_transfer" in processed_actions[0].dsl_script
         assert result.next_actions_description is None # no more actions to execute
 
         # ensure deposit is successful
-        post_deposit_portfolio = job2.after_execution_state.bots[0].exchange_account_elements.portfolio.content
+        post_deposit_portfolio = job2.after_execution_state.automations[0].client_exchange_account_elements.portfolio.content
         assert post_deposit_portfolio["BTC"] == {
             common_constants.PORTFOLIO_AVAILABLE: pre_deposit_portfolio["BTC"][common_constants.PORTFOLIO_AVAILABLE] + deposit_action["params"]["BLOCKCHAIN_FROM_AMOUNT"],
             common_constants.PORTFOLIO_TOTAL: pre_deposit_portfolio["BTC"][common_constants.PORTFOLIO_TOTAL] + deposit_action["params"]["BLOCKCHAIN_FROM_AMOUNT"],
         }
 
     async def test_run_withdraw_action(self, withdraw_action):
-        # step 1: configure the task
+        # step 1: configure the job
         job = octobot_lib.OctoBotActionsJob(withdraw_action)
         result = await job.run()
-        assert len(result.processed_actions) == 1
-        assert result.processed_actions[0].config[kw_constants.CUSTOM_ACTION_OPEN_SOURCE_FORMAT_KEY][custom_action_trading_mode.CustomActionTradingMode.SIGNAL_KEY] == kw_enums.CustomActionExclusiveFormattedContentConfigKeys.APPLY_CONFIGURATION.value
-        pre_withdraw_portfolio = job.after_execution_state.bots[0].exchange_account_elements.portfolio.content
+        assert len(result.processed_actions_by_automation_id) == 1
+        processed_actions = next(iter(result.processed_actions_by_automation_id.values()))
+        assert len(processed_actions) == 1
+        assert isinstance(processed_actions[0], mini_octobot.entities.ConfiguredActionDetails)
+        assert processed_actions[0].action == mini_octobot.enums.ActionType.APPLY_CONFIGURATION.value
+        assert processed_actions[0].config is not None
+        assert len(processed_actions[0].config["automations"]) == 1
+        assert isinstance(processed_actions[0].config["exchange_account_details"], dict)
+        pre_withdraw_portfolio = job.after_execution_state.automations[0].client_exchange_account_elements.portfolio.content
         assert pre_withdraw_portfolio["ETH"] == {
             common_constants.PORTFOLIO_AVAILABLE: 2,
             common_constants.PORTFOLIO_TOTAL: 2,
@@ -453,56 +544,104 @@ class TestOctoBotActionsJob:
         # step 2: run the withdraw action
         next_actions_description = result.next_actions_description
         assert next_actions_description is not None
-        assert len(next_actions_description.immediate_actions) == 1
-        assert next_actions_description.immediate_actions[0].config[kw_constants.CUSTOM_ACTION_OPEN_SOURCE_FORMAT_KEY][custom_action_trading_mode.CustomActionTradingMode.SIGNAL_KEY] == custom_action_trading_mode.CustomActionTradingMode.WITHDRAW_FUNDS_SIGNAL
+        parsed_state = mini_octobot.AutomationsState.from_dict(next_actions_description.state)
+        next_actions = parsed_state.automations[0].actions_dag.get_executable_actions()
+        assert len(next_actions) == 1
+        assert isinstance(next_actions[0], mini_octobot.entities.DSLScriptActionDetails)
+        assert next_actions[0].dsl_script.startswith("withdraw(")
         job2 = octobot_lib.OctoBotActionsJob(
             next_actions_description.to_dict(include_default_values=False)
         )
         result = await job2.run()
-        assert len(result.processed_actions) == 1
-        assert result.processed_actions[0].config[kw_constants.CUSTOM_ACTION_OPEN_SOURCE_FORMAT_KEY][custom_action_trading_mode.CustomActionTradingMode.SIGNAL_KEY] == custom_action_trading_mode.CustomActionTradingMode.WITHDRAW_FUNDS_SIGNAL
+        assert len(result.processed_actions_by_automation_id) == 1
+        processed_actions = next(iter(result.processed_actions_by_automation_id.values()))
+        assert len(processed_actions) == 1
+        assert isinstance(processed_actions[0], mini_octobot.entities.DSLScriptActionDetails)
+        assert processed_actions[0].dsl_script.startswith("withdraw(")
         assert result.next_actions_description is None # no more actions to execute
 
         # ensure withdraw is successful
-        post_withdraw_portfolio = job2.after_execution_state.bots[0].exchange_account_elements.portfolio.content
+        post_withdraw_portfolio = job2.after_execution_state.automations[0].client_exchange_account_elements.portfolio.content
         assert post_withdraw_portfolio == {}  # portfolio should now be empty
 
     async def test_run_multiple_actions_bundle_no_wait(self, multiple_actions_bundle_no_wait):
-        # step 1: configure the task
+        # step 1: configure the job
         job = octobot_lib.OctoBotActionsJob(multiple_actions_bundle_no_wait)
+        # ensure wait keywords have been considered
+        automations = job.description.state["automations"]
+        assert len(automations) == 1
+        dag = automations[0]["actions_dag"]
+        for action in dag["actions"]:
+            assert action["next_schedule"] is None # no wait keywords have been considered
         result = await job.run()
-        assert len(result.processed_actions) == 1
-        assert result.processed_actions[0].config[kw_constants.CUSTOM_ACTION_OPEN_SOURCE_FORMAT_KEY][custom_action_trading_mode.CustomActionTradingMode.SIGNAL_KEY] == kw_enums.CustomActionExclusiveFormattedContentConfigKeys.APPLY_CONFIGURATION.value
-        pre_trade_portfolio = job.after_execution_state.bots[0].exchange_account_elements.portfolio.content
+        assert len(result.processed_actions_by_automation_id) == 1
+        processed_actions = next(iter(result.processed_actions_by_automation_id.values()))
+        assert len(processed_actions) == 1
+        assert isinstance(processed_actions[0], mini_octobot.entities.ConfiguredActionDetails)
+        assert processed_actions[0].action == mini_octobot.enums.ActionType.APPLY_CONFIGURATION.value
+        assert processed_actions[0].config is not None
+        assert len(processed_actions[0].config["automations"]) == 1
+        assert isinstance(processed_actions[0].config["exchange_account_details"], dict)
+        pre_trade_portfolio = job.after_execution_state.automations[0].client_exchange_account_elements.portfolio.content
         assert pre_trade_portfolio["BTC"] == {
             common_constants.PORTFOLIO_AVAILABLE: 1,
             common_constants.PORTFOLIO_TOTAL: 1,
         }
 
-        # step 2: run the deposit and trade actions
+        # step 2: run the deposit action
         next_actions_description = result.next_actions_description
         assert next_actions_description is not None
-        assert len(next_actions_description.immediate_actions) == 2
-        assert next_actions_description.immediate_actions[0].config[kw_constants.CUSTOM_ACTION_OPEN_SOURCE_FORMAT_KEY][custom_action_trading_mode.CustomActionTradingMode.SIGNAL_KEY] == custom_action_trading_mode.CustomActionTradingMode.TRANSFER_FUNDS_SIGNAL
-        assert next_actions_description.immediate_actions[1].config[kw_constants.CUSTOM_ACTION_OPEN_SOURCE_FORMAT_KEY][custom_action_trading_mode.CustomActionTradingMode.SIGNAL_KEY] == custom_action_trading_mode.CustomActionTradingMode.BUY_SIGNAL
+        parsed_state = mini_octobot.AutomationsState.from_dict(next_actions_description.state)
+        next_actions = parsed_state.automations[0].actions_dag.get_executable_actions()
+        assert len(next_actions) == 1 # only the deposit action should be executable as the trade action depends on it
+        assert isinstance(next_actions[0], mini_octobot.entities.DSLScriptActionDetails)
+        assert next_actions[0].dsl_script is not None and "blockchain_wallet_transfer" in next_actions[0].dsl_script
         job2 = octobot_lib.OctoBotActionsJob(
             next_actions_description.to_dict(include_default_values=False)
         )
         result = await job2.run()
-        assert len(result.processed_actions) == 2
-        assert result.processed_actions[0].config[kw_constants.CUSTOM_ACTION_OPEN_SOURCE_FORMAT_KEY][custom_action_trading_mode.CustomActionTradingMode.SIGNAL_KEY] == custom_action_trading_mode.CustomActionTradingMode.TRANSFER_FUNDS_SIGNAL
-        assert result.processed_actions[0].result["amount"] == 1
-        assert result.processed_actions[1].config[kw_constants.CUSTOM_ACTION_OPEN_SOURCE_FORMAT_KEY][custom_action_trading_mode.CustomActionTradingMode.SIGNAL_KEY] == custom_action_trading_mode.CustomActionTradingMode.BUY_SIGNAL
+        assert len(result.processed_actions_by_automation_id) == 1
+        processed_actions = next(iter(result.processed_actions_by_automation_id.values()))
+        assert len(processed_actions) == 1
+        assert isinstance(processed_actions[0], mini_octobot.entities.DSLScriptActionDetails)
+        assert processed_actions[0].dsl_script is not None and "blockchain_wallet_transfer" in processed_actions[0].dsl_script
+        assert processed_actions[0].result is not None
+        assert len(processed_actions[0].result[DSL_operators.CREATED_TRANSACTIONS_KEY]) == len(result.get_deposit_and_withdrawal_details()) == 1
+        assert len(result.get_deposit_and_withdrawal_details()) == 1
+        transaction = result.get_deposit_and_withdrawal_details()[0]
+        assert transaction[trading_enums.ExchangeConstantsTransactionColumns.CURRENCY.value] == "BTC"
+        assert transaction[trading_enums.ExchangeConstantsTransactionColumns.AMOUNT.value] == decimal.Decimal("1")
+        assert transaction[trading_enums.ExchangeConstantsTransactionColumns.NETWORK.value] == BLOCKCHAIN
+        assert transaction[trading_enums.ExchangeConstantsTransactionColumns.ADDRESS_TO.value] == "0x123_simulated_deposit_address_BTC"
+
+
+        # step 3: run the trade action
+        next_actions_description = result.next_actions_description
+        assert next_actions_description is not None
+        parsed_state = mini_octobot.AutomationsState.from_dict(next_actions_description.state)
+        next_actions = parsed_state.automations[0].actions_dag.get_executable_actions()
+        assert len(next_actions) == 1 # only the trade action should be executable now: all others have been executed already
+        assert isinstance(next_actions[0], mini_octobot.entities.DSLScriptActionDetails)
+        assert next_actions[0].dsl_script.startswith("limit(")
+        job3 = octobot_lib.OctoBotActionsJob(
+            next_actions_description.to_dict(include_default_values=False)
+        )
+        result = await job3.run()
+        assert len(result.processed_actions_by_automation_id) == 1
+        processed_actions = next(iter(result.processed_actions_by_automation_id.values()))
+        assert len(processed_actions) == 1
+        assert isinstance(processed_actions[0], mini_octobot.entities.DSLScriptActionDetails)
+        assert processed_actions[0].dsl_script.startswith("limit(")
         assert len(result.get_created_orders()) == 1
         limit_order = result.get_created_orders()[0]
         assert limit_order["symbol"] == "ETH/BTC"
-        assert limit_order["amount"] == 1
+        assert limit_order["amount"] == decimal.Decimal("1")
         assert limit_order["type"] == "limit"
         assert limit_order["side"] == "buy"
         assert result.next_actions_description is None # no more actions to execute
 
         # ensure trades are taken into account in portfolio
-        post_deposit_portfolio = job2.after_execution_state.bots[0].exchange_account_elements.portfolio.content
+        post_deposit_portfolio = job3.after_execution_state.automations[0].client_exchange_account_elements.portfolio.content
 
         assert "ETH" not in post_deposit_portfolio # ETH order has not been executed (still open)
 
@@ -512,12 +651,35 @@ class TestOctoBotActionsJob:
 
 
     async def test_run_multiple_actions_bundle_with_wait(self, multiple_action_bundle_with_wait):
-        # step 1: configure the task
+        # step 1: configure the job
         job = octobot_lib.OctoBotActionsJob(multiple_action_bundle_with_wait)
+        # ensure wait keywords have been considered
+        automations = job.description.state["automations"]
+        assert len(automations) == 1
+        dag = automations[0]["actions_dag"]
+        for index, action in enumerate(dag["actions"]):
+            if index == len(dag["actions"]) - 1:
+                assert action["next_schedule"] is None
+            else:
+                assert action["next_schedule"] is not None
+                assert action["next_schedule"] == dataclasses.asdict(mini_octobot.entities.NextScheduleParams(
+                    type=mini_octobot.entities.ScheduleType.RANDOM.value,
+                    schedule=mini_octobot.entities.RandomScheduleDetails(
+                        min_delay=0.1,
+                        max_delay=0.15,
+                    ),
+                ))
+        # run the job
         result = await job.run()
-        assert len(result.processed_actions) == 1
-        assert result.processed_actions[0].config[kw_constants.CUSTOM_ACTION_OPEN_SOURCE_FORMAT_KEY][custom_action_trading_mode.CustomActionTradingMode.SIGNAL_KEY] == kw_enums.CustomActionExclusiveFormattedContentConfigKeys.APPLY_CONFIGURATION.value
-        pre_trade_portfolio = job.after_execution_state.bots[0].exchange_account_elements.portfolio.content
+        assert len(result.processed_actions_by_automation_id) == 1
+        processed_actions = next(iter(result.processed_actions_by_automation_id.values()))
+        assert len(processed_actions) == 1
+        assert isinstance(processed_actions[0], mini_octobot.entities.ConfiguredActionDetails)
+        assert processed_actions[0].action == mini_octobot.enums.ActionType.APPLY_CONFIGURATION.value
+        assert processed_actions[0].config is not None
+        assert len(processed_actions[0].config["automations"]) == 1
+        assert isinstance(processed_actions[0].config["exchange_account_details"], dict)
+        pre_trade_portfolio = job.after_execution_state.automations[0].client_exchange_account_elements.portfolio.content
         assert pre_trade_portfolio["BTC"] == {
             common_constants.PORTFOLIO_AVAILABLE: 1,
             common_constants.PORTFOLIO_TOTAL: 1,
@@ -526,19 +688,35 @@ class TestOctoBotActionsJob:
         # step 2: run the deposit action
         next_actions_description = result.next_actions_description
         assert next_actions_description is not None
-        assert len(next_actions_description.immediate_actions) == 1
-        assert next_actions_description.immediate_actions[0].config[kw_constants.CUSTOM_ACTION_OPEN_SOURCE_FORMAT_KEY][custom_action_trading_mode.CustomActionTradingMode.SIGNAL_KEY] == custom_action_trading_mode.CustomActionTradingMode.TRANSFER_FUNDS_SIGNAL
+        parsed_state = mini_octobot.AutomationsState.from_dict(next_actions_description.state)
+        next_actions = parsed_state.automations[0].actions_dag.get_executable_actions()
+        assert len(next_actions) == 1
+        assert isinstance(next_actions[0], mini_octobot.entities.DSLScriptActionDetails)
+        assert next_actions[0].dsl_script is not None and "blockchain_wallet_transfer" in next_actions[0].dsl_script
         job2 = octobot_lib.OctoBotActionsJob(
             next_actions_description.to_dict(include_default_values=False)
         )
         result = await job2.run()
-        assert len(result.processed_actions) == 1
-        assert result.processed_actions[0].config[kw_constants.CUSTOM_ACTION_OPEN_SOURCE_FORMAT_KEY][custom_action_trading_mode.CustomActionTradingMode.SIGNAL_KEY] == custom_action_trading_mode.CustomActionTradingMode.TRANSFER_FUNDS_SIGNAL
-        assert result.processed_actions[0].result["amount"] == 1
-        assert result.next_actions_description is not None
-        assert len(result.next_actions_description.immediate_actions) == 1
-        assert result.next_actions_description.immediate_actions[0].config[kw_constants.CUSTOM_ACTION_OPEN_SOURCE_FORMAT_KEY][custom_action_trading_mode.CustomActionTradingMode.SIGNAL_KEY] == custom_action_trading_mode.CustomActionTradingMode.BUY_SIGNAL
-        post_deposit_portfolio = job2.after_execution_state.bots[0].exchange_account_elements.portfolio.content
+        assert len(result.processed_actions_by_automation_id) == 1
+        processed_actions = next(iter(result.processed_actions_by_automation_id.values()))
+        assert len(processed_actions) == 1
+        assert isinstance(processed_actions[0], mini_octobot.entities.DSLScriptActionDetails)
+        assert processed_actions[0].dsl_script is not None and "blockchain_wallet_transfer" in processed_actions[0].dsl_script
+        assert processed_actions[0].result is not None
+        assert len(processed_actions[0].result[DSL_operators.CREATED_TRANSACTIONS_KEY]) == len(result.get_deposit_and_withdrawal_details()) == 1
+        transaction = processed_actions[0].result[DSL_operators.CREATED_TRANSACTIONS_KEY][0]
+        assert transaction[trading_enums.ExchangeConstantsTransactionColumns.CURRENCY.value] == "BTC"
+        assert transaction[trading_enums.ExchangeConstantsTransactionColumns.AMOUNT.value] == decimal.Decimal("1")
+        assert transaction[trading_enums.ExchangeConstantsTransactionColumns.NETWORK.value] == BLOCKCHAIN
+        assert transaction[trading_enums.ExchangeConstantsTransactionColumns.ADDRESS_TO.value] == "0x123_simulated_deposit_address_BTC"
+        next_desc = result.next_actions_description
+        assert next_desc is not None
+        parsed_state = mini_octobot.AutomationsState.from_dict(next_desc.state)
+        next_actions = parsed_state.automations[0].actions_dag.get_executable_actions()
+        assert len(next_actions) == 1
+        assert isinstance(next_actions[0], mini_octobot.entities.DSLScriptActionDetails)
+        assert next_actions[0].dsl_script.startswith("market(")
+        post_deposit_portfolio = job2.after_execution_state.automations[0].client_exchange_account_elements.portfolio.content
         assert post_deposit_portfolio["BTC"] == {
             common_constants.PORTFOLIO_AVAILABLE: 2,
             common_constants.PORTFOLIO_TOTAL: 2,
@@ -547,16 +725,23 @@ class TestOctoBotActionsJob:
         # step 3: run the trade action
         next_actions_description = result.next_actions_description
         assert next_actions_description is not None
-        assert len(next_actions_description.immediate_actions) == 1
-        assert next_actions_description.immediate_actions[0].config[kw_constants.CUSTOM_ACTION_OPEN_SOURCE_FORMAT_KEY][custom_action_trading_mode.CustomActionTradingMode.SIGNAL_KEY] == custom_action_trading_mode.CustomActionTradingMode.BUY_SIGNAL
+        parsed_state = mini_octobot.AutomationsState.from_dict(next_actions_description.state)
+        next_actions = parsed_state.automations[0].actions_dag.get_executable_actions()
+        assert len(next_actions) == 1
+        assert isinstance(next_actions[0], mini_octobot.entities.DSLScriptActionDetails)
+        assert next_actions[0].dsl_script.startswith("market(")
         job3 = octobot_lib.OctoBotActionsJob(
             next_actions_description.to_dict(include_default_values=False)
         )
         result = await job3.run()
-        assert len(result.processed_actions) == 1
-        assert result.processed_actions[0].config[kw_constants.CUSTOM_ACTION_OPEN_SOURCE_FORMAT_KEY][custom_action_trading_mode.CustomActionTradingMode.SIGNAL_KEY] == custom_action_trading_mode.CustomActionTradingMode.BUY_SIGNAL
-        assert len(result.get_created_orders()) == 1
-        post_trade_portfolio = job3.after_execution_state.bots[0].exchange_account_elements.portfolio.content
+        assert len(result.processed_actions_by_automation_id) == 1
+        processed_actions = next(iter(result.processed_actions_by_automation_id.values()))
+        assert len(processed_actions) == 1
+        assert isinstance(processed_actions[0], mini_octobot.entities.DSLScriptActionDetails)
+        assert processed_actions[0].dsl_script.startswith("market(")
+        assert processed_actions[0].result is not None
+        assert len(processed_actions[0].result[DSL_operators.CREATED_ORDERS_KEY]) == len(result.get_created_orders()) == 1
+        post_trade_portfolio = job3.after_execution_state.automations[0].client_exchange_account_elements.portfolio.content
         assert post_trade_portfolio["BTC"][common_constants.PORTFOLIO_AVAILABLE] < post_deposit_portfolio["BTC"][common_constants.PORTFOLIO_AVAILABLE]
         assert post_trade_portfolio["ETH"] == {
             common_constants.PORTFOLIO_AVAILABLE: 0.999,
@@ -566,16 +751,28 @@ class TestOctoBotActionsJob:
         # step 4: run the withdraw action
         next_actions_description = result.next_actions_description
         assert next_actions_description is not None
-        assert len(next_actions_description.immediate_actions) == 1
-        assert next_actions_description.immediate_actions[0].config[kw_constants.CUSTOM_ACTION_OPEN_SOURCE_FORMAT_KEY][custom_action_trading_mode.CustomActionTradingMode.SIGNAL_KEY] == custom_action_trading_mode.CustomActionTradingMode.WITHDRAW_FUNDS_SIGNAL
+        parsed_state = mini_octobot.AutomationsState.from_dict(next_actions_description.state)
+        next_actions = parsed_state.automations[0].actions_dag.get_executable_actions()
+        assert len(next_actions) == 1
+        assert isinstance(next_actions[0], mini_octobot.entities.DSLScriptActionDetails)
+        assert next_actions[0].dsl_script.startswith("withdraw(")
         job4 = octobot_lib.OctoBotActionsJob(
             next_actions_description.to_dict(include_default_values=False)
         )
         result = await job4.run()
-        assert len(result.processed_actions) == 1
-        assert result.processed_actions[0].config[kw_constants.CUSTOM_ACTION_OPEN_SOURCE_FORMAT_KEY][custom_action_trading_mode.CustomActionTradingMode.SIGNAL_KEY] == custom_action_trading_mode.CustomActionTradingMode.WITHDRAW_FUNDS_SIGNAL
-        assert result.processed_actions[0].result["amount"] == 0.999
-        post_withdraw_portfolio = job4.after_execution_state.bots[0].exchange_account_elements.portfolio.content
+        assert len(result.processed_actions_by_automation_id) == 1
+        processed_actions = next(iter(result.processed_actions_by_automation_id.values()))
+        assert len(processed_actions) == 1
+        assert isinstance(processed_actions[0], mini_octobot.entities.DSLScriptActionDetails)
+        assert processed_actions[0].dsl_script.startswith("withdraw(")
+        assert processed_actions[0].result is not None
+        assert len(processed_actions[0].result[DSL_operators.CREATED_WITHDRAWALS_KEY]) == len(result.get_deposit_and_withdrawal_details()) == 1
+        transaction = processed_actions[0].result[DSL_operators.CREATED_WITHDRAWALS_KEY][0]
+        assert transaction[trading_enums.ExchangeConstantsTransactionColumns.CURRENCY.value] == "ETH"
+        assert transaction[trading_enums.ExchangeConstantsTransactionColumns.AMOUNT.value] == decimal.Decimal("0.999")
+        assert transaction[trading_enums.ExchangeConstantsTransactionColumns.NETWORK.value] == "ethereum"
+        assert transaction[trading_enums.ExchangeConstantsTransactionColumns.ADDRESS_TO.value] == "0x1234567890123456789012345678901234567890"
+        post_withdraw_portfolio = job4.after_execution_state.automations[0].client_exchange_account_elements.portfolio.content
         assert post_withdraw_portfolio["BTC"] == post_trade_portfolio["BTC"]
         assert "ETH" not in post_withdraw_portfolio
         assert result.next_actions_description is None # no more actions to execute

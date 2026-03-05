@@ -15,6 +15,7 @@
 #  License along with this library.
 import typing
 import enum
+import time
 import decimal
 import uuid
 
@@ -53,7 +54,7 @@ class BlockchainWalletSimulator(blockchain_wallet.BlockchainWallet):
     def __init__(
         self,
         parameters: blockchain_wallet_parameters.BlockchainWalletParameters,
-        trader: "octobot_trading.exchanges.Trader"
+        trader: typing.Optional["octobot_trading.exchanges.Trader"]
     ):
         if parameters.blockchain_descriptor.network != octobot_trading.constants.SIMULATED_BLOCKCHAIN_NETWORK:
             # this is a simulator wallet, the network must be the simulated network 
@@ -68,7 +69,7 @@ class BlockchainWalletSimulator(blockchain_wallet.BlockchainWallet):
                 free=decimal.Decimal(0)
             )
         } if parameters.blockchain_descriptor.native_coin_symbol else {}
-        self._trader: "octobot_trading.exchanges.Trader" = trader
+        self._trader: typing.Optional["octobot_trading.exchanges.Trader"] = trader
         super().__init__(parameters)
         if parameters.wallet_descriptor.specific_config:
             self._apply_wallet_descriptor_specific_config(parameters.wallet_descriptor.specific_config)
@@ -123,13 +124,15 @@ class BlockchainWalletSimulator(blockchain_wallet.BlockchainWallet):
     @staticmethod
     def create_wallet_descriptor_specific_config(**kwargs) -> dict:
         return {
-            BlockchainWalletSimulatorConfigurationKeys.ASSETS.value: {
-                BlockchainWalletSimulatorConfigurationKeys.ASSET.value: asset,
-                BlockchainWalletSimulatorConfigurationKeys.AMOUNT.value: amount,
-            }
-            for asset, amount in kwargs.get(
-                BlockchainWalletSimulatorConfigurationKeys.ASSETS.value, {}
-            ).items()
+            BlockchainWalletSimulatorConfigurationKeys.ASSETS.value: [
+                {
+                    BlockchainWalletSimulatorConfigurationKeys.ASSET.value: asset,
+                    BlockchainWalletSimulatorConfigurationKeys.AMOUNT.value: amount,
+                }
+                for asset, amount in kwargs.get(
+                    BlockchainWalletSimulatorConfigurationKeys.ASSETS.value, {}
+                ).items()
+            ]
         }
 
     def _apply_wallet_descriptor_specific_config(self, specific_config: dict):
@@ -158,6 +161,10 @@ class BlockchainWalletSimulator(blockchain_wallet.BlockchainWallet):
         )
 
     async def _get_trader_deposit_address(self, asset: str) -> str:
+        if self._trader is None:
+            raise octobot_trading.errors.BlockchainWalletConfigurationError(
+                f"No trader is provided to {self.__class__.__name__} to get a deposit address"
+            )
         return (await self._trader.get_deposit_address(asset))[
             octobot_trading.enums.ExchangeConstantsDepositAddressColumns.ADDRESS.value
         ]
@@ -172,13 +179,17 @@ class BlockchainWalletSimulator(blockchain_wallet.BlockchainWallet):
                 f"Available: {holdings.free}, required: {amount}"
             )
         transaction_id = str(uuid.uuid4())
-        if to_address == await self._get_trader_deposit_address(asset):
+        if self._trader and to_address == await self._get_trader_deposit_address(asset):
             # this is an exchange deposit: credit the exchange portfolio
             await self._deposit_coin_on_trader_portfolio(asset, amount, to_address, transaction_id)
 
+        tx_timestamp = (
+            self._trader.exchange_manager.exchange.get_exchange_current_time()
+            if self._trader else int(time.time())
+        )
         return blockchain_wallet_adapter.Transaction(
             txid=transaction_id,
-            timestamp=self._trader.exchange_manager.exchange.get_exchange_current_time(),
+            timestamp=tx_timestamp,
             address_from=self.wallet_descriptor.address,
             network=self.blockchain_descriptor.network,
             address_to=to_address,
@@ -214,7 +225,7 @@ class BlockchainWalletSimulator(blockchain_wallet.BlockchainWallet):
                 currency=asset,
                 transaction_type=octobot_trading.enums.TransactionType.BLOCKCHAIN_WITHDRAWAL,
             )
-        )
+        ) if self._trader else octobot_trading.constants.ZERO
 
     def _get_total_deposits_from_address(self, asset: str, from_address: str) -> decimal.Decimal:
         return sum( # type: ignore
@@ -225,4 +236,4 @@ class BlockchainWalletSimulator(blockchain_wallet.BlockchainWallet):
                 currency=asset,
                 transaction_type=octobot_trading.enums.TransactionType.BLOCKCHAIN_DEPOSIT,
             )
-        )
+        ) if self._trader else octobot_trading.constants.ZERO

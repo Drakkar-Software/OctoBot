@@ -19,6 +19,7 @@ import decimal
 import contextlib
 import uuid
 import typing
+import collections
 
 import octobot_commons.symbols as symbol_util
 import octobot_commons.constants as commons_constants
@@ -880,4 +881,22 @@ def get_short_order_summary(order: typing.Union[dict, order_import.Order]) -> st
     return (
         f"{order[enums.ExchangeConstantsOrderColumns.TYPE.value]} {order[enums.ExchangeConstantsOrderColumns.AMOUNT.value]}{filled} "
         f"{order[enums.ExchangeConstantsOrderColumns.SYMBOL.value]} at {order[enums.ExchangeConstantsOrderColumns.PRICE.value]} cost: {round(cost, 8)}"
+    )
+
+
+def get_enriched_orders_by_exchange_id(enriched_orders: list[dict]) -> dict[str, dict]:
+    return {
+        order_details[constants.STORAGE_ORIGIN_VALUE][
+            enums.ExchangeConstantsOrderColumns.EXCHANGE_ID.value
+        ]: order_details
+        for order_details in enriched_orders
+    }
+
+
+def get_symbol_count(raw_trades_or_raw_orders: list[dict]) -> dict[str, int]:
+    return dict(
+        collections.Counter(
+            element[enums.ExchangeConstantsOrderColumns.SYMBOL.value]
+            for element in raw_trades_or_raw_orders
+        )
     )

@@ -83,11 +83,6 @@ def create_blockchain_wallet_operators(
             ]
 
         async def pre_compute(self) -> None:
-            await super().pre_compute()
-            if exchange_manager is None:
-                raise octobot_commons.errors.DSLInterpreterError(
-                    "exchange_manager is required for blockchain_wallet_balance operator"
-                )
             param_by_name = self.get_computed_value_by_parameter()
             blockchain_wallet_balance_params = BlockchainWalletBalanceParams.from_dict(param_by_name)
             async with octobot_trading.api.blockchain_wallet_context(
@@ -95,7 +90,7 @@ def create_blockchain_wallet_operators(
                     blockchain_descriptor=blockchain_wallet_balance_params.blockchain_descriptor,
                     wallet_descriptor=blockchain_wallet_balance_params.wallet_descriptor,
                 ), 
-                exchange_manager.trader
+                exchange_manager.trader if exchange_manager else None
             ) as wallet:
                 wallet_balance = await wallet.get_balance()
                 self.value = float(
@@ -124,10 +119,6 @@ def create_blockchain_wallet_operators(
 
         async def pre_compute(self) -> None:
             await super().pre_compute()
-            if exchange_manager is None:
-                raise octobot_commons.errors.DSLInterpreterError(
-                    "exchange_manager is required for blockchain_wallet_transfer operator"
-                )
             param_by_name = self.get_computed_value_by_parameter()
             transfer_funds_params = TransferFundsParams.from_dict(param_by_name)
             async with octobot_trading.api.blockchain_wallet_context(
@@ -135,7 +126,7 @@ def create_blockchain_wallet_operators(
                     blockchain_descriptor=transfer_funds_params.blockchain_descriptor,
                     wallet_descriptor=transfer_funds_params.wallet_descriptor,
                 ), 
-                exchange_manager.trader
+                exchange_manager.trader if exchange_manager else None
             ) as wallet:
                 if transfer_funds_params.address:
                     address = transfer_funds_params.address

@@ -165,6 +165,12 @@ class InvalidParameterFormatError(InvalidParametersError):
     """
 
 
+class ResolvedParameterNotFoundError(DSLInterpreterError):
+    """
+    Raised when a resolved parameter is not found in the script
+    """
+
+
 class ErrorStatementEncountered(DSLInterpreterError):
     """
     Raised when a error statement is encountered when executing a script

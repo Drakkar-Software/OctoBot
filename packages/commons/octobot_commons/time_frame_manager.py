@@ -13,6 +13,8 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import typing
+
 import octobot_commons.constants as constants
 import octobot_commons.logging as logging_util
 import octobot_commons.enums as enums
@@ -99,7 +101,10 @@ def get_previous_time_frame(config_time_frames, time_frame, origin_time_frame):
     return origin_time_frame
 
 
-def find_min_time_frame(time_frames, min_time_frame=None):
+def find_min_time_frame(
+    time_frames: list[typing.Union[str, enums.TimeFrames]],
+    min_time_frame: typing.Optional[str] = None
+) -> enums.TimeFrames:
     """
     Find the minimum time frame
     :param time_frames: the time frame list

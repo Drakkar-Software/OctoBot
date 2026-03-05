@@ -21,7 +21,10 @@ import octobot_commons.enums
 import octobot_trading.enums
 import octobot_trading.exchange_data as exchange_data
 import octobot_trading.util as util
+import octobot_trading.exchanges.util as exchange_util
 
+if typing.TYPE_CHECKING:
+    import octobot_trading.exchanges.exchange_manager
 
 def get_symbol_data(exchange_manager, symbol, allow_creation=True) -> exchange_data.ExchangeSymbolData:
     return exchange_manager.exchange_symbols_data.get_exchange_symbol_data(symbol, allow_creation=allow_creation)
@@ -150,9 +153,12 @@ def create_new_candles_manager(candles=None, max_candles_count=None) -> exchange
     return manager
 
 
-def force_set_mark_price(exchange_manager, symbol, price):
-    exchange_manager.exchange_symbols_data.get_exchange_symbol_data(symbol).prices_manager.\
-        set_mark_price(decimal.Decimal(str(price)), octobot_trading.enums.MarkPriceSources.EXCHANGE_MARK_PRICE.value)
+def force_set_mark_price(
+    exchange_manager: "octobot_trading.exchanges.exchange_manager.ExchangeManager",
+    symbol: str,
+    price: typing.Union[float, decimal.Decimal],
+) -> None:
+    return exchange_util.force_set_mark_price(exchange_manager, symbol, price)
 
 
 def is_mark_price_initialized(exchange_manager, symbol: str) -> bool:

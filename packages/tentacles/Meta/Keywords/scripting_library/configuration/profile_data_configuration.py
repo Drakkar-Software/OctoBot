@@ -25,7 +25,6 @@ import octobot_commons.enums as common_enums
 import octobot_commons.configuration as commons_configuration
 import octobot_commons.profiles as commons_profiles
 import octobot_commons.profiles.profile_data as commons_profile_data
-import octobot_commons.tentacles_management as tentacles_management
 import octobot_commons.time_frame_manager as time_frame_manager
 import octobot_commons.symbols
 import octobot_commons.logging
@@ -36,6 +35,7 @@ import octobot_trading.constants as trading_constants
 import octobot_trading.exchanges as exchanges
 import octobot_trading.util.test_tools.exchange_data as exchange_data_import
 import octobot_trading.api
+import octobot_trading.enums
 
 import octobot_tentacles_manager.api
 import octobot_tentacles_manager.configuration
@@ -358,11 +358,33 @@ def _get_is_auth_required_exchange(
     )
 
 
+def get_required_candles_count(profile_data: commons_profiles.ProfileData, min_candles_count: int) -> int:
+    for tentacle_config in profile_data.tentacles:
+        if common_constants.CONFIG_TENTACLES_REQUIRED_CANDLES_COUNT in tentacle_config.config:
+            return max(
+                tentacle_config.config[common_constants.CONFIG_TENTACLES_REQUIRED_CANDLES_COUNT],
+                min_candles_count
+            )
+    return min_candles_count
+
+
 def _set_portfolio(
     profile_data: commons_profiles.ProfileData,
     portfolio: dict
 ):
     profile_data.trader_simulator.starting_portfolio = get_formatted_portfolio(portfolio)
+
+
+def update_position_levarage(
+    position: exchange_data_import.PositionDetails, updated_contracts_by_symbol: dict
+):
+    leverage = float(
+        updated_contracts_by_symbol[
+            position.contract[octobot_trading.enums.ExchangeConstantsMarginContractColumns.PAIR.value]
+        ].current_leverage
+    )
+    position.contract[octobot_trading.enums.ExchangeConstantsMarginContractColumns.CURRENT_LEVERAGE.value] = leverage
+    position.position[octobot_trading.enums.ExchangeConstantsPositionColumns.LEVERAGE.value] = leverage
 
 
 def get_formatted_portfolio(portfolio: dict):
@@ -496,7 +518,7 @@ def get_traded_coins(
 
 def get_time_frames(
     profile_data: commons_profiles.ProfileData, for_historical_data=False
-):
+) -> list[str]:
     for config in get_config_by_tentacle(profile_data).values():
         if evaluators_constants.STRATEGIES_REQUIRED_TIME_FRAME in config:
             return config[evaluators_constants.STRATEGIES_REQUIRED_TIME_FRAME]
