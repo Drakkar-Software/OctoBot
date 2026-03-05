@@ -59,6 +59,9 @@ class BookOrderData:
 
     def get_base_amount(self) -> decimal.Decimal:
         return self.amount * self.price if self.side == trading_enums.TradeOrderSide.BUY else self.amount
+    
+    def __repr__(self) -> str:
+        return f"BookOrderData(price={self.price}, amount={self.amount}, side={self.side} (cost={self.price * self.amount}))"
 
 
 class FullBookRebalanceRequired(Exception):
@@ -306,7 +309,7 @@ class OrderBookDistribution:
         self, ideal_total_volume: decimal.Decimal, total_volume: decimal.Decimal,
         side: trading_enums.TradeOrderSide, tolerated_bellow_depth_ratio=DEFAULT_TOLERATED_BELLOW_DEPTH_RATIO
     ) -> bool:
-        return ideal_total_volume * tolerated_bellow_depth_ratio > total_volume
+        return ideal_total_volume * tolerated_bellow_depth_ratio >= total_volume
 
     def _are_total_order_volumes_compatible_with_config(
         self,
