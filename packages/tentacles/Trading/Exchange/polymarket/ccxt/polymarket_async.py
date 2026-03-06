@@ -1000,7 +1000,7 @@ class polymarket(Exchange, ImplicitAPI):
                         market['precision']['price'] = self.parse_number(tickSize)
                     # Also keep market['info']['tick_size'] in sync so buildAndSignOrder uses the
                     # correct rounding config(prevents price like 0.003956 rounding to 0.00)
-                    if market['info']['tick_size'] is None:
+                    if self.safe_string(market['info'], 'tick_size') is None:
                         market['info']['tick_size'] = tickSize
             if negRisk is not None:
                 metadata['neg_risk'] = negRisk
@@ -1094,7 +1094,7 @@ class polymarket(Exchange, ImplicitAPI):
             tokenId = self.safe_string(market, 'id')
         if tokenId is None:
             raise ArgumentsRequired(self.id + ' fetchTicker() requires a token_id parameter for market ' + symbol)
-        # Fetch prices using POST /prices endpoint with both BUY and SELL sides
+        # Fetch both BUY and SELL prices in a single POST /prices request
         # See https://docs.polymarket.com/api-reference/pricing/get-multiple-market-prices-by-request
         pricesResponse = await self.clob_public_post_prices(self.extend({
             'requests': [
@@ -1102,7 +1102,6 @@ class polymarket(Exchange, ImplicitAPI):
                 {'token_id': tokenId, 'side': 'SELL'},
             ],
         }, params))
-        # Parse prices response: {[token_id]: {BUY: "price", SELL: "price"}, ...}
         tokenPrices = self.safe_dict(pricesResponse, tokenId, {})
         buyPrice = self.safe_string(tokenPrices, 'BUY')
         sellPrice = self.safe_string(tokenPrices, 'SELL')
@@ -1126,11 +1125,10 @@ class polymarket(Exchange, ImplicitAPI):
         """
         fetches price tickers for multiple markets, statistical information calculated over the past 24 hours for each market
 
-        https://docs.polymarket.com/api-reference/pricing/get-multiple-market-prices
+        https://docs.polymarket.com/api-reference/pricing/get-multiple-market-prices-by-request
 
         :param str[]|None symbols: unified symbols of the markets to fetch the ticker for, all market tickers are returned if not assigned
         :param dict [params]: extra parameters specific to the exchange API endpoint
-        :param boolean [params.fetchSpreads]: if True, also fetch bid-ask spreads for all markets(default: False)
         :returns dict: a dictionary of `ticker structures <https://docs.ccxt.com/#/?id=ticker-structure>`
         """
         await self.load_markets()
@@ -1149,58 +1147,39 @@ class polymarket(Exchange, ImplicitAPI):
                 tokenIdToSymbol[tokenId] = symbol
         if len(tokenIds) == 0:
             return {}
-        # Build requests array for POST /prices endpoint
-        # Each token needs both BUY and SELL sides
+        # Fetch prices in batches using POST /prices with BUY+SELL requests per token.
+        # Response format: {[token_id]: {BUY: price, SELL: price}}
         # See https://docs.polymarket.com/api-reference/pricing/get-multiple-market-prices-by-request
-        requests = []
-        for i in range(0, len(tokenIds)):
-            tokenId = tokenIds[i]
-            requests.append({'token_id': tokenId, 'side': 'BUY'})
-            requests.append({'token_id': tokenId, 'side': 'SELL'})
-        # Fetch prices for all token IDs at once using POST /prices endpoint
-        # Response format: {[token_id]: {BUY: "price", SELL: "price"}, ...}
-        # See https://docs.polymarket.com/api-reference/pricing/get-multiple-market-prices-by-request
-        pricesResponse = await self.clob_public_post_prices(self.extend({'requests': requests}, params))
-        # Optionally fetch spreads for all token IDs
-        # See https://docs.polymarket.com/api-reference/spreads/get-bid-ask-spreads
-        fetchSpreads = self.safe_bool(params, 'fetchSpreads', False)
-        spreadsResponse = {}
-        if fetchSpreads:
-            try:
-                spreadsResponse = await self.clob_public_post_spreads(self.extend({'token_ids': tokenIds}, params))
-            except Exception as e:
-                spreadsResponse = {}
-        # Build market data map for efficient lookup
-        tokenIdToMarket = {}
-        for i in range(0, len(tokenIds)):
-            tokenId = tokenIds[i]
-            symbol = tokenIdToSymbol[tokenId]
-            tokenIdToMarket[tokenId] = self.market(symbol)
-        # Parse prices and build tickers(no additional fetching during parsing)
+        BATCH_TOKEN_SIZE = 250
+        allPricesResponse: dict = {}
+        batchStart = 0
+        while(batchStart < len(tokenIds)):
+            batchTokenIds = tokenIds[batchStart:batchStart + BATCH_TOKEN_SIZE]
+            batchRequests = []
+            for j in range(0, len(batchTokenIds)):
+                batchRequests.append({'token_id': batchTokenIds[j], 'side': 'BUY'})
+                batchRequests.append({'token_id': batchTokenIds[j], 'side': 'SELL'})
+            batchResponse = await self.clob_public_post_prices({'requests': batchRequests})
+            allPricesResponse = self.deep_extend(allPricesResponse, batchResponse)
+            batchStart = batchStart + BATCH_TOKEN_SIZE
+        # Parse prices and build tickers
         tickers: dict = {}
         for i in range(0, len(tokenIds)):
             tokenId = tokenIds[i]
             symbol = tokenIdToSymbol[tokenId]
-            market = tokenIdToMarket[tokenId]
+            market = self.market(symbol)
             try:
-                # Get prices from the response(both BUY and SELL are in the same response)
-                tokenPrices = self.safe_dict(pricesResponse, tokenId, {})
+                tokenPrices = self.safe_dict(allPricesResponse, tokenId, {})
                 buyPrice = self.safe_string(tokenPrices, 'BUY')
                 sellPrice = self.safe_string(tokenPrices, 'SELL')
-                # Get spread if available
-                spread = self.safe_string(spreadsResponse, tokenId)
-                # Use market info data(already loaded from fetchMarkets)
                 marketInfo = self.safe_dict(market, 'info', {})
-                # Combine pricing data with market info
                 combinedData = self.deep_extend(marketInfo, {
                     'buyPrice': buyPrice,
                     'sellPrice': sellPrice,
-                    'spread': spread,
                 })
                 ticker = self.parse_ticker(combinedData, market)
                 tickers[symbol] = ticker
             except Exception as e:
-                # Skip markets that fail to parse
                 continue
         return tickers
 
@@ -1352,6 +1331,8 @@ class polymarket(Exchange, ImplicitAPI):
             ask = bestAsk
         if last is None and lastTradePrice is not None:
             last = lastTradePrice
+        if last is None and bid is not None and ask is not None:
+            last = (bid + ask) / 2
         # Timestamp
         updatedAtString = self.safe_string(ticker, 'updatedAt')
         timestamp = self.parse8601(updatedAtString) if updatedAtString else None

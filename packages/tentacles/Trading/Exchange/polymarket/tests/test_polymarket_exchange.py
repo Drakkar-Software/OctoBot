@@ -15,9 +15,13 @@
 #  License along with this library.
 import datetime
 import decimal
+import unittest.mock as mock
+
+import pytest
 
 import octobot_trading.constants as trading_constants
 import tentacles.Trading.Exchange.polymarket.polymarket_exchange as polymarket_exchange
+from tentacles.Trading.Exchange.polymarket.ccxt.polymarket_async import polymarket as PolymarketCCXT
 
 
 def test_parse_end_date_returns_none_for_invalid_input():
@@ -123,3 +127,29 @@ def test_convert_portfolio_assets_merges_alias_into_existing_usdc():
 
 def test_convert_portfolio_assets_none_portfolio():
     assert polymarket_exchange._convert_portfolio_assets(None) is None
+
+
+@pytest.mark.asyncio
+async def test_fetch_tickers_with_symbols_only_posts_specified_token_ids():
+    exchange = PolymarketCCXT({})
+    exchange.markets = {
+        "SYM_A/USDC": {"id": "token_id_A", "symbol": "SYM_A/USDC", "type": "option"},
+        "SYM_B/USDC": {"id": "token_id_B", "symbol": "SYM_B/USDC", "type": "option"},
+    }
+    exchange.symbols = ["SYM_A/USDC", "SYM_B/USDC"]
+    prices_response = {"token_id_A": {"BUY": "0.95", "SELL": "0.94"}}
+
+    with (
+        mock.patch.object(exchange, "load_markets", new=mock.AsyncMock()),
+        mock.patch.object(exchange, "clob_public_post_prices",
+                          new=mock.AsyncMock(return_value=prices_response)) as mock_prices,
+        mock.patch.object(exchange, "parse_ticker", return_value={"symbol": "SYM_A/USDC", "close": 0.95}),
+    ):
+        tickers = await exchange.fetch_tickers(symbols=["SYM_A/USDC"])
+
+    assert mock_prices.call_count >= 1
+    for call_args in mock_prices.call_args_list:
+        token_ids_in_batch = {r["token_id"] for r in call_args.args[0]["requests"]}
+        assert "token_id_B" not in token_ids_in_batch
+    assert "SYM_A/USDC" in tickers
+    assert "SYM_B/USDC" not in tickers
