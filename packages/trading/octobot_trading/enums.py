@@ -255,6 +255,7 @@ class ExchangeConstantsMarketStatusColumns(enum.Enum):
     LIMITS_COST_MIN = "min"  # order cost should be > min
     LIMITS_COST_MAX = "max"  # order cost should be < max
     TYPE = "type"
+    EXPIRY = "expiry"
     INFO = "info"
 
 
