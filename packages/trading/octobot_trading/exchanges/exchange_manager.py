@@ -34,6 +34,9 @@ import octobot_trading.exchanges.config.exchange_credentials_data as exchange_cr
 import trading_backend.exchanges
 
 
+if typing.TYPE_CHECKING:
+    import octobot_trading.util.test_tools.exchange_data as exchange_data_import
+
 class ExchangeManager(util.Initializable):
     def __init__(self, config, exchange_class_string):
         super().__init__()
@@ -205,6 +208,37 @@ class ExchangeManager(util.Initializable):
         self.trader = trader
         await self.exchange_personal_data.initialize()
         await self.exchange_config.initialize()
+
+    async def initialize_from_exchange_data(
+        self,
+        exchange_data: "exchange_data_import.ExchangeData",
+        price_by_symbol: dict[str, float],
+        ignore_orders_and_trades: bool,
+        lock_chained_orders_funds: bool,
+        as_simulator: bool,
+    ) -> None:
+        """
+        Initialize trader positions and orders from exchange data by delegating to all relevant managers.
+        """
+        await self.trader.initialize()
+        self.exchange_personal_data.portfolio_manager.portfolio_value_holder.initialize_from_exchange_data(
+            exchange_data, price_by_symbol
+        )
+        if not ignore_orders_and_trades:
+            if exchange_data.trades:
+                self.exchange_personal_data.trades_manager.initialize_from_exchange_data(exchange_data)
+            if (
+                exchange_data.orders_details.open_orders
+                and exchange_data.orders_details.open_orders[0]
+                .get(constants.STORAGE_ORIGIN_VALUE, {})
+                .get(enums.ExchangeConstantsOrderColumns.TYPE.value)
+            ):
+                await self.exchange_personal_data.orders_manager.initialize_from_exchange_data(exchange_data)
+            if lock_chained_orders_funds:
+                await self.exchange_personal_data.portfolio_manager.initialize_from_exchange_data(exchange_data)
+            self.exchange_personal_data.positions_manager.initialize_from_exchange_data(
+                exchange_data, exclusively_use_exchange_position_details=not as_simulator
+            )
 
     def load_constants(self):
         if not self.is_backtesting:

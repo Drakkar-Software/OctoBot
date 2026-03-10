@@ -21,11 +21,15 @@ import octobot_commons.logging as logging
 import octobot_commons.symbols as symbol_util
 
 import octobot_trading.constants as constants
+import octobot_trading.exchanges as exchanges
 import octobot_trading.errors as errors
 import octobot_trading.enums as enums
 import octobot_trading.personal_data.portfolios.value_converter as value_converter
 import octobot_trading.personal_data.portfolios
 
+
+if typing.TYPE_CHECKING:
+    import octobot_trading.util.test_tools.exchange_data as exchange_data_import
 
 class PortfolioValueHolder:
     """
@@ -56,6 +60,73 @@ class PortfolioValueHolder:
 
         self.origin_crypto_currencies_values = {}
         self.current_crypto_currencies_values = {}
+
+    def initialize_from_exchange_data(
+        self, exchange_data: "exchange_data_import.ExchangeData", price_by_symbol: dict[str, float]
+    ) -> None:
+        """
+        Initialize prices and portfolio values from exchange data.
+        """
+        self._set_current_prices_from_exchange_data(exchange_data, price_by_symbol)
+        self._sync_portfolio_current_value_if_necessary()
+
+    def _set_current_prices_from_exchange_data(
+        self, exchange_data: "exchange_data_import.ExchangeData", price_by_symbol: dict[str, float]
+    ) -> None:
+        added_symbols = set()
+        for market in exchange_data.markets:
+            price = price_by_symbol.get(market.symbol)
+            if price is not None:
+                price = decimal.Decimal(str(price))
+                exchanges.force_set_mark_price(self.portfolio_manager.exchange_manager, market.symbol, price)
+                self.value_converter.update_last_price(market.symbol, price)
+                added_symbols.add(market.symbol)
+        ref_market = self.portfolio_manager.reference_market
+        for asset, value in exchange_data.portfolio_details.asset_values.items():
+            if asset == ref_market:
+                continue
+            # include fetched portfolio assets values to be able to value them in ref market in case they
+            # are not already added from traded pairs
+            value_symbol = symbol_util.merge_currencies(asset, ref_market)
+            decimal_value = decimal.Decimal(str(value))
+            if value_symbol not in added_symbols:
+                exchanges.force_set_mark_price(self.portfolio_manager.exchange_manager, value_symbol, decimal_value)
+                self.value_converter.update_last_price(value_symbol, decimal_value)
+                added_symbols.add(value_symbol)
+
+    def _sync_portfolio_current_value_if_necessary(self) -> None:
+        if not self.portfolio_manager.portfolio.portfolio:
+            # portfolio is not initialized, skip portfolio values initialization
+            return
+        try:
+            self._sync_portfolio_current_value_using_available_currencies_values(init_price_fetchers=False)
+            portfolio_value = self.portfolio_current_value
+            if not portfolio_value or portfolio_value <= constants.ZERO:
+                if self._should_have_initialized_portfolio_values():
+                    # should not happen (if it does, holding ratios using portfolio_value can't 
+                    # be computed)
+                    # This is not critial but should be fixed if seen
+                    self.logger.error(
+                        f"[{self.portfolio_manager.exchange_manager.exchange_name}] Portfolio current value "
+                        f"can't be initialized: {portfolio_value=}"
+                    )
+                else:
+                    self.logger.info(
+                        f"[{self.portfolio_manager.exchange_manager.exchange_name}] Portfolio current value "
+                        f"not initialized: no traded asset holdings in portfolio"
+                    )
+        except Exception as err:
+            self.logger.exception(err, True, f"Error when initializing trading portfolio values: {err}")
+
+    def _should_have_initialized_portfolio_values(self) -> bool:
+        portfolio_assets = [
+            asset
+            for asset, values in self.portfolio_manager.portfolio.portfolio.items()
+            if values.total > constants.ZERO
+        ]
+        if any(coin in portfolio_assets for coin in exchanges.get_traded_assets(self.portfolio_manager.exchange_manager)):
+            return True
+        return False
 
     def update_origin_crypto_currencies_values(self, symbol, mark_price):
         """
@@ -106,7 +177,7 @@ class PortfolioValueHolder:
         :return: the current crypto-currencies values
         """
         if not self.current_crypto_currencies_values:
-            self.sync_portfolio_current_value_using_available_currencies_values()
+            self._sync_portfolio_current_value_using_available_currencies_values()
         return self.current_crypto_currencies_values
 
     def get_current_holdings_values(self):
@@ -171,7 +242,7 @@ class PortfolioValueHolder:
         Initialize values required by portfolio profitability to perform its profitability calculation
         :param force_recompute_origin_portfolio: when True, force origin portfolio computation
         """
-        self.sync_portfolio_current_value_using_available_currencies_values()
+        self._sync_portfolio_current_value_using_available_currencies_values()
         self._init_portfolio_values_if_necessary(force_recompute_origin_portfolio)
 
     def get_origin_portfolio_current_value(self, refresh_values=False):
@@ -248,7 +319,7 @@ class PortfolioValueHolder:
             if currency not in currencies_values
         })
 
-    def sync_portfolio_current_value_using_available_currencies_values(self, init_price_fetchers=True):
+    def _sync_portfolio_current_value_using_available_currencies_values(self, init_price_fetchers=True):
         """
         :param init_price_fetchers: When True, can init price using fetchers
         Update the portfolio current value with the current portfolio instance

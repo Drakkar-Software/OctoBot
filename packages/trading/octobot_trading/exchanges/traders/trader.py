@@ -15,6 +15,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import decimal
+import uuid
 import typing
 import asyncio
 
@@ -1172,3 +1173,6 @@ class Trader(util.Initializable):
         """
         return len(self.exchange_manager.exchange_personal_data.positions_manager.get_symbol_positions(
             symbol=symbol)) != 0
+
+    def generate_random_order_id(self) -> str:
+        return str(uuid.uuid4())
