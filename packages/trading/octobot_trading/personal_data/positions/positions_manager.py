@@ -16,11 +16,13 @@
 import collections
 import contextlib
 import typing
+import copy
 
 import octobot_commons.logging as logging
 import octobot_commons.enums as commons_enums
 import octobot_commons.tree as commons_tree
 
+import octobot_trading.exchange_data.contracts.contract_factory as contract_factory
 import octobot_trading.personal_data.positions.position_factory as position_factory
 import octobot_trading.personal_data.positions.position as position_import
 import octobot_trading.util as util
@@ -28,6 +30,9 @@ import octobot_trading.enums as enums
 import octobot_trading.constants as constants
 import octobot_trading.errors as errors
 import octobot_trading.exchange_channel as exchange_channel
+
+if typing.TYPE_CHECKING:
+    import octobot_trading.util.test_tools.exchange_data as exchange_data_import
 
 
 class PositionsManager(util.Initializable):
@@ -231,6 +236,31 @@ class PositionsManager(util.Initializable):
             yield
         finally:
             self._enable_position_update_from_order = True
+
+    def initialize_from_exchange_data(
+        self, exchange_data: "exchange_data_import.ExchangeData",
+        exclusively_use_exchange_position_details: bool = False
+    ) -> None:
+        """ 
+        Initialize positions from exchange data by parsing position details and adding them to this manager.
+        """
+        exchange_manager = self.trader.exchange_manager
+        contract_factory.initialize_contracts_from_exchange_data(exchange_manager, exchange_data)
+        for position_details in exchange_data.positions:
+            if not self._is_cleared_position(position_details.position):
+                position = position_factory.create_position_instance_from_dict(
+                    self.trader, copy.copy(position_details.position)
+                )
+                position.position_id = self.create_position_id(position)
+                self.add_position(position)
+        self.is_exclusively_using_exchange_position_details = exclusively_use_exchange_position_details
+
+    @staticmethod
+    def _is_cleared_position(position_dict: dict) -> bool:
+        for key in position_dict:
+            if key not in constants.MINIMAL_POSITION_IDENTIFICATION_DETAILS_KEYS:
+                return False
+        return True
 
     # private
 

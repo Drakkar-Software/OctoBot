@@ -26,6 +26,9 @@ import octobot_trading.personal_data as personal_data
 import octobot_trading.personal_data.trades.trade_pnl as trade_pnl
 import octobot_trading.util as util
 
+if typing.TYPE_CHECKING:
+    import octobot_trading.util.test_tools.exchange_data as exchange_data_import
+
 
 class TradesManager(util.Initializable):
     # memory usage for 100000 trades: approx 180 Mo
@@ -154,6 +157,15 @@ class TradesManager(util.Initializable):
                 and (not exchange_order_id or trade.exchange_order_id == exchange_order_id)
             )
         ]
+
+    def initialize_from_exchange_data(self, exchange_data: "exchange_data_import.ExchangeData") -> None:
+        """
+        Initialize trades from exchange data by parsing trade dicts and adding them to this manager.
+        """
+        for trade_dict in exchange_data.trades:
+            trade = personal_data.create_trade_from_dict(self.trader, trade_dict)
+            trade.trade_id = trade.trade_id or self.trader.generate_random_order_id()
+            self.upsert_trade_instance(trade)
 
     # private
     def _check_trades_size(self):

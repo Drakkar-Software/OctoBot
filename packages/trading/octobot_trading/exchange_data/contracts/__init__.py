@@ -37,6 +37,7 @@ from octobot_trading.exchange_data.contracts.option_contract import (
 from octobot_trading.exchange_data.contracts import contract_factory
 from octobot_trading.exchange_data.contracts.contract_factory import (
     get_contract_type_from_symbol,
+    initialize_contracts_from_exchange_data,
     update_contracts_from_positions,
     update_future_contract_from_dict,
     create_default_future_contract,
@@ -50,6 +51,7 @@ __all__ = [
     "FutureContract",
     "OptionContract",
     "get_contract_type_from_symbol",
+    "initialize_contracts_from_exchange_data",
     "update_contracts_from_positions",
     "update_future_contract_from_dict",
     "create_default_future_contract",
