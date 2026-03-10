@@ -25,14 +25,17 @@ import octobot_commons.enums as commons_enums
 
 import octobot_trading.exchange_channel as exchange_channel
 import octobot_trading.constants as constants
+import octobot_trading.enums as enums
 import octobot_trading.errors as errors
 import octobot_trading.personal_data as personal_data
+import octobot_trading.storage as storage
 import octobot_trading.util as util
 import octobot_trading.enums as enums
 import octobot_trading.personal_data.portfolios.update_events as update_events
 
 if typing.TYPE_CHECKING:
     import octobot_trading.exchanges
+    import octobot_trading.util.test_tools.exchange_data as exchange_data_import
 
 
 class PortfolioManager(util.Initializable):
@@ -339,6 +342,32 @@ class PortfolioManager(util.Initializable):
         """
         if self.enable_portfolio_available_update_from_order:
             self.portfolio.update_portfolio_available(order, is_new_order=is_new_order)
+
+    async def initialize_from_exchange_data(self, exchange_data: "exchange_data_import.ExchangeData") -> None:
+        """
+        Lock funds for chained orders from missing orders in portfolio.
+        """
+        groups = {}
+        for base_order in exchange_data.orders_details.missing_orders:
+            for chained_order_dict in base_order.get(enums.StoredOrdersAttr.CHAINED_ORDERS.value, []):
+                chained_order = await personal_data.create_order_from_order_storage_details(
+                    storage.orders_storage.from_order_document(chained_order_dict),
+                    self.exchange_manager,
+                    groups,
+                )
+                if chained_order.update_with_triggering_order_fees and (
+                    base_order_exchange_id := base_order.get(constants.STORAGE_ORIGIN_VALUE, {}).get(
+                        enums.ExchangeConstantsOrderColumns.EXCHANGE_ID.value
+                    )
+                ):
+                    trade = personal_data.aggregate_trades_by_exchange_order_id(
+                        self.exchange_manager.exchange_personal_data.trades_manager.get_trades(
+                            exchange_order_id=base_order_exchange_id
+                        )
+                    ).get(base_order_exchange_id)
+                    if trade:
+                        chained_order.update_quantity_with_order_fees(trade)
+                self.portfolio.update_portfolio_available(chained_order, is_new_order=True)
 
     def _load_portfolio(self, reset_from_config):
         """

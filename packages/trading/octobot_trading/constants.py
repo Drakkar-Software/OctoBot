@@ -213,6 +213,11 @@ RETRIABLE_EXCHANGE_PROXY_ERRORS_DESC: set[str] = set(os.getenv(
 
 # used to force margin type update before positions init (if necessary)
 FORCED_MARGIN_TYPE = enums.MarginType(os.getenv("FORCED_MARGIN_TYPE", enums.MarginType.ISOLATED.value))
+MINIMAL_POSITION_IDENTIFICATION_DETAILS_KEYS = [
+    enums.ExchangeConstantsPositionColumns.LOCAL_ID.value,  # to fetch position
+    enums.ExchangeConstantsPositionColumns.SYMBOL.value,  # to fetch position
+    enums.ExchangeConstantsPositionColumns.LEVERAGE.value,  # to keep user configured leverage
+]
 
 # API
 API_LOGGER_TAG = "TradingApi"

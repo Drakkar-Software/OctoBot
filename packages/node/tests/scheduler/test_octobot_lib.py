@@ -142,6 +142,21 @@ def deposit_action():
 
 
 @pytest.fixture
+def transfer_blockchain_action():
+    return {
+        "params": {
+            "ACTIONS": "transfer",
+            "BLOCKCHAIN_FROM_ASSET": "BTC",
+            "BLOCKCHAIN_FROM_AMOUNT": 1,
+            "BLOCKCHAIN_FROM": BLOCKCHAIN,
+            "BLOCKCHAIN_TO": BLOCKCHAIN,
+            "BLOCKCHAIN_TO_ASSET": "BTC",
+            "BLOCKCHAIN_TO_ADDRESS": "0x123_simulated_transfer_to_address_BTC",
+        }
+    }
+
+
+@pytest.fixture
 def withdraw_action():
     return {
         "params": {
@@ -478,6 +493,50 @@ class TestOctoBotActionsJob:
             assert order["amount"] == decimal.Decimal("1")
             assert order["type"] == "market"
             assert order["side"] == "buy"
+
+    async def test_run_transfer_blockchain_only_action(self, transfer_blockchain_action):
+        # step 1: configure the job
+        job = octobot_lib.OctoBotActionsJob(transfer_blockchain_action)
+        result = await job.run()
+        assert len(result.processed_actions_by_automation_id) == 1
+        processed_actions = next(iter(result.processed_actions_by_automation_id.values()))
+        assert len(processed_actions) == 1
+        assert isinstance(processed_actions[0], mini_octobot.entities.ConfiguredActionDetails)
+        assert processed_actions[0].action == mini_octobot.enums.ActionType.APPLY_CONFIGURATION.value
+        assert processed_actions[0].config is not None
+        assert len(processed_actions[0].config["automations"]) == 1
+        assert job.after_execution_state.automations[0].reference_exchange_account_elements is None
+        assert job.after_execution_state.automations[0].client_exchange_account_elements.portfolio.content is None
+
+        # step 2: run the transfer action
+        next_actions_description = result.next_actions_description
+        assert next_actions_description is not None
+        parsed_state = mini_octobot.AutomationsState.from_dict(next_actions_description.state)
+        next_actions = parsed_state.automations[0].actions_dag.get_executable_actions()
+        assert len(next_actions) == 1
+        assert isinstance(next_actions[0], mini_octobot.entities.DSLScriptActionDetails)
+        assert next_actions[0].dsl_script is not None and "blockchain_wallet_transfer" in next_actions[0].dsl_script
+        job2 = octobot_lib.OctoBotActionsJob(
+            next_actions_description.to_dict(include_default_values=False)
+        )
+        result = await job2.run()
+        assert len(result.processed_actions_by_automation_id) == 1
+        processed_actions = next(iter(result.processed_actions_by_automation_id.values()))
+        assert len(processed_actions) == 1
+        assert isinstance(processed_actions[0], mini_octobot.entities.DSLScriptActionDetails)
+        assert processed_actions[0].dsl_script is not None and "blockchain_wallet_transfer" in processed_actions[0].dsl_script
+        assert result.next_actions_description is None # no more actions to execute
+
+        assert processed_actions[0].result is not None
+        assert len(processed_actions[0].result[DSL_operators.CREATED_TRANSACTIONS_KEY]) == len(result.get_deposit_and_withdrawal_details()) == 1
+        assert len(result.get_deposit_and_withdrawal_details()) == 1
+        transaction = result.get_deposit_and_withdrawal_details()[0]
+        assert transaction[trading_enums.ExchangeConstantsTransactionColumns.CURRENCY.value] == "BTC"
+        assert transaction[trading_enums.ExchangeConstantsTransactionColumns.AMOUNT.value] == decimal.Decimal("1")
+        assert transaction[trading_enums.ExchangeConstantsTransactionColumns.NETWORK.value] == BLOCKCHAIN
+        assert transaction[trading_enums.ExchangeConstantsTransactionColumns.ADDRESS_TO.value] == "0x123_simulated_transfer_to_address_BTC"
+
+
 
     async def test_run_deposit_action(self, deposit_action):
         # step 1: configure the job

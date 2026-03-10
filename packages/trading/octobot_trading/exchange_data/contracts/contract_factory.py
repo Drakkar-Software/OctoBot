@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import typing
 import decimal
 
 import octobot_commons.logging as logging
@@ -25,6 +26,8 @@ import octobot_trading.exchange_data.contracts.margin_contract as margin_contrac
 import octobot_trading.exchange_data.contracts.future_contract as future_contract
 import octobot_trading.exchange_data.contracts.option_contract as option_contract
 
+if typing.TYPE_CHECKING:
+    import octobot_trading.util.test_tools.exchange_data as exchange_data_import
 
 def update_contracts_from_positions(exchange_manager, positions) -> bool:
     updated = False
@@ -56,6 +59,12 @@ def update_contracts_from_positions(exchange_manager, positions) -> bool:
                     # no need to inform as the contract is not requested
                     _get_logger().debug(message)
     return updated
+
+
+def initialize_contracts_from_exchange_data(exchange_manager, exchange_data: "exchange_data_import.ExchangeData") -> None:
+    for position_data in exchange_data.positions:
+        if position_data.contract:
+            update_future_contract_from_dict(exchange_manager, position_data.contract)
 
 
 def update_future_contract_from_dict(exchange_manager, contract: dict) -> bool:

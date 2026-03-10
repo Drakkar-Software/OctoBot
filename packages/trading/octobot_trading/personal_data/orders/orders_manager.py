@@ -27,10 +27,15 @@ import octobot_trading.errors as errors
 import octobot_trading.personal_data.orders.order as order_class
 import octobot_trading.personal_data.orders.order_factory as order_factory
 import octobot_trading.personal_data.orders.order_util as order_util
+import octobot_trading.personal_data.orders.orders_storage_operations as orders_storage_operations
 import octobot_trading.exchanges
 import octobot_trading.personal_data.orders.active_order_swap_strategies.active_order_swap_strategy as \
     active_order_swap_strategy_import
 import octobot_trading.personal_data.orders.order_group as order_group_import
+
+
+if typing.TYPE_CHECKING:
+    import octobot_trading.util.test_tools.exchange_data as exchange_data_import
 
 
 class OrdersManager(util.Initializable):
@@ -255,6 +260,25 @@ class OrdersManager(util.Initializable):
             yield
         finally:
             self.enable_order_auto_synchronization = True
+
+    async def initialize_from_exchange_data(self, exchange_data: "exchange_data_import.ExchangeData") -> None:
+        """
+        Initialize orders from exchange data by parsing open orders and adding them to this manager.
+        """
+        exchange_manager = self.trader.exchange_manager
+        pending_groups = {}
+        for order_details in exchange_data.orders_details.open_orders:
+            if constants.STORAGE_ORIGIN_VALUE in order_details:
+                order = order_factory.create_order_from_order_raw_in_storage_details_without_related_elements(
+                    exchange_manager, order_details
+                )
+                await orders_storage_operations.create_orders_storage_related_elements(
+                    order, order_details, exchange_manager, pending_groups
+                )
+            else:
+                # simple order dict (order just fetched from exchange)
+                order = order_factory.create_order_instance_from_raw(self.trader, order_details)
+            await self.upsert_order_instance(order)
 
     # private methods
     def _reset_orders(self):

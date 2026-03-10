@@ -15,7 +15,6 @@
 #  License along with this library.
 import decimal
 import time
-import uuid
 
 import octobot_trading.constants
 import octobot_trading.enums as enums
@@ -59,7 +58,7 @@ class TraderSimulator(trader.Trader):
         self, asset: str, amount: decimal.Decimal, network: str, address: str, tag: str = "", params: dict = None
     ) -> dict:
         deposit_address = await self.get_deposit_address(asset)
-        transaction_id = str(uuid.uuid4())
+        transaction_id = self.generate_random_order_id()
         return {
             enums.ExchangeConstantsTransactionColumns.TXID.value: transaction_id,
             enums.ExchangeConstantsTransactionColumns.TIMESTAMP.value: time.time(),
