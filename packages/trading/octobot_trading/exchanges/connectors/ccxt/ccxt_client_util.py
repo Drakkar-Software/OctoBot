@@ -24,7 +24,6 @@ except ImportError:
 import os
 import ssl
 import aiohttp
-import copy
 import logging
 import typing
 import ccxt
@@ -114,24 +113,6 @@ def create_client(
 
 async def close_client(client):
     await client.close()
-    client.markets = {}
-    client.markets_by_id = {}
-    client.ids = []
-    client.last_json_response = {}
-    client.last_http_response = ""
-    client.last_response_headers = {}
-    client.markets_loading = None
-    client.currencies = {}
-    client.baseCurrencies = {}
-    client.quoteCurrencies = {}
-    client.currencies_by_id = {}
-    client.codes = []
-    client.symbols = {}
-    client.accounts = []
-    client.accounts_by_id = {}
-    client.ohlcvs = {}
-    client.trades = {}
-    client.orderbooks = {}
 
 
 def get_unauthenticated_exchange(
@@ -196,23 +177,18 @@ def filtered_fetched_markets(client, market_filter: typing.Callable[[dict], bool
         client.fetch_markets = origin_fetch_markets
 
 
-def load_markets_from_cache(client, authenticated_cache: bool, market_filter: typing.Union[None, typing.Callable[[dict], bool]] = None):
+def load_markets_from_cache(client: async_ccxt.Exchange, authenticated_cache: bool, market_filter: typing.Union[None, typing.Callable[[dict], bool]] = None):
     client_key = ccxt_clients_cache.get_client_key(client, authenticated_cache)
-    client.set_markets(
-        market
-        for market in ccxt_clients_cache.get_exchange_parsed_markets(client_key)
-        if market_filter is None or market_filter(market)
-    )
+    ccxt_clients_cache.apply_exchange_markets_cache(client_key, client, market_filter)
     if time_difference := ccxt_clients_cache.get_exchange_time_difference(client_key):
-        client.options[ccxt_constants.CCXT_TIME_DIFFERENCE] = time_difference
+        if client.options:
+            client.options[ccxt_constants.CCXT_TIME_DIFFERENCE] = time_difference
 
 
-def set_markets_cache(client, authenticated_cache: bool):
+def set_ccxt_client_cache(client: async_ccxt.Exchange, authenticated_cache: bool):
     if client.markets:
         client_key = ccxt_clients_cache.get_client_key(client, authenticated_cache)
-        ccxt_clients_cache.set_exchange_parsed_markets(
-            client_key, copy.deepcopy(list(client.markets.values()))
-        )
+        ccxt_clients_cache.set_exchange_markets_cache(client_key, client)
         if time_difference := client.options.get(ccxt_constants.CCXT_TIME_DIFFERENCE):
             ccxt_clients_cache.set_exchange_time_difference(client_key, time_difference)
 

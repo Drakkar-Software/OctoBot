@@ -13,16 +13,20 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import typing
+
 import octobot_trading.constants as constants
 import octobot_trading.enums as enums
-import octobot_trading.util.test_tools.exchange_data as exchange_data_import
+
+if typing.TYPE_CHECKING:
+    import octobot_trading.util.test_tools.exchange_data as exchange_data_import
 
 
-def _get_positions_symbols(exchange_data: exchange_data_import.ExchangeData) -> set[str]:
+def _get_positions_symbols(exchange_data: "exchange_data_import.ExchangeData") -> set[str]:
     return set(get_positions_by_symbol(exchange_data))
 
 
-def _get_orders_symbols(exchange_data: exchange_data_import.ExchangeData) -> set[str]:
+def _get_orders_symbols(exchange_data: "exchange_data_import.ExchangeData") -> set[str]:
     return set(
         order[constants.STORAGE_ORIGIN_VALUE][enums.ExchangeConstantsOrderColumns.SYMBOL.value]
         for order in exchange_data.orders_details.open_orders + exchange_data.orders_details.missing_orders
@@ -32,11 +36,11 @@ def _get_orders_symbols(exchange_data: exchange_data_import.ExchangeData) -> set
     )
 
 
-def get_orders_and_positions_symbols(exchange_data: exchange_data_import.ExchangeData) -> set[str]:
+def get_orders_and_positions_symbols(exchange_data: "exchange_data_import.ExchangeData") -> set[str]:
     return _get_orders_symbols(exchange_data).union(_get_positions_symbols(exchange_data))
 
 
-def get_positions_by_symbol(exchange_data: exchange_data_import.ExchangeData) -> dict[str, list[dict]]:
+def get_positions_by_symbol(exchange_data: "exchange_data_import.ExchangeData") -> dict[str, list[dict]]:
     return {
         position_details.position[enums.ExchangeConstantsPositionColumns.SYMBOL.value]:
             [
