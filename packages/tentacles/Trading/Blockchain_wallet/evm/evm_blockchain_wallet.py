@@ -21,6 +21,9 @@ import enum
 import os
 import logging
 
+# Disable web3.py import logging
+for logger_name in ["rlp.codec"]:
+    logging.getLogger(logger_name).setLevel(logging.WARNING)
 import web3 as web3_lib
 import web3.exceptions as web3_exceptions
 
@@ -157,7 +160,7 @@ class EVMBlockchainWallet(blockchain_wallets.BlockchainWallet):
         self._get_rpc_url()  # validate early — raises BlockchainWalletConfigurationError if missing
         self._address: str = self._resolve_address()
         # Disable web3.py logging
-        for logger_name in ["web3", "urllib3", "rlp.codec"]:
+        for logger_name in ["web3", "urllib3"]:
             logging.getLogger(logger_name).setLevel(logging.WARNING)
 
     def _resolve_address(self) -> str:
