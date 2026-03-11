@@ -24,7 +24,7 @@ import octobot_commons.timestamp_util as timestamp_util
 import octobot_trading.exchange_channel as exchange_channel
 import octobot_trading.exchanges as exchanges
 import octobot_trading.personal_data as personal_data
-import octobot_trading.exchange_data as exchange_data
+import octobot_trading.exchange_data
 import octobot_trading.constants as constants
 import octobot_trading.enums as enums
 import octobot_trading.util as util
@@ -91,7 +91,9 @@ class ExchangeManager(util.Initializable):
         self.storage_manager: storage.StorageManager = storage.StorageManager(self)
         self.exchange_config: exchanges.ExchangeConfig = exchanges.ExchangeConfig(self)
         self.exchange_personal_data: personal_data.ExchangePersonalData = personal_data.ExchangePersonalData(self)
-        self.exchange_symbols_data: exchange_data.ExchangeSymbolsData = exchange_data.ExchangeSymbolsData(self)
+        self.exchange_symbols_data: octobot_trading.exchange_data.ExchangeSymbolsData = (
+            octobot_trading.exchange_data.ExchangeSymbolsData(self)
+        )
 
         self.debug_info: dict[str, typing.Any] = {}
 
@@ -254,7 +256,7 @@ class ExchangeManager(util.Initializable):
         return self.config[common_constants.CONFIG_TRADER][common_constants.CONFIG_ENABLED_OPTION]
 
     def reset_exchange_symbols_data(self):
-        self.exchange_symbols_data = exchange_data.ExchangeSymbolsData(self)
+        self.exchange_symbols_data = octobot_trading.exchange_data.ExchangeSymbolsData(self)
 
     def reset_exchange_personal_data(self):
         self.exchange_personal_data = personal_data.ExchangePersonalData(self)

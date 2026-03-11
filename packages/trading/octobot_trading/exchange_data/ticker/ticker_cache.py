@@ -24,7 +24,9 @@ class TickerCache:
     def is_valid_symbol(self, exchange_name: str, exchange_type: str, sandboxed: bool, symbol: str) -> bool:
         try:
             # will raise if symbol is missing (therefore invalid)
-            self._ALL_TICKERS_BY_EXCHANGE_KEY[self.get_exchange_key(exchange_name, exchange_type, sandboxed)][symbol]
+            self._ALL_TICKERS_BY_EXCHANGE_KEY[ # pylint: disable=expression-not-assigned
+                self.get_exchange_key(exchange_name, exchange_type, sandboxed)
+            ][symbol]
             return True
         except KeyError:
             return False
