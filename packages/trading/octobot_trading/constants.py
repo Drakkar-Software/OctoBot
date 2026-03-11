@@ -205,6 +205,7 @@ RETRIABLE_EXCHANGE_ERRORS_DESC: set[str] = set(os.getenv(
         ':read ECONNRESET:read ETIMEDOUT'
     )
 ).split(":"))
+USE_CCXT_SHARED_MARKETS_CACHE = os_util.parse_boolean_environment_var("USE_CCXT_SHARED_MARKETS_CACHE", "True")
 
 # exchange proxy
 RETRIABLE_EXCHANGE_PROXY_ERRORS_DESC: set[str] = set(os.getenv(

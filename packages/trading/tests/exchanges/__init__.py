@@ -26,6 +26,7 @@ from octobot_backtesting.constants import CONFIG_BACKTESTING
 import octobot_backtesting.time as backtesting_time
 from octobot_commons.asyncio_tools import wait_asyncio_next_cycle
 from octobot_commons.enums import TimeFrames
+import octobot_trading.constants
 import octobot_trading.exchanges.connectors.ccxt.ccxt_clients_cache as ccxt_clients_cache
 
 from octobot_commons.tests.test_config import load_test_config
@@ -414,9 +415,15 @@ async def cached_markets_exchange_manager(config, exchange_name, exchange_only=F
 
 
 def register_market_status_mocks(exchange_name):
+    cached_client = ccxt_client_util.ccxt_exchange_class_factory(exchange_name)()
+    client_key = ccxt_clients_cache.get_client_key(cached_client, False)
+    # save markets in cache
     ccxt_clients_cache.set_exchange_parsed_markets(
-        ccxt_clients_cache.get_client_key(
-            ccxt_client_util.ccxt_exchange_class_factory(exchange_name)(), False
-        ),
-        mock_exchanges_data.MOCKED_EXCHANGE_SYMBOL_DETAILS[exchange_name]
+        client_key, mock_exchanges_data.MOCKED_EXCHANGE_SYMBOL_DETAILS[exchange_name]
     )
+    with mock.patch.object(octobot_trading.constants, "USE_CCXT_SHARED_MARKETS_CACHE", False):
+        # apply markets from cache
+        ccxt_clients_cache.apply_exchange_markets_cache(client_key, cached_client)
+    # save cached_client cache in cached exchange
+    ccxt_clients_cache.set_cached_shared_markets_exchange(client_key, cached_client)
+

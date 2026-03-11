@@ -3,12 +3,14 @@ import typing
 import octobot_commons.constants as common_constants
 
 import octobot_trading.enums as trading_enums
-import octobot_trading.util.test_tools.exchange_data as exchange_data_import
 import octobot_trading.util.test_tools.exchange_data_util as exchange_data_util
+
+if typing.TYPE_CHECKING:
+    import octobot_trading.util.test_tools.exchange_data as exchange_data_import
 
 
 def create_market_filter(
-    exchange_data: typing.Optional[exchange_data_import.ExchangeData],
+    exchange_data: typing.Optional["exchange_data_import.ExchangeData"],
     to_keep_quote: typing.Optional[str],
     to_keep_symbols: typing.Optional[typing.Iterable[str]] = None,
     to_keep_quotes: typing.Optional[typing.Iterable[str]] = None,

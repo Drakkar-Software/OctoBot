@@ -166,7 +166,7 @@ async def test_get_current_holdings_values(backtesting_trader):
         portfolio_value_holder.value_converter.last_prices_by_trading_pair["ETH/BTC"] = decimal.Decimal("50")
         # Update current_crypto_currencies_values to include ETH with the calculated price
         portfolio_value_holder.current_crypto_currencies_values["ETH"] = decimal.Decimal("50")
-        portfolio_value_holder.sync_portfolio_current_value_using_available_currencies_values(init_price_fetchers=False)
+        portfolio_value_holder._sync_portfolio_current_value_using_available_currencies_values(init_price_fetchers=False)
         assert portfolio_value_holder.get_current_holdings_values() == {
             'BTC': decimal.Decimal("10"),
             'ETH': decimal.Decimal("5000"),
@@ -255,19 +255,19 @@ async def test_update_origin_crypto_currencies_values(backtesting_trader):
            is False
 
 @pytest.mark.parametrize("backtesting_exchange_manager", ["spot", "margin", "futures", "options"], indirect=True)
-async def test_sync_portfolio_current_value_using_available_currencies_values(backtesting_trader):
+async def test__sync_portfolio_current_value_using_available_currencies_values(backtesting_trader):
     config, exchange_manager, trader = backtesting_trader
     portfolio_manager = exchange_manager.exchange_personal_data.portfolio_manager
     portfolio_value_holder = portfolio_manager.portfolio_value_holder
 
     assert portfolio_value_holder.portfolio_current_value == constants.ZERO
-    portfolio_value_holder.sync_portfolio_current_value_using_available_currencies_values()
+    portfolio_value_holder._sync_portfolio_current_value_using_available_currencies_values()
     assert portfolio_value_holder.portfolio_current_value == decimal.Decimal(str(10))
 
     portfolio_value_holder.value_converter.missing_currency_data_in_exchange.clear()
     exchange_manager.client_symbols.append("BTC/USDT")
     portfolio_manager.handle_mark_price_update("BTC/USDT", decimal.Decimal(str(100)))
-    portfolio_value_holder.sync_portfolio_current_value_using_available_currencies_values()
+    portfolio_value_holder._sync_portfolio_current_value_using_available_currencies_values()
     assert portfolio_value_holder.portfolio_current_value == decimal.Decimal(str(20)) # now includes USDT
 
 @pytest.mark.parametrize("backtesting_exchange_manager", ["spot", "futures"], indirect=True)
@@ -564,7 +564,7 @@ async def test_get_holdings_ratio_from_portfolio(backtesting_trader, currency, t
     exchange_manager.client_symbols.append("BTC/USDT")
     portfolio_value_holder.value_converter.last_prices_by_trading_pair["BTC/USDT"] = decimal.Decimal("1000")
     portfolio_value_holder.value_converter.missing_currency_data_in_exchange.discard("USDT")
-    portfolio_value_holder.sync_portfolio_current_value_using_available_currencies_values(init_price_fetchers=False)
+    portfolio_value_holder._sync_portfolio_current_value_using_available_currencies_values(init_price_fetchers=False)
     
     result = portfolio_value_holder._get_holdings_ratio_from_portfolio(
         currency, traded_symbols_only, include_assets_in_open_orders, coins_whitelist
@@ -598,7 +598,7 @@ async def test_get_total_holdings_value(backtesting_trader, coins_whitelist, tra
     exchange_manager.client_symbols.append("BTC/USDT")
     portfolio_value_holder.value_converter.last_prices_by_trading_pair["BTC/USDT"] = decimal.Decimal("1000")
     portfolio_value_holder.value_converter.missing_currency_data_in_exchange.discard("USDT")
-    portfolio_value_holder.sync_portfolio_current_value_using_available_currencies_values(init_price_fetchers=False)
+    portfolio_value_holder._sync_portfolio_current_value_using_available_currencies_values(init_price_fetchers=False)
     
     result = portfolio_value_holder._get_total_holdings_value(coins_whitelist, traded_symbols_only)
     
