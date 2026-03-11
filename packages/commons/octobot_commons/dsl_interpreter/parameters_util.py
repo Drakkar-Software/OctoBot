@@ -120,7 +120,9 @@ def apply_resolved_parameter_value(script: str, parameter: str, value: typing.An
     """
     to_replace = f"{parameter}={octobot_commons.constants.UNRESOLVED_PARAMETER_PLACEHOLDER}"
     if to_replace not in script:
-        raise octobot_commons.errors.ResolvedParameterNotFoundError(f"Parameter {parameter} not found in script: {script}")
+        raise octobot_commons.errors.ResolvedParameterNotFoundError(
+            f"Parameter {parameter} not found in script: {script}"
+        )
     new_value = f"{parameter}={format_parameter_value(value)}"
     return script.replace(to_replace, new_value)
 

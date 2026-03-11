@@ -122,6 +122,9 @@ async def gather_waiting_for_all_before_raising(*coros):
 
 @contextlib.contextmanager
 def logged_waiter(self, name: str, sleep_time: float = 30) -> typing.Generator[None, None, None]:
+    """
+    Periodically log the time elapsed since the start of the waiter
+    """
     async def _waiter() -> None:
         t0 = time.time()
         try:

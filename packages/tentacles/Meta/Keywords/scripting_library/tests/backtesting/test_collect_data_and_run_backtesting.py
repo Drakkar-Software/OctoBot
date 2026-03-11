@@ -76,12 +76,12 @@ async def test_collect_candles_without_backend_and_run_backtesting(trading_mode_
     )
 
     # 2. collect candles
-    ccxt_clients_cache._MARKETS_BY_EXCHANGE.clear()
+    ccxt_clients_cache._SHARED_MARKETS_EXCHANGE_BY_EXCHANGE.clear()
     await scripting_library.init_exchange_market_status_and_populate_backtesting_exchange_data(
         exchange_data, profile_data
     )
     # cached markets have been updated and now contain this exchange markets
-    assert len(ccxt_clients_cache._MARKETS_BY_EXCHANGE) == 1
+    assert len(ccxt_clients_cache._SHARED_MARKETS_EXCHANGE_BY_EXCHANGE) == 1
     # ensure collected datas are correct
     assert len(exchange_data.markets) == 2
     assert sorted([market.symbol for market in exchange_data.markets]) == ["BTC/USDT", "ETH/USDT"]

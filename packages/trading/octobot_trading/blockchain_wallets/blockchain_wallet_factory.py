@@ -17,10 +17,8 @@ import functools
 import typing
 
 import octobot_commons.tentacles_management as tentacles_management
-import octobot_trading.errors
 import octobot_trading.blockchain_wallets.blockchain_wallet as blockchain_wallet
 import octobot_trading.blockchain_wallets.blockchain_wallet_parameters as blockchain_wallet_parameters
-import octobot_trading.blockchain_wallets.simulator.blockchain_wallet_simulator as blockchain_wallet_simulator
 
 if typing.TYPE_CHECKING:
     import octobot_trading.exchanges
@@ -51,8 +49,10 @@ def create_blockchain_wallet(
         ]
         try:
             return blockchain_wallet_class(parameters)
-        except TypeError as err:
+        except TypeError:
             # trader arg is required for this wallet
             return blockchain_wallet_class(parameters, trader=trader)
     except KeyError as err:
-        raise ValueError(f"Blockchain {parameters.blockchain_descriptor.blockchain} not supported") from err
+        raise ValueError(
+            f"Blockchain {parameters.blockchain_descriptor.blockchain} not supported"
+        ) from err

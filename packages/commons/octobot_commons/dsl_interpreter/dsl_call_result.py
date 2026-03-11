@@ -22,9 +22,16 @@ import octobot_commons.dataclasses
 
 @dataclasses.dataclass
 class DSLCallResult(octobot_commons.dataclasses.FlexibleDataclass):
+    """
+    Stores a DSL call result alongside its statement (and error if any)
+    """
     statement: str
     result: typing.Optional[typing.Any] = None
     error: typing.Optional[str] = None
 
     def succeeded(self) -> bool:
+        """
+        Check if the DSL call succeeded
+        :return: True if the DSL call succeeded, False otherwise
+        """
         return self.error is None

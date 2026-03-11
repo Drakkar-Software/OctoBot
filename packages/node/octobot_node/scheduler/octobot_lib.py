@@ -28,6 +28,7 @@ try:
     import mini_octobot.environment
     import mini_octobot.enums
     import mini_octobot.parsers
+    import mini_octobot.entities
     # Requires mini_octobot import and importable tentacles folder
 
     # ensure environment is initialized
@@ -40,36 +41,6 @@ try:
 
 except ImportError:
     logging.getLogger("octobot_node.scheduler.octobot_lib").warning("OctoBot is not installed, OctoBot actions will not be available")
-    # mocks to allow import
-    class mini_octobot_mock:
-        class AbstractActionDetails:
-            def from_dict(self, *args, **kwargs):
-                raise NotImplementedError("AbstractActionDetails.from_dict is not implemented")
-
-        class AutomationsState:
-            def from_dict(self, *args, **kwargs):
-                raise NotImplementedError("AutomationsState.from_dict is not implemented")
-            def to_dict(self, *args, **kwargs):
-                raise NotImplementedError("AutomationsState.to_dict is not implemented")
-            def add_new_automation(self, *args, **kwargs):
-                raise NotImplementedError("AutomationsState.add_new_automation is not implemented")
-            def upsert_automation_actions(self, *args, **kwargs):
-                raise NotImplementedError("AutomationsState.upsert_automation_actions is not implemented")
-        class parsers:
-            class ActionsDAGParser:
-                def __init__(self, *args, **kwargs):
-                    raise NotImplementedError("ActionsDAGParser.__init__ is not implemented")
-                def parse(self, *args, **kwargs):
-                    raise NotImplementedError("ActionsDAGParser.parse is not implemented")
-
-        class AutomationsJob:
-            def __init__(self, *args, **kwargs):
-                raise NotImplementedError("AutomationsJob.__init__ is not implemented")
-            async def __aenter__(self):
-                raise NotImplementedError("AutomationsJob.__aenter__ is not implemented")
-            async def __aexit__(self, *args, **kwargs):
-                raise NotImplementedError("AutomationsJob.__aexit__ is not implemented")
-    mini_octobot = mini_octobot_mock()
 
 
 @dataclasses.dataclass
@@ -87,13 +58,13 @@ class OctoBotActionsJobDescription(octobot_commons.dataclasses.MinimizableDatacl
         if not to_add_actions_dag:
             raise ValueError("No action found in params")
         automation_id = None
-        if isinstance(to_add_actions_dag.actions[0], mini_octobot.entities.ConfiguredActionDetails):
+        if isinstance(to_add_actions_dag.actions[0], mini_octobot.entities.ConfiguredActionDetails) and to_add_actions_dag.actions[0].config:
             automation_id = to_add_actions_dag.actions[0].config["automations"][0]["metadata"]["automation_id"]
         if not automation_id:
             raise ValueError("No automation id found in params")
         self._include_actions_in_automations_state(automation_id, to_add_actions_dag)
     
-    def _include_actions_in_automations_state(self, automation_id: str, actions: mini_octobot.ActionsDAG):
+    def _include_actions_in_automations_state(self, automation_id: str, actions: "mini_octobot.ActionsDAG"):
         automations_state = mini_octobot.AutomationsState.from_dict(self.state)
         if not automations_state.automations:
             automations_state.add_new_automation(
@@ -122,12 +93,12 @@ def required_actions(func):
 
 @dataclasses.dataclass
 class OctoBotActionsJobResult:
-    processed_actions_by_automation_id: dict[str, list[mini_octobot.AbstractActionDetails]]
+    processed_actions_by_automation_id: dict[str, list["mini_octobot.AbstractActionDetails"]]
     next_actions_description: typing.Optional[OctoBotActionsJobDescription] = None
-    actions_dag_by_automation_id: dict[str, mini_octobot.ActionsDAG] = dataclasses.field(default_factory=dict)
+    actions_dag_by_automation_id: dict[str, "mini_octobot.ActionsDAG"] = dataclasses.field(default_factory=dict)
 
     @required_actions
-    def get_failed_actions(self) -> list[dict]:
+    def get_failed_actions(self) -> list[typing.Optional[dict]]:
         failed_actions = [
             action.result
             for actions in self.processed_actions_by_automation_id.values()
