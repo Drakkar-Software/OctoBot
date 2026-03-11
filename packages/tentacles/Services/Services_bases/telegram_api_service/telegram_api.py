@@ -19,6 +19,11 @@ import os
 import octobot_commons.constants as common_constants
 import octobot_commons.logging as bot_logging
 import telegram
+# avoid logging at telethon import time
+bot_logging.set_logging_level(
+    ["telethon.crypto.aes", "telethon.crypto.aesctr", "telethon.crypto.libssl"],
+    logging.WARNING
+)
 import telethon
 
 import octobot.constants as constants
@@ -29,9 +34,10 @@ import octobot_tentacles_manager.api as tentacles_manager_api
 
 
 class TelegramApiService(services.AbstractService):
-    LOGGERS = ["TelegramApiService.client.updates", "TelegramApiService.extensions.messagepacker",
-               "TelegramApiService.network.mtprotosender", "TelegramApiService.client.downloads",
-               "telethon.crypto.aes", "telethon.crypto.aesctr"]
+    LOGGERS = [
+        "TelegramApiService.client.updates", "TelegramApiService.extensions.messagepacker",
+        "TelegramApiService.network.mtprotosender", "TelegramApiService.client.downloads"
+    ]
 
     DOWNLOADS_FOLDER = "Downloads"
 
