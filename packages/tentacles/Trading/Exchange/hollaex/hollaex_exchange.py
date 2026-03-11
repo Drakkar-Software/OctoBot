@@ -58,9 +58,12 @@ class hollaexConnector(exchanges.CCXTConnector):
         if self.exchange_manager.exchange_name not in _REFRESHED_EXCHANGE_FEE_TIERS_BY_EXCHANGE_NAME:
             authenticated_cache = self.exchange_manager.exchange.requires_authentication_for_this_configuration_only()
             # always update fees cache using all markets to avoid market filter side effects from the current client
-            all_markets = ccxt_clients_cache.get_exchange_parsed_markets(
-                ccxt_clients_cache.get_client_key(self.client, authenticated_cache)
-            )
+            if trading_constants.USE_CCXT_SHARED_MARKETS_CACHE:
+                all_markets = list(self.client.markets.values())
+            else:
+                all_markets = ccxt_clients_cache.get_exchange_parsed_markets(
+                    ccxt_clients_cache.get_client_key(self.client, authenticated_cache)
+                )
             await self._refresh_exchange_fee_tiers(all_markets)
 
     async def disable_quick_trade_only_pairs(self):
