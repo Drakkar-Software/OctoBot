@@ -77,8 +77,6 @@ class ExchangeManager(util.Initializable):
 
         self.trader: exchanges.Trader = None # type: ignore
         self.exchange: exchanges.RestExchange = None # type: ignore
-        self.preconfigured_exchange: typing.Optional[exchanges.RestExchange] = None
-        self.leave_rest_exchange_open: bool = False
         self.exchange_backend: trading_backend.exchanges.Exchange = None # type: ignore
         self.is_broker_enabled: bool = False
         self.trading_modes: list = []
@@ -139,26 +137,24 @@ class ExchangeManager(util.Initializable):
         # stop exchange channels
         if enable_logs:
             self.logger.debug(f"Stopping exchange channels for exchange_id: {self.id} ...")
-        if self.exchange is not None and not self.leave_rest_exchange_open:
-            try:
-                exchange_channel.get_exchange_channels(self.id)
-                await exchange_channel.stop_exchange_channels(self, should_warn=warning_on_missing_elements)
-            except KeyError:
-                # no exchange channel to stop
-                pass
-            except Exception as err:
-                self.logger.exception(err, True, f"Error when stopping exchange channels: {err}")
+        try:
+            exchange_channel.get_exchange_channels(self.id)
+            await exchange_channel.stop_exchange_channels(self, should_warn=warning_on_missing_elements)
+        except KeyError:
+            # no exchange channel to stop
+            pass
+        except Exception as err:
+            self.logger.exception(err, True, f"Error when stopping exchange channels: {err}")
+        if self.exchange is not None:
+            # ensure self.exchange still exists as await self.exchange.stop()
+            # internally uses asyncio.sleep within ccxt
+            exchanges.Exchanges.instance().del_exchange(
+                self.exchange.name, self.id, should_warn=warning_on_missing_elements
+            )
             try:
                 await self.exchange.stop()
             except Exception as err:
                 self.logger.exception(err, True, f"Error when stopping exchange: {err}")
-            if self.exchange is not None:
-                # ensure self.exchange still exists as await self.exchange.stop()
-                # internally uses asyncio.sleep within ccxt
-                exchanges.Exchanges.instance().del_exchange(
-                    self.exchange.name, self.id, should_warn=warning_on_missing_elements
-                )
-                self.exchange.exchange_manager = None # type: ignore
             self.exchange = None # type: ignore
         if self.exchange_personal_data is not None:
             try:

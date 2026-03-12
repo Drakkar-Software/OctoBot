@@ -225,8 +225,6 @@ async def get_local_exchange_manager(
     is_broker_enabled: bool = False, exchange_config_by_exchange: typing.Optional[dict[str, dict]] = None,
     disable_unauth_retry: bool = False,
     market_filter: typing.Union[None, typing.Callable[[dict], bool]] = None,
-    rest_exchange: typing.Optional[exchanges_types.RestExchange] = None,
-    leave_rest_exchange_open: bool = False,
 ):
     exchange_type = exchange_config.get(common_constants.CONFIG_EXCHANGE_TYPE, get_default_exchange_type(exchange_name))
     builder = builder or exchange_builder.ExchangeBuilder(
@@ -244,8 +242,6 @@ async def get_local_exchange_manager(
         .is_broker_enabled(is_broker_enabled) \
         .use_cached_markets(use_cached_markets) \
         .use_market_filter(market_filter) \
-        .set_rest_exchange(rest_exchange) \
-        .leave_rest_exchange_open(leave_rest_exchange_open) \
         .is_ignoring_config(ignore_config) \
         .disable_trading_mode() \
         .build()
