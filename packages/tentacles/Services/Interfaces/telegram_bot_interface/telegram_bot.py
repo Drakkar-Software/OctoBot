@@ -102,21 +102,21 @@ class TelegramBotInterface(interfaces_bots.AbstractBotInterface):
             message += "/start: `Displays my startup message.`" + interfaces_bots.EOL
             message += "/ping: `Shows for how long I'm working.`" + interfaces_bots.EOL
             message += "/portfolio or /pf: `Displays my current portfolio.`" + interfaces_bots.EOL
-            message += "/open\_orders or /oo: `Displays my current open orders.`" + interfaces_bots.EOL
-            message += "/trades\_history or /th: `Displays my trades history since I started.`" + interfaces_bots.EOL
+            message += "/open\\_orders or /oo: `Displays my current open orders.`" + interfaces_bots.EOL
+            message += "/trades\\_history or /th: `Displays my trades history since I started.`" + interfaces_bots.EOL
             message += "/profitability or /pb: `Displays the profitability I made since I started.`" + interfaces_bots.EOL
-            message += "/market\_status or /ms: `Displays my understanding of the market and my risk parameter.`" + interfaces_bots.EOL
+            message += "/market\\_status or /ms: `Displays my understanding of the market and my risk parameter.`" + interfaces_bots.EOL
             message += "/fees or /fs: `Displays the total amount of fees I paid since I started.`" + interfaces_bots.EOL
             message += "/configuration or /cf: `Displays my traders, exchanges, evaluators, strategies and trading " \
                        "mode.`" + interfaces_bots.EOL
             message += "* - Trading Orders - *" + interfaces_bots.EOL
-            message += "/sell\_all : `Cancels all my orders related to the currency in parameter and instantly " \
+            message += "/sell\\_all : `Cancels all my orders related to the currency in parameter and instantly " \
                        "liquidate my holdings in this currency for my reference market.`" + interfaces_bots.EOL
-            message += "/sell\_all\_currencies : `Cancels all my orders and instantly liquidate all my currencies " \
+            message += "/sell\\_all\\_currencies : `Cancels all my orders and instantly liquidate all my currencies " \
                        "for my reference market.`" + interfaces_bots.EOL
             message += "* - Management - *" + interfaces_bots.EOL
-            message += "/set\_risk: `Changes my current risk setting into your command's parameter.`" + interfaces_bots.EOL
-            message += "/refresh\_portfolio or /rpf : `Forces OctoBot's real trader portfolio refresh using exchange " \
+            message += "/set\\_risk: `Changes my current risk setting into your command's parameter.`" + interfaces_bots.EOL
+            message += "/refresh\\_portfolio or /rpf : `Forces OctoBot's real trader portfolio refresh using exchange " \
                        "data. Should normally not be necessary.`" + interfaces_bots.EOL
             message += "/pause or /resume: `Pauses or resumes me.`" + interfaces_bots.EOL
             message += "/restart: `Restarts me.`" + interfaces_bots.EOL
