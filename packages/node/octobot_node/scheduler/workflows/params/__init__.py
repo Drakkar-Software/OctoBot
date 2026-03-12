@@ -16,17 +16,15 @@
 from .base_params import (
     Tracker,
     ProgressStatus,
-    BaseHistory,
 )
-from .automations_workflow_params import (
-    AutomationsWorkflowInputs,
-    AutomationsWorkflowIterationResult,
+from .automation_workflow_params import (
+    AutomationWorkflowInputs,
+    AutomationWorkflowIterationResult,
 )
 
 __all__ = [
     "Tracker",
-    "AutomationsWorkflowInputs",
-    "AutomationsWorkflowIterationResult",
+    "AutomationWorkflowInputs",
+    "AutomationWorkflowIterationResult",
     "ProgressStatus",
-    "BaseHistory",
 ]

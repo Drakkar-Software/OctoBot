@@ -32,22 +32,22 @@ def generate_workflow_name(prefix: str) -> str:
 
 async def get_progress_status(workflow_id: str) -> typing.Optional[params.ProgressStatus]:
     workflow_status = await dbos_lib.DBOS.get_workflow_status_async(workflow_id)
-    if inputs := get_automations_workflow_inputs(workflow_status):
+    if inputs := get_automation_workflow_inputs(workflow_status):
         return inputs.progress_status
     return None
 
 
 def get_input_task(workflow_status: dbos_lib.WorkflowStatus) -> typing.Optional[models.Task]:
-    if inputs := get_automations_workflow_inputs(workflow_status):
+    if inputs := get_automation_workflow_inputs(workflow_status):
         return inputs.task
     return None
 
 
-def get_automations_workflow_inputs(workflow_status: dbos_lib.WorkflowStatus) -> typing.Optional[params.AutomationsWorkflowInputs]:
+def get_automation_workflow_inputs(workflow_status: dbos_lib.WorkflowStatus) -> typing.Optional[params.AutomationWorkflowInputs]:
     for input in list(workflow_status.input.get("args", [])) + list(workflow_status.input.get("kwargs", {}).values()):
         if isinstance(input, dict):
             try:
-                parsed_inputs = params.AutomationsWorkflowInputs.from_dict(input)
+                parsed_inputs = params.AutomationWorkflowInputs.from_dict(input)
                 return parsed_inputs
             except TypeError:
                 print(f"Failed to parse inputs: {input}")
