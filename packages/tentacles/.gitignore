@@ -129,3 +129,6 @@ Services/Services_feeds/__init__.py
 Trading/__init__.py
 Trading/Exchange/__init__.py
 Trading/Mode/__init__.py
+
+# include web interface lib directory
+!/Services/Interfaces/web_interface/static/js/lib
