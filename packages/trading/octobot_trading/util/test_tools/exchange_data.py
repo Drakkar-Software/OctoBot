@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+# todo move
 import dataclasses
 import typing
 import decimal
@@ -20,7 +21,6 @@ import decimal
 import octobot_commons.dataclasses
 import octobot_commons.enums as common_enums
 import octobot_trading.exchanges.util.symbol_details as symbol_details_import
-
 
 @dataclasses.dataclass
 class IncompatibleAssetDetails(

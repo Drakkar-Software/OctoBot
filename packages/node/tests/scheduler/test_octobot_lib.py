@@ -249,15 +249,15 @@ class TestOctoBotActionsJob:
         # step 1: configure the job
         job = octobot_lib.OctoBotActionsJob(market_order_action)
         result = await job.run()
-        assert len(result.processed_actions_by_automation_id) == 1
-        processed_actions = next(iter(result.processed_actions_by_automation_id.values()))
+        assert len(result.processed_actions) == 1
+        processed_actions = result.processed_actions
         assert len(processed_actions) == 1
         assert isinstance(processed_actions[0], mini_octobot.entities.ConfiguredActionDetails)
         assert processed_actions[0].action == mini_octobot.enums.ActionType.APPLY_CONFIGURATION.value
         assert processed_actions[0].config is not None
-        assert len(processed_actions[0].config["automations"]) == 1
+        assert "automation" in processed_actions[0].config
         assert isinstance(processed_actions[0].config["exchange_account_details"], dict)
-        pre_trade_portfolio = job.after_execution_state.automations[0].client_exchange_account_elements.portfolio.content
+        pre_trade_portfolio = job.after_execution_state.automation.client_exchange_account_elements.portfolio.content
         assert pre_trade_portfolio["BTC"] == {
             common_constants.PORTFOLIO_AVAILABLE: 1,
             common_constants.PORTFOLIO_TOTAL: 1,
@@ -266,8 +266,8 @@ class TestOctoBotActionsJob:
         # step 2: run the trade action
         next_actions_description = result.next_actions_description
         assert next_actions_description is not None
-        parsed_state = mini_octobot.AutomationsState.from_dict(next_actions_description.state)
-        next_actions = parsed_state.automations[0].actions_dag.get_executable_actions()
+        parsed_state = mini_octobot.AutomationState.from_dict(next_actions_description.state)
+        next_actions = parsed_state.automation.actions_dag.get_executable_actions()
         assert len(next_actions) == 1
         assert isinstance(next_actions[0], mini_octobot.entities.DSLScriptActionDetails)
         assert next_actions[0].dsl_script == "market('buy', 'ETH/BTC', 1)"
@@ -275,8 +275,8 @@ class TestOctoBotActionsJob:
             next_actions_description.to_dict(include_default_values=False)
         )
         result = await job2.run()
-        assert len(result.processed_actions_by_automation_id) == 1
-        processed_actions = next(iter(result.processed_actions_by_automation_id.values()))
+        assert len(result.processed_actions) == 1
+        processed_actions = result.processed_actions
         assert len(processed_actions) == 1
         assert isinstance(processed_actions[0], mini_octobot.entities.DSLScriptActionDetails)
         assert processed_actions[0].dsl_script == "market('buy', 'ETH/BTC', 1)"
@@ -289,7 +289,7 @@ class TestOctoBotActionsJob:
         assert result.next_actions_description is None # no more actions to execute
 
         # ensure deposit is successful
-        post_deposit_portfolio = job2.after_execution_state.automations[0].client_exchange_account_elements.portfolio.content
+        post_deposit_portfolio = job2.after_execution_state.automation.client_exchange_account_elements.portfolio.content
         assert post_deposit_portfolio["BTC"][common_constants.PORTFOLIO_AVAILABLE] < pre_trade_portfolio["BTC"][common_constants.PORTFOLIO_AVAILABLE]
         assert post_deposit_portfolio["BTC"][common_constants.PORTFOLIO_TOTAL] < pre_trade_portfolio["BTC"][common_constants.PORTFOLIO_TOTAL]
 
@@ -301,15 +301,15 @@ class TestOctoBotActionsJob:
         # step 1: configure the job
         job = octobot_lib.OctoBotActionsJob(limit_order_action)
         result = await job.run()
-        assert len(result.processed_actions_by_automation_id) == 1
-        processed_actions = next(iter(result.processed_actions_by_automation_id.values()))
+        assert len(result.processed_actions) == 1
+        processed_actions = result.processed_actions
         assert len(processed_actions) == 1
         assert isinstance(processed_actions[0], mini_octobot.entities.ConfiguredActionDetails)
         assert processed_actions[0].action == mini_octobot.enums.ActionType.APPLY_CONFIGURATION.value
         assert processed_actions[0].config is not None
-        assert len(processed_actions[0].config["automations"]) == 1
+        assert "automation" in processed_actions[0].config
         assert isinstance(processed_actions[0].config["exchange_account_details"], dict)
-        pre_trade_portfolio = job.after_execution_state.automations[0].client_exchange_account_elements.portfolio.content
+        pre_trade_portfolio = job.after_execution_state.automation.client_exchange_account_elements.portfolio.content
         assert pre_trade_portfolio["BTC"] == {
             common_constants.PORTFOLIO_AVAILABLE: 1,
             common_constants.PORTFOLIO_TOTAL: 1,
@@ -318,8 +318,8 @@ class TestOctoBotActionsJob:
         # step 2: run the trade action
         next_actions_description = result.next_actions_description
         assert next_actions_description is not None
-        parsed_state = mini_octobot.AutomationsState.from_dict(next_actions_description.state)
-        next_actions = parsed_state.automations[0].actions_dag.get_executable_actions()
+        parsed_state = mini_octobot.AutomationState.from_dict(next_actions_description.state)
+        next_actions = parsed_state.automation.actions_dag.get_executable_actions()
         assert len(next_actions) == 1
         assert isinstance(next_actions[0], mini_octobot.entities.DSLScriptActionDetails)
         assert next_actions[0].dsl_script == "limit('buy', 'ETH/BTC', 1, '-10%')"
@@ -327,8 +327,8 @@ class TestOctoBotActionsJob:
             next_actions_description.to_dict(include_default_values=False)
         )
         result = await job2.run()
-        assert len(result.processed_actions_by_automation_id) == 1
-        processed_actions = next(iter(result.processed_actions_by_automation_id.values()))
+        assert len(result.processed_actions) == 1
+        processed_actions = result.processed_actions
         assert len(processed_actions) == 1
         assert isinstance(processed_actions[0], mini_octobot.entities.DSLScriptActionDetails)
         assert processed_actions[0].dsl_script == "limit('buy', 'ETH/BTC', 1, '-10%')"
@@ -345,15 +345,15 @@ class TestOctoBotActionsJob:
         # step 1: configure the job
         job = octobot_lib.OctoBotActionsJob(stop_loss_order_action)
         result = await job.run()
-        assert len(result.processed_actions_by_automation_id) == 1
-        processed_actions = next(iter(result.processed_actions_by_automation_id.values()))
+        assert len(result.processed_actions) == 1
+        processed_actions = result.processed_actions
         assert len(processed_actions) == 1
         assert isinstance(processed_actions[0], mini_octobot.entities.ConfiguredActionDetails)
         assert processed_actions[0].action == mini_octobot.enums.ActionType.APPLY_CONFIGURATION.value
         assert processed_actions[0].config is not None
-        assert len(processed_actions[0].config["automations"]) == 1
+        assert "automation" in processed_actions[0].config
         assert isinstance(processed_actions[0].config["exchange_account_details"], dict)
-        pre_trade_portfolio = job.after_execution_state.automations[0].client_exchange_account_elements.portfolio.content
+        pre_trade_portfolio = job.after_execution_state.automation.client_exchange_account_elements.portfolio.content
         assert pre_trade_portfolio["ETH"] == {
             common_constants.PORTFOLIO_AVAILABLE: 1,
             common_constants.PORTFOLIO_TOTAL: 1,
@@ -362,8 +362,8 @@ class TestOctoBotActionsJob:
         # step 2: run the trade action
         next_actions_description = result.next_actions_description
         assert next_actions_description is not None
-        parsed_state = mini_octobot.AutomationsState.from_dict(next_actions_description.state)
-        next_actions = parsed_state.automations[0].actions_dag.get_executable_actions()
+        parsed_state = mini_octobot.AutomationState.from_dict(next_actions_description.state)
+        next_actions = parsed_state.automation.actions_dag.get_executable_actions()
         assert len(next_actions) == 1
         assert isinstance(next_actions[0], mini_octobot.entities.DSLScriptActionDetails)
         assert next_actions[0].dsl_script.startswith("stop_loss('sell', 'ETH/BTC', '10%', '-10%')")
@@ -371,8 +371,8 @@ class TestOctoBotActionsJob:
             next_actions_description.to_dict(include_default_values=False)
         )
         result = await job2.run()
-        assert len(result.processed_actions_by_automation_id) == 1
-        processed_actions = next(iter(result.processed_actions_by_automation_id.values()))
+        assert len(result.processed_actions) == 1
+        processed_actions = result.processed_actions
         assert len(processed_actions) == 1
         assert isinstance(processed_actions[0], mini_octobot.entities.DSLScriptActionDetails)
         assert processed_actions[0].dsl_script.startswith("stop_loss('sell', 'ETH/BTC', '10%', '-10%')")
@@ -389,15 +389,15 @@ class TestOctoBotActionsJob:
         # step 1: configure the job
         job = octobot_lib.OctoBotActionsJob(create_limit_and_cancel_order_action)
         result = await job.run()
-        assert len(result.processed_actions_by_automation_id) == 1
-        processed_actions = next(iter(result.processed_actions_by_automation_id.values()))
+        assert len(result.processed_actions) == 1
+        processed_actions = result.processed_actions
         assert len(processed_actions) == 1
         assert isinstance(processed_actions[0], mini_octobot.entities.ConfiguredActionDetails)
         assert processed_actions[0].action == mini_octobot.enums.ActionType.APPLY_CONFIGURATION.value
         assert processed_actions[0].config is not None
-        assert len(processed_actions[0].config["automations"]) == 1
+        assert "automation" in processed_actions[0].config
         assert isinstance(processed_actions[0].config["exchange_account_details"], dict)
-        pre_trade_portfolio = job.after_execution_state.automations[0].client_exchange_account_elements.portfolio.content
+        pre_trade_portfolio = job.after_execution_state.automation.client_exchange_account_elements.portfolio.content
         assert pre_trade_portfolio["BTC"] == {
             common_constants.PORTFOLIO_AVAILABLE: 1,
             common_constants.PORTFOLIO_TOTAL: 1,
@@ -406,8 +406,8 @@ class TestOctoBotActionsJob:
         # step 2: run the trade action
         next_actions_description = result.next_actions_description
         assert next_actions_description is not None
-        parsed_state = mini_octobot.AutomationsState.from_dict(next_actions_description.state)
-        next_actions = parsed_state.automations[0].actions_dag.get_executable_actions()
+        parsed_state = mini_octobot.AutomationState.from_dict(next_actions_description.state)
+        next_actions = parsed_state.automation.actions_dag.get_executable_actions()
         assert len(next_actions) == 1
         assert isinstance(next_actions[0], mini_octobot.entities.DSLScriptActionDetails)
         assert next_actions[0].dsl_script == "limit('buy', 'ETH/BTC', 1, '-10%')"
@@ -415,8 +415,8 @@ class TestOctoBotActionsJob:
             next_actions_description.to_dict(include_default_values=False)
         )
         result = await job2.run()
-        assert len(result.processed_actions_by_automation_id) == 1
-        processed_actions = next(iter(result.processed_actions_by_automation_id.values()))
+        assert len(result.processed_actions) == 1
+        processed_actions = result.processed_actions
         assert len(processed_actions) == 1
         assert isinstance(processed_actions[0], mini_octobot.entities.DSLScriptActionDetails)
         assert processed_actions[0].dsl_script.startswith("limit(")
@@ -432,8 +432,8 @@ class TestOctoBotActionsJob:
         # step 3: run the cancel action
         next_actions_description = result.next_actions_description
         assert next_actions_description is not None
-        parsed_state = mini_octobot.AutomationsState.from_dict(next_actions_description.state)
-        next_actions = parsed_state.automations[0].actions_dag.get_executable_actions()
+        parsed_state = mini_octobot.AutomationState.from_dict(next_actions_description.state)
+        next_actions = parsed_state.automation.actions_dag.get_executable_actions()
         assert len(next_actions) == 1
         assert isinstance(next_actions[0], mini_octobot.entities.DSLScriptActionDetails)
         assert next_actions[0].dsl_script == "cancel_order('ETH/BTC', side='buy')"
@@ -441,8 +441,8 @@ class TestOctoBotActionsJob:
             next_actions_description.to_dict(include_default_values=False)
         )
         result = await job3.run()
-        assert len(result.processed_actions_by_automation_id) == 1
-        processed_actions = next(iter(result.processed_actions_by_automation_id.values()))
+        assert len(result.processed_actions) == 1
+        processed_actions = result.processed_actions
         assert len(processed_actions) == 1
         assert isinstance(processed_actions[0], mini_octobot.entities.DSLScriptActionDetails)
         assert processed_actions[0].dsl_script.startswith("cancel_order(")
@@ -455,15 +455,15 @@ class TestOctoBotActionsJob:
         # step 1: configure the job
         job = octobot_lib.OctoBotActionsJob(polymarket_order_action)
         result = await job.run()
-        assert len(result.processed_actions_by_automation_id) == 1
-        processed_actions = next(iter(result.processed_actions_by_automation_id.values()))
+        assert len(result.processed_actions) == 1
+        processed_actions = result.processed_actions
         assert len(processed_actions) == 1
         assert isinstance(processed_actions[0], mini_octobot.entities.ConfiguredActionDetails)
         assert processed_actions[0].action == mini_octobot.enums.ActionType.APPLY_CONFIGURATION.value
         assert processed_actions[0].config is not None
-        assert len(processed_actions[0].config["automations"]) == 1
+        assert "automation" in processed_actions[0].config
         assert isinstance(processed_actions[0].config["exchange_account_details"], dict)
-        pre_trade_portfolio = job.after_execution_state.automations[0].client_exchange_account_elements.portfolio.content
+        pre_trade_portfolio = job.after_execution_state.automation.client_exchange_account_elements.portfolio.content
         assert pre_trade_portfolio["USDC"] == {
             common_constants.PORTFOLIO_AVAILABLE: 100,
             common_constants.PORTFOLIO_TOTAL: 100,
@@ -472,8 +472,8 @@ class TestOctoBotActionsJob:
         # step 2: run the trade action
         next_actions_description = result.next_actions_description
         assert next_actions_description is not None
-        parsed_state = mini_octobot.AutomationsState.from_dict(next_actions_description.state)
-        next_actions = parsed_state.automations[0].actions_dag.get_executable_actions()
+        parsed_state = mini_octobot.AutomationState.from_dict(next_actions_description.state)
+        next_actions = parsed_state.automation.actions_dag.get_executable_actions()
         assert len(next_actions) == 1
         assert isinstance(next_actions[0], mini_octobot.entities.DSLScriptActionDetails)
         assert next_actions[0].dsl_script.startswith("market(")
@@ -482,8 +482,8 @@ class TestOctoBotActionsJob:
         )
         with pytest.raises(octobot_trading.errors.FailedRequest): # TODO: update once supported
             result = await job2.run()
-            assert len(result.processed_actions_by_automation_id) == 1
-            processed_actions = next(iter(result.processed_actions_by_automation_id.values()))
+            assert len(result.processed_actions) == 1
+            processed_actions = result.processed_actions
             assert len(processed_actions) == 1
             assert isinstance(processed_actions[0], mini_octobot.entities.DSLScriptActionDetails)
             assert processed_actions[0].dsl_script.startswith("market(")
@@ -498,21 +498,21 @@ class TestOctoBotActionsJob:
         # step 1: configure the job
         job = octobot_lib.OctoBotActionsJob(transfer_blockchain_action)
         result = await job.run()
-        assert len(result.processed_actions_by_automation_id) == 1
-        processed_actions = next(iter(result.processed_actions_by_automation_id.values()))
+        assert len(result.processed_actions) == 1
+        processed_actions = result.processed_actions
         assert len(processed_actions) == 1
         assert isinstance(processed_actions[0], mini_octobot.entities.ConfiguredActionDetails)
         assert processed_actions[0].action == mini_octobot.enums.ActionType.APPLY_CONFIGURATION.value
         assert processed_actions[0].config is not None
-        assert len(processed_actions[0].config["automations"]) == 1
-        assert job.after_execution_state.automations[0].reference_exchange_account_elements is None
-        assert job.after_execution_state.automations[0].client_exchange_account_elements.portfolio.content is None
+        assert "automation" in processed_actions[0].config
+        assert job.after_execution_state.automation.reference_exchange_account_elements is None
+        assert job.after_execution_state.automation.client_exchange_account_elements.portfolio.content is None
 
         # step 2: run the transfer action
         next_actions_description = result.next_actions_description
         assert next_actions_description is not None
-        parsed_state = mini_octobot.AutomationsState.from_dict(next_actions_description.state)
-        next_actions = parsed_state.automations[0].actions_dag.get_executable_actions()
+        parsed_state = mini_octobot.AutomationState.from_dict(next_actions_description.state)
+        next_actions = parsed_state.automation.actions_dag.get_executable_actions()
         assert len(next_actions) == 1
         assert isinstance(next_actions[0], mini_octobot.entities.DSLScriptActionDetails)
         assert next_actions[0].dsl_script is not None and "blockchain_wallet_transfer" in next_actions[0].dsl_script
@@ -520,8 +520,8 @@ class TestOctoBotActionsJob:
             next_actions_description.to_dict(include_default_values=False)
         )
         result = await job2.run()
-        assert len(result.processed_actions_by_automation_id) == 1
-        processed_actions = next(iter(result.processed_actions_by_automation_id.values()))
+        assert len(result.processed_actions) == 1
+        processed_actions = result.processed_actions
         assert len(processed_actions) == 1
         assert isinstance(processed_actions[0], mini_octobot.entities.DSLScriptActionDetails)
         assert processed_actions[0].dsl_script is not None and "blockchain_wallet_transfer" in processed_actions[0].dsl_script
@@ -542,15 +542,15 @@ class TestOctoBotActionsJob:
         # step 1: configure the job
         job = octobot_lib.OctoBotActionsJob(deposit_action)
         result = await job.run()
-        assert len(result.processed_actions_by_automation_id) == 1
-        processed_actions = next(iter(result.processed_actions_by_automation_id.values()))
+        assert len(result.processed_actions) == 1
+        processed_actions = result.processed_actions
         assert len(processed_actions) == 1
         assert isinstance(processed_actions[0], mini_octobot.entities.ConfiguredActionDetails)
         assert processed_actions[0].action == mini_octobot.enums.ActionType.APPLY_CONFIGURATION.value
         assert processed_actions[0].config is not None
-        assert len(processed_actions[0].config["automations"]) == 1
+        assert "automation" in processed_actions[0].config
         assert isinstance(processed_actions[0].config["exchange_account_details"], dict)
-        pre_deposit_portfolio = job.after_execution_state.automations[0].client_exchange_account_elements.portfolio.content
+        pre_deposit_portfolio = job.after_execution_state.automation.client_exchange_account_elements.portfolio.content
         assert pre_deposit_portfolio["BTC"] == {
             common_constants.PORTFOLIO_AVAILABLE: 0.01,
             common_constants.PORTFOLIO_TOTAL: 0.01,
@@ -559,8 +559,8 @@ class TestOctoBotActionsJob:
         # step 2: run the deposit action
         next_actions_description = result.next_actions_description
         assert next_actions_description is not None
-        parsed_state = mini_octobot.AutomationsState.from_dict(next_actions_description.state)
-        next_actions = parsed_state.automations[0].actions_dag.get_executable_actions()
+        parsed_state = mini_octobot.AutomationState.from_dict(next_actions_description.state)
+        next_actions = parsed_state.automation.actions_dag.get_executable_actions()
         assert len(next_actions) == 1
         assert isinstance(next_actions[0], mini_octobot.entities.DSLScriptActionDetails)
         assert next_actions[0].dsl_script is not None and "blockchain_wallet_transfer" in next_actions[0].dsl_script
@@ -568,15 +568,15 @@ class TestOctoBotActionsJob:
             next_actions_description.to_dict(include_default_values=False)
         )
         result = await job2.run()
-        assert len(result.processed_actions_by_automation_id) == 1
-        processed_actions = next(iter(result.processed_actions_by_automation_id.values()))
+        assert len(result.processed_actions) == 1
+        processed_actions = result.processed_actions
         assert len(processed_actions) == 1
         assert isinstance(processed_actions[0], mini_octobot.entities.DSLScriptActionDetails)
         assert processed_actions[0].dsl_script is not None and "blockchain_wallet_transfer" in processed_actions[0].dsl_script
         assert result.next_actions_description is None # no more actions to execute
 
         # ensure deposit is successful
-        post_deposit_portfolio = job2.after_execution_state.automations[0].client_exchange_account_elements.portfolio.content
+        post_deposit_portfolio = job2.after_execution_state.automation.client_exchange_account_elements.portfolio.content
         assert post_deposit_portfolio["BTC"] == {
             common_constants.PORTFOLIO_AVAILABLE: pre_deposit_portfolio["BTC"][common_constants.PORTFOLIO_AVAILABLE] + deposit_action["params"]["BLOCKCHAIN_FROM_AMOUNT"],
             common_constants.PORTFOLIO_TOTAL: pre_deposit_portfolio["BTC"][common_constants.PORTFOLIO_TOTAL] + deposit_action["params"]["BLOCKCHAIN_FROM_AMOUNT"],
@@ -586,15 +586,15 @@ class TestOctoBotActionsJob:
         # step 1: configure the job
         job = octobot_lib.OctoBotActionsJob(withdraw_action)
         result = await job.run()
-        assert len(result.processed_actions_by_automation_id) == 1
-        processed_actions = next(iter(result.processed_actions_by_automation_id.values()))
+        assert len(result.processed_actions) == 1
+        processed_actions = result.processed_actions
         assert len(processed_actions) == 1
         assert isinstance(processed_actions[0], mini_octobot.entities.ConfiguredActionDetails)
         assert processed_actions[0].action == mini_octobot.enums.ActionType.APPLY_CONFIGURATION.value
         assert processed_actions[0].config is not None
-        assert len(processed_actions[0].config["automations"]) == 1
+        assert "automation" in processed_actions[0].config
         assert isinstance(processed_actions[0].config["exchange_account_details"], dict)
-        pre_withdraw_portfolio = job.after_execution_state.automations[0].client_exchange_account_elements.portfolio.content
+        pre_withdraw_portfolio = job.after_execution_state.automation.client_exchange_account_elements.portfolio.content
         assert pre_withdraw_portfolio["ETH"] == {
             common_constants.PORTFOLIO_AVAILABLE: 2,
             common_constants.PORTFOLIO_TOTAL: 2,
@@ -603,8 +603,8 @@ class TestOctoBotActionsJob:
         # step 2: run the withdraw action
         next_actions_description = result.next_actions_description
         assert next_actions_description is not None
-        parsed_state = mini_octobot.AutomationsState.from_dict(next_actions_description.state)
-        next_actions = parsed_state.automations[0].actions_dag.get_executable_actions()
+        parsed_state = mini_octobot.AutomationState.from_dict(next_actions_description.state)
+        next_actions = parsed_state.automation.actions_dag.get_executable_actions()
         assert len(next_actions) == 1
         assert isinstance(next_actions[0], mini_octobot.entities.DSLScriptActionDetails)
         assert next_actions[0].dsl_script.startswith("withdraw(")
@@ -612,36 +612,35 @@ class TestOctoBotActionsJob:
             next_actions_description.to_dict(include_default_values=False)
         )
         result = await job2.run()
-        assert len(result.processed_actions_by_automation_id) == 1
-        processed_actions = next(iter(result.processed_actions_by_automation_id.values()))
+        assert len(result.processed_actions) == 1
+        processed_actions = result.processed_actions
         assert len(processed_actions) == 1
         assert isinstance(processed_actions[0], mini_octobot.entities.DSLScriptActionDetails)
         assert processed_actions[0].dsl_script.startswith("withdraw(")
         assert result.next_actions_description is None # no more actions to execute
 
         # ensure withdraw is successful
-        post_withdraw_portfolio = job2.after_execution_state.automations[0].client_exchange_account_elements.portfolio.content
+        post_withdraw_portfolio = job2.after_execution_state.automation.client_exchange_account_elements.portfolio.content
         assert post_withdraw_portfolio == {}  # portfolio should now be empty
 
     async def test_run_multiple_actions_bundle_no_wait(self, multiple_actions_bundle_no_wait):
         # step 1: configure the job
         job = octobot_lib.OctoBotActionsJob(multiple_actions_bundle_no_wait)
         # ensure wait keywords have been considered
-        automations = job.description.state["automations"]
-        assert len(automations) == 1
-        dag = automations[0]["actions_dag"]
+        automation = job.description.state["automation"]
+        dag = automation["actions_dag"]
         for action in dag["actions"]:
             assert action["next_schedule"] is None # no wait keywords have been considered
         result = await job.run()
-        assert len(result.processed_actions_by_automation_id) == 1
-        processed_actions = next(iter(result.processed_actions_by_automation_id.values()))
+        assert len(result.processed_actions) == 1
+        processed_actions = result.processed_actions
         assert len(processed_actions) == 1
         assert isinstance(processed_actions[0], mini_octobot.entities.ConfiguredActionDetails)
         assert processed_actions[0].action == mini_octobot.enums.ActionType.APPLY_CONFIGURATION.value
         assert processed_actions[0].config is not None
-        assert len(processed_actions[0].config["automations"]) == 1
+        assert "automation" in processed_actions[0].config
         assert isinstance(processed_actions[0].config["exchange_account_details"], dict)
-        pre_trade_portfolio = job.after_execution_state.automations[0].client_exchange_account_elements.portfolio.content
+        pre_trade_portfolio = job.after_execution_state.automation.client_exchange_account_elements.portfolio.content
         assert pre_trade_portfolio["BTC"] == {
             common_constants.PORTFOLIO_AVAILABLE: 1,
             common_constants.PORTFOLIO_TOTAL: 1,
@@ -650,8 +649,8 @@ class TestOctoBotActionsJob:
         # step 2: run the deposit action
         next_actions_description = result.next_actions_description
         assert next_actions_description is not None
-        parsed_state = mini_octobot.AutomationsState.from_dict(next_actions_description.state)
-        next_actions = parsed_state.automations[0].actions_dag.get_executable_actions()
+        parsed_state = mini_octobot.AutomationState.from_dict(next_actions_description.state)
+        next_actions = parsed_state.automation.actions_dag.get_executable_actions()
         assert len(next_actions) == 1 # only the deposit action should be executable as the trade action depends on it
         assert isinstance(next_actions[0], mini_octobot.entities.DSLScriptActionDetails)
         assert next_actions[0].dsl_script is not None and "blockchain_wallet_transfer" in next_actions[0].dsl_script
@@ -659,8 +658,8 @@ class TestOctoBotActionsJob:
             next_actions_description.to_dict(include_default_values=False)
         )
         result = await job2.run()
-        assert len(result.processed_actions_by_automation_id) == 1
-        processed_actions = next(iter(result.processed_actions_by_automation_id.values()))
+        assert len(result.processed_actions) == 1
+        processed_actions = result.processed_actions
         assert len(processed_actions) == 1
         assert isinstance(processed_actions[0], mini_octobot.entities.DSLScriptActionDetails)
         assert processed_actions[0].dsl_script is not None and "blockchain_wallet_transfer" in processed_actions[0].dsl_script
@@ -677,8 +676,8 @@ class TestOctoBotActionsJob:
         # step 3: run the trade action
         next_actions_description = result.next_actions_description
         assert next_actions_description is not None
-        parsed_state = mini_octobot.AutomationsState.from_dict(next_actions_description.state)
-        next_actions = parsed_state.automations[0].actions_dag.get_executable_actions()
+        parsed_state = mini_octobot.AutomationState.from_dict(next_actions_description.state)
+        next_actions = parsed_state.automation.actions_dag.get_executable_actions()
         assert len(next_actions) == 1 # only the trade action should be executable now: all others have been executed already
         assert isinstance(next_actions[0], mini_octobot.entities.DSLScriptActionDetails)
         assert next_actions[0].dsl_script.startswith("limit(")
@@ -686,8 +685,8 @@ class TestOctoBotActionsJob:
             next_actions_description.to_dict(include_default_values=False)
         )
         result = await job3.run()
-        assert len(result.processed_actions_by_automation_id) == 1
-        processed_actions = next(iter(result.processed_actions_by_automation_id.values()))
+        assert len(result.processed_actions) == 1
+        processed_actions = result.processed_actions
         assert len(processed_actions) == 1
         assert isinstance(processed_actions[0], mini_octobot.entities.DSLScriptActionDetails)
         assert processed_actions[0].dsl_script.startswith("limit(")
@@ -700,7 +699,7 @@ class TestOctoBotActionsJob:
         assert result.next_actions_description is None # no more actions to execute
 
         # ensure trades are taken into account in portfolio
-        post_deposit_portfolio = job3.after_execution_state.automations[0].client_exchange_account_elements.portfolio.content
+        post_deposit_portfolio = job3.after_execution_state.automation.client_exchange_account_elements.portfolio.content
 
         assert "ETH" not in post_deposit_portfolio # ETH order has not been executed (still open)
 
@@ -713,9 +712,8 @@ class TestOctoBotActionsJob:
         # step 1: configure the job
         job = octobot_lib.OctoBotActionsJob(multiple_action_bundle_with_wait)
         # ensure wait keywords have been considered
-        automations = job.description.state["automations"]
-        assert len(automations) == 1
-        dag = automations[0]["actions_dag"]
+        automation = job.description.state["automation"]
+        dag = automation["actions_dag"]
         for index, action in enumerate(dag["actions"]):
             if index == len(dag["actions"]) - 1:
                 assert action["next_schedule"] is None
@@ -730,15 +728,15 @@ class TestOctoBotActionsJob:
                 ))
         # run the job
         result = await job.run()
-        assert len(result.processed_actions_by_automation_id) == 1
-        processed_actions = next(iter(result.processed_actions_by_automation_id.values()))
+        assert len(result.processed_actions) == 1
+        processed_actions = result.processed_actions
         assert len(processed_actions) == 1
         assert isinstance(processed_actions[0], mini_octobot.entities.ConfiguredActionDetails)
         assert processed_actions[0].action == mini_octobot.enums.ActionType.APPLY_CONFIGURATION.value
         assert processed_actions[0].config is not None
-        assert len(processed_actions[0].config["automations"]) == 1
+        assert "automation" in processed_actions[0].config
         assert isinstance(processed_actions[0].config["exchange_account_details"], dict)
-        pre_trade_portfolio = job.after_execution_state.automations[0].client_exchange_account_elements.portfolio.content
+        pre_trade_portfolio = job.after_execution_state.automation.client_exchange_account_elements.portfolio.content
         assert pre_trade_portfolio["BTC"] == {
             common_constants.PORTFOLIO_AVAILABLE: 1,
             common_constants.PORTFOLIO_TOTAL: 1,
@@ -747,8 +745,8 @@ class TestOctoBotActionsJob:
         # step 2: run the deposit action
         next_actions_description = result.next_actions_description
         assert next_actions_description is not None
-        parsed_state = mini_octobot.AutomationsState.from_dict(next_actions_description.state)
-        next_actions = parsed_state.automations[0].actions_dag.get_executable_actions()
+        parsed_state = mini_octobot.AutomationState.from_dict(next_actions_description.state)
+        next_actions = parsed_state.automation.actions_dag.get_executable_actions()
         assert len(next_actions) == 1
         assert isinstance(next_actions[0], mini_octobot.entities.DSLScriptActionDetails)
         assert next_actions[0].dsl_script is not None and "blockchain_wallet_transfer" in next_actions[0].dsl_script
@@ -756,8 +754,8 @@ class TestOctoBotActionsJob:
             next_actions_description.to_dict(include_default_values=False)
         )
         result = await job2.run()
-        assert len(result.processed_actions_by_automation_id) == 1
-        processed_actions = next(iter(result.processed_actions_by_automation_id.values()))
+        assert len(result.processed_actions) == 1
+        processed_actions = result.processed_actions
         assert len(processed_actions) == 1
         assert isinstance(processed_actions[0], mini_octobot.entities.DSLScriptActionDetails)
         assert processed_actions[0].dsl_script is not None and "blockchain_wallet_transfer" in processed_actions[0].dsl_script
@@ -770,12 +768,12 @@ class TestOctoBotActionsJob:
         assert transaction[trading_enums.ExchangeConstantsTransactionColumns.ADDRESS_TO.value] == "0x123_simulated_deposit_address_BTC"
         next_desc = result.next_actions_description
         assert next_desc is not None
-        parsed_state = mini_octobot.AutomationsState.from_dict(next_desc.state)
-        next_actions = parsed_state.automations[0].actions_dag.get_executable_actions()
+        parsed_state = mini_octobot.AutomationState.from_dict(next_desc.state)
+        next_actions = parsed_state.automation.actions_dag.get_executable_actions()
         assert len(next_actions) == 1
         assert isinstance(next_actions[0], mini_octobot.entities.DSLScriptActionDetails)
         assert next_actions[0].dsl_script.startswith("market(")
-        post_deposit_portfolio = job2.after_execution_state.automations[0].client_exchange_account_elements.portfolio.content
+        post_deposit_portfolio = job2.after_execution_state.automation.client_exchange_account_elements.portfolio.content
         assert post_deposit_portfolio["BTC"] == {
             common_constants.PORTFOLIO_AVAILABLE: 2,
             common_constants.PORTFOLIO_TOTAL: 2,
@@ -784,8 +782,8 @@ class TestOctoBotActionsJob:
         # step 3: run the trade action
         next_actions_description = result.next_actions_description
         assert next_actions_description is not None
-        parsed_state = mini_octobot.AutomationsState.from_dict(next_actions_description.state)
-        next_actions = parsed_state.automations[0].actions_dag.get_executable_actions()
+        parsed_state = mini_octobot.AutomationState.from_dict(next_actions_description.state)
+        next_actions = parsed_state.automation.actions_dag.get_executable_actions()
         assert len(next_actions) == 1
         assert isinstance(next_actions[0], mini_octobot.entities.DSLScriptActionDetails)
         assert next_actions[0].dsl_script.startswith("market(")
@@ -793,14 +791,14 @@ class TestOctoBotActionsJob:
             next_actions_description.to_dict(include_default_values=False)
         )
         result = await job3.run()
-        assert len(result.processed_actions_by_automation_id) == 1
-        processed_actions = next(iter(result.processed_actions_by_automation_id.values()))
+        assert len(result.processed_actions) == 1
+        processed_actions = result.processed_actions
         assert len(processed_actions) == 1
         assert isinstance(processed_actions[0], mini_octobot.entities.DSLScriptActionDetails)
         assert processed_actions[0].dsl_script.startswith("market(")
         assert processed_actions[0].result is not None
         assert len(processed_actions[0].result[DSL_operators.CREATED_ORDERS_KEY]) == len(result.get_created_orders()) == 1
-        post_trade_portfolio = job3.after_execution_state.automations[0].client_exchange_account_elements.portfolio.content
+        post_trade_portfolio = job3.after_execution_state.automation.client_exchange_account_elements.portfolio.content
         assert post_trade_portfolio["BTC"][common_constants.PORTFOLIO_AVAILABLE] < post_deposit_portfolio["BTC"][common_constants.PORTFOLIO_AVAILABLE]
         assert post_trade_portfolio["ETH"] == {
             common_constants.PORTFOLIO_AVAILABLE: 0.999,
@@ -810,8 +808,8 @@ class TestOctoBotActionsJob:
         # step 4: run the withdraw action
         next_actions_description = result.next_actions_description
         assert next_actions_description is not None
-        parsed_state = mini_octobot.AutomationsState.from_dict(next_actions_description.state)
-        next_actions = parsed_state.automations[0].actions_dag.get_executable_actions()
+        parsed_state = mini_octobot.AutomationState.from_dict(next_actions_description.state)
+        next_actions = parsed_state.automation.actions_dag.get_executable_actions()
         assert len(next_actions) == 1
         assert isinstance(next_actions[0], mini_octobot.entities.DSLScriptActionDetails)
         assert next_actions[0].dsl_script.startswith("withdraw(")
@@ -819,8 +817,8 @@ class TestOctoBotActionsJob:
             next_actions_description.to_dict(include_default_values=False)
         )
         result = await job4.run()
-        assert len(result.processed_actions_by_automation_id) == 1
-        processed_actions = next(iter(result.processed_actions_by_automation_id.values()))
+        assert len(result.processed_actions) == 1
+        processed_actions = result.processed_actions
         assert len(processed_actions) == 1
         assert isinstance(processed_actions[0], mini_octobot.entities.DSLScriptActionDetails)
         assert processed_actions[0].dsl_script.startswith("withdraw(")
@@ -831,7 +829,7 @@ class TestOctoBotActionsJob:
         assert transaction[trading_enums.ExchangeConstantsTransactionColumns.AMOUNT.value] == decimal.Decimal("0.999")
         assert transaction[trading_enums.ExchangeConstantsTransactionColumns.NETWORK.value] == "ethereum"
         assert transaction[trading_enums.ExchangeConstantsTransactionColumns.ADDRESS_TO.value] == "0x1234567890123456789012345678901234567890"
-        post_withdraw_portfolio = job4.after_execution_state.automations[0].client_exchange_account_elements.portfolio.content
+        post_withdraw_portfolio = job4.after_execution_state.automation.client_exchange_account_elements.portfolio.content
         assert post_withdraw_portfolio["BTC"] == post_trade_portfolio["BTC"]
         assert "ETH" not in post_withdraw_portfolio
         assert result.next_actions_description is None # no more actions to execute

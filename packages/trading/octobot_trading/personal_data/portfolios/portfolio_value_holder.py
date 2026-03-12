@@ -72,7 +72,7 @@ class PortfolioValueHolder:
 
     def _set_current_prices_from_exchange_data(
         self, exchange_data: "exchange_data_import.ExchangeData", price_by_symbol: dict[str, float]
-    ) -> None:
+    ) -> None: # todo refactor
         added_symbols = set()
         for market in exchange_data.markets:
             price = price_by_symbol.get(market.symbol)

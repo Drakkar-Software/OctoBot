@@ -20,15 +20,15 @@ from octobot_node.scheduler import SCHEDULER # avoid circular import
 
 
 async def trigger_task(task: octobot_node.models.Task) -> bool:
-    import octobot_node.scheduler.workflows.automations_workflow as automations_workflow
+    import octobot_node.scheduler.workflows.automation_workflow as automation_workflow
     delay = 1
     handle = None
     # enqueue workflow instead of starting it to dispatch them to multiple workers if possible
     if task.type == octobot_node.models.TaskType.EXECUTE_ACTIONS.value:
-        handle = await SCHEDULER.AUTOMATIONS_WORKFLOW_QUEUE.enqueue_async(
-            automations_workflow.AutomationsWorkflow.execute_automations,
+        handle = await SCHEDULER.AUTOMATION_WORKFLOW_QUEUE.enqueue_async(
+            automation_workflow.AutomationWorkflow.execute_automation,
             t=params.Tracker(name=workflows_util.generate_workflow_name(task.name)),
-            inputs=params.AutomationsWorkflowInputs(task=task, delay=delay).to_dict(include_default_values=False)
+            inputs=params.AutomationWorkflowInputs(task=task, delay=delay).to_dict(include_default_values=False)
         )
     else:
         raise ValueError(f"Unsupported task type: {task.type}")

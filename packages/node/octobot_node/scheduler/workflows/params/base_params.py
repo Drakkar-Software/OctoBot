@@ -21,39 +21,21 @@ import octobot_commons.logging
 import octobot_commons.dataclasses
 
 
-class BaseHistory(pydantic.BaseModel):
-    completed_iterations: int = 1
-    created_orders: list[dict] = pydantic.Field(default_factory=list)
-    cancelled_orders: list[str] = pydantic.Field(default_factory=list)
-    transfers: list[dict] = pydantic.Field(default_factory=list)
-
-    def update(self, history: "BaseHistory"):
-        self.completed_iterations += history.completed_iterations
-        self.created_orders.extend(history.created_orders)  # pylint: disable=no-member
-        self.cancelled_orders.extend(history.cancelled_orders)  # pylint: disable=no-member
-        self.transfers.extend(history.transfers)  # pylint: disable=no-member
-
-
 class ProgressStatus(pydantic.BaseModel):
-    latest_step_by_automation_id: typing.Optional[dict[str, str]] = None
+    latest_step: typing.Optional[str] = None
     latest_step_result: typing.Optional[dict] = None
-    next_step_by_automation_id: typing.Optional[dict[str, str]] = None
+    next_step: typing.Optional[str] = None
     next_step_at: typing.Optional[float] = None
     remaining_steps: typing.Optional[int] = None
     error: typing.Optional[str] = None
-    history: typing.Optional[BaseHistory] = None
 
     def update(self, progress_status: "ProgressStatus"):
-        self.latest_step_by_automation_id = progress_status.latest_step_by_automation_id
+        self.latest_step = progress_status.latest_step
         self.latest_step_result = progress_status.latest_step_result
-        self.next_step_by_automation_id = progress_status.next_step_by_automation_id
+        self.next_step = progress_status.next_step
         self.next_step_at = progress_status.next_step_at
         self.remaining_steps = progress_status.remaining_steps
         self.error = progress_status.error
-        if self.history is None:
-            self.history = BaseHistory()
-        if progress_status.history:
-            self.history.update(progress_status.history)
 
 
 @dataclasses.dataclass

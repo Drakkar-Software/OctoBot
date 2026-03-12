@@ -58,34 +58,34 @@ class OctoBotActionsJobDescription(octobot_commons.dataclasses.MinimizableDatacl
         if not to_add_actions_dag:
             raise ValueError("No action found in params")
         automation_id = None
-        if isinstance(to_add_actions_dag.actions[0], mini_octobot.entities.ConfiguredActionDetails) and to_add_actions_dag.actions[0].config:
-            automation_id = to_add_actions_dag.actions[0].config["automations"][0]["metadata"]["automation_id"]
+        if not automation_id and isinstance(to_add_actions_dag.actions[0], mini_octobot.entities.ConfiguredActionDetails) and to_add_actions_dag.actions[0].config:
+            config = to_add_actions_dag.actions[0].config
+            if "automation" in config:
+                automation_id = config["automation"]["metadata"]["automation_id"]
         if not automation_id:
             raise ValueError("No automation id found in params")
-        self._include_actions_in_automations_state(automation_id, to_add_actions_dag)
-    
-    def _include_actions_in_automations_state(self, automation_id: str, actions: "mini_octobot.ActionsDAG"):
-        automations_state = mini_octobot.AutomationsState.from_dict(self.state)
-        if not automations_state.automations:
-            automations_state.add_new_automation(
-                automation_id, actions,
+        self._include_actions_in_automation_state(automation_id, to_add_actions_dag)
+
+    def _include_actions_in_automation_state(self, automation_id: str, actions: "mini_octobot.ActionsDAG"):
+        automation_state = mini_octobot.AutomationState.from_dict(self.state)
+        if not automation_state.automation.metadata.automation_id:
+            automation_state.automation = mini_octobot.entities.AutomationDetails(
+                metadata=mini_octobot.entities.AutomationMetadata(
+                    automation_id=automation_id,
+                ),
+                actions_dag=actions,
             )
         else:
-            automations_state.upsert_automation_actions(
-                automation_id, actions,
-            )
-        self.state = automations_state.to_dict(include_default_values=False)
+            automation_state.update_automation_actions(actions.actions)
+        self.state = automation_state.to_dict(include_default_values=False)
 
     def get_next_execution_time(self) -> float:
-        return min(
-            automation["execution"]["current_execution"]["scheduled_to"]
-            for automation in self.state["automations"]
-        )
+        return self.state["automation"]["execution"]["current_execution"]["scheduled_to"]
 
 
 def required_actions(func):
     def get_required_actions_wrapper(self, *args, **kwargs):
-        if self.processed_actions_by_automation_id is None:
+        if self.processed_actions is None:
             raise ValueError("No bot actions were executed yet")
         return func(self, *args, **kwargs)
     return get_required_actions_wrapper
@@ -93,26 +93,23 @@ def required_actions(func):
 
 @dataclasses.dataclass
 class OctoBotActionsJobResult:
-    processed_actions_by_automation_id: dict[str, list["mini_octobot.AbstractActionDetails"]]
+    processed_actions: list["mini_octobot.AbstractActionDetails"]
     next_actions_description: typing.Optional[OctoBotActionsJobDescription] = None
-    actions_dag_by_automation_id: dict[str, "mini_octobot.ActionsDAG"] = dataclasses.field(default_factory=dict)
+    actions_dag: "mini_octobot.ActionsDAG" = dataclasses.field(default_factory=mini_octobot.ActionsDAG)
 
     @required_actions
     def get_failed_actions(self) -> list[typing.Optional[dict]]:
-        failed_actions = [
+        return [
             action.result
-            for actions in self.processed_actions_by_automation_id.values()
-            for action in actions
+            for action in self.processed_actions
             if action.error_status is not mini_octobot.enums.ActionErrorStatus.NO_ERROR.value
         ]
-        return failed_actions
 
     @required_actions
     def get_created_orders(self) -> list[dict]:
         order_lists = [
             action.result.get(exchange_operators.CREATED_ORDERS_KEY, [])
-            for actions in self.processed_actions_by_automation_id.values()
-            for action in actions
+            for action in self.processed_actions
             if action.result
         ]
         return list_util.flatten_list(order_lists) if order_lists else []
@@ -121,8 +118,7 @@ class OctoBotActionsJobResult:
     def get_cancelled_orders(self) -> list[str]:
         cancelled_orders = [
             action.result.get(exchange_operators.CANCELLED_ORDERS_KEY, [])
-            for actions in self.processed_actions_by_automation_id.values()
-            for action in actions
+            for action in self.processed_actions
             if action.result
         ]
         return list_util.flatten_list(cancelled_orders) if cancelled_orders else []
@@ -131,8 +127,7 @@ class OctoBotActionsJobResult:
     def get_deposit_and_withdrawal_details(self) -> list[dict]:
         withdrawal_lists = [
             action.result.get(exchange_operators.CREATED_WITHDRAWALS_KEY, []) + action.result.get(blockchain_wallet_operators.CREATED_TRANSACTIONS_KEY, [])
-            for actions in self.processed_actions_by_automation_id.values()
-            for action in actions
+            for action in self.processed_actions
             if action.result and isinstance(action.result, dict) and (
                 exchange_operators.CREATED_WITHDRAWALS_KEY in action.result or
                 blockchain_wallet_operators.CREATED_TRANSACTIONS_KEY in action.result
@@ -170,57 +165,39 @@ class OctoBotActionsJob:
         return parsed_description
 
     async def run(self) -> OctoBotActionsJobResult:
-        async with mini_octobot.AutomationsJob(
+        async with mini_octobot.AutomationJob(
             self.description.state, self.description.auth_details
-        ) as automations_job:
-            selected_actions_by_automation = {
-                automation.metadata.automation_id: automation.actions_dag.get_executable_actions()
-                for automation in automations_job.automations_state.automations
-            }
-            logging.getLogger(self.__class__.__name__).info(f"Running automations actions: {selected_actions_by_automation}")
-            await automations_job.run()
-            for automation_id, selected_actions in selected_actions_by_automation.items():
-                automations_job.automations_state.get_automation_details(automation_id).actions_dag.update_actions_results(selected_actions)
-            self.after_execution_state = automations_job.automations_state
-            post_execution_state_dump = automations_job.dump()
+        ) as automation_job:
+            selected_actions = automation_job.automation_state.automation.actions_dag.get_executable_actions()
+            logging.getLogger(self.__class__.__name__).info(f"Running automation actions: {selected_actions}")
+            await automation_job.run()
+            automation_job.automation_state.automation.actions_dag.update_actions_results(selected_actions)
+            self.after_execution_state = automation_job.automation_state
+            post_execution_state_dump = automation_job.dump()
             return OctoBotActionsJobResult(
-                processed_actions_by_automation_id=selected_actions_by_automation,
+                processed_actions=selected_actions,
                 next_actions_description=self.get_next_actions_description(post_execution_state_dump),
-                actions_dag_by_automation_id={
-                    automation.metadata.automation_id: automation.actions_dag
-                    for automation in automations_job.automations_state.automations
-                },
+                actions_dag=automation_job.automation_state.automation.actions_dag,
             )
 
     def get_next_actions_description(
         self, post_execution_state: dict
     ) -> typing.Optional[OctoBotActionsJobDescription]:
-        has_at_least_one_action_to_execute = False
-        for automation in self.after_execution_state.automations:
-            if automation.actions_dag.get_executable_actions():
-                has_at_least_one_action_to_execute = True
-            else:
-                if pending_actions := automation.actions_dag.get_pending_actions():
-                    raise ValueError(
-                        f"Automation {automation.metadata.automation_id}: actions DAG dependencies issue: "
-                        f"no executable actions while there are still "
-                        f"{len(pending_actions)} pending actions: {pending_actions}"
-                    )
-        if has_at_least_one_action_to_execute:
+        automation = self.after_execution_state.automation
+        if automation.actions_dag.get_executable_actions():
             return OctoBotActionsJobDescription(
                 state=post_execution_state,
                 auth_details=self.description.auth_details,
             )
+        if pending_actions := automation.actions_dag.get_pending_actions():
+            raise ValueError(
+                f"Automation {automation.metadata.automation_id}: actions DAG dependencies issue: "
+                f"no executable actions while there are still "
+                f"{len(pending_actions)} pending actions: {pending_actions}"
+            )
         return None
 
     def __repr__(self) -> str:
-        parsed_state = mini_octobot.AutomationsState.from_dict(self.description.state)
-        automations_repr = (
-            '\n- '.join([str(automation) for automation in parsed_state.automations])
-            if parsed_state.automations
-            else "No automations"
-        )
-        return (
-            f"OctoBotActionsJob with {len(parsed_state.automations)} "
-            f"automation{'s' if len(parsed_state.automations) > 1 else ''}:\n- {automations_repr})"
-        )
+        parsed_state = mini_octobot.AutomationState.from_dict(self.description.state)
+        automation_repr = str(parsed_state.automation) if parsed_state.automation else "No automation"
+        return f"OctoBotActionsJob with automation:\n- {automation_repr}"
