@@ -66,7 +66,7 @@ def _sanitize(result: typing.Any) -> typing.Any:
 
 class Scheduler:
     INSTANCE: dbos.DBOS = None # type: ignore
-    AUTOMATIONS_WORKFLOW_QUEUE: dbos.Queue = None # type: ignore
+    AUTOMATION_WORKFLOW_QUEUE: dbos.Queue = None # type: ignore
 
     def __init__(self):
         self.logger = logging.getLogger(self.__class__.__name__)
@@ -119,7 +119,7 @@ class Scheduler:
             self.logger.warning("Scheduler not initialized")
 
     def create_queues(self):
-        self.AUTOMATIONS_WORKFLOW_QUEUE = dbos.Queue(name=octobot_node.enums.SchedulerQueues.AUTOMATIONS_WORKFLOW_QUEUE.value)
+        self.AUTOMATION_WORKFLOW_QUEUE = dbos.Queue(name=octobot_node.enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE.value)
 
     async def get_periodic_tasks(self) -> list[dict]:
         """DBOS scheduled workflows are not easily introspectable; return empty list."""
@@ -134,7 +134,7 @@ class Scheduler:
             for pending_workflow_status in pending_workflow_statuses or []:
                 try:
                     if progress_status := await workflows_util.get_progress_status(pending_workflow_status.workflow_id):
-                        description = f"{progress_status.latest_step_by_automation_id}"
+                        description = f"{progress_status.latest_step}"
                     else:
                         description = f"Pending task: {pending_workflow_status.workflow_id}"
                     task_dict = self._parse_workflow_status(pending_workflow_status, octobot_node.models.TaskStatus.PENDING, description)
@@ -178,7 +178,7 @@ class Scheduler:
                         "name": task_name,
                         "description": description,
                         "status": status,
-                        "result": json.dumps(_sanitize(result.get("history", result))) if isinstance(result, dict) else "",
+                        "result": json.dumps(_sanitize(result.get("history", result))) if isinstance(result, dict) else "", #todo change
                         "result_metadata": metadata,
                         "scheduled_at": completed_workflow_status.created_at,
                         "started_at": None,

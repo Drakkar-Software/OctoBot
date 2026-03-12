@@ -31,7 +31,7 @@ def temp_dbos_scheduler():
             "name": "scheduler_test",
             "system_database_url": f"sqlite:///{temp_file_name}",
         }
-        if octobot_node.scheduler.SCHEDULER.AUTOMATIONS_WORKFLOW_QUEUE is None:
+        if octobot_node.scheduler.SCHEDULER.AUTOMATION_WORKFLOW_QUEUE is None:
             octobot_node.scheduler.SCHEDULER.create_queues()
         dbos.DBOS(config=config)
         dbos.DBOS.reset_system_database()
