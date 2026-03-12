@@ -258,14 +258,6 @@ class ExchangeBuilder:
     def use_market_filter(self, market_filter: typing.Union[None, typing.Callable[[dict], bool]]):
         self.exchange_manager.market_filter = market_filter
         return self
-
-    def set_rest_exchange(self, rest_exchange: typing.Optional["exchanges.RestExchange"]):
-        self.exchange_manager.preconfigured_exchange = rest_exchange
-        return self
-
-    def leave_rest_exchange_open(self, leave_rest_exchange_open: bool):
-        self.exchange_manager.leave_rest_exchange_open = leave_rest_exchange_open
-        return self
     
     def is_ignoring_config(self, ignore_config=True):
         self.exchange_manager.ignore_config = ignore_config
