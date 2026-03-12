@@ -54,14 +54,9 @@ async def create_real_exchange(exchange_manager, exchange_config_by_exchange: ty
     :param exchange_manager: the related exchange manager
     :param exchange_config_by_exchange: optional exchange configurations
     """
-    if exchange_manager.preconfigured_exchange:
-        exchange_manager.exchange = exchange_manager.preconfigured_exchange
-        exchange_manager.exchange.exchange_manager = exchange_manager
-    else:
-        await _create_rest_exchange(exchange_manager, exchange_config_by_exchange)
+    await _create_rest_exchange(exchange_manager, exchange_config_by_exchange)
     try:
-        if exchange_manager.preconfigured_exchange is None:
-            await exchange_manager.exchange.initialize()
+        await exchange_manager.exchange.initialize()
         _create_exchange_backend(exchange_manager)
         if exchange_manager.exchange_only:
             return
