@@ -67,6 +67,7 @@ jobs:
           - packages/node
           - packages/flow
           - packages/services
+          - packages/sync
           - packages/tentacles_manager
           - packages/trading
           - packages/trading_backend

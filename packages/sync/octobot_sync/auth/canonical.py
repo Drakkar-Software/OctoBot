@@ -1,4 +1,4 @@
-#  This file is part of OctoBot (https://github.com/Drakkar-Software/OctoBot)
+#  This file is part of OctoBot Sync (https://github.com/Drakkar-Software/OctoBot)
 #  Copyright (c) 2025 Drakkar-Software, All rights reserved.
 #
 #  OctoBot is free software; you can redistribute it and/or
@@ -14,21 +14,19 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
-from octobot.community.errors_upload import sentry_tracker
-from octobot.community.errors_upload.sentry_tracker import (
-    init_sentry_tracker,
-    flush_tracker,
-)
+import hashlib
 
-from octobot.community.errors_upload import error_sharing
-from octobot.community.errors_upload.error_sharing import (
-    upload_error,
-    share_logs,
-)
 
-__all__ = [
-    "init_sentry_tracker",
-    "flush_tracker",
-    "upload_error",
-    "share_logs",
-]
+def build_canonical(
+    method: str,
+    path: str,
+    timestamp: str,
+    nonce: str,
+    body_hash: str,
+) -> str:
+    return f"ED25519-OCTOBOT\n{method}\n{path}\n{timestamp}\n{nonce}\n{body_hash}"
+
+
+def hash_body(body: str | None) -> str:
+    data = (body or "").encode("utf-8")
+    return hashlib.sha256(data).hexdigest()

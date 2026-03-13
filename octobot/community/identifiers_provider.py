@@ -26,6 +26,7 @@ class IdentifiersProvider:
     FRONTEND_PASSWORD_RECOVER_URL: str = None
     BACKEND_URL: str = None
     BACKEND_KEY: str = None
+    SYNC_SERVER_URL: str = None
 
     @staticmethod
     def use_production():
@@ -34,6 +35,7 @@ class IdentifiersProvider:
         IdentifiersProvider.FRONTEND_PASSWORD_RECOVER_URL = constants.OCTOBOT_COMMUNITY_RECOVER_PASSWORD_URL
         IdentifiersProvider.BACKEND_URL = constants.COMMUNITY_BACKEND_URL
         IdentifiersProvider.BACKEND_KEY = constants.COMMUNITY_BACKEND_KEY
+        IdentifiersProvider.SYNC_SERVER_URL = constants.SYNC_SERVER_URL
         IdentifiersProvider._register_environment(enums.CommunityEnvironments.Production)
 
     @staticmethod
@@ -43,6 +45,7 @@ class IdentifiersProvider:
         IdentifiersProvider.FRONTEND_PASSWORD_RECOVER_URL = constants.STAGING_COMMUNITY_RECOVER_PASSWORD_URL
         IdentifiersProvider.BACKEND_URL = constants.STAGING_COMMUNITY_BACKEND_URL
         IdentifiersProvider.BACKEND_KEY = constants.STAGING_COMMUNITY_BACKEND_KEY
+        IdentifiersProvider.SYNC_SERVER_URL = constants.STAGING_SYNC_SERVER_URL
         IdentifiersProvider._register_environment(enums.CommunityEnvironments.Staging)
 
     @staticmethod

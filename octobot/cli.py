@@ -516,6 +516,13 @@ def octobot_parser(parser, default_config_file=None):
     _register_node_arguments(node_parser)
     node_parser.set_defaults(func=lambda args: start_node(args, default_config_file))
 
+    # sync server
+    sync_parser = subparsers.add_parser("sync", help='Start OctoBot Sync server.\n'
+                                                     'Use "sync --help" to get the '
+                                                     'sync server help.')
+    _register_sync_arguments(sync_parser)
+    sync_parser.set_defaults(func=lambda args: start_sync(args))
+
 
 def _register_node_arguments(parser):
     parser.add_argument(
@@ -551,6 +558,30 @@ def start_node(args, default_config_file=None):
         octobot_node.config.settings.IS_MASTER_MODE = True
     octobot_node.config.settings.CONSUMER_ONLY = args.consumer_only
     start_octobot(args, default_config_file)
+
+
+def _register_sync_arguments(parser):
+    parser.add_argument(
+        '--host',
+        help='Host to bind the sync server to (default: 0.0.0.0).',
+        type=str,
+        default="0.0.0.0"
+    )
+    parser.add_argument(
+        '--port',
+        help='Port to bind the sync server to (default: 3000).',
+        type=int,
+        default=None
+    )
+
+
+def start_sync(args):
+    import octobot_sync.server
+
+    octobot_sync.server.start_sync_server(
+        host=args.host,
+        port=args.port,
+    )
 
 
 def start_background_octobot_with_args(

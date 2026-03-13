@@ -120,7 +120,7 @@ downloaded_temp_tentacles
 !packages/tentacles
 
 # User config
-user/
+user
 temp_config.json
 
 *.csv

@@ -216,6 +216,7 @@ from tentacles.Services.Interfaces.web_interface.models.interface_settings impor
 from tentacles.Services.Interfaces.web_interface.models.logs import (
     LOG_EXPORT_FORMAT,
     export_logs,
+    async_share_logs,
 )
 from tentacles.Services.Interfaces.web_interface.models.medias import (
     is_valid_tentacle_image_path,

@@ -1,4 +1,4 @@
-#  Drakkar-Software OctoBot-Interfaces
+#  Drakkar-Software OctoBot-Sync
 #  Copyright (c) Drakkar-Software, All rights reserved.
 #
 #  This library is free software; you can redistribute it and/or
@@ -13,18 +13,34 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-import shutil
-import octobot.constants as constants
-import octobot.community as community
 
+from octobot_sync.chain import interface
+from octobot_sync.chain.interface import (
+    AbstractChain,
+    Item,
+    Wallet,
+)
 
-LOG_EXPORT_FORMAT = "zip"
+from octobot_sync.chain import evm
+from octobot_sync.chain.evm import (
+    EvmChain,
+    create_evm_wallet,
+    address_from_evm_key,
+    verify_evm,
+)
 
+from octobot_sync.chain import registry
+from octobot_sync.chain.registry import (
+    ChainRegistry,
+)
 
-def export_logs(export_path):
-    shutil.make_archive(export_path, "zip", constants.LOGS_FOLDER)
-    return f"{export_path}.{LOG_EXPORT_FORMAT}"
-
-
-async def async_share_logs(export_path):
-    return await community.share_logs(export_path)
+__all__ = [
+    "AbstractChain",
+    "Item",
+    "Wallet",
+    "EvmChain",
+    "create_evm_wallet",
+    "address_from_evm_key",
+    "verify_evm",
+    "ChainRegistry",
+]

@@ -79,3 +79,4 @@ class OctoBotDistribution(enum.Enum):
     MARKET_MAKING = "market_making"
     PREDICTION_MARKET = "prediction_market"
     NODE = "node"
+    SYNC = "sync"

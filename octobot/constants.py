@@ -109,6 +109,13 @@ CREATE_ICEBERG_DB_IF_MISSING = os_util.parse_boolean_environment_var("CREATE_ICE
 
 OCTOBOT_MARKET_MAKING_URL = os.getenv("OCTOBOT_MARKET_MAKING_URL", "https://market-making.octobot.cloud")
 
+# Sync server
+SYNC_SERVER_URL = os.getenv("SYNC_SERVER_URL", "https://sync.octobot.cloud")
+STAGING_SYNC_SERVER_URL = os.getenv("SYNC_SERVER_URL", "https://sync-beta.octobot.cloud")
+SYNC_CHAIN_ID = os.getenv("SYNC_CHAIN_ID", "evm:8453")
+ENABLE_LOCAL_SYNC_SERVER = os_util.parse_boolean_environment_var("ENABLE_LOCAL_SYNC_SERVER", "false")
+LOCAL_SYNC_PORT = int(os.getenv("LOCAL_SYNC_PORT", "3000"))
+
 ERROR_TRACKER_DSN = os.getenv("ERROR_TRACKER_DSN")
 
 CONFIG_COMMUNITY = "community"
@@ -119,6 +126,7 @@ CONFIG_COMMUNITY_TRADINGVIEW_EMAIL_CONFIRMED = "tradingview_email_confirmed"
 CONFIG_COMMUNITY_PACKAGE_URLS = "package_urls"
 CONFIG_COMMUNITY_ENVIRONMENT = "environment"
 CONFIG_COMMUNITY_LOCAL_DATA_IDENTIFIER = "local_data_identifier"
+CONFIG_COMMUNITY_WALLETS = "wallets"
 USE_BETA_EARLY_ACCESS = os_util.parse_boolean_environment_var("USE_BETA_EARLY_ACCESS", "false")
 USER_ACCOUNT_EMAIL = os.getenv("USER_ACCOUNT_EMAIL", "")
 USER_PASSWORD_TOKEN = os.getenv("USER_PASSWORD_TOKEN", None)
