@@ -18,7 +18,6 @@ import pytest
 import mock
 import time
 
-import octobot_commons.constants
 import octobot_commons.dsl_interpreter as dsl_interpreter
 import octobot_commons.errors
 
