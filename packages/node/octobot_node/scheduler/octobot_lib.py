@@ -95,7 +95,7 @@ def required_actions(func):
 class OctoBotActionsJobResult:
     processed_actions: list["mini_octobot.AbstractActionDetails"]
     next_actions_description: typing.Optional[OctoBotActionsJobDescription] = None
-    actions_dag: "mini_octobot.ActionsDAG" = dataclasses.field(default_factory=mini_octobot.ActionsDAG)
+    actions_dag: typing.Optional["mini_octobot.ActionsDAG"] = None
 
     @required_actions
     def get_failed_actions(self) -> list[typing.Optional[dict]]:

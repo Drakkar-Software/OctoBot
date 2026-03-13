@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import re
 import typing
 import json
 
@@ -125,6 +126,34 @@ def apply_resolved_parameter_value(script: str, parameter: str, value: typing.An
         )
     new_value = f"{parameter}={format_parameter_value(value)}"
     return script.replace(to_replace, new_value)
+
+
+def add_resolved_parameter_value(script: str, parameter: str, value: typing.Any):
+    """
+    Append a resolved parameter value to the end of a DSL script.
+    Supports:
+    - Calls with no parenthesis (e.g. op -> op(x='a'))
+    - Calls with no existing params (e.g. op() -> op(x='a'))
+    - Calls with existing params (e.g. op(1) -> op(1, x='a'))
+    Raises InvalidParametersError if the parameter is already in the operator keyword args.
+    """
+    param_str = f"{parameter}={format_parameter_value(value)}"
+    if script[-1] == ")":
+        # Script ends with ) - append to existing call
+        if re.search(rf"(?:\(|,)\s*{re.escape(parameter)}\s*=", script):
+            raise octobot_commons.errors.InvalidParametersError(
+                f"Parameter {parameter} is already in operator keyword args: {script}"
+            )
+        inner = script[:-1]
+        has_existing_params = inner.rstrip().endswith("(")
+        if has_existing_params:
+            return f"{inner}{param_str})"
+        return f"{inner}, {param_str})"
+    if "(" in script:
+        raise octobot_commons.errors.InvalidParametersError(
+            f"Script {script} has unclosed parenthesis"
+        )
+    return f"{script}({param_str})"
 
 
 def has_unresolved_parameters(script: str) -> bool:
