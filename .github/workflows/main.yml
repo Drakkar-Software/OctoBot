@@ -66,6 +66,7 @@ jobs:
           - packages/evaluators
           - packages/node
           - packages/services
+          - packages/sync
           - packages/tentacles_manager
           - packages/trading
           - packages/trading_backend

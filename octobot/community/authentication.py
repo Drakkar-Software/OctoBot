@@ -43,6 +43,8 @@ import octobot_commons.authentication as authentication
 import octobot_commons.configuration as commons_configuration
 import octobot_commons.profiles as commons_profiles
 import octobot_trading.enums as trading_enums
+import octobot_sync.chain as sync_chain
+import octobot_sync.client as sync_client
 
 
 def expired_session_retrier(func):
@@ -124,6 +126,8 @@ class CommunityAuthentication(authentication.Authenticator):
         self._startup_info: typing.Optional[startup_info.StartupInfo] = None
 
         self._fetch_account_task: typing.Optional[asyncio.Task] = None
+        self._sync_client = None
+        self._sync_address: str = ""
 
     @staticmethod
     def create(configuration: commons_configuration.Configuration, **kwargs):
@@ -581,6 +585,9 @@ class CommunityAuthentication(authentication.Authenticator):
             await self._community_feed.stop()
         if self.community_bot:
             self.community_bot.clear()
+        if self._sync_client:
+            await self._sync_client.close()
+            self._sync_client = None
         self.logger.debug("Stopped")
 
     def _update_supports(self, resp_status, json_data):
@@ -624,6 +631,40 @@ class CommunityAuthentication(authentication.Authenticator):
             self.logger.exception(e, True, f"Error when fetching community supports: {e}({e.__class__.__name__})")
         finally:
             self.initialized_event.set()
+
+    def _get_or_create_wallet_private_key(self, chain_id: str) -> str:
+        chain_type, chain_network = chain_id.split(":", 1)
+        wallets = self._get_value_in_config(constants.CONFIG_COMMUNITY_WALLETS) or {}
+        chain_wallets = wallets.get(chain_type, {})
+        private_key = chain_wallets.get(chain_network)
+        if private_key:
+            return private_key
+        wallet = sync_chain.create_evm_wallet()
+        chain_wallets[chain_network] = wallet.private_key
+        wallets[chain_type] = chain_wallets
+        self._save_value_in_config(constants.CONFIG_COMMUNITY_WALLETS, wallets)
+        self.logger.info(f"Created new {chain_type} wallet for {chain_id}: {wallet.address}")
+        return wallet.private_key
+
+    def init_sync_client(self):
+        if self._sync_client is not None:
+            return
+        try:
+            chain_id = constants.SYNC_CHAIN_ID
+            sync_url = identifiers_provider.IdentifiersProvider.SYNC_SERVER_URL
+            if not sync_url and not constants.ENABLE_LOCAL_SYNC_SERVER:
+                self.logger.debug("No sync server URL configured, skipping satellite client init")
+                return
+            private_key = self._get_or_create_wallet_private_key(chain_id)
+            self._sync_client, self._sync_address = sync_client.create_sync_client(
+                private_key=private_key,
+                chain_id=chain_id,
+                sync_url=sync_url,
+                start_local_server=constants.ENABLE_LOCAL_SYNC_SERVER,
+                local_server_port=constants.LOCAL_SYNC_PORT,
+            )
+        except Exception as e:
+            self.logger.exception(e, True, f"Failed to initialize satellite client: {e}")
 
     async def _init_community_data(self, fetch_private_data):
         coros = [

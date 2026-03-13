@@ -62,6 +62,12 @@
                           data-toggle="tooltip" title="Export your logs into a zipped file to help fixing the issues you might have.">
                       <i class="fas fa-share-square"></i> <span class="d-none d-md-inline">Download detailed logs</span>
                   </button>
+                  <button id="share-logs"
+                          data-url="{{url_for('share_logs')}}"
+                          class="btn btn-outline-info waves-effect share-logs-button"
+                          data-toggle="tooltip" title="Upload your logs to the OctoBot team to help diagnose issues.">
+                      <i class="fas fa-cloud-upload-alt"></i> <span class="d-none d-md-inline">Share logs</span>
+                  </button>
               </div>
             </div>
             <div class="tab-pane fade" id="notifications" role="tabnotifications" aria-labelledby="notifications-tab">

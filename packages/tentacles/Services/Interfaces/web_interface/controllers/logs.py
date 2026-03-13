@@ -19,6 +19,7 @@ import os
 import octobot_commons.constants as commons_constants
 import octobot_commons.logging as logging
 import octobot_tentacles_manager.constants as tentacles_manager_constants
+import octobot_services.interfaces.util as interfaces_util
 import tentacles.Services.Interfaces.web_interface as web_interface
 import tentacles.Services.Interfaces.web_interface.login as login
 import tentacles.Services.Interfaces.web_interface.models as models
@@ -33,8 +34,8 @@ def register(blueprint):
         return flask.render_template("logs.html",
                                      logs=web_interface.get_logs(),
                                      notifications=web_interface.get_notifications_history())
-    
-    
+
+
     @blueprint.route("/export_logs")
     @login.login_required_when_activated
     def export_logs():
@@ -54,3 +55,25 @@ def register(blueprint):
                 error = err
         flask.flash(f"Error when exporting logs: {error}.", "danger")
         return flask.redirect(flask.url_for("logs"))
+
+    @blueprint.route("/share_logs", methods=["POST"])
+    @login.login_required_when_activated
+    def share_logs():
+        for candidate_path in (commons_constants.USER_FOLDER, tentacles_manager_constants.TENTACLES_PATH):
+            temp_file = os.path.abspath(os.path.join(os.getcwd(), candidate_path, "shared_logs"))
+            try:
+                result = interfaces_util.run_in_bot_main_loop(
+                    models.async_share_logs(temp_file),
+                    timeout=30,
+                )
+                if result is None:
+                    return flask.jsonify({"success": False, "error": "Sync client not configured"}), 503
+                return flask.jsonify({
+                    "success": True,
+                    "errorId": result.get("errorId", ""),
+                    "errorSecret": result.get("errorSecret", ""),
+                })
+            except Exception as err:
+                logging.get_logger("share_logs").exception(err, True, f"Unexpected error when sharing logs: {err}")
+                error = err
+        return flask.jsonify({"success": False, "error": str(error)}), 500

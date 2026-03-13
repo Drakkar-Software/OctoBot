@@ -1,4 +1,4 @@
-#  This file is part of OctoBot (https://github.com/Drakkar-Software/OctoBot)
+#  This file is part of OctoBot Sync (https://github.com/Drakkar-Software/OctoBot)
 #  Copyright (c) 2025 Drakkar-Software, All rights reserved.
 #
 #  OctoBot is free software; you can redistribute it and/or
@@ -14,21 +14,18 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
-from octobot.community.errors_upload import sentry_tracker
-from octobot.community.errors_upload.sentry_tracker import (
-    init_sentry_tracker,
-    flush_tracker,
-)
+"""Nonce replay protection."""
 
-from octobot.community.errors_upload import error_sharing
-from octobot.community.errors_upload.error_sharing import (
-    upload_error,
-    share_logs,
-)
 
-__all__ = [
-    "init_sentry_tracker",
-    "flush_tracker",
-    "upload_error",
-    "share_logs",
-]
+import octobot_sync.auth.storage as storage_module
+
+
+class NonceStore:
+    def __init__(self, store: storage_module.AbstractStorageAdapter) -> None:
+        self._store = store
+
+    async def nonce_insert(self, nonce: str, pubkey: str) -> bool:
+        """Returns True if nonce is fresh (allow request).
+        Returns False if nonce was already seen within the 30s window (reject as replay).
+        """
+        return await self._store.set_if_absent(f"nonce:{pubkey}:{nonce}", "1", 30_000)

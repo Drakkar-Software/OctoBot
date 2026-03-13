@@ -1,4 +1,4 @@
-#  Drakkar-Software OctoBot-Interfaces
+#  Drakkar-Software OctoBot-Sync
 #  Copyright (c) Drakkar-Software, All rights reserved.
 #
 #  This library is free software; you can redistribute it and/or
@@ -13,18 +13,34 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-import shutil
-import octobot.constants as constants
-import octobot.community as community
 
+from octobot_sync.auth import canonical
+from octobot_sync.auth.canonical import (
+    build_canonical,
+    hash_body,
+)
 
-LOG_EXPORT_FORMAT = "zip"
+from octobot_sync.auth import nonce
+from octobot_sync.auth.nonce import (
+    NonceStore,
+)
 
+from octobot_sync.auth import storage
+from octobot_sync.auth.storage import (
+    AbstractStorageAdapter,
+    MemoryStorageAdapter,
+)
 
-def export_logs(export_path):
-    shutil.make_archive(export_path, "zip", constants.LOGS_FOLDER)
-    return f"{export_path}.{LOG_EXPORT_FORMAT}"
+from octobot_sync.auth import provider
+from octobot_sync.auth.provider import (
+    SatelliteAuthProvider,
+)
 
-
-async def async_share_logs(export_path):
-    return await community.share_logs(export_path)
+__all__ = [
+    "build_canonical",
+    "hash_body",
+    "NonceStore",
+    "AbstractStorageAdapter",
+    "MemoryStorageAdapter",
+    "SatelliteAuthProvider",
+]

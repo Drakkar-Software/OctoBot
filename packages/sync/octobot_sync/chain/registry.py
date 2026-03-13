@@ -1,4 +1,4 @@
-#  This file is part of OctoBot (https://github.com/Drakkar-Software/OctoBot)
+#  This file is part of OctoBot Sync (https://github.com/Drakkar-Software/OctoBot)
 #  Copyright (c) 2025 Drakkar-Software, All rights reserved.
 #
 #  OctoBot is free software; you can redistribute it and/or
@@ -14,21 +14,21 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
-from octobot.community.errors_upload import sentry_tracker
-from octobot.community.errors_upload.sentry_tracker import (
-    init_sentry_tracker,
-    flush_tracker,
-)
+import octobot_sync.chain.interface as chain_interface
 
-from octobot.community.errors_upload import error_sharing
-from octobot.community.errors_upload.error_sharing import (
-    upload_error,
-    share_logs,
-)
 
-__all__ = [
-    "init_sentry_tracker",
-    "flush_tracker",
-    "upload_error",
-    "share_logs",
-]
+class ChainRegistry:
+    def __init__(self) -> None:
+        self._chains: dict[str, chain_interface.AbstractChain] = {}
+
+    def register(self, chain: chain_interface.AbstractChain) -> None:
+        self._chains[chain.id] = chain
+
+    def get(self, chain_id: str) -> chain_interface.AbstractChain:
+        chain = self._chains.get(chain_id)
+        if chain is None:
+            raise ValueError(f"Unknown chain: {chain_id}")
+        return chain
+
+    def list(self) -> list[chain_interface.AbstractChain]:
+        return list(self._chains.values())
