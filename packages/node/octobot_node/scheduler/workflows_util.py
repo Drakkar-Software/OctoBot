@@ -82,7 +82,9 @@ def get_automation_dict(description: typing.Union[str, dict]) -> dict:
 
 
 async def get_automation_workflow_status(automation_id: str) -> dbos_lib.WorkflowStatus:
-    for workflow_status in await dbos_lib.DBOS.list_workflows_async(status=["PENDING", "ENQUEUED"]):
+    for workflow_status in await dbos_lib.DBOS.list_workflows_async(status=[
+        dbos_lib.WorkflowStatusString.PENDING.value, dbos_lib.WorkflowStatusString.ENQUEUED.value
+    ]):
         if get_automation_id(workflow_status) == automation_id:
             return workflow_status
     raise ValueError(f"No automation workflow found for automation_id: {automation_id}")

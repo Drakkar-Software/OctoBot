@@ -24,3 +24,7 @@ class WorkflowInputError(WorkflowError):
 
 class WorkflowActionExecutionError(WorkflowError):
     """Raised when a workflow action execution fails"""
+    
+
+class WorkflowPriorityActionExecutionError(WorkflowActionExecutionError):
+    """Raised when a workflow priority action execution fails"""

@@ -21,24 +21,35 @@ import octobot_node.scheduler
 import octobot_node.scheduler.workflows
 
 
+def init_scheduler(db_file_name: str):
+    config: dbos.DBOSConfig = {
+        "name": "scheduler_test",
+        "system_database_url": f"sqlite:///{db_file_name}",
+    }
+    if octobot_node.scheduler.SCHEDULER.AUTOMATION_WORKFLOW_QUEUE is None:
+        octobot_node.scheduler.SCHEDULER.create_queues()
+    dbos.DBOS(config=config)
+    octobot_node.scheduler.SCHEDULER.INSTANCE = dbos.DBOS
+    octobot_node.scheduler.workflows.register_workflows()
+    return dbos.DBOS
+
+
 @pytest.fixture()
 def temp_dbos_scheduler():
     # from https://docs.dbos.dev/python/tutorials/testing
     # don't use too muck as it is very slow
     with tempfile.NamedTemporaryFile() as temp_file:
-        temp_file_name = temp_file.name
-        config: dbos.DBOSConfig = {
-            "name": "scheduler_test",
-            "system_database_url": f"sqlite:///{temp_file_name}",
-        }
-        if octobot_node.scheduler.SCHEDULER.AUTOMATION_WORKFLOW_QUEUE is None:
-            octobot_node.scheduler.SCHEDULER.create_queues()
-        dbos.DBOS(config=config)
-        dbos.DBOS.reset_system_database()
-        octobot_node.scheduler.SCHEDULER.INSTANCE = dbos.DBOS
-        octobot_node.scheduler.workflows.register_workflows()
-        dbos.DBOS.launch()
+        dbos =init_scheduler(temp_file.name)
+        dbos.reset_system_database()
+        dbos.launch()
         try:
             yield octobot_node.scheduler.SCHEDULER
         finally:
-            dbos.DBOS.destroy()
+            dbos.destroy()
+
+
+def init_and_destroy_scheduler(db_file_name: str):
+    dbos = init_scheduler(db_file_name)
+    dbos.reset_system_database()
+    dbos.launch()
+    dbos.destroy()
