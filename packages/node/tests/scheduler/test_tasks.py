@@ -65,12 +65,10 @@ class TestTriggerTask:
                 assert result is True
                 mock_enqueue_async.assert_called_once()
                 call_kwargs = mock_enqueue_async.call_args[1]
-                assert "t" in call_kwargs
-                assert call_kwargs["t"].name.startswith(f"{schedule_task.name}_")
                 assert "inputs" in call_kwargs
+                assert len(call_kwargs["inputs"]) == 1
                 inputs = call_kwargs["inputs"]
                 assert inputs["task"] == schedule_task.model_dump(exclude_defaults=True)
-                assert inputs["delay"] == 1
         with pytest.raises(ValueError, match="Unsupported task type"):
             with mock.patch.object(
                 temp_dbos_scheduler.AUTOMATION_WORKFLOW_QUEUE, "enqueue_async", mock.AsyncMock()

@@ -25,7 +25,6 @@ import logging
 import time
 
 import octobot_node.scheduler
-import octobot_node.scheduler.workflows.params as params
 
 QUEUE = dbos.Queue(name="test_queue")
 
@@ -56,10 +55,10 @@ class TestSchedulerRecovery:
             class Sleeper():
                 @staticmethod
                 @octobot_node.scheduler.SCHEDULER.INSTANCE.workflow()
-                async def sleeper_workflow(t: params.Tracker, identifier: float) -> float:
-                    t.logger.info(f"{t.name}: sleeper_workflow {identifier} started")
+                async def sleeper_workflow(identifier: float) -> float:
+                    logging.info(f"sleeper_workflow {identifier} started")
                     await dbos.DBOS.sleep_async(WF_SLEEP_TIME)
-                    t.logger.info(f"{t.name}: sleeper_workflow {identifier} done")
+                    logging.info(f"sleeper_workflow {identifier} done")
                     completed_workflows.append(identifier)
                     return identifier
     
@@ -70,7 +69,7 @@ class TestSchedulerRecovery:
             # 1. simple execution
             t0 = time.time()
             for i in range(WF_TO_CREATE):
-                await QUEUE.enqueue_async(Sleeper.sleeper_workflow, params.Tracker(name=f"sleeper_workflow_{i}"), i)
+                await QUEUE.enqueue_async(Sleeper.sleeper_workflow, i)
             wfs = await octobot_node.scheduler.SCHEDULER.INSTANCE.list_workflows_async(
                 status=["ENQUEUED", "PENDING"]
             )
@@ -87,7 +86,7 @@ class TestSchedulerRecovery:
 
             # 2. enqueue 10 more and restart
             for i in range(WF_TO_CREATE):
-                await QUEUE.enqueue_async(Sleeper.sleeper_workflow, params.Tracker(name=f"sleeper_workflow_{i}"), i)
+                await QUEUE.enqueue_async(Sleeper.sleeper_workflow, i)
             logging.info(f"Destroying DBOS instance 1 ...")
             octobot_node.scheduler.SCHEDULER.INSTANCE.destroy()
             logging.info(f"DBOS instance 1 destroyed")
@@ -105,7 +104,7 @@ class TestSchedulerRecovery:
             assert len(pending_wfs) == WF_TO_CREATE
             # enqueue a second batch of workflows
             for i in range(WF_TO_CREATE, WF_TO_CREATE*2):
-                await QUEUE.enqueue_async(Sleeper.sleeper_workflow, params.Tracker(name=f"sleeper_workflow_2_{i}"), i)
+                await QUEUE.enqueue_async(Sleeper.sleeper_workflow, i)
             t0 = time.time()
             for wf_status in await octobot_node.scheduler.SCHEDULER.INSTANCE.list_workflows_async():
                 handle = await octobot_node.scheduler.SCHEDULER.INSTANCE.retrieve_workflow_async(wf_status.workflow_id)
