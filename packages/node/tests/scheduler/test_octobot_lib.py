@@ -17,7 +17,9 @@ import pytest
 import decimal
 import time
 import mock
+import typing
 
+import octobot_commons.list_util as list_util
 import octobot_commons.constants as common_constants
 import octobot_commons.dsl_interpreter as dsl_interpreter
 import octobot_trading.constants
@@ -237,6 +239,42 @@ def misses_required_octobot_lib_import():
     except ImportError:
         return "octobot_lib is not installed"
 
+
+def get_failed_actions(actions: list[mini_octobot.entities.AbstractActionDetails]) -> list[typing.Optional[dict]]:
+    return [
+        action.result
+        for action in actions
+        if action.error_status is not mini_octobot.enums.ActionErrorStatus.NO_ERROR.value
+    ]
+
+def get_created_orders(actions: list[mini_octobot.entities.AbstractActionDetails]) -> list[dict]:
+    order_lists = [
+        action.result.get(DSL_operators.CREATED_ORDERS_KEY, [])
+        for action in actions
+        if action.result
+    ]
+    return list_util.flatten_list(order_lists) if order_lists else []
+
+def get_cancelled_orders(actions: list[mini_octobot.entities.AbstractActionDetails]) -> list[str]:
+    cancelled_orders = [
+        action.result.get(DSL_operators.CANCELLED_ORDERS_KEY, [])
+        for action in actions
+        if action.result
+    ]
+    return list_util.flatten_list(cancelled_orders) if cancelled_orders else []
+
+def get_deposit_and_withdrawal_details(actions: list[mini_octobot.entities.AbstractActionDetails]) -> list[dict]:
+    withdrawal_lists = [
+        action.result.get(DSL_operators.CREATED_WITHDRAWALS_KEY, []) + action.result.get(DSL_operators.CREATED_TRANSACTIONS_KEY, [])
+        for action in actions
+        if action.result and isinstance(action.result, dict) and (
+            DSL_operators.CREATED_WITHDRAWALS_KEY in action.result or
+            DSL_operators.CREATED_TRANSACTIONS_KEY in action.result
+        )
+    ]
+    return list_util.flatten_list(withdrawal_lists) if withdrawal_lists else []
+
+
 class TestOctoBotActionsJob:
 
     def setup_method(self):
@@ -282,8 +320,8 @@ class TestOctoBotActionsJob:
         assert len(processed_actions) == 1
         assert isinstance(processed_actions[0], mini_octobot.entities.DSLScriptActionDetails)
         assert processed_actions[0].dsl_script == "market('buy', 'ETH/BTC', 1)"
-        assert len(result.get_created_orders()) == 1
-        order = result.get_created_orders()[0]
+        assert len(get_created_orders(processed_actions)) == 1
+        order = get_created_orders(processed_actions)[0]
         assert order["symbol"] == "ETH/BTC"
         assert order["amount"] == 1
         assert order["type"] == "market"
@@ -334,8 +372,8 @@ class TestOctoBotActionsJob:
         assert len(processed_actions) == 1
         assert isinstance(processed_actions[0], mini_octobot.entities.DSLScriptActionDetails)
         assert processed_actions[0].dsl_script == "limit('buy', 'ETH/BTC', 1, '-10%')"
-        assert len(result.get_created_orders()) == 1
-        order = result.get_created_orders()[0]
+        assert len(get_created_orders(processed_actions)) == 1
+        order = get_created_orders(processed_actions)[0]
         assert order["symbol"] == "ETH/BTC"
         assert order["amount"] == decimal.Decimal("1")
         assert decimal.Decimal("0.001") < order["price"] < decimal.Decimal("0.2")
@@ -378,8 +416,8 @@ class TestOctoBotActionsJob:
         assert len(processed_actions) == 1
         assert isinstance(processed_actions[0], mini_octobot.entities.DSLScriptActionDetails)
         assert processed_actions[0].dsl_script.startswith("stop_loss('sell', 'ETH/BTC', '10%', '-10%')")
-        assert len(result.get_created_orders()) == 1
-        order = result.get_created_orders()[0]
+        assert len(get_created_orders(processed_actions)) == 1
+        order = get_created_orders(processed_actions)[0]
         assert order["symbol"] == "ETH/BTC"
         assert order["amount"] == decimal.Decimal("0.1") # 10% of 1 ETH
         assert decimal.Decimal("0.001") < order["price"] < decimal.Decimal("0.2")
@@ -422,8 +460,8 @@ class TestOctoBotActionsJob:
         assert len(processed_actions) == 1
         assert isinstance(processed_actions[0], mini_octobot.entities.DSLScriptActionDetails)
         assert processed_actions[0].dsl_script.startswith("limit(")
-        assert len(result.get_created_orders()) == 1
-        order = result.get_created_orders()[0]
+        assert len(get_created_orders(processed_actions)) == 1
+        order = get_created_orders(processed_actions)[0]
         assert order["symbol"] == "ETH/BTC"
         assert order["amount"] == decimal.Decimal("1")
         assert decimal.Decimal("0.001") < order["price"] < decimal.Decimal("0.2")
@@ -469,7 +507,7 @@ class TestOctoBotActionsJob:
         assert isinstance(processed_actions[0], mini_octobot.entities.DSLScriptActionDetails)
         assert processed_actions[0].dsl_script.startswith("cancel_order(")
         assert processed_actions[0].result is not None
-        assert len(processed_actions[0].result[DSL_operators.CANCELLED_ORDERS_KEY]) == len(result.get_cancelled_orders()) == 1
+        assert len(processed_actions[0].result[DSL_operators.CANCELLED_ORDERS_KEY]) == len(get_cancelled_orders(processed_actions)) == 1
         assert result.next_actions_description is None # no more actions to execute
 
     @pytest.mark.skip(reason="restore once polymarket is fully supported")
@@ -509,8 +547,8 @@ class TestOctoBotActionsJob:
             assert len(processed_actions) == 1
             assert isinstance(processed_actions[0], mini_octobot.entities.DSLScriptActionDetails)
             assert processed_actions[0].dsl_script.startswith("market(")
-            assert len(result.get_created_orders()) == 1
-            order = result.get_created_orders()[0]
+            assert len(get_created_orders(processed_actions)) == 1
+            order = get_created_orders(processed_actions)[0]
             assert order["symbol"] == "what-price-will-bitcoin-hit-in-january-2026/USDC:USDC-260131-0-YES"
             assert order["amount"] == decimal.Decimal("1")
             assert order["type"] == "market"
@@ -550,9 +588,9 @@ class TestOctoBotActionsJob:
         assert result.next_actions_description is None # no more actions to execute
 
         assert processed_actions[0].result is not None
-        assert len(processed_actions[0].result[DSL_operators.CREATED_TRANSACTIONS_KEY]) == len(result.get_deposit_and_withdrawal_details()) == 1
-        assert len(result.get_deposit_and_withdrawal_details()) == 1
-        transaction = result.get_deposit_and_withdrawal_details()[0]
+        assert len(processed_actions[0].result[DSL_operators.CREATED_TRANSACTIONS_KEY]) == len(get_deposit_and_withdrawal_details(processed_actions)) == 1
+        assert len(get_deposit_and_withdrawal_details(processed_actions)) == 1
+        transaction = get_deposit_and_withdrawal_details(processed_actions)[0]
         assert transaction[trading_enums.ExchangeConstantsTransactionColumns.CURRENCY.value] == "BTC"
         assert transaction[trading_enums.ExchangeConstantsTransactionColumns.AMOUNT.value] == decimal.Decimal("1")
         assert transaction[trading_enums.ExchangeConstantsTransactionColumns.NETWORK.value] == BLOCKCHAIN
@@ -682,9 +720,9 @@ class TestOctoBotActionsJob:
         assert isinstance(processed_actions[0], mini_octobot.entities.DSLScriptActionDetails)
         assert processed_actions[0].dsl_script is not None and "blockchain_wallet_transfer" in processed_actions[0].dsl_script
         assert processed_actions[0].result is not None
-        assert len(processed_actions[0].result[DSL_operators.CREATED_TRANSACTIONS_KEY]) == len(result.get_deposit_and_withdrawal_details()) == 1
-        assert len(result.get_deposit_and_withdrawal_details()) == 1
-        transaction = result.get_deposit_and_withdrawal_details()[0]
+        assert len(processed_actions[0].result[DSL_operators.CREATED_TRANSACTIONS_KEY]) == len(get_deposit_and_withdrawal_details(processed_actions)) == 1
+        assert len(get_deposit_and_withdrawal_details(processed_actions)) == 1
+        transaction = get_deposit_and_withdrawal_details(processed_actions)[0]
         assert transaction[trading_enums.ExchangeConstantsTransactionColumns.CURRENCY.value] == "BTC"
         assert transaction[trading_enums.ExchangeConstantsTransactionColumns.AMOUNT.value] == decimal.Decimal("1")
         assert transaction[trading_enums.ExchangeConstantsTransactionColumns.NETWORK.value] == BLOCKCHAIN
@@ -708,8 +746,8 @@ class TestOctoBotActionsJob:
         assert len(processed_actions) == 1
         assert isinstance(processed_actions[0], mini_octobot.entities.DSLScriptActionDetails)
         assert processed_actions[0].dsl_script.startswith("limit(")
-        assert len(result.get_created_orders()) == 1
-        limit_order = result.get_created_orders()[0]
+        assert len(get_created_orders(processed_actions)) == 1
+        limit_order = get_created_orders(processed_actions)[0]
         assert limit_order["symbol"] == "ETH/BTC"
         assert limit_order["amount"] == decimal.Decimal("1")
         assert limit_order["type"] == "limit"
@@ -773,7 +811,7 @@ class TestOctoBotActionsJob:
         assert isinstance(processed_actions[0], mini_octobot.entities.DSLScriptActionDetails)
         assert processed_actions[0].dsl_script is not None and "blockchain_wallet_transfer" in processed_actions[0].dsl_script
         assert processed_actions[0].result is not None
-        assert len(processed_actions[0].result[DSL_operators.CREATED_TRANSACTIONS_KEY]) == len(result.get_deposit_and_withdrawal_details()) == 1
+        assert len(processed_actions[0].result[DSL_operators.CREATED_TRANSACTIONS_KEY]) == len(get_deposit_and_withdrawal_details(processed_actions)) == 1
         transaction = processed_actions[0].result[DSL_operators.CREATED_TRANSACTIONS_KEY][0]
         assert transaction[trading_enums.ExchangeConstantsTransactionColumns.CURRENCY.value] == "BTC"
         assert transaction[trading_enums.ExchangeConstantsTransactionColumns.AMOUNT.value] == decimal.Decimal("1")
@@ -803,6 +841,7 @@ class TestOctoBotActionsJob:
         assert len(next_actions) == 1
         assert isinstance(next_actions[0], mini_octobot.entities.DSLScriptActionDetails)
         assert next_actions[0].dsl_script.startswith("wait(")
+        assert next_actions[0].previous_execution_result
         waiting_time = next_actions[0].previous_execution_result[dsl_interpreter.ReCallableOperatorMixin.LAST_EXECUTION_RESULT_KEY][dsl_interpreter.ReCallingOperatorResultKeys.WAITING_TIME.value]
         
         # step 3.B: complete the wait action
@@ -848,7 +887,7 @@ class TestOctoBotActionsJob:
         assert isinstance(processed_actions[0], mini_octobot.entities.DSLScriptActionDetails)
         assert processed_actions[0].dsl_script.startswith("market(")
         assert processed_actions[0].result is not None
-        assert len(processed_actions[0].result[DSL_operators.CREATED_ORDERS_KEY]) == len(result.get_created_orders()) == 1
+        assert len(processed_actions[0].result[DSL_operators.CREATED_ORDERS_KEY]) == len(get_created_orders(processed_actions)) == 1
         post_trade_portfolio = job5.after_execution_state.automation.client_exchange_account_elements.portfolio.content
         assert post_trade_portfolio["BTC"][common_constants.PORTFOLIO_AVAILABLE] < post_deposit_portfolio["BTC"][common_constants.PORTFOLIO_AVAILABLE]
         assert post_trade_portfolio["ETH"] == {
@@ -866,6 +905,7 @@ class TestOctoBotActionsJob:
         assert len(processed_actions) == 1
         assert isinstance(processed_actions[0], mini_octobot.entities.DSLScriptActionDetails)
         assert processed_actions[0].dsl_script.startswith("wait(")
+        assert processed_actions[0].previous_execution_result
         waiting_time = processed_actions[0].previous_execution_result[dsl_interpreter.ReCallableOperatorMixin.LAST_EXECUTION_RESULT_KEY][dsl_interpreter.ReCallingOperatorResultKeys.WAITING_TIME.value]
         
         # step 5.B: complete the wait action
@@ -901,7 +941,7 @@ class TestOctoBotActionsJob:
         assert isinstance(processed_actions[0], mini_octobot.entities.DSLScriptActionDetails)
         assert processed_actions[0].dsl_script.startswith("withdraw(")
         assert processed_actions[0].result is not None
-        assert len(processed_actions[0].result[DSL_operators.CREATED_WITHDRAWALS_KEY]) == len(result.get_deposit_and_withdrawal_details()) == 1
+        assert len(processed_actions[0].result[DSL_operators.CREATED_WITHDRAWALS_KEY]) == len(get_deposit_and_withdrawal_details(processed_actions)) == 1
         transaction = processed_actions[0].result[DSL_operators.CREATED_WITHDRAWALS_KEY][0]
         assert transaction[trading_enums.ExchangeConstantsTransactionColumns.CURRENCY.value] == "ETH"
         assert transaction[trading_enums.ExchangeConstantsTransactionColumns.AMOUNT.value] == decimal.Decimal("0.999")

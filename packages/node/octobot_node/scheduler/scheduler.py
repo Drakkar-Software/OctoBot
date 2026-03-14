@@ -133,8 +133,12 @@ class Scheduler:
             pending_workflow_statuses = await self.INSTANCE.list_workflows_async(status=["ENQUEUED", "PENDING"])
             for pending_workflow_status in pending_workflow_statuses or []:
                 try:
-                    if progress_status := await workflows_util.get_progress_status(pending_workflow_status.workflow_id):
-                        description = f"{progress_status.latest_step}"
+                    if state := workflows_util.get_automation_state(pending_workflow_status):
+                        next_step = ", ".join([
+                            action.get_summary()
+                            for action in state.automation.actions_dag.get_executable_actions()
+                        ])
+                        description = f"next steps: {next_step}"
                     else:
                         description = f"Pending task: {pending_workflow_status.workflow_id}"
                     task_dict = self._parse_workflow_status(pending_workflow_status, octobot_node.models.TaskStatus.PENDING, description)

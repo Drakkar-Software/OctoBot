@@ -18,25 +18,19 @@ import dataclasses
 import json
 import logging
 
-import octobot_commons.list_util as list_util
 import octobot_commons.dataclasses
 
-import octobot_tentacles_manager.api
+import octobot_node.scheduler.workflows_util as workflows_util
 
 try:
     import mini_octobot
     import mini_octobot.environment
-    import mini_octobot.enums
     import mini_octobot.parsers
     import mini_octobot.entities
     # Requires mini_octobot import and importable tentacles folder
 
     # ensure environment is initialized
     mini_octobot.environment.initialize_environment(True)
-    # reload tentacles info to ensure mini-octobot tentacles are loaded
-    octobot_tentacles_manager.api.reload_tentacle_info()
-    import tentacles.Meta.DSL_operators.exchange_operators as exchange_operators
-    import tentacles.Meta.DSL_operators.blockchain_wallet_operators as blockchain_wallet_operators
 
 
 except ImportError:
@@ -83,57 +77,11 @@ class OctoBotActionsJobDescription(octobot_commons.dataclasses.MinimizableDatacl
         return self.state["automation"]["execution"]["current_execution"]["scheduled_to"]
 
 
-def required_actions(func):
-    def get_required_actions_wrapper(self, *args, **kwargs):
-        if self.processed_actions is None:
-            raise ValueError("No bot actions were executed yet")
-        return func(self, *args, **kwargs)
-    return get_required_actions_wrapper
-
-
 @dataclasses.dataclass
 class OctoBotActionsJobResult:
     processed_actions: list["mini_octobot.AbstractActionDetails"]
     next_actions_description: typing.Optional[OctoBotActionsJobDescription] = None
     actions_dag: typing.Optional["mini_octobot.ActionsDAG"] = None
-
-    @required_actions
-    def get_failed_actions(self) -> list[typing.Optional[dict]]:
-        return [
-            action.result
-            for action in self.processed_actions
-            if action.error_status is not mini_octobot.enums.ActionErrorStatus.NO_ERROR.value
-        ]
-
-    @required_actions
-    def get_created_orders(self) -> list[dict]:
-        order_lists = [
-            action.result.get(exchange_operators.CREATED_ORDERS_KEY, [])
-            for action in self.processed_actions
-            if action.result
-        ]
-        return list_util.flatten_list(order_lists) if order_lists else []
-
-    @required_actions
-    def get_cancelled_orders(self) -> list[str]:
-        cancelled_orders = [
-            action.result.get(exchange_operators.CANCELLED_ORDERS_KEY, [])
-            for action in self.processed_actions
-            if action.result
-        ]
-        return list_util.flatten_list(cancelled_orders) if cancelled_orders else []
-    
-    @required_actions
-    def get_deposit_and_withdrawal_details(self) -> list[dict]:
-        withdrawal_lists = [
-            action.result.get(exchange_operators.CREATED_WITHDRAWALS_KEY, []) + action.result.get(blockchain_wallet_operators.CREATED_TRANSACTIONS_KEY, [])
-            for action in self.processed_actions
-            if action.result and isinstance(action.result, dict) and (
-                exchange_operators.CREATED_WITHDRAWALS_KEY in action.result or
-                blockchain_wallet_operators.CREATED_TRANSACTIONS_KEY in action.result
-            )
-        ]
-        return list_util.flatten_list(withdrawal_lists) if withdrawal_lists else []
 
 
 class OctoBotActionsJob:
@@ -145,16 +93,14 @@ class OctoBotActionsJob:
         self.after_execution_state = None
 
     def _parse_description(self, description: typing.Union[str, dict]) -> dict:
-        if isinstance(description, dict):
-            # normal Non-init case
-            parsed_description = description
-        else:
-            dict_description = json.loads(description)
-            if "state" in dict_description:
-                # there is a state, so it's a non init case
-                parsed_description = dict_description
+        try:
+            parsed_description = workflows_util.get_automation_dict(description)
+        except ValueError:
+            if isinstance(description, dict):
+                parsed_description = description
             else:
-                # normal init case: description is a JSON string: store it in params
+                # description is a JSON string with key/value parameters: store it in params
+                dict_description = json.loads(description)
                 parsed_description = {
                     "params": dict_description
                 }
@@ -201,3 +147,5 @@ class OctoBotActionsJob:
         parsed_state = mini_octobot.AutomationState.from_dict(self.description.state)
         automation_repr = str(parsed_state.automation) if parsed_state.automation else "No automation"
         return f"OctoBotActionsJob with automation:\n- {automation_repr}"
+
+

@@ -14,7 +14,6 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 from .base_params import (
-    Tracker,
     ProgressStatus,
 )
 from .automation_workflow_params import (
@@ -23,7 +22,6 @@ from .automation_workflow_params import (
 )
 
 __all__ = [
-    "Tracker",
     "AutomationWorkflowInputs",
     "AutomationWorkflowIterationResult",
     "ProgressStatus",
