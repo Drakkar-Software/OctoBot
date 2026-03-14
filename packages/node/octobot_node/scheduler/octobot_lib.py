@@ -82,14 +82,20 @@ class OctoBotActionsJobResult:
     processed_actions: list["mini_octobot.AbstractActionDetails"]
     next_actions_description: typing.Optional[OctoBotActionsJobDescription] = None
     actions_dag: typing.Optional["mini_octobot.ActionsDAG"] = None
+    should_stop: bool = False
 
 
 class OctoBotActionsJob:
-    def __init__(self, description: typing.Union[str, dict]):
+    def __init__(self, description: typing.Union[str, dict], user_actions: list[dict]):
         parsed_description = self._parse_description(description)
         self.description: OctoBotActionsJobDescription = OctoBotActionsJobDescription.from_dict(
             parsed_description
         )
+        self.priority_user_actions: list[mini_octobot.AbstractActionDetails] = [
+            mini_octobot.parse_action_details(
+                user_action
+            ) for user_action in user_actions
+        ]
         self.after_execution_state = None
 
     def _parse_description(self, description: typing.Union[str, dict]) -> dict:
@@ -112,18 +118,21 @@ class OctoBotActionsJob:
 
     async def run(self) -> OctoBotActionsJobResult:
         async with mini_octobot.AutomationJob(
-            self.description.state, self.description.auth_details
+            self.description.state, self.priority_user_actions, self.description.auth_details,
         ) as automation_job:
-            selected_actions = automation_job.automation_state.automation.actions_dag.get_executable_actions()
+            selected_actions = (
+                self.priority_user_actions 
+                or automation_job.automation_state.automation.actions_dag.get_executable_actions()
+            )
             logging.getLogger(self.__class__.__name__).info(f"Running automation actions: {selected_actions}")
-            await automation_job.run()
-            automation_job.automation_state.automation.actions_dag.update_actions_results(selected_actions)
+            executed_actions = await automation_job.run()
             self.after_execution_state = automation_job.automation_state
             post_execution_state_dump = automation_job.dump()
             return OctoBotActionsJobResult(
-                processed_actions=selected_actions,
+                processed_actions=executed_actions,
                 next_actions_description=self.get_next_actions_description(post_execution_state_dump),
                 actions_dag=automation_job.automation_state.automation.actions_dag,
+                should_stop=automation_job.automation_state.automation.post_actions.stop_automation,
             )
 
     def get_next_actions_description(

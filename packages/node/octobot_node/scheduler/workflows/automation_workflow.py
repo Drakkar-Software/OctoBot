@@ -41,10 +41,11 @@ class AutomationWorkflow:
         parsed_inputs = params.AutomationWorkflowInputs.from_dict(inputs)
         delay_str = f" with {parsed_inputs.delay} initial delay" if parsed_inputs.delay > 0 else ""
         AutomationWorkflow.get_logger(parsed_inputs).info(f"{AutomationWorkflow.__name__} started{delay_str}.")
+        priority_action: typing.Optional[dict] = None
         if parsed_inputs.delay > 0:
             AutomationWorkflow.get_logger(parsed_inputs).info(f"Sleeping for {parsed_inputs.delay} seconds ...")
-            await dbos_lib.DBOS.sleep_async(parsed_inputs.delay)
-        raw_iteration_result = await AutomationWorkflow.execute_iteration(inputs)
+            priority_action = await AutomationWorkflow.wait_for_priority_action(parsed_inputs, parsed_inputs.delay)
+        raw_iteration_result = await AutomationWorkflow.execute_iteration(inputs, priority_action)
         iteration_result = params.AutomationWorkflowIterationResult.from_dict(raw_iteration_result)
         if iteration_result.progress_status.error:
             # failed iteration, return global progress where it stopped and exit workflow
@@ -52,26 +53,46 @@ class AutomationWorkflow:
                 f"Failed iteration: stopping workflow, error: {iteration_result.progress_status.error}. "
                 f"Iteration: {iteration_result.progress_status.latest_step}"
             )
-            return
-        if iteration_result.next_iteration_description:
-            # successful iteration and a new iteration is required, schedule next iteration, don't return anything
-            await AutomationWorkflow._schedule_next_iteration(parsed_inputs, iteration_result)
+        elif iteration_result.progress_status.should_stop:
+            AutomationWorkflow.get_logger(parsed_inputs).info(
+                f"Stopping workflow, should stop: {iteration_result.progress_status.should_stop}"
+            )
+        elif iteration_result.next_iteration_description:
+            # in case an action was sent, execute it and schedule next iteration after it
+            if action := await AutomationWorkflow.wait_for_priority_action(parsed_inputs, 0):
+                iteration_result = await AutomationWorkflow.execute_iteration(inputs, action)
+                await AutomationWorkflow._schedule_next_iteration(parsed_inputs, iteration_result)
+            else:
+                # successful iteration and a new iteration is required, schedule next iteration, don't return anything
+                await AutomationWorkflow._schedule_next_iteration(parsed_inputs, iteration_result)
         else:
             # successful iteration, no new iteration is required, exit workflow
             AutomationWorkflow.get_logger(parsed_inputs).info(f"Completed all iterations, stopping workflow")
 
     @staticmethod
+    async def wait_for_priority_action(
+        parsed_inputs: params.AutomationWorkflowInputs, delay: float
+    ) -> typing.Optional[dict]:
+        if priority_action := await dbos_lib.DBOS.recv_async(topic="user_action", timeout_seconds=delay):
+            AutomationWorkflow.get_logger(parsed_inputs).info(f"Received user action: {priority_action}")
+            return priority_action
+        return None
+
+    @staticmethod
     @SCHEDULER.INSTANCE.step(name="execute_iteration")
-    async def execute_iteration(inputs: dict) -> dict:
+    async def execute_iteration(inputs: dict, user_action: typing.Optional[dict]) -> dict:
         parsed_inputs: params.AutomationWorkflowInputs = params.AutomationWorkflowInputs.from_dict(inputs)
         execution_error: typing.Optional[str] = None
         executed_step: str = "no action executed"
         result: octobot_lib.OctoBotActionsJobResult = None # type: ignore
         with octobot_node.scheduler.task_context.encrypted_task(parsed_inputs.task):
             if parsed_inputs.task.type == octobot_node.models.TaskType.EXECUTE_ACTIONS.value:
-                AutomationWorkflow.get_logger(parsed_inputs).info(f"Executing task '{parsed_inputs.task.name}' ...")
+                if user_action:
+                    AutomationWorkflow.get_logger(parsed_inputs).info(f"Executing user action: {user_action}")
+                else:
+                    AutomationWorkflow.get_logger(parsed_inputs).info(f"Executing task '{parsed_inputs.task.name}' ...")
                 result = await octobot_lib.OctoBotActionsJob(
-                    parsed_inputs.task.content
+                    parsed_inputs.task.content, [user_action] if user_action else []
                 ).run()
                 if result.processed_actions:
                     if latest_step := ", ".join([str(action.get_summary()) for action in result.processed_actions]):
@@ -103,6 +124,7 @@ class AutomationWorkflow:
                 1 if result.next_actions_description else 0
             ),
             error=execution_error,
+            should_stop=result.should_stop,
         )
         return params.AutomationWorkflowIterationResult(
             progress_status=progress,

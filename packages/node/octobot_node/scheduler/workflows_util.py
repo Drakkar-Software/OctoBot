@@ -40,6 +40,12 @@ def get_automation_state(workflow_status: dbos_lib.WorkflowStatus) -> typing.Opt
     return None
 
 
+def get_automation_id(workflow_status: dbos_lib.WorkflowStatus) -> typing.Optional[str]:
+    if state_dict := get_automation_state_dict(workflow_status):
+        return state_dict.get("automation", {}).get("metadata", {}).get("automation_id")
+    return None
+
+
 def get_automation_state_dict(workflow_status: dbos_lib.WorkflowStatus) -> typing.Optional[dict]:
     if inputs := get_automation_workflow_inputs(workflow_status):
         try:
@@ -73,3 +79,10 @@ def get_automation_dict(description: typing.Union[str, dict]) -> dict:
     if isinstance(description, dict) and (state := description.get(STATE_KEY)) and isinstance(state, dict):
         return description
     raise ValueError("No automation state found in description")
+
+
+async def get_automation_workflow_status(automation_id: str) -> dbos_lib.WorkflowStatus:
+    for workflow_status in await dbos_lib.DBOS.list_workflows_async(status=["PENDING", "ENQUEUED"]):
+        if get_automation_id(workflow_status) == automation_id:
+            return workflow_status
+    raise ValueError(f"No automation workflow found for automation_id: {automation_id}")
