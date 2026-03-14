@@ -115,7 +115,7 @@ jobs:
         else
           if [ "${{ matrix.package }}" = "packages/node" ]; then
             echo "Running node tests from root dir to allow tentacles import"
-            pytest packages/node/tests
+            pytest packages/node/tests -n auto --dist loadfile
           else
             cd ${{ matrix.package }}
             if [ "${{ matrix.package }}" = "packages/tentacles_manager" ]; then

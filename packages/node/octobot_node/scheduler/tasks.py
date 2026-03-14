@@ -33,8 +33,8 @@ async def trigger_task(task: octobot_node.models.Task) -> bool:
     return handle is not None
 
 
-async def send_action_to_automation(action: dict, automation_id: str):
+async def send_actions_to_automation(actions: list[dict], automation_id: str):
     workflow_status = await workflows_util.get_automation_workflow_status(automation_id)
     await SCHEDULER.INSTANCE.send_async(
-        workflow_status.workflow_id, action, topic="user_action"
+        workflow_status.workflow_id, actions, topic="user_actions"
     )

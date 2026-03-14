@@ -24,10 +24,10 @@ import octobot_node.scheduler.workflows.params.base_params as base_params
 @dataclasses.dataclass
 class AutomationWorkflowInputs(octobot_commons.dataclasses.minimizable_dataclass.MinimizableDataclass):
     task: octobot_node.models.Task
-    delay: float = 0
+    execution_time: float = 0
 
 
 @dataclasses.dataclass
 class AutomationWorkflowIterationResult(octobot_commons.dataclasses.minimizable_dataclass.MinimizableDataclass):
     progress_status: base_params.ProgressStatus
-    next_iteration_description: typing.Optional[dict]
+    next_iteration_description: typing.Optional[str]
