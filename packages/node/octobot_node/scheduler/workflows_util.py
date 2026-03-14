@@ -13,27 +13,39 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-import uuid
+import json
 import typing
 import dbos as dbos_lib
 
+import octobot_commons.logging
 import octobot_node.models as models
 import octobot_node.scheduler.workflows.params as params
-import octobot_node.scheduler
 
 
-async def get_workflow_handle(workflow_id: str) -> dbos_lib.WorkflowHandleAsync:
-    return await octobot_node.scheduler.SCHEDULER.INSTANCE.retrieve_workflow_async(workflow_id)
+try:
+    import mini_octobot
+except ImportError:
+    octobot_commons.logging.get_logger("octobot_node.scheduler.workflows_util").warning(
+        "mini_octobot is not installed, workflows utilities will not be available"
+    )
 
 
-def generate_workflow_name(prefix: str) -> str:
-    return f"{prefix}_{uuid.uuid4()}"
+STATE_KEY = "state"
 
 
-async def get_progress_status(workflow_id: str) -> typing.Optional[params.ProgressStatus]:
-    workflow_status = await dbos_lib.DBOS.get_workflow_status_async(workflow_id)
+def get_automation_state(workflow_status: dbos_lib.WorkflowStatus) -> typing.Optional["mini_octobot.AutomationState"]:
+    """Get the automation state from the workflow status"""
+    if state_dict := get_automation_state_dict(workflow_status):
+        return mini_octobot.AutomationState.from_dict(state_dict)
+    return None
+
+
+def get_automation_state_dict(workflow_status: dbos_lib.WorkflowStatus) -> typing.Optional[dict]:
     if inputs := get_automation_workflow_inputs(workflow_status):
-        return inputs.progress_status
+        try:
+            return get_automation_dict(inputs.task.content)[STATE_KEY]
+        except ValueError:
+            return None
     return None
 
 
@@ -53,3 +65,11 @@ def get_automation_workflow_inputs(workflow_status: dbos_lib.WorkflowStatus) -> 
                 print(f"Failed to parse inputs: {input}")
                 pass
     return None
+
+
+def get_automation_dict(description: typing.Union[str, dict]) -> dict:
+    if isinstance(description, str):
+        description = json.loads(description)
+    if isinstance(description, dict) and (state := description.get(STATE_KEY)) and isinstance(state, dict):
+        return description
+    raise ValueError("No automation state found in description")

@@ -28,10 +28,7 @@ class ReCallingOperatorResultKeys(str, enum.Enum):
 
 
 @dataclasses.dataclass
-class ReCallingOperatorResult(
-    octobot_commons.dataclasses.MinimizableDataclass,
-    octobot_commons.dataclasses.FlexibleDataclass
-):
+class ReCallingOperatorResult(octobot_commons.dataclasses.MinimizableDataclass):
     reset_to_id: typing.Optional[str] = None
     last_execution_result: typing.Optional[dict] = None
 
