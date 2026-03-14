@@ -23,3 +23,4 @@ class ProgressStatus(pydantic.BaseModel):
     next_step_at: typing.Optional[float] = None
     remaining_steps: typing.Optional[int] = None
     error: typing.Optional[str] = None
+    should_stop: bool = False
