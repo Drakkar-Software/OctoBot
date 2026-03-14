@@ -158,14 +158,16 @@ class Scheduler:
             return []
         tasks: list[dict] = []
         try:
-            completed_workflow_statuses = await self.INSTANCE.list_workflows_async(status=["SUCCESS", "ERROR"], load_output=True)
+            completed_workflow_statuses = await self.INSTANCE.list_workflows_async(status=[
+                dbos.WorkflowStatusString.SUCCESS.value, dbos.WorkflowStatusString.ERROR.value
+            ], load_output=True)
             for completed_workflow_status in completed_workflow_statuses or []:
                 try:
                     wf_status = completed_workflow_status.status
                     task_name = completed_workflow_status.workflow_id
                     metadata = ""
                     result = ""
-                    if wf_status == "SUCCESS":
+                    if wf_status == dbos.WorkflowStatusString.SUCCESS.value:
                         result = completed_workflow_status.output
                         execution_error = result.get("error") if isinstance(result, dict) else None
                         description = "Error" if execution_error else "Completed" 

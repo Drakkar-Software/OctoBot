@@ -18,6 +18,9 @@ import typing
 
 
 class ProgressStatus(pydantic.BaseModel):
+    """
+    Only contains non-encrypted data
+    """
     latest_step: typing.Optional[str] = None
     next_step: typing.Optional[str] = None
     next_step_at: typing.Optional[float] = None

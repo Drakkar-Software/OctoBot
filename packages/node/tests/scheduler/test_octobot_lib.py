@@ -240,14 +240,14 @@ def misses_required_octobot_lib_import():
         return "octobot_lib is not installed"
 
 
-def get_failed_actions(actions: list[mini_octobot.entities.AbstractActionDetails]) -> list[typing.Optional[dict]]:
+def get_failed_actions(actions: list["mini_octobot.entities.AbstractActionDetails"]) -> list[typing.Optional[dict]]:
     return [
         action.result
         for action in actions
         if action.error_status is not mini_octobot.enums.ActionErrorStatus.NO_ERROR.value
     ]
 
-def get_created_orders(actions: list[mini_octobot.entities.AbstractActionDetails]) -> list[dict]:
+def get_created_orders(actions: list["mini_octobot.entities.AbstractActionDetails"]) -> list[dict]:
     order_lists = [
         action.result.get(DSL_operators.CREATED_ORDERS_KEY, [])
         for action in actions
@@ -255,7 +255,7 @@ def get_created_orders(actions: list[mini_octobot.entities.AbstractActionDetails
     ]
     return list_util.flatten_list(order_lists) if order_lists else []
 
-def get_cancelled_orders(actions: list[mini_octobot.entities.AbstractActionDetails]) -> list[str]:
+def get_cancelled_orders(actions: list["mini_octobot.entities.AbstractActionDetails"]) -> list[str]:
     cancelled_orders = [
         action.result.get(DSL_operators.CANCELLED_ORDERS_KEY, [])
         for action in actions
@@ -263,7 +263,7 @@ def get_cancelled_orders(actions: list[mini_octobot.entities.AbstractActionDetai
     ]
     return list_util.flatten_list(cancelled_orders) if cancelled_orders else []
 
-def get_deposit_and_withdrawal_details(actions: list[mini_octobot.entities.AbstractActionDetails]) -> list[dict]:
+def get_deposit_and_withdrawal_details(actions: list["mini_octobot.entities.AbstractActionDetails"]) -> list[dict]:
     withdrawal_lists = [
         action.result.get(DSL_operators.CREATED_WITHDRAWALS_KEY, []) + action.result.get(DSL_operators.CREATED_TRANSACTIONS_KEY, [])
         for action in actions
