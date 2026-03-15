@@ -107,6 +107,8 @@ class Settings(BaseSettings):
     TASKS_OUTPUTS_RSA_PRIVATE_KEY: Annotated[bytes | None, BeforeValidator(parse_key_to_bytes)] = None
     TASKS_OUTPUTS_ECDSA_PUBLIC_KEY: Annotated[bytes | None, BeforeValidator(parse_key_to_bytes)] = None
 
+    USE_DEDICATED_LOG_FILE_PER_AUTOMATION: bool = False
+
     def _check_default_secret(self, var_name: str, value: str | None, default_value: EmailStr | None) -> None:
         if value == default_value:
             message = (
