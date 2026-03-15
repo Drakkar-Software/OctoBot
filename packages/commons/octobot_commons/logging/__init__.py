@@ -39,6 +39,11 @@ from octobot_commons.logging.logging_util import (
     register_log_callback,
     set_enable_web_interface_logs,
 )
+from octobot_commons.logging.context_based_file_handler import (
+    add_context_based_file_handler,
+    ContextBasedFileHandler,
+)
+
 
 __all__ = [
     "BotLogger",
@@ -63,4 +68,6 @@ __all__ = [
     "register_error_notifier",
     "register_log_callback",
     "set_enable_web_interface_logs",
+    "add_context_based_file_handler",
+    "ContextBasedFileHandler",
 ]
