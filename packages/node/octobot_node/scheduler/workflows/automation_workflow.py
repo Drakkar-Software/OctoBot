@@ -63,7 +63,9 @@ class AutomationWorkflow:
             iteration_result = params.AutomationWorkflowIterationResult.from_dict(raw_iteration_result)
             continue_workflow = False
             if AutomationWorkflow._should_continue_workflow(parsed_inputs, iteration_result.progress_status, bool(priority_actions)):
-                continue_workflow = await AutomationWorkflow._process_pending_priority_actions_and_reschedule(parsed_inputs, iteration_result)
+                continue_workflow = await AutomationWorkflow._process_pending_priority_actions_and_reschedule(
+                    parsed_inputs, iteration_result
+                )
             if not continue_workflow:
                 AutomationWorkflow.get_logger(parsed_inputs).info(
                     f"Stopped workflow (remaining steps: {iteration_result.progress_status.remaining_steps})"

@@ -21,9 +21,11 @@ import typing
 import decimal
 import enum
 
+import octobot_commons.logging
 import octobot_node.config
 import octobot_node.enums
 import octobot_node.models
+import octobot_node.constants
 import octobot_node.scheduler.workflows_util as workflows_util
 import octobot_node.scheduler.workflows.base as workflow_base
 try:
@@ -94,6 +96,24 @@ class Scheduler:
                     "system_database_url": f"sqlite:///{octobot_node.config.settings.SCHEDULER_SQLITE_FILE}",
                 },
             ))
+        if self.INSTANCE and octobot_node.config.settings.USE_DEDICATED_LOG_FILE_PER_AUTOMATION:
+            self._setup_workflow_logging()
+
+    def _setup_workflow_logging(self) -> None:
+        """Register DBOS workflow ID provider and add workflow file handler for per-workflow log files."""
+        octobot_commons.logging.add_context_based_file_handler(
+            octobot_node.constants.AUTOMATION_LOGS_FOLDER,
+            self._get_dbos_workflow_id
+        )
+
+    @staticmethod
+    def _get_dbos_workflow_id() -> typing.Optional[str]:
+        """Return the current DBOS workflow ID when executing within a step or workflow."""
+        if workflow_id := getattr(dbos.DBOS, "workflow_id", None):
+            # group children workflows and parent workflows together
+            # (a child workflow has the parent's workflow ID as a prefix)
+            return workflow_id[:octobot_node.constants.PARENT_WORKFLOW_ID_LENGTH]
+        return None
 
     def is_enabled(self) -> bool:
         # enabled if master mode or consumer only mode

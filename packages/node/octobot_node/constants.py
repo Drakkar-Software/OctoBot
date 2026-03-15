@@ -13,3 +13,11 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
+try:
+    import octobot.constants as octobot_constants
+    BASE_LOGS_FOLDER = octobot_constants.LOGS_FOLDER
+except ImportError:
+    BASE_LOGS_FOLDER = "logs"
+
+AUTOMATION_LOGS_FOLDER = f"{BASE_LOGS_FOLDER}/automations"
+PARENT_WORKFLOW_ID_LENGTH = 36 # length of a UUID4
