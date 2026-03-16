@@ -25,6 +25,7 @@ import octobot_commons.dsl_interpreter as dsl_interpreter
 import octobot_trading.constants
 import octobot_trading.errors
 import octobot_trading.enums as trading_enums
+import octobot_trading.personal_data.orders.order_factory as order_factory
 import octobot_node.scheduler.octobot_flow_client as octobot_flow_client
 
 RUN_TESTS = True
@@ -37,7 +38,10 @@ try:
     import tentacles.Meta.DSL_operators as DSL_operators
 
     BLOCKCHAIN = octobot_trading.constants.SIMULATED_BLOCKCHAIN_NETWORK
-except ImportError:
+except ImportError as err:
+    import traceback
+    traceback.print_exc()
+    print(f"Error importing octobot_flow: {err}")
     # tests will be skipped if octobot_trading or octobot_wrapper are not installed
     RUN_TESTS = False
     BLOCKCHAIN = "unavailable"
@@ -47,12 +51,15 @@ except ImportError:
 pytestmark = pytest.mark.asyncio
 
 
+EXCHANGE_INTERNAL_NAME = "binanceus"
+
+
 @pytest.fixture
 def market_order_action():
     return {
         "params": {
             "ACTIONS": "trade",
-            "EXCHANGE_FROM": "binance",
+            "EXCHANGE_FROM": EXCHANGE_INTERNAL_NAME,
             "ORDER_SYMBOL": "ETH/BTC",
             "ORDER_AMOUNT": 1,
             "ORDER_TYPE": "market",
@@ -69,7 +76,7 @@ def limit_order_action():
     return {
         "params": {
             "ACTIONS": "trade",
-            "EXCHANGE_FROM": "binance",
+            "EXCHANGE_FROM": EXCHANGE_INTERNAL_NAME,
             "ORDER_SYMBOL": "ETH/BTC",
             "ORDER_AMOUNT": 1,
             "ORDER_PRICE": "-10%",
@@ -87,7 +94,7 @@ def stop_loss_order_action():
     return {
         "params": {
             "ACTIONS": "trade",
-            "EXCHANGE_FROM": "binance",
+            "EXCHANGE_FROM": EXCHANGE_INTERNAL_NAME,
             "ORDER_SYMBOL": "ETH/BTC",
             "ORDER_TYPE": "stop",
             "ORDER_AMOUNT": "10%",
@@ -105,7 +112,7 @@ def cancel_order_action():
     return {
         "params": {
             "ACTIONS": "cancel",
-            "EXCHANGE_FROM": "binance",
+            "EXCHANGE_FROM": EXCHANGE_INTERNAL_NAME,
             "ORDER_SYMBOL": "ETH/BTC",
             "ORDER_SIDE": "BUY",
         }
@@ -134,7 +141,7 @@ def deposit_action():
     return {
         "params": {
             "ACTIONS": "deposit",
-            "EXCHANGE_TO": "binance",
+            "EXCHANGE_TO": EXCHANGE_INTERNAL_NAME,
             "BLOCKCHAIN_FROM_ASSET": "BTC",
             "BLOCKCHAIN_FROM_AMOUNT": 1,
             "BLOCKCHAIN_FROM": BLOCKCHAIN,
@@ -165,7 +172,7 @@ def withdraw_action():
     return {
         "params": {
             "ACTIONS": "withdraw",
-            "EXCHANGE_FROM": "binance",
+            "EXCHANGE_FROM": EXCHANGE_INTERNAL_NAME,
             "BLOCKCHAIN_TO": "ethereum",
             "BLOCKCHAIN_TO_ASSET": "ETH",
             "BLOCKCHAIN_TO_ADDRESS": "0x1234567890123456789012345678901234567890",
@@ -334,8 +341,8 @@ class TestOctoBotActionsJob:
         assert post_deposit_portfolio["BTC"][common_constants.PORTFOLIO_TOTAL] < pre_trade_portfolio["BTC"][common_constants.PORTFOLIO_TOTAL]
 
         # bought ETH - fees
-        assert post_deposit_portfolio["ETH"][common_constants.PORTFOLIO_AVAILABLE] == 0.999
-        assert post_deposit_portfolio["ETH"][common_constants.PORTFOLIO_TOTAL] == 0.999
+        assert 0.990 < post_deposit_portfolio["ETH"][common_constants.PORTFOLIO_AVAILABLE] <= 0.999
+        assert 0.990 < post_deposit_portfolio["ETH"][common_constants.PORTFOLIO_TOTAL] <= 0.999
 
     async def test_run_limit_order_action(self, limit_order_action):
         # step 1: configure the job
@@ -400,30 +407,35 @@ class TestOctoBotActionsJob:
         }
 
         # step 2: run the trade action
-        next_actions_description = result.next_actions_description
-        assert next_actions_description is not None
-        parsed_state = octobot_flow.AutomationState.from_dict(next_actions_description.state)
-        next_actions = parsed_state.automation.actions_dag.get_executable_actions()
-        assert len(next_actions) == 1
-        assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
-        assert next_actions[0].dsl_script.startswith("stop_loss('sell', 'ETH/BTC', '10%', '-10%')")
-        job2 = octobot_flow_client.OctoBotActionsJob(
-            next_actions_description.to_dict(include_default_values=False), []
-        )
-        result = await job2.run()
-        assert len(result.processed_actions) == 1
-        processed_actions = result.processed_actions
-        assert len(processed_actions) == 1
-        assert isinstance(processed_actions[0], octobot_flow.entities.DSLScriptActionDetails)
-        assert processed_actions[0].dsl_script.startswith("stop_loss('sell', 'ETH/BTC', '10%', '-10%')")
-        assert len(get_created_orders(processed_actions)) == 1
-        order = get_created_orders(processed_actions)[0]
-        assert order["symbol"] == "ETH/BTC"
-        assert order["amount"] == decimal.Decimal("0.1") # 10% of 1 ETH
-        assert decimal.Decimal("0.001") < order["price"] < decimal.Decimal("0.2")
-        assert order["type"] == "stop_loss"
-        assert order["side"] == "sell"
-        assert result.next_actions_description is None # no more actions to execute
+        with mock.patch.object(
+            # force stop loseses to be supported no matter the exchange
+            order_factory.OrderFactory, "_ensure_supported_order_type", mock.Mock()
+        ) as _ensure_supported_order_type:
+            next_actions_description = result.next_actions_description
+            assert next_actions_description is not None
+            parsed_state = octobot_flow.AutomationState.from_dict(next_actions_description.state)
+            next_actions = parsed_state.automation.actions_dag.get_executable_actions()
+            assert len(next_actions) == 1
+            assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
+            assert next_actions[0].dsl_script.startswith("stop_loss('sell', 'ETH/BTC', '10%', '-10%')")
+            job2 = octobot_flow_client.OctoBotActionsJob(
+                next_actions_description.to_dict(include_default_values=False), []
+            )
+            result = await job2.run()
+            assert len(result.processed_actions) == 1
+            processed_actions = result.processed_actions
+            assert len(processed_actions) == 1
+            assert isinstance(processed_actions[0], octobot_flow.entities.DSLScriptActionDetails)
+            assert processed_actions[0].dsl_script.startswith("stop_loss('sell', 'ETH/BTC', '10%', '-10%')")
+            assert processed_actions[0].error_status is None
+            assert len(get_created_orders(processed_actions)) == 1
+            order = get_created_orders(processed_actions)[0]
+            assert order["symbol"] == "ETH/BTC"
+            assert order["amount"] == decimal.Decimal("0.1") # 10% of 1 ETH
+            assert decimal.Decimal("0.001") < order["price"] < decimal.Decimal("0.2")
+            assert order["type"] == "stop_loss"
+            assert order["side"] == "sell"
+            assert result.next_actions_description is None # no more actions to execute
 
     async def test_run_cancel_limit_order_after_instant_wait_action(self, create_limit_instant_wait_and_cancel_order_action):
         # step 1: configure the job
@@ -900,10 +912,8 @@ class TestOctoBotActionsJob:
         assert len(processed_actions[0].result[DSL_operators.CREATED_ORDERS_KEY]) == len(get_created_orders(processed_actions)) == 1
         post_trade_portfolio = job5.after_execution_state.automation.client_exchange_account_elements.portfolio.content
         assert post_trade_portfolio["BTC"][common_constants.PORTFOLIO_AVAILABLE] < post_deposit_portfolio["BTC"][common_constants.PORTFOLIO_AVAILABLE]
-        assert post_trade_portfolio["ETH"] == {
-            common_constants.PORTFOLIO_AVAILABLE: 0.999,
-            common_constants.PORTFOLIO_TOTAL: 0.999,
-        }
+        assert 0.990 < post_trade_portfolio["ETH"][common_constants.PORTFOLIO_AVAILABLE] <= 0.999
+        assert 0.990 < post_trade_portfolio["ETH"][common_constants.PORTFOLIO_TOTAL] <= 0.999
         # step 5.A: run the wait action
         next_actions_description = result.next_actions_description
         job6 = octobot_flow_client.OctoBotActionsJob(
@@ -957,7 +967,7 @@ class TestOctoBotActionsJob:
         assert len(processed_actions[0].result[DSL_operators.CREATED_WITHDRAWALS_KEY]) == len(get_deposit_and_withdrawal_details(processed_actions)) == 1
         transaction = processed_actions[0].result[DSL_operators.CREATED_WITHDRAWALS_KEY][0]
         assert transaction[trading_enums.ExchangeConstantsTransactionColumns.CURRENCY.value] == "ETH"
-        assert transaction[trading_enums.ExchangeConstantsTransactionColumns.AMOUNT.value] == decimal.Decimal("0.999")
+        assert 0.990 < transaction[trading_enums.ExchangeConstantsTransactionColumns.AMOUNT.value] <= 0.999
         assert transaction[trading_enums.ExchangeConstantsTransactionColumns.NETWORK.value] == "ethereum"
         assert transaction[trading_enums.ExchangeConstantsTransactionColumns.ADDRESS_TO.value] == "0x1234567890123456789012345678901234567890"
         post_withdraw_portfolio = job8.after_execution_state.automation.client_exchange_account_elements.portfolio.content

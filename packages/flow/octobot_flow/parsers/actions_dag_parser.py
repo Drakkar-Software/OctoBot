@@ -72,7 +72,7 @@ class ActionsDAGParserParams(octobot_commons.dataclasses.FlexibleDataclass):
     def __post_init__(self):
         if self.ACTIONS and isinstance(self.ACTIONS, str):
             # action is a string, convert it to a list
-            self.ACTIONS = self.ACTIONS.split(",")
+            self.ACTIONS = self.ACTIONS.split(",") # pylint: disable=no-member
         self.validate()
 
     def validate(self):

@@ -17,9 +17,14 @@ import octobot_flow.entities
 import octobot_flow.environment
 import octobot_flow.repositories.community
 
+def is_on_github_ci():
+    # Always set to true when GitHub Actions is running the workflow.
+    # You can use this variable to differentiate when tests are being run locally or by GitHub Actions.
+    # from https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/store-information-in-variables
+    return bool(os.getenv("GITHUB_ACTIONS"))
 
 current_time = time.time()
-EXCHANGE_INTERNAL_NAME = "binance"
+EXCHANGE_INTERNAL_NAME = "binanceus" if is_on_github_ci() else "binance" # binanceus works on github CI
 
 @contextlib.contextmanager
 def mocked_community_authentication():

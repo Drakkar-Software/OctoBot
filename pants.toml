@@ -24,6 +24,7 @@ root_patterns = [
     "/packages/commons",
     "/packages/evaluators",
     "/packages/node",
+    "/packages/flow",
     "/packages/services",
     "/packages/tentacles_manager",
     "/packages/trading",

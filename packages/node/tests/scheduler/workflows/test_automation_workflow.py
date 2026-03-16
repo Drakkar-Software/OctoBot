@@ -38,14 +38,14 @@ import octobot_node.scheduler.task_context as task_context
 from tests.scheduler import temp_dbos_scheduler, init_and_destroy_scheduler
 
 
-IMPORTED_octobot_flow = True
+IMPORTED_OCTOBOT_FLOW = True
 AUTOMATION_WORKFLOW_IMPORTED = False
 try:
     import octobot_flow.entities
     import octobot_flow.enums
 
 except ImportError:
-    IMPORTED_octobot_flow = False
+    IMPORTED_OCTOBOT_FLOW = False
 
 
 @pytest.fixture
@@ -104,7 +104,7 @@ def iteration_result():
 def required_imports(func):
     @functools.wraps(func)
     async def wrapper(*args, **kwargs):
-        if not IMPORTED_octobot_flow:
+        if not IMPORTED_OCTOBOT_FLOW:
             pytest.skip(reason="octobot_flow is not installed")
         return await func(*args, **kwargs)
     return wrapper

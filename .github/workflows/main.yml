@@ -65,6 +65,7 @@ jobs:
           - packages/commons
           - packages/evaluators
           - packages/node
+          - packages/flow
           - packages/services
           - packages/tentacles_manager
           - packages/trading
@@ -101,7 +102,7 @@ jobs:
         fi
 
     - name: Install tentacles
-      if:  matrix.package == 'octobot'
+      if:  matrix.package == 'octobot' || matrix.package == 'packages/node' || matrix.package == 'packages/flow'
       run: |
         mkdir -p output
         OctoBot tentacles -d packages/tentacles -p any_platform.zip
@@ -113,9 +114,9 @@ jobs:
           pytest tests -n auto --dist loadfile
           pytest --ignore=tentacles/Trading/Exchange tentacles -n auto --dist loadfile
         else
-          if [ "${{ matrix.package }}" = "packages/node" ]; then
-            echo "Running node tests from root dir to allow tentacles import"
-            pytest packages/node/tests -n auto --dist loadfile
+          if [ "${{ matrix.package }}" = "packages/node" ] || [ "${{ matrix.package }}" = "packages/flow" ]; then
+            echo "Running tests from root dir to allow tentacles import"
+            PYTHONPATH=.:$PYTHONPATH pytest ${{ matrix.package }}/tests -n auto --dist loadfile
           else
             cd ${{ matrix.package }}
             if [ "${{ matrix.package }}" = "packages/tentacles_manager" ]; then

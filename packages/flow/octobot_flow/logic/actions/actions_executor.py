@@ -122,13 +122,6 @@ class ActionsExecutor:
             if action.should_be_historised_in_database()
         ]:
             raise NotImplementedError("_update_actions_history is not implemented yet")
-            community_repository = octobot_flow.repositories.community.ensure_authenticated_community_repository(
-                self._maybe_community_repository
-            )
-            custom_actions_repository = octobot_flow.repositories.community.CustomActionsRepository(
-                community_repository.authenticator
-            )
-            await custom_actions_repository.update_automation_actions_history(to_update_actions)
 
     async def _insert_execution_bot_logs(self, log_data: list[octobot.community.BotLogData]):
         try:
