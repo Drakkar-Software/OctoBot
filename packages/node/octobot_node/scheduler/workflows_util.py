@@ -23,20 +23,20 @@ import octobot_node.scheduler.workflows.params as params
 
 
 try:
-    import mini_octobot
+    import octobot_flow
 except ImportError:
     octobot_commons.logging.get_logger("octobot_node.scheduler.workflows_util").warning(
-        "mini_octobot is not installed, workflows utilities will not be available"
+        "octobot_flow is not installed, workflows utilities will not be available"
     )
 
 
 STATE_KEY = "state"
 
 
-def get_automation_state(workflow_status: dbos_lib.WorkflowStatus) -> typing.Optional["mini_octobot.AutomationState"]:
+def get_automation_state(workflow_status: dbos_lib.WorkflowStatus) -> typing.Optional["octobot_flow.AutomationState"]:
     """Get the automation state from the workflow status"""
     if state_dict := get_automation_state_dict(workflow_status):
-        return mini_octobot.AutomationState.from_dict(state_dict)
+        return octobot_flow.AutomationState.from_dict(state_dict)
     return None
 
 

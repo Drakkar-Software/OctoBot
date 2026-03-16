@@ -31,21 +31,21 @@ import octobot_node.scheduler.workflows
 import octobot_node.errors as errors
 import octobot_node.models
 import octobot_node.scheduler.workflows.params as params
-import octobot_node.scheduler.octobot_lib as octobot_lib
+import octobot_node.scheduler.octobot_flow_client as octobot_flow_client
 import octobot_node.scheduler.task_context as task_context
 
 
 from tests.scheduler import temp_dbos_scheduler, init_and_destroy_scheduler
 
 
-IMPORTED_MINI_OCTOBOT = True
+IMPORTED_octobot_flow = True
 AUTOMATION_WORKFLOW_IMPORTED = False
 try:
-    import mini_octobot.entities
-    import mini_octobot.enums
+    import octobot_flow.entities
+    import octobot_flow.enums
 
 except ImportError:
-    IMPORTED_MINI_OCTOBOT = False
+    IMPORTED_octobot_flow = False
 
 
 @pytest.fixture
@@ -104,8 +104,8 @@ def iteration_result():
 def required_imports(func):
     @functools.wraps(func)
     async def wrapper(*args, **kwargs):
-        if not IMPORTED_MINI_OCTOBOT:
-            pytest.skip(reason="mini_octobot is not installed")
+        if not IMPORTED_octobot_flow:
+            pytest.skip(reason="octobot_flow is not installed")
         return await func(*args, **kwargs)
     return wrapper
 
@@ -298,12 +298,12 @@ class TestExecuteIteration:
             "ORDER_SIDE": "BUY", "SIMULATED_PORTFOLIO": {"BTC": 1}}})
         inputs = params.AutomationWorkflowInputs(task=task, execution_time=0).to_dict(include_default_values=False)
 
-        action = mini_octobot.entities.ConfiguredActionDetails(
+        action = octobot_flow.entities.ConfiguredActionDetails(
             id="action_1",
             action="trade",
         )
 
-        mock_result = octobot_lib.OctoBotActionsJobResult(
+        mock_result = octobot_flow_client.OctoBotActionsJobResult(
             processed_actions=[action],
             next_actions_description=None,
             actions_dag=None,
@@ -316,7 +316,7 @@ class TestExecuteIteration:
             mock_encrypted.return_value.__enter__ = mock.Mock(return_value=None)
             mock_encrypted.return_value.__exit__ = mock.Mock(return_value=None)
             with mock.patch.object(
-                octobot_lib,
+                octobot_flow_client,
                 "OctoBotActionsJob",
                 mock.Mock(return_value=mock_job),
             ):
@@ -349,13 +349,13 @@ class TestExecuteIteration:
             "ORDER_SIDE": "BUY", "SIMULATED_PORTFOLIO": {"BTC": 1}}})
         inputs = params.AutomationWorkflowInputs(task=task, execution_time=0).to_dict(include_default_values=False)
 
-        action = mini_octobot.entities.ConfiguredActionDetails(
+        action = octobot_flow.entities.ConfiguredActionDetails(
             id="action_1",
             action="trade",
             error_status="some_error",
         )
 
-        mock_result = octobot_lib.OctoBotActionsJobResult(
+        mock_result = octobot_flow_client.OctoBotActionsJobResult(
             processed_actions=[action],
             next_actions_description=None,
             actions_dag=None,
@@ -368,7 +368,7 @@ class TestExecuteIteration:
             mock_encrypted.return_value.__enter__ = mock.Mock(return_value=None)
             mock_encrypted.return_value.__exit__ = mock.Mock(return_value=None)
             with mock.patch.object(
-                octobot_lib,
+                octobot_flow_client,
                 "OctoBotActionsJob",
                 mock.Mock(return_value=mock_job),
             ):
@@ -622,8 +622,8 @@ class TestGetActionsSummary:
     @pytest.mark.asyncio
     @required_imports
     async def test_get_actions_summary_joins_action_summaries(self, import_automation_workflow):
-        action1 = mini_octobot.entities.ConfiguredActionDetails(id="action_1", action="action_1")
-        action2 = mini_octobot.entities.DSLScriptActionDetails(id="action_2", dsl_script="action_2('plop')")
+        action1 = octobot_flow.entities.ConfiguredActionDetails(id="action_1", action="action_1")
+        action2 = octobot_flow.entities.DSLScriptActionDetails(id="action_2", dsl_script="action_2('plop')")
         result = octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow._get_actions_summary([action1, action2])
         assert result == "action_1, action_2('plop')"
         
@@ -668,7 +668,7 @@ class TestExecuteAutomationIntegration:
     ):
         init_action = {
             "id": "action_init",
-            "action": mini_octobot.enums.ActionType.APPLY_CONFIGURATION.value,
+            "action": octobot_flow.enums.ActionType.APPLY_CONFIGURATION.value,
             "config": {
                 "automation": {"metadata": {"automation_id": "automation_1"}},
                 "client_exchange_account_elements": {

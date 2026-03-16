@@ -23,18 +23,17 @@ import octobot_commons.dataclasses
 import octobot_node.scheduler.workflows_util as workflows_util
 
 try:
-    import mini_octobot
-    import mini_octobot.environment
-    import mini_octobot.parsers
-    import mini_octobot.entities
-    # Requires mini_octobot import and importable tentacles folder
+    import octobot_flow
+    import octobot_flow.environment
+    import octobot_flow.parsers
+    import octobot_flow.entities
+    # Requires octobot_flow import and importable tentacles folder
 
     # ensure environment is initialized
-    mini_octobot.environment.initialize_environment(True)
-
+    octobot_flow.environment.initialize_environment(True)
 
 except ImportError:
-    logging.getLogger("octobot_node.scheduler.octobot_lib").warning("OctoBot is not installed, OctoBot actions will not be available")
+    pass # OctoBot Flow is not available
 
 
 @dataclasses.dataclass
@@ -48,11 +47,11 @@ class OctoBotActionsJobDescription(octobot_commons.dataclasses.MinimizableDatacl
             self._parse_actions_plan(self.params)
 
     def _parse_actions_plan(self, params: dict) -> None:
-        to_add_actions_dag = mini_octobot.parsers.ActionsDAGParser(params).parse()
+        to_add_actions_dag = octobot_flow.parsers.ActionsDAGParser(params).parse()
         if not to_add_actions_dag:
             raise ValueError("No action found in params")
         automation_id = None
-        if not automation_id and isinstance(to_add_actions_dag.actions[0], mini_octobot.entities.ConfiguredActionDetails) and to_add_actions_dag.actions[0].config:
+        if not automation_id and isinstance(to_add_actions_dag.actions[0], octobot_flow.entities.ConfiguredActionDetails) and to_add_actions_dag.actions[0].config:
             config = to_add_actions_dag.actions[0].config
             if "automation" in config:
                 automation_id = config["automation"]["metadata"]["automation_id"]
@@ -60,11 +59,11 @@ class OctoBotActionsJobDescription(octobot_commons.dataclasses.MinimizableDatacl
             raise ValueError("No automation id found in params")
         self._include_actions_in_automation_state(automation_id, to_add_actions_dag)
 
-    def _include_actions_in_automation_state(self, automation_id: str, actions: "mini_octobot.ActionsDAG"):
-        automation_state = mini_octobot.AutomationState.from_dict(self.state)
+    def _include_actions_in_automation_state(self, automation_id: str, actions: "octobot_flow.ActionsDAG"):
+        automation_state = octobot_flow.AutomationState.from_dict(self.state)
         if not automation_state.automation.metadata.automation_id:
-            automation_state.automation = mini_octobot.entities.AutomationDetails(
-                metadata=mini_octobot.entities.AutomationMetadata(
+            automation_state.automation = octobot_flow.entities.AutomationDetails(
+                metadata=octobot_flow.entities.AutomationMetadata(
                     automation_id=automation_id,
                 ),
                 actions_dag=actions,
@@ -79,9 +78,9 @@ class OctoBotActionsJobDescription(octobot_commons.dataclasses.MinimizableDatacl
 
 @dataclasses.dataclass
 class OctoBotActionsJobResult:
-    processed_actions: list["mini_octobot.AbstractActionDetails"]
+    processed_actions: list["octobot_flow.AbstractActionDetails"]
     next_actions_description: typing.Optional[OctoBotActionsJobDescription] = None
-    actions_dag: typing.Optional["mini_octobot.ActionsDAG"] = None
+    actions_dag: typing.Optional["octobot_flow.ActionsDAG"] = None
     should_stop: bool = False
 
 
@@ -91,8 +90,8 @@ class OctoBotActionsJob:
         self.description: OctoBotActionsJobDescription = OctoBotActionsJobDescription.from_dict(
             parsed_description
         )
-        self.priority_user_actions: list[mini_octobot.AbstractActionDetails] = [
-            mini_octobot.parse_action_details(
+        self.priority_user_actions: list[octobot_flow.AbstractActionDetails] = [
+            octobot_flow.parse_action_details(
                 user_action
             ) for user_action in user_actions
         ]
@@ -117,11 +116,11 @@ class OctoBotActionsJob:
         return parsed_description
 
     async def run(self) -> OctoBotActionsJobResult:
-        async with mini_octobot.AutomationJob(
+        async with octobot_flow.AutomationJob(
             self.description.state, self.priority_user_actions, self.description.auth_details,
         ) as automation_job:
             selected_actions = (
-                self.priority_user_actions 
+                self.priority_user_actions
                 or automation_job.automation_state.automation.actions_dag.get_executable_actions()
             )
             logging.getLogger(self.__class__.__name__).info(f"Running automation actions: {selected_actions}")
@@ -153,8 +152,6 @@ class OctoBotActionsJob:
         return None
 
     def __repr__(self) -> str:
-        parsed_state = mini_octobot.AutomationState.from_dict(self.description.state)
+        parsed_state = octobot_flow.AutomationState.from_dict(self.description.state)
         automation_repr = str(parsed_state.automation) if parsed_state.automation else "No automation"
         return f"OctoBotActionsJob with automation:\n- {automation_repr}"
-
-
