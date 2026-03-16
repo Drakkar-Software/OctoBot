@@ -23,8 +23,18 @@ import octobot_node.config
 import octobot_node.enums
 import octobot_node.models
 import octobot_node.scheduler.workflows.base as workflow_base
+try:
+    from octobot import VERSION
+except ImportError:
+    VERSION = "unknown"
 
 DEFAULT_NAME = "octobot_node"
+
+_BASE_CONFIG = dbos.DBOSConfig(
+    name=DEFAULT_NAME,
+    max_executor_threads=octobot_node.config.settings.SCHEDULER_MAX_EXECUTOR_THREADS,
+    application_version=VERSION,
+)
 
 
 class Scheduler:
@@ -41,9 +51,10 @@ class Scheduler:
             )
 
             self.INSTANCE = dbos.DBOS(config=dbos.DBOSConfig(
-                name=DEFAULT_NAME,
-                system_database_url=octobot_node.config.settings.SCHEDULER_POSTGRES_URL,
-                max_executor_threads=octobot_node.config.settings.SCHEDULER_MAX_EXECUTOR_THREADS,
+                **_BASE_CONFIG,
+                **{
+                    "system_database_url": octobot_node.config.settings.SCHEDULER_POSTGRES_URL,
+                },
             ))
         else:
             self.logger.info(
@@ -51,9 +62,10 @@ class Scheduler:
             )
             # DB not autosaved?
             self.INSTANCE = dbos.DBOS(config=dbos.DBOSConfig(
-                name=DEFAULT_NAME,
-                system_database_url=f"sqlite:///{octobot_node.config.settings.SCHEDULER_SQLITE_FILE}",
-                max_executor_threads=octobot_node.config.settings.SCHEDULER_MAX_EXECUTOR_THREADS,
+                **_BASE_CONFIG,
+                **{
+                    "system_database_url": f"sqlite:///{octobot_node.config.settings.SCHEDULER_SQLITE_FILE}",
+                },
             ))
 
     def is_enabled(self) -> bool:
