@@ -862,8 +862,11 @@ class TestOctoBotActionsJob:
         assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
         assert next_actions[0].dsl_script.startswith("wait(")
         assert next_actions[0].previous_execution_result
-        waiting_time = next_actions[0].previous_execution_result[dsl_interpreter.ReCallableOperatorMixin.LAST_EXECUTION_RESULT_KEY][dsl_interpreter.ReCallingOperatorResultKeys.WAITING_TIME.value]
-        
+        last_execution_result = dsl_interpreter.ReCallingOperatorResult.from_dict(
+            next_actions[0].previous_execution_result[dsl_interpreter.ReCallingOperatorResult.__name__]
+        )
+        waiting_time = last_execution_result.last_execution_result[dsl_interpreter.ReCallingOperatorResultKeys.WAITING_TIME.value]
+
         # step 3.B: complete the wait action
         with mock.patch.object(time, "time", mock.Mock(return_value=time.time() + waiting_time)):
             job4 = octobot_flow_client.OctoBotActionsJob(
@@ -927,8 +930,11 @@ class TestOctoBotActionsJob:
         assert isinstance(processed_actions[0], octobot_flow.entities.DSLScriptActionDetails)
         assert processed_actions[0].dsl_script.startswith("wait(")
         assert processed_actions[0].previous_execution_result
-        waiting_time = processed_actions[0].previous_execution_result[dsl_interpreter.ReCallableOperatorMixin.LAST_EXECUTION_RESULT_KEY][dsl_interpreter.ReCallingOperatorResultKeys.WAITING_TIME.value]
-        
+        last_execution_result = dsl_interpreter.ReCallingOperatorResult.from_dict(
+            processed_actions[0].previous_execution_result[dsl_interpreter.ReCallingOperatorResult.__name__]
+        )
+        waiting_time = last_execution_result.last_execution_result[dsl_interpreter.ReCallingOperatorResultKeys.WAITING_TIME.value]
+
         # step 5.B: complete the wait action
         next_actions_description = result.next_actions_description
         with mock.patch.object(time, "time", mock.Mock(return_value=time.time() + waiting_time)):

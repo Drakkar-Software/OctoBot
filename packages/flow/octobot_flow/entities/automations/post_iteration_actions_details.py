@@ -1,6 +1,7 @@
 import dataclasses
-import octobot_commons.dataclasses
 import typing
+
+import octobot_commons.dataclasses
 
 
 @dataclasses.dataclass
@@ -21,7 +22,7 @@ class NextIterationDetails(octobot_commons.dataclasses.FlexibleDataclass):
 
 
 @dataclasses.dataclass
-class PostIterationActionsDetails(octobot_commons.dataclasses.FlexibleDataclass):
+class PostIterationActionsDetails(octobot_commons.dataclasses.MinimizableDataclass):
     stop_automation: bool = False
     postpone_execution: bool = False
     postpone_reason: typing.Optional[str] = None

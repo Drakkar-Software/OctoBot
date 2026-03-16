@@ -59,12 +59,14 @@ class AutomationJob:
                 to_execute_actions, are_priority_actions = self._get_actions_to_execute()
                 if are_priority_actions:
                     self._logger.info(f"Running {len(to_execute_actions)} priority actions: {to_execute_actions}")
+                    self._resolve_dsl_scripts(to_execute_actions, True)
                 else:
                     # fetch the actions and signals if any
                     await self._fetch_actions(maybe_authenticator)
                     # resolve the DSL scripts in case it has dependencies on other actions
                     self._resolve_dsl_scripts(
-                        self.automation_state.automation.actions_dag.get_executable_actions()
+                        self.automation_state.automation.actions_dag.get_executable_actions(),
+                        True
                     )
                 # fetch the dependencies of the automation environment
                 fetched_dependencies = await self._fetch_dependencies(maybe_community_repository, to_execute_actions)
@@ -285,10 +287,17 @@ class AutomationJob:
             action for action in self.automation_state.priority_actions if not action.is_completed()
         ]
 
-    def _resolve_dsl_scripts(self, actions: list[octobot_flow.entities.AbstractActionDetails]):
-        self.automation_state.automation.actions_dag.resolve_dsl_scripts(
-            actions
-        )
+    def _resolve_dsl_scripts(
+        self, actions: list[octobot_flow.entities.AbstractActionDetails],
+        from_actions_dag: bool
+    ):
+        if from_actions_dag:
+            self.automation_state.automation.actions_dag.resolve_dsl_scripts(
+                actions
+            )
+        else:
+            local_dag = octobot_flow.entities.ActionsDAG(actions=actions)
+            local_dag.resolve_dsl_scripts(actions)
 
     def _clear_resolved_dsl_scripts(self, actions: list[octobot_flow.entities.AbstractActionDetails]):
         for action in actions:

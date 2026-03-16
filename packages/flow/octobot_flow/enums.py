@@ -26,7 +26,6 @@ class ChangedElements(enum.Enum):
 
 class ActionType(enum.Enum):
     APPLY_CONFIGURATION = "apply_configuration"
-    STOP_AUTOMATION = "stop_automation"
     UNKNOWN = "unknown"
 
 
