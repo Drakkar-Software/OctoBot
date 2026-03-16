@@ -38,7 +38,7 @@ class ReCallingOperatorResult(octobot_commons.dataclasses.MinimizableDataclass):
         Check if the result is a re-calling operator result.
         """
         return isinstance(result, dict) and (
-            "reset_to_id" in result or "last_execution_result" in result
+            ReCallingOperatorResult.__name__ in result
         )
 
     def get_next_call_time(self) -> typing.Optional[float]:
@@ -88,7 +88,9 @@ class ReCallableOperatorMixin:
             (result_dict := param_by_name.get(self.LAST_EXECUTION_RESULT_KEY, None))
             and ReCallingOperatorResult.is_re_calling_operator_result(result_dict)
         ):
-            return ReCallingOperatorResult.from_dict(result_dict).last_execution_result
+            return ReCallingOperatorResult.from_dict(result_dict[
+                ReCallingOperatorResult.__name__
+            ]).last_execution_result
         return None
 
     def build_re_callable_result(
@@ -101,11 +103,13 @@ class ReCallableOperatorMixin:
         """
         Builds a dict formatted re-callable result from the given parameters.
         """
-        return ReCallingOperatorResult(
-            reset_to_id=reset_to_id,
-            last_execution_result={
-                ReCallingOperatorResultKeys.WAITING_TIME.value: waiting_time,
-                ReCallingOperatorResultKeys.LAST_EXECUTION_TIME.value: last_execution_time,
-                **kwargs,
-            },
-        ).to_dict(include_default_values=False)
+        return {
+            ReCallingOperatorResult.__name__: ReCallingOperatorResult(
+                reset_to_id=reset_to_id,
+                last_execution_result={
+                    ReCallingOperatorResultKeys.WAITING_TIME.value: waiting_time,
+                    ReCallingOperatorResultKeys.LAST_EXECUTION_TIME.value: last_execution_time,
+                    **kwargs,
+                },
+            ).to_dict(include_default_values=False)
+        }

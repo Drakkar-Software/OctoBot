@@ -20,7 +20,9 @@ class AbstractActionDetails(octobot_commons.dataclasses.FlexibleDataclass):
     # unique id of the action
     id: str = dataclasses.field(repr=True)
     # result of the action. Set after the action is executed
-    result: typing.Optional[dict] = dataclasses.field(default=None, repr=True)
+    result: typing.Optional[
+        octobot_commons.dsl_interpreter.ComputedOperatorParameterType
+    ] = dataclasses.field(default=None, repr=True)
     # error status of the action. Set after the action is executed, in case an error occured
     error_status: typing.Optional[str] = dataclasses.field(default=None, repr=True)       # ActionErrorStatus
     # time at which the action was executed

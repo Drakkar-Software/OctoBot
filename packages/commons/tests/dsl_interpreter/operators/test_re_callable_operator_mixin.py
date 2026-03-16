@@ -23,12 +23,16 @@ import octobot_commons.dsl_interpreter.operators.re_callable_operator_mixin as r
 class TestReCallingOperatorResult:
     def test_is_re_calling_operator_result_with_reset_to_id(self):
         assert re_callable_operator_mixin.ReCallingOperatorResult.is_re_calling_operator_result(
-            {"reset_to_id": "some_id"}
+            {re_callable_operator_mixin.ReCallingOperatorResult.__name__: {"reset_to_id": "some_id"}}
         ) is True
 
     def test_is_re_calling_operator_result_with_last_execution_result(self):
         assert re_callable_operator_mixin.ReCallingOperatorResult.is_re_calling_operator_result(
-            {"last_execution_result": {"waiting_time": 5, "last_execution_time": 1000.0}}
+            {
+                re_callable_operator_mixin.ReCallingOperatorResult.__name__: {
+                    "last_execution_result": {"waiting_time": 5, "last_execution_time": 1000.0},
+                }
+            }
         ) is True
 
     def test_is_re_calling_operator_result_false_for_non_dict(self):
@@ -124,7 +128,9 @@ class TestReCallableOperatorMixin:
         }
         result = operator.get_last_execution_result({
             dsl_interpreter.ReCallableOperatorMixin.LAST_EXECUTION_RESULT_KEY: {
-                "last_execution_result": inner,
+                re_callable_operator_mixin.ReCallingOperatorResult.__name__: {
+                    "last_execution_result": inner,
+                },
             },
         })
         assert result == inner
@@ -134,8 +140,10 @@ class TestReCallableOperatorMixin:
         inner = {"waiting_time": 3.0, "last_execution_time": 500.0}
         result = operator.get_last_execution_result({
             dsl_interpreter.ReCallableOperatorMixin.LAST_EXECUTION_RESULT_KEY: {
-                "reset_to_id": "abc",
-                "last_execution_result": inner,
+                re_callable_operator_mixin.ReCallingOperatorResult.__name__: {
+                    "reset_to_id": "abc",
+                    "last_execution_result": inner,
+                },
             },
         })
         assert result == inner
@@ -146,11 +154,12 @@ class TestReCallableOperatorMixin:
             last_execution_time=1000.0,
             waiting_time=5.0,
         )
-        assert "last_execution_result" in result
-        assert result["last_execution_result"][
+        inner = result[re_callable_operator_mixin.ReCallingOperatorResult.__name__]
+        assert "last_execution_result" in inner
+        assert inner["last_execution_result"][
             re_callable_operator_mixin.ReCallingOperatorResultKeys.LAST_EXECUTION_TIME.value
         ] == 1000.0
-        assert result["last_execution_result"][
+        assert inner["last_execution_result"][
             re_callable_operator_mixin.ReCallingOperatorResultKeys.WAITING_TIME.value
         ] == 5.0
 
@@ -161,8 +170,9 @@ class TestReCallableOperatorMixin:
             last_execution_time=1000.0,
             waiting_time=5.0,
         )
-        assert result["reset_to_id"] == "target_123"
-        assert "last_execution_result" in result
+        inner = result[re_callable_operator_mixin.ReCallingOperatorResult.__name__]
+        assert inner["reset_to_id"] == "target_123"
+        assert "last_execution_result" in inner
 
     def test_build_re_callable_result_with_extra_kwargs(self):
         operator = _TestReCallableOperator()
@@ -171,4 +181,5 @@ class TestReCallableOperatorMixin:
             waiting_time=5.0,
             extra_field=42,
         )
-        assert result["last_execution_result"]["extra_field"] == 42
+        inner = result[re_callable_operator_mixin.ReCallingOperatorResult.__name__]
+        assert inner["last_execution_result"]["extra_field"] == 42

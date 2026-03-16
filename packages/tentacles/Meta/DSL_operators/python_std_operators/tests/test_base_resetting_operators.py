@@ -43,10 +43,12 @@ class TestWaitOperator:
 
             mock_sleep.reset_mock()
 
-            # wait with return_remaining_time=True returns ReCallingOperatorResult dict
+            # wait with return_remaining_time=True returns ReCallingOperatorResult dict (wrapped format)
             with mock.patch.object(time, "time", return_value=1000.0):
                 result = await interpreter.interprete("wait(5, return_remaining_time=True)")
-                assert result == {
+                assert dsl_interpreter.ReCallingOperatorResult.__name__ in result
+                inner = result[dsl_interpreter.ReCallingOperatorResult.__name__]
+                assert inner == {
                     "last_execution_result": {
                         dsl_interpreter.ReCallingOperatorResultKeys.LAST_EXECUTION_TIME.value: 1000.0,
                         dsl_interpreter.ReCallingOperatorResultKeys.WAITING_TIME.value: 5,
@@ -78,23 +80,27 @@ class TestWaitOperator:
                     dsl_interpreter.ReCallableOperatorMixin.LAST_EXECUTION_RESULT_KEY: None,
                 })
         assert result is not None
-        assert result["last_execution_result"][dsl_interpreter.ReCallingOperatorResultKeys.LAST_EXECUTION_TIME.value] == 1000.0
-        assert result["last_execution_result"][dsl_interpreter.ReCallingOperatorResultKeys.WAITING_TIME.value] == 3.0
+        last_result = result[dsl_interpreter.ReCallingOperatorResult.__name__]["last_execution_result"]
+        assert last_result[dsl_interpreter.ReCallingOperatorResultKeys.LAST_EXECUTION_TIME.value] == 1000.0
+        assert last_result[dsl_interpreter.ReCallingOperatorResultKeys.WAITING_TIME.value] == 3.0
 
-        # _compute_remaining_time with previous (ReCallingOperatorResult format)
+        # _compute_remaining_time with previous (ReCallingOperatorResult wrapped format)
         with mock.patch.object(base_resetting_operators.time, "time", return_value=1002.0):
             result = operator._compute_remaining_time({
                 "min_seconds": 1, "max_seconds": None,
                 dsl_interpreter.ReCallableOperatorMixin.LAST_EXECUTION_RESULT_KEY: {
-                    "last_execution_result": {
-                        dsl_interpreter.ReCallingOperatorResultKeys.LAST_EXECUTION_TIME.value: 1000.0,
-                        dsl_interpreter.ReCallingOperatorResultKeys.WAITING_TIME.value: 5.0,
+                    dsl_interpreter.ReCallingOperatorResult.__name__: {
+                        "last_execution_result": {
+                            dsl_interpreter.ReCallingOperatorResultKeys.LAST_EXECUTION_TIME.value: 1000.0,
+                            dsl_interpreter.ReCallingOperatorResultKeys.WAITING_TIME.value: 5.0,
+                        },
                     },
                 },
             })
         assert result is not None
-        assert result["last_execution_result"][dsl_interpreter.ReCallingOperatorResultKeys.LAST_EXECUTION_TIME.value] == 1002.0
-        assert result["last_execution_result"][dsl_interpreter.ReCallingOperatorResultKeys.WAITING_TIME.value] == 3.0  # 5 - (1002 - 1000)
+        last_result = result[dsl_interpreter.ReCallingOperatorResult.__name__]["last_execution_result"]
+        assert last_result[dsl_interpreter.ReCallingOperatorResultKeys.LAST_EXECUTION_TIME.value] == 1002.0
+        assert last_result[dsl_interpreter.ReCallingOperatorResultKeys.WAITING_TIME.value] == 3.0  # 5 - (1002 - 1000)
 
         # No mock: ensure random and time are actually called and return valid values
         min_sec, max_sec = 1, 3
@@ -111,16 +117,18 @@ class TestWaitOperator:
             dsl_interpreter.ReCallableOperatorMixin.LAST_EXECUTION_RESULT_KEY: None,
         })
         assert result is not None
-        assert "last_execution_result" in result
-        assert dsl_interpreter.ReCallingOperatorResultKeys.LAST_EXECUTION_TIME.value in result["last_execution_result"]
-        assert dsl_interpreter.ReCallingOperatorResultKeys.WAITING_TIME.value in result["last_execution_result"]
-        assert 2 <= result["last_execution_result"][dsl_interpreter.ReCallingOperatorResultKeys.WAITING_TIME.value] < 5
-        assert result["last_execution_result"][dsl_interpreter.ReCallingOperatorResultKeys.LAST_EXECUTION_TIME.value] > 0
+        last_result = result[dsl_interpreter.ReCallingOperatorResult.__name__]["last_execution_result"]
+        assert dsl_interpreter.ReCallingOperatorResultKeys.LAST_EXECUTION_TIME.value in last_result
+        assert dsl_interpreter.ReCallingOperatorResultKeys.WAITING_TIME.value in last_result
+        assert 2 <= last_result[dsl_interpreter.ReCallingOperatorResultKeys.WAITING_TIME.value] < 5
+        assert last_result[dsl_interpreter.ReCallingOperatorResultKeys.LAST_EXECUTION_TIME.value] > 0
 
         previous = {
-            "last_execution_result": {
-                dsl_interpreter.ReCallingOperatorResultKeys.LAST_EXECUTION_TIME.value: time.time() - 1.0,
-                dsl_interpreter.ReCallingOperatorResultKeys.WAITING_TIME.value: 5.0,
+            dsl_interpreter.ReCallingOperatorResult.__name__: {
+                "last_execution_result": {
+                    dsl_interpreter.ReCallingOperatorResultKeys.LAST_EXECUTION_TIME.value: time.time() - 1.0,
+                    dsl_interpreter.ReCallingOperatorResultKeys.WAITING_TIME.value: 5.0,
+                },
             },
         }
         result = operator._compute_remaining_time({
@@ -128,8 +136,10 @@ class TestWaitOperator:
             dsl_interpreter.ReCallableOperatorMixin.LAST_EXECUTION_RESULT_KEY: previous,
         })
         assert result is not None
-        assert result["last_execution_result"][dsl_interpreter.ReCallingOperatorResultKeys.WAITING_TIME.value] <= 5.0  # time has passed
-        assert result["last_execution_result"][dsl_interpreter.ReCallingOperatorResultKeys.LAST_EXECUTION_TIME.value] >= previous["last_execution_result"][dsl_interpreter.ReCallingOperatorResultKeys.LAST_EXECUTION_TIME.value]
+        last_result = result[dsl_interpreter.ReCallingOperatorResult.__name__]["last_execution_result"]
+        prev_last_result = previous[dsl_interpreter.ReCallingOperatorResult.__name__]["last_execution_result"]
+        assert last_result[dsl_interpreter.ReCallingOperatorResultKeys.WAITING_TIME.value] <= 5.0  # time has passed
+        assert last_result[dsl_interpreter.ReCallingOperatorResultKeys.LAST_EXECUTION_TIME.value] >= prev_last_result[dsl_interpreter.ReCallingOperatorResultKeys.LAST_EXECUTION_TIME.value]
 
     @pytest.mark.asyncio
     async def test_wait_operator_pre_compute(self):
@@ -144,7 +154,8 @@ class TestWaitOperator:
             mock_sleep.assert_not_awaited()
             assert operator_with_return.value is not None
             assert isinstance(operator_with_return.value, dict)
-            assert operator_with_return.value["last_execution_result"][dsl_interpreter.ReCallingOperatorResultKeys.WAITING_TIME.value] == 2
+            last_result = operator_with_return.value[dsl_interpreter.ReCallingOperatorResult.__name__]["last_execution_result"]
+            assert last_result[dsl_interpreter.ReCallingOperatorResultKeys.WAITING_TIME.value] == 2
 
     @pytest.mark.asyncio
     async def test_wait_operator_invalid_parameters(self, interpreter):
