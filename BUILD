@@ -32,6 +32,7 @@ PACKAGE_SOURCES = [
     "packages/commons:octobot_commons",
     "packages/evaluators:octobot_evaluators",
     "packages/node:octobot_node",
+    "packages/flow:octobot_flow",
     "packages/services:octobot_services",
     "packages/tentacles_manager:octobot_tentacles_manager",
     "packages/trading:octobot_trading",

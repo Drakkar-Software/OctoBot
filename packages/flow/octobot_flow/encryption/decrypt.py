@@ -19,7 +19,7 @@ def decrypted_bots_configurations(
 
 def _decrypt_exchange_credentials(
     auth_details: exchange_data_import.ExchangeAuthDetails
-):
+):  # pylint: disable=undefined-variable
     if auth_details.encrypted:
         raise NotImplementedError("_decrypt_exchange_credentials not implemented")
         # todo
