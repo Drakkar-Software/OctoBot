@@ -416,6 +416,8 @@ jobs:
         exclude:
           - os: windows-latest
             arch: arm64
+          - os: macos-latest
+            arch: x64
 
     steps:
     - uses: actions/checkout@v6
@@ -543,7 +545,6 @@ jobs:
         run: |
           echo ::set-output name=octobot_linux_x64_hash::$(openssl sha256 ./OctoBot_linux_x64 | awk '{print $2}')
           echo ::set-output name=octobot_linux_arm64_hash::$(openssl sha256 ./OctoBot_linux_arm64 | awk '{print $2}')
-          echo ::set-output name=octobot_macos_x64_hash::$(openssl sha256 ./OctoBot_macos_x64 | awk '{print $2}')
           echo ::set-output name=octobot_macos_arm64_hash::$(openssl sha256 ./OctoBot_macos_arm64 | awk '{print $2}')
           echo ::set-output name=octobot_windows_x64_hash::$(openssl sha256 ./OctoBot_windows_x64.exe | awk '{print $2}')
 
@@ -566,7 +567,6 @@ jobs:
             | Windows x64 | [Download](https://github.com/${{ github.repository_owner }}/OctoBot/releases/download/${{ steps.vars.outputs.tag }}/OctoBot_windows_x64.exe) | ${{ steps.hashes.outputs.octobot_windows_x64_hash }} |
             | Linux x64 | [Download](https://github.com/${{ github.repository_owner }}/OctoBot/releases/download/${{ steps.vars.outputs.tag }}/OctoBot_linux_x64) | ${{ steps.hashes.outputs.octobot_linux_x64_hash }} |
             | Linux arm64 | [Download](https://github.com/${{ github.repository_owner }}/OctoBot/releases/download/${{ steps.vars.outputs.tag }}/OctoBot_linux_arm64) | ${{ steps.hashes.outputs.octobot_linux_arm64_hash }} |
-            | MacOS x64 | [Download](https://github.com/${{ github.repository_owner }}/OctoBot/releases/download/${{ steps.vars.outputs.tag }}/OctoBot_macos_x64) | ${{ steps.hashes.outputs.octobot_macos_x64_hash }} |
             | MacOS arm64 | [Download](https://github.com/${{ github.repository_owner }}/OctoBot/releases/download/${{ steps.vars.outputs.tag }}/OctoBot_macos_arm64) | ${{ steps.hashes.outputs.octobot_macos_arm64_hash }} |
 
       - name: Upload Release Asset - OctoBot_windows_x64
@@ -597,16 +597,6 @@ jobs:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./OctoBot_linux_arm64
           asset_name: OctoBot_linux_arm64
-          asset_content_type: application/x-binary
-
-      - name: Upload Release Asset - OctoBot_macos_x64
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.AUTH_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./OctoBot_macos_x64
-          asset_name: OctoBot_macos_x64
           asset_content_type: application/x-binary
 
       - name: Upload Release Asset - OctoBot_macos_arm64
