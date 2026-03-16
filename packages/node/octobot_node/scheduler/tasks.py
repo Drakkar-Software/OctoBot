@@ -16,15 +16,15 @@
 import octobot_node.models
 import octobot_node.scheduler.workflows_util as workflows_util
 import octobot_node.scheduler.workflows.params as params
-from octobot_node.scheduler import SCHEDULER # avoid circular import
 
 
 async def trigger_task(task: octobot_node.models.Task) -> bool:
     import octobot_node.scheduler.workflows.automation_workflow as automation_workflow
+    import octobot_node.scheduler  # avoid circular import
     handle = None
     # enqueue workflow instead of starting it to dispatch them to multiple workers if possible
     if task.type == octobot_node.models.TaskType.EXECUTE_ACTIONS.value:
-        handle = await SCHEDULER.AUTOMATION_WORKFLOW_QUEUE.enqueue_async(
+        handle = await octobot_node.scheduler.SCHEDULER.AUTOMATION_WORKFLOW_QUEUE.enqueue_async(
             automation_workflow.AutomationWorkflow.execute_automation,
             inputs=params.AutomationWorkflowInputs(task=task).to_dict(include_default_values=False)
         )
@@ -34,7 +34,8 @@ async def trigger_task(task: octobot_node.models.Task) -> bool:
 
 
 async def send_actions_to_automation(actions: list[dict], automation_id: str):
+    import octobot_node.scheduler  # avoid circular import
     workflow_status = await workflows_util.get_automation_workflow_status(automation_id)
-    await SCHEDULER.INSTANCE.send_async(
+    await octobot_node.scheduler.SCHEDULER.INSTANCE.send_async(
         workflow_status.workflow_id, actions, topic="user_actions"
     )

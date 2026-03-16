@@ -27,7 +27,6 @@ import octobot_node.enums
 import octobot_node.models
 import octobot_node.constants
 import octobot_node.scheduler.workflows_util as workflows_util
-import octobot_node.scheduler.workflows.base as workflow_base
 try:
     from octobot import VERSION
 except ImportError:
@@ -40,18 +39,6 @@ _BASE_CONFIG = dbos.DBOSConfig(
     max_executor_threads=octobot_node.config.settings.SCHEDULER_MAX_EXECUTOR_THREADS,
     application_version=VERSION,
 )
-
-
-def _sanitize(result: typing.Any) -> typing.Any:
-    if isinstance(result, decimal.Decimal):
-        return float(result)
-    if isinstance(result, enum.Enum):
-        return result.value
-    if isinstance(result, dict):
-        return {k: _sanitize(v) for k, v in result.items()}
-    elif isinstance(result, list):
-        return [_sanitize(v) for v in result]
-    return result
 
 
 def _sanitize(result: typing.Any) -> typing.Any:
