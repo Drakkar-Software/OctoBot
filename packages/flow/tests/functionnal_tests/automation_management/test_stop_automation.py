@@ -3,7 +3,6 @@ import mock
 import time
 
 import octobot_flow
-import octobot_flow.entities
 import octobot_flow.enums
 
 import tests.functionnal_tests as functionnal_tests
@@ -31,7 +30,7 @@ def init_action():
 def stop_automation_action():
     return {
         "id": "action_stop",
-        "action": octobot_flow.enums.ActionType.STOP_AUTOMATION.value,
+        "dsl_script": "stop_automation()",
         "dependencies": [
             {"action_id": "action_init"},
         ],
@@ -44,9 +43,7 @@ def random_action():
         "id": "action_random",
         "dsl_script": "'yes' if 1 == 2 else 'no'",
         "dependencies": [
-            {
-                "action_id": "action_init",
-            },
+            {"action_id": "action_init"},
         ],
     }
 

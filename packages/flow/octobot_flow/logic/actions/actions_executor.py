@@ -10,7 +10,6 @@ import octobot.community
 import octobot_flow.entities
 import octobot_flow.repositories.community
 import octobot_flow.logic.dsl
-import octobot_flow.logic.configured_actions
 import octobot_flow.enums
 import octobot_flow.errors
 
@@ -48,30 +47,9 @@ class ActionsExecutor:
         async with dsl_executor.dependencies_context(self._actions):
             for index, action in enumerate(self._actions):
                 await self._execute_action(dsl_executor, action)
-                if octobot_commons.dsl_interpreter.ReCallingOperatorResult.is_re_calling_operator_result(
-                    action.result
-                ):
-                    recall_dag_details = octobot_commons.dsl_interpreter.ReCallingOperatorResult.from_dict(
-                        action.result
-                    )
-                    if not recall_dag_details.reset_to_id:
-                        # reset to the current action if no specific id is provided (loop on this action)
-                        recall_dag_details.reset_to_id = action.id
-                    if recall_dag_details.reset_to_id == action.id:
-                        # Keep executing other selected actions if any: those are not affected by the reset
-                        # as they don't depend on the reset action
-                        continue
-                    # Reset to a past action: interrupt execution of the following actions 
-                    # as they might depend on the reset action
-                    if index < len(self._actions) - 1:
-                        interrupted_action = self._actions[index + 1: ]
-                        self._get_logger().info(
-                            f"DAG reset required. Interrupting execution of "
-                            f"{len(interrupted_action)} actions: "
-                            f"{', '.join([action.id for action in interrupted_action])}"
-                        )
-                        break
-
+                recall_dag_details, should_stop_processing = self._handle_execution_result(action, index)
+                if should_stop_processing:
+                    break
         self._sync_after_execution()
         await self._update_actions_history()
         await self._insert_execution_bot_logs(dsl_executor.pending_bot_logs)
@@ -85,6 +63,44 @@ class ActionsExecutor:
             # no reset: schedule immediately
             self.next_execution_scheduled_to = 0
 
+    def _handle_execution_result(
+        self, action: octobot_flow.entities.AbstractActionDetails, index: int
+    ) -> tuple[typing.Optional[octobot_commons.dsl_interpreter.ReCallingOperatorResult], bool]:
+        if not isinstance(action.result, dict):
+            return None, False
+        if octobot_flow.entities.PostIterationActionsDetails.__name__ in action.result:
+            post_iteration_actions_details = octobot_flow.entities.PostIterationActionsDetails.from_dict(
+                action.result[octobot_flow.entities.PostIterationActionsDetails.__name__]
+            )
+            if post_iteration_actions_details.stop_automation:
+                self._get_logger().info(f"Stopping automation: {self._automation.metadata.automation_id}")
+                self._automation.post_actions.stop_automation = True
+                # todo cancel open orders and sell assets if required in action config
+                return None, True
+            return None, False
+        if octobot_commons.dsl_interpreter.ReCallingOperatorResult.is_re_calling_operator_result(action.result):
+            recall_dag_details = octobot_commons.dsl_interpreter.ReCallingOperatorResult.from_dict(
+                action.result[octobot_commons.dsl_interpreter.ReCallingOperatorResult.__name__]
+            )
+            if not recall_dag_details.reset_to_id:
+                # reset to the current action if no specific id is provided (loop on this action)
+                recall_dag_details.reset_to_id = action.id
+            if recall_dag_details.reset_to_id == action.id:
+                # Keep executing other selected actions if any: those are not affected by the reset
+                # as they don't depend on the reset action
+                return recall_dag_details, False
+            # Reset to a past action: interrupt execution of the following actions 
+            # as they might depend on the reset action
+            if index < len(self._actions) - 1:
+                interrupted_action = self._actions[index + 1: ]
+                self._get_logger().info(
+                    f"DAG reset required. Interrupting execution of "
+                    f"{len(interrupted_action)} actions: "
+                    f"{', '.join([action.id for action in interrupted_action])}"
+                )
+                return recall_dag_details, True
+        return None, False
+
     async def _execute_action(
         self,
         dsl_executor: "octobot_flow.logic.dsl.DSLExecutor",
@@ -92,11 +108,6 @@ class ActionsExecutor:
     ):
         if isinstance(action, octobot_flow.entities.DSLScriptActionDetails):
             return await dsl_executor.execute_action(action)
-        elif isinstance(action, octobot_flow.entities.ConfiguredActionDetails):
-            configured_actions_executor = octobot_flow.logic.configured_actions.ConfiguredActionsExecutor(
-                self._exchange_manager, self._automation
-            )
-            return await configured_actions_executor.execute_action(action)
         raise octobot_flow.errors.UnsupportedActionTypeError(
             f"{self.__class__.__name__} does not support action type: {type(action)}"
         ) from None

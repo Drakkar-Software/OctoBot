@@ -103,7 +103,9 @@ resolved_actions(actions_to_execute),
         rescheduled_parameters = wait_action.get_rescheduled_parameters()
         assert dsl_interpreter.ReCallableOperatorMixin.LAST_EXECUTION_RESULT_KEY in rescheduled_parameters
         last_execution_result = dsl_interpreter.ReCallingOperatorResult.from_dict(
-            rescheduled_parameters[dsl_interpreter.ReCallableOperatorMixin.LAST_EXECUTION_RESULT_KEY]
+            rescheduled_parameters[dsl_interpreter.ReCallableOperatorMixin.LAST_EXECUTION_RESULT_KEY][
+                dsl_interpreter.ReCallingOperatorResult.__name__
+            ]
         )
         assert isinstance(last_execution_result.last_execution_result, dict)
         waiting_time_1 = last_execution_result.last_execution_result[dsl_interpreter.ReCallingOperatorResultKeys.WAITING_TIME.value]
@@ -135,7 +137,9 @@ resolved_actions(actions_to_execute),
         rescheduled_parameters = wait_action.get_rescheduled_parameters()
         assert dsl_interpreter.ReCallableOperatorMixin.LAST_EXECUTION_RESULT_KEY in rescheduled_parameters
         last_execution_result = dsl_interpreter.ReCallingOperatorResult.from_dict(
-            rescheduled_parameters[dsl_interpreter.ReCallableOperatorMixin.LAST_EXECUTION_RESULT_KEY]
+            rescheduled_parameters[dsl_interpreter.ReCallableOperatorMixin.LAST_EXECUTION_RESULT_KEY][
+                dsl_interpreter.ReCallingOperatorResult.__name__
+            ]
         )
         assert isinstance(last_execution_result.last_execution_result, dict)
         waiting_time_2 = last_execution_result.last_execution_result[dsl_interpreter.ReCallingOperatorResultKeys.WAITING_TIME.value]
