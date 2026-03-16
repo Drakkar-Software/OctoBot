@@ -13,23 +13,23 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-import typing
 import json
 import time
+import typing
 
 import octobot_commons.logging
 
 import octobot_node.models
-import octobot_node.scheduler.octobot_lib as octobot_lib
+import octobot_node.scheduler.octobot_flow_client as octobot_flow_client
 import octobot_node.scheduler.task_context
 import octobot_node.scheduler.workflows.params as params
 import octobot_node.errors as errors
 
+if typing.TYPE_CHECKING:
+    import octobot_flow.entities
 
 from octobot_node.scheduler import SCHEDULER  # avoid circular import
 
-if typing.TYPE_CHECKING:
-    import mini_octobot.entities
 
 
 
@@ -92,7 +92,7 @@ class AutomationWorkflow:
         execution_error = next_iteration_description = next_step = next_step_at = None
         with octobot_node.scheduler.task_context.encrypted_task(parsed_inputs.task):
             #### Start of decryped task context ####
-            result: octobot_lib.OctoBotActionsJobResult = None # type: ignore
+            result: octobot_flow_client.OctoBotActionsJobResult = None # type: ignore
             if parsed_inputs.task.type == octobot_node.models.TaskType.EXECUTE_ACTIONS.value:
                 if user_actions:
                     AutomationWorkflow.get_logger(parsed_inputs).info(f"Executing user actions: {user_actions}")
@@ -100,7 +100,7 @@ class AutomationWorkflow:
                     AutomationWorkflow.get_logger(parsed_inputs).info(
                         f"Executing {parsed_inputs.task.name} ' DAG's executable actions"
                     )
-                result = await octobot_lib.OctoBotActionsJob(
+                result = await octobot_flow_client.OctoBotActionsJob(
                     parsed_inputs.task.content, user_actions
                 ).run()
                 if result.processed_actions:
@@ -250,7 +250,7 @@ class AutomationWorkflow:
         return True
 
     @staticmethod
-    def _get_actions_summary(actions: list["mini_octobot.entities.AbstractActionDetails"], minimal: bool = False) -> str:
+    def _get_actions_summary(actions: list["octobot_flow.entities.AbstractActionDetails"], minimal: bool = False) -> str:
         return ", ".join([action.get_summary(minimal=minimal) for action in actions]) if actions else ""
 
     @staticmethod
