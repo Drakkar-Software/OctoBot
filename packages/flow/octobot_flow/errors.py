@@ -1,16 +1,16 @@
-class MiniOctobotError(Exception):
-    """parent class for all mini octobot errors"""
+class OctobotFlowError(Exception):
+    """parent class for all octobot flow errors"""
 
-class ConfigurationError(MiniOctobotError):
+class ConfigurationError(OctobotFlowError):
     """an error related to the configuration of the bot"""
 
-class ExchangeError(MiniOctobotError):
+class ExchangeError(OctobotFlowError):
     """an error related to the bot's communication with the exchange"""
 
-class AutomationActionError(MiniOctobotError):
+class AutomationActionError(OctobotFlowError):
     """an error related to an automation action execution"""
 
-class DSLExecutorError(MiniOctobotError):
+class DSLExecutorError(OctobotFlowError):
     """raise when a DSL executor error occurs"""
 
 class ExchangeAccountInitializationError(ExchangeError):
