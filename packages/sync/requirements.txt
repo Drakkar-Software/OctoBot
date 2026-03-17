@@ -1,7 +1,3 @@
-satellite-server @ git+https://github.com/Herklos/satellite.git#subdirectory=servers/python
 satellite-sdk @ git+https://github.com/Herklos/satellite.git#subdirectory=clients/python
-uvicorn[standard]
 python-multipart
 web3
-fastapi[standard]
-cachetools
