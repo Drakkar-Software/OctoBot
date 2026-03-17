@@ -14,12 +14,17 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import typing
+import decimal
 
 import octobot_commons.logging as logging
 
 import octobot_trading.exchange_data.exchange_symbol_data as exchange_symbol_data_import
 import octobot_trading.exchanges
+import octobot_trading.enums as enums
 import octobot_trading.exchange_data.markets.markets_manager as markets_manager
+
+if typing.TYPE_CHECKING:
+    import octobot_trading.exchanges.util.exchange_data as exchange_data_import
 
 
 class ExchangeSymbolsData:
@@ -31,6 +36,19 @@ class ExchangeSymbolsData:
         self.exchange_symbol_data: dict[str, exchange_symbol_data_import.ExchangeSymbolData] = {}
 
         self.markets_manager: markets_manager.MarketsManager = markets_manager.MarketsManager()
+
+    def initialize_from_exchange_data(
+        self, exchange_data: "exchange_data_import.ExchangeData", price_by_symbol: dict[str, float]
+    ) -> None:
+        """
+        Initialize prices from exchange data.
+        """
+        for market in exchange_data.markets:
+            price = price_by_symbol.get(market.symbol)
+            if price is not None:
+                self.get_exchange_symbol_data(market.symbol).prices_manager.set_mark_price(
+                    decimal.Decimal(str(price)), enums.MarkPriceSources.EXCHANGE_MARK_PRICE.value
+                )
 
     async def stop(self):
         self.exchange_manager = None # type: ignore

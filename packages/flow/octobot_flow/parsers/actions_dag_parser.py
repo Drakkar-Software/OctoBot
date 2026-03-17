@@ -9,7 +9,7 @@ import octobot_commons.profiles.profile_data as profiles_import
 import octobot_commons.dataclasses
 import octobot_trading.blockchain_wallets as blockchain_wallets
 import octobot_trading.blockchain_wallets.simulator.blockchain_wallet_simulator as blockchain_wallets_simulator
-import octobot_trading.util.test_tools.exchange_data as exchange_data_import
+import octobot_trading.exchanges.util.exchange_data as exchange_data_import
 import octobot_flow.errors
 import octobot_flow.entities
 import octobot_flow.enums

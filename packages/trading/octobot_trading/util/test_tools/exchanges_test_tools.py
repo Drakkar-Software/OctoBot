@@ -32,7 +32,7 @@ import octobot_tentacles_manager.api as tentacles_manager_api
 
 import octobot_trading.personal_data as personal_data
 
-import octobot_trading.util.test_tools.exchange_data as exchange_data_import
+import octobot_trading.exchanges.util.exchange_data as exchange_data_import
 
 
 BASE_TIMEOUT = 10

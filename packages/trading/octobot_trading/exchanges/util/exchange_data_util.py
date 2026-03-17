@@ -13,14 +13,13 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-# todo move
 import typing
 
 import octobot_trading.constants as constants
 import octobot_trading.enums as enums
 
 if typing.TYPE_CHECKING:
-    import octobot_trading.util.test_tools.exchange_data as exchange_data_import
+    import octobot_trading.exchanges.util.exchange_data as exchange_data_import
 
 
 def _get_positions_symbols(exchange_data: "exchange_data_import.ExchangeData") -> set[str]:

@@ -32,7 +32,7 @@ import octobot_tentacles_manager.configuration
 import octobot.backtesting.independent_backtesting
 import octobot.backtesting.minimal_data_importer as minimal_data_importer
 
-import octobot_trading.util.test_tools.exchange_data as exchange_data_import
+import octobot_trading.exchanges.util.exchange_data as exchange_data_import
 import octobot_trading.api
 
 import tentacles.Meta.Keywords.scripting_library as scripting_library

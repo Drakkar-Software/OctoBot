@@ -27,7 +27,7 @@ import octobot_trading.exchange_data.contracts.future_contract as future_contrac
 import octobot_trading.exchange_data.contracts.option_contract as option_contract
 
 if typing.TYPE_CHECKING:
-    import octobot_trading.util.test_tools.exchange_data as exchange_data_import
+    import octobot_trading.exchanges.util.exchange_data as exchange_data_import
 
 def update_contracts_from_positions(exchange_manager, positions) -> bool:
     updated = False
