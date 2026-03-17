@@ -152,12 +152,20 @@ python_distribution(
     provides=python_artifact(
         name="octobot",
         version="2.1.0",
+        url='https://github.com/Drakkar-Software/OctoBot',
+        license='GPL-3.0',
+        author="Drakkar-Software",
+        author_email='contact@drakkar.software',
+        description='Cryptocurrencies alert / trading bot',
+        long_description_file="README.md",
+        long_description_content_type='text/markdown',
     ),
     entry_points={
         'console_scripts': {
             'OctoBot': 'octobot.cli:main'
         }
     },
+    generate_setup=True,
     sdist=True,
     wheel=True,
 )
