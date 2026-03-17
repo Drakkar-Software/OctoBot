@@ -20,6 +20,7 @@ import logging
 import typing
 import decimal
 import enum
+import sqlalchemy
 
 import octobot_commons.logging
 import octobot_node.config
@@ -137,7 +138,7 @@ class Scheduler:
             return []
         tasks: list[dict] = []
         try:
-            pending_workflow_statuses = await self.INSTANCE.list_workflows_async(status=["ENQUEUED", "PENDING"])
+            pending_workflow_statuses = await self.INSTANCE.list_workflows_async(status=[dbos.WorkflowStatusString.ENQUEUED.value, dbos.WorkflowStatusString.PENDING.value])
             for pending_workflow_status in pending_workflow_statuses or []:
                 try:
                     if state := workflows_util.get_automation_state(pending_workflow_status):
@@ -155,6 +156,29 @@ class Scheduler:
         except Exception as e:
             self.logger.warning(f"Failed to list pending workflows: {e}")
         return tasks
+
+    async def delete_workflows(self, to_delete_workflow_ids: list[str]):
+        self.logger.info(f"Deleting {len(to_delete_workflow_ids)} workflows")
+        all_completed_workflows = await self.INSTANCE.list_workflows_async(status=[
+            dbos.WorkflowStatusString.SUCCESS.value, dbos.WorkflowStatusString.ERROR.value,
+            dbos.WorkflowStatusString.CANCELLED.value, dbos.WorkflowStatusString.MAX_RECOVERY_ATTEMPTS_EXCEEDED.value
+        ])
+        to_delete_parent_workflow_ids = [
+            workflow_id[:octobot_node.constants.PARENT_WORKFLOW_ID_LENGTH] for workflow_id in to_delete_workflow_ids
+        ]
+        children_workflow_ids = [
+            workflow.workflow_id for workflow in all_completed_workflows 
+            if any(workflow.workflow_id.startswith(parent_workflow_id) for parent_workflow_id in to_delete_parent_workflow_ids)
+        ]
+        merged_to_delete_workflow_ids = list(set(to_delete_workflow_ids + children_workflow_ids))
+        self.logger.info(
+            f"Including {len(merged_to_delete_workflow_ids) - len(to_delete_workflow_ids)} associated children workflows to delete"
+        )
+        await self.INSTANCE.delete_workflows_async(merged_to_delete_workflow_ids, delete_children=False)
+        self.logger.info(f"Vacuuming database")
+        with self.INSTANCE._sys_db.engine.begin() as conn:
+            conn.execute(sqlalchemy.text("VACUUM"))
+        self.logger.info(f"Database vacuum completed")
 
     async def get_scheduled_tasks(self) -> list[dict]:
         """DBOS has no direct 'scheduled for later' queue; return empty list."""
