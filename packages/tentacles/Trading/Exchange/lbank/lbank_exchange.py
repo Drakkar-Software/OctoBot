@@ -131,9 +131,13 @@ class LBankConnector(exchanges.CCXTConnector, LBankSignConnectorMixin):
         exchanges.CCXTConnector._create_client(self, force_unauth=force_unauth)
         self.register_client_mocks()
 
+    async def fetch_swap_markets_mock(self, *args, **kwargs):
+        return []
+
     def register_client_mocks(self):
         self.client.sign = self._lazy_maybe_force_signed_requests(self.client.sign)
         self.client.parse_order = self.parse_order_mock(self.client)
+        self.client.fetch_swap_markets = self.fetch_swap_markets_mock
     
     def parse_order_mock(self, client):
         origin_parse_order = client.parse_order
