@@ -42,7 +42,7 @@ jobs:
         run: pants package :OctoBot
 
       - name: Upload wheel artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: octobot-wheel
           path: dist/octobot-*.whl
@@ -80,7 +80,7 @@ jobs:
         architecture: ${{ matrix.arch }}
 
     - name: Download build wheel artifact
-      uses: actions/download-artifact@v7
+      uses: actions/download-artifact@v8
       with:
         name: octobot-wheel
         path: dist/
@@ -197,7 +197,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Download build wheel artifact
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: octobot-wheel
           path: dist/
@@ -312,7 +312,7 @@ jobs:
           architecture: ${{ matrix.arch }}
 
       - name: Download build wheel artifact
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: octobot-wheel
           path: dist/
@@ -338,10 +338,11 @@ jobs:
           CLOUDFLARE_ZONE: ${{ secrets.CLOUDFLARE_ZONE }}
           S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
         run: |
+          echo "Publishing tentacles for tag: ${GITHUB_REF_NAME}"
           cp packages/tentacles/metadata.yaml ../metadata.yaml
-          sed -i "s/VERSION_PLACEHOLDER/${TARGET_BRANCH#refs/*/}/g" ../metadata.yaml
+          sed -i "s/VERSION_PLACEHOLDER/${GITHUB_REF_NAME}/g" ../metadata.yaml
           OctoBot tentacles -m "../metadata.yaml" -d "../new_tentacles" -p "../any_platform.zip" -ite -ute ${{ secrets.TENTACLES_OFFICIAL_PATH }}/tentacles -upe ${{ secrets.TENTACLES_OFFICIAL_PATH }}/packages/full/${{ secrets.TENTACLES_REPOSITORY_NAME }}/
-          python packages/tentacles/scripts/clear_cloudflare_cache.py ${TARGET_BRANCH#refs/*/}
+          python packages/tentacles/scripts/clear_cloudflare_cache.py ${GITHUB_REF_NAME}
 
       - name: Publish latest tentacles
         if: github.ref == 'refs/heads/dev' && startsWith(github.ref, 'refs/tags') != true
@@ -395,14 +396,11 @@ jobs:
           python-version: ${{ matrix.version }}
           architecture: ${{ matrix.arch }}
 
-      - name: Install Pants
-        uses: pantsbuild/actions/init-pants@v10
+      - name: Download build wheel artifact
+        uses: actions/download-artifact@v8
         with:
-          gha-cache-key: ${{ runner.os }}-pants-build
-          named-caches-hash: ${{ hashFiles('pants.toml') }}
-
-      - name: Build packages with Pants
-        run: pants package :OctoBot
+          name: octobot-wheel
+          path: dist/
 
       - name: Publish packages
         run: |
@@ -428,7 +426,7 @@ jobs:
     - uses: actions/checkout@v6
 
     - name: Download wheel artifact
-      uses: actions/download-artifact@v7
+      uses: actions/download-artifact@v8
       with:
         name: octobot-wheel
         path: dist/
@@ -499,7 +497,7 @@ jobs:
       shell: powershell
 
     - name: Upload OctoBot Binary on MacOS
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       if: matrix.os == 'macos-latest'
       with:
         name: OctoBot_macos_${{ matrix.arch }}
@@ -507,7 +505,7 @@ jobs:
         if-no-files-found: error
 
     - name: Upload OctoBot Binary on Linux
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       if: matrix.os == 'ubuntu-latest'
       with:
         name: OctoBot_linux_${{ matrix.arch }}
@@ -515,7 +513,7 @@ jobs:
         if-no-files-found: error
 
     - name: Upload OctoBot Binary on Windows
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       if: matrix.os == 'windows-latest'
       with:
         name: OctoBot_windows_${{ matrix.arch }}.exe
@@ -535,7 +533,9 @@ jobs:
 
     steps:
       - name: Download artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
+        with:
+          pattern: OctoBot_*
 
       - name: Set version as environement var
         id: vars
@@ -543,17 +543,19 @@ jobs:
 
       - name: Clean artifact names
         run: |
-          sudo apt-get update
-          sudo apt-get install rename -y
-          find . -type f -exec bash -c 'mv $1 $(basename $(dirname $1)).tmp && rm -rf $(basename $(dirname $1)) && rename 's/\.tmp$//' *.tmp' _ {} \;
+          mkdir bin
+          mv OctoBot_linux_x64/OctoBot_x64 bin/OctoBot_linux_x64
+          mv OctoBot_windows_x64.exe/OctoBot_windows.exe bin/OctoBot_windows_x64.exe
+          mv OctoBot_linux_arm64/OctoBot_arm64 bin/OctoBot_linux_arm64
+          mv OctoBot_macos_arm64/OctoBot_arm64 bin/OctoBot_macos_arm64
 
       - name: Compute hashes
         id: hashes
         run: |
-          echo ::set-output name=octobot_linux_x64_hash::$(openssl sha256 ./OctoBot_linux_x64 | awk '{print $2}')
-          echo ::set-output name=octobot_linux_arm64_hash::$(openssl sha256 ./OctoBot_linux_arm64 | awk '{print $2}')
-          echo ::set-output name=octobot_macos_arm64_hash::$(openssl sha256 ./OctoBot_macos_arm64 | awk '{print $2}')
-          echo ::set-output name=octobot_windows_x64_hash::$(openssl sha256 ./OctoBot_windows_x64.exe | awk '{print $2}')
+          echo ::set-output name=octobot_linux_x64_hash::$(openssl sha256 ./bin/OctoBot_linux_x64 | awk '{print $2}')
+          echo ::set-output name=octobot_linux_arm64_hash::$(openssl sha256 ./bin/OctoBot_linux_arm64 | awk '{print $2}')
+          echo ::set-output name=octobot_macos_arm64_hash::$(openssl sha256 ./bin/OctoBot_macos_arm64 | awk '{print $2}')
+          echo ::set-output name=octobot_windows_x64_hash::$(openssl sha256 ./bin/OctoBot_windows_x64.exe | awk '{print $2}')
 
       - name: Create Release
         id: create_release
@@ -582,7 +584,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.AUTH_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./OctoBot_windows_x64.exe
+          asset_path: ./bin/OctoBot_windows_x64.exe
           asset_name: OctoBot_windows_x64.exe
           asset_content_type: application/x-binary
 
@@ -592,7 +594,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.AUTH_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./OctoBot_linux_x64
+          asset_path: ./bin/OctoBot_linux_x64
           asset_name: OctoBot_linux_x64
           asset_content_type: application/x-binary
 
@@ -602,7 +604,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.AUTH_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./OctoBot_linux_arm64
+          asset_path: ./bin/OctoBot_linux_arm64
           asset_name: OctoBot_linux_arm64
           asset_content_type: application/x-binary
 
@@ -612,7 +614,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.AUTH_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./OctoBot_macos_arm64
+          asset_path: ./bin/OctoBot_macos_arm64
           asset_name: OctoBot_macos_arm64
           asset_content_type: application/x-binary
 
