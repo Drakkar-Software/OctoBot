@@ -31,7 +31,7 @@ jobs:
       - name: Install Pants
         uses: pantsbuild/actions/init-pants@v10
         with:
-          gha-cache-key: ${{ runner.os }}-pants-${{ matrix.package }}
+          gha-cache-key: ${{ runner.os }}-pants-build
           named-caches-hash: ${{ hashFiles('pants.toml') }}
 
       - uses: actions/setup-node@v6
@@ -402,7 +402,7 @@ jobs:
           named-caches-hash: ${{ hashFiles('pants.toml') }}
 
       - name: Build packages with Pants
-        run: "pants package ::"
+        run: pants package :OctoBot
 
       - name: Publish packages
         run: |
