@@ -118,6 +118,10 @@ class LBankSignConnectorMixin:
         }
         return {'url': url, 'method': method, 'body': body, 'headers': headers}
 
+    async def fetch_swap_markets_mock(self, *args, **kwargs):
+        self.logger.info(f"Skipped fetching {self.exchange_manager.exchange_name} swap markets")
+        return []
+
 
 class LBankConnector(exchanges.CCXTConnector, LBankSignConnectorMixin):
 
@@ -130,9 +134,6 @@ class LBankConnector(exchanges.CCXTConnector, LBankSignConnectorMixin):
     def _create_client(self, force_unauth=False):
         exchanges.CCXTConnector._create_client(self, force_unauth=force_unauth)
         self.register_client_mocks()
-
-    async def fetch_swap_markets_mock(self, *args, **kwargs):
-        return []
 
     def register_client_mocks(self):
         self.client.sign = self._lazy_maybe_force_signed_requests(self.client.sign)
