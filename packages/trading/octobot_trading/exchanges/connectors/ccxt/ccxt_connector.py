@@ -178,7 +178,11 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
         try:
             if self.exchange_manager.exchange.ADJUST_FOR_TIME_DIFFERENCE:
                 # load time difference before loading markets in case a signature is needed to load markets
-                await client.load_time_difference()
+                try:
+                    await client.load_time_difference()
+                except Exception as err:
+                    # don't crash when loading time difference
+                    self.logger.error(f"Error loading time difference for {self.exchange_manager.exchange_name}: {err}")
             if self.exchange_manager.exchange.FETCH_MIN_EXCHANGE_MARKETS and market_filter:
                 with ccxt_client_util.filtered_fetched_markets(client, market_filter):
                     await client.load_markets(reload=reload)
