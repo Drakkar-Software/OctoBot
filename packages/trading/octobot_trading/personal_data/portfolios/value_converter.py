@@ -15,6 +15,7 @@
 #  License along with this library.
 import asyncio
 import decimal
+import typing
 
 import octobot_commons.logging as logging
 import octobot_commons.symbols as symbol_util
@@ -23,7 +24,10 @@ import octobot_commons.constants as commons_constants
 
 import octobot_trading.constants as constants
 import octobot_trading.errors as errors
+import octobot_trading.exchanges as exchanges
 
+if typing.TYPE_CHECKING:
+    import octobot_trading.exchanges.util.exchange_data as exchange_data_import
 
 class ValueConverter:
     """
@@ -49,6 +53,31 @@ class ValueConverter:
         # internal price conversion elements
         self._price_bridge_by_symbol = {}
         self._missing_price_bridges = set()
+
+    def initialize_from_exchange_data(
+        self, exchange_data: "exchange_data_import.ExchangeData", price_by_symbol: dict[str, float]
+    ) -> None:
+        """
+        Initialize value converter last prices from exchange data.
+        """
+        added_symbols = set()
+        for market in exchange_data.markets:
+            price = price_by_symbol.get(market.symbol)
+            if price is not None:
+                self.update_last_price(market.symbol, decimal.Decimal(str(price)))
+                added_symbols.add(market.symbol)
+        ref_market = self.portfolio_manager.reference_market
+        for asset, value in exchange_data.portfolio_details.asset_values.items():
+            if asset == ref_market:
+                continue
+            # include fetched portfolio assets values to be able to value them in ref market in case they
+            # are not already added from traded pairs
+            value_symbol = symbol_util.merge_currencies(asset, ref_market)
+            decimal_value = decimal.Decimal(str(value))
+            if value_symbol not in added_symbols:
+                exchanges.force_set_mark_price(self.portfolio_manager.exchange_manager, value_symbol, decimal_value)
+                self.update_last_price(value_symbol, decimal_value)
+                added_symbols.add(value_symbol)
 
     def update_last_price(self, symbol, price):
         if symbol not in self.last_prices_by_trading_pair:

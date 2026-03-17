@@ -9,7 +9,7 @@ import octobot_commons.profiles as commons_profiles
 import octobot_commons.logging as commons_logging
 import octobot_trading.exchanges
 import octobot_trading.exchange_data
-import octobot_trading.util.test_tools.exchange_data as exchange_data_import
+import octobot_trading.exchanges.util.exchange_data as exchange_data_import
 import octobot_tentacles_manager.api
 import octobot.databases_util as databases_util
 import tentacles.Meta.Keywords.scripting_library as scripting_library

@@ -2,7 +2,7 @@ import contextlib
 import typing
 
 import octobot_trading.exchanges as exchanges
-import octobot_trading.util.test_tools.exchange_data as exchange_data_import
+import octobot_trading.exchanges.util.exchange_data as exchange_data_import
 
 import tentacles.Meta.Keywords.scripting_library.configuration.profile_data_configuration as profile_data_configuration
 

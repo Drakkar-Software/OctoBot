@@ -17,7 +17,7 @@ import octobot_commons.symbols as commons_symbols
 import octobot_trading.constants as trading_constants
 import octobot_trading.enums as trading_enums
 import octobot_trading.exchanges as exchanges
-import octobot_trading.util.test_tools.exchange_data as exchange_data_import
+import octobot_trading.exchanges.util.exchange_data as exchange_data_import
 
 
 def _market(base, quote, m_type):

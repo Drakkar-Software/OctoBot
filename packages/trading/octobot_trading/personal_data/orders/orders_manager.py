@@ -35,7 +35,7 @@ import octobot_trading.personal_data.orders.order_group as order_group_import
 
 
 if typing.TYPE_CHECKING:
-    import octobot_trading.util.test_tools.exchange_data as exchange_data_import
+    import octobot_trading.exchanges.util.exchange_data as exchange_data_import
 
 
 class OrdersManager(util.Initializable):

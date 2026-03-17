@@ -20,7 +20,7 @@ import typing
 
 import octobot_commons.logging as common_logging
 import octobot_commons.profiles.profile_data as profiles_import
-import octobot_trading.util.test_tools.exchange_data as exchange_data_import
+import octobot_trading.exchanges.util.exchange_data as exchange_data_import
 
 import octobot_flow.entities
 import octobot_flow.errors
