@@ -33,7 +33,7 @@ import octobot_evaluators.constants as evaluators_constants
 
 import octobot_trading.constants as trading_constants
 import octobot_trading.exchanges as exchanges
-import octobot_trading.util.test_tools.exchange_data as exchange_data_import
+import octobot_trading.exchanges.util.exchange_data as exchange_data_import
 import octobot_trading.api
 import octobot_trading.enums
 

@@ -19,7 +19,7 @@ import typing
 import decimal
 
 import octobot_commons.dataclasses
-import octobot_trading.util.test_tools.exchange_data as exchange_data_import
+import octobot_trading.exchanges.util.exchange_data as exchange_data_import
 
 import octobot_flow.entities.accounts.exchange_account_details as exchange_account_details_import
 import octobot_flow.entities.automations.automation_details as automation_details_import

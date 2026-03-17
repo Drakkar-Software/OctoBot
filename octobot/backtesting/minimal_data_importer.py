@@ -7,7 +7,7 @@ import octobot_commons.time_frame_manager as time_frame_manager
 import octobot_backtesting.importers
 import octobot_backtesting.enums
 
-import octobot_trading.util.test_tools.exchange_data as exchange_data_import
+import octobot_trading.exchanges.util.exchange_data as exchange_data_import
 
 
 class MinimalDataImporter(octobot_backtesting.importers.ExchangeDataImporter):

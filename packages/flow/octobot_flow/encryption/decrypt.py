@@ -1,7 +1,7 @@
 import contextlib
 
 import octobot_flow.entities
-import octobot_trading.util.test_tools.exchange_data as exchange_data_import
+import octobot_trading.exchanges.util.exchange_data as exchange_data_import
 
 
 @contextlib.contextmanager

@@ -4,7 +4,7 @@ import decimal
 
 import octobot_commons.dataclasses
 import octobot_commons.profiles.profile_data as profile_data_import
-import octobot_trading.util.test_tools.exchange_data as exchange_data_import
+import octobot_trading.exchanges.util.exchange_data as exchange_data_import
 import octobot_flow.entities.accounts.portfolio_asset_holdings as portfolio_asset_holdings_import
 
 

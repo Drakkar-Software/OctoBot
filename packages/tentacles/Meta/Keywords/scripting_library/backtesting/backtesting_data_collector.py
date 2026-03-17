@@ -27,7 +27,7 @@ import octobot_commons.symbols
 import octobot_commons.logging
 
 import octobot_trading.exchanges
-import octobot_trading.util.test_tools.exchange_data as exchange_data_import
+import octobot_trading.exchanges.util.exchange_data as exchange_data_import
 import octobot_trading.util.test_tools.exchanges_test_tools as exchanges_test_tools
 
 import octobot.community

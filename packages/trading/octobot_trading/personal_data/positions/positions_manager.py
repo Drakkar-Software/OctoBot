@@ -32,7 +32,7 @@ import octobot_trading.errors as errors
 import octobot_trading.exchange_channel as exchange_channel
 
 if typing.TYPE_CHECKING:
-    import octobot_trading.util.test_tools.exchange_data as exchange_data_import
+    import octobot_trading.exchanges.util.exchange_data as exchange_data_import
 
 
 class PositionsManager(util.Initializable):

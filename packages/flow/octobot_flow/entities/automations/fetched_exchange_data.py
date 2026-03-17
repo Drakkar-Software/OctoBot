@@ -4,7 +4,7 @@ import decimal
 
 import octobot_commons.dataclasses
 import octobot_commons.logging
-import octobot_trading.util.test_tools.exchange_data as exchange_data_import
+import octobot_trading.exchanges.util.exchange_data as exchange_data_import
 import octobot_trading.exchanges
 import octobot_trading.storage.orders_storage
 import octobot_trading.api

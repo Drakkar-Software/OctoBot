@@ -35,7 +35,7 @@ import trading_backend.exchanges
 
 
 if typing.TYPE_CHECKING:
-    import octobot_trading.util.test_tools.exchange_data as exchange_data_import
+    import octobot_trading.exchanges.util.exchange_data as exchange_data_import
 
 class ExchangeManager(util.Initializable):
     def __init__(self, config, exchange_class_string):
@@ -219,6 +219,7 @@ class ExchangeManager(util.Initializable):
         Initialize trader positions and orders from exchange data by delegating to all relevant managers.
         """
         await self.trader.initialize()
+        self.exchange_symbols_data.initialize_from_exchange_data(exchange_data, price_by_symbol)
         self.exchange_personal_data.portfolio_manager.portfolio_value_holder.initialize_from_exchange_data(
             exchange_data, price_by_symbol
         )

@@ -3,7 +3,7 @@ import typing
 
 import octobot_commons.profiles as commons_profiles
 import octobot_commons.context_util as context_util
-import octobot_trading.util.test_tools.exchange_data as exchange_data_import
+import octobot_trading.exchanges.util.exchange_data as exchange_data_import
 
 import octobot_flow.entities
 import octobot_flow.enums
