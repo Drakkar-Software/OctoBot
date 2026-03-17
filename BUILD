@@ -151,7 +151,7 @@ python_distribution(
     ] + PACKAGE_SOURCES + PACKAGE_REQS + PACKAGE_FULL_REQS,
     provides=python_artifact(
         name="octobot",
-        version="2.0.16",
+        version="2.1.0",
     ),
     entry_points={
         'console_scripts': {
