@@ -1,0 +1,2 @@
+satellite-server @ git+https://github.com/Herklos/satellite.git#subdirectory=servers/python
+cachetools
