@@ -3,11 +3,13 @@
 pants_version = "2.30.0"
 backend_packages = [
     "pants.backend.python",
-    "pants.backend.docker"
+    "pants.backend.docker",
+    "python_plugins",
 ]
 pants_ignore_use_gitignore = false
 pantsd = true
 pantsd_max_memory_usage = "6GiB"
+pythonpath = ["%(buildroot)s/pants-plugins"]
 
 [source]
 # Configure source roots for packages directory
@@ -26,6 +28,7 @@ root_patterns = [
     "/packages/tentacles_manager",
     "/packages/trading",
     "/packages/trading_backend",
+    "pants-plugins",
     "/",
 ]
 
