@@ -407,7 +407,11 @@ class PortfolioManager(util.Initializable):
                 }
         self._forced_portfolio = forced_portfolio_initial_config
 
-    def apply_forced_portfolio(self, forced_portfolio_config: typing.Optional[dict[str, typing.Any]] = None):
+    def apply_forced_portfolio(
+        self,
+        forced_portfolio_config: typing.Optional[dict[str, typing.Any]] = None,
+        update_available_funds_from_open_orders: bool = False,
+    ):
         """
         Load new portfolio from config settings
         """
@@ -415,6 +419,19 @@ class PortfolioManager(util.Initializable):
             self.set_forced_portfolio_initial_config(forced_portfolio_config)
         portfolio_amount_dict = personal_data.parse_decimal_config_portfolio(self._forced_portfolio)
         self.handle_balance_update(self.portfolio.get_portfolio_from_amount_dict(portfolio_amount_dict))
+        if update_available_funds_from_open_orders:
+            self._updated_available_from_open_orders()
+
+    def _updated_available_from_open_orders(self) -> None:
+        """
+        Apply locked funds for open orders.
+        """
+        if not self.enable_portfolio_available_update_from_order:
+            return
+        for order in self.exchange_manager.exchange_personal_data.orders_manager.get_open_orders():
+            self.refresh_portfolio_available_from_order(
+                order, is_new_order=True
+            )
 
     def _set_initialized_event(self):
         commons_tree.EventProvider.instance().trigger_event(

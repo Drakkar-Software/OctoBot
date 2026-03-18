@@ -207,15 +207,22 @@ class AutomationJob:
         exchange_account_job = exchange_account_job_import.ExchangeAccountJob(
             self.automation_state, self.fetched_actions
         )
-        symbol = set(
-            exchange_account_job.get_all_actions_symbols()
-            + octobot_flow.logic.dsl.get_actions_symbol_dependencies(to_execute_actions)
+        minimal_profile_data = octobot_flow.logic.configuration.create_profile_data(
+            self.automation_state.exchange_account_details,
+            self.automation_state.automation.metadata.automation_id,
+            set()
+        )
+        symbols = set(
+            exchange_account_job.get_all_actions_symbols(minimal_profile_data)
+            + octobot_flow.logic.dsl.get_actions_symbol_dependencies(
+                to_execute_actions, minimal_profile_data
+            )
         )
         async with exchange_account_job.account_exchange_context(
             octobot_flow.logic.configuration.create_profile_data(
                 self.automation_state.exchange_account_details,
                 self.automation_state.automation.metadata.automation_id,
-                symbol
+                symbols
             )
         ):
             await exchange_account_job.update_public_data()

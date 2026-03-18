@@ -13,10 +13,15 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import functools
+
 import octobot_commons.constants as constants
 import octobot_commons.logging as logging
+import octobot_commons.tentacles_management as tentacles_management
 
 import octobot_trading.errors as errors
+import octobot_trading.modes.abstract_trading_mode as abstract_trading_mode
+
 
 LOGGER_TAG = "TradingModeFactory"
 
@@ -128,3 +133,18 @@ def _get_symbols_to_create(trading_mode_class, cryptocurrencies, cryptocurrency,
 
 def _get_time_frames_to_create(trading_mode_class, time_frames):
     return time_frames if time_frames and not trading_mode_class.get_is_time_frame_wildcard() else [None]
+
+
+@functools.lru_cache(maxsize=1)
+def get_all_concrete_trading_mode_classes() -> tuple[type, ...]:
+    """
+    All non-abstract trading mode classes, discovered from tentacles.
+    Cached for the process lifetime (tentacle discovery is assumed static after the first call of this function).
+    """
+    return tuple(
+        cls
+        for cls in tentacles_management.get_all_classes_from_parent(
+            abstract_trading_mode.AbstractTradingMode
+        )
+        if cls is not abstract_trading_mode.AbstractTradingMode
+    )

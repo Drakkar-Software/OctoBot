@@ -370,7 +370,7 @@ class Interpreter:
             )
 
         raise octobot_commons.errors.UnsupportedOperatorError(
-            f"Unsupported AST node type: {type(node).__name__}"
+            f"Unsupported AST node type: {type(node).__name__}. Expression: {self._parsed_expression}"
         )
 
     def _get_name_from_node(self, node: ast.AST) -> str:

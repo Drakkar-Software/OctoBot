@@ -4,8 +4,10 @@ import contextlib
 import octobot_commons.dsl_interpreter
 import octobot_commons.signals
 import octobot_commons.errors
+import octobot_commons.profiles
 import octobot_trading.exchanges
 import octobot_trading.dsl
+import octobot_trading.modes as trading_modes
 
 import tentacles.Meta.DSL_operators as dsl_operators
 
@@ -21,14 +23,15 @@ from octobot_flow.logic.actions.abstract_action_executor import AbstractActionEx
 class DSLExecutor(AbstractActionExecutor):
     def __init__(
         self, 
+        profile_data: octobot_commons.profiles.ProfileData,
         exchange_manager: typing.Optional[octobot_trading.exchanges.ExchangeManager],
         dsl_script: typing.Optional[str], 
         dependencies: typing.Optional[octobot_commons.signals.SignalDependencies] = None,
     ):
         super().__init__()
-
         self._exchange_manager = exchange_manager
         self._dependencies = dependencies
+        self._dependencies_config: dict = profile_data.to_profile("").config
         self._interpreter: octobot_commons.dsl_interpreter.Interpreter = self._create_interpreter(None)
         if dsl_script:
             self._interpreter.prepare(dsl_script)
@@ -47,6 +50,9 @@ class DSLExecutor(AbstractActionExecutor):
                 self._exchange_manager, trading_mode=None, dependencies=self._dependencies
             )
             + dsl_operators.create_blockchain_wallet_operators(self._exchange_manager)
+            + trading_modes.create_all_trading_mode_operators(
+                self._exchange_manager, self._dependencies_config
+            )
         )
 
     def get_dependencies(self) -> list[

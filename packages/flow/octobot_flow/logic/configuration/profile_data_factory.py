@@ -5,7 +5,6 @@ import octobot_commons.constants
 import octobot_trading.enums as trading_enums
 
 import octobot_flow.entities
-import octobot_flow.logic.dsl
 
 import tentacles.Meta.Keywords.scripting_library as scripting_library
 
@@ -42,6 +41,9 @@ def _infer_reference_market(
     if crypto_currencies:
         return octobot_commons.symbols.parse_symbol(crypto_currencies[0].trading_pairs[0]).quote # type: ignore
     elif exchange_account_details:
+        if exchange_account_details.portfolio.unit:
+            # portfolio unit can be used to define the reference market
+            return exchange_account_details.portfolio.unit
         return scripting_library.get_default_exchange_reference_market(exchange_account_details.exchange_details.internal_name)
     return octobot_commons.constants.DEFAULT_REFERENCE_MARKET
 

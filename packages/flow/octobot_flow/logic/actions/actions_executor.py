@@ -1,8 +1,8 @@
 import typing
-import time
 
 import octobot_commons.logging
 import octobot_commons.dsl_interpreter
+import octobot_commons.profiles
 import octobot_trading.exchanges
 
 import octobot.community
@@ -22,6 +22,7 @@ class ActionsExecutor:
         self,
         maybe_community_repository: typing.Optional[octobot_flow.repositories.community.CommunityRepository],
         exchange_manager: typing.Optional[octobot_trading.exchanges.ExchangeManager],
+        profile_data: octobot_commons.profiles.ProfileData,
         automation: octobot_flow.entities.AutomationDetails,
         actions: list[octobot_flow.entities.AbstractActionDetails],
         as_reference_account: bool,
@@ -33,13 +34,14 @@ class ActionsExecutor:
             octobot_flow.repositories.community.CommunityRepository
         ] = maybe_community_repository
         self._exchange_manager: typing.Optional[octobot_trading.exchanges.ExchangeManager] = exchange_manager
+        self._profile_data: octobot_commons.profiles.ProfileData = profile_data
         self._automation: octobot_flow.entities.AutomationDetails = automation
         self._actions: list[octobot_flow.entities.AbstractActionDetails] = actions
         self._as_reference_account: bool = as_reference_account
 
     async def execute(self):
         dsl_executor = octobot_flow.logic.dsl.DSLExecutor(
-            self._exchange_manager, None
+            self._profile_data, self._exchange_manager, None
         )
         if self._exchange_manager:
             await octobot_trading.exchanges.create_exchange_channels(self._exchange_manager)
@@ -145,31 +147,6 @@ class ActionsExecutor:
             self._get_logger().info(
                 "No available community repository: bot logs upload is skipped"
             )
-
-    # def _get_or_compute_actions_next_execution_scheduled_to(
-    #     self
-    # ) -> float: #todo
-    #     for action in self._actions:
-    #         if action.next_schedule:
-    #             next_schedule_details = octobot_flow.entities.NextScheduleParams.from_dict(action.next_schedule)
-    #             return next_schedule_details.get_next_schedule_time()
-    #     return self._compute_next_execution_scheduled_to(
-    #         octobot_flow.constants.DEFAULT_EXTERNAL_TRIGGER_ONLY_NO_ORDER_TIMEFRAME
-    #     )
-
-    # def _compute_next_execution_scheduled_to(
-    #     self,
-    #     time_frame: octobot_commons.enums.TimeFrames
-    # ) -> float:
-    #     # if this was scheduled, use it as a basis to always start at the same time,
-    #     # otherwise use triggered at
-    #     current_schedule_time = (
-    #         self._automation.execution.current_execution.scheduled_to 
-    #         or self._automation.execution.current_execution.triggered_at
-    #     )
-    #     return current_schedule_time + (
-    #         octobot_commons.enums.TimeFramesMinutes[time_frame] * octobot_commons.constants.MINUTE_TO_SECONDS
-    #     )
 
     def _sync_after_execution(self):
         if exchange_account_elements := self._automation.get_exchange_account_elements(

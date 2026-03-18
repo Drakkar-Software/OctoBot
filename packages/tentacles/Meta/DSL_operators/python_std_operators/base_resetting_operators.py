@@ -72,7 +72,7 @@ class WaitOperator(dsl_interpreter.PreComputingCallOperator, dsl_interpreter.ReC
         if waiting_time <= 0:
             # done waiting
             return None
-        return self.build_re_callable_result(
+        return self.create_re_callable_result_dict(
             last_execution_time=current_time,
             waiting_time=waiting_time,
         )

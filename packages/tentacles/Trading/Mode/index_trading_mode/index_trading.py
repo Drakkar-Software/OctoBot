@@ -24,6 +24,7 @@ import octobot_commons.symbols.symbol_util as symbol_util
 import octobot_commons.authentication as authentication
 import octobot_commons.signals as commons_signals
 import octobot_trading.constants as trading_constants
+import octobot_trading.dsl as trading_dsl
 import octobot_trading.enums as trading_enums
 import octobot_trading.errors as trading_errors
 import octobot_trading.modes as trading_modes
@@ -331,6 +332,12 @@ class IndexTradingModeProducer(trading_modes.AbstractTradingModeProducer):
         if self.trading_mode is not None:
             self.trading_mode.flush_trading_mode_consumers()
         await super().stop()
+
+    async def manual_trigger(
+        self, matrix_id: str, cryptocurrency: str,
+        symbol: str, time_frame, trigger_source: str
+    ) -> None:
+        return await self._check_index_if_necessary()
 
     async def ohlcv_callback(self, exchange: str, exchange_id: str, cryptocurrency: str, symbol: str,
                              time_frame: str, candle: dict, init_call: bool = False):
@@ -888,8 +895,9 @@ class IndexTradingMode(trading_modes.AbstractTradingMode):
             IndexTradingModeProducer.SELL_UNINDEXED_TRADED_COINS,
             self.sell_unindexed_traded_coins
         )
-        if (not self.exchange_manager or not self.exchange_manager.is_backtesting) and \
-                authentication.Authenticator.instance().has_open_source_package():
+        if (not self.exchange_manager or not self.exchange_manager.is_backtesting) and (
+            authentication.Authenticator.instance().has_open_source_package() or self.synchronous_execution
+        ):
             self.UI.user_input(IndexTradingModeProducer.INDEX_CONTENT, commons_enums.UserInputTypes.OBJECT_ARRAY,
                                trading_config.get(IndexTradingModeProducer.INDEX_CONTENT, None), inputs,
                                item_title="Coin",
@@ -916,6 +924,18 @@ class IndexTradingMode(trading_modes.AbstractTradingMode):
             symbol_util.merge_currencies(asset[index_distribution.DISTRIBUTION_NAME], reference_market)
             for asset in (cls.get_ideal_distribution(config) or [])
         ]
+
+    @classmethod
+    def get_dsl_dependencies(cls, trading_config: dict, config: dict) -> list:
+        index_content = cls.get_ideal_distribution(trading_config)
+        if not index_content:
+            return []
+        try:
+            reference_market = trading_util.get_reference_market(config)
+        except (KeyError, TypeError):
+            reference_market = commons_constants.DEFAULT_REFERENCE_MARKET
+        symbols = cls.get_tentacle_config_traded_symbols(trading_config, reference_market)
+        return [trading_dsl.SymbolDependency(symbol=symbol) for symbol in symbols]
 
     def is_updating_at_each_price_change(self):
         return self.refresh_interval_days == 0

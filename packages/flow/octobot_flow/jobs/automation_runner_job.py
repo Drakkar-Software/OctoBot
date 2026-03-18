@@ -69,8 +69,9 @@ class AutomationRunnerJob(octobot_flow.repositories.exchange.ExchangeContextMixi
     async def _execute_actions(self) -> tuple[list[octobot_flow.enums.ChangedElements], float]:
         actions_executor = octobot_flow.logic.actions.ActionsExecutor(
             self._maybe_community_repository, self._exchange_manager, 
+            self.profile_data_provider.get_profile_data(),
             self.automation_state.automation, self._to_execute_actions,
-            self._as_reference_account
+            self._as_reference_account,
         )
         await actions_executor.execute()
         return actions_executor.changed_elements, (
@@ -113,11 +114,16 @@ class AutomationRunnerJob(octobot_flow.repositories.exchange.ExchangeContextMixi
         exchange_data.orders_details.open_orders = exchange_account_elements.orders.open_orders
 
     def _get_profile_data(self) -> commons_profiles.ProfileData:
+        minimal_profile_data = octobot_flow.logic.configuration.create_profile_data(
+            self.automation_state.exchange_account_details,
+            self.automation_state.automation.metadata.automation_id,
+            set()
+        )
         return octobot_flow.logic.configuration.create_profile_data(
             self.automation_state.exchange_account_details,
             self.automation_state.automation.metadata.automation_id,
             set(octobot_flow.logic.dsl.get_actions_symbol_dependencies(
-                self._to_execute_actions
+                self._to_execute_actions, minimal_profile_data
             ))
         )
 
