@@ -1344,7 +1344,6 @@ async def test_start_after_offline_x_filled_and_missing_should_recreate_1_sell()
         producer.enable_trailing_up = True
         producer.flat_increment = decimal.Decimal(100)
         producer.flat_spread = decimal.Decimal(300)
-        producer.reinvest_profits = False
         producer.sell_volume_per_order = producer.buy_volume_per_order = False
         producer.starting_price = 0
         producer.use_existing_orders_only = False
@@ -1421,7 +1420,6 @@ async def test_start_after_offline_x_filled_and_missing_should_recreate_5_sell_o
         producer.enable_trailing_up = True
         producer.flat_increment = decimal.Decimal(100)
         producer.flat_spread = decimal.Decimal(300)
-        producer.reinvest_profits = False
         producer.sell_volume_per_order = producer.buy_volume_per_order = False
         producer.starting_price = 0
         producer.use_existing_orders_only = False
@@ -1504,7 +1502,6 @@ async def test_start_after_offline_x_filled_and_missing_should_recreate_5_buy_or
         producer.enable_trailing_up = True
         producer.flat_increment = decimal.Decimal(100)
         producer.flat_spread = decimal.Decimal(300)
-        producer.reinvest_profits = False
         producer.sell_volume_per_order = producer.buy_volume_per_order = False
         producer.starting_price = 0
         producer.use_existing_orders_only = False

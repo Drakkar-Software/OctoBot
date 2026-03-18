@@ -1230,6 +1230,33 @@ async def test_compute_mirror_order_volume():
         ) == 5
 
 
+async def test_compute_mirror_order_volume_reinvest_profits():
+    async with _get_tools("BTC/USD", fees=0) as tools:
+        producer, _, _ = tools
+        producer.ignore_exchange_fees = True
+        producer.sell_volume_per_order = producer.buy_volume_per_order = trading_constants.ZERO
+
+        # reinvest_profits True (default): mirror SELL uses full quantity
+        producer.reinvest_profits = True
+        assert producer._compute_mirror_order_volume(
+            True, decimal.Decimal("50000"), decimal.Decimal("51000"), decimal.Decimal("1"), None
+        ) == 1
+
+        # reinvest_profits False: mirror SELL uses cost-equivalent volume only
+        producer.reinvest_profits = False
+        cost_equivalent_volume = (decimal.Decimal("50000") * decimal.Decimal("1")) / decimal.Decimal("51000")
+        assert cost_equivalent_volume < decimal.Decimal("1") # sell less than 1 (bought 1)
+        assert producer._compute_mirror_order_volume(
+            True, decimal.Decimal("50000"), decimal.Decimal("51000"), decimal.Decimal("1"), None
+        ) == cost_equivalent_volume
+
+        # BUY mirror order unchanged by reinvest_profits
+        producer.reinvest_profits = False
+        assert producer._compute_mirror_order_volume(
+            False, decimal.Decimal("100"), decimal.Decimal("80"), decimal.Decimal("2"), None
+        ) == 2 * (decimal.Decimal("100") / decimal.Decimal("80"))
+
+
 async def test_create_order():
     symbol = "BTC/USD"
     async with _get_tools(symbol) as tools:
