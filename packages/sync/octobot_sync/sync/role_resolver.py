@@ -20,7 +20,7 @@ from contextvars import ContextVar
 from urllib.parse import urlparse
 
 from fastapi import Request
-from satellite_server.router.route_builder import AuthResult
+from starfish_server.router.route_builder import AuthResult
 
 import octobot_sync.auth as auth
 import octobot_sync.chain as chain

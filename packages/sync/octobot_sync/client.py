@@ -16,7 +16,7 @@
 
 import threading
 
-from satellite_sdk import SatelliteClient
+from starfish_sdk import StarfishClient
 
 import octobot_commons.logging as logging
 import octobot_sync.auth as auth
@@ -29,18 +29,25 @@ def create_sync_client(
     private_key: str,
     chain_id: str,
     sync_url: str = None,
-    start_local_server: bool = False,
-    local_server_port: int = 3000,
-) -> tuple[SatelliteClient, str]:
-    auth_provider = auth.SatelliteAuthProvider(private_key, chain_id)
+    start_replica_server: bool = False,
+    replica_port: int = 3000,
+    replica_write_mode: str = "bidirectional",
+    replica_sync_interval_ms: int = 60_000,
+) -> tuple[StarfishClient, str]:
+    auth_provider = auth.StarfishAuthProvider(private_key, chain_id)
 
-    if start_local_server:
-        sync_url = _start_local_server(
-            port=local_server_port,
+    if start_replica_server:
+        sync_url = _start_replica_server(
+            primary_url=sync_url,
+            private_key=private_key,
+            chain_id=chain_id,
+            port=replica_port,
             platform_pubkey=auth_provider.address,
+            write_mode=replica_write_mode,
+            sync_interval_ms=replica_sync_interval_ms,
         )
 
-    client = SatelliteClient(
+    client = StarfishClient(
         base_url=sync_url,
         auth=auth_provider,
     )
@@ -48,12 +55,25 @@ def create_sync_client(
     return client, auth_provider.address
 
 
-def _start_local_server(port: int, platform_pubkey: str) -> str:
+def _start_replica_server(
+    primary_url: str,
+    private_key: str,
+    chain_id: str,
+    port: int,
+    platform_pubkey: str,
+    write_mode: str = "bidirectional",
+    sync_interval_ms: int = 60_000,
+) -> str:
     global _local_server_thread
     if _local_server_thread is None or not _local_server_thread.is_alive():
-        _local_server_thread = server.start_sync_server_background(
+        _local_server_thread = server.start_replica_server_background(
+            primary_url=primary_url,
+            private_key=private_key,
+            chain_id=chain_id,
             host="127.0.0.1",
             port=port,
             platform_pubkey=platform_pubkey,
+            write_mode=write_mode,
+            sync_interval_ms=sync_interval_ms,
         )
     return f"http://127.0.0.1:{port}"

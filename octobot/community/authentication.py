@@ -652,19 +652,21 @@ class CommunityAuthentication(authentication.Authenticator):
         try:
             chain_id = constants.SYNC_CHAIN_ID
             sync_url = identifiers_provider.IdentifiersProvider.SYNC_SERVER_URL
-            if not sync_url and not constants.ENABLE_LOCAL_SYNC_SERVER:
-                self.logger.debug("No sync server URL configured, skipping satellite client init")
+            if not sync_url and not constants.ENABLE_REPLICA_SERVER:
+                self.logger.debug("No sync server URL configured, skipping sync client init")
                 return
             private_key = self._get_or_create_wallet_private_key(chain_id)
             self._sync_client, self._sync_address = sync_client.create_sync_client(
                 private_key=private_key,
                 chain_id=chain_id,
                 sync_url=sync_url,
-                start_local_server=constants.ENABLE_LOCAL_SYNC_SERVER,
-                local_server_port=constants.LOCAL_SYNC_PORT,
+                start_replica_server=constants.ENABLE_REPLICA_SERVER,
+                replica_port=constants.REPLICA_SERVER_PORT,
+                replica_write_mode=constants.REPLICA_WRITE_MODE,
+                replica_sync_interval_ms=constants.REPLICA_SYNC_INTERVAL_MS,
             )
         except Exception as e:
-            self.logger.exception(e, True, f"Failed to initialize satellite client: {e}")
+            self.logger.exception(e, True, f"Failed to initialize sync client: {e}")
 
     async def _init_community_data(self, fetch_private_data):
         coros = [

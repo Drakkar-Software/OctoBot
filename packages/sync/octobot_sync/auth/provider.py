@@ -24,7 +24,7 @@ import octobot_sync.chain.evm as evm
 import octobot_sync.constants as constants
 
 
-class SatelliteAuthProvider:
+class StarfishAuthProvider:
     def __init__(self, private_key: str, chain_id: str) -> None:
         self._w3 = Web3()
         self._private_key = private_key

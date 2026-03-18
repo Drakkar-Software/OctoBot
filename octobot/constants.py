@@ -109,12 +109,18 @@ CREATE_ICEBERG_DB_IF_MISSING = os_util.parse_boolean_environment_var("CREATE_ICE
 
 OCTOBOT_MARKET_MAKING_URL = os.getenv("OCTOBOT_MARKET_MAKING_URL", "https://market-making.octobot.cloud")
 
-# Sync server
+# sync server
 SYNC_SERVER_URL = os.getenv("SYNC_SERVER_URL", "https://sync.octobot.cloud")
 STAGING_SYNC_SERVER_URL = os.getenv("SYNC_SERVER_URL", "https://sync-beta.octobot.cloud")
 SYNC_CHAIN_ID = os.getenv("SYNC_CHAIN_ID", "evm:8453")
-ENABLE_LOCAL_SYNC_SERVER = os_util.parse_boolean_environment_var("ENABLE_LOCAL_SYNC_SERVER", "false")
-LOCAL_SYNC_PORT = int(os.getenv("LOCAL_SYNC_PORT", "3000"))
+ENABLE_REPLICA_SERVER = os_util.parse_boolean_environment_var(
+    "ENABLE_REPLICA_SERVER",
+    os.getenv("ENABLE_LOCAL_SYNC_SERVER", "false"),  # backward compat
+)
+REPLICA_SERVER_PORT = int(os.getenv("REPLICA_SERVER_PORT", os.getenv("LOCAL_SYNC_PORT", "3000")))
+REPLICA_WRITE_MODE = os.getenv("REPLICA_WRITE_MODE", "bidirectional")
+REPLICA_SYNC_INTERVAL_MS = int(os.getenv("REPLICA_SYNC_INTERVAL_MS", "60000"))
+REPLICA_DATA_DIR = os.getenv("REPLICA_DATA_DIR", "")
 
 ERROR_TRACKER_DSN = os.getenv("ERROR_TRACKER_DSN")
 

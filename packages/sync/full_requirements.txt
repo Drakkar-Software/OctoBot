@@ -1,2 +1,2 @@
-satellite-server @ git+https://github.com/Herklos/satellite.git#subdirectory=servers/python
+starfish-server==1.0.0
 cachetools
