@@ -3,7 +3,7 @@ import octobot_commons.dataclasses
 
 
 @dataclasses.dataclass
-class AdditionalActions(octobot_commons.dataclasses.FlexibleDataclass):
+class AdditionalActions(octobot_commons.dataclasses.MinimizableDataclass):
     # todo implement this when necessary
     check_min_portfolio: bool = False
     optimize_portfolio: bool = False

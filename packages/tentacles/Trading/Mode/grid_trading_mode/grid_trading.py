@@ -393,9 +393,10 @@ class GridTradingModeProducer(staggered_orders_trading.StaggeredOrdersTradingMod
                 if grid_orders:
                     self._already_created_init_orders = True
 
-    async def trigger_staggered_orders_creation(self):
+    async def trigger_staggered_orders_creation(self, reload_config: bool = True):
         # reload configuration
-        await self.trading_mode.reload_config(self.exchange_manager.bot_id)
+        if reload_config:
+            await self.trading_mode.reload_config(self.exchange_manager.bot_id)
         self._load_symbol_trading_config()
         self.read_config()
         if self.symbol_trading_config:

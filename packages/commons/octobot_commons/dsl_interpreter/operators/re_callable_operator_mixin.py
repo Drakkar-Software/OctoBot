@@ -93,7 +93,26 @@ class ReCallableOperatorMixin:
             ]).last_execution_result
         return None
 
-    def build_re_callable_result(
+    def create_re_callable_result(
+        self,
+        reset_to_id: typing.Optional[str] = None,
+        waiting_time: typing.Optional[float] = None,
+        last_execution_time: typing.Optional[float] = None,
+        **kwargs: typing.Any,
+    ) -> ReCallingOperatorResult:
+        """
+        Builds a re-callable result from the given parameters.
+        """
+        return ReCallingOperatorResult(
+            reset_to_id=reset_to_id,
+            last_execution_result={
+                ReCallingOperatorResultKeys.WAITING_TIME.value: waiting_time,
+                ReCallingOperatorResultKeys.LAST_EXECUTION_TIME.value: last_execution_time,
+                **kwargs,
+            },
+        )
+
+    def create_re_callable_result_dict(
         self,
         reset_to_id: typing.Optional[str] = None,
         waiting_time: typing.Optional[float] = None,
@@ -104,12 +123,10 @@ class ReCallableOperatorMixin:
         Builds a dict formatted re-callable result from the given parameters.
         """
         return {
-            ReCallingOperatorResult.__name__: ReCallingOperatorResult(
+            ReCallingOperatorResult.__name__: self.create_re_callable_result(
                 reset_to_id=reset_to_id,
-                last_execution_result={
-                    ReCallingOperatorResultKeys.WAITING_TIME.value: waiting_time,
-                    ReCallingOperatorResultKeys.LAST_EXECUTION_TIME.value: last_execution_time,
-                    **kwargs,
-                },
+                waiting_time=waiting_time,
+                last_execution_time=last_execution_time,
+                **kwargs,
             ).to_dict(include_default_values=False)
         }

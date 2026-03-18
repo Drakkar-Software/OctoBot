@@ -109,7 +109,12 @@ class ExchangeContextMixin:
                     asset: portfolio_element[common_constants.PORTFOLIO_TOTAL]
                     for asset, portfolio_element in exchange_data.portfolio_details.content.items()
                 }
-                exchange_manager.exchange_personal_data.portfolio_manager.apply_forced_portfolio(portfolio_config)
+                portfolio_manager = exchange_manager.exchange_personal_data.portfolio_manager
+                portfolio_manager.apply_forced_portfolio(
+                    portfolio_config,
+                    # lock open orders funds in portfolio for simulated trading
+                    update_available_funds_from_open_orders=profile_data.trader_simulator.enabled,
+                )
                 self._exchange_manager = exchange_manager
                 if self.WILL_EXECUTE_STRATEGY:
                     with self._predictive_order_sync_context(exchange_manager, profile_data):
