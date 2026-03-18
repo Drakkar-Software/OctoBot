@@ -60,7 +60,7 @@ def chain_registry(mock_chain):
 
 
 class MemoryObjectStore:
-    """Minimal IObjectStore for testing."""
+    """Minimal AbstractObjectStore for testing."""
 
     def __init__(self) -> None:
         self._store: dict[str, str] = {}
@@ -73,7 +73,7 @@ class MemoryObjectStore:
     ) -> None:
         self._store[key] = body
 
-    async def list(
+    async def list_keys(
         self, prefix: str, *, start_after: str | None = None, limit: int | None = None
     ) -> list[str]:
         keys = sorted(k for k in self._store if k.startswith(prefix))

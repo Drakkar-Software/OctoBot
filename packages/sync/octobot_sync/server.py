@@ -18,7 +18,8 @@ import os
 import threading
 
 import uvicorn
-from satellite_server.storage.s3 import S3ObjectStore, S3StorageOptions
+from starfish_server.storage.s3 import S3ObjectStore, S3StorageOptions
+from starfish_server.storage.filesystem import FilesystemObjectStore, FilesystemStorageOptions
 
 import octobot_commons.logging as logging
 import octobot_sync.app as sync_app
@@ -36,7 +37,19 @@ def _require_env(key: str) -> str:
     return value
 
 
+def _setup_registry() -> chain.ChainRegistry:
+    registry = chain.ChainRegistry()
+    evm_base_rpc = os.getenv("EVM_BASE_RPC")
+    evm_contract_base = os.getenv("EVM_CONTRACT_BASE")
+    if evm_base_rpc and evm_contract_base:
+        registry.register(chain.EvmChain("evm:8453", evm_base_rpc, evm_contract_base))
+    else:
+        registry.register(chain.EvmChain("evm:8453"))
+    return registry
+
+
 def _build_app(platform_pubkey: str | None = None) -> tuple:
+    """Build a standalone (primary) server backed by S3 storage."""
     nonce = auth.NonceStore(auth.MemoryStorageAdapter())
 
     object_store = S3ObjectStore(
@@ -49,19 +62,49 @@ def _build_app(platform_pubkey: str | None = None) -> tuple:
         )
     )
 
-    registry = chain.ChainRegistry()
-
-    evm_base_rpc = os.getenv("EVM_BASE_RPC")
-    evm_contract_base = os.getenv("EVM_CONTRACT_BASE")
-    if evm_base_rpc and evm_contract_base:
-        registry.register(chain.EvmChain("evm:8453", evm_base_rpc, evm_contract_base))
-    else:
-        registry.register(chain.EvmChain("evm:8453"))
+    registry = _setup_registry()
 
     if platform_pubkey:
         os.environ.setdefault("PLATFORM_PUBKEY_EVM", platform_pubkey)
 
     app = sync_app.create_app(nonce, object_store, registry)
+    return app
+
+
+def _build_replica_app(
+    primary_url: str,
+    private_key: str,
+    chain_id: str,
+    platform_pubkey: str | None = None,
+    write_mode: str = "bidirectional",
+    sync_interval_ms: int = 60_000,
+    data_dir: str | None = None,
+) -> tuple:
+    """Build a replica server backed by local filesystem storage."""
+    nonce = auth.NonceStore(auth.MemoryStorageAdapter())
+
+    resolved_data_dir = data_dir or os.path.join(
+        os.path.expanduser("~"), ".octobot", "sync_data"
+    )
+    object_store = FilesystemObjectStore(
+        FilesystemStorageOptions(base_dir=resolved_data_dir)
+    )
+
+    registry = _setup_registry()
+    auth_provider = auth.StarfishAuthProvider(private_key, chain_id)
+
+    if platform_pubkey:
+        os.environ.setdefault("PLATFORM_PUBKEY_EVM", platform_pubkey)
+
+    app = sync_app.create_app(
+        nonce,
+        object_store,
+        registry,
+        primary_url=primary_url,
+        auth_provider=auth_provider,
+        write_mode=write_mode,
+        sync_interval_ms=sync_interval_ms,
+    )
     return app
 
 
@@ -84,4 +127,37 @@ def start_sync_server_background(
     thread = threading.Thread(target=server.run, name="octobot-sync", daemon=True)
     thread.start()
     _get_logger().info(f"Local sync server started on http://{host}:{port}")
+    return thread
+
+
+def start_replica_server_background(
+    primary_url: str,
+    private_key: str,
+    chain_id: str,
+    host: str = "127.0.0.1",
+    port: int = 3000,
+    platform_pubkey: str | None = None,
+    write_mode: str = "bidirectional",
+    sync_interval_ms: int = 60_000,
+    data_dir: str | None = None,
+) -> threading.Thread:
+    """Start a replica server in a background daemon thread."""
+    app = _build_replica_app(
+        primary_url=primary_url,
+        private_key=private_key,
+        chain_id=chain_id,
+        platform_pubkey=platform_pubkey,
+        write_mode=write_mode,
+        sync_interval_ms=sync_interval_ms,
+        data_dir=data_dir,
+    )
+    config = uvicorn.Config(app, host=host, port=port, log_level="warning")
+    server = uvicorn.Server(config)
+
+    thread = threading.Thread(target=server.run, name="octobot-sync-replica", daemon=True)
+    thread.start()
+    _get_logger().info(
+        f"Replica sync server started on http://{host}:{port} "
+        f"(primary: {primary_url})"
+    )
     return thread

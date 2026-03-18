@@ -19,8 +19,8 @@ import os
 import octobot_commons.constants as commons_constants
 import octobot_commons.logging as logging
 
-from satellite_server.config.loader import load_config_file
-from satellite_server.config.schema import SyncConfig, CollectionConfig
+from starfish_server.config.loader import load_config_file
+from starfish_server.config.schema import SyncConfig, CollectionConfig, RemoteConfig, WriteMode, SyncTrigger
 
 import octobot_sync.constants as constants
 
@@ -71,3 +71,43 @@ def load_sync_config(
         )
         return DEFAULT_SYNC_CONFIG
     return load_config_file(path)
+
+
+def is_replicable_collection(col: CollectionConfig) -> bool:
+    """A collection is replicable if its storagePath has no template variables."""
+    return "{" not in col.storage_path
+
+
+def make_replica_config(
+    config: SyncConfig,
+    primary_url: str,
+    write_mode: str = "bidirectional",
+    sync_interval_ms: int = 60_000,
+) -> tuple[SyncConfig, list[CollectionConfig]]:
+    """Inject RemoteConfig into replicable collections.
+
+    Returns the updated SyncConfig (with remote on replicable collections)
+    and the list of non-replicable (proxy) collections.
+    """
+    mode = WriteMode(write_mode)
+    replicable = []
+    proxied = []
+    for col in config.collections:
+        if is_replicable_collection(col):
+            col_with_remote = col.model_copy(
+                update={
+                    "remote": RemoteConfig(
+                        url=primary_url,
+                        pullPath=f"/pull/{col.storage_path}",
+                        pushPath=f"/push/{col.storage_path}" if mode != WriteMode.PULL_ONLY else None,
+                        writeMode=mode,
+                        intervalMs=sync_interval_ms,
+                        syncTriggers=[SyncTrigger.ON_PULL, SyncTrigger.SCHEDULED],
+                    ),
+                }
+            )
+            replicable.append(col_with_remote)
+        else:
+            proxied.append(col)
+    updated_config = config.model_copy(update={"collections": replicable + proxied})
+    return updated_config, proxied

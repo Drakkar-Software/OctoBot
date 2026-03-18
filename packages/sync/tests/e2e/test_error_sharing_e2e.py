@@ -23,7 +23,7 @@ import uuid
 import pytest
 from httpx import ASGITransport
 
-from satellite_sdk import SatelliteClient, SyncManager
+from starfish_sdk import StarfishClient, SyncManager
 
 import octobot_sync.app as sync_app
 import octobot_sync.auth as auth
@@ -83,7 +83,7 @@ async def sync_client(s3_store, mock_chain, monkeypatch):
 
     transport = ASGITransport(app=app)
     http_client = httpx.AsyncClient(transport=transport, base_url="http://test")
-    client = SatelliteClient(
+    client = StarfishClient(
         base_url="http://test",
         auth=_make_auth_provider(mock_chain, USER_PUBKEY),
         client=http_client,

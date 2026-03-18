@@ -43,7 +43,7 @@ COLLECTIONS_PATH = str(
 
 @pytest.fixture
 async def s3_store():
-    from satellite_server.storage.s3 import S3ObjectStore, S3StorageOptions
+    from starfish_server.storage.s3 import S3ObjectStore, S3StorageOptions
 
     store = S3ObjectStore(
         S3StorageOptions(
@@ -57,7 +57,7 @@ async def s3_store():
     yield store
     try:
         for prefix in ("test/", "products/", "users/", "public/", "platform/"):
-            keys = await store.list(prefix)
+            keys = await store.list_keys(prefix)
             if keys:
                 await store.delete_many(keys)
     finally:

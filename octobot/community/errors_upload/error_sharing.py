@@ -26,7 +26,7 @@ from typing import Any
 import octobot_commons.authentication as authentication
 import octobot_commons.logging as logging
 
-from satellite_sdk import SatelliteClient, SyncManager
+from starfish_sdk import StarfishClient, SyncManager
 
 import octobot.constants
 
@@ -37,7 +37,7 @@ ERRORS_PULL_PATH_TEMPLATE = "/v1/pull/users/{pubkey}/errors/{errorId}"
 ENCRYPTION_INFO = "octobot-error-data"
 
 
-def _get_client_and_address() -> tuple[SatelliteClient, str] | None:
+def _get_client_and_address() -> tuple[StarfishClient, str] | None:
     authenticator = authentication.Authenticator.get_instance_if_exists()
     if authenticator is None:
         return None
@@ -54,7 +54,7 @@ def _generate_credentials() -> tuple[str, str]:
 
 
 async def upload_error(
-    client: SatelliteClient,
+    client: StarfishClient,
     address: str,
     error: Exception,
     *,

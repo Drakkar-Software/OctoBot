@@ -33,7 +33,7 @@ from octobot_sync.auth.storage import (
 
 from octobot_sync.auth import provider
 from octobot_sync.auth.provider import (
-    SatelliteAuthProvider,
+    StarfishAuthProvider,
 )
 
 __all__ = [
@@ -42,5 +42,5 @@ __all__ = [
     "NonceStore",
     "AbstractStorageAdapter",
     "MemoryStorageAdapter",
-    "SatelliteAuthProvider",
+    "StarfishAuthProvider",
 ]
