@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "collections": [
+    {
+      "name": "alpha-docs",
+      "storagePath": "users/{identity}",
+      "bundle": "personal",
+      "readRoles": ["self"],
+      "writeRoles": ["self"],
+      "encryption": "identity",
+      "maxBodyBytes": 10485760
+    },
+    {
+      "name": "beta-prefs",
+      "storagePath": "users/{identity}",
+      "bundle": "personal",
+      "readRoles": ["self"],
+      "writeRoles": ["self"],
+      "encryption": "identity",
+      "maxBodyBytes": 10485760
+    },
+    {
+      "name": "gamma-logs",
+      "storagePath": "users/{identity}/logs/{logId}",
+      "readRoles": ["admin"],
+      "writeRoles": ["user"],
+      "encryption": "delegated",
+      "maxBodyBytes": 65536
+    },
+    {
+      "name": "delta-feed",
+      "storagePath": "items/{itemId}/feed/{version}",
+      "readRoles": ["public"],
+      "writeRoles": ["owner"],
+      "encryption": "none",
+      "maxBodyBytes": 65536,
+      "rateLimit": true
+    },
+    {
+      "name": "epsilon-catalog",
+      "storagePath": "public/catalog",
+      "readRoles": ["public"],
+      "writeRoles": ["admin"],
+      "encryption": "none",
+      "maxBodyBytes": 1048576,
+      "pullOnly": true
+    },
+    {
+      "name": "zeta-internal",
+      "storagePath": "platform/internal/{identity}",
+      "readRoles": ["self"],
+      "writeRoles": ["admin"],
+      "encryption": "server",
+      "maxBodyBytes": 65536
+    },
+    {
+      "name": "eta-static",
+      "storagePath": "items/{itemId}",
+      "readRoles": ["public"],
+      "writeRoles": ["owner"],
+      "encryption": "none",
+      "maxBodyBytes": 2097152
+    }
+  ],
+  "rateLimit": {
+    "windowMs": 60000,
+    "maxRequests": 100
+  }
+}

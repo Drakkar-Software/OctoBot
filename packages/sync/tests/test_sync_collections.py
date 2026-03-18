@@ -14,18 +14,14 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-"""Tests for sync collection definitions loaded from collections.json."""
+"""Tests for sync collection loading from a sample collections.json."""
 
 from pathlib import Path
 
-import octobot_commons.constants as commons_constants
-import octobot_sync.constants as sync_constants
 import octobot_sync.sync.collections as collections_module
 
-_OCTOBOT_ROOT = Path(__file__).resolve().parents[3]
-COLLECTIONS_PATH = str(
-    _OCTOBOT_ROOT / commons_constants.USER_FOLDER / sync_constants.COLLECTIONS_FILE
-)
+FIXTURES_DIR = Path(__file__).resolve().parent / "fixtures"
+COLLECTIONS_PATH = str(FIXTURES_DIR / "collections.json")
 
 
 def _load():
@@ -37,7 +33,7 @@ def test_sync_config_version():
 
 
 def test_sync_config_has_collections():
-    assert len(_load().collections) == 25
+    assert len(_load().collections) == 7
 
 
 def test_all_collections_have_names():
@@ -47,20 +43,20 @@ def test_all_collections_have_names():
     assert len(names) == len(set(names)), "Duplicate collection names"
 
 
-def test_signals_collection():
-    signals = next(c for c in _load().collections if c.name == "signals")
-    assert signals.storage_path == "products/{productId}/signals/{version}"
-    assert "public" in signals.read_roles
-    assert "owner" in signals.write_roles
-    assert signals.encryption == "none"
-    assert signals.rate_limit is True
+def test_rate_limited_collection():
+    col = next(c for c in _load().collections if c.name == "delta-feed")
+    assert col.storage_path == "items/{itemId}/feed/{version}"
+    assert "public" in col.read_roles
+    assert "owner" in col.write_roles
+    assert col.encryption == "none"
+    assert col.rate_limit is True
 
 
-def test_bundled_user_data():
-    bundled = [c for c in _load().collections if c.bundle == "user-data"]
-    assert len(bundled) == 4
+def test_bundled_collections():
+    bundled = [c for c in _load().collections if c.bundle == "personal"]
+    assert len(bundled) == 2
     names = {c.name for c in bundled}
-    assert names == {"bots", "accounts", "settings", "notifications"}
+    assert names == {"alpha-docs", "beta-prefs"}
     for c in bundled:
         assert c.encryption == "identity"
         assert c.storage_path == "users/{identity}"
@@ -68,20 +64,14 @@ def test_bundled_user_data():
 
 def test_pull_only_collections():
     pull_only = [c for c in _load().collections if c.pull_only]
-    assert len(pull_only) == 5
-    names = {c.name for c in pull_only}
-    assert "news" in names
-    assert "courses" in names
-    assert "exchanges" in names
-    assert "cryptocurrencies" in names
-    assert "cryptocurrency-detail" in names
+    assert len(pull_only) == 1
+    assert pull_only[0].name == "epsilon-catalog"
 
 
-def test_platform_encrypted_collections():
+def test_server_encrypted_collections():
     server_encrypted = [c for c in _load().collections if c.encryption == "server"]
-    assert len(server_encrypted) == 2
-    names = {c.name for c in server_encrypted}
-    assert names == {"platform-affiliates", "platform-referrals"}
+    assert len(server_encrypted) == 1
+    assert server_encrypted[0].name == "zeta-internal"
 
 
 def test_rate_limit_config():
@@ -89,3 +79,12 @@ def test_rate_limit_config():
     assert config.rate_limit is not None
     assert config.rate_limit.window_ms == 60_000
     assert config.rate_limit.max_requests == 100
+
+
+def test_fallback_to_default_config():
+    """When collections file is missing, DEFAULT_SYNC_CONFIG is returned."""
+    config = collections_module.load_sync_config("/nonexistent/path.json")
+    assert config.version == 1
+    assert len(config.collections) == 3
+    names = {c.name for c in config.collections}
+    assert names == {"bots", "accounts", "errors"}
