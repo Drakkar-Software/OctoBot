@@ -361,11 +361,18 @@ class AbstractTradingModeProducer(modes_channel.ModeChannelProducer):
         """
         try:
             async with self.trading_mode_trigger(), self.trading_mode.remote_signal_publisher(symbol):
-                await self.set_final_eval(matrix_id=matrix_id,
-                                          cryptocurrency=cryptocurrency,
-                                          symbol=symbol,
-                                          time_frame=time_frame,
-                                          trigger_source=trigger_source)
+                if trigger_source == common_enums.TriggerSource.MANUAL.value:
+                    await self.manual_trigger(matrix_id=matrix_id,
+                                            cryptocurrency=cryptocurrency,
+                                            symbol=symbol,
+                                            time_frame=time_frame,
+                                            trigger_source=trigger_source)
+                else:
+                    await self.set_final_eval(matrix_id=matrix_id,
+                                            cryptocurrency=cryptocurrency,
+                                            symbol=symbol,
+                                            time_frame=time_frame,
+                                            trigger_source=trigger_source)
         except errors.InitializingError as e:
             self.logger.exception(
                 e,
@@ -413,8 +420,25 @@ class AbstractTradingModeProducer(modes_channel.ModeChannelProducer):
     async def post_trigger(self):
         pass
 
-    async def set_final_eval(self, matrix_id: str, cryptocurrency: str, symbol: str, time_frame,
-                             trigger_source: str) -> None:
+    async def manual_trigger(
+        self, matrix_id: str, cryptocurrency: str,
+        symbol: str, time_frame, trigger_source: str
+    ) -> None:
+        """
+        Called when a manual trigger is received. Behaves like set_final_eval by default.
+        """
+        return await self.set_final_eval(
+            matrix_id=matrix_id,
+            cryptocurrency=cryptocurrency,
+            symbol=symbol,
+            time_frame=time_frame,
+            trigger_source=trigger_source
+        )
+
+    async def set_final_eval(
+        self, matrix_id: str, cryptocurrency: str, symbol: str,
+        time_frame, trigger_source: str
+    ) -> None:
         """
         Called to calculate the final note or state => when any notification appears
         """
@@ -427,14 +451,56 @@ class AbstractTradingModeProducer(modes_channel.ModeChannelProducer):
         data=None,
         dependencies: typing.Optional[commons_signals.SignalDependencies] = None
     ) -> None:
-        await self.send(trading_mode_name=self.trading_mode.get_name(),
-                        cryptocurrency=cryptocurrency,
-                        symbol=symbol,
-                        time_frame=time_frame,
-                        final_note=final_note,
-                        state=state.value,
-                        data=data if data is not None else {},
-                        dependencies=dependencies)
+        if self.trading_mode.synchronous_execution:
+            await self._submit_trading_evaluation_synchronous(
+                cryptocurrency=cryptocurrency,
+                symbol=symbol,
+                time_frame=time_frame,
+                final_note=final_note,
+                state=state.value,
+                data=data if data is not None else {},
+                dependencies=dependencies,
+            )
+        else:
+            await self.send(trading_mode_name=self.trading_mode.get_name(),
+                            cryptocurrency=cryptocurrency,
+                            symbol=symbol,
+                            time_frame=time_frame,
+                            final_note=final_note,
+                            state=state.value,
+                            data=data if data is not None else {},
+                            dependencies=dependencies)
+
+    async def _submit_trading_evaluation_synchronous(
+        self, cryptocurrency, symbol, time_frame,
+        final_note, state, data, dependencies
+    ) -> None:
+        """
+        Directly call consumers instead of using the channel queue.
+        Awaiting this completes after all consumers have finished.
+        """
+        consumers = self.channel.get_filtered_consumers(
+            trading_mode_name=self.trading_mode.get_name(),
+            state=state,
+            cryptocurrency=cryptocurrency,
+            symbol=symbol,
+            time_frame=time_frame,
+        )
+        if not consumers:
+            return
+        await asyncio.gather(*[
+            consumer.internal_callback(
+                trading_mode_name=self.trading_mode.get_name(),
+                cryptocurrency=cryptocurrency,
+                symbol=symbol,
+                time_frame=time_frame,
+                final_note=final_note,
+                state=state,
+                data=data,
+                dependencies=dependencies,
+            )
+            for consumer in consumers
+        ])
 
     @classmethod
     def get_should_cancel_loaded_orders(cls) -> bool:

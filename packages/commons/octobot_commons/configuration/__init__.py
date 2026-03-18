@@ -46,6 +46,8 @@ from octobot_commons.configuration.fields_utils import (
     get_password_hash,
 )
 from octobot_commons.configuration.user_inputs import (
+    USER_INPUT_TYPE_TO_PYTHON_TYPE,
+    MAX_USER_INPUT_ORDER,
     UserInput,
     UserInputFactory,
     sanitize_user_input_name,
@@ -85,6 +87,8 @@ __all__ = [
     "decrypt",
     "decrypt_element_if_possible",
     "get_password_hash",
+    "USER_INPUT_TYPE_TO_PYTHON_TYPE",
+    "MAX_USER_INPUT_ORDER",
     "UserInput",
     "UserInputFactory",
     "sanitize_user_input_name",

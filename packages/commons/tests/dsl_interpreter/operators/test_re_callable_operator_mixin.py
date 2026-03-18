@@ -148,9 +148,9 @@ class TestReCallableOperatorMixin:
         })
         assert result == inner
 
-    def test_build_re_callable_result(self):
+    def test_create_re_callable_result_dict(self):
         operator = _TestReCallableOperator()
-        result = operator.build_re_callable_result(
+        result = operator.create_re_callable_result_dict(
             last_execution_time=1000.0,
             waiting_time=5.0,
         )
@@ -163,9 +163,9 @@ class TestReCallableOperatorMixin:
             re_callable_operator_mixin.ReCallingOperatorResultKeys.WAITING_TIME.value
         ] == 5.0
 
-    def test_build_re_callable_result_with_reset_to_id(self):
+    def test_create_re_callable_result_dict_with_reset_to_id(self):
         operator = _TestReCallableOperator()
-        result = operator.build_re_callable_result(
+        result = operator.create_re_callable_result_dict(
             reset_to_id="target_123",
             last_execution_time=1000.0,
             waiting_time=5.0,
@@ -174,9 +174,9 @@ class TestReCallableOperatorMixin:
         assert inner["reset_to_id"] == "target_123"
         assert "last_execution_result" in inner
 
-    def test_build_re_callable_result_with_extra_kwargs(self):
+    def test_create_re_callable_result_dict_with_extra_kwargs(self):
         operator = _TestReCallableOperator()
-        result = operator.build_re_callable_result(
+        result = operator.create_re_callable_result_dict(
             last_execution_time=1000.0,
             waiting_time=5.0,
             extra_field=42,

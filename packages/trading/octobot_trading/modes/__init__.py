@@ -57,6 +57,10 @@ from octobot_trading.modes.modes_factory import (
     create_trading_mode,
     create_temporary_trading_mode_with_local_config,
 )
+from octobot_trading.modes.trading_mode_dsl_factory import (
+    create_trading_mode_operator,
+    create_all_trading_mode_operators,
+)
 
 from octobot_trading.modes import mode_activity
 from octobot_trading.modes.mode_activity import (
@@ -90,6 +94,8 @@ __all__ = [
     "create_trading_modes",
     "create_trading_mode",
     "create_temporary_trading_mode_with_local_config",
+    "create_trading_mode_operator",
+    "create_all_trading_mode_operators",
     "TradingModeActivity",
     "get_activated_trading_mode",
     "should_emit_trading_signals_user_input",

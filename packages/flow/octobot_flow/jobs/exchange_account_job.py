@@ -149,11 +149,13 @@ class ExchangeAccountJob(octobot_flow.repositories.exchange.ExchangeContextMixin
         profile_data = self.profile_data_provider.get_profile_data()
         config_symbols = scripting_library.get_traded_symbols(profile_data)
         return list_util.deduplicate(
-            config_symbols + self.get_all_actions_symbols()
+            config_symbols + self.get_all_actions_symbols(profile_data)
         )
 
-    def get_all_actions_symbols(self) -> list[str]:
-        return octobot_flow.logic.dsl.get_actions_symbol_dependencies(self.actions)
+    def get_all_actions_symbols(self, profile_data: commons_profiles.ProfileData) -> list[str]:
+        return octobot_flow.logic.dsl.get_actions_symbol_dependencies(
+            self.actions, profile_data
+        )
 
     def _get_time_frames(self) -> list[str]:
         return scripting_library.get_time_frames(self.profile_data_provider.get_profile_data())

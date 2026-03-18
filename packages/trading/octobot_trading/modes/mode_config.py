@@ -61,13 +61,13 @@ def should_emit_trading_signals_user_input(trading_mode, inputs: dict):
     trading_mode.UI.user_input(
         common_constants.CONFIG_EMIT_TRADING_SIGNALS, common_enums.UserInputTypes.BOOLEAN, False, inputs,
         title="Emit trading signals on OctoBot cloud for people to follow.",
-        order=commons_configuration.UserInput.MAX_ORDER - 2
+        order=commons_configuration.MAX_USER_INPUT_ORDER - 2
     )
     trading_mode.UI.user_input(
         common_constants.CONFIG_TRADING_SIGNALS_STRATEGY, common_enums.UserInputTypes.TEXT, trading_mode.get_name(),
         inputs,
         title="Name of the strategy to send signals on.",
-        order=commons_configuration.UserInput.MAX_ORDER - 1,
+        order=commons_configuration.MAX_USER_INPUT_ORDER - 1,
         other_schema_values={"minLength": 0},
         editor_options={
             common_enums.UserInputOtherSchemaValuesTypes.DEPENDENCIES.value: {

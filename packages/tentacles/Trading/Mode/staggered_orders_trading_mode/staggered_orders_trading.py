@@ -29,6 +29,7 @@ import octobot_commons.symbols.symbol_util as symbol_util
 import octobot_commons.data_util as data_util
 import octobot_commons.signals as commons_signals
 import octobot_trading.api as trading_api
+import octobot_trading.dsl as trading_dsl
 import octobot_trading.modes as trading_modes
 import octobot_trading.exchange_channel as exchanges_channel
 import octobot_trading.constants as trading_constants
@@ -280,6 +281,25 @@ class StaggeredOrdersTradingMode(trading_modes.AbstractTradingMode):
     @classmethod
     def get_is_symbol_wildcard(cls) -> bool:
         return False
+
+    @classmethod
+    def get_tentacle_config_traded_symbols(cls, trading_config: dict, reference_market: str) -> list[str]:
+        pair_settings = trading_config.get(cls.CONFIG_PAIR_SETTINGS) or []
+        symbols = []
+        seen: set[str] = set()
+        for pair_config in pair_settings:
+            symbol = pair_config.get(cls.CONFIG_PAIR)
+            if symbol and symbol not in seen:
+                seen.add(symbol)
+                symbols.append(symbol)
+        return symbols
+
+    @classmethod
+    def get_dsl_dependencies(cls, trading_config: dict, config: dict) -> list:
+        symbols = cls.get_tentacle_config_traded_symbols(trading_config)
+        if not symbols:
+            return []
+        return [trading_dsl.SymbolDependency(symbol=symbol) for symbol in symbols]
 
     def set_default_config(self):
         raise RuntimeError(f"Impossible to start {self.get_name()} without a valid configuration file.")
@@ -577,16 +597,17 @@ class StaggeredOrdersTradingModeProducer(trading_modes.AbstractTradingModeProduc
         self.symbol = trading_mode.symbol
         self.symbol_market = None
         self.min_max_order_details = {}
-        fees = trading_api.get_fees(exchange_manager, self.symbol)
-        try:
-            self.max_fees = decimal.Decimal(str(max(fees[trading_enums.ExchangeConstantsMarketPropertyColumns.TAKER.value],
-                                                    fees[trading_enums.ExchangeConstantsMarketPropertyColumns.MAKER.value]
-                                                    )))
-        except TypeError as err:
-            # don't crash if fees are not available
-            market_status = self.exchange_manager.exchange.get_market_status(self.symbol, with_fixer=False)
-            self.logger.error(f"Error reading fees for {self.symbol}: {err}. Market status: {market_status}")
-            self.max_fees = decimal.Decimal(str(trading_constants.CONFIG_DEFAULT_FEES))
+        if self.symbol:
+            fees = trading_api.get_fees(exchange_manager, self.symbol)
+            try:
+                self.max_fees = decimal.Decimal(str(max(fees[trading_enums.ExchangeConstantsMarketPropertyColumns.TAKER.value],
+                                                        fees[trading_enums.ExchangeConstantsMarketPropertyColumns.MAKER.value]
+                                                        )))
+            except TypeError as err:
+                # don't crash if fees are not available
+                market_status = self.exchange_manager.exchange.get_market_status(self.symbol, with_fixer=False)
+                self.logger.error(f"Error reading fees for {self.symbol}: {err}. Market status: {market_status}")
+                self.max_fees = decimal.Decimal(str(trading_constants.CONFIG_DEFAULT_FEES))
         self.flat_increment = None
         self.flat_spread = None
         self.current_price = None
@@ -742,6 +763,12 @@ class StaggeredOrdersTradingModeProducer(trading_modes.AbstractTradingModeProduc
         # price is above max order price
         if max_order_price < price and self.enable_upwards_price_follow:
             return True
+
+    async def manual_trigger(
+        self, matrix_id: str, cryptocurrency: str,
+        symbol: str, time_frame, trigger_source: str
+    ) -> None:
+        return await self.trigger_staggered_orders_creation(reload_config=False)
 
     def _schedule_order_refresh(self):
         # schedule order creation / health check
