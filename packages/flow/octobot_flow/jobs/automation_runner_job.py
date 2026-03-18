@@ -47,16 +47,19 @@ class AutomationRunnerJob(octobot_flow.repositories.exchange.ExchangeContextMixi
 
     async def run(self):
         self.automation_state.automation.execution.start_execution()
-        # 1. for each automation, process additional actions if necessary (ex: portfolio optimization)
-        if self.automation_state.automation.execution.current_execution.additional_actions.has_trading_actions():
-            await self._process_additional_actions()
-        # 2. process on filled and cancelled orders actions if necessary
-        await self._process_on_filled_and_cancelled_orders_actions()
-        # 3. update strategy if necessary
+        # TODO implement to remove after POC 4
+        # # 1. for each automation, process additional actions if necessary (ex: portfolio optimization)
+        # if self.automation_state.automation.execution.current_execution.additional_actions.has_trading_actions():
+        #     await self._process_additional_actions()
+        # TODO implement to remove after POC 4
+        # # 2. process on filled and cancelled orders actions if necessary
+        # await self._process_on_filled_and_cancelled_orders_actions()
+        # # 3. update strategy if necessary
         changed_elements, next_execution_scheduled_to = await self._execute_actions()
-        if octobot_flow.enums.ChangedElements.ORDERS in changed_elements:
-            # 4. process on filled and cancelled orders actions again if necessary
-            await self._process_on_filled_and_cancelled_orders_actions()
+        # if octobot_flow.enums.ChangedElements.ORDERS in changed_elements:
+        #     TODO implement to remove after POC 4
+        #     # 4. process on filled and cancelled orders actions again if necessary
+        #     await self._process_on_filled_and_cancelled_orders_actions()
         # 5. execute post actions if necessary
         if self.automation_state.automation.post_actions.has_automation_actions():
             await self._execute_post_actions()
@@ -95,13 +98,13 @@ class AutomationRunnerJob(octobot_flow.repositories.exchange.ExchangeContextMixi
     async def _process_additional_actions(self):
         raise NotImplementedError("_process_additional_actions not implemented")
 
-    async def _stop_automation(self):
-        # TODO when supporting sub portfolios: unregister automation sub portfolio 
+    async def _update_stopped_automation_sub_portfolio_if_necessary(self):
+        # TODO implement when supporting sub portfolios: unregister automation sub portfolio 
         pass
 
     async def _execute_post_actions(self):
         if self.automation_state.automation.post_actions.stop_automation:
-            await self._stop_automation()
+            await self._update_stopped_automation_sub_portfolio_if_necessary()
 
     def init_strategy_exchange_data(self, exchange_data: exchange_data_import.ExchangeData):
         exchange_account_elements = self.automation_state.automation.get_exchange_account_elements(self._as_reference_account)
