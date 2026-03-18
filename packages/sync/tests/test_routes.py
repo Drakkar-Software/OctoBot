@@ -21,7 +21,6 @@ from pathlib import Path
 import pytest
 from httpx import AsyncClient, ASGITransport
 
-import octobot_commons.constants as commons_constants
 import octobot_sync.app as sync_app
 import octobot_sync.auth as auth
 import octobot_sync.chain as chain
@@ -34,10 +33,7 @@ ADMIN_PUBKEY = "0xAdminPubkey"
 USER_PUBKEY = "0xUserPubkey"
 CHAIN_ID = "mock"
 
-_OCTOBOT_ROOT = Path(__file__).resolve().parents[3]
-COLLECTIONS_PATH = str(
-    _OCTOBOT_ROOT / commons_constants.USER_FOLDER / constants.COLLECTIONS_FILE
-)
+COLLECTIONS_PATH = str(Path(__file__).resolve().parent / "fixtures" / "collections.json")
 
 
 @pytest.fixture

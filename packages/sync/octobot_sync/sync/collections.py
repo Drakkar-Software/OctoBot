@@ -83,18 +83,17 @@ def make_replica_config(
     primary_url: str,
     write_mode: str = "bidirectional",
     sync_interval_ms: int = 60_000,
-) -> tuple[SyncConfig, list[CollectionConfig]]:
+) -> SyncConfig:
     """Inject RemoteConfig into replicable collections.
 
-    Returns the updated SyncConfig (with remote on replicable collections)
-    and the list of non-replicable (proxy) collections.
+    Returns the updated SyncConfig with remote on replicable collections.
+    Non-replicable (templated) collections are kept as-is.
     """
     mode = WriteMode(write_mode)
-    replicable = []
-    proxied = []
+    updated = []
     for col in config.collections:
         if is_replicable_collection(col):
-            col_with_remote = col.model_copy(
+            col = col.model_copy(
                 update={
                     "remote": RemoteConfig(
                         url=primary_url,
@@ -106,8 +105,5 @@ def make_replica_config(
                     ),
                 }
             )
-            replicable.append(col_with_remote)
-        else:
-            proxied.append(col)
-    updated_config = config.model_copy(update={"collections": replicable + proxied})
-    return updated_config, proxied
+        updated.append(col)
+    return config.model_copy(update={"collections": updated})

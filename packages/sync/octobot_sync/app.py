@@ -19,8 +19,7 @@
 import os
 
 import httpx
-from fastapi import APIRouter, FastAPI, Request
-from fastapi.responses import Response
+from fastapi import FastAPI
 from starfish_server.storage.base import AbstractObjectStore
 from starfish_server.router.route_builder import create_sync_router, SyncRouterOptions
 from starfish_server.replica import ReplicaManager, create_replica_router
@@ -64,12 +63,10 @@ def create_app(
 
     replica_manager = None
     if primary_url:
-        # Replica mode: split collections into replicable vs proxied
-        sync_config, proxied_collections = sync.make_replica_config(
+        sync_config = sync.make_replica_config(
             sync_config, primary_url, write_mode, sync_interval_ms,
         )
 
-        # Create authenticated httpx client for replica-to-primary requests
         replica_client = _create_authenticated_client(auth_provider)
         replica_manager = ReplicaManager(
             store=object_store,
@@ -77,12 +74,6 @@ def create_app(
             client=replica_client,
         )
 
-        # Proxy routes for per-user/templated collections
-        if proxied_collections:
-            proxy_router = _create_proxy_router(primary_url, replica_client)
-            app.include_router(proxy_router, prefix="/v1")
-
-        # Replica notification endpoint
         replica_router = create_replica_router(
             replica_manager=replica_manager,
             collections=sync_config.collections,
@@ -143,38 +134,3 @@ def _create_authenticated_client(
         timeout=30.0,
         event_hooks={"request": [_auth_hook]},
     )
-
-
-def _create_proxy_router(primary_url: str, client: httpx.AsyncClient) -> APIRouter:
-    """Create a catch-all router that proxies requests to the primary server."""
-    router = APIRouter()
-
-    @router.api_route(
-        "/{action:path}",
-        methods=["GET", "POST", "PUT", "DELETE", "PATCH"],
-    )
-    async def _proxy(request: Request, action: str):
-        target_url = f"{primary_url.rstrip('/')}/{action}"
-        body = await request.body()
-
-        # Forward headers (except host)
-        headers = {
-            k: v for k, v in request.headers.items()
-            if k.lower() not in ("host", "content-length")
-        }
-
-        resp = await client.request(
-            method=request.method,
-            url=target_url,
-            content=body if body else None,
-            headers=headers,
-            params=dict(request.query_params),
-        )
-
-        return Response(
-            content=resp.content,
-            status_code=resp.status_code,
-            headers=dict(resp.headers),
-        )
-
-    return router
