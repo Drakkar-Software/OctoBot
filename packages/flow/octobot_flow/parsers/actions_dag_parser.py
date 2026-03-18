@@ -407,7 +407,6 @@ class ActionsDAGParser:
             }
             for asset, value in simulated_portfolio.items()
         } if simulated_portfolio else None
-        must_wait = bool(self.params.ACTIONS and self.params.ACTIONS[0] == ActionType.WAIT.value)
         automation_details = octobot_flow.entities.AutomationDetails(
             metadata=octobot_flow.entities.AutomationMetadata(
                 automation_id=automation_id,

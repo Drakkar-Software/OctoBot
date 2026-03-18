@@ -109,10 +109,6 @@ class OctoBotActionsJob:
                 parsed_description = {
                     "params": dict_description
                 }
-                # TMP: add a simulated portfolio to the params
-                parsed_description["params"]["SIMULATED_PORTFOLIO"] = {
-                    "ETH": 1,
-                }
         return parsed_description
 
     async def run(self) -> OctoBotActionsJobResult:
