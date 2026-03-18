@@ -152,6 +152,14 @@ class GridTradingMode(staggered_orders_trading.StaggeredOrdersTradingMode):
                   "fees into account.",
         )
         self.UI.user_input(
+            self.CONFIG_REINVEST_PROFITS, commons_enums.UserInputTypes.BOOLEAN,
+            default_config[self.CONFIG_REINVEST_PROFITS], inputs,
+            parent_input_name=self.CONFIG_PAIR_SETTINGS,
+            title="Reinvest profits: when checked, mirror SELL orders will sell the full quantity received from the "
+                  "filled BUY order. When unchecked, mirror SELL orders will only sell an amount equivalent to the "
+                  "original BUY cost, extracting the profit to quote currency.",
+        )
+        self.UI.user_input(
             self.CONFIG_MIRROR_ORDER_DELAY, commons_enums.UserInputTypes.FLOAT,
             default_config[self.CONFIG_MIRROR_ORDER_DELAY], inputs,
             min_val=0,
@@ -238,6 +246,7 @@ class GridTradingMode(staggered_orders_trading.StaggeredOrdersTradingMode):
           cls.CONFIG_BUY_VOLUME_PER_ORDER: 0,
           cls.CONFIG_SELL_VOLUME_PER_ORDER: 0,
           cls.CONFIG_IGNORE_EXCHANGE_FEES: True,
+          cls.CONFIG_REINVEST_PROFITS: True,
           cls.CONFIG_MIRROR_ORDER_DELAY: 0,
           cls.CONFIG_USE_EXISTING_ORDERS_ONLY: False,
           cls.CONFIG_ALLOW_FUNDS_REDISPATCH: False,
@@ -300,6 +309,7 @@ class GridTradingModeProducer(staggered_orders_trading.StaggeredOrdersTradingMod
     RECENT_TRADES_ALLOWED_TIME = 2 * commons_constants.DAYS_TO_SECONDS
 
     def __init__(self, channel, config, trading_mode, exchange_manager):
+        self.trading_mode: GridTradingMode = trading_mode # for type hinting
         self.buy_orders_count = self.sell_orders_count = None
         self.sell_price_range = AllowedPriceRange()
         self.buy_price_range = AllowedPriceRange()
@@ -334,6 +344,7 @@ class GridTradingModeProducer(staggered_orders_trading.StaggeredOrdersTradingMod
             self.symbol_trading_config.get(self.trading_mode.LIMIT_ORDERS_IF_NECESSARY, True)
         self.ignore_exchange_fees = self.symbol_trading_config.get(self.trading_mode.CONFIG_IGNORE_EXCHANGE_FEES,
                                                                    self.ignore_exchange_fees)
+        self.reinvest_profits = self.symbol_trading_config.get(self.trading_mode.CONFIG_REINVEST_PROFITS, self.reinvest_profits)
         self.use_existing_orders_only = self.symbol_trading_config.get(self.trading_mode.CONFIG_USE_EXISTING_ORDERS_ONLY,
                                                                        self.use_existing_orders_only)
         self.mirror_order_delay = self.symbol_trading_config.get(self.trading_mode.CONFIG_MIRROR_ORDER_DELAY,
