@@ -1,0 +1,36 @@
+---
+- name: Wait for Garage health
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:3903/health"
+    return_content: true
+    status_code: [200]
+  register: garage_health
+  until: garage_health.status == 200
+  retries: 10
+  delay: 5
+
+- name: Wait for OctoBot sync health
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ octobot_sync_port }}/health"
+    return_content: true
+    status_code: [200]
+  register: octobot_health
+  until: octobot_health.status == 200
+  retries: 30
+  delay: 5
+
+- name: Verify OctoBot sync responds ok
+  ansible.builtin.assert:
+    that:
+      - octobot_health.json.ok == true
+    fail_msg: "OctoBot sync health check failed on {{ inventory_hostname }}"
+
+- name: Wait for Nginx health (proxied)
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ nginx_port }}/health"
+    return_content: true
+    status_code: [200]
+  register: nginx_health
+  until: nginx_health.status == 200
+  retries: 10
+  delay: 5

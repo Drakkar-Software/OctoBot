@@ -1,0 +1,6 @@
+garage_bootstrap_peers: >-
+  {% set peers = [] %}
+  {% for host in groups['sync_nodes'] if host != inventory_hostname %}
+  {% set _ = peers.append('"' ~ hostvars[host]['garage_node_id'] ~ '@' ~ hostvars[host]['garage_rpc_public_addr'] ~ '"') %}
+  {% endfor %}
+  {{ peers | join(', ') }}

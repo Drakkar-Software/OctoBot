@@ -1,0 +1,42 @@
+services:
+  garage:
+    image: {{ garage_image }}
+    ports:
+      - "127.0.0.1:3900:3900"
+      - "0.0.0.0:3901:3901"
+      - "127.0.0.1:3902:3902"
+      - "127.0.0.1:3903:3903"
+    restart: unless-stopped
+    volumes:
+      - garage_meta:/var/lib/garage/meta
+      - garage_data:/var/lib/garage/data
+      - ./garage.toml:/etc/garage.toml:ro
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3903/health"]
+      interval: 10s
+      retries: 5
+
+  octobot-sync:
+    image: {{ octobot_sync_image }}:{{ octobot_image_tag }}
+    command: ["OctoBot", "sync", "--host", "0.0.0.0", "--port", "{{ octobot_sync_port }}"]
+    env_file: .env
+    expose:
+      - "{{ octobot_sync_port }}"
+    restart: unless-stopped
+    depends_on:
+      garage:
+        condition: service_healthy
+
+  nginx:
+    image: {{ nginx_image }}
+    ports:
+      - "{{ nginx_port }}:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - octobot-sync
+    restart: unless-stopped
+
+volumes:
+  garage_meta:
+  garage_data:

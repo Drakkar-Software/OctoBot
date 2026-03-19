@@ -141,6 +141,14 @@ letsencrypt/
 # dev env
 .env
 
+# Ansible decrypted temp files, SSH keys, and production collections config
+infra/**/*.dec.yml
+infra/**/.ssh/
+infra/**/files/collections.json
+
+# Ansible Galaxy installed roles (installed via requirements.yml)
+infra/**/roles/geerlingguy.*/
+
 # Pants build system
 /.pants.d/
 /dist/

@@ -1,0 +1,18 @@
+---
+# One-time: bootstrap the Garage cluster after first deploy
+# Run AFTER site.yml has deployed all nodes with Garage running
+#
+# Usage:
+#   ansible-playbook playbooks/setup-garage.yml
+#
+# After this completes:
+# 1. Copy the S3 credentials into vault.yml
+# 2. Copy the node IDs into host_vars/<hostname>.yml
+# 3. Re-run site.yml to deploy with real credentials
+
+- name: Bootstrap Garage Cluster
+  hosts: sync_nodes
+  become: true
+
+  roles:
+    - garage_init

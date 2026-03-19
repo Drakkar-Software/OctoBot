@@ -1,0 +1,36 @@
+# Docker images
+octobot_sync_image: "drakkarsoftware/octobot"
+octobot_image_tag: "stable"
+garage_image: "dxflrs/garage:v2.2.0"
+nginx_image: "nginx:1-alpine"
+
+# Deployment
+stack_deploy_dir: "/opt/octobot-sync"
+s3_bucket: "octobot-sync"
+s3_region: "garage"
+octobot_sync_port: 3000
+nginx_port: 80
+garage_replication_factor: 3
+
+# Map vault → app vars
+garage_rpc_secret: "{{ vault_garage_rpc_secret }}"
+garage_admin_token: "{{ vault_garage_admin_token }}"
+garage_metrics_token: "{{ vault_garage_metrics_token }}"
+s3_access_key: "{{ vault_s3_access_key }}"
+s3_secret_key: "{{ vault_s3_secret_key }}"
+platform_pubkey_evm: "{{ vault_platform_pubkey_evm }}"
+encryption_secret: "{{ vault_encryption_secret }}"
+platform_encryption_secret: "{{ vault_platform_encryption_secret }}"
+evm_base_rpc: "{{ vault_evm_base_rpc | default('') }}"
+evm_contract_base: "{{ vault_evm_contract_base | default('') }}"
+
+# Firewall (geerlingguy.firewall)
+firewall_allowed_tcp_ports:
+  - "22"
+  - "80"
+  - "3901"
+
+# Docker (geerlingguy.docker)
+docker_install_compose_plugin: true
+docker_users:
+  - deploy

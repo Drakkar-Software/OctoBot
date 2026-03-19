@@ -1,0 +1,25 @@
+# Copy to inventories/<env>/group_vars/all/vault.yml and fill in secrets
+# Then encrypt: ansible-vault encrypt inventories/<env>/group_vars/all/vault.yml
+#
+# Generate secrets:
+#   openssl rand -hex 32        → vault_garage_rpc_secret
+#   openssl rand -base64 32     → vault_garage_admin_token, vault_garage_metrics_token
+#   openssl rand -base64 64     → vault_encryption_secret, vault_platform_encryption_secret
+#
+# S3 credentials come from setup-garage.yml (garage key create)
+# Platform EVM address: derive from your private key or use an existing wallet address
+
+vault_garage_rpc_secret: "CHANGE_ME"
+vault_garage_admin_token: "CHANGE_ME"
+vault_garage_metrics_token: "CHANGE_ME"
+
+vault_s3_access_key: "CHANGE_ME"
+vault_s3_secret_key: "CHANGE_ME"
+
+vault_platform_pubkey_evm: "0xCHANGE_ME"
+vault_encryption_secret: "CHANGE_ME"           # openssl rand -base64 64
+vault_platform_encryption_secret: "CHANGE_ME"  # openssl rand -base64 64
+
+# Optional
+# vault_evm_base_rpc: "https://mainnet.base.org"
+# vault_evm_contract_base: "0x..."

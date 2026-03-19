@@ -1,0 +1,138 @@
+---
+# One-time cluster bootstrap — run via setup-garage.yml
+# Idempotent: skips bucket/key creation if they already exist (replicated metadata)
+
+- name: Ensure Garage is running
+  ansible.builtin.command:
+    cmd: docker compose exec -T garage wget -qO- http://127.0.0.1:3903/health
+    chdir: "{{ stack_deploy_dir }}"
+  register: garage_health
+  retries: 10
+  delay: 5
+  until: garage_health.rc == 0
+  changed_when: false
+
+- name: Discover Garage node ID
+  ansible.builtin.command:
+    cmd: docker compose exec -T garage /garage node id -q
+    chdir: "{{ stack_deploy_dir }}"
+  register: node_id_result
+  changed_when: false
+
+- name: Set node ID fact
+  ansible.builtin.set_fact:
+    discovered_garage_node_id: "{{ node_id_result.stdout | trim }}"
+
+- name: Display node ID
+  ansible.builtin.debug:
+    msg: "{{ inventory_hostname }}: {{ discovered_garage_node_id }}"
+
+# --- Cluster setup (delegated to first node) ---
+
+- name: Connect to all peers
+  ansible.builtin.command:
+    cmd: >-
+      docker compose exec -T garage /garage node connect
+      {{ hostvars[item]['discovered_garage_node_id'] }}@{{ hostvars[item]['garage_rpc_public_addr'] }}
+    chdir: "{{ stack_deploy_dir }}"
+  loop: "{{ groups['sync_nodes'] }}"
+  when:
+    - inventory_hostname == groups['sync_nodes'][0]
+    - item != inventory_hostname
+  changed_when: false
+
+- name: Assign layout for each node
+  ansible.builtin.command:
+    cmd: >-
+      docker compose exec -T garage /garage layout assign
+      -z {{ hostvars[item]['garage_zone'] }}
+      -c {{ hostvars[item]['garage_capacity'] }}G
+      -t {{ item }}
+      {{ hostvars[item]['discovered_garage_node_id'] }}
+    chdir: "{{ stack_deploy_dir }}"
+  loop: "{{ groups['sync_nodes'] }}"
+  when: inventory_hostname == groups['sync_nodes'][0]
+  changed_when: true
+
+- name: Get current layout version
+  ansible.builtin.shell:
+    cmd: >-
+      docker compose exec -T garage /garage layout show 2>&1
+      | grep -oP 'Current layout version: \K\d+' || echo 0
+    chdir: "{{ stack_deploy_dir }}"
+  register: layout_version
+  changed_when: false
+  when: inventory_hostname == groups['sync_nodes'][0]
+
+- name: Apply layout
+  ansible.builtin.command:
+    cmd: >-
+      docker compose exec -T garage /garage layout apply
+      --version {{ (layout_version.stdout | int) + 1 }}
+    chdir: "{{ stack_deploy_dir }}"
+  when: inventory_hostname == groups['sync_nodes'][0]
+  changed_when: true
+
+# --- Bucket (idempotent — skipped if already exists via replication) ---
+
+- name: Check if bucket exists
+  ansible.builtin.command:
+    cmd: docker compose exec -T garage /garage bucket info {{ s3_bucket }}
+    chdir: "{{ stack_deploy_dir }}"
+  register: bucket_check
+  failed_when: false
+  changed_when: false
+  when: inventory_hostname == groups['sync_nodes'][0]
+
+- name: Create S3 bucket
+  ansible.builtin.command:
+    cmd: docker compose exec -T garage /garage bucket create {{ s3_bucket }}
+    chdir: "{{ stack_deploy_dir }}"
+  when:
+    - inventory_hostname == groups['sync_nodes'][0]
+    - bucket_check.rc != 0
+
+# --- API key (idempotent — skipped if already exists via replication) ---
+
+- name: Check if API key exists
+  ansible.builtin.command:
+    cmd: docker compose exec -T garage /garage key info octobot-sync-key
+    chdir: "{{ stack_deploy_dir }}"
+  register: key_check
+  failed_when: false
+  changed_when: false
+  when: inventory_hostname == groups['sync_nodes'][0]
+
+- name: Create S3 API key
+  ansible.builtin.command:
+    cmd: docker compose exec -T garage /garage key create octobot-sync-key
+    chdir: "{{ stack_deploy_dir }}"
+  when:
+    - inventory_hostname == groups['sync_nodes'][0]
+    - key_check.rc != 0
+  register: key_output
+
+- name: Grant key access to bucket
+  ansible.builtin.command:
+    cmd: >-
+      docker compose exec -T garage /garage bucket allow
+      --read --write --owner {{ s3_bucket }} --key octobot-sync-key
+    chdir: "{{ stack_deploy_dir }}"
+  when:
+    - inventory_hostname == groups['sync_nodes'][0]
+    - key_check.rc != 0
+
+- name: Display new credentials
+  ansible.builtin.debug:
+    msg: |
+      Save these to vault.yml for this environment!
+        cp vault.yml.example inventories/<env>/group_vars/all/vault.yml
+        ansible-vault edit inventories/<env>/group_vars/all/vault.yml
+
+      {{ key_output.stdout | default('(key already existed)') }}
+
+      Node IDs for host_vars:
+      {% for host in groups['sync_nodes'] %}
+        {{ host }}: {{ hostvars[host]['discovered_garage_node_id'] }}
+      {% endfor %}
+  when: inventory_hostname == groups['sync_nodes'][0]

@@ -625,6 +625,42 @@ jobs:
           asset_name: OctoBot_macos_arm64
           asset_content_type: application/x-binary
 
+  sync-deploy:
+    name: Deploy Sync Server
+    needs: [docker]
+    if: false  # Temporarily skipped
+    runs-on: ubuntu-latest
+
+    env:
+      DEPLOY_ENV: ${{ startsWith(github.ref, 'refs/tags/') && 'production' || github.ref == 'refs/heads/master' && 'staging' || 'development' }}
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Ansible
+        run: pip install ansible
+
+      - name: Install Galaxy requirements
+        working-directory: infra/sync/ansible
+        run: ansible-galaxy install -r requirements.yml
+
+      - name: Set up SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SYNC_DEPLOY_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          for ip in ${{ secrets.SYNC_NODE_IPS }}; do
+            ssh-keyscan -H "$ip" >> ~/.ssh/known_hosts 2>/dev/null
+          done
+
+      - name: Deploy to ${{ env.DEPLOY_ENV }}
+        working-directory: infra/sync/ansible
+        env:
+          ANSIBLE_VAULT_PASSWORD: ${{ secrets.SYNC_ANSIBLE_VAULT_PASSWORD }}
+        run: |
+          ansible-playbook playbooks/deploy-octobot-sync.yml \
+            -i inventories/${{ env.DEPLOY_ENV }}
+
   notify:
     if: ${{ failure() }}
     needs:

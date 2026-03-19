@@ -1,0 +1,81 @@
+---
+- name: Create deploy directory
+  ansible.builtin.file:
+    path: "{{ stack_deploy_dir }}"
+    state: directory
+    owner: deploy
+    group: deploy
+    mode: "0755"
+
+- name: Render docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ stack_deploy_dir }}/docker-compose.yml"
+    owner: deploy
+    group: deploy
+    mode: "0644"
+  notify: restart stack
+
+- name: Render .env
+  ansible.builtin.template:
+    src: env.j2
+    dest: "{{ stack_deploy_dir }}/.env"
+    owner: deploy
+    group: deploy
+    mode: "0600"
+  notify: restart octobot-sync
+
+- name: Render garage.toml
+  ansible.builtin.template:
+    src: garage.toml.j2
+    dest: "{{ stack_deploy_dir }}/garage.toml"
+    owner: deploy
+    group: deploy
+    mode: "0644"
+  notify: restart garage
+
+- name: Copy collections.json
+  ansible.builtin.copy:
+    src: collections.json
+    dest: "{{ stack_deploy_dir }}/collections.json"
+    owner: deploy
+    group: deploy
+    mode: "0644"
+  notify: regenerate nginx config
+
+- name: Pull Docker images
+  ansible.builtin.command:
+    cmd: docker compose pull
+    chdir: "{{ stack_deploy_dir }}"
+  changed_when: false
+
+- name: Generate nginx.conf via OctoBot sync image
+  ansible.builtin.command:
+    cmd: >-
+      docker run --rm --entrypoint python3
+      -v {{ stack_deploy_dir }}/collections.json:/tmp/collections.json:ro
+      {{ octobot_sync_image }}:{{ octobot_image_tag }}
+      -m octobot_sync.util.nginx_conf /tmp/collections.json
+  register: nginx_conf_output
+  changed_when: false
+
+- name: Write nginx.conf
+  ansible.builtin.copy:
+    content: "{{ nginx_conf_output.stdout }}"
+    dest: "{{ stack_deploy_dir }}/nginx.conf"
+    owner: deploy
+    group: deploy
+    mode: "0644"
+  notify: restart nginx
+
+- name: Start stack
+  ansible.builtin.command:
+    cmd: docker compose up -d
+    chdir: "{{ stack_deploy_dir }}"
+  changed_when: false
+
+- name: Flush handlers before health check
+  ansible.builtin.meta: flush_handlers
+
+- name: Run health checks
+  ansible.builtin.include_tasks: healthcheck.yml

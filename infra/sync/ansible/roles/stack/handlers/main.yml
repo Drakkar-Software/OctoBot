@@ -1,0 +1,31 @@
+---
+- name: restart stack
+  ansible.builtin.command:
+    cmd: docker compose up -d
+    chdir: "{{ stack_deploy_dir }}"
+
+- name: restart garage
+  ansible.builtin.command:
+    cmd: docker compose restart garage
+    chdir: "{{ stack_deploy_dir }}"
+
+- name: restart octobot-sync
+  ansible.builtin.command:
+    cmd: docker compose up -d --no-deps --force-recreate octobot-sync
+    chdir: "{{ stack_deploy_dir }}"
+
+- name: restart nginx
+  ansible.builtin.command:
+    cmd: docker compose restart nginx
+    chdir: "{{ stack_deploy_dir }}"
+
+- name: regenerate nginx config
+  ansible.builtin.command:
+    cmd: >-
+      docker run --rm --entrypoint python3
+      -v {{ stack_deploy_dir }}/collections.json:/tmp/collections.json:ro
+      {{ octobot_sync_image }}:{{ octobot_image_tag }}
+      -m octobot_sync.util.nginx_conf /tmp/collections.json
+  register: nginx_regen
+  changed_when: false
+  notify: restart nginx
