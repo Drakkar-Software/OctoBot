@@ -1,0 +1,18 @@
+---
+# Full stack rolling deploy — one node at a time, health-checked
+- name: Deploy OctoBot Sync Stack
+  hosts: sync_nodes
+  serial: 1
+  max_fail_percentage: 0
+  become: true
+
+  roles:
+    - geerlingguy.firewall
+    - geerlingguy.docker
+    - stack
+
+  post_tasks:
+    - name: Pause between nodes
+      ansible.builtin.pause:
+        seconds: 10
+      when: ansible_play_hosts_all | length > 1

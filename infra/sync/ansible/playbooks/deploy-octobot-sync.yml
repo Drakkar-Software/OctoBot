@@ -1,0 +1,30 @@
+---
+# App-only rolling update — fast path after CI pushes a new image
+- name: Rolling deploy of OctoBot sync
+  hosts: sync_nodes
+  serial: 1
+  max_fail_percentage: 0
+  become: true
+
+  tasks:
+    - name: Pull new OctoBot sync image
+      ansible.builtin.command:
+        cmd: docker compose pull octobot-sync
+        chdir: "{{ stack_deploy_dir }}"
+      changed_when: false
+
+    - name: Restart OctoBot sync only
+      ansible.builtin.command:
+        cmd: docker compose up -d --no-deps --force-recreate octobot-sync
+        chdir: "{{ stack_deploy_dir }}"
+      changed_when: true
+
+    - name: Run health checks
+      ansible.builtin.include_role:
+        name: stack
+        tasks_from: healthcheck
+
+    - name: Pause between nodes
+      ansible.builtin.pause:
+        seconds: 10
+      when: ansible_play_hosts_all | length > 1

@@ -1,0 +1,28 @@
+# Copy to inventories/<env>/hosts.yml and fill in real values
+# Then encrypt: ansible-vault encrypt inventories/<env>/hosts.yml
+#
+# For a single-node dev setup, one host is enough.
+# For staging/production, use 3+ nodes across different zones for redundancy.
+
+all:
+  children:
+    sync_nodes:
+      hosts:
+        sync-1.example.com:
+          ansible_host: 203.0.113.10
+          ansible_user: deploy
+          garage_rpc_public_addr: "203.0.113.10:3901"
+          garage_capacity: 100       # GB of storage to allocate
+          garage_zone: "dc1"
+        # sync-2.example.com:
+        #   ansible_host: 203.0.113.11
+        #   ansible_user: deploy
+        #   garage_rpc_public_addr: "203.0.113.11:3901"
+        #   garage_capacity: 100
+        #   garage_zone: "dc2"
+        # sync-3.example.com:
+        #   ansible_host: 203.0.113.12
+        #   ansible_user: deploy
+        #   garage_rpc_public_addr: "203.0.113.12:3901"
+        #   garage_capacity: 100
+        #   garage_zone: "dc3"

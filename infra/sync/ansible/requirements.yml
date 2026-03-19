@@ -1,0 +1,9 @@
+roles:
+  - name: geerlingguy.docker
+    version: "7.4.1"
+  - name: geerlingguy.firewall
+    version: "2.7.0"
+
+collections:
+  - name: community.docker
+    version: ">=3.0.0"
