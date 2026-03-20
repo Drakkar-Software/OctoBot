@@ -1,0 +1,5 @@
+---
+garage_admin_url: "http://127.0.0.1:3903"
+garage_admin_headers:
+  Authorization: "Bearer {{ garage_admin_token }}"
+garage_s3_key_name: "octobot-sync-key"

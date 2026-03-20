@@ -85,6 +85,10 @@ def create_app(
     )
     app.include_router(sync_router, prefix="/v1")
 
+    @app.get("/health")
+    async def health():
+        return {"ok": True}
+
     if replica_manager:
         @app.on_event("startup")
         async def _start_replica():

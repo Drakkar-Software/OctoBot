@@ -1,27 +1,32 @@
 ---
 # One-time cluster bootstrap — run via setup-garage.yml
 # Idempotent: skips bucket/key creation if they already exist (replicated metadata)
+# Uses Garage v2 admin HTTP API instead of CLI (avoids Docker networking issues)
 
-- name: Ensure Garage is running
-  ansible.builtin.command:
-    cmd: docker compose exec -T garage wget -qO- http://127.0.0.1:3903/health
-    chdir: "{{ stack_deploy_dir }}"
-  register: garage_health
-  retries: 10
-  delay: 5
-  until: garage_health.rc == 0
-  changed_when: false
+- name: Wait for Garage admin API
+  ansible.builtin.wait_for:
+    host: 127.0.0.1
+    port: 3903
+    timeout: 60
 
-- name: Discover Garage node ID
-  ansible.builtin.command:
-    cmd: docker compose exec -T garage /garage node id -q
-    chdir: "{{ stack_deploy_dir }}"
-  register: node_id_result
-  changed_when: false
+# --- Discover node IDs (runs on every node) ---
 
-- name: Set node ID fact
+- name: Get cluster status
+  ansible.builtin.uri:
+    url: "{{ garage_admin_url }}/v2/GetClusterStatus"
+    method: GET
+    headers: "{{ garage_admin_headers }}"
+    return_content: true
+  register: cluster_status
+
+- name: Find local node in cluster status
   ansible.builtin.set_fact:
-    discovered_garage_node_id: "{{ node_id_result.stdout | trim }}"
+    local_node: "{{ cluster_status.json.nodes | selectattr('addr', 'equalto', garage_rpc_public_addr) | first }}"
+
+- name: Set node ID facts
+  ansible.builtin.set_fact:
+    discovered_garage_node_hex: "{{ local_node.id }}"
+    discovered_garage_node_id: "{{ local_node.id }}@{{ garage_rpc_public_addr }}"
 
 - name: Display node ID
   ansible.builtin.debug:
@@ -30,98 +35,149 @@
 # --- Cluster setup (delegated to first node) ---
 
 - name: Connect to all peers
-  ansible.builtin.command:
-    cmd: >-
-      docker compose exec -T garage /garage node connect
-      {{ hostvars[item]['discovered_garage_node_id'] }}@{{ hostvars[item]['garage_rpc_public_addr'] }}
-    chdir: "{{ stack_deploy_dir }}"
+  ansible.builtin.uri:
+    url: "{{ garage_admin_url }}/v2/ConnectClusterNodes"
+    method: POST
+    headers: "{{ garage_admin_headers }}"
+    body_format: json
+    body:
+      - "{{ hostvars[item]['discovered_garage_node_hex'] }}@{{ hostvars[item]['garage_rpc_public_addr'] }}"
+    status_code: [200]
+    return_content: true
   loop: "{{ groups['sync_nodes'] }}"
   when:
     - inventory_hostname == groups['sync_nodes'][0]
     - item != inventory_hostname
   changed_when: false
 
-- name: Assign layout for each node
-  ansible.builtin.command:
-    cmd: >-
-      docker compose exec -T garage /garage layout assign
-      -z {{ hostvars[item]['garage_zone'] }}
-      -c {{ hostvars[item]['garage_capacity'] }}G
-      -t {{ item }}
-      {{ hostvars[item]['discovered_garage_node_id'] }}
-    chdir: "{{ stack_deploy_dir }}"
+- name: Build layout assignment
+  ansible.builtin.set_fact:
+    garage_layout_roles: "{{ garage_layout_roles | default([]) + [{'id': hostvars[item]['discovered_garage_node_hex'], 'zone': hostvars[item]['garage_zone'], 'capacity': hostvars[item]['garage_capacity'] | int * 1073741824, 'tags': [item]}] }}"
   loop: "{{ groups['sync_nodes'] }}"
   when: inventory_hostname == groups['sync_nodes'][0]
-  changed_when: true
+
+- name: Assign layout for all nodes
+  ansible.builtin.uri:
+    url: "{{ garage_admin_url }}/v2/UpdateClusterLayout"
+    method: POST
+    headers: "{{ garage_admin_headers }}"
+    body_format: json
+    body:
+      roles: "{{ garage_layout_roles }}"
+    status_code: [200, 204, 500]
+    return_content: true
+  register: layout_assign
+  when: inventory_hostname == groups['sync_nodes'][0]
+  changed_when: layout_assign.status in [200, 204]
 
 - name: Get current layout version
-  ansible.builtin.shell:
-    cmd: >-
-      docker compose exec -T garage /garage layout show 2>&1
-      | grep -oP 'Current layout version: \K\d+' || echo 0
-    chdir: "{{ stack_deploy_dir }}"
-  register: layout_version
-  changed_when: false
+  ansible.builtin.uri:
+    url: "{{ garage_admin_url }}/v2/GetClusterLayout"
+    method: GET
+    headers: "{{ garage_admin_headers }}"
+    return_content: true
+  register: cluster_layout
   when: inventory_hostname == groups['sync_nodes'][0]
 
 - name: Apply layout
-  ansible.builtin.command:
-    cmd: >-
-      docker compose exec -T garage /garage layout apply
-      --version {{ (layout_version.stdout | int) + 1 }}
-    chdir: "{{ stack_deploy_dir }}"
-  when: inventory_hostname == groups['sync_nodes'][0]
+  ansible.builtin.uri:
+    url: "{{ garage_admin_url }}/v2/ApplyClusterLayout"
+    method: POST
+    headers: "{{ garage_admin_headers }}"
+    body_format: json
+    body:
+      version: "{{ (cluster_layout.json.version | default(0) | int) + 1 }}"
+    status_code: [200, 204]
+    return_content: true
+  when:
+    - inventory_hostname == groups['sync_nodes'][0]
+    - cluster_layout.json.stagedRoleChanges | default([]) | length > 0
   changed_when: true
 
 # --- Bucket (idempotent — skipped if already exists via replication) ---
 
 - name: Check if bucket exists
-  ansible.builtin.command:
-    cmd: docker compose exec -T garage /garage bucket info {{ s3_bucket }}
-    chdir: "{{ stack_deploy_dir }}"
+  ansible.builtin.uri:
+    url: "{{ garage_admin_url }}/v2/GetBucketInfo?globalAlias={{ s3_bucket }}"
+    method: GET
+    headers: "{{ garage_admin_headers }}"
+    return_content: true
+    status_code: [200, 404]
   register: bucket_check
-  failed_when: false
-  changed_when: false
   when: inventory_hostname == groups['sync_nodes'][0]
 
 - name: Create S3 bucket
-  ansible.builtin.command:
-    cmd: docker compose exec -T garage /garage bucket create {{ s3_bucket }}
-    chdir: "{{ stack_deploy_dir }}"
+  ansible.builtin.uri:
+    url: "{{ garage_admin_url }}/v2/CreateBucket"
+    method: POST
+    headers: "{{ garage_admin_headers }}"
+    body_format: json
+    body:
+      globalAlias: "{{ s3_bucket }}"
+    status_code: [200]
+    return_content: true
+  register: bucket_create
   when:
     - inventory_hostname == groups['sync_nodes'][0]
-    - bucket_check.rc != 0
+    - bucket_check.status == 404
+
+- name: Set bucket ID fact
+  ansible.builtin.set_fact:
+    garage_bucket_id: "{{ bucket_create.json.id if bucket_check.status == 404 else bucket_check.json.id }}"
+  when: inventory_hostname == groups['sync_nodes'][0]
 
 # --- API key (idempotent — skipped if already exists via replication) ---
 
 - name: Check if API key exists
-  ansible.builtin.command:
-    cmd: docker compose exec -T garage /garage key info octobot-sync-key
-    chdir: "{{ stack_deploy_dir }}"
+  ansible.builtin.uri:
+    url: "{{ garage_admin_url }}/v2/GetKeyInfo?search={{ garage_s3_key_name }}"
+    method: GET
+    headers: "{{ garage_admin_headers }}"
+    return_content: true
+    status_code: [200, 400, 404]
   register: key_check
-  failed_when: false
-  changed_when: false
   when: inventory_hostname == groups['sync_nodes'][0]
 
 - name: Create S3 API key
-  ansible.builtin.command:
-    cmd: docker compose exec -T garage /garage key create octobot-sync-key
-    chdir: "{{ stack_deploy_dir }}"
+  ansible.builtin.uri:
+    url: "{{ garage_admin_url }}/v2/CreateKey"
+    method: POST
+    headers: "{{ garage_admin_headers }}"
+    body_format: json
+    body:
+      name: "{{ garage_s3_key_name }}"
+    status_code: [200]
+    return_content: true
+  register: key_create
   when:
     - inventory_hostname == groups['sync_nodes'][0]
-    - key_check.rc != 0
-  register: key_output
+    - key_check.status != 200
+  no_log: true
+
+- name: Set API key ID fact
+  ansible.builtin.set_fact:
+    garage_access_key_id: "{{ key_create.json.accessKeyId if key_check.status != 200 else key_check.json.accessKeyId }}"
+  when: inventory_hostname == groups['sync_nodes'][0]
   no_log: true
 
 - name: Grant key access to bucket
-  ansible.builtin.command:
-    cmd: >-
-      docker compose exec -T garage /garage bucket allow
-      --read --write --owner {{ s3_bucket }} --key octobot-sync-key
-    chdir: "{{ stack_deploy_dir }}"
-  when:
-    - inventory_hostname == groups['sync_nodes'][0]
-    - key_check.rc != 0
+  ansible.builtin.uri:
+    url: "{{ garage_admin_url }}/v2/AllowBucketKey"
+    method: POST
+    headers: "{{ garage_admin_headers }}"
+    body_format: json
+    body:
+      bucketId: "{{ garage_bucket_id }}"
+      accessKeyId: "{{ garage_access_key_id }}"
+      permissions:
+        read: true
+        write: true
+        owner: true
+    status_code: [200]
+    return_content: true
+  when: inventory_hostname == groups['sync_nodes'][0]
+
+# --- Display credentials ---
 
 - name: Display new credentials
   ansible.builtin.debug:
@@ -130,11 +186,15 @@
         cp vault.yml.example inventories/<env>/group_vars/all/vault.yml
         ansible-vault edit inventories/<env>/group_vars/all/vault.yml
 
-      {{ key_output.stdout | default('(key already existed)') }}
+      {% if key_check.status != 200 %}
+      S3 Access Key ID:     {{ key_create.json.accessKeyId }}
+      S3 Secret Access Key: {{ key_create.json.secretAccessKey }}
+      {% else %}
+      (key already existed — secret not available via API, check vault)
+      {% endif %}
 
       Node IDs for host_vars:
       {% for host in groups['sync_nodes'] %}
         {{ host }}: {{ hostvars[host]['discovered_garage_node_id'] }}
       {% endfor %}
   when: inventory_hostname == groups['sync_nodes'][0]
-  no_log: "{{ key_output is changed }}"

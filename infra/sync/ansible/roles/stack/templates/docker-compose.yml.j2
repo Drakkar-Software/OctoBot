@@ -14,26 +14,23 @@ services:
       - garage_meta:/var/lib/garage/meta
       - garage_data:/var/lib/garage/data
       - ./garage.toml:/etc/garage.toml:ro
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3903/health"]
-      interval: 10s
-      retries: 5
     networks:
       - backend
 
   octobot-sync:
     image: {{ octobot_sync_image }}:{{ octobot_image_tag }}
-    command: ["OctoBot", "sync", "--host", "0.0.0.0", "--port", "{{ octobot_sync_port }}"]
+    command: ["sync", "--host", "0.0.0.0", "--port", "{{ octobot_sync_port }}"]
     env_file: .env
-    expose:
-      - "{{ octobot_sync_port }}"
+    volumes:
+      - ./collections.json:/octobot/user/collections.json:ro
+    ports:
+      - "127.0.0.1:{{ octobot_sync_port }}:{{ octobot_sync_port }}"
     restart: unless-stopped
     mem_limit: 1g
     security_opt:
       - no-new-privileges:true
     depends_on:
-      garage:
-        condition: service_healthy
+      - garage
     networks:
       - frontend
       - backend
