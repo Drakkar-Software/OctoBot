@@ -23,6 +23,7 @@ from additional_tests.exchanges_tests import abstract_authenticated_exchange_tes
 pytestmark = pytest.mark.asyncio
 
 
+# need non FR account to test this exchange (20 march 2026)
 class TestBitgetAuthenticatedExchange(
     abstract_authenticated_exchange_tester.AbstractAuthenticatedExchangeTester
 ):

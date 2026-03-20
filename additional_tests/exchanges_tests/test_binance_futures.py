@@ -42,6 +42,8 @@ class TestBinanceFuturesAuthenticatedExchange(
     MAX_TRADE_USD_VALUE = decimal.Decimal(450000)   # testnet portfolio
     ALLOW_0_MAKER_FEES = True
     SUPPORTS_GET_MAX_ORDERS_COUNT = True
+    # Set True when get_cancelled_order() can return outdated open orders
+    CAN_HAVE_DELAYED_CANCELLED_ORDERS = True
 
     SPECIAL_ORDER_TYPES_BY_EXCHANGE_ID: dict[
         str, (
