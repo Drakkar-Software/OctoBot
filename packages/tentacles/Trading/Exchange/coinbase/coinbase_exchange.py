@@ -279,7 +279,6 @@ class CoinbaseConnector(ccxt_connector.CCXTConnector):
 
 class Coinbase(exchanges.RestExchange):
     MAX_PAGINATION_LIMIT: int = 300
-    ALWAYS_REQUIRES_AUTHENTICATION = True
     IS_SKIPPING_EMPTY_CANDLES_IN_OHLCV_FETCH = True
     DEFAULT_CONNECTOR_CLASS = CoinbaseConnector
 

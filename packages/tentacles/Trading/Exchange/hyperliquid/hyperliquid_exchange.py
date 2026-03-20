@@ -44,6 +44,8 @@ class Hyperliquid(exchanges.RestExchange):
     FIX_MARKET_STATUS = True
     REQUIRE_ORDER_FEES_FROM_TRADES = True  # set True when get_order is not giving fees on closed orders and fees
     # should be fetched using recent trades.
+    EXPECT_POSSIBLE_ORDER_NOT_FOUND_DURING_ORDER_CREATION = True  # set True when get_order() can return None
+    # (order not found) when orders are instantly filled on exchange and are not fully processed on the exchange side.
 
     @classmethod
     def get_name(cls):

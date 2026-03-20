@@ -29,13 +29,10 @@ pytestmark = pytest.mark.asyncio
 
 
 class TestCoinbaseRealExchangeTester(RealExchangeTester):
-    # ALL require authentication ?
-    # https://github.com/ccxt/ccxt/issues/16719
     EXCHANGE_NAME = "coinbase"
     SYMBOL = "BTC/USDT"
     SYMBOL_2 = "ETH/BTC"
     SYMBOL_3 = "ADA/BTC"
-    REQUIRES_AUTH = True    # set True when even normally public apis require authentication
 
     async def test_time_frames(self):
         time_frames = await self.time_frames()
