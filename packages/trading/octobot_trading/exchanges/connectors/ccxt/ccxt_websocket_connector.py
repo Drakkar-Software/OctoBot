@@ -141,10 +141,10 @@ class CCXTWebsocketConnector(abstract_websocket_exchange.AbstractWebsocketExchan
             additional_config
         )
         if self.USE_REST_CONNECTOR_ADDITIONAL_CONFIG:
-            self.additional_config = {
-                **(self.additional_config or {}),
-                **self.exchange_manager.exchange.get_extended_additional_connector_config()
-            }
+            self.additional_config = (
+                self.exchange_manager.exchange.connector.get_extended_additional_connector_config(self.additional_config)
+                if self.exchange_manager.exchange.connector else self.additional_config
+            )
         self.headers: dict[str, str] = {}
         self.options: dict[str, typing.Any] = {
             "newUpdates": True,  # only get new updates from trades and ohlcv (don't return the full cached history)

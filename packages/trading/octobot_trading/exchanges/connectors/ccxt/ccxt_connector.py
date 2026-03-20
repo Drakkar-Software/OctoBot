@@ -342,6 +342,9 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
 
     @classmethod
     def get_extended_additional_connector_config(cls, additional_config: dict):
+        """
+        implement in subclass if necessary
+        """
         extended_ccxt_options = {}
         if extended_ccxt_options:
             if additional_config and ccxt_constants.CCXT_OPTIONS in additional_config:
