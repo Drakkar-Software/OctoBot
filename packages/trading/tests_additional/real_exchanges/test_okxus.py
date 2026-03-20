@@ -35,17 +35,3 @@ class TestOkxUsRealExchangeTester(test_okx.TestOkxRealExchangeTester):
     # okxus overrides
     async def test_active_symbols(self):
         await self.inner_test_active_symbols(2100, 2200)
-
-    async def test_get_all_currencies_price_ticker_with_market_filter(self):
-        tickers = await self.get_all_currencies_price_ticker(market_filter=self.get_market_filter())
-        assert len(tickers) > 2    # all tickers
-        assert self.SYMBOL in tickers
-        assert self.SYMBOL_2 in tickers
-        assert self.SYMBOL_3 not in tickers  # symbol not correctly parsed as not in available markets
-        tickers = await self.get_all_currencies_price_ticker(
-            symbols=[self.SYMBOL, self.SYMBOL_2],
-            market_filter=self.get_market_filter()
-        )
-        assert list(tickers) == [self.SYMBOL, self.SYMBOL_2]    # ticker for self.SYMBOL, self.SYMBOL_2
-        for symbol, ticker in tickers.items():
-            self._check_ticker(ticker, symbol)

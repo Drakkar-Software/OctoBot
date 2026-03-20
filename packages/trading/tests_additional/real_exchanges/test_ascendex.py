@@ -34,7 +34,7 @@ class TestAscendExRealExchangeTester(RealExchangeTester):
     EXCHANGE_NAME = "ascendex"
     SYMBOL = "BTC/USDT"
     SYMBOL_2 = "ETH/BTC"
-    SYMBOL_3 = "KAI/USDT"
+    SYMBOL_3 = "BTT/USDT"
     # CANDLE_SINCE = round(time.time() - datetime.timedelta(days = 30.5*6).total_seconds())  # now - 6 months
 
     async def test_time_frames(self):
