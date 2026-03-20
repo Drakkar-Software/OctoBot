@@ -28,7 +28,7 @@ evm_contract_base: "{{ vault_evm_contract_base | default('') }}"
 firewall_allowed_tcp_ports:
   - "22"
   - "8080"
-  - "3901"
+  # Port 3901 (Garage RPC) restricted to peer IPs only — see sync_nodes group vars
 
 # Docker (geerlingguy.docker)
 docker_install_compose_plugin: true

@@ -24,6 +24,7 @@
     group: deploy
     mode: "0600"
   notify: restart octobot-sync
+  no_log: true
 
 - name: Render garage.toml
   ansible.builtin.template:

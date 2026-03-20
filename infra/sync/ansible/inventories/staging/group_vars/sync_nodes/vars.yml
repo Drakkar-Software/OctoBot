@@ -4,3 +4,13 @@ garage_bootstrap_peers: >-
   {% set _ = peers.append('"' ~ hostvars[host]['garage_node_id'] ~ '@' ~ hostvars[host]['garage_rpc_public_addr'] ~ '"') %}
   {% endfor %}
   {{ peers | join(', ') }}
+
+# Allow Garage RPC (3901) only from peer sync nodes
+firewall_additional_rules: >-
+  {{
+    groups['sync_nodes']
+    | reject('equalto', inventory_hostname)
+    | map('extract', hostvars, 'ansible_host')
+    | map('regex_replace', '^(.*)$', 'iptables -A INPUT -p tcp --dport 3901 -s \1 -j ACCEPT')
+    | list
+  }}

@@ -30,11 +30,53 @@
     {
       "name": "delta-feed",
       "storagePath": "items/{itemId}/feed/{version}",
-      "readRoles": ["public"],
+      "readRoles": ["member"],
       "writeRoles": ["owner"],
       "encryption": "none",
       "maxBodyBytes": 65536,
       "rateLimit": true
+    },
+    {
+      "name": "theta-profiles",
+      "storagePath": "items/{itemId}/profile",
+      "readRoles": ["public"],
+      "writeRoles": ["owner", "admin"],
+      "encryption": "none",
+      "maxBodyBytes": 65536,
+      "objectSchema": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "description": { "type": "string" }
+        },
+        "additionalProperties": false
+      },
+      "rateLimit": true
+    },
+    {
+      "name": "theta-logos",
+      "storagePath": "items/{itemId}/logo",
+      "readRoles": ["public"],
+      "writeRoles": ["owner", "admin"],
+      "encryption": "none",
+      "maxBodyBytes": 2097152,
+      "allowedMimeTypes": ["image/png", "image/jpeg", "image/gif", "image/webp"],
+      "rateLimit": true
+    },
+    {
+      "name": "theta-versions",
+      "storagePath": "items/{itemId}/versions/{version}/document",
+      "readRoles": ["public"],
+      "writeRoles": ["owner", "admin"],
+      "encryption": "none",
+      "maxBodyBytes": 65536,
+      "objectSchema": {
+        "type": "object",
+        "properties": {
+          "description": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
     },
     {
       "name": "epsilon-catalog",

@@ -7,6 +7,9 @@ services:
       - "127.0.0.1:3902:3902"
       - "127.0.0.1:3903:3903"
     restart: unless-stopped
+    mem_limit: 2g
+    security_opt:
+      - no-new-privileges:true
     volumes:
       - garage_meta:/var/lib/garage/meta
       - garage_data:/var/lib/garage/data
@@ -15,6 +18,8 @@ services:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3903/health"]
       interval: 10s
       retries: 5
+    networks:
+      - backend
 
   octobot-sync:
     image: {{ octobot_sync_image }}:{{ octobot_image_tag }}
@@ -23,9 +28,15 @@ services:
     expose:
       - "{{ octobot_sync_port }}"
     restart: unless-stopped
+    mem_limit: 1g
+    security_opt:
+      - no-new-privileges:true
     depends_on:
       garage:
         condition: service_healthy
+    networks:
+      - frontend
+      - backend
 
   nginx:
     image: {{ nginx_image }}
@@ -36,7 +47,20 @@ services:
     depends_on:
       - octobot-sync
     restart: unless-stopped
+    mem_limit: 256m
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/health"]
+      interval: 10s
+      retries: 5
+    networks:
+      - frontend
 
 volumes:
   garage_meta:
   garage_data:
+
+networks:
+  frontend:
+  backend:

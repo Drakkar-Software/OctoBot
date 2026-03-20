@@ -30,7 +30,7 @@ COLLECTIONS_PATH = str(FIXTURES_DIR / "collections.json")
 
 
 def test_static_path_unchanged():
-    assert storage_path_to_regex("public/catalog") == "public/catalog"
+    assert storage_path_to_regex("public/catalog") == r"public/catalog"
 
 
 def test_single_template_replaced():
@@ -96,9 +96,9 @@ def test_public_pull_only_cached_1h():
 
 
 def test_public_writable_cached_30s():
-    """delta-feed is public + writable → 30s cache."""
+    """theta-profiles is public + writable → 30s cache."""
     output = generate(COLLECTIONS_PATH, "octobot-sync:3000", 80)
-    assert "# delta-feed (public, writable)" in output
+    assert "# theta-profiles (public, writable)" in output
     assert "proxy_cache_valid 200 30s;" in output
 
 
@@ -204,3 +204,67 @@ def test_no_rate_limit_config():
     assert "limit_req_zone" not in output
     assert "limit_req" not in output
     assert "public-col" in output
+
+
+# ── Security: input sanitization (#24) ──
+
+
+def test_storage_path_escapes_regex_special_chars():
+    """Regex metacharacters in literal path segments must be escaped."""
+    result = storage_path_to_regex("public/data.v2")
+    assert result == r"public/data\.v2"
+
+    result = storage_path_to_regex("items/{id}/feed+extra")
+    assert result == r"items/[^/]+/feed\+extra"
+
+
+def test_storage_path_escapes_pipe():
+    """Pipe in path could create regex OR — must be escaped."""
+    result = storage_path_to_regex("public/a|b")
+    assert result == r"public/a\|b"
+
+
+def test_storage_path_escapes_dollar():
+    """Dollar sign in path must be escaped."""
+    result = storage_path_to_regex("public/price$")
+    assert result == r"public/price\$"
+
+
+def test_storage_path_escapes_parentheses():
+    result = storage_path_to_regex("public/data(v1)")
+    assert result == r"public/data\(v1\)"
+
+
+def test_invalid_collection_name_rejected():
+    """Collection names with special chars should raise ValueError."""
+    config = {
+        "version": 1,
+        "collections": [
+            {
+                "name": "bad name; injection",
+                "storagePath": "public/data",
+                "readRoles": ["public"],
+                "writeRoles": ["admin"],
+                "encryption": "none",
+                "maxBodyBytes": 65536,
+            }
+        ],
+    }
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+        json.dump(config, f)
+        f.flush()
+        try:
+            with pytest.raises(ValueError, match="Invalid collection name"):
+                generate(f.name, "octobot-sync:3000", 80)
+        finally:
+            os.unlink(f.name)
+
+
+def test_rate_to_nginx_rejects_zero():
+    with pytest.raises(ValueError, match="must be positive"):
+        rate_to_nginx(0, 60_000)
+
+
+def test_rate_to_nginx_rejects_negative():
+    with pytest.raises(ValueError, match="must be positive"):
+        rate_to_nginx(10, -1)

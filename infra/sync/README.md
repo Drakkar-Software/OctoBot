@@ -20,28 +20,24 @@ cd infra/sync/ansible
 # 2. Install Ansible Galaxy roles
 ansible-galaxy install -r requirements.yml
 
-# 3. Set up collections config
-cp roles/stack/files/collections.json.example roles/stack/files/collections.json
-vim roles/stack/files/collections.json        # adjust collections for your deployment
-
-# 4. Set up credentials for your environment
+# 3. Set up credentials for your environment
 cp vault.yml.example inventories/development/group_vars/all/vault.yml
 cp hosts.yml.example inventories/development/hosts.yml
 
-# 5. Set up SSH key
+# 4. Set up SSH key
 mkdir -p inventories/development/.ssh
 cp ~/.ssh/id_rsa inventories/development/.ssh/id_rsa
 chmod 600 inventories/development/.ssh/id_rsa
 
-# 6. Fill in real values
+# 5. Fill in real values
 vim inventories/development/hosts.yml                 # node IPs, zones, capacity
 vim inventories/development/group_vars/all/vault.yml  # secrets
 
-# 7. Encrypt sensitive files
+# 6. Encrypt sensitive files
 ansible-vault encrypt inventories/development/group_vars/all/vault.yml
 ansible-vault encrypt inventories/development/hosts.yml
 
-# 8. Deploy
+# 7. Deploy
 ansible-playbook playbooks/site.yml -i inventories/development
 ```
 

@@ -19,13 +19,26 @@ import sys
 import textwrap
 
 
+_COLLECTION_NAME_RE = re.compile(r"^[a-zA-Z0-9_-]+$")
+
+
 def storage_path_to_regex(storage_path: str) -> str:
     """Convert a storagePath to an nginx location regex.
 
     "items/{itemId}/feed/{version}" → "items/[^/]+/feed/[^/]+"
     "public/catalog"               → "public/catalog"
+
+    Literal path segments are escaped so that regex metacharacters in
+    collection paths cannot inject arbitrary nginx location patterns.
     """
-    return re.sub(r"\{[^}]+\}", "[^/]+", storage_path)
+    parts = re.split(r"(\{[^}]+\})", storage_path)
+    result = []
+    for part in parts:
+        if part.startswith("{") and part.endswith("}"):
+            result.append("[^/]+")
+        else:
+            result.append(re.escape(part))
+    return "".join(result)
 
 
 def rate_to_nginx(max_requests: int, window_ms: int) -> tuple[str, int]:
@@ -33,6 +46,8 @@ def rate_to_nginx(max_requests: int, window_ms: int) -> tuple[str, int]:
 
     Returns (rate_str, burst) e.g. ("2r/s", 20).
     """
+    if max_requests <= 0 or window_ms <= 0:
+        raise ValueError(f"Rate limit values must be positive: maxRequests={max_requests}, windowMs={window_ms}")
     window_s = window_ms / 1000
     rps = max_requests / window_s
     if rps >= 1:
@@ -49,6 +64,10 @@ def generate(collections_path: str, upstream: str, listen: int) -> str:
         config = json.load(f)
 
     collections = config.get("collections", [])
+    for col in collections:
+        name = col.get("name", "")
+        if not _COLLECTION_NAME_RE.match(name):
+            raise ValueError(f"Invalid collection name (must be alphanumeric/hyphens/underscores): {name!r}")
     global_rate_limit = config.get("rateLimit")
 
     # Rate limit zones
