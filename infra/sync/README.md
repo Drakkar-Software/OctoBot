@@ -202,6 +202,48 @@ See `vault.yml.example` for the full list:
 | `vault_encryption_secret` | User data encryption key |
 | `vault_platform_encryption_secret` | Platform data encryption key |
 
+### Regenerating S3 keys
+
+The S3 secret key is only returned by Garage at creation time. If it was lost, delete the key and recreate it:
+
+```bash
+# 1. SSH into any cluster node
+ssh deploy@<node>
+
+# 2. Read the admin token from the deployed Garage config
+GARAGE_TOKEN=$(grep admin_token /opt/octobot-sync/garage.toml | awk -F'"' '{print $2}')
+
+# 3. Get the key ID
+KEY_ID=$(curl -s -H "Authorization: Bearer $GARAGE_TOKEN" \
+  'http://127.0.0.1:3903/v2/GetKeyInfo?search=octobot-sync-key' \
+  | python3 -c "import sys,json; print(json.load(sys.stdin)['accessKeyId'])")
+
+echo "Key ID: $KEY_ID"
+
+# 4. Delete the key
+curl -s -X POST -H "Authorization: Bearer $GARAGE_TOKEN" \
+  "http://127.0.0.1:3903/v2/DeleteKey?id=$KEY_ID"
+```
+
+Then re-run `setup-garage.yml` — it will create a new key and display the credentials:
+
+```bash
+ansible-playbook playbooks/setup-garage.yml -i inventories/<env>
+```
+
+Save the new credentials into vault.yml:
+
+```bash
+ansible-vault edit inventories/<env>/group_vars/all/vault.yml
+# Update vault_s3_access_key and vault_s3_secret_key
+```
+
+Re-deploy to apply the new credentials:
+
+```bash
+ansible-playbook playbooks/site.yml -i inventories/<env>
+```
+
 ## Adding a new node
 
 1. Edit the environment's `hosts.yml` — add a new entry under `sync_nodes`
