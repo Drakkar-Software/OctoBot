@@ -26,6 +26,7 @@ import tentacles.Services.Interfaces.web_interface.constants as constants
 import tentacles.Services.Interfaces.web_interface.login as login
 import tentacles.Services.Interfaces.web_interface.models as models
 import tentacles.Services.Interfaces.web_interface.util as util
+import tentacles.Services.Interfaces.web_interface.security as security
 import tentacles.Services.Interfaces.web_interface.flask_util as flask_util
 import octobot_backtesting.api as backtesting_api
 import octobot_trading.api as trading_api
@@ -47,7 +48,7 @@ def register(blueprint):
         else:
             current_profile = models.get_current_profile()
         if next_url is not None:
-            return flask.redirect(next_url)
+            return flask.redirect(security.redirect_target_or(next_url, flask.url_for("profile")))
         media_url = flask.url_for("tentacle_media", _external=True)
         display_config = interfaces_util.get_edited_config()
 
@@ -130,7 +131,8 @@ def register(blueprint):
                 return util.get_rest_reply(flask.jsonify(str(err)), code=400)
             flask.flash(f"{removed_profile.name} profile removed.", "success")
             return util.get_rest_reply(flask.jsonify("Profile created"))
-        next_url = flask.request.args.get("next", flask.url_for('profile'))
+        next_url = flask.request.args.get("next", None)
+        profiles_next_default = flask.url_for('profile')
         if action == "import":
             file = flask.request.files['file']
             name = werkzeug.utils.secure_filename(flask.request.files['file'].filename)
@@ -139,7 +141,7 @@ def register(blueprint):
                 flask.flash(f"{new_profile.name} profile successfully imported.", "success")
             except Exception as err:
                 flask.flash(f"Error when importing profile: {err}.", "danger")
-            return flask.redirect(next_url)
+            return flask.redirect(security.redirect_target_or(next_url, profiles_next_default))
         if action == "download":
             url = flask.request.form.get('inputProfileLink')
             strategy_id = flask.request.json.get('strategy_id')
@@ -172,7 +174,7 @@ def register(blueprint):
                     code=200 if success else 400
                 )
             flask.flash(f"{message}", "success" if success else "danger")
-            return flask.redirect(next_url)
+            return flask.redirect(security.redirect_target_or(next_url, profiles_next_default))
         if action == "export":
             profile_id = flask.request.args.get("profile_id")
             temp_file = os.path.abspath("profile")
@@ -269,7 +271,7 @@ def register(blueprint):
             if request_data.get("restart_after_save", False):
                 models.schedule_delayed_command(models.restart_bot)
             if next_url is not None:
-                return flask.redirect(next_url)
+                return flask.redirect(security.redirect_target_or(next_url, flask.url_for("profile")))
             return util.get_rest_reply(flask.jsonify(response))
         else:
             return util.get_rest_reply(flask.jsonify(err_message), 500)

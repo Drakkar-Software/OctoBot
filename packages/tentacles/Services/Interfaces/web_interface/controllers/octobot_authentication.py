@@ -63,9 +63,11 @@ def register(blueprint):
 
     def _get_next_url_or_home_redirect():
         next_url = flask.request.args.get('next')
-        if not security.is_safe_url(next_url):
+        if not security.is_safe_redirect_url(next_url):
             return flask.abort(400)
-        return flask.redirect(next_url or flask.url_for('home'))
+        if isinstance(next_url, str) and next_url.strip():
+            return flask.redirect(next_url.strip())
+        return flask.redirect(flask.url_for('home'))
 
 
 class LoginForm(flask_wtf.FlaskForm):

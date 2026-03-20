@@ -24,6 +24,7 @@ import tentacles.Services.Interfaces.web_interface.models as models
 import tentacles.Services.Interfaces.web_interface.models.distributions.prediction_market as models_prediction_market
 import tentacles.Services.Interfaces.web_interface.enums as enums
 import tentacles.Services.Interfaces.web_interface.util as util
+import tentacles.Services.Interfaces.web_interface.security as security
 import tentacles.Services.Interfaces.web_interface.flask_util as flask_util
 import octobot_trading.api as trading_api
 
@@ -145,7 +146,7 @@ def register(blueprint):
             if request_data.get("restart_after_save", False):
                 models.schedule_delayed_command(models.restart_bot)
             if next_url is not None:
-                return flask.redirect(next_url)
+                return flask.redirect(security.redirect_target_or(next_url, flask.url_for('configuration')))
             return util.get_rest_reply(flask.jsonify(response))
         else:
             return util.get_rest_reply(flask.jsonify(err_message), 500)
@@ -189,4 +190,4 @@ def register(blueprint):
             flask.flash(
                 f"Selected the {current_profile.name} profile", "success"
             )
-        return flask.redirect(next_url)
+        return flask.redirect(security.redirect_target_or(next_url, flask.url_for('configuration')))

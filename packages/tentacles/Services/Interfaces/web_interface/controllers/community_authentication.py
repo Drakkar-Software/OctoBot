@@ -23,6 +23,7 @@ import octobot_commons.logging as logging
 import octobot_services.interfaces.util as interfaces_util
 import tentacles.Services.Interfaces.web_interface.login as login
 import tentacles.Services.Interfaces.web_interface.models as models
+import tentacles.Services.Interfaces.web_interface.security as security
 
 
 VALIDATE_EMAIL_INFO = "Please validate your email from the confirm link we sent you and re-enter your credentials."
@@ -64,7 +65,7 @@ def register(blueprint):
                     logging.get_logger("CommunityAuthentication").exception(e, False)
                     flask.flash(f"Error during authentication: {e}", "error")
         if flask.request.method == 'POST' and next_url and authenticator.is_logged_in():
-            return flask.redirect(next_url)
+            return flask.redirect(security.redirect_target_or(next_url, flask.url_for('community')))
         return flask.render_template('community_login.html',
                                      form=form,
                                      current_logged_in_email=logged_in_email,
@@ -96,7 +97,7 @@ def register(blueprint):
                                     f"from your OctoBot account.", "success")
                 # creation success: redirect to next_url
                 if next_url:
-                    return flask.redirect(next_url)
+                    return flask.redirect(security.redirect_target_or(next_url, flask.url_for('community')))
             except community_errors.EmailValidationRequiredError:
                 flask.flash(VALIDATE_EMAIL_INFO, "info")
                 interfaces_util.run_in_bot_main_loop(authenticator.logout())
@@ -118,11 +119,12 @@ def register(blueprint):
     @blueprint.route("/community_logout")
     @login.login_required_when_activated
     def community_logout():
-        next_url = flask.request.args.get("next", flask.url_for("community_login"))
+        default_next = flask.url_for("community_login")
+        next_url = flask.request.args.get("next", default_next)
         if not models.can_logout():
             return flask.redirect(flask.url_for('community'))
         interfaces_util.run_in_bot_main_loop(authentication.Authenticator.instance().logout())
-        return flask.redirect(next_url)
+        return flask.redirect(security.redirect_target_or(next_url, default_next))
 
 
 class CommunityLoginForm(flask_wtf.FlaskForm):
