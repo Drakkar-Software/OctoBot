@@ -17,6 +17,7 @@ import flask
 
 import tentacles.Services.Interfaces.web_interface.login as login
 import tentacles.Services.Interfaces.web_interface.models as models
+import tentacles.Services.Interfaces.web_interface.security as security
 
 
 def register(blueprint):
@@ -24,7 +25,9 @@ def register(blueprint):
     @login.login_required_when_activated
     def wait_reboot():
         trading_delay_info = flask.request.args.get("trading_delay_info", 'false').lower() == "true"
-        next_url = flask.request.args.get("next", flask.url_for("home", trading_delay_info=trading_delay_info))
+        default_next = flask.url_for("home", trading_delay_info=trading_delay_info)
+        next_url = flask.request.args.get("next", default_next)
+        safe_next = security.redirect_target_or(next_url, default_next)
         reboot = flask.request.args.get("reboot", "false").lower() == "true"
         onboarding = flask.request.args.get("onboarding", 'false').lower() == "true"
 
@@ -33,7 +36,7 @@ def register(blueprint):
                 'wait_reboot.html',
                 show_nab_bar=not onboarding,
                 onboarding=onboarding,
-                next_url=next_url,
+                next_url=safe_next,
                 current_profile_name=models.get_current_profile().name,
             )
             if not models.is_rebooting():
@@ -41,5 +44,5 @@ def register(blueprint):
                 # schedule reboot now that the page render has been computed
                 models.restart_bot(delay=reboot_delay)
         else:
-            return_val = flask.redirect(next_url)
+            return_val = flask.redirect(safe_next)
         return return_val

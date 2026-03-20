@@ -16,7 +16,8 @@
 import datetime
 import flask
 import werkzeug.http as werk_http
-import urllib.parse as url_parse
+import urllib.parse
+import re
 
 
 CACHE_CONTROL_KEY = 'Cache-Control'
@@ -65,8 +66,38 @@ def _prepare_response_extra_headers(include_security_headers):
     return response_extra_headers
 
 
+def is_safe_redirect_url(target) -> bool:
+    """
+    True if target is usable with flask.redirect without open-redirect risk:
+    same host and scheme as the current request, or absent/blank (caller supplies
+    a default destination).
+    """
+    if target is None:
+        return True
+    if not isinstance(target, str):
+        return False
+    stripped = target.strip()
+    if not stripped:
+        return True
+    # Only allow absolute paths starting with exactly one slash
+    if not re.match(r'^/[^/]', target):
+        return False
+    ref_url = urllib.parse.urlparse(flask.request.host_url)
+    test_url = urllib.parse.urlparse(urllib.parse.urljoin(flask.request.host_url, stripped))
+    return test_url.scheme in ('http', 'https') and ref_url.netloc == test_url.netloc
+
+
+def redirect_target_or(target, default):
+    """Return a same-host redirect path/URL, or default if missing or unsafe."""
+    if target is None or not isinstance(target, str):
+        return default
+    stripped = target.strip()
+    if not stripped:
+        return default
+    if not is_safe_redirect_url(stripped):
+        return default
+    return stripped
+
+
 def is_safe_url(target):
-    ref_url = url_parse.urlparse(flask.request.host_url)
-    test_url = url_parse.urlparse(url_parse.urljoin(flask.request.host_url, target))
-    return test_url.scheme in ('http', 'https') and \
-        ref_url.netloc == test_url.netloc
+    return is_safe_redirect_url(target)

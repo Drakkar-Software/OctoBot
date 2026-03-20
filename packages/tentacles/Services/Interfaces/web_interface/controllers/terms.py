@@ -18,6 +18,7 @@ import flask
 import octobot.disclaimer as disclaimer
 import tentacles.Services.Interfaces.web_interface.login as login
 import tentacles.Services.Interfaces.web_interface.models as models
+import tentacles.Services.Interfaces.web_interface.security as security
 import tentacles.Services.Interfaces.web_interface.flask_util as flask_util
 
 
@@ -37,5 +38,6 @@ def register(blueprint):
         if flask.request.args.get("accept_terms", None) == "True":
             models.accept_terms(True)
             flask_util.BrowsingDataProvider.instance().set_first_displays(True)
-            return flask.redirect(next_url or flask.url_for("home"))
+            safe_next = security.redirect_target_or(next_url, flask.url_for("home"))
+            return flask.redirect(safe_next)
         return flask.redirect(flask.url_for("terms"))
