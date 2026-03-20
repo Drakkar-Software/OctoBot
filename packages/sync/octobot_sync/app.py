@@ -27,7 +27,6 @@ from starfish_server.replica import ReplicaManager, create_replica_router
 import octobot_sync.auth as auth
 import octobot_sync.chain as chain
 import octobot_sync.constants as constants
-import octobot_sync.routes as routes
 import octobot_sync.sync as sync
 
 
@@ -47,19 +46,7 @@ def create_app(
     encryption_secret = os.environ["ENCRYPTION_SECRET"]
     platform_encryption_secret = os.environ["PLATFORM_ENCRYPTION_SECRET"]
 
-    # Store shared deps on app.state for route handlers
-    app.state.object_store = object_store
-    app.state.nonce = nonce
-    app.state.registry = registry
-    app.state.platform_pubkey = platform_pubkey
-    app.state.encryption_secret = encryption_secret
-    app.state.platform_encryption_secret = platform_encryption_secret
-
     sync_config = sync.load_sync_config(collections_path)
-
-    # Health + verify (unversioned)
-    app.include_router(routes.health.router)
-    app.include_router(routes.verify.router)
 
     replica_manager = None
     if primary_url:
@@ -97,10 +84,6 @@ def create_app(
         )
     )
     app.include_router(sync_router, prefix="/v1")
-
-    # Manual routes (non-sync)
-    app.include_router(routes.product_meta.router, prefix="/v1")
-    app.include_router(routes.product.router, prefix="/v1")
 
     if replica_manager:
         @app.on_event("startup")

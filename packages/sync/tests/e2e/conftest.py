@@ -17,7 +17,6 @@
 """Shared fixtures for e2e tests."""
 
 import os
-import time
 from pathlib import Path
 
 import pytest
@@ -26,7 +25,6 @@ from httpx import AsyncClient, ASGITransport
 import octobot_sync.app as sync_app
 import octobot_sync.auth as auth
 import octobot_sync.chain as chain
-import octobot_sync.constants as constants
 import tests.mock_chain as mock_chain_module
 
 ADMIN_PUBKEY = "0xE2eAdminPubkey"
@@ -81,30 +79,3 @@ async def client(app):
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
-
-
-def make_verify_headers(
-    mock_chain: mock_chain_module.MockChain,
-    pubkey: str,
-    original_method: str,
-    original_uri: str,
-) -> dict[str, str]:
-    """Build valid auth + nginx headers for the /verify endpoint."""
-    ts = str(int(time.time() * 1000))
-    nonce = f"e2e-nonce-{time.time()}"
-    body_hash = auth.hash_body("")
-    canonical = auth.build_canonical(
-        original_method, original_uri, ts, nonce, body_hash
-    )
-    signature = f"e2e-sig-{ts}"
-    mock_chain.set_signature_valid(canonical, signature, pubkey, True)
-
-    return {
-        constants.HEADER_PUBKEY: pubkey,
-        constants.HEADER_SIGNATURE: signature,
-        constants.HEADER_TIMESTAMP: ts,
-        constants.HEADER_NONCE: nonce,
-        constants.HEADER_CHAIN: CHAIN_ID,
-        constants.HEADER_ORIGINAL_METHOD: original_method,
-        constants.HEADER_ORIGINAL_URI: original_uri,
-    }

@@ -33,7 +33,7 @@ def test_sync_config_version():
 
 
 def test_sync_config_has_collections():
-    assert len(_load().collections) == 7
+    assert len(_load().collections) == 10
 
 
 def test_all_collections_have_names():
@@ -46,10 +46,10 @@ def test_all_collections_have_names():
 def test_rate_limited_collection():
     col = next(c for c in _load().collections if c.name == "delta-feed")
     assert col.storage_path == "items/{itemId}/feed/{version}"
-    assert "public" in col.read_roles
+    assert "member" in col.read_roles
     assert "owner" in col.write_roles
     assert col.encryption == "none"
-    assert col.rate_limit is True
+    assert col.rate_limit
 
 
 def test_bundled_collections():

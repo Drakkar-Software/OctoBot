@@ -26,7 +26,6 @@ from octobot_sync.sync.role_resolver import (
     create_role_resolver,
     create_role_enricher,
     create_signature_verifier,
-    find_item,
 )
 
 __all__ = [
@@ -36,5 +35,4 @@ __all__ = [
     "create_role_resolver",
     "create_role_enricher",
     "create_signature_verifier",
-    "find_item",
 ]

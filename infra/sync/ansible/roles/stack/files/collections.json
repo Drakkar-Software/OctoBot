@@ -1,0 +1,276 @@
+{
+  "version": 1,
+  "collections": [
+    {
+      "name": "signals",
+      "storagePath": "products/{productId}/signals/{version}",
+      "readRoles": ["member"],
+      "writeRoles": ["owner"],
+      "encryption": "none",
+      "maxBodyBytes": 65536,
+      "rateLimit": true
+    },
+    {
+      "name": "product-profiles",
+      "storagePath": "products/{productId}/profile",
+      "readRoles": ["public"],
+      "writeRoles": ["owner", "admin"],
+      "encryption": "none",
+      "maxBodyBytes": 65536,
+      "objectSchema": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "website": { "type": "string" },
+          "twitter": { "type": "string" },
+          "tags": {
+            "type": "array",
+            "items": { "type": "string", "maxLength": 100 },
+            "maxItems": 50
+          }
+        },
+        "additionalProperties": false
+      },
+      "rateLimit": true
+    },
+    {
+      "name": "product-logos",
+      "storagePath": "products/{productId}/logo",
+      "readRoles": ["public"],
+      "writeRoles": ["owner", "admin"],
+      "encryption": "none",
+      "maxBodyBytes": 2097152,
+      "allowedMimeTypes": ["image/png", "image/jpeg", "image/gif", "image/webp"],
+      "rateLimit": true
+    },
+    {
+      "name": "product-versions",
+      "storagePath": "products/{productId}/versions/{version}/document",
+      "readRoles": ["public"],
+      "writeRoles": ["owner", "admin"],
+      "encryption": "none",
+      "maxBodyBytes": 65536,
+      "objectSchema": {
+        "type": "object",
+        "properties": {
+          "description": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "bots",
+      "storagePath": "users/{identity}",
+      "bundle": "user-data",
+      "readRoles": ["self"],
+      "writeRoles": ["self"],
+      "encryption": "identity",
+      "maxBodyBytes": 10485760
+    },
+    {
+      "name": "accounts",
+      "storagePath": "users/{identity}",
+      "bundle": "user-data",
+      "readRoles": ["self"],
+      "writeRoles": ["self"],
+      "encryption": "identity",
+      "maxBodyBytes": 10485760
+    },
+    {
+      "name": "settings",
+      "storagePath": "users/{identity}",
+      "bundle": "user-data",
+      "readRoles": ["self"],
+      "writeRoles": ["self"],
+      "encryption": "identity",
+      "maxBodyBytes": 10485760
+    },
+    {
+      "name": "notifications",
+      "storagePath": "users/{identity}",
+      "bundle": "user-data",
+      "readRoles": ["self"],
+      "writeRoles": ["self"],
+      "encryption": "identity",
+      "maxBodyBytes": 10485760
+    },
+    {
+      "name": "referrals",
+      "storagePath": "users/{identity}/referrals",
+      "readRoles": ["self", "admin"],
+      "writeRoles": ["admin"],
+      "encryption": "none",
+      "maxBodyBytes": 65536
+    },
+    {
+      "name": "invoices",
+      "storagePath": "users/{identity}/invoices",
+      "readRoles": ["self", "admin"],
+      "writeRoles": ["admin"],
+      "encryption": "none",
+      "maxBodyBytes": 65536
+    },
+    {
+      "name": "affiliate",
+      "storagePath": "users/{identity}/affiliate",
+      "readRoles": ["self", "admin"],
+      "writeRoles": ["admin"],
+      "encryption": "none",
+      "maxBodyBytes": 65536
+    },
+    {
+      "name": "donations",
+      "storagePath": "users/{identity}/donations",
+      "readRoles": ["self", "admin"],
+      "writeRoles": ["admin"],
+      "encryption": "none",
+      "maxBodyBytes": 65536
+    },
+    {
+      "name": "recovery",
+      "storagePath": "users/{identity}/recovery",
+      "readRoles": ["self", "admin"],
+      "writeRoles": ["self"],
+      "encryption": "identity",
+      "maxBodyBytes": 65536
+    },
+    {
+      "name": "courses-user",
+      "storagePath": "users/{identity}/courses",
+      "readRoles": ["self"],
+      "writeRoles": ["self"],
+      "encryption": "identity",
+      "maxBodyBytes": 65536
+    },
+    {
+      "name": "platform-affiliates",
+      "storagePath": "platform/affiliates",
+      "readRoles": ["admin"],
+      "writeRoles": ["admin"],
+      "encryption": "server",
+      "maxBodyBytes": 65536
+    },
+    {
+      "name": "platform-referrals",
+      "storagePath": "platform/referrals",
+      "readRoles": ["admin"],
+      "writeRoles": ["admin"],
+      "encryption": "server",
+      "maxBodyBytes": 65536
+    },
+    {
+      "name": "errors",
+      "storagePath": "users/{identity}/errors/{errorId}",
+      "readRoles": ["self", "admin"],
+      "writeRoles": ["self"],
+      "encryption": "delegated",
+      "maxBodyBytes": 500000
+    },
+    {
+      "name": "profiles",
+      "storagePath": "public/profiles/{identity}",
+      "readRoles": ["public"],
+      "writeRoles": ["self", "admin"],
+      "pullOnly": false,
+      "encryption": "none",
+      "maxBodyBytes": 65536,
+      "rateLimit": true
+    },
+    {
+      "name": "news",
+      "storagePath": "public/news/{lang}/{month}",
+      "readRoles": ["public"],
+      "writeRoles": [],
+      "pullOnly": true,
+      "forceFullFetch": true,
+      "encryption": "none",
+      "maxBodyBytes": 65536
+    },
+    {
+      "name": "courses",
+      "storagePath": "public/courses",
+      "readRoles": ["public"],
+      "writeRoles": [],
+      "pullOnly": true,
+      "encryption": "none",
+      "maxBodyBytes": 65536
+    },
+    {
+      "name": "exchanges",
+      "storagePath": "public/exchanges",
+      "readRoles": ["public"],
+      "writeRoles": [],
+      "pullOnly": true,
+      "encryption": "none",
+      "maxBodyBytes": 65536
+    },
+    {
+      "name": "cryptocurrencies",
+      "storagePath": "public/cryptocurrencies",
+      "readRoles": ["public"],
+      "writeRoles": [],
+      "pullOnly": true,
+      "encryption": "none",
+      "maxBodyBytes": 65536
+    },
+    {
+      "name": "cryptocurrency-detail",
+      "storagePath": "public/cryptocurrencies/{cryptocurrency}",
+      "readRoles": ["public"],
+      "writeRoles": [],
+      "pullOnly": true,
+      "encryption": "none",
+      "maxBodyBytes": 65536
+    },
+    {
+      "name": "highlights",
+      "storagePath": "public/products/highlights",
+      "readRoles": ["public"],
+      "writeRoles": [],
+      "pullOnly": true,
+      "encryption": "none",
+      "maxBodyBytes": 65536
+    },
+    {
+      "name": "categories",
+      "storagePath": "public/products/categories",
+      "readRoles": ["public"],
+      "writeRoles": [],
+      "pullOnly": true,
+      "encryption": "none",
+      "maxBodyBytes": 65536
+    },
+    {
+      "name": "plans",
+      "storagePath": "public/products/plans",
+      "readRoles": ["public"],
+      "writeRoles": [],
+      "pullOnly": true,
+      "encryption": "none",
+      "maxBodyBytes": 65536
+    },
+    {
+      "name": "products-index",
+      "storagePath": "public/products/index",
+      "readRoles": ["public"],
+      "writeRoles": [],
+      "pullOnly": true,
+      "encryption": "none",
+      "maxBodyBytes": 65536
+    },
+    {
+      "name": "performance",
+      "storagePath": "products/{productId}/performance/{version}",
+      "readRoles": ["public"],
+      "writeRoles": [],
+      "pullOnly": true,
+      "encryption": "none",
+      "maxBodyBytes": 65536
+    }
+  ],
+  "rateLimit": {
+    "windowMs": 60000,
+    "maxRequests": 100
+  }
+}

@@ -111,6 +111,7 @@
     - inventory_hostname == groups['sync_nodes'][0]
     - key_check.rc != 0
   register: key_output
+  no_log: true
 
 - name: Grant key access to bucket
   ansible.builtin.command:
@@ -136,3 +137,4 @@
         {{ host }}: {{ hostvars[host]['discovered_garage_node_id'] }}
       {% endfor %}
   when: inventory_hostname == groups['sync_nodes'][0]
+  no_log: "{{ key_output is changed }}"

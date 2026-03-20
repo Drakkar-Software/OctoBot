@@ -92,11 +92,13 @@ def create_role_resolver(
 def create_role_enricher(registry: chain.ChainRegistry):
     async def role_enricher(auth: AuthResult, params: dict[str, str]) -> list[str]:
         product_id = params.get("productId")
-        if product_id:
-            for chain in registry.list():
-                is_owner = await chain.is_item_owner(product_id, auth.identity)
-                if is_owner:
-                    return ["owner"]
+        if not product_id:
+            return []
+        for c in registry.list():
+            if await c.is_item_owner(product_id, auth.identity):
+                return ["owner", "member"]
+            if await c.has_access(product_id, auth.identity):
+                return ["member"]
         return []
 
     return role_enricher
@@ -113,11 +115,3 @@ def create_signature_verifier(registry: chain.ChainRegistry):
         return False
 
     return signature_verifier
-
-
-async def find_item(registry: chain.ChainRegistry, item_id: str) -> chain.Item | None:
-    for chain in registry.list():
-        item = await chain.get_item(item_id)
-        if item is not None:
-            return item
-    return None

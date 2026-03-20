@@ -147,9 +147,20 @@ async def test_role_enricher_owner(mock_chain, registry):
 
     extra = await enricher(AuthResult(identity=PUBKEY, roles=["user"]), {"productId": "product-123"})
     assert "owner" in extra
+    assert "member" in extra
 
 
-async def test_role_enricher_not_owner(mock_chain, registry):
+async def test_role_enricher_member(mock_chain, registry):
+    enricher = sync.create_role_enricher(registry)
+    mock_chain.set_owner("product-123", "0xSomeoneElse")
+    mock_chain.set_access("product-123", PUBKEY, 0)
+
+    extra = await enricher(AuthResult(identity=PUBKEY, roles=["user"]), {"productId": "product-123"})
+    assert "member" in extra
+    assert "owner" not in extra
+
+
+async def test_role_enricher_not_owner_no_access(mock_chain, registry):
     enricher = sync.create_role_enricher(registry)
     mock_chain.set_owner("product-123", "0xSomeoneElse")
 
@@ -210,15 +221,3 @@ async def test_role_enricher_no_product_id(mock_chain, registry):
     enricher = sync.create_role_enricher(registry)
     extra = await enricher(AuthResult(identity=PUBKEY, roles=["user"]), {})
     assert extra == []
-
-
-async def test_find_item(mock_chain, registry):
-    mock_chain.set_item("item-1", chain.Item(id="item-1", owner="0xOwner"))
-    result = await sync.find_item(registry, "item-1")
-    assert result is not None
-    assert result.id == "item-1"
-
-
-async def test_find_item_not_found(registry):
-    result = await sync.find_item(registry, "nonexistent")
-    assert result is None
