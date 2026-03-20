@@ -15,4 +15,4 @@ bash tunnel.sh
 set +e
 
 # Start OctoBot using the installed console script
-OctoBot
+OctoBot "$@"
