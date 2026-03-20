@@ -340,12 +340,8 @@ class RealExchangeTester:
         async with self.get_exchange_manager() as exchange_manager:
             return await exchange_manager.exchange.get_price_ticker(self.SYMBOL)
 
-    async def get_all_currencies_price_ticker(self, market_filter=None, **kwargs):
-        if market_filter is not None:
-            async with self.get_exchange_manager(market_filter=market_filter) as exchange_manager:
-                # create 2 exchange manager to force applying market_filter (avoid single test call side effect)
-                await exchange_manager.exchange.connector.load_symbol_markets()
-        async with self.get_exchange_manager(market_filter=market_filter) as exchange_manager:
+    async def get_all_currencies_price_ticker(self, **kwargs):
+        async with self.get_exchange_manager() as exchange_manager:
             return await exchange_manager.exchange.get_all_currencies_price_ticker(**kwargs)
 
     async def get_user_recent_trades(self):
