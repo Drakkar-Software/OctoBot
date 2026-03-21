@@ -26,8 +26,7 @@ from openai.lib._pydantic import to_strict_json_schema
 
 MCP_AVAILABLE = False
 try:
-    from mcp import ClientSession, StdioServerParameters
-    from mcp.client.stdio import stdio_client
+    import mcp
     MCP_AVAILABLE = True
 except ImportError:
     MCP_AVAILABLE = False
@@ -37,9 +36,7 @@ import octobot_services.services as services
 import octobot_services.errors as errors
 import octobot_services.enums as enums
 import octobot_services.interfaces.util as interfaces_util
-from octobot_services.services.abstract_ai_service import AbstractAIService
 
-import octobot_commons.constants as commons_constants
 import octobot_commons.enums as commons_enums
 import octobot_commons.logging as commons_logging
 import octobot_commons.time_frame_manager as time_frame_manager
@@ -80,7 +77,6 @@ class LLMService(services.AbstractAIService):
     def get_fields_description(self):
         if self._env_secret_key is None:
             fields = {
-                services_constants.CONFIG_OPENAI_SECRET_KEY: "Your openai API secret key",
                 services_constants.CONFIG_LLM_CUSTOM_BASE_URL: (
                     "Custom LLM base url to use. Leave empty to use openai.com. For Ollama models, "
                     "add /v1 to the url (such as: http://localhost:11434/v1). "
@@ -126,7 +122,7 @@ class LLMService(services.AbstractAIService):
                     "If False, tool calls will be requested without JSON output."
                 ),
                 services_constants.CONFIG_LLM_AI_PROVIDER: "AI provider to use (openai, anthropic, local, other)",
-                services_constants.CONFIG_LLM_AUTH_TOKEN: "Authentication token for the AI service"
+                services_constants.CONFIG_LLM_API_KEY: "API key for the AI service. Previously known as 'openai-secret-key'"
             }
             return fields
         return {}
@@ -134,17 +130,20 @@ class LLMService(services.AbstractAIService):
     def get_default_value(self):
         if self._env_secret_key is None:
             return {
-                services_constants.CONFIG_LLM_MODEL: self.DEFAULT_MODEL,
-                services_constants.CONFIG_LLM_MODEL_FAST: "",
-                services_constants.CONFIG_LLM_MODEL_REASONING: "",
-                services_constants.CONFIG_LLM_DAILY_TOKENS_LIMIT: self.NO_TOKEN_LIMIT_VALUE,
-                services_constants.CONFIG_LLM_SHOW_REASONING: False,
-                services_constants.CONFIG_LLM_REASONING_EFFORT: "",
-                services_constants.CONFIG_LLM_MCP_SERVERS: [],
-                services_constants.CONFIG_LLM_AUTO_INJECT_MCP_TOOLS: True,
-                services_constants.CONFIG_LLM_TOOL_CALL_JSON_OUTPUT: True,
-                services_constants.CONFIG_LLM_AI_PROVIDER: "",
-                services_constants.CONFIG_LLM_AUTH_TOKEN: "",
+                # return config values to use in UI
+                services_constants.CONFIG_LLM_API_KEY: "",
+                services_constants.CONFIG_LLM_CUSTOM_BASE_URL: "",
+                # other config values are available but not displayed in UI for now
+                # services_constants.CONFIG_LLM_MODEL: self.DEFAULT_MODEL,
+                # services_constants.CONFIG_LLM_MODEL_FAST: "",
+                # services_constants.CONFIG_LLM_MODEL_REASONING: "",
+                # services_constants.CONFIG_LLM_DAILY_TOKENS_LIMIT: self.NO_TOKEN_LIMIT_VALUE,
+                # services_constants.CONFIG_LLM_SHOW_REASONING: False,
+                # services_constants.CONFIG_LLM_REASONING_EFFORT: "",
+                # services_constants.CONFIG_LLM_MCP_SERVERS: [],
+                # services_constants.CONFIG_LLM_AUTO_INJECT_MCP_TOOLS: True,
+                # services_constants.CONFIG_LLM_TOOL_CALL_JSON_OUTPUT: True,
+                # services_constants.CONFIG_LLM_AI_PROVIDER: "",
             }
         return {}
 
@@ -188,6 +187,9 @@ class LLMService(services.AbstractAIService):
 
         self.ai_provider = enums.AIProvider.OPENAI
         self._tool_call_json_output: bool = True
+
+    def get_ai_provider_name(self) -> str:
+        return self.ai_provider.value if self.ai_provider else enums.AIProvider.OPENAI.value
 
     def _load_model_from_config(self):
         """Load model from config if not overridden by environment variable."""
@@ -344,9 +346,9 @@ class LLMService(services.AbstractAIService):
                 except ValueError:
                     self.logger.warning(f"Invalid AI provider: {ai_provider_str}")
             
-            auth_token = svc_config.get(services_constants.CONFIG_LLM_AUTH_TOKEN)
-            if auth_token and not fields_utils.has_invalid_default_config_value(auth_token):
-                self.auth_token = auth_token
+            api_key = svc_config.get(services_constants.CONFIG_LLM_API_KEY)
+            if api_key and not fields_utils.has_invalid_default_config_value(api_key):
+                self.auth_token = api_key
                 
         except (KeyError, TypeError):
             pass
@@ -472,14 +474,14 @@ class LLMService(services.AbstractAIService):
                     args = []
                 
                 # Create stdio server parameters
-                server_params = StdioServerParameters(
+                server_params = mcp.StdioServerParameters(
                     command=command,
                     args=args,
                 )
                 
                 # Connect and discover tools
-                async with stdio_client(server_params) as (read, write):
-                    async with ClientSession(read, write) as session:
+                async with mcp.stdio_client(server_params) as (read, write):
+                    async with mcp.ClientSession(read, write) as session:
                         await session.initialize()
                         
                         # List available tools
@@ -900,7 +902,7 @@ class LLMService(services.AbstractAIService):
         
         return message_content
 
-    @AbstractAIService.retry_llm_completion()
+    @services.AbstractAIService.retry_llm_completion()
     async def get_completion(
         self,
         messages,
@@ -1031,7 +1033,7 @@ class LLMService(services.AbstractAIService):
             )
             self.creation_error_message = str(err)
         except openai.AuthenticationError as err:
-            self.logger.error(f"Invalid OpenAI api key: {err}")
+            self.logger.error(f"Invalid {self.get_ai_provider_name()} api key: {err}")
             self.creation_error_message = str(err)
         except Exception as err:
             raise errors.InvalidRequestError(
@@ -1057,7 +1059,7 @@ class LLMService(services.AbstractAIService):
         # Append tool results to conversation
         conversation_messages.extend(tool_results)
 
-    @AbstractAIService.retry_llm_completion()
+    @services.AbstractAIService.retry_llm_completion()
     async def get_completion_with_tools(
         self,
         messages: list,
@@ -1595,10 +1597,10 @@ class LLMService(services.AbstractAIService):
             return self.check_required_config({})
 
     def get_required_config(self):
-        env_base_url = os.getenv(services_constants.ENV_LLM_CUSTOM_BASE_URL, None)
-        if env_base_url or self._get_base_url() or self._get_api_key() is not None:
+        if self._env_base_url and self._env_secret_key:
+            # no config required when using environment variables
             return []
-        return [services_constants.CONFIG_OPENAI_SECRET_KEY]
+        return [services_constants.CONFIG_LLM_API_KEY]
 
     @classmethod
     def get_help_page(cls) -> str:
@@ -1623,7 +1625,9 @@ class LLMService(services.AbstractAIService):
                         self.get_type(), {}
                     )
                 if config:
-                    key = config.get(services_constants.CONFIG_OPENAI_SECRET_KEY, None)
+                    key = config.get(services_constants.CONFIG_LLM_API_KEY, 
+                        config.get(services_constants.DEPRECATED_CONFIG_OPENAI_SECRET_KEY, None)
+                    )
             except Exception:
                 pass
         if key and not fields_utils.has_invalid_default_config_value(key):
@@ -1637,9 +1641,10 @@ class LLMService(services.AbstractAIService):
         if self._env_base_url:
             return self._env_base_url
         try:
-            value = self.config.get(services_constants.CONFIG_CATEGORY_SERVICES, {}).get(
+            service_config = self.config.get(services_constants.CONFIG_CATEGORY_SERVICES, {}).get(
                 self.get_type(), {}
-            ).get(services_constants.CONFIG_LLM_CUSTOM_BASE_URL, None)
+            )
+            value = service_config.get(services_constants.CONFIG_LLM_CUSTOM_BASE_URL, None)
             if fields_utils.has_invalid_default_config_value(value):
                 return None
             return value or None
@@ -1687,11 +1692,16 @@ class LLMService(services.AbstractAIService):
                 )
                 self._mcp_tools = []
         except openai.AuthenticationError as err:
-            self.logger.error(f"Invalid OpenAI api key: {err}")
+            self.logger.error(f"Invalid {self.get_ai_provider_name()} api key: {err}")
             self.creation_error_message = str(err)
+        except openai.APIConnectionError as err:
+            server = self._get_base_url() or self.get_ai_provider_name()
+            error_message = f"Impossible to connect to {server} LLM server: {err}"
+            self.logger.error(error_message)
+            self.creation_error_message = error_message
         except Exception as err:
             self.logger.exception(
-                err, True, f"Unexpected error when initializing LLM service: {err}"
+                err, True, f"Unexpected error when initializing LLM service: {err} ({err.__class__.__name__})"
             )
 
     def _is_healthy(self):
@@ -1982,11 +1992,11 @@ class LLMSignalService(LLMService):
             # Call parent prepare to handle model loading and MCP discovery
             await super().prepare()
         except openai.AuthenticationError as err:
-            self.logger.error(f"Invalid OpenAI api key: {err}")
+            self.logger.error(f"Invalid {self.get_ai_provider_name()} api key: {err}")
             self.creation_error_message = str(err)
         except Exception as err:
             self.logger.exception(
-                err, True, f"Unexpected error when initializing GPT service: {err}"
+                err, True, f"Unexpected error when initializing LLM service: {err} ({err.__class__.__name__})"
             )
 
 
