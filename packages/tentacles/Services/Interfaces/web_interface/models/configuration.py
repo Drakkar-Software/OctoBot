@@ -850,7 +850,7 @@ def get_beta_env_enabled_in_config():
 
 def get_services_list():
     services = {}
-    for service in services_api.get_available_services():
+    for service in services_api.get_available_services() + services_api.get_available_ai_services():
         srv = service.instance()
         if srv.get_required_config():
             # do not add services without a config, ex: GoogleService (nothing to show on the web interface)
