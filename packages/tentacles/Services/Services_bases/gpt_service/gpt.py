@@ -70,7 +70,7 @@ REASONING_EFFORT_VALUES = (REASONING_EFFORT_LOW, REASONING_EFFORT_MEDIUM, REASON
 class LLMService(services.AbstractAIService):
     BACKTESTING_ENABLED = True
 
-    DEFAULT_MODEL = None
+    DEFAULT_MODEL = "gpt-4o-mini"
     NO_TOKEN_LIMIT_VALUE = -1
     HTTP_TIMEOUT = 300.0  # HTTP client timeout in seconds
 
@@ -133,8 +133,8 @@ class LLMService(services.AbstractAIService):
                 # return config values to use in UI
                 services_constants.CONFIG_LLM_API_KEY: "",
                 services_constants.CONFIG_LLM_CUSTOM_BASE_URL: "",
+                services_constants.CONFIG_LLM_MODEL: self.DEFAULT_MODEL,
                 # other config values are available but not displayed in UI for now
-                # services_constants.CONFIG_LLM_MODEL: self.DEFAULT_MODEL,
                 # services_constants.CONFIG_LLM_MODEL_FAST: "",
                 # services_constants.CONFIG_LLM_MODEL_REASONING: "",
                 # services_constants.CONFIG_LLM_DAILY_TOKENS_LIMIT: self.NO_TOKEN_LIMIT_VALUE,
@@ -1709,7 +1709,8 @@ class LLMService(services.AbstractAIService):
 
     def get_successful_startup_message(self):
         return (
-            f"LLM configured and ready. {len(self.models)} AI models are available. Using {self.models}.",
+            f"LLM configured and ready on {self.get_ai_provider_name()}. Default model: {self.model}. "
+            f"{len(self.models)} AI models are available: {self.models}.",
             self._is_healthy(),
         )
 
@@ -1968,7 +1969,8 @@ class LLMSignalService(LLMService):
 
     def get_successful_startup_message(self):
         return (
-            f"GPT configured and ready. {len(self.models)} AI models are available. "
+            f"LLM configured and ready on {self.get_ai_provider_name()}. Default model: {self.model}. "
+            f"{len(self.models)} AI models are available. "
             f"Using {'stored signals' if self.use_stored_signals_only() else self.models}.",
             self._is_healthy(),
         )
