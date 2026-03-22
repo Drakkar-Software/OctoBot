@@ -14,7 +14,6 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import asyncio
-import base64
 import contextlib
 import json
 import time
@@ -22,8 +21,6 @@ import typing
 import hashlib
 import os
 import decimal
-
-import octobot_commons.cryptography.encryption as commons_encryption
 
 import octobot.constants as constants
 import octobot.enums as enums
@@ -37,6 +34,7 @@ import octobot.community.models.formatters as formatters
 import octobot.community.models.strategy_data as strategy_data
 import octobot.community.supabase_backend as supabase_backend
 import octobot.community.supabase_backend.enums as backend_enums
+import octobot.community.wallet_backend as wallet_backend
 import octobot.community.feeds as community_feeds
 import octobot.community.tentacles_packages as community_tentacles_packages
 import octobot.community.community_bot as community_bot
@@ -46,7 +44,6 @@ import octobot_commons.authentication as authentication
 import octobot_commons.configuration as commons_configuration
 import octobot_commons.profiles as commons_profiles
 import octobot_trading.enums as trading_enums
-import octobot_sync.chain as sync_chain
 import octobot_sync.client as sync_client
 
 
@@ -131,6 +128,9 @@ class CommunityAuthentication(authentication.Authenticator):
         self._fetch_account_task: typing.Optional[asyncio.Task] = None
         self._sync_client = None
         self._sync_address: str = ""
+        self._wallet_backend: wallet_backend.WalletBackend = wallet_backend.WalletBackend(
+            self.configuration_storage.sync_storage, self.logger
+        )
 
     @staticmethod
     def create(configuration: commons_configuration.Configuration, **kwargs):
@@ -636,92 +636,25 @@ class CommunityAuthentication(authentication.Authenticator):
             self.initialized_event.set()
 
     def _get_or_create_wallet_private_key(self, chain_id: str) -> typing.Optional[str]:
-        chain_type, chain_network = chain_id.split(":", 1)
-        wallets = self._get_value_in_config(constants.CONFIG_COMMUNITY_WALLETS) or {}
-        chain_wallets = wallets.get(chain_type, {})
-        private_key = chain_wallets.get(chain_network)
-        if isinstance(private_key, dict):
-            # Encrypted keystore — plaintext key unavailable without passphrase
-            return None
-        if private_key:
-            return private_key
-        wallet = sync_chain.create_evm_wallet()
-        chain_wallets[chain_network] = wallet.private_key
-        wallets[chain_type] = chain_wallets
-        self._save_value_in_config(constants.CONFIG_COMMUNITY_WALLETS, wallets)
-        self.logger.info(f"Created new {chain_type} wallet for {chain_id}: {wallet.address}")
-        return wallet.private_key
-
-    def _get_node_keystore(self) -> dict:
-        chain_type, chain_network = constants.SYNC_CHAIN_ID.split(":", 1)
-        wallets = self._get_value_in_config(constants.CONFIG_COMMUNITY_WALLETS) or {}
-        value = wallets.get(chain_type, {}).get(chain_network)
-        if isinstance(value, dict):
-            return value
-        return {}
-
-    def _save_node_keystore(self, keystore: dict) -> None:
-        chain_type, chain_network = constants.SYNC_CHAIN_ID.split(":", 1)
-        wallets = self._get_value_in_config(constants.CONFIG_COMMUNITY_WALLETS) or {}
-        chain_wallets = wallets.get(chain_type, {})
-        chain_wallets[chain_network] = keystore
-        wallets[chain_type] = chain_wallets
-        self._save_value_in_config(constants.CONFIG_COMMUNITY_WALLETS, wallets)
+        return self._wallet_backend.get_or_create_wallet_private_key(chain_id)
 
     def is_node_wallet_configured(self) -> bool:
-        try:
-            return bool(self._get_node_keystore().get("encrypted_key"))
-        except Exception:
-            return False
+        return self._wallet_backend.is_node_wallet_configured()
 
     def get_node_wallet_address(self) -> typing.Optional[str]:
-        try:
-            return self._get_node_keystore().get("address") or None
-        except Exception:
-            return None
+        return self._wallet_backend.get_node_wallet_address()
 
-    def create_and_encrypt_node_wallet(self, passphrase: str) -> sync_chain.Wallet:
-        wallet = sync_chain.create_evm_wallet()
-        key_bytes = bytes.fromhex(wallet.private_key.removeprefix("0x"))
-        encrypted_key, salt, iv = commons_encryption.pbkdf2_encrypt_aes_key(key_bytes, passphrase)
-        self._save_node_keystore({
-            "address": wallet.address,
-            "encrypted_key": base64.b64encode(encrypted_key).decode(),
-            "salt": base64.b64encode(salt).decode(),
-            "iv": base64.b64encode(iv).decode(),
-        })
-        return wallet
+    def create_and_encrypt_node_wallet(self, passphrase: str):
+        return self._wallet_backend.create_and_encrypt_node_wallet(passphrase)
 
-    def import_and_encrypt_node_wallet(self, private_key: str, passphrase: str) -> sync_chain.Wallet:
-        try:
-            address = sync_chain.address_from_evm_key(private_key)
-        except Exception as err:
-            raise ValueError(f"Invalid EVM private key: {err}") from err
-        key_bytes = bytes.fromhex(private_key.removeprefix("0x"))
-        encrypted_key, salt, iv = commons_encryption.pbkdf2_encrypt_aes_key(key_bytes, passphrase)
-        self._save_node_keystore({
-            "address": address,
-            "encrypted_key": base64.b64encode(encrypted_key).decode(),
-            "salt": base64.b64encode(salt).decode(),
-            "iv": base64.b64encode(iv).decode(),
-        })
-        return sync_chain.Wallet(private_key=private_key, address=address)
+    def import_and_encrypt_node_wallet(self, private_key: str, passphrase: str):
+        return self._wallet_backend.import_and_encrypt_node_wallet(private_key, passphrase)
 
-    def decrypt_node_wallet(self, passphrase: str) -> sync_chain.Wallet:
-        keystore = self._get_node_keystore()
-        encrypted_key = base64.b64decode(keystore["encrypted_key"])
-        salt = base64.b64decode(keystore["salt"])
-        iv = base64.b64decode(keystore["iv"])
-        address = keystore["address"]
-        key_bytes = commons_encryption.pbkdf2_decrypt_aes_key(encrypted_key, passphrase, salt, iv)
-        return sync_chain.Wallet(private_key=key_bytes.hex(), address=address)
+    def decrypt_node_wallet(self, passphrase: str):
+        return self._wallet_backend.decrypt_node_wallet(passphrase)
 
     def verify_node_passphrase(self, passphrase: str) -> bool:
-        try:
-            self.decrypt_node_wallet(passphrase)
-            return True
-        except Exception:
-            return False
+        return self._wallet_backend.verify_node_passphrase(passphrase)
 
     def init_sync_client(self):
         if self._sync_client is not None:
