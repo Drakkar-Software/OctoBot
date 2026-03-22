@@ -98,7 +98,7 @@ class AutomationWorkflow:
                     AutomationWorkflow.get_logger(parsed_inputs).info(f"Executing user actions: {user_actions}")
                 else:
                     AutomationWorkflow.get_logger(parsed_inputs).info(
-                        f"Executing {parsed_inputs.task.name} ' DAG's executable actions"
+                        f"Executing {parsed_inputs.task.name} DAG's executable actions"
                     )
                 result = await octobot_flow_client.OctoBotActionsJob(
                     parsed_inputs.task.content, user_actions
