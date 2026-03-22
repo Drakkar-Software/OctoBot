@@ -31,6 +31,7 @@ if typing.TYPE_CHECKING:
 from octobot_node.scheduler import SCHEDULER  # avoid circular import
 
 
+MAX_ITERATION_RETRIES = 3
 
 
 @SCHEDULER.INSTANCE.dbos_class()
@@ -76,7 +77,9 @@ class AutomationWorkflow:
             )
 
     @staticmethod
-    @SCHEDULER.INSTANCE.step(name="execute_iteration")
+    @SCHEDULER.INSTANCE.step(
+        name="execute_iteration", retries_allowed=True, max_attempts=MAX_ITERATION_RETRIES
+    )
     async def execute_iteration(inputs: dict, user_actions: list[dict]) -> dict:
         """
         Execute an automation iteration: executed actions can be received priority actions or DAG's executable actions.
@@ -86,6 +89,8 @@ class AutomationWorkflow:
         Should be a SCHEDULER.INSTANCE.step to avoid executing actions twice when recovering a workflow 
         that was interrupted while executing priority actions which were received AFTER the initial 
         iteration of the workflow.
+
+        Will retry up to 3 times in case of an unexpected error before failing step.
         """
         parsed_inputs: params.AutomationWorkflowInputs = params.AutomationWorkflowInputs.from_dict(inputs)
         executed_step: str = "no action executed"

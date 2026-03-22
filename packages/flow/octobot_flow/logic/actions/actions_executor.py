@@ -172,11 +172,11 @@ class ActionsExecutor:
     #     )
 
     def _sync_after_execution(self):
-        exchange_account_elements = self._automation.get_exchange_account_elements(
+        if exchange_account_elements := self._automation.get_exchange_account_elements(
             self._as_reference_account
-        )
-        self._sync_automation_from_actions_results(exchange_account_elements)
-        self._sync_exchange_account_elements(exchange_account_elements)
+        ):
+            self._sync_automation_from_actions_results(exchange_account_elements)
+            self._sync_exchange_account_elements(exchange_account_elements)
 
     def _sync_automation_from_actions_results(
         self,

@@ -740,3 +740,105 @@ class TestExecuteAutomationIntegration:
         
         completed = [w for w in workflows if w.status == dbos.WorkflowStatusString.SUCCESS.value]
         assert len(completed) >= 3, f"Expected at least 3 completed workflows, got {len(completed)}"
+
+    @pytest.mark.asyncio
+    @required_imports
+    async def test_execute_automation_execute_iteration_retries_octobot_actions_job_then_succeeds(
+        self,
+        import_automation_workflow,
+        temp_dbos_scheduler,
+    ):
+        """
+        DBOS execute_iteration is configured with max_attempts=MAX_ITERATION_RETRIES.
+        When OctoBotActionsJob.run() fails on early attempts then succeeds, the step should
+        retry and eventually complete without failing the workflow.
+        """
+        max_attempts = octobot_node.scheduler.workflows.automation_workflow.MAX_ITERATION_RETRIES
+        task = octobot_node.models.Task(
+            name="retry_policy_test",
+            content="{}",
+            type=octobot_node.models.TaskType.EXECUTE_ACTIONS.value,
+        )
+        inputs = params.AutomationWorkflowInputs(task=task, execution_time=0).to_dict(
+            include_default_values=False
+        )
+        inputs["task"] = task.model_dump(exclude_defaults=True)
+
+        action = octobot_flow.entities.ConfiguredActionDetails(id="action_1", action="trade")
+        success_result = octobot_flow_client.OctoBotActionsJobResult(
+            processed_actions=[action],
+            next_actions_description=None,
+            actions_dag=None,
+            should_stop=False,
+        )
+        mock_job = mock.Mock()
+        mock_job.run = mock.AsyncMock(
+            side_effect=[*[RuntimeError("simulated transient failure")] * (max_attempts - 1), success_result]
+        )
+        mock_logger = mock.Mock()
+
+        recv_path = "octobot_node.scheduler.workflows.automation_workflow.SCHEDULER.INSTANCE.recv_async"
+        with mock.patch(recv_path, mock.AsyncMock(return_value=[])), mock.patch(
+            "asyncio.sleep", mock.AsyncMock()
+        ), mock.patch.object(
+            octobot_flow_client,
+            "OctoBotActionsJob",
+            mock.Mock(return_value=mock_job),
+        ), mock.patch.object(
+            octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow,
+            "get_logger",
+            mock.Mock(return_value=mock_logger),
+        ):
+            handle = await temp_dbos_scheduler.INSTANCE.start_workflow_async(
+                octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow.execute_automation,
+                inputs=inputs,
+            )
+            assert await handle.get_result() is None
+
+        assert mock_job.run.await_count == max_attempts
+        mock_logger.exception.assert_not_called()
+
+    @pytest.mark.asyncio
+    @required_imports
+    async def test_execute_automation_execute_iteration_exhausts_retries_when_octobot_actions_job_always_fails(
+        self,
+        import_automation_workflow,
+        temp_dbos_scheduler,
+    ):
+        """After MAX_ITERATION_RETRIES failed OctoBotActionsJob.run() calls, the step must stop retrying."""
+        max_attempts = octobot_node.scheduler.workflows.automation_workflow.MAX_ITERATION_RETRIES
+        task = octobot_node.models.Task(
+            name="retry_exhausted_test",
+            content="{}",
+            type=octobot_node.models.TaskType.EXECUTE_ACTIONS.value,
+        )
+        inputs = params.AutomationWorkflowInputs(task=task, execution_time=0).to_dict(
+            include_default_values=False
+        )
+        inputs["task"] = task.model_dump(exclude_defaults=True)
+
+        mock_job = mock.Mock()
+        mock_job.run = mock.AsyncMock(side_effect=RuntimeError("persistent failure"))
+        mock_logger = mock.Mock()
+
+        recv_path = "octobot_node.scheduler.workflows.automation_workflow.SCHEDULER.INSTANCE.recv_async"
+        with mock.patch(recv_path, mock.AsyncMock(return_value=[])), mock.patch(
+            "asyncio.sleep", mock.AsyncMock()
+        ), mock.patch.object(
+            octobot_flow_client,
+            "OctoBotActionsJob",
+            mock.Mock(return_value=mock_job),
+        ), mock.patch.object(
+            octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow,
+            "get_logger",
+            mock.Mock(return_value=mock_logger),
+        ):
+            handle = await temp_dbos_scheduler.INSTANCE.start_workflow_async(
+                octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow.execute_automation,
+                inputs=inputs,
+            )
+            assert await handle.get_result() is None
+
+        assert mock_job.run.await_count == max_attempts
+        mock_logger.exception.assert_called_once()
+        assert "Interrupted workflow: unexpected critical error: " in str(mock_logger.exception.call_args[0][2])
