@@ -18,15 +18,17 @@ from fastapi import APIRouter
 
 # Import from tentacles package (runtime) or fallback to direct imports (build)
 try:
-    from tentacles.Services.Interfaces.node_api_interface.api.routes import login, nodes, users, tasks
+    from tentacles.Services.Interfaces.node_api_interface.api.routes import login, nodes, users, tasks, logs, setup
 except ImportError:
-    from api.routes import login, nodes, users, tasks
+    from api.routes import login, nodes, users, tasks, logs, setup
 
 
 def build_api_router() -> APIRouter:
     api_router = APIRouter()
+    api_router.include_router(setup.router)
     api_router.include_router(login.router)
     api_router.include_router(users.router, prefix="/users")
     api_router.include_router(tasks.router, prefix="/tasks")
     api_router.include_router(nodes.router, prefix="/nodes")
+    api_router.include_router(logs.router, prefix="/logs")
     return api_router

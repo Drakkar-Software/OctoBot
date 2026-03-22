@@ -1,7 +1,6 @@
 import { Link } from "@tanstack/react-router"
-import { LogOut, Settings, Sliders, Users2 } from "lucide-react"
+import { LogOut, Settings, User } from "lucide-react"
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,7 +10,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import useAuth from "@/hooks/useAuth"
-import { getInitials } from "@/utils"
 
 export function UserMenu() {
   const { user, logout } = useAuth()
@@ -25,20 +23,13 @@ export function UserMenu() {
           className="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium"
           data-testid="user-menu"
         >
-          <Avatar className="size-7">
-            <AvatarFallback className="bg-zinc-600 text-white text-xs">
-              {getInitials(user?.full_name || "User")}
-            </AvatarFallback>
-          </Avatar>
-          <span className="hidden sm:block">{user?.full_name || "Admin"}</span>
+          <span className="flex size-7 items-center justify-center rounded-full bg-zinc-600 text-white">
+            <User className="size-4" />
+          </span>
+          <span className="hidden sm:block">{user?.full_name || user?.email?.slice(0, 8) || "—"}</span>
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-64" align="end" sideOffset={8}>
-        <DropdownMenuLabel className="flex flex-col gap-1">
-          <span className="text-sm font-medium">{user?.full_name || "Admin"}</span>
-          <span className="text-xs text-muted-foreground">{user?.email}</span>
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
         {/* <DropdownMenuItem asChild>
           <Link to="/tentacles">
             <Sliders className="size-4" />

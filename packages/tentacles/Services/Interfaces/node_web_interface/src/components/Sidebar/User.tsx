@@ -1,7 +1,5 @@
 import { Link as RouterLink } from "@tanstack/react-router"
-import { ChevronsUpDown, LogOut } from "lucide-react"
-
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { ChevronsUpDown, LogOut, User as UserIcon } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,7 +15,6 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import useAuth from "@/hooks/useAuth"
-import { getInitials } from "@/utils"
 
 interface UserInfoProps {
   fullName?: string
@@ -27,13 +24,11 @@ interface UserInfoProps {
 function UserInfo({ fullName, email }: UserInfoProps) {
   return (
     <div className="flex items-center gap-2.5 w-full min-w-0">
-      <Avatar className="size-8">
-        <AvatarFallback className="bg-zinc-600 text-white">
-          {getInitials(fullName || "User")}
-        </AvatarFallback>
-      </Avatar>
+      <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-zinc-600 text-white">
+        <UserIcon className="size-4" />
+      </span>
       <div className="flex flex-col items-start min-w-0">
-        <p className="text-sm font-medium truncate w-full">{fullName}</p>
+        <p className="text-sm font-medium truncate w-full">{fullName || email?.slice(0, 8)}</p>
         <p className="text-xs text-muted-foreground truncate w-full">{email}</p>
       </div>
     </div>
@@ -75,7 +70,7 @@ export function User({ user }: { user: any }) {
             align="end"
             sideOffset={4}
           >
-            <DropdownMenuLabel className="p-0 font-normal">
+            <DropdownMenuLabel className="p-0 font-normal overflow-hidden">
               <UserInfo fullName={user?.full_name} email={user?.email} />
             </DropdownMenuLabel>
             <DropdownMenuSeparator />

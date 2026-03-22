@@ -22,6 +22,7 @@ from fastapi.routing import APIRoute
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.cors import CORSMiddleware
 
+import octobot.community.authentication as community_auth
 import octobot_services.interfaces as services_interfaces
 import octobot_node.config as node_config
 import octobot_node.scheduler as scheduler # noqa: F401
@@ -89,6 +90,7 @@ class NodeApiInterface(services_interfaces.AbstractInterface):
             node_config.settings.SCHEDULER_POSTGRES_URL = node_postgres_url
         host = self.host
         port = self.port
+        community_auth.CommunityAuthentication.create(self.node_api_service.edited_config)
         self.app = self.create_app()
         # Set CORS from service config
         cors_origins_str = self.node_api_service.get_backend_cors_origins()

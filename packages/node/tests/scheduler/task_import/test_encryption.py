@@ -32,12 +32,12 @@ from octobot_node.tools.decrypt_csv_tasks import decrypt_csv_file_from_keys_file
 
 class TestCSVEncryption:
     def test_encrypt_and_decrypt_csv(self, tmp_path: Path) -> None:
-        test_csv_content = '''"name","content","type","actions","order_type","order_side","order_price","order_symbol","order_amount","order_leverage","exchange_from","exchange_to","blockchain_from_asset","blockchain_from_amount","blockchain_to_address","blockchain_to_address","blockchain_from","blockchain_to"
-"Deposit 1 Bitcoin",,"execute_actions","deposit",,,,,,,,"binance","BTC",1,,,"SIMULATED",
-"Trade 1 ETH vs Bitcoin",,"execute_actions","trade","market_order","sell",,"ETH/BTC",1,,"binance",,,,,,,
-"Open long position on Binance",,"execute_actions","trade","limit",,50000,,,10,,"binance",,,,,,
-"Buy YES to $150k what-price-will-bitcoin-hit-in-january-2026 on polymarket",,"execute_actions","trade","market_order",,,"what-price-will-bitcoin-hit-in-january-2026/USDC:USDC-260131-0-YES",,,,,"polymarket",,,,,
-"Decentralized trading example","{""EXCHANGE_TO"":""binance"",""BLOCKCHAIN_FROM_ASSET"":""BTC"",""BLOCKCHAIN_FROM_AMOUNT"":1,""BLOCKCHAIN_FROM"":""SIMULATED"",""ORDER_SYMBOL"":""ETH/BTC"",""ORDER_AMOUNT"":1,""ORDER_TYPE"":""market"",""EXCHANGE_FROM"":""binance"",""BLOCKCHAIN_TO"":""Ethereum"",""BLOCKCHAIN_TO_ASSET"":""ETH"",""BLOCKCHAIN_TO_AMOUNT"":1,""BLOCKCHAIN_TO_ADDRESS"":""0x123456""}","execute_actions","deposit,wait,trade,wait,withdraw",,,,,,,,,,,,,,
+        test_csv_content = '''"name","content","type","actions","order_type","order_side","order_price","order_symbol","order_amount","order_leverage","exchange_from","exchange_to","blockchain_from_asset","blockchain_from_amount","blockchain_to_address","blockchain_to_address","blockchain_from","blockchain_to","simulated_portfolio"
+"Deposit 1 Bitcoin",,"execute_actions","deposit",,,,,,,,"binance","BTC",1,,,"SIMULATED",,
+"Trade 1 ETH vs Bitcoin",,"execute_actions","trade","market","sell",,"ETH/BTC",1,,"binance",,,,,,,,"{""ETH"":2}"
+"Open long position on Binance",,"execute_actions","trade","limit",,50000,,,10,,"binance",,,,,,,
+"Buy YES to $150k what-price-will-bitcoin-hit-in-january-2026 on polymarket",,"execute_actions","trade","market",,,"what-price-will-bitcoin-hit-in-january-2026/USDC:USDC-260131-0-YES",,,,,"polymarket",,,,,,
+"Decentralized trading example","{""EXCHANGE_TO"":""binance"",""BLOCKCHAIN_FROM_ASSET"":""BTC"",""BLOCKCHAIN_FROM_AMOUNT"":1,""BLOCKCHAIN_FROM"":""SIMULATED"",""ORDER_SYMBOL"":""ETH/BTC"",""ORDER_AMOUNT"":1,""ORDER_TYPE"":""market"",""EXCHANGE_FROM"":""binance"",""BLOCKCHAIN_TO"":""Ethereum"",""BLOCKCHAIN_TO_ASSET"":""ETH"",""BLOCKCHAIN_TO_AMOUNT"":0.9,""BLOCKCHAIN_TO_ADDRESS"":""0x123456"",""MIN_DELAY"":2}","execute_actions","deposit,wait,trade,wait,withdraw",,,,,,,,,,,,,,,
 '''
         
         test_csv_path = tmp_path / "test-tasks.csv"

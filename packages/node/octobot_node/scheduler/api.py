@@ -20,6 +20,8 @@ import typing
 import uuid
 
 import octobot_node.config
+import octobot_node.constants
+import octobot_node.models
 import octobot_node.scheduler
 
 logger = logging.getLogger(__name__)
@@ -77,23 +79,71 @@ async def get_task_metrics() -> dict[str, int]:
         return {"pending": 0, "scheduled": 0, "results": 0}
 
 
-async def get_all_tasks() -> list[dict[str, typing.Any]]:
-    tasks: list[dict[str, typing.Any]] = []
+def _get_active_execution(
+    executions: list[octobot_node.models.Execution],
+) -> typing.Optional[octobot_node.models.Execution]:
+    pending = [e for e in executions if e.status == octobot_node.models.TaskStatus.PENDING]
+    if pending:
+        return pending[-1]
+    dated = sorted(
+        [e for e in executions if e.completed_at is not None],
+        key=lambda e: e.completed_at,
+    )
+    return dated[-1] if dated else (executions[-1] if executions else None)
+
+
+def _build_tasks_from_executions(
+    executions: list[octobot_node.models.Execution],
+) -> list[octobot_node.models.Task]:
+    grouped: dict[str, list[octobot_node.models.Execution]] = {}
+    for execution in executions:
+        parent_id = execution.id[:octobot_node.constants.PARENT_WORKFLOW_ID_LENGTH]
+        grouped.setdefault(parent_id, []).append(execution)
+
+    tasks = []
+    for parent_id, group in grouped.items():
+        active = _get_active_execution(group)
+        tasks.append(octobot_node.models.Task(
+            id=parent_id,
+            name=active.name if active else None,
+            description=active.description if active else None,
+            content=active.actions if active else None,
+            type=active.type if active else None,
+            status=active.status if active else None,
+            result=active.result if active else None,
+            result_metadata=active.result_metadata if active else None,
+            retries=active.retries if active else 0,
+            retry_delay=active.retry_delay if active else 0,
+            priority=active.priority if active else 0,
+            expires=active.expires if active else None,
+            expires_resolved=active.expires_resolved if active else None,
+            scheduled_at=active.scheduled_at if active else None,
+            started_at=active.started_at if active else None,
+            completed_at=active.completed_at if active else None,
+            executions=group,
+        ))
+    return tasks
+
+
+async def get_all_tasks() -> list[octobot_node.models.Task]:
+    executions: list[octobot_node.models.Execution] = []
     try:
-        periodic_tasks, pending_tasks, scheduled_tasks, results = await asyncio.gather(
+        periodic, pending, scheduled, results = await asyncio.gather(
             octobot_node.scheduler.SCHEDULER.get_periodic_tasks(),
             octobot_node.scheduler.SCHEDULER.get_pending_tasks(),
             octobot_node.scheduler.SCHEDULER.get_scheduled_tasks(),
             octobot_node.scheduler.SCHEDULER.get_results(),
         )
-        tasks.extend(periodic_tasks)
-        tasks.extend(pending_tasks)
-        tasks.extend(scheduled_tasks)
-        tasks.extend(results)
+        executions.extend(periodic)
+        executions.extend(pending)
+        executions.extend(scheduled)
+        executions.extend(results)
     except Exception as e:
         logger.error("Failed to retrieve tasks from scheduler: %s", e)
+        return []
 
-    logger.debug("Returning %d total tasks", len(tasks))
+    tasks = _build_tasks_from_executions(executions)
+    logger.debug("Returning %d total tasks from %d executions", len(tasks), len(executions))
     return tasks
 
 

@@ -37,11 +37,14 @@ ERRORS_PULL_PATH_TEMPLATE = "/v1/pull/users/{pubkey}/errors/{errorId}"
 ENCRYPTION_INFO = "octobot-error-data"
 
 
-def _get_client_and_address() -> tuple[StarfishClient, str] | None:
+def _get_client_and_address(passphrase: str | None = None) -> tuple[StarfishClient, str] | None:
     authenticator = authentication.Authenticator.get_instance_if_exists()
     if authenticator is None:
         return None
-    authenticator.init_sync_client()
+    if passphrase:
+        authenticator.init_sync_client_with_passphrase(passphrase)
+    else:
+        authenticator.init_sync_client()
     if authenticator._sync_client is None:
         return None
     return authenticator._sync_client, authenticator._sync_address
@@ -97,8 +100,8 @@ async def upload_error(
         return None
 
 
-async def share_logs(export_path: str) -> dict[str, Any] | None:
-    result = _get_client_and_address()
+async def share_logs(export_path: str, passphrase: str | None = None) -> dict[str, Any] | None:
+    result = _get_client_and_address(passphrase)
     if result is None:
         logger.warning("Cannot share logs: no sync client configured")
         return None

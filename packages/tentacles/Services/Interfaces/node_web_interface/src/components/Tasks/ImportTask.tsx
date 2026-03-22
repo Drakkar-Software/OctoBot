@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { Upload, FileText } from "lucide-react"
 import { useRef, useState } from "react"
 
-import { type Task, TasksService } from "@/client"
+import { type Task_Output as Task, TasksService } from "@/client"
 import { LoadingButton } from "@/components/ui/loading-button"
 import useCustomToast from "@/hooks/useCustomToast"
 import { parseCSVFile, type CSVRow } from "@/lib/csv"

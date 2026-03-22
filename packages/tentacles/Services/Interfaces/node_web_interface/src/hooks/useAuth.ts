@@ -31,12 +31,11 @@ const useAuth = () => {
   })
 
   const login = async (data: LoginCredentials) => {
-    // Store credentials for Basic Auth
     localStorage.setItem("auth_username", data.username)
     localStorage.setItem("auth_password", data.password)
-    
-    // Test authentication by calling the test endpoint
-    await LoginService.testAuth()
+    const user = await LoginService.testAuth()
+    // Store the real node address returned by the server
+    localStorage.setItem("auth_username", user.email)
   }
 
   const loginMutation = useMutation({
@@ -45,15 +44,12 @@ const useAuth = () => {
       navigate({ to: "/" })
     },
     onError: (error) => {
-      // Clear credentials on error
-      localStorage.removeItem("auth_username")
       localStorage.removeItem("auth_password")
       handleError.bind(showErrorToast)(error as ApiError)
     },
   })
 
   const logout = () => {
-    localStorage.removeItem("auth_username")
     localStorage.removeItem("auth_password")
     navigate({ to: "/login" })
   }

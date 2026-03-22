@@ -114,7 +114,7 @@ class NodeApiService(services.AbstractService):
             self.node_redis_url = None
             self.backend_cors_origins = None
         self._sync_config()
-        if self.get_is_enabled(self.config) and not octobot_node.scheduler.is_enabled():
+        if self.get_is_enabled(self.config) and not octobot_node.scheduler.is_initialized():
             octobot_node.scheduler.initialize_scheduler()
 
     def _sync_config(self):

@@ -106,9 +106,12 @@ class Scheduler:
     def is_enabled(self) -> bool:
         # enabled if master mode or consumer only mode
         return (
-            octobot_node.config.settings.IS_MASTER_MODE 
+            octobot_node.config.settings.IS_MASTER_MODE
             or octobot_node.config.settings.CONSUMER_ONLY
         )
+
+    def is_initialized(self) -> bool:
+        return self.INSTANCE is not None
 
     def start(self):
         if self.INSTANCE:
@@ -129,14 +132,14 @@ class Scheduler:
     def create_queues(self):
         self.AUTOMATION_WORKFLOW_QUEUE = dbos.Queue(name=octobot_node.enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE.value)
 
-    async def get_periodic_tasks(self) -> list[dict]:
+    async def get_periodic_tasks(self) -> list[octobot_node.models.Execution]:
         """DBOS scheduled workflows are not easily introspectable; return empty list."""
         return [] # TODO
 
-    async def get_pending_tasks(self) -> list[dict]:
+    async def get_pending_tasks(self) -> list[octobot_node.models.Execution]:
         if not self.INSTANCE:
             return []
-        tasks: list[dict] = []
+        executions: list[octobot_node.models.Execution] = []
         try:
             pending_workflow_statuses = await self.INSTANCE.list_workflows_async(status=[dbos.WorkflowStatusString.ENQUEUED.value, dbos.WorkflowStatusString.PENDING.value])
             for pending_workflow_status in pending_workflow_statuses or []:
@@ -149,13 +152,13 @@ class Scheduler:
                         description = f"next steps: {next_step}"
                     else:
                         description = f"Pending task: {pending_workflow_status.workflow_id}"
-                    task_dict = self._parse_workflow_status(pending_workflow_status, octobot_node.models.TaskStatus.PENDING, description)
-                    tasks.append(task_dict)
+                    execution = self._parse_workflow_status(pending_workflow_status, octobot_node.models.TaskStatus.PENDING, description)
+                    executions.append(execution)
                 except Exception as e:
                     self.logger.warning(f"Failed to process pending workflow {pending_workflow_status.workflow_id}: {e}")
         except Exception as e:
             self.logger.warning(f"Failed to list pending workflows: {e}")
-        return tasks
+        return executions
 
     async def delete_workflows(self, to_delete_workflow_ids: list[str]):
         self.logger.info(f"Deleting {len(to_delete_workflow_ids)} workflows")
@@ -180,14 +183,14 @@ class Scheduler:
             conn.execute(sqlalchemy.text("VACUUM"))
         self.logger.info(f"Database vacuum completed")
 
-    async def get_scheduled_tasks(self) -> list[dict]:
+    async def get_scheduled_tasks(self) -> list[octobot_node.models.Execution]:
         """DBOS has no direct 'scheduled for later' queue; return empty list."""
         return []
 
-    async def get_results(self) -> list[dict]:
+    async def get_results(self) -> list[octobot_node.models.Execution]:
         if not self.INSTANCE:
             return []
-        tasks: list[dict] = []
+        executions: list[octobot_node.models.Execution] = []
         try:
             completed_workflow_statuses = await self.INSTANCE.list_workflows_async(status=[
                 dbos.WorkflowStatusString.SUCCESS.value, dbos.WorkflowStatusString.ERROR.value
@@ -201,7 +204,7 @@ class Scheduler:
                     if wf_status == dbos.WorkflowStatusString.SUCCESS.value:
                         result = completed_workflow_status.output
                         execution_error = result.get("error") if isinstance(result, dict) else None
-                        description = "Error" if execution_error else "Completed" 
+                        description = "Error" if execution_error else "Completed"
                         status = octobot_node.models.TaskStatus.FAILED if execution_error else octobot_node.models.TaskStatus.COMPLETED
                         if task := workflows_util.get_input_task(completed_workflow_status):
                             metadata = task.content_metadata
@@ -210,30 +213,29 @@ class Scheduler:
                         description = "Task failed"
                         status = octobot_node.models.TaskStatus.FAILED
 
-                    tasks.append({
-                        "id": completed_workflow_status.workflow_id,
-                        "name": task_name,
-                        "description": description,
-                        "status": status,
-                        "result": json.dumps(_sanitize(result.get("history", result))) if isinstance(result, dict) else "", #todo change
-                        "result_metadata": metadata,
-                        "scheduled_at": completed_workflow_status.created_at,
-                        "started_at": None,
-                        "completed_at": completed_workflow_status.updated_at,
-                    })
+                    executions.append(octobot_node.models.Execution(
+                        id=completed_workflow_status.workflow_id,
+                        name=task_name,
+                        description=description,
+                        status=status,
+                        result=json.dumps(_sanitize(result.get("history", result))) if isinstance(result, dict) else "",
+                        result_metadata=metadata,
+                        scheduled_at=completed_workflow_status.created_at,
+                        completed_at=completed_workflow_status.updated_at,
+                    ))
                 except Exception as e:
                     self.logger.exception(e, True, f"Failed to process result workflow {completed_workflow_status.workflow_id}: {e}")
         except Exception as e:
             self.logger.warning(f"Failed to list result workflows: {e}")
-        return tasks
+        return executions
 
     def _parse_workflow_status(
         self,
         workflow_status: dbos.WorkflowStatus,
         status: octobot_node.models.TaskStatus,
         description: typing.Optional[str] = None,
-    ) -> dict:
-        """Map DBOS WorkflowStatus to octobot_node.models.Task dict."""
+    ) -> octobot_node.models.Execution:
+        """Map DBOS WorkflowStatus to octobot_node.models.Execution."""
         task_id = str(workflow_status.workflow_id)
         task_name = workflow_status.name
         task_type = None
@@ -243,22 +245,17 @@ class Scheduler:
                 task_type = task.type
                 task_actions = task.content #todo confi
 
-        return {
-            "id": task_id,
-            "name": task_name,
-            "description": description,
-            "actions": task_actions,
-            "type": task_type,
-            "status": status,
-            "retries": 0,
-            "retry_delay": 0,
-            "priority": 0,
-            "expires": None,
-            "expires_resolved": None,
-            "scheduled_at": None,
-            "started_at": None,
-            "completed_at": None,
-        }
+        return octobot_node.models.Execution(
+            id=task_id,
+            name=task_name,
+            description=description,
+            actions=task_actions,
+            type=task_type,
+            status=status,
+            retries=0,
+            retry_delay=0,
+            priority=0,
+        )
 
     def get_task_name(self, task_data: dict | octobot_node.models.Task | None, default_value: typing.Optional[str] = None) -> typing.Optional[str]:
         if isinstance(task_data, octobot_node.models.Task):

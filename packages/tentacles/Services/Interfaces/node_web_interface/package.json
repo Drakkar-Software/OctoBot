@@ -41,6 +41,7 @@
     "react-error-boundary": "^6.0.0",
     "react-hook-form": "^7.68.0",
     "react-icons": "^5.5.0",
+    "react-qr-code": "^2.0.18",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.4.0",
     "tailwindcss": "^4.1.17",
