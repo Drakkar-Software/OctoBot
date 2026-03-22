@@ -19,7 +19,9 @@ import typing
 
 import octobot_commons.logging
 
+import octobot_node.config
 import octobot_node.models
+import octobot_node.scheduler.encryption as encryption
 import octobot_node.scheduler.octobot_flow_client as octobot_flow_client
 import octobot_node.scheduler.task_context
 import octobot_node.scheduler.workflows.params as params
@@ -94,7 +96,7 @@ class AutomationWorkflow:
         """
         parsed_inputs: params.AutomationWorkflowInputs = params.AutomationWorkflowInputs.from_dict(inputs)
         executed_step: str = "no action executed"
-        execution_error = next_iteration_description = next_step = next_step_at = None
+        execution_error = next_iteration_description = next_iteration_description_metadata = next_step = next_step_at = None
         with octobot_node.scheduler.task_context.encrypted_task(parsed_inputs.task):
             #### Start of decryped task context ####
             result: octobot_flow_client.OctoBotActionsJobResult = None # type: ignore
@@ -126,10 +128,16 @@ class AutomationWorkflow:
                     next_actions = result.actions_dag.get_executable_actions()
                     remaining_steps = len(result.actions_dag.get_pending_actions())
                 next_step_at = result.next_actions_description.get_next_execution_time()
-                # TODO next_iteration_description should be encrypted if encryption is enabled
-                next_iteration_description = json.dumps(
+                raw_description = json.dumps(
                     result.next_actions_description.to_dict(include_default_values=False)
                 )
+                next_iteration_description_metadata = None
+                if octobot_node.config.settings.is_node_side_encryption_enabled:
+                    next_iteration_description, next_iteration_description_metadata = (
+                        encryption.encrypt_task_content(raw_description)
+                    )
+                else:
+                    next_iteration_description = raw_description
                 next_step = AutomationWorkflow._get_actions_summary(next_actions, minimal=True)
             AutomationWorkflow.get_logger(parsed_inputs).info(
                 f"Iteration completed, executed step: '{executed_step}', next immediate actions: {next_actions}"
@@ -146,7 +154,8 @@ class AutomationWorkflow:
                 error=execution_error,
                 should_stop=should_stop,
             ),
-            next_iteration_description=next_iteration_description
+            next_iteration_description=next_iteration_description,
+            next_iteration_description_metadata=next_iteration_description_metadata,
         ).to_dict(include_default_values=False)
 
     @staticmethod
@@ -173,7 +182,8 @@ class AutomationWorkflow:
             parsed_inputs, 0
         ):
             extra_iteration_inputs = AutomationWorkflow._create_next_iteration_inputs(
-                parsed_inputs, latest_iteration_result.next_iteration_description, 0
+                parsed_inputs, latest_iteration_result.next_iteration_description, 0,
+                latest_iteration_result.next_iteration_description_metadata,
             )
             # execute the iteration on the updated state from last iteration
             raw_iteration_result = await AutomationWorkflow.execute_iteration(extra_iteration_inputs, new_priority_actions)
@@ -194,8 +204,9 @@ class AutomationWorkflow:
             # successful iteration and a new iteration is required, schedule next iteration, don't return anything
             await AutomationWorkflow._schedule_next_iteration(
                 parsed_inputs,
-                latest_iteration_result.next_iteration_description, # type: ignore
-                latest_iteration_result.progress_status
+                latest_iteration_result.next_iteration_description,  # type: ignore
+                latest_iteration_result.progress_status,
+                latest_iteration_result.next_iteration_description_metadata,
             )
         return True
 
@@ -203,11 +214,12 @@ class AutomationWorkflow:
     async def _schedule_next_iteration(
         parsed_inputs: params.AutomationWorkflowInputs,
         next_iteration_description: str,
-        progress_status: params.ProgressStatus
+        progress_status: params.ProgressStatus,
+        next_iteration_description_metadata: typing.Optional[str] = None,
     ):
         next_execution_time = progress_status.next_step_at or 0
         next_iteration_inputs = AutomationWorkflow._create_next_iteration_inputs(
-            parsed_inputs, next_iteration_description, next_execution_time
+            parsed_inputs, next_iteration_description, next_execution_time, next_iteration_description_metadata
         )
         delay = next_execution_time - time.time()
         delay_str = f", starting in {delay:.2f} seconds" if delay > 0 else ""
@@ -224,11 +236,13 @@ class AutomationWorkflow:
     def _create_next_iteration_inputs(
         parsed_inputs: params.AutomationWorkflowInputs,
         next_iteration_description: str,
-        next_execution_time: float
+        next_execution_time: float,
+        next_iteration_description_metadata: typing.Optional[str] = None,
     ) -> dict:
         # update task.content with the next iteration description containing the automation state
         next_task = parsed_inputs.task
         next_task.content = next_iteration_description
+        next_task.content_metadata = next_iteration_description_metadata
         next_execution_time = next_execution_time or 0
         return params.AutomationWorkflowInputs(
             task=parsed_inputs.task, execution_time=next_execution_time
