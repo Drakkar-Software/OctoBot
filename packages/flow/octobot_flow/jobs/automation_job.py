@@ -265,15 +265,15 @@ class AutomationJob:
                 f"{automation_signature} successfully updated in {round(time.time() - start_time, 2)} seconds"
             )
         except octobot_flow.errors.AutomationValidationError as err:
-            self._logger.exception(
-                err, True, f"Skipped {automation_signature} update: automation configuration is invalid: {err}"
+            self._logger.error(
+                f"{automation_signature} automation configuration is invalid: {err}"
             )
+            raise
         except Exception as err:
-            self._logger.exception(
-                err,
-                True,
+            self._logger.error(
                 f"Unexpected error when updating {automation_signature}: {err.__class__.__name__}: {err}"
             )
+            raise
         return to_execute_actions
 
     def _get_actions_to_execute(self) -> tuple[list[octobot_flow.entities.AbstractActionDetails], bool]:
