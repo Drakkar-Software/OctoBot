@@ -2,6 +2,7 @@ import typing
 import dataclasses
 import enum
 import uuid
+import json
 
 import octobot_commons.constants as commons_constants
 import octobot_commons.symbols
@@ -31,6 +32,9 @@ class ActionType(enum.Enum):
     TRANSFER = "transfer"
 
 
+CONTENT_KEY = "CONTENT"
+
+
 @dataclasses.dataclass
 class ActionsDAGParserParams(octobot_commons.dataclasses.FlexibleDataclass):
     ACTIONS: list[str] = dataclasses.field(default_factory=list)
@@ -38,7 +42,7 @@ class ActionsDAGParserParams(octobot_commons.dataclasses.FlexibleDataclass):
     EXCHANGE_TO: typing.Optional[str] = None
     API_KEY: typing.Optional[str] = None
     API_SECRET: typing.Optional[str] = None
-    SIMULATED_PORTFOLIO: typing.Optional[dict[str, float]] = None
+    SIMULATED_PORTFOLIO: typing.Optional[dict[str, float]] = dataclasses.field(default_factory=dict)
     ORDER_SIDE: typing.Optional[str] = None
     ORDER_SYMBOL: typing.Optional[str] = None
     ORDER_AMOUNT: typing.Optional[float] = None
@@ -68,6 +72,7 @@ class ActionsDAGParserParams(octobot_commons.dataclasses.FlexibleDataclass):
     BLOCKCHAIN_TO_SECRET_VIEW_KEY: typing.Optional[str] = None
     BLOCKCHAIN_TO_SECRET_SPEND_KEY: typing.Optional[str] = None
     BLOCKCHAIN_TO_PRIVATE_KEY: typing.Optional[str] = None
+    CONTENT: typing.Optional[dict] = None
 
     def __post_init__(self):
         if self.ACTIONS and isinstance(self.ACTIONS, str):
@@ -206,6 +211,15 @@ class ActionsDAGParserParams(octobot_commons.dataclasses.FlexibleDataclass):
 
 class ActionsDAGParser:
     def __init__(self, params: dict):
+        if content := params.get(CONTENT_KEY):
+            if isinstance(content, str):
+                try:
+                    content = json.loads(content)
+                except json.JSONDecodeError:
+                    raise octobot_flow.errors.InvalidAutomationActionError(
+                        f"Invalid json value in {CONTENT_KEY} column: {content}"
+                    )
+            params = {**params, **content}
         self.params: ActionsDAGParserParams = ActionsDAGParserParams.from_dict(params)
         self.blockchain_param_index = 0
 
@@ -406,7 +420,7 @@ class ActionsDAGParser:
                 commons_constants.PORTFOLIO_AVAILABLE: value,
             }
             for asset, value in simulated_portfolio.items()
-        } if simulated_portfolio else None
+        }
         automation_details = octobot_flow.entities.AutomationDetails(
             metadata=octobot_flow.entities.AutomationMetadata(
                 automation_id=automation_id,
@@ -442,6 +456,10 @@ class ActionsDAGParser:
         dsl_script = tradingview_signal_to_dsl_translator.TradingViewSignalToDSLTranslator.translate_signal(
             {**{trading_view_signals_trading.TradingViewSignalsTradingMode.SIGNAL_KEY: signal}, **details}
         )
+        if dsl_script == tradingview_signal_to_dsl_translator.UNKNOWN_SIGNAL_RESULT:
+            raise octobot_flow.errors.InvalidAutomationActionError(
+                f"Invalid signal: {signal}({details}) (action {action_id})"
+            )
         return octobot_flow.entities.DSLScriptActionDetails(
             id=action_id,
             dsl_script=dsl_script,

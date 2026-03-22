@@ -579,7 +579,7 @@ class TestOctoBotActionsJob:
         assert processed_actions[0].config is not None
         assert "automation" in processed_actions[0].config
         assert job.after_execution_state.automation.reference_exchange_account_elements is None
-        assert job.after_execution_state.automation.client_exchange_account_elements.portfolio.content is None
+        assert job.after_execution_state.automation.client_exchange_account_elements.portfolio.content == {}
 
         # step 2: run the transfer action
         next_actions_description = result.next_actions_description

@@ -25,6 +25,7 @@ import tentacles.Trading.Mode.trading_view_signals_trading_mode.trading_view_sig
 
 
 FREE_PARAMS_NAME = "params"
+UNKNOWN_SIGNAL_RESULT = "None"
 
 
 class TradingViewSignalToDSLTranslator:
@@ -205,11 +206,11 @@ class TradingViewSignalToDSLTranslator:
     def translate_signal(cls, parsed_data: dict) -> str:
         keyword, params = cls._get_dsl_signal_keyword_and_params(parsed_data)
         if not keyword:
-            return "None"
+            return UNKNOWN_SIGNAL_RESULT
         if operator_class := cls._get_operator_class(keyword):
             all_params = cls._resolve_operator_params(operator_class, params, parsed_data)
             return f"{operator_class.get_name()}({', '.join(all_params)})"
-        return "None"
+        return UNKNOWN_SIGNAL_RESULT
 
     @classmethod
     def _get_allowed_keywords(cls) -> list[dsl_interpreter.Operator]:
