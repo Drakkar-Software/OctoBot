@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 import { Download } from "lucide-react"
 import { useState } from "react"
 
-import { type Task, TasksService } from "@/client"
+import { type Task_Output as Task, TasksService } from "@/client"
 import { Button } from "@/components/ui/button"
 import useCustomToast from "@/hooks/useCustomToast"
 import { generateCSV, downloadCSV } from "@/lib/csv"

@@ -107,7 +107,32 @@ class Settings(BaseSettings):
     TASKS_OUTPUTS_RSA_PRIVATE_KEY: Annotated[bytes | None, BeforeValidator(parse_key_to_bytes)] = None
     TASKS_OUTPUTS_ECDSA_PUBLIC_KEY: Annotated[bytes | None, BeforeValidator(parse_key_to_bytes)] = None
 
-    USE_DEDICATED_LOG_FILE_PER_AUTOMATION: bool = False
+    USE_DEDICATED_LOG_FILE_PER_AUTOMATION: bool = True
+
+    @computed_field
+    @property
+    def is_node_side_encryption_enabled(self) -> bool:
+        return all([
+            self.TASKS_INPUTS_RSA_PRIVATE_KEY,
+            self.TASKS_INPUTS_ECDSA_PUBLIC_KEY,
+            self.TASKS_OUTPUTS_RSA_PUBLIC_KEY,
+            self.TASKS_OUTPUTS_ECDSA_PRIVATE_KEY,
+        ])
+
+    @computed_field
+    @property
+    def is_producer_side_encryption_enabled(self) -> bool:
+        return all([
+            self.TASKS_INPUTS_RSA_PUBLIC_KEY,
+            self.TASKS_INPUTS_ECDSA_PRIVATE_KEY,
+            self.TASKS_OUTPUTS_RSA_PRIVATE_KEY,
+            self.TASKS_OUTPUTS_ECDSA_PUBLIC_KEY,
+        ])
+
+    @computed_field
+    @property
+    def tasks_encryption_enabled(self) -> bool:
+        return self.is_node_side_encryption_enabled and self.is_producer_side_encryption_enabled
 
     def _check_default_secret(self, var_name: str, value: str | None, default_value: EmailStr | None) -> None:
         if value == default_value:

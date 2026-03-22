@@ -1,9 +1,9 @@
-import { useSuspenseQuery } from "@tanstack/react-query"
+import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query"
 import { createFileRoute, Link } from "@tanstack/react-router"
-import { Bot, Download, Plus } from "lucide-react"
+import { Activity, Bot, Check, Clock, Layers, Plus, Trash2 } from "lucide-react"
 import { Suspense, useMemo, useState } from "react"
 
-import type { Task, TaskStatus } from "@/client"
+import type { Task_Output as Task, TaskStatus } from "@/client"
 import { TasksService } from "@/client"
 import { CollectionHeader } from "@/components/Common/CollectionHeader"
 import { Badge } from "@/components/ui/badge"
@@ -15,6 +15,19 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { LoadingButton } from "@/components/ui/loading-button"
+import useCustomToast from "@/hooks/useCustomToast"
+import { generateCSV, downloadCSV } from "@/lib/csv"
+import { cn } from "@/lib/utils"
 
 function getTasksQueryOptions() {
   return {
@@ -28,7 +41,6 @@ const filters = [
   { value: "running", label: "Running" },
   { value: "scheduled", label: "Scheduled" },
   { value: "stopped", label: "Stopped" },
-  { value: "terminated", label: "Terminated" },
 ]
 
 const statusLabels: Record<TaskStatus, string> = {
@@ -37,7 +49,7 @@ const statusLabels: Record<TaskStatus, string> = {
   periodic: "Recurring",
   running: "Running",
   completed: "Stopped",
-  failed: "Terminated",
+  failed: "Failed",
 }
 
 function getStatusVariant(status?: TaskStatus | null) {
@@ -54,58 +66,210 @@ function getStatusGroup(status?: TaskStatus | null) {
   if (status === "scheduled" || status === "periodic" || status === "pending") {
     return "scheduled"
   }
-  if (status === "failed") return "terminated"
   return "stopped"
 }
 
 function getDisplayDate(task: Task) {
+  const group = getStatusGroup(task.status)
+  if (task.expires_resolved && group === "scheduled") {
+    return { label: "Expires", value: task.expires_resolved }
+  }
+  if (group === "stopped") {
+    if (task.completed_at) return { label: "Executed at", value: task.completed_at }
+    if (task.started_at) return { label: "Executed at", value: task.started_at }
+  }
   if (task.started_at) return { label: "Started", value: task.started_at }
   if (task.scheduled_at) return { label: "Scheduled", value: task.scheduled_at }
   if (task.completed_at) return { label: "Stopped", value: task.completed_at }
   return { label: "Created", value: "—" }
 }
 
-function OctobotCard({ task }: { task: Task }) {
-  const label = task.name || `OctoBot ${task.id?.slice(0, 6) || "new"}`
-  const status = task.status || "scheduled"
+function getDuration(task: Task): string | null {
+  if (!task.started_at || !task.completed_at) return null
+  const ms = new Date(task.completed_at).getTime() - new Date(task.started_at).getTime()
+  if (ms < 0) return null
+  if (ms < 1000) return `${ms}ms`
+  if (ms < 60_000) return `${Math.round(ms / 1000)}s`
+  if (ms < 3_600_000) return `${Math.round(ms / 60_000)}m`
+  return `${Math.round(ms / 3_600_000)}h`
+}
+
+function formatDate(value: string | null | undefined): string {
+  if (!value || value === "—") return "—"
+  try {
+    return new Intl.DateTimeFormat(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(new Date(value))
+  } catch {
+    return value
+  }
+}
+
+function BotCardBody({ task }: { task: Task }) {
+  const group = getStatusGroup(task.status)
   const date = getDisplayDate(task)
+  const stepCount = task.executions?.length ?? 0
+  const pendingSteps = task.executions?.filter((e) => e.status === "pending").length ?? 0
+  const completedSteps = task.executions?.filter((e) => e.status === "completed" || e.status === "failed").length ?? 0
+  const duration = getDuration(task)
+
+  if (group === "running") {
+    const progress =
+      task.description &&
+      !task.description.startsWith("Pending task:") &&
+      task.description !== "Completed" &&
+      task.description !== "Error"
+        ? task.description
+        : null
+
+    return (
+      <CardContent className="flex flex-col gap-2 pt-0">
+        {progress && (
+          <div className="flex items-center gap-1.5 text-xs text-foreground">
+            <Activity className="size-3.5 shrink-0 text-primary" />
+            <span className="truncate">{progress}</span>
+          </div>
+        )}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+          {completedSteps > 0 && (
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Layers className="size-3.5" />
+              {completedSteps} done
+            </span>
+          )}
+          {pendingSteps > 0 && (
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Clock className="size-3.5" />
+              {pendingSteps} remaining
+            </span>
+          )}
+        </div>
+        <div className="text-xs text-muted-foreground">
+          {date.label}: {formatDate(date.value as string)}
+        </div>
+      </CardContent>
+    )
+  }
+
+  if (group === "scheduled") {
+    return (
+      <CardContent className="flex flex-col gap-2 pt-0">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          {task.type && (
+            <span className="rounded bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+              {task.type}
+            </span>
+          )}
+          {task.retries != null && task.retries > 0 && (
+            <span className="text-xs text-muted-foreground">↺ {task.retries} retries</span>
+          )}
+          {task.priority != null && task.priority > 0 && (
+            <span className="text-xs text-muted-foreground">⬆ High priority</span>
+          )}
+        </div>
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Clock className="size-3.5 shrink-0" />
+          {date.label}: {formatDate(date.value as string)}
+        </div>
+      </CardContent>
+    )
+  }
+
+  const isFailed = task.status === "failed"
 
   return (
-    <Card className="transition-shadow hover:shadow-md">
-      <CardHeader className="gap-3">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-xl bg-muted">
-              <Bot className="size-5 text-muted-foreground" />
-            </div>
-            <div>
-              <CardTitle>{label}</CardTitle>
-              <CardDescription className="text-xs">
-                {task.type || "Strategy"} · {task.description || "No description"}
-              </CardDescription>
-            </div>
+    <CardContent className="flex flex-col gap-2 pt-0">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          {task.type && (
+            <span className="rounded bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+              {task.type}
+            </span>
+          )}
+          {stepCount > 0 && (
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Layers className="size-3.5" />
+              {stepCount} step{stepCount !== 1 ? "s" : ""}
+            </span>
+          )}
+        </div>
+        {duration && (
+          <span className="shrink-0 text-xs text-muted-foreground">⏱ {duration}</span>
+        )}
+      </div>
+      <div className={cn("text-xs", isFailed ? "text-destructive/80" : "text-muted-foreground")}>
+        {date.label}: {formatDate(date.value as string)}
+      </div>
+    </CardContent>
+  )
+}
+
+function BotCard({
+  task,
+  selected,
+  onToggleSelect,
+}: {
+  task: Task
+  selected: boolean
+  onToggleSelect: (id: string) => void
+}) {
+  const label = task.name || `OctoBot ${task.id?.slice(0, 6) || "new"}`
+  const status = task.status || "scheduled"
+
+  return (
+    <Card
+      className={cn(
+        "relative cursor-pointer transition-all hover:shadow-md",
+        selected
+          ? "ring-2 ring-primary shadow-md"
+          : "hover:ring-1 hover:ring-primary/40",
+      )}
+      onClick={() => task.id && onToggleSelect(task.id)}
+    >
+      {selected && (
+        <div className="absolute right-3 top-3 flex size-5 items-center justify-center rounded-full bg-primary">
+          <Check className="size-3 text-primary-foreground" />
+        </div>
+      )}
+      <CardHeader className="gap-1.5 pb-3">
+        <div className="flex items-start gap-3">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted">
+            <Bot className="size-5 text-muted-foreground" />
           </div>
-          <Badge variant={getStatusVariant(status)}>{statusLabels[status]}</Badge>
+          <div className="min-w-0 flex-1">
+            <div className="grid grid-cols-[1fr_auto] items-start gap-2">
+              <span className="truncate text-sm font-semibold leading-tight">{label}</span>
+              <Badge variant={getStatusVariant(status)} className={cn(selected && "mr-6")}>
+                {statusLabels[status]}
+              </Badge>
+            </div>
+            <span className="mt-0.5 block font-mono text-xs text-muted-foreground">
+              ID: {task.id?.slice(0, 12) || "—"}
+            </span>
+          </div>
         </div>
       </CardHeader>
-      <CardContent className="flex items-center justify-between text-sm text-muted-foreground">
-        <span>
-          {date.label}: {date.value}
-        </span>
-        <span>ID: {task.id?.slice(0, 8) || "—"}</span>
-      </CardContent>
+      <BotCardBody task={task} />
     </Card>
   )
 }
 
-function OctobotGrid({
+function BotGrid({
   tasks,
   filter,
   search,
+  selectedIds,
+  onToggleSelect,
 }: {
   tasks: Task[]
   filter: string
   search: string
+  selectedIds: Set<string>
+  onToggleSelect: (id: string) => void
 }) {
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase()
@@ -148,31 +312,227 @@ function OctobotGrid({
   return (
     <div className="grid gap-4 md:grid-cols-2">
       {filtered.map((task) => (
-        <OctobotCard key={task.id} task={task} />
+        <BotCard
+          key={task.id}
+          task={task}
+          selected={task.id ? selectedIds.has(task.id) : false}
+          onToggleSelect={onToggleSelect}
+        />
       ))}
     </div>
   )
 }
 
-function OctobotsContent() {
+function SelectionToolbar({
+  selectedIds,
+  filteredTasks,
+  allTasks,
+  onSelectAll,
+  onDeselectAll,
+  onDeleted,
+}: {
+  selectedIds: Set<string>
+  filteredTasks: Task[]
+  allTasks: Task[]
+  onSelectAll: () => void
+  onDeselectAll: () => void
+  onDeleted: () => void
+}) {
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [shareLogsOpen, setShareLogsOpen] = useState(false)
+  const [shareLogsLoading, setShareLogsLoading] = useState(false)
+  const [shareCreds, setShareCreds] = useState<{ errorId: string; errorSecret: string } | null>(null)
+  const queryClient = useQueryClient()
+  const { showSuccessToast, showErrorToast } = useCustomToast()
+
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      for (const id of selectedIds) {
+        await TasksService.deleteTask({ taskId: id })
+      }
+    },
+    onSuccess: () => {
+      showSuccessToast(`Deleted ${selectedIds.size} OctoBot${selectedIds.size !== 1 ? "s" : ""}`)
+      setDeleteOpen(false)
+      onDeleted()
+      queryClient.invalidateQueries({ queryKey: ["tasks"] })
+    },
+    onError: () => {
+      showErrorToast("Some deletions failed")
+    },
+  })
+
+  const handleExportResults = () => {
+    const selected = allTasks.filter(
+      (t) => t.id && selectedIds.has(t.id) && getStatusGroup(t.status) === "stopped"
+    )
+    if (selected.length === 0) {
+      showErrorToast("No results to export for selected OctoBots")
+      return
+    }
+    const headers = ["name", "status", "result", "result_metadata"]
+    const rows = selected.map((t) => {
+      let resultValue = t.result
+      try {
+        const parsed = t.result ? JSON.parse(t.result) : null
+        resultValue = parsed !== null ? JSON.stringify(parsed) : t.result
+      } catch { /* raw string */ }
+      return [t.name || "", t.status || "", resultValue || "", t.result_metadata || ""]
+    })
+    const csv = generateCSV(headers, rows)
+    downloadCSV(csv, `task-results-${new Date().toISOString().split("T")[0]}`)
+    showSuccessToast(`Exported ${selected.length} result${selected.length !== 1 ? "s" : ""}`)
+  }
+
+  const handleShareLogs = async () => {
+    setShareLogsLoading(true)
+    try {
+      const username = localStorage.getItem("auth_username") || "node"
+      const password = localStorage.getItem("auth_password") || ""
+      const res = await fetch("/api/v1/logs/share", {
+        method: "POST",
+        headers: { Authorization: `Basic ${btoa(`${username}:${password}`)}` },
+      })
+      const data = await res.json()
+      if (data.success) {
+        setShareCreds({ errorId: data.errorId, errorSecret: data.errorSecret })
+        setShareLogsOpen(true)
+      } else {
+        showErrorToast(data.error ?? "Failed to share logs")
+      }
+    } catch {
+      showErrorToast("Failed to share logs")
+    } finally {
+      setShareLogsLoading(false)
+    }
+  }
+
+  const allFilteredSelected = filteredTasks.every((t) => t.id && selectedIds.has(t.id))
+
+  return (
+    <>
+      <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-muted/50 px-4 py-2 text-sm">
+        <span className="font-medium">{selectedIds.size} selected</span>
+        <div className="flex gap-2">
+          {!allFilteredSelected && (
+            <Button variant="ghost" size="sm" onClick={onSelectAll}>
+              Select all
+            </Button>
+          )}
+          <Button variant="ghost" size="sm" onClick={onDeselectAll}>
+            Deselect all
+          </Button>
+        </div>
+        <div className="ml-auto flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" onClick={handleExportResults}>
+            Export results
+          </Button>
+          <LoadingButton variant="outline" size="sm" loading={shareLogsLoading} onClick={handleShareLogs}>
+            Share logs
+          </LoadingButton>
+          <Button variant="destructive" size="sm" onClick={() => setDeleteOpen(true)}>
+            <Trash2 className="size-3.5" />
+            Delete
+          </Button>
+        </div>
+      </div>
+
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete {selectedIds.size} OctoBot{selectedIds.size !== 1 ? "s" : ""}</DialogTitle>
+            <DialogDescription>
+              This will permanently delete the selected OctoBots. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4">
+            <DialogClose asChild>
+              <Button variant="outline" disabled={deleteMutation.isPending}>Cancel</Button>
+            </DialogClose>
+            <LoadingButton
+              variant="destructive"
+              loading={deleteMutation.isPending}
+              onClick={() => deleteMutation.mutate()}
+            >
+              Delete
+            </LoadingButton>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={shareLogsOpen} onOpenChange={setShareLogsOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Logs shared</DialogTitle>
+            <DialogDescription>
+              Share these credentials with the OctoBot team to help diagnose issues.
+            </DialogDescription>
+          </DialogHeader>
+          {shareCreds && (
+            <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
+              <span className="font-medium text-muted-foreground">Error ID</span>
+              <span className="select-all break-all font-mono text-xs">{shareCreds.errorId}</span>
+              <span className="font-medium text-muted-foreground">Error Secret</span>
+              <span className="select-all break-all font-mono text-xs">{shareCreds.errorSecret}</span>
+            </div>
+          )}
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Close</Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  )
+}
+
+
+function BotsContent() {
   const { data: tasks } = useSuspenseQuery(getTasksQueryOptions())
   const [filterValue, setFilterValue] = useState("all")
   const [searchValue, setSearchValue] = useState("")
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+
+  const filteredTasks = useMemo(() => {
+    const query = searchValue.trim().toLowerCase()
+    return tasks.filter((task) => {
+      const inFilter =
+        filterValue === "all" ? true : getStatusGroup(task.status) === filterValue
+      const inSearch = query
+        ? `${task.name ?? ""} ${task.description ?? ""} ${task.type ?? ""}`
+            .toLowerCase()
+            .includes(query)
+        : true
+      return inFilter && inSearch
+    })
+  }, [tasks, filterValue, searchValue])
+
   const counts = useMemo(() => {
     return {
       all: tasks.length,
-      running: tasks.filter((task) => getStatusGroup(task.status) === "running")
-        .length,
-      scheduled: tasks.filter(
-        (task) => getStatusGroup(task.status) === "scheduled"
-      ).length,
-      stopped: tasks.filter((task) => getStatusGroup(task.status) === "stopped")
-        .length,
-      terminated: tasks.filter(
-        (task) => getStatusGroup(task.status) === "terminated"
-      ).length,
+      running: tasks.filter((task) => getStatusGroup(task.status) === "running").length,
+      scheduled: tasks.filter((task) => getStatusGroup(task.status) === "scheduled").length,
+      stopped: tasks.filter((task) => getStatusGroup(task.status) === "stopped").length,
     }
   }, [tasks])
+
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const handleSelectAll = () => {
+    setSelectedIds(new Set(filteredTasks.map((t) => t.id!).filter(Boolean)))
+  }
+
+  const handleDeselectAll = () => {
+    setSelectedIds(new Set())
+  }
 
   return (
     <div className="flex flex-col gap-8">
@@ -180,20 +540,12 @@ function OctobotsContent() {
         title="OctoBots"
         description="Monitor running, scheduled, and stopped OctoBots."
         action={
-          <div className="flex flex-wrap gap-2">
-            <Button asChild variant="outline" size="lg">
-              <Link to="/octobots/import">
-                <Download className="size-4" />
-                Import OctoBots
-              </Link>
-            </Button>
-            <Button asChild size="lg">
-              <Link to="/octobots/new">
-                <Plus className="size-4" />
-                Start new OctoBot
-              </Link>
-            </Button>
-          </div>
+          <Button asChild size="lg">
+            <Link to="/octobots/new">
+              <Plus className="size-4" />
+              New OctoBot
+            </Link>
+          </Button>
         }
         searchValue={searchValue}
         onSearchChange={setSearchValue}
@@ -205,22 +557,38 @@ function OctobotsContent() {
         filterValue={filterValue}
         onFilterChange={setFilterValue}
       />
-      <OctobotGrid tasks={tasks} filter={filterValue} search={searchValue} />
+      {selectedIds.size > 0 && (
+        <SelectionToolbar
+          selectedIds={selectedIds}
+          filteredTasks={filteredTasks}
+          allTasks={tasks}
+          onSelectAll={handleSelectAll}
+          onDeselectAll={handleDeselectAll}
+          onDeleted={handleDeselectAll}
+        />
+      )}
+      <BotGrid
+        tasks={tasks}
+        filter={filterValue}
+        search={searchValue}
+        selectedIds={selectedIds}
+        onToggleSelect={handleToggleSelect}
+      />
     </div>
   )
 }
 
 export const Route = createFileRoute("/_layout/octobots/")({
-  component: OctobotsIndex,
+  component: BotsIndex,
   head: () => ({
     meta: [{ title: "OctoBots" }],
   }),
 })
 
-function OctobotsIndex() {
+function BotsIndex() {
   return (
     <Suspense fallback={<div>Loading OctoBots...</div>}>
-      <OctobotsContent />
+      <BotsContent />
     </Suspense>
   )
 }

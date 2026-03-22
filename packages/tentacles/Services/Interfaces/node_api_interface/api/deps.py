@@ -20,38 +20,36 @@ import typing
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 
-import octobot_node.config
 import octobot_node.models
+import octobot.community.authentication as community_auth
 
-security_basic = HTTPBasic()
+security_basic = HTTPBasic(auto_error=False)
 
 _BASIC_AUTH_USER_ID = uuid.uuid4()
 
-# TODO: support other auth methods (like supabase, jwt, etc.)
 
-def get_current_user(credentials: typing.Annotated[HTTPBasicCredentials, Depends(security_basic)]) -> octobot_node.models.User:
-    if credentials.username != octobot_node.config.settings.ADMIN_USERNAME:
+def get_current_user(
+    credentials: typing.Annotated[typing.Optional[HTTPBasicCredentials], Depends(security_basic)],
+) -> octobot_node.models.User:
+    auth = community_auth.CommunityAuthentication.instance()
+    if auth is None or not auth.is_node_wallet_configured():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Node not configured",
+        )
+    if credentials is None or not auth.verify_node_passphrase(credentials.password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Basic"},
+            detail="Incorrect passphrase",
         )
-    
-    if credentials.password != octobot_node.config.settings.ADMIN_PASSWORD:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Basic"},
-        )
-
-    user = octobot_node.models.User(
+    address = auth.get_node_wallet_address()
+    return octobot_node.models.User(
         id=_BASIC_AUTH_USER_ID,
-        email=octobot_node.config.settings.ADMIN_USERNAME,
+        email=address,
         is_active=True,
         is_superuser=True,
         full_name=None,
     )
-    return user
 
 
 CurrentUser = typing.Annotated[octobot_node.models.User, Depends(get_current_user)]

@@ -1,6 +1,6 @@
 import type { ColumnDef } from "@tanstack/react-table"
 
-import type { Task } from "@/client"
+import type { Task_Output as Task } from "@/client"
 import { cn } from "@/lib/utils"
 import { TaskMenu } from "./TaskMenu"
 

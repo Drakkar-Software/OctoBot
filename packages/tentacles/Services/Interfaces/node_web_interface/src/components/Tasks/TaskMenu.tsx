@@ -1,7 +1,7 @@
 import { EllipsisVertical } from "lucide-react"
 import { useState } from "react"
 
-import type { Task } from "@/client"
+import type { Task_Output as Task } from "@/client"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,

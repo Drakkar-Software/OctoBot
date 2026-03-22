@@ -28,6 +28,10 @@ def is_enabled() -> bool:
     return SCHEDULER.is_enabled()
 
 
+def is_initialized() -> bool:
+    return SCHEDULER.is_initialized()
+
+
 def initialize_scheduler():
     scheduler_logger.info("Initializing scheduler")
     SCHEDULER.create()

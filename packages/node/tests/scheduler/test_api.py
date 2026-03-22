@@ -16,6 +16,7 @@
 
 import pytest
 import mock
+from octobot_node.models import Execution, Task, TaskStatus
 from octobot_node.scheduler.api import (
     get_node_status,
     get_task_metrics,
@@ -180,28 +181,89 @@ class TestGetAllTasks:
 
     @pytest.mark.asyncio
     async def test_get_all_tasks_success(self, temp_dbos_scheduler) -> None:
-        """Test successful retrieval of all tasks."""
-        periodic_tasks = [{"id": "periodic1", "status": "periodic"}]
-        pending_tasks = [{"id": "pending1", "status": "pending"}]
-        scheduled_tasks = [{"id": "scheduled1", "status": "scheduled"}]
-        result_tasks = [{"id": "result1", "status": "completed"}]
+        """Test successful retrieval of all tasks with distinct IDs produces one Task per Execution."""
+        periodic_executions = [Execution(id="aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", status=TaskStatus.PERIODIC)]
+        pending_executions = [Execution(id="bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", status=TaskStatus.PENDING)]
+        scheduled_executions = [Execution(id="cccccccc-cccc-cccc-cccc-cccccccccccc", status=TaskStatus.SCHEDULED)]
+        result_executions = [Execution(id="dddddddd-dddd-dddd-dddd-dddddddddddd", status=TaskStatus.COMPLETED)]
 
         with mock.patch.object(
-            temp_dbos_scheduler, "get_periodic_tasks", mock.AsyncMock(return_value=periodic_tasks)
+            temp_dbos_scheduler, "get_periodic_tasks", mock.AsyncMock(return_value=periodic_executions)
         ), mock.patch.object(
-            temp_dbos_scheduler, "get_pending_tasks", mock.AsyncMock(return_value=pending_tasks)
+            temp_dbos_scheduler, "get_pending_tasks", mock.AsyncMock(return_value=pending_executions)
         ), mock.patch.object(
-            temp_dbos_scheduler, "get_scheduled_tasks", mock.AsyncMock(return_value=scheduled_tasks)
+            temp_dbos_scheduler, "get_scheduled_tasks", mock.AsyncMock(return_value=scheduled_executions)
         ), mock.patch.object(
-            temp_dbos_scheduler, "get_results", mock.AsyncMock(return_value=result_tasks)
+            temp_dbos_scheduler, "get_results", mock.AsyncMock(return_value=result_executions)
         ):
             result = await get_all_tasks()
 
             assert len(result) == 4
-            assert periodic_tasks[0] in result
-            assert pending_tasks[0] in result
-            assert scheduled_tasks[0] in result
-            assert result_tasks[0] in result
+            assert all(isinstance(t, Task) for t in result)
+            assert all(len(t.executions) == 1 for t in result)
+            task_ids = {t.id for t in result}
+            assert "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa" in task_ids
+            assert "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb" in task_ids
+            assert "cccccccc-cccc-cccc-cccc-cccccccccccc" in task_ids
+            assert "dddddddd-dddd-dddd-dddd-dddddddddddd" in task_ids
+
+    @pytest.mark.asyncio
+    async def test_get_all_tasks_merges_same_id(self, temp_dbos_scheduler) -> None:
+        """Test that executions sharing the same parent ID are merged into a single Task."""
+        parent_id = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+        child_suffix = "_child_step_1"
+        pending_executions = [Execution(id=parent_id, status=TaskStatus.PENDING, name="my-task")]
+        result_executions = [Execution(id=f"{parent_id}{child_suffix}", status=TaskStatus.COMPLETED, name="my-task")]
+
+        with mock.patch.object(
+            temp_dbos_scheduler, "get_periodic_tasks", mock.AsyncMock(return_value=[])
+        ), mock.patch.object(
+            temp_dbos_scheduler, "get_pending_tasks", mock.AsyncMock(return_value=pending_executions)
+        ), mock.patch.object(
+            temp_dbos_scheduler, "get_scheduled_tasks", mock.AsyncMock(return_value=[])
+        ), mock.patch.object(
+            temp_dbos_scheduler, "get_results", mock.AsyncMock(return_value=result_executions)
+        ):
+            result = await get_all_tasks()
+
+            assert len(result) == 1
+            task = result[0]
+            assert isinstance(task, Task)
+            assert task.id == parent_id
+            assert len(task.executions) == 2
+            assert task.status == TaskStatus.PENDING
+
+    @pytest.mark.asyncio
+    async def test_get_all_tasks_active_execution_latest_completed(self, temp_dbos_scheduler) -> None:
+        """Test that when no pending execution, the latest completed_at is used as active."""
+        import datetime
+        parent_id = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+        older = Execution(
+            id=f"{parent_id}_old",
+            status=TaskStatus.COMPLETED,
+            name="old-run",
+            completed_at=datetime.datetime(2025, 1, 1),
+        )
+        newer = Execution(
+            id=f"{parent_id}_new",
+            status=TaskStatus.COMPLETED,
+            name="new-run",
+            completed_at=datetime.datetime(2025, 6, 1),
+        )
+
+        with mock.patch.object(
+            temp_dbos_scheduler, "get_periodic_tasks", mock.AsyncMock(return_value=[])
+        ), mock.patch.object(
+            temp_dbos_scheduler, "get_pending_tasks", mock.AsyncMock(return_value=[])
+        ), mock.patch.object(
+            temp_dbos_scheduler, "get_scheduled_tasks", mock.AsyncMock(return_value=[])
+        ), mock.patch.object(
+            temp_dbos_scheduler, "get_results", mock.AsyncMock(return_value=[older, newer])
+        ):
+            result = await get_all_tasks()
+
+            assert len(result) == 1
+            assert result[0].name == "new-run"
 
     @pytest.mark.asyncio
     async def test_get_all_tasks_empty(self) -> None:
@@ -234,12 +296,9 @@ class TestGetAllTasks:
     @pytest.mark.asyncio
     async def test_get_all_tasks_partial_exception(self) -> None:
         """Test get_all_tasks when one method fails - gather fails entirely, returns []."""
-        periodic_tasks = [{"id": "periodic1"}]
-        pending_tasks = [{"id": "pending1"}]
-
         mock_scheduler = mock.Mock()
-        mock_scheduler.get_periodic_tasks = mock.AsyncMock(return_value=periodic_tasks)
-        mock_scheduler.get_pending_tasks = mock.AsyncMock(return_value=pending_tasks)
+        mock_scheduler.get_periodic_tasks = mock.AsyncMock(return_value=[Execution(id="aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")])
+        mock_scheduler.get_pending_tasks = mock.AsyncMock(return_value=[Execution(id="bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")])
         mock_scheduler.get_scheduled_tasks = mock.AsyncMock(side_effect=Exception("Error"))
         mock_scheduler.get_results = mock.AsyncMock(return_value=[])
 

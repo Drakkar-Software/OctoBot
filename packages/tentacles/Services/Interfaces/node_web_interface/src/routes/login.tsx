@@ -15,18 +15,13 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
 import { LoadingButton } from "@/components/ui/loading-button"
 import { PasswordInput } from "@/components/ui/password-input"
-import useAuth, { isLoggedIn, type LoginCredentials } from "@/hooks/useAuth"
+import useAuth, { isLoggedIn } from "@/hooks/useAuth"
 
 const formSchema = z.object({
-  username: z.email(),
-  password: z
-    .string()
-    .min(1, { message: "Password is required" })
-    .min(8, { message: "Password must be at least 8 characters" }),
-}) satisfies z.ZodType<LoginCredentials>
+  passphrase: z.string().min(1, { message: "Passphrase is required" }),
+})
 
 type FormData = z.infer<typeof formSchema>
 
@@ -34,17 +29,11 @@ export const Route = createFileRoute("/login")({
   component: Login,
   beforeLoad: async () => {
     if (isLoggedIn()) {
-      throw redirect({
-        to: "/",
-      })
+      throw redirect({ to: "/" })
     }
   },
   head: () => ({
-    meta: [
-      {
-        title: "Log In",
-      },
-    ],
+    meta: [{ title: "Log In" }],
   }),
 })
 
@@ -55,16 +44,16 @@ function Login() {
     mode: "onBlur",
     criteriaMode: "all",
     defaultValues: {
-      username: "",
-      password: "",
+      passphrase: "",
     },
   })
 
   const onSubmit = (data: FormData) => {
     if (loginMutation.isPending) return
-    loginMutation.mutate(data)
+    // Use stored address or a placeholder — backend only checks the passphrase
+    const username = localStorage.getItem("auth_username") || "node"
+    loginMutation.mutate({ username, password: data.passphrase })
   }
-
 
   return (
     <AuthLayout>
@@ -74,41 +63,23 @@ function Login() {
           className="flex flex-col gap-6"
         >
           <div className="flex flex-col items-center gap-2 text-center">
-            <h1 className="text-2xl font-bold">Login to your account</h1>
+            <h1 className="text-2xl font-bold">Unlock your node</h1>
+            <p className="text-sm text-muted-foreground">
+              Enter your passphrase to continue.
+            </p>
           </div>
 
           <div className="grid gap-4">
             <FormField
               control={form.control}
-              name="username"
+              name="passphrase"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input
-                      data-testid="email-input"
-                      placeholder="user@example.com"
-                      type="email"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage className="text-xs" />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <div className="flex items-center">
-                    <FormLabel>Password</FormLabel>
-                  </div>
+                  <FormLabel>Passphrase</FormLabel>
                   <FormControl>
                     <PasswordInput
-                      data-testid="password-input"
-                      placeholder="Password"
+                      data-testid="passphrase-input"
+                      placeholder="Your passphrase"
                       {...field}
                     />
                   </FormControl>
@@ -118,7 +89,7 @@ function Login() {
             />
 
             <LoadingButton type="submit" loading={loginMutation.isPending}>
-              Log In
+              Unlock
             </LoadingButton>
           </div>
         </form>

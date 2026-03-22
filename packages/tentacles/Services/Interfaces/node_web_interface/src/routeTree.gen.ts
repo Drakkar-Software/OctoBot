@@ -9,9 +9,13 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SetupRouteImport } from './routes/setup'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LayoutRouteImport } from './routes/_layout'
+import { Route as SetupIndexRouteImport } from './routes/setup/index'
 import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
+import { Route as SetupNodeTypeRouteImport } from './routes/setup/node-type'
+import { Route as SetupFirstBotRouteImport } from './routes/setup/first-bot'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
 import { Route as LayoutOctobotsRouteImport } from './routes/_layout/octobots'
 import { Route as LayoutOctobotsIndexRouteImport } from './routes/_layout/octobots/index'
@@ -21,6 +25,11 @@ import { Route as LayoutOctobotsNewPresetsRouteImport } from './routes/_layout/o
 import { Route as LayoutOctobotsNewDefaultsRouteImport } from './routes/_layout/octobots/new/defaults'
 import { Route as LayoutOctobotsNewBuilderRouteImport } from './routes/_layout/octobots/new/builder'
 
+const SetupRoute = SetupRouteImport.update({
+  id: '/setup',
+  path: '/setup',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -30,10 +39,25 @@ const LayoutRoute = LayoutRouteImport.update({
   id: '/_layout',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SetupIndexRoute = SetupIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => SetupRoute,
+} as any)
 const LayoutIndexRoute = LayoutIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => LayoutRoute,
+} as any)
+const SetupNodeTypeRoute = SetupNodeTypeRouteImport.update({
+  id: '/node-type',
+  path: '/node-type',
+  getParentRoute: () => SetupRoute,
+} as any)
+const SetupFirstBotRoute = SetupFirstBotRouteImport.update({
+  id: '/first-bot',
+  path: '/first-bot',
+  getParentRoute: () => SetupRoute,
 } as any)
 const LayoutSettingsRoute = LayoutSettingsRouteImport.update({
   id: '/settings',
@@ -81,9 +105,13 @@ const LayoutOctobotsNewBuilderRoute =
 
 export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
+  '/setup': typeof SetupRouteWithChildren
   '/octobots': typeof LayoutOctobotsRouteWithChildren
   '/settings': typeof LayoutSettingsRoute
+  '/setup/first-bot': typeof SetupFirstBotRoute
+  '/setup/node-type': typeof SetupNodeTypeRoute
   '/': typeof LayoutIndexRoute
+  '/setup/': typeof SetupIndexRoute
   '/octobots/import': typeof LayoutOctobotsImportRoute
   '/octobots/new': typeof LayoutOctobotsNewRouteWithChildren
   '/octobots/': typeof LayoutOctobotsIndexRoute
@@ -94,7 +122,10 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/settings': typeof LayoutSettingsRoute
+  '/setup/first-bot': typeof SetupFirstBotRoute
+  '/setup/node-type': typeof SetupNodeTypeRoute
   '/': typeof LayoutIndexRoute
+  '/setup': typeof SetupIndexRoute
   '/octobots/import': typeof LayoutOctobotsImportRoute
   '/octobots/new': typeof LayoutOctobotsNewRouteWithChildren
   '/octobots': typeof LayoutOctobotsIndexRoute
@@ -106,9 +137,13 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_layout': typeof LayoutRouteWithChildren
   '/login': typeof LoginRoute
+  '/setup': typeof SetupRouteWithChildren
   '/_layout/octobots': typeof LayoutOctobotsRouteWithChildren
   '/_layout/settings': typeof LayoutSettingsRoute
+  '/setup/first-bot': typeof SetupFirstBotRoute
+  '/setup/node-type': typeof SetupNodeTypeRoute
   '/_layout/': typeof LayoutIndexRoute
+  '/setup/': typeof SetupIndexRoute
   '/_layout/octobots/import': typeof LayoutOctobotsImportRoute
   '/_layout/octobots/new': typeof LayoutOctobotsNewRouteWithChildren
   '/_layout/octobots/': typeof LayoutOctobotsIndexRoute
@@ -120,9 +155,13 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/login'
+    | '/setup'
     | '/octobots'
     | '/settings'
+    | '/setup/first-bot'
+    | '/setup/node-type'
     | '/'
+    | '/setup/'
     | '/octobots/import'
     | '/octobots/new'
     | '/octobots/'
@@ -133,7 +172,10 @@ export interface FileRouteTypes {
   to:
     | '/login'
     | '/settings'
+    | '/setup/first-bot'
+    | '/setup/node-type'
     | '/'
+    | '/setup'
     | '/octobots/import'
     | '/octobots/new'
     | '/octobots'
@@ -144,9 +186,13 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_layout'
     | '/login'
+    | '/setup'
     | '/_layout/octobots'
     | '/_layout/settings'
+    | '/setup/first-bot'
+    | '/setup/node-type'
     | '/_layout/'
+    | '/setup/'
     | '/_layout/octobots/import'
     | '/_layout/octobots/new'
     | '/_layout/octobots/'
@@ -158,10 +204,18 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   LayoutRoute: typeof LayoutRouteWithChildren
   LoginRoute: typeof LoginRoute
+  SetupRoute: typeof SetupRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/setup': {
+      id: '/setup'
+      path: '/setup'
+      fullPath: '/setup'
+      preLoaderRoute: typeof SetupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -176,12 +230,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/setup/': {
+      id: '/setup/'
+      path: '/'
+      fullPath: '/setup/'
+      preLoaderRoute: typeof SetupIndexRouteImport
+      parentRoute: typeof SetupRoute
+    }
     '/_layout/': {
       id: '/_layout/'
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof LayoutIndexRouteImport
       parentRoute: typeof LayoutRoute
+    }
+    '/setup/node-type': {
+      id: '/setup/node-type'
+      path: '/node-type'
+      fullPath: '/setup/node-type'
+      preLoaderRoute: typeof SetupNodeTypeRouteImport
+      parentRoute: typeof SetupRoute
+    }
+    '/setup/first-bot': {
+      id: '/setup/first-bot'
+      path: '/first-bot'
+      fullPath: '/setup/first-bot'
+      preLoaderRoute: typeof SetupFirstBotRouteImport
+      parentRoute: typeof SetupRoute
     }
     '/_layout/settings': {
       id: '/_layout/settings'
@@ -288,9 +363,24 @@ const LayoutRouteChildren: LayoutRouteChildren = {
 const LayoutRouteWithChildren =
   LayoutRoute._addFileChildren(LayoutRouteChildren)
 
+interface SetupRouteChildren {
+  SetupFirstBotRoute: typeof SetupFirstBotRoute
+  SetupNodeTypeRoute: typeof SetupNodeTypeRoute
+  SetupIndexRoute: typeof SetupIndexRoute
+}
+
+const SetupRouteChildren: SetupRouteChildren = {
+  SetupFirstBotRoute: SetupFirstBotRoute,
+  SetupNodeTypeRoute: SetupNodeTypeRoute,
+  SetupIndexRoute: SetupIndexRoute,
+}
+
+const SetupRouteWithChildren = SetupRoute._addFileChildren(SetupRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   LayoutRoute: LayoutRouteWithChildren,
   LoginRoute: LoginRoute,
+  SetupRoute: SetupRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

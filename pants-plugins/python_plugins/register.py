@@ -4,13 +4,18 @@
 from __future__ import annotations
 
 import os.path
+import subprocess
+import sys
 
+from pants.backend.python.target_types import PythonRequirementsField
 from pants.backend.python.util_rules.package_dists import SetupKwargs, SetupKwargsRequest
-from pants.engine.target import Target
+from pants.engine.console import Console
 from pants.engine.fs import DigestContents, GlobMatchErrorBehavior, PathGlobs
+from pants.engine.goal import Goal, GoalSubsystem
 from pants.engine.intrinsics import get_digest_contents
-from pants.engine.unions import UnionRule
 from pants.engine.rules import collect_rules, goal_rule, implicitly, rule
+from pants.engine.target import AllTargets, Target
+from pants.engine.unions import UnionRule
 
 
 class PantsSetupKwargsRequest(SetupKwargsRequest):
@@ -43,6 +48,55 @@ async def setup_kwargs_plugin(request: PantsSetupKwargsRequest) -> SetupKwargs:
         {**original_kwargs, "long_description": description_content},
         address=request.target.address
     )
+
+
+class InstallDepsSubsystem(GoalSubsystem):
+    name = "install-deps"
+    help = "Install third-party Python dependencies into the local Python environment."
+
+    @classmethod
+    def register_options(cls, register) -> None:
+        super().register_options(register)
+        register(
+            "--full",
+            type=bool,
+            default=False,
+            help="Also install packages from full_requirements.txt files.",
+        )
+
+
+class InstallDeps(Goal):
+    subsystem_cls = InstallDepsSubsystem
+    environment_behavior = Goal.EnvironmentBehavior.LOCAL_ONLY
+
+
+@goal_rule
+async def install_deps(
+    console: Console,
+    targets: AllTargets,
+    subsystem: InstallDepsSubsystem,
+) -> InstallDeps:
+    include_full = subsystem.options.full
+    requirements: set[str] = set()
+    for target in targets:
+        if not target.has_field(PythonRequirementsField):
+            continue
+        if not include_full and target.address.target_name == "full_reqs":
+            continue
+        for req in target[PythonRequirementsField].value:
+            requirements.add(str(req))
+
+    if not requirements:
+        console.print_stdout("No third-party requirements found.")
+        return InstallDeps(exit_code=0)
+
+    sorted_reqs = sorted(requirements)
+    console.print_stdout(f"Installing {len(sorted_reqs)} packages into {sys.executable}...")
+    result = subprocess.run(
+        [sys.executable, "-m", "pip", "install", *sorted_reqs],
+        check=False,
+    )
+    return InstallDeps(exit_code=result.returncode)
 
 
 def rules():

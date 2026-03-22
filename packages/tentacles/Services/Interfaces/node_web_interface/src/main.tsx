@@ -23,7 +23,6 @@ OpenAPI.PASSWORD = async () => {
 
 const handleApiError = (error: Error) => {
   if (error instanceof ApiError && [401, 403].includes(error.status)) {
-    localStorage.removeItem("auth_username")
     localStorage.removeItem("auth_password")
     window.location.href = "/app/login"
   }

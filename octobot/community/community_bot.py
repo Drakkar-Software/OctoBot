@@ -23,7 +23,6 @@ import octobot_commons.cache_util as cache_util
 import octobot.community.errors as errors
 import octobot.community.supabase_backend.enums as supabase_enums
 import octobot.community.models.formatters as formatters
-import octobot.constants
 import octobot_commons.logging as commons_logging
 import octobot_commons.enums as commons_enums
 import octobot.automation

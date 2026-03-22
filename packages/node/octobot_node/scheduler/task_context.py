@@ -38,10 +38,8 @@ def encrypted_task(task: octobot_node.models.Task):
     
     try:
         # Decrypt content if encryption keys are configured
-        if octobot_node.config.settings.TASKS_INPUTS_RSA_PRIVATE_KEY and octobot_node.config.settings.TASKS_INPUTS_ECDSA_PUBLIC_KEY:
+        if octobot_node.config.settings.is_node_side_encryption_enabled and task.content_metadata:
             try:
-                if not task.content_metadata:
-                    raise encryption.MissingMetadataError("No metadata provided for content decryption")
                 decrypted_content = encryption.decrypt_task_content(task.content, task.content_metadata)
                 task.content = decrypted_content
             except Exception as e:
@@ -64,7 +62,7 @@ def encrypted_task(task: octobot_node.models.Task):
                 } # type: ignore
 
             # Encrypt result if encryption keys are configured
-            if octobot_node.config.settings.TASKS_OUTPUTS_RSA_PUBLIC_KEY and octobot_node.config.settings.TASKS_OUTPUTS_ECDSA_PRIVATE_KEY:
+            if octobot_node.config.settings.is_node_side_encryption_enabled:
                 try:
                     result_json = json.dumps(task.result)
                     encrypted_result, metadata = encryption.encrypt_task_result(result_json)
