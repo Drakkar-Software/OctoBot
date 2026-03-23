@@ -5,6 +5,7 @@
 
 from ccxt.async_support.base.exchange import Exchange
 from .polymarket_abstract import ImplicitAPI
+import asyncio
 import hashlib
 import math
 import json
@@ -548,16 +549,31 @@ class polymarket(Exchange, ImplicitAPI):
         active = self.safe_bool(options, 'active', True)
         if self.safe_value(params, 'closed') is None:
             request['closed'] = not active
-        offset = self.safe_integer(request, 'offset', 0)
-        markets: List[Any] = []
-        while(True):
-            pageRequest = self.extend(request, {'offset': offset})
-            response = await self.gamma_public_get_markets(pageRequest)
-            page = self.safe_list(response, 'data', response) or []
-            markets = self.array_concat(markets, page)
-            if len(page) < limit:
-                break
-            offset += limit
+        # Fetch first page to seed the results
+        firstResponse = await self.gamma_public_get_markets(self.extend({}, request, {'offset': 0}))
+        firstPage = self.safe_list(firstResponse, 'data', firstResponse)
+        markets: List[Any] = firstPage
+        if len(firstPage) >= limit:
+            # API returns a plain list with no total count — fetch remaining pages in parallel batches.
+            # BATCH_SIZE=10 pages per round, MAX_ROUNDS=100 covers up to 500,000 markets.
+            BATCH_SIZE = 10
+            MAX_ROUNDS = 100
+            currentOffset = limit
+            done = False
+            for round in range(0, MAX_ROUNDS):
+                batchPromises = []
+                for i in range(0, BATCH_SIZE):
+                    batchPromises.append(self.gamma_public_get_markets(self.extend({}, request, {'offset': currentOffset + i * limit})))
+                batchResponses = await asyncio.gather(*batchPromises)
+                for i in range(0, len(batchResponses)):
+                    page = self.safe_list(batchResponses[i], 'data', batchResponses[i])
+                    markets = self.array_concat(markets, page)
+                    if len(page) < limit:
+                        done = True
+                        break
+                currentOffset += BATCH_SIZE * limit
+                if done:
+                    break
         filtered = []
         for i in range(0, len(markets)):
             market = markets[i]
