@@ -2,7 +2,7 @@ import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router"
 import { useMutation } from "@tanstack/react-query"
 import { Network, Server } from "lucide-react"
 
-import { SetupService, type ApiError } from "@/client"
+import { SetupService, type ApiError, type SetupResult } from "@/client"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -30,7 +30,7 @@ function SetupNodeType() {
   const navigate = useNavigate()
   const { showErrorToast } = useCustomToast()
 
-  const initMutation = useMutation({
+  const initMutation = useMutation<SetupResult, ApiError, "standalone" | "master">({
     mutationFn: (nodeType: "standalone" | "master") => {
       const passphrase = sessionStorage.getItem("setup_passphrase") ?? ""
       const privateKey = sessionStorage.getItem("setup_private_key") ?? undefined

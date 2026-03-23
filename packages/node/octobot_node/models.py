@@ -54,34 +54,18 @@ class Execution(BaseModel):
     status: typing.Optional[TaskStatus] = None
     result: typing.Optional[str] = None
     result_metadata: typing.Optional[str] = None
-    retries: typing.Optional[int] = 0
-    retry_delay: typing.Optional[int] = 0
-    priority: typing.Optional[int] = 0
-    expires: typing.Optional[datetime.datetime] = None
-    expires_resolved: typing.Optional[datetime.datetime] = None
     scheduled_at: typing.Optional[datetime.datetime] = None
-    started_at: typing.Optional[datetime.datetime] = None
     completed_at: typing.Optional[datetime.datetime] = None
 
 
 class Task(BaseModel):
     id: str = str(uuid.uuid4())
     name: typing.Optional[str] = None
-    description: typing.Optional[str] = None
     content: typing.Optional[str] = None
     content_metadata: typing.Optional[str] = None
     type: typing.Optional[str] = None
-    status: typing.Optional[TaskStatus] = None
-    result: typing.Optional[str] = None
+    result: typing.Optional[typing.Any] = None
     result_metadata: typing.Optional[str] = None
-    retries: typing.Optional[int] = 0
-    retry_delay: typing.Optional[int] = 0
-    priority: typing.Optional[int] = 0
-    expires: typing.Optional[datetime.datetime] = None
-    expires_resolved: typing.Optional[datetime.datetime] = None
-    scheduled_at: typing.Optional[datetime.datetime] = None
-    started_at: typing.Optional[datetime.datetime] = None
-    completed_at: typing.Optional[datetime.datetime] = None
     executions: list[Execution] = []
 
 class Node(BaseModel):

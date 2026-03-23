@@ -32,7 +32,6 @@ import { handleError } from "@/utils"
 
 const formSchema = z.object({
   name: z.string().min(1, { message: "Name is required" }),
-  description: z.string().optional(),
 })
 
 type FormData = z.infer<typeof formSchema>
@@ -53,7 +52,6 @@ const EditTask = ({ task, onSuccess }: EditTaskProps) => {
     criteriaMode: "all",
     defaultValues: {
       name: task.name ?? "",
-      description: task.description ?? undefined,
     },
   })
 
@@ -72,7 +70,7 @@ const EditTask = ({ task, onSuccess }: EditTaskProps) => {
   })
 
   const onSubmit = (data: FormData) => {
-    mutation.mutate({ name: data.name, description: data.description ?? "" } as Task)
+    mutation.mutate({ name: data.name } as Task)
   }
 
   return (
@@ -110,19 +108,6 @@ const EditTask = ({ task, onSuccess }: EditTaskProps) => {
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Description" type="text" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
             </div>
 
             <DialogFooter>

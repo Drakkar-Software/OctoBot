@@ -117,7 +117,7 @@ function SetupWallet() {
         </div>
 
         {mode === "generate" ? (
-          <Form {...generateForm}>
+          <Form key="generate" {...generateForm}>
             <form
               onSubmit={generateForm.handleSubmit(onGenerateSubmit)}
               className="flex flex-col gap-4"
@@ -154,7 +154,7 @@ function SetupWallet() {
             </form>
           </Form>
         ) : (
-          <Form {...importForm}>
+          <Form key="import" {...importForm}>
             <form
               onSubmit={importForm.handleSubmit(onImportSubmit)}
               className="flex flex-col gap-4"

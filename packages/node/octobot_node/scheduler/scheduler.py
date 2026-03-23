@@ -252,9 +252,6 @@ class Scheduler:
             actions=task_actions,
             type=task_type,
             status=status,
-            retries=0,
-            retry_delay=0,
-            priority=0,
         )
 
     def get_task_name(self, task_data: dict | octobot_node.models.Task | None, default_value: typing.Optional[str] = None) -> typing.Optional[str]:

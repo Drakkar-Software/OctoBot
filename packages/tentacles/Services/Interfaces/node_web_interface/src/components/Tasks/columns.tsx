@@ -1,10 +1,11 @@
 import type { ColumnDef } from "@tanstack/react-table"
 
-import type { Task_Output as Task } from "@/client"
+import type { Task_Output as Task, TaskStatus } from "@/client"
 import { cn } from "@/lib/utils"
+import { getActiveExecution } from "@/utils/executions"
 import { TaskMenu } from "./TaskMenu"
 
-function StatusBadge({ status }: { status: Task["status"] }) {
+function StatusBadge({ status }: { status: TaskStatus | null | undefined }) {
   const statusConfig = {
     pending: { label: "Pending", className: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400" },
     scheduled: { label: "Scheduled", className: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400" },
@@ -30,26 +31,9 @@ function StatusBadge({ status }: { status: Task["status"] }) {
 
 export const columns: ColumnDef<Task>[] = [
   {
-    accessorKey: "description",
-    header: "Description",
-    cell: ({ row }) => {
-      const description = row.original.description
-      return (
-        <span
-          className={cn(
-            "max-w-xs truncate block text-muted-foreground",
-            !description && "italic",
-          )}
-        >
-          {description || "No description"}
-        </span>
-      )
-    },
-  },
-  {
     accessorKey: "status",
     header: "Status",
-    cell: ({ row }) => <StatusBadge status={row.original.status} />,
+    cell: ({ row }) => <StatusBadge status={getActiveExecution(row.original.executions)?.status} />,
   },
   {
     accessorKey: "name",

@@ -6,6 +6,7 @@ import { type Task_Output as Task, TasksService } from "@/client"
 import { Button } from "@/components/ui/button"
 import useCustomToast from "@/hooks/useCustomToast"
 import { generateCSV, downloadCSV } from "@/lib/csv"
+import { getActiveExecution } from "@/utils/executions"
 
 const ExportResults = () => {
   const [isExporting, setIsExporting] = useState(false)
@@ -27,7 +28,10 @@ const ExportResults = () => {
     try {
       // Filter tasks that have results
       const tasksWithResults = tasks.filter(
-        (task: Task) => task.result && task.result.trim() !== ""
+        (task: Task) => {
+          const result = getActiveExecution(task.executions)?.result
+          return result && result.trim() !== ""
+        }
       )
 
       if (tasksWithResults.length === 0) {
@@ -40,23 +44,24 @@ const ExportResults = () => {
       const rows: unknown[][] = []
       
       for (const task of tasksWithResults) {
-        let resultValue = task.result
+        const activeExec = getActiveExecution(task.executions)
+        let resultValue = activeExec?.result
         try {
           // Try to parse and stringify to format nicely
-          const parsed = task.result ? JSON.parse(task.result) : null
-          resultValue = parsed !== null ? JSON.stringify(parsed) : task.result
+          const parsed = activeExec?.result ? JSON.parse(activeExec.result) : null
+          resultValue = parsed !== null ? JSON.stringify(parsed) : activeExec?.result
         } catch {
           // If parsing fails, use raw string
-          resultValue = task.result
+          resultValue = activeExec?.result
         }
-        
+
         const row = [
           task.name || "",
-          task.status || "",
+          activeExec?.status || "",
           resultValue || "No result found",
-          task.result_metadata
+          activeExec?.result_metadata
         ]
-        
+
         rows.push(row)
       }
 

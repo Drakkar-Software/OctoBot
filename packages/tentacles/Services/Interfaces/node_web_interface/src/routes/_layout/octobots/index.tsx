@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query"
 import { createFileRoute, Link } from "@tanstack/react-router"
-import { Activity, Bot, Check, Clock, Layers, Plus, Trash2 } from "lucide-react"
+import { Bot, Check, Clock, Layers, Plus, Trash2 } from "lucide-react"
 import { Suspense, useMemo, useState } from "react"
 
 import type { Task_Output as Task, TaskStatus } from "@/client"
@@ -28,6 +28,7 @@ import { LoadingButton } from "@/components/ui/loading-button"
 import useCustomToast from "@/hooks/useCustomToast"
 import { generateCSV, downloadCSV } from "@/lib/csv"
 import { cn } from "@/lib/utils"
+import { getActiveExecution } from "@/utils/executions"
 
 function getTasksQueryOptions() {
   return {
@@ -70,29 +71,11 @@ function getStatusGroup(status?: TaskStatus | null) {
 }
 
 function getDisplayDate(task: Task) {
-  const group = getStatusGroup(task.status)
-  if (task.expires_resolved && group === "scheduled") {
-    return { label: "Expires", value: task.expires_resolved }
-  }
-  if (group === "stopped") {
-    if (task.completed_at) return { label: "Executed at", value: task.completed_at }
-    if (task.started_at) return { label: "Executed at", value: task.started_at }
-  }
-  if (task.started_at) return { label: "Started", value: task.started_at }
-  if (task.scheduled_at) return { label: "Scheduled", value: task.scheduled_at }
-  if (task.completed_at) return { label: "Stopped", value: task.completed_at }
+  const completed_at = getActiveExecution(task.executions)?.completed_at
+  if (completed_at) return { label: "Executed at", value: completed_at }
   return { label: "Created", value: "—" }
 }
 
-function getDuration(task: Task): string | null {
-  if (!task.started_at || !task.completed_at) return null
-  const ms = new Date(task.completed_at).getTime() - new Date(task.started_at).getTime()
-  if (ms < 0) return null
-  if (ms < 1000) return `${ms}ms`
-  if (ms < 60_000) return `${Math.round(ms / 1000)}s`
-  if (ms < 3_600_000) return `${Math.round(ms / 60_000)}m`
-  return `${Math.round(ms / 3_600_000)}h`
-}
 
 function formatDate(value: string | null | undefined): string {
   if (!value || value === "—") return "—"
@@ -110,30 +93,16 @@ function formatDate(value: string | null | undefined): string {
 }
 
 function BotCardBody({ task }: { task: Task }) {
-  const group = getStatusGroup(task.status)
+  const activeExec = getActiveExecution(task.executions)
+  const group = getStatusGroup(activeExec?.status)
   const date = getDisplayDate(task)
   const stepCount = task.executions?.length ?? 0
   const pendingSteps = task.executions?.filter((e) => e.status === "pending").length ?? 0
   const completedSteps = task.executions?.filter((e) => e.status === "completed" || e.status === "failed").length ?? 0
-  const duration = getDuration(task)
 
   if (group === "running") {
-    const progress =
-      task.description &&
-      !task.description.startsWith("Pending task:") &&
-      task.description !== "Completed" &&
-      task.description !== "Error"
-        ? task.description
-        : null
-
     return (
       <CardContent className="flex flex-col gap-2 pt-0">
-        {progress && (
-          <div className="flex items-center gap-1.5 text-xs text-foreground">
-            <Activity className="size-3.5 shrink-0 text-primary" />
-            <span className="truncate">{progress}</span>
-          </div>
-        )}
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
           {completedSteps > 0 && (
             <span className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -159,16 +128,10 @@ function BotCardBody({ task }: { task: Task }) {
     return (
       <CardContent className="flex flex-col gap-2 pt-0">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          {task.type && (
+          {activeExec?.type && (
             <span className="rounded bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-              {task.type}
+              {activeExec.type}
             </span>
-          )}
-          {task.retries != null && task.retries > 0 && (
-            <span className="text-xs text-muted-foreground">↺ {task.retries} retries</span>
-          )}
-          {task.priority != null && task.priority > 0 && (
-            <span className="text-xs text-muted-foreground">⬆ High priority</span>
           )}
         </div>
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -179,26 +142,21 @@ function BotCardBody({ task }: { task: Task }) {
     )
   }
 
-  const isFailed = task.status === "failed"
+  const isFailed = activeExec?.status === "failed"
 
   return (
     <CardContent className="flex flex-col gap-2 pt-0">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          {task.type && (
-            <span className="rounded bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-              {task.type}
-            </span>
-          )}
-          {stepCount > 0 && (
-            <span className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Layers className="size-3.5" />
-              {stepCount} step{stepCount !== 1 ? "s" : ""}
-            </span>
-          )}
-        </div>
-        {duration && (
-          <span className="shrink-0 text-xs text-muted-foreground">⏱ {duration}</span>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        {activeExec?.type && (
+          <span className="rounded bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+            {activeExec.type}
+          </span>
+        )}
+        {stepCount > 0 && (
+          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+            <Layers className="size-3.5" />
+            {stepCount} step{stepCount !== 1 ? "s" : ""}
+          </span>
         )}
       </div>
       <div className={cn("text-xs", isFailed ? "text-destructive/80" : "text-muted-foreground")}>
@@ -218,7 +176,7 @@ function BotCard({
   onToggleSelect: (id: string) => void
 }) {
   const label = task.name || `OctoBot ${task.id?.slice(0, 6) || "new"}`
-  const status = task.status || "scheduled"
+  const status = (getActiveExecution(task.executions)?.status || "scheduled") as TaskStatus
 
   return (
     <Card
@@ -274,10 +232,11 @@ function BotGrid({
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase()
     return tasks.filter((task) => {
+      const activeExec = getActiveExecution(task.executions)
       const inFilter =
-        filter === "all" ? true : getStatusGroup(task.status) === filter
+        filter === "all" ? true : getStatusGroup(activeExec?.status) === filter
       const inSearch = query
-        ? `${task.name ?? ""} ${task.description ?? ""} ${task.type ?? ""}`
+        ? `${task.name ?? ""} ${activeExec?.type ?? ""}`
             .toLowerCase()
             .includes(query)
         : true
@@ -364,7 +323,7 @@ function SelectionToolbar({
 
   const handleExportResults = () => {
     const selected = allTasks.filter(
-      (t) => t.id && selectedIds.has(t.id) && getStatusGroup(t.status) === "stopped"
+      (t) => t.id && selectedIds.has(t.id) && getStatusGroup(getActiveExecution(t.executions)?.status) === "stopped"
     )
     if (selected.length === 0) {
       showErrorToast("No results to export for selected OctoBots")
@@ -372,12 +331,13 @@ function SelectionToolbar({
     }
     const headers = ["name", "status", "result", "result_metadata"]
     const rows = selected.map((t) => {
-      let resultValue = t.result
+      const activeExec = getActiveExecution(t.executions)
+      let resultValue = activeExec?.result
       try {
-        const parsed = t.result ? JSON.parse(t.result) : null
-        resultValue = parsed !== null ? JSON.stringify(parsed) : t.result
+        const parsed = activeExec?.result ? JSON.parse(activeExec.result) : null
+        resultValue = parsed !== null ? JSON.stringify(parsed) : activeExec?.result
       } catch { /* raw string */ }
-      return [t.name || "", t.status || "", resultValue || "", t.result_metadata || ""]
+      return [t.name || "", activeExec?.status || "", resultValue || "", activeExec?.result_metadata || ""]
     })
     const csv = generateCSV(headers, rows)
     downloadCSV(csv, `task-results-${new Date().toISOString().split("T")[0]}`)
@@ -497,10 +457,11 @@ function BotsContent() {
   const filteredTasks = useMemo(() => {
     const query = searchValue.trim().toLowerCase()
     return tasks.filter((task) => {
+      const activeExec = getActiveExecution(task.executions)
       const inFilter =
-        filterValue === "all" ? true : getStatusGroup(task.status) === filterValue
+        filterValue === "all" ? true : getStatusGroup(activeExec?.status) === filterValue
       const inSearch = query
-        ? `${task.name ?? ""} ${task.description ?? ""} ${task.type ?? ""}`
+        ? `${task.name ?? ""} ${activeExec?.type ?? ""}`
             .toLowerCase()
             .includes(query)
         : true
@@ -511,9 +472,9 @@ function BotsContent() {
   const counts = useMemo(() => {
     return {
       all: tasks.length,
-      running: tasks.filter((task) => getStatusGroup(task.status) === "running").length,
-      scheduled: tasks.filter((task) => getStatusGroup(task.status) === "scheduled").length,
-      stopped: tasks.filter((task) => getStatusGroup(task.status) === "stopped").length,
+      running: tasks.filter((task) => getStatusGroup(getActiveExecution(task.executions)?.status) === "running").length,
+      scheduled: tasks.filter((task) => getStatusGroup(getActiveExecution(task.executions)?.status) === "scheduled").length,
+      stopped: tasks.filter((task) => getStatusGroup(getActiveExecution(task.executions)?.status) === "stopped").length,
     }
   }, [tasks])
 
