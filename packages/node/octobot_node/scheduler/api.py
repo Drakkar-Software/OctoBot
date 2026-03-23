@@ -106,20 +106,7 @@ def _build_tasks_from_executions(
         tasks.append(octobot_node.models.Task(
             id=parent_id,
             name=active.name if active else None,
-            description=active.description if active else None,
             content=active.actions if active else None,
-            type=active.type if active else None,
-            status=active.status if active else None,
-            result=active.result if active else None,
-            result_metadata=active.result_metadata if active else None,
-            retries=active.retries if active else 0,
-            retry_delay=active.retry_delay if active else 0,
-            priority=active.priority if active else 0,
-            expires=active.expires if active else None,
-            expires_resolved=active.expires_resolved if active else None,
-            scheduled_at=active.scheduled_at if active else None,
-            started_at=active.started_at if active else None,
-            completed_at=active.completed_at if active else None,
             executions=group,
         ))
     return tasks

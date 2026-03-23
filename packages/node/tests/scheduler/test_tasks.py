@@ -32,7 +32,6 @@ from tests.scheduler import temp_dbos_scheduler
 def schedule_task():
     return octobot_node.models.Task(
         name="test_task",
-        description="Test task",
         content=json.dumps(
             {
                 "ACTIONS": "trade",

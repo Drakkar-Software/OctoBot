@@ -231,7 +231,7 @@ class TestGetAllTasks:
             assert isinstance(task, Task)
             assert task.id == parent_id
             assert len(task.executions) == 2
-            assert task.status == TaskStatus.PENDING
+            assert any(e.status == TaskStatus.PENDING for e in task.executions)
 
     @pytest.mark.asyncio
     async def test_get_all_tasks_active_execution_latest_completed(self, temp_dbos_scheduler) -> None:
