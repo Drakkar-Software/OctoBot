@@ -164,3 +164,18 @@ installer/
 
 # ai
 analysis/
+
+# octobot_edge — Rust compiled artifacts
+packages/edge/octobot_edge/_native*.so
+packages/edge/octobot_edge/_native*.pyd
+packages/edge/octobot_edge/_native*.dylib
+packages/edge/rust/target/
+packages/edge/js/dist/
+packages/edge/js/node_modules/
+packages/edge/js/src/rust-bridge/pkg/
+packages/edge/js/src/rust-bridge/*.node
+packages/edge/js/dist/native/*.node
+packages/edge/rust/napi/*.node
+packages/edge/js/src/rust-bridge/native.js
+packages/edge/js/src/rust-bridge/native.d.ts
+packages/edge/js/*.tsbuildinfo

@@ -1,0 +1,335 @@
+name: OctoBot-Edge CI
+
+on:
+  push:
+    branches:
+      - 'master'
+      - 'dev'
+    tags:
+      - '*'
+    paths:
+      - 'packages/edge/**'
+  pull_request:
+    paths:
+      - 'packages/edge/**'
+
+permissions: read-all
+
+jobs:
+  rust-tests:
+    name: Rust tests — ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+          - os: macos-latest
+            target: aarch64-apple-darwin
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Cache Rust dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            packages/edge/rust/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('packages/edge/rust/**/Cargo.toml') }}
+          restore-keys: ${{ runner.os }}-cargo-
+
+      - name: Run core Rust tests
+        working-directory: packages/edge/rust
+        run: cargo test --manifest-path core/Cargo.toml
+
+  build-wasm:
+    name: Build WASM
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Install wasm-pack
+        run: cargo install wasm-pack --version 0.13.1
+
+      - name: Build WASM
+        working-directory: packages/edge/rust/wasm
+        run: wasm-pack build --target bundler --out-dir ../../js/src/rust-bridge/pkg
+
+      - name: Upload WASM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: edge-wasm
+          path: packages/edge/js/src/rust-bridge/pkg/
+          if-no-files-found: error
+
+  build-napi:
+    name: Build NAPI — ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifact_suffix: linux-x64-gnu
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            artifact_suffix: darwin-arm64
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact_suffix: win32-x64-msvc
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install napi-rs CLI
+        run: npm install -g @napi-rs/cli@3.0.0
+
+      - name: Build NAPI addon
+        working-directory: packages/edge/rust/napi
+        run: |
+          napi build --platform --release \
+            --js ../../js/src/rust-bridge/native.js \
+            --dts ../../js/src/rust-bridge/native.d.ts
+
+      - name: Upload NAPI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: edge-napi-${{ matrix.artifact_suffix }}
+          path: packages/edge/rust/napi/*.node
+          if-no-files-found: error
+
+  build-python:
+    name: Build Python extension
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13.x'
+
+      - name: Install maturin
+        run: pip install maturin==1.8.3
+
+      - name: Build wheel
+        working-directory: packages/edge/rust/py
+        run: maturin build --release
+
+      - name: Upload wheel artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: edge-python-wheel
+          path: packages/edge/rust/target/wheels/*.whl
+          if-no-files-found: error
+
+  js-build-test:
+    name: JS build & test
+    needs: [build-wasm]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Download WASM artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: edge-wasm
+          path: packages/edge/js/src/rust-bridge/pkg/
+
+      - name: Install JS dependencies
+        working-directory: packages/edge/js
+        run: npm install
+
+      - name: Build TypeScript
+        working-directory: packages/edge/js
+        run: npm run build
+
+      - name: Run JS tests
+        working-directory: packages/edge/js
+        run: npm run test:ci
+
+      - name: Upload npm package
+        uses: actions/upload-artifact@v4
+        with:
+          name: edge-npm-package
+          path: packages/edge/js/dist/
+          if-no-files-found: error
+
+  python-tests:
+    name: Python tests
+    needs: [build-python]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13.x'
+
+      - name: Install dependencies
+        working-directory: packages/edge
+        run: pip install -r full_requirements.txt
+
+      - name: Download Python wheel
+        uses: actions/download-artifact@v4
+        with:
+          name: edge-python-wheel
+          path: dist/
+
+      - name: Install compiled Rust extension
+        run: pip install --force-reinstall --no-deps dist/*.whl
+
+      - name: Install package (editable)
+        working-directory: packages/edge
+        run: pip install -e .
+
+      - name: Run tests
+        working-directory: packages/edge
+        run: pytest tests -v
+
+  publish-npm:
+    name: Publish npm package
+    needs: [rust-tests, js-build-test, build-napi, build-wasm]
+    if: startsWith(github.ref, 'refs/tags/edge-')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: 'https://registry.npmjs.org'
+
+      # Download the built JS package (dist/)
+      - name: Download npm package artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: edge-npm-package
+          path: packages/edge/js/dist/
+
+      # Download WASM binary and copy into dist/
+      - name: Download WASM artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: edge-wasm
+          path: /tmp/wasm-artifact/
+
+      - name: Copy WASM binary into dist
+        run: |
+          mkdir -p packages/edge/js/dist/wasm
+          cp /tmp/wasm-artifact/*.wasm packages/edge/js/dist/wasm/ || true
+          cp /tmp/wasm-artifact/*.js packages/edge/js/dist/wasm/ || true
+          ls -la packages/edge/js/dist/wasm/
+
+      # Download NAPI binaries and copy into dist/ so they're included in the publish
+      - name: Download NAPI artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: edge-napi-*
+          path: /tmp/napi-artifacts/
+
+      - name: Copy NAPI binaries into dist
+        run: |
+          mkdir -p packages/edge/js/dist/native
+          for dir in /tmp/napi-artifacts/edge-napi-*/; do
+            cp "$dir"/*.node packages/edge/js/dist/native/ || true
+          done
+          ls -la packages/edge/js/dist/native/
+
+      - name: Publish to npm
+        working-directory: packages/edge/js
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  publish-python:
+    name: Publish Python package to PyPI
+    needs: [rust-tests, python-tests, build-python]
+    if: startsWith(github.ref, 'refs/tags/edge-')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13.x'
+
+      - name: Download Python wheel
+        uses: actions/download-artifact@v4
+        with:
+          name: edge-python-wheel
+          path: dist/
+
+      - name: Publish to PyPI
+        env:
+          TWINE_REPOSITORY_URL: ${{ secrets.PYPI_OFFICIAL_UPLOAD_URL }}
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+        run: |
+          pip install twine
+          python -m twine upload --skip-existing dist/*
+
+  publish-release:
+    name: Upload release assets
+    needs: [build-wasm, build-napi, build-python]
+    if: startsWith(github.ref, 'refs/tags/edge-')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: edge-*
+
+      - name: Create archives
+        run: |
+          tar czf edge-wasm.tar.gz -C edge-wasm .
+          for dir in edge-napi-*; do
+            tar czf "${dir}.tar.gz" -C "$dir" .
+          done
+          tar czf edge-python-wheel.tar.gz -C edge-python-wheel .
+
+      - name: Upload to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            edge-wasm.tar.gz
+            edge-napi-*.tar.gz
+            edge-python-wheel.tar.gz

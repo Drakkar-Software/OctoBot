@@ -1,0 +1,12 @@
+[package]
+name = "octobot_edge_native"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "octobot_edge_native"
+crate-type = ["cdylib"]
+
+[dependencies]
+octobot-edge-core = { path = "../core" }
+pyo3 = { version = "0.22", features = ["extension-module"] }

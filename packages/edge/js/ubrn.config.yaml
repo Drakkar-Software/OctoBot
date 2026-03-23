@@ -1,0 +1,10 @@
+rust:
+  directory: ../rust/mobile
+  manifestPath: Cargo.toml
+bindings:
+  ios:
+    directory: ios
+    iosDeploymentTarget: "15.1"
+  android:
+    directory: android/app/src/main/jni
+outputDir: src/generated/octobot_edge_mobile

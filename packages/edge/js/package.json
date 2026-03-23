@@ -1,0 +1,83 @@
+{
+  "name": "@octobot/edge",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Universal CCXT wrapper — Node, Bun, Deno, browser, React Native (iOS/Android)",
+  "types": "./dist/esm/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/esm/index.d.ts",
+      "react-native": "./dist/rn/index.js",
+      "browser": "./dist/browser/index.mjs",
+      "bun": "./dist/esm/index.mjs",
+      "import": "./dist/esm/index.mjs",
+      "require": "./dist/cjs/index.cjs"
+    },
+    "./wasm": {
+      "types": "./dist/wasm/octobot_edge_wasm.d.ts",
+      "default": "./dist/wasm/octobot_edge_wasm.js"
+    },
+    "./polyfills/node": {
+      "import": "./dist/esm/polyfills/node.mjs",
+      "require": "./dist/cjs/polyfills/node.cjs",
+      "default": "./dist/esm/polyfills/node.mjs"
+    },
+    "./polyfills/mobile": {
+      "react-native": "./dist/rn/polyfills/mobile.js",
+      "default": "./dist/esm/polyfills/mobile.mjs"
+    },
+    "./polyfills/browser": {
+      "import": "./dist/esm/polyfills/browser.mjs",
+      "default": "./dist/esm/polyfills/browser.mjs"
+    },
+    "./polyfills/crypto": {
+      "import": "./dist/esm/polyfills/crypto.mjs",
+      "require": "./dist/cjs/polyfills/crypto.cjs",
+      "default": "./dist/esm/polyfills/crypto.mjs"
+    }
+  },
+  "files": [
+    "src",
+    "dist",
+    "dist/native",
+    "ios",
+    "android",
+    "ubrn.config.yaml",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "npm run build:all",
+    "build:js": "tsup",
+    "build:wasm": "cd ../rust/wasm && wasm-pack build --target bundler --out-dir ../../js/src/rust-bridge/pkg",
+    "build:napi": "cd ../rust/napi && napi build --platform --release --js ../../js/src/rust-bridge/native.js --dts ../../js/src/rust-bridge/native.d.ts",
+    "build:mobile:ios": "uniffi-bindgen-react-native build --config ubrn.config.yaml --release --and-generate && node scripts/postprocess-uniffi.js",
+    "build:mobile:android": "uniffi-bindgen-react-native build --config ubrn.config.yaml --release --and-generate --targets aarch64-linux-android armv7-linux-androideabi x86_64-linux-android && node scripts/postprocess-uniffi.js",
+    "build:ccxt": "node esbuild.mjs",
+    "build:all": "npm run build:wasm && npm run build:napi && npm run build:js",
+    "sync:wasm": "node scripts/sync-wasm-artifacts.js",
+    "lint": "biome check --write --unsafe src/",
+    "test": "node --experimental-vm-modules node_modules/.bin/jest",
+    "test:ci": "jest --ci",
+    "test:binance": "jest --ci tests/binance.integration.test.ts"
+  },
+  "dependencies": {
+    "ccxt": ">=4.0.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.0.0",
+    "@napi-rs/cli": "^3.0.0",
+    "esbuild": "^0.24.0",
+    "jest": "^29.0.0",
+    "ts-jest": "^29.0.0",
+    "@jest/globals": "^29.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.8",
+    "wasm-pack": "^0.13",
+    "uniffi-bindgen-react-native": "*"
+  },
+  "optionalDependencies": {
+    "@octobot/edge-napi-linux-x64-gnu": "0.1.0",
+    "@octobot/edge-napi-darwin-arm64": "0.1.0",
+    "@octobot/edge-napi-win32-x64-msvc": "0.1.0"
+  }
+}

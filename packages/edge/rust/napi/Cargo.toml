@@ -1,0 +1,16 @@
+[package]
+name = "octobot-edge-napi"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+octobot-edge-core = { path = "../core" }
+napi = { version = "2", features = ["napi9"] }
+napi-derive = "2"
+hex = { workspace = true }
+
+[build-dependencies]
+napi-build = "2"

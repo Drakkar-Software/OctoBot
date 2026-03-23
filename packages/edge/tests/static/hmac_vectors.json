@@ -1,0 +1,40 @@
+{
+  "description": "HMAC-SHA256/512 test vectors from exchange API documentation",
+  "vectors": [
+    {
+      "name": "binance_official",
+      "algorithm": "sha256",
+      "key": "NhqPtmdSJYdKjVHjA7PZj4Mge3R5YNiP1e3UZjInClVN65XAbvqqM6A7H5fATj0j",
+      "message": "symbol=LTCBTC&side=BUY&type=LIMIT&timeInForce=GTC&quantity=1&price=0.1&recvWindow=5000&timestamp=1499827319559",
+      "expected_hex": "c8db56825ae71d6d79447849e617115f4a920fa2acdcab2b053c4b2838bd6b71"
+    },
+    {
+      "name": "empty_message",
+      "algorithm": "sha256",
+      "key": "secret",
+      "message": "",
+      "expected_hex": "f9e66e179b6747ae54108f82f8ade8b3c25d76fd30afde6c395822c530196169"
+    },
+    {
+      "name": "empty_key",
+      "algorithm": "sha256",
+      "key": "",
+      "message": "message",
+      "expected_hex": "eb08c1f56d5ddee07f7bdf80468083da06b64cf4fac64fe3a90883df5feacae4"
+    },
+    {
+      "name": "sha512_basic",
+      "algorithm": "sha512",
+      "key": "secret_key",
+      "message": "test_message",
+      "expected_hex": "a2074354902578dd2bbf662b828c5174088eb38105f848f3621fd9ccd3d15cfbabc780d46b4ad8a56615f027fedd273215e98ff1de74d6001e3e919185cb87a7"
+    },
+    {
+      "name": "bybit_style",
+      "algorithm": "sha256",
+      "key": "t7T0YlFnYXk0Fx3JswQsDrViLg1Gh3DUU5Mr",
+      "message": "1658384314791GET/v5/order/realtime?category=option&symbol=BTC-29JUL22-25000-C",
+      "expected_hex": "bd874cfc642bdaf817fa7a55ee106f5078b64d51691855a870214658acbb53ce"
+    }
+  ]
+}

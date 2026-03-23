@@ -63,6 +63,7 @@ jobs:
           - packages/async_channel
           - packages/backtesting
           - packages/commons
+          - packages/edge  # tests run in Python-fallback mode (no Rust); edge.yml tests Rust
           - packages/evaluators
           - packages/node
           - packages/flow

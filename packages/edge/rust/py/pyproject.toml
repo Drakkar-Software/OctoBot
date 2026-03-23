@@ -1,0 +1,8 @@
+[build-system]
+requires = ["maturin>=1.4"]
+build-backend = "maturin"
+
+[tool.maturin]
+python-source = "../../"
+module-name = "octobot_edge._native"
+manifest-path = "Cargo.toml"

@@ -1,0 +1,17 @@
+[package]
+name = "octobot-edge-mobile"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "octobot_edge_mobile"
+crate-type = ["staticlib", "cdylib"]
+
+[dependencies]
+octobot-edge-core = { path = "../core" }
+uniffi            = { version = "0.28", features = ["build"] }
+thiserror         = { workspace = true }
+tokio             = { version = "1", features = ["rt"] }
+
+[build-dependencies]
+uniffi = { version = "0.28", features = ["build"] }

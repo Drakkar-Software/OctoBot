@@ -22,6 +22,7 @@ root_patterns = [
     "/packages/backtesting",
     "/packages/binary",
     "/packages/commons",
+    "/packages/edge",
     "/packages/evaluators",
     "/packages/node",
     "/packages/flow",
