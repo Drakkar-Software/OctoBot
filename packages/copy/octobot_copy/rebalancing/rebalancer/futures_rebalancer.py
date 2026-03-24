@@ -20,9 +20,6 @@ import octobot_commons.signals as commons_signals
 import octobot_trading.constants as trading_constants
 import octobot_trading.enums as trading_enums
 import octobot_trading.errors as trading_errors
-import octobot_trading.modes as trading_modes
-import octobot_trading.personal_data as trading_personal_data
-import octobot_trading.personal_data.orders.order_util as order_util
 
 import octobot_copy.enums as rebalancer_enums
 import octobot_copy.rebalancing.rebalancer.rebalancer as base_rebalancer
@@ -30,16 +27,10 @@ import octobot_copy.rebalancing.rebalancer.rebalancer as base_rebalancer
 
 class FuturesRebalancer(base_rebalancer.AbstractRebalancer):
     async def prepare_coin_rebalancing(self, coin: str):
-        await self.ensure_contract_loaded(coin)
+        symbol, _ = self._get_symbol_and_base_asset(coin)
+        await self._exchange_interface.public_data.ensure_contract_loaded(symbol)
 
-    async def ensure_contract_loaded(self, coin: str):
-        symbol, _ = self.get_symbol_and_base_asset(coin)
-        try:
-            await self.trading_mode.exchange_manager.exchange.get_pair_contract_async(symbol)
-        except trading_errors.ContractExistsError:
-            self.logger.info(f"Contract for {symbol} has been loaded.")
-
-    async def buy_coin(
+    async def _buy_coin(
         self,
         symbol: str,
         ideal_amount: decimal.Decimal,
@@ -50,203 +41,68 @@ class FuturesRebalancer(base_rebalancer.AbstractRebalancer):
         Opens or increases a position for a symbol.
         For futures, this creates orders to open/increase positions instead of buying assets.
         """
-        positions_manager = self.trading_mode.exchange_manager.exchange_personal_data.positions_manager
-        position = positions_manager.get_symbol_position(symbol, trading_enums.PositionSide.BOTH)
-        _, _, _, current_price, symbol_market = await trading_personal_data.get_pre_order_data(
-            self.trading_mode.exchange_manager,
+        position = self._exchange_interface.private_data.get_symbol_position(symbol, trading_enums.PositionSide.BOTH)
+        _, _, _, current_price, symbol_market = await self._exchange_interface.private_data.get_pre_order_data(
             symbol=symbol,
             timeout=trading_constants.ORDER_DATA_FETCHING_TIMEOUT
         )
 
         order_target_price = ideal_price if ideal_price is not None else current_price
         current_position_size = position.size if not position.is_idle() else trading_constants.ZERO
-        effective_current_position_size = current_position_size + self.get_pending_open_quantity(symbol)
+        effective_current_position_size = current_position_size + self._get_pending_open_quantity(symbol)
         size_difference = ideal_amount - effective_current_position_size
 
         if size_difference <= trading_constants.ZERO:
             return []
 
-        side = trading_enums.TradeOrderSide.BUY  # Always open long positions for index
-        max_order_size, increasing_position = order_util.get_futures_max_order_size(
-            self.trading_mode.exchange_manager, symbol, side, current_price, False,
-            current_position_size, ideal_amount
+        side = trading_enums.TradeOrderSide.BUY  # Always open long positions for targeted coins
+        max_order_size, _ = self._exchange_interface.private_data.get_futures_max_order_size(
+            symbol, side, current_price, False, current_position_size, ideal_amount
         )
 
         order_quantity = min(size_difference, max_order_size)
         if order_quantity <= trading_constants.ZERO:
             return []
 
-        quantity = trading_personal_data.decimal_adapt_order_quantity_because_fees(
-            self.trading_mode.exchange_manager, symbol, trading_enums.TraderOrderType.BUY_MARKET, order_quantity,
-            order_target_price, trading_enums.TradeOrderSide.BUY
-        )
-
-        created_orders = []
-        orders_should_have_been_created = False
         is_price_close_to_market = order_target_price >= current_price * (decimal.Decimal(1) - self.PRICE_THRESHOLD_TO_USE_MARKET_ORDER)
         ideal_order_type = trading_enums.TraderOrderType.BUY_MARKET if is_price_close_to_market else trading_enums.TraderOrderType.BUY_LIMIT
         order_type = (
             ideal_order_type
-            if self.trading_mode.exchange_manager.exchange.is_market_open_for_order_type(symbol, ideal_order_type)
+            if self._exchange_interface.public_data.is_market_open_for_order_type(symbol, ideal_order_type)
             else trading_enums.TraderOrderType.BUY_LIMIT
         )
 
-        if trading_personal_data.get_trade_order_type(order_type) is not trading_enums.TradeOrderType.MARKET:
-            # can't use market orders: use limit orders with price a bit above the current price to instant fill it.
-            order_target_price, quantity = \
-                trading_modes.get_instantly_filled_limit_order_adapted_price_and_quantity(
-                    order_target_price, quantity, order_type
-                )
-
-        for order_quantity, order_price in trading_personal_data.decimal_check_and_adapt_order_details_if_necessary(
-            quantity,
+        created_orders, orders_should_have_been_created = await self._exchange_interface.private_data.create_orders(
+            order_type,
+            symbol,
+            current_price,
+            order_quantity,
             order_target_price,
-            symbol_market
-        ):
-            orders_should_have_been_created = True
-            current_order = trading_personal_data.create_order_instance(
-                trader=self.trading_mode.exchange_manager.trader,
-                order_type=order_type,
-                symbol=symbol,
-                current_price=current_price,
-                quantity=order_quantity,
-                price=order_price,
-                reduce_only=False,  # Opening/increasing position
-            )
-            created_order = await self.trading_mode.create_order(current_order, dependencies=dependencies)
-            if created_order is not None:
-                created_orders.append(created_order)
+            symbol_market,
+            dependencies=dependencies,
+            reduce_only=False,
+            skip_none_create_results=True,
+        )
 
         if created_orders:
             return created_orders
-        if self.trading_mode.allow_skip_asset:
-            self.logger.warning(f"Skipping {symbol} order creation...")
+        if self._rebalancing_client.allow_skip_asset:
+            self._get_logger().warning(f"Skipping {symbol} order creation...")
             return []
         if orders_should_have_been_created:
             raise trading_errors.OrderCreationError()
         raise trading_errors.MissingMinimalExchangeTradeVolume()
 
-    async def get_coins_to_sell_orders(self, details: dict, dependencies: typing.Optional[commons_signals.SignalDependencies]) -> list:
-        orders = []
-        symbol_target_ratio: dict[str, typing.Optional[decimal.Decimal]] = {}
-
-        for coin_or_symbol in self.get_coins_to_sell(details):
-            symbol_target_ratio[self.get_symbol_and_base_asset(coin_or_symbol)[0]] = None
-
-        for coin_or_symbol in details.get(rebalancer_enums.RebalanceDetails.REMOVE.value, {}):
-            symbol_target_ratio[self.get_symbol_and_base_asset(coin_or_symbol)[0]] = None
-
-        for coin_or_symbol, target_ratio in details.get(rebalancer_enums.RebalanceDetails.SELL_SOME.value, {}).items():
-            symbol_target_ratio[self.get_symbol_and_base_asset(coin_or_symbol)[0]] = target_ratio
-
-        for symbol, target_ratio in symbol_target_ratio.items():
-            orders += await self._close_symbol_position(symbol, dependencies, target_ratio=target_ratio)
-
-        return orders
-
-    async def _close_symbol_position(
+    def compute_desired_futures_position_size(
         self,
-        symbol: str,
-        dependencies: typing.Optional[commons_signals.SignalDependencies],
-        target_ratio: typing.Optional[decimal.Decimal] = None
-    ) -> list:
-        positions_manager = self.trading_mode.exchange_manager.exchange_personal_data.positions_manager
-        position = positions_manager.get_symbol_position(symbol, trading_enums.PositionSide.BOTH)
-        if position.is_idle():
-            # Force a refresh from the exchange before concluding there is nothing to sell.
-            await positions_manager.refresh_real_trader_position(position, force_job_execution=True)
-            position = positions_manager.get_symbol_position(symbol, trading_enums.PositionSide.BOTH)
-            if position.is_idle():
-                await self.cancel_symbol_open_orders(symbol, dependencies=dependencies)
-                return []
-
-        _, _, _, current_price, symbol_market = await trading_personal_data.get_pre_order_data(
-            self.trading_mode.exchange_manager,
-            symbol=symbol,
-            timeout=trading_constants.ORDER_DATA_FETCHING_TIMEOUT
-        )
-        # Cancel open close-side orders BEFORE computing effective position size so that a stuck
-        # IOC→GTC order from a previous cycle does not subtract from pending_open_quantity and wrongly suppress the fresh close order.
-        close_side = (
-            trading_enums.TradeOrderSide.BUY if position.is_short()
-            else trading_enums.TradeOrderSide.SELL
-        )
-        await self.cancel_symbol_open_orders(symbol, dependencies, allowed_sides={close_side})
-        pending_open_quantity = self.get_pending_open_quantity(symbol)
-        position_size = decimal.Decimal(str(position.size))
-        if position.is_short():
-            effective_position_size = -abs(position_size) + pending_open_quantity
-        else:
-            effective_position_size = abs(position_size) + pending_open_quantity
-
-        if effective_position_size == trading_constants.ZERO:
-            return []
-
-        if effective_position_size > trading_constants.ZERO:
-            side = trading_enums.TradeOrderSide.SELL
-        else:
-            side = trading_enums.TradeOrderSide.BUY
-
-        quantity_to_close = abs(effective_position_size)
-        if target_ratio is not None and effective_position_size > trading_constants.ZERO:
-            desired_position_size = self._compute_desired_position_size(current_price, target_ratio)
-            quantity_to_close = max(trading_constants.ZERO, effective_position_size - desired_position_size)
-        if quantity_to_close <= trading_constants.ZERO:
-            return []
-
-        ideal_order_type = (
-            trading_enums.TraderOrderType.SELL_MARKET
-            if side is trading_enums.TradeOrderSide.SELL
-            else trading_enums.TraderOrderType.BUY_MARKET
-        )
-        order_type = (
-            ideal_order_type
-            if self.trading_mode.exchange_manager.exchange.is_market_open_for_order_type(symbol, ideal_order_type)
-            else (
-                trading_enums.TraderOrderType.SELL_LIMIT
-                if side is trading_enums.TradeOrderSide.SELL
-                else trading_enums.TraderOrderType.BUY_LIMIT
-            )
-        )
-
-        quantity = trading_personal_data.decimal_adapt_order_quantity_because_fees(
-            self.trading_mode.exchange_manager, symbol, order_type, quantity_to_close, current_price, side
-        )
-        if trading_personal_data.get_trade_order_type(order_type) is not trading_enums.TradeOrderType.MARKET:
-            current_price, quantity = trading_modes.get_instantly_filled_limit_order_adapted_price_and_quantity(
-                current_price, quantity, order_type
-            )
-
-        created_orders = []
-        for order_quantity, order_price in trading_personal_data.decimal_check_and_adapt_order_details_if_necessary(
-            quantity,
-            current_price,
-            symbol_market
-        ):
-            current_order = trading_personal_data.create_order_instance(
-                trader=self.trading_mode.exchange_manager.trader,
-                order_type=order_type,
-                symbol=symbol,
-                current_price=order_price,
-                quantity=order_quantity,
-                price=order_price,
-                reduce_only=True,
-                close_position=True,
-            )
-            created_order = await self.trading_mode.create_order(current_order, dependencies=dependencies)
-            if created_order is not None:
-                created_orders.append(created_order)
-
-        return created_orders
-
-    def _compute_desired_position_size(
-        self, current_price: decimal.Decimal, target_ratio: decimal.Decimal
+        current_price: decimal.Decimal,
+        target_ratio: decimal.Decimal,
     ) -> decimal.Decimal:
         if current_price <= trading_constants.ZERO:
             return trading_constants.ZERO
-        ref_market = self.trading_mode.exchange_manager.exchange_personal_data.portfolio_manager.reference_market
-        total_holdings_value = self.trading_mode.exchange_manager.exchange_personal_data.portfolio_manager. \
-            portfolio_value_holder.get_traded_assets_holdings_value(ref_market, None)
+        total_holdings_value = self._exchange_interface.private_data.get_traded_assets_holdings_value(
+            self._rebalancing_client.reference_market
+        )
         try:
             return max(
                 trading_constants.ZERO,
@@ -254,3 +110,36 @@ class FuturesRebalancer(base_rebalancer.AbstractRebalancer):
             )
         except decimal.DecimalException:
             return trading_constants.ZERO
+
+    async def _get_coins_to_sell_orders(self, details: dict, dependencies: typing.Optional[commons_signals.SignalDependencies]) -> list:
+        orders = []
+        symbol_target_ratio: dict[str, typing.Optional[decimal.Decimal]] = {}
+
+        for coin_or_symbol in self._get_coins_to_sell(details):
+            symbol_target_ratio[self._get_symbol_and_base_asset(coin_or_symbol)[0]] = None
+
+        for coin_or_symbol in details.get(rebalancer_enums.RebalanceDetails.REMOVE.value, {}):
+            symbol_target_ratio[self._get_symbol_and_base_asset(coin_or_symbol)[0]] = None
+
+        for coin_or_symbol, target_ratio in details.get(rebalancer_enums.RebalanceDetails.SELL_SOME.value, {}).items():
+            symbol_target_ratio[self._get_symbol_and_base_asset(coin_or_symbol)[0]] = target_ratio
+
+        for symbol, target_ratio in symbol_target_ratio.items():
+            _, _, _, current_price, symbol_market = await self._exchange_interface.private_data.get_pre_order_data(
+                symbol=symbol,
+                timeout=trading_constants.ORDER_DATA_FETCHING_TIMEOUT,
+            )
+            desired_futures_position_size = (
+                self.compute_desired_futures_position_size(current_price, target_ratio)
+                if target_ratio is not None
+                else None
+            )
+            orders += await self._exchange_interface.private_data.close_symbol_position(
+                symbol,
+                dependencies,
+                current_price,
+                symbol_market,
+                desired_futures_position_size=desired_futures_position_size,
+            )
+
+        return orders

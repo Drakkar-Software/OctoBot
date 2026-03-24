@@ -27,3 +27,6 @@ CONFIG_REBALANCE_TRIGGER_PROFILES = "rebalance_trigger_profiles"
 CONFIG_SELECTED_REBALANCE_TRIGGER_PROFILE = "selected_rebalance_trigger_profile"
 CONFIG_REBALANCE_TRIGGER_PROFILE_NAME = "name"
 CONFIG_REBALANCE_TRIGGER_PROFILE_MIN_PERCENT = "min_percent"
+
+# Exchange / order lifecycle (seconds)
+FILL_ORDER_TIMEOUT = 60

@@ -19,6 +19,7 @@ import typing
 
 import tentacles.Trading.Mode.index_trading_mode.index_trading as index_trading_mode
 import tentacles.Trading.Mode.profile_copy_trading_mode.profile_distribution as profile_distribution
+import octobot_copy.enums as rebalancer_enums
 import octobot_trading.enums as trading_enums
 import octobot_trading.constants as trading_constants
 import octobot_trading.errors as trading_errors
@@ -261,7 +262,9 @@ class ProfileCopyTradingModeProducer(index_trading_mode.IndexTradingModeProducer
         super().__init__(channel, config, trading_mode, exchange_manager)
         self.trading_mode: ProfileCopyTradingMode = typing.cast(ProfileCopyTradingMode, self.trading_mode)
         self.requires_initializing_appropriate_coins_distribution = False
-        self.trading_mode.synchronization_policy = index_trading_mode.SynchronizationPolicy.SELL_REMOVED_DYNAMIC_INDEX_COINS_AS_SOON_AS_POSSIBLE
+        self.trading_mode.synchronization_policy = (
+            rebalancer_enums.SynchronizationPolicy.SELL_REMOVED_DYNAMIC_INDEX_COINS_AS_SOON_AS_POSSIBLE
+        )
 
     async def profile_callback(self, profile_data: exchange_service_feed.ExchangeProfile, ctx):
         self.trading_mode.distribution_per_exchange_profile = profile_distribution.update_distribution_based_on_profile_data(

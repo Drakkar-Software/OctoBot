@@ -71,7 +71,7 @@ class RebalanceActionsPlanner:
         should_rebalance = False
         available_traded_bases = set(
             symbol.base
-            for symbol in self._exchange.get_traded_symbols()
+            for symbol in self._exchange.public_data.get_traded_symbols()
         )
 
         if self.synchronization_policy in (
@@ -195,7 +195,7 @@ class RebalanceActionsPlanner:
             ]))
         if self.synchronization_policy == rebalancer_enums.SynchronizationPolicy.SELL_REMOVED_INDEX_COINS_ON_RATIO_REBALANCE:
             historical_configs = self._client.get_historical_configs(
-                0, self._exchange.get_time()
+                0, self._exchange.public_data.get_time()
             )
             if not (historical_configs and trading_config):
                 return removed_coins
@@ -357,7 +357,7 @@ class RebalanceActionsPlanner:
         total = trading_constants.ZERO
         for quote in set(
             symbol.quote
-            for symbol in self._exchange.get_traded_symbols()
+            for symbol in self._exchange.public_data.get_traded_symbols()
             if symbol.quote not in self._targeted_coins
         ):
             ratio = decimal.Decimal(str(
@@ -402,7 +402,7 @@ class RebalanceActionsPlanner:
     def _get_filtered_traded_coins(self) -> list[str]:
         coins = set(
             symbol.base
-            for symbol in self._exchange.get_traded_symbols()
+            for symbol in self._exchange.public_data.get_traded_symbols()
             if symbol.base in self.ratio_per_asset and symbol.quote == self._reference_market
         )
         if self._reference_market in self.ratio_per_asset and coins:
@@ -413,10 +413,10 @@ class RebalanceActionsPlanner:
         self, config: dict, traded_bases: set[str]
     ) -> dict:
         if self._is_target_config_applied(config, traded_bases):
-            self.logger.info(f"Using {self._client.get_client_name()} latest config.")
+            self.logger.info(f"Using {self._client.client_name} latest config.")
             return config
         historical_configs = self._client.get_historical_configs(
-            0, self._exchange.get_time()
+            0, self._exchange.public_data.get_time()
         )
         if not historical_configs or (
             len(historical_configs) == 1 and (
@@ -424,17 +424,17 @@ class RebalanceActionsPlanner:
                 and historical_configs[0][copy_constants.CONFIG_REBALANCE_TRIGGER_MIN_PERCENT] == config[copy_constants.CONFIG_REBALANCE_TRIGGER_MIN_PERCENT]
             )
         ):
-            self.logger.info(f"Using {self._client.get_client_name()} latest config as no historical configs are available.")
+            self.logger.info(f"Using {self._client.client_name} latest config as no historical configs are available.")
             return config
         for hist_rank, historical_config in enumerate(historical_configs):
             if self._is_target_config_applied(historical_config, traded_bases):
                 self.logger.info(
-                    f"Using [N-{hist_rank}] {self._client.get_client_name()} historical config distribution: "
+                    f"Using [N-{hist_rank}] {self._client.client_name} historical config distribution: "
                     f"{self._client.get_ideal_distribution(historical_config)}."
                 )
                 return historical_config
         self.logger.info(
-            f"No suitable {self._client.get_client_name()} config found: using latest distribution: "
+            f"No suitable {self._client.client_name} config found: using latest distribution: "
             f"{self._client.get_ideal_distribution(config)}."
         )
         return config
@@ -455,7 +455,7 @@ class RebalanceActionsPlanner:
                 if asset not in assets_distribution
             ]
             self.logger.warning(
-                f"Ignored {self._client.get_client_name()} config candidate as {len(missing_assets)} configured assets "
+                f"Ignored {self._client.client_name} config candidate as {len(missing_assets)} configured assets "
                 f"{missing_assets} are missing from {self._exchange.exchange_name} traded pairs."
             )
             return False
@@ -510,7 +510,7 @@ class RebalanceActionsPlanner:
         if detailed_distribution := self._client.get_ideal_distribution(trading_config or {}):
             traded_bases = set(
                 symbol.base
-                for symbol in self._exchange.get_traded_symbols()
+                for symbol in self._exchange.public_data.get_traded_symbols()
             )
             traded_bases.add(self._reference_market)
             if (
@@ -524,10 +524,10 @@ class RebalanceActionsPlanner:
                 else:
                     try:
                         target_config = self._client.get_historical_configs(
-                            0, self._exchange.get_time()
+                            0, self._exchange.public_data.get_time()
                         )[0]
                         self.logger.info(
-                            f"Updated {self._client.get_client_name()} to use latest distribution: "
+                            f"Updated {self._client.client_name} to use latest distribution: "
                             f"{self._client.get_ideal_distribution(target_config)}."
                         )
                     except IndexError:
@@ -552,5 +552,5 @@ class RebalanceActionsPlanner:
             return distribution
         return planner_distributions.get_uniform_distribution([
             symbol.base
-            for symbol in self._exchange.get_traded_symbols()
+            for symbol in self._exchange.public_data.get_traded_symbols()
         ])

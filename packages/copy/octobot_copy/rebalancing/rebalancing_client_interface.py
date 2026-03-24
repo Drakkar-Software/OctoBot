@@ -21,16 +21,30 @@ class RebalancingClientInterface:
     def __init__(
         self,
         *,
+        client_name: str,
+        reference_market: str,
+        min_order_size_margin: decimal.Decimal,
         get_holdings_ratio: typing.Callable[..., decimal.Decimal],
         get_config: typing.Callable[[], typing.Optional[dict]],
         get_previous_config: typing.Callable[[], typing.Optional[dict]],
         get_historical_configs: typing.Callable[[float, float], list],
         get_ideal_distribution: typing.Callable[[dict], typing.Optional[list]],
-        get_client_name: typing.Callable[[], str],
+        get_allow_skip_asset: typing.Callable[[], bool],
     ) -> None:
+        # static values
+        self.client_name: str = client_name
+        self.reference_market: str = reference_market
+        self.min_order_size_margin: decimal.Decimal = min_order_size_margin
+
+        # dynamic values
         self.get_holdings_ratio = get_holdings_ratio
         self.get_config = get_config
         self.get_previous_config = get_previous_config
         self.get_historical_configs = get_historical_configs
         self.get_ideal_distribution = get_ideal_distribution
-        self.get_client_name = get_client_name
+        self.get_allow_skip_asset = get_allow_skip_asset
+
+    @property
+    def allow_skip_asset(self) -> bool:
+        # implemented as property in case the actual value changes dynamically
+        return self.get_allow_skip_asset()

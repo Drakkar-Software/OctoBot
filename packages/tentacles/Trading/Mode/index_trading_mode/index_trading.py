@@ -34,6 +34,7 @@ import octobot_trading.signals as signals
 
 import octobot_copy.constants as octobot_copy_constants
 import octobot_copy.rebalancing as rebalancer
+import octobot_copy.errors as copy_errors
 import octobot_copy.enums as rebalancer_enums
 import octobot_copy.exchange.exchange_interface as exchange_interface
 import octobot_copy.rebalancing.planner.rebalance_actions_planner as rebalance_actions_planner
@@ -55,11 +56,6 @@ DEFAULT_REBALANCE_TRIGGER_MIN_RATIO = 0.05  # 5%
 
 
 class IndexTradingModeConsumer(trading_modes.AbstractTradingModeConsumer):
-    SIMPLE_ADD_MIN_TOLERANCE_RATIO = decimal.Decimal("0.8")  # 20% tolerance
-
-    IDEAL_AMOUNT = "ideal_amount"
-    IDEAL_PRICE = "ideal_price"
-
     def __init__(self, trading_mode):
         super().__init__(trading_mode)
         self.trading_mode: IndexTradingMode = typing.cast(IndexTradingMode, self.trading_mode)
@@ -80,12 +76,17 @@ class IndexTradingModeConsumer(trading_modes.AbstractTradingModeConsumer):
     async def _rebalance_portfolio(self, details: dict, initial_dependencies: typing.Optional[commons_signals.SignalDependencies]):
         self.logger.info(f"Executing rebalance on [{self.exchange_manager.exchange_name}]")
         orders = []
+        if self.trading_mode.rebalance_actions_planner is None:
+            self.logger.error("Rebalance aborted: rebalance_actions_planner is not initialized")
+            return orders
+        self.trading_mode._sync_rebalance_planner()
+        portfolio_rebalancer = self.trading_mode.create_rebalancer(self.exchange_manager)
         try:
             # 1. make sure we can actually rebalance the portfolio
             self.logger.info("Step 1/3: ensuring enough funds are available for rebalance")
-            await self._ensure_enough_funds_to_buy_after_selling()
+            await portfolio_rebalancer.ensure_enough_funds_to_buy_after_selling()
             # 2. sell indexed coins for reference market
-            is_simple_buy_without_selling = self._can_simply_buy_coins_without_selling(details)
+            is_simple_buy_without_selling = portfolio_rebalancer.can_simply_buy_coins_without_selling(details)
             sell_orders_dependencies = initial_dependencies
             if is_simple_buy_without_selling:
                 self.logger.info(
@@ -97,21 +98,23 @@ class IndexTradingModeConsumer(trading_modes.AbstractTradingModeConsumer):
                     f"Step 2/3: selling coins to free "
                     f"{self.exchange_manager.exchange_personal_data.portfolio_manager.reference_market}"
                 )
-                orders += await self.trading_mode.rebalancer.sell_indexed_coins_for_reference_market(details, initial_dependencies)
+                orders += await portfolio_rebalancer.sell_targeted_coins_for_reference_market(details, initial_dependencies)
                 sell_orders_dependencies = signals.get_orders_dependencies(orders)
             # 3. split reference market into indexed coins
             self.logger.info(
                 f"Step 3/3: buying coins using "
                 f"{self.exchange_manager.exchange_personal_data.portfolio_manager.reference_market}"
             )
-            orders += await self._split_reference_market_into_indexed_coins(
-                details, is_simple_buy_without_selling, sell_orders_dependencies
+            orders += await portfolio_rebalancer.split_reference_market_into_targeted_coins(
+                details,
+                is_simple_buy_without_selling,
+                sell_orders_dependencies,
             )
             # reset flag to relog if a next rebalance is aborted
             self._already_logged_aborted_rebalance_error = False
-        except (trading_errors.MissingMinimalExchangeTradeVolume, rebalancer.RebalanceAborted) as err:
+        except (trading_errors.MissingMinimalExchangeTradeVolume, copy_errors.RebalanceAborted) as err:
             log_level = self.logger.warning
-            if isinstance(err, rebalancer.RebalanceAborted) and not self._already_logged_aborted_rebalance_error:
+            if isinstance(err, copy_errors.RebalanceAborted) and not self._already_logged_aborted_rebalance_error:
                 log_level = self.logger.error
                 self._already_logged_aborted_rebalance_error = True
             log_level(
@@ -124,173 +127,6 @@ class IndexTradingModeConsumer(trading_modes.AbstractTradingModeConsumer):
         finally:
             self.logger.info("Portoflio rebalance process complete")
         return orders
-
-    
-    def _can_simply_buy_coins_without_selling(self, details: dict) -> bool:
-        simple_buy_coins = self._get_simple_buy_coins(details)
-        if not simple_buy_coins:
-            return False
-        # check if there is enough free funds to buy those coins
-        ref_market = self.exchange_manager.exchange_personal_data.portfolio_manager.reference_market
-        reference_market_to_split = self._get_traded_assets_holdings_value(ref_market)
-        free_reference_market_holding = self._get_free_reference_market_holding(ref_market)
-        cumulated_ratio = sum(
-            self.trading_mode.get_target_ratio(coin)
-            for coin in simple_buy_coins
-        )
-        tolerated_min_amount = reference_market_to_split * cumulated_ratio * self.SIMPLE_ADD_MIN_TOLERANCE_RATIO
-        # can reach target ratios without selling if this condition is met
-        return tolerated_min_amount <= free_reference_market_holding
-
-    def _get_simple_buy_coins(self, details: dict) -> list:
-        # Returns the list of coins to simply buy.
-        # Used to avoid a full rebalance when coins are seen as added to a basket
-        # AND funds are available to buy it AND no asset should be sold
-        added = details[rebalancer_enums.RebalanceDetails.ADD.value] or details[rebalancer_enums.RebalanceDetails.BUY_MORE.value]
-        if added and not (
-            details[rebalancer_enums.RebalanceDetails.SWAP.value]
-            or details[rebalancer_enums.RebalanceDetails.SELL_SOME.value]
-            or details[rebalancer_enums.RebalanceDetails.REMOVE.value]
-            or details[rebalancer_enums.RebalanceDetails.FORCED_REBALANCE.value]
-        ):
-            added_coins = list(details[rebalancer_enums.RebalanceDetails.ADD.value]) + list(details[rebalancer_enums.RebalanceDetails.BUY_MORE.value])
-            return [
-                coin
-                for coin in self.trading_mode.indexed_coins # iterate over self.trading_mode.indexed_coins to keep order
-                if coin in added_coins
-            ] + [
-                coin
-                for coin in added_coins
-                if coin not in self.trading_mode.indexed_coins
-            ]
-        return []
-
-    def _get_traded_assets_holdings_value(self, reference_market: typing.Optional[str] = None, coins_whitelist: typing.Optional[typing.Iterable] = None) -> decimal.Decimal:
-        reference_market = reference_market or self.trading_mode.exchange_manager.exchange_personal_data.portfolio_manager.reference_market
-        return self.trading_mode.exchange_manager.exchange_personal_data.portfolio_manager. \
-            portfolio_value_holder.get_traded_assets_holdings_value(reference_market, coins_whitelist)
-
-    def _get_free_reference_market_holding(self, reference_market: typing.Optional[str] = None) -> decimal.Decimal:
-        reference_market = reference_market or self.trading_mode.exchange_manager.exchange_personal_data.portfolio_manager.reference_market
-        return self.trading_mode.exchange_manager.exchange_personal_data.portfolio_manager.portfolio.get_currency_portfolio(reference_market).available
-
-    async def _ensure_enough_funds_to_buy_after_selling(self):
-        reference_market_to_split = self._get_traded_assets_holdings_value()
-        # will raise if funds are missing
-        await self._get_symbols_and_amounts(self.trading_mode.indexed_coins, self.trading_mode.indexed_coins_prices, reference_market_to_split)
-
-    async def _split_reference_market_into_indexed_coins(
-        self, 
-        details: dict, 
-        is_simple_buy_without_selling: bool, 
-        dependencies: typing.Optional[commons_signals.SignalDependencies]
-    ) -> list:
-        orders = []
-        await self.trading_mode.rebalancer.pre_cancel_conflicting_orders(details, dependencies, trading_enums.TradeOrderSide.SELL)
-        ref_market = self.exchange_manager.exchange_personal_data.portfolio_manager.reference_market
-        coins_prices = self.trading_mode.indexed_coins_prices
-        if details[rebalancer_enums.RebalanceDetails.SWAP.value] or is_simple_buy_without_selling:
-            # has to infer total reference market holdings
-            reference_market_to_split = self._get_traded_assets_holdings_value()
-            coins_to_buy = (
-                self._get_simple_buy_coins(details) if is_simple_buy_without_selling
-                else list(details[rebalancer_enums.RebalanceDetails.SWAP.value].values())
-            ) 
-        else:
-            # can use actual reference market holdings: everything has been sold
-            reference_market_to_split = self._get_free_reference_market_holding()
-            coins_to_buy = self.trading_mode.indexed_coins
-
-        # Distribute a percentage among indexed coins, keep the rest in reference market
-        # If reference_market_ratio is 0, distribute everything (no reservation)
-        if self.trading_mode.reference_market_ratio > trading_constants.ZERO:
-            reference_market_to_distribute = reference_market_to_split * self.trading_mode.reference_market_ratio
-            reference_market_reserved = reference_market_to_split - reference_market_to_distribute
-        else:
-            reference_market_to_distribute = reference_market_to_split
-            reference_market_reserved = trading_constants.ZERO
-        
-        if reference_market_reserved > trading_constants.ZERO:
-            self.logger.info(
-                f"Distributing {reference_market_to_distribute} {ref_market} ({self.trading_mode.reference_market_ratio * trading_constants.ONE_HUNDRED}%) "
-                f"among indexed coins, reserving {reference_market_reserved} {ref_market} for reference market"
-            )
-
-        amount_by_symbol = await self._get_symbols_and_amounts(coins_to_buy, coins_prices, reference_market_to_distribute)
-        for symbol, values in amount_by_symbol.items():
-            orders.extend(await self.trading_mode.rebalancer.buy_coin(symbol, values.get(self.IDEAL_AMOUNT), values.get(self.IDEAL_PRICE), dependencies))
-        if not orders and not self.trading_mode.allow_skip_asset:
-            raise trading_errors.MissingMinimalExchangeTradeVolume()
-        return orders
-
-    async def _get_symbols_and_amounts(
-        self, 
-        coins_to_buy: list,
-        coins_prices: dict,
-        reference_market_to_split: decimal.Decimal
-    ) -> dict:
-        amount_by_symbol = {}
-        for coin in coins_to_buy:
-            if not symbol_util.is_symbol(coin):
-                if coin == self.exchange_manager.exchange_personal_data.portfolio_manager.reference_market:
-                    # nothing to do for reference market, keep as is
-                    continue
-                symbol = symbol_util.merge_currencies(
-                    coin,
-                    self.exchange_manager.exchange_personal_data.portfolio_manager.reference_market
-                )
-            else:
-                symbol = coin
-
-            up_to_date_price = await trading_personal_data.get_up_to_date_price(
-                self.exchange_manager, symbol, timeout=trading_constants.ORDER_DATA_FETCHING_TIMEOUT
-            )
-            price = coins_prices.get(symbol, up_to_date_price)
-            symbol_market = self.exchange_manager.exchange.get_market_status(symbol, with_fixer=False)
-            ratio = self.trading_mode.get_target_ratio(coin)
-            if ratio == trading_constants.ZERO:
-                # coin is not to handle
-                continue
-            try:
-                ideal_amount = ratio * reference_market_to_split / price
-            except decimal.DecimalException as err:
-                raise rebalancer.RebalanceAborted(
-                    f"Error computing {symbol} ideal amount ({ratio=}, {reference_market_to_split=}, {price=}): {err=}"
-                ) from err
-            # worse case (ex with 5 USDT min order size): exactly 5 USDT can be in portfolio, we therefore want to
-            # trade at least 5 USDT to be able to buy more.
-            # - we want ideal_amount - min_cost > min_cost
-            # - in other words ideal_amount > min_cost * min_order_size_margin
-            #   => ideal_amount / min_order_size_margin > min_cost
-            min_order_size_margin = self.trading_mode.min_order_size_margin
-            if min_order_size_margin < trading_constants.ONE:
-                min_order_size_margin = trading_constants.ONE
-            adapted_quantity = trading_personal_data.decimal_check_and_adapt_order_details_if_necessary(
-                ideal_amount / min_order_size_margin,
-                price,
-                symbol_market
-            )
-            if not adapted_quantity:
-                if self.trading_mode.allow_skip_asset:
-                    self.logger.warning(
-                        f"Skipping {symbol} buy: available funds are too low to buy {ratio*trading_constants.ONE_HUNDRED}% "
-                        f"of {reference_market_to_split} holdings: {round(ideal_amount / min_order_size_margin, 9)} {coin}"
-                    )
-                    continue
-                # if we can't create an order in this case, we won't be able to balance the portfolio.
-                # don't try to avoid triggering new rebalances on each wakeup cycling market sell & buy orders
-                raise trading_errors.MissingMinimalExchangeTradeVolume(
-                    f"Can't buy {symbol}: available funds are too low to buy {ratio*trading_constants.ONE_HUNDRED}% "
-                    f"of {reference_market_to_split} holdings: {round(ideal_amount / min_order_size_margin, 9)} {coin} "
-                    f"required order size is not compatible with {symbol} exchange requirements: "
-                    f"{symbol_market[trading_enums.ExchangeConstantsMarketStatusColumns.LIMITS.value]}."
-                )
-
-            amount_by_symbol[symbol] = {
-                self.IDEAL_AMOUNT: ideal_amount,
-                self.IDEAL_PRICE: price,
-            }
-        return amount_by_symbol
 
 
 class IndexTradingModeProducer(trading_modes.AbstractTradingModeProducer):
@@ -362,8 +198,9 @@ class IndexTradingModeProducer(trading_modes.AbstractTradingModeProducer):
             self._last_trigger_time = current_time
 
     async def _prepare_indexed_coins(self):
+        portfolio_rebalancer = self.trading_mode.create_rebalancer(self.exchange_manager)
         for coin in self.trading_mode.indexed_coins:
-            await self.trading_mode.rebalancer.prepare_coin_rebalancing(coin)
+            await portfolio_rebalancer.prepare_coin_rebalancing(coin)
 
     def _get_full_traded_pairs(self):
         return self.exchange_manager.exchange_config.traded_symbol_pairs + self.exchange_manager.exchange_config.additional_traded_pairs
@@ -477,14 +314,6 @@ class IndexTradingModeProducer(trading_modes.AbstractTradingModeProducer):
                     f"Traded: {self.trading_mode.indexed_coins}, configured: {ideal_distribution}"
                 )
 
-    def get_holdings_ratio(self, coin: str, traded_symbols_only: bool = False, include_assets_in_open_orders=False, coins_whitelist: typing.Optional[list] = None) -> decimal.Decimal:
-        return self.trading_mode._portfolio_holdings_ratio(
-            coin,
-            traded_symbols_only=traded_symbols_only,
-            include_assets_in_open_orders=include_assets_in_open_orders,
-            coins_whitelist=coins_whitelist,
-        )
-
     def _get_rebalance_details(self) -> typing.Tuple[bool, dict]:
         self.trading_mode._sync_rebalance_planner()
         return self.trading_mode.rebalance_actions_planner.get_rebalance_details()
@@ -565,24 +394,30 @@ class IndexTradingMode(trading_modes.AbstractTradingMode):
         self.is_processing_rebalance = False
         self.rebalance_actions_planner: rebalance_actions_planner.RebalanceActionsPlanner = None # type: ignore
         if exchange_manager:
+            reference_market = exchange_manager.exchange_personal_data.portfolio_manager.reference_market
             self.rebalance_actions_planner = rebalance_actions_planner.RebalanceActionsPlanner(
-                exchange=exchange_interface.ExchangeInterface(exchange_manager),
-                client=rebalancing_client_interface.RebalancingClientInterface(
-                    get_holdings_ratio=self._portfolio_holdings_ratio,
-                    get_config=lambda: self.trading_config,
-                    get_previous_config=lambda: self.previous_trading_config,
-                    get_historical_configs=lambda ft, tt: self.get_historical_configs(ft, tt),
-                    get_ideal_distribution=self.get_ideal_distribution,
-                    get_client_name=self.get_name,
-                ),
+                exchange=exchange_interface.ExchangeInterface(exchange_manager, trading_mode=self),
+                client=self._create_rebalancing_client(),
                 synchronization_policy=self.synchronization_policy,
                 rebalance_trigger_min_ratio=self.rebalance_trigger_min_ratio,
                 quote_asset_rebalance_ratio_threshold=self.quote_asset_rebalance_ratio_threshold,
                 reference_market_ratio=self.reference_market_ratio,
-                reference_market=exchange_manager.exchange_personal_data.portfolio_manager.reference_market,
+                reference_market=reference_market,
                 sell_untargeted_traded_coins=self.sell_unindexed_traded_coins,
             )
-        self.rebalancer: rebalancer.AbstractRebalancer = self._create_rebalancer(exchange_manager) if exchange_manager else None # type: ignore
+
+    def _create_rebalancing_client(self) -> rebalancing_client_interface.RebalancingClientInterface:
+        return rebalancing_client_interface.RebalancingClientInterface(
+            client_name=self.get_name(),
+            reference_market=self.exchange_manager.exchange_personal_data.portfolio_manager.reference_market,
+            min_order_size_margin=self.min_order_size_margin,
+            get_holdings_ratio=self._portfolio_holdings_ratio,
+            get_config=lambda: self.trading_config,
+            get_previous_config=lambda: self.previous_trading_config,
+            get_historical_configs=lambda ft, tt: self.get_historical_configs(ft, tt),
+            get_ideal_distribution=self.get_ideal_distribution,
+            get_allow_skip_asset=lambda: self.allow_skip_asset,
+        )
 
     def _portfolio_holdings_ratio(
         self,
@@ -864,12 +699,32 @@ class IndexTradingMode(trading_modes.AbstractTradingMode):
             return trading_constants.ZERO
         return self.rebalance_actions_planner.get_target_ratio(currency)
 
-    def _create_rebalancer(self, exchange_manager) -> rebalancer.AbstractRebalancer:
+    def create_rebalancer(self, exchange_manager) -> rebalancer.AbstractRebalancer:
+        self._sync_rebalance_planner()
+        exchange = exchange_interface.ExchangeInterface(exchange_manager, trading_mode=self)
+        client = self._create_rebalancing_client()
+        if self.rebalance_actions_planner is None:
+            raise RuntimeError("rebalance_actions_planner must be initialized before create_rebalancer")
         if exchange_manager.is_option:
-            return rebalancer.OptionRebalancer(self)
+            return rebalancer.OptionRebalancer(
+                exchange,
+                client,
+                self.rebalance_actions_planner,
+                self.indexed_coins_prices,
+            )
         if exchange_manager.is_future:
-            return rebalancer.FuturesRebalancer(self)
-        return rebalancer.SpotRebalancer(self)
+            return rebalancer.FuturesRebalancer(
+                exchange,
+                client,
+                self.rebalance_actions_planner,
+                self.indexed_coins_prices,
+            )
+        return rebalancer.SpotRebalancer(
+            exchange,
+            client,
+            self.rebalance_actions_planner,
+            self.indexed_coins_prices,
+        )
 
     @classmethod
     def get_is_symbol_wildcard(cls) -> bool:
