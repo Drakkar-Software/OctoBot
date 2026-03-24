@@ -18,6 +18,7 @@ Define Channel helping methods
 """
 from async_channel.util import channel_creator
 from async_channel.util import logging_util
+from async_channel.util import synchronization_util
 
 from async_channel.util.channel_creator import (
     create_all_subclasses_channel,
@@ -28,8 +29,13 @@ from async_channel.util.logging_util import (
     get_logger,
 )
 
+from async_channel.util.synchronization_util import (
+    trigger_and_bypass_consumers_queue,
+)
+
 __all__ = [
     "create_all_subclasses_channel",
     "create_channel_instance",
     "get_logger",
+    "trigger_and_bypass_consumers_queue",
 ]
