@@ -3,32 +3,12 @@ import typing
 import numpy
 
 import octobot_trading.constants
+import octobot_copy.enums as copy_enums
+import octobot_copy.rebalancing.planner.distributions as planner_distributions
 
-DISTRIBUTION_NAME = "name"
-DISTRIBUTION_VALUE = "value"
-DISTRIBUTION_PRICE = "price"
 MAX_DISTRIBUTION_AFTER_COMMA_DIGITS = 1
 
-
-def get_uniform_distribution(coins, price_by_coin: typing.Optional[dict[str, decimal.Decimal]] = None) -> typing.List:
-    if not coins:
-        return []
-    ratio = float(
-        round(
-            octobot_trading.constants.ONE / decimal.Decimal(str(len(coins))) * octobot_trading.constants.ONE_HUNDRED,
-            MAX_DISTRIBUTION_AFTER_COMMA_DIGITS
-        )
-    )
-    if not ratio:
-        return []
-    return [
-        {
-            DISTRIBUTION_NAME: coin,
-            DISTRIBUTION_VALUE: ratio,
-            DISTRIBUTION_PRICE: price_by_coin.get(coin) if price_by_coin else None
-        }
-        for coin in coins
-    ]
+get_uniform_distribution = planner_distributions.get_uniform_distribution
 
 
 def get_linear_distribution(weight_by_coin: dict[str, decimal.Decimal], price_by_coin: typing.Optional[dict[str, decimal.Decimal]] = None) -> typing.List:
@@ -37,12 +17,12 @@ def get_linear_distribution(weight_by_coin: dict[str, decimal.Decimal], price_by
         raise ValueError(f"total weight is {total_weight}")
     return [
         {
-            DISTRIBUTION_NAME: coin,
-            DISTRIBUTION_VALUE: float(round(
+            copy_enums.DistributionKeys.NAME.value: coin,
+            copy_enums.DistributionKeys.VALUE.value: float(round(
                 weight / total_weight * octobot_trading.constants.ONE_HUNDRED,
                 MAX_DISTRIBUTION_AFTER_COMMA_DIGITS
             )),
-            DISTRIBUTION_PRICE: price_by_coin.get(coin) if price_by_coin else None
+            copy_enums.DistributionKeys.PRICE.value: price_by_coin.get(coin) if price_by_coin else None
         }
         for coin, weight in weight_by_coin.items()
     ]

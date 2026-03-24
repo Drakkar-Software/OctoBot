@@ -26,22 +26,23 @@ import octobot_trading.exchanges.util.exchange_data as exchange_data_import
 import tentacles.Meta.Keywords.scripting_library as scripting_library
 import tentacles.Trading.Mode.index_trading_mode.index_distribution as index_distribution
 import tentacles.Trading.Mode.index_trading_mode.index_trading as index_trading
+import octobot_copy.enums as copy_enums
 
 
 @pytest.fixture
 def trading_mode_tentacles_data() -> commons_profile_data.TentaclesData:
     distribution = [
         {
-            index_distribution.DISTRIBUTION_NAME: "BTC",
-            index_distribution.DISTRIBUTION_VALUE: 50.0,
+            copy_enums.DistributionKeys.NAME: "BTC",
+            copy_enums.DistributionKeys.VALUE: 50.0,
         },
         {
-            index_distribution.DISTRIBUTION_NAME: "ETH",
-            index_distribution.DISTRIBUTION_VALUE: 30.0,
+            copy_enums.DistributionKeys.NAME: "ETH",
+            copy_enums.DistributionKeys.VALUE: 30.0,
         },
         {
-            index_distribution.DISTRIBUTION_NAME: "USD",  # Will be replaced by reference market
-            index_distribution.DISTRIBUTION_VALUE: 20.0,
+            copy_enums.DistributionKeys.NAME: "USD",  # Will be replaced by reference market
+            copy_enums.DistributionKeys.VALUE: 20.0,
         },
     ]
     

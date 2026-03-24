@@ -23,25 +23,25 @@ import octobot_trading.errors as trading_errors
 import octobot_trading.modes as trading_modes
 import octobot_trading.personal_data as trading_personal_data
 
-import tentacles.Trading.Mode.index_trading_mode.rebalancer as rebalancer
+import octobot_copy.rebalancing.rebalancer.rebalancer as base_rebalancer
 
 
-class SpotRebalancer(rebalancer.AbstractRebalancer):
+class SpotRebalancer(base_rebalancer.AbstractRebalancer):
     async def prepare_coin_rebalancing(self, coin: str):
         # Nothing to do in SPOT
         pass
 
     async def buy_coin(
-        self, 
-        symbol: str, 
+        self,
+        symbol: str,
         ideal_amount: decimal.Decimal,
         ideal_price: typing.Optional[decimal.Decimal],
         dependencies: typing.Optional[commons_signals.SignalDependencies]
     ) -> list:
         current_symbol_holding, current_market_holding, market_quantity, current_price, symbol_market = \
             await trading_personal_data.get_pre_order_data(
-                self.trading_mode.exchange_manager, 
-                symbol=symbol, 
+                self.trading_mode.exchange_manager,
+                symbol=symbol,
                 timeout=trading_constants.ORDER_DATA_FETCHING_TIMEOUT
             )
         order_target_price = ideal_price if ideal_price is not None else current_price

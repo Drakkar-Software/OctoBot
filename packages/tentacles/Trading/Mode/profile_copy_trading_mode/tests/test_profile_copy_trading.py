@@ -36,8 +36,8 @@ import octobot_trading.exchanges as exchanges
 import tentacles.Trading.Mode as Mode
 import tentacles.Trading.Mode.profile_copy_trading_mode.profile_copy_trading as profile_copy_trading
 import tentacles.Trading.Mode.profile_copy_trading_mode.profile_distribution as profile_distribution
-import tentacles.Trading.Mode.index_trading_mode.index_distribution as index_distribution
 import tentacles.Trading.Mode.index_trading_mode.index_trading as index_trading
+import octobot_copy.enums as rebalancer_enums
 
 import tests.test_utils.config as test_utils_config
 import tests.test_utils.test_exchanges as test_exchanges
@@ -129,8 +129,8 @@ async def test_validate_portfolio_allocation_feasibility_valid_cases(tools):
         "profile1": {
             profile_distribution.DISTRIBUTION_KEY: [
                 {
-                    index_distribution.DISTRIBUTION_NAME: "BTC/USDT",
-                    index_distribution.DISTRIBUTION_VALUE: 100.0,
+                    rebalancer_enums.DistributionKeys.NAME: "BTC/USDT",
+                    rebalancer_enums.DistributionKeys.VALUE: 100.0,
                 }
             ],
             profile_distribution.TRADABLE_RATIO: decimal.Decimal("1"),
@@ -138,8 +138,8 @@ async def test_validate_portfolio_allocation_feasibility_valid_cases(tools):
         "profile2": {
             profile_distribution.DISTRIBUTION_KEY: [
                 {
-                    index_distribution.DISTRIBUTION_NAME: "ETH/USDT",
-                    index_distribution.DISTRIBUTION_VALUE: 100.0,
+                    rebalancer_enums.DistributionKeys.NAME: "ETH/USDT",
+                    rebalancer_enums.DistributionKeys.VALUE: 100.0,
                 }
             ],
             profile_distribution.TRADABLE_RATIO: decimal.Decimal("1"),
@@ -257,7 +257,7 @@ async def test_close_positions_when_filtered_out_default_is_false(tools):
 
 async def test_dynamic_synchronization_policy_removes_coins_not_in_indexed_coins(tools):
     mode, producer, _, _ = await _init_mode(tools, _get_config(tools, {}))
-    assert mode.synchronization_policy == index_trading.SynchronizationPolicy.SELL_REMOVED_DYNAMIC_INDEX_COINS_AS_SOON_AS_POSSIBLE
+    assert mode.synchronization_policy == rebalancer_enums.SynchronizationPolicy.SELL_REMOVED_DYNAMIC_INDEX_COINS_AS_SOON_AS_POSSIBLE
     mode.indexed_coins = ["BTC"]
     # USDT is the reference market and must be excluded; ETH is in traded bases but not indexed
     removed = mode.get_removed_coins_from_config({"BTC", "ETH", "USDT"})
@@ -268,8 +268,8 @@ async def test_rebalance_with_pending_open_orders(tools):
     mode.indexed_coins = ["BTC"]
     mode.ratio_per_asset = {
         "BTC": {
-            index_distribution.DISTRIBUTION_NAME: "BTC",
-            index_distribution.DISTRIBUTION_VALUE: decimal.Decimal("100"),
+            rebalancer_enums.DistributionKeys.NAME: "BTC",
+            rebalancer_enums.DistributionKeys.VALUE: decimal.Decimal("100"),
         }
     }
     mode.total_ratio_per_asset = decimal.Decimal("100")
@@ -289,4 +289,4 @@ async def test_rebalance_with_pending_open_orders(tools):
     # Without open orders we should have rebalanced
     # As we have open orders using USDT, the rebalance should not be triggered as the current ratio is 0.2 which is above the threshold of 0.1
     assert should_rebalance is False
-    assert details[index_trading.RebalanceDetails.FORCED_REBALANCE.value] is False
+    assert details[rebalancer_enums.RebalanceDetails.FORCED_REBALANCE.value] is False

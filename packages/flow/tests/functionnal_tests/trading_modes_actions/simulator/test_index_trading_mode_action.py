@@ -17,16 +17,16 @@ import tentacles.Trading.Mode.index_trading_mode as index_trading_mode
 import tests.functionnal_tests as functionnal_tests
 from tests.functionnal_tests import current_time, resolved_actions, automation_state_dict
 
-import tentacles.Trading.Mode.index_trading_mode.index_distribution as index_distribution
+import octobot_copy.enums as rebalancer_enums
 
 index_content = [
     {
-        index_distribution.DISTRIBUTION_NAME: "BTC",
-        index_distribution.DISTRIBUTION_VALUE: 1,
+        rebalancer_enums.DistributionKeys.NAME: "BTC",
+        rebalancer_enums.DistributionKeys.VALUE: 1,
     },
     {
-        index_distribution.DISTRIBUTION_NAME: "ETH",
-        index_distribution.DISTRIBUTION_VALUE: 1,
+        rebalancer_enums.DistributionKeys.NAME: "ETH",
+        rebalancer_enums.DistributionKeys.VALUE: 1,
     },
 ]
 

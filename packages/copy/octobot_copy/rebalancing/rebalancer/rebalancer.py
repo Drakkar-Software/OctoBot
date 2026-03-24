@@ -19,19 +19,20 @@ import typing
 
 import octobot_commons.logging as logging
 import octobot_commons.signals as commons_signals
+import octobot_commons.symbols.symbol_util as symbol_util
 import octobot_trading.personal_data as trading_personal_data
 import octobot_trading.modes as trading_modes
-import octobot_commons.symbols.symbol_util as symbol_util
 import octobot_trading.errors as trading_errors
 import octobot_trading.enums as trading_enums
 import octobot_trading.api as trading_api
 
-import tentacles.Trading.Mode.index_trading_mode.index_trading as index_trading
+import octobot_copy.enums as rebalancer_enums
 
 
 class RebalanceAborted(Exception):
     pass
 
+# TODO refactor this class to use the ExchangeInterface and client interfaces
 
 class AbstractRebalancer:
     FILL_ORDER_TIMEOUT = 60
@@ -47,9 +48,9 @@ class AbstractRebalancer:
         raise NotImplementedError("prepare_coin_rebalancing is not implemented")
 
     async def buy_coin(
-        self, 
-        symbol: str, 
-        ideal_amount: decimal.Decimal, 
+        self,
+        symbol: str,
+        ideal_amount: decimal.Decimal,
         ideal_price: typing.Optional[decimal.Decimal],
         dependencies: typing.Optional[commons_signals.SignalDependencies]
     ) -> list:
@@ -60,14 +61,14 @@ class AbstractRebalancer:
 
     async def get_removed_coins_to_sell_orders(self, details: dict, dependencies: typing.Optional[commons_signals.SignalDependencies]) -> list:
         removed_coins_to_sell_orders = []
-        if removed_coins_to_sell := list(details[index_trading.RebalanceDetails.REMOVE.value]):
+        if removed_coins_to_sell := list(details[rebalancer_enums.RebalanceDetails.REMOVE.value]):
             removed_coins_to_sell_orders = await trading_modes.convert_assets_to_target_asset(
                 self.trading_mode, removed_coins_to_sell,
                 self.trading_mode.exchange_manager.exchange_personal_data.portfolio_manager.reference_market, {},
                 dependencies=dependencies
             )
         return removed_coins_to_sell_orders
-    
+
     async def get_coins_to_sell_orders(self, details: dict, dependencies: typing.Optional[commons_signals.SignalDependencies]) -> list:
         order_coins_to_sell = self.get_coins_to_sell(details)
         coins_to_sell_orders = await trading_modes.convert_assets_to_target_asset(
@@ -83,11 +84,11 @@ class AbstractRebalancer:
         removed_orders: typing.Optional[list] = None
     ) -> None:
         if (
-            details[index_trading.RebalanceDetails.REMOVE.value] and
+            details[rebalancer_enums.RebalanceDetails.REMOVE.value] and
             not (
-                details[index_trading.RebalanceDetails.BUY_MORE.value]
-                or details[index_trading.RebalanceDetails.ADD.value]
-                or details[index_trading.RebalanceDetails.SWAP.value]
+                details[rebalancer_enums.RebalanceDetails.BUY_MORE.value]
+                or details[rebalancer_enums.RebalanceDetails.ADD.value]
+                or details[rebalancer_enums.RebalanceDetails.SWAP.value]
             )
         ):
             if removed_orders is None:
@@ -102,18 +103,18 @@ class AbstractRebalancer:
             ]
             if not any(
                 asset in sold_coins
-                for asset in details[index_trading.RebalanceDetails.REMOVE.value]
+                for asset in details[rebalancer_enums.RebalanceDetails.REMOVE.value]
             ):
                 self.logger.info(
-                    f"Cancelling rebalance: not enough {list(details[index_trading.RebalanceDetails.REMOVE.value])} funds to sell"
+                    f"Cancelling rebalance: not enough {list(details[rebalancer_enums.RebalanceDetails.REMOVE.value])} funds to sell"
                 )
                 raise trading_errors.MissingMinimalExchangeTradeVolume(
-                    f"not enough {list(details[index_trading.RebalanceDetails.REMOVE.value])} funds to sell"
+                    f"not enough {list(details[rebalancer_enums.RebalanceDetails.REMOVE.value])} funds to sell"
                 )
 
     async def sell_indexed_coins_for_reference_market(
-        self, 
-        details: dict, 
+        self,
+        details: dict,
         dependencies: typing.Optional[commons_signals.SignalDependencies]
     ) -> list:
         await self.pre_cancel_conflicting_orders(details, dependencies, trading_enums.TradeOrderSide.BUY)
@@ -127,7 +128,7 @@ class AbstractRebalancer:
         return orders
 
     def get_coins_to_sell(self, details: dict) -> list:
-        return list(details[index_trading.RebalanceDetails.SWAP.value]) or (
+        return list(details[rebalancer_enums.RebalanceDetails.SWAP.value]) or (
             self.trading_mode.indexed_coins
         )
 
@@ -196,7 +197,7 @@ class AbstractRebalancer:
     def get_pre_cancel_order_symbols(self, details: dict, side: trading_enums.TradeOrderSide) -> set[str]:
         symbols_to_cleanup: set[str] = set()
         keys = self.get_rebalance_details_keys_for_side(side)
-        
+
         for key in keys:
             for coin_or_symbol in details.get(key, {}):
                 symbols_to_cleanup.add(self.get_symbol_and_base_asset(coin_or_symbol)[0])
@@ -204,9 +205,9 @@ class AbstractRebalancer:
 
     def get_rebalance_details_keys_for_side(self, side: trading_enums.TradeOrderSide) -> list[str]:
         if side == trading_enums.TradeOrderSide.BUY:
-            return [index_trading.RebalanceDetails.REMOVE.value, index_trading.RebalanceDetails.SELL_SOME.value]
+            return [rebalancer_enums.RebalanceDetails.REMOVE.value, rebalancer_enums.RebalanceDetails.SELL_SOME.value]
         if side == trading_enums.TradeOrderSide.SELL:
-            return [index_trading.RebalanceDetails.ADD.value, index_trading.RebalanceDetails.BUY_MORE.value]
+            return [rebalancer_enums.RebalanceDetails.ADD.value, rebalancer_enums.RebalanceDetails.BUY_MORE.value]
         raise ValueError(f"Unsupported side: {side}")
 
     def get_symbol_and_base_asset(self, coin_or_symbol: str) -> tuple[str, str]:

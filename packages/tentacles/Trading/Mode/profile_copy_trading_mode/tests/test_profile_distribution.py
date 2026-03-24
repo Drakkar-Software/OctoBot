@@ -4,7 +4,7 @@ import pytest
 import typing
 
 import tentacles.Trading.Mode.profile_copy_trading_mode.profile_distribution as profile_distribution
-import tentacles.Trading.Mode.index_trading_mode.index_distribution as index_distribution
+import octobot_copy.enums as copy_enums
 import octobot_trading.enums as trading_enums
 import octobot_trading.constants as trading_constants
 
@@ -85,9 +85,9 @@ def _make_distribution(assets: list[tuple]) -> list[dict]:
     """Helper to create distribution list from (name, value, price) tuples."""
     return [
         {
-            index_distribution.DISTRIBUTION_NAME: name,
-            index_distribution.DISTRIBUTION_VALUE: value,
-            index_distribution.DISTRIBUTION_PRICE: price,
+            copy_enums.DistributionKeys.NAME: name,
+            copy_enums.DistributionKeys.VALUE: value,
+            copy_enums.DistributionKeys.PRICE: price,
         }
         for name, value, price in assets
     ]
@@ -121,11 +121,11 @@ def test_update_global_distribution_merges_overlapping_assets():
     )
     
     # BTC: (50.0 * 0.5) + (40.0 * 0.5) = 45.0, ETH: 30.0 * 0.5 = 15.0, SOL: 60.0 * 0.5 = 30.0
-    assert result[profile_distribution.RATIO_PER_ASSET]["BTC"][index_distribution.DISTRIBUTION_VALUE] == decimal.Decimal("45.0")
+    assert result[profile_distribution.RATIO_PER_ASSET]["BTC"][copy_enums.DistributionKeys.VALUE] == decimal.Decimal("45.0")
     # ETH should be weighted: 30.0 * 0.5 = 15.0
-    assert result[profile_distribution.RATIO_PER_ASSET]["ETH"][index_distribution.DISTRIBUTION_VALUE] == decimal.Decimal("15.0")
+    assert result[profile_distribution.RATIO_PER_ASSET]["ETH"][copy_enums.DistributionKeys.VALUE] == decimal.Decimal("15.0")
     # SOL should be weighted: 60.0 * 0.5 = 30.0
-    assert result[profile_distribution.RATIO_PER_ASSET]["SOL"][index_distribution.DISTRIBUTION_VALUE] == decimal.Decimal("30.0")
+    assert result[profile_distribution.RATIO_PER_ASSET]["SOL"][copy_enums.DistributionKeys.VALUE] == decimal.Decimal("30.0")
     # Total should be 45.0 + 15.0 + 30.0 = 90.0
     assert result[profile_distribution.TOTAL_RATIO_PER_ASSET] == decimal.Decimal("90.0")
 
@@ -190,17 +190,17 @@ def test_get_smoothed_distribution_from_profile_data_aggregates_same_symbols():
     
     # BTC should have aggregated margin: 100 + 50 = 150 out of 200 total (75%)
     # ETH should have 50 out of 200 total (25%)
-    btc_dist = next((d for d in result if d[index_distribution.DISTRIBUTION_NAME] == "BTC/USDT"), None)
-    eth_dist = next((d for d in result if d[index_distribution.DISTRIBUTION_NAME] == "ETH/USDT"), None)
+    btc_dist = next((d for d in result if d[copy_enums.DistributionKeys.NAME] == "BTC/USDT"), None)
+    eth_dist = next((d for d in result if d[copy_enums.DistributionKeys.NAME] == "ETH/USDT"), None)
     
     assert btc_dist is not None
     assert eth_dist is not None
     # BTC should have higher value than ETH due to aggregated margin
-    assert btc_dist[index_distribution.DISTRIBUTION_VALUE] > eth_dist[index_distribution.DISTRIBUTION_VALUE]
+    assert btc_dist[copy_enums.DistributionKeys.VALUE] > eth_dist[copy_enums.DistributionKeys.VALUE]
     # Verify price information is included in the distribution
     # When multiple positions have the same symbol, the last price is used (51000.0)
-    assert btc_dist[index_distribution.DISTRIBUTION_PRICE] == decimal.Decimal("51000.0")
-    assert eth_dist[index_distribution.DISTRIBUTION_PRICE] == decimal.Decimal("3000.0")
+    assert btc_dist[copy_enums.DistributionKeys.PRICE] == decimal.Decimal("51000.0")
+    assert eth_dist[copy_enums.DistributionKeys.PRICE] == decimal.Decimal("3000.0")
 
     # without prices
     profile_data.positions[-1].pop(trading_enums.ExchangeConstantsPositionColumns.ENTRY_PRICE.value)
@@ -208,15 +208,15 @@ def test_get_smoothed_distribution_from_profile_data_aggregates_same_symbols():
         profile_data, new_position_only=False, started_at=started_at
     )
     
-    btc_dist = next((d for d in result if d[index_distribution.DISTRIBUTION_NAME] == "BTC/USDT"), None)
-    eth_dist = next((d for d in result if d[index_distribution.DISTRIBUTION_NAME] == "ETH/USDT"), None)
+    btc_dist = next((d for d in result if d[copy_enums.DistributionKeys.NAME] == "BTC/USDT"), None)
+    eth_dist = next((d for d in result if d[copy_enums.DistributionKeys.NAME] == "ETH/USDT"), None)
     
     assert btc_dist is not None
     assert eth_dist is not None
     # BTC should still have price from the second BTC position (51000.0)
-    assert btc_dist[index_distribution.DISTRIBUTION_PRICE] == decimal.Decimal("51000.0")
+    assert btc_dist[copy_enums.DistributionKeys.PRICE] == decimal.Decimal("51000.0")
     # ETH should have price as 0 (default value when missing)
-    assert eth_dist[index_distribution.DISTRIBUTION_PRICE] == decimal.Decimal("0")
+    assert eth_dist[copy_enums.DistributionKeys.PRICE] == decimal.Decimal("0")
 
 
 def test_update_global_distribution_merges_identical_assets_from_multiple_profiles():
@@ -237,19 +237,19 @@ def test_update_global_distribution_merges_identical_assets_from_multiple_profil
     )
     
     # Both profiles contribute 100.0 * 0.4 = 40.0, merged = 80.0
-    assert result[profile_distribution.RATIO_PER_ASSET]["BTC"][index_distribution.DISTRIBUTION_VALUE] == decimal.Decimal("80.0")
+    assert result[profile_distribution.RATIO_PER_ASSET]["BTC"][copy_enums.DistributionKeys.VALUE] == decimal.Decimal("80.0")
     assert result[profile_distribution.TOTAL_RATIO_PER_ASSET] == decimal.Decimal("80.0")
 
 
 def test_update_global_distribution_handles_missing_prices():
     distribution_per_exchange_profile = {
         "profile1": _make_profile_dist([
-            {index_distribution.DISTRIBUTION_NAME: "BTC", index_distribution.DISTRIBUTION_VALUE: 50.0, index_distribution.DISTRIBUTION_PRICE: decimal.Decimal("50000")},
-            {index_distribution.DISTRIBUTION_NAME: "ETH", index_distribution.DISTRIBUTION_VALUE: 30.0},  # No price
+            {copy_enums.DistributionKeys.NAME: "BTC", copy_enums.DistributionKeys.VALUE: 50.0, copy_enums.DistributionKeys.PRICE: decimal.Decimal("50000")},
+            {copy_enums.DistributionKeys.NAME: "ETH", copy_enums.DistributionKeys.VALUE: 30.0},  # No price
         ]),
         "profile2": _make_profile_dist([
-            {index_distribution.DISTRIBUTION_NAME: "BTC", index_distribution.DISTRIBUTION_VALUE: 40.0},  # No price
-            {index_distribution.DISTRIBUTION_NAME: "SOL", index_distribution.DISTRIBUTION_VALUE: 60.0, index_distribution.DISTRIBUTION_PRICE: decimal.Decimal("100")},
+            {copy_enums.DistributionKeys.NAME: "BTC", copy_enums.DistributionKeys.VALUE: 40.0},  # No price
+            {copy_enums.DistributionKeys.NAME: "SOL", copy_enums.DistributionKeys.VALUE: 60.0, copy_enums.DistributionKeys.PRICE: decimal.Decimal("100")},
         ]),
     }
     
@@ -353,18 +353,18 @@ def test_get_smoothed_distribution_from_profile_data_respects_new_position_only(
         profile_data, new_position_only=test_case.new_position_only, started_at=started_at
     )
     
-    btc_dist = next((d for d in result if d[index_distribution.DISTRIBUTION_NAME] == "BTC/USDT"), None)
-    eth_dist = next((d for d in result if d[index_distribution.DISTRIBUTION_NAME] == "ETH/USDT"), None)
+    btc_dist = next((d for d in result if d[copy_enums.DistributionKeys.NAME] == "BTC/USDT"), None)
+    eth_dist = next((d for d in result if d[copy_enums.DistributionKeys.NAME] == "ETH/USDT"), None)
     
     assert (btc_dist is not None) == test_case.expected_btc_present
     assert (eth_dist is not None) == test_case.expected_eth_present
     
     if test_case.expected_eth_present:
-        assert eth_dist[index_distribution.DISTRIBUTION_VALUE] > decimal.Decimal("0")
-        assert eth_dist[index_distribution.DISTRIBUTION_PRICE] == decimal.Decimal("3000.0")
+        assert eth_dist[copy_enums.DistributionKeys.VALUE] > decimal.Decimal("0")
+        assert eth_dist[copy_enums.DistributionKeys.PRICE] == decimal.Decimal("3000.0")
     
     if test_case.btc_higher_than_eth and btc_dist is not None and eth_dist is not None:
-        assert btc_dist[index_distribution.DISTRIBUTION_VALUE] > eth_dist[index_distribution.DISTRIBUTION_VALUE]
+        assert btc_dist[copy_enums.DistributionKeys.VALUE] > eth_dist[copy_enums.DistributionKeys.VALUE]
 
 
 @pytest.mark.parametrize(
@@ -401,8 +401,8 @@ def test_update_distribution_based_on_profile_data_respects_new_position_only(
     assert "profile1" in result
     profile_result = result["profile1"]
     distribution = profile_result["distribution"]
-    btc_dist = next((d for d in distribution if d[index_distribution.DISTRIBUTION_NAME] == "BTC/USDT"), None)
-    eth_dist = next((d for d in distribution if d[index_distribution.DISTRIBUTION_NAME] == "ETH/USDT"), None)
+    btc_dist = next((d for d in distribution if d[copy_enums.DistributionKeys.NAME] == "BTC/USDT"), None)
+    eth_dist = next((d for d in distribution if d[copy_enums.DistributionKeys.NAME] == "ETH/USDT"), None)
     
     assert (btc_dist is not None) == expected_btc_present
     assert (eth_dist is not None) == expected_eth_present
@@ -477,7 +477,7 @@ def test_get_smoothed_distribution_from_profile_data_respects_min_unrealized_pnl
         profile_data, new_position_only=False, started_at=started_at,
         min_unrealized_pnl_percent=0.1,
     )
-    symbols = [d[index_distribution.DISTRIBUTION_NAME] for d in result]
+    symbols = [d[copy_enums.DistributionKeys.NAME] for d in result]
     assert "BTC/USDT" in symbols
     assert "ETH/USDT" not in symbols
     assert tradable_ratio == decimal.Decimal("0.5")
@@ -565,7 +565,7 @@ def test_get_smoothed_distribution_from_profile_data_respects_min_position_size(
         profile_data, new_position_only=False, started_at=started_at,
         min_position_size=decimal.Decimal("5"),
     )
-    symbols = [d[index_distribution.DISTRIBUTION_NAME] for d in result]
+    symbols = [d[copy_enums.DistributionKeys.NAME] for d in result]
     assert "BTC/USDT" in symbols
     assert "ETH/USDT" not in symbols
     assert tradable_ratio == decimal.Decimal("0.5")
@@ -633,7 +633,7 @@ def test_tradable_ratio_with_new_position_only():
     )
     
     # Only ETH should be in distribution (BTC is old), tradable_ratio = 100/200 = 0.5
-    symbols = [d[index_distribution.DISTRIBUTION_NAME] for d in result]
+    symbols = [d[copy_enums.DistributionKeys.NAME] for d in result]
     assert "BTC/USDT" not in symbols
     assert "ETH/USDT" in symbols
     assert tradable_ratio == decimal.Decimal("0.5")
@@ -702,7 +702,7 @@ def test_get_smoothed_distribution_portfolio_scenarios(test_case: PortfolioTestC
     assert source == test_case.expected_source
     assert tradable_ratio == test_case.expected_tradable_ratio
     
-    symbols = [d[index_distribution.DISTRIBUTION_NAME] for d in result]
+    symbols = [d[copy_enums.DistributionKeys.NAME] for d in result]
     assert symbols == test_case.expected_symbols
     
     # Check excluded symbols are not present
@@ -711,9 +711,9 @@ def test_get_smoothed_distribution_portfolio_scenarios(test_case: PortfolioTestC
     
     # Check weight assertions
     if test_case.weight_assertion == "ETH > BTC":
-        btc_dist = next((d for d in result if d[index_distribution.DISTRIBUTION_NAME] == "BTC"), None)
-        eth_dist = next((d for d in result if d[index_distribution.DISTRIBUTION_NAME] == "ETH"), None)
-        assert eth_dist[index_distribution.DISTRIBUTION_VALUE] > btc_dist[index_distribution.DISTRIBUTION_VALUE]
+        btc_dist = next((d for d in result if d[copy_enums.DistributionKeys.NAME] == "BTC"), None)
+        eth_dist = next((d for d in result if d[copy_enums.DistributionKeys.NAME] == "ETH"), None)
+        assert eth_dist[copy_enums.DistributionKeys.VALUE] > btc_dist[copy_enums.DistributionKeys.VALUE]
 
 @pytest.mark.parametrize("allocation_ratio,padding_ratio,expected_ref_market", [
     # No padding: 50% allocation = 50% reference market
@@ -782,7 +782,7 @@ def test_get_reference_market_balance():
 
 
 def _get_distribution_symbols(distribution: list) -> list[str]:
-    return [d[index_distribution.DISTRIBUTION_NAME] for d in distribution]
+    return [d[copy_enums.DistributionKeys.NAME] for d in distribution]
 
 
 def test_update_distribution_tracks_passing_positions():
@@ -984,7 +984,7 @@ def test_position_value_uses_notional_when_initial_margin_is_zero():
         profile_data, new_position_only=False, started_at=started_at
     )
     assert len(result) == 1
-    assert result[0][profile_distribution.index_distribution.DISTRIBUTION_NAME] == "EVENT/USDC:USDC-YES"
+    assert result[0][copy_enums.DistributionKeys.NAME] == "EVENT/USDC:USDC-YES"
     assert tradable_ratio == trading_constants.ONE
 
 

@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import tentacles.Trading.Mode.index_trading_mode.index_trading as index_trading
+import octobot_copy.enums as rebalancer_enums
 
 import octobot_commons.constants as commons_constants
 import octobot_commons.profiles.profile_data as commons_profile_data
@@ -78,7 +79,7 @@ def test_register_historical_configs_applies_master_edits():
                 index_trading.IndexTradingModeProducer.REBALANCE_TRIGGER_PROFILE_MIN_PERCENT: 20
             }
         ], 
-        index_trading.IndexTradingModeProducer.SYNCHRONIZATION_POLICY: index_trading.SynchronizationPolicy.SELL_REMOVED_INDEX_COINS_ON_RATIO_REBALANCE.value
+        index_trading.IndexTradingModeProducer.SYNCHRONIZATION_POLICY: rebalancer_enums.SynchronizationPolicy.SELL_REMOVED_INDEX_COINS_ON_RATIO_REBALANCE.value
     }
     master.tentacles = [commons_profile_data.TentaclesData(name=tentacle_name, config=master_config)]
     historical_1 = scripting_library.minimal_profile_data()
@@ -112,7 +113,7 @@ def test_register_historical_configs_applies_master_edits():
                 index_trading.IndexTradingModeProducer.REBALANCE_TRIGGER_PROFILE_MIN_PERCENT: 20
             }
         ], 
-        index_trading.IndexTradingModeProducer.SYNCHRONIZATION_POLICY: index_trading.SynchronizationPolicy.SELL_REMOVED_INDEX_COINS_ON_RATIO_REBALANCE.value
+        index_trading.IndexTradingModeProducer.SYNCHRONIZATION_POLICY: rebalancer_enums.SynchronizationPolicy.SELL_REMOVED_INDEX_COINS_ON_RATIO_REBALANCE.value
     }
     assert hist_config_2 == {
         special_key: 1, 
@@ -127,5 +128,5 @@ def test_register_historical_configs_applies_master_edits():
                 index_trading.IndexTradingModeProducer.REBALANCE_TRIGGER_PROFILE_MIN_PERCENT: 20
             }
         ], 
-        index_trading.IndexTradingModeProducer.SYNCHRONIZATION_POLICY: index_trading.SynchronizationPolicy.SELL_REMOVED_INDEX_COINS_ON_RATIO_REBALANCE.value
+        index_trading.IndexTradingModeProducer.SYNCHRONIZATION_POLICY: rebalancer_enums.SynchronizationPolicy.SELL_REMOVED_INDEX_COINS_ON_RATIO_REBALANCE.value
     }

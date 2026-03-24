@@ -24,11 +24,11 @@ import octobot_trading.modes as trading_modes
 import octobot_trading.personal_data as trading_personal_data
 import octobot_trading.personal_data.orders.order_util as order_util
 
-import tentacles.Trading.Mode.index_trading_mode.rebalancer as rebalancer
-import tentacles.Trading.Mode.index_trading_mode.index_trading as index_trading
+import octobot_copy.enums as rebalancer_enums
+import octobot_copy.rebalancing.rebalancer.rebalancer as base_rebalancer
 
 
-class FuturesRebalancer(rebalancer.AbstractRebalancer):
+class FuturesRebalancer(base_rebalancer.AbstractRebalancer):
     async def prepare_coin_rebalancing(self, coin: str):
         await self.ensure_contract_loaded(coin)
 
@@ -40,8 +40,8 @@ class FuturesRebalancer(rebalancer.AbstractRebalancer):
             self.logger.info(f"Contract for {symbol} has been loaded.")
 
     async def buy_coin(
-        self, 
-        symbol: str, 
+        self,
+        symbol: str,
         ideal_amount: decimal.Decimal,
         ideal_price: typing.Optional[decimal.Decimal],
         dependencies: typing.Optional[commons_signals.SignalDependencies]
@@ -53,34 +53,34 @@ class FuturesRebalancer(rebalancer.AbstractRebalancer):
         positions_manager = self.trading_mode.exchange_manager.exchange_personal_data.positions_manager
         position = positions_manager.get_symbol_position(symbol, trading_enums.PositionSide.BOTH)
         _, _, _, current_price, symbol_market = await trading_personal_data.get_pre_order_data(
-            self.trading_mode.exchange_manager, 
-            symbol=symbol, 
+            self.trading_mode.exchange_manager,
+            symbol=symbol,
             timeout=trading_constants.ORDER_DATA_FETCHING_TIMEOUT
         )
-        
+
         order_target_price = ideal_price if ideal_price is not None else current_price
         current_position_size = position.size if not position.is_idle() else trading_constants.ZERO
         effective_current_position_size = current_position_size + self.get_pending_open_quantity(symbol)
         size_difference = ideal_amount - effective_current_position_size
-        
+
         if size_difference <= trading_constants.ZERO:
             return []
-        
+
         side = trading_enums.TradeOrderSide.BUY  # Always open long positions for index
         max_order_size, increasing_position = order_util.get_futures_max_order_size(
             self.trading_mode.exchange_manager, symbol, side, current_price, False,
             current_position_size, ideal_amount
         )
-        
+
         order_quantity = min(size_difference, max_order_size)
         if order_quantity <= trading_constants.ZERO:
             return []
-        
+
         quantity = trading_personal_data.decimal_adapt_order_quantity_because_fees(
             self.trading_mode.exchange_manager, symbol, trading_enums.TraderOrderType.BUY_MARKET, order_quantity,
             order_target_price, trading_enums.TradeOrderSide.BUY
         )
-        
+
         created_orders = []
         orders_should_have_been_created = False
         is_price_close_to_market = order_target_price >= current_price * (decimal.Decimal(1) - self.PRICE_THRESHOLD_TO_USE_MARKET_ORDER)
@@ -97,7 +97,7 @@ class FuturesRebalancer(rebalancer.AbstractRebalancer):
                 trading_modes.get_instantly_filled_limit_order_adapted_price_and_quantity(
                     order_target_price, quantity, order_type
                 )
-        
+
         for order_quantity, order_price in trading_personal_data.decimal_check_and_adapt_order_details_if_necessary(
             quantity,
             order_target_price,
@@ -116,7 +116,7 @@ class FuturesRebalancer(rebalancer.AbstractRebalancer):
             created_order = await self.trading_mode.create_order(current_order, dependencies=dependencies)
             if created_order is not None:
                 created_orders.append(created_order)
-        
+
         if created_orders:
             return created_orders
         if self.trading_mode.allow_skip_asset:
@@ -133,10 +133,10 @@ class FuturesRebalancer(rebalancer.AbstractRebalancer):
         for coin_or_symbol in self.get_coins_to_sell(details):
             symbol_target_ratio[self.get_symbol_and_base_asset(coin_or_symbol)[0]] = None
 
-        for coin_or_symbol in details.get(index_trading.RebalanceDetails.REMOVE.value, {}):
+        for coin_or_symbol in details.get(rebalancer_enums.RebalanceDetails.REMOVE.value, {}):
             symbol_target_ratio[self.get_symbol_and_base_asset(coin_or_symbol)[0]] = None
 
-        for coin_or_symbol, target_ratio in details.get(index_trading.RebalanceDetails.SELL_SOME.value, {}).items():
+        for coin_or_symbol, target_ratio in details.get(rebalancer_enums.RebalanceDetails.SELL_SOME.value, {}).items():
             symbol_target_ratio[self.get_symbol_and_base_asset(coin_or_symbol)[0]] = target_ratio
 
         for symbol, target_ratio in symbol_target_ratio.items():
