@@ -26,6 +26,7 @@ import octobot_commons.enums as commons_enums
 import octobot_commons.tree as commons_tree
 
 import octobot_trading.exchange_channel as exchange_channel
+import octobot_trading.exchanges.exchange_channels as exchange_channels
 import octobot_trading.exchanges.config.backtesting_exchange_config as backtesting_exchange_config
 import octobot_trading.exchanges.util as exchange_util
 import octobot_trading.exchanges.exchange_websocket_factory as exchange_websocket_factory
@@ -269,6 +270,9 @@ class ExchangeConfig(util.Initializable):
                     self.exchange_manager.exchange_web_socket.remove_pairs(removed_valid_symbol_pairs, watching_only=watch_only)
                 await self.exchange_manager.exchange_web_socket.handle_updated_pairs(debounce_duration=1)
 
+            await exchange_channels.create_minimal_dynamic_symbols_env_producers_if_needed(
+                self.exchange_manager, start_producers=False, subscribe_indirect_producers_if_not_started=True
+            )
             for channel in watch_only_channels_to_notify:
                 await exchange_channel.get_chan(channel, self.exchange_manager.id).modify(
                     added_pairs=new_valid_symbol_pairs, removed_pairs=removed_valid_symbol_pairs
