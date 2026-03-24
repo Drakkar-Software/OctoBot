@@ -451,56 +451,17 @@ class AbstractTradingModeProducer(modes_channel.ModeChannelProducer):
         data=None,
         dependencies: typing.Optional[commons_signals.SignalDependencies] = None
     ) -> None:
-        if self.trading_mode.synchronous_execution:
-            await self._submit_trading_evaluation_synchronous(
-                cryptocurrency=cryptocurrency,
-                symbol=symbol,
-                time_frame=time_frame,
-                final_note=final_note,
-                state=state.value,
-                data=data if data is not None else {},
-                dependencies=dependencies,
-            )
-        else:
-            await self.send(trading_mode_name=self.trading_mode.get_name(),
-                            cryptocurrency=cryptocurrency,
-                            symbol=symbol,
-                            time_frame=time_frame,
-                            final_note=final_note,
-                            state=state.value,
-                            data=data if data is not None else {},
-                            dependencies=dependencies)
-
-    async def _submit_trading_evaluation_synchronous(
-        self, cryptocurrency, symbol, time_frame,
-        final_note, state, data, dependencies
-    ) -> None:
-        """
-        Directly call consumers instead of using the channel queue.
-        Awaiting this completes after all consumers have finished.
-        """
-        consumers = self.channel.get_filtered_consumers(
+        await self.send(
             trading_mode_name=self.trading_mode.get_name(),
-            state=state,
             cryptocurrency=cryptocurrency,
             symbol=symbol,
             time_frame=time_frame,
+            final_note=final_note,
+            state=state.value,
+            data=data if data is not None else {},
+            dependencies=dependencies,
+            synchronous_execution=self.trading_mode.synchronous_execution
         )
-        if not consumers:
-            return
-        await asyncio.gather(*[
-            consumer.internal_callback(
-                trading_mode_name=self.trading_mode.get_name(),
-                cryptocurrency=cryptocurrency,
-                symbol=symbol,
-                time_frame=time_frame,
-                final_note=final_note,
-                state=state,
-                data=data,
-                dependencies=dependencies,
-            )
-            for consumer in consumers
-        ])
 
     @classmethod
     def get_should_cancel_loaded_orders(cls) -> bool:
