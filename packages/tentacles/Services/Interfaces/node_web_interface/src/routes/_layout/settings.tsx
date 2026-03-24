@@ -10,7 +10,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
   DialogContent,
@@ -31,7 +30,6 @@ export const Route = createFileRoute("/_layout/settings")({
 
 function LoggingCard() {
   const [enabled, setEnabled] = useState<boolean | null>(null)
-  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     fetch("/api/v1/nodes/config", { credentials: "include" })
@@ -39,24 +37,6 @@ function LoggingCard() {
       .then((data) => setEnabled(data.use_dedicated_log_file_per_automation ?? true))
       .catch(() => setEnabled(true))
   }, [])
-
-  const handleToggle = async (value: boolean) => {
-    setLoading(true)
-    try {
-      const res = await fetch("/api/v1/nodes/config", {
-        method: "PATCH",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ use_dedicated_log_file_per_automation: value }),
-      })
-      const data = await res.json()
-      setEnabled(data.use_dedicated_log_file_per_automation)
-    } catch {
-      // keep previous value on error
-    } finally {
-      setLoading(false)
-    }
-  }
 
   return (
     <Card>
@@ -70,20 +50,19 @@ function LoggingCard() {
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex flex-col gap-1">
-            <Label htmlFor="per-bot-logs">Per-bot log files</Label>
-            <span className="text-xs text-muted-foreground">
-              Write a dedicated log file for each bot run in <code>logs/automations/</code>.
-              Changes apply immediately but reset on restart.
-            </span>
-          </div>
-          <Checkbox
-            id="per-bot-logs"
-            checked={enabled ?? true}
-            disabled={enabled === null || loading}
-            onCheckedChange={(v) => handleToggle(Boolean(v))}
-          />
+        <div className="flex flex-col gap-1">
+          <Label>Per-bot log files</Label>
+          <span className="text-xs text-muted-foreground">
+            {enabled === null
+              ? "Loading…"
+              : enabled
+                ? "Enabled — a dedicated log file is written for each bot run."
+                : "Disabled — bot logs are written to the main log file."}
+          </span>
+          <span className="text-xs text-muted-foreground mt-1">
+            Configure via the <code>USE_DEDICATED_LOG_FILE_PER_AUTOMATION</code> environment variable
+            (<code>true</code> or <code>false</code>). Defaults to <code>true</code>.
+          </span>
         </div>
       </CardContent>
     </Card>
@@ -255,7 +234,6 @@ type NodeType = "standalone" | "master"
 
 function NodeTypeCard() {
   const [nodeType, setNodeType] = useState<NodeType | null>(null)
-  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     fetch("/api/v1/nodes/config", { credentials: "include" })
@@ -263,25 +241,6 @@ function NodeTypeCard() {
       .then((data) => setNodeType(data.node_type ?? "standalone"))
       .catch(() => setNodeType("standalone"))
   }, [])
-
-  const select = async (value: NodeType) => {
-    if (loading || value === nodeType) return
-    setLoading(true)
-    try {
-      const res = await fetch("/api/v1/nodes/config", {
-        method: "PATCH",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ node_type: value }),
-      })
-      const data = await res.json()
-      setNodeType(data.node_type)
-    } catch {
-      // keep previous value on error
-    } finally {
-      setLoading(false)
-    }
-  }
 
   return (
     <Card>
@@ -291,29 +250,32 @@ function NodeTypeCard() {
           Node type
         </CardTitle>
         <CardDescription>
-          Choose how this node runs.
+          How this node is configured to run.
         </CardDescription>
       </CardHeader>
-      <CardContent className="grid grid-cols-2 gap-3">
-        <button
-          disabled={loading || nodeType === null}
-          onClick={() => select("standalone")}
-          className={`flex flex-col items-center gap-2 rounded-lg border p-4 text-sm transition-colors ${
-            nodeType === "standalone"
-              ? "border-primary bg-primary/5 text-primary"
-              : "hover:border-primary/40 hover:bg-muted text-muted-foreground"
-          }`}
-        >
-          <Server className="size-6" />
-          Standalone
-        </button>
-        <div className="relative flex flex-col items-center gap-2 rounded-lg border p-4 text-sm opacity-50 cursor-not-allowed text-muted-foreground">
-          <Network className="size-6" />
-          Master / Replica
-          <span className="absolute -top-2 right-2 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground border">
-            Coming soon
-          </span>
+      <CardContent className="flex flex-col gap-3">
+        <div className="grid grid-cols-2 gap-3">
+          <div
+            className={`flex flex-col items-center gap-2 rounded-lg border p-4 text-sm ${
+              nodeType === "standalone"
+                ? "border-primary bg-primary/5 text-primary"
+                : "text-muted-foreground"
+            }`}
+          >
+            <Server className="size-6" />
+            Standalone
+          </div>
+          <div className="relative flex flex-col items-center gap-2 rounded-lg border p-4 text-sm opacity-50 cursor-not-allowed text-muted-foreground">
+            <Network className="size-6" />
+            Master / Replica
+            <span className="absolute -top-2 right-2 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground border">
+              Coming soon
+            </span>
+          </div>
         </div>
+        <span className="text-xs text-muted-foreground">
+          The node type can only be changed from the CLI. Use the <code>--node-type</code> flag when starting the node.
+        </span>
       </CardContent>
     </Card>
   )
