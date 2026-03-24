@@ -51,9 +51,9 @@ function SetupNodeType() {
     },
   })
 
-  const select = (nodeType: "standalone" | "master") => {
+  const select = () => {
     if (initMutation.isPending) return
-    initMutation.mutate(nodeType)
+    initMutation.mutate("standalone")
   }
 
   return (
@@ -61,17 +61,14 @@ function SetupNodeType() {
       <div className="flex w-full max-w-2xl flex-col gap-8">
         <div className="flex flex-col items-center gap-2 text-center">
           <p className="text-xs text-muted-foreground">Step 2 / 3</p>
-          <h1 className="text-2xl font-bold">Choose your node type</h1>
+          <h1 className="text-2xl font-bold">Node type</h1>
           <p className="text-sm text-muted-foreground">
-            You can change this later in settings.
+            Your node will be initialized as a standalone node.
           </p>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Card
-            className="cursor-pointer transition-colors hover:border-primary/60 hover:bg-primary/5"
-            onClick={() => select("standalone")}
-          >
+          <Card className="border-primary bg-primary/5">
             <CardHeader>
               <div className="flex justify-center pb-2">
                 <Server className="size-12 text-primary" />
@@ -82,8 +79,8 @@ function SetupNodeType() {
               </CardDescription>
             </CardHeader>
             <CardContent className="flex justify-end">
-              <Button disabled={initMutation.isPending} onClick={(e) => { e.stopPropagation(); select("standalone") }}>
-                Get started
+              <Button disabled={initMutation.isPending} onClick={select}>
+                Continue
               </Button>
             </CardContent>
           </Card>
@@ -108,6 +105,10 @@ function SetupNodeType() {
             </CardContent>
           </Card>
         </div>
+
+        <p className="text-center text-xs text-muted-foreground">
+          The node type can be changed later using the <code>--node-type</code> CLI flag.
+        </p>
       </div>
     </div>
   )

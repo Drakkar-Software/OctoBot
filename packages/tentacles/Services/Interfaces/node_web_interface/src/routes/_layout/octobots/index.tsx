@@ -34,6 +34,7 @@ function getTasksQueryOptions() {
   return {
     queryFn: () => TasksService.getTasks({ page: 1, limit: 100 }),
     queryKey: ["tasks"],
+    refetchInterval: 5_000,
   }
 }
 
