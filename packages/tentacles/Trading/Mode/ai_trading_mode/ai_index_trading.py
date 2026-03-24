@@ -29,6 +29,7 @@ import octobot_trading.api as trading_api
 import octobot_services.api.services as services_api
 import octobot_agents.constants as agent_constants
 import octobot_commons.constants as common_constants
+import octobot_copy.enums as copy_enums
 
 from tentacles.Trading.Mode.ai_trading_mode import ai_index_distribution
 from tentacles.Trading.Mode.index_trading_mode import index_trading
@@ -531,7 +532,7 @@ class AIIndexTradingModeProducer(index_trading.IndexTradingModeProducer):
             return {}
         
         return {
-            asset: float(data.get(index_trading.index_distribution.DISTRIBUTION_VALUE, 0))
+            asset: float(data.get(copy_enums.DistributionKeys.VALUE, 0))
             for asset, data in self.trading_mode.ratio_per_asset.items()
         }
     

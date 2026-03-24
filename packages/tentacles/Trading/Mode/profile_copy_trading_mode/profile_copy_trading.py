@@ -259,6 +259,7 @@ class ProfileCopyTradingModeProducer(index_trading_mode.IndexTradingModeProducer
 
     def __init__(self, channel, config, trading_mode, exchange_manager):
         super().__init__(channel, config, trading_mode, exchange_manager)
+        self.trading_mode: ProfileCopyTradingMode = typing.cast(ProfileCopyTradingMode, self.trading_mode)
         self.requires_initializing_appropriate_coins_distribution = False
         self.trading_mode.synchronization_policy = index_trading_mode.SynchronizationPolicy.SELL_REMOVED_DYNAMIC_INDEX_COINS_AS_SOON_AS_POSSIBLE
 

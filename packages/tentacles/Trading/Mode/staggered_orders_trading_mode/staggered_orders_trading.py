@@ -29,6 +29,7 @@ import octobot_commons.symbols.symbol_util as symbol_util
 import octobot_commons.data_util as data_util
 import octobot_commons.signals as commons_signals
 import octobot_trading.api as trading_api
+import octobot_trading.util as trading_util
 import octobot_trading.dsl as trading_dsl
 import octobot_trading.modes as trading_modes
 import octobot_trading.exchange_channel as exchanges_channel
@@ -296,7 +297,9 @@ class StaggeredOrdersTradingMode(trading_modes.AbstractTradingMode):
 
     @classmethod
     def get_dsl_dependencies(cls, trading_config: dict, config: dict) -> list:
-        symbols = cls.get_tentacle_config_traded_symbols(trading_config)
+        symbols = cls.get_tentacle_config_traded_symbols(
+            trading_config, trading_util.get_reference_market(config)
+        )
         if not symbols:
             return []
         return [trading_dsl.SymbolDependency(symbol=symbol) for symbol in symbols]

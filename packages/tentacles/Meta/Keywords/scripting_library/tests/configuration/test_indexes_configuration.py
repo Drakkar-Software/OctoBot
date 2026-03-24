@@ -17,7 +17,7 @@ import octobot_commons.profiles.profile_data as commons_profile_data
 import octobot_commons.constants as commons_constants
 
 import tentacles.Trading.Mode.index_trading_mode.index_trading as index_trading
-import tentacles.Trading.Mode.index_trading_mode.index_distribution as index_distribution
+import octobot_copy.enums as rebalancer_enums
 import tentacles.Meta.Keywords.scripting_library.configuration.indexes_configuration as indexes_configuration
 
 
@@ -25,16 +25,16 @@ def test_create_index_config_from_tentacles_config():
     # Create test distribution
     distribution = [
         {
-            index_distribution.DISTRIBUTION_NAME: "BTC",
-            index_distribution.DISTRIBUTION_VALUE: 50.0,
+            rebalancer_enums.DistributionKeys.NAME: "BTC",
+            rebalancer_enums.DistributionKeys.VALUE: 50.0,
         },
         {
-            index_distribution.DISTRIBUTION_NAME: "ETH",
-            index_distribution.DISTRIBUTION_VALUE: 30.0,
+            rebalancer_enums.DistributionKeys.NAME: "ETH",
+            rebalancer_enums.DistributionKeys.VALUE: 30.0,
         },
         {
-            index_distribution.DISTRIBUTION_NAME: "USD",  # Should be replaced by reference market
-            index_distribution.DISTRIBUTION_VALUE: 20.0,
+            rebalancer_enums.DistributionKeys.NAME: "USD",  # Should be replaced by reference market
+            rebalancer_enums.DistributionKeys.VALUE: 20.0,
         },
     ]
     
@@ -94,7 +94,7 @@ def test_create_index_config_from_tentacles_config():
     
     # Check that USD was replaced by reference market in distribution
     distribution_names = [
-        item[index_distribution.DISTRIBUTION_NAME] 
+        item[rebalancer_enums.DistributionKeys.NAME] 
         for item in result.tentacles[0].config[index_trading.IndexTradingModeProducer.INDEX_CONTENT]
     ]
     assert "USD" not in distribution_names
@@ -111,16 +111,16 @@ def test_generate_index_config():
     # Create test distribution
     distribution = [
         {
-            index_distribution.DISTRIBUTION_NAME: "BTC",
-            index_distribution.DISTRIBUTION_VALUE: 50.0,
+            rebalancer_enums.DistributionKeys.NAME: "BTC",
+            rebalancer_enums.DistributionKeys.VALUE: 50.0,
         },
         {
-            index_distribution.DISTRIBUTION_NAME: "ETH",
-            index_distribution.DISTRIBUTION_VALUE: 30.0,
+            rebalancer_enums.DistributionKeys.NAME: "ETH",
+            rebalancer_enums.DistributionKeys.VALUE: 30.0,
         },
         {
-            index_distribution.DISTRIBUTION_NAME: "USDT",
-            index_distribution.DISTRIBUTION_VALUE: 20.0,
+            rebalancer_enums.DistributionKeys.NAME: "USDT",
+            rebalancer_enums.DistributionKeys.VALUE: 20.0,
         },
     ]
     
@@ -196,7 +196,7 @@ def test_generate_index_config():
     assert config[index_trading.IndexTradingModeProducer.REBALANCE_TRIGGER_MIN_PERCENT] == rebalance_cap
     assert config[index_trading.IndexTradingModeProducer.SELECTED_REBALANCE_TRIGGER_PROFILE] == selected_rebalance_trigger_profile
     assert config[index_trading.IndexTradingModeProducer.REBALANCE_TRIGGER_PROFILES] == rebalance_trigger_profiles
-    assert config[index_trading.IndexTradingModeProducer.SYNCHRONIZATION_POLICY] == index_trading.SynchronizationPolicy.SELL_REMOVED_INDEX_COINS_ON_RATIO_REBALANCE.value
+    assert config[index_trading.IndexTradingModeProducer.SYNCHRONIZATION_POLICY] == rebalancer_enums.SynchronizationPolicy.SELL_REMOVED_INDEX_COINS_ON_RATIO_REBALANCE.value
     assert config[index_trading.IndexTradingModeProducer.SELL_UNINDEXED_TRADED_COINS] is True
     assert config[index_trading.IndexTradingModeProducer.REFRESH_INTERVAL] == 1
     

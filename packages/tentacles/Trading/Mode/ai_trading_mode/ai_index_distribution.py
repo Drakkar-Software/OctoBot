@@ -16,7 +16,7 @@
 
 import decimal
 
-import tentacles.Trading.Mode.index_trading_mode.index_distribution as index_distribution
+import octobot_copy.enums as copy_enums
 
 from tentacles.Agent.sub_agents.distribution_agent.constants import (
     INSTRUCTION_ACTION,
@@ -45,9 +45,9 @@ def apply_ai_instructions(trading_mode, instructions: list):
         if trading_mode.ratio_per_asset:
             for asset, item in trading_mode.ratio_per_asset.items():
                 current_distribution[asset] = item[
-                    index_distribution.DISTRIBUTION_VALUE
+                    copy_enums.DistributionKeys.VALUE
                 ]
-                total_weight += decimal.Decimal(str(item[index_distribution.DISTRIBUTION_VALUE]))
+                total_weight += decimal.Decimal(str(item[copy_enums.DistributionKeys.VALUE]))
 
         # Apply instructions
         for instruction in instructions:
@@ -98,8 +98,8 @@ def apply_ai_instructions(trading_mode, instructions: list):
         # Update trading_mode.ratio_per_asset
         trading_mode.ratio_per_asset = {
             asset: {
-                index_distribution.DISTRIBUTION_NAME: asset,
-                index_distribution.DISTRIBUTION_VALUE: weight,
+                copy_enums.DistributionKeys.NAME: asset,
+                copy_enums.DistributionKeys.VALUE: weight,
             }
             for asset, weight in current_distribution.items()
         }

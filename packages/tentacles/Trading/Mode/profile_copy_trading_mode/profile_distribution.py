@@ -24,6 +24,7 @@ import octobot_commons.constants as commons_constants
 import octobot_commons.symbols as symbols_util
 
 import tentacles.Trading.Mode.index_trading_mode.index_distribution as index_distribution
+import octobot_copy.enums as copy_enums
 
 if typing.TYPE_CHECKING:
     import tentacles.Services.Services_feeds.exchange_service_feed as exchange_service_feed
@@ -355,22 +356,22 @@ def update_global_distribution(
         total_effective_allocation += effective_profile_ratio
 
         ratio_per_asset = {
-            asset[index_distribution.DISTRIBUTION_NAME]: asset
+            asset[copy_enums.DistributionKeys.NAME]: asset
             for asset in distribution
         }
 
         for asset_name, asset_dict in ratio_per_asset.items():
-            distribution_value = decimal.Decimal(str(asset_dict[index_distribution.DISTRIBUTION_VALUE]))
+            distribution_value = decimal.Decimal(str(asset_dict[copy_enums.DistributionKeys.VALUE]))
             weighted_value = distribution_value * effective_profile_ratio
-            distribution_price = asset_dict.get(index_distribution.DISTRIBUTION_PRICE)
+            distribution_price = asset_dict.get(copy_enums.DistributionKeys.PRICE)
 
             if asset_name in merged_ratio_per_asset:
-                existing_value = decimal.Decimal(str(merged_ratio_per_asset[asset_name][index_distribution.DISTRIBUTION_VALUE]))
-                merged_ratio_per_asset[asset_name][index_distribution.DISTRIBUTION_VALUE] = existing_value + weighted_value
+                existing_value = decimal.Decimal(str(merged_ratio_per_asset[asset_name][copy_enums.DistributionKeys.VALUE]))
+                merged_ratio_per_asset[asset_name][copy_enums.DistributionKeys.VALUE] = existing_value + weighted_value
             else:
                 merged_ratio_per_asset[asset_name] = {
-                    index_distribution.DISTRIBUTION_NAME: asset_dict[index_distribution.DISTRIBUTION_NAME],
-                    index_distribution.DISTRIBUTION_VALUE: weighted_value
+                    copy_enums.DistributionKeys.NAME: asset_dict[copy_enums.DistributionKeys.NAME],
+                    copy_enums.DistributionKeys.VALUE: weighted_value
                 }
 
             if distribution_price is not None:
@@ -389,11 +390,11 @@ def update_global_distribution(
 
     ratio_per_asset = merged_ratio_per_asset
     total_ratio_per_asset = sum(
-        decimal.Decimal(str(asset[index_distribution.DISTRIBUTION_VALUE]))
+        decimal.Decimal(str(asset[copy_enums.DistributionKeys.VALUE]))
         for asset in ratio_per_asset.values()
     )
     indexed_coins = [
-        asset[index_distribution.DISTRIBUTION_NAME]
+        asset[copy_enums.DistributionKeys.NAME]
         for asset in ratio_per_asset.values()
     ]
 
