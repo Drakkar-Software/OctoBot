@@ -1,4 +1,9 @@
 ---
+- name: Restart Docker to rebuild iptables chains after firewall changes
+  ansible.builtin.service:
+    name: docker
+    state: restarted
+
 - name: Create deploy directory
   ansible.builtin.file:
     path: "{{ stack_deploy_dir }}"
