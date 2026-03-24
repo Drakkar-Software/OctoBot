@@ -284,7 +284,11 @@ async def test_rebalance_with_pending_open_orders(tools):
             return decimal.Decimal("0") if include_assets_in_open_orders else decimal.Decimal("0.2")
         return decimal.Decimal("0")
 
-    with mock.patch.object(producer, "get_holdings_ratio", mock.Mock(side_effect=_fake_get_holdings_ratio)):
+    with mock.patch.object(
+        mode.rebalance_actions_planner._client,
+        "get_holdings_ratio",
+        mock.Mock(side_effect=_fake_get_holdings_ratio),
+    ):
         should_rebalance, details = producer._get_rebalance_details()
     # Without open orders we should have rebalanced
     # As we have open orders using USDT, the rebalance should not be triggered as the current ratio is 0.2 which is above the threshold of 0.1

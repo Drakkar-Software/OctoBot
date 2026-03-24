@@ -20,18 +20,17 @@ import octobot_commons.signals as commons_signals
 import octobot_trading.constants as trading_constants
 import octobot_trading.enums as trading_enums
 import octobot_trading.errors as trading_errors
-import octobot_trading.modes as trading_modes
-import octobot_trading.personal_data as trading_personal_data
 
 import octobot_copy.rebalancing.rebalancer.rebalancer as base_rebalancer
 
 
 class SpotRebalancer(base_rebalancer.AbstractRebalancer):
+
     async def prepare_coin_rebalancing(self, coin: str):
         # Nothing to do in SPOT
         pass
 
-    async def buy_coin(
+    async def _buy_coin(
         self,
         symbol: str,
         ideal_amount: decimal.Decimal,
@@ -39,8 +38,7 @@ class SpotRebalancer(base_rebalancer.AbstractRebalancer):
         dependencies: typing.Optional[commons_signals.SignalDependencies]
     ) -> list:
         current_symbol_holding, current_market_holding, market_quantity, current_price, symbol_market = \
-            await trading_personal_data.get_pre_order_data(
-                self.trading_mode.exchange_manager,
+            await self._exchange_interface.private_data.get_pre_order_data(
                 symbol=symbol,
                 timeout=trading_constants.ORDER_DATA_FETCHING_TIMEOUT
             )
@@ -48,51 +46,31 @@ class SpotRebalancer(base_rebalancer.AbstractRebalancer):
         # ideally use the expected reference_market_available_holdings ratio, fallback to available
         # holdings if necessary
         target_quantity = min(ideal_amount, current_market_holding / order_target_price)
-        effective_current_symbol_holding = current_symbol_holding + self.get_pending_open_quantity(symbol)
+        effective_current_symbol_holding = current_symbol_holding + self._get_pending_open_quantity(symbol)
         ideal_quantity = target_quantity - effective_current_symbol_holding
         if ideal_quantity <= trading_constants.ZERO:
             return []
-        quantity = trading_personal_data.decimal_adapt_order_quantity_because_fees(
-            self.trading_mode.exchange_manager, symbol, trading_enums.TraderOrderType.BUY_MARKET, ideal_quantity,
-            order_target_price, trading_enums.TradeOrderSide.BUY
-        )
-        created_orders = []
         is_price_close_to_market = order_target_price >= current_price * (decimal.Decimal(1) - self.PRICE_THRESHOLD_TO_USE_MARKET_ORDER)
-        orders_should_have_been_created = False
         ideal_order_type = trading_enums.TraderOrderType.BUY_MARKET if is_price_close_to_market else trading_enums.TraderOrderType.BUY_LIMIT
         order_type = (
             ideal_order_type
-            if self.trading_mode.exchange_manager.exchange.is_market_open_for_order_type(symbol, ideal_order_type)
+            if self._exchange_interface.public_data.is_market_open_for_order_type(symbol, ideal_order_type)
             else trading_enums.TraderOrderType.BUY_LIMIT
         )
 
-        if trading_personal_data.get_trade_order_type(order_type) is not trading_enums.TradeOrderType.MARKET:
-            # can't use market orders: use limit orders with price a bit above the current price to instant fill it.
-            order_target_price, quantity = \
-                trading_modes.get_instantly_filled_limit_order_adapted_price_and_quantity(
-                    order_target_price, quantity, order_type
-                )
-
-        for order_quantity, order_price in trading_personal_data.decimal_check_and_adapt_order_details_if_necessary(
-            quantity,
+        created_orders, orders_should_have_been_created = await self._exchange_interface.private_data.create_orders(
+            order_type,
+            symbol,
+            current_price,
+            ideal_quantity,
             order_target_price,
-            symbol_market
-        ):
-            orders_should_have_been_created = True
-            current_order = trading_personal_data.create_order_instance(
-                trader=self.trading_mode.exchange_manager.trader,
-                order_type=order_type,
-                symbol=symbol,
-                current_price=current_price,
-                quantity=order_quantity,
-                price=order_price,
-            )
-            created_order = await self.trading_mode.create_order(current_order, dependencies=dependencies)
-            created_orders.append(created_order)
+            symbol_market,
+            dependencies=dependencies,
+        )
         if created_orders:
             return created_orders
-        if self.trading_mode.allow_skip_asset:
-            self.logger.warning(f"Skipping {symbol} order creation...")
+        if self._rebalancing_client.allow_skip_asset:
+            self._get_logger().warning(f"Skipping {symbol} order creation...")
             return []
         if orders_should_have_been_created:
             raise trading_errors.OrderCreationError()
