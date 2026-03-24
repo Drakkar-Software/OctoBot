@@ -411,28 +411,12 @@ class IndexTradingMode(trading_modes.AbstractTradingMode):
             client_name=self.get_name(),
             reference_market=self.exchange_manager.exchange_personal_data.portfolio_manager.reference_market,
             min_order_size_margin=self.min_order_size_margin,
-            get_holdings_ratio=self._portfolio_holdings_ratio,
             get_config=lambda: self.trading_config,
             get_previous_config=lambda: self.previous_trading_config,
             get_historical_configs=lambda ft, tt: self.get_historical_configs(ft, tt),
             get_ideal_distribution=self.get_ideal_distribution,
             get_allow_skip_asset=lambda: self.allow_skip_asset,
         )
-
-    def _portfolio_holdings_ratio(
-        self,
-        coin: str,
-        traded_symbols_only: bool = False,
-        include_assets_in_open_orders=False,
-        coins_whitelist: typing.Optional[list] = None,
-    ) -> decimal.Decimal:
-        return self.exchange_manager.exchange_personal_data.portfolio_manager. \
-            portfolio_value_holder.get_holdings_ratio(
-                coin,
-                traded_symbols_only=traded_symbols_only,
-                include_assets_in_open_orders=include_assets_in_open_orders,
-                coins_whitelist=coins_whitelist,
-            )
 
     @property
     def ratio_per_asset(self) -> dict:

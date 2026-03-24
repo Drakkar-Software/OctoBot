@@ -24,7 +24,6 @@ class RebalancingClientInterface:
         client_name: str,
         reference_market: str,
         min_order_size_margin: decimal.Decimal,
-        get_holdings_ratio: typing.Callable[..., decimal.Decimal],
         get_config: typing.Callable[[], typing.Optional[dict]],
         get_previous_config: typing.Callable[[], typing.Optional[dict]],
         get_historical_configs: typing.Callable[[float, float], list],
@@ -37,7 +36,6 @@ class RebalancingClientInterface:
         self.min_order_size_margin: decimal.Decimal = min_order_size_margin
 
         # dynamic values
-        self.get_holdings_ratio = get_holdings_ratio
         self.get_config = get_config
         self.get_previous_config = get_previous_config
         self.get_historical_configs = get_historical_configs
