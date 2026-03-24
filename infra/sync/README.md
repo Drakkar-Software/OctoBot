@@ -26,8 +26,8 @@ cp hosts.yml.example inventories/development/hosts.yml
 
 # 4. Set up SSH key
 mkdir -p inventories/development/.ssh
-cp ~/.ssh/id_rsa inventories/development/.ssh/id_rsa
-chmod 600 inventories/development/.ssh/id_rsa
+cp ~/.ssh/id_ed25519 inventories/development/.ssh/id_ed25519
+chmod 600 inventories/development/.ssh/id_ed25519
 
 # 5. Fill in real values
 vim inventories/development/hosts.yml                 # node IPs, zones, capacity
@@ -97,20 +97,20 @@ All secrets are managed via [Ansible Vault](https://docs.ansible.com/ansible/lat
 
 ### SSH keys per environment
 
-Each environment has its own SSH key at `inventories/<env>/.ssh/id_rsa` (gitignored):
+Each environment has its own SSH key at `inventories/<env>/.ssh/id_ed25519` (gitignored):
 
 ```bash
 mkdir -p inventories/production/.ssh
-ssh-keygen -t ed25519 -f inventories/production/.ssh/id_rsa -N ""
+ssh-keygen -t ed25519 -f inventories/production/.ssh/id_ed25519 -N ""
 # Copy the public key to your nodes:
-ssh-copy-id -i inventories/production/.ssh/id_rsa.pub deploy@node-ip
+ssh-copy-id -i inventories/production/.ssh/id_ed25519.pub deploy@node-ip
 ```
 
 When deploying to a non-default environment, pass the key explicitly:
 
 ```bash
 ansible-playbook playbooks/site.yml -i inventories/production \
-  --private-key inventories/production/.ssh/id_rsa
+  --private-key inventories/production/.ssh/id_ed25519
 ```
 
 ### Encrypted files per environment
@@ -274,9 +274,59 @@ Required GitHub secrets:
 
 | Secret | Purpose |
 |---|---|
-| `SYNC_DEPLOY_SSH_KEY` | Ed25519 private key for the `deploy` user on VPS nodes |
-| `SYNC_ANSIBLE_VAULT_PASSWORD` | Vault password for decrypting secrets |
-| `SYNC_NODE_IPS` | Space-separated list of node IPs (for ssh-keyscan) |
+| `ANSIBLE_SSH_KEY` | Ed25519 private key for the `deploy` user on VPS nodes |
+| `ANSIBLE_VAULT_PASSWORD` | Vault password for decrypting secrets |
+
+### Generating the CI/CD SSH key
+
+Generate a dedicated ed25519 key pair (no passphrase — Actions reads it directly):
+
+```bash
+ssh-keygen -t ed25519 -C "github-actions-deploy" -f /tmp/deploy_ed25519 -N ""
+```
+
+Add the **private key** as the `ANSIBLE_SSH_KEY` GitHub secret (the exact contents of `/tmp/deploy_ed25519`).
+
+On each VPS node, append the **public key** to `~/.ssh/authorized_keys` with forwarding disabled.
+
+```bash
+export NODE_IP=<ip> SSH_USER=<user>
+echo "no-port-forwarding,no-X11-forwarding,no-agent-forwarding $(cat /tmp/deploy_ed25519.pub)" | ssh -i ~/.ssh/ed25519 $SSH_USER@$NODE_IP "tee -a ~/.ssh/authorized_keys"
+```
+
+### GitHub Environment protection
+
+Store `ANSIBLE_SSH_KEY` and `ANSIBLE_VAULT_PASSWORD` inside a **GitHub Environment** (e.g., `production`) rather than as plain repository secrets. Configure the environment with:
+
+- **Required reviewers** — at least one approver before a deployment can proceed
+- **Branch restrictions** — only allow deployments from `master` (or your release branch)
+
+This ensures the key is never exposed to workflows triggered by pull requests from forks or arbitrary branches.
+
+## Admin: Fetching a specific file from S3 (local access)
+
+`/garage` (inside the container) is the cluster management tool — it has no S3 file download command. Use `awscli` from the host pointed at the Garage S3 API on `localhost:3900`, with credentials from the vault.
+
+```bash
+# Install awscli
+pip install awscli
+
+# Configure Garage credentials (values from vault.yml)
+aws configure set aws_access_key_id "<vault_s3_access_key>"
+aws configure set aws_secret_access_key "<vault_s3_secret_key>"
+aws configure set default.region garage
+
+# List buckets
+aws s3 ls --endpoint-url http://localhost:3900
+
+# List objects under a prefix (to find the exact key path)
+aws s3 ls "s3://<bucket>/<optional/prefix>" --endpoint-url http://localhost:3900
+
+# Download a specific object
+aws s3 cp "s3://<bucket>/<path/to/object>" /tmp/fetched_file --endpoint-url http://localhost:3900
+```
+
+> **Tip:** Port 3900 is the Garage S3 API — it listens only on localhost and is not exposed publicly. S3 credentials (`vault_s3_access_key` / `vault_s3_secret_key`) come from the Ansible vault.
 
 ## Nginx caching
 
