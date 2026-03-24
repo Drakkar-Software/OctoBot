@@ -25,7 +25,7 @@ import octobot_trading.enums as trading_enums
 import octobot_copy.enums as rebalancer_enums
 import octobot_copy.errors as copy_errors
 import octobot_copy.exchange.exchange_interface as copy_exchange
-import octobot_copy.rebalancing.planner.rebalance_actions_planner as rebalance_actions_planner
+import octobot_copy.rebalancing.planner.rebalance_actions_planner as rebalance_actions_planner_import
 import octobot_copy.rebalancing.rebalancing_client_interface as rebalancing_client_interface
 
 
@@ -41,14 +41,14 @@ class AbstractRebalancer:
         self,
         exchange_interface: copy_exchange.ExchangeInterface,
         rebalancing_client: rebalancing_client_interface.RebalancingClientInterface,
-        rebalance_actions_planner: rebalance_actions_planner.RebalanceActionsPlanner,
+        rebalance_actions_planner: rebalance_actions_planner_import.RebalanceActionsPlanner,
         target_coins_prices: dict,
     ):
-        self._exchange_interface = exchange_interface
-        self._rebalancing_client = rebalancing_client
-        self._rebalance_actions_planner = rebalance_actions_planner
-        self._target_coins_prices = target_coins_prices
-        self._already_logged_aborted_rebalance_error = False
+        self._exchange_interface: copy_exchange.ExchangeInterface = exchange_interface
+        self._rebalancing_client: rebalancing_client_interface.RebalancingClientInterface = rebalancing_client
+        self._rebalance_actions_planner: rebalance_actions_planner_import.RebalanceActionsPlanner = rebalance_actions_planner
+        self._target_coins_prices: dict[str, decimal.Decimal] = target_coins_prices
+        self._already_logged_aborted_rebalance_error: bool = False
 
     async def prepare_coin_rebalancing(self, coin: str):
         raise NotImplementedError("prepare_coin_rebalancing is not implemented")
@@ -68,7 +68,7 @@ class AbstractRebalancer:
 
     async def sell_targeted_coins_for_reference_market(
         self,
-        details: dict,
+        details: dict[str, typing.Any],
         dependencies: typing.Optional[commons_signals.SignalDependencies]
     ) -> list:
         """
@@ -84,7 +84,7 @@ class AbstractRebalancer:
             await self._exchange_interface.private_data.wait_for_orders_to_fill(orders)
         return orders
 
-    def can_simply_buy_coins_without_selling(self, details: dict) -> bool:
+    def can_simply_buy_coins_without_selling(self, details: dict[str, typing.Any]) -> bool:
         """
         Returns True when it is possible to just buy the targeted coins
         without selling any other coins.
@@ -106,7 +106,7 @@ class AbstractRebalancer:
 
     async def split_reference_market_into_targeted_coins(
         self,
-        details: dict,
+        details: dict[str, typing.Any],
         is_simple_buy_without_selling: bool,
         dependencies: typing.Optional[commons_signals.SignalDependencies],
     ) -> list:
@@ -183,7 +183,7 @@ class AbstractRebalancer:
         """
         raise NotImplementedError("_buy_coin is not implemented")
 
-    async def _get_removed_coins_to_sell_orders(self, details: dict, dependencies: typing.Optional[commons_signals.SignalDependencies]) -> list:
+    async def _get_removed_coins_to_sell_orders(self, details: dict[str, typing.Any], dependencies: typing.Optional[commons_signals.SignalDependencies]) -> list:
         removed_coins_to_sell_orders = []
         if removed_coins_to_sell := list(details[rebalancer_enums.RebalanceDetails.REMOVE.value]):
             removed_coins_to_sell_orders = await self._exchange_interface.private_data.convert_assets_to_target_asset(
@@ -194,7 +194,7 @@ class AbstractRebalancer:
             )
         return removed_coins_to_sell_orders
 
-    async def _get_coins_to_sell_orders(self, details: dict, dependencies: typing.Optional[commons_signals.SignalDependencies]) -> list:
+    async def _get_coins_to_sell_orders(self, details: dict[str, typing.Any], dependencies: typing.Optional[commons_signals.SignalDependencies]) -> list:
         order_coins_to_sell = self._get_coins_to_sell(details)
         coins_to_sell_orders = await self._exchange_interface.private_data.convert_assets_to_target_asset(
             order_coins_to_sell,
@@ -206,7 +206,7 @@ class AbstractRebalancer:
 
     async def _validate_sold_removed_assets(
         self,
-        details: dict,
+        details: dict[str, typing.Any],
         removed_orders: typing.Optional[list] = None
     ) -> None:
         if (
@@ -238,7 +238,7 @@ class AbstractRebalancer:
                     f"not enough {list(details[rebalancer_enums.RebalanceDetails.REMOVE.value])} funds to sell"
                 )
 
-    def _get_simple_buy_coins(self, details: dict) -> list:
+    def _get_simple_buy_coins(self, details: dict[str, typing.Any]) -> list:
         # Returns the list of coins to simply buy.
         # Used to avoid a full rebalance when coins are seen as added to a basket
         # AND funds are available to buy it AND no asset should be sold
@@ -346,7 +346,7 @@ class AbstractRebalancer:
             }
         return amount_by_symbol
 
-    def _get_coins_to_sell(self, details: dict) -> list:
+    def _get_coins_to_sell(self, details: dict[str, typing.Any]) -> list:
         return list(details[rebalancer_enums.RebalanceDetails.SWAP.value]) or (
             self._rebalance_actions_planner.targeted_coins
         )
@@ -366,7 +366,7 @@ class AbstractRebalancer:
 
     async def _pre_cancel_conflicting_orders(
         self,
-        details: dict,
+        details: dict[str, typing.Any],
         dependencies: typing.Optional[commons_signals.SignalDependencies],
         side: trading_enums.TradeOrderSide
     ) -> None:
@@ -378,7 +378,7 @@ class AbstractRebalancer:
                 allowed_sides={side}
             )
 
-    def _get_pre_cancel_order_symbols(self, details: dict, side: trading_enums.TradeOrderSide) -> set[str]:
+    def _get_pre_cancel_order_symbols(self, details: dict[str, typing.Any], side: trading_enums.TradeOrderSide) -> set[str]:
         symbols_to_cleanup: set[str] = set()
         keys = self._get_rebalance_details_keys_for_side(side)
 

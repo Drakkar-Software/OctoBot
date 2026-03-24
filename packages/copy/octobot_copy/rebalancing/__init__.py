@@ -27,6 +27,7 @@ from octobot_copy.rebalancing.planner import (
     RebalanceActionsPlanner,
     get_uniform_distribution,
 )
+from octobot_copy.rebalancing.rebalancing_client_interface import RebalancingClientInterface
 
 __all__ = [
     "AbstractRebalancer",
@@ -38,4 +39,5 @@ __all__ = [
     "SIMPLE_ADD_MIN_TOLERANCE_RATIO",
     "RebalanceActionsPlanner",
     "get_uniform_distribution",
+    "RebalancingClientInterface",
 ]

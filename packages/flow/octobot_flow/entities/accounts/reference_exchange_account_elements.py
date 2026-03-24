@@ -13,8 +13,6 @@ import octobot_flow.enums
 import octobot_flow.entities.accounts.account_elements as account_elements_import
 
 
-
-
 @dataclasses.dataclass
 class ReferenceExchangeAccountElements(account_elements_import.AccountElements):
     """
