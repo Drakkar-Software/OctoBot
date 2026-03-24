@@ -212,6 +212,9 @@ class Symbol:
     def __str__(self):
         return self.symbol_str
 
+    def __repr__(self):
+        return str(self)
+
 
 def _parse_symbol_full(full_symbol_regex, symbol_str):
     return re.search(full_symbol_regex, symbol_str).groups()

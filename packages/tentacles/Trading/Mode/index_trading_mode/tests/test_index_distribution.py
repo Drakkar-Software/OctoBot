@@ -2,6 +2,7 @@ import decimal
 import pytest
 
 import tentacles.Trading.Mode.index_trading_mode.index_distribution as index_distribution
+import octobot_copy.enums as copy_enums
 
 
 def test_get_uniform_distribution():
@@ -11,24 +12,24 @@ def test_get_uniform_distribution():
         {"BTC": decimal.Decimal("50000"), "1": decimal.Decimal("100"), "2": decimal.Decimal("200"), "3": decimal.Decimal("300")}
     ) == [
         {
-            index_distribution.DISTRIBUTION_NAME: "BTC",
-            index_distribution.DISTRIBUTION_VALUE: 25,
-            index_distribution.DISTRIBUTION_PRICE: decimal.Decimal("50000"),
+            copy_enums.DistributionKeys.NAME: "BTC",
+            copy_enums.DistributionKeys.VALUE: 25,
+            copy_enums.DistributionKeys.PRICE: decimal.Decimal("50000"),
         },
         {
-            index_distribution.DISTRIBUTION_NAME: "1",
-            index_distribution.DISTRIBUTION_VALUE: 25,
-            index_distribution.DISTRIBUTION_PRICE: decimal.Decimal("100"),
+            copy_enums.DistributionKeys.NAME: "1",
+            copy_enums.DistributionKeys.VALUE: 25,
+            copy_enums.DistributionKeys.PRICE: decimal.Decimal("100"),
         },
         {
-            index_distribution.DISTRIBUTION_NAME: "2",
-            index_distribution.DISTRIBUTION_VALUE: 25,
-            index_distribution.DISTRIBUTION_PRICE: decimal.Decimal("200"),
+            copy_enums.DistributionKeys.NAME: "2",
+            copy_enums.DistributionKeys.VALUE: 25,
+            copy_enums.DistributionKeys.PRICE: decimal.Decimal("200"),
         },
         {
-            index_distribution.DISTRIBUTION_NAME: "3",
-            index_distribution.DISTRIBUTION_VALUE: 25,
-            index_distribution.DISTRIBUTION_PRICE: decimal.Decimal("300"),
+            copy_enums.DistributionKeys.NAME: "3",
+            copy_enums.DistributionKeys.VALUE: 25,
+            copy_enums.DistributionKeys.PRICE: decimal.Decimal("300"),
         }
     ]
     assert index_distribution.get_uniform_distribution(
@@ -36,19 +37,19 @@ def test_get_uniform_distribution():
         {"BTC": decimal.Decimal("50000"), "1": decimal.Decimal("100"), "2": decimal.Decimal("200")}
     ) == [
         {
-            index_distribution.DISTRIBUTION_NAME: "BTC",
-            index_distribution.DISTRIBUTION_VALUE: 33.3,
-            index_distribution.DISTRIBUTION_PRICE: decimal.Decimal("50000"),
+            copy_enums.DistributionKeys.NAME: "BTC",
+            copy_enums.DistributionKeys.VALUE: 33.3,
+            copy_enums.DistributionKeys.PRICE: decimal.Decimal("50000"),
         },
         {
-            index_distribution.DISTRIBUTION_NAME: "1",
-            index_distribution.DISTRIBUTION_VALUE: 33.3,
-            index_distribution.DISTRIBUTION_PRICE: decimal.Decimal("100"),
+            copy_enums.DistributionKeys.NAME: "1",
+            copy_enums.DistributionKeys.VALUE: 33.3,
+            copy_enums.DistributionKeys.PRICE: decimal.Decimal("100"),
         },
         {
-            index_distribution.DISTRIBUTION_NAME: "2",
-            index_distribution.DISTRIBUTION_VALUE: 33.3,
-            index_distribution.DISTRIBUTION_PRICE: decimal.Decimal("200"),
+            copy_enums.DistributionKeys.NAME: "2",
+            copy_enums.DistributionKeys.VALUE: 33.3,
+            copy_enums.DistributionKeys.PRICE: decimal.Decimal("200"),
         },
     ]
     # Test when price_by_coin is None
@@ -57,19 +58,19 @@ def test_get_uniform_distribution():
         None
     ) == [
         {
-            index_distribution.DISTRIBUTION_NAME: "BTC",
-            index_distribution.DISTRIBUTION_VALUE: 33.3,
-            index_distribution.DISTRIBUTION_PRICE: None,
+            copy_enums.DistributionKeys.NAME: "BTC",
+            copy_enums.DistributionKeys.VALUE: 33.3,
+            copy_enums.DistributionKeys.PRICE: None,
         },
         {
-            index_distribution.DISTRIBUTION_NAME: "1",
-            index_distribution.DISTRIBUTION_VALUE: 33.3,
-            index_distribution.DISTRIBUTION_PRICE: None,
+            copy_enums.DistributionKeys.NAME: "1",
+            copy_enums.DistributionKeys.VALUE: 33.3,
+            copy_enums.DistributionKeys.PRICE: None,
         },
         {
-            index_distribution.DISTRIBUTION_NAME: "2",
-            index_distribution.DISTRIBUTION_VALUE: 33.3,
-            index_distribution.DISTRIBUTION_PRICE: None,
+            copy_enums.DistributionKeys.NAME: "2",
+            copy_enums.DistributionKeys.VALUE: 33.3,
+            copy_enums.DistributionKeys.PRICE: None,
         },
     ]
     # Test when some coins are not in price_by_coin
@@ -78,24 +79,24 @@ def test_get_uniform_distribution():
         {"BTC": decimal.Decimal("50000"), "1": decimal.Decimal("100")}
     ) == [
         {
-            index_distribution.DISTRIBUTION_NAME: "BTC",
-            index_distribution.DISTRIBUTION_VALUE: 25,
-            index_distribution.DISTRIBUTION_PRICE: decimal.Decimal("50000"),
+            copy_enums.DistributionKeys.NAME: "BTC",
+            copy_enums.DistributionKeys.VALUE: 25,
+            copy_enums.DistributionKeys.PRICE: decimal.Decimal("50000"),
         },
         {
-            index_distribution.DISTRIBUTION_NAME: "1",
-            index_distribution.DISTRIBUTION_VALUE: 25,
-            index_distribution.DISTRIBUTION_PRICE: decimal.Decimal("100"),
+            copy_enums.DistributionKeys.NAME: "1",
+            copy_enums.DistributionKeys.VALUE: 25,
+            copy_enums.DistributionKeys.PRICE: decimal.Decimal("100"),
         },
         {
-            index_distribution.DISTRIBUTION_NAME: "2",
-            index_distribution.DISTRIBUTION_VALUE: 25,
-            index_distribution.DISTRIBUTION_PRICE: None,
+            copy_enums.DistributionKeys.NAME: "2",
+            copy_enums.DistributionKeys.VALUE: 25,
+            copy_enums.DistributionKeys.PRICE: None,
         },
         {
-            index_distribution.DISTRIBUTION_NAME: "3",
-            index_distribution.DISTRIBUTION_VALUE: 25,
-            index_distribution.DISTRIBUTION_PRICE: None,
+            copy_enums.DistributionKeys.NAME: "3",
+            copy_enums.DistributionKeys.VALUE: 25,
+            copy_enums.DistributionKeys.PRICE: None,
         }
     ]
 
@@ -115,24 +116,24 @@ def test_get_linear_distribution():
         "3": decimal.Decimal("300")
     }) == [
         {
-            index_distribution.DISTRIBUTION_NAME: "BTC",
-            index_distribution.DISTRIBUTION_VALUE: 68.4,
-            index_distribution.DISTRIBUTION_PRICE: decimal.Decimal("50000"),
+            copy_enums.DistributionKeys.NAME: "BTC",
+            copy_enums.DistributionKeys.VALUE: 68.4,
+            copy_enums.DistributionKeys.PRICE: decimal.Decimal("50000"),
         },
         {
-            index_distribution.DISTRIBUTION_NAME: "1",
-            index_distribution.DISTRIBUTION_VALUE: 6.7,
-            index_distribution.DISTRIBUTION_PRICE: decimal.Decimal("100"),
+            copy_enums.DistributionKeys.NAME: "1",
+            copy_enums.DistributionKeys.VALUE: 6.7,
+            copy_enums.DistributionKeys.PRICE: decimal.Decimal("100"),
         },
         {
-            index_distribution.DISTRIBUTION_NAME: "2",
-            index_distribution.DISTRIBUTION_VALUE: 0.2,
-            index_distribution.DISTRIBUTION_PRICE: decimal.Decimal("200"),
+            copy_enums.DistributionKeys.NAME: "2",
+            copy_enums.DistributionKeys.VALUE: 0.2,
+            copy_enums.DistributionKeys.PRICE: decimal.Decimal("200"),
         },
         {
-            index_distribution.DISTRIBUTION_NAME: "3",
-            index_distribution.DISTRIBUTION_VALUE: 24.7,
-            index_distribution.DISTRIBUTION_PRICE: decimal.Decimal("300"),
+            copy_enums.DistributionKeys.NAME: "3",
+            copy_enums.DistributionKeys.VALUE: 24.7,
+            copy_enums.DistributionKeys.PRICE: decimal.Decimal("300"),
         }
     ]
     assert index_distribution.get_linear_distribution({
@@ -145,19 +146,19 @@ def test_get_linear_distribution():
         "3": decimal.Decimal("300")
     }) == [
         {
-            index_distribution.DISTRIBUTION_NAME: "BTC",
-            index_distribution.DISTRIBUTION_VALUE: 2.8,
-            index_distribution.DISTRIBUTION_PRICE: decimal.Decimal("50000"),
+            copy_enums.DistributionKeys.NAME: "BTC",
+            copy_enums.DistributionKeys.VALUE: 2.8,
+            copy_enums.DistributionKeys.PRICE: decimal.Decimal("50000"),
         },
         {
-            index_distribution.DISTRIBUTION_NAME: "1",
-            index_distribution.DISTRIBUTION_VALUE: 0,
-            index_distribution.DISTRIBUTION_PRICE: decimal.Decimal("100"),
+            copy_enums.DistributionKeys.NAME: "1",
+            copy_enums.DistributionKeys.VALUE: 0,
+            copy_enums.DistributionKeys.PRICE: decimal.Decimal("100"),
         },
         {
-            index_distribution.DISTRIBUTION_NAME: "3",
-            index_distribution.DISTRIBUTION_VALUE: 97.2,
-            index_distribution.DISTRIBUTION_PRICE: decimal.Decimal("300"),
+            copy_enums.DistributionKeys.NAME: "3",
+            copy_enums.DistributionKeys.VALUE: 97.2,
+            copy_enums.DistributionKeys.PRICE: decimal.Decimal("300"),
         },
     ]
     # Test when price_by_coin is None
@@ -168,24 +169,24 @@ def test_get_linear_distribution():
         "3": decimal.Decimal(44)
     }, None) == [
         {
-            index_distribution.DISTRIBUTION_NAME: "BTC",
-            index_distribution.DISTRIBUTION_VALUE: 68.4,
-            index_distribution.DISTRIBUTION_PRICE: None,
+            copy_enums.DistributionKeys.NAME: "BTC",
+            copy_enums.DistributionKeys.VALUE: 68.4,
+            copy_enums.DistributionKeys.PRICE: None,
         },
         {
-            index_distribution.DISTRIBUTION_NAME: "1",
-            index_distribution.DISTRIBUTION_VALUE: 6.7,
-            index_distribution.DISTRIBUTION_PRICE: None,
+            copy_enums.DistributionKeys.NAME: "1",
+            copy_enums.DistributionKeys.VALUE: 6.7,
+            copy_enums.DistributionKeys.PRICE: None,
         },
         {
-            index_distribution.DISTRIBUTION_NAME: "2",
-            index_distribution.DISTRIBUTION_VALUE: 0.2,
-            index_distribution.DISTRIBUTION_PRICE: None,
+            copy_enums.DistributionKeys.NAME: "2",
+            copy_enums.DistributionKeys.VALUE: 0.2,
+            copy_enums.DistributionKeys.PRICE: None,
         },
         {
-            index_distribution.DISTRIBUTION_NAME: "3",
-            index_distribution.DISTRIBUTION_VALUE: 24.7,
-            index_distribution.DISTRIBUTION_PRICE: None,
+            copy_enums.DistributionKeys.NAME: "3",
+            copy_enums.DistributionKeys.VALUE: 24.7,
+            copy_enums.DistributionKeys.PRICE: None,
         }
     ]
     # Test when some coins are not in price_by_coin
@@ -199,24 +200,24 @@ def test_get_linear_distribution():
         "3": decimal.Decimal("300")
     }) == [
         {
-            index_distribution.DISTRIBUTION_NAME: "BTC",
-            index_distribution.DISTRIBUTION_VALUE: 68.4,
-            index_distribution.DISTRIBUTION_PRICE: decimal.Decimal("50000"),
+            copy_enums.DistributionKeys.NAME: "BTC",
+            copy_enums.DistributionKeys.VALUE: 68.4,
+            copy_enums.DistributionKeys.PRICE: decimal.Decimal("50000"),
         },
         {
-            index_distribution.DISTRIBUTION_NAME: "1",
-            index_distribution.DISTRIBUTION_VALUE: 6.7,
-            index_distribution.DISTRIBUTION_PRICE: None,
+            copy_enums.DistributionKeys.NAME: "1",
+            copy_enums.DistributionKeys.VALUE: 6.7,
+            copy_enums.DistributionKeys.PRICE: None,
         },
         {
-            index_distribution.DISTRIBUTION_NAME: "2",
-            index_distribution.DISTRIBUTION_VALUE: 0.2,
-            index_distribution.DISTRIBUTION_PRICE: None,
+            copy_enums.DistributionKeys.NAME: "2",
+            copy_enums.DistributionKeys.VALUE: 0.2,
+            copy_enums.DistributionKeys.PRICE: None,
         },
         {
-            index_distribution.DISTRIBUTION_NAME: "3",
-            index_distribution.DISTRIBUTION_VALUE: 24.7,
-            index_distribution.DISTRIBUTION_PRICE: decimal.Decimal("300"),
+            copy_enums.DistributionKeys.NAME: "3",
+            copy_enums.DistributionKeys.VALUE: 24.7,
+            copy_enums.DistributionKeys.PRICE: decimal.Decimal("300"),
         }
     ]
 
@@ -231,24 +232,24 @@ def test_get_smoothed_distribution():
         "3": decimal.Decimal(44)
     }) == [
         {
-            index_distribution.DISTRIBUTION_NAME: "BTC",
-            index_distribution.DISTRIBUTION_VALUE: 43.1,
-            index_distribution.DISTRIBUTION_PRICE: None,
+            copy_enums.DistributionKeys.NAME: "BTC",
+            copy_enums.DistributionKeys.VALUE: 43.1,
+            copy_enums.DistributionKeys.PRICE: None,
         },
         {
-            index_distribution.DISTRIBUTION_NAME: "1",
-            index_distribution.DISTRIBUTION_VALUE: 19.9,
-            index_distribution.DISTRIBUTION_PRICE: None,
+            copy_enums.DistributionKeys.NAME: "1",
+            copy_enums.DistributionKeys.VALUE: 19.9,
+            copy_enums.DistributionKeys.PRICE: None,
         },
         {
-            index_distribution.DISTRIBUTION_NAME: "2",
-            index_distribution.DISTRIBUTION_VALUE: 6.4,
-            index_distribution.DISTRIBUTION_PRICE: None,
+            copy_enums.DistributionKeys.NAME: "2",
+            copy_enums.DistributionKeys.VALUE: 6.4,
+            copy_enums.DistributionKeys.PRICE: None,
         },
         {
-            index_distribution.DISTRIBUTION_NAME: "3",
-            index_distribution.DISTRIBUTION_VALUE: 30.7,
-            index_distribution.DISTRIBUTION_PRICE: None,
+            copy_enums.DistributionKeys.NAME: "3",
+            copy_enums.DistributionKeys.VALUE: 30.7,
+            copy_enums.DistributionKeys.PRICE: None,
         }
     ]
     assert index_distribution.get_smoothed_distribution({
@@ -257,19 +258,19 @@ def test_get_smoothed_distribution():
         "3": decimal.Decimal(433334)
     }) == [
         {
-            index_distribution.DISTRIBUTION_NAME: "BTC",
-            index_distribution.DISTRIBUTION_VALUE: 22.9,
-            index_distribution.DISTRIBUTION_PRICE: None,
+            copy_enums.DistributionKeys.NAME: "BTC",
+            copy_enums.DistributionKeys.VALUE: 22.9,
+            copy_enums.DistributionKeys.PRICE: None,
         },
         {
-            index_distribution.DISTRIBUTION_NAME: "1",
-            index_distribution.DISTRIBUTION_VALUE: 2.3,
-            index_distribution.DISTRIBUTION_PRICE: None,
+            copy_enums.DistributionKeys.NAME: "1",
+            copy_enums.DistributionKeys.VALUE: 2.3,
+            copy_enums.DistributionKeys.PRICE: None,
         },
         {
-            index_distribution.DISTRIBUTION_NAME: "3",
-            index_distribution.DISTRIBUTION_VALUE: 74.9,
-            index_distribution.DISTRIBUTION_PRICE: None,
+            copy_enums.DistributionKeys.NAME: "3",
+            copy_enums.DistributionKeys.VALUE: 74.9,
+            copy_enums.DistributionKeys.PRICE: None,
         },
     ]
     # Test when price_by_coin is provided
@@ -285,23 +286,23 @@ def test_get_smoothed_distribution():
         "3": decimal.Decimal("300")
     }) == [
         {
-            index_distribution.DISTRIBUTION_NAME: "BTC",
-            index_distribution.DISTRIBUTION_VALUE: 43.1,
-            index_distribution.DISTRIBUTION_PRICE: decimal.Decimal("50000"),
+            copy_enums.DistributionKeys.NAME: "BTC",
+            copy_enums.DistributionKeys.VALUE: 43.1,
+            copy_enums.DistributionKeys.PRICE: decimal.Decimal("50000"),
         },
         {
-            index_distribution.DISTRIBUTION_NAME: "1",
-            index_distribution.DISTRIBUTION_VALUE: 19.9,
-            index_distribution.DISTRIBUTION_PRICE: decimal.Decimal("100"),
+            copy_enums.DistributionKeys.NAME: "1",
+            copy_enums.DistributionKeys.VALUE: 19.9,
+            copy_enums.DistributionKeys.PRICE: decimal.Decimal("100"),
         },
         {
-            index_distribution.DISTRIBUTION_NAME: "2",
-            index_distribution.DISTRIBUTION_VALUE: 6.4,
-            index_distribution.DISTRIBUTION_PRICE: decimal.Decimal("200"),
+            copy_enums.DistributionKeys.NAME: "2",
+            copy_enums.DistributionKeys.VALUE: 6.4,
+            copy_enums.DistributionKeys.PRICE: decimal.Decimal("200"),
         },
         {
-            index_distribution.DISTRIBUTION_NAME: "3",
-            index_distribution.DISTRIBUTION_VALUE: 30.7,
-            index_distribution.DISTRIBUTION_PRICE: decimal.Decimal("300"),
+            copy_enums.DistributionKeys.NAME: "3",
+            copy_enums.DistributionKeys.VALUE: 30.7,
+            copy_enums.DistributionKeys.PRICE: decimal.Decimal("300"),
         }
     ]

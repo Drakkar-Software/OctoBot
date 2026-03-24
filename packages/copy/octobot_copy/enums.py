@@ -13,16 +13,26 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import enum
 
-from .rebalancer import AbstractRebalancer, RebalanceAborted
-from .futures_rebalancer import FuturesRebalancer
-from .spot_rebalancer import SpotRebalancer
-from .option_rebalancer import OptionRebalancer
 
-__all__ = [
-    "AbstractRebalancer",
-    "RebalanceAborted",
-    "FuturesRebalancer",
-    "SpotRebalancer",
-    "OptionRebalancer",
-]
+class RebalanceDetails(enum.Enum):
+    SELL_SOME = "SELL_SOME"
+    BUY_MORE = "BUY_MORE"
+    REMOVE = "REMOVE"
+    ADD = "ADD"
+    SWAP = "SWAP"
+    FORCED_REBALANCE = "FORCED_REBALANCE"
+
+
+class SynchronizationPolicy(enum.Enum):
+    SELL_REMOVED_INDEX_COINS_ON_RATIO_REBALANCE = "sell_removed_index_coins_on_ratio_rebalance"
+    SELL_REMOVED_INDEX_COINS_AS_SOON_AS_POSSIBLE = "sell_removed_index_coins_as_soon_as_possible"
+    SELL_REMOVED_DYNAMIC_INDEX_COINS_AS_SOON_AS_POSSIBLE = "sell_removed_dynamic_index_coins_as_soon_as_possible"
+
+
+class DistributionKeys(enum.StrEnum):
+    NAME = "name"
+    VALUE = "value"
+    PRICE = "price"
+

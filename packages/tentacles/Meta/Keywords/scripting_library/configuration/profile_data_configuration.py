@@ -43,6 +43,7 @@ import octobot_tentacles_manager.configuration
 
 import tentacles.Trading.Mode.index_trading_mode.index_trading as index_trading
 import tentacles.Trading.Mode.index_trading_mode.index_distribution as index_distribution
+import octobot_copy.enums as copy_enums
 import tentacles.Meta.Keywords.scripting_library.errors as scr_errors
 import tentacles.Meta.Keywords.scripting_library.constants as scr_constants
 import tentacles.Meta.Keywords.scripting_library.configuration.tentacles_configuration as tentacles_configuration
@@ -248,14 +249,14 @@ def _get_historical_index_trading_pairs(
 ) -> typing.Iterable[str]:
     historical_assets = []
     latest_config_assets = set(
-        asset[index_distribution.DISTRIBUTION_NAME]
+        asset[copy_enums.DistributionKeys.NAME]
         for asset in _get_trading_mode_config(profile_data)[
             index_trading.IndexTradingModeProducer.INDEX_CONTENT
         ]
     )
     for historical_trading_mode_config in historical_trading_mode_configs:
         for asset in historical_trading_mode_config[index_trading.IndexTradingModeProducer.INDEX_CONTENT]:
-            historical_asset = asset[index_distribution.DISTRIBUTION_NAME]
+            historical_asset = asset[copy_enums.DistributionKeys.NAME]
             if historical_asset not in historical_assets and historical_asset not in latest_config_assets:
                 historical_assets.append(historical_asset)
     return [
