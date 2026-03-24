@@ -128,6 +128,7 @@ class CommunityAuthentication(authentication.Authenticator):
         self._fetch_account_task: typing.Optional[asyncio.Task] = None
         self._sync_client = None
         self._sync_address: str = ""
+        self._sync_data_signer = None
         self._wallet_backend: wallet_backend.WalletBackend = wallet_backend.WalletBackend(
             self.configuration_storage.sync_storage, self.logger
         )
@@ -669,7 +670,7 @@ class CommunityAuthentication(authentication.Authenticator):
             if private_key is None:
                 self.logger.debug("Wallet is encrypted: sync client requires passphrase to initialize")
                 return
-            self._sync_client, self._sync_address = sync_client.create_sync_client(
+            self._sync_client, self._sync_address, self._sync_data_signer = sync_client.create_sync_client(
                 private_key=private_key,
                 chain_id=chain_id,
                 sync_url=sync_url,
@@ -691,7 +692,7 @@ class CommunityAuthentication(authentication.Authenticator):
                 self.logger.debug("No sync server URL configured, skipping sync client init")
                 return
             wallet = self.decrypt_node_wallet(passphrase)
-            self._sync_client, self._sync_address = sync_client.create_sync_client(
+            self._sync_client, self._sync_address, self._sync_data_signer = sync_client.create_sync_client(
                 private_key=wallet.private_key,
                 chain_id=chain_id,
                 sync_url=sync_url,

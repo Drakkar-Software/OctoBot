@@ -37,7 +37,7 @@ ERRORS_PULL_PATH_TEMPLATE = "/v1/pull/users/{pubkey}/errors/{errorId}"
 ENCRYPTION_INFO = "octobot-error-data"
 
 
-def _get_client_and_address(passphrase: str | None = None) -> tuple[StarfishClient, str] | None:
+def _get_client_and_address(passphrase: str | None = None) -> tuple[StarfishClient, str, any] | None:
     authenticator = authentication.Authenticator.get_instance_if_exists()
     if authenticator is None:
         return None
@@ -47,7 +47,7 @@ def _get_client_and_address(passphrase: str | None = None) -> tuple[StarfishClie
         authenticator.init_sync_client()
     if authenticator._sync_client is None:
         return None
-    return authenticator._sync_client, authenticator._sync_address
+    return authenticator._sync_client, authenticator._sync_address, authenticator._sync_data_signer
 
 
 def _generate_credentials() -> tuple[str, str]:
@@ -63,6 +63,7 @@ async def upload_error(
     *,
     context: dict[str, Any] | None = None,
     error_id: str | None = None,
+    sign_data=None,
 ) -> dict[str, Any] | None:
     error_secret, salt = _generate_credentials()
     push_path = ERRORS_PUSH_PATH_TEMPLATE.format(pubkey=address, errorId=salt)
@@ -89,6 +90,7 @@ async def upload_error(
             encryption_secret=error_secret,
             encryption_salt=salt,
             encryption_info=ENCRYPTION_INFO,
+            sign_data=sign_data,
         )
         result = await manager.push(payload)
         if result is not None:
@@ -105,7 +107,7 @@ async def share_logs(export_path: str, passphrase: str | None = None) -> dict[st
     if result is None:
         logger.warning("Cannot share logs: no sync client configured")
         return None
-    client, address = result
+    client, address, data_signer = result
 
     error_secret, salt = _generate_credentials()
     push_path = ERRORS_PUSH_PATH_TEMPLATE.format(pubkey=address, errorId=salt)
@@ -139,6 +141,7 @@ async def share_logs(export_path: str, passphrase: str | None = None) -> dict[st
             encryption_secret=error_secret,
             encryption_salt=salt,
             encryption_info=ENCRYPTION_INFO,
+            sign_data=data_signer,
         )
         result = await manager.push(payload)
         if result is not None:
