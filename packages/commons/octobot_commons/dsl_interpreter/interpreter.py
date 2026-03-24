@@ -237,19 +237,28 @@ class Interpreter:
 
         if isinstance(node, ast.Compare):
             # Comparison: left op right
-            if len(node.ops) == 1 and len(node.comparators) == 1:
-                op_name = type(node.ops[0]).__name__
-                if op_name in self.operators_by_name:
-                    operator_class = self.operators_by_name[op_name]
-                    left = self._visit_node(node.left)
-                    right = self._visit_node(node.comparators[0])
-                    return operator_class(left, right)
+            # Handles both single comparisons (a < b) and chained comparisons (a < b <= c)
+            # Chained comparisons are decomposed into: (a < b) And (b <= c)
+            comparisons = []
+            left = self._visit_node(node.left)
+            for op, comparator in zip(node.ops, node.comparators):
+                op_name = type(op).__name__
+                if op_name not in self.operators_by_name:
+                    raise octobot_commons.errors.UnsupportedOperatorError(
+                        f"Unknown comparison operator: {op_name}"
+                    )
+                operator_class = self.operators_by_name[op_name]
+                right = self._visit_node(comparator)
+                comparisons.append(operator_class(left, right))
+                left = right
+            if len(comparisons) == 1:
+                return comparisons[0]
+            and_op_name = ast.And.__name__
+            if and_op_name not in self.operators_by_name:
                 raise octobot_commons.errors.UnsupportedOperatorError(
-                    f"Unknown comparison operator: {op_name}"
+                    f"Chained comparisons require the '{and_op_name}' operator"
                 )
-            raise octobot_commons.errors.UnsupportedOperatorError(
-                "Multiple comparisons not supported"
-            )
+            return self.operators_by_name[and_op_name](*comparisons)
 
         if isinstance(node, (ast.Constant)):
             # Literal values: numbers, strings, booleans, None
