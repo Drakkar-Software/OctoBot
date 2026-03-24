@@ -1,4 +1,4 @@
-#  Drakkar-Software OctoBot
+#  Drakkar-Software Async-Channel
 #  Copyright (c) Drakkar-Software, All rights reserved.
 #
 #  This library is free software; you can redistribute it and/or
@@ -13,9 +13,17 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import asyncio
+import typing
 
-import tentacles.Trading.Mode.index_trading_mode.rebalancer as rebalancer
+if typing.TYPE_CHECKING:
+    import async_channel.consumer
 
 
-class OptionRebalancer(rebalancer.FuturesRebalancer):    
-    pass
+async def trigger_and_bypass_consumers_queue(
+    consumers: list["async_channel.consumer.Consumer"], kwargs: dict
+):
+    await asyncio.gather(*[
+        consumer.callback(**kwargs)
+        for consumer in consumers
+    ])

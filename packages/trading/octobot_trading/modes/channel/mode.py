@@ -22,6 +22,8 @@ import octobot_commons.signals as commons_signals
 
 import octobot_trading.exchange_channel as exchanges_channel
 import octobot_trading.constants as constants
+import octobot_commons.enums as common_enums
+import async_channel.util as channel_util
 
 
 class ModeChannelConsumer(exchanges_channel.ExchangeChannelInternalConsumer):
@@ -29,30 +31,40 @@ class ModeChannelConsumer(exchanges_channel.ExchangeChannelInternalConsumer):
 
 
 class ModeChannelProducer(exchanges_channel.ExchangeChannelProducer):
-    async def send(self,
-                   final_note=constants.ZERO,
-                   trading_mode_name=channel_constants.CHANNEL_WILDCARD,
-                   state=channel_constants.CHANNEL_WILDCARD,
-                   cryptocurrency=channel_constants.CHANNEL_WILDCARD,
-                   symbol=channel_constants.CHANNEL_WILDCARD,
-                   time_frame=None,
-                   data=None,
-                   dependencies: typing.Optional[commons_signals.SignalDependencies] = None):
-        for consumer in self.channel.get_filtered_consumers(trading_mode_name=trading_mode_name,
-                                                            state=state,
-                                                            cryptocurrency=cryptocurrency,
-                                                            symbol=symbol,
-                                                            time_frame=time_frame):
-            await consumer.queue.put({
-                "final_note": final_note,
-                "state": state,
-                "trading_mode_name": trading_mode_name,
-                "cryptocurrency": cryptocurrency,
-                "symbol": symbol,
-                "time_frame": time_frame,
-                "data": data,
-                "dependencies": dependencies
-            })
+    async def send(
+        self,
+        final_note=constants.ZERO,
+        trading_mode_name=channel_constants.CHANNEL_WILDCARD,
+        state=channel_constants.CHANNEL_WILDCARD,
+        cryptocurrency=channel_constants.CHANNEL_WILDCARD,
+        symbol=channel_constants.CHANNEL_WILDCARD,
+        time_frame: typing.Optional[common_enums.TimeFrames] = None,
+        data=None,
+        dependencies: typing.Optional[commons_signals.SignalDependencies] = None,
+        synchronous_execution: bool = False
+    ):
+        consumers = self.channel.get_filtered_consumers(
+            trading_mode_name=trading_mode_name,
+            state=state,
+            cryptocurrency=cryptocurrency,
+            symbol=symbol,
+            time_frame=time_frame
+        )
+        data = {
+            "final_note": final_note,
+            "state": state,
+            "trading_mode_name": trading_mode_name,
+            "cryptocurrency": cryptocurrency,
+            "symbol": symbol,
+            "time_frame": time_frame,
+            "data": data,
+            "dependencies": dependencies
+        }
+        if synchronous_execution:
+            await channel_util.trigger_and_bypass_consumers_queue(consumers, data)
+        else:
+            for consumer in consumers:
+                await consumer.queue.put(data)
 
 
 class ModeChannel(exchanges_channel.ExchangeChannel):
