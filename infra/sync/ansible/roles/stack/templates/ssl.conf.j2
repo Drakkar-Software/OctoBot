@@ -1,0 +1,46 @@
+server {
+    listen {{ nginx_ssl_port }} ssl;
+    server_name _;
+
+    ssl_certificate /etc/nginx/certs/origin.crt;
+    ssl_certificate_key /etc/nginx/certs/origin.key;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers on;
+
+    client_max_body_size 10m;
+
+    # Health (no cache, no rate limit)
+    location = /health {
+        proxy_pass http://octobot_sync;
+    }
+
+    # Push endpoints (strict rate limit)
+    location ~* ^/v1/push/ {
+        proxy_pass http://octobot_sync;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        limit_req zone=sync_strict burst=25 nodelay;
+    }
+
+    # Pull endpoints (general rate limit + cache)
+    location ~* ^/v1/pull/ {
+        proxy_pass http://octobot_sync;
+        proxy_cache sync_cache;
+        proxy_cache_valid 200 1h;
+        proxy_cache_use_stale error timeout updating;
+        proxy_cache_lock on;
+        add_header X-Cache-Status $upstream_cache_status;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        limit_req zone=sync_global burst=50 nodelay;
+    }
+
+    # Reject anything outside /v1 and /health
+    location / {
+        return 404;
+    }
+}

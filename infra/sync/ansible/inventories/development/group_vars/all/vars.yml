@@ -10,6 +10,7 @@ s3_bucket: "octobot-sync-dev"
 s3_region: "garage"
 octobot_sync_port: 3000
 nginx_port: 80
+nginx_ssl_port: 443
 garage_replication_factor: 1
 
 # Map vault → app vars
@@ -28,6 +29,7 @@ evm_contract_base: "{{ vault_evm_contract_base | default('') }}"
 firewall_allowed_tcp_ports:
   - "22"
   - "80"
+  - "443"
   # Port 3901 (Garage RPC) restricted to peer IPs only — see sync_nodes group vars
 
 # Docker (geerlingguy.docker)

@@ -45,8 +45,12 @@ services:
     image: {{ nginx_image }}
     ports:
       - "{{ nginx_port }}:80"
+      - "{{ nginx_ssl_port }}:443"
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./ssl.conf:/etc/nginx/conf.d/ssl.conf:ro
+      - ./origin.crt:/etc/nginx/certs/origin.crt:ro
+      - ./origin.key:/etc/nginx/certs/origin.key:ro
     depends_on:
       octobot-sync:
         condition: service_healthy

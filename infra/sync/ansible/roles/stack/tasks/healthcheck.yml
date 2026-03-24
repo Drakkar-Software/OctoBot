@@ -6,7 +6,7 @@
     status_code: [200]
   register: garage_health
   until: garage_health.status == 200
-  retries: 10
+  retries: 30
   delay: 5
 
 - name: Wait for OctoBot sync health

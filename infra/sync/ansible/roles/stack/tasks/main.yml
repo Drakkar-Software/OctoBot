@@ -1,8 +1,15 @@
 ---
+- name: Check if Docker iptables chains are present
+  ansible.builtin.command: iptables -L DOCKER-USER -n
+  register: docker_chains
+  changed_when: false
+  failed_when: false
+
 - name: Restart Docker to rebuild iptables chains after firewall changes
   ansible.builtin.service:
     name: docker
     state: restarted
+  when: docker_chains.rc != 0
 
 - name: Create deploy directory
   ansible.builtin.file:
@@ -39,6 +46,25 @@
     group: deploy
     mode: "0644"
   notify: restart garage
+
+- name: Render ssl.conf
+  ansible.builtin.template:
+    src: ssl.conf.j2
+    dest: "{{ stack_deploy_dir }}/ssl.conf"
+    owner: deploy
+    group: deploy
+    mode: "0644"
+  notify: restart nginx
+
+- name: Generate self-signed TLS certificate
+  ansible.builtin.command:
+    cmd: >-
+      openssl req -x509 -nodes -newkey rsa:2048 -days 3650
+      -keyout {{ stack_deploy_dir }}/origin.key
+      -out {{ stack_deploy_dir }}/origin.crt
+      -subj "/CN={{ inventory_hostname }}"
+    creates: "{{ stack_deploy_dir }}/origin.crt"
+  notify: restart nginx
 
 - name: Copy collections.json
   ansible.builtin.copy:
