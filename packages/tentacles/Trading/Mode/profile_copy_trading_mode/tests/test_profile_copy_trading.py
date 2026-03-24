@@ -285,7 +285,7 @@ async def test_rebalance_with_pending_open_orders(tools):
         return decimal.Decimal("0")
 
     with mock.patch.object(
-        mode.rebalance_actions_planner._client,
+        mode.rebalance_actions_planner._exchange.private_data,
         "get_holdings_ratio",
         mock.Mock(side_effect=_fake_get_holdings_ratio),
     ):

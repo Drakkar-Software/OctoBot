@@ -253,7 +253,9 @@ class RebalanceActionsPlanner:
         should_rebalance = False
         for coin in self._targeted_coins:
             target_ratio = self._get_adjusted_target_ratio(coin)
-            coin_ratio = self._client.get_holdings_ratio(coin, traded_symbols_only=True, include_assets_in_open_orders=True)
+            coin_ratio = self._exchange.private_data.get_holdings_ratio(
+                coin, traded_symbols_only=True, include_assets_in_open_orders=True
+            )
             beyond_ratio = True
             if coin_ratio == trading_constants.ZERO and target_ratio > trading_constants.ZERO:
                 rebalance_details[rebalancer_enums.RebalanceDetails.ADD.value][coin] = target_ratio
@@ -281,7 +283,9 @@ class RebalanceActionsPlanner:
         should_rebalance = False
         for coin in self.get_removed_coins_from_config(available_traded_bases):
             if coin in available_traded_bases:
-                coin_ratio = self._client.get_holdings_ratio(coin, traded_symbols_only=True, include_assets_in_open_orders=True)
+                coin_ratio = self._exchange.private_data.get_holdings_ratio(
+                coin, traded_symbols_only=True, include_assets_in_open_orders=True
+            )
                 if coin_ratio >= copy_constants.MIN_RATIO_TO_SELL:
                     rebalance_details[rebalancer_enums.RebalanceDetails.REMOVE.value][coin] = coin_ratio
                     self.logger.info(
@@ -360,9 +364,9 @@ class RebalanceActionsPlanner:
             for symbol in self._exchange.public_data.get_traded_symbols()
             if symbol.quote not in self._targeted_coins
         ):
-            ratio = decimal.Decimal(str(
-                self._client.get_holdings_ratio(quote, traded_symbols_only=True, include_assets_in_open_orders=True)
-            ))
+            ratio = self._exchange.private_data.get_holdings_ratio(
+                quote, traded_symbols_only=True, include_assets_in_open_orders=True
+            )
             if quote == self._reference_market and self.reference_market_ratio > trading_constants.ZERO:
                 reference_market_keep_ratio = trading_constants.ONE - self.reference_market_ratio
                 ratio = max(trading_constants.ZERO, ratio - reference_market_keep_ratio)
@@ -385,7 +389,7 @@ class RebalanceActionsPlanner:
             for removed_coin, removed_ratio, added_coin, added_ratio in zip(
                 removed, removed.values(), added, added.values()
             ):
-                added_holding_ratio = self._client.get_holdings_ratio(
+                added_holding_ratio = self._exchange.private_data.get_holdings_ratio(
                     added_coin, traded_symbols_only=True, coins_whitelist=self._get_coins_to_consider_for_ratio()
                 )
                 required_added_ratio = added_ratio - added_holding_ratio
@@ -473,7 +477,7 @@ class RebalanceActionsPlanner:
                 target_ratio = base_target_ratio * self.reference_market_ratio
             else:
                 target_ratio = base_target_ratio
-            coin_ratio = self._client.get_holdings_ratio(
+            coin_ratio = self._exchange.private_data.get_holdings_ratio(
                 asset_distrib[rebalancer_enums.DistributionKeys.NAME], traded_symbols_only=True,
             )
             if not (target_ratio - min_trigger_ratio <= coin_ratio <= target_ratio + min_trigger_ratio):
@@ -505,6 +509,10 @@ class RebalanceActionsPlanner:
         SELL_REMOVED_INDEX_COINS_ON_RATIO_REBALANCE synchronization policy is used.
 
         Use a uniform distribution over all the exchange's traded pairs if no configured distribution is found.
+
+        :param adapt_to_holdings: Whether to adapt the distribution to the current holdings.
+        This means selecting the closest historical config according to the current holdings.
+        :param force_latest: Whether to force the use of the latest distribution.
         """
         trading_config = self._client.get_config()
         if detailed_distribution := self._client.get_ideal_distribution(trading_config or {}):

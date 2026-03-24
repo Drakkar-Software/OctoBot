@@ -33,6 +33,21 @@ class ExchangePrivateData:
         self._trading_mode: typing.Optional["trading_modes.AbstractTradingMode"] = trading_mode
         self._public_data: exchange_public_data.ExchangePublicData = public_data
 
+    def get_holdings_ratio(
+        self,
+        coin: str,
+        traded_symbols_only: bool = False,
+        include_assets_in_open_orders: bool = False,
+        coins_whitelist: typing.Optional[list] = None,
+    ) -> decimal.Decimal:
+        ratio = self._exchange_manager.exchange_personal_data.portfolio_manager.portfolio_value_holder.get_holdings_ratio(
+            coin,
+            traded_symbols_only=traded_symbols_only,
+            include_assets_in_open_orders=include_assets_in_open_orders,
+            coins_whitelist=coins_whitelist,
+        )
+        return ratio if ratio is not None else trading_constants.ZERO
+
     def get_symbol_position(
         self,
         symbol: str,
