@@ -123,6 +123,13 @@ import octobot_backtesting.enums as backtesting_enums
 
 UNAUTHENTICATED_UPDATER_PRODUCERS = [OHLCVUpdater, OrderBookUpdater, RecentTradeUpdater, TickerUpdater,
                                      KlineUpdater, MarkPriceUpdater, FundingUpdater, MarketsUpdater]
+MINIMAL_DYNAMIC_SYMBOLS_ENV_UPDATER_PRODUCERS = {
+    # channels whose producers should be initialized even in a minimal environment to be able
+    # to dynamically update supported symbols
+    trading_constants.MARK_PRICE_CHANNEL: MarkPriceUpdater,
+    trading_constants.TICKER_CHANNEL: TickerUpdater,
+    # for now only ticker & mark price are needed. Add other channels (such as OHLCV) if needed
+}
 UNAUTHENTICATED_UPDATER_SIMULATOR_PRODUCERS = {
         trading_constants.OHLCV_CHANNEL: OHLCVUpdaterSimulator,
         trading_constants.ORDER_BOOK_CHANNEL: OrderBookUpdaterSimulator,

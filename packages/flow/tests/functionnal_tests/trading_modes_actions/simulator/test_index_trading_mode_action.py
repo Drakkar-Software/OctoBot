@@ -1,12 +1,18 @@
 import pytest
 import logging
 import json
+import mock
 
 import octobot_commons.enums as common_enums
 import octobot_commons.constants as common_constants
+import octobot_trading.dsl as trading_dsl
+import octobot_trading.exchanges.exchange_channels as exchange_channels
+import octobot_copy.rebalancing as rebalancing
 import octobot_flow
 import octobot_flow.entities
 import octobot_flow.enums
+
+import tentacles.Trading.Mode.index_trading_mode as index_trading_mode
 
 import tests.functionnal_tests as functionnal_tests
 from tests.functionnal_tests import current_time, resolved_actions, automation_state_dict
@@ -153,3 +159,68 @@ async def test_simulator_index_init_from_empty_state(init_action: dict):
     # portfolio already follows the index content: ensure portfolio content is the same as the first call
     after_second_call_portfolio_content = after_second_call_execution_dump["automation"]["client_exchange_account_elements"]["portfolio"]["content"]
     assert after_second_call_portfolio_content == after_initial_rebalance_portfolio_content
+
+
+@pytest.mark.asyncio
+async def test_simulator_index_with_added_traded_pairs(init_action: dict):
+    all_actions = [init_action, index_trading_mode_action(init_action)]
+    automation_state = automation_state_dict(resolved_actions(all_actions))
+
+    # 1. run init action
+    async with octobot_flow.AutomationJob(automation_state, [], {}) as automation_job:
+        await automation_job.run()
+    after_init_execution_dump = automation_job.dump()
+
+    # check bot actions execution
+    assert len(automation_job.automation_state.automation.actions_dag.actions) == len(all_actions)
+    for index, action in enumerate(automation_job.automation_state.automation.actions_dag.actions):
+        assert isinstance(action, octobot_flow.entities.AbstractActionDetails)
+        assert action.error_status == octobot_flow.enums.ActionErrorStatus.NO_ERROR.value
+        assert action.result is None
+        if index == 0:
+            assert action.executed_at and action.executed_at >= current_time
+            assert action.previous_execution_result is None
+        else:
+            assert action.executed_at is None
+            assert action.previous_execution_result is None
+        
+    # 2. run index trading mode action
+    with (
+        mock.patch.object(
+            index_trading_mode.IndexTradingMode, "get_dsl_dependencies",
+            # ETH/USDT won't be identified as dependency but is in index config: it will be added dynamically
+            return_value=[trading_dsl.SymbolDependency(symbol="BTC/USDT")]
+        ) as mock_get_dsl_dependencies,
+        mock.patch.object(
+            rebalancing.RebalanceActionsPlanner, "_get_supported_distribution",
+            return_value=rebalancing.get_uniform_distribution(["BTC", "ETH"])
+        ) as mock_get_supported_distribution,
+        mock.patch.object(
+            rebalancing.RebalanceActionsPlanner, "_get_filtered_traded_coins",
+            return_value=["BTC", "ETH"]
+        ) as mock_get_filtered_traded_coins,
+        mock.patch.object(
+            exchange_channels, "create_minimal_dynamic_symbols_env_producers_if_needed",
+            mock.AsyncMock(wraps=exchange_channels.create_minimal_dynamic_symbols_env_producers_if_needed)
+        ) as mock_create_minimal_dynamic_symbols_env_producers_if_needed,
+    ):
+        async with octobot_flow.AutomationJob(after_init_execution_dump, [], {}) as automation_job:
+            await automation_job.run()
+        assert mock_get_dsl_dependencies.call_count > 1
+        # ensure the ETH/USDC pairs is really added as a dynamic symbol
+        mock_create_minimal_dynamic_symbols_env_producers_if_needed.assert_awaited_once()
+        mock_get_supported_distribution.assert_called_once()
+        mock_get_filtered_traded_coins.assert_called_once()
+        after_initial_rebalance_execution_dump = automation_job.dump()
+        assert len(automation_job.automation_state.automation.actions_dag.actions) == len(all_actions)
+        for index, action in enumerate(automation_job.automation_state.automation.actions_dag.actions):
+            assert isinstance(action, octobot_flow.entities.AbstractActionDetails)
+            assert action.error_status == octobot_flow.enums.ActionErrorStatus.NO_ERROR.value
+            assert action.result is None
+            if index == 0:
+                assert action.executed_at is not None
+                assert action.previous_execution_result is None
+            else:
+                # action is reset: this is a trading mode action: it will be executed again at the next execution
+                assert action.executed_at is None
+                assert isinstance(action.previous_execution_result, dict)
