@@ -75,6 +75,17 @@ class ExchangeChannelProducer(producers.Producer):
         return True
 
 
+class IndirectExchangeChannelProducer(ExchangeChannelProducer):
+    """
+    An indirect ExchangeChannelProducer is not fetching data directly but relying on another channel instead
+    """
+    async def subscribe(self) -> None:
+        """
+        Subscribe to primary channels, should be implemented by indirect producers
+        """
+        raise NotImplementedError("subscribe() is not implemented")
+
+
 class ExchangeChannel(channels.Channel):
     PRODUCER_CLASS = ExchangeChannelProducer
     CONSUMER_CLASS = ExchangeChannelConsumer

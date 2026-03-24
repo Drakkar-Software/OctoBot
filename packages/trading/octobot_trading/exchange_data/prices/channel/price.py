@@ -21,16 +21,17 @@ import octobot_trading.exchange_channel as exchanges_channel
 import octobot_trading.enums as enums
 
 
-class MarkPriceProducer(exchanges_channel.ExchangeChannelProducer):
+class MarkPriceProducer(exchanges_channel.IndirectExchangeChannelProducer):
     async def push(self, symbol, mark_price, mark_price_source=enums.MarkPriceSources.EXCHANGE_MARK_PRICE.value):
         await self.perform(symbol, mark_price, mark_price_source=mark_price_source)
 
     async def perform(self, symbol, mark_price, mark_price_source=enums.MarkPriceSources.EXCHANGE_MARK_PRICE.value):
         try:
-            if self.channel.get_filtered_consumers(symbol=channel_constants.CHANNEL_WILDCARD) or \
-                    self.channel.get_filtered_consumers(symbol=symbol):
-                if self.channel.exchange_manager.get_symbol_data(symbol).handle_mark_price_update(mark_price,
-                                                                                                  mark_price_source):
+            if self.channel.exchange_manager.get_symbol_data(symbol).handle_mark_price_update(
+                mark_price, mark_price_source
+            ):
+                if self.channel.get_filtered_consumers(symbol=channel_constants.CHANNEL_WILDCARD) or \
+                   self.channel.get_filtered_consumers(symbol=symbol):
                     # only send mark price if price got updated
                     # mark_price attribute access required to send calculation result
                     await self.send(cryptocurrency=self.channel.exchange_manager.exchange.get_pair_cryptocurrency(

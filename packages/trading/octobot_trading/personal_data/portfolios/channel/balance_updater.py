@@ -163,6 +163,9 @@ class BalanceProfitabilityUpdater(portfolios_channel.BalanceProfitabilityProduce
         """
         Starts the balance profitability subscribing process
         """
+        await self.subscribe()
+
+    async def subscribe(self):
         self.balance_consumer = await exchange_channel.get_chan(
             constants.BALANCE_CHANNEL, self.channel.exchange_manager.id
         ).new_consumer(self.handle_balance_update)

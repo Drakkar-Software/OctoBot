@@ -95,7 +95,7 @@ class BalanceChannel(exchanges_channel.ExchangeChannel):
     CONSUMER_CLASS = exchanges_channel.ExchangeChannelConsumer
 
 
-class BalanceProfitabilityProducer(exchanges_channel.ExchangeChannelProducer):
+class BalanceProfitabilityProducer(exchanges_channel.IndirectExchangeChannelProducer):
     async def push(self, balance, mark_price):
         await self.perform(balance, mark_price)
 

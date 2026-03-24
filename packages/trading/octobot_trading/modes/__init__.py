@@ -57,7 +57,7 @@ from octobot_trading.modes.modes_factory import (
     create_trading_mode,
     create_temporary_trading_mode_with_local_config,
 )
-from octobot_trading.modes.trading_mode_dsl_factory import (
+from octobot_trading.modes.mode_dsl_factory import (
     create_trading_mode_operator,
     create_all_trading_mode_operators,
 )
