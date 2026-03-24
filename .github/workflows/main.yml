@@ -625,14 +625,13 @@ jobs:
           asset_name: OctoBot_macos_arm64
           asset_content_type: application/x-binary
 
-  sync-deploy:
+  sync:
     name: Deploy Sync Server
+    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/dev' || startsWith(github.ref, 'refs/tags/')
     needs: [docker]
-    if: false  # Temporarily skipped
+    environment:
+      name: ${{ startsWith(github.ref, 'refs/tags/') && 'Production - Sync Server' || github.ref == 'refs/heads/master' && 'Staging - Sync Server' || 'Development - Sync Server' }}
     runs-on: ubuntu-latest
-
-    env:
-      DEPLOY_ENV: ${{ startsWith(github.ref, 'refs/tags/') && 'production' || github.ref == 'refs/heads/master' && 'staging' || 'development' }}
 
     steps:
       - uses: actions/checkout@v6
@@ -646,20 +645,21 @@ jobs:
 
       - name: Set up SSH key
         run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SYNC_DEPLOY_SSH_KEY }}" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          for ip in ${{ secrets.SYNC_NODE_IPS }}; do
-            ssh-keyscan -H "$ip" >> ~/.ssh/known_hosts 2>/dev/null
-          done
+          mkdir -p infra/sync/ansible/inventories/${{ vars.ANSIBLE_ENV }}/.ssh
+          echo "${{ secrets.ANSIBLE_SSH_KEY }}" > infra/sync/ansible/inventories/${{ vars.ANSIBLE_ENV }}/.ssh/id_ed25519
+          chmod 600 infra/sync/ansible/inventories/${{ vars.ANSIBLE_ENV }}/.ssh/id_ed25519
 
-      - name: Deploy to ${{ env.DEPLOY_ENV }}
+      - name: Deploy to ${{ vars.ANSIBLE_ENV }}
         working-directory: infra/sync/ansible
         env:
-          ANSIBLE_VAULT_PASSWORD: ${{ secrets.SYNC_ANSIBLE_VAULT_PASSWORD }}
+          ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
+          ANSIBLE_HOST_KEY_CHECKING: "false"
         run: |
-          ansible-playbook playbooks/deploy-octobot-sync.yml \
-            -i inventories/${{ env.DEPLOY_ENV }}
+          ansible-playbook playbooks/deploy-octobot-sync.yml -i inventories/${{ vars.ANSIBLE_ENV }}
+
+      - name: Clean up SSH key
+        if: always()
+        run: rm -f infra/sync/ansible/inventories/${{ vars.ANSIBLE_ENV }}/.ssh/id_ed25519
 
   notify:
     if: ${{ failure() }}
@@ -671,6 +671,7 @@ jobs:
       - tentacles
       - release
       - version
+      - sync
     uses: Drakkar-Software/.github/.github/workflows/failure_notify_workflow.yml@master
     secrets:
       DISCORD_GITHUB_WEBHOOK: ${{ secrets.DISCORD_GITHUB_WEBHOOK }}
