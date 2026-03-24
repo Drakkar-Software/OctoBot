@@ -21,6 +21,7 @@ import shutil
 import time
 import traceback
 import uuid
+import zipfile
 from typing import Any
 
 import octobot_commons.authentication as authentication
@@ -102,7 +103,11 @@ async def upload_error(
         return None
 
 
-async def share_logs(export_path: str, passphrase: str | None = None) -> dict[str, Any] | None:
+async def share_logs(
+    export_path: str,
+    passphrase: str | None = None,
+    log_paths: list[str] | None = None,
+) -> dict[str, Any] | None:
     result = _get_client_and_address(passphrase)
     if result is None:
         logger.warning("Cannot share logs: no sync client configured")
@@ -115,7 +120,13 @@ async def share_logs(export_path: str, passphrase: str | None = None) -> dict[st
 
     zip_path = f"{export_path}.zip"
     try:
-        shutil.make_archive(export_path, "zip", octobot.constants.LOGS_FOLDER)
+        if log_paths is not None:
+            with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+                for path in log_paths:
+                    if os.path.isfile(path):
+                        zf.write(path, arcname=os.path.basename(path))
+        else:
+            shutil.make_archive(export_path, "zip", octobot.constants.LOGS_FOLDER)
         with open(zip_path, "rb") as f:
             logs_b64 = base64.b64encode(f.read()).decode("ascii")
     finally:

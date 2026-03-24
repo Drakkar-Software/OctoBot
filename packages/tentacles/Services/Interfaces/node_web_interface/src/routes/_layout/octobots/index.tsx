@@ -352,7 +352,11 @@ function SelectionToolbar({
       const password = localStorage.getItem("auth_password") || ""
       const res = await fetch("/api/v1/logs/share", {
         method: "POST",
-        headers: { Authorization: `Basic ${btoa(`${username}:${password}`)}` },
+        headers: {
+          Authorization: `Basic ${btoa(`${username}:${password}`)}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ automation_ids: Array.from(selectedIds) }),
       })
       const data = await res.json()
       if (data.success) {

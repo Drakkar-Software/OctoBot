@@ -14,14 +14,18 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
+import os
 import tempfile
 import typing
 
+import pydantic
 from fastapi import APIRouter, Depends
 from fastapi.security import HTTPBasicCredentials
 
+import octobot_node.constants as node_constants
+import octobot.community.errors_upload.error_sharing as error_sharing
+
 try:
-    import octobot.community.errors_upload.error_sharing as error_sharing
     from tentacles.Services.Interfaces.node_api_interface.api.deps import CurrentUser, security_basic
 except ImportError:
     from api.deps import CurrentUser, security_basic
@@ -29,16 +33,27 @@ except ImportError:
 router = APIRouter(tags=["logs"])
 
 
+class ShareLogsRequest(pydantic.BaseModel):
+    automation_ids: typing.Optional[list[str]] = None
+
+
 @router.post("/share")
 async def share_logs(
     current_user: CurrentUser,
     credentials: typing.Annotated[typing.Optional[HTTPBasicCredentials], Depends(security_basic)],
+    body: typing.Optional[ShareLogsRequest] = None,
 ) -> typing.Any:
     try:
         with tempfile.NamedTemporaryFile(suffix="", delete=False) as tmp:
             export_path = tmp.name
         passphrase = credentials.password if credentials else None
-        result = await error_sharing.share_logs(export_path, passphrase)
+        log_paths = None
+        if body and body.automation_ids:
+            log_paths = [
+                os.path.join(node_constants.AUTOMATION_LOGS_FOLDER, f"{automation_id}.log")
+                for automation_id in body.automation_ids
+            ]
+        result = await error_sharing.share_logs(export_path, passphrase, log_paths)
         if result is None:
             return {"success": False, "error": "Not connected to octobot.cloud"}
         return {
