@@ -35,6 +35,11 @@ class StarfishAuthProvider:
     def address(self) -> str:
         return self._address
 
+    async def sign_payload(self, data: str) -> str:
+        msg_hash = evm._eip191_hash(data)
+        signed = self._w3.eth.account._sign_hash(msg_hash, private_key=self._private_key)
+        return signed.signature.hex()
+
     async def __call__(
         self, *, method: str, path: str, body: str | None
     ) -> dict[str, str]:

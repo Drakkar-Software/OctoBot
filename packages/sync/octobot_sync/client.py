@@ -52,7 +52,7 @@ def create_sync_client(
         auth=auth_provider,
     )
     logging.get_logger("SyncClient").info(f"Sync client initialized (sync server: {sync_url}, address: {auth_provider.address})")
-    return client, auth_provider.address
+    return client, auth_provider.address, auth_provider.sign_payload
 
 
 def _start_replica_server(
