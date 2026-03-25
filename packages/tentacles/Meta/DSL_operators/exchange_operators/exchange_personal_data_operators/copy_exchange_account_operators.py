@@ -16,6 +16,7 @@
 #  License along with this library.
 import json
 import typing
+import time
 
 import octobot_commons.constants as commons_constants
 import octobot_commons.dsl_interpreter as dsl_interpreter
@@ -29,6 +30,7 @@ import octobot_trading.modes
 
 import octobot_copy.copiers
 import octobot_copy.entities
+import octobot_copy.constants
 
 import tentacles.Meta.DSL_operators.exchange_operators.exchange_personal_data_operators.create_order_operators as create_order_operators
 
@@ -37,7 +39,7 @@ def create_copy_exchange_account_operators(
     copier_exchange_manager: typing.Optional[octobot_trading.exchanges.ExchangeManager] = None,
     copier_trading_mode: typing.Optional[octobot_trading.modes.AbstractTradingMode] = None,
 ) -> list[type[dsl_interpreter.PreComputingCallOperator]]:
-    class _CopyExchangeAccountOperator(dsl_interpreter.PreComputingCallOperator):
+    class _CopyExchangeAccountOperator(dsl_interpreter.PreComputingCallOperator, dsl_interpreter.ReCallableOperatorMixin):
         DESCRIPTION = (
             "Rebalances the copier exchange toward the reference account allocation. "
             "reference_account is JSON for octobot_copy.entities.Account (portfolio content, orders, positions). "
@@ -87,7 +89,7 @@ def create_copy_exchange_account_operators(
                     required=False,
                     type=str,
                 ),
-            ]
+            ] + super().get_re_callable_parameters()
 
         def _parse_reference_account(self, raw: typing.Any) -> octobot_copy.entities.Account:
             if raw is None:
@@ -147,6 +149,7 @@ def create_copy_exchange_account_operators(
 
         async def pre_compute(self) -> None:
             await super().pre_compute()
+            execution_time = time.time()
             if copier_exchange_manager is None:
                 raise commons_errors.DSLInterpreterError(
                     "copier_exchange_manager is required in context to execute copy_exchange_account"
@@ -161,9 +164,13 @@ def create_copy_exchange_account_operators(
                 copier_trading_mode,
             )
             orders = await account_copier.execute_rebalance_if_needed()
-            self.value = {
-                create_order_operators.CREATED_ORDERS_KEY: [order.to_dict() for order in orders],
-            }
+            self.value = self.create_re_callable_result_dict(
+                waiting_time=octobot_copy.constants.DEFAULT_COPY_WAITING_TIME,
+                last_execution_time=execution_time,
+                state={
+                    create_order_operators.CREATED_ORDERS_KEY: [order.to_dict() for order in orders],
+                },
+            )
 
     return [_CopyExchangeAccountOperator]
 

@@ -270,48 +270,35 @@ class AutomationJob:
                 == octobot_flow.enums.AutomationRunMode.UPDATE_REFERENCE_EXCHANGE_ACCOUNT_AND_COPY.value
             )
             if execute_dag_on_client_account_only or excecute_dag_on_ref_account_and_copy_on_client:
-                # DAG should be executed
+                # automation DAG should be executed
                 async with automation_runner_job.actions_context(
                     to_execute_actions,
                     as_reference_account=excecute_dag_on_ref_account_and_copy_on_client,
                     update_execution_details=True
                 ):
                     await automation_runner_job.run()
-            copy_reference_account_to_client_account = automation.metadata.run_mode in (
-                octobot_flow.enums.AutomationRunMode.COPY_OTHER_REFERENCE_ACCOUNT.value,
-                octobot_flow.enums.AutomationRunMode.UPDATE_REFERENCE_EXCHANGE_ACCOUNT_AND_COPY.value
-            )
-            if copy_reference_account_to_client_account:
-                if excecute_dag_on_ref_account_and_copy_on_client:
-                    # copy reference account on client account
-                    ref_elements = automation.get_exchange_account_elements(True)
-                    if ref_elements is None:
-                        raise octobot_flow.errors.AutomationValidationError(
-                            "Reference exchange account elements are required to copy to the client account"
-                        )
-                    reference_market = octobot_flow.logic.configuration.infer_reference_market(
-                        self.automation_state.exchange_account_details,
-                        [],
-                    )
-                    reference_account = account_copy_util.reference_exchange_elements_to_account(
-                        ref_elements, fetched_dependencies.fetched_exchange_data, reference_market # type: ignore
-                    )
-                    copy_actions = [
-                        octobot_flow.logic.actions.create_copy_exchange_account_action(
-                            reference_market=reference_market, reference_account=reference_account,
-                        )
-                    ]
-                    # fetch the copy client dependencies (open orders, positions, etc.)
-                    copy_client_fetched_dependencies = await self._fetch_dependencies(maybe_community_repository, copy_actions)
-                    automation_runner_job.set_fetched_dependencies(copy_client_fetched_dependencies)
-                elif execute_dag_on_client_account_only:
-                    # actions to execute are already copying
-                    copy_actions = to_execute_actions
-                    raise NotImplementedError("execute_dag_on_client_account_only is not yet implemented")
-                else:
+            if excecute_dag_on_ref_account_and_copy_on_client:
+                # copy reference account on client account
+                ref_elements = automation.get_exchange_account_elements(True)
+                if ref_elements is None:
                     raise octobot_flow.errors.AutomationValidationError(
-                        f"Can't copy reference account to client account with run mode: {automation.metadata.run_mode}"
+                        "Reference exchange account elements are required to copy to the client account"
                     )
+                reference_market = octobot_flow.logic.configuration.infer_reference_market(
+                    self.automation_state.exchange_account_details,
+                    [],
+                )
+                reference_account = account_copy_util.reference_exchange_elements_to_account(
+                    ref_elements, fetched_dependencies.fetched_exchange_data, reference_market # type: ignore
+                )
+                copy_actions = [
+                    octobot_flow.logic.actions.create_copy_exchange_account_action(
+                        reference_market=reference_market, reference_account=reference_account,
+                    )
+                ]
+                # fetch the copy client dependencies (open orders, positions, etc.)
+                copy_client_fetched_dependencies = await self._fetch_dependencies(maybe_community_repository, copy_actions)
+                automation_runner_job.set_fetched_dependencies(copy_client_fetched_dependencies)
                 self._logger.info(f"Copying reference account to client account")
                 async with automation_runner_job.actions_context(
                     copy_actions, as_reference_account=False, update_execution_details=execute_dag_on_client_account_only

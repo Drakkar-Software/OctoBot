@@ -97,7 +97,7 @@ class TradingModeOperator(
         *parameters: dsl_interpreter.OperatorParameterType,
         **kwargs: typing.Any,
     ):
-        super().__init__(*parameters, **kwargs)
+        super(dsl_interpreter.PreComputingCallOperator, self).__init__(*parameters, **kwargs)
         self.param_by_name: dict[
             str, dsl_interpreter.ComputedOperatorParameterType
         ] = dsl_interpreter.UNINITIALIZED_VALUE  # type: ignore

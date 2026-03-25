@@ -49,5 +49,4 @@ class ActionErrorStatus(enum.Enum):
 
 class AutomationRunMode(enum.StrEnum):
     UPDATE_REFERENCE_EXCHANGE_ACCOUNT_AND_COPY = "update_reference_exchange_account_and_copy"
-    COPY_OTHER_REFERENCE_ACCOUNT = "copy_other_reference_account"
     UPDATE_CLIENT_EXCHANGE_ACCOUNT_ONLY = "update_client_exchange_account_only"

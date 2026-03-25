@@ -2,7 +2,9 @@ import pytest
 import logging
 import json
 import mock
+import decimal
 
+import octobot_copy.entities as copy_entities
 import octobot_commons.enums as common_enums
 import octobot_commons.constants as common_constants
 import octobot_trading.dsl as trading_dsl
@@ -11,11 +13,12 @@ import octobot_copy.rebalancing as rebalancing
 import octobot_flow
 import octobot_flow.entities
 import octobot_flow.enums
+import octobot_copy.constants as copy_constants
 
 import tentacles.Trading.Mode.index_trading_mode as index_trading_mode
 
 import tests.functionnal_tests as functionnal_tests
-from tests.functionnal_tests import current_time, resolved_actions, automation_state_dict, set_init_action_run_mode
+from tests.functionnal_tests import current_time, resolved_actions, automation_state_dict, set_init_action_run_mode, copy_exchange_account_action
 
 import octobot_copy.enums as rebalancer_enums
 
@@ -37,6 +40,31 @@ def index_trading_mode_action(dependency_action: dict):
         "dsl_script": f"index_trading_mode(index_content={json.dumps(index_content)}, rebalance_trigger_min_percent=5)",
         "dependencies": [{"action_id": dependency_action["id"]}],
     }
+
+
+@pytest.fixture
+def index_reference_account():
+    return copy_entities.Account(
+        content={
+            "BTC": {
+                common_constants.PORTFOLIO_TOTAL: decimal.Decimal("1"),
+                common_constants.PORTFOLIO_AVAILABLE: decimal.Decimal("1"),
+                copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.5"),
+            },
+            "ETH": {
+                common_constants.PORTFOLIO_TOTAL: decimal.Decimal("20"),
+                common_constants.PORTFOLIO_AVAILABLE: decimal.Decimal("20"),
+                copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.4999"),
+            },
+            "USDT": {
+                common_constants.PORTFOLIO_TOTAL: decimal.Decimal("10"),
+                common_constants.PORTFOLIO_AVAILABLE: decimal.Decimal("10"),
+                copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.0001"),
+            },
+        },
+        orders=[],
+        positions=[],
+    )
 
 
 @pytest.fixture
@@ -268,3 +296,98 @@ async def test_simulator_index_with_added_traded_pairs(init_action: dict, run_mo
         assert 0.001 < after_initial_rebalance_reference_account_portfolio_content["BTC"]["available"] < 0.01
     else:
         assert "reference_exchange_account_elements" not in after_initial_rebalance_execution_dump["automation"]
+
+
+@pytest.mark.asyncio
+async def test_simulator_copy_index(init_action: dict, index_reference_account: copy_entities.Account):
+    reference_market = init_action["config"]["exchange_account_details"]["portfolio"]["unit"]
+    all_actions = [
+        set_init_action_run_mode(init_action, octobot_flow.enums.AutomationRunMode.UPDATE_CLIENT_EXCHANGE_ACCOUNT_ONLY),
+        copy_exchange_account_action(reference_market, index_reference_account)
+    ]
+    automation_state = automation_state_dict(resolved_actions(all_actions))
+
+    # 1. run init action
+    async with octobot_flow.AutomationJob(automation_state, [], {}) as automation_job:
+        await automation_job.run()
+    after_init_execution_dump = automation_job.dump()
+
+    # check bot actions execution
+    assert len(automation_job.automation_state.automation.actions_dag.actions) == len(all_actions)
+    for index, action in enumerate(automation_job.automation_state.automation.actions_dag.actions):
+        assert isinstance(action, octobot_flow.entities.AbstractActionDetails)
+        assert action.error_status == octobot_flow.enums.ActionErrorStatus.NO_ERROR.value
+        assert action.result is None
+        if index == 0:
+            assert action.executed_at and action.executed_at >= current_time
+            assert action.previous_execution_result is None
+        else:
+            assert action.executed_at is None
+            assert action.previous_execution_result is None
+        
+    # 2. run copy exchange account action
+    async with octobot_flow.AutomationJob(after_init_execution_dump, [], {}) as automation_job:
+        await automation_job.run()
+    after_initial_rebalance_execution_dump = automation_job.dump()
+    assert len(automation_job.automation_state.automation.actions_dag.actions) == len(all_actions)
+    for index, action in enumerate(automation_job.automation_state.automation.actions_dag.actions):
+        assert isinstance(action, octobot_flow.entities.AbstractActionDetails)
+        assert action.error_status == octobot_flow.enums.ActionErrorStatus.NO_ERROR.value
+        assert action.result is None
+        if index == 0:
+            assert action.executed_at is not None
+            assert action.previous_execution_result is None
+        else:
+            # action is reset: this is a trading mode action: it will be executed again at the next execution
+            assert action.executed_at is None
+            assert isinstance(action.previous_execution_result, dict)
+    
+    # scheduled next execution time 4h after the current execution (4h is the default time when unspecified when copying an account)
+    assert after_initial_rebalance_execution_dump["automation"]["execution"]["previous_execution"]["triggered_at"] >= current_time
+    allowed_execution_time = 20
+    schedule_delay = (
+        after_initial_rebalance_execution_dump["automation"]["execution"]["current_execution"]["scheduled_to"]
+        - after_initial_rebalance_execution_dump["automation"]["execution"]["previous_execution"]["triggered_at"]
+    )
+    assert copy_constants.DEFAULT_COPY_WAITING_TIME - allowed_execution_time < schedule_delay < copy_constants.DEFAULT_COPY_WAITING_TIME + allowed_execution_time
+    # check portfolio content
+    # both run modes should result in the same client portfolio
+    after_initial_rebalance_portfolio_content = after_initial_rebalance_execution_dump["automation"]["client_exchange_account_elements"]["portfolio"]["content"]
+    assert isinstance(after_initial_rebalance_execution_dump, dict)
+    assert list(sorted(after_initial_rebalance_portfolio_content.keys())) == ["BTC", "ETH", "USDT"]
+    assert 0 < after_initial_rebalance_portfolio_content["USDT"]["available"] < 5
+    assert 0.1 < after_initial_rebalance_portfolio_content["ETH"]["available"] < 0.4
+    assert 0.001 < after_initial_rebalance_portfolio_content["BTC"]["available"] < 0.01
+    logging.getLogger("test_update_simulated_basket_bot").info(f"after_execution_portfolio_content: {after_initial_rebalance_portfolio_content}")
+    # reference account should not be updated
+    assert "reference_exchange_account_elements" not in after_initial_rebalance_execution_dump["automation"]
+
+
+    # 3. trigger again: nothing to do
+    async with octobot_flow.AutomationJob(after_initial_rebalance_execution_dump, [], {}) as automation_job:
+        await automation_job.run()
+    after_second_call_execution_dump = automation_job.dump()
+    assert len(automation_job.automation_state.automation.actions_dag.actions) == len(all_actions)
+    for index, action in enumerate(automation_job.automation_state.automation.actions_dag.actions):
+        assert isinstance(action, octobot_flow.entities.AbstractActionDetails)
+        assert action.error_status == octobot_flow.enums.ActionErrorStatus.NO_ERROR.value
+        assert action.result is None
+        if index == 0:
+            assert action.executed_at is not None
+            assert action.previous_execution_result is None
+        else:
+            # action is reset: this is a trading mode action: it will be executed again at the next execution
+            assert action.executed_at is None
+            assert isinstance(action.previous_execution_result, dict)
+
+    # ensure schedule delay is the same as the first call
+    schedule_delay = (
+        after_second_call_execution_dump["automation"]["execution"]["current_execution"]["scheduled_to"]
+        - after_second_call_execution_dump["automation"]["execution"]["previous_execution"]["triggered_at"]
+    )
+    assert copy_constants.DEFAULT_COPY_WAITING_TIME - allowed_execution_time < schedule_delay < copy_constants.DEFAULT_COPY_WAITING_TIME + allowed_execution_time
+
+    # portfolio already follows the index content: ensure portfolio content is the same as the first call
+    after_second_call_portfolio_content = after_second_call_execution_dump["automation"]["client_exchange_account_elements"]["portfolio"]["content"]
+    assert after_second_call_portfolio_content == after_initial_rebalance_portfolio_content
+    assert "reference_exchange_account_elements" not in after_second_call_execution_dump["automation"]

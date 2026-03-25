@@ -26,6 +26,7 @@ class ActionsExecutor:
         automation: octobot_flow.entities.AutomationDetails,
         actions: list[octobot_flow.entities.AbstractActionDetails],
         as_reference_account: bool,
+        update_execution_details: bool,
     ):
         self.changed_elements: list[octobot_flow.enums.ChangedElements] = []
         self.next_execution_scheduled_to: float = 0
@@ -38,6 +39,7 @@ class ActionsExecutor:
         self._automation: octobot_flow.entities.AutomationDetails = automation
         self._actions: list[octobot_flow.entities.AbstractActionDetails] = actions
         self._as_reference_account: bool = as_reference_account
+        self._update_execution_details: bool = update_execution_details
 
     async def execute(self):
         dsl_executor = octobot_flow.logic.dsl.DSLExecutor(
@@ -51,11 +53,13 @@ class ActionsExecutor:
         async with dsl_executor.dependencies_context(self._actions):
             for index, action in enumerate(self._actions):
                 await self._execute_action(dsl_executor, action)
-                recall_dag_details, should_stop_processing = self._handle_execution_result(action, index)
-                if should_stop_processing:
-                    break
+                if self._update_execution_details:
+                    recall_dag_details, should_stop_processing = self._handle_execution_result(action, index)
+                    if should_stop_processing:
+                        break
         self._sync_after_execution()
-        await self._update_actions_history()
+        if self._update_execution_details:
+            await self._update_actions_history()
         await self._insert_execution_bot_logs(dsl_executor.pending_bot_logs)
         if recall_dag_details:
             self._reset_dag_to(recall_dag_details)
@@ -63,7 +67,7 @@ class ActionsExecutor:
             self.next_execution_scheduled_to = self._compute_next_execution_scheduled_to(
                 recall_dag_details
             )
-        else:
+        elif self._update_execution_details:
             # no reset: schedule immediately
             self.next_execution_scheduled_to = 0
 
