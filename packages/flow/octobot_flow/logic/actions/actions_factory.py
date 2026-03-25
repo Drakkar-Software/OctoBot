@@ -19,9 +19,9 @@ def create_copy_exchange_account_action(
     reference_market: str,
     reference_account: copy_entities.Account,
     account_copy_settings: typing.Optional[copy_entities.AccountCopySettings] = None,
-) -> octobot_flow.entities.AbstractActionDetails:
-    reference_dict = reference_account.to_dict()
-    settings_dict = account_copy_settings.to_dict() if account_copy_settings else {}
+) -> octobot_flow.entities.DSLScriptActionDetails:
+    reference_dict = reference_account.to_dict(include_default_values=False)
+    settings_dict = account_copy_settings.to_dict(include_default_values=False) if account_copy_settings else {}
     ref_json = json.dumps(reference_dict, default=_json_serialize_for_dsl)
     settings_json = json.dumps(settings_dict, default=_json_serialize_for_dsl)
     dsl_script = (

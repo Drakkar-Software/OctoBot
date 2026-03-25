@@ -4,6 +4,7 @@ import pytest
 import time
 import os
 import typing
+import json
 
 # force env var
 os.environ["USE_MINIMAL_LIBS"] = "true"
@@ -12,11 +13,14 @@ os.environ["ALLOW_FUNDS_TRANSFER"] = "True"
 import octobot_trading.exchanges.connectors.ccxt.ccxt_clients_cache as ccxt_clients_cache
 import octobot.community as community
 
+import octobot_copy.entities as copy_entities
+
 import octobot_flow.entities
 import octobot_flow.enums
 
 import octobot_flow.environment
 import octobot_flow.repositories.community
+import octobot_flow.logic.actions.actions_factory as actions_factory
 
 def is_on_github_ci():
     # Always set to true when GitHub Actions is running the workflow.
@@ -238,6 +242,19 @@ def actions_with_cancel_limit_orders():
             "dsl_script": "cancel_order('BTC/USDC')",
         }
     ]
+
+
+def copy_exchange_account_action(
+    reference_market: str,
+    reference_account: copy_entities.Account,
+    account_copy_settings: typing.Optional[copy_entities.AccountCopySettings] = None,
+) -> dict:
+    return {
+        "id": "action_copy_exchange_account",
+        "dsl_script": actions_factory.create_copy_exchange_account_action(
+            reference_market, reference_account, account_copy_settings
+        ).dsl_script,
+    }
 
 
 @pytest.fixture

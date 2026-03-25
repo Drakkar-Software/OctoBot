@@ -75,6 +75,7 @@ class AutomationRunnerJob(octobot_flow.repositories.exchange.ExchangeContextMixi
             self.profile_data_provider.get_profile_data(),
             self.automation_state.automation, self._to_execute_actions,
             self._as_reference_account,
+            self._update_execution_details,
         )
         await actions_executor.execute()
         return actions_executor.changed_elements, (

@@ -15,6 +15,9 @@
 #  License along with this library.
 import decimal
 
+import octobot_commons.constants
+
+
 # Rebalance planner thresholds
 ALLOWED_1_TO_1_SWAP_COUNTS = 1
 MIN_RATIO_TO_SELL = decimal.Decimal("0.0001")  # 1/10000
@@ -33,3 +36,6 @@ FILL_ORDER_TIMEOUT = 60
 
 # Account keys
 PORTFOLIO_ASSET_ALLOCATION_RATIO = "allocation_ratio"
+
+# Account copy settings
+DEFAULT_COPY_WAITING_TIME = octobot_commons.constants.HOURS_TO_SECONDS * 4 # wake up every 4 hours by default
