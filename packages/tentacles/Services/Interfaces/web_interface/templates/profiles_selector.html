@@ -61,10 +61,12 @@
                     </h4>
                     <div class="row mx-0 mt-1">
                         {% for profile in profiles %}
+                        {% if not profile.hidden %}
                         {{ profiles_macros.profile_overview(profile, current_profile,
                           profiles_tentacles_details[profile.profile_id], strategy_config,
                           evaluator_config, get_profile_traded_pairs_by_currency, get_profile_exchanges,
                           get_enabled_trader, get_filtered_list, read_only, True, onboarding) }}
+                        {% endif %}
                         {% endfor %}
                     </div>
                 </div>

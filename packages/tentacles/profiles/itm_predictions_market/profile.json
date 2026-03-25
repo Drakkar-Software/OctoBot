@@ -38,6 +38,7 @@
         "name": "ITM Predictions Market",
         "origin_url": null,
         "read_only": true,
+        "hidden": true,
         "risk": 2,
         "slug": "",
         "type": "live"
