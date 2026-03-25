@@ -1,0 +1,11 @@
+{
+    "tentacle_activation": {
+        "Evaluator": {
+            "DSLRealtimeEvaluator": true,
+            "SimpleStrategyEvaluator": true
+        },
+        "Trading": {
+            "DSLTradingMode": true
+        }
+    }
+}

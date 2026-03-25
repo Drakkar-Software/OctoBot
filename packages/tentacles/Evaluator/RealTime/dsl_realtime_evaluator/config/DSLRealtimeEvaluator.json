@@ -1,0 +1,5 @@
+{
+    "trigger_channel": "ohlcv",
+    "dsl_script": "",
+    "time_frame": "1m"
+}

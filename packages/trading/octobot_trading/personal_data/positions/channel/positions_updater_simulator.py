@@ -68,6 +68,27 @@ class PositionsUpdaterSimulator(positions_updater.PositionsUpdater):
                           f"{constants.DEFAULT_SYMBOL_FUTURE_CONTRACT_TYPE}")
         return enums.FutureContractType.LINEAR_PERPETUAL
 
+    async def modify(self, added_pairs=None, removed_pairs=None):
+        if not self._should_run():
+            return
+        if added_pairs:
+            self.logger.info(f"Initializing simulated positions for new traded symbols: {added_pairs}...")
+            for pair in added_pairs:
+                contract = self.channel.exchange_manager.exchange.create_pair_contract(
+                    pair=pair,
+                    current_leverage=constants.DEFAULT_SYMBOL_LEVERAGE,
+                    contract_size=constants.DEFAULT_SYMBOL_CONTRACT_SIZE,
+                    margin_type=constants.DEFAULT_SYMBOL_MARGIN_TYPE,
+                    contract_type=self._get_contract_type_or_default(pair),
+                    position_mode=constants.DEFAULT_SYMBOL_POSITION_MODE,
+                    maintenance_margin_rate=constants.DEFAULT_SYMBOL_MAINTENANCE_MARGIN_RATE,
+                    maximum_leverage=constants.DEFAULT_SYMBOL_MAX_LEVERAGE,
+                )
+                if not contract.is_handled_contract():
+                    self.logger.error(f"Unhandled contract {contract}. This contract can't be traded")
+                self.channel.exchange_manager.exchange.set_contract_initialized_event(pair)
+                self.channel.exchange_manager.exchange_personal_data.positions_manager.set_initialized_event(pair)
+
     async def handle_funding_rate(self, exchange: str,
                                   exchange_id: str,
                                   cryptocurrency: str,

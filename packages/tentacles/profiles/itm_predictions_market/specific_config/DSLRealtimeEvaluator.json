@@ -1,0 +1,6 @@
+{
+    "trigger_channel": "all_tickers",
+    "all_tickers_refresh_time": 100,
+    "dsl_script": "market_expiry(triggered_symbol()) is not None and 0 < market_expiry(triggered_symbol()) - now_ms() <= 86400000 and ticker_close(triggered_symbol()) >= 0.90 and ticker_close(triggered_symbol()) < 0.999",
+    "time_frame": "1m"
+}

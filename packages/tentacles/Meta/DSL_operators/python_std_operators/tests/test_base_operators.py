@@ -114,6 +114,16 @@ async def test_interpreter_mixed_basic_operations(interpreter):
 
 
 @pytest.mark.asyncio
+async def test_and_or_short_circuit(interpreter):
+    # and short-circuits: False and (None - 1) should not crash
+    assert await interpreter.interprete("False and None - 1") is False
+    assert await interpreter.interprete("None is not None and None - 1 > 0") is False
+    # or short-circuits: True or (None - 1) should not crash
+    assert await interpreter.interprete("True or None - 1") is True
+    assert await interpreter.interprete("1 > 0 or None - 1 > 0") is True
+
+
+@pytest.mark.asyncio
 async def test_interpreter_call_operations(interpreter):
     assert await interpreter.interprete("max(1, 2, 3)") == 3
     assert await interpreter.interprete("min(1, 2, 3)") == 1

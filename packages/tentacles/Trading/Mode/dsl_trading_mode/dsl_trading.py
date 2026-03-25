@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import typing
+import octobot_commons.constants as commons_constants
 import octobot_commons.enums as commons_enums
 import octobot_commons.errors as commons_errors
 import octobot_commons.dsl_interpreter as dsl_interpreter
@@ -37,7 +38,11 @@ class DSLTradingModeProducer(trading_modes.AbstractTradingModeProducer):
         self.logger.info(
             f"Executing DSL script trigger by {matrix_id=}, {cryptocurrency=}, {symbol=}, {time_frame=}, {trigger_source=}"
         )
-        result = await self.trading_mode.interpret_dsl_script() # type: ignore
+        if symbol not in self.exchange_manager.exchange_config.traded_symbol_pairs:
+            self.logger.info(f"Registering new trading pair: {symbol}")
+            await self.exchange_manager.exchange_config.add_traded_symbols([symbol], [])
+        self.trading_mode.triggered_symbol = symbol
+        result = await self.trading_mode.interpret_dsl_script()
         self.logger.info(f"DSL script successfully executed. Result: {result.result}")
 
     @classmethod
@@ -57,6 +62,7 @@ class DSLTradingMode(trading_modes.AbstractTradingMode):
     def __init__(self, config, exchange_manager):
         super().__init__(config, exchange_manager)
         self.dsl_script: str = ""
+        self.triggered_symbol: str = ""
         self.interpreter: dsl_interpreter.Interpreter = None # type: ignore
 
     def init_user_inputs(self, inputs: dict) -> None:
@@ -116,6 +122,7 @@ class DSLTradingMode(trading_modes.AbstractTradingMode):
                 self.exchange_manager, trading_mode=self, dependencies=dependencies
             )
             + dsl_operators.create_blockchain_wallet_operators(self.exchange_manager)
+            + dsl_operators.create_symbol_operators(self)
         )
 
     async def interpret_dsl_script(self) -> dsl_interpreter.DSLCallResult:
@@ -145,4 +152,7 @@ class DSLTradingMode(trading_modes.AbstractTradingMode):
         return [
             trading_enums.ExchangeTypes.SPOT,
             trading_enums.ExchangeTypes.FUTURE,
+            trading_enums.ExchangeTypes.OPTION,
         ]
+
+
