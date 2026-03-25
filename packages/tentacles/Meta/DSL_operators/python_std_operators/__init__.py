@@ -86,6 +86,10 @@ import tentacles.Meta.DSL_operators.python_std_operators.base_iterable_operators
 from tentacles.Meta.DSL_operators.python_std_operators.base_iterable_operators import (
     ListOperator,
 )
+import tentacles.Meta.DSL_operators.python_std_operators.base_time_operators as dsl_interpreter_base_time_operators
+from tentacles.Meta.DSL_operators.python_std_operators.base_time_operators import (
+    NowMsOperator,
+)
 
 __all__ = [
     "AddOperator",
@@ -129,4 +133,5 @@ __all__ = [
     "SliceOperator",
     "ListOperator",
     "ErrorOperator",
+    "NowMsOperator",
 ]

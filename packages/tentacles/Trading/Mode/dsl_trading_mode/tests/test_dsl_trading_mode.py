@@ -48,7 +48,8 @@ class TestDSLTradingModeClassMethods:
         supported = dsl_trading.DSLTradingMode.get_supported_exchange_types()
         assert trading_enums.ExchangeTypes.SPOT in supported
         assert trading_enums.ExchangeTypes.FUTURE in supported
-        assert len(supported) == 2
+        assert trading_enums.ExchangeTypes.OPTION in supported
+        assert len(supported) == 3
 
 
 class TestDSLTradingMode:
@@ -247,6 +248,7 @@ class TestDSLTradingModeProducer:
     async def test_set_final_eval(self):
         config = {}
         exchange_manager = mock.Mock()
+        exchange_manager.exchange_config.traded_symbol_pairs = ["BTC/USDT"]
         trading_mode = dsl_trading.DSLTradingMode(config, exchange_manager)
         trading_mode.interpreter = mock.Mock()
         dsl_result = mock.Mock(result=42)

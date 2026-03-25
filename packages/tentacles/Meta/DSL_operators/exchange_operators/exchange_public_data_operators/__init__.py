@@ -21,9 +21,19 @@ from tentacles.Meta.DSL_operators.exchange_operators.exchange_public_data_operat
     ExchangeDataDependency,
     create_ohlcv_operators,
 )
+import tentacles.Meta.DSL_operators.exchange_operators.exchange_public_data_operators.ticker_operators
+from tentacles.Meta.DSL_operators.exchange_operators.exchange_public_data_operators.ticker_operators import (
+    create_ticker_operators,
+)
+import tentacles.Meta.DSL_operators.exchange_operators.exchange_public_data_operators.symbol_operators
+from tentacles.Meta.DSL_operators.exchange_operators.exchange_public_data_operators.symbol_operators import (
+    create_symbol_operators,
+)
 
 __all__ = [
     "OHLCVOperator",
     "ExchangeDataDependency",
     "create_ohlcv_operators",
+    "create_ticker_operators",
+    "create_symbol_operators",
 ]

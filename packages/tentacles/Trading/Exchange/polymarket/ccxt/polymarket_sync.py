@@ -550,7 +550,7 @@ class polymarket(Exchange, ImplicitAPI):
             request['closed'] = not active
         # Fetch first page to seed the results
         firstResponse = self.gamma_public_get_markets(self.extend({}, request, {'offset': 0}))
-        firstPage = self.safe_list(firstResponse, 'data', firstResponse)
+        firstPage = self.safe_list(firstResponse, 'data', firstResponse) or []
         markets: List[Any] = firstPage
         if len(firstPage) >= limit:
             # API returns a plain list with no total count — fetch remaining pages in parallel batches.
@@ -565,7 +565,7 @@ class polymarket(Exchange, ImplicitAPI):
                     batchPromises.append(self.gamma_public_get_markets(self.extend({}, request, {'offset': currentOffset + i * limit})))
                 batchResponses = batchPromises
                 for i in range(0, len(batchResponses)):
-                    page = self.safe_list(batchResponses[i], 'data', batchResponses[i])
+                    page = self.safe_list(batchResponses[i], 'data', batchResponses[i]) or []
                     markets = self.array_concat(markets, page)
                     if len(page) < limit:
                         done = True
@@ -1153,18 +1153,23 @@ class polymarket(Exchange, ImplicitAPI):
         symbolsToFetch = symbols or self.symbols
         for i in range(0, len(symbolsToFetch)):
             symbol = symbolsToFetch[i]
-            market = self.market(symbol)
-            # Use market['id'] which is the specific token ID for self outcome(YES/NO)
-            # Do NOT use clobTokenIds[0] always picks the first outcome regardless of symbol
-            tokenId = self.safe_string(market, 'id')
-            if tokenId is not None:
-                tokenIds.append(tokenId)
-                tokenIdToSymbol[tokenId] = symbol
+            try:
+                market = self.market(symbol)
+                # Use market['id'] which is the specific token ID for self outcome(YES/NO)
+                # Do NOT use clobTokenIds[0] always picks the first outcome regardless of symbol
+                tokenId = self.safe_string(market, 'id')
+                if tokenId is not None:
+                    tokenIds.append(tokenId)
+                    tokenIdToSymbol[tokenId] = symbol
+            except Exception as e:
+                continue
         if len(tokenIds) == 0:
             return {}
         # Fetch prices in batches using POST /prices with BUY+SELL requests per token.
         # Response format: {[token_id]: {BUY: price, SELL: price}}
         # See https://docs.polymarket.com/api-reference/pricing/get-multiple-market-prices-by-request
+        # Note: lastTradePrice, bestBid, bestAsk are already in marketInfo from loadMarkets()(Gamma API)
+        # and serve in parseTicker() when the pricing API has no orderbook data.
         BATCH_TOKEN_SIZE = 250
         allPricesResponse: dict = {}
         batchStart = 0
@@ -1182,8 +1187,8 @@ class polymarket(Exchange, ImplicitAPI):
         for i in range(0, len(tokenIds)):
             tokenId = tokenIds[i]
             symbol = tokenIdToSymbol[tokenId]
-            market = self.market(symbol)
             try:
+                market = self.market(symbol)
                 tokenPrices = self.safe_dict(allPricesResponse, tokenId, {})
                 buyPrice = self.safe_string(tokenPrices, 'BUY')
                 sellPrice = self.safe_string(tokenPrices, 'SELL')
@@ -1348,15 +1353,33 @@ class polymarket(Exchange, ImplicitAPI):
             last = lastTradePrice
         if last is None and bid is not None and ask is not None:
             last = (bid + ask) / 2
+        # Fallback to market outcomesInfo from loadMarkets()(Gamma API)
+        # Match by market.id(clobTokenId) to find the correct outcome price
+        if last is None and market is not None:
+            marketInfoForPrices = self.safe_dict(market, 'info', {})
+            outcomesInfoList = self.safe_list(marketInfoForPrices, 'outcomesInfo', [])
+            marketId = self.safe_string(market, 'id')
+            for k in range(0, len(outcomesInfoList)):
+                outcomeInfo = self.safe_dict(outcomesInfoList, k, {})
+                outcomeId = self.safe_string(outcomeInfo, 'id')
+                if outcomeId == marketId:
+                    last = self.safe_number(outcomeInfo, 'price')
+                    break
         # Timestamp
         updatedAtString = self.safe_string(ticker, 'updatedAt')
         timestamp = self.parse8601(updatedAtString) if updatedAtString else None
         datetime = self.iso8601(timestamp) if timestamp else None
         # Open(previous closing price - approximated)
-        open = last is not None and oneDayPriceChange is not last / (1 + oneDayPriceChange) if None else None
+        open = None
+        if last is not None and oneDayPriceChange is not None:
+            open = last / (1 + oneDayPriceChange)
         # Change and percentage
-        change = last is not None and open is not last - open if None else None
-        percentage = oneDayPriceChange is not oneDayPriceChange * 100 if None else None
+        change = None
+        if last is not None and open is not None:
+            change = last - open
+        percentage = None
+        if oneDayPriceChange is not None:
+            percentage = oneDayPriceChange * 100
         # Add additional Polymarket-specific fields to info
         tickerInfo = self.safe_dict(ticker, 'info', {})
         extendedInfo = self.deep_extend(tickerInfo, {

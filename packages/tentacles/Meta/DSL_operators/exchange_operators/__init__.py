@@ -20,6 +20,8 @@ from tentacles.Meta.DSL_operators.exchange_operators.exchange_public_data_operat
     OHLCVOperator,
     ExchangeDataDependency,
     create_ohlcv_operators,
+    create_ticker_operators,
+    create_symbol_operators,
 )
 import tentacles.Meta.DSL_operators.exchange_operators.exchange_personal_data_operators
 from tentacles.Meta.DSL_operators.exchange_operators.exchange_personal_data_operators import (
@@ -37,6 +39,8 @@ __all__ = [
     "OHLCVOperator",
     "ExchangeDataDependency",
     "create_ohlcv_operators",
+    "create_ticker_operators",
+    "create_symbol_operators",
     "create_portfolio_operators",
     "create_cancel_order_operators",
     "create_create_order_operators",

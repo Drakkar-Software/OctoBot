@@ -1,0 +1,3 @@
+{
+    "dsl_script": "limit('buy', triggered_symbol(), available('USDC') * 0.05, price='-1%', take_profit_prices=['0.99'], allow_holdings_adaptation=True)"
+}

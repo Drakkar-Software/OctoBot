@@ -1,0 +1,45 @@
+{
+    "config": {
+        "crypto-currencies": {},
+        "distribution": "default",
+        "exchanges": {
+            "polymarket": {
+                "enabled": true,
+                "exchange-type": "option"
+            }
+        },
+        "trader": {
+            "enabled": false,
+            "load-trade-history": false
+        },
+        "trader-simulator": {
+            "enabled": true,
+            "fees": {
+                "maker": 0.0,
+                "taker": 0.0
+            },
+            "starting-portfolio": {
+                "USDC": 1000
+            }
+        },
+        "trading": {
+            "reference-market": "USDC",
+            "risk": 0.5
+        }
+    },
+    "profile": {
+        "auto_update": false,
+        "avatar": "default_profile.png",
+        "complexity": 2,
+        "description": "ITM Predictions Market profile: buys in-the-money binary options on predictions markets (e.g. Polymarket) using limit orders.",
+        "extra_backtesting_time_frames": [],
+        "id": "itm_predictions_market",
+        "imported": false,
+        "name": "ITM Predictions Market",
+        "origin_url": null,
+        "read_only": true,
+        "risk": 2,
+        "slug": "",
+        "type": "live"
+    }
+}

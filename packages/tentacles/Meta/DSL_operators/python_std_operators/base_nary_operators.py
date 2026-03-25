@@ -32,8 +32,11 @@ class AndOperator(dsl_interpreter_n_ary_operator.NaryOperator):
         return ast.And.__name__
 
     def compute(self) -> dsl_interpreter_operator.ComputedOperatorParameterType:
-        operands = self.get_computed_parameters()
-        return all(operands)
+        for parameter in self.parameters:
+            value = self._get_computed_parameter(parameter)
+            if not value:
+                return False
+        return True
 
 
 class OrOperator(dsl_interpreter_n_ary_operator.NaryOperator):
@@ -48,5 +51,8 @@ class OrOperator(dsl_interpreter_n_ary_operator.NaryOperator):
         return ast.Or.__name__
 
     def compute(self) -> dsl_interpreter_operator.ComputedOperatorParameterType:
-        operands = self.get_computed_parameters()
-        return any(operands)
+        for parameter in self.parameters:
+            value = self._get_computed_parameter(parameter)
+            if value:
+                return True
+        return False
