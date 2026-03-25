@@ -93,7 +93,9 @@ class Operator:
                 )
             if max_params is not None and total_params > max_params:
                 raise octobot_commons.errors.InvalidParametersError(
-                    f"{self.get_name()} supports up to {max_params} "
+                    f"{self.get_name()} got {total_params} parameters "
+                    f"({', '.join([str(p) for p in tuple(parameters) + tuple(kwargs.values())])}) "
+                    f"but supports up to {max_params} "
                     f"parameters: {self.get_parameters_description()}"
                 )
 
