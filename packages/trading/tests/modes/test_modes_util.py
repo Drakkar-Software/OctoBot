@@ -67,7 +67,7 @@ async def test_get_assets_requiring_extra_price_data_to_convert(backtesting_trad
 
 
 async def test_convert_assets_to_target_asset():
-    trading_mode = "trading_mode"
+    trading_mode = mock.Mock()
     sellable_assets = ["USDT", "PLOP"]
     target_asset = "USD"
     tickers = {"BTC/USDT": {}}
@@ -75,20 +75,34 @@ async def test_convert_assets_to_target_asset():
             modes_util, "convert_asset_to_target_asset", mock.AsyncMock(return_value=["orders"])
     ) as convert_asset_to_target_asset:
         orders = \
-            await modes_util.convert_assets_to_target_asset(trading_mode, sellable_assets, target_asset, tickers)
+            await modes_util.convert_assets_to_target_asset(
+                sellable_assets, target_asset, tickers, trading_mode=trading_mode,
+            )
 
         assert convert_asset_to_target_asset.call_count == 2
         assert convert_asset_to_target_asset.mock_calls[0].args == \
-               (trading_mode, "PLOP", target_asset, {"BTC/USDT": {}})
-        assert convert_asset_to_target_asset.mock_calls[0].kwargs == {"asset_amount": None, "dependencies": None}
+               ("PLOP", target_asset, {"BTC/USDT": {}})
+        assert convert_asset_to_target_asset.mock_calls[0].kwargs == {
+            "asset_amount": None,
+            "dependencies": None,
+            "trading_mode": trading_mode,
+            "exchange_manager": None,
+        }
         assert convert_asset_to_target_asset.mock_calls[1].args == \
-               (trading_mode, "USDT", target_asset, {"BTC/USDT": {}})
-        assert convert_asset_to_target_asset.mock_calls[1].kwargs == {"asset_amount": None, "dependencies": None}
+               ("USDT", target_asset, {"BTC/USDT": {}})
+        assert convert_asset_to_target_asset.mock_calls[1].kwargs == {
+            "asset_amount": None,
+            "dependencies": None,
+            "trading_mode": trading_mode,
+            "exchange_manager": None,
+        }
 
         assert orders == ["orders", "orders"]
 
         convert_asset_to_target_asset.reset_mock()
-        orders = await modes_util.convert_assets_to_target_asset(trading_mode, [], target_asset, {"tickers": {}})
+        orders = await modes_util.convert_assets_to_target_asset(
+            [], target_asset, {"tickers": {}}, trading_mode=trading_mode,
+        )
         convert_asset_to_target_asset.assert_not_called()
         assert orders == []
 
@@ -97,19 +111,27 @@ async def test_convert_assets_to_target_asset():
     ) as convert_asset_to_target_asset:
         trading_mode = mock.Mock()
         assert await modes_util.convert_assets_to_target_asset(
-            trading_mode, sellable_assets, target_asset, tickers,
+            sellable_assets,
+            target_asset,
+            tickers,
             dependencies=signals.get_orders_dependencies([
                 mock.Mock(order_id="123"),
                 mock.Mock(order_id="456")
-            ])
+            ]),
+            trading_mode=trading_mode,
         ) == []
         assert sellable_assets
         assert convert_asset_to_target_asset.call_count == len(sellable_assets)
         for call in convert_asset_to_target_asset.mock_calls:
-            assert call.kwargs == {"asset_amount": None, "dependencies": signals.get_orders_dependencies([
-                mock.Mock(order_id="123"),
-                mock.Mock(order_id="456")
-            ])}
+            assert call.kwargs == {
+                "asset_amount": None,
+                "dependencies": signals.get_orders_dependencies([
+                    mock.Mock(order_id="123"),
+                    mock.Mock(order_id="456")
+                ]),
+                "trading_mode": trading_mode,
+                "exchange_manager": None,
+            }
 
 
 async def test_convert_asset_to_target_asset(backtesting_trader):
@@ -125,13 +147,13 @@ async def test_convert_asset_to_target_asset(backtesting_trader):
         as is_market_open_for_order_type_mock:
         # only BTC and USDT in portfolio
         # convert ETH to USDT: nothing to do
-        orders = await modes_util.convert_asset_to_target_asset(trading_mode, "ETH", "USDT", tickers)
+        orders = await modes_util.convert_asset_to_target_asset("ETH", "USDT", tickers, trading_mode=trading_mode)
         assert orders == []
         trading_mode.create_order.assert_not_called()
         is_market_open_for_order_type_mock.assert_not_called()
 
         # sell BTC
-        orders = await modes_util.convert_asset_to_target_asset(trading_mode, "BTC", "USDT", tickers)
+        orders = await modes_util.convert_asset_to_target_asset("BTC", "USDT", tickers, trading_mode=trading_mode)
         # not working: no BTC pair in exchange_manager.client_symbols (can't create convert order)
         assert orders == []
         trading_mode.create_order.assert_not_called()
@@ -148,11 +170,12 @@ async def test_convert_asset_to_target_asset(backtesting_trader):
         # register BTC price
         converter.update_last_price("BTC/USDT", decimal.Decimal(30000))
         orders = await modes_util.convert_asset_to_target_asset(
-            trading_mode, "BTC", "USDT", tickers,
+            "BTC", "USDT", tickers,
             dependencies=signals.get_orders_dependencies([
                 mock.Mock(order_id="123"),
                 mock.Mock(order_id="456")
-            ])
+            ]),
+            trading_mode=trading_mode,
         )
         assert len(orders) == 1
         order = orders[0]
@@ -175,7 +198,7 @@ async def test_convert_asset_to_target_asset(backtesting_trader):
         )
         is_market_open_for_order_type_mock.reset_mock()
 
-    orders = await modes_util.convert_asset_to_target_asset(trading_mode, "USDT", "BTC", tickers)
+    orders = await modes_util.convert_asset_to_target_asset("USDT", "BTC", tickers, trading_mode=trading_mode)
     assert len(orders) == 1
     order = orders[0]
     assert order.order_type == trading_enums.TraderOrderType.BUY_MARKET
@@ -194,7 +217,7 @@ async def test_convert_asset_to_target_asset(backtesting_trader):
 
     # reset portfolio
     portfolio["USDT"] = trading_personal_data.SpotAsset("USDT", decimal.Decimal(1000), decimal.Decimal(1000))
-    orders = await modes_util.convert_asset_to_target_asset(trading_mode, "USDT", "ETH", tickers)
+    orders = await modes_util.convert_asset_to_target_asset("USDT", "ETH", tickers, trading_mode=trading_mode)
     assert len(orders) == 1
     order = orders[0]
     assert order.order_type == trading_enums.TraderOrderType.BUY_MARKET
@@ -206,13 +229,13 @@ async def test_convert_asset_to_target_asset(backtesting_trader):
     trading_mode.create_order.reset_mock()
 
     portfolio["ETH"] = trading_personal_data.SpotAsset("ETH", constants.ZERO, constants.ZERO)
-    orders = await modes_util.convert_asset_to_target_asset(trading_mode, "ETH", "USDT", tickers)
+    orders = await modes_util.convert_asset_to_target_asset("ETH", "USDT", tickers, trading_mode=trading_mode)
     # no ETH in portfolio
     assert orders == []
     trading_mode.create_order.assert_not_called()
 
     portfolio["ETH"] = trading_personal_data.SpotAsset("ETH", constants.ONE, constants.ONE)
-    orders = await modes_util.convert_asset_to_target_asset(trading_mode, "ETH", "USDT", tickers)
+    orders = await modes_util.convert_asset_to_target_asset("ETH", "USDT", tickers, trading_mode=trading_mode)
     assert len(orders) == 1
     order = orders[0]
     assert order.order_type == trading_enums.TraderOrderType.SELL_MARKET
@@ -226,7 +249,7 @@ async def test_convert_asset_to_target_asset(backtesting_trader):
     # with amount param
     portfolio["ETH"] = trading_personal_data.SpotAsset("ETH", decimal.Decimal("2"), decimal.Decimal("2"))
     orders = await modes_util.convert_asset_to_target_asset(
-        trading_mode, "ETH", "USDT", tickers, asset_amount=decimal.Decimal(2)
+        "ETH", "USDT", tickers, asset_amount=decimal.Decimal(2), trading_mode=trading_mode,
     )
     assert len(orders) == 1
     order = orders[0]
@@ -239,7 +262,7 @@ async def test_convert_asset_to_target_asset(backtesting_trader):
     trading_mode.create_order.reset_mock()
 
     orders = await modes_util.convert_asset_to_target_asset(
-        trading_mode, "USDT", "ETH", tickers, asset_amount=decimal.Decimal(450)
+        "USDT", "ETH", tickers, asset_amount=decimal.Decimal(450), trading_mode=trading_mode,
     )
     assert len(orders) == 1
     order = orders[0]
@@ -252,7 +275,7 @@ async def test_convert_asset_to_target_asset(backtesting_trader):
     trading_mode.create_order.reset_mock()
 
     orders = await modes_util.convert_asset_to_target_asset(
-        trading_mode, "USDT", "ETH", tickers, asset_amount=decimal.Decimal(1000)
+        "USDT", "ETH", tickers, asset_amount=decimal.Decimal(1000), trading_mode=trading_mode,
     )
     assert len(orders) == 1
     order = orders[0]
@@ -275,7 +298,7 @@ async def test_convert_asset_to_target_asset(backtesting_trader):
         # cast 1: enough funds in pf to cover fees
         portfolio["USDT"] = trading_personal_data.SpotAsset("USDT", decimal.Decimal(1000), decimal.Decimal(1000))
         orders = await modes_util.convert_asset_to_target_asset(
-            trading_mode, "USDT", "ETH", tickers, asset_amount=decimal.Decimal(450)
+            "USDT", "ETH", tickers, asset_amount=decimal.Decimal(450), trading_mode=trading_mode,
         )
         assert len(orders) == 1
         order = orders[0]
@@ -292,7 +315,7 @@ async def test_convert_asset_to_target_asset(backtesting_trader):
         # cast 2: reduce amount to cover fees
         portfolio["USDT"] = trading_personal_data.SpotAsset("USDT", decimal.Decimal(1000), decimal.Decimal(1000))
         orders = await modes_util.convert_asset_to_target_asset(
-            trading_mode, "USDT", "ETH", tickers, asset_amount=decimal.Decimal(1000)
+            "USDT", "ETH", tickers, asset_amount=decimal.Decimal(1000), trading_mode=trading_mode,
         )
         assert len(orders) == 1
         order = orders[0]
@@ -319,7 +342,7 @@ async def test_convert_asset_to_target_asset(backtesting_trader):
         # cast 1: buying
         portfolio["USDT"] = trading_personal_data.SpotAsset("USDT", decimal.Decimal(1000), decimal.Decimal(1000))
         orders = await modes_util.convert_asset_to_target_asset(
-            trading_mode, "USDT", "ETH", tickers, asset_amount=decimal.Decimal(450)
+            "USDT", "ETH", tickers, asset_amount=decimal.Decimal(450), trading_mode=trading_mode,
         )
         assert len(orders) == 1
         order = orders[0]
@@ -348,7 +371,7 @@ async def test_convert_asset_to_target_asset(backtesting_trader):
         # cast 2: selling
         portfolio["USDT"] = trading_personal_data.SpotAsset("USDT", decimal.Decimal(2), decimal.Decimal(2))
         orders = await modes_util.convert_asset_to_target_asset(
-            trading_mode, "ETH", "USDT", tickers, asset_amount=decimal.Decimal(2)
+            "ETH", "USDT", tickers, asset_amount=decimal.Decimal(2), trading_mode=trading_mode,
         )
         assert len(orders) == 1
         order = orders[0]

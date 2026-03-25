@@ -86,7 +86,7 @@ class FuturesRebalancer(base_rebalancer.AbstractRebalancer):
 
         if created_orders:
             return created_orders
-        if self._rebalancing_client.allow_skip_asset:
+        if self._rebalance_actions_planner.client.allow_skip_asset:
             self._get_logger().warning(f"Skipping {symbol} order creation...")
             return []
         if orders_should_have_been_created:
@@ -101,7 +101,7 @@ class FuturesRebalancer(base_rebalancer.AbstractRebalancer):
         if current_price <= trading_constants.ZERO:
             return trading_constants.ZERO
         total_holdings_value = self._exchange_interface.private_data.get_traded_assets_holdings_value(
-            self._rebalancing_client.reference_market
+            self._exchange_interface.private_data.reference_market
         )
         try:
             return max(

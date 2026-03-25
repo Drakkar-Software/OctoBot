@@ -3,37 +3,48 @@ import typing
 import decimal
 
 import octobot_commons.constants as common_constants
+import octobot_commons.dataclasses as commons_dataclasses
 import octobot_trading.constants as trading_constants
 
 import octobot_copy.enums as copy_enums
 import octobot_copy.rebalancing.planner.distributions as planner_distributions
+import octobot_copy.constants as copy_constants
 
 
 @dataclasses.dataclass
-class Account:
-    # account portfolio: dict of assets with available and total amounts
+class Account(commons_dataclasses.MinimizableDataclass):
+    # account portfolio: dict of assets with allocation_ratio, available and total amounts
+    # the allocation_ratio key is used to compute the distribution allocation
     content: dict[str, dict[str, decimal.Decimal]] = dataclasses.field(default_factory=dict)
     # account orders, dict keys: trading_enums.ExchangeConstantsOrderColumns
     orders: list[dict[str, typing.Any]] = dataclasses.field(default_factory=list)
     # account positions, dict keys: trading_enums.ExchangeConstantsPositionColumns
     positions: list[dict[str, typing.Any]] = dataclasses.field(default_factory=list)
 
+    def __post_init__(self):
+        self.content = {
+            asset: {
+                key: decimal.Decimal(str(value)) for key, value in holdings.items()
+            }
+            for asset, holdings in self.content.items()
+        }
+
     def create_assets_distribution(self) -> list[dict[str, typing.Any]]:
         amounts: list[tuple[str, decimal.Decimal]] = []
         for currency, holdings in self.content.items():
-            quantity = holdings[common_constants.PORTFOLIO_TOTAL]
-            if quantity > trading_constants.ZERO:
-                amounts.append((currency, quantity))
+            allocation_ratio = holdings[copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO]
+            if allocation_ratio > trading_constants.ZERO:
+                amounts.append((currency, allocation_ratio))
         if not amounts:
             return []
-        total = sum((quantity for _, quantity in amounts), trading_constants.ZERO)
+        total = sum((allocation_ratio for _, allocation_ratio in amounts), trading_constants.ZERO)
         if total <= trading_constants.ZERO:
             return []
         distribution: list[dict[str, typing.Any]] = []
-        for currency, quantity in amounts:
+        for currency, allocation_ratio in amounts:
             percentage = float(
                 round(
-                    quantity / total * trading_constants.ONE_HUNDRED,
+                    allocation_ratio / total * trading_constants.ONE_HUNDRED,
                     planner_distributions.MAX_DISTRIBUTION_AFTER_COMMA_DIGITS,
                 )
             )

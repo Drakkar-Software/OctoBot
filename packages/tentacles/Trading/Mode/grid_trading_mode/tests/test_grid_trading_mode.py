@@ -2342,12 +2342,13 @@ async def test_order_by_order_trailing_up_and_down():
                 [call.args[0] for call in cancel_order_mock.mock_calls]
             )
             convert_asset_to_target_asset_mock.assert_awaited_once_with(
-                producer.trading_mode, "USDT", "BTC", {
+                "USDT", "BTC", {
                     producer.symbol: {
                         trading_enums.ExchangeConstantsTickersColumns.CLOSE.value: new_price,
                     }
                 }, asset_amount=decimal.Decimal("7.7922"),
-                dependencies=cancelled_orders_dependencies
+                dependencies=cancelled_orders_dependencies,
+                trading_mode=producer.trading_mode,
             )
             convert_dependencies = trading_signals.get_orders_dependencies(
                 _convert_asset_to_target_asset_returned_values[-1]

@@ -26,7 +26,6 @@ import octobot_copy.enums as rebalancer_enums
 import octobot_copy.errors as copy_errors
 import octobot_copy.exchange.exchange_interface as copy_exchange
 import octobot_copy.rebalancing.planner.rebalance_actions_planner as rebalance_actions_planner_import
-import octobot_copy.rebalancing.rebalancing_client_interface as rebalancing_client_interface
 
 
 SIMPLE_ADD_MIN_TOLERANCE_RATIO = decimal.Decimal("0.8")  # 20% tolerance
@@ -40,12 +39,10 @@ class AbstractRebalancer:
     def __init__(
         self,
         exchange_interface: copy_exchange.ExchangeInterface,
-        rebalancing_client: rebalancing_client_interface.RebalancingClientInterface,
         rebalance_actions_planner: rebalance_actions_planner_import.RebalanceActionsPlanner,
         target_coins_prices: dict,
     ):
         self._exchange_interface: copy_exchange.ExchangeInterface = exchange_interface
-        self._rebalancing_client: rebalancing_client_interface.RebalancingClientInterface = rebalancing_client
         self._rebalance_actions_planner: rebalance_actions_planner_import.RebalanceActionsPlanner = rebalance_actions_planner
         self._target_coins_prices: dict[str, decimal.Decimal] = target_coins_prices
         self._already_logged_aborted_rebalance_error: bool = False
@@ -58,7 +55,7 @@ class AbstractRebalancer:
         Raises MissingMinimalExchangeTradeVolume if there are not enough funds
         to buy the targeted coins.
         """
-        ref_market = self._rebalancing_client.reference_market
+        ref_market = self._exchange_interface.private_data.reference_market
         reference_market_to_split = self._get_traded_assets_holdings_value(ref_market)
         # will raise if funds are missing
         await self._get_symbols_and_amounts(
@@ -93,7 +90,7 @@ class AbstractRebalancer:
         if not simple_buy_coins:
             return False
         # check if there is enough free funds to buy those coins
-        ref_market = self._rebalancing_client.reference_market
+        ref_market = self._exchange_interface.private_data.reference_market
         reference_market_to_split = self._get_traded_assets_holdings_value(ref_market)
         free_reference_market_holding = self._get_free_reference_market_holding(ref_market)
         cumulated_ratio = sum(
@@ -122,7 +119,7 @@ class AbstractRebalancer:
         """
         orders = []
         await self._pre_cancel_conflicting_orders(details, dependencies, trading_enums.TradeOrderSide.SELL)
-        ref_market = self._rebalancing_client.reference_market
+        ref_market = self._exchange_interface.private_data.reference_market
         if details[rebalancer_enums.RebalanceDetails.SWAP.value] or is_simple_buy_without_selling:
             # has to infer total reference market holdings
             reference_market_to_split = self._get_traded_assets_holdings_value(ref_market)
@@ -135,7 +132,7 @@ class AbstractRebalancer:
             reference_market_to_split = self._get_free_reference_market_holding(ref_market)
             coins_to_buy = self._rebalance_actions_planner.targeted_coins
 
-        reference_market_ratio = self._rebalance_actions_planner.reference_market_ratio
+        reference_market_ratio = self._rebalance_actions_planner.client.reference_market_ratio
         # Distribute a percentage among targeted coins, keep the rest in reference market
         # If reference_market_ratio is 0, distribute everything (no reservation)
         if reference_market_ratio > trading_constants.ZERO:
@@ -165,7 +162,7 @@ class AbstractRebalancer:
                     dependencies,
                 )
             )
-        if not orders and not self._rebalancing_client.allow_skip_asset:
+        if not orders and not self._rebalance_actions_planner.client.allow_skip_asset:
             raise trading_errors.MissingMinimalExchangeTradeVolume()
         return orders
 
@@ -188,7 +185,7 @@ class AbstractRebalancer:
         if removed_coins_to_sell := list(details[rebalancer_enums.RebalanceDetails.REMOVE.value]):
             removed_coins_to_sell_orders = await self._exchange_interface.private_data.convert_assets_to_target_asset(
                 removed_coins_to_sell,
-                self._rebalancing_client.reference_market,
+                self._exchange_interface.private_data.reference_market,
                 {},
                 dependencies=dependencies,
             )
@@ -198,7 +195,7 @@ class AbstractRebalancer:
         order_coins_to_sell = self._get_coins_to_sell(details)
         coins_to_sell_orders = await self._exchange_interface.private_data.convert_assets_to_target_asset(
             order_coins_to_sell,
-            self._rebalancing_client.reference_market,
+            self._exchange_interface.private_data.reference_market,
             {},
             dependencies=dependencies,
         )
@@ -281,8 +278,8 @@ class AbstractRebalancer:
         coins_to_buy: typing.Optional[list] = None,
     ) -> dict:
         amount_by_symbol = {}
-        ref_market = self._rebalancing_client.reference_market
-        min_order_size_margin = self._rebalancing_client.min_order_size_margin
+        ref_market = self._exchange_interface.private_data.reference_market
+        min_order_size_margin = self._rebalance_actions_planner.client.min_order_size_margin
         coins = (
             list(coins_to_buy)
             if coins_to_buy is not None
@@ -325,7 +322,7 @@ class AbstractRebalancer:
                 )
             )
             if not adapted_quantity:
-                if self._rebalancing_client.allow_skip_asset:
+                if self._rebalance_actions_planner.client.allow_skip_asset:
                     self._get_logger().warning(
                         f"Skipping {symbol} buy: available funds are too low to buy {ratio*trading_constants.ONE_HUNDRED}% "
                         f"of {reference_market_to_split} holdings: {round(ideal_amount / effective_min_order_size_margin, 9)} {coin}"
@@ -397,7 +394,7 @@ class AbstractRebalancer:
     def _get_symbol_and_base_asset(self, coin_or_symbol: str) -> tuple[str, str]:
         if symbol_util.is_symbol(coin_or_symbol):
             return coin_or_symbol, symbol_util.parse_symbol(coin_or_symbol).base # type: ignore
-        return symbol_util.merge_currencies(coin_or_symbol, self._rebalancing_client.reference_market), coin_or_symbol
+        return symbol_util.merge_currencies(coin_or_symbol, self._exchange_interface.private_data.reference_market), coin_or_symbol
 
     def _get_logger(self):
         return logging.get_logger(self.__class__.__name__)

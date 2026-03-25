@@ -1098,7 +1098,7 @@ class DCATradingMode(trading_modes.AbstractTradingMode):
         sellable_assets = sorted(list(set(sellable_assets + traded_coins)))
         self.logger.info(f"Optimizing portfolio: selling {sellable_assets} to buy {target_asset}")
         return await trading_modes.convert_assets_to_target_asset(
-            self, sellable_assets, target_asset, tickers
+            sellable_assets, target_asset, tickers, trading_mode=self,
         )
 
     async def single_exchange_process_health_check(self, chained_orders: list, tickers: dict) -> list:
@@ -1119,7 +1119,7 @@ class DCATradingMode(trading_modes.AbstractTradingMode):
             )
             try:
                 asset_orders = await trading_modes.convert_asset_to_target_asset(
-                    self, asset, common_quote, tickers, asset_amount=amount
+                    asset, common_quote, tickers, asset_amount=amount, trading_mode=self,
                 )
                 if not asset_orders:
                     self.logger.info(

@@ -9,11 +9,17 @@ import octobot_flow.entities.accounts.client_exchange_account_elements as client
 import octobot_flow.entities.actions.actions_dag as actions_dag_import
 import octobot_flow.entities.accounts.account_elements as account_elements_import
 import octobot_flow.entities.automations.post_iteration_actions_details as post_iteration_actions_details_import
+import octobot_flow.enums
 
 
 @dataclasses.dataclass
 class AutomationMetadata(octobot_commons.dataclasses.MinimizableDataclass):
     automation_id: str = dataclasses.field(default="", repr=True)
+    run_mode: str = dataclasses.field(default=octobot_flow.enums.AutomationRunMode.UPDATE_CLIENT_EXCHANGE_ACCOUNT_ONLY.value, repr=True)
+
+
+    def maintains_a_reference_exchange_account(self) -> bool:
+        return self.run_mode == octobot_flow.enums.AutomationRunMode.UPDATE_REFERENCE_EXCHANGE_ACCOUNT_AND_COPY.value
 
 
 @dataclasses.dataclass
@@ -61,6 +67,3 @@ class AutomationDetails(octobot_commons.dataclasses.MinimizableDataclass, octobo
             self.reference_exchange_account_elements
             if as_reference_account else self.client_exchange_account_elements
         ) # type: ignore
-
-    def runs_on_reference_exchange_account_first(self) -> bool:
-        return False # TODO return True when the automation should run on the reference exchange account first and then copied by the client

@@ -22,10 +22,10 @@ from octobot_flow.logic.actions.abstract_action_executor import AbstractActionEx
 
 class DSLExecutor(AbstractActionExecutor):
     def __init__(
-        self, 
+        self,
         profile_data: octobot_commons.profiles.ProfileData,
         exchange_manager: typing.Optional[octobot_trading.exchanges.ExchangeManager],
-        dsl_script: typing.Optional[str], 
+        dsl_script: typing.Optional[str],
         dependencies: typing.Optional[octobot_commons.signals.SignalDependencies] = None,
     ):
         super().__init__()
@@ -52,6 +52,10 @@ class DSLExecutor(AbstractActionExecutor):
             + dsl_operators.create_blockchain_wallet_operators(self._exchange_manager)
             + trading_modes.create_all_trading_mode_operators(
                 self._exchange_manager, self._dependencies_config
+            )
+            + dsl_operators.create_copy_exchange_account_operators(
+                copier_exchange_manager=self._exchange_manager,
+                copier_trading_mode=None,
             )
         )
 

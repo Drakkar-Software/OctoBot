@@ -33,6 +33,10 @@ class ExchangePrivateData:
         self._trading_mode: typing.Optional["trading_modes.AbstractTradingMode"] = trading_mode
         self._public_data: exchange_public_data.ExchangePublicData = public_data
 
+    @property
+    def reference_market(self) -> str:
+        return self._exchange_manager.exchange_personal_data.portfolio_manager.reference_market
+
     def get_holdings_ratio(
         self,
         coin: str,
@@ -225,14 +229,13 @@ class ExchangePrivateData:
         tickers: dict,
         dependencies: typing.Optional[commons_signals.SignalDependencies] = None,
     ) -> list:
-        if self._trading_mode is None:
-            raise ValueError("ExchangePrivateData.convert_assets_to_target_asset requires trading_mode")
         return await modes_util.convert_assets_to_target_asset(
-            self._trading_mode,
             sellable_assets,
             target_asset,
             tickers,
             dependencies=dependencies,
+            trading_mode=self._trading_mode,
+            exchange_manager=self._exchange_manager,
         )
 
     async def cancel_order(

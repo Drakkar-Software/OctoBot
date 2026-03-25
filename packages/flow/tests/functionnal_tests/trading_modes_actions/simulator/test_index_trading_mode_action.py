@@ -15,7 +15,7 @@ import octobot_flow.enums
 import tentacles.Trading.Mode.index_trading_mode as index_trading_mode
 
 import tests.functionnal_tests as functionnal_tests
-from tests.functionnal_tests import current_time, resolved_actions, automation_state_dict
+from tests.functionnal_tests import current_time, resolved_actions, automation_state_dict, set_init_action_run_mode
 
 import octobot_copy.enums as rebalancer_enums
 
@@ -74,8 +74,12 @@ def init_action():
 
 
 @pytest.mark.asyncio
-async def test_simulator_index_init_from_empty_state(init_action: dict):
-    all_actions = [init_action, index_trading_mode_action(init_action)]
+@pytest.mark.parametrize("run_mode", [
+    octobot_flow.enums.AutomationRunMode.UPDATE_CLIENT_EXCHANGE_ACCOUNT_ONLY,
+    octobot_flow.enums.AutomationRunMode.UPDATE_REFERENCE_EXCHANGE_ACCOUNT_AND_COPY,
+])
+async def test_simulator_index_init_from_empty_state(init_action: dict, run_mode: octobot_flow.enums.AutomationRunMode):
+    all_actions = [set_init_action_run_mode(init_action, run_mode), index_trading_mode_action(init_action)]
     automation_state = automation_state_dict(resolved_actions(all_actions))
 
     # 1. run init action
@@ -123,6 +127,7 @@ async def test_simulator_index_init_from_empty_state(init_action: dict):
     )
     assert one_hour - allowed_execution_time < schedule_delay < one_hour + allowed_execution_time
     # check portfolio content
+    # both run modes should result in the same client portfolio
     after_initial_rebalance_portfolio_content = after_initial_rebalance_execution_dump["automation"]["client_exchange_account_elements"]["portfolio"]["content"]
     assert isinstance(after_initial_rebalance_execution_dump, dict)
     assert list(sorted(after_initial_rebalance_portfolio_content.keys())) == ["BTC", "ETH", "USDT"]
@@ -130,6 +135,17 @@ async def test_simulator_index_init_from_empty_state(init_action: dict):
     assert 0.1 < after_initial_rebalance_portfolio_content["ETH"]["available"] < 0.4
     assert 0.001 < after_initial_rebalance_portfolio_content["BTC"]["available"] < 0.01
     logging.getLogger("test_update_simulated_basket_bot").info(f"after_execution_portfolio_content: {after_initial_rebalance_portfolio_content}")
+    if run_mode == octobot_flow.enums.AutomationRunMode.UPDATE_REFERENCE_EXCHANGE_ACCOUNT_AND_COPY:
+        # check reference account portfolio content
+        after_initial_rebalance_reference_account_portfolio_content = after_initial_rebalance_execution_dump["automation"]["reference_exchange_account_elements"]["portfolio"]["content"]
+        assert isinstance(after_initial_rebalance_reference_account_portfolio_content, dict)
+        assert list(sorted(after_initial_rebalance_reference_account_portfolio_content.keys())) == ["BTC", "ETH", "USDT"]
+        assert 0 < after_initial_rebalance_reference_account_portfolio_content["USDT"]["available"] < 5
+        assert 0.1 < after_initial_rebalance_reference_account_portfolio_content["ETH"]["available"] < 0.4
+        assert 0.001 < after_initial_rebalance_reference_account_portfolio_content["BTC"]["available"] < 0.01
+    else:
+        # reference account should not be updated
+        assert "reference_exchange_account_elements" not in after_initial_rebalance_execution_dump["automation"]
 
 
     # 3. trigger again: nothing to do
@@ -159,11 +175,20 @@ async def test_simulator_index_init_from_empty_state(init_action: dict):
     # portfolio already follows the index content: ensure portfolio content is the same as the first call
     after_second_call_portfolio_content = after_second_call_execution_dump["automation"]["client_exchange_account_elements"]["portfolio"]["content"]
     assert after_second_call_portfolio_content == after_initial_rebalance_portfolio_content
+    if run_mode == octobot_flow.enums.AutomationRunMode.UPDATE_REFERENCE_EXCHANGE_ACCOUNT_AND_COPY:
+        after_second_call_reference_account_portfolio_content = after_second_call_execution_dump["automation"]["reference_exchange_account_elements"]["portfolio"]["content"]
+        assert after_second_call_reference_account_portfolio_content == after_initial_rebalance_reference_account_portfolio_content
+    else:
+        assert "reference_exchange_account_elements" not in after_second_call_execution_dump["automation"]
 
 
 @pytest.mark.asyncio
-async def test_simulator_index_with_added_traded_pairs(init_action: dict):
-    all_actions = [init_action, index_trading_mode_action(init_action)]
+@pytest.mark.parametrize("run_mode", [
+    octobot_flow.enums.AutomationRunMode.UPDATE_CLIENT_EXCHANGE_ACCOUNT_ONLY,
+    octobot_flow.enums.AutomationRunMode.UPDATE_REFERENCE_EXCHANGE_ACCOUNT_AND_COPY,
+])
+async def test_simulator_index_with_added_traded_pairs(init_action: dict, run_mode: octobot_flow.enums.AutomationRunMode):
+    all_actions = [set_init_action_run_mode(init_action, run_mode), index_trading_mode_action(init_action)]
     automation_state = automation_state_dict(resolved_actions(all_actions))
 
     # 1. run init action
@@ -209,8 +234,9 @@ async def test_simulator_index_with_added_traded_pairs(init_action: dict):
         assert mock_get_dsl_dependencies.call_count > 1
         # ensure the ETH/USDC pairs is really added as a dynamic symbol
         mock_create_minimal_dynamic_symbols_env_producers_if_needed.assert_awaited_once()
-        mock_get_supported_distribution.assert_called_once()
-        mock_get_filtered_traded_coins.assert_called_once()
+        expected_call_count = 2 if run_mode == octobot_flow.enums.AutomationRunMode.UPDATE_REFERENCE_EXCHANGE_ACCOUNT_AND_COPY else 1
+        assert mock_get_supported_distribution.call_count == expected_call_count
+        assert mock_get_filtered_traded_coins.call_count == expected_call_count
         after_initial_rebalance_execution_dump = automation_job.dump()
         assert len(automation_job.automation_state.automation.actions_dag.actions) == len(all_actions)
         for index, action in enumerate(automation_job.automation_state.automation.actions_dag.actions):
@@ -224,3 +250,21 @@ async def test_simulator_index_with_added_traded_pairs(init_action: dict):
                 # action is reset: this is a trading mode action: it will be executed again at the next execution
                 assert action.executed_at is None
                 assert isinstance(action.previous_execution_result, dict)
+    
+    # both run modes should result in the same client portfolio
+    after_initial_rebalance_portfolio_content = after_initial_rebalance_execution_dump["automation"]["client_exchange_account_elements"]["portfolio"]["content"]
+    assert isinstance(after_initial_rebalance_execution_dump, dict)
+    assert list(sorted(after_initial_rebalance_portfolio_content.keys())) == ["BTC", "ETH", "USDT"]
+    assert 0 < after_initial_rebalance_portfolio_content["USDT"]["available"] < 5
+    assert 0.1 < after_initial_rebalance_portfolio_content["ETH"]["available"] < 0.4
+    assert 0.001 < after_initial_rebalance_portfolio_content["BTC"]["available"] < 0.01
+    if run_mode == octobot_flow.enums.AutomationRunMode.UPDATE_REFERENCE_EXCHANGE_ACCOUNT_AND_COPY:
+        # check reference account portfolio content
+        after_initial_rebalance_reference_account_portfolio_content = after_initial_rebalance_execution_dump["automation"]["reference_exchange_account_elements"]["portfolio"]["content"]
+        assert isinstance(after_initial_rebalance_reference_account_portfolio_content, dict)
+        assert list(sorted(after_initial_rebalance_reference_account_portfolio_content.keys())) == ["BTC", "ETH", "USDT"]
+        assert 0 < after_initial_rebalance_reference_account_portfolio_content["USDT"]["available"] < 5
+        assert 0.1 < after_initial_rebalance_reference_account_portfolio_content["ETH"]["available"] < 0.4
+        assert 0.001 < after_initial_rebalance_reference_account_portfolio_content["BTC"]["available"] < 0.01
+    else:
+        assert "reference_exchange_account_elements" not in after_initial_rebalance_execution_dump["automation"]
