@@ -1,7 +1,10 @@
+import typing
+
 import octobot_trading.util.test_tools.exchanges_test_tools as exchanges_test_tools
 import octobot_trading.exchange_data
 import octobot_trading.exchanges
 import octobot_trading.enums as trading_enums
+import octobot_trading.exchanges.util.exchange_data as exchange_data_import
 
 import octobot_flow.repositories.exchange.base_exchange_repository as base_exchange_repository_import
 import octobot_flow.constants
@@ -14,22 +17,27 @@ _TICKER_CACHE = octobot_trading.exchange_data.TickerCache(
 
 class TickersRepository(base_exchange_repository_import.BaseExchangeRepository):
 
-    async def fetch_tickers(self, symbols: list[str]) -> dict[str, dict]:
-        if not symbols:
+    async def fetch_tickers(self, symbols: typing.Optional[list[str]]) -> dict[str, dict]:
+        if symbols == []:
             return {}
-        if len(symbols) == 1:
+        if isinstance(symbols, list) and len(symbols) == 1:
             return {
                 symbols[0]: await exchanges_test_tools.get_price_ticker(self.exchange_manager, symbols[0]) # type: ignore
             }
-        tickers = await exchanges_test_tools.get_all_currencies_price_ticker(
-            self.exchange_manager, symbols=symbols
-        )
-        self.set_tickers_cache(
+        if not (tickers := _TICKER_CACHE.get_all_tickers(
             self.exchange_manager.exchange_name,
             octobot_trading.exchanges.get_exchange_type(self.exchange_manager).value,
-            self.exchange_manager.is_sandboxed,
-            tickers
-        )
+            self.exchange_manager.is_sandboxed
+        )):
+            tickers = await exchanges_test_tools.get_all_currencies_price_ticker(
+                self.exchange_manager, symbols=symbols
+            )
+            self.set_tickers_cache(
+                self.exchange_manager.exchange_name,
+                octobot_trading.exchanges.get_exchange_type(self.exchange_manager).value,
+                self.exchange_manager.is_sandboxed,
+                tickers
+            )
         return tickers
 
     @staticmethod
@@ -41,6 +49,15 @@ class TickersRepository(base_exchange_repository_import.BaseExchangeRepository):
         except TypeError as err:
             # symbol not found in cache
             raise KeyError(err) from err
+
+    @staticmethod
+    def get_cached_market_price_from_exchange_data(
+        exchange_data: exchange_data_import.ExchangeData, symbol: str
+    ) -> float:
+        return TickersRepository.get_cached_market_price(
+            exchange_data.exchange_details.name, exchange_data.auth_details.exchange_type,
+            exchange_data.auth_details.sandboxed, symbol,
+        )
 
 
     @staticmethod

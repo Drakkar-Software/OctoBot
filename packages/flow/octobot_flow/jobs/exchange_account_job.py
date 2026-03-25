@@ -88,15 +88,17 @@ class ExchangeAccountJob(octobot_flow.repositories.exchange.ExchangeContextMixin
     async def _fetch_tickers(self):
         repository = self.get_exchange_repository_factory().get_tickers_repository()
         self.fetched_dependencies.fetched_exchange_data.public_data.tickers = await repository.fetch_tickers(
-            self._get_traded_symbols()
+            # when maintaining a reference exchange account, always fetch all tickers to be able to evaluate portfolio ratios
+            None if self.automation_state.automation.metadata.maintains_a_reference_exchange_account()
+            else self._get_traded_symbols()
         )
         ticker_close_by_symbols = {
             symbol: ticker[octobot_trading.enums.ExchangeConstantsTickersColumns.CLOSE.value] 
             for symbol, ticker in self.fetched_dependencies.fetched_exchange_data.public_data.tickers.items()
         }
+        logged_tickers = f" tickers: {ticker_close_by_symbols}" if len(ticker_close_by_symbols) < 10 else ""
         self._logger.info(
-            f"Fetched [{self._exchange_manager.exchange_name}] {len(self.fetched_dependencies.fetched_exchange_data.public_data.tickers)} "
-            f"tickers: {ticker_close_by_symbols}"
+            f"Fetched [{self._exchange_manager.exchange_name}] {len(self.fetched_dependencies.fetched_exchange_data.public_data.tickers)}{logged_tickers}"
         )
 
     async def _fetch_positions(self):

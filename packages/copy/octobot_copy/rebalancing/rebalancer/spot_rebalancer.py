@@ -69,7 +69,7 @@ class SpotRebalancer(base_rebalancer.AbstractRebalancer):
         )
         if created_orders:
             return created_orders
-        if self._rebalancing_client.allow_skip_asset:
+        if self._rebalance_actions_planner.client.allow_skip_asset:
             self._get_logger().warning(f"Skipping {symbol} order creation...")
             return []
         if orders_should_have_been_created:

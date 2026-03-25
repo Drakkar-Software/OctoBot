@@ -62,7 +62,7 @@ class TickerCache:
             **self._ALL_TICKERS_BY_EXCHANGE_KEY.get(key, {}), **tickers
         }
         octobot_commons.logging.get_logger(self.__class__.__name__).info(
-            f"Refreshed {len(tickers)} ({len(tickers)})/{len(merged_tickers)}) tickers cache for {exchange_name} {exchange_type}{sandbox}"
+            f"Refreshed {len(tickers)} ({len(tickers)}/{len(merged_tickers)}) tickers cache for {exchange_name} {exchange_type}{sandbox}"
         )
         self._ALL_TICKERS_BY_EXCHANGE_KEY[key] = merged_tickers
         self._ALL_PARSED_SYMBOLS_BY_MERGED_SYMBOLS_BY_EXCHANGE_KEY[key] = {

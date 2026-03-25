@@ -1,13 +1,12 @@
 import dataclasses
 import decimal
 
+import octobot_commons.dataclasses as commons_dataclasses
 import octobot_copy.enums as copy_enums
 
 
 @dataclasses.dataclass
-class AccountCopySettings:
-    # Quote asset used for portfolio valuation and rebalance pairs (must match the copier exchange reference market).
-    reference_market: str
+class AccountCopySettings(commons_dataclasses.MinimizableDataclass):
     synchronization_policy: copy_enums.SynchronizationPolicy = (
         copy_enums.SynchronizationPolicy.SELL_REMOVED_INDEX_COINS_AS_SOON_AS_POSSIBLE
     )
@@ -23,3 +22,16 @@ class AccountCopySettings:
     min_order_size_margin: decimal.Decimal = decimal.Decimal("2")
     # Allow skipping assets that don't meet minimum order size requirements instead of aborting portfolio rebalancing
     allow_skip_asset: bool = False
+
+
+    def __post_init__(self):
+        if self.synchronization_policy:
+            self.synchronization_policy = copy_enums.SynchronizationPolicy(self.synchronization_policy)
+        if self.rebalance_trigger_min_ratio:
+            self.rebalance_trigger_min_ratio = decimal.Decimal(str(self.rebalance_trigger_min_ratio))
+        if self.quote_asset_rebalance_ratio_threshold:
+            self.quote_asset_rebalance_ratio_threshold = decimal.Decimal(str(self.quote_asset_rebalance_ratio_threshold))
+        if self.reference_market_ratio:
+            self.reference_market_ratio = decimal.Decimal(str(self.reference_market_ratio))
+        if self.min_order_size_margin:
+            self.min_order_size_margin = decimal.Decimal(str(self.min_order_size_margin))

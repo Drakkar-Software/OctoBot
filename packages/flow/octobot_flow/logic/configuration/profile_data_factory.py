@@ -22,7 +22,7 @@ def create_profile_data(
         crypto_currencies=crypto_currencies,
         exchanges=[exchange_account_details.exchange_details] if exchange_account_details else [],
         trading=profile_data_import.TradingData(
-            reference_market=_infer_reference_market(exchange_account_details, crypto_currencies) 
+            reference_market=infer_reference_market(exchange_account_details, crypto_currencies) 
         ),
         trader_simulator=profile_data_import.TraderSimulatorData(
             enabled=exchange_account_details.is_simulated() if exchange_account_details else True,
@@ -30,7 +30,7 @@ def create_profile_data(
         tentacles=[], # no tentacles: only the generic dsl executor will be used
     )
 
-def _infer_reference_market(
+def infer_reference_market(
     exchange_account_details: typing.Optional[octobot_flow.entities.ExchangeAccountDetails],
     crypto_currencies: list[profile_data_import.CryptoCurrencyData]) -> str:
     if (

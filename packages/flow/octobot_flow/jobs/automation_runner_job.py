@@ -38,6 +38,7 @@ class AutomationRunnerJob(octobot_flow.repositories.exchange.ExchangeContextMixi
         self._as_reference_account: bool = False
         self._to_execute_actions: list[octobot_flow.entities.AbstractActionDetails] = None # type: ignore
         self._default_next_execution_scheduled_to: float = default_next_execution_scheduled_to
+        self._update_execution_details: bool = True
 
     def validate(self, automation: octobot_flow.entities.AutomationDetails):
         if not automation.metadata.automation_id:
@@ -46,7 +47,8 @@ class AutomationRunnerJob(octobot_flow.repositories.exchange.ExchangeContextMixi
             )
 
     async def run(self):
-        self.automation_state.automation.execution.start_execution()
+        if self._update_execution_details:
+            self.automation_state.automation.execution.start_execution()
         # TODO implement to remove after POC 4
         # # 1. for each automation, process additional actions if necessary (ex: portfolio optimization)
         # if self.automation_state.automation.execution.current_execution.additional_actions.has_trading_actions():
@@ -64,7 +66,8 @@ class AutomationRunnerJob(octobot_flow.repositories.exchange.ExchangeContextMixi
         if self.automation_state.automation.post_actions.has_automation_actions():
             await self._execute_post_actions()
         # 6. register execution completion
-        self.automation_state.automation.execution.complete_execution(next_execution_scheduled_to)
+        if self._update_execution_details:
+            self.automation_state.automation.execution.complete_execution(next_execution_scheduled_to)
 
     async def _execute_actions(self) -> tuple[list[octobot_flow.enums.ChangedElements], float]:
         actions_executor = octobot_flow.logic.actions.ActionsExecutor(
@@ -131,11 +134,13 @@ class AutomationRunnerJob(octobot_flow.repositories.exchange.ExchangeContextMixi
     async def actions_context(
         self,
         actions: list[octobot_flow.entities.AbstractActionDetails],
-        as_reference_account: bool
+        as_reference_account: bool,
+        update_execution_details: bool,
     ):
         try:
             self._as_reference_account = as_reference_account
             self._to_execute_actions = actions
+            self._update_execution_details = update_execution_details
             with (
                 self._maybe_community_repository.automation_context(
                     self.automation_state.automation

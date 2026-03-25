@@ -59,7 +59,7 @@ class AccountCopier:
         planner = self._create_rebalance_actions_planner(rebalancing_client)
         self._sync_planner(planner)
         planner.update_distribution(adapt_to_holdings=False, force_latest=False)
-        rebalancer = self._create_rebalancer(planner, rebalancing_client)
+        rebalancer = self._create_rebalancer(planner)
         for coin in planner.targeted_coins:
             await rebalancer.prepare_coin_rebalancing(coin)
         should_rebalance, details = planner.get_rebalance_details()
@@ -74,12 +74,13 @@ class AccountCopier:
         self._get_logger().info("Step 1/3: ensuring enough funds are available for rebalance")
         await rebalancer.ensure_enough_funds_to_buy_after_selling()
         is_simple_buy_without_selling = rebalancer.can_simply_buy_coins_without_selling(details)
+        reference_market = self._copier_exchange_interface.private_data.reference_market
         if is_simple_buy_without_selling:
-            self._get_logger().info(f"Step 2/3: skipped: no coin to sell for {self._copy_settings.reference_market}")
+            self._get_logger().info(f"Step 2/3: skipped: no coin to sell for {reference_market}")
         else:
-            self._get_logger().info(f"Step 2/3: selling coins to free {self._copy_settings.reference_market}")
+            self._get_logger().info(f"Step 2/3: selling coins to free {reference_market}")
             orders += await rebalancer.sell_targeted_coins_for_reference_market(details, None)
-        self._get_logger().info(f"Step 3/3: buying coins using {self._copy_settings.reference_market}")
+        self._get_logger().info(f"Step 3/3: buying coins using {reference_market}")
         orders += await rebalancer.split_reference_market_into_targeted_coins(
             details,
             is_simple_buy_without_selling,
@@ -103,13 +104,17 @@ class AccountCopier:
     def _create_rebalancing_client(self) -> copy_rebalancing.RebalancingClientInterface:
         return copy_rebalancing.RebalancingClientInterface(
             client_name=self.__class__.__name__,
-            reference_market=self._copy_settings.reference_market,
             min_order_size_margin=self._copy_settings.min_order_size_margin,
+            rebalance_trigger_min_ratio=self._copy_settings.rebalance_trigger_min_ratio,
+            quote_asset_rebalance_ratio_threshold=self._copy_settings.quote_asset_rebalance_ratio_threshold,
+            reference_market_ratio=self._copy_settings.reference_market_ratio,
+            sell_untargeted_traded_coins=self._copy_settings.sell_untargeted_traded_coins,
+            synchronization_policy=self._copy_settings.synchronization_policy,
+            allow_skip_asset=self._copy_settings.allow_skip_asset,
             get_config=self._get_synthetic_config,
             get_previous_config=lambda: None, # not implemented for now
             get_historical_configs=lambda _ft, _tt: [], # not implemented for now
             get_ideal_distribution=self._get_ideal_distribution,
-            get_allow_skip_asset=lambda: self._copy_settings.allow_skip_asset,
         )
 
     def _create_rebalance_actions_planner(
@@ -119,32 +124,25 @@ class AccountCopier:
         return copy_rebalancing.RebalanceActionsPlanner(
             exchange=self._copier_exchange_interface,
             client=rebalancing_client,
-            synchronization_policy=self._copy_settings.synchronization_policy,
-            rebalance_trigger_min_ratio=self._copy_settings.rebalance_trigger_min_ratio,
-            quote_asset_rebalance_ratio_threshold=self._copy_settings.quote_asset_rebalance_ratio_threshold,
-            reference_market_ratio=self._copy_settings.reference_market_ratio,
-            reference_market=self._copy_settings.reference_market,
-            sell_untargeted_traded_coins=self._copy_settings.sell_untargeted_traded_coins,
         )
 
     def _sync_planner(self, planner: copy_rebalancing.RebalanceActionsPlanner) -> None:
         planner.update(
+            min_order_size_margin=self._copy_settings.min_order_size_margin,
             synchronization_policy=self._copy_settings.synchronization_policy,
             rebalance_trigger_min_ratio=self._copy_settings.rebalance_trigger_min_ratio,
             quote_asset_rebalance_ratio_threshold=self._copy_settings.quote_asset_rebalance_ratio_threshold,
             reference_market_ratio=self._copy_settings.reference_market_ratio,
-            reference_market=self._copy_settings.reference_market,
             sell_untargeted_traded_coins=self._copy_settings.sell_untargeted_traded_coins,
+            allow_skip_asset=self._copy_settings.allow_skip_asset,
         )
 
     def _create_rebalancer(
         self,
         planner: copy_rebalancing.RebalanceActionsPlanner,
-        rebalancing_client: copy_rebalancing.RebalancingClientInterface,
     ) -> copy_rebalancing.AbstractRebalancer:
         return self.get_rebalancer_class()(
             self._copier_exchange_interface,
-            rebalancing_client,
             planner,
             {},
         )

@@ -394,28 +394,25 @@ class IndexTradingMode(trading_modes.AbstractTradingMode):
         self.is_processing_rebalance = False
         self.rebalance_actions_planner: rebalance_actions_planner.RebalanceActionsPlanner = None # type: ignore
         if exchange_manager:
-            reference_market = exchange_manager.exchange_personal_data.portfolio_manager.reference_market
             self.rebalance_actions_planner = rebalance_actions_planner.RebalanceActionsPlanner(
                 exchange=exchange_interface.ExchangeInterface(exchange_manager, trading_mode=self),
                 client=self._create_rebalancing_client(),
-                synchronization_policy=self.synchronization_policy,
-                rebalance_trigger_min_ratio=self.rebalance_trigger_min_ratio,
-                quote_asset_rebalance_ratio_threshold=self.quote_asset_rebalance_ratio_threshold,
-                reference_market_ratio=self.reference_market_ratio,
-                reference_market=reference_market,
-                sell_untargeted_traded_coins=self.sell_unindexed_traded_coins,
             )
 
     def _create_rebalancing_client(self) -> rebalancing_client_interface.RebalancingClientInterface:
         return rebalancing_client_interface.RebalancingClientInterface(
             client_name=self.get_name(),
-            reference_market=self.exchange_manager.exchange_personal_data.portfolio_manager.reference_market,
             min_order_size_margin=self.min_order_size_margin,
+            rebalance_trigger_min_ratio=self.rebalance_trigger_min_ratio,
+            quote_asset_rebalance_ratio_threshold=self.quote_asset_rebalance_ratio_threshold,
+            reference_market_ratio=self.reference_market_ratio,
+            sell_untargeted_traded_coins=self.sell_unindexed_traded_coins,
+            synchronization_policy=self.synchronization_policy,
+            allow_skip_asset=self.allow_skip_asset,
             get_config=lambda: self.trading_config,
             get_previous_config=lambda: self.previous_trading_config,
             get_historical_configs=lambda ft, tt: self.get_historical_configs(ft, tt),
             get_ideal_distribution=self.get_ideal_distribution,
-            get_allow_skip_asset=lambda: self.allow_skip_asset,
         )
 
     @property
@@ -455,12 +452,13 @@ class IndexTradingMode(trading_modes.AbstractTradingMode):
         if self.rebalance_actions_planner is None:
             return
         self.rebalance_actions_planner.update(
+            min_order_size_margin=self.min_order_size_margin,
             synchronization_policy=self.synchronization_policy,
             rebalance_trigger_min_ratio=self.rebalance_trigger_min_ratio,
             quote_asset_rebalance_ratio_threshold=self.quote_asset_rebalance_ratio_threshold,
             reference_market_ratio=self.reference_market_ratio,
-            reference_market=self.exchange_manager.exchange_personal_data.portfolio_manager.reference_market,
             sell_untargeted_traded_coins=self.sell_unindexed_traded_coins,
+            allow_skip_asset=self.allow_skip_asset,
         )
 
     def init_user_inputs(self, inputs: dict) -> None:
@@ -686,26 +684,22 @@ class IndexTradingMode(trading_modes.AbstractTradingMode):
     def create_rebalancer(self, exchange_manager) -> rebalancer.AbstractRebalancer:
         self._sync_rebalance_planner()
         exchange = exchange_interface.ExchangeInterface(exchange_manager, trading_mode=self)
-        client = self._create_rebalancing_client()
         if self.rebalance_actions_planner is None:
             raise RuntimeError("rebalance_actions_planner must be initialized before create_rebalancer")
         if exchange_manager.is_option:
             return rebalancer.OptionRebalancer(
                 exchange,
-                client,
                 self.rebalance_actions_planner,
                 self.indexed_coins_prices,
             )
         if exchange_manager.is_future:
             return rebalancer.FuturesRebalancer(
                 exchange,
-                client,
                 self.rebalance_actions_planner,
                 self.indexed_coins_prices,
             )
         return rebalancer.SpotRebalancer(
             exchange,
-            client,
             self.rebalance_actions_planner,
             self.indexed_coins_prices,
         )
@@ -732,5 +726,9 @@ class IndexTradingMode(trading_modes.AbstractTradingMode):
         self, sellable_assets: list, target_asset: str, tickers: dict
     ) -> list:
         return await trading_modes.convert_assets_to_target_asset(
-            self, sellable_assets, target_asset, tickers
+            sellable_assets,
+            target_asset,
+            tickers,
+            trading_mode=self,
+            exchange_manager=self.exchange_manager,
         )

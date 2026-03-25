@@ -1293,7 +1293,7 @@ async def test_single_exchange_process_optimize_initial_portfolio(tools):
             octobot_trading.modes, "convert_assets_to_target_asset", mock.AsyncMock(return_value=["order_1"])
     ) as convert_assets_to_target_asset_mock:
         orders = await mode.single_exchange_process_optimize_initial_portfolio(["BTC", "ETH"], "USDT", {})
-        convert_assets_to_target_asset_mock.assert_called_once_with(mode, ["BTC", "ETH"], "USDT", {})
+        convert_assets_to_target_asset_mock.assert_called_once_with(["BTC", "ETH"], "USDT", {}, trading_mode=mode)
         assert orders == ["order_1"]
         convert_assets_to_target_asset_mock.reset_mock()
 
@@ -1303,7 +1303,7 @@ async def test_single_exchange_process_optimize_initial_portfolio(tools):
         ]
         orders = await mode.single_exchange_process_optimize_initial_portfolio(["BTC", "ETH"], "USDT", {})
         convert_assets_to_target_asset_mock.assert_called_once_with(
-            mode, ["BCC", "BTC", "ETH", "SOL"], "USDT", {}
+            ["BCC", "BTC", "ETH", "SOL"], "USDT", {}, trading_mode=mode
         )
         assert orders == ["order_1"]
 

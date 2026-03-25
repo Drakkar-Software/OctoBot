@@ -22,7 +22,7 @@ import octobot_commons.enums as common_enums
 import octobot_commons.errors as commons_errors
 import octobot_commons.str_util as str_util
 
-import octobot_trading.modes.trading_mode_dsl_factory as trading_mode_dsl_factory
+import octobot_trading.modes.mode_dsl_factory as trading_mode_dsl_factory
 
 
 pytestmark = pytest.mark.asyncio
@@ -346,7 +346,7 @@ class TestGetDependencies:
 class TestCreateAllTradingModeOperators:
     def test_builds_one_operator_per_trading_mode_class(self):
         with mock.patch(
-            "octobot_trading.modes.trading_mode_dsl_factory.modes_factory.get_all_concrete_trading_mode_classes",
+            "octobot_trading.modes.mode_dsl_factory.modes_factory.get_all_concrete_trading_mode_classes",
             return_value=(FakeTradingModeAlpha, FakeTradingModeBeta),
         ):
             ops = trading_mode_dsl_factory.create_all_trading_mode_operators(
@@ -545,11 +545,11 @@ class TestOptimizeInitialPortfolio:
         portfolio_holder = mock.Mock()
         em.exchange_personal_data.portfolio_manager.portfolio.portfolio = portfolio_holder
         with mock.patch(
-            "octobot_trading.modes.trading_mode_dsl_factory.personal_data.portfolio_to_float",
+            "octobot_trading.modes.mode_dsl_factory.personal_data.portfolio_to_float",
             return_value={},
         ):
             with mock.patch(
-                "octobot_trading.modes.trading_mode_dsl_factory.personal_data.get_balance_summary",
+                "octobot_trading.modes.mode_dsl_factory.personal_data.get_balance_summary",
                 return_value="summary",
             ):
                 with mock.patch.object(op, "_get_logger", return_value=mock.Mock()):

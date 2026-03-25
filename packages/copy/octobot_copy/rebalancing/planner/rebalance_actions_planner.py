@@ -32,25 +32,13 @@ class RebalanceActionsPlanner:
         self,
         exchange: exchange_interface.ExchangeInterface,
         client: rebalancing_client_interface.RebalancingClientInterface,
-        synchronization_policy: rebalancer_enums.SynchronizationPolicy,
-        rebalance_trigger_min_ratio: decimal.Decimal,
-        quote_asset_rebalance_ratio_threshold: decimal.Decimal,
-        reference_market_ratio: decimal.Decimal,
-        reference_market: str,
-        sell_untargeted_traded_coins: bool,
     ):
         self._exchange: exchange_interface.ExchangeInterface = exchange
-        self._client: rebalancing_client_interface.RebalancingClientInterface = client
+        self.client: rebalancing_client_interface.RebalancingClientInterface = client
 
-        self.synchronization_policy: rebalancer_enums.SynchronizationPolicy = synchronization_policy
-        self.rebalance_trigger_min_ratio: decimal.Decimal = rebalance_trigger_min_ratio
-        self.quote_asset_rebalance_ratio_threshold: decimal.Decimal = quote_asset_rebalance_ratio_threshold
-        self.reference_market_ratio: decimal.Decimal = reference_market_ratio
-        self.sell_untargeted_traded_coins: bool = sell_untargeted_traded_coins
         self.ratio_per_asset: dict = {}
         self.total_ratio_per_asset: decimal.Decimal = trading_constants.ZERO
 
-        self._reference_market = reference_market
         self._targeted_coins: list[str] = []
         self._disabled_symbol_bases: frozenset = frozenset()
         self.logger: logging.BotLogger = logging.get_logger(self.__class__.__name__)
@@ -74,7 +62,7 @@ class RebalanceActionsPlanner:
             for symbol in self._exchange.public_data.get_traded_symbols()
         )
 
-        if self.synchronization_policy in (
+        if self.client.synchronization_policy in (
             rebalancer_enums.SynchronizationPolicy.SELL_REMOVED_INDEX_COINS_AS_SOON_AS_POSSIBLE,
             rebalancer_enums.SynchronizationPolicy.SELL_REMOVED_DYNAMIC_INDEX_COINS_AS_SOON_AS_POSSIBLE,
         ):
@@ -83,7 +71,7 @@ class RebalanceActionsPlanner:
         should_rebalance = self._register_quote_asset_rebalance(rebalance_details) or should_rebalance
         if (
             should_rebalance
-            and self.synchronization_policy
+            and self.client.synchronization_policy
             == rebalancer_enums.SynchronizationPolicy.SELL_REMOVED_INDEX_COINS_ON_RATIO_REBALANCE
         ):
             self.update_distribution(force_latest=True)
@@ -121,19 +109,23 @@ class RebalanceActionsPlanner:
     def update(
         self,
         *,
+        min_order_size_margin: decimal.Decimal,
         synchronization_policy: typing.Any,
         rebalance_trigger_min_ratio: decimal.Decimal,
         quote_asset_rebalance_ratio_threshold: decimal.Decimal,
         reference_market_ratio: decimal.Decimal,
-        reference_market: str,
         sell_untargeted_traded_coins: bool,
+        allow_skip_asset: bool,
     ) -> None:
-        self.synchronization_policy = synchronization_policy
-        self.rebalance_trigger_min_ratio = rebalance_trigger_min_ratio
-        self.quote_asset_rebalance_ratio_threshold = quote_asset_rebalance_ratio_threshold
-        self.reference_market_ratio = reference_market_ratio
-        self._reference_market = reference_market
-        self.sell_untargeted_traded_coins = sell_untargeted_traded_coins
+        self.client.update(
+            min_order_size_margin=min_order_size_margin,
+            synchronization_policy=synchronization_policy,
+            rebalance_trigger_min_ratio=rebalance_trigger_min_ratio,
+            quote_asset_rebalance_ratio_threshold=quote_asset_rebalance_ratio_threshold,
+            reference_market_ratio=reference_market_ratio,
+            sell_untargeted_traded_coins=sell_untargeted_traded_coins,
+            allow_skip_asset=allow_skip_asset,
+        )
 
     def update_distribution(self, adapt_to_holdings: bool = False, force_latest: bool = False) -> None:
         """
@@ -168,21 +160,21 @@ class RebalanceActionsPlanner:
         Mainly used when a target configuration changed and some coins are no longer in the target.
         """
         removed_coins = []
-        trading_config = self._client.get_config()
-        if self._client.get_ideal_distribution(trading_config or {}) and self.sell_untargeted_traded_coins:
+        trading_config = self.client.get_config()
+        if self.client.get_ideal_distribution(trading_config or {}) and self.client.sell_untargeted_traded_coins:
             removed_coins = [
                 coin
                 for coin in available_traded_bases
                 if coin not in self._targeted_coins
-                and coin != self._reference_market
+                and coin != self._exchange.private_data.reference_market
             ]
-        if self.synchronization_policy == rebalancer_enums.SynchronizationPolicy.SELL_REMOVED_INDEX_COINS_AS_SOON_AS_POSSIBLE:
-            previous_trading_config = self._client.get_previous_config()
+        if self.client.synchronization_policy == rebalancer_enums.SynchronizationPolicy.SELL_REMOVED_INDEX_COINS_AS_SOON_AS_POSSIBLE:
+            previous_trading_config = self.client.get_previous_config()
             if not (previous_trading_config and trading_config):
                 return removed_coins
             current_coins = [
                 asset[rebalancer_enums.DistributionKeys.NAME]
-                for asset in (self._client.get_ideal_distribution(trading_config or {}) or [])
+                for asset in (self.client.get_ideal_distribution(trading_config or {}) or [])
             ]
             return list(set(removed_coins + [
                 asset[rebalancer_enums.DistributionKeys.NAME]
@@ -190,32 +182,32 @@ class RebalanceActionsPlanner:
                 if asset[rebalancer_enums.DistributionKeys.NAME] not in current_coins
                     and (
                         asset[rebalancer_enums.DistributionKeys.NAME]
-                        != self._reference_market
+                        != self._exchange.private_data.reference_market
                     )
             ]))
-        if self.synchronization_policy == rebalancer_enums.SynchronizationPolicy.SELL_REMOVED_INDEX_COINS_ON_RATIO_REBALANCE:
-            historical_configs = self._client.get_historical_configs(
+        if self.client.synchronization_policy == rebalancer_enums.SynchronizationPolicy.SELL_REMOVED_INDEX_COINS_ON_RATIO_REBALANCE:
+            historical_configs = self.client.get_historical_configs(
                 0, self._exchange.public_data.get_time()
             )
             if not (historical_configs and trading_config):
                 return removed_coins
             current_coins = [
                 asset[rebalancer_enums.DistributionKeys.NAME]
-                for asset in (self._client.get_ideal_distribution(trading_config or {}) or [])
+                for asset in (self.client.get_ideal_distribution(trading_config or {}) or [])
             ]
             removed_coins_from_historical_configs = set()
             for historical_config in historical_configs:
                 for asset in historical_config[copy_constants.CONFIG_INDEX_CONTENT]:
                     asset_name = asset[rebalancer_enums.DistributionKeys.NAME]
-                    if asset_name not in current_coins and asset_name != self._reference_market:
+                    if asset_name not in current_coins and asset_name != self._exchange.private_data.reference_market:
                         removed_coins_from_historical_configs.add(asset_name)
             return list(removed_coins_from_historical_configs.union(removed_coins))
-        if self.synchronization_policy == rebalancer_enums.SynchronizationPolicy.SELL_REMOVED_DYNAMIC_INDEX_COINS_AS_SOON_AS_POSSIBLE:
+        if self.client.synchronization_policy == rebalancer_enums.SynchronizationPolicy.SELL_REMOVED_DYNAMIC_INDEX_COINS_AS_SOON_AS_POSSIBLE:
             return [
                 coin for coin in available_traded_bases
-                if coin not in self._targeted_coins and coin != self._reference_market
+                if coin not in self._targeted_coins and coin != self._exchange.private_data.reference_market
             ]
-        self.logger.error(f"Unknown synchronization policy: {self.synchronization_policy}")
+        self.logger.error(f"Unknown synchronization policy: {self.client.synchronization_policy}")
         return []
 
     def _get_adjusted_target_ratio(self, currency: str) -> decimal.Decimal:
@@ -223,15 +215,15 @@ class RebalanceActionsPlanner:
         Get the adjusted target ratio for a given currency relatively to the reference market ratio.
         """
         base_ratio = self.get_target_ratio(currency)
-        if self.reference_market_ratio < trading_constants.ONE:
-            return base_ratio * self.reference_market_ratio
+        if self.client.reference_market_ratio < trading_constants.ONE:
+            return base_ratio * self.client.reference_market_ratio
         return base_ratio
 
     def _get_coins_to_consider_for_ratio(self) -> list:
         """
         Get the coins that should be considered for the ratio, including the reference market.
         """
-        return self._targeted_coins + [self._reference_market]
+        return self._targeted_coins + [self._exchange.private_data.reference_market]
 
     def _empty_rebalance_details(self) -> dict:
         return {
@@ -260,16 +252,16 @@ class RebalanceActionsPlanner:
             if coin_ratio == trading_constants.ZERO and target_ratio > trading_constants.ZERO:
                 rebalance_details[rebalancer_enums.RebalanceDetails.ADD.value][coin] = target_ratio
                 should_rebalance = True
-            elif coin_ratio < target_ratio - self.rebalance_trigger_min_ratio:
+            elif coin_ratio < target_ratio - self.client.rebalance_trigger_min_ratio:
                 rebalance_details[rebalancer_enums.RebalanceDetails.BUY_MORE.value][coin] = target_ratio
                 should_rebalance = True
-            elif coin_ratio > target_ratio + self.rebalance_trigger_min_ratio:
+            elif coin_ratio > target_ratio + self.client.rebalance_trigger_min_ratio:
                 rebalance_details[rebalancer_enums.RebalanceDetails.SELL_SOME.value][coin] = target_ratio
                 should_rebalance = True
             else:
                 beyond_ratio = False
             if beyond_ratio:
-                allowance = round(self.rebalance_trigger_min_ratio * trading_constants.ONE_HUNDRED, 2)
+                allowance = round(self.client.rebalance_trigger_min_ratio * trading_constants.ONE_HUNDRED, 2)
                 self.logger.info(
                     f"{coin} is beyond the target ratio of {round(target_ratio * trading_constants.ONE_HUNDRED, 2)}[+/-{allowance}]%, "
                     f"ratio: {round(coin_ratio * trading_constants.ONE_HUNDRED, 2)}%. A rebalance is required."
@@ -284,8 +276,8 @@ class RebalanceActionsPlanner:
         for coin in self.get_removed_coins_from_config(available_traded_bases):
             if coin in available_traded_bases:
                 coin_ratio = self._exchange.private_data.get_holdings_ratio(
-                coin, traded_symbols_only=True, include_assets_in_open_orders=True
-            )
+                    coin, traded_symbols_only=True, include_assets_in_open_orders=True
+                )
                 if coin_ratio >= copy_constants.MIN_RATIO_TO_SELL:
                     rebalance_details[rebalancer_enums.RebalanceDetails.REMOVE.value][coin] = coin_ratio
                     self.logger.info(
@@ -317,7 +309,7 @@ class RebalanceActionsPlanner:
             self.logger.info(
                 f"Rebalancing due to a high non-targeted quote asset holdings ratio: "
                 f"{round(non_targeted_quote_assets_ratio * trading_constants.ONE_HUNDRED, 2)}%, quote rebalance "
-                f"threshold = {self.quote_asset_rebalance_ratio_threshold * trading_constants.ONE_HUNDRED}%"
+                f"threshold = {self.client.quote_asset_rebalance_ratio_threshold * trading_constants.ONE_HUNDRED}%"
             )
             return True
         return False
@@ -345,8 +337,8 @@ class RebalanceActionsPlanner:
             min(
                 self.get_target_ratio(coin)
                 for coin in self._targeted_coins
-            ) if self._targeted_coins else self.quote_asset_rebalance_ratio_threshold,
-            self.quote_asset_rebalance_ratio_threshold
+            ) if self._targeted_coins else self.client.quote_asset_rebalance_ratio_threshold,
+            self.client.quote_asset_rebalance_ratio_threshold
         )
         return non_targeted_quote_assets_ratio >= min_ratio
 
@@ -367,8 +359,8 @@ class RebalanceActionsPlanner:
             ratio = self._exchange.private_data.get_holdings_ratio(
                 quote, traded_symbols_only=True, include_assets_in_open_orders=True
             )
-            if quote == self._reference_market and self.reference_market_ratio > trading_constants.ZERO:
-                reference_market_keep_ratio = trading_constants.ONE - self.reference_market_ratio
+            if quote == self._exchange.private_data.reference_market and self.client.reference_market_ratio > trading_constants.ZERO:
+                reference_market_keep_ratio = trading_constants.ONE - self.client.reference_market_ratio
                 ratio = max(trading_constants.ZERO, ratio - reference_market_keep_ratio)
             total += ratio
         return decimal.Decimal(str(total))
@@ -394,9 +386,9 @@ class RebalanceActionsPlanner:
                 )
                 required_added_ratio = added_ratio - added_holding_ratio
                 if (
-                    removed_ratio - self.rebalance_trigger_min_ratio
+                    removed_ratio - self.client.rebalance_trigger_min_ratio
                     < required_added_ratio
-                    < removed_ratio + self.rebalance_trigger_min_ratio
+                    < removed_ratio + self.client.rebalance_trigger_min_ratio
                 ):
                     details[rebalancer_enums.RebalanceDetails.SWAP.value][removed_coin] = added_coin
                 else:
@@ -407,44 +399,44 @@ class RebalanceActionsPlanner:
         coins = set(
             symbol.base
             for symbol in self._exchange.public_data.get_traded_symbols()
-            if symbol.base in self.ratio_per_asset and symbol.quote == self._reference_market
+            if symbol.base in self.ratio_per_asset and symbol.quote == self._exchange.private_data.reference_market
         )
-        if self._reference_market in self.ratio_per_asset and coins:
-            coins.add(self._reference_market)
+        if self._exchange.private_data.reference_market in self.ratio_per_asset and coins:
+            coins.add(self._exchange.private_data.reference_market)
         return sorted(list(coins))
 
     def _get_currently_applied_historical_config_according_to_holdings(
         self, config: dict, traded_bases: set[str]
     ) -> dict:
         if self._is_target_config_applied(config, traded_bases):
-            self.logger.info(f"Using {self._client.client_name} latest config.")
+            self.logger.info(f"Using {self.client.client_name} latest config.")
             return config
-        historical_configs = self._client.get_historical_configs(
+        historical_configs = self.client.get_historical_configs(
             0, self._exchange.public_data.get_time()
         )
         if not historical_configs or (
             len(historical_configs) == 1 and (
-                self._client.get_ideal_distribution(historical_configs[0]) == self._client.get_ideal_distribution(config)
+                self.client.get_ideal_distribution(historical_configs[0]) == self.client.get_ideal_distribution(config)
                 and historical_configs[0][copy_constants.CONFIG_REBALANCE_TRIGGER_MIN_PERCENT] == config[copy_constants.CONFIG_REBALANCE_TRIGGER_MIN_PERCENT]
             )
         ):
-            self.logger.info(f"Using {self._client.client_name} latest config as no historical configs are available.")
+            self.logger.info(f"Using {self.client.client_name} latest config as no historical configs are available.")
             return config
         for hist_rank, historical_config in enumerate(historical_configs):
             if self._is_target_config_applied(historical_config, traded_bases):
                 self.logger.info(
-                    f"Using [N-{hist_rank}] {self._client.client_name} historical config distribution: "
-                    f"{self._client.get_ideal_distribution(historical_config)}."
+                    f"Using [N-{hist_rank}] {self.client.client_name} historical config distribution: "
+                    f"{self.client.get_ideal_distribution(historical_config)}."
                 )
                 return historical_config
         self.logger.info(
-            f"No suitable {self._client.client_name} config found: using latest distribution: "
-            f"{self._client.get_ideal_distribution(config)}."
+            f"No suitable {self.client.client_name} config found: using latest distribution: "
+            f"{self.client.get_ideal_distribution(config)}."
         )
         return config
 
     def _is_target_config_applied(self, config: dict, traded_bases: set[str]) -> bool:
-        full_assets_distribution = self._client.get_ideal_distribution(config)
+        full_assets_distribution = self.client.get_ideal_distribution(config)
         if not full_assets_distribution:
             return False
         assets_distribution = [
@@ -459,7 +451,7 @@ class RebalanceActionsPlanner:
                 if asset not in assets_distribution
             ]
             self.logger.warning(
-                f"Ignored {self._client.client_name} config candidate as {len(missing_assets)} configured assets "
+                f"Ignored {self.client.client_name} config candidate as {len(missing_assets)} configured assets "
                 f"{missing_assets} are missing from {self._exchange.exchange_name} traded pairs."
             )
             return False
@@ -473,8 +465,8 @@ class RebalanceActionsPlanner:
         min_trigger_ratio = self._get_config_min_ratio(config)
         for asset_distrib in assets_distribution:
             base_target_ratio = decimal.Decimal(str(asset_distrib[rebalancer_enums.DistributionKeys.VALUE])) / total_ratio
-            if self.reference_market_ratio < trading_constants.ONE:
-                target_ratio = base_target_ratio * self.reference_market_ratio
+            if self.client.reference_market_ratio < trading_constants.ONE:
+                target_ratio = base_target_ratio * self.client.reference_market_ratio
             else:
                 target_ratio = base_target_ratio
             coin_ratio = self._exchange.private_data.get_holdings_ratio(
@@ -499,7 +491,7 @@ class RebalanceActionsPlanner:
         if ratio is None:
             ratio = config.get(copy_constants.CONFIG_REBALANCE_TRIGGER_MIN_PERCENT)
         if ratio is None:
-            return self.rebalance_trigger_min_ratio
+            return self.client.rebalance_trigger_min_ratio
         return decimal.Decimal(str(ratio)) / trading_constants.ONE_HUNDRED
 
     def _get_supported_distribution(self, adapt_to_holdings: bool, force_latest: bool) -> list:
@@ -514,16 +506,16 @@ class RebalanceActionsPlanner:
         This means selecting the closest historical config according to the current holdings.
         :param force_latest: Whether to force the use of the latest distribution.
         """
-        trading_config = self._client.get_config()
-        if detailed_distribution := self._client.get_ideal_distribution(trading_config or {}):
+        trading_config = self.client.get_config()
+        if detailed_distribution := self.client.get_ideal_distribution(trading_config or {}):
             traded_bases = set(
                 symbol.base
                 for symbol in self._exchange.public_data.get_traded_symbols()
             )
-            traded_bases.add(self._reference_market)
+            traded_bases.add(self._exchange.private_data.reference_market)
             if (
                 (adapt_to_holdings or force_latest)
-                and self.synchronization_policy == rebalancer_enums.SynchronizationPolicy.SELL_REMOVED_INDEX_COINS_ON_RATIO_REBALANCE
+                and self.client.synchronization_policy == rebalancer_enums.SynchronizationPolicy.SELL_REMOVED_INDEX_COINS_ON_RATIO_REBALANCE
             ):
                 if adapt_to_holdings:
                     target_config = self._get_currently_applied_historical_config_according_to_holdings(
@@ -531,16 +523,16 @@ class RebalanceActionsPlanner:
                     )
                 else:
                     try:
-                        target_config = self._client.get_historical_configs(
+                        target_config = self.client.get_historical_configs(
                             0, self._exchange.public_data.get_time()
                         )[0]
                         self.logger.info(
-                            f"Updated {self._client.client_name} to use latest distribution: "
-                            f"{self._client.get_ideal_distribution(target_config)}."
+                            f"Updated {self.client.client_name} to use latest distribution: "
+                            f"{self.client.get_ideal_distribution(target_config)}."
                         )
                     except IndexError:
                         target_config = trading_config or {}
-                detailed_distribution = self._client.get_ideal_distribution(target_config)
+                detailed_distribution = self.client.get_ideal_distribution(target_config)
                 if not detailed_distribution:
                     raise ValueError(f"No distribution found in historical target config: {target_config}")
             distribution = [

@@ -23,6 +23,7 @@ import octobot_commons.profiles.profile_data as profiles_import
 import octobot_trading.exchanges.util.exchange_data as exchange_data_import
 
 import octobot_flow.entities
+import octobot_flow.enums
 import octobot_flow.errors
 
 
@@ -65,6 +66,7 @@ class AutomationConfigurationUpdater:
             else:
                 self._update_auth_details(automation_state_update.exchange_account_details)
             self._update_portfolio(automation_state_update.exchange_account_details)
+            self._init_reference_exchange_account_if_necessary(automation_state_update)
         self._update_automation(automation_state_update)
 
     def _update_exchange_details(
@@ -95,6 +97,19 @@ class AutomationConfigurationUpdater:
         if self.automation_state.exchange_account_details.is_simulated():
             portfolio_update = octobot_flow.entities.ExchangeAccountPortfolio().get_update(configuration_update.portfolio)
             self.automation_state.exchange_account_details.portfolio.update(portfolio_update)
+
+    def _init_reference_exchange_account_if_necessary(
+        self, automation_state_update: octobot_flow.entities.AutomationState
+    ):
+        if (
+            automation_state_update.automation.metadata.run_mode == octobot_flow.enums.AutomationRunMode.UPDATE_REFERENCE_EXCHANGE_ACCOUNT_AND_COPY.value
+            and automation_state_update.automation.client_exchange_account_elements
+            and not self.automation_state.automation.reference_exchange_account_elements
+        ):
+            # by default, init reference exchange account elements from client exchange account elements
+            automation_state_update.automation.reference_exchange_account_elements = octobot_flow.entities.ReferenceExchangeAccountElements.from_dict(
+                automation_state_update.automation.client_exchange_account_elements.to_dict()
+            )
 
     def _update_automation(
         self, automation_state_update: octobot_flow.entities.AutomationState
