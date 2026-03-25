@@ -95,6 +95,15 @@ class ExchangeManager(util.Initializable):
 
         self.debug_info: dict[str, typing.Any] = {}
 
+    def set_proxy_config(self, proxy_config: "exchanges.ProxyConfig") -> None:
+        if self.proxy_config.has_proxy():
+            self.logger.warning(
+                f"[{self.exchange_name}] A proxy is already configured, "
+                "ignoring the new proxy config."
+            )
+            return
+        self.proxy_config = proxy_config
+
     async def initialize_impl(self, exchange_config_by_exchange: typing.Optional[dict[str, dict]]):
         await exchanges.create_exchanges(self, exchange_config_by_exchange)
         if self.is_storage_enabled():

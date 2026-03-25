@@ -39,6 +39,11 @@ async def stop_exchange(exchange_manager) -> None:
     await exchange_manager.stop()
 
 
+def set_all_exchanges_proxy_config(proxy_config: "exchanges.ProxyConfig") -> None:
+    for exchange_config in exchanges.Exchanges.instance().get_all_exchanges():
+        exchange_config.exchange_manager.set_proxy_config(proxy_config)
+
+
 def get_exchange_configurations_from_exchange_name(exchange_name: str) -> typing.Optional[dict]:
     return exchanges.Exchanges.instance().get_exchanges(exchange_name)
 
