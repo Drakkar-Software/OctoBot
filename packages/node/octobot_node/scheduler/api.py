@@ -19,6 +19,8 @@ import logging
 import typing
 import uuid
 
+import dbos
+
 import octobot_node.config
 import octobot_node.constants
 import octobot_node.models
@@ -65,8 +67,12 @@ async def get_task_metrics() -> dict[str, int]:
             pending, completed, periodic = [], [], []
         else:
             pending, completed, periodic = await asyncio.gather(
-                instance.list_workflows_async(status=["ENQUEUED", "PENDING"]),
-                instance.list_workflows_async(status=["SUCCESS", "ERROR"]),
+                instance.list_workflows_async(status=[
+                    dbos.WorkflowStatusString.ENQUEUED.value, dbos.WorkflowStatusString.PENDING.value
+                ]),
+                instance.list_workflows_async(status=[
+                    dbos.WorkflowStatusString.SUCCESS.value, dbos.WorkflowStatusString.ERROR.value
+                ]),
                 octobot_node.scheduler.SCHEDULER.get_periodic_tasks()
             )
         return {
@@ -132,6 +138,11 @@ async def get_all_tasks() -> list[octobot_node.models.Task]:
     tasks = _build_tasks_from_executions(executions)
     logger.debug("Returning %d total tasks from %d executions", len(tasks), len(executions))
     return tasks
+
+
+async def delete_task(task_id: str) -> str:
+    await octobot_node.scheduler.SCHEDULER.delete_workflows([task_id])
+    return task_id
 
 
 async def get_task_result(task_id: str):

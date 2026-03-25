@@ -14,7 +14,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as LayoutRouteImport } from './routes/_layout'
 import { Route as SetupIndexRouteImport } from './routes/setup/index'
 import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
-import { Route as SetupNodeTypeRouteImport } from './routes/setup/node-type'
+import { Route as SetupMobileAppRouteImport } from './routes/setup/mobile-app'
 import { Route as SetupFirstBotRouteImport } from './routes/setup/first-bot'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
 import { Route as LayoutOctobotsRouteImport } from './routes/_layout/octobots'
@@ -49,9 +49,9 @@ const LayoutIndexRoute = LayoutIndexRouteImport.update({
   path: '/',
   getParentRoute: () => LayoutRoute,
 } as any)
-const SetupNodeTypeRoute = SetupNodeTypeRouteImport.update({
-  id: '/node-type',
-  path: '/node-type',
+const SetupMobileAppRoute = SetupMobileAppRouteImport.update({
+  id: '/mobile-app',
+  path: '/mobile-app',
   getParentRoute: () => SetupRoute,
 } as any)
 const SetupFirstBotRoute = SetupFirstBotRouteImport.update({
@@ -109,7 +109,7 @@ export interface FileRoutesByFullPath {
   '/octobots': typeof LayoutOctobotsRouteWithChildren
   '/settings': typeof LayoutSettingsRoute
   '/setup/first-bot': typeof SetupFirstBotRoute
-  '/setup/node-type': typeof SetupNodeTypeRoute
+  '/setup/mobile-app': typeof SetupMobileAppRoute
   '/': typeof LayoutIndexRoute
   '/setup/': typeof SetupIndexRoute
   '/octobots/import': typeof LayoutOctobotsImportRoute
@@ -123,7 +123,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/settings': typeof LayoutSettingsRoute
   '/setup/first-bot': typeof SetupFirstBotRoute
-  '/setup/node-type': typeof SetupNodeTypeRoute
+  '/setup/mobile-app': typeof SetupMobileAppRoute
   '/': typeof LayoutIndexRoute
   '/setup': typeof SetupIndexRoute
   '/octobots/import': typeof LayoutOctobotsImportRoute
@@ -141,7 +141,7 @@ export interface FileRoutesById {
   '/_layout/octobots': typeof LayoutOctobotsRouteWithChildren
   '/_layout/settings': typeof LayoutSettingsRoute
   '/setup/first-bot': typeof SetupFirstBotRoute
-  '/setup/node-type': typeof SetupNodeTypeRoute
+  '/setup/mobile-app': typeof SetupMobileAppRoute
   '/_layout/': typeof LayoutIndexRoute
   '/setup/': typeof SetupIndexRoute
   '/_layout/octobots/import': typeof LayoutOctobotsImportRoute
@@ -159,7 +159,7 @@ export interface FileRouteTypes {
     | '/octobots'
     | '/settings'
     | '/setup/first-bot'
-    | '/setup/node-type'
+    | '/setup/mobile-app'
     | '/'
     | '/setup/'
     | '/octobots/import'
@@ -173,7 +173,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/settings'
     | '/setup/first-bot'
-    | '/setup/node-type'
+    | '/setup/mobile-app'
     | '/'
     | '/setup'
     | '/octobots/import'
@@ -190,7 +190,7 @@ export interface FileRouteTypes {
     | '/_layout/octobots'
     | '/_layout/settings'
     | '/setup/first-bot'
-    | '/setup/node-type'
+    | '/setup/mobile-app'
     | '/_layout/'
     | '/setup/'
     | '/_layout/octobots/import'
@@ -244,11 +244,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutIndexRouteImport
       parentRoute: typeof LayoutRoute
     }
-    '/setup/node-type': {
-      id: '/setup/node-type'
-      path: '/node-type'
-      fullPath: '/setup/node-type'
-      preLoaderRoute: typeof SetupNodeTypeRouteImport
+    '/setup/mobile-app': {
+      id: '/setup/mobile-app'
+      path: '/mobile-app'
+      fullPath: '/setup/mobile-app'
+      preLoaderRoute: typeof SetupMobileAppRouteImport
       parentRoute: typeof SetupRoute
     }
     '/setup/first-bot': {
@@ -365,13 +365,13 @@ const LayoutRouteWithChildren =
 
 interface SetupRouteChildren {
   SetupFirstBotRoute: typeof SetupFirstBotRoute
-  SetupNodeTypeRoute: typeof SetupNodeTypeRoute
+  SetupMobileAppRoute: typeof SetupMobileAppRoute
   SetupIndexRoute: typeof SetupIndexRoute
 }
 
 const SetupRouteChildren: SetupRouteChildren = {
   SetupFirstBotRoute: SetupFirstBotRoute,
-  SetupNodeTypeRoute: SetupNodeTypeRoute,
+  SetupMobileAppRoute: SetupMobileAppRoute,
   SetupIndexRoute: SetupIndexRoute,
 }
 

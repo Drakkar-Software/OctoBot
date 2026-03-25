@@ -16,7 +16,7 @@
 
 import typing
 import uuid
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
 import octobot_node.models
 import octobot_node.scheduler.api
@@ -56,6 +56,9 @@ def update_task(taskId: uuid.UUID, task: octobot_node.models.Task) -> typing.Any
     return task
 
 @router.delete("/", response_model=str)
-def delete_task(taskId: uuid.UUID) -> str:
-    # TODO
-    return taskId
+async def delete_task(taskId: uuid.UUID) -> str:
+    try:
+        await octobot_node.scheduler.api.delete_task(str(taskId))
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    return str(taskId)

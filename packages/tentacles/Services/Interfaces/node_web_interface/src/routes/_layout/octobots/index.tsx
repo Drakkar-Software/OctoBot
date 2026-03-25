@@ -1,19 +1,16 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query"
 import { createFileRoute, Link } from "@tanstack/react-router"
-import { Bot, Check, Clock, Layers, Plus, Trash2 } from "lucide-react"
+import { Bot, Check, Clock, Layers, Plus, Search, Trash2, X } from "lucide-react"
 import { Suspense, useMemo, useState } from "react"
 
 import type { Task_Output as Task, TaskStatus } from "@/client"
 import { TasksService } from "@/client"
-import { CollectionHeader } from "@/components/Common/CollectionHeader"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
-  CardTitle,
 } from "@/components/ui/card"
 import {
   Dialog,
@@ -34,14 +31,12 @@ function getTasksQueryOptions() {
   return {
     queryFn: () => TasksService.getTasks({ page: 1, limit: 100 }),
     queryKey: ["tasks"],
-    refetchInterval: 5_000,
+    refetchInterval: 2_000,
   }
 }
 
 const filters = [
-  { value: "all", label: "All" },
-  { value: "running", label: "Running" },
-  { value: "scheduled", label: "Scheduled" },
+  { value: "active", label: "Active" },
   { value: "stopped", label: "Stopped" },
 ]
 
@@ -63,10 +58,9 @@ function getStatusVariant(status?: TaskStatus | null) {
 }
 
 function getStatusGroup(status?: TaskStatus | null) {
-  if (!status) return "scheduled"
-  if (status === "running") return "running"
-  if (status === "scheduled" || status === "periodic" || status === "pending") {
-    return "scheduled"
+  if (!status) return "active"
+  if (status === "running" || status === "scheduled" || status === "periodic" || status === "pending") {
+    return "active"
   }
   return "stopped"
 }
@@ -101,44 +95,47 @@ function BotCardBody({ task }: { task: Task }) {
   const pendingSteps = task.executions?.filter((e) => e.status === "pending").length ?? 0
   const completedSteps = task.executions?.filter((e) => e.status === "completed" || e.status === "failed").length ?? 0
 
-  if (group === "running") {
+  if (group === "active") {
+    const isRunning = activeExec?.status === "running"
     return (
       <CardContent className="flex flex-col gap-2 pt-0">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-          {completedSteps > 0 && (
-            <span className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Layers className="size-3.5" />
-              {completedSteps} done
-            </span>
+          {isRunning ? (
+            <>
+              {completedSteps > 0 && (
+                <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Layers className="size-3.5" />
+                  {completedSteps} done
+                </span>
+              )}
+              {pendingSteps > 0 && (
+                <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Clock className="size-3.5" />
+                  {pendingSteps} remaining
+                </span>
+              )}
+            </>
+          ) : (
+            <>
+              {activeExec?.type && (
+                <span className="rounded bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                  {activeExec.type}
+                </span>
+              )}
+              <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Clock className="size-3.5 shrink-0" />
+                {activeExec?.scheduled_at
+                  ? <>Next run: {formatDate(activeExec.scheduled_at as unknown as string)}</>
+                  : <>{date.label}: {formatDate(date.value as string)}</>}
+              </span>
+            </>
           )}
-          {pendingSteps > 0 && (
-            <span className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Clock className="size-3.5" />
-              {pendingSteps} remaining
-            </span>
-          )}
         </div>
-        <div className="text-xs text-muted-foreground">
-          {date.label}: {formatDate(date.value as string)}
-        </div>
-      </CardContent>
-    )
-  }
-
-  if (group === "scheduled") {
-    return (
-      <CardContent className="flex flex-col gap-2 pt-0">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          {activeExec?.type && (
-            <span className="rounded bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-              {activeExec.type}
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Clock className="size-3.5 shrink-0" />
-          {date.label}: {formatDate(date.value as string)}
-        </div>
+        {isRunning && (
+          <div className="text-xs text-muted-foreground">
+            {date.label}: {formatDate(date.value as string)}
+          </div>
+        )}
       </CardContent>
     )
   }
@@ -247,25 +244,37 @@ function BotGrid({
 
   if (tasks.length === 0) {
     return (
-      <Card className="border-dashed">
-        <CardHeader>
-          <CardTitle>No OctoBots yet</CardTitle>
-          <CardDescription>
-            Start your first OctoBot or import a saved configuration.
-          </CardDescription>
-        </CardHeader>
-      </Card>
+      <div className="flex flex-col items-center justify-center gap-4 py-20 text-center">
+        <Bot className="size-10 text-muted-foreground/50" />
+        <div>
+          <p className="text-lg font-medium text-muted-foreground">No OctoBots yet</p>
+          <p className="mt-1 text-sm text-muted-foreground/70">Start your first OctoBot or import a saved configuration.</p>
+        </div>
+        <Button asChild size="lg">
+          <Link to="/octobots/new">
+            <Plus className="size-4" />
+            New OctoBot
+          </Link>
+        </Button>
+      </div>
     )
   }
 
   if (filtered.length === 0) {
     return (
-      <Card className="border-dashed">
-        <CardHeader>
-          <CardTitle>No OctoBots match this filter</CardTitle>
-          <CardDescription>Try another filter or search term.</CardDescription>
-        </CardHeader>
-      </Card>
+      <div className="flex flex-col items-center justify-center gap-4 py-20 text-center">
+        <Bot className="size-10 text-muted-foreground/50" />
+        <div>
+          <p className="text-lg font-medium text-muted-foreground">No OctoBots match this filter</p>
+          <p className="mt-1 text-sm text-muted-foreground/70">Try another filter or search term.</p>
+        </div>
+        <Button asChild size="lg">
+          <Link to="/octobots/new">
+            <Plus className="size-4" />
+            New OctoBot
+          </Link>
+        </Button>
+      </div>
     )
   }
 
@@ -307,9 +316,9 @@ function SelectionToolbar({
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
-      for (const id of selectedIds) {
-        await TasksService.deleteTask({ taskId: id })
-      }
+      await Promise.all(
+        Array.from(selectedIds).map((id) => TasksService.deleteTask({ taskId: id }))
+      )
     },
     onSuccess: () => {
       showSuccessToast(`Deleted ${selectedIds.size} OctoBot${selectedIds.size !== 1 ? "s" : ""}`)
@@ -455,7 +464,7 @@ function SelectionToolbar({
 
 function BotsContent() {
   const { data: tasks } = useSuspenseQuery(getTasksQueryOptions())
-  const [filterValue, setFilterValue] = useState("all")
+  const [filterValue, setFilterValue] = useState("active")
   const [searchValue, setSearchValue] = useState("")
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 
@@ -476,9 +485,7 @@ function BotsContent() {
 
   const counts = useMemo(() => {
     return {
-      all: tasks.length,
-      running: tasks.filter((task) => getStatusGroup(getActiveExecution(task.executions)?.status) === "running").length,
-      scheduled: tasks.filter((task) => getStatusGroup(getActiveExecution(task.executions)?.status) === "scheduled").length,
+      active: tasks.filter((task) => getStatusGroup(getActiveExecution(task.executions)?.status) === "active").length,
       stopped: tasks.filter((task) => getStatusGroup(getActiveExecution(task.executions)?.status) === "stopped").length,
     }
   }, [tasks])
@@ -501,28 +508,47 @@ function BotsContent() {
   }
 
   return (
-    <div className="flex flex-col gap-8">
-      <CollectionHeader
-        title="OctoBots"
-        description="Monitor running, scheduled, and stopped OctoBots."
-        action={
-          <Button asChild size="lg">
-            <Link to="/octobots/new">
-              <Plus className="size-4" />
-              New OctoBot
-            </Link>
-          </Button>
-        }
-        searchValue={searchValue}
-        onSearchChange={setSearchValue}
-        searchPlaceholder="Search OctoBots..."
-        filters={filters.map((filter) => ({
-          ...filter,
-          label: `${filter.label} (${counts[filter.value as keyof typeof counts]})`,
-        }))}
-        filterValue={filterValue}
-        onFilterChange={setFilterValue}
-      />
+    <div className="flex flex-col gap-6">
+      <div className="inline-flex items-center rounded-lg border p-0.5 self-start">
+        {filters.map((f) => {
+          const active = filterValue === f.value
+          return (
+            <button
+              key={f.value}
+              onClick={() => setFilterValue(f.value)}
+              className={cn(
+                "rounded-md px-3.5 py-1.5 text-sm font-medium transition-colors",
+                active
+                  ? "bg-foreground text-background shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {f.label}
+              <span className={cn("ml-1.5 tabular-nums", active ? "text-background/70" : "text-muted-foreground/60")}>
+                {counts[f.value as keyof typeof counts]}
+              </span>
+            </button>
+          )
+        })}
+        <div className="mx-1 h-5 w-px bg-border" />
+        <div className="relative flex items-center">
+          <Search className="pointer-events-none absolute left-2.5 size-3.5 text-muted-foreground" />
+          <input
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
+            placeholder="Search..."
+            className="h-7 w-32 rounded-md bg-transparent pl-8 pr-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
+          />
+          {searchValue && (
+            <button
+              onClick={() => setSearchValue("")}
+              className="absolute right-1.5 text-muted-foreground hover:text-foreground"
+            >
+              <X className="size-3" />
+            </button>
+          )}
+        </div>
+      </div>
       {selectedIds.size > 0 && (
         <SelectionToolbar
           selectedIds={selectedIds}

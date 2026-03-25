@@ -9,7 +9,7 @@ export type FilterOption = {
 }
 
 interface CollectionHeaderProps {
-  title: string
+  title?: string
   description?: string
   action?: ReactNode
   searchValue: string
@@ -31,24 +31,21 @@ export function CollectionHeader({
   filterValue,
   onFilterChange,
 }: CollectionHeaderProps) {
+  const hasHeading = title || description || action
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
-          {description && (
-            <p className="text-muted-foreground">{description}</p>
-          )}
+      {hasHeading && (
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            {title && <h1 className="text-2xl font-bold tracking-tight">{title}</h1>}
+            {description && (
+              <p className="text-muted-foreground">{description}</p>
+            )}
+          </div>
+          {action}
         </div>
-        {action}
-      </div>
+      )}
       <div className="flex flex-wrap items-center gap-3">
-        <SearchInput
-          value={searchValue}
-          onChange={onSearchChange}
-          placeholder={searchPlaceholder}
-          className="min-w-[240px] flex-1"
-        />
         <Tabs
           value={filterValue}
           onValueChange={onFilterChange}
@@ -62,6 +59,12 @@ export function CollectionHeader({
             ))}
           </TabsList>
         </Tabs>
+        <SearchInput
+          value={searchValue}
+          onChange={onSearchChange}
+          placeholder={searchPlaceholder}
+          className="ml-auto w-48"
+        />
       </div>
     </div>
   )

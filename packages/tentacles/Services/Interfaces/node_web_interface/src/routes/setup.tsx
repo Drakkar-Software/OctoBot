@@ -11,7 +11,7 @@ export const Route = createFileRoute("/setup")({
     } catch {
       // network error — stay on setup
     }
-    if (configured) {
+    if (configured && !sessionStorage.getItem("setup_in_progress")) {
       throw redirect({ to: isLoggedIn() ? "/" : "/login" })
     }
   },

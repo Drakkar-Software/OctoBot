@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { CheckCircle2, Copy, Download, FileText, Network, QrCode, Server, ShieldCheck, ShieldOff, Sliders, TriangleAlert, Wallet } from "lucide-react"
+import { Check, Copy, Download, FileText, Network, QrCode, Server, ShieldCheck, Sliders, TriangleAlert, Wallet, X } from "lucide-react"
 import { useEffect, useState } from "react"
 import QRCode from "react-qr-code"
 
@@ -18,7 +18,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import useAuth from "@/hooks/useAuth"
 
 export const Route = createFileRoute("/_layout/settings")({
@@ -27,6 +27,28 @@ export const Route = createFileRoute("/_layout/settings")({
     meta: [{ title: "Settings" }],
   }),
 })
+
+function StatusIndicator({ enabled }: { enabled: boolean | null }) {
+  if (enabled === null) return null
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        {enabled ? (
+          <span className="flex size-6 items-center justify-center rounded-full bg-foreground text-background">
+            <Check className="size-3.5" strokeWidth={3} />
+          </span>
+        ) : (
+          <span className="flex size-6 items-center justify-center rounded-full bg-muted text-muted-foreground">
+            <X className="size-3.5" strokeWidth={3} />
+          </span>
+        )}
+      </TooltipTrigger>
+      <TooltipContent side="left">
+        {enabled ? "Enabled" : "Disabled"}
+      </TooltipContent>
+    </Tooltip>
+  )
+}
 
 function LoggingCard() {
   const [enabled, setEnabled] = useState<boolean | null>(null)
@@ -39,8 +61,11 @@ function LoggingCard() {
   }, [])
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="relative">
+      <div className="absolute right-4 top-4">
+        <StatusIndicator enabled={enabled} />
+      </div>
+      <CardHeader className="pr-12">
         <CardTitle className="flex items-center gap-2">
           <FileText className="size-4" />
           Logging
@@ -49,21 +74,17 @@ function LoggingCard() {
           Per-bot log files and diagnostic settings.
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1">
-          <Label>Per-bot log files</Label>
-          <span className="text-xs text-muted-foreground">
-            {enabled === null
-              ? "Loading…"
-              : enabled
-                ? "Enabled — a dedicated log file is written for each bot run."
-                : "Disabled — bot logs are written to the main log file."}
-          </span>
-          <span className="text-xs text-muted-foreground mt-1">
-            Configure via the <code>USE_DEDICATED_LOG_FILE_PER_AUTOMATION</code> environment variable
-            (<code>true</code> or <code>false</code>). Defaults to <code>true</code>.
-          </span>
-        </div>
+      <CardContent className="flex flex-col gap-2">
+        <span className="text-xs text-muted-foreground">
+          {enabled === null
+            ? "Loading…"
+            : enabled
+              ? "A dedicated log file is written for each bot run."
+              : "Bot logs are written to the main log file."}
+        </span>
+        <span className="text-xs text-muted-foreground">
+          Configure via <code>USE_DEDICATED_LOG_FILE_PER_AUTOMATION</code>.
+        </span>
       </CardContent>
     </Card>
   )
@@ -292,30 +313,31 @@ function EncryptionCard() {
   }, [])
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="relative">
+      <div className="absolute right-4 top-4">
+        <StatusIndicator enabled={enabled} />
+      </div>
+      <CardHeader className="pr-12">
         <CardTitle className="flex items-center gap-2">
           <ShieldCheck className="size-4" />
           Task encryption
         </CardTitle>
         <CardDescription>
-          End-to-end encryption status for task inputs and outputs.
+          End-to-end encryption for task inputs and outputs.
         </CardDescription>
       </CardHeader>
       <CardContent>
         {enabled === null ? (
           <p className="text-sm text-muted-foreground">Loading…</p>
         ) : enabled ? (
-          <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
-            <CheckCircle2 className="size-4 shrink-0" />
-            Enabled — all task encryption keys are configured.
-          </div>
+          <span className="text-xs text-muted-foreground">
+            All task encryption keys are configured.
+          </span>
         ) : (
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <ShieldOff className="size-4 shrink-0" />
-              Disabled — define the following environment variables to enable:
-            </div>
+          <div className="flex flex-col gap-2">
+            <span className="text-xs text-muted-foreground">
+              Define the following environment variables to enable:
+            </span>
             <ul className="text-xs font-mono text-muted-foreground flex flex-col gap-0.5 ml-6 list-disc">
               <li>TASKS_INPUTS_RSA_PRIVATE_KEY</li>
               <li>TASKS_INPUTS_ECDSA_PUBLIC_KEY</li>
@@ -336,12 +358,6 @@ function EncryptionCard() {
 function Settings() {
   return (
     <div className="flex flex-col gap-8">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
-        <p className="text-muted-foreground">
-          Tune security, node behavior, and integrations.
-        </p>
-      </div>
       <div className="grid gap-4 md:grid-cols-2">
         <WalletCard />
         <NodeTypeCard />
