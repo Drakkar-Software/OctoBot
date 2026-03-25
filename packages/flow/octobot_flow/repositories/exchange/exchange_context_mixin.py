@@ -43,6 +43,9 @@ class ExchangeContextMixin:
             self.profile_data_provider.get_profile_data().trader_simulator.enabled,
         )
 
+    def set_fetched_dependencies(self, fetched_dependencies: octobot_flow.entities.FetchedDependencies):
+        self.fetched_dependencies = fetched_dependencies
+
     def init_strategy_exchange_data(self, exchange_data: exchange_data_import.ExchangeData):
         """
         should be implemented when self.WILL_EXECUTE_STRATEGY is True
@@ -138,9 +141,8 @@ class ExchangeContextMixin:
             return exchange_data.get_price(symbol)
         except (IndexError, KeyError):
             try:
-                price = tickers_repository.TickersRepository.get_cached_market_price(
-                    exchange_data.exchange_details.name, exchange_data.auth_details.exchange_type,
-                    exchange_data.auth_details.sandboxed, symbol,
+                price = tickers_repository.TickersRepository.get_cached_market_price_from_exchange_data(
+                    exchange_data, symbol
                 )
                 commons_logging.get_logger(self.__class__.__name__).warning(
                     f"Using {symbol} [{exchange_data.exchange_details.name}] "

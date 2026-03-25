@@ -13,6 +13,7 @@ import octobot_trading.exchanges.connectors.ccxt.ccxt_clients_cache as ccxt_clie
 import octobot.community as community
 
 import octobot_flow.entities
+import octobot_flow.enums
 
 import octobot_flow.environment
 import octobot_flow.repositories.community
@@ -245,7 +246,9 @@ def isolated_exchange_cache():
         yield
 
 
-def automation_state_dict(resolved_actions: list[octobot_flow.entities.AbstractActionDetails]) -> dict[str, typing.Any]:
+def automation_state_dict(
+    resolved_actions: list[octobot_flow.entities.AbstractActionDetails],
+) -> dict[str, typing.Any]:
     return {
         "automation": {
             "metadata": {"automation_id": "automation_1"},
@@ -254,7 +257,11 @@ def automation_state_dict(resolved_actions: list[octobot_flow.entities.AbstractA
     }
 
 
-automations_state_dict = automation_state_dict  # alias for backward compatibility
+def set_init_action_run_mode(
+    init_action: dict[str, typing.Any], run_mode: octobot_flow.enums.AutomationRunMode
+) -> dict[str, typing.Any]:
+    init_action["config"]["automation"]["metadata"]["run_mode"] = run_mode.value
+    return init_action
 
 
 def resolved_actions(actions: list[dict[str, typing.Any]]) -> list[octobot_flow.entities.AbstractActionDetails]:

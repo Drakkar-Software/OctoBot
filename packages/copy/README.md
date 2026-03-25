@@ -1,3 +1,1 @@
-# Mini OctoBot
-
-OctoBot automations runner
+# OctoBot copy

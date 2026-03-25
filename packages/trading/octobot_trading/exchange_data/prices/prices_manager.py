@@ -145,10 +145,10 @@ class PricesManager(util.Initializable):
             self.logger.exception(
                 err,
                 True,
-                f"Missing {constants.TICKER_CHANNEL} channel producer. Can't force mark price update from this channel"
+                f"Missing {constants.TICKER_CHANNEL} channel producer. Can't force {self.symbol} mark price update from this channel"
             )
         except Exception as err:
-            self.logger.exception(err, True, f"Unexpected error when triggering ticker update: {err}")
+            self.logger.exception(err, True, f"Unexpected error when triggering {self.symbol} ticker update: {err}")
 
     def _set_mark_price_value(self, mark_price):
         """

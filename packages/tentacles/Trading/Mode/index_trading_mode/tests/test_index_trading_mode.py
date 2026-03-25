@@ -411,7 +411,9 @@ async def test_single_exchange_process_optimize_initial_portfolio(trading_tools)
     ) as cancel_order_mock:
         # no open order
         orders = await mode.single_exchange_process_optimize_initial_portfolio(["BTC", "ETH"], "USDT", {})
-        convert_assets_to_target_asset_mock.assert_called_once_with(mode, ["BTC", "ETH"], "USDT", {})
+        convert_assets_to_target_asset_mock.assert_called_once_with(
+            ["BTC", "ETH"], "USDT", {}, trading_mode=mode, exchange_manager=mode.exchange_manager,
+        )
         cancel_order_mock.assert_not_called()
         assert orders == ["order_1"]
         convert_assets_to_target_asset_mock.reset_mock()
@@ -446,7 +448,9 @@ async def test_single_exchange_process_optimize_initial_portfolio(trading_tools)
         mode.exchange_manager.exchange_config.traded_symbol_pairs = ["BTC/USDT", "ETH/USDT"]
 
         orders = await mode.single_exchange_process_optimize_initial_portfolio(["BTC", "ETH"], "USDT", {})
-        convert_assets_to_target_asset_mock.assert_called_once_with(mode, ["BTC", "ETH"], "USDT", {})
+        convert_assets_to_target_asset_mock.assert_called_once_with(
+            ["BTC", "ETH"], "USDT", {}, trading_mode=mode, exchange_manager=mode.exchange_manager,
+        )
         cancel_order_mock.assert_not_called()
         assert orders == ["order_1"]
         convert_assets_to_target_asset_mock.reset_mock()
@@ -2100,9 +2104,12 @@ async def test_sell_targeted_coins_for_reference_market(trading_tools):
             }
             assert await portfolio_rebalancer.sell_targeted_coins_for_reference_market(details, dependencies) == orders
             convert_assets_to_target_asset_mock.assert_called_once_with(
-                mode, ["BTC", "ETH", "SOL"],
-                consumer.exchange_manager.exchange_personal_data.portfolio_manager.reference_market, {},
-                dependencies=dependencies
+                ["BTC", "ETH", "SOL"],
+                consumer.exchange_manager.exchange_personal_data.portfolio_manager.reference_market,
+                {},
+                dependencies=dependencies,
+                trading_mode=mode,
+                exchange_manager=mode.exchange_manager,
             )
             assert wait_for_order_fill_mock.call_count == 2
             _get_coins_to_sell_mock.assert_called_once_with(details)
@@ -2140,9 +2147,12 @@ async def test_sell_targeted_coins_for_reference_market(trading_tools):
                 with pytest.raises(trading_errors.MissingMinimalExchangeTradeVolume):
                     assert await portfolio_rebalancer.sell_targeted_coins_for_reference_market(details, dependencies) == orders + orders
                 convert_assets_to_target_asset_mock_2.assert_called_once_with(
-                    mode, ["BTC"],
-                    consumer.exchange_manager.exchange_personal_data.portfolio_manager.reference_market, {},
-                    dependencies=dependencies
+                    ["BTC"],
+                    consumer.exchange_manager.exchange_personal_data.portfolio_manager.reference_market,
+                    {},
+                    dependencies=dependencies,
+                    trading_mode=mode,
+                    exchange_manager=mode.exchange_manager,
                 )
                 wait_for_order_fill_mock.assert_not_called()
                 _get_coins_to_sell_mock.assert_not_called()
@@ -2216,9 +2226,12 @@ async def test_sell_some_reduces_or_closes_position(trading_tools):
             orders = await mode.create_rebalancer(mode.exchange_manager).sell_targeted_coins_for_reference_market(details, dependencies)
             assert orders == converted_orders
             convert_assets_to_target_asset_mock.assert_called_once_with(
-                mode, ["BTC"],
-                consumer.exchange_manager.exchange_personal_data.portfolio_manager.reference_market, {},
-                dependencies=dependencies
+                ["BTC"],
+                consumer.exchange_manager.exchange_personal_data.portfolio_manager.reference_market,
+                {},
+                dependencies=dependencies,
+                trading_mode=mode,
+                exchange_manager=mode.exchange_manager,
             )
 
         # When pending sells already exceed holdings, no new sell is created
@@ -3747,7 +3760,7 @@ async def test_get_supported_distribution(trading_tools):
             },
         ]
     }
-    with mock.patch.object(mode.rebalance_actions_planner._client, "get_ideal_distribution", mock.Mock(wraps=mode.rebalance_actions_planner._client.get_ideal_distribution)) as get_ideal_distribution_mock:
+    with mock.patch.object(mode.rebalance_actions_planner.client, "get_ideal_distribution", mock.Mock(wraps=mode.rebalance_actions_planner.client.get_ideal_distribution)) as get_ideal_distribution_mock:
         # no ideal distribution: return uniform distribution over traded assets
         mode._sync_rebalance_planner()
         assert mode.rebalance_actions_planner._get_supported_distribution(False, False) == mode.trading_config[
@@ -3771,7 +3784,7 @@ async def test_get_supported_distribution(trading_tools):
             },
         ]
     }
-    with mock.patch.object(mode.rebalance_actions_planner._client, "get_ideal_distribution", mock.Mock(wraps=mode.rebalance_actions_planner._client.get_ideal_distribution)) as get_ideal_distribution_mock:
+    with mock.patch.object(mode.rebalance_actions_planner.client, "get_ideal_distribution", mock.Mock(wraps=mode.rebalance_actions_planner.client.get_ideal_distribution)) as get_ideal_distribution_mock:
         mode._sync_rebalance_planner()
         assert mode.rebalance_actions_planner._get_supported_distribution(False, False) == mode.trading_config[
             index_trading.IndexTradingModeProducer.INDEX_CONTENT
@@ -3798,7 +3811,7 @@ async def test_get_supported_distribution(trading_tools):
             },
         ]
     }
-    with mock.patch.object(mode.rebalance_actions_planner._client, "get_ideal_distribution", mock.Mock(wraps=mode.rebalance_actions_planner._client.get_ideal_distribution)) as get_ideal_distribution_mock:
+    with mock.patch.object(mode.rebalance_actions_planner.client, "get_ideal_distribution", mock.Mock(wraps=mode.rebalance_actions_planner.client.get_ideal_distribution)) as get_ideal_distribution_mock:
         mode._sync_rebalance_planner()
         assert mode.rebalance_actions_planner._get_supported_distribution(False, False) == [
             {
@@ -3839,7 +3852,7 @@ async def test_get_supported_distribution(trading_tools):
 
     # synchronization policy is not SELL_REMOVED_INDEX_COINS_ON_RATIO_REBALANCE
     mode.synchronization_policy = rebalancer_enums.SynchronizationPolicy.SELL_REMOVED_INDEX_COINS_AS_SOON_AS_POSSIBLE
-    with mock.patch.object(mode.rebalance_actions_planner._client, "get_ideal_distribution", mock.Mock(wraps=mode.rebalance_actions_planner._client.get_ideal_distribution)) as get_ideal_distribution_mock:
+    with mock.patch.object(mode.rebalance_actions_planner.client, "get_ideal_distribution", mock.Mock(wraps=mode.rebalance_actions_planner.client.get_ideal_distribution)) as get_ideal_distribution_mock:
         with mock.patch.object(mode.rebalance_actions_planner, "_get_currently_applied_historical_config_according_to_holdings", mock.Mock()) as _get_currently_applied_historical_config_according_to_holdings_mock, \
             mock.patch.object(mode, "get_historical_configs", mock.Mock()) as get_historical_configs_mock:
             mode._sync_rebalance_planner()
@@ -3870,7 +3883,7 @@ async def test_get_supported_distribution(trading_tools):
             },
         ]
     }
-    with mock.patch.object(mode.rebalance_actions_planner._client, "get_ideal_distribution", mock.Mock(wraps=mode.rebalance_actions_planner._client.get_ideal_distribution)) as get_ideal_distribution_mock:
+    with mock.patch.object(mode.rebalance_actions_planner.client, "get_ideal_distribution", mock.Mock(wraps=mode.rebalance_actions_planner.client.get_ideal_distribution)) as get_ideal_distribution_mock:
         with mock.patch.object(mode.rebalance_actions_planner, "_get_currently_applied_historical_config_according_to_holdings", mock.Mock(return_value=holding_adapted_config)) as _get_currently_applied_historical_config_according_to_holdings_mock, \
             mock.patch.object(mode, "get_historical_configs", mock.Mock()) as get_historical_configs_mock:
             mode._sync_rebalance_planner()

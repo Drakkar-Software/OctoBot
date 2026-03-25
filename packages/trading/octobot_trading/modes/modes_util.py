@@ -76,52 +76,93 @@ def get_assets_requiring_extra_price_data_to_convert(exchange_manager, sellable_
 
 
 async def convert_assets_to_target_asset(
-    trading_mode, sellable_assets: list, target_asset: str, tickers: dict,
-    dependencies: typing.Optional[commons_signals.SignalDependencies] = None
+    sellable_assets: list,
+    target_asset: str,
+    tickers: dict,
+    dependencies: typing.Optional[commons_signals.SignalDependencies] = None,
+    *,
+    trading_mode=None,
+    exchange_manager=None,
 ) -> list:
+    if trading_mode is None and exchange_manager is None:
+        raise ValueError("At least one of trading_mode or exchange_manager must be provided")
+    logger = trading_mode.logger if trading_mode is not None else logging.get_logger(__name__)
     created_orders = []
     for asset in sorted(sellable_assets):
         try:
             new_orders = await convert_asset_to_target_asset(
-                trading_mode, asset, target_asset, tickers, asset_amount=None, dependencies=dependencies
+                asset,
+                target_asset,
+                tickers,
+                asset_amount=None,
+                dependencies=dependencies,
+                trading_mode=trading_mode,
+                exchange_manager=exchange_manager,
             )
             created_orders += new_orders
         except KeyError as err:
-            trading_mode.logger.exception(
+            logger.exception(
                 err, True, f"Impossible to convert {asset} into {target_asset}: missing {err} market status"
             )
     return created_orders
 
 
 async def convert_asset_to_target_asset(
-    trading_mode, asset: str, target_asset: str, tickers: dict, asset_amount=None,
-    dependencies: typing.Optional[commons_signals.SignalDependencies] = None
+    asset: str,
+    target_asset: str,
+    tickers: dict,
+    asset_amount=None,
+    dependencies: typing.Optional[commons_signals.SignalDependencies] = None,
+    *,
+    trading_mode=None,
+    exchange_manager=None,
 ) -> list:
+    if trading_mode is None and exchange_manager is None:
+        raise ValueError("At least one of trading_mode or exchange_manager must be provided")
+
     if asset == target_asset:
         return []
     created_orders = []
-    tickers = tickers or {}
-    portfolio = trading_mode.exchange_manager.exchange_personal_data.portfolio_manager.portfolio.portfolio
+    exchange_mgr = trading_mode.exchange_manager if trading_mode is not None else exchange_manager
+    portfolio = exchange_mgr.exchange_personal_data.portfolio_manager.portfolio.portfolio
     if asset in portfolio and portfolio[asset].available:
         created_orders.extend(
             await convert_with_market_or_limit_order(
-                trading_mode, asset, target_asset, tickers, asset_amount, dependencies=dependencies
+                asset,
+                target_asset,
+                tickers,
+                asset_amount,
+                dependencies=dependencies,
+                trading_mode=trading_mode,
+                exchange_manager=exchange_manager,
             )
         )
     return created_orders
 
 
 async def convert_with_market_or_limit_order(
-    trading_mode, asset: str, target_asset: str, tickers: dict, asset_amount=None,
-    dependencies: typing.Optional[commons_signals.SignalDependencies] = None
+    asset: str,
+    target_asset: str,
+    tickers: dict,
+    asset_amount=None,
+    dependencies: typing.Optional[commons_signals.SignalDependencies] = None,
+    *,
+    trading_mode=None,
+    exchange_manager=None,
 ) -> list:
+    if trading_mode is None and exchange_manager is None:
+        raise ValueError("At least one of trading_mode or exchange_manager must be provided")
+
+    exchange_mgr = trading_mode.exchange_manager if trading_mode is not None else exchange_manager
+    logger = trading_mode.logger if trading_mode is not None else logging.get_logger(__name__)
+
     # get symbol of the order
-    symbol, order_type = _get_associated_symbol_and_order_type(trading_mode, asset, target_asset)
+    symbol, order_type = _get_associated_symbol_and_order_type(exchange_mgr, logger, asset, target_asset)
     if symbol is None:
         # can't convert asset into target_asset
-        trading_mode.logger.warning(
+        logger.warning(
             f"Impossible to convert {asset} into {target_asset}: no associated trading pair "
-            f"on {trading_mode.exchange_manager.exchange_name}"
+            f"on {exchange_mgr.exchange_name}"
         )
         return []
 
@@ -133,12 +174,12 @@ async def convert_with_market_or_limit_order(
         price_target = asset
 
     price = trading_personal_data.get_asset_price_from_converter_or_tickers(
-        trading_mode.exchange_manager, price_base, price_target, symbol, tickers
+        exchange_mgr, price_base, price_target, symbol, tickers
     )
 
     if not price:
         # can't get price, should not happen as symbol is in client_symbols
-        trading_mode.logger.error(
+        logger.error(
             f"Impossible to convert {asset} into {target_asset}: {symbol} ticker can't be fetched"
         )
         return []
@@ -148,8 +189,8 @@ async def convert_with_market_or_limit_order(
         price = get_instantly_filled_limit_order_adapted_price(price, order_type)
 
     # get order quantity
-    quantity = _get_available_or_target_quantity(trading_mode, symbol, order_type, price, asset_amount)
-    symbol_market = trading_mode.exchange_manager.exchange.get_market_status(symbol, with_fixer=False)
+    quantity = _get_available_or_target_quantity(exchange_mgr, symbol, order_type, price, asset_amount)
+    symbol_market = exchange_mgr.exchange.get_market_status(symbol, with_fixer=False)
     created_orders = []
     for order_quantity, order_price in \
             trading_personal_data.decimal_check_and_adapt_order_details_if_necessary(
@@ -159,14 +200,21 @@ async def convert_with_market_or_limit_order(
             ):
         # create order
         order = trading_personal_data.create_order_instance(
-            trader=trading_mode.exchange_manager.trader,
+            trader=exchange_mgr.trader,
             order_type=order_type,
             symbol=symbol,
             current_price=price,
             quantity=order_quantity,
             price=order_price
         )
-        initialized_order = await trading_mode.create_order(order, dependencies=dependencies)
+        if trading_mode is not None:
+            initialized_order = await trading_mode.create_order(order, dependencies=dependencies)
+        else:
+            initialized_order = await exchange_mgr.trader.create_order(
+                order,
+                wait_for_creation=True,
+                creation_timeout=constants.INDIVIDUAL_ORDER_SYNC_TIMEOUT,
+            )
         if isinstance(initialized_order, trading_personal_data.LimitOrder) and initialized_order.simulated:
             # on simulator, this order should be instantly filled now as its price is meant to be instantly filled
             await initialized_order.on_fill()
@@ -199,26 +247,30 @@ def get_instantly_filled_limit_order_adapted_price_and_quantity(
     return adapted_price, adapted_quantity
 
 
-def _get_associated_symbol_and_order_type(trading_mode, asset: str, target_asset: str) \
-     -> (str, trading_enums.TraderOrderType):
-    symbol, reversed_symbol = exchange_util.get_associated_symbol(trading_mode.exchange_manager, asset, target_asset)
+def _get_associated_symbol_and_order_type(
+    exchange_manager,
+    logger: logging.BotLogger,
+    asset: str,
+    target_asset: str,
+) -> (str, trading_enums.TraderOrderType):
+    symbol, reversed_symbol = exchange_util.get_associated_symbol(exchange_manager, asset, target_asset)
     if symbol is None:
         return None, None
     order_type = trading_enums.TraderOrderType.BUY_MARKET if reversed_symbol else \
         trading_enums.TraderOrderType.SELL_MARKET
-    if not trading_mode.exchange_manager.exchange.is_market_open_for_order_type(symbol, order_type):
+    if not exchange_manager.exchange.is_market_open_for_order_type(symbol, order_type):
         # can't use market orders: use limit orders instead
         order_type = trading_enums.TraderOrderType.BUY_LIMIT if order_type is trading_enums.TraderOrderType.BUY_MARKET \
             else trading_enums.TraderOrderType.SELL_LIMIT
-        if not trading_mode.exchange_manager.exchange.is_market_open_for_order_type(symbol, order_type):
+        if not exchange_manager.exchange.is_market_open_for_order_type(symbol, order_type):
             # can't convert asset: still try with limit orders but it will probably fail
-            trading_mode.logger.error(
+            logger.error(
                 f"Both market and {order_type} order are currently unsupported. Trying limit orders anyway."
             )
     return symbol, order_type
 
 
-def _get_available_or_target_quantity(trading_mode, symbol, order_type, price, asset_amount) -> decimal.Decimal:
+def _get_available_or_target_quantity(exchange_manager, symbol, order_type, price, asset_amount) -> decimal.Decimal:
     side = (
         trading_enums.TradeOrderSide.SELL
         if order_type in (trading_enums.TraderOrderType.SELL_MARKET, trading_enums.TraderOrderType.SELL_LIMIT)
@@ -226,7 +278,7 @@ def _get_available_or_target_quantity(trading_mode, symbol, order_type, price, a
     )
 
     currency_available, _, market_quantity = trading_personal_data.get_portfolio_amounts(
-        trading_mode.exchange_manager, symbol, price, portfolio_type=common_constants.PORTFOLIO_AVAILABLE
+        exchange_manager, symbol, price, portfolio_type=common_constants.PORTFOLIO_AVAILABLE
     )
     if asset_amount is None:
         quantity = currency_available if side is trading_enums.TradeOrderSide.SELL else market_quantity
@@ -237,7 +289,7 @@ def _get_available_or_target_quantity(trading_mode, symbol, order_type, price, a
             quantity = constants.ZERO
 
     adapted_quantity = trading_personal_data.decimal_adapt_order_quantity_because_fees(
-        trading_mode.exchange_manager, symbol, order_type, quantity, price, side
+        exchange_manager, symbol, order_type, quantity, price, side
     )
     return adapted_quantity
 

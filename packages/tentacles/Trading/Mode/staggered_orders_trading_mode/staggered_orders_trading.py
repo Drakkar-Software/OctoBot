@@ -393,7 +393,7 @@ class StaggeredOrdersTradingMode(trading_modes.AbstractTradingMode):
         self.logger.info(f"Optimizing portfolio: selling {to_sell_assets} to buy {common_quote}")
         # need portfolio available to be up-to-date with cancelled orders
         orders = await trading_modes.convert_assets_to_target_asset(
-            self, list(to_sell_assets), common_quote, tickers, dependencies=dependencies
+            list(to_sell_assets), common_quote, tickers, dependencies=dependencies, trading_mode=self,
         )
         if orders:
             await asyncio.gather(
@@ -417,9 +417,10 @@ class StaggeredOrdersTradingMode(trading_modes.AbstractTradingMode):
             )
             try:
                 created_orders += await trading_modes.convert_asset_to_target_asset(
-                    self, common_quote, base, tickers,
+                    common_quote, base, tickers,
                     asset_amount=converted_quote_amount_per_symbol,
-                    dependencies=dependencies
+                    dependencies=dependencies,
+                    trading_mode=self,
                 )
             except Exception as err:
                 self.logger.exception(err, True, f"Error when creating order to buy {base}: {err}")
@@ -1683,12 +1684,13 @@ class StaggeredOrdersTradingModeProducer(trading_modes.AbstractTradingModeProduc
         self.logger.info(f"{log_header}selling {amount_to_convert} {base} worth of {to_sell} to buy {to_buy}")
         # need portfolio available to be up-to-date with cancelled orders
         orders = await trading_modes.convert_asset_to_target_asset(
-            self.trading_mode, to_sell, to_buy, {
+            to_sell, to_buy, {
                 self.symbol: {
                     trading_enums.ExchangeConstantsTickersColumns.CLOSE.value: current_price,
                 }
             }, asset_amount=amount_to_convert,
-            dependencies=convert_dependencies
+            dependencies=convert_dependencies,
+            trading_mode=self.trading_mode,
         )
         orders = [order for order in orders if order is not None]
         if orders:
@@ -1886,12 +1888,13 @@ class StaggeredOrdersTradingModeProducer(trading_modes.AbstractTradingModeProduc
                 self.logger.info(f"{log_header}selling {amount} {to_sell} to buy {to_buy}")
                 # need portfolio available to be up-to-date with cancelled orders
                 orders = await trading_modes.convert_asset_to_target_asset(
-                    self.trading_mode, to_sell, to_buy, {
+                    to_sell, to_buy, {
                         self.symbol: {
                             trading_enums.ExchangeConstantsTickersColumns.CLOSE.value: current_price,
                         }
                     }, asset_amount=amount,
-                    dependencies=convert_dependencies
+                    dependencies=convert_dependencies,
+                    trading_mode=self.trading_mode,
                 )
                 if orders:
                     await asyncio.gather(*[

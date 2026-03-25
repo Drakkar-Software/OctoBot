@@ -16,33 +16,59 @@
 import decimal
 import typing
 
+import octobot_copy.enums as copy_enums
+
 
 class RebalancingClientInterface:
     def __init__(
         self,
         *,
         client_name: str,
-        reference_market: str,
         min_order_size_margin: decimal.Decimal,
+        rebalance_trigger_min_ratio: decimal.Decimal,
+        quote_asset_rebalance_ratio_threshold: decimal.Decimal,
+        reference_market_ratio: decimal.Decimal,
+        sell_untargeted_traded_coins: bool,
+        synchronization_policy: copy_enums.SynchronizationPolicy,
+        allow_skip_asset: bool,
         get_config: typing.Callable[[], typing.Optional[dict]],
         get_previous_config: typing.Callable[[], typing.Optional[dict]],
         get_historical_configs: typing.Callable[[float, float], list],
         get_ideal_distribution: typing.Callable[[dict], typing.Optional[list]],
-        get_allow_skip_asset: typing.Callable[[], bool],
     ) -> None:
         # static values
         self.client_name: str = client_name
-        self.reference_market: str = reference_market
         self.min_order_size_margin: decimal.Decimal = min_order_size_margin
+        self.rebalance_trigger_min_ratio: decimal.Decimal = rebalance_trigger_min_ratio
+        self.quote_asset_rebalance_ratio_threshold: decimal.Decimal = (
+            quote_asset_rebalance_ratio_threshold
+        )
+        self.reference_market_ratio: decimal.Decimal = reference_market_ratio
+        self.sell_untargeted_traded_coins: bool = sell_untargeted_traded_coins
+        self.synchronization_policy: copy_enums.SynchronizationPolicy = synchronization_policy
+        self.allow_skip_asset: bool = allow_skip_asset
 
         # dynamic values
         self.get_config = get_config
         self.get_previous_config = get_previous_config
         self.get_historical_configs = get_historical_configs
         self.get_ideal_distribution = get_ideal_distribution
-        self.get_allow_skip_asset = get_allow_skip_asset
 
-    @property
-    def allow_skip_asset(self) -> bool:
-        # implemented as property in case the actual value changes dynamically
-        return self.get_allow_skip_asset()
+    def update(
+        self,
+        *,
+        min_order_size_margin: decimal.Decimal,
+        synchronization_policy: typing.Any,
+        rebalance_trigger_min_ratio: decimal.Decimal,
+        quote_asset_rebalance_ratio_threshold: decimal.Decimal,
+        reference_market_ratio: decimal.Decimal,
+        sell_untargeted_traded_coins: bool,
+        allow_skip_asset: bool,
+    ) -> None:
+        self.min_order_size_margin = min_order_size_margin
+        self.synchronization_policy = synchronization_policy
+        self.rebalance_trigger_min_ratio = rebalance_trigger_min_ratio
+        self.quote_asset_rebalance_ratio_threshold = quote_asset_rebalance_ratio_threshold
+        self.reference_market_ratio = reference_market_ratio
+        self.sell_untargeted_traded_coins = sell_untargeted_traded_coins
+        self.allow_skip_asset = allow_skip_asset

@@ -41,7 +41,9 @@ class ActionsExecutor:
 
     async def execute(self):
         dsl_executor = octobot_flow.logic.dsl.DSLExecutor(
-            self._profile_data, self._exchange_manager, None
+            self._profile_data,
+            self._exchange_manager,
+            None,
         )
         if self._exchange_manager:
             await octobot_trading.exchanges.create_exchange_channels(self._exchange_manager)

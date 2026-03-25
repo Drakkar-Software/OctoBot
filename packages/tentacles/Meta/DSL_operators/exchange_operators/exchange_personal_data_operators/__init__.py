@@ -33,11 +33,15 @@ import tentacles.Meta.DSL_operators.exchange_operators.exchange_personal_data_op
 from tentacles.Meta.DSL_operators.exchange_operators.exchange_personal_data_operators.futures_contracts_operators import (
     create_futures_contracts_operators,
 )
+from tentacles.Meta.DSL_operators.exchange_operators.exchange_personal_data_operators.copy_exchange_account_operators import (
+    create_copy_exchange_account_operators,
+)
 __all__ = [
     "create_portfolio_operators",
     "create_cancel_order_operators",
     "create_create_order_operators",
     "create_futures_contracts_operators",
+    "create_copy_exchange_account_operators",
     "CREATED_ORDERS_KEY",
     "CANCELLED_ORDERS_KEY",
     "CREATED_WITHDRAWALS_KEY",
