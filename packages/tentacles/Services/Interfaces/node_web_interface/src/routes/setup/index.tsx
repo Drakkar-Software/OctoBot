@@ -1,9 +1,11 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { useMutation } from "@tanstack/react-query"
 import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 
+import { SetupService, type ApiError, type SetupResult } from "@/client"
 import { AuthLayout } from "@/components/Common/AuthLayout"
 import {
   Form,
@@ -16,11 +18,13 @@ import {
 import { Input } from "@/components/ui/input"
 import { LoadingButton } from "@/components/ui/loading-button"
 import { PasswordInput } from "@/components/ui/password-input"
+import useCustomToast from "@/hooks/useCustomToast"
+import { handleError } from "@/utils"
 
 export const Route = createFileRoute("/setup/")({
   component: SetupWallet,
   head: () => ({
-    meta: [{ title: "Setup — Step 1" }],
+    meta: [{ title: "Setup — Secure your node" }],
   }),
 })
 
@@ -53,6 +57,7 @@ type ImportData = z.infer<typeof importSchema>
 function SetupWallet() {
   const navigate = useNavigate()
   const [mode, setMode] = useState<"generate" | "import">("generate")
+  const { showErrorToast } = useCustomToast()
 
   const generateForm = useForm<GenerateData>({
     resolver: zodResolver(generateSchema),
@@ -68,16 +73,28 @@ function SetupWallet() {
     defaultValues: { passphrase: "", confirmPassphrase: "", privateKey: "" },
   })
 
+  const initMutation = useMutation<SetupResult, ApiError, { passphrase: string; privateKey?: string }>({
+    mutationFn: ({ passphrase, privateKey }) =>
+      SetupService.initSetup({
+        requestBody: { passphrase, node_type: "standalone", private_key: privateKey || undefined },
+      }),
+    onSuccess: (result, { passphrase }) => {
+      localStorage.setItem("auth_username", result.address)
+      localStorage.setItem("auth_password", passphrase)
+      sessionStorage.setItem("setup_in_progress", "true")
+      navigate({ to: "/setup/first-bot" })
+    },
+    onError: (error) => {
+      handleError.bind(showErrorToast)(error as ApiError)
+    },
+  })
+
   const onGenerateSubmit = (data: GenerateData) => {
-    sessionStorage.setItem("setup_passphrase", data.passphrase)
-    sessionStorage.removeItem("setup_private_key")
-    navigate({ to: "/setup/node-type" })
+    initMutation.mutate({ passphrase: data.passphrase })
   }
 
   const onImportSubmit = (data: ImportData) => {
-    sessionStorage.setItem("setup_passphrase", data.passphrase)
-    sessionStorage.setItem("setup_private_key", data.privateKey)
-    navigate({ to: "/setup/node-type" })
+    initMutation.mutate({ passphrase: data.passphrase, privateKey: data.privateKey })
   }
 
   return (
@@ -148,7 +165,7 @@ function SetupWallet() {
                   </FormItem>
                 )}
               />
-              <LoadingButton type="submit">
+              <LoadingButton type="submit" loading={initMutation.isPending}>
                 Continue
               </LoadingButton>
             </form>
@@ -202,7 +219,7 @@ function SetupWallet() {
                   </FormItem>
                 )}
               />
-              <LoadingButton type="submit">
+              <LoadingButton type="submit" loading={initMutation.isPending}>
                 Continue
               </LoadingButton>
             </form>
