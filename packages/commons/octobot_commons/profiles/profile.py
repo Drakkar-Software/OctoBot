@@ -71,6 +71,7 @@ class Profile:
         self.origin_url: str = None
         self.auto_update: bool = False
         self.read_only: bool = False
+        self.hidden: bool = False
         self.imported: bool = False
         self.complexity: enums.ProfileComplexity = enums.ProfileComplexity.MEDIUM
         self.risk: enums.ProfileRisk = enums.ProfileRisk.MODERATE
@@ -100,6 +101,7 @@ class Profile:
         self.origin_url = profile_config.get(constants.CONFIG_ORIGIN_URL, None)
         self.auto_update = profile_config.get(constants.CONFIG_AUTO_UPDATE, False)
         self.read_only = profile_config.get(constants.CONFIG_READ_ONLY, False)
+        self.hidden = profile_config.get(constants.CONFIG_HIDDEN, False)
         self.imported = profile_config.get(constants.CONFIG_IMPORTED, False)
         self.complexity = enums.ProfileComplexity(
             profile_config.get(
@@ -259,6 +261,7 @@ class Profile:
                 constants.CONFIG_ORIGIN_URL: self.origin_url,
                 constants.CONFIG_AUTO_UPDATE: self.auto_update,
                 constants.CONFIG_READ_ONLY: self.read_only,
+                constants.CONFIG_HIDDEN: self.hidden,
                 constants.CONFIG_IMPORTED: self.imported,
                 constants.CONFIG_COMPLEXITY: (
                     self.complexity.value if self.complexity else None

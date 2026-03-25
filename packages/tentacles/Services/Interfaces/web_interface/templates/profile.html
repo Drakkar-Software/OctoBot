@@ -39,6 +39,7 @@
                     </a>
                     <ul class="collapse nav" id="profilesSubmenu">
                         {% for profile_id, profile in profiles.items() | sort(attribute='1.name') %}
+                        {% if not profile.hidden or profile_id == current_profile.profile_id %}
                         <li class="w-100">
                             <a class="nav-link pl-2 pl-sm-4 waves-effect d-flex {{ 'font-weight-bold' if profile_id == current_profile.profile_id }}" id="profile-{{profile_id}}-tab"
                                data-toggle="pill"
@@ -51,6 +52,7 @@
                                 {% endif %}
                             </a>
                         </li>
+                        {% endif %}
                         {% endfor %}
                     </ul>
                 </span>
