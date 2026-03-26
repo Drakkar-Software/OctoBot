@@ -14,10 +14,13 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-from octobot_copy.rebalancing.planner.rebalance_actions_planner import RebalanceActionsPlanner
+from octobot_copy.rebalancing.planner.base_rebalance_actions_planner import BaseRebalanceActionsPlanner
+from octobot_copy.rebalancing.planner.historical_configuration_rebalance_actions_planner import HistoricalConfigurationRebalanceActionsPlanner
 from octobot_copy.rebalancing.planner.distributions import get_uniform_distribution
 
+
 __all__ = [
-    "RebalanceActionsPlanner",
+    "BaseRebalanceActionsPlanner",
+    "HistoricalConfigurationRebalanceActionsPlanner",
     "get_uniform_distribution",
 ]

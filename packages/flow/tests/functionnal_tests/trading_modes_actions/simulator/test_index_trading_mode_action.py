@@ -245,11 +245,11 @@ async def test_simulator_index_with_added_traded_pairs(init_action: dict, run_mo
             return_value=[trading_dsl.SymbolDependency(symbol="BTC/USDT")]
         ) as mock_get_dsl_dependencies,
         mock.patch.object(
-            rebalancing.RebalanceActionsPlanner, "_get_supported_distribution",
+            rebalancing.BaseRebalanceActionsPlanner, "_get_supported_distribution",
             return_value=rebalancing.get_uniform_distribution(["BTC", "ETH"])
         ) as mock_get_supported_distribution,
         mock.patch.object(
-            rebalancing.RebalanceActionsPlanner, "_get_filtered_traded_coins",
+            rebalancing.BaseRebalanceActionsPlanner, "_get_filtered_traded_coins",
             return_value=["BTC", "ETH"]
         ) as mock_get_filtered_traded_coins,
         mock.patch.object(

@@ -16,7 +16,7 @@ import octobot_copy.rebalancing as copy_rebalancing
 class AccountCopier:
     """
     Copies a reference spot-style account allocation onto the copier exchange by planning with
-    RebalanceActionsPlanner and executing with an AbstractRebalancer.
+    BaseRebalanceActionsPlanner and executing with an AbstractRebalancer.
 
     Target weights are derived from reference_account (quantity-proportional). Holdings ratios
     and order execution use the live portfolio behind exchange_interface. Callers must ensure
@@ -140,13 +140,13 @@ class AccountCopier:
     def _create_rebalance_actions_planner(
         self,
         rebalancing_client: copy_rebalancing.RebalancingClientInterface,
-    ) -> copy_rebalancing.RebalanceActionsPlanner:
-        return copy_rebalancing.RebalanceActionsPlanner(
+    ) -> copy_rebalancing.BaseRebalanceActionsPlanner:
+        return copy_rebalancing.BaseRebalanceActionsPlanner(
             exchange=self._copier_exchange_interface,
             client=rebalancing_client,
         )
 
-    def _sync_planner(self, planner: copy_rebalancing.RebalanceActionsPlanner) -> None:
+    def _sync_planner(self, planner: copy_rebalancing.BaseRebalanceActionsPlanner) -> None:
         planner.update(
             min_order_size_margin=self._copy_settings.min_order_size_margin,
             synchronization_policy=self._copy_settings.synchronization_policy,
@@ -162,7 +162,7 @@ class AccountCopier:
 
     def _create_rebalancer(
         self,
-        planner: copy_rebalancing.RebalanceActionsPlanner,
+        planner: copy_rebalancing.BaseRebalanceActionsPlanner,
     ) -> copy_rebalancing.AbstractRebalancer:
         return self.get_rebalancer_class()(
             self._copier_exchange_interface,
