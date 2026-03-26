@@ -19,6 +19,9 @@ class ExchangePublicData:
     def get_traded_symbols(self) -> typing.Iterable[octobot_commons.symbols.Symbol]:
         return self._exchange_manager.exchange_config.traded_symbols
 
+    def is_symbol_tradable(self, symbol: str) -> bool:
+        return symbol in self._exchange_manager.exchange_symbols_data.exchange_symbol_data
+
     async def get_up_to_date_price(self, symbol: str) -> decimal.Decimal:
         return await trading_personal_data.get_up_to_date_price(
             self._exchange_manager,

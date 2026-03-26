@@ -43,4 +43,4 @@ def reference_exchange_elements_to_account(
     total_value = sum(value_by_asset.values())
     for asset, values in elements.portfolio.content.items():
         content[asset][copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO] = value_by_asset[asset] / total_value
-    return copy_entities.Account(content=content)
+    return copy_entities.Account(content=content, orders=elements.orders.open_orders)

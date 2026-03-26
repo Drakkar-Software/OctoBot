@@ -77,6 +77,7 @@ def _assert_create_order_called_once_with_mode(create_order_mock, order, depende
         params=None,
         wait_for_creation=True,
         creation_timeout=trading_constants.INDIVIDUAL_ORDER_SYNC_TIMEOUT,
+        raise_all_creation_error=False,
         dependencies=dependencies,
     )
 
@@ -412,7 +413,12 @@ async def test_single_exchange_process_optimize_initial_portfolio(trading_tools)
         # no open order
         orders = await mode.single_exchange_process_optimize_initial_portfolio(["BTC", "ETH"], "USDT", {})
         convert_assets_to_target_asset_mock.assert_called_once_with(
-            ["BTC", "ETH"], "USDT", {}, trading_mode=mode, exchange_manager=mode.exchange_manager,
+            ["BTC", "ETH"],
+            "USDT",
+            {},
+            raise_all_order_errors=False,
+            trading_mode=mode,
+            exchange_manager=mode.exchange_manager,
         )
         cancel_order_mock.assert_not_called()
         assert orders == ["order_1"]
@@ -449,7 +455,12 @@ async def test_single_exchange_process_optimize_initial_portfolio(trading_tools)
 
         orders = await mode.single_exchange_process_optimize_initial_portfolio(["BTC", "ETH"], "USDT", {})
         convert_assets_to_target_asset_mock.assert_called_once_with(
-            ["BTC", "ETH"], "USDT", {}, trading_mode=mode, exchange_manager=mode.exchange_manager,
+            ["BTC", "ETH"],
+            "USDT",
+            {},
+            raise_all_order_errors=False,
+            trading_mode=mode,
+            exchange_manager=mode.exchange_manager,
         )
         cancel_order_mock.assert_not_called()
         assert orders == ["order_1"]
@@ -2108,6 +2119,7 @@ async def test_sell_targeted_coins_for_reference_market(trading_tools):
                 consumer.exchange_manager.exchange_personal_data.portfolio_manager.reference_market,
                 {},
                 dependencies=dependencies,
+                raise_all_order_errors=False,
                 trading_mode=mode,
                 exchange_manager=mode.exchange_manager,
             )
@@ -2151,6 +2163,7 @@ async def test_sell_targeted_coins_for_reference_market(trading_tools):
                     consumer.exchange_manager.exchange_personal_data.portfolio_manager.reference_market,
                     {},
                     dependencies=dependencies,
+                    raise_all_order_errors=False,
                     trading_mode=mode,
                     exchange_manager=mode.exchange_manager,
                 )
@@ -2230,6 +2243,7 @@ async def test_sell_some_reduces_or_closes_position(trading_tools):
                 consumer.exchange_manager.exchange_personal_data.portfolio_manager.reference_market,
                 {},
                 dependencies=dependencies,
+                raise_all_order_errors=False,
                 trading_mode=mode,
                 exchange_manager=mode.exchange_manager,
             )

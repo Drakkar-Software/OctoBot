@@ -85,6 +85,7 @@ async def test_convert_assets_to_target_asset():
         assert convert_asset_to_target_asset.mock_calls[0].kwargs == {
             "asset_amount": None,
             "dependencies": None,
+            "raise_all_order_errors": False,
             "trading_mode": trading_mode,
             "exchange_manager": None,
         }
@@ -93,6 +94,7 @@ async def test_convert_assets_to_target_asset():
         assert convert_asset_to_target_asset.mock_calls[1].kwargs == {
             "asset_amount": None,
             "dependencies": None,
+            "raise_all_order_errors": False,
             "trading_mode": trading_mode,
             "exchange_manager": None,
         }
@@ -129,6 +131,7 @@ async def test_convert_assets_to_target_asset():
                     mock.Mock(order_id="123"),
                     mock.Mock(order_id="456")
                 ]),
+                "raise_all_order_errors": False,
                 "trading_mode": trading_mode,
                 "exchange_manager": None,
             }
@@ -458,9 +461,9 @@ async def test_enabled_trader_only(backtesting_trader):
 
 
 def _get_trading_mode(exchange_manager):
-    async def _create_order(order, dependencies=None):
+    async def _create_order(order, dependencies=None, raise_all_creation_error=False, **kwargs):
         return await signals.create_order(
-            exchange_manager, False, order, dependencies=dependencies
+            exchange_manager, False, order, dependencies=dependencies, raise_all_creation_error=raise_all_creation_error
         )
 
     return mock.Mock(

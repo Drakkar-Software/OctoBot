@@ -31,6 +31,8 @@ class RebalancingClientInterface:
         sell_untargeted_traded_coins: bool,
         synchronization_policy: copy_enums.SynchronizationPolicy,
         allow_skip_asset: bool,
+        can_include_assets_in_open_orders_in_holdings_ratio: bool,
+        raise_all_order_errors: bool,
         get_config: typing.Callable[[], typing.Optional[dict]],
         get_previous_config: typing.Callable[[], typing.Optional[dict]],
         get_historical_configs: typing.Callable[[float, float], list],
@@ -47,6 +49,8 @@ class RebalancingClientInterface:
         self.sell_untargeted_traded_coins: bool = sell_untargeted_traded_coins
         self.synchronization_policy: copy_enums.SynchronizationPolicy = synchronization_policy
         self.allow_skip_asset: bool = allow_skip_asset
+        self.can_include_assets_in_open_orders_in_holdings_ratio: bool = can_include_assets_in_open_orders_in_holdings_ratio
+        self.raise_all_order_errors: bool = raise_all_order_errors
 
         # dynamic values
         self.get_config = get_config
@@ -64,6 +68,8 @@ class RebalancingClientInterface:
         reference_market_ratio: decimal.Decimal,
         sell_untargeted_traded_coins: bool,
         allow_skip_asset: bool,
+        can_include_assets_in_open_orders_in_holdings_ratio: bool,
+        raise_all_order_errors: bool = False,
     ) -> None:
         self.min_order_size_margin = min_order_size_margin
         self.synchronization_policy = synchronization_policy
@@ -72,3 +78,7 @@ class RebalancingClientInterface:
         self.reference_market_ratio = reference_market_ratio
         self.sell_untargeted_traded_coins = sell_untargeted_traded_coins
         self.allow_skip_asset = allow_skip_asset
+        self.can_include_assets_in_open_orders_in_holdings_ratio = (
+            can_include_assets_in_open_orders_in_holdings_ratio
+        )
+        self.raise_all_order_errors = raise_all_order_errors

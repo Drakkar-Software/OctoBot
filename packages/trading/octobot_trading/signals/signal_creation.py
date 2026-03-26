@@ -78,6 +78,7 @@ async def create_order(
     loaded: bool = False, params: dict = None,
     wait_for_creation=True,
     creation_timeout=constants.INDIVIDUAL_ORDER_SYNC_TIMEOUT,
+    raise_all_creation_error=False,
     dependencies: typing.Optional[signals.SignalDependencies] = None,
     force_if_disabled=False
 ):
@@ -92,6 +93,7 @@ async def create_order(
     created_order = await exchange_manager.trader.create_order(
         order, loaded=loaded, params=params,
         wait_for_creation=wait_for_creation, creation_timeout=creation_timeout,
+        raise_all_creation_error=raise_all_creation_error,
         force_if_disabled=force_if_disabled
     )
     if created_order is not None and should_emit_signal:

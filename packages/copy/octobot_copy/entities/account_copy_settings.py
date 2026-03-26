@@ -22,6 +22,8 @@ class AccountCopySettings(commons_dataclasses.MinimizableDataclass):
     min_order_size_margin: decimal.Decimal = decimal.Decimal("2")
     # Allow skipping assets that don't meet minimum order size requirements instead of aborting portfolio rebalancing
     allow_skip_asset: bool = False
+    # When True, planner holdings ratios include value tied up in open orders
+    can_include_assets_in_open_orders_in_holdings_ratio: bool = False
 
 
     def __post_init__(self):

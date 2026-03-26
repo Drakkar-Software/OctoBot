@@ -409,6 +409,8 @@ class IndexTradingMode(trading_modes.AbstractTradingMode):
             sell_untargeted_traded_coins=self.sell_unindexed_traded_coins,
             synchronization_policy=self.synchronization_policy,
             allow_skip_asset=self.allow_skip_asset,
+            can_include_assets_in_open_orders_in_holdings_ratio=True,
+            raise_all_order_errors=False,
             get_config=lambda: self.trading_config,
             get_previous_config=lambda: self.previous_trading_config,
             get_historical_configs=lambda ft, tt: self.get_historical_configs(ft, tt),
@@ -459,6 +461,7 @@ class IndexTradingMode(trading_modes.AbstractTradingMode):
             reference_market_ratio=self.reference_market_ratio,
             sell_untargeted_traded_coins=self.sell_unindexed_traded_coins,
             allow_skip_asset=self.allow_skip_asset,
+            can_include_assets_in_open_orders_in_holdings_ratio=True,
         )
 
     def init_user_inputs(self, inputs: dict) -> None:
@@ -725,10 +728,16 @@ class IndexTradingMode(trading_modes.AbstractTradingMode):
     async def single_exchange_process_optimize_initial_portfolio(
         self, sellable_assets: list, target_asset: str, tickers: dict
     ) -> list:
+        raise_all_order_errors = (
+            self.rebalance_actions_planner.client.raise_all_order_errors
+            if self.rebalance_actions_planner is not None
+            else False
+        )
         return await trading_modes.convert_assets_to_target_asset(
             sellable_assets,
             target_asset,
             tickers,
+            raise_all_order_errors=raise_all_order_errors,
             trading_mode=self,
             exchange_manager=self.exchange_manager,
         )
