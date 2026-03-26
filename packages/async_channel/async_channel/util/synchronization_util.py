@@ -13,6 +13,9 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+"""
+Define async_channel synchronization utilities
+"""
 import asyncio
 import typing
 
@@ -23,6 +26,11 @@ if typing.TYPE_CHECKING:
 async def trigger_and_bypass_consumers_queue(
     consumers: list["async_channel.consumer.Consumer"], kwargs: dict
 ):
+    """
+    Triggers the consumers queue and bypasses the consumers callback.
+    Warning: this can cause concurrent async executions of the consumer callback
+    as the queue is bypassed.
+    """
     await asyncio.gather(*[
         consumer.callback(**kwargs)
         for consumer in consumers

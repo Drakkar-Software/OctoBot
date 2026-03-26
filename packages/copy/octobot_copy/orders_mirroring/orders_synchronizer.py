@@ -78,7 +78,7 @@ class OrdersSynchronizer:
         self._get_logger().info(
             f"Order mirror completed: {total_cancelled} cancelled "
             f"[{orphan_cancelled_count} orphan(s), {replaced_cancelled_count} replaced], "
-            f"{total_created} created ,"
+            f"{total_created} created, "
             f"{already_synchronized_count} already synchronized orders."
         )
         return created

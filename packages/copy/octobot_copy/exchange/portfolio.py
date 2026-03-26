@@ -47,3 +47,7 @@ class PortfolioInterface:
     def get_currency_portfolio_total(self, currency: str) -> decimal.Decimal:
         portfolio = self._exchange_manager.exchange_personal_data.portfolio_manager.portfolio
         return portfolio.get_currency_portfolio(currency).total
+
+    def get_currency_portfolio_available(self, currency: str) -> decimal.Decimal:
+        portfolio = self._exchange_manager.exchange_personal_data.portfolio_manager.portfolio
+        return portfolio.get_currency_portfolio(currency).available
