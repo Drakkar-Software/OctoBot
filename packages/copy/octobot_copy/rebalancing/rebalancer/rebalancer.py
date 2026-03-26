@@ -25,7 +25,7 @@ import octobot_trading.enums as trading_enums
 import octobot_copy.enums as rebalancer_enums
 import octobot_copy.errors as copy_errors
 import octobot_copy.exchange.exchange_interface as copy_exchange
-import octobot_copy.rebalancing.planner.rebalance_actions_planner as rebalance_actions_planner_import
+import octobot_copy.rebalancing.planner.base_rebalance_actions_planner as rebalance_actions_planner_import
 
 
 SIMPLE_ADD_MIN_TOLERANCE_RATIO = decimal.Decimal("0.8")  # 20% tolerance
@@ -39,11 +39,13 @@ class AbstractRebalancer:
     def __init__(
         self,
         exchange_interface: copy_exchange.ExchangeInterface,
-        rebalance_actions_planner: rebalance_actions_planner_import.RebalanceActionsPlanner,
+        rebalance_actions_planner: rebalance_actions_planner_import.BaseRebalanceActionsPlanner,
         target_coins_prices: dict,
     ):
         self._exchange_interface: copy_exchange.ExchangeInterface = exchange_interface
-        self._rebalance_actions_planner: rebalance_actions_planner_import.RebalanceActionsPlanner = rebalance_actions_planner
+        self._rebalance_actions_planner: rebalance_actions_planner_import.BaseRebalanceActionsPlanner = (
+            rebalance_actions_planner
+        )
         self._target_coins_prices: dict[str, decimal.Decimal] = target_coins_prices
         self._already_logged_aborted_rebalance_error: bool = False
 

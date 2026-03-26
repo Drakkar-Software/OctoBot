@@ -49,7 +49,7 @@ import octobot_trading.util as trading_util
 
 import octobot_copy.enums as rebalancer_enums
 import octobot_copy.rebalancing as rebalancer
-import octobot_copy.rebalancing.planner.rebalance_actions_planner as rebalance_actions_planner
+import octobot_copy.rebalancing.planner.base_rebalance_actions_planner as rebalance_actions_planner
 import octobot_copy.errors as copy_errors
 
 import tentacles.Trading.Mode as Mode
@@ -3946,7 +3946,7 @@ async def test_get_supported_distribution(trading_tools):
             assert mode.rebalance_actions_planner._get_supported_distribution(False, True) == mode.trading_config[
                 index_trading.IndexTradingModeProducer.INDEX_CONTENT
             ]
-            assert get_ideal_distribution_mock.call_count == 2
+            assert get_ideal_distribution_mock.call_count == 1 # called once (target config is the same as initial target config)
             _get_currently_applied_historical_config_according_to_holdings_mock.assert_not_called()
             get_historical_configs_mock.assert_called_once_with(
                 0, mode.exchange_manager.exchange.get_exchange_current_time()
