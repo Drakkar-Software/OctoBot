@@ -98,10 +98,10 @@ async def test_producer_synchronized_perform_supervised_consumer_with_processing
         assert done_calls == []
         # queue is empty
         assert test_consumer.queue.qsize() == 0
-        asyncio.create_task(set_event_task())
         # wait for call to finish even though queue is empty => does not work as we are not joining the
         # current processing
         await producer.synchronized_perform_consumers_queue(1, False, 1)
+        asyncio.create_task(set_event_task())
         assert done_calls == []
         # wait for call to finish even though queue is empty with join
         await producer.synchronized_perform_consumers_queue(1, True, 1)

@@ -130,6 +130,85 @@ jobs:
       env:
         DISABLE_SENTRY: True
 
+  rust-lint:
+    name: Rust lint - ${{ matrix.crate }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        crate:
+          - async_channel
+          - pyo3_bridge
+    steps:
+
+    - uses: actions/checkout@v6
+
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+        components: clippy
+
+    - run: cargo clippy -p ${{ matrix.crate }} -- -D warnings
+
+  rust-tests:
+    name: Rust ${{ matrix.test-type }} tests - ${{ matrix.crate }}
+    needs: [ build, rust-lint ]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - test-type: unit
+            crate: async_channel
+          - test-type: python
+            crate: async_channel
+            py-binding-crate: async_channel_py
+            py-wheel-name: async_channel_rs
+            py-test-package: packages/async_channel
+
+    steps:
+
+    - uses: actions/checkout@v6
+
+    - uses: dtolnay/rust-toolchain@stable
+
+    - uses: actions/setup-python@v6
+      if: matrix.test-type == 'python'
+      with:
+        python-version: "3.13.x"
+
+    - name: Download build wheel artifact
+      if: matrix.test-type == 'python'
+      uses: actions/download-artifact@v8
+      with:
+        name: octobot-wheel
+        path: dist/
+
+    - name: Install dependencies
+      if: matrix.test-type == 'python'
+      run: |
+        pip3 install -r dev_requirements.txt
+        pip3 install dist/octobot-*.whl
+        pip3 install maturin
+
+    - name: Build and install Rust extension
+      if: matrix.test-type == 'python'
+      run: |
+        cd crates/${{ matrix.py-binding-crate }}
+        maturin build --release
+        pip3 install ../../target/wheels/${{ matrix.py-wheel-name }}-*.whl
+
+    - name: Run Rust unit tests
+      if: matrix.test-type == 'unit'
+      run: cargo test -p ${{ matrix.crate }}
+
+    - name: Run Rust Python tests
+      if: matrix.test-type == 'python'
+      run: >
+        cd ${{ matrix.py-test-package }} && pytest tests --backend=rust
+        -o asyncio_mode=auto
+        -o asyncio_default_fixture_loop_scope=session
+        -o asyncio_default_test_loop_scope=session
+      env:
+        DISABLE_SENTRY: True
+
   docker:
     name: Build & Push Docker images
     needs: [ build, tests ]

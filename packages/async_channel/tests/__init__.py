@@ -14,11 +14,11 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import asyncio
+import os
 
 import async_channel.channels as channels
 import async_channel.consumer as channel_consumer
 import async_channel.producer as producer
-
 TEST_CHANNEL = "Test"
 EMPTY_TEST_CHANNEL = "EmptyTest"
 EMPTY_TEST_WITH_ID_CHANNEL = "EmptyTestWithId"
@@ -73,6 +73,10 @@ class EmptyTestWithIdChannel(channels.Channel):
 
 
 async def wait_asyncio_next_cycle():
-    async def do_nothing():
-        pass
-    await asyncio.create_task(do_nothing())
+    if os.environ.get("ASYNC_CHANNEL_TEST_BACKEND") == "rust":
+        for _ in range(10):
+            await asyncio.sleep(0.01)
+    else:
+        async def do_nothing():
+            pass
+        await asyncio.create_task(do_nothing())

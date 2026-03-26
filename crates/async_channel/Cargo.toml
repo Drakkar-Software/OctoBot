@@ -1,0 +1,14 @@
+[package]
+name = "async_channel"
+version = "2.2.2"
+edition = "2021"
+
+[lib]
+name = "async_channel"
+
+[dependencies]
+tokio = { version = "1", features = ["sync", "rt", "macros", "time"] }
+log = "0.4"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["full"] }

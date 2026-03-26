@@ -1,0 +1,8 @@
+[package]
+name = "pyo3_bridge"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+pyo3 = { version = "0.28", features = ["extension-module"] }
+pyo3-async-runtimes = { version = "0.28", features = ["tokio-runtime"] }

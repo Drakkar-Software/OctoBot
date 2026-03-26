@@ -1,0 +1,15 @@
+[package]
+name = "async_channel_py"
+version = "2.2.2"
+edition = "2021"
+
+[lib]
+name = "async_channel_py"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+async_channel = { path = "../async_channel" }
+pyo3_bridge = { path = "../pyo3_bridge" }
+pyo3 = { version = "0.28", features = ["extension-module"] }
+pyo3-async-runtimes = { version = "0.28", features = ["tokio-runtime"] }
+tokio = { version = "1", features = ["rt", "rt-multi-thread"] }
