@@ -2064,7 +2064,7 @@ async def test_sell_targeted_coins_for_reference_market(trading_tools):
         ) as get_open_orders_mock:
             portfolio_rebalancer = mode.create_rebalancer(mode.exchange_manager)
             with mock.patch.object(
-                portfolio_rebalancer._exchange_interface.private_data, "cancel_symbol_open_orders", mock.AsyncMock()
+                portfolio_rebalancer._exchange_interface.orders, "cancel_symbol_open_orders", mock.AsyncMock()
             ) as cancel_symbol_open_orders_mock, mock.patch.object(
                 mode, "create_rebalancer", return_value=portfolio_rebalancer
             ), mock.patch.object(
@@ -2322,7 +2322,7 @@ async def test_close_position_refreshes_stale_internal_state(futures_tools):
     ):
         portfolio_rebalancer = mode.create_rebalancer(mode.exchange_manager)
         with mock.patch.object(
-            portfolio_rebalancer._exchange_interface.private_data, "cancel_symbol_open_orders", mock.AsyncMock()
+            portfolio_rebalancer._exchange_interface.orders, "cancel_symbol_open_orders", mock.AsyncMock()
         ) as cancel_mock, mock.patch.object(
             mode, "create_rebalancer", return_value=portfolio_rebalancer
         ), mock.patch.object(
@@ -2375,7 +2375,7 @@ async def test_close_position_cancels_stuck_sell_orders(futures_tools):
     ):
         portfolio_rebalancer = mode.create_rebalancer(mode.exchange_manager)
         with mock.patch.object(
-            portfolio_rebalancer._exchange_interface.private_data, "cancel_symbol_open_orders",
+            portfolio_rebalancer._exchange_interface.orders, "cancel_symbol_open_orders",
                 mock.AsyncMock(side_effect=_mock_cancel)
         ), mock.patch.object(
             mode, "create_rebalancer", return_value=portfolio_rebalancer

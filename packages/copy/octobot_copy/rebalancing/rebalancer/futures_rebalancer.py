@@ -28,7 +28,7 @@ import octobot_copy.rebalancing.rebalancer.rebalancer as base_rebalancer
 class FuturesRebalancer(base_rebalancer.AbstractRebalancer):
     async def prepare_coin_rebalancing(self, coin: str):
         symbol, _ = self._get_symbol_and_base_asset(coin)
-        await self._exchange_interface.public_data.ensure_contract_loaded(symbol)
+        await self._exchange_interface.market.ensure_contract_loaded(symbol)
 
     async def _buy_coin(
         self,
@@ -41,8 +41,8 @@ class FuturesRebalancer(base_rebalancer.AbstractRebalancer):
         Opens or increases a position for a symbol.
         For futures, this creates orders to open/increase positions instead of buying assets.
         """
-        position = self._exchange_interface.private_data.get_symbol_position(symbol, trading_enums.PositionSide.BOTH)
-        _, _, _, current_price, symbol_market = await self._exchange_interface.private_data.get_pre_order_data(
+        position = self._exchange_interface.positions.get_symbol_position(symbol, trading_enums.PositionSide.BOTH)
+        _, _, _, current_price, symbol_market = await self._exchange_interface.orders.get_pre_order_data(
             symbol=symbol,
             timeout=trading_constants.ORDER_DATA_FETCHING_TIMEOUT
         )
@@ -56,7 +56,7 @@ class FuturesRebalancer(base_rebalancer.AbstractRebalancer):
             return []
 
         side = trading_enums.TradeOrderSide.BUY  # Always open long positions for targeted coins
-        max_order_size, _ = self._exchange_interface.private_data.get_futures_max_order_size(
+        max_order_size, _ = self._exchange_interface.orders.get_futures_max_order_size(
             symbol, side, current_price, False, current_position_size, ideal_amount
         )
 
@@ -68,12 +68,12 @@ class FuturesRebalancer(base_rebalancer.AbstractRebalancer):
         ideal_order_type = trading_enums.TraderOrderType.BUY_MARKET if is_price_close_to_market else trading_enums.TraderOrderType.BUY_LIMIT
         order_type = (
             ideal_order_type
-            if self._exchange_interface.public_data.is_market_open_for_order_type(symbol, ideal_order_type)
+            if self._exchange_interface.market.is_market_open_for_order_type(symbol, ideal_order_type)
             else trading_enums.TraderOrderType.BUY_LIMIT
         )
 
         order_target_price, order_quantity = (
-            self._exchange_interface.private_data.adapt_order_quantity_and_target_price_for_order_creation(
+            self._exchange_interface.orders.adapt_order_quantity_and_target_price_for_order_creation(
                 order_type,
                 symbol,
                 order_quantity,
@@ -81,7 +81,7 @@ class FuturesRebalancer(base_rebalancer.AbstractRebalancer):
                 adapt_price_for_limit_orders=True,
             )
         )
-        created_orders, orders_should_have_been_created = await self._exchange_interface.private_data.create_orders(
+        created_orders, orders_should_have_been_created = await self._exchange_interface.orders.create_orders(
             order_type,
             symbol,
             current_price,
@@ -110,8 +110,8 @@ class FuturesRebalancer(base_rebalancer.AbstractRebalancer):
     ) -> decimal.Decimal:
         if current_price <= trading_constants.ZERO:
             return trading_constants.ZERO
-        total_holdings_value = self._exchange_interface.private_data.get_traded_assets_holdings_value(
-            self._exchange_interface.private_data.reference_market
+        total_holdings_value = self._exchange_interface.portfolio.get_traded_assets_holdings_value(
+            self._exchange_interface.portfolio.reference_market
         )
         try:
             return max(
@@ -135,7 +135,7 @@ class FuturesRebalancer(base_rebalancer.AbstractRebalancer):
             symbol_target_ratio[self._get_symbol_and_base_asset(coin_or_symbol)[0]] = target_ratio
 
         for symbol, target_ratio in symbol_target_ratio.items():
-            _, _, _, current_price, symbol_market = await self._exchange_interface.private_data.get_pre_order_data(
+            _, _, _, current_price, symbol_market = await self._exchange_interface.orders.get_pre_order_data(
                 symbol=symbol,
                 timeout=trading_constants.ORDER_DATA_FETCHING_TIMEOUT,
             )
@@ -144,7 +144,7 @@ class FuturesRebalancer(base_rebalancer.AbstractRebalancer):
                 if target_ratio is not None
                 else None
             )
-            orders += await self._exchange_interface.private_data.close_symbol_position(
+            orders += await self._exchange_interface.positions.close_symbol_position(
                 symbol,
                 dependencies,
                 current_price,

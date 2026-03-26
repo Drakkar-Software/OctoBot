@@ -57,7 +57,7 @@ class AbstractRebalancer:
         Raises MissingMinimalExchangeTradeVolume if there are not enough funds
         to buy the targeted coins.
         """
-        ref_market = self._exchange_interface.private_data.reference_market
+        ref_market = self._exchange_interface.portfolio.reference_market
         reference_market_to_split = self._get_traded_assets_holdings_value(ref_market)
         # will raise if funds are missing
         await self._get_symbols_and_amounts(
@@ -80,7 +80,7 @@ class AbstractRebalancer:
         orders = removed_coins_to_sell_orders + coins_to_sell_orders
         if orders:
             # ensure all orders are filled
-            await self._exchange_interface.private_data.wait_for_orders_to_fill(orders)
+            await self._exchange_interface.orders.wait_for_orders_to_fill(orders)
         return orders
 
     def can_simply_buy_coins_without_selling(self, details: dict[str, typing.Any]) -> bool:
@@ -92,7 +92,7 @@ class AbstractRebalancer:
         if not simple_buy_coins:
             return False
         # check if there is enough free funds to buy those coins
-        ref_market = self._exchange_interface.private_data.reference_market
+        ref_market = self._exchange_interface.portfolio.reference_market
         reference_market_to_split = self._get_traded_assets_holdings_value(ref_market)
         free_reference_market_holding = self._get_free_reference_market_holding(ref_market)
         cumulated_ratio = sum(
@@ -121,7 +121,7 @@ class AbstractRebalancer:
         """
         orders = []
         await self._pre_cancel_conflicting_orders(details, dependencies, trading_enums.TradeOrderSide.SELL)
-        ref_market = self._exchange_interface.private_data.reference_market
+        ref_market = self._exchange_interface.portfolio.reference_market
         if details[rebalancer_enums.RebalanceDetails.SWAP.value] or is_simple_buy_without_selling:
             # has to infer total reference market holdings
             reference_market_to_split = self._get_traded_assets_holdings_value(ref_market)
@@ -185,9 +185,9 @@ class AbstractRebalancer:
     async def _get_removed_coins_to_sell_orders(self, details: dict[str, typing.Any], dependencies: typing.Optional[commons_signals.SignalDependencies]) -> list:
         removed_coins_to_sell_orders = []
         if removed_coins_to_sell := list(details[rebalancer_enums.RebalanceDetails.REMOVE.value]):
-            removed_coins_to_sell_orders = await self._exchange_interface.private_data.convert_assets_to_target_asset(
+            removed_coins_to_sell_orders = await self._exchange_interface.orders.convert_assets_to_target_asset(
                 removed_coins_to_sell,
-                self._exchange_interface.private_data.reference_market,
+                self._exchange_interface.portfolio.reference_market,
                 {},
                 dependencies=dependencies,
                 raise_all_order_errors=self._rebalance_actions_planner.client.raise_all_order_errors,
@@ -196,9 +196,9 @@ class AbstractRebalancer:
 
     async def _get_coins_to_sell_orders(self, details: dict[str, typing.Any], dependencies: typing.Optional[commons_signals.SignalDependencies]) -> list:
         order_coins_to_sell = self._get_coins_to_sell(details)
-        coins_to_sell_orders = await self._exchange_interface.private_data.convert_assets_to_target_asset(
+        coins_to_sell_orders = await self._exchange_interface.orders.convert_assets_to_target_asset(
             order_coins_to_sell,
-            self._exchange_interface.private_data.reference_market,
+            self._exchange_interface.portfolio.reference_market,
             {},
             dependencies=dependencies,
             raise_all_order_errors=self._rebalance_actions_planner.client.raise_all_order_errors,
@@ -267,12 +267,12 @@ class AbstractRebalancer:
         unit: str,
         coins_whitelist: typing.Optional[typing.Iterable] = None,
     ) -> decimal.Decimal:
-        return self._exchange_interface.private_data.get_traded_assets_holdings_value(
+        return self._exchange_interface.portfolio.get_traded_assets_holdings_value(
             unit, coins_whitelist
         )
 
     def _get_free_reference_market_holding(self, reference_market: str) -> decimal.Decimal:
-        return self._exchange_interface.private_data.get_free_reference_market_holding(reference_market)
+        return self._exchange_interface.portfolio.get_free_reference_market_holding(reference_market)
 
     async def _get_symbols_and_amounts(
         self,
@@ -282,7 +282,7 @@ class AbstractRebalancer:
         coins_to_buy: typing.Optional[list] = None,
     ) -> dict:
         amount_by_symbol = {}
-        ref_market = self._exchange_interface.private_data.reference_market
+        ref_market = self._exchange_interface.portfolio.reference_market
         min_order_size_margin = self._rebalance_actions_planner.client.min_order_size_margin
         coins = (
             list(coins_to_buy)
@@ -298,7 +298,7 @@ class AbstractRebalancer:
             else:
                 symbol = coin
 
-            up_to_date_price = await self._exchange_interface.public_data.get_up_to_date_price(symbol)
+            up_to_date_price = await self._exchange_interface.market.get_up_to_date_price(symbol)
             price = coins_prices.get(symbol, up_to_date_price)
             ratio = self._rebalance_actions_planner.get_target_ratio(coin)
             if ratio == trading_constants.ZERO:
@@ -319,7 +319,7 @@ class AbstractRebalancer:
             if effective_min_order_size_margin < trading_constants.ONE:
                 effective_min_order_size_margin = trading_constants.ONE
             adapted_quantity, symbol_market = (
-                self._exchange_interface.private_data.check_and_adapt_order_details_if_necessary(
+                self._exchange_interface.orders.check_and_adapt_order_details_if_necessary(
                     symbol,
                     ideal_amount / effective_min_order_size_margin,
                     price,
@@ -353,7 +353,7 @@ class AbstractRebalancer:
         )
 
     def _get_pending_open_quantity(self, symbol: str) -> decimal.Decimal:
-        return self._exchange_interface.private_data.get_pending_open_quantity(symbol)
+        return self._exchange_interface.orders.get_pending_open_quantity(symbol)
 
     async def _cancel_symbol_open_orders(
         self,
@@ -361,7 +361,7 @@ class AbstractRebalancer:
         dependencies: typing.Optional[commons_signals.SignalDependencies],
         allowed_sides: typing.Optional[set[trading_enums.TradeOrderSide]] = None
     ) -> typing.Optional[commons_signals.SignalDependencies]:
-        return await self._exchange_interface.private_data.cancel_symbol_open_orders(
+        return await self._exchange_interface.orders.cancel_symbol_open_orders(
             symbol, dependencies, allowed_sides=allowed_sides
         )
 
@@ -398,7 +398,7 @@ class AbstractRebalancer:
     def _get_symbol_and_base_asset(self, coin_or_symbol: str) -> tuple[str, str]:
         if symbol_util.is_symbol(coin_or_symbol):
             return coin_or_symbol, symbol_util.parse_symbol(coin_or_symbol).base # type: ignore
-        return symbol_util.merge_currencies(coin_or_symbol, self._exchange_interface.private_data.reference_market), coin_or_symbol
+        return symbol_util.merge_currencies(coin_or_symbol, self._exchange_interface.portfolio.reference_market), coin_or_symbol
 
     def _get_logger(self):
         return logging.get_logger(self.__class__.__name__)

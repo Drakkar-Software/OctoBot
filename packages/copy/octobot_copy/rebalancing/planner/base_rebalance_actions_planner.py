@@ -30,10 +30,10 @@ import octobot_copy.rebalancing.rebalancing_client_interface as rebalancing_clie
 class BaseRebalanceActionsPlanner:
     def __init__(
         self,
-        exchange: exchange_interface.ExchangeInterface,
+        exchange_interface: exchange_interface.ExchangeInterface,
         client: rebalancing_client_interface.RebalancingClientInterface,
     ):
-        self._exchange: exchange_interface.ExchangeInterface = exchange
+        self._exchange_interface: exchange_interface.ExchangeInterface = exchange_interface
         self.client: rebalancing_client_interface.RebalancingClientInterface = client
 
         self.ratio_per_asset: dict = {}
@@ -59,7 +59,7 @@ class BaseRebalanceActionsPlanner:
         should_rebalance = False
         available_traded_bases = set(
             symbol.base
-            for symbol in self._exchange.public_data.get_traded_symbols()
+            for symbol in self._exchange_interface.market.get_traded_symbols()
         )
 
         if self.client.synchronization_policy in (
@@ -99,7 +99,7 @@ class BaseRebalanceActionsPlanner:
                 ) or "???"
                 self.logger.info(
                     f"Swapping {origin} (holding ratio: {origin_ratio}%) for {target} (to buy ratio: {target_ratio}%) "
-                    f"on [{self._exchange.exchange_name}]: ratios are similar enough to allow swapping."
+                    f"on [{self._exchange_interface.exchange_name}]: ratios are similar enough to allow swapping."
                 )
         return (
             should_rebalance or rebalance_details[rebalancer_enums.RebalanceDetails.FORCED_REBALANCE.value],
@@ -172,7 +172,7 @@ class BaseRebalanceActionsPlanner:
     ) -> list:
         return [
             coin for coin in available_traded_bases
-            if coin not in self._targeted_coins and coin != self._exchange.private_data.reference_market
+            if coin not in self._targeted_coins and coin != self._exchange_interface.portfolio.reference_market
         ]
 
     def _apply_synchronization_policy_to_removed_coins(
@@ -203,7 +203,7 @@ class BaseRebalanceActionsPlanner:
                 coin
                 for coin in available_traded_bases
                 if coin not in self._targeted_coins
-                and coin != self._exchange.private_data.reference_market
+                and coin != self._exchange_interface.portfolio.reference_market
             ]
         return self._apply_synchronization_policy_to_removed_coins(
             removed_coins, trading_config, available_traded_bases
@@ -222,7 +222,7 @@ class BaseRebalanceActionsPlanner:
         """
         Get the coins that should be considered for the ratio, including the reference market.
         """
-        return self._targeted_coins + [self._exchange.private_data.reference_market]
+        return self._targeted_coins + [self._exchange_interface.portfolio.reference_market]
 
     def _empty_rebalance_details(self) -> dict:
         return {
@@ -244,7 +244,7 @@ class BaseRebalanceActionsPlanner:
         should_rebalance = False
         for coin in self._targeted_coins:
             target_ratio = self._get_adjusted_target_ratio(coin)
-            coin_ratio = self._exchange.private_data.get_holdings_ratio(
+            coin_ratio = self._exchange_interface.portfolio.get_holdings_ratio(
                 coin,
                 traded_symbols_only=True,
                 include_assets_in_open_orders=(
@@ -278,7 +278,7 @@ class BaseRebalanceActionsPlanner:
         should_rebalance = False
         for coin in self.get_removed_coins_from_config(available_traded_bases):
             if coin in available_traded_bases:
-                coin_ratio = self._exchange.private_data.get_holdings_ratio(
+                coin_ratio = self._exchange_interface.portfolio.get_holdings_ratio(
                     coin,
                     traded_symbols_only=True,
                     include_assets_in_open_orders=(
@@ -360,17 +360,17 @@ class BaseRebalanceActionsPlanner:
         total = trading_constants.ZERO
         for quote in set(
             symbol.quote
-            for symbol in self._exchange.public_data.get_traded_symbols()
+            for symbol in self._exchange_interface.market.get_traded_symbols()
             if symbol.quote not in self._targeted_coins
         ):
-            ratio = self._exchange.private_data.get_holdings_ratio(
+            ratio = self._exchange_interface.portfolio.get_holdings_ratio(
                 quote,
                 traded_symbols_only=True,
                 include_assets_in_open_orders=(
                     self.client.can_include_assets_in_open_orders_in_holdings_ratio
                 ),
             )
-            if quote == self._exchange.private_data.reference_market and self.client.reference_market_ratio > trading_constants.ZERO:
+            if quote == self._exchange_interface.portfolio.reference_market and self.client.reference_market_ratio > trading_constants.ZERO:
                 reference_market_keep_ratio = trading_constants.ONE - self.client.reference_market_ratio
                 ratio = max(trading_constants.ZERO, ratio - reference_market_keep_ratio)
             total += ratio
@@ -392,7 +392,7 @@ class BaseRebalanceActionsPlanner:
             for removed_coin, removed_ratio, added_coin, added_ratio in zip(
                 removed, removed.values(), added, added.values()
             ):
-                added_holding_ratio = self._exchange.private_data.get_holdings_ratio(
+                added_holding_ratio = self._exchange_interface.portfolio.get_holdings_ratio(
                     added_coin, traded_symbols_only=True, include_assets_in_open_orders=False,
                     coins_whitelist=self._get_coins_to_consider_for_ratio()
                 )
@@ -410,11 +410,11 @@ class BaseRebalanceActionsPlanner:
     def _get_filtered_traded_coins(self) -> list[str]:
         coins = set(
             symbol.base
-            for symbol in self._exchange.public_data.get_traded_symbols()
-            if symbol.base in self.ratio_per_asset and symbol.quote == self._exchange.private_data.reference_market
+            for symbol in self._exchange_interface.market.get_traded_symbols()
+            if symbol.base in self.ratio_per_asset and symbol.quote == self._exchange_interface.portfolio.reference_market
         )
-        if self._exchange.private_data.reference_market in self.ratio_per_asset and coins:
-            coins.add(self._exchange.private_data.reference_market)
+        if self._exchange_interface.portfolio.reference_market in self.ratio_per_asset and coins:
+            coins.add(self._exchange_interface.portfolio.reference_market)
         return sorted(list(coins))
 
     def _get_supported_distribution(self, adapt_to_holdings: bool, force_latest: bool) -> list:
@@ -429,9 +429,9 @@ class BaseRebalanceActionsPlanner:
         if detailed_distribution := self.client.get_ideal_distribution(initial_target_config):
             traded_bases = set(
                 symbol.base
-                for symbol in self._exchange.public_data.get_traded_symbols()
+                for symbol in self._exchange_interface.market.get_traded_symbols()
             )
-            traded_bases.add(self._exchange.private_data.reference_market)
+            traded_bases.add(self._exchange_interface.portfolio.reference_market)
             target_config = self._resolve_target_config_for_distribution(
                 initial_target_config, traded_bases, adapt_to_holdings, force_latest
             )
@@ -457,5 +457,5 @@ class BaseRebalanceActionsPlanner:
             return distribution
         return planner_distributions.get_uniform_distribution([
             symbol.base
-            for symbol in self._exchange.public_data.get_traded_symbols()
+            for symbol in self._exchange_interface.market.get_traded_symbols()
         ])
