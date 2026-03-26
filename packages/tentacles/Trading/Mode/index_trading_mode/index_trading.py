@@ -37,7 +37,7 @@ import octobot_copy.rebalancing as rebalancer
 import octobot_copy.errors as copy_errors
 import octobot_copy.enums as rebalancer_enums
 import octobot_copy.exchange.exchange_interface as exchange_interface
-import octobot_copy.rebalancing.planner.rebalance_actions_planner as rebalance_actions_planner
+import octobot_copy.rebalancing.planner
 import octobot_copy.rebalancing.rebalancing_client_interface as rebalancing_client_interface
 
 
@@ -392,9 +392,9 @@ class IndexTradingMode(trading_modes.AbstractTradingMode):
         self.requires_initializing_appropriate_coins_distribution = False
         self.indexed_coins_prices = {}
         self.is_processing_rebalance = False
-        self.rebalance_actions_planner: rebalance_actions_planner.RebalanceActionsPlanner = None # type: ignore
+        self.rebalance_actions_planner: octobot_copy.rebalancing.planner.HistoricalConfigurationRebalanceActionsPlanner = None # type: ignore
         if exchange_manager:
-            self.rebalance_actions_planner = rebalance_actions_planner.RebalanceActionsPlanner(
+            self.rebalance_actions_planner = octobot_copy.rebalancing.planner.HistoricalConfigurationRebalanceActionsPlanner(
                 exchange=exchange_interface.ExchangeInterface(exchange_manager, trading_mode=self),
                 client=self._create_rebalancing_client(),
             )

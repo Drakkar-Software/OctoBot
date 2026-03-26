@@ -23,11 +23,12 @@ from octobot_copy.rebalancing.rebalancer import (
     IDEAL_PRICE,
     SIMPLE_ADD_MIN_TOLERANCE_RATIO,
 )
-from octobot_copy.rebalancing.planner import (
-    RebalanceActionsPlanner,
-    get_uniform_distribution,
-)
+import octobot_copy.rebalancing.planner as rebalancing_planner
 from octobot_copy.rebalancing.rebalancing_client_interface import RebalancingClientInterface
+
+BaseRebalanceActionsPlanner = rebalancing_planner.BaseRebalanceActionsPlanner
+HistoricalConfigurationRebalanceActionsPlanner = rebalancing_planner.HistoricalConfigurationRebalanceActionsPlanner
+get_uniform_distribution = rebalancing_planner.get_uniform_distribution
 
 __all__ = [
     "AbstractRebalancer",
@@ -37,7 +38,8 @@ __all__ = [
     "IDEAL_AMOUNT",
     "IDEAL_PRICE",
     "SIMPLE_ADD_MIN_TOLERANCE_RATIO",
-    "RebalanceActionsPlanner",
+    "BaseRebalanceActionsPlanner",
+    "HistoricalConfigurationRebalanceActionsPlanner",
     "get_uniform_distribution",
     "RebalancingClientInterface",
 ]
