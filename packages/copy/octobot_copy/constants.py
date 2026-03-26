@@ -39,3 +39,7 @@ PORTFOLIO_ASSET_ALLOCATION_RATIO = "allocation_ratio"
 
 # Account copy settings
 DEFAULT_COPY_WAITING_TIME = octobot_commons.constants.HOURS_TO_SECONDS * 4 # wake up every 4 hours by default
+
+# Order tags: reference mirror orders vs rebalance limit orders (orphan cancellation scope)
+MIRRORED_ORDER_TAG = "mirrored_order"
+REBALANCER_ORDER_TAG = "rebalancer_order"

@@ -188,6 +188,7 @@ class AbstractRebalancer:
                 self._exchange_interface.private_data.reference_market,
                 {},
                 dependencies=dependencies,
+                raise_all_order_errors=self._rebalance_actions_planner.client.raise_all_order_errors,
             )
         return removed_coins_to_sell_orders
 
@@ -198,6 +199,7 @@ class AbstractRebalancer:
             self._exchange_interface.private_data.reference_market,
             {},
             dependencies=dependencies,
+            raise_all_order_errors=self._rebalance_actions_planner.client.raise_all_order_errors,
         )
         return coins_to_sell_orders
 

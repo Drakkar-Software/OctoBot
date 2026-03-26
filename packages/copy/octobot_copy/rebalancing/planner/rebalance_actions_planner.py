@@ -116,6 +116,7 @@ class RebalanceActionsPlanner:
         reference_market_ratio: decimal.Decimal,
         sell_untargeted_traded_coins: bool,
         allow_skip_asset: bool,
+        can_include_assets_in_open_orders_in_holdings_ratio: bool,
     ) -> None:
         self.client.update(
             min_order_size_margin=min_order_size_margin,
@@ -125,6 +126,9 @@ class RebalanceActionsPlanner:
             reference_market_ratio=reference_market_ratio,
             sell_untargeted_traded_coins=sell_untargeted_traded_coins,
             allow_skip_asset=allow_skip_asset,
+            can_include_assets_in_open_orders_in_holdings_ratio=(
+                can_include_assets_in_open_orders_in_holdings_ratio
+            ),
         )
 
     def update_distribution(self, adapt_to_holdings: bool = False, force_latest: bool = False) -> None:
@@ -246,7 +250,11 @@ class RebalanceActionsPlanner:
         for coin in self._targeted_coins:
             target_ratio = self._get_adjusted_target_ratio(coin)
             coin_ratio = self._exchange.private_data.get_holdings_ratio(
-                coin, traded_symbols_only=True, include_assets_in_open_orders=True
+                coin,
+                traded_symbols_only=True,
+                include_assets_in_open_orders=(
+                    self.client.can_include_assets_in_open_orders_in_holdings_ratio
+                ),
             )
             beyond_ratio = True
             if coin_ratio == trading_constants.ZERO and target_ratio > trading_constants.ZERO:
@@ -276,7 +284,11 @@ class RebalanceActionsPlanner:
         for coin in self.get_removed_coins_from_config(available_traded_bases):
             if coin in available_traded_bases:
                 coin_ratio = self._exchange.private_data.get_holdings_ratio(
-                    coin, traded_symbols_only=True, include_assets_in_open_orders=True
+                    coin,
+                    traded_symbols_only=True,
+                    include_assets_in_open_orders=(
+                        self.client.can_include_assets_in_open_orders_in_holdings_ratio
+                    ),
                 )
                 if coin_ratio >= copy_constants.MIN_RATIO_TO_SELL:
                     rebalance_details[rebalancer_enums.RebalanceDetails.REMOVE.value][coin] = coin_ratio
@@ -357,7 +369,11 @@ class RebalanceActionsPlanner:
             if symbol.quote not in self._targeted_coins
         ):
             ratio = self._exchange.private_data.get_holdings_ratio(
-                quote, traded_symbols_only=True, include_assets_in_open_orders=True
+                quote,
+                traded_symbols_only=True,
+                include_assets_in_open_orders=(
+                    self.client.can_include_assets_in_open_orders_in_holdings_ratio
+                ),
             )
             if quote == self._exchange.private_data.reference_market and self.client.reference_market_ratio > trading_constants.ZERO:
                 reference_market_keep_ratio = trading_constants.ONE - self.client.reference_market_ratio
@@ -382,7 +398,8 @@ class RebalanceActionsPlanner:
                 removed, removed.values(), added, added.values()
             ):
                 added_holding_ratio = self._exchange.private_data.get_holdings_ratio(
-                    added_coin, traded_symbols_only=True, coins_whitelist=self._get_coins_to_consider_for_ratio()
+                    added_coin, traded_symbols_only=True, include_assets_in_open_orders=False,
+                    coins_whitelist=self._get_coins_to_consider_for_ratio()
                 )
                 required_added_ratio = added_ratio - added_holding_ratio
                 if (
@@ -471,6 +488,7 @@ class RebalanceActionsPlanner:
                 target_ratio = base_target_ratio
             coin_ratio = self._exchange.private_data.get_holdings_ratio(
                 asset_distrib[rebalancer_enums.DistributionKeys.NAME], traded_symbols_only=True,
+                include_assets_in_open_orders=False,
             )
             if not (target_ratio - min_trigger_ratio <= coin_ratio <= target_ratio + min_trigger_ratio):
                 return False

@@ -80,6 +80,9 @@ class ExchangePrivateData:
         wait_for_creation=True,
         creation_timeout=trading_constants.INDIVIDUAL_ORDER_SYNC_TIMEOUT,
         dependencies: typing.Optional[commons_signals.SignalDependencies] = None,
+        tag: typing.Optional[str] = None,
+        order_id: typing.Optional[str] = None,
+        raise_all_creation_error: bool = False,
     ):
         order = trading_personal_data.create_order_instance(
             trader=self._exchange_manager.trader,
@@ -90,6 +93,8 @@ class ExchangePrivateData:
             price=price,
             reduce_only=reduce_only,
             close_position=close_position,
+            tag=tag,
+            order_id=order_id,
         )
         if self._trading_mode is not None:
             return await self._trading_mode.create_order(
@@ -98,6 +103,7 @@ class ExchangePrivateData:
                 params=params,
                 wait_for_creation=wait_for_creation,
                 creation_timeout=creation_timeout,
+                raise_all_creation_error=raise_all_creation_error,
                 dependencies=dependencies,
             )
         return await self._exchange_manager.trader.create_order(
@@ -106,8 +112,46 @@ class ExchangePrivateData:
             params=params,
             wait_for_creation=wait_for_creation,
             creation_timeout=creation_timeout,
+            raise_all_creation_error=raise_all_creation_error,
             force_if_disabled=False  # type: ignore
         )
+
+    def adapt_order_quantity_and_target_price_for_order_creation(
+        self,
+        order_type: trading_enums.TraderOrderType,
+        symbol: str,
+        quantity: decimal.Decimal,
+        order_target_price: decimal.Decimal,
+        *,
+        adapt_price_for_limit_orders: bool = False,
+    ) -> tuple[decimal.Decimal, decimal.Decimal]:
+        side = (
+            trading_enums.TradeOrderSide.BUY
+            if order_type
+            in (
+                trading_enums.TraderOrderType.BUY_MARKET,
+                trading_enums.TraderOrderType.BUY_LIMIT,
+            )
+            else trading_enums.TradeOrderSide.SELL
+        )
+        adapted_target_price = order_target_price
+        adapted_quantity = trading_personal_data.decimal_adapt_order_quantity_because_fees(
+            self._exchange_manager,
+            symbol,
+            order_type,
+            quantity,
+            order_target_price,
+            side,
+        )
+        if trading_personal_data.get_trade_order_type(order_type) is trading_enums.TradeOrderType.MARKET:
+            return adapted_target_price, adapted_quantity
+        if adapt_price_for_limit_orders:
+            adapted_target_price, adapted_quantity = (
+                trading_modes.get_instantly_filled_limit_order_adapted_price_and_quantity(
+                    adapted_target_price, adapted_quantity, order_type
+                )
+            )
+        return adapted_target_price, adapted_quantity
 
     async def create_orders(
         self,
@@ -122,28 +166,22 @@ class ExchangePrivateData:
         reduce_only: typing.Optional[bool] = None,
         close_position: bool = False,
         skip_none_create_results: bool = False,
+        tag: typing.Optional[str] = None,
+        order_id: typing.Optional[str] = None,
+        raise_all_creation_error: bool = False,
     ) -> tuple[list, bool]:
         created_orders: list = []
         orders_should_have_been_created = False
-        adapted_target_price = order_target_price
-        side = trading_enums.TradeOrderSide.BUY if order_type in (
-            trading_enums.TraderOrderType.BUY_MARKET, trading_enums.TraderOrderType.BUY_LIMIT
-        ) else trading_enums.TradeOrderSide.SELL
-        adapted_quantity = trading_personal_data.decimal_adapt_order_quantity_because_fees(
-            self._exchange_manager, symbol, order_type, quantity, order_target_price, side
-        )
-        if trading_personal_data.get_trade_order_type(order_type) is not trading_enums.TradeOrderType.MARKET:
-            adapted_target_price, adapted_quantity = (
-                trading_modes.get_instantly_filled_limit_order_adapted_price_and_quantity(
-                    adapted_target_price, adapted_quantity, order_type
-                )
-            )
+        chunk_index = 0
         for order_quantity, order_price in trading_personal_data.decimal_check_and_adapt_order_details_if_necessary(
-            adapted_quantity,
-            adapted_target_price,
+            quantity,
+            order_target_price,
             symbol_market,
         ):
             orders_should_have_been_created = True
+            chunk_order_id = order_id if chunk_index == 0 else None
+            chunk_tag = tag if chunk_index == 0 else None
+            chunk_index += 1
             created_order = await self.create_order(
                 order_type,
                 symbol,
@@ -153,6 +191,9 @@ class ExchangePrivateData:
                 reduce_only=reduce_only,
                 close_position=close_position,
                 dependencies=dependencies,
+                tag=chunk_tag,
+                order_id=chunk_order_id,
+                raise_all_creation_error=raise_all_creation_error,
             )
             if skip_none_create_results:
                 if created_order is not None:
@@ -228,12 +269,14 @@ class ExchangePrivateData:
         target_asset: str,
         tickers: dict,
         dependencies: typing.Optional[commons_signals.SignalDependencies] = None,
+        raise_all_order_errors: bool = False,
     ) -> list:
         return await modes_util.convert_assets_to_target_asset(
             sellable_assets,
             target_asset,
             tickers,
             dependencies=dependencies,
+            raise_all_order_errors=raise_all_order_errors,
             trading_mode=self._trading_mode,
             exchange_manager=self._exchange_manager,
         )
@@ -324,6 +367,13 @@ class ExchangePrivateData:
     def get_free_reference_market_holding(self, reference_market: str) -> decimal.Decimal:
         portfolio_manager = self._exchange_manager.exchange_personal_data.portfolio_manager
         return portfolio_manager.portfolio.get_currency_portfolio(reference_market).available
+
+    def get_currency_portfolio_total(self, currency: str) -> decimal.Decimal:
+        portfolio = self._exchange_manager.exchange_personal_data.portfolio_manager.portfolio
+        return portfolio.get_currency_portfolio(currency).total
+
+    def get_market_status(self, symbol: str, *, with_fixer: bool = False):
+        return self._exchange_manager.exchange.get_market_status(symbol, with_fixer=with_fixer)
 
     async def close_symbol_position(
         self,
