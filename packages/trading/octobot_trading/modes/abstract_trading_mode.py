@@ -654,12 +654,14 @@ class AbstractTradingMode(abstract_tentacle.AbstractTentacle):
     async def create_order(
         self, order, loaded: bool = False, params: typing.Optional[dict] = None,
         wait_for_creation=True, creation_timeout=constants.INDIVIDUAL_ORDER_SYNC_TIMEOUT,
+        raise_all_creation_error=False,
         dependencies: typing.Optional[commons_signals.SignalDependencies] = None
     ):
         return await signals.create_order(
             self.exchange_manager, self.should_emit_trading_signal(), order,
             loaded=loaded, params=params,
             wait_for_creation=wait_for_creation, creation_timeout=creation_timeout,
+            raise_all_creation_error=raise_all_creation_error,
             dependencies=dependencies
         )
 

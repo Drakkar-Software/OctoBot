@@ -16,7 +16,7 @@ class Account(commons_dataclasses.MinimizableDataclass):
     # account portfolio: dict of assets with allocation_ratio, available and total amounts
     # the allocation_ratio key is used to compute the distribution allocation
     content: dict[str, dict[str, decimal.Decimal]] = dataclasses.field(default_factory=dict)
-    # account orders, dict keys: trading_enums.ExchangeConstantsOrderColumns
+    # account enriched orders formatted as trading_storage.orders_storage._format_order
     orders: list[dict[str, typing.Any]] = dataclasses.field(default_factory=list)
     # account positions, dict keys: trading_enums.ExchangeConstantsPositionColumns
     positions: list[dict[str, typing.Any]] = dataclasses.field(default_factory=list)

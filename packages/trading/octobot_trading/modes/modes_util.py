@@ -80,6 +80,7 @@ async def convert_assets_to_target_asset(
     target_asset: str,
     tickers: dict,
     dependencies: typing.Optional[commons_signals.SignalDependencies] = None,
+    raise_all_order_errors: bool = False,
     *,
     trading_mode=None,
     exchange_manager=None,
@@ -96,6 +97,7 @@ async def convert_assets_to_target_asset(
                 tickers,
                 asset_amount=None,
                 dependencies=dependencies,
+                raise_all_order_errors=raise_all_order_errors,
                 trading_mode=trading_mode,
                 exchange_manager=exchange_manager,
             )
@@ -113,6 +115,7 @@ async def convert_asset_to_target_asset(
     tickers: dict,
     asset_amount=None,
     dependencies: typing.Optional[commons_signals.SignalDependencies] = None,
+    raise_all_order_errors: bool = False,
     *,
     trading_mode=None,
     exchange_manager=None,
@@ -133,6 +136,7 @@ async def convert_asset_to_target_asset(
                 tickers,
                 asset_amount,
                 dependencies=dependencies,
+                raise_all_order_errors=raise_all_order_errors,
                 trading_mode=trading_mode,
                 exchange_manager=exchange_manager,
             )
@@ -146,6 +150,7 @@ async def convert_with_market_or_limit_order(
     tickers: dict,
     asset_amount=None,
     dependencies: typing.Optional[commons_signals.SignalDependencies] = None,
+    raise_all_order_errors: bool = False,
     *,
     trading_mode=None,
     exchange_manager=None,
@@ -208,12 +213,15 @@ async def convert_with_market_or_limit_order(
             price=order_price
         )
         if trading_mode is not None:
-            initialized_order = await trading_mode.create_order(order, dependencies=dependencies)
+            initialized_order = await trading_mode.create_order(
+                order, dependencies=dependencies, raise_all_creation_error=raise_all_order_errors
+            )
         else:
             initialized_order = await exchange_mgr.trader.create_order(
                 order,
                 wait_for_creation=True,
                 creation_timeout=constants.INDIVIDUAL_ORDER_SYNC_TIMEOUT,
+                raise_all_creation_error=raise_all_order_errors,
             )
         if isinstance(initialized_order, trading_personal_data.LimitOrder) and initialized_order.simulated:
             # on simulator, this order should be instantly filled now as its price is meant to be instantly filled

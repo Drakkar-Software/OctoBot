@@ -21,6 +21,7 @@ import octobot_trading.constants as trading_constants
 import octobot_trading.enums as trading_enums
 import octobot_trading.errors as trading_errors
 
+import octobot_copy.constants as copy_constants
 import octobot_copy.rebalancing.rebalancer.rebalancer as base_rebalancer
 
 
@@ -58,6 +59,15 @@ class SpotRebalancer(base_rebalancer.AbstractRebalancer):
             else trading_enums.TraderOrderType.BUY_LIMIT
         )
 
+        order_target_price, ideal_quantity = (
+            self._exchange_interface.private_data.adapt_order_quantity_and_target_price_for_order_creation(
+                order_type,
+                symbol,
+                ideal_quantity,
+                order_target_price,
+                adapt_price_for_limit_orders=True,
+            )
+        )
         created_orders, orders_should_have_been_created = await self._exchange_interface.private_data.create_orders(
             order_type,
             symbol,
@@ -66,6 +76,8 @@ class SpotRebalancer(base_rebalancer.AbstractRebalancer):
             order_target_price,
             symbol_market,
             dependencies=dependencies,
+            tag=copy_constants.REBALANCER_ORDER_TAG,
+            raise_all_creation_error=self._rebalance_actions_planner.client.raise_all_order_errors,
         )
         if created_orders:
             return created_orders

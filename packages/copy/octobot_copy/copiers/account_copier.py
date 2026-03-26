@@ -3,13 +3,15 @@ import typing
 import octobot_commons.logging as logging
 import octobot_trading.constants as trading_constants
 import octobot_trading.errors as trading_errors
-import octobot_trading.personal_data
+import octobot_trading.personal_data as trading_personal_data
 
 import octobot_copy.constants as copy_constants
 import octobot_copy.entities as copy_entities
 import octobot_copy.errors as copy_errors
 import octobot_copy.exchange as copy_exchange
+import octobot_copy.orders_mirroring.orders_synchronizer as orders_synchronizer_module
 import octobot_copy.rebalancing as copy_rebalancing
+
 
 class AccountCopier:
     """
@@ -21,6 +23,7 @@ class AccountCopier:
     traded pairs on the copier exchange cover the assets to trade.
     copier_account is reserved for future snapshot/offline use and is not used by the rebalance pipeline.
     copy_settings controls reference_market, rebalance thresholds, and synchronization.
+    Reference open orders in reference_account.orders are synched onto the copier after each successful run (spot).
     """
 
     def __init__(
@@ -32,22 +35,35 @@ class AccountCopier:
         self._reference_account: copy_entities.Account = reference_account
         self._copier_exchange_interface: copy_exchange.ExchangeInterface = exchange_interface
         self._copy_settings: copy_entities.AccountCopySettings = copy_settings
+        self._orders_synchronizer: orders_synchronizer_module.OrdersSynchronizer = (
+            orders_synchronizer_module.OrdersSynchronizer(reference_account, exchange_interface)
+        )
 
-    async def execute_rebalance_if_needed(self) -> list[octobot_trading.personal_data.Order]:
+    async def execute_rebalance_if_needed(self) -> list[trading_personal_data.Order]:
         rebalancer, should_rebalance, details = await self._prepare_rebalance_plan()
-        if not should_rebalance:
-            self._get_logger().info("No rebalance needed")
-            return []
+        rebalance_orders: list = []
         try:
-            self._get_logger().info(f"Executing rebalance on [{self._copier_exchange_interface.exchange_name}]")
-            return await self._run_rebalance(rebalancer, details)
+            if should_rebalance:
+                self._get_logger().info(
+                    f"Executing rebalance on [{self._copier_exchange_interface.exchange_name}]"
+                )
+                rebalance_orders = await self._run_rebalance(rebalancer, details)
+            else:
+                self._get_logger().info("No rebalance needed")
+            synched_orders = await self._synchronize_reference_open_orders()
+            return rebalance_orders + synched_orders
         except (trading_errors.MissingMinimalExchangeTradeVolume, copy_errors.RebalanceAborted) as err:
             self._get_logger().exception(
-                err, True, f"Aborted rebalance on {self._copier_exchange_interface.exchange_name}: {err} ({err.__class__.__name__})"
+                err,
+                True,
+                f"Aborted rebalance on {self._copier_exchange_interface.exchange_name}: {err} ({err.__class__.__name__})",
             )
+            return []
         finally:
             self._get_logger().info("Portfolio rebalance process complete")
-        return []
+
+    async def _synchronize_reference_open_orders(self) -> list[trading_personal_data.Order]:
+        return await self._orders_synchronizer.synchronize()
 
     def get_rebalancer_class(self) -> type[copy_rebalancing.AbstractRebalancer]:
         raise NotImplementedError("get_rebalancer_class is not implemented")
@@ -69,7 +85,7 @@ class AccountCopier:
         self,
         rebalancer: copy_rebalancing.AbstractRebalancer,
         details: dict,
-    ) -> list[octobot_trading.personal_data.Order]:
+    ) -> list[trading_personal_data.Order]:
         orders: list = []
         self._get_logger().info("Step 1/3: ensuring enough funds are available for rebalance")
         await rebalancer.ensure_enough_funds_to_buy_after_selling()
@@ -111,6 +127,10 @@ class AccountCopier:
             sell_untargeted_traded_coins=self._copy_settings.sell_untargeted_traded_coins,
             synchronization_policy=self._copy_settings.synchronization_policy,
             allow_skip_asset=self._copy_settings.allow_skip_asset,
+            can_include_assets_in_open_orders_in_holdings_ratio=(
+                self._copy_settings.can_include_assets_in_open_orders_in_holdings_ratio
+            ),
+            raise_all_order_errors=True,
             get_config=self._get_synthetic_config,
             get_previous_config=lambda: None, # not implemented for now
             get_historical_configs=lambda _ft, _tt: [], # not implemented for now
@@ -135,6 +155,9 @@ class AccountCopier:
             reference_market_ratio=self._copy_settings.reference_market_ratio,
             sell_untargeted_traded_coins=self._copy_settings.sell_untargeted_traded_coins,
             allow_skip_asset=self._copy_settings.allow_skip_asset,
+            can_include_assets_in_open_orders_in_holdings_ratio=(
+                self._copy_settings.can_include_assets_in_open_orders_in_holdings_ratio
+            ),
         )
 
     def _create_rebalancer(
