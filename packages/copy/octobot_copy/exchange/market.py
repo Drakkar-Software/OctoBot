@@ -29,6 +29,12 @@ class MarketInterface:
             timeout=trading_constants.ORDER_DATA_FETCHING_TIMEOUT,
         )
 
+    def get_potentially_outdated_price(self, symbol: str) -> (decimal.Decimal, bool):
+        return trading_personal_data.get_potentially_outdated_price(
+            self._exchange_manager,
+            symbol,
+        )
+
     async def ensure_contract_loaded(self, symbol: str) -> None:
         try:
             await self._exchange_manager.exchange.get_pair_contract_async(symbol)

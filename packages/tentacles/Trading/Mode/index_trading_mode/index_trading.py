@@ -23,6 +23,7 @@ import octobot_commons.enums as commons_enums
 import octobot_commons.symbols.symbol_util as symbol_util
 import octobot_commons.authentication as authentication
 import octobot_commons.signals as commons_signals
+import octobot_commons.list_util as list_util
 import octobot_trading.constants as trading_constants
 import octobot_trading.dsl as trading_dsl
 import octobot_trading.enums as trading_enums
@@ -53,6 +54,9 @@ class RebalanceSkipDetails(enum.Enum):
 
 DEFAULT_QUOTE_ASSET_REBALANCE_TRIGGER_MIN_RATIO = 0.1  # 10%
 DEFAULT_REBALANCE_TRIGGER_MIN_RATIO = 0.05  # 5%
+
+class StateKeys(enum.StrEnum):
+    INDEXED_COINS = "indexed_coins"
 
 
 class IndexTradingModeConsumer(trading_modes.AbstractTradingModeConsumer):
@@ -161,7 +165,7 @@ class IndexTradingModeProducer(trading_modes.AbstractTradingModeProducer):
         self, matrix_id: str, cryptocurrency: str,
         symbol: str, time_frame, trigger_source: str
     ) -> None:
-        return await self._check_index_if_necessary()
+        await self._check_index_if_necessary()
 
     async def ohlcv_callback(self, exchange: str, exchange_id: str, cryptocurrency: str, symbol: str,
                              time_frame: str, candle: dict, init_call: bool = False):
@@ -619,7 +623,9 @@ class IndexTradingMode(trading_modes.AbstractTradingMode):
         ]
 
     @classmethod
-    def get_dsl_dependencies(cls, trading_config: dict, config: dict) -> list:
+    def get_dsl_dependencies(
+        cls, trading_config: dict, config: dict, previous_state: typing.Optional[dict]
+    ) -> list:
         index_content = cls.get_ideal_distribution(trading_config)
         if not index_content:
             return []
@@ -627,8 +633,18 @@ class IndexTradingMode(trading_modes.AbstractTradingMode):
             reference_market = trading_util.get_reference_market(config)
         except (KeyError, TypeError):
             reference_market = commons_constants.DEFAULT_REFERENCE_MARKET
-        symbols = cls.get_tentacle_config_traded_symbols(trading_config, reference_market)
-        return [trading_dsl.SymbolDependency(symbol=symbol) for symbol in symbols]
+        symbols = cls.get_tentacle_config_traded_symbols(trading_config, reference_market) + (
+            [
+                symbol_util.merge_currencies(coin, reference_market)
+                for coin in previous_state.get(StateKeys.INDEXED_COINS.value, [])
+            ] if previous_state else []
+        )
+        return [trading_dsl.SymbolDependency(symbol=symbol) for symbol in list_util.deduplicate(symbols)]
+
+    def get_dsl_state(self) -> dict:
+        return {
+            StateKeys.INDEXED_COINS.value: self.indexed_coins,
+        }
 
     def is_updating_at_each_price_change(self):
         return self.refresh_interval_days == 0

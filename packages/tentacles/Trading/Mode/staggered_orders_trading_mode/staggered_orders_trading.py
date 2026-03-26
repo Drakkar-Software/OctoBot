@@ -296,7 +296,7 @@ class StaggeredOrdersTradingMode(trading_modes.AbstractTradingMode):
         return symbols
 
     @classmethod
-    def get_dsl_dependencies(cls, trading_config: dict, config: dict) -> list:
+    def get_dsl_dependencies(cls, trading_config: dict, config: dict, previous_state: typing.Optional[dict]) -> list:
         symbols = cls.get_tentacle_config_traded_symbols(
             trading_config, trading_util.get_reference_market(config)
         )
@@ -772,7 +772,7 @@ class StaggeredOrdersTradingModeProducer(trading_modes.AbstractTradingModeProduc
         self, matrix_id: str, cryptocurrency: str,
         symbol: str, time_frame, trigger_source: str
     ) -> None:
-        return await self.trigger_staggered_orders_creation(reload_config=False)
+        await self.trigger_staggered_orders_creation(reload_config=False)
 
     def _schedule_order_refresh(self):
         # schedule order creation / health check

@@ -30,7 +30,7 @@ class TickersRepository(base_exchange_repository_import.BaseExchangeRepository):
             self.exchange_manager.is_sandboxed
         )):
             tickers = await exchanges_test_tools.get_all_currencies_price_ticker(
-                self.exchange_manager, symbols=symbols
+                self.exchange_manager, symbols=None # force fetching all tickers
             )
             self.set_tickers_cache(
                 self.exchange_manager.exchange_name,
