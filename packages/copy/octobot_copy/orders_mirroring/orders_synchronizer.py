@@ -85,13 +85,13 @@ class OrdersSynchronizer:
 
     async def _cancel_mirrored_orphan_orders(self, active_reference_ids: set) -> int:
         cancelled_count = 0
-        for order in self._exchange_interface.private_data.get_open_orders():
+        for order in self._exchange_interface.orders.get_open_orders():
             if order.tag != copy_constants.MIRRORED_ORDER_TAG:
                 continue
             if str(order.order_id) in active_reference_ids:
                 continue
             try:
-                await self._exchange_interface.private_data.cancel_order(order)
+                await self._exchange_interface.orders.cancel_order(order)
                 cancelled_count += 1
                 self._get_logger().info(
                     f"Cancelled mirrored orphan order: symbol={order.symbol} "
@@ -121,7 +121,7 @@ class OrdersSynchronizer:
         )
         if reference_total <= trading_constants.ZERO:
             return None
-        copier_total = self._exchange_interface.private_data.get_currency_portfolio_total(scale_currency)
+        copier_total = self._exchange_interface.portfolio.get_currency_portfolio_total(scale_currency)
         amount = decimal.Decimal(str(origin[trading_enums.ExchangeConstantsOrderColumns.AMOUNT.value]))
         if amount <= trading_constants.ZERO:
             return None
@@ -129,7 +129,7 @@ class OrdersSynchronizer:
         return amount * scale
 
     def _find_open_order_by_bot_order_id(self, order_id: str) -> typing.Optional[trading_personal_data.Order]:
-        for order in self._exchange_interface.private_data.get_open_orders():
+        for order in self._exchange_interface.orders.get_open_orders():
             if str(order.order_id) == str(order_id):
                 return order
         return None
@@ -235,16 +235,16 @@ class OrdersSynchronizer:
                 f"order_id={existing.order_id} side={existing.side} type={existing.order_type} "
                 f"(reference_id={reference_order_id})"
             )
-            await self._exchange_interface.private_data.cancel_order(existing)
+            await self._exchange_interface.orders.cancel_order(existing)
             replaced_cancelled = 1
             self._get_logger().info(
                 f"Cancelled mirrored order for replace ({replace_reason}): symbol={existing.symbol} "
                 f"order_id={existing.order_id} side={existing.side} type={existing.order_type} "
                 f"(reference_id={reference_order_id})"
             )
-        symbol_market = self._exchange_interface.private_data.get_market_status(symbol, with_fixer=False)
+        symbol_market = self._exchange_interface.market.get_market_status(symbol, with_fixer=False)
         market_or_limit_price, ideal_quantity = (
-            self._exchange_interface.private_data.adapt_order_quantity_and_target_price_for_order_creation(
+            self._exchange_interface.orders.adapt_order_quantity_and_target_price_for_order_creation(
                 resolved_type,
                 symbol,
                 ideal_quantity,
@@ -252,7 +252,7 @@ class OrdersSynchronizer:
                 adapt_price_for_limit_orders=False,
             )
         )
-        created, _ = await self._exchange_interface.private_data.create_orders(
+        created, _ = await self._exchange_interface.orders.create_orders(
             resolved_type,
             symbol,
             current_price,
@@ -286,7 +286,7 @@ class OrdersSynchronizer:
             _market_quantity,
             current_price,
             _symbol_market,
-        ) = await self._exchange_interface.private_data.get_pre_order_data(
+        ) = await self._exchange_interface.orders.get_pre_order_data(
             symbol=symbol,
             timeout=trading_constants.ORDER_DATA_FETCHING_TIMEOUT,
             portfolio_type=commons_constants.PORTFOLIO_TOTAL,
@@ -298,7 +298,7 @@ class OrdersSynchronizer:
         )
         resolved_trader_order_type = trader_order_type
         if trading_personal_data.get_trade_order_type(trader_order_type) is trading_enums.TradeOrderType.MARKET:
-            if not self._exchange_interface.public_data.is_market_open_for_order_type(
+            if not self._exchange_interface.market.is_market_open_for_order_type(
                 symbol, trader_order_type
             ):
                 resolved_trader_order_type = (

@@ -12,7 +12,7 @@ if typing.TYPE_CHECKING:
     import octobot_trading.exchanges
 
 
-class ExchangePublicData:
+class MarketInterface:
     def __init__(self, exchange_manager: "octobot_trading.exchanges.ExchangeManager"):
         self._exchange_manager: "octobot_trading.exchanges.ExchangeManager" = exchange_manager
 
@@ -29,9 +29,6 @@ class ExchangePublicData:
             timeout=trading_constants.ORDER_DATA_FETCHING_TIMEOUT,
         )
 
-    def get_time(self) -> float:
-        return self._exchange_manager.exchange.get_exchange_current_time()
-
     async def ensure_contract_loaded(self, symbol: str) -> None:
         try:
             await self._exchange_manager.exchange.get_pair_contract_async(symbol)
@@ -42,3 +39,6 @@ class ExchangePublicData:
 
     def is_market_open_for_order_type(self, symbol: str, order_type: trading_enums.TraderOrderType) -> bool:
         return self._exchange_manager.exchange.is_market_open_for_order_type(symbol, order_type)
+
+    def get_market_status(self, symbol: str, *, with_fixer: bool = False):
+        return self._exchange_manager.exchange.get_market_status(symbol, with_fixer=with_fixer)
