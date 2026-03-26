@@ -71,7 +71,7 @@ class HistoricalConfigurationRebalanceActionsPlanner(
             )
         try:
             target_config = self.client.get_historical_configs(
-                0, self._exchange.public_data.get_time()
+                0, self._exchange_interface.get_time()
             )[0]
             self.logger.info(
                 f"Updated {self.client.client_name} to use latest distribution: "
@@ -101,7 +101,7 @@ class HistoricalConfigurationRebalanceActionsPlanner(
             if asset[rebalancer_enums.DistributionKeys.NAME] not in current_coins
                 and (
                     asset[rebalancer_enums.DistributionKeys.NAME]
-                    != self._exchange.private_data.reference_market
+                    != self._exchange_interface.portfolio.reference_market
                 )
         ]))
 
@@ -113,7 +113,7 @@ class HistoricalConfigurationRebalanceActionsPlanner(
     ) -> list:
         del available_traded_bases
         historical_configs = self.client.get_historical_configs(
-            0, self._exchange.public_data.get_time()
+            0, self._exchange_interface.get_time()
         )
         if not (historical_configs and trading_config):
             return removed_coins
@@ -125,7 +125,7 @@ class HistoricalConfigurationRebalanceActionsPlanner(
         for historical_config in historical_configs:
             for asset in historical_config[copy_constants.CONFIG_INDEX_CONTENT]:
                 asset_name = asset[rebalancer_enums.DistributionKeys.NAME]
-                if asset_name not in current_coins and asset_name != self._exchange.private_data.reference_market:
+                if asset_name not in current_coins and asset_name != self._exchange_interface.portfolio.reference_market:
                     removed_coins_from_historical_configs.add(asset_name)
         return list(removed_coins_from_historical_configs.union(removed_coins))
 
@@ -136,7 +136,7 @@ class HistoricalConfigurationRebalanceActionsPlanner(
             self.logger.info(f"Using {self.client.client_name} latest config.")
             return config
         historical_configs = self.client.get_historical_configs(
-            0, self._exchange.public_data.get_time()
+            0, self._exchange_interface.get_time()
         )
         if not historical_configs or (
             len(historical_configs) == 1 and (
@@ -176,7 +176,7 @@ class HistoricalConfigurationRebalanceActionsPlanner(
             ]
             self.logger.warning(
                 f"Ignored {self.client.client_name} config candidate as {len(missing_assets)} configured assets "
-                f"{missing_assets} are missing from {self._exchange.exchange_name} traded pairs."
+                f"{missing_assets} are missing from {self._exchange_interface.exchange_name} traded pairs."
             )
             return False
 
@@ -193,7 +193,7 @@ class HistoricalConfigurationRebalanceActionsPlanner(
                 target_ratio = base_target_ratio * self.client.reference_market_ratio
             else:
                 target_ratio = base_target_ratio
-            coin_ratio = self._exchange.private_data.get_holdings_ratio(
+            coin_ratio = self._exchange_interface.portfolio.get_holdings_ratio(
                 asset_distrib[rebalancer_enums.DistributionKeys.NAME], traded_symbols_only=True,
                 include_assets_in_open_orders=False,
             )

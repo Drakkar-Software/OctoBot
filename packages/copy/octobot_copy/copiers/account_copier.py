@@ -90,7 +90,7 @@ class AccountCopier:
         self._get_logger().info("Step 1/3: ensuring enough funds are available for rebalance")
         await rebalancer.ensure_enough_funds_to_buy_after_selling()
         is_simple_buy_without_selling = rebalancer.can_simply_buy_coins_without_selling(details)
-        reference_market = self._copier_exchange_interface.private_data.reference_market
+        reference_market = self._copier_exchange_interface.portfolio.reference_market
         if is_simple_buy_without_selling:
             self._get_logger().info(f"Step 2/3: skipped: no coin to sell for {reference_market}")
         else:
@@ -142,7 +142,7 @@ class AccountCopier:
         rebalancing_client: copy_rebalancing.RebalancingClientInterface,
     ) -> copy_rebalancing.BaseRebalanceActionsPlanner:
         return copy_rebalancing.BaseRebalanceActionsPlanner(
-            exchange=self._copier_exchange_interface,
+            exchange_interface=self._copier_exchange_interface,
             client=rebalancing_client,
         )
 

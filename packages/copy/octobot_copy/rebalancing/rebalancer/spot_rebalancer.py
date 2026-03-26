@@ -39,7 +39,7 @@ class SpotRebalancer(base_rebalancer.AbstractRebalancer):
         dependencies: typing.Optional[commons_signals.SignalDependencies]
     ) -> list:
         current_symbol_holding, current_market_holding, market_quantity, current_price, symbol_market = \
-            await self._exchange_interface.private_data.get_pre_order_data(
+            await self._exchange_interface.orders.get_pre_order_data(
                 symbol=symbol,
                 timeout=trading_constants.ORDER_DATA_FETCHING_TIMEOUT
             )
@@ -55,12 +55,12 @@ class SpotRebalancer(base_rebalancer.AbstractRebalancer):
         ideal_order_type = trading_enums.TraderOrderType.BUY_MARKET if is_price_close_to_market else trading_enums.TraderOrderType.BUY_LIMIT
         order_type = (
             ideal_order_type
-            if self._exchange_interface.public_data.is_market_open_for_order_type(symbol, ideal_order_type)
+            if self._exchange_interface.market.is_market_open_for_order_type(symbol, ideal_order_type)
             else trading_enums.TraderOrderType.BUY_LIMIT
         )
 
         order_target_price, ideal_quantity = (
-            self._exchange_interface.private_data.adapt_order_quantity_and_target_price_for_order_creation(
+            self._exchange_interface.orders.adapt_order_quantity_and_target_price_for_order_creation(
                 order_type,
                 symbol,
                 ideal_quantity,
@@ -68,7 +68,7 @@ class SpotRebalancer(base_rebalancer.AbstractRebalancer):
                 adapt_price_for_limit_orders=True,
             )
         )
-        created_orders, orders_should_have_been_created = await self._exchange_interface.private_data.create_orders(
+        created_orders, orders_should_have_been_created = await self._exchange_interface.orders.create_orders(
             order_type,
             symbol,
             current_price,

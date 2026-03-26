@@ -395,7 +395,7 @@ class IndexTradingMode(trading_modes.AbstractTradingMode):
         self.rebalance_actions_planner: octobot_copy.rebalancing.planner.HistoricalConfigurationRebalanceActionsPlanner = None # type: ignore
         if exchange_manager:
             self.rebalance_actions_planner = octobot_copy.rebalancing.planner.HistoricalConfigurationRebalanceActionsPlanner(
-                exchange=exchange_interface.ExchangeInterface(exchange_manager, trading_mode=self),
+                exchange_interface=exchange_interface.ExchangeInterface(exchange_manager, trading_mode=self),
                 client=self._create_rebalancing_client(),
             )
 
