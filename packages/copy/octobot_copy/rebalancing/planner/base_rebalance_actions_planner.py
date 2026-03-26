@@ -18,7 +18,9 @@ import typing
 
 import octobot_commons.list_util as list_util
 import octobot_commons.logging as logging
+import octobot_commons.symbols.symbol_util as symbol_util
 import octobot_trading.constants as trading_constants
+import octobot_trading.errors as trading_errors
 
 import octobot_copy.constants as copy_constants
 import octobot_copy.enums as rebalancer_enums
@@ -286,6 +288,12 @@ class BaseRebalanceActionsPlanner:
                     ),
                 )
                 if coin_ratio >= copy_constants.MIN_RATIO_TO_SELL:
+                    if self._removed_index_assets_unsold_are_only_dust({coin: coin_ratio}, []):
+                        self.logger.info(
+                            f"{coin} is not in target anymore but available holding value is below the exchange "
+                            f"minimal order cost; omitting it from the removed-coins sell list."
+                        )
+                        continue
                     rebalance_details[rebalancer_enums.RebalanceDetails.REMOVE.value][coin] = coin_ratio
                     self.logger.info(
                         f"{coin} (holdings: {round(coin_ratio * trading_constants.ONE_HUNDRED, 3)}%) is not in target "
@@ -303,6 +311,34 @@ class BaseRebalanceActionsPlanner:
                         f" but is not in target anymore. This is unexpected"
                     )
         return should_rebalance
+
+    def _removed_index_assets_unsold_are_only_dust(
+        self,
+        removed_coins: typing.Mapping[str, typing.Any],
+        sold_coins: list,
+    ) -> bool:
+        ref_market = self._exchange_interface.portfolio.reference_market
+        targeted = frozenset(self._targeted_coins)
+        for asset in removed_coins:
+            if asset in sold_coins:
+                continue
+            if asset in targeted:
+                return False
+            if asset == ref_market:
+                return False
+            symbol = symbol_util.merge_currencies(asset, ref_market)
+            try:
+                price, _ = self._exchange_interface.market.get_potentially_outdated_price(symbol)
+                min_cost_decimal = self._exchange_interface.orders.get_minimal_order_cost(
+                    symbol, default_price=float(price)
+                )
+            except trading_errors.NotSupported:
+                return False
+            available = self._exchange_interface.portfolio.get_currency_portfolio_available(asset)
+            holding_value = available * price
+            if holding_value >= min_cost_decimal:
+                return False
+        return True
 
     def _register_quote_asset_rebalance(self, rebalance_details: dict) -> bool:
         """

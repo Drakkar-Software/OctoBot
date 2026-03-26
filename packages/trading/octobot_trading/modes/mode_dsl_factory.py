@@ -15,6 +15,7 @@
 #  License along with this library.
 import time
 import typing
+import json
 
 import octobot_commons.constants as common_constants
 import octobot_commons.enums as common_enums
@@ -30,6 +31,9 @@ import octobot_trading.modes.modes_factory as modes_factory
 if typing.TYPE_CHECKING:
     import octobot_trading.exchanges
     import octobot_trading.modes.abstract_trading_mode
+
+
+STATE_KEY = "state"
 
 
 def _create_operator_parameters_from_user_inputs(
@@ -98,9 +102,6 @@ class TradingModeOperator(
         **kwargs: typing.Any,
     ):
         super(dsl_interpreter.PreComputingCallOperator, self).__init__(*parameters, **kwargs)
-        self.param_by_name: dict[
-            str, dsl_interpreter.ComputedOperatorParameterType
-        ] = dsl_interpreter.UNINITIALIZED_VALUE  # type: ignore
 
     @staticmethod
     def get_library() -> str:
@@ -156,7 +157,8 @@ class TradingModeOperator(
         trading_mode_class: type,
         trading_config: dict,
         exchange_manager: "octobot_trading.exchanges.ExchangeManager",
-        symbol: str
+        symbol: str,
+        previous_state: typing.Optional[dict]
     ) -> "octobot_trading.modes.abstract_trading_mode.AbstractTradingMode":
         trading_mode = trading_mode_class(exchange_manager.config, exchange_manager)
         if symbol is not None:
@@ -165,7 +167,7 @@ class TradingModeOperator(
         await trading_mode.initialize(
             trading_config=trading_config,
             auto_start=False,
-            previous_state=self.param_by_name.get("state")
+            previous_state=previous_state
         )
         for producer in trading_mode.producers:
             producer.force_is_ready_to_trade()
@@ -176,17 +178,18 @@ class TradingModeOperator(
         trading_mode_class: type,
         trading_config: dict,
         exchange_manager: "octobot_trading.exchanges.ExchangeManager",
+        previous_state: typing.Optional[dict]
     ) -> list["octobot_trading.modes.abstract_trading_mode.AbstractTradingMode"]:
         trading_modes = []
         if trading_mode_class.get_is_symbol_wildcard():
             trading_mode = await self._create_trading_mode(
-                trading_mode_class, trading_config, exchange_manager, None
+                trading_mode_class, trading_config, exchange_manager, None, previous_state
             )
             trading_modes.append(trading_mode)
         else:
             for symbol in exchange_manager.exchange_config.traded_symbol_pairs:
                 trading_mode = await self._create_trading_mode(
-                    trading_mode_class, trading_config, exchange_manager, symbol
+                    trading_mode_class, trading_config, exchange_manager, symbol, previous_state
                 )
                 trading_modes.append(trading_mode)
         return trading_modes
@@ -204,6 +207,10 @@ class TradingModeOperator(
             state=trading_mode.get_dsl_state(),
         )
 
+    def get_previous_state(self, param_by_name: dict[str, typing.Any]) -> typing.Optional[dict]:
+        last_execution_result = self.get_last_execution_result(param_by_name)
+        return json.loads(last_execution_result.get(STATE_KEY)) if last_execution_result else None
+
     async def pre_compute(self) -> None:
         await super().pre_compute()
         exchange_manager = self.get_exchange_manager()
@@ -211,13 +218,14 @@ class TradingModeOperator(
             raise commons_errors.DSLInterpreterError(
                 "Exchange manager is required to execute trading mode operator"
             )
-        self.param_by_name = self.get_computed_value_by_parameter()
+        param_by_name = self.get_computed_value_by_parameter()
         trading_modes = await self._create_trading_modes(
             self.get_trading_mode_class(),
-            self.param_by_name,
-            exchange_manager
+            param_by_name,
+            exchange_manager,
+            self.get_previous_state(param_by_name)
         )
-        if not self.get_last_execution_result(self.param_by_name):
+        if not self.get_last_execution_result(param_by_name):
             try:
                 # this is the first execution, optimize initial portfolio
                 sellable_assets = [] # todo later: populate with asseets that can be sold additionally to the traded ones
@@ -247,7 +255,7 @@ class TradingModeOperator(
                     dsl_interpreter.ReCallingOperatorResultKeys.LAST_EXECUTION_TIME.value
                 )
                 waiting_with_last_exec.append((waiting_time, last_execution_time))
-            merged_state.update(result.last_execution_result)
+            merged_state.update(result.last_execution_result.get(STATE_KEY, {}))
 
         if not waiting_with_last_exec:
             min_waiting_time = None
@@ -260,14 +268,14 @@ class TradingModeOperator(
         return self.create_re_callable_result_dict(
             waiting_time=min_waiting_time or None,
             last_execution_time=summary_last_execution_time or None,
-            state=merged_state,
+            state=json.dumps(merged_state), # stored as str to avoid interpreter parsing
         )
 
     def get_dependencies(self) -> typing.List[dsl_interpreter.InterpreterDependency]:
         trading_mode_class = self.get_trading_mode_class()
         param_by_name = self.get_computed_value_by_parameter()
         local_dependencies = trading_mode_class.get_dsl_dependencies(
-            param_by_name, self.get_config()
+            param_by_name, self.get_config(), self.get_previous_state(param_by_name)
         )
         return super().get_dependencies() + local_dependencies
 

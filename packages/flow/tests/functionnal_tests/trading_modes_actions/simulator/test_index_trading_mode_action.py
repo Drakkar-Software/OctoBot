@@ -3,6 +3,7 @@ import logging
 import json
 import mock
 import decimal
+import copy
 
 import octobot_copy.entities as copy_entities
 import octobot_commons.enums as common_enums
@@ -32,6 +33,29 @@ index_content = [
         rebalancer_enums.DistributionKeys.VALUE: 1,
     },
 ]
+
+index_content_btc_sol = [
+    {
+        rebalancer_enums.DistributionKeys.NAME: "BTC",
+        rebalancer_enums.DistributionKeys.VALUE: 1,
+    },
+    {
+        rebalancer_enums.DistributionKeys.NAME: "SOL",
+        rebalancer_enums.DistributionKeys.VALUE: 1,
+    },
+]
+
+
+def _replace_index_trading_mode_dsl_in_dump(automation_dump: dict, new_index_content: list) -> None:
+    for action in automation_dump["automation"]["actions_dag"]["actions"]:
+        if action.get("id") != "action_1":
+            continue
+        action["dsl_script"] = (
+            f"index_trading_mode(index_content={json.dumps(new_index_content)}, rebalance_trigger_min_percent=5)"
+        )
+        action.pop("resolved_dsl_script", None)
+        return
+    raise AssertionError("action_1 not found in automation dump")
 
 
 def index_trading_mode_action(dependency_action: dict):
@@ -206,6 +230,147 @@ async def test_simulator_index_init_from_empty_state(init_action: dict, run_mode
     if run_mode == octobot_flow.enums.AutomationRunMode.UPDATE_REFERENCE_EXCHANGE_ACCOUNT_AND_COPY:
         after_second_call_reference_account_portfolio_content = after_second_call_execution_dump["automation"]["reference_exchange_account_elements"]["portfolio"]["content"]
         assert after_second_call_reference_account_portfolio_content == after_initial_rebalance_reference_account_portfolio_content
+    else:
+        assert "reference_exchange_account_elements" not in after_second_call_execution_dump["automation"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("run_mode", [
+    octobot_flow.enums.AutomationRunMode.UPDATE_CLIENT_EXCHANGE_ACCOUNT_ONLY,
+    octobot_flow.enums.AutomationRunMode.UPDATE_REFERENCE_EXCHANGE_ACCOUNT_AND_COPY,
+])
+async def test_simulator_index_rebalance_after_index_content_switch_btc_eth_to_btc_sol(
+    init_action: dict, run_mode: octobot_flow.enums.AutomationRunMode,
+):
+    all_actions = [set_init_action_run_mode(init_action, run_mode), index_trading_mode_action(init_action)]
+    automation_state = automation_state_dict(resolved_actions(all_actions))
+
+    # 1. run init action
+    async with octobot_flow.AutomationJob(automation_state, [], {}) as automation_job:
+        await automation_job.run()
+    after_init_execution_dump = automation_job.dump()
+
+    assert len(automation_job.automation_state.automation.actions_dag.actions) == len(all_actions)
+    for index, action in enumerate(automation_job.automation_state.automation.actions_dag.actions):
+        assert isinstance(action, octobot_flow.entities.AbstractActionDetails)
+        assert action.error_status == octobot_flow.enums.ActionErrorStatus.NO_ERROR.value
+        assert action.result is None
+        if index == 0:
+            assert action.executed_at and action.executed_at >= current_time
+            assert action.previous_execution_result is None
+        else:
+            assert action.executed_at is None
+            assert action.previous_execution_result is None
+
+    # 2. first index run: BTC + ETH (base index_content)
+    async with octobot_flow.AutomationJob(after_init_execution_dump, [], {}) as automation_job:
+        await automation_job.run()
+    after_btc_eth_execution_dump = automation_job.dump()
+
+    assert len(automation_job.automation_state.automation.actions_dag.actions) == len(all_actions)
+    for index, action in enumerate(automation_job.automation_state.automation.actions_dag.actions):
+        assert isinstance(action, octobot_flow.entities.AbstractActionDetails)
+        assert action.error_status == octobot_flow.enums.ActionErrorStatus.NO_ERROR.value
+        assert action.result is None
+        if index == 0:
+            assert action.executed_at is not None
+            assert action.previous_execution_result is None
+        else:
+            assert action.executed_at is None
+            assert isinstance(action.previous_execution_result, dict)
+
+    after_btc_eth_portfolio = after_btc_eth_execution_dump["automation"]["client_exchange_account_elements"]["portfolio"]["content"]
+    assert list(sorted(after_btc_eth_portfolio.keys())) == ["BTC", "ETH", "USDT"]
+    assert 0 < after_btc_eth_portfolio["USDT"]["available"] < 5
+    assert 0.1 < after_btc_eth_portfolio["ETH"]["available"] < 0.4
+    assert 0.001 < after_btc_eth_portfolio["BTC"]["available"] < 0.01
+    assert "SOL" not in after_btc_eth_portfolio
+
+    if run_mode == octobot_flow.enums.AutomationRunMode.UPDATE_REFERENCE_EXCHANGE_ACCOUNT_AND_COPY:
+        after_btc_eth_reference = after_btc_eth_execution_dump["automation"]["reference_exchange_account_elements"]["portfolio"]["content"]
+        assert list(sorted(after_btc_eth_reference.keys())) == ["BTC", "ETH", "USDT"]
+        assert 0 < after_btc_eth_reference["USDT"]["available"] < 5
+        assert 0.1 < after_btc_eth_reference["ETH"]["available"] < 0.4
+        assert 0.001 < after_btc_eth_reference["BTC"]["available"] < 0.01
+        assert "SOL" not in after_btc_eth_reference
+    else:
+        assert "reference_exchange_account_elements" not in after_btc_eth_execution_dump["automation"]
+
+    one_hour = common_enums.TimeFramesMinutes[common_enums.TimeFrames.ONE_HOUR] * common_constants.MINUTE_TO_SECONDS
+    allowed_execution_time = 20
+
+    # 3. switch index definition to BTC + SOL and rebalance
+    dump_after_index_switch = copy.deepcopy(after_btc_eth_execution_dump)
+    _replace_index_trading_mode_dsl_in_dump(dump_after_index_switch, index_content_btc_sol)
+    async with octobot_flow.AutomationJob(dump_after_index_switch, [], {}) as automation_job:
+        await automation_job.run()
+    after_btc_sol_execution_dump = automation_job.dump()
+
+    assert len(automation_job.automation_state.automation.actions_dag.actions) == len(all_actions)
+    for index, action in enumerate(automation_job.automation_state.automation.actions_dag.actions):
+        assert isinstance(action, octobot_flow.entities.AbstractActionDetails)
+        assert action.error_status == octobot_flow.enums.ActionErrorStatus.NO_ERROR.value
+        assert action.result is None
+        if index == 0:
+            assert action.executed_at is not None
+            assert action.previous_execution_result is None
+        else:
+            assert action.executed_at is None
+            assert isinstance(action.previous_execution_result, dict)
+
+    # portfolio should be updated to BTC + SOL, ETH should be removed
+    after_btc_sol_portfolio = after_btc_sol_execution_dump["automation"]["client_exchange_account_elements"]["portfolio"]["content"]
+    assert list(sorted(after_btc_sol_portfolio.keys())) == ["BTC", "ETH", "SOL", "USDT"]
+    assert 0 < after_btc_sol_portfolio["USDT"]["available"] < 5
+    assert 0.001 < after_btc_sol_portfolio["BTC"]["available"] < 0.02
+    assert 0.5 < after_btc_sol_portfolio["SOL"]["available"] < 20
+    assert 0 < after_btc_sol_portfolio["ETH"]["available"] < 0.001 # sold close to all ETH
+
+
+    if run_mode == octobot_flow.enums.AutomationRunMode.UPDATE_REFERENCE_EXCHANGE_ACCOUNT_AND_COPY:
+        after_btc_sol_reference = after_btc_sol_execution_dump["automation"]["reference_exchange_account_elements"]["portfolio"]["content"]
+        assert list(sorted(after_btc_sol_reference.keys())) == ["BTC", "ETH", "SOL", "USDT"]
+        assert 0 < after_btc_sol_reference["USDT"]["available"] < 5
+        assert 0.001 < after_btc_sol_reference["BTC"]["available"] < 0.02
+        assert 0.5 < after_btc_sol_reference["SOL"]["available"] < 20
+        assert 0 < after_btc_sol_reference["ETH"]["available"] < 0.001 # sold close to all ETH
+    else:
+        assert "reference_exchange_account_elements" not in after_btc_sol_execution_dump["automation"]
+
+    schedule_delay = (
+        after_btc_sol_execution_dump["automation"]["execution"]["current_execution"]["scheduled_to"]
+        - after_btc_sol_execution_dump["automation"]["execution"]["previous_execution"]["triggered_at"]
+    )
+    assert one_hour - allowed_execution_time < schedule_delay < one_hour + allowed_execution_time
+
+    # 4. trigger again: portfolio already matches BTC + SOL index
+    async with octobot_flow.AutomationJob(after_btc_sol_execution_dump, [], {}) as automation_job:
+        await automation_job.run()
+    after_second_call_execution_dump = automation_job.dump()
+
+    assert len(automation_job.automation_state.automation.actions_dag.actions) == len(all_actions)
+    for index, action in enumerate(automation_job.automation_state.automation.actions_dag.actions):
+        assert isinstance(action, octobot_flow.entities.AbstractActionDetails)
+        assert action.error_status == octobot_flow.enums.ActionErrorStatus.NO_ERROR.value
+        assert action.result is None
+        if index == 0:
+            assert action.executed_at is not None
+            assert action.previous_execution_result is None
+        else:
+            assert action.executed_at is None
+            assert isinstance(action.previous_execution_result, dict)
+
+    schedule_delay = (
+        after_second_call_execution_dump["automation"]["execution"]["current_execution"]["scheduled_to"]
+        - after_second_call_execution_dump["automation"]["execution"]["previous_execution"]["triggered_at"]
+    )
+    assert one_hour - allowed_execution_time < schedule_delay < one_hour + allowed_execution_time
+
+    after_second_call_portfolio = after_second_call_execution_dump["automation"]["client_exchange_account_elements"]["portfolio"]["content"]
+    assert after_second_call_portfolio == after_btc_sol_portfolio
+    if run_mode == octobot_flow.enums.AutomationRunMode.UPDATE_REFERENCE_EXCHANGE_ACCOUNT_AND_COPY:
+        after_second_call_reference = after_second_call_execution_dump["automation"]["reference_exchange_account_elements"]["portfolio"]["content"]
+        assert after_second_call_reference == after_btc_sol_reference
     else:
         assert "reference_exchange_account_elements" not in after_second_call_execution_dump["automation"]
 

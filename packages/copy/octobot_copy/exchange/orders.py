@@ -304,6 +304,10 @@ class OrdersInterface:
             self._exchange_manager, symbol, order_type, quantity, price, side
         )
 
+    def get_minimal_order_cost(self, symbol: str, default_price: typing.Optional[float] = None) -> float:
+        symbol_market = self._exchange_manager.exchange.get_market_status(symbol, with_fixer=False)
+        return trading_personal_data.get_minimal_order_cost(symbol_market, default_price=default_price)
+
     def check_and_adapt_order_details_if_necessary(
         self,
         symbol: str,

@@ -361,7 +361,7 @@ class AbstractTradingMode(abstract_tentacle.AbstractTentacle):
             if self.SUPPORTS_HEALTH_CHECK:
                 await self.health_check([], {})
 
-    async def manual_trigger(self, data):
+    async def manual_trigger(self, data) -> None:
         kwargs = {
             "trigger_source": common_enums.TriggerSource.MANUAL.value
         }
@@ -370,7 +370,7 @@ class AbstractTradingMode(abstract_tentacle.AbstractTentacle):
             await producer.trigger(**kwargs)
 
     @classmethod
-    def get_dsl_dependencies(cls, trading_config: dict, config: dict) -> list[dsl_interpreter.InterpreterDependency]:
+    def get_dsl_dependencies(cls, trading_config: dict, config: dict, previous_state: typing.Optional[dict]) -> list[dsl_interpreter.InterpreterDependency]:
         """
         Overwrite in subclasses if necessary
         :param trading_config: The trading config

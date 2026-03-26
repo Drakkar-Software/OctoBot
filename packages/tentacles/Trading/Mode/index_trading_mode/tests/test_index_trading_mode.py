@@ -841,7 +841,11 @@ async def test_get_rebalance_details(trading_tools):
                 get_traded_assets_holdings_value_mock.reset_mock()
             with mock.patch.object(
                     mode.rebalance_actions_planner, "get_removed_coins_from_config", mock.Mock(return_value=["SOL", "ADA"])
-            ) as get_removed_coins_from_config_mock:
+            ) as get_removed_coins_from_config_mock, mock.patch.object(
+                    mode.rebalance_actions_planner,
+                    "_removed_index_assets_unsold_are_only_dust",
+                    mock.Mock(return_value=False),
+            ):
                 should_rebalance, details = producer._get_rebalance_details()
                 assert should_rebalance is True
                 assert details == {
@@ -918,7 +922,11 @@ async def test_get_rebalance_details(trading_tools):
                 get_traded_assets_holdings_value_mock_2.reset_mock()
             with mock.patch.object(
                     mode.rebalance_actions_planner, "get_removed_coins_from_config", mock.Mock(return_value=["SOL", "ADA"])
-            ) as get_removed_coins_from_config_mock:
+            ) as get_removed_coins_from_config_mock, mock.patch.object(
+                    mode.rebalance_actions_planner,
+                    "_removed_index_assets_unsold_are_only_dust",
+                    mock.Mock(return_value=False),
+            ):
                 should_rebalance, details = producer._get_rebalance_details()
                 assert should_rebalance is True
                 assert details == {

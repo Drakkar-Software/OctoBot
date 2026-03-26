@@ -99,7 +99,7 @@ class FakeTradingModeBeta:
 
 class FakeTradingModeWithDslDeps(FakeTradingModeAlpha):
     @classmethod
-    def get_dsl_dependencies(cls, trading_config, config):
+    def get_dsl_dependencies(cls, trading_config, config, previous_state):
         return [dsl_interpreter.InterpreterDependency()]
 
 
