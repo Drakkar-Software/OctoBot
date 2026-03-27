@@ -20,7 +20,7 @@ import octobot_commons.tentacles_management as tentacles_management
 
 import octobot_trading.exchanges as exchanges
 import octobot_trading.exchange_channel as exchange_channel
-import octobot_trading.exchange_data as exchange_data
+import octobot_trading.exchange_data as exchange_data_import
 
 
 async def create_exchange_channels(exchange_manager) -> None:
@@ -155,7 +155,7 @@ async def create_minimal_dynamic_symbols_env_producers_if_needed(
     start_producers: bool = False, subscribe_indirect_producers_if_not_started: bool = True
 ):
     if not _has_minimal_dynamic_symbols_env_producers(exchange_manager):
-        for producer_class in exchange_data.MINIMAL_DYNAMIC_SYMBOLS_ENV_UPDATER_PRODUCERS.values():
+        for producer_class in exchange_data_import.MINIMAL_DYNAMIC_SYMBOLS_ENV_UPDATER_PRODUCERS.values():
             await _create_producer(
                 exchange_manager, producer_class,
                 start_producers=start_producers, subscribe_indirect_producers_if_not_started=subscribe_indirect_producers_if_not_started
@@ -164,7 +164,7 @@ async def create_minimal_dynamic_symbols_env_producers_if_needed(
 
 def _has_minimal_dynamic_symbols_env_producers(exchange_manager) -> bool:
     created_channels = exchange_channel.get_exchange_channels(exchange_manager.id)
-    for channel_name in exchange_data.MINIMAL_DYNAMIC_SYMBOLS_ENV_UPDATER_PRODUCERS:
+    for channel_name in exchange_data_import.MINIMAL_DYNAMIC_SYMBOLS_ENV_UPDATER_PRODUCERS:
         if (channel := created_channels.get(channel_name)) and not channel.get_producers():
             # this channel is required and created but has no producer
             return False

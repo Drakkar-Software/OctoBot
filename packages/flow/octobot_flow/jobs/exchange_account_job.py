@@ -38,10 +38,10 @@ class ExchangeAccountJob(octobot_flow.repositories.exchange.ExchangeContextMixin
             self._fetch_tickers()
         )
 
-    async def update_authenticated_data(self):
+    async def update_authenticated_data(self, as_reference_account: bool):
         self._ensure_exchange_dependencies()
         await self._fetch_authenticated_data()
-        await self._update_bot_authenticated_data()
+        await self._update_bot_authenticated_data(as_reference_account)
         
     async def _fetch_authenticated_data(self):
         coros = [
@@ -52,11 +52,22 @@ class ExchangeAccountJob(octobot_flow.repositories.exchange.ExchangeContextMixin
             coros.append(self._fetch_positions())
         await asyncio.gather(*coros)
 
-    async def _update_bot_authenticated_data(self):
-        sub_portfolio_resolver = octobot_flow.logic.exchange.SubPortfolioResolver(
-            self.automation_state
-        )
-        await sub_portfolio_resolver.resolve_sub_portfolios()
+    async def _update_bot_authenticated_data(self, as_reference_account: bool):
+        is_simulated = self.automation_state.exchange_account_details.is_simulated()
+        if as_reference_account or is_simulated:
+            simulated_exchange_account_resolver = octobot_flow.logic.exchange.SimulatedExchangeAccountResolver(
+                self.automation_state,
+                self.fetched_dependencies,
+                self.actions,
+                as_reference_account=as_reference_account,
+            )
+            await simulated_exchange_account_resolver.resolve()
+        else:
+            # updating client account with real trading data: update sub portfolio if any
+            sub_portfolio_resolver = octobot_flow.logic.exchange.SubPortfolioResolver(
+                self.automation_state
+            )
+            await sub_portfolio_resolver.resolve()
 
     @contextlib.asynccontextmanager
     async def account_exchange_context(self, global_profile_data: commons_profiles.ProfileData):

@@ -59,7 +59,10 @@ class TickersRepository(base_exchange_repository_import.BaseExchangeRepository):
             exchange_data.auth_details.sandboxed, symbol,
         )
 
-
     @staticmethod
     def set_tickers_cache(exchange_name: str, exchange_type: str, sandboxed: bool, tickers: dict):
         _TICKER_CACHE.set_all_tickers(exchange_name, exchange_type, sandboxed, tickers, replace_all=False)
+
+    @staticmethod
+    def reset_tickers_cache():
+        _TICKER_CACHE.reset_all_tickers_cache()

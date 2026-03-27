@@ -1,5 +1,6 @@
 import decimal
 import logging
+import typing
 
 import mock
 import pytest
@@ -11,9 +12,11 @@ import octobot_copy.constants as copy_constants
 import octobot_copy.entities as copy_entities
 import octobot_trading.constants as trading_constants
 import octobot_trading.enums as trading_enums
+import octobot_trading.exchanges.util.exchange_data as exchange_data
 import octobot_flow
 import octobot_flow.entities
 import octobot_flow.enums
+import octobot_flow.repositories.exchange
 import octobot_trading.util.test_tools.exchanges_test_tools as exchanges_test_tools
 
 import tests.functionnal_tests as functionnal_tests
@@ -71,6 +74,53 @@ def _grid_reference_storage_order(order_id: str, side: str, price: float, amount
             trading_enums.ExchangeConstantsOrderColumns.SELF_MANAGED.value: False,
         }
     }
+
+
+def fetch_ohlcv_side_effect_for_close_price(
+    get_close_price: typing.Callable[[], typing.Union[int, float]],
+):
+    """
+    Async side effect for exchanges_test_tools.fetch_ohlcv: every candle uses get_close_price()
+    for open, high, low, and close (and optionally close-only rows).
+    """
+    async def patched_fetch_ohlcv(
+        _exchange_manager,
+        symbol: str,
+        time_frame: str,
+        history_size=1,
+        _start_time=0,
+        _end_time=0,
+        close_price_only=False,
+        _include_latest_candle=True,
+    ):
+        close_price = float(get_close_price())
+        n = max(int(history_size or 1), 1)
+        times = [float(i) for i in range(n)]
+        closes = [close_price] * n
+        if close_price_only:
+            return exchange_data.MarketDetails(
+                symbol=symbol,
+                time_frame=time_frame,
+                close=closes,
+                open=[],
+                high=[],
+                low=[],
+                volume=[],
+                time=times,
+            )
+        ohlc = [close_price] * n
+        return exchange_data.MarketDetails(
+            symbol=symbol,
+            time_frame=time_frame,
+            close=closes,
+            open=ohlc,
+            high=ohlc,
+            low=ohlc,
+            volume=[0.0] * n,
+            time=times,
+        )
+
+    return patched_fetch_ohlcv
 
 
 @pytest.fixture
@@ -291,6 +341,159 @@ async def test_simulator_grid_init_from_empty_state(init_action: dict, run_mode:
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("run_mode", [
+    octobot_flow.enums.AutomationRunMode.UPDATE_CLIENT_EXCHANGE_ACCOUNT_ONLY,
+    octobot_flow.enums.AutomationRunMode.UPDATE_REFERENCE_EXCHANGE_ACCOUNT_AND_COPY,
+])
+async def test_simulator_grid_init_and_fill_sell_order(init_action: dict, run_mode: octobot_flow.enums.AutomationRunMode):
+    """
+    Initialize a grid at a fixed BTC/USDC price, move the market above the first sell limit so it fills,
+    then run the automation again from the saved state: staggered/grid mode should place a mirror buy
+    at (first_sell_price - (spread - increment)).
+    """
+    orig_get_all = exchanges_test_tools.get_all_currencies_price_ticker
+    orig_get_one = exchanges_test_tools.get_price_ticker
+    close_col = trading_enums.ExchangeConstantsTickersColumns.CLOSE.value
+    btc_usdc = "BTC/USDC"
+    simulated_close = {"value": _FIXED_BTC_USDC_CLOSE}
+
+    async def patched_get_all_currencies_price_ticker(exchange_manager, **kwargs):
+        tickers = await orig_get_all(exchange_manager, **kwargs)
+        c = simulated_close["value"]
+        if btc_usdc in tickers:
+            tickers[btc_usdc] = {**tickers[btc_usdc], close_col: c}
+        else:
+            tickers[btc_usdc] = {close_col: c}
+        return tickers
+
+    async def patched_get_price_ticker(exchange_manager, symbol: str, **kwargs):
+        if symbol == btc_usdc:
+            return {close_col: simulated_close["value"]}
+        return await orig_get_one(exchange_manager, symbol, **kwargs)
+
+    patched_fetch_ohlcv = fetch_ohlcv_side_effect_for_close_price(lambda: simulated_close["value"])
+
+    with (
+        mock.patch.object(
+            exchanges_test_tools,
+            "get_all_currencies_price_ticker",
+            side_effect=patched_get_all_currencies_price_ticker,
+        ),
+        mock.patch.object(
+            exchanges_test_tools,
+            "get_price_ticker",
+            side_effect=patched_get_price_ticker,
+        ),
+        mock.patch.object(
+            exchanges_test_tools,
+            "fetch_ohlcv",
+            side_effect=patched_fetch_ohlcv,
+        ),
+    ):
+        all_actions = [
+            set_init_action_run_mode(init_action, run_mode),
+            grid_trading_mode_action(init_action),
+        ]
+        automation_state = automation_state_dict(resolved_actions(all_actions))
+
+        async with octobot_flow.AutomationJob(automation_state, [], {}) as automation_job:
+            await automation_job.run()
+        after_init_execution_dump = automation_job.dump()
+
+        async with octobot_flow.AutomationJob(after_init_execution_dump, [], {}) as automation_job:
+            await automation_job.run()
+        after_grid_execution_dump = automation_job.dump()
+
+        open_after_grid = [
+            order[trading_constants.STORAGE_ORIGIN_VALUE]
+            for order in after_grid_execution_dump["automation"]["client_exchange_account_elements"]["orders"][
+                "open_orders"
+            ]
+        ]
+        buy_after_grid = sorted(
+            [
+                o
+                for o in open_after_grid
+                if o[trading_enums.ExchangeConstantsOrderColumns.SIDE.value]
+                == trading_enums.TradeOrderSide.BUY.value
+            ],
+            key=lambda o: o[trading_enums.ExchangeConstantsOrderColumns.PRICE.value],
+        )
+        sell_after_grid = sorted(
+            [
+                o
+                for o in open_after_grid
+                if o[trading_enums.ExchangeConstantsOrderColumns.SIDE.value]
+                == trading_enums.TradeOrderSide.SELL.value
+            ],
+            key=lambda o: o[trading_enums.ExchangeConstantsOrderColumns.PRICE.value],
+        )
+        assert len(buy_after_grid) == len(sell_after_grid) == 2
+        lowest_buy_price = buy_after_grid[0][trading_enums.ExchangeConstantsOrderColumns.PRICE.value]
+        first_sell_price = sell_after_grid[0][trading_enums.ExchangeConstantsOrderColumns.PRICE.value]
+        second_sell_price = sell_after_grid[1][trading_enums.ExchangeConstantsOrderColumns.PRICE.value]
+        assert buy_after_grid[1][trading_enums.ExchangeConstantsOrderColumns.PRICE.value] == lowest_buy_price + increment
+        assert first_sell_price == lowest_buy_price + increment + spread
+        assert second_sell_price == lowest_buy_price + increment + spread + increment
+
+        # force ticker refresh
+        octobot_flow.repositories.exchange.TickersRepository.reset_tickers_cache()
+
+        # Between first and second sell so the lowest sell limit fills but price stays inside the grid upper bound.
+        simulated_close["value"] = first_sell_price + increment / 2
+
+        async with octobot_flow.AutomationJob(after_grid_execution_dump, [], {}) as automation_job:
+            await automation_job.run()
+            final_dump = automation_job.dump()
+            for action in automation_job.automation_state.automation.actions_dag.actions:
+                assert isinstance(action, octobot_flow.entities.AbstractActionDetails)
+                assert action.error_status == octobot_flow.enums.ActionErrorStatus.NO_ERROR.value
+
+    final_open = [
+        order[trading_constants.STORAGE_ORIGIN_VALUE]
+        for order in final_dump["automation"]["client_exchange_account_elements"]["orders"]["open_orders"]
+    ]
+    buy_orders = sorted(
+        [
+            o
+            for o in final_open
+            if o[trading_enums.ExchangeConstantsOrderColumns.SIDE.value] == trading_enums.TradeOrderSide.BUY.value
+        ],
+        key=lambda o: o[trading_enums.ExchangeConstantsOrderColumns.PRICE.value],
+    )
+    sell_orders = sorted(
+        [
+            o
+            for o in final_open
+            if o[trading_enums.ExchangeConstantsOrderColumns.SIDE.value] == trading_enums.TradeOrderSide.SELL.value
+        ],
+        key=lambda o: o[trading_enums.ExchangeConstantsOrderColumns.PRICE.value],
+    )
+    assert len(buy_orders) == 3
+    assert len(sell_orders) == 1
+
+    mirror_spread_minus_increment = spread - increment
+    expected_mirror_buy_price = first_sell_price - mirror_spread_minus_increment
+    expected_remaining_sell_price = second_sell_price
+
+    for o in buy_orders:
+        assert o[trading_enums.ExchangeConstantsOrderColumns.TYPE.value] == trading_enums.TradeOrderType.LIMIT.value
+        assert o[trading_enums.ExchangeConstantsOrderColumns.STATUS.value] == trading_enums.OrderStatus.OPEN.value
+        assert o[trading_enums.ExchangeConstantsOrderColumns.SYMBOL.value] == btc_usdc
+        # even mirrored order amount is close to the amount of initial orders
+        assert 0.0024 <= o[trading_enums.ExchangeConstantsOrderColumns.AMOUNT.value] <= 0.0026
+    assert buy_orders[0][trading_enums.ExchangeConstantsOrderColumns.PRICE.value] == lowest_buy_price
+    assert buy_orders[1][trading_enums.ExchangeConstantsOrderColumns.PRICE.value] == lowest_buy_price + increment
+    assert buy_orders[2][trading_enums.ExchangeConstantsOrderColumns.PRICE.value] == expected_mirror_buy_price
+    assert sell_orders[0][trading_enums.ExchangeConstantsOrderColumns.PRICE.value] == expected_remaining_sell_price
+
+    assert sell_orders[0][trading_enums.ExchangeConstantsOrderColumns.TYPE.value] == trading_enums.TradeOrderType.LIMIT.value
+    assert sell_orders[0][trading_enums.ExchangeConstantsOrderColumns.STATUS.value] == trading_enums.OrderStatus.OPEN.value
+    assert sell_orders[0][trading_enums.ExchangeConstantsOrderColumns.SYMBOL.value] == btc_usdc
+    assert 0.0024 <= sell_orders[0][trading_enums.ExchangeConstantsOrderColumns.AMOUNT.value] <= 0.0026
+
+
+@pytest.mark.asyncio
 async def test_simulator_copy_grid(init_action: dict, grid_reference_account: copy_entities.Account):
     """
     Copy a reference spot account shaped like a BTC/USDC grid (portfolio + 2/2 open limits)
@@ -314,6 +517,8 @@ async def test_simulator_copy_grid(init_action: dict, grid_reference_account: co
             return {close_col: _FIXED_BTC_USDC_CLOSE}
         return await orig_get_one(exchange_manager, symbol, **kwargs)
 
+    patched_fetch_ohlcv = fetch_ohlcv_side_effect_for_close_price(lambda: _FIXED_BTC_USDC_CLOSE)
+
     with (
         mock.patch.object(
             exchanges_test_tools,
@@ -324,6 +529,11 @@ async def test_simulator_copy_grid(init_action: dict, grid_reference_account: co
             exchanges_test_tools,
             "get_price_ticker",
             side_effect=patched_get_price_ticker,
+        ),
+        mock.patch.object(
+            exchanges_test_tools,
+            "fetch_ohlcv",
+            side_effect=patched_fetch_ohlcv,
         ),
     ):
         reference_market = init_action["config"]["exchange_account_details"]["portfolio"]["unit"]
@@ -392,7 +602,7 @@ async def test_simulator_copy_grid(init_action: dict, grid_reference_account: co
         assert list(sorted(after_initial_portfolio_content.keys())) == ["BTC", "USDC"]
         assert 450 < after_initial_portfolio_content["USDC"]["total"] < 550
         assert 100 < after_initial_portfolio_content["USDC"]["available"] < 150
-        assert 0.006 < after_initial_portfolio_content["BTC"]["total"] < 0.07
+        assert 0.0045 < after_initial_portfolio_content["BTC"]["total"] < 0.055
         assert after_initial_portfolio_content["BTC"]["available"] < 0.0015
         logging.getLogger("test_simulator_copy_grid").info(
             f"after_copy_portfolio_content: {after_initial_portfolio_content}"

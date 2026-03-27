@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import decimal
 import typing
 
 import octobot_commons.logging as logging
@@ -110,8 +111,12 @@ class ExchangeSymbolData:
     def handle_liquidations(self, liquidations):
         self.recent_trades_manager.add_new_liquidations(liquidations)
 
-    def handle_mark_price_update(self, mark_price, mark_price_source) -> bool:
+    def handle_mark_price_update(
+        self, mark_price: decimal.Decimal, mark_price_source: str, reset_mark_price_from_other_sources: bool = False
+    ) -> bool:
         trigger_init_event = not self.prices_manager.initialized()
+        if reset_mark_price_from_other_sources:
+            self.prices_manager.clear_mark_price_from_all_sources(mark_price_source)
         updated = self.prices_manager.set_mark_price(mark_price, mark_price_source)
         if updated:
             if trigger_init_event:

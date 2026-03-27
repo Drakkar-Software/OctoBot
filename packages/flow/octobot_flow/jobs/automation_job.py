@@ -71,7 +71,10 @@ class AutomationJob:
                         True
                     )
                 # fetch the dependencies of the automation environment
-                fetched_dependencies = await self._fetch_dependencies(maybe_community_repository, to_execute_actions)
+                as_reference_account = self.automation_state.automation.metadata.maintains_a_reference_exchange_account()
+                fetched_dependencies = await self._fetch_dependencies(
+                    as_reference_account, maybe_community_repository, to_execute_actions
+                )
                 # Align on the previous scheduled time when possible when running priority actions
                 # to keep sleep cycles consistency when a priority action is processed.
                 default_next_execution_scheduled_to = (
@@ -180,13 +183,15 @@ class AutomationJob:
 
     async def _fetch_dependencies(
         self,
+        as_reference_account: bool,
         maybe_community_repository: typing.Optional[octobot_flow.repositories.community.CommunityRepository],
-        to_execute_actions: list[octobot_flow.entities.AbstractActionDetails]
+        to_execute_actions: list[octobot_flow.entities.AbstractActionDetails],
     ) -> octobot_flow.entities.FetchedDependencies:
         self._logger.info("Fetching automation dependencies.")
         fetched_exchange_data = (
             await self._init_all_required_exchange_data(
-                self.automation_state.exchange_account_details, maybe_community_repository, to_execute_actions
+                self.automation_state.exchange_account_details, as_reference_account,
+                maybe_community_repository, to_execute_actions,
             )
             if self.automation_state.has_exchange() else None
         )
@@ -197,12 +202,13 @@ class AutomationJob:
     async def _init_all_required_exchange_data(
         self,
         exchange_account_details: octobot_flow.entities.ExchangeAccountDetails,
+        as_reference_account: bool,
         maybe_community_repository: typing.Optional[octobot_flow.repositories.community.CommunityRepository],
-        to_execute_actions: list[octobot_flow.entities.AbstractActionDetails]
+        to_execute_actions: list[octobot_flow.entities.AbstractActionDetails],
     ) -> octobot_flow.entities.FetchedExchangeData:
         t0 = time.time()
         exchange_summary = (
-            f"[{exchange_account_details.exchange_details.internal_name}]"
+            f"[{exchange_account_details.exchange_details.internal_name}] "
             f"account with id: {exchange_account_details.exchange_details.exchange_account_id}"
         )
         self._logger.info(f"Initializing all required data for {exchange_summary}.")
@@ -232,7 +238,7 @@ class AutomationJob:
                 f"Public data updated for {exchange_account_details.exchange_details.internal_name} in {round(time.time() - t0, 2)} seconds"
             )
             t1 = time.time()
-            await exchange_account_job.update_authenticated_data()
+            await exchange_account_job.update_authenticated_data(as_reference_account)
             self._logger.info(
                 f"Authenticated data updated for {exchange_account_details.exchange_details.internal_name} in {round(time.time() - t1, 2)} seconds"
             )
@@ -297,7 +303,9 @@ class AutomationJob:
                     )
                 ]
                 # fetch the copy client dependencies (open orders, positions, etc.)
-                copy_client_fetched_dependencies = await self._fetch_dependencies(maybe_community_repository, copy_actions)
+                copy_client_fetched_dependencies = await self._fetch_dependencies(
+                    False, maybe_community_repository, copy_actions
+                )
                 automation_runner_job.set_fetched_dependencies(copy_client_fetched_dependencies)
                 self._logger.info(f"Copying reference account to client account")
                 async with automation_runner_job.actions_context(
