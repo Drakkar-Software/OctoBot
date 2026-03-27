@@ -38,14 +38,30 @@ jobs:
         with:
           node-version: 22
 
-      - name: Build wheel
-        run: pants package :OctoBot
+      - name: Install Rust toolchain
+        if: hashFiles('packages/*/crates/*/Cargo.toml') != ''
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
 
-      - name: Upload wheel artifact
+      - name: Rust lint & tests
+        if: hashFiles('packages/*/crates/*/Cargo.toml') != ''
+        run: |
+          cargo clippy --workspace -- -D warnings
+          cargo test --workspace
+
+      - name: Install maturin
+        if: hashFiles('packages/*/crates/*/pyproject.toml') != ''
+        run: pip install maturin
+
+      - name: Build wheels
+        run: pants package :OctoBot $(pants list --filter-target-type=package_shell_command ::)
+
+      - name: Upload wheel artifacts
         uses: actions/upload-artifact@v7
         with:
           name: octobot-wheel
-          path: dist/octobot-*.whl
+          path: dist/*.whl
           if-no-files-found: error
 
   tests:
@@ -72,8 +88,20 @@ jobs:
           - packages/trading
           - packages/trading_backend
 
+    env:
+      USES_TENTACLES: ${{ matrix.package == 'octobot' || matrix.package == 'packages/node' || matrix.package == 'packages/flow' }}
+
     steps:
     - uses: actions/checkout@v6
+
+    - name: Detect package features
+      id: detect
+      run: |
+        if ls ${{ matrix.package }}/crates/*/Cargo.toml 1>/dev/null 2>&1; then
+          echo "has_rust=true" >> $GITHUB_OUTPUT
+        else
+          echo "has_rust=false" >> $GITHUB_OUTPUT
+        fi
 
     - name: Set up Python ${{ matrix.version }}
       uses: actions/setup-python@v6
@@ -90,20 +118,34 @@ jobs:
     - name: Install OctoBot
       run: |
         pip3 install -r dev_requirements.txt
-        pip3 install dist/octobot-*.whl
+        pip3 install dist/*.whl
 
     - name: Lint package
       run: |
         if [ -f "${{ matrix.package }}/standard.rc" ]; then
           pylint --rcfile=${{ matrix.package }}/standard.rc ${{ matrix.package }}/
-          if [ $? -ne 1 ]; then exit 0; fi
+          rc=$?
         else
           pylint --rcfile=standard.rc ${{ matrix.package }}/
-          if [ $? -ne 1 ]; then exit 0; fi
+          rc=$?
         fi
+        if [ $rc -eq 1 ]; then exit 1; fi
+
+    - name: Install Rust toolchain
+      if: steps.detect.outputs.has_rust == 'true'
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        components: clippy
+
+    - name: Lint Rust crates
+      if: steps.detect.outputs.has_rust == 'true'
+      run: |
+        for crate in ${{ matrix.package }}/crates/*/; do
+          cargo clippy --manifest-path "$crate/Cargo.toml" -- -D warnings
+        done
 
     - name: Install tentacles
-      if:  matrix.package == 'octobot' || matrix.package == 'packages/node' || matrix.package == 'packages/flow'
+      if: env.USES_TENTACLES == 'true'
       run: |
         mkdir -p output
         OctoBot tentacles -d packages/tentacles -p any_platform.zip
@@ -129,6 +171,12 @@ jobs:
         fi
       env:
         DISABLE_SENTRY: True
+
+    - name: Run Rust backend tests
+      if: steps.detect.outputs.has_rust == 'true'
+      run: |
+        cd ${{ matrix.package }}
+        pytest tests --backend=rust -v
 
   docker:
     name: Build & Push Docker images
