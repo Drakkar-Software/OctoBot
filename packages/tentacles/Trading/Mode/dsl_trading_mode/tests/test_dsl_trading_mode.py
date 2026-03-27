@@ -152,7 +152,7 @@ class TestDSLTradingMode:
             "",
             {},
             other_schema_values={"minLength": 0},
-            title="DSL script: The DSL script to use for the trading mode."
+            title="DSL script: The DSL script to use for the trading mode. Example: limit('buy', 'BTC/USDT', 0.01, price='-1%')"
         )
         mode.on_new_dsl_script.assert_not_called()
 

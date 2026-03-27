@@ -1,4 +1,5 @@
 {
     "default_config": [],
-    "required_strategies": []
+    "required_strategies": [],
+    "dsl_script": ""
 }

@@ -75,7 +75,7 @@ class DSLTradingMode(trading_modes.AbstractTradingMode):
             self.UI.user_input(
                 self.DSL_SCRIPT, commons_enums.UserInputTypes.TEXT, default_config[self.DSL_SCRIPT],
                 inputs, other_schema_values={"minLength": 0},
-                title="DSL script: The DSL script to use for the trading mode."
+                title="DSL script: The DSL script to use for the trading mode. Example: limit('buy', 'BTC/USDT', 0.01, price='-1%')"
             )
         )
         self.set_dsl_script(new_script, raise_on_error=False, dependencies=None)
