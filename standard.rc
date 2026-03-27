@@ -3,7 +3,7 @@
 # A comma-separated list of package or module names from where C extensions may
 # be loaded. Extensions are loading into the active Python interpreter and may
 # run arbitrary code.
-extension-pkg-whitelist=
+extension-pkg-whitelist=octobot_poc_rs
 
 # Specify a score threshold to be exceeded before program exits with error.
 fail-under=10.0

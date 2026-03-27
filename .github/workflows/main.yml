@@ -38,14 +38,27 @@ jobs:
         with:
           node-version: 22
 
-      - name: Build wheel
-        run: pants package :OctoBot
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
 
-      - name: Upload wheel artifact
+      - name: Rust lint & tests
+        run: |
+          cargo clippy --workspace -- -D warnings
+          cargo test --workspace
+
+      - name: Install maturin
+        run: pip install maturin
+
+      - name: Build wheels
+        run: pants package :OctoBot packages/poc/crates/poc_py:octobot-poc-rs
+
+      - name: Upload wheel artifacts
         uses: actions/upload-artifact@v7
         with:
           name: octobot-wheel
-          path: dist/octobot-*.whl
+          path: dist/*.whl
           if-no-files-found: error
 
   tests:
@@ -71,6 +84,11 @@ jobs:
           - packages/tentacles_manager
           - packages/trading
           - packages/trading_backend
+          - packages/poc
+
+    env:
+      HAS_RUST: ${{ matrix.package == 'packages/poc' }}
+      USES_TENTACLES: ${{ matrix.package == 'octobot' || matrix.package == 'packages/node' || matrix.package == 'packages/flow' }}
 
     steps:
     - uses: actions/checkout@v6
@@ -90,7 +108,7 @@ jobs:
     - name: Install OctoBot
       run: |
         pip3 install -r dev_requirements.txt
-        pip3 install dist/octobot-*.whl
+        pip3 install dist/*.whl
 
     - name: Lint package
       run: |
@@ -102,8 +120,21 @@ jobs:
           if [ $? -ne 1 ]; then exit 0; fi
         fi
 
+    - name: Install Rust toolchain
+      if: env.HAS_RUST == 'true'
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        components: clippy
+
+    - name: Lint Rust crates
+      if: env.HAS_RUST == 'true'
+      run: |
+        for crate in ${{ matrix.package }}/crates/*/; do
+          cargo clippy --manifest-path "$crate/Cargo.toml" -- -D warnings
+        done
+
     - name: Install tentacles
-      if:  matrix.package == 'octobot' || matrix.package == 'packages/node' || matrix.package == 'packages/flow'
+      if: env.USES_TENTACLES == 'true'
       run: |
         mkdir -p output
         OctoBot tentacles -d packages/tentacles -p any_platform.zip
@@ -129,6 +160,12 @@ jobs:
         fi
       env:
         DISABLE_SENTRY: True
+
+    - name: Run Rust backend tests
+      if: env.HAS_RUST == 'true'
+      run: |
+        cd ${{ matrix.package }}
+        pytest tests --backend=rust -v
 
   docker:
     name: Build & Push Docker images

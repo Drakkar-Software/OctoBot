@@ -1,0 +1,16 @@
+[package]
+name = "poc_py"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "poc_py"
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = ["pymodule"]
+pymodule = []
+
+[dependencies]
+poc_core = { path = "../poc_core" }
+pyo3 = { version = "0.28", features = ["extension-module"] }
