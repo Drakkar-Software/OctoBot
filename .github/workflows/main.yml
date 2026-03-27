@@ -137,6 +137,8 @@ jobs:
       matrix:
         crate:
           - async_channel
+          - octobot_evaluators
+          - octobot_evaluators_py
           - pyo3_bridge
     steps:
 
@@ -162,6 +164,15 @@ jobs:
             py-binding-crate: async_channel_py
             py-wheel-name: async_channel_rs
             py-test-package: packages/async_channel
+          - test-type: unit
+            crate: octobot_evaluators
+          - test-type: python
+            crate: octobot_evaluators
+            py-binding-crate: octobot_evaluators_py
+            py-wheel-name: octobot_evaluators_rs
+            py-test-package: packages/evaluators
+            extra-py-binding-crate: async_channel_py
+            extra-py-wheel-name: async_channel_rs
 
     steps:
 
@@ -187,6 +198,13 @@ jobs:
         pip3 install -r dev_requirements.txt
         pip3 install dist/octobot-*.whl
         pip3 install maturin
+
+    - name: Build and install extra Rust dependency
+      if: matrix.test-type == 'python' && matrix.extra-py-binding-crate
+      run: |
+        cd crates/${{ matrix.extra-py-binding-crate }}
+        maturin build --release
+        pip3 install ../../target/wheels/${{ matrix.extra-py-wheel-name }}-*.whl
 
     - name: Build and install Rust extension
       if: matrix.test-type == 'python'

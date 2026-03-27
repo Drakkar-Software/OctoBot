@@ -315,6 +315,24 @@ impl PyChannel {
 // are in the main #[pymethods] block above (bridged because Python
 // calls them via self._ and subclasses may override them)
 
+// Public Rust-accessible methods for cross-crate use.
+// The #[pymethods] versions are always private to this crate.
+impl PyChannel {
+    pub fn create(py: Python<'_>) -> PyResult<Self> {
+        Self::new(py, None)
+    }
+
+    /// Public wrapper for add_new_consumer, callable from other crates.
+    pub fn add_consumer(slf: &Bound<'_, Self>, consumer: &Bound<'_, PyAny>, filters: &Bound<'_, PyDict>) -> PyResult<()> {
+        Self::add_new_consumer(slf, consumer, filters)
+    }
+
+    /// Public wrapper for _filter_consumers, callable from other crates.
+    pub fn filter_consumers(slf: &Bound<'_, Self>, expected: &Bound<'_, PyDict>) -> PyResult<Vec<Py<PyAny>>> {
+        Self::_filter_consumers(slf, expected)
+    }
+}
+
 // ── Module-level functions ─────────────────────────────────────────────────
 
 #[pyfunction] #[pyo3(signature = (chan, name=None))]

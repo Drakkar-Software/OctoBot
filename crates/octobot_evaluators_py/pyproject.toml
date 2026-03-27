@@ -1,0 +1,14 @@
+[build-system]
+requires = ["maturin>=1.7,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "octobot-evaluators-rs"
+version = "1.10.1"
+requires-python = ">=3.12"
+
+[tool.maturin]
+features = ["pyo3/extension-module"]
+bindings = "pyo3"
+module-name = "octobot_evaluators_rs._core"
+python-source = "python"

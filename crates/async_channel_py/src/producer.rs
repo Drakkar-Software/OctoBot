@@ -263,6 +263,13 @@ impl PyProducer {
     }
 }
 
+// Public Rust-accessible constructor for cross-crate use.
+impl PyProducer {
+    pub fn create(py: Python<'_>, channel: Py<PyAny>) -> PyResult<Self> {
+        Self::new(py, channel)
+    }
+}
+
 pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyProducer>()?;
     Ok(())

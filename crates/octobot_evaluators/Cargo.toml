@@ -1,0 +1,16 @@
+[package]
+name = "octobot_evaluators"
+version = "1.10.1"
+edition = "2021"
+
+[lib]
+name = "octobot_evaluators"
+
+[dependencies]
+async_channel = { path = "../async_channel" }
+tokio = { version = "1", features = ["sync", "rt", "macros", "time"] }
+log = "0.4"
+uuid = { version = "1", features = ["v4"] }
+
+[dev-dependencies]
+tokio = { version = "1", features = ["full"] }

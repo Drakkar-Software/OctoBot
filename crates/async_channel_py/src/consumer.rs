@@ -257,6 +257,28 @@ impl PySupervisedConsumer {
     }
 }
 
+// Public Rust-accessible constructors for cross-crate use.
+// The #[pymethods] `fn new` is always private to this crate.
+impl PyConsumer {
+    pub fn create(py: Python<'_>, callback: Option<Py<PyAny>>, size: Option<i64>, priority_level: Option<i64>) -> PyResult<Self> {
+        Self::new(py, callback, size, priority_level)
+    }
+}
+
+impl PySupervisedConsumer {
+    pub fn create(py: Python<'_>, callback: Option<Py<PyAny>>, size: Option<i64>, priority_level: Option<i64>) -> PyResult<(Self, PyConsumer)> {
+        Self::new(py, callback, size, priority_level)
+    }
+
+    /// Create just the PySupervisedConsumer struct (without the base PyConsumer).
+    /// Used by cross-crate subclasses with `PyClassInitializer::add_subclass`.
+    pub fn create_part(py: Python<'_>) -> PyResult<Self> {
+        let idle = py.import("asyncio")?.call_method0("Event")?;
+        idle.call_method0("set")?;
+        Ok(Self { idle: idle.unbind(), _supervised: SupervisedState::new() })
+    }
+}
+
 pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyConsumer>()?; m.add_class::<PyInternalConsumer>()?; m.add_class::<PySupervisedConsumer>()?; Ok(())
 }
