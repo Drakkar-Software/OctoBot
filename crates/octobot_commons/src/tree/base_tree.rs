@@ -1,6 +1,16 @@
 use std::collections::HashMap;
+use std::fmt;
 
-use crate::errors::NodeExistsError;
+#[derive(Debug)]
+pub struct NodeExistsError;
+
+impl fmt::Display for NodeExistsError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("NodeExistsError: node does not exist at the given path")
+    }
+}
+
+impl std::error::Error for NodeExistsError {}
 
 /// Node element of a BaseTree. Generic over value type `T`.
 ///

@@ -137,6 +137,9 @@ jobs:
       matrix:
         crate:
           - async_channel
+          - async_channel_py
+          - octobot_commons
+          - octobot_commons_py
           - octobot_evaluators
           - octobot_evaluators_py
           - pyo3_bridge
@@ -164,6 +167,13 @@ jobs:
             py-binding-crate: async_channel_py
             py-wheel-name: async_channel_rs
             py-test-package: packages/async_channel
+          - test-type: unit
+            crate: octobot_commons
+          - test-type: python
+            crate: octobot_commons
+            py-binding-crate: octobot_commons_py
+            py-wheel-name: octobot_commons_rs
+            py-test-package: packages/commons
           - test-type: unit
             crate: octobot_evaluators
           - test-type: python

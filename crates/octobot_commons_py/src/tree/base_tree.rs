@@ -3,14 +3,9 @@ use pyo3::types::{PyDict, PyList};
 
 use crate::tree::base_tree_node::PyBaseTreeNode;
 
-// Python exception mirroring the Rust `NodeExistsError`.
-pyo3::create_exception!(octobot_evaluators_rs, NodeExistsError, pyo3::exceptions::PyException);
+pyo3::create_exception!(octobot_commons_rs, NodeExistsError, pyo3::exceptions::PyException);
 
-/// Python wrapper for the evaluator tree.
-///
-/// All tree operations navigate through Python `dict` children so that
-/// nodes are real `PyBaseTreeNode` instances accessible from Python.
-#[pyclass(name = "BaseTree", dict, subclass, module = "octobot_evaluators_rs")]
+#[pyclass(name = "BaseTree", dict, subclass, module = "octobot_commons_rs")]
 pub struct PyBaseTree {
     #[pyo3(get)]
     pub root: Py<PyBaseTreeNode>,
@@ -24,12 +19,12 @@ impl PyBaseTree {
         Ok(Self { root })
     }
 
-    /// Set attributes on an existing node.
     #[staticmethod]
+    #[pyo3(signature = (value, node_type, node, timestamp=0.0))]
     fn set_node(
-        node: &Bound<'_, PyBaseTreeNode>,
         value: Option<Py<PyAny>>,
         node_type: Option<Py<PyAny>>,
+        node: &Bound<'_, PyBaseTreeNode>,
         timestamp: f64,
     ) -> PyResult<()> {
         let mut n = node.borrow_mut();
@@ -43,7 +38,6 @@ impl PyBaseTree {
         Ok(())
     }
 
-    /// Set node at path, creating intermediate nodes as needed.
     #[allow(clippy::too_many_arguments)]
     #[pyo3(signature = (value, node_type, path, timestamp=0.0, description=None, metadata=None))]
     fn set_node_at_path(
@@ -76,7 +70,6 @@ impl PyBaseTree {
         Ok(())
     }
 
-    /// Get node at path. Raises `NodeExistsError` if any segment is missing.
     #[pyo3(signature = (path, starting_node=None))]
     fn get_node(
         &self,
@@ -89,18 +82,22 @@ impl PyBaseTree {
         self.traverse(py, &keys, start)
     }
 
-    /// Get node at path, creating intermediate nodes as needed.
+    #[pyo3(signature = (path, starting_node=None, **_kwargs))]
     fn get_or_create_node(
         &self,
         py: Python<'_>,
         path: &Bound<'_, PyList>,
+        starting_node: Option<Py<PyBaseTreeNode>>,
+        _kwargs: Option<&Bound<'_, PyDict>>,
     ) -> PyResult<Py<PyBaseTreeNode>> {
         let keys = list_to_strings(path)?;
-        self.get_or_create_node_inner(py, &keys)
+        if let Some(start) = starting_node {
+            self.get_or_create_node_from(py, &keys, start)
+        } else {
+            self.get_or_create_node_inner(py, &keys)
+        }
     }
 
-    /// Delete node at path. Returns the removed node.
-    /// Raises `NodeExistsError` if the path does not exist.
     #[pyo3(signature = (path, starting_node=None))]
     fn delete_node(
         &self,
@@ -114,16 +111,14 @@ impl PyBaseTree {
         }
         let parent_keys = &keys[..keys.len() - 1];
         let child_key = &keys[keys.len() - 1];
-
         let start = starting_node.unwrap_or_else(|| self.root.clone_ref(py));
         let parent = self.traverse(py, parent_keys, start)?;
-
         let children = parent.bind(py).borrow().children.clone_ref(py);
         let children_bound = children.bind(py);
         match children_bound.get_item(child_key)? {
             Some(child) => {
                 children_bound.del_item(child_key)?;
-                Ok(child.extract::<Py<PyBaseTreeNode>>()?)
+                Ok(child.cast::<PyBaseTreeNode>()?.clone().unbind())
             }
             None => Err(NodeExistsError::new_err(
                 "NodeExistsError: node does not exist at the given path",
@@ -131,7 +126,6 @@ impl PyBaseTree {
         }
     }
 
-    /// Return the children keys of the node at path.
     fn get_children_keys(
         &self,
         py: Python<'_>,
@@ -150,18 +144,17 @@ impl PyBaseTree {
         Ok(result)
     }
 
-    /// Depth-first traversal returning `(node, path)` tuples.
-    ///
-    /// When `select_leaves_only` is `True`, only leaf nodes (no children) are
-    /// included.  Otherwise every visited node is included.
-    #[pyo3(signature = (path, select_leaves_only=false))]
+    #[pyo3(signature = (path=None, select_leaves_only=true))]
     fn get_nested_children_with_path(
         &self,
         py: Python<'_>,
-        path: &Bound<'_, PyList>,
+        path: Option<&Bound<'_, PyList>>,
         select_leaves_only: bool,
     ) -> PyResult<Py<PyList>> {
-        let keys = list_to_strings(path)?;
+        let keys = match path {
+            Some(p) => list_to_strings(p)?,
+            None => Vec::new(),
+        };
         let start = self.root.clone_ref(py);
         let node = self.traverse(py, &keys, start)?;
         let results = PyList::empty(py);
@@ -169,7 +162,6 @@ impl PyBaseTree {
         Ok(results.unbind())
     }
 
-    /// Reset the tree to an empty root.
     fn clear(&self, py: Python<'_>) -> PyResult<()> {
         let mut root = self.root.bind(py).borrow_mut();
         root.node_value = py.None();
@@ -182,11 +174,7 @@ impl PyBaseTree {
     }
 }
 
-// ---------------------------------------------------------------------------
-// Private helpers (not exposed to Python)
-// ---------------------------------------------------------------------------
 impl PyBaseTree {
-    /// Walk the children dicts along `keys`, returning the final node.
     fn traverse(
         &self,
         py: Python<'_>,
@@ -198,7 +186,7 @@ impl PyBaseTree {
             let children = current.bind(py).borrow().children.clone_ref(py);
             match children.bind(py).get_item(key)? {
                 Some(child) => {
-                    current = child.extract::<Py<PyBaseTreeNode>>()?;
+                    current = child.cast::<PyBaseTreeNode>()?.clone().unbind();
                 }
                 None => {
                     return Err(NodeExistsError::new_err(
@@ -210,7 +198,6 @@ impl PyBaseTree {
         Ok(current)
     }
 
-    /// Walk children dicts along `keys`, creating missing nodes on the fly.
     fn get_or_create_node_inner(
         &self,
         py: Python<'_>,
@@ -222,7 +209,7 @@ impl PyBaseTree {
             let children_bound = children.bind(py);
             match children_bound.get_item(key)? {
                 Some(child) => {
-                    current = child.extract()?;
+                    current = child.cast::<PyBaseTreeNode>()?.clone().unbind();
                 }
                 None => {
                     let new_node = Py::new(py, PyBaseTreeNode::new(py, None, None))?;
@@ -234,7 +221,30 @@ impl PyBaseTree {
         Ok(current)
     }
 
-    /// Recursive depth-first collector for `get_nested_children_with_path`.
+    fn get_or_create_node_from(
+        &self,
+        py: Python<'_>,
+        keys: &[String],
+        start: Py<PyBaseTreeNode>,
+    ) -> PyResult<Py<PyBaseTreeNode>> {
+        let mut current = start;
+        for key in keys {
+            let children = current.bind(py).borrow().children.clone_ref(py);
+            let children_bound = children.bind(py);
+            match children_bound.get_item(key)? {
+                Some(child) => {
+                    current = child.cast::<PyBaseTreeNode>()?.clone().unbind();
+                }
+                None => {
+                    let new_node = Py::new(py, PyBaseTreeNode::new(py, None, None))?;
+                    children_bound.set_item(key, &new_node)?;
+                    current = new_node;
+                }
+            }
+        }
+        Ok(current)
+    }
+
     fn collect_nested(
         &self,
         py: Python<'_>,
@@ -259,7 +269,7 @@ impl PyBaseTree {
 
         for key in child_keys {
             let child_obj = children_bound.get_item(&key)?.unwrap();
-            let child: Py<PyBaseTreeNode> = child_obj.extract()?;
+            let child: Py<PyBaseTreeNode> = child_obj.cast::<PyBaseTreeNode>()?.clone().unbind();
             let mut child_path = current_path.to_vec();
             child_path.push(key);
             self.collect_nested(py, &child, &child_path, select_leaves_only, results)?;
@@ -268,14 +278,9 @@ impl PyBaseTree {
     }
 }
 
-/// Convert a Python list of path elements to `Vec<String>`.
-/// Each element is converted via Python `str()`.
 fn list_to_strings(list: &Bound<'_, PyList>) -> PyResult<Vec<String>> {
     list.iter()
-        .map(|item| {
-            item.str()
-                .and_then(|s| s.extract::<String>())
-        })
+        .map(|item| item.str().and_then(|s| s.extract::<String>()))
         .collect()
 }
 

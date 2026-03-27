@@ -1,8 +1,17 @@
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList};
 
-use crate::tree::base_tree::PyBaseTree;
-use crate::tree::base_tree_node::PyBaseTreeNode;
+use octobot_commons_py::tree::base_tree::PyBaseTree;
+use octobot_commons_py::tree::base_tree_node::PyBaseTreeNode;
+
+/// Convert a list of arbitrary Python objects to a PyList of their str() representations.
+fn to_py_path_list<'py>(py: Python<'py>, path: Vec<Py<PyAny>>) -> PyResult<Bound<'py, PyList>> {
+    let items: Vec<Bound<'py, PyAny>> = path
+        .iter()
+        .map(|p| p.bind(py).str().map(|s| s.into_any()))
+        .collect::<PyResult<_>>()?;
+    PyList::new(py, &items)
+}
 
 #[pyclass(name = "Matrix", dict, subclass, module = "octobot_evaluators_rs")]
 pub struct PyMatrix {
@@ -17,10 +26,7 @@ impl PyMatrix {
     #[new]
     fn new(py: Python<'_>) -> PyResult<Self> {
         let id = uuid::Uuid::new_v4().to_string();
-        // Call PyBaseTree via Python to avoid Rust privacy issues with #[pymethods]
-        let tree_cls = py
-            .import("octobot_evaluators_rs._core")?
-            .getattr("BaseTree")?;
+        let tree_cls = py.get_type::<PyBaseTree>();
         let tree: Py<PyBaseTree> = tree_cls.call0()?.extract()?;
         Ok(Self {
             matrix_id: id,
@@ -35,13 +41,13 @@ impl PyMatrix {
         py: Python<'_>,
         value: Py<PyAny>,
         value_type: Py<PyAny>,
-        value_path: Vec<String>,
+        value_path: Vec<Py<PyAny>>,
         timestamp: f64,
         description: Option<Py<PyAny>>,
         metadata: Option<&Bound<'_, PyDict>>,
     ) -> PyResult<()> {
         let tree = self.matrix.bind(py);
-        let path_list = PyList::new(py, &value_path)?;
+        let path_list = to_py_path_list(py, value_path)?;
         let kwargs = PyDict::new(py);
         kwargs.set_item("timestamp", timestamp)?;
         if let Some(d) = description {
@@ -62,11 +68,11 @@ impl PyMatrix {
     fn get_node_children_at_path(
         &self,
         py: Python<'_>,
-        node_path: Vec<String>,
+        node_path: Vec<Py<PyAny>>,
         starting_node: Option<Py<PyBaseTreeNode>>,
     ) -> PyResult<Vec<Py<PyAny>>> {
         let tree = self.matrix.bind(py);
-        let path_list = PyList::new(py, &node_path)?;
+        let path_list = to_py_path_list(py, node_path)?;
         let kwargs = PyDict::new(py);
         if let Some(sn) = starting_node {
             kwargs.set_item("starting_node", sn)?;
@@ -91,11 +97,11 @@ impl PyMatrix {
     fn get_node_children_by_names_at_path(
         &self,
         py: Python<'_>,
-        node_path: Vec<String>,
+        node_path: Vec<Py<PyAny>>,
         starting_node: Option<Py<PyBaseTreeNode>>,
     ) -> PyResult<Py<PyDict>> {
         let tree = self.matrix.bind(py);
-        let path_list = PyList::new(py, &node_path)?;
+        let path_list = to_py_path_list(py, node_path)?;
         let kwargs = PyDict::new(py);
         if let Some(sn) = starting_node {
             kwargs.set_item("starting_node", sn)?;
@@ -119,11 +125,11 @@ impl PyMatrix {
     fn get_node_at_path(
         &self,
         py: Python<'_>,
-        node_path: Vec<String>,
+        node_path: Vec<Py<PyAny>>,
         starting_node: Option<Py<PyBaseTreeNode>>,
     ) -> PyResult<Option<Py<PyBaseTreeNode>>> {
         let tree = self.matrix.bind(py);
-        let path_list = PyList::new(py, &node_path)?;
+        let path_list = to_py_path_list(py, node_path)?;
         let kwargs = PyDict::new(py);
         if let Some(sn) = starting_node {
             kwargs.set_item("starting_node", sn)?;
@@ -141,11 +147,11 @@ impl PyMatrix {
     fn delete_node_at_path(
         &self,
         py: Python<'_>,
-        node_path: Vec<String>,
+        node_path: Vec<Py<PyAny>>,
         starting_node: Option<Py<PyBaseTreeNode>>,
     ) -> PyResult<Option<Py<PyBaseTreeNode>>> {
         let tree = self.matrix.bind(py);
-        let path_list = PyList::new(py, &node_path)?;
+        let path_list = to_py_path_list(py, node_path)?;
         let kwargs = PyDict::new(py);
         if let Some(sn) = starting_node {
             kwargs.set_item("starting_node", sn)?;

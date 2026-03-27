@@ -1,12 +1,7 @@
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
 
-/// Python wrapper for a tree node.
-///
-/// Stores all fields as Python objects so that children (which are also
-/// `PyBaseTreeNode` instances) can be shared freely with Python code.
-/// The `dict` + `subclass` flags are required for `mock.patch` compatibility.
-#[pyclass(name = "BaseTreeNode", dict, subclass, module = "octobot_evaluators_rs")]
+#[pyclass(name = "BaseTreeNode", dict, subclass, module = "octobot_commons_rs")]
 pub struct PyBaseTreeNode {
     #[pyo3(get, set)]
     pub node_value: Py<PyAny>,

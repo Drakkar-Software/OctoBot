@@ -1,15 +1,7 @@
 use std::fmt;
 
-#[derive(Debug)]
-pub struct NodeExistsError;
-
-impl fmt::Display for NodeExistsError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str("NodeExistsError: node does not exist at the given path")
-    }
-}
-
-impl std::error::Error for NodeExistsError {}
+// NodeExistsError is now in octobot_commons::tree::base_tree
+pub use octobot_commons::tree::base_tree::NodeExistsError;
 
 #[derive(Debug)]
 pub struct UnsetTentacleEvaluation {

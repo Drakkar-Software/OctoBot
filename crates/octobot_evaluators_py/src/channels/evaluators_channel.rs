@@ -115,19 +115,24 @@ impl PyEvaluatorsChannelProducer {
                     .collect::<PyResult<Vec<_>>>()
             })?;
 
+            // Build message dict once, reuse for all consumers
+            let msg: Py<PyDict> = Python::attach(|py| -> PyResult<Py<PyDict>> {
+                let msg = PyDict::new(py);
+                msg.set_item("matrix_id", &matrix_id)?;
+                msg.set_item("evaluator_name", &evaluator_name)?;
+                msg.set_item("evaluator_type", &evaluator_type)?;
+                msg.set_item("exchange_name", &exchange_name)?;
+                msg.set_item("cryptocurrency", &cryptocurrency)?;
+                msg.set_item("symbol", &symbol)?;
+                msg.set_item("time_frame", &time_frame)?;
+                msg.set_item("data", data.bind(py))?;
+                Ok(msg.unbind())
+            })?;
+
             for consumer in consumers {
                 let fut = Python::attach(|py| -> PyResult<_> {
-                    let msg = PyDict::new(py);
-                    msg.set_item("matrix_id", &matrix_id)?;
-                    msg.set_item("evaluator_name", &evaluator_name)?;
-                    msg.set_item("evaluator_type", &evaluator_type)?;
-                    msg.set_item("exchange_name", &exchange_name)?;
-                    msg.set_item("cryptocurrency", &cryptocurrency)?;
-                    msg.set_item("symbol", &symbol)?;
-                    msg.set_item("time_frame", &time_frame)?;
-                    msg.set_item("data", data.bind(py))?;
                     let q = consumer.bind(py).getattr("queue")?;
-                    let coro = q.call_method1("put", (msg,))?;
+                    let coro = q.call_method1("put", (msg.bind(py),))?;
                     pyo3_async_runtimes::tokio::into_future(coro)
                 })?;
                 fut.await?;

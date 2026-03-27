@@ -8,6 +8,7 @@ name = "octobot_evaluators"
 
 [dependencies]
 async_channel = { path = "../async_channel" }
+octobot_commons = { path = "../octobot_commons" }
 tokio = { version = "1", features = ["sync", "rt", "macros", "time"] }
 log = "0.4"
 uuid = { version = "1", features = ["v4"] }

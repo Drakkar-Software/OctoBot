@@ -5,7 +5,11 @@ edition = "2021"
 
 [lib]
 name = "async_channel_py"
-crate-type = ["cdylib", "rlib"]
+crate-type = ["rlib"]
+
+[features]
+default = ["pymodule"]
+pymodule = []
 
 [dependencies]
 async_channel = { path = "../async_channel" }

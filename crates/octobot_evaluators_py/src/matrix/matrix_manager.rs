@@ -1,10 +1,10 @@
 use pyo3::prelude::*;
-use pyo3::types::PyDict;
+use pyo3::types::{PyDict, PyList};
 
 use octobot_evaluators::constants::EVALUATION_ALLOWED_TIME_DELTA;
 use octobot_evaluators::matrix::matrix_manager as rust_mm;
 
-use crate::tree::base_tree_node::PyBaseTreeNode;
+use octobot_commons_py::tree::base_tree_node::PyBaseTreeNode;
 
 // ---------------------------------------------------------------------------
 // Singleton access helpers
@@ -114,13 +114,13 @@ fn get_tentacle_eval_time(
     py: Python<'_>,
     matrix_id: &str,
     tentacle_path: Vec<String>,
-) -> PyResult<Py<PyAny>> {
+) -> PyResult<Option<f64>> {
     match get_tentacle_node(py, matrix_id, tentacle_path)? {
         Some(node) => {
             let t = node.bind(py).borrow().node_value_time;
-            Ok(t.into_pyobject(py)?.into_any().unbind())
+            Ok(Some(t))
         }
-        None => Ok(py.None()),
+        None => Ok(None),
     }
 }
 
@@ -219,28 +219,22 @@ fn get_node_children_by_names_at_path(
 fn get_tentacles_value_nodes(
     py: Python<'_>,
     matrix_id: &str,
-    tentacle_nodes: Vec<Vec<String>>,
+    tentacle_nodes: Vec<Py<PyAny>>,
     cryptocurrency: Option<&str>,
     symbol: Option<&str>,
     time_frame: Option<&str>,
 ) -> PyResult<Vec<Py<PyAny>>> {
-    let value_path = rust_mm::get_tentacle_value_path(cryptocurrency, symbol, time_frame);
+    let value_path: Vec<String> = rust_mm::get_tentacle_value_path(cryptocurrency, symbol, time_frame);
+    let path_list = PyList::new(py, &value_path)?;
     let matrix = get_matrix_from_singleton(py, matrix_id)?;
     let matrix_bound = matrix.bind(py);
-    let mut results = Vec::new();
+    let mut results = Vec::with_capacity(tentacle_nodes.len());
+    let kwargs = PyDict::new(py);
 
-    for tentacle_path in &tentacle_nodes {
-        // Navigate to the tentacle node first
-        let tentacle_result =
-            matrix_bound.call_method1("get_node_at_path", (tentacle_path.clone(),))?;
-        if tentacle_result.is_none() {
-            continue;
-        }
-        // Then resolve the value sub-path from that node
-        let kwargs = PyDict::new(py);
-        kwargs.set_item("starting_node", &tentacle_result)?;
+    for node in &tentacle_nodes {
+        kwargs.set_item("starting_node", node)?;
         let value_result =
-            matrix_bound.call_method("get_node_at_path", (value_path.clone(),), Some(&kwargs))?;
+            matrix_bound.call_method("get_node_at_path", (&path_list,), Some(&kwargs))?;
         if !value_result.is_none() {
             results.push(value_result.unbind());
         }
@@ -254,7 +248,7 @@ fn get_tentacles_value_nodes(
 
 #[allow(clippy::too_many_arguments)]
 #[pyfunction]
-#[pyo3(signature = (matrix_id, exchange_name=None, tentacle_type=None, cryptocurrency=None, symbol=None, time_frame=None, allow_missing=true))]
+#[pyo3(signature = (matrix_id, exchange_name=None, tentacle_type=None, cryptocurrency=None, symbol=None, time_frame=None, allow_missing=true, allowed_values=None))]
 fn get_evaluations_by_evaluator(
     py: Python<'_>,
     matrix_id: &str,
@@ -264,9 +258,9 @@ fn get_evaluations_by_evaluator(
     symbol: Option<&str>,
     time_frame: Option<&str>,
     allow_missing: bool,
+    allowed_values: Option<Py<PyAny>>,
 ) -> PyResult<Py<PyDict>> {
     let tentacle_path = rust_mm::get_tentacle_path(exchange_name, tentacle_type, None);
-    let value_path = rust_mm::get_tentacle_value_path(cryptocurrency, symbol, time_frame);
 
     let matrix = get_matrix_from_singleton(py, matrix_id)?;
     let matrix_bound = matrix.bind(py);
@@ -283,35 +277,44 @@ fn get_evaluations_by_evaluator(
     let evaluations = PyDict::new(py);
 
     for (evaluator_name, node) in evaluator_dict.iter() {
-        // Resolve value sub-path from evaluator node
-        let inner_kwargs = PyDict::new(py);
-        inner_kwargs.set_item("starting_node", &node)?;
-        let eval_result = matrix_bound
-            .call_method("get_node_at_path", (value_path.clone(),), Some(&inner_kwargs))?;
+        // Use get_tentacles_value_nodes with the node to resolve the value
+        let nodes_list = pyo3::types::PyList::new(py, [&node])?;
+        let value_nodes: Vec<Py<PyAny>> = get_tentacles_value_nodes(
+            py, matrix_id,
+            nodes_list.iter().map(|v| v.unbind()).collect(),
+            cryptocurrency, symbol, time_frame,
+        )?;
 
-        if eval_result.is_none() {
-            continue;
-        }
+        if value_nodes.len() > 1 {
+            // log warning -- more than one evaluation
+        } else if let Some(eval_node) = value_nodes.first() {
+            let en: Py<PyBaseTreeNode> = eval_node.bind(py).extract()?;
+            let en_bound = en.bind(py);
+            let en_ref = en_bound.borrow();
+            let eval_value = en_ref.node_value.clone_ref(py);
 
-        let en: Py<PyBaseTreeNode> = eval_result.extract()?;
-        let en_bound = en.bind(py);
-        let en_ref = en_bound.borrow();
-        let eval_value = en_ref.node_value.clone_ref(py);
-        let is_valid: bool = check_fn.call1((&eval_value,))?.extract()?;
+            // Check allowed_values first, then check_valid_eval_note
+            let in_allowed = if let Some(ref av) = allowed_values {
+                av.bind(py).call_method1("__contains__", (&eval_value,))
+                    .and_then(|r| r.extract::<bool>())
+                    .unwrap_or(false)
+            } else {
+                false
+            };
+            let is_valid: bool = in_allowed || check_fn.call1((&eval_value,))?.extract()?;
 
-        if is_valid {
-            let result = PyDict::new(py);
-            result.set_item("node_value", &eval_value)?;
-            result.set_item("node_value_time", en_ref.node_value_time)?;
-            evaluations.set_item(&evaluator_name, result)?;
-        } else if !allow_missing {
-            let tf_display = time_frame.unwrap_or("evaluation");
-            let sym_display = symbol.unwrap_or("unknown");
-            let eval_name_str: String = evaluator_name.extract()?;
-            return Err(pyo3::exceptions::PyRuntimeError::new_err(format!(
-                "Missing {} for {} on {}, evaluation is {:?}).",
-                tf_display, eval_name_str, sym_display, eval_value
-            )));
+            if is_valid {
+                // Return the actual node object, matching Python behavior
+                evaluations.set_item(&evaluator_name, eval_node)?;
+            } else if !allow_missing {
+                let tf_display = time_frame.unwrap_or("evaluation");
+                let sym_display = symbol.unwrap_or("unknown");
+                let eval_name_str: String = evaluator_name.extract()?;
+                return Err(crate::UnsetTentacleEvaluation::new_err(format!(
+                    "Missing {} for {} on {}, evaluation is {:?}).",
+                    tf_display, eval_name_str, sym_display, eval_value
+                )));
+            }
         }
     }
 
@@ -469,16 +472,37 @@ fn is_tentacle_value_valid(
     };
     let allowed = delta.unwrap_or(EVALUATION_ALLOWED_TIME_DELTA);
 
-    match get_tentacle_node(py, matrix_id, tentacle_path)? {
-        Some(node) => {
-            let eval_time = node.bind(py).borrow().node_value_time;
-            // For time-frame-less validation, use 0.0 as tf_minutes
-            Ok(rust_mm::is_evaluation_valid_in_time(
-                ts, eval_time, 0.0, allowed,
-            ))
+    // Extract time frame string before moving tentacle_path
+    let tf_str = tentacle_path.last().cloned();
+
+    // Check node existence first (Python raises KeyError if missing)
+    let node = match get_tentacle_node(py, matrix_id, tentacle_path)? {
+        Some(n) => n,
+        None => {
+            return Err(pyo3::exceptions::PyKeyError::new_err(
+                "No node at given path",
+            ));
         }
-        None => Ok(false),
-    }
+    };
+
+    // Extract time frame from the last path element (matching Python's behavior)
+    let tf_minutes: f64 = match tf_str.as_deref() {
+        Some(tf_val) => {
+            let tf_enum_cls = py.import("octobot_commons.enums")?;
+            let tf_minutes_map = tf_enum_cls.getattr("TimeFramesMinutes")?;
+            let tf_enum = tf_enum_cls.getattr("TimeFrames")?.call1((tf_val,));
+            match tf_enum {
+                Ok(tf) => tf_minutes_map.get_item(tf)?.extract().unwrap_or(0.0),
+                Err(_) => return Ok(false),
+            }
+        }
+        None => return Ok(false),
+    };
+
+    let eval_time = node.bind(py).borrow().node_value_time;
+    Ok(rust_mm::is_evaluation_valid_in_time(
+        ts, eval_time, tf_minutes, allowed,
+    ))
 }
 
 /// Check whether an evaluation timestamp is still valid.
@@ -539,9 +563,10 @@ fn get_latest_eval_time(
     cryptocurrency: Option<&str>,
     symbol: Option<&str>,
     time_frame: Option<&str>,
-) -> PyResult<Py<PyAny>> {
+) -> PyResult<Option<f64>> {
     let tentacle_path = rust_mm::get_tentacle_path(exchange_name, tentacle_type, None);
     let value_path = rust_mm::get_tentacle_value_path(cryptocurrency, symbol, time_frame);
+    let path_list = PyList::new(py, &value_path)?;
 
     let matrix = get_matrix_from_singleton(py, matrix_id)?;
     let matrix_bound = matrix.bind(py);
@@ -551,12 +576,12 @@ fn get_latest_eval_time(
         .call_method1("get_node_children_by_names_at_path", (tentacle_path,))?;
     let evaluator_dict = evaluator_nodes.cast::<PyDict>()?;
 
+    let kwargs = PyDict::new(py);
     let mut latest: Option<f64> = None;
     for (_name, node) in evaluator_dict.iter() {
-        let kwargs = PyDict::new(py);
         kwargs.set_item("starting_node", &node)?;
         let value_result = matrix_bound
-            .call_method("get_node_at_path", (value_path.clone(),), Some(&kwargs))?;
+            .call_method("get_node_at_path", (&path_list,), Some(&kwargs))?;
         if value_result.is_none() {
             continue;
         }
@@ -570,10 +595,7 @@ fn get_latest_eval_time(
         }
     }
 
-    match latest {
-        Some(t) => Ok(t.into_pyobject(py)?.into_any().unbind()),
-        None => Ok(py.None()),
-    }
+    Ok(latest)
 }
 
 // ---------------------------------------------------------------------------

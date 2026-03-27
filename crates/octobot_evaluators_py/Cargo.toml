@@ -10,7 +10,8 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 octobot_evaluators = { path = "../octobot_evaluators" }
 async_channel = { path = "../async_channel" }
-async_channel_py = { path = "../async_channel_py" }
+async_channel_py = { path = "../async_channel_py", default-features = false }
+octobot_commons_py = { path = "../octobot_commons_py", default-features = false }
 pyo3_bridge = { path = "../pyo3_bridge" }
 pyo3 = { version = "0.28", features = ["extension-module"] }
 pyo3-async-runtimes = { version = "0.28", features = ["tokio-runtime"] }

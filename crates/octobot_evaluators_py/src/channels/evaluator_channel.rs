@@ -144,12 +144,13 @@ impl PyEvaluatorChannel {
         let base_results: Vec<Py<PyAny>> =
             PyChannel::filter_consumers(slf.as_any().cast()?, consumer_filters)?;
         match origin_consumer {
-            Some(origin) => Ok(base_results
-                .into_iter()
-                .filter(|c| {
-                    Python::attach(|py| !c.bind(py).is(origin))
-                })
-                .collect()),
+            Some(origin) => {
+                let py = slf.py();
+                Ok(base_results
+                    .into_iter()
+                    .filter(|c| !c.bind(py).is(origin))
+                    .collect())
+            }
             None => Ok(base_results),
         }
     }

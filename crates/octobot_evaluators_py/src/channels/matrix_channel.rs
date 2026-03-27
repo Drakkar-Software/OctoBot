@@ -129,11 +129,7 @@ impl PyMatrixChannelProducer {
 
         // Resolve default eval_note_type to Python `float`
         let eval_note_type = eval_note_type.unwrap_or_else(|| {
-            Python::attach(|py| {
-                py.eval(pyo3::ffi::c_str!("float"), None, None)
-                    .map(|v| v.unbind())
-                    .unwrap_or_else(|_| py.None())
-            })
+            py.get_type::<pyo3::types::PyFloat>().into_any().unbind()
         });
 
         let producer: Py<PyAny> = slf.as_any().clone().unbind();
@@ -155,22 +151,27 @@ impl PyMatrixChannelProducer {
                     .collect::<PyResult<Vec<_>>>()
             })?;
 
+            // Build message dict once, reuse for all consumers
+            let msg: Py<PyDict> = Python::attach(|py| -> PyResult<Py<PyDict>> {
+                let msg = PyDict::new(py);
+                msg.set_item("matrix_id", &matrix_id)?;
+                msg.set_item("evaluator_name", &evaluator_name)?;
+                msg.set_item("evaluator_type", evaluator_type.bind(py))?;
+                msg.set_item("eval_note", eval_note.bind(py))?;
+                msg.set_item("eval_note_type", eval_note_type.bind(py))?;
+                msg.set_item("eval_note_description", eval_note_description.as_ref().map(|d| d.bind(py)))?;
+                msg.set_item("eval_note_metadata", eval_note_metadata.as_ref().map(|m| m.bind(py)))?;
+                msg.set_item("exchange_name", exchange_name.as_deref())?;
+                msg.set_item("cryptocurrency", &cryptocurrency)?;
+                msg.set_item("symbol", &symbol)?;
+                msg.set_item("time_frame", time_frame.as_ref().map(|t| t.bind(py)))?;
+                Ok(msg.unbind())
+            })?;
+
             for consumer in consumers {
                 let fut = Python::attach(|py| -> PyResult<_> {
-                    let msg = PyDict::new(py);
-                    msg.set_item("matrix_id", &matrix_id)?;
-                    msg.set_item("evaluator_name", &evaluator_name)?;
-                    msg.set_item("evaluator_type", evaluator_type.bind(py))?;
-                    msg.set_item("eval_note", eval_note.bind(py))?;
-                    msg.set_item("eval_note_type", eval_note_type.bind(py))?;
-                    msg.set_item("eval_note_description", eval_note_description.as_ref().map(|d| d.bind(py)))?;
-                    msg.set_item("eval_note_metadata", eval_note_metadata.as_ref().map(|m| m.bind(py)))?;
-                    msg.set_item("exchange_name", exchange_name.as_deref())?;
-                    msg.set_item("cryptocurrency", &cryptocurrency)?;
-                    msg.set_item("symbol", &symbol)?;
-                    msg.set_item("time_frame", time_frame.as_ref().map(|t| t.bind(py)))?;
                     let q = consumer.bind(py).getattr("queue")?;
-                    let coro = q.call_method1("put", (msg,))?;
+                    let coro = q.call_method1("put", (msg.bind(py),))?;
                     pyo3_async_runtimes::tokio::into_future(coro)
                 })?;
                 fut.await?;

@@ -1,0 +1,14 @@
+[build-system]
+requires = ["maturin>=1.7,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "octobot-commons-rs"
+version = "1.10.6"
+requires-python = ">=3.12"
+
+[tool.maturin]
+features = ["pyo3/extension-module"]
+bindings = "pyo3"
+module-name = "octobot_commons_rs._core"
+python-source = "python"
