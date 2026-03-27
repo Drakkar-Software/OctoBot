@@ -218,7 +218,7 @@ class ExchangePersonalData(util.Initializable):
         try:
             await exchange_channel.get_chan(constants.BALANCE_CHANNEL, self.exchange_manager.id). \
                 get_internal_producer().send(balance)
-        except ValueError as e:
+        except (ValueError, KeyError) as e:
             self.logger.error(f"Failed to send balance update notification : {e}")
 
     async def handle_portfolio_profitability_update(self, balance, mark_price, symbol, should_notify: bool = True):
@@ -346,7 +346,7 @@ class ExchangePersonalData(util.Initializable):
                 update_type=update_type,
                 is_closed=order.is_closed()
             )
-        except ValueError as e:
+        except (ValueError, KeyError) as e:
             self.logger.error(f"Failed to send order update notification : {e}")
 
     async def handle_closed_order_update(self, exchange_order_id, raw_order) -> bool:
@@ -419,7 +419,7 @@ class ExchangePersonalData(util.Initializable):
                       symbol=trade.symbol,
                       trade=trade.to_dict(),
                       old_trade=is_old_trade)
-        except ValueError as e:
+        except (ValueError, KeyError) as e:
             self.logger.error(f"Failed to send trade update notification : {e}")
 
     async def handle_position_update(self, symbol, side, raw_position, should_notify: bool = True):

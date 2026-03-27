@@ -6,14 +6,13 @@ class SubPortfolioResolver:
     def __init__(self, automation_state: octobot_flow.entities.AutomationState):
         self._automation_state = automation_state
 
-    async def resolve_sub_portfolios(self):
+    async def resolve(self):
         # equivalent to serverless global view update
         # 1. identify missing orders #TODO
         # 2. resolve missing orders #TODO
         # 3. resolve (sub)portfolios
-        if not self._automation_state.exchange_account_details.is_simulated():
-            await self._resolve_full_portfolio(self._automation_state.automation)
-                # await self._resolve_sub_portfolio(bot_details)
+        await self._resolve_full_portfolio(self._automation_state.automation)
+            # await self._resolve_sub_portfolio(bot_details)
 
     async def _resolve_sub_portfolio(self, automation: octobot_flow.entities.AutomationDetails):
         # TODO: implement to support sub portfolios
