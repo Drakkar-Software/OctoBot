@@ -32,9 +32,18 @@ import tentacles.Trading.Mode.grid_trading_mode.grid_trading as grid_trading
 
 increment = 200
 spread = 600
+D_INCREMENT = decimal.Decimal(str(increment))
+D_SPREAD = decimal.Decimal(str(spread))
 # Stable quote for mirrored grid limits (test patches tickers to this close).
 _FIXED_BTC_USDC_CLOSE = 100000.0
 GRID_REFERENCE_LOWEST_BUY = _FIXED_BTC_USDC_CLOSE - (spread / 2) - increment * 2 + 12.12
+
+
+def d_order_price(value: typing.Union[int, float, decimal.Decimal]) -> decimal.Decimal:
+    """Exact decimal view of a stored order price (avoids float + int mix in assertions)."""
+    if isinstance(value, decimal.Decimal):
+        return value
+    return decimal.Decimal(str(value))
 grid_pair_settings = [
     grid_trading.GridTradingMode.get_default_pair_config(
         "BTC/USDC",
@@ -80,34 +89,18 @@ def fetch_ohlcv_side_effect_for_close_price(
     get_close_price: typing.Callable[[], typing.Union[int, float]],
 ):
     """
-    Async side effect for exchanges_test_tools.fetch_ohlcv: every candle uses get_close_price()
-    for open, high, low, and close (and optionally close-only rows).
+    Async side effect for octobot_flow.repositories.exchange.OhlcvRepository.fetch_ohlcv:
+    every candle uses get_close_price() for open, high, low, and close.
     """
     async def patched_fetch_ohlcv(
-        _exchange_manager,
         symbol: str,
         time_frame: str,
-        history_size=1,
-        _start_time=0,
-        _end_time=0,
-        close_price_only=False,
-        _include_latest_candle=True,
+        limit: int,
     ):
         close_price = float(get_close_price())
-        n = max(int(history_size or 1), 1)
+        n = max(int(limit or 1), 1)
         times = [float(i) for i in range(n)]
         closes = [close_price] * n
-        if close_price_only:
-            return exchange_data.MarketDetails(
-                symbol=symbol,
-                time_frame=time_frame,
-                close=closes,
-                open=[],
-                high=[],
-                low=[],
-                volume=[],
-                time=times,
-            )
         ohlc = [close_price] * n
         return exchange_data.MarketDetails(
             symbol=symbol,
@@ -301,10 +294,11 @@ async def test_simulator_grid_init_from_empty_state(init_action: dict, run_mode:
         ], key=lambda o: o[trading_enums.ExchangeConstantsOrderColumns.PRICE.value])
         assert len(buy_orders) == len(sell_orders) == 2
         # check order prices are according to the grid settings
-        lowest_buy_price = buy_orders[0][trading_enums.ExchangeConstantsOrderColumns.PRICE.value]
-        assert buy_orders[1][trading_enums.ExchangeConstantsOrderColumns.PRICE.value] == lowest_buy_price + increment
-        assert sell_orders[0][trading_enums.ExchangeConstantsOrderColumns.PRICE.value] == lowest_buy_price + increment + spread
-        assert sell_orders[1][trading_enums.ExchangeConstantsOrderColumns.PRICE.value] == lowest_buy_price + increment + spread + increment
+        price_col = trading_enums.ExchangeConstantsOrderColumns.PRICE.value
+        lowest_buy_price = d_order_price(buy_orders[0][price_col])
+        assert d_order_price(buy_orders[1][price_col]) == lowest_buy_price + D_INCREMENT
+        assert d_order_price(sell_orders[0][price_col]) == lowest_buy_price + D_INCREMENT + D_SPREAD
+        assert d_order_price(sell_orders[1][price_col]) == lowest_buy_price + D_INCREMENT + D_SPREAD + D_INCREMENT
 
     # 3. trigger again: nothing to do
     async with octobot_flow.AutomationJob(after_grid_execution_dump, [], {}) as automation_job:
@@ -385,7 +379,7 @@ async def test_simulator_grid_init_and_fill_sell_order(init_action: dict, run_mo
             side_effect=patched_get_price_ticker,
         ),
         mock.patch.object(
-            exchanges_test_tools,
+            octobot_flow.repositories.exchange.OhlcvRepository,
             "fetch_ohlcv",
             side_effect=patched_fetch_ohlcv,
         ),
@@ -429,18 +423,20 @@ async def test_simulator_grid_init_and_fill_sell_order(init_action: dict, run_mo
             key=lambda o: o[trading_enums.ExchangeConstantsOrderColumns.PRICE.value],
         )
         assert len(buy_after_grid) == len(sell_after_grid) == 2
-        lowest_buy_price = buy_after_grid[0][trading_enums.ExchangeConstantsOrderColumns.PRICE.value]
-        first_sell_price = sell_after_grid[0][trading_enums.ExchangeConstantsOrderColumns.PRICE.value]
-        second_sell_price = sell_after_grid[1][trading_enums.ExchangeConstantsOrderColumns.PRICE.value]
-        assert buy_after_grid[1][trading_enums.ExchangeConstantsOrderColumns.PRICE.value] == lowest_buy_price + increment
-        assert first_sell_price == lowest_buy_price + increment + spread
-        assert second_sell_price == lowest_buy_price + increment + spread + increment
+        price_col = trading_enums.ExchangeConstantsOrderColumns.PRICE.value
+        lowest_buy_price = d_order_price(buy_after_grid[0][price_col])
+        first_sell_price = d_order_price(sell_after_grid[0][price_col])
+        second_sell_price = d_order_price(sell_after_grid[1][price_col])
+        assert d_order_price(buy_after_grid[1][price_col]) == lowest_buy_price + D_INCREMENT
+        assert first_sell_price == lowest_buy_price + D_INCREMENT + D_SPREAD
+        assert second_sell_price == lowest_buy_price + D_INCREMENT + D_SPREAD + D_INCREMENT
 
-        # force ticker refresh
+        # force ticker and OHLCV refresh (flow repositories TTL caches)
         octobot_flow.repositories.exchange.TickersRepository.reset_tickers_cache()
+        octobot_flow.repositories.exchange.OhlcvRepository.reset_ohlcv_cache()
 
         # Between first and second sell so the lowest sell limit fills but price stays inside the grid upper bound.
-        simulated_close["value"] = first_sell_price + increment / 2
+        simulated_close["value"] = float(first_sell_price + D_INCREMENT / decimal.Decimal("2"))
 
         async with octobot_flow.AutomationJob(after_grid_execution_dump, [], {}) as automation_job:
             await automation_job.run()
@@ -472,8 +468,7 @@ async def test_simulator_grid_init_and_fill_sell_order(init_action: dict, run_mo
     assert len(buy_orders) == 3
     assert len(sell_orders) == 1
 
-    mirror_spread_minus_increment = spread - increment
-    expected_mirror_buy_price = first_sell_price - mirror_spread_minus_increment
+    expected_mirror_buy_price = first_sell_price - (D_SPREAD - D_INCREMENT)
     expected_remaining_sell_price = second_sell_price
 
     for o in buy_orders:
@@ -482,10 +477,11 @@ async def test_simulator_grid_init_and_fill_sell_order(init_action: dict, run_mo
         assert o[trading_enums.ExchangeConstantsOrderColumns.SYMBOL.value] == btc_usdc
         # even mirrored order amount is close to the amount of initial orders
         assert 0.0024 <= o[trading_enums.ExchangeConstantsOrderColumns.AMOUNT.value] <= 0.0026
-    assert buy_orders[0][trading_enums.ExchangeConstantsOrderColumns.PRICE.value] == lowest_buy_price
-    assert buy_orders[1][trading_enums.ExchangeConstantsOrderColumns.PRICE.value] == lowest_buy_price + increment
-    assert buy_orders[2][trading_enums.ExchangeConstantsOrderColumns.PRICE.value] == expected_mirror_buy_price
-    assert sell_orders[0][trading_enums.ExchangeConstantsOrderColumns.PRICE.value] == expected_remaining_sell_price
+    price_col = trading_enums.ExchangeConstantsOrderColumns.PRICE.value
+    assert d_order_price(buy_orders[0][price_col]) == lowest_buy_price
+    assert d_order_price(buy_orders[1][price_col]) == lowest_buy_price + D_INCREMENT
+    assert d_order_price(buy_orders[2][price_col]) == expected_mirror_buy_price
+    assert d_order_price(sell_orders[0][price_col]) == expected_remaining_sell_price
 
     assert sell_orders[0][trading_enums.ExchangeConstantsOrderColumns.TYPE.value] == trading_enums.TradeOrderType.LIMIT.value
     assert sell_orders[0][trading_enums.ExchangeConstantsOrderColumns.STATUS.value] == trading_enums.OrderStatus.OPEN.value
@@ -531,7 +527,7 @@ async def test_simulator_copy_grid(init_action: dict, grid_reference_account: co
             side_effect=patched_get_price_ticker,
         ),
         mock.patch.object(
-            exchanges_test_tools,
+            octobot_flow.repositories.exchange.OhlcvRepository,
             "fetch_ohlcv",
             side_effect=patched_fetch_ohlcv,
         ),
@@ -633,17 +629,12 @@ async def test_simulator_copy_grid(init_action: dict, grid_reference_account: co
             key=lambda o: o[trading_enums.ExchangeConstantsOrderColumns.PRICE.value],
         )
         assert len(buy_orders) == len(sell_orders) == 2
-        lowest_buy_price = buy_orders[0][trading_enums.ExchangeConstantsOrderColumns.PRICE.value]
-        assert lowest_buy_price == GRID_REFERENCE_LOWEST_BUY
-        assert buy_orders[1][trading_enums.ExchangeConstantsOrderColumns.PRICE.value] == lowest_buy_price + increment
-        assert (
-            sell_orders[0][trading_enums.ExchangeConstantsOrderColumns.PRICE.value]
-            == lowest_buy_price + increment + spread
-        )
-        assert (
-            sell_orders[1][trading_enums.ExchangeConstantsOrderColumns.PRICE.value]
-            == lowest_buy_price + increment + spread + increment
-        )
+        price_col = trading_enums.ExchangeConstantsOrderColumns.PRICE.value
+        lowest_buy_price = d_order_price(buy_orders[0][price_col])
+        assert lowest_buy_price == d_order_price(GRID_REFERENCE_LOWEST_BUY)
+        assert d_order_price(buy_orders[1][price_col]) == lowest_buy_price + D_INCREMENT
+        assert d_order_price(sell_orders[0][price_col]) == lowest_buy_price + D_INCREMENT + D_SPREAD
+        assert d_order_price(sell_orders[1][price_col]) == lowest_buy_price + D_INCREMENT + D_SPREAD + D_INCREMENT
 
         # 3. trigger again: portfolio and mirrored grid should be unchanged
         async with octobot_flow.AutomationJob(after_initial_copy_execution_dump, [], {}) as automation_job:
@@ -700,9 +691,10 @@ async def test_simulator_copy_grid(init_action: dict, grid_reference_account: co
             ],
             key=lambda o: o[trading_enums.ExchangeConstantsOrderColumns.PRICE.value],
         )
-        assert [o[trading_enums.ExchangeConstantsOrderColumns.PRICE.value] for o in second_buy_orders] == [
-            o[trading_enums.ExchangeConstantsOrderColumns.PRICE.value] for o in buy_orders
+        price_col = trading_enums.ExchangeConstantsOrderColumns.PRICE.value
+        assert [d_order_price(o[price_col]) for o in second_buy_orders] == [
+            d_order_price(o[price_col]) for o in buy_orders
         ]
-        assert [o[trading_enums.ExchangeConstantsOrderColumns.PRICE.value] for o in second_sell_orders] == [
-            o[trading_enums.ExchangeConstantsOrderColumns.PRICE.value] for o in sell_orders
+        assert [d_order_price(o[price_col]) for o in second_sell_orders] == [
+            d_order_price(o[price_col]) for o in sell_orders
         ]
