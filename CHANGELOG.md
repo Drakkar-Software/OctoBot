@@ -6,8 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
-## [2.1.1] - 2026-XX-XX - UNRELEASED
+## [2.1.1] - 2026-03-28
+### Added
+- [GridTrading] Add reinvest_profits config option
+- [DSLTradingMode] Add DSLTradingMode
+### Updated
+- [CCXT] Update to ccxt 4.5.44
+- [Exchanges]: Improve exchange market status cache
+- [Polymarket]: Improve tickers fetching
 ### Fixed
+- [Hyperliquid]: Fix assets valuation and websocket related issues
+- [WebInterface]: Fix GPT settings display
 - [Webinterface]: Improve redirect checks. Special thanks to zhangqy24
 
 ## [2.1.0] - 2026-03-17
