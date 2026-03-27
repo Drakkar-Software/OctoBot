@@ -1131,10 +1131,16 @@ class Order(util.Initializable):
                 else enums.ExchangeConstantsMarketPropertyColumns.MAKER
             ).value
 
-    def is_synchronization_enabled(self):
+    def is_synchronization_enabled(self) -> bool:
         return (
             self.exchange_manager is not None and
             self.exchange_manager.exchange_personal_data.orders_manager.enable_order_auto_synchronization
+        )
+    
+    def is_fill_event_enabled(self) -> bool:
+        return self.is_synchronization_enabled() or (
+            self.exchange_manager is not None and
+            self.exchange_manager.exchange_personal_data.orders_manager.enable_order_fill_events
         )
 
     def to_dict(self) -> dict[str, typing.Any]:
