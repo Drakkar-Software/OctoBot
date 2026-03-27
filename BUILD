@@ -2,6 +2,11 @@ python_requirements(name="reqs")
 python_requirements(name="full_reqs", source="full_requirements.txt")
 python_requirements(name="dev_reqs", source="dev_requirements.txt")
 
+files(
+    name="cargo_workspace",
+    sources=["Cargo.toml", "Cargo.lock"],
+)
+
 python_sources(name="octobot", sources=["octobot/**/*.py"])
 
 files(
