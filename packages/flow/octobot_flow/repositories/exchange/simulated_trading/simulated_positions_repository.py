@@ -5,5 +5,4 @@ import octobot_trading.exchanges.util.exchange_data as exchange_data_import
 class SimulatedPositionsRepository(positions_repository_import.PositionsRepository):
 
     async def fetch_positions(self, symbols: list[str]) -> list[exchange_data_import.PositionDetails]:
-        # todo update simulated positions with updated orders and trades
         return self.fetched_exchange_data.authenticated_data.positions

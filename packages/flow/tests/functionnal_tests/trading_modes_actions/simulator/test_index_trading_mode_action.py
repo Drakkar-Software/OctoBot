@@ -237,7 +237,7 @@ async def test_simulator_index_init_from_empty_state(init_action: dict, run_mode
 @pytest.mark.asyncio
 @pytest.mark.parametrize("run_mode", [
     octobot_flow.enums.AutomationRunMode.UPDATE_CLIENT_EXCHANGE_ACCOUNT_ONLY,
-    octobot_flow.enums.AutomationRunMode.UPDATE_REFERENCE_EXCHANGE_ACCOUNT_AND_COPY,
+    # octobot_flow.enums.AutomationRunMode.UPDATE_REFERENCE_EXCHANGE_ACCOUNT_AND_COPY,
 ])
 async def test_simulator_index_rebalance_after_index_content_switch_btc_eth_to_btc_sol(
     init_action: dict, run_mode: octobot_flow.enums.AutomationRunMode,

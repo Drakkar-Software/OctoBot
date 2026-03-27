@@ -47,6 +47,7 @@ class OrdersManager(util.Initializable):
         self.trader: octobot_trading.exchanges.Trader = trader
         self.orders_initialized: bool = False
         self.enable_order_auto_synchronization: bool = True
+        self.enable_order_fill_events: bool = True
         self.orders: collections.OrderedDict[str, order_class.Order] = collections.OrderedDict()
         self.order_groups: dict[str, order_group_import.OrderGroup] = {}
         # orders that are expected from exchange but have not yet been fetched: will be removed when fetched
@@ -251,15 +252,17 @@ class OrdersManager(util.Initializable):
         self._check_orders_size()
 
     @contextlib.contextmanager
-    def disabled_order_auto_synchronization(self):
+    def disabled_order_auto_synchronization(self, enable_order_fill_events: bool = False):
         """
         Can be used to locally disable orders auto refresh when an order is pending
         """
         self.enable_order_auto_synchronization = False
+        self.enable_order_fill_events = enable_order_fill_events
         try:
             yield
         finally:
             self.enable_order_auto_synchronization = True
+            self.enable_order_fill_events = True
 
     async def initialize_from_exchange_data(self, exchange_data: "exchange_data_import.ExchangeData") -> None:
         """

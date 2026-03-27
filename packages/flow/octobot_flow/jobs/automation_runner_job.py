@@ -21,7 +21,7 @@ class AutomationRunnerJob(octobot_flow.repositories.exchange.ExchangeContextMixi
     Sequentially executes the automation pre-actions, actions and post-actions.
     Finally, completes the current execution and register the next execution scheduled time.
     """
-    WILL_EXECUTE_STRATEGY: bool = True
+    USE_PREDICTIVE_ORDERS_SYNC: bool = True
 
     def __init__(
         self,
@@ -111,7 +111,7 @@ class AutomationRunnerJob(octobot_flow.repositories.exchange.ExchangeContextMixi
         if self.automation_state.automation.post_actions.stop_automation:
             await self._update_stopped_automation_sub_portfolio_if_necessary()
 
-    def init_strategy_exchange_data(self, exchange_data: exchange_data_import.ExchangeData):
+    def init_predictive_orders_exchange_data(self, exchange_data: exchange_data_import.ExchangeData):
         exchange_account_elements = self.automation_state.automation.get_exchange_account_elements(self._as_reference_account)
         exchange_data.markets = self.fetched_dependencies.fetched_exchange_data.public_data.markets
         exchange_data.portfolio_details.content = exchange_account_elements.portfolio.content

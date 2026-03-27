@@ -4,6 +4,7 @@ import typing
 
 import mock
 import pytest
+import time
 
 import octobot_commons.enums as common_enums
 import octobot_commons.constants as common_constants
@@ -97,9 +98,13 @@ def fetch_ohlcv_side_effect_for_close_price(
         time_frame: str,
         limit: int,
     ):
+        time_frame_seconds = common_enums.TimeFramesMinutes[common_enums.TimeFrames(time_frame)] * 60
         close_price = float(get_close_price())
         n = max(int(limit or 1), 1)
-        times = [float(i) for i in range(n)]
+        local_time = time.time()
+        current_candle_open_time = local_time - (local_time % time_frame_seconds)
+        first_candle_open_time = current_candle_open_time - (n - 1) * time_frame_seconds
+        times = [float(first_candle_open_time + i * time_frame_seconds) for i in range(n)]
         closes = [close_price] * n
         ohlc = [close_price] * n
         return exchange_data.MarketDetails(
