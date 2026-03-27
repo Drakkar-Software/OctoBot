@@ -55,7 +55,7 @@ class PricesManager(util.Initializable):
         self._reset_prices()
         self.exchange_manager = None # type: ignore
 
-    def set_mark_price(self, mark_price, mark_price_source) -> bool:
+    def set_mark_price(self, mark_price: decimal.Decimal, mark_price_source: str) -> bool:
         """
         Set the mark price if the mark price come from MarkPriceSources.EXCHANGE_MARK_PRICE
         Set the mark price if the mark price come from MarkPriceSources.RECENT_TRADE_AVERAGE and
@@ -169,6 +169,9 @@ class PricesManager(util.Initializable):
                     self._is_mark_price_valid(source_mark_price[1]):
                 return True
         return False
+
+    def clear_mark_price_from_all_sources(self, mark_price_source: str):
+        self.mark_price_from_sources.clear()
 
     def _ensure_price_validity(self):
         """

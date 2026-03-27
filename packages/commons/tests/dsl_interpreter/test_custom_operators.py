@@ -357,11 +357,17 @@ async def test_interpreter_call_with_default_parameters(interpreter):
     assert await interpreter.interprete("call_with_default_parameters(1, 2, added_extra_value=4, substracted_extra_value=5)") == 2
     with pytest.raises(commons_errors.InvalidParametersError, match="call_with_default_parameters requires at least 1 parameter"):
         await interpreter.interprete("call_with_default_parameters()")
-    with pytest.raises(commons_errors.InvalidParametersError, match="call_with_default_parameters supports up to 4 parameters:"):
+    # Too many positional args: rejected in parameters_util.resolve_operator_args_and_kwargs
+    too_many_positional_msg = re.escape("call_with_default_parameters supports up to 4 parameters:")
+    with pytest.raises(commons_errors.InvalidParametersError, match=too_many_positional_msg):
         await interpreter.interprete("call_with_default_parameters(1, 2, 3, 4, 5)")
     with pytest.raises(commons_errors.InvalidParametersError, match=re.escape("Parameter(s) 'added_extra_value' have multiple values")):
         await interpreter.interprete("call_with_default_parameters(1, 2, 3, added_extra_value=4)")
-    with pytest.raises(commons_errors.InvalidParametersError, match=re.escape("call_with_default_parameters supports up to 4 parameters:")):
+    # Positional slot full + duplicate keyword: Operator._validate_parameters
+    too_many_total_msg = re.escape(
+        "call_with_default_parameters got 5 parameters (1, 2, 3, 4, 5) but supports up to 4 parameters:"
+    )
+    with pytest.raises(commons_errors.InvalidParametersError, match=too_many_total_msg):
         await interpreter.interprete("call_with_default_parameters(1, 2, 3, 4, added_extra_value=5)")
 
 
@@ -389,9 +395,10 @@ async def test_interpreter_invalid_parameters(interpreter):
         interpreter.prepare("add2()")
     with pytest.raises(commons_errors.InvalidParametersError, match=re.escape("add2 requires at least 2 parameter(s): 1: left")):
         await interpreter.interprete("add2()")
-    with pytest.raises(commons_errors.InvalidParametersError, match="add2 supports up to 2 parameters:"):
+    add2_too_many = re.escape("add2 supports up to 2 parameters:")
+    with pytest.raises(commons_errors.InvalidParametersError, match=add2_too_many):
         interpreter.prepare("add2(1, 2, 3)")
-    with pytest.raises(commons_errors.InvalidParametersError, match="add2 supports up to 2 parameters:"):
+    with pytest.raises(commons_errors.InvalidParametersError, match=add2_too_many):
         await interpreter.interprete("add2(1, 2, 3)")
     with pytest.raises(commons_errors.InvalidParametersError, match=re.escape("time_frame_to_seconds requires at least 1 parameter(s)")):
         interpreter.prepare("time_frame_to_seconds()")
@@ -448,7 +455,9 @@ def test_get_input_value_by_parameter():
         ParamMerger(1, unknown_param=3).get_input_value_by_parameter()
     with pytest.raises(
         commons_errors.InvalidParametersError,
-        match=re.escape("param_merger supports up to 2 parameters"),
+        match=re.escape(
+            "param_merger got 4 parameters (1, 2, 99, 1) but supports up to 2 parameters:"
+        ),
     ):
         ParamMerger(p1=1, p2=2, extra=99, another=1).get_input_value_by_parameter()
 
