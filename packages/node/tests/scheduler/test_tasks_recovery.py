@@ -47,7 +47,6 @@ class TestSchedulerRecovery:
 
     @pytest.mark.asyncio
     async def test_recover_after_shutdown(self):
-        completed_workflows = []
         with tempfile.NamedTemporaryFile() as temp_file:
             await _init_dbos_scheduler(temp_file.name, reset_database=True)
 
@@ -59,7 +58,6 @@ class TestSchedulerRecovery:
                     logging.info(f"sleeper_workflow {identifier} started")
                     await dbos.DBOS.sleep_async(WF_SLEEP_TIME)
                     logging.info(f"sleeper_workflow {identifier} done")
-                    completed_workflows.append(identifier)
                     return identifier
     
             logging.info(f"Launching DBOS instance 1 ...")
@@ -74,15 +72,21 @@ class TestSchedulerRecovery:
                 status=["ENQUEUED", "PENDING"]
             )
             assert len(wfs) == WF_TO_CREATE
+            results_part1: list[int] = []
             for wf_status in wfs:
                 handle = await octobot_node.scheduler.SCHEDULER.INSTANCE.retrieve_workflow_async(wf_status.workflow_id)
-                assert 0 <= await handle.get_result() < WF_TO_CREATE
+                r = await handle.get_result()
+                assert 0 <= r < WF_TO_CREATE
+                results_part1.append(int(r))
             duration = time.time() - t0
             logging.info(f"Workflow batch completed in {duration} seconds")
             max_duration = WF_TO_CREATE * WF_SLEEP_TIME * 0.9 # 90% of the 1 by 1 time to ensure asynchronous execution. usually 3 to 4 seconds on a normal machine
             assert duration <= max_duration, f"Workflow batch part 1 completed in {duration} seconds, expected <= {max_duration}"
-            assert sorted(completed_workflows) == list(range(WF_TO_CREATE))
-            completed_workflows.clear()
+            assert sorted(results_part1) == list(range(WF_TO_CREATE))
+            success_wfs = await octobot_node.scheduler.SCHEDULER.INSTANCE.list_workflows_async(
+                status=[dbos.WorkflowStatusString.SUCCESS.value]
+            )
+            assert len(success_wfs) == WF_TO_CREATE
 
             # 2. enqueue 10 more and restart
             for i in range(WF_TO_CREATE):
@@ -105,15 +109,32 @@ class TestSchedulerRecovery:
             # enqueue a second batch of workflows
             for i in range(WF_TO_CREATE, WF_TO_CREATE*2):
                 await QUEUE.enqueue_async(Sleeper.sleeper_workflow, i)
+            # Only ENQUEUED/PENDING: part 1 workflows are already SUCCESS (same inputs 0..9)
+            # and must not be awaited again or get_result would duplicate those ids here.
+            wfs_to_finish = await octobot_node.scheduler.SCHEDULER.INSTANCE.list_workflows_async(
+                status=[dbos.WorkflowStatusString.ENQUEUED.value, dbos.WorkflowStatusString.PENDING.value]
+            )
+            assert len(wfs_to_finish) == WF_TO_CREATE * 2
             t0 = time.time()
-            for wf_status in await octobot_node.scheduler.SCHEDULER.INSTANCE.list_workflows_async():
+            results_part2: list[int] = []
+            for wf_status in wfs_to_finish:
                 handle = await octobot_node.scheduler.SCHEDULER.INSTANCE.retrieve_workflow_async(wf_status.workflow_id)
-                assert 0 <= await handle.get_result() < WF_TO_CREATE*2
+                r = await handle.get_result()
+                assert 0 <= r < WF_TO_CREATE*2
+                results_part2.append(int(r))
             duration = time.time() - t0
             logging.info(f"2 parallel workflow batches completed in {duration} seconds")
             max_duration = WF_TO_CREATE * WF_SLEEP_TIME * 2 * 0.9 # 90% of the 1 by 1 time to ensure asynchronous execution. usually 3 to 4 seconds on a normal machine
             assert duration < max_duration, f"Workflow batch part 2 completed in {duration} seconds, expected <= {max_duration}"
-            assert sorted(completed_workflows) == list(range(WF_TO_CREATE*2))
+            assert sorted(results_part2) == list(range(WF_TO_CREATE*2))
+            success_wfs = await octobot_node.scheduler.SCHEDULER.INSTANCE.list_workflows_async(
+                status=[dbos.WorkflowStatusString.SUCCESS.value]
+            )
+            assert len(success_wfs) == WF_TO_CREATE * 3
+            no_pending = await octobot_node.scheduler.SCHEDULER.INSTANCE.list_workflows_async(
+                status=[dbos.WorkflowStatusString.ENQUEUED.value, dbos.WorkflowStatusString.PENDING.value]
+            )
+            assert no_pending == []
             logging.info(f"Destroying DBOS instance 2 ...")
             octobot_node.scheduler.SCHEDULER.INSTANCE.destroy()
             logging.info(f"DBOS instance 2 destroyed")
