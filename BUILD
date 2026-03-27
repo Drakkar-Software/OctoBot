@@ -160,7 +160,7 @@ python_distribution(
     ] + PACKAGE_SOURCES + PACKAGE_REQS + PACKAGE_FULL_REQS,
     provides=python_artifact(
         name="octobot",
-        version="2.1.0",
+        version="2.1.1",
         url='https://github.com/Drakkar-Software/OctoBot',
         license='GPL-3.0',
         author="Drakkar-Software",
