@@ -15,6 +15,7 @@
 #  License along with this library.
 import asyncio
 import decimal
+import functools
 import typing
 
 import octobot_commons.logging as logging
@@ -37,8 +38,27 @@ if typing.TYPE_CHECKING:
     import octobot_trading.exchanges
 
 
+def ignore_channel_notification_send_errors(failure_message: str):
+    """
+    Swallows ValueError / KeyError from exchange channel notify sends.
+    Logs at error level when ignore_channel_notification_push_error is set on the instance, otherwise debug.
+    """
+    def decorator(async_method):
+        @functools.wraps(async_method)
+        async def wrapper(self, *args, **kwargs):
+            try:
+                return await async_method(self, *args, **kwargs)
+            except (ValueError, KeyError) as err:
+                message = f"{failure_message} : {err}"
+                if self.error_on_channel_notification_push_error:
+                    self.logger.error(message)
+                else:
+                    self.logger.debug(message)
+        return wrapper
+    return decorator
+
+
 class ExchangePersonalData(util.Initializable):
-    # note: symbol keys are without /
     def __init__(self, exchange_manager):
         super().__init__()
         self.logger: logging.BotLogger = logging.get_logger(self.__class__.__name__)
@@ -53,6 +73,7 @@ class ExchangePersonalData(util.Initializable):
         self.orders_manager: orders_manager.OrdersManager = None # type: ignore
         self.positions_manager: positions_manager.PositionsManager = None # type: ignore
         self.transactions_manager: transactions_manager.TransactionsManager = None # type: ignore
+        self.error_on_channel_notification_push_error: bool = False
 
     async def initialize_impl(self):
         self.trader = self.exchange_manager.trader
@@ -210,16 +231,14 @@ class ExchangePersonalData(util.Initializable):
         if should_notify:
             await self.handle_portfolio_update_notification(self.portfolio_manager.portfolio.portfolio)
 
+    @ignore_channel_notification_send_errors("Failed to send balance update notification")
     async def handle_portfolio_update_notification(self, balance):
         """
         Notify Balance channel from portfolio update
         :param balance: the updated balance
         """
-        try:
-            await exchange_channel.get_chan(constants.BALANCE_CHANNEL, self.exchange_manager.id). \
-                get_internal_producer().send(balance)
-        except (ValueError, KeyError) as e:
-            self.logger.error(f"Failed to send balance update notification : {e}")
+        await exchange_channel.get_chan(constants.BALANCE_CHANNEL, self.exchange_manager.id). \
+            get_internal_producer().send(balance)
 
     async def handle_portfolio_profitability_update(self, balance, mark_price, symbol, should_notify: bool = True):
         try:
@@ -234,14 +253,21 @@ class ExchangePersonalData(util.Initializable):
                 await self.portfolio_manager.update_historical_portfolio_values()
 
             if should_notify:
-                await exchange_channel.get_chan(constants.BALANCE_PROFITABILITY_CHANNEL,
-                                                self.exchange_manager.id).get_internal_producer() \
-                    .send(profitability=portfolio_profitability.profitability,
-                          profitability_percent=portfolio_profitability.profitability_percent,
-                          market_profitability_percent=portfolio_profitability.market_profitability_percent,
-                          initial_portfolio_current_profitability=portfolio_profitability.initial_portfolio_current_profitability)
+                await self._handle_portfolio_profitability_update_notification(portfolio_profitability)
+
         except Exception as e:
             self.logger.exception(e, True, f"Failed to update portfolio profitability : {e}")
+
+    @ignore_channel_notification_send_errors("Failed to send portfolio profitability update notification")
+    async def _handle_portfolio_profitability_update_notification(self, portfolio_profitability):
+        await exchange_channel.get_chan(
+            constants.BALANCE_PROFITABILITY_CHANNEL, self.exchange_manager.id
+        ).get_internal_producer().send(
+            profitability=portfolio_profitability.profitability,
+            profitability_percent=portfolio_profitability.profitability_percent,
+            market_profitability_percent=portfolio_profitability.market_profitability_percent,
+            initial_portfolio_current_profitability=portfolio_profitability.initial_portfolio_current_profitability
+        )
 
     async def handle_order_update_from_raw(self, exchange_order_id, raw_order,
                                            is_new_order: bool = False,
@@ -327,27 +353,25 @@ class ExchangePersonalData(util.Initializable):
             self.logger.exception(e, True, f"Failed to update order instance : {e}")
             return False
 
+    @ignore_channel_notification_send_errors("Failed to send order update notification")
     async def handle_order_update_notification(self, order, update_type: enums.OrderUpdateType):
         """
         Notify Orders channel for Order update
         :param order: the updated order
         :param update_type: the type of update as enums.OrderUpdateType
         """
-        try:
-            orders_chan = exchange_channel.get_chan(constants.ORDERS_CHANNEL, self.exchange_manager.id)
-            if not orders_chan.get_consumers():
-                # avoid other computations if no consumer
-                return
-            await orders_chan.get_internal_producer().send(
-                self.exchange_manager.exchange.get_pair_cryptocurrency(order.symbol),
-                order.symbol,
-                order.to_dict(),
-                is_from_bot=order.is_from_this_octobot,
-                update_type=update_type,
-                is_closed=order.is_closed()
-            )
-        except (ValueError, KeyError) as e:
-            self.logger.error(f"Failed to send order update notification : {e}")
+        orders_chan = exchange_channel.get_chan(constants.ORDERS_CHANNEL, self.exchange_manager.id)
+        if not orders_chan.get_consumers():
+            # avoid other computations if no consumer
+            return
+        await orders_chan.get_internal_producer().send(
+            self.exchange_manager.exchange.get_pair_cryptocurrency(order.symbol),
+            order.symbol,
+            order.to_dict(),
+            is_from_bot=order.is_from_this_octobot,
+            update_type=update_type,
+            is_closed=order.is_closed()
+        )
 
     async def handle_closed_order_update(self, exchange_order_id, raw_order) -> bool:
         """
@@ -406,21 +430,19 @@ class ExchangePersonalData(util.Initializable):
             self.logger.exception(e, True, f"Failed to update trade instance : {e}")
             return False
 
+    @ignore_channel_notification_send_errors("Failed to send trade update notification")
     async def handle_trade_update_notification(self, trade, is_old_trade=False):
         """
         Notify Trade channel from Trade update
         :param trade: the updated trade
         :param is_old_trade: if the trade has already been loaded
         """
-        try:
-            await exchange_channel.get_chan(constants.TRADES_CHANNEL,
-                                            self.exchange_manager.id).get_internal_producer() \
-                .send(cryptocurrency=self.exchange_manager.exchange.get_pair_cryptocurrency(trade.symbol),
-                      symbol=trade.symbol,
-                      trade=trade.to_dict(),
-                      old_trade=is_old_trade)
-        except (ValueError, KeyError) as e:
-            self.logger.error(f"Failed to send trade update notification : {e}")
+        await exchange_channel.get_chan(constants.TRADES_CHANNEL,
+                                        self.exchange_manager.id).get_internal_producer() \
+            .send(cryptocurrency=self.exchange_manager.exchange.get_pair_cryptocurrency(trade.symbol),
+                  symbol=trade.symbol,
+                  trade=trade.to_dict(),
+                  old_trade=is_old_trade)
 
     async def handle_position_update(self, symbol, side, raw_position, should_notify: bool = True):
         try:
@@ -451,6 +473,7 @@ class ExchangePersonalData(util.Initializable):
             self.logger.exception(e, True, f"Failed to update position instance : {e}")
             return False
 
+    @ignore_channel_notification_send_errors("Failed to send position update notification")
     async def handle_position_update_notification(self, position, is_updated=True):
         """
         Notify Positions channel for Position update
@@ -458,15 +481,12 @@ class ExchangePersonalData(util.Initializable):
         :param position: the updated position
         :param is_updated: if the position has been updated
         """
-        try:
-            await exchange_channel.get_chan(constants.POSITIONS_CHANNEL,
-                                            self.exchange_manager.id).get_internal_producer() \
-                .send(cryptocurrency=self.exchange_manager.exchange.get_pair_cryptocurrency(position.symbol),
-                      symbol=position.symbol,
-                      position=position,
-                      is_updated=is_updated)
-        except ValueError as e:
-            self.logger.error(f"Failed to send position update notification : {e}")
+        await exchange_channel.get_chan(constants.POSITIONS_CHANNEL,
+                                        self.exchange_manager.id).get_internal_producer() \
+            .send(cryptocurrency=self.exchange_manager.exchange.get_pair_cryptocurrency(position.symbol),
+                  symbol=position.symbol,
+                  position=position,
+                  is_updated=is_updated)
 
     def get_trade_or_open_order(self, order_id: str) -> (
         typing.Optional["octobot_trading.personal_data.Trade"], typing.Optional["octobot_trading.personal_data.Order"]

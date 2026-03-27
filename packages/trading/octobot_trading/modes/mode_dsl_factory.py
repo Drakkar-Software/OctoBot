@@ -208,8 +208,12 @@ class TradingModeOperator(
         )
 
     def get_previous_state(self, param_by_name: dict[str, typing.Any]) -> typing.Optional[dict]:
-        last_execution_result = self.get_last_execution_result(param_by_name)
-        return json.loads(last_execution_result.get(STATE_KEY)) if last_execution_result else None
+        if last_execution_result := self.get_last_execution_result(param_by_name):
+            if raw_state := last_execution_result.get(STATE_KEY):
+                if isinstance(raw_state, dict):
+                    return raw_state
+                return json.loads(raw_state)
+        return None
 
     async def pre_compute(self) -> None:
         await super().pre_compute()

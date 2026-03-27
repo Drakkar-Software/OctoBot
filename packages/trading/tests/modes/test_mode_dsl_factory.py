@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import json
 import pytest
 import mock
 
@@ -290,26 +291,41 @@ class TestGetResultsSummary:
             last_execution_result={
                 dsl_interpreter.ReCallingOperatorResultKeys.WAITING_TIME.value: 5.0,
                 dsl_interpreter.ReCallingOperatorResultKeys.LAST_EXECUTION_TIME.value: 1.0,
-                "custom": "first",
-                "other": "a",
+                trading_mode_dsl_factory.STATE_KEY: {
+                    "custom": "first",
+                    "other": "a",
+                },
             },
         )
         r2 = dsl_interpreter.ReCallingOperatorResult(
             last_execution_result={
-                dsl_interpreter.ReCallingOperatorResultKeys.WAITING_TIME.value: 10.0,
+                dsl_interpreter.ReCallingOperatorResultKeys.WAITING_TIME.value: 4.0,
                 dsl_interpreter.ReCallingOperatorResultKeys.LAST_EXECUTION_TIME.value: 2.0,
-                "custom": "second",
-                "other2": "b",
+                trading_mode_dsl_factory.STATE_KEY: {
+                    "custom": "second",
+                    "other2": "b",
+                },
             },
         )
-        summary = op.get_results_summary([r1, r2])
+        r3 = dsl_interpreter.ReCallingOperatorResult(
+            last_execution_result={
+                dsl_interpreter.ReCallingOperatorResultKeys.WAITING_TIME.value: 10.0,
+                dsl_interpreter.ReCallingOperatorResultKeys.LAST_EXECUTION_TIME.value: 3.0,
+                trading_mode_dsl_factory.STATE_KEY: {
+                    "custom": "second",
+                    "other3": "cc",
+                },
+            },
+        )
+        summary = op.get_results_summary([r1, r2, r3])
         inner = summary[dsl_interpreter.ReCallingOperatorResult.__name__]["last_execution_result"]
-        assert inner["state"] == {
-            dsl_interpreter.ReCallingOperatorResultKeys.WAITING_TIME.value: 10.0,
-            dsl_interpreter.ReCallingOperatorResultKeys.LAST_EXECUTION_TIME.value: 2.0,
+        assert inner[dsl_interpreter.ReCallingOperatorResultKeys.WAITING_TIME.value] == 4.0
+        assert inner[dsl_interpreter.ReCallingOperatorResultKeys.LAST_EXECUTION_TIME.value] == 2.0
+        assert json.loads(inner[trading_mode_dsl_factory.STATE_KEY]) == {
             "custom": "second",
             "other": "a",
             "other2": "b",
+            "other3": "cc",
         }
 
 
@@ -338,8 +354,7 @@ class TestGetDependencies:
                     mock.Mock(return_value=[local_dep]),
                 ) as gdd:
                     deps = op.get_dependencies()
-                    # Mock replaces the classmethod descriptor; calls are (trading_config, config).
-                    gdd.assert_called_once_with({"param": 1}, {"global": True})
+                    gdd.assert_called_once_with({"param": 1}, {"global": True}, None)
         assert deps == [base_dep, local_dep]
 
 
@@ -419,6 +434,7 @@ class TestPreCompute:
             FakeTradingModeBeta,
             {"qty": 1},
             em,
+            None,
         )
         tm_a.manual_trigger.assert_awaited_once_with(
             {"trigger_source": common_enums.TriggerSource.MANUAL.value},
@@ -431,9 +447,9 @@ class TestPreCompute:
             "last_execution_result"
         ]
         assert inner[dsl_interpreter.ReCallingOperatorResultKeys.WAITING_TIME.value] == 10.0
-        # summary passes merged per-mode results as `state=`; nested DSL state is under "state".
-        assert inner["state"][dsl_interpreter.ReCallingOperatorResultKeys.WAITING_TIME.value] == 20.0
-        assert inner["state"]["state"]["id"] == "b"
+        # Summary stores merged per-mode `get_dsl_state()` as a JSON string under "state".
+        merged_dsl = json.loads(inner[trading_mode_dsl_factory.STATE_KEY])
+        assert merged_dsl["id"] == "b"
 
     async def test_calls_optimize_initial_portfolio_on_first_execution(self):
         op, em = _operator_with_exchange_manager()
