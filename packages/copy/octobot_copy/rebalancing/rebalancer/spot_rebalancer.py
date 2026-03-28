@@ -49,6 +49,11 @@ class SpotRebalancer(base_rebalancer.AbstractRebalancer):
         target_quantity = min(ideal_amount, current_market_holding / order_target_price)
         effective_current_symbol_holding = current_symbol_holding + self._get_pending_open_quantity(symbol)
         ideal_quantity = target_quantity - effective_current_symbol_holding
+        if ideal_quantity < ideal_amount * decimal.Decimal("0.9"):
+            self._get_logger().warning(
+                f"{symbol} order quantity has to be reduced from {ideal_amount} to "
+                f"{ideal_quantity} to adapt to available funds."
+            )
         if ideal_quantity <= trading_constants.ZERO:
             return []
         is_price_close_to_market = order_target_price >= current_price * (decimal.Decimal(1) - self.PRICE_THRESHOLD_TO_USE_MARKET_ORDER)

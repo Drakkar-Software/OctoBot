@@ -34,6 +34,7 @@ if typing.TYPE_CHECKING:
 
 
 STATE_KEY = "state"
+ENABLE_INITIAL_PORTFOLIO_OPTIMIZATION = "enable_initial_portfolio_optimization"
 
 
 def _create_operator_parameters_from_user_inputs(
@@ -229,7 +230,10 @@ class TradingModeOperator(
             exchange_manager,
             self.get_previous_state(param_by_name)
         )
-        if not self.get_last_execution_result(param_by_name):
+        if (
+            not self.get_last_execution_result(param_by_name)
+            and param_by_name.get(ENABLE_INITIAL_PORTFOLIO_OPTIMIZATION, True)
+        ):
             try:
                 # this is the first execution, optimize initial portfolio
                 sellable_assets = [] # todo later: populate with asseets that can be sold additionally to the traded ones
@@ -327,6 +331,18 @@ def create_trading_mode_operator(
             return operator_name
 
         @classmethod
+        def get_trading_mode_meta_parameters(cls) -> list[dsl_interpreter.OperatorParameter]:
+            return [
+                dsl_interpreter.OperatorParameter(
+                    name=ENABLE_INITIAL_PORTFOLIO_OPTIMIZATION,
+                    description="Enable initial portfolio optimization",
+                    required=False,
+                    type=bool,
+                    default=True,
+                ),
+            ]
+
+        @classmethod
         def get_parameters(cls) -> list[dsl_interpreter.OperatorParameter]:
             if not _operator_parameters:
                 # lazy computation of the operator parameters to only compute them once 
@@ -334,7 +350,11 @@ def create_trading_mode_operator(
                 _operator_parameters.extend(_create_trading_mode_operator_parameters(
                     trading_mode_class, config #, tentacles_setup_config, loaded_config
                 ))
-            return _operator_parameters + cls.get_re_callable_parameters()
+            return (
+                _operator_parameters 
+                + cls.get_trading_mode_meta_parameters()
+                + cls.get_re_callable_parameters()
+            )
 
     return _TradingModeOperatorImpl
 

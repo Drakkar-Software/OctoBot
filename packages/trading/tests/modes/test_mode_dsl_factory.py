@@ -188,9 +188,27 @@ class TestCreateTradingModeOperatorParameters:
         assert "Top_Level_Int" in names
         assert "Top_Float" in names
         assert "Nested" not in names
+        assert trading_mode_dsl_factory.ENABLE_INITIAL_PORTFOLIO_OPTIMIZATION not in names
         int_param = next(p for p in params if p.name == "Top_Level_Int")
         assert int_param.type is int
         assert int_param.description == "Integer setting"
+
+
+class TestGetTradingModeMetaParameters:
+    def test_enable_initial_portfolio_optimization_parameter(self):
+        OpCls = trading_mode_dsl_factory.create_trading_mode_operator(
+            FakeTradingModeAlpha,
+            mock.Mock(),
+            {},
+        )
+        meta = OpCls.get_trading_mode_meta_parameters()
+        assert len(meta) == 1
+        p = meta[0]
+        assert p.name == trading_mode_dsl_factory.ENABLE_INITIAL_PORTFOLIO_OPTIMIZATION
+        assert p.type is bool
+        assert p.default is True
+        assert p.required is False
+        assert "initial portfolio optimization" in p.description.lower()
 
 
 class TestCreateTradingModeOperator:
@@ -226,7 +244,11 @@ class TestGetParameters:
             for p in first
             if p.name != dsl_interpreter.ReCallableOperatorMixin.LAST_EXECUTION_RESULT_KEY
         }
-        assert trading_param_names == {"Top_Level_Int", "Top_Float"}
+        assert trading_param_names == {
+            "Top_Level_Int",
+            "Top_Float",
+            trading_mode_dsl_factory.ENABLE_INITIAL_PORTFOLIO_OPTIMIZATION,
+        }
         assert sum(
             1 for p in first if p.name == dsl_interpreter.ReCallableOperatorMixin.LAST_EXECUTION_RESULT_KEY
         ) == 1
@@ -476,6 +498,33 @@ class TestPreCompute:
                     ) as optimize_mock:
                         await op.pre_compute()
         optimize_mock.assert_awaited_once_with([tm], [], {})
+
+    async def test_skips_optimize_when_enable_initial_portfolio_optimization_false(self):
+        op, _em = _operator_with_exchange_manager()
+        tm = _trading_mode_mock()
+        with mock.patch.object(
+            dsl_interpreter.PreComputingCallOperator,
+            "pre_compute",
+            mock.AsyncMock(),
+        ):
+            with mock.patch.object(
+                op,
+                "get_computed_value_by_parameter",
+                return_value={trading_mode_dsl_factory.ENABLE_INITIAL_PORTFOLIO_OPTIMIZATION: False},
+            ):
+                with mock.patch.object(
+                    op,
+                    "_create_trading_modes",
+                    mock.AsyncMock(return_value=[tm]),
+                ):
+                    with mock.patch.object(
+                        op,
+                        "_optimize_initial_portfolio",
+                        mock.AsyncMock(),
+                    ) as optimize_mock:
+                        await op.pre_compute()
+        optimize_mock.assert_not_awaited()
+        tm.manual_trigger.assert_awaited_once()
 
     async def test_skips_optimize_when_get_last_execution_result_truthy(self):
         op, em = _operator_with_exchange_manager()

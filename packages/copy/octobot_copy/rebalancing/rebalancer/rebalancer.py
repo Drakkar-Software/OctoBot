@@ -165,7 +165,7 @@ class AbstractRebalancer:
                 )
             )
         if not orders and not self._rebalance_actions_planner.client.allow_skip_asset:
-            raise trading_errors.MissingMinimalExchangeTradeVolume()
+            raise trading_errors.MissingMinimalExchangeTradeVolume(f"{amount_by_symbol=}")
         return orders
 
     async def _buy_coin(

@@ -9,9 +9,11 @@ import octobot_commons.logging as common_logging
 import octobot_trading.constants as trading_constants
 import octobot_trading.enums
 import octobot_trading.personal_data as personal_data
+import octobot_trading.exchanges.util.exchange_data as exchange_data_import
 import tentacles.Meta.Keywords.scripting_library as scripting_library
 import octobot_flow.repositories.exchange
 import octobot_flow.entities
+import octobot_flow.errors
 
 import octobot_flow.logic.exchange
 import octobot_flow.logic.dsl
@@ -39,20 +41,26 @@ class ExchangeAccountJob(octobot_flow.repositories.exchange.ExchangeContextMixin
         )
 
     async def update_authenticated_data(self, as_reference_account: bool):
+        fetched_authenticated_data = octobot_flow.entities.FetchedExchangeAccountElements()
         self._ensure_exchange_dependencies()
-        await self._fetch_authenticated_data()
-        await self._update_bot_authenticated_data(as_reference_account)
-        
-    async def _fetch_authenticated_data(self):
+        await self._fetch_authenticated_data(fetched_authenticated_data, as_reference_account)
+        await self._update_bot_authenticated_data(fetched_authenticated_data, as_reference_account)
+
+    async def _fetch_authenticated_data(self, fetched_authenticated_data: octobot_flow.entities.FetchedExchangeAccountElements, as_reference_account: bool):
         coros = [
-            self._fetch_open_orders(),
-            self._fetch_portfolio(),
+            self._fetch_open_orders(fetched_authenticated_data, as_reference_account),
+            self._fetch_portfolio(fetched_authenticated_data, as_reference_account),
         ]
         if self._exchange_manager.is_future:
-            coros.append(self._fetch_positions())
+            coros.append(self._fetch_positions(fetched_authenticated_data))
         await asyncio.gather(*coros)
 
-    async def _update_bot_authenticated_data(self, as_reference_account: bool):
+    async def _update_bot_authenticated_data(
+        self,
+        fetched_authenticated_data: octobot_flow.entities.FetchedExchangeAccountElements,
+        as_reference_account: bool
+    ):
+        # bind fetched data to the relevant automation account
         is_simulated = self.automation_state.exchange_account_details.is_simulated()
         if as_reference_account or is_simulated:
             simulated_exchange_account_resolver = octobot_flow.logic.exchange.SimulatedExchangeAccountResolver(
@@ -63,7 +71,14 @@ class ExchangeAccountJob(octobot_flow.repositories.exchange.ExchangeContextMixin
             )
             await simulated_exchange_account_resolver.resolve()
         else:
-            # updating client account with real trading data: update sub portfolio if any
+            # updating client account with real trading data:
+            client_account = self.automation_state.automation.client_exchange_account_elements
+            if client_account is None:
+                raise octobot_flow.errors.ExchangeAccountInitializationError(
+                    "Client exchange account elements are required to update the client account"
+                )
+            client_account.orders = fetched_authenticated_data.orders
+            client_account.positions = fetched_authenticated_data.positions
             sub_portfolio_resolver = octobot_flow.logic.exchange.SubPortfolioResolver(
                 self.automation_state
             )
@@ -112,35 +127,39 @@ class ExchangeAccountJob(octobot_flow.repositories.exchange.ExchangeContextMixin
             f"Fetched [{self._exchange_manager.exchange_name}] {len(self.fetched_dependencies.fetched_exchange_data.public_data.tickers)}{logged_tickers}"
         )
 
-    async def _fetch_positions(self):
+    async def _fetch_positions(self, fetched_authenticated_data: octobot_flow.entities.FetchedExchangeAccountElements):
         repository = self.get_exchange_repository_factory().get_positions_repository()
-        self.fetched_dependencies.fetched_exchange_data.authenticated_data.positions = await repository.fetch_positions(self._get_traded_symbols())
+        fetched_authenticated_data.positions = await repository.fetch_positions(self._get_traded_symbols())
         self._logger.info(
-            f"Fetched [{self._exchange_manager.exchange_name}] {len(self.fetched_dependencies.fetched_exchange_data.authenticated_data.positions)} positions: "
-            f"{[position.position for position in self.fetched_dependencies.fetched_exchange_data.authenticated_data.positions]}"
+            f"Fetched [{self._exchange_manager.exchange_name}] {len(fetched_authenticated_data.positions)} positions: "
+            f"{[position.position for position in fetched_authenticated_data.positions]}"
         )
 
-    async def _fetch_open_orders(self):
+    async def _fetch_open_orders(self, fetched_authenticated_data: octobot_flow.entities.FetchedExchangeAccountElements, as_reference_account: bool):
         repository = self.get_exchange_repository_factory().get_orders_repository()
         symbols = self._get_traded_symbols()
-        self.fetched_dependencies.fetched_exchange_data.authenticated_data.orders.open_orders = await repository.fetch_open_orders(symbols)
+        open_orders = await repository.fetch_open_orders(symbols)
+        fetched_authenticated_data.orders.open_orders = repository.update_enriched_orders(
+            open_orders,
+            self.automation_state.automation.get_exchange_account_elements(as_reference_account).orders.open_orders
+        )
         self._logger.info(
             f"Fetched [{self._exchange_manager.exchange_name}] "
-            f"{personal_data.get_symbol_count(self.fetched_dependencies.fetched_exchange_data.authenticated_data.orders.open_orders) or "0"} "
-            f"open orders for {symbols}"
+            f"{personal_data.get_symbol_count(open_orders) or "0"} open orders for {symbols}"
         )
-    
 
-    async def _fetch_portfolio(self):
+    async def _fetch_portfolio(self, fetched_authenticated_data: octobot_flow.entities.FetchedExchangeAccountElements, as_reference_account: bool):
         repository = self.get_exchange_repository_factory().get_portfolio_repository()
-        self.fetched_dependencies.fetched_exchange_data.authenticated_data.portfolio.full_content = await repository.fetch_portfolio() # type: ignore
+        fetched_authenticated_data.portfolio.full_content = await repository.fetch_portfolio()  # type: ignore
         self._logger.info(
             f"Fetched [{self._exchange_manager.exchange_name}] full portfolio: "
-            f"{personal_data.get_balance_summary(self.fetched_dependencies.fetched_exchange_data.authenticated_data.portfolio.full_content, use_exchange_format=False)}"
+            f"{personal_data.get_balance_summary(fetched_authenticated_data.portfolio.full_content, use_exchange_format=False)}"
         )
-        self._update_exchange_account_portfolio()
+        if not as_reference_account:
+            # only update the exchange account portfolio when it is the target portfolio
+            self._update_exchange_account_portfolio(fetched_authenticated_data.portfolio)
 
-    def _update_exchange_account_portfolio(self):
+    def _update_exchange_account_portfolio(self, portfolio: exchange_data_import.PortfolioDetails):
         unit = scripting_library.get_default_exchange_reference_market(self._exchange_manager.exchange_name)
         self.automation_state.exchange_account_details.portfolio.content = [
             octobot_flow.entities.PortfolioAssetHolding(
@@ -155,7 +174,7 @@ class ExchangeAccountJob(octobot_flow.repositories.exchange.ExchangeContextMixin
                      ) * values[common_constants.PORTFOLIO_TOTAL] # type: ignore
                 ),
             )
-            for asset, values in self.fetched_dependencies.fetched_exchange_data.authenticated_data.portfolio.full_content.items()
+            for asset, values in portfolio.full_content.items()
         ]
 
     def _get_traded_symbols(self) -> list[str]:

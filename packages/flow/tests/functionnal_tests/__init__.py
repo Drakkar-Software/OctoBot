@@ -22,6 +22,8 @@ import octobot_flow.environment
 import octobot_flow.repositories.community
 import octobot_flow.logic.actions.actions_factory as actions_factory
 
+AUTHENTICATED_TEST_GROUP = "authenticated_xdist_group"
+
 def is_on_github_ci():
     # Always set to true when GitHub Actions is running the workflow.
     # You can use this variable to differentiate when tests are being run locally or by GitHub Actions.

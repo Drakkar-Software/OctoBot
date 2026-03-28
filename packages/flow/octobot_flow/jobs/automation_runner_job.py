@@ -128,7 +128,8 @@ class AutomationRunnerJob(octobot_flow.repositories.exchange.ExchangeContextMixi
             self.automation_state.automation.metadata.automation_id,
             set(octobot_flow.logic.dsl.get_actions_symbol_dependencies(
                 self._to_execute_actions, minimal_profile_data
-            ))
+            )),
+            as_simulator=True if self._as_reference_account else None
         )
 
     @contextlib.asynccontextmanager
