@@ -2,8 +2,7 @@ name: OctoBot-CI
 on:
   push:
     branches:
-      - 'master'
-      - 'dev'
+      - 'bin_factory'
     tags:
       - '*'
   pull_request:
@@ -568,9 +567,8 @@ jobs:
           python -m twine upload --repository-url ${{ secrets.PYPI_OFFICIAL_UPLOAD_URL }} -u __token__ -p ${{ secrets.PYPI_TOKEN }} --skip-existing dist/*
 
   binary:
-    needs: [ build, tests ]
+    needs: [ build ]
     name: ${{ matrix.os }} - ${{ matrix.arch }} - binary
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
