@@ -66,6 +66,27 @@ instance/
 # Sphinx documentation
 docs/_build/
 
+# Docusaurus documentation
+docs/node_modules/
+docs/build/
+docs/.docusaurus/
+# Auto-generated tentacle docs (from collect-tentacles.mjs)
+docs/content/creators/trading-modes/*.md
+docs/content/creators/evaluators/**/*.md
+docs/content/users/exchanges/*.md
+# Auto-generated _category_.json files (from collect-tentacles.mjs)
+docs/content/creators/trading-modes/_category_.json
+docs/content/creators/evaluators/**/_category_.json
+docs/content/users/exchanges/_category_.json
+# Auto-generated infrastructure docs (from collect-infra-docs.mjs)
+docs/content/developers/infrastructure/*.md
+docs/content/developers/infrastructure/_category_.json
+# Auto-synced root docs (from sync-root-docs.mjs)
+docs/content/developers/contributing.md
+docs/content/developers/changelog.md
+# Auto-generated llms.txt (from generate-llms-txt.mjs)
+docs/static/llms.txt
+
 # PyBuilder
 target/
 

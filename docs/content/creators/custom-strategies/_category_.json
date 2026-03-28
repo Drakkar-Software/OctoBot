@@ -1,0 +1,8 @@
+{
+  "label": "Custom Strategies",
+  "position": 5,
+  "link": {
+    "type": "generated-index",
+    "description": "Build your own trading strategies, evaluators, and tentacles."
+  }
+}

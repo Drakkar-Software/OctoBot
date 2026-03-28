@@ -709,6 +709,38 @@ jobs:
         if: always()
         run: rm -f infra/sync/ansible/inventories/${{ vars.ANSIBLE_ENV }}/.ssh/id_ed25519
 
+  docs:
+    name: Build & Deploy Docs
+    needs: [build, tests]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: docs/package-lock.json
+
+      - name: Install dependencies
+        run: cd docs && npm ci
+
+      - name: Build docs
+        run: cd docs && npm run build
+
+      - name: Deploy to Cloudflare Pages
+        if: github.event_name == 'push'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy docs/build --project-name=octobot-docs --branch=${{ github.head_ref || github.ref_name }}
+
   notify:
     if: ${{ failure() }}
     needs:
@@ -720,6 +752,7 @@ jobs:
       - release
       - version
       - sync
+      - docs
     uses: Drakkar-Software/.github/.github/workflows/failure_notify_workflow.yml@master
     secrets:
       DISCORD_GITHUB_WEBHOOK: ${{ secrets.DISCORD_GITHUB_WEBHOOK }}

@@ -1,0 +1,8 @@
+{
+  "label": "Architecture",
+  "position": 2,
+  "link": {
+    "type": "generated-index",
+    "description": "OctoBot system architecture and design decisions."
+  }
+}
