@@ -8,6 +8,7 @@ backend_packages = [
     "python_plugins",
 ]
 pants_ignore_use_gitignore = false
+pants_ignore = ["venv/"]
 pantsd = true
 pantsd_max_memory_usage = "6GiB"
 pythonpath = ["%(buildroot)s/pants-plugins"]
