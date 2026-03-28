@@ -14,8 +14,6 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-import typing
-
 import octobot_commons.constants
 import octobot_commons.errors
 import octobot_commons.dsl_interpreter as dsl_interpreter
