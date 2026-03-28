@@ -1262,6 +1262,9 @@ class MarketMakingTradingModeProducer(trading_modes.AbstractTradingModeProducer)
         return False
 
     async def on_new_reference_price(self, reference_price: decimal.Decimal) -> bool:
+        """
+        Returns True if market making orders should be updated.
+        """
         trigger = False
         open_orders = self.get_market_making_orders()
         buy_orders = [
