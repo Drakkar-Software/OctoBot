@@ -95,7 +95,7 @@ def create_order_instance(
     side: typing.Optional[enums.TradeOrderSide] = None,
     trigger_above: typing.Optional[bool] = None,
     fees_currency_side: typing.Optional[str] = None,
-    group: typing.Optional[str] = None,
+    group: typing.Optional["personal_data.OrderGroup"] = None,
     tag: typing.Optional[str] = None,
     reduce_only: typing.Optional[bool] = None,
     quantity_currency: typing.Optional[str] = None,
