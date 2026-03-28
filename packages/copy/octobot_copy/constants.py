@@ -33,6 +33,7 @@ CONFIG_REBALANCE_TRIGGER_PROFILE_MIN_PERCENT = "min_percent"
 
 # Exchange / order lifecycle (seconds)
 FILL_ORDER_TIMEOUT = 60
+FILL_ORDER_WAIT_TIME = 5
 
 # Account keys
 PORTFOLIO_ASSET_ALLOCATION_RATIO = "allocation_ratio"

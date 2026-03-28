@@ -230,7 +230,8 @@ class AutomationJob:
             octobot_flow.logic.configuration.create_profile_data(
                 self.automation_state.exchange_account_details,
                 self.automation_state.automation.metadata.automation_id,
-                symbols
+                symbols,
+                as_simulator=True if as_reference_account else None
             )
         ):
             await exchange_account_job.update_public_data()

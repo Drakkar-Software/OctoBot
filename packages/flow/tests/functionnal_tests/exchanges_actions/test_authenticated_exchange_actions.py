@@ -18,6 +18,7 @@ from tests.functionnal_tests import (
     actions_with_cancel_limit_orders,
     resolved_actions,
     automation_state_dict,
+    AUTHENTICATED_TEST_GROUP,
 )
 
 
@@ -51,6 +52,7 @@ def init_action():
 
 
 @pytest.mark.asyncio
+@pytest.mark.xdist_group(name=AUTHENTICATED_TEST_GROUP)
 async def test_execute_actions_with_limit_orders_and_empty_state(
     init_action: dict, actions_with_create_limit_orders: list[dict], actions_with_cancel_limit_orders: list[dict]
 ):

@@ -166,17 +166,28 @@ class OrdersInterface:
                 created_orders.append(created_order)
         return created_orders, orders_should_have_been_created
 
+    def automatically_synchronize_orders(self) -> bool:
+        return self._exchange_manager.exchange_personal_data.orders_manager.enable_order_auto_synchronization
+
     async def wait_for_orders_to_fill(self, orders: list) -> None:
         if orders:
-            await asyncio.gather(
-                *[
-                    trading_personal_data.wait_for_order_fill(
-                        order, copy_constants.FILL_ORDER_TIMEOUT, True
-                    )
-                    for order in orders
-                ],
-                return_exceptions=True,
-            )
+            if self._exchange_manager.trader.simulate or self.automatically_synchronize_orders():
+                # order will be synchronized by the orders manager
+                await asyncio.gather(
+                    *[
+                        trading_personal_data.wait_for_order_fill(
+                            order, copy_constants.FILL_ORDER_TIMEOUT, True
+                        )
+                        for order in orders
+                    ],
+                    return_exceptions=True,
+                )
+            else:
+                # todo for subportfolio: smartly wait for orders to fill instead of waiting for a fixed time
+                self._get_logger().info(
+                    f"Waiting for {copy_constants.FILL_ORDER_WAIT_TIME} seconds to let {len(orders)} orders fill..."
+                )
+                await asyncio.sleep(copy_constants.FILL_ORDER_WAIT_TIME)
 
     def get_open_orders(self, symbol: typing.Optional[str] = None, active: typing.Optional[bool] = None) -> list:
         return trading_api.get_open_orders(self._exchange_manager, symbol=symbol, active=active)
@@ -285,7 +296,7 @@ class OrdersInterface:
                 if is_cancelled and dependency is not None:
                     cancelled_dependencies.extend(dependency)
             except trading_errors.UnexpectedExchangeSideOrderStateError as err:
-                commons_logging.get_logger(self.__class__.__name__).warning(
+                self._get_logger().warning(
                     f"Skipped order cancel: {err}, order: {order}"
                 )
         if dependencies is not None:
@@ -313,11 +324,14 @@ class OrdersInterface:
         symbol: str,
         quantity: decimal.Decimal,
         price: decimal.Decimal,
-    ) -> tuple[decimal.Decimal, dict]:
+    ) -> tuple[list[tuple[decimal.Decimal, decimal.Decimal]], dict]:
         symbol_market = self._exchange_manager.exchange.get_market_status(symbol, with_fixer=False)
-        adapted_quantity = trading_personal_data.decimal_check_and_adapt_order_details_if_necessary(
+        adapted_order_details = trading_personal_data.decimal_check_and_adapt_order_details_if_necessary(
             quantity,
             price,
             symbol_market,
         )
-        return adapted_quantity, symbol_market
+        return adapted_order_details, symbol_market
+
+    def _get_logger(self) -> commons_logging.BotLogger:
+        return commons_logging.get_logger(self.__class__.__name__)

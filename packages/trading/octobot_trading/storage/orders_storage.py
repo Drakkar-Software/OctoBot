@@ -17,6 +17,7 @@ import copy
 import decimal
 import time
 import dataclasses
+import typing
 
 import octobot_commons.channels_name as channels_name
 import octobot_commons.enums as commons_enums
@@ -29,6 +30,12 @@ import octobot_trading.constants as constants
 import octobot_trading.storage.abstract_storage as abstract_storage
 import octobot_trading.storage.util as storage_util
 import octobot_trading.exchanges as exchanges
+import octobot_trading.personal_data.orders.order_factory as order_factory
+
+
+TO_UPDATE_FROM_EXCHANGE_FETCHED_ORDER_KEYS = [
+    enums.ExchangeConstantsOrderColumns.FILLED.value,   # filled is kept between iterations but should be updated by the latest fetched value when it changes
+]
 
 
 class OrdersStorage(abstract_storage.AbstractStorage):
@@ -309,6 +316,30 @@ def restore_order_storage_origin_value(origin_val):
                 origin_val[enums.ExchangeConstantsOrderColumns.FEE.value][enums.FeePropertyColumns.COST.value]
             ))
     return origin_val
+
+
+def update_enriched_order(
+    order_dict: dict[str, typing.Any],
+    account_orders_by_exchange_id: dict[str, dict[str, dict[str, typing.Any]]],
+    exchange_manager: "exchanges.ExchangeManager"
+):
+    order_exchange_id = order_dict[enums.ExchangeConstantsOrderColumns.EXCHANGE_ID.value]
+    if order_exchange_id in account_orders_by_exchange_id:
+        stored_order_dict = account_orders_by_exchange_id[order_exchange_id][constants.STORAGE_ORIGIN_VALUE]
+        # complete account order with exchange fetched as it might contain updated info but to keep existing info
+        for key, val in order_dict.items():
+            if key not in stored_order_dict or key in TO_UPDATE_FROM_EXCHANGE_FETCHED_ORDER_KEYS:
+                stored_order_dict[key] = val
+        if enums.ExchangeConstantsOrderColumns.ID.value not in stored_order_dict:
+            stored_order_dict[enums.ExchangeConstantsOrderColumns.ID.value] = None
+        return OrdersStorage.sanitize_for_storage(account_orders_by_exchange_id[order_exchange_id])
+    # create a new enriched order
+    return _format_order(
+        order_factory.create_order_instance_from_raw(
+            exchange_manager.trader, order_dict, force_open_or_pending_creation=True
+        ),
+        exchange_manager
+    )
 
 
 def _get_startup_order_key(order_dict):

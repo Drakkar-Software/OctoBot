@@ -12,7 +12,8 @@ import tentacles.Meta.Keywords.scripting_library as scripting_library
 def create_profile_data(
     exchange_account_details: typing.Optional[octobot_flow.entities.ExchangeAccountDetails],
     automation_id: str,
-    symbols: set[str]
+    symbols: set[str],
+    as_simulator: typing.Optional[bool] = None,
 ) -> profile_data_import.ProfileData:
     crypto_currencies = _get_crypto_currencies(symbols)
     return profile_data_import.ProfileData(
@@ -25,7 +26,9 @@ def create_profile_data(
             reference_market=infer_reference_market(exchange_account_details, crypto_currencies) 
         ),
         trader_simulator=profile_data_import.TraderSimulatorData(
-            enabled=exchange_account_details.is_simulated() if exchange_account_details else True,
+            enabled=as_simulator if as_simulator is not None else (
+                exchange_account_details.is_simulated() if exchange_account_details else True
+            )
         ),
         tentacles=[], # no tentacles: only the generic dsl executor will be used
     )

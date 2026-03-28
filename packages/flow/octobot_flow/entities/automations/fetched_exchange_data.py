@@ -104,13 +104,10 @@ class FetchedExchangePublicData(octobot_commons.dataclasses.MinimizableDataclass
 @dataclasses.dataclass
 class FetchedExchangeData(octobot_commons.dataclasses.MinimizableDataclass):
     public_data: FetchedExchangePublicData = dataclasses.field(default_factory=FetchedExchangePublicData)
-    authenticated_data: FetchedExchangeAccountElements = dataclasses.field(default_factory=FetchedExchangeAccountElements)
 
     def __post_init__(self):
         if self.public_data and isinstance(self.public_data, dict):
             self.public_data = FetchedExchangePublicData.from_dict(self.public_data)
-        if self.authenticated_data and isinstance(self.authenticated_data, dict):
-            self.authenticated_data = FetchedExchangeAccountElements.from_dict(self.authenticated_data)
 
     def get_last_price(self, symbol: str) -> decimal.Decimal:
         # use if as in most cases, tickers are not available for all symbols

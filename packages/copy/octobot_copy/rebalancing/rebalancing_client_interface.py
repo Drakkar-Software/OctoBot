@@ -82,3 +82,4 @@ class RebalancingClientInterface:
             can_include_assets_in_open_orders_in_holdings_ratio
         )
         self.raise_all_order_errors = raise_all_order_errors
+    

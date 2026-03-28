@@ -39,7 +39,7 @@ class AccountCopier:
             orders_synchronizer_module.OrdersSynchronizer(reference_account, exchange_interface)
         )
 
-    async def execute_rebalance_if_needed(self) -> list[trading_personal_data.Order]:
+    async def copy_account(self) -> list[trading_personal_data.Order]:
         rebalancer, should_rebalance, details = await self._prepare_rebalance_plan()
         rebalance_orders: list = []
         try:
@@ -47,9 +47,12 @@ class AccountCopier:
                 self._get_logger().info(
                     f"Executing rebalance on [{self._copier_exchange_interface.exchange_name}]"
                 )
+                await self._orders_synchronizer.cancel_orders_pending_synchronization(None)
                 rebalance_orders = await self._run_rebalance(rebalancer, details)
             else:
                 self._get_logger().info("No rebalance needed")
+            if rebalance_orders:
+                await self._copier_exchange_interface.portfolio.refresh_portfolio()
             synched_orders = await self._synchronize_reference_open_orders()
             return rebalance_orders + synched_orders
         except (trading_errors.MissingMinimalExchangeTradeVolume, copy_errors.RebalanceAborted) as err:
@@ -95,13 +98,19 @@ class AccountCopier:
             self._get_logger().info(f"Step 2/3: skipped: no coin to sell for {reference_market}")
         else:
             self._get_logger().info(f"Step 2/3: selling coins to free {reference_market}")
-            orders += await rebalancer.sell_targeted_coins_for_reference_market(details, None)
+            if sell_orders := await rebalancer.sell_targeted_coins_for_reference_market(details, None):
+                if not self._copier_exchange_interface.orders.automatically_synchronize_orders():
+                    await self._copier_exchange_interface.portfolio.refresh_portfolio()
+                orders += sell_orders
         self._get_logger().info(f"Step 3/3: buying coins using {reference_market}")
-        orders += await rebalancer.split_reference_market_into_targeted_coins(
+        if buy_orders := await rebalancer.split_reference_market_into_targeted_coins(
             details,
             is_simple_buy_without_selling,
             None,
-        )
+        ):
+            if not self._copier_exchange_interface.orders.automatically_synchronize_orders():
+                await self._copier_exchange_interface.portfolio.refresh_portfolio()
+            orders += buy_orders
         return orders
 
     def _get_synthetic_config(self) -> dict:

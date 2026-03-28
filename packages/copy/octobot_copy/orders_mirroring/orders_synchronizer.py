@@ -43,10 +43,8 @@ class OrdersSynchronizer:
             replicable.append(doc)
         return replicable
 
-    async def synchronize(self) -> list:
-        """Align copier open orders with reference_account.orders (synched mirror rows)."""
-        replicable = self._get_replicable_reference_orders()
-        active_reference_ids = {
+    def _active_reference_order_ids(self, replicable: list[dict[str, typing.Any]]) -> set:
+        return {
             str(
                 doc[trading_constants.STORAGE_ORIGIN_VALUE][
                     trading_enums.ExchangeConstantsOrderColumns.ID.value
@@ -54,7 +52,22 @@ class OrdersSynchronizer:
             )
             for doc in replicable
         }
-        orphan_cancelled_count = await self._cancel_mirrored_orphan_orders(active_reference_ids)
+
+    async def cancel_orders_pending_synchronization(
+        self,
+        replicable_orders: typing.Optional[list[dict[str, typing.Any]]]
+    ) -> int:
+        """
+        Cancel mirrored copier open orders that no longer match a replicable reference open order
+        """
+        replicable = replicable_orders or self._get_replicable_reference_orders()
+        to_keep_ids = self._active_reference_order_ids(replicable)
+        return await self._cancel_mirrored_orphan_orders(to_keep_ids)
+
+    async def synchronize(self) -> list:
+        """Align copier open orders with reference_account.orders (synched mirror rows)."""
+        replicable = self._get_replicable_reference_orders()
+        orphan_cancelled_count = await self.cancel_orders_pending_synchronization(replicable)
         created: list = []
         replaced_cancelled_count = 0
         already_synchronized_count = 0
@@ -325,6 +338,26 @@ class OrdersSynchronizer:
             target_quantity = min(scaled_quantity, total_symbol_holding)
         if target_quantity <= trading_constants.ZERO:
             target_quantity = trading_constants.ZERO
+        else:
+            adapted_order_chunks, _ = (
+                self._exchange_interface.orders.check_and_adapt_order_details_if_necessary(
+                    symbol,
+                    target_quantity,
+                    limit_price,
+                )
+            )
+            adapted_details: list[tuple[decimal.Decimal, decimal.Decimal]] = typing.cast(
+                list[tuple[decimal.Decimal, decimal.Decimal]],
+                adapted_order_chunks,
+            )
+            if not adapted_details:
+                target_quantity = trading_constants.ZERO
+            else:
+                target_quantity = sum(
+                    (quantity for quantity, _ in adapted_details),
+                    trading_constants.ZERO,
+                )
+                limit_price = adapted_details[0][1]
         return target_quantity, resolved_trader_order_type, limit_price, current_price
 
     def _get_logger(self) -> logging.BotLogger:
