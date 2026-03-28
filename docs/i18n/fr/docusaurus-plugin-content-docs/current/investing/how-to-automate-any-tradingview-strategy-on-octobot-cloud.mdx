@@ -1,0 +1,295 @@
+---
+title: "Automatisation de stratégies"
+description: "Utilisez les stratégies de TradingView pour automatiser les trades de votre compte d'échange crypto avec stratégies préconçues ou personnalisées."
+sidebar_position: 18
+---
+
+
+
+# Comment automatiser toute stratégie TradingView sur OctoBot cloud
+
+import YouTube from '@site/src/components/YouTube';
+
+<YouTube id="OZIYfg7bJf4" title="Automatisez votre stratégie avec un compte TradingView" />
+
+Automatisez n'importe quelle stratégie TradingView en quelques secondes en utilisant un compte TradingView et le <a href="https://www.octobot.cloud/fr/creator" rel="nofollow">générateur de stratégie par IA</a>.
+
+Note: L'automatisation d'alertes TradingView gratuitement par email n'est malheureusement plus disponible suite à une récente restriction de la part de TradingView.
+
+## Toute stratégie TradingView peut être automatisée avec OctoBot
+
+OctoBot peut facilement être [connecté à TradingView](tradingview-automated-trading) pour automatiser les trades en se basant sur des événements de prix, des indicateurs ou encore des stratégies complètes.
+
+<div style={{textAlign: "center"}}>
+  <div>
+    ![stratégies de la communauté
+    tradingview](/images/guides/trading-view/tradingview-community-strategies.png)
+  </div>
+</div>
+
+Automatiser une stratégie TradingView présente de nombreux avantages par rapport à une simple automatisation suivant des événements de prix ou des indicateurs techniques.  
+Avec l'automatisation d'une stratégie, vous pouvez :
+
+- Automatiser vos transactions en utilisant **toute stratégie TradingView**, **votre propre stratégie** créée par le <a href="https://www.octobot.cloud/fr/creator" rel="nofollow">générateur de strategies TradingView</a> d'OctoBot, ou une stratégie fournie par **votre créateur de stratégies préféré**
+- **Combinez plusieurs indicateurs** pour créer vos ordres d'entrée et de sortie lorsque toutes vos conditions sont remplies
+- Utilisez le moteur de backtesting intégré à TradingView pour **optimiser votre stratégie**
+
+## 1. Préparer une stratégie TradingView à se connecter à votre OctoBot
+
+Pour permettre à votre OctoBot de trader sur votre compte d'échange (ou un [compte virtuel sans risque](paper-trading-a-strategy)) à partir d'une stratégie TradingView, il vous suffit de lier les ordres de la stratégie à vos [automatisations TradingView](tradingview-alerts-automation#trading-automatisé-avec-des-stratégies-pine-script) en utilisant des alertes TradingView classiques.
+
+Voici un guide étape par étape présentant la façon de procéder.
+
+Une fois que vous savez quelle stratégie vous souhaitez utiliser, affichez-la sur votre graphique TradingView et cliquez sur l'icône `{}`.
+
+<div style={{textAlign: "center"}}>
+  <div>
+    ![code d'une stratégie
+    tradingview](/images/guides/trading-view/tradingview-open-strategy-code.png)
+  </div>
+</div>
+
+Cela affiche le code Pine Script de la stratégie. Modifier ce code modifiera le comportement de la stratégie.
+
+:::info
+  Vous ne trouvez pas le code la stratégie que vous voudiez utiliser ? Générez
+  le avec le{' '}
+  <a href="https://www.octobot.cloud/fr/creator" rel="nofollow">générateur de strategies TradingView</a>{' '}
+  d'OctoBot.
+:::
+
+Chaque stratégie TradingView utilisant Pine Script en version 4 et supérieure peut utiliser les mots-clés `strategy.entry`, `strategy.exit`, `strategy.close` et `strategy.order` pour trader afin d'entrer et de sortir des positions.  
+Pour lier ces transactions à votre compte d'échange en utilisant OctoBot, il vous suffit d'ajouter le paramètre `alert_message="your-OctoBot-automation-id"` au mot-clé.
+
+<div style={{textAlign: "center"}}>
+  <div>
+    ![message d'ajout d'alerte
+    tradingview](/images/guides/trading-view/tradingview-adding-alert-message.png)
+  </div>
+</div>
+
+Notez que l'entrée initiale `strategy.entry("RsiLE", strategy.long, comment="Buy")` a été modifiée en `strategy.entry("RsiLE", strategy.long, comment="Buy", alert_message="your-OctoBot-automation-id")` afin d'inclure le paramètre `alert_message="your-OctoBot-automation-id"`.
+
+Dans votre stratégie Pine Script, chaque appel du mot-clé suivant doit inclure ce paramètre `alert_message="your-OctoBot-automation-id"` :
+
+- `strategy.entry`
+- `strategy.exit`
+- `strategy.close`
+- `strategy.order`
+
+Oublier d'ajouter le paramètre `alert_message` à l'un de ces appels entraînera des signaux manquants sur votre compte d'échange.
+
+Maintenant que chaque appel de stratégie contient le paramètre, allez dans l'onglet personnalisé de l'<a href="https://www.octobot.cloud/explore?category=tv" rel="nofollow">explorateur de stratégies OctoBot</a> et démarrez un nouvel OctoBot TradingView.
+
+<div style={{textAlign: "center"}}>
+  ![lancer un nouvel octobot depuis
+  l'explorer](/images/guides/trading-view/start-new-tradingview-octobot-from-explorer.png)
+</div>
+
+Voici un [guide expliquant comment démarrer un OctoBot TradingView](tradingview-trading-tutorial#1-create-your-tradingview-octobot) si vous désirez plus d'information sur le sujet.
+
+Maintenant que votre TradingView OctoBot est lancé, il vous suffit de créer une automatisation pour chaque signal de trading de votre stratégie.
+
+:::info
+  Les automatisations sont des actions à exécuter automatiquement par votre
+  OctoBot lorsqu'elles sont déclenchées par les alertes TradingView.
+:::
+
+## 2. Option A: Créer vos automatisations
+
+### 2.1 Créer une automation standard
+
+Chaque mot-clé `strategy.entry`, `strategy.exit`, `strategy.close` et `strategy.order` crée des signaux de trading, il suffit de créer une automatisation pour chacun de ces signaux.
+
+<div style={{textAlign: "center"}}>
+  <div>
+    ![stratégie rsi simple sur
+    tradingview](/images/guides/trading-view/tradingview-simple-rsi-strategy.png)
+  </div>
+</div>
+
+Dans cette stratégie RSI simple, deux signaux sont émis : un signal LONG et un signal SHORT, tous deux créés par un mot-clé strategy.entry.
+
+Dans cet exemple, nous voulons acheter lorsque le signal LONG est émis et vendre lorsque le signal SHORT est envoyé.
+
+Nous allons donc créer les deux automatisations suivantes :
+
+**Automation 1 : signal long**
+
+<div style={{textAlign: "center"}}>
+  <div>
+    ![automatisation octobot achetent des eth pour 25 percent des
+    usdt](/images/guides/trading-view/octobot-automation-buy-eth-25-percent-usdt.png)
+  </div>
+</div>
+Acheter de l'ETH/USDT en utilisant 25% du portefeuille au prix du marché.
+<div style={{textAlign: "center"}}>
+  <div>
+    ![id de l'automatisation octobot achetant des eth pour 25 percent des
+    usdt](/images/guides/trading-view/octobot-automation-buy-eth-25-percent-usdt-automation-id.png)
+  </div>
+</div>
+Nous utiliserons l'identifiant de cette automatisation pour remplacer le texte
+`your-OctoBot-automation-id` dans le premier mot-clé `strategy.entry`.
+
+**Automation 2 : short signal**
+
+<div style={{textAlign: "center"}}>
+  <div>
+    ![automatisation octobot pour vendre 100 percent des
+    eth](/images/guides/trading-view/octobot-automation-sell-100-percent-eth.png)
+  </div>
+</div>
+Vendre 100% de la détention d'ETH/USDT au prix du marché. Nous utiliserons
+l'identifiant de cette automatisation pour remplacer le texte
+`your-OctoBot-automation-id` dans le deuxième mot-clé `strategy.entry`.
+
+### 2.2 Lier votre stratégie TradingView à vos automatisations standards
+
+**1. Copiez les identifiants de vos automatisations dans votre alerte de stratégie**
+
+Copiez l'identifiant de chaque automatisation dans la valeur textuelle de `alert_message` de leur signal associé.
+
+<div style={{textAlign: "center"}}>
+  <div>
+    ![panel de connection d' automatisation
+    octobot](/images/guides/trading-view/octobot-open-automation-connection-panel.png)
+  </div>
+  <div>
+    ![id d'automatisation octobot pour acheter des eth avec 25 pourcent des
+    usdt](/images/guides/trading-view/octobot-automation-buy-eth-25-percent-usdt-automation-id.png)
+  </div>
+</div>
+
+Il ne devrait plus rester de `your-OctoBot-automation-id` dans le code de votre stratégie Pine Script.
+
+<div style={{textAlign: "center"}}>
+  <div>
+    ![exemple de stratégie tradingview avec des id
+    d'automatisation](/images/guides/trading-view/tradingview-strategy-example-with-automation-ids.png)
+  </div>
+</div>
+
+Notez les textes `f2b0b567-d63e-412e-b6cb-1a31c0bc1217` et `af4b897e-6b8e-45d0-a88d-9f11fd57a9b2` qui se trouvent maintenant dans le mot-clé `strategy.entry` au lieu de la valeur par défaut `your-OctoBot-automation-id`. Naturellement, ces deux identifiants sont des exemples et vous devriez utiliser vos propres identifiants d'automatisation à la place.
+
+**2. Configurer l'alerte TradingView**
+
+Créez une nouvelle alerte TradingView liée à votre stratégie et modifiez la section `Message` de l'alerte pour ne contenir que la valeur du paramètre `alert_message` (qui est votre identifiant d'automatisation).
+
+<div style={{textAlign: "center"}}>
+  ![création d'alerte sur
+  tradingview](/images/guides/trading-view/tradingview-create-alert.png)
+</div>
+Ouvrez la vue `Alertes` sur la droite et cliquez sur `Créer une alerte`.
+
+<div style={{textAlign: "center"}}>
+  <div>
+    ![ajout d'alerte de stratégie dans
+    tradingview](/images/guides/trading-view/tradingview-adding-strategy-alert-message.png)
+  </div>
+</div>
+
+1. Sélectionnez votre stratégie dans la section `Condition`. Veuillez noter que toute modification de la configuration de votre stratégie nécessitera de sélectionner la version la plus récente de la stratégie dans cette alerte.
+2. Utilisez **cette syntaxe exacte** pour le contenu du `Message` : `{{strategy.order.alert_message}}`
+
+**3. Assurez-vous que vos paramètres de notification sont à jour**
+
+Vous voudrez peut-être utiliser des notifications par [webhooks](tradingview-trading-tutorial#25-configurer-lurl-du-webhook) pour trader en utilisant cette stratégie. Avant de confirmer l'alerte, assurez-vous toujours que la configuration des **Notifications** de votre alerte est à jour, sinon votre OctoBot risque de ne pas recevoir vos alertes.
+
+<div style={{textAlign: "center"}}>
+  <div>
+    ![configuration de notification
+    tradingview](/images/guides/trading-view/tradingview-notification-configuration.png)
+  </div>
+</div>
+
+Remarque : lorsque vous utilisez des notifications par courrier électronique, assurez-vous toujours de cocher `Envoyer du texte brut`.
+
+## 2. Option B: Utiliser des automatisations personnalisées
+
+### 2.1 Créer des automatisations personnalisées
+
+
+<YouTube id="HeOi4PY1ayk" title="Tutorial TradingView: automatiser n" />
+<div style={{textAlign: "center"}}>
+  Tutorial TradingView: automatiser n'importe quelle stratégie avec les
+  automatisations personnalisées d'OctoBot.
+</div>
+
+Chaque mot-clé `strategy.entry`, `strategy.exit`, `strategy.close` et `strategy.order` crée des signaux de trading, il suffit de créer une automatisation pour chacun de ces signaux.
+
+<div style={{textAlign: "center"}}>
+  <div>
+    ![stratégie rsi simple sur
+    tradingview](/images/guides/trading-view/tradingview-simple-rsi-strategy.png)
+  </div>
+</div>
+
+Dans cette stratégie RSI simple, deux signaux sont émis : un signal LONG et un signal SHORT, tous deux créés par un mot-clé strategy.entry.
+
+Dans cet exemple, nous voulons acheter lorsque le signal LONG est émis et vendre lorsque le signal SHORT est envoyé.
+
+Nous allons donc mettre à jour le paramètre `alert_message` de chaque signal LONG et SHORT pour envoyer nos signaux d'achat et de vente.
+
+**Automatisation personnalisée : Acheter 0,1 ETH sur un signal LONG et le vendre sur un signal SHORT**
+
+<div style={{textAlign: "center"}}>
+  <div>
+    ![Automatisation personnalisée octobot achat
+    eth](/images/guides/trading-view/octobot-custom-automation-buy-eth.png)
+  </div>
+</div>
+- Contenu de l' `alert_message` du signal LONG:
+`SYMBOL=ETHUSDT;SIGNAL=BUY;VOLUME=0.1;BOT_ID=21a7e1e2-d499` - Contenu de l'
+`alert_message` du signal SHORT:
+`SYMBOL=ETHUSDT;SIGNAL=SELL;VOLUME=0.1;BOT_ID=21a7e1e2-d499`
+
+Vous trouverez la liste des paramètres pris en charge dans le [guide des automatisations](tradingview-alerts-automation#automatisations-tradingview-personnalisées).
+
+_Remarque : ici, `BOT_ID=21a7e1e2-d499` n'est qu'une valeur d'exemple et doit être remplacée par l'identifiant de votre OctoBot TradingView, que vous pouvez trouver comme dernier composant de l'URL de votre OctoBot TradingView._
+
+Et voilà, ce simple `alert_message` indique automatiquement à OctoBot que faire lorsque la stratégie se déclenche.
+
+### 2.2 Lier votre stratégie TradingView à vos automatisations personnalisées
+
+Créez une nouvelle alerte TradingView liée à votre stratégie et modifiez la section `Message` de l'alerte pour ne contenir que la valeur du paramètre `alert_message` (qui est le contenu de l'automatisation).
+
+<div style={{textAlign: "center"}}>
+  ![création d'alerte sur
+  tradingview](/images/guides/trading-view/tradingview-create-alert.png)
+</div>
+Ouvrez la vue `Alertes` sur la droite et cliquez sur `Créer une alerte`.
+
+<div style={{textAlign: "center"}}>
+  <div>
+    ![ajout d'alerte de stratégie dans
+    tradingview](/images/guides/trading-view/tradingview-adding-strategy-alert-message.png)
+  </div>
+</div>
+
+1. Sélectionnez votre stratégie dans la section `Condition`. Veuillez noter que toute modification de la configuration de votre stratégie nécessitera de sélectionner la version la plus récente de la stratégie dans cette alerte.
+2. Utilisez **cette syntaxe exacte** pour le contenu du `Message` : `{{strategy.order.alert_message}}`
+
+**3. Assurez-vous que vos paramètres de notification sont à jour**
+
+Vous voudrez peut-être utiliser des notifications par [webhooks](tradingview-trading-tutorial#25-configurer-lurl-du-webhook) pour trader en utilisant cette stratégie. Avant de confirmer l'alerte, assurez-vous toujours que la configuration des **Notifications** de votre alerte est à jour, sinon votre OctoBot risque de ne pas recevoir vos alertes.
+
+<div style={{textAlign: "center"}}>
+  <div>
+    ![configuration de notification
+    tradingview](/images/guides/trading-view/tradingview-notification-configuration.png)
+  </div>
+</div>
+
+Remarque : lorsque vous utilisez des notifications par courrier électronique, assurez-vous toujours de cocher `Envoyer du texte brut`.
+
+## Tout est prêt !
+
+C'est tout ! Avec cette configuration, lorsque votre stratégie TradingView détectera une opportunité d'achat ou de vente, elle :
+
+1. Appellera `strategy.entry` (ou tout autre mot-clé `strategy.` que vous aurez utilisé)
+2. Appellera strategy.entry (ou tout autre mot-clé strategy. que vous avez utilisé)
+   Ce qui enverra une alerte liée à une automatisation de votre TradingView OctoBot (identifié par le paramètre `alert_message`)
+3. Votre automatisation OctoBot sera exécutée sur votre compte d'échange réel ou virtuel
+
+**[Démarrer votre bot TradingView](https://www.octobot.cloud)**

@@ -23,4 +23,5 @@ SETTLEMENT_ASSET_SEPARATOR = ":"
 OPTION_SEPARATOR = "-"
 DICT_BULLET_TOKEN_STR = "\n "
 
-OCTOBOT_KEY = b"uVEw_JJe7uiXepaU_DR4T-ThkjZlDn8Pzl8hYPIv7w0="  # TODO temp
+# DEPRECATED: will be removed in future versions
+OCTOBOT_KEY = b"uVEw_JJe7uiXepaU_DR4T-ThkjZlDn8Pzl8hYPIv7w0="

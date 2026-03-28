@@ -1,0 +1,91 @@
+---
+title: "Trader avec ChatGPT"
+description: "Utilisez ChatGPT pour améliorer vos stratégies de trading de cryptos avec des prédictions d'une IA en temps réel"
+slug: "trading-using-chat-gpt"
+date: "2023-11-02"
+authors: ["paul"]
+tags: ["ChatGPT", "AI", "Cryptocurrency", "Trading", "OctoBot cloud"]
+image: "/images/blog/trading-using-chat-gpt/cover.png"
+---
+
+
+
+# Trader avec ChatGPT
+
+![cover](/images/blog/trading-using-chat-gpt/cover.png)
+
+## Demandez à ChatGPT l'avenir du marché crypto
+
+Ne serait-il pas formidable de savoir ce que <a href="https://chat.openai.com/" rel="nofollow">ChatGPT</a> pense d'une direction particulière du marché ?
+
+Bien que ChatGPT ne puisse pas répondre directement à des questions telles que "Le BTC/USD va-t-il monter demain ?", il peut répondre à de nombreuses questions connexes, y compris les prévisions de tendances.
+
+C'est une excellente opportunité de tirer parti de l'IA extrêmement puissante qu'est ChatGPT (dans sa version 3 ou ultérieure) et de l'intégrer directement dans vos stratégies de trading.
+
+## Une stratégie de trading ChatGPT
+
+Dans cette vidéo, nous présentons une stratégie de trading ChatGPT que nous avons créé sur [OctoBot cloud](/fr). Nous expliquons son fonctionnement et ses performances.
+
+import YouTube from '@site/src/components/YouTube';
+
+<YouTube id="BV4ZHQrIpRQ" title="Stratégie de trading crypto avec ChatGPT sur OctoBot" />
+
+Si vous êtes intéressés pour en savoir plus sur cette stratégie de trading ChatGPT, nous avons créé ce [making of de la stratégie ChatGPT](chatgpt-strategy-deep-dive) dans lequel nous couvrons on détails:
+
+- Les achats et ventes de cette stratégie
+- Ses performances en trading simulé avec les données historiques ([backtesting](/guides/octobot-usage/backtesting))
+- Les performances d'un OctoBot qui trade avec cette stratégie depuis plusieurs semaines.
+
+**[Investir avec ChatGPT](https://www.octobot.cloud)**
+
+## ChatGPT dans votre OctoBot
+
+Depuis OctoBot 0.4.47, nous avons ajouté un nouvel évaluateur : le `GPTEvaluator`. Cet évaluateur peut être utilisé facilement avec le profile `GPT Trading`.
+
+Une fois activé, il demandera automatiquement à ChatGPT son avis sur chaque paire échangée, sur chaque intervalle de temps.
+
+Le type de données donné à ChatGPT peut être configuré : la valeur du prix de l'actif ou différents types d'évaluateurs techniques peuvent être envoyés à ChatGPT pour qu'il donne son avis.
+
+Une fois activé, le `GPTEvaluator` se comporte comme tout autre évaluateur technique, ce qui signifie qu'il peut être combiné avec d'autres, utilisé pour trader, pour créer des signaux de trading ou pour vous notifier lorsque la situation change.
+
+Vous pouvez donc :
+
+- Trader automatiquement en se basant uniquement sur les prédictions de ChatGPT
+- Trader en combinant les prédictions de ChatGPT avec d'autres évaluateurs
+- Obtenir l'avis de ChatGPT sur le marché à tout moment depuis l'interface web et le statut du marché et être notifié de tout changement
+
+Plus de détails sur le fonctionnement des stratégies de trading ChatGPT avec OctoBot sur le [guide de trading ChatGPT](/guides/octobot-trading-modes/chatgpt-trading).
+
+## Suivez les signaux de trading ChatGPT
+
+Nous avons également mis en place une [page](https://www.octobot.cloud/tools/crypto-prediction) où vous pouvez suivre les derniers signaux de trading crypto de ChatGPT.
+L'objectif de cette nouvelle page est simple. Il s'agit de vous montrer les derniers signaux de trading crypto de notre stratégie ChatGPT. De cette façon, vous pouvez voir comment cela fonctionne et confirmer que cela fonctionne réellement.
+
+<div style={{textAlign: "center"}}>
+  <div>
+    ![ChatGPT trading signals](/images/blog/trading-using-chat-gpt/gpt-free-tool.png)
+    _Tableau de bord des derniers signaux de trading ChatGPT_
+  </div>
+</div>
+
+Pour des informations en temps réel, nous avons également créé un <a href="https://twitter.com/OctoBotGPT" rel="nofollow">compte Twitter / X</a> et un <a href="https://t.me/octobotgpt" rel="nofollow">Telegram</a> qui publient les nouveaux signaux. En suivant ces comptes, vous pouvez immédiatement recevoir des notifications sur les derniers signaux, ce qui facilite le suivi du marché crypto.
+
+Pour avoir plus d'informations sur les signaux de trading ChatGPT, lisez notre article [Trading avec les signaux ChatGPT](introducing-chatgpt-trading-tool).
+
+<div style={{textAlign: "center"}}>
+  **[Voir les stratégies ChatGPT](https://www.octobot.cloud/fr/explore?category=strategies)**
+</div>
+
+## Comment utiliser ChatGPT dans votre OctoBot
+
+Étant donné que les appels automatisés à ChatGPT sont une fonctionnalité payante de <a href="https://openai.com/" rel="nofollow">openai.com</a>, il existe 3 façons de l'utiliser dans OctoBot et de [trader avec ChatGPT](/guides/octobot-trading-modes/chatgpt-trading).
+
+### 1. Utiliser une stratégie de trading OctoBot cloud basée sur ChatGPT
+
+En utilisant [OctoBot cloud](https://www.octobot.cloud/), vous pouvez utiliser des stratégies de trading ChatGPT simplement et gratuitement. Utilisez les sur votre compte de plateforme d'échange favorite ou sans risque en utilisant le [trading virtuel](/investing/paper-trading-a-strategy).
+
+### 2. ChatGPT à partir de votre OctoBot auto-hébergé
+
+Pour utiliser ChatGPT à partir de votre [robot de trading OctoBot cloud](https://www.octobot.cloud/trading-bot), renseignez votre clé API OpenAI et la stocker dans la configuration de votre OctoBot. Les tarifs d'OpenAI seront alors appliqués.
+
+Plus de détails sur la configuration de ChatGPT et comment estimer le coût de ses demandes dans le [guide ChatGPT](/guides/octobot-interfaces/chatgpt)

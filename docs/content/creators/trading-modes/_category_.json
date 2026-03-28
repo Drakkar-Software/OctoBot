@@ -1,0 +1,8 @@
+{
+  "label": "Trading Modes",
+  "position": 2,
+  "link": {
+    "type": "generated-index",
+    "description": "Trading Modes available in OctoBot."
+  }
+}

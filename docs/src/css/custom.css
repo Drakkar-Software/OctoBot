@@ -1,0 +1,171 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap');
+
+:root {
+  --ifm-color-primary: #2563eb;
+  --ifm-color-primary-dark: #1d4ed8;
+  --ifm-color-primary-darker: #1e40af;
+  --ifm-color-primary-darkest: #1e3a8a;
+  --ifm-color-primary-light: #3b82f6;
+  --ifm-color-primary-lighter: #60a5fa;
+  --ifm-color-primary-lightest: #93bbfd;
+  --ifm-code-font-size: 95%;
+  --ifm-font-family-base: 'DM Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+  letter-spacing: -0.3px;
+}
+
+[data-theme='dark'] {
+  --ifm-color-primary: #60a5fa;
+  --ifm-color-primary-dark: #3b82f6;
+  --ifm-color-primary-darker: #2563eb;
+  --ifm-color-primary-darkest: #1d4ed8;
+  --ifm-color-primary-light: #93bbfd;
+  --ifm-color-primary-lighter: #bfdbfe;
+  --ifm-color-primary-lightest: #dbeafe;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+}
+
+/* Hero section */
+.hero--primary {
+  --ifm-hero-background-color: var(--ifm-color-primary);
+  --ifm-hero-text-color: #ffffff;
+}
+
+/* Sidebar improvements */
+.menu__link {
+  font-size: 0.9rem;
+}
+
+/* Footer */
+.footer--dark {
+  --ifm-footer-background-color: #0f172a;
+}
+
+/* ===== Blog list page — card grid ===== */
+
+/* Grid container: 3 cols desktop, 1 col mobile */
+.blog-list-page .row > main {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+  max-width: 100%;
+  flex-basis: 100%;
+}
+
+@media (max-width: 768px) {
+  .blog-list-page .row > main {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Card wrapper */
+.blog-post-card {
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  background: var(--ifm-background-color);
+  display: flex;
+  flex-direction: column;
+}
+
+.blog-post-card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+[data-theme='dark'] .blog-post-card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+/* Cover image */
+.blog-post-cover-link {
+  display: block;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  background: var(--ifm-color-emphasis-100);
+  flex-shrink: 0;
+}
+
+.blog-post-cover-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.blog-post-card:hover .blog-post-cover-image {
+  transform: scale(1.03);
+}
+
+/* Card content */
+.blog-post-card > article,
+.blog-post-card > div:last-child > article {
+  padding: 0.5rem 0.75rem 0.75rem;
+  margin-bottom: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Title */
+.blog-list-page article header h2 {
+  font-size: 0.95rem;
+  line-height: 1.3;
+  margin-bottom: 0.15rem;
+}
+
+.blog-list-page article header h2 a {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Meta line (date + reading time) */
+.blog-list-page article header .margin-vert--md {
+  margin-top: 0 !important;
+  margin-bottom: 0.4rem !important;
+  font-size: 0.75rem;
+  color: var(--ifm-color-emphasis-600);
+}
+
+/* Excerpt text — clamp to 2 lines */
+.blog-list-page article .markdown {
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--ifm-color-emphasis-700);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  flex: 1;
+}
+
+.blog-list-page article .markdown > *:first-child {
+  margin-top: 0;
+}
+
+/* Footer (tags + read more) */
+.blog-list-page article footer.row {
+  margin-top: auto !important;
+  padding-top: 0.4rem;
+  border-top: 1px solid var(--ifm-color-emphasis-200);
+  font-size: 0.75rem;
+}
+
+/* Hide duplicate H1/H2 in list excerpts */
+.blog-list-page article .markdown > h1:first-child,
+.blog-list-page article .markdown > h2:first-child {
+  display: none;
+}
+
+/* Remove default bottom margin on list items (grid handles spacing) */
+.blog-list-page .row > main > .margin-bottom--xl {
+  margin-bottom: 0 !important;
+}
+
+/* Pagination — span full grid width */
+.blog-list-page nav.pagination-nav {
+  grid-column: 1 / -1;
+}

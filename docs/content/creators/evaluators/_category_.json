@@ -1,0 +1,8 @@
+{
+  "label": "Evaluators",
+  "position": 3,
+  "link": {
+    "type": "generated-index",
+    "description": "Evaluators available in OctoBot."
+  }
+}

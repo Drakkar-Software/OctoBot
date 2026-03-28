@@ -1,0 +1,261 @@
+---
+title: "TradingView trading tutorial"
+description: "Simple step by step tutorial to create your TradingView OctoBot and trade on TradingView alerts using paper or real trading on any cryptocurrency exchange."
+sidebar_position: 16
+---
+
+
+
+# TradingView trading tutorial
+
+With OctoBot cloud, it is very easy to automate your trades using your own TradingView-based strategies.
+
+Here is a step by step tutorial on how to get started and make your first trades with OctoBot using paper trading and TradingView.
+
+import YouTube from '@site/src/components/YouTube';
+
+<YouTube id="TNRMUP6-a_g" title="Automating TradingView" />
+
+In this tutorial, you will learn how to:
+
+1. Create a TradingView OctoBot and make it buy BTC whenever a TradingView alert is received
+2. Configure TradingView to notify your OctoBot when the BTC price crosses 40.000 USDT
+3. Follow your TradingView OctoBot activity
+
+## 1. Create your TradingView OctoBot
+
+### 1.1 Start a new TradingView OctoBot
+
+- If you are creating your OctoBot account, scroll down to `Automate your own strategy with TradingView` in the introduction, after choosing your exchange.
+
+  <div style={{textAlign: "center"}}>
+    ![octobot create tradingview bot from
+    intro](/images/guides/trading-view/octobot-create-tradingview-bot-from-intro.png)
+  </div>
+
+- Or go to the `Custom` tab of the <a href="https://www.octobot.cloud/explore?category=tv" rel="nofollow">strategy explorer</a>.
+  <div style={{textAlign: "center"}}>
+    ![start new tradingview octobot from
+    explorer](/images/guides/trading-view/start-new-tradingview-octobot-from-explorer.png)
+  </div>
+
+**[Start a bot](https://www.octobot.cloud)**
+
+### 1.2 Choose the exchange you want to trade on
+
+Just like regular bots, TradingView OctoBots are running on a single exchange at a time.
+
+<div style={{textAlign: "center"}}>
+  ![octobot create tradingview bot select
+  exchange](/images/guides/trading-view/octobot-create-tradingview-bot-select-exchange.png)
+</div>
+
+Select the exchange you want this OctoBot to trade on.
+
+### 1.3 Select paper or real trading
+
+<div style={{textAlign: "center"}}>
+  ![octobot create tradingview bot select paper or real
+  trading](/images/guides/trading-view/octobot-create-tradingview-bot-select-paper-or-real-trading.png)
+</div>
+
+Also like other bots, you can use your TradingView OctoBot on a [real exchange account](invest-with-your-strategy) or risk free with [paper trading and simulated funds](paper-trading-a-strategy).  
+We suggest to start with paper trading until you are confortable automating your TradingView strategies with your real funds.
+
+### 1.4 Start your OctoBot
+
+Once your account is selected and initialized, you can start your TradingView OctoBot.
+
+<div style={{textAlign: "center"}}>
+  ![octobot create tradingview bot start
+  bot](/images/guides/trading-view/octobot-create-tradingview-bot-start-bot.png)
+</div>
+
+When starting, TradingView bots won't create orders, they will be waiting for TradingView alerts to trade.
+
+### 1.5 Meet your TradingView bot
+
+Your TradingView OctoBot is now ready to trade on the account you selected everytime it will be notified from your TradingView alerts.
+
+<div style={{textAlign: "center"}}>
+  ![octobot create tradingview bot initial
+  bot](/images/guides/trading-view/octobot-create-tradingview-bot-initial-bot.png)
+</div>
+
+New TradingView bots are using automations to trade. Therefore at least one automation is required for your bot to start trading. We will now create your bot's first automation.
+
+### 1.6 Introducing automations
+
+Automations are the building blocks of every TradingView strategy on OctoBot.
+
+Automations are actions that are automatically performed when receiving the associated TradingView alert. An automation can be creating or cancelling orders according to your configuration.
+
+Each bot can have as many automation as necessary, there are no limit in the amount of automations and traded pairs a TradingView OctoBot can handle.
+
+Learn more about automations on the [tradingView automated trading guide](tradingview-automated-trading)
+
+<div style={{textAlign: "center"}}>
+  ![octobot automation connection empty
+  panel](/images/guides/trading-view/octobot-automation-connection-empty-panel.png)
+</div>
+
+At OctoBot cloud, we try to keep things simple. Here is an example of how to create an automation and as you can see, it's pretty straight forward.
+
+Let's create an automation to buy BTC on your account when receiving a TradingView alert.
+
+### 1.7 Create an automation
+
+Lets create a new automation the `+` button
+
+<div style={{textAlign: "center"}}>
+  ![octobot create tradingview bot initial bot highlighted create
+  button](/images/guides/trading-view/octobot-create-tradingview-bot-initial-bot-highlighted-create-button.png)
+</div>
+
+And enter the following information on the `Create automation` panel:
+
+<div style={{textAlign: "center"}}>
+  ![octobot automation connection panel
+  highlights](/images/guides/trading-view/octobot-automation-connection-panel-highlights.png)
+</div>
+
+- Name: the name of your automation, you can use the name you want to easily find your automation later on
+- Order symbol: the traded symbol to create the order on. Please note that it has to follow the `/` format. For example BTCUSDT on TradingView would be BTC/USDT on your automation
+
+Press `Create` once you are satisfied with your configuration.
+
+:::info
+  If you need to use more advanced automations such as using dynamic values from Pine Script, cancelling orders, creating automated take profits or stop losses, check out [custom automations](tradingview-alerts-automation#tradingview-custom-automations).
+:::
+
+
+## 2. Configure TradingView to send alerts to your bot
+
+### 2.1 Open the connection panel of your automation
+
+<div style={{textAlign: "center"}}>
+  ![octobot open automation connection
+  panel](/images/guides/trading-view/octobot-open-automation-connection-panel.png)
+</div>
+
+In the Automation section of your TradingView OctoBot, open the connection panel of the `Market buy BTC - 10% of USDT` automation.
+
+<div style={{textAlign: "center"}}>
+  ![octobot automation connection
+  panel](/images/guides/trading-view/octobot-automation-connection-panel.png)
+</div>
+
+This panel show you all the necessary information to trigger the `Market buy BTC - 10% of USDT` automation from TradingView.
+
+### 2.2 Log in to TradingView
+
+Using another tab (to keep the connection panel open), go to <a href="https://www.tradingview.com/?aff_id=27595" rel="nofollow">TradingView</a> and login or <a href="https://www.tradingview.com/?aff_id=27595" rel="nofollow">create an account</a>.
+
+Binding TradingView to OctoBot uses alerts which can be sent to OctoBot using **Webhooks**. They Requires a "Essential" or higher plan. You can create a TradingView account and start a 30 days free trial using <a href="https://www.tradingview.com/?aff_id=27595" rel="nofollow">this link</a>.
+
+### 2.3 Select your trading pair
+
+In our current automation, we are trading BTC/USDT. Let's select a BTCUSDT market on TradingView, for example the Binance one.
+
+<div style={{textAlign: "center"}}>
+  ![tradingview select btcusdt
+  market](/images/guides/trading-view/tradingview-select-btcusdt-market.png)
+</div>
+
+### 2.4 Go to the Alerts tab
+
+![creating an alert from tradingview](/images/guides/trading-view/creating-an-alert-from-tradingview.png)
+
+From the alerts tab, click **Create alert**.
+
+### 2.5 Configure the webhook URL
+
+In the "Notfications" tab of the "Create Alert on BTCUSDT" menu on TradingView, enter the webhook URL of your OctoBot account.
+
+1. Select `Webhook URL`
+
+   <div style={{textAlign: "center"}}>
+     ![creating an alert from tradingview webhook
+     url](/images/guides/trading-view/creating-an-alert-from-tradingview-webhook-url.png)
+   </div>
+
+2. Paste your webhook URL. You will find your webhook URL in the `3. Automate with webhook` section of the [connection panel](#21-open-the-connection-panel-of-your-automation) of your automation, on your OctoBot tab.
+
+<div style={{textAlign: "center"}}>
+  ![octobot automation webhook
+  url](/images/guides/trading-view/octobot-automation-webhook-url.png)
+</div>
+
+You might need to enable two factor authentication on TradingView to enter a webhook URL.
+
+Your webhook notifications are now ready!
+
+:::info
+  The Webhook URL configuration only needs to be done once. Other alerts
+  you will create will automatically use this notifications configuration.
+:::
+
+### 2.6 Create a new alert
+
+Going back to the "Settings" tab of the "Create Alert on BTCUSDT" menu on TradingView, fill in your alert details.
+
+<div style={{textAlign: "center"}}>
+  ![creating a price alert from
+  tradingview](/images/guides/trading-view/creating-a-price-alert-from-tradingview.png)
+</div>
+
+In this tutorial, we will create a simple alert based on the BTC/USDT price that will trigger our `Market buy BTC - 10% of USDT` automation when the BTC price crosses 40.000 USDT on TradingView.
+
+1. Select a condition to trigger your alert on.
+2. Name your alert. This name has no impact and is only for you to remember the alert
+3. Fill the "Message" field with the **identifier of your automation** that you will find on the `2. Create an Alert` section of the [connection panel](#21-open-the-connection-panel-of-your-automation) of your automation, on your OctoBot tab.
+
+<div style={{textAlign: "center"}}>
+  ![octobot automation
+  identifier](/images/guides/trading-view/octobot-automation-identifier.png)
+</div>
+4. Press "Create" to save your TradingView alert.
+
+## 3. You are all set
+
+Congratulation! You now have a TradingView alert that will automatically trigger your `Market buy BTC - 10% of USDT` automation on your OctoBot account as soon as the alert will fire on TradingView.
+
+**[Start a TradingView OctoBot](https://www.octobot.cloud)**
+
+### 3.1 Following alerts
+
+Every time a new alert is received, your OctoBot will save it and you will be able to see its execution result.
+
+<div style={{textAlign: "center"}}>
+  ![octobot automations view with executed tradingview
+  alerts](/images/guides/trading-view/octobot-automations-view-with-executed-tradingview-alerts.png)
+</div>
+
+You can also view your bot's full alert and automation history using the `See all` button
+
+<div style={{textAlign: "center"}}>
+  ![octobot automation
+  history](/images/guides/trading-view/octobot-automations-history.png)
+</div>
+
+### 3.2 Creating other automations
+
+For each of your TradingView OctoBot, you can create as many automations as you want and trade on as many symbols as you wish.
+
+<div style={{textAlign: "center"}}>
+  ![octobot many tradingview
+  automations](/images/guides/trading-view/octobot-many-tradingview-automations.png)
+</div>
+
+In this tutorial, we created a BTC/USDT automation triggered by a price event but there are many other ways to trigger TradingView alerts including:
+
+- Price actions, like the one we created in the tutorial
+- Indicators, to trade using simple or sophisticated technical indicators
+- Pine Script strategies, to trade from full TradingView strategies written in Pine Script
+
+<div style={{textAlign: "center"}}>
+  ![tradingview many btcusdt
+  alerts](/images/guides/trading-view/tradingview-many-btcusdt-alerts.png)
+</div>
+
+Lean more on the different types of alerts on the [TradingView alerts automation guide](tradingview-alerts-automation).

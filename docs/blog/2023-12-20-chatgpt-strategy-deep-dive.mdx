@@ -1,0 +1,81 @@
+---
+title: "ChatGPT trading strategy deep dive"
+description: "Discover how we created the ChatGPT based OctoBot trading strategy by combining the benefits of AI and smart DCA strategies"
+slug: "chatgpt-strategy-deep-dive"
+date: "2023-12-20"
+authors: ["paul"]
+tags: ["ChatGPT", "AI", "DCA", "Strategy designer", "Backtesting", "Cryptocurrency", "Trading", "OctoBot cloud", "Educational"]
+image: "/images/blog/chatgpt-strategy-deep-dive/cover.png"
+---
+
+
+
+# ChatGPT trading strategy deep dive
+
+For a few months now, we have been experimenting with <a href="https://chat.openai.com/" rel="nofollow">ChatGPT</a> based trading strategies. We started by adding the [possibility to use ChatGPT as an indicator on OctoBot](/guides/octobot-trading-modes/chatgpt-trading) and kept building.
+
+import YouTube from '@site/src/components/YouTube';
+
+<YouTube id="P23oiE8gW4Y" title="Deep Dive into the ChatGPT Trading Strategy" />
+
+<!--truncate-->
+
+In this video, we are explaining how the strategy works in details and go through its historical and live performances by following a 4 weeks old live trading OctoBot.
+
+We are now introducing our latest ChatGPT strategy that is taking advantage of both [Smart DCA (Dollar Cost Averaging)](smart-dca-making-of) optimisations and artificial intelligence predictions.
+
+## The ChatGPT strategy concept
+
+The concept behind this strategy is to identify market entries when ChatGPT predicts that the market will go up.
+
+For this, we provide ChatGPT with context of the market: we give it recent market data and ask for a prediction of the following candle: "Will the market go up or down ?"
+
+Once an entry is identified, the DCA part of the strategy kicks in to optimize the buy and sell steps.
+
+More details on how to trade with ChatGPT on OctoBot on the [ChatGPT trading guide](/guides/octobot-trading-modes/chatgpt-trading).
+
+## Video summary
+
+### Creating orders
+
+Buy orders are created when ChatGPT predicts the market will go up with a sufficient degree of confidence.
+
+Each buy signal is then triggering a quick DCA strategy where multiple buy orders at different prices are created. Using multiple buy prices allows to take advantage of smaller market dips to lower the average buying price
+
+Once filled, each buy order is replaced by a sell order of the same amount. This sell order is at an optimized profit target and is designed to be filled within the next hours or days, therefore generating profits.
+
+### Backtesting the strategy
+
+To design the ChatGPT strategy, we ran extensive [backtesting](/guides/octobot-usage/backtesting) campaigns in order to find the best markets and settings to trade on.
+
+![strategy designer with bitcoin and ChatGPT strategy](/images/blog/chatgpt-strategy-deep-dive/strategy-designer-bitcoin-with-chat-gpt-strategy.png)
+
+Similarly to [Smart DCA complementary assets](smart-dca-making-of#complementary-assets), the ChatGPT strategy benefits from trading multiple complementary assets at the same time, therefore it is important to identify the right markets to optimize your profits using this strategy.
+
+### Live results
+
+We are testing the ChatGPT strategy with live trading bots for a few weeks now and we are very happy to see that it behaves as expected:
+
+- It buys and sells quickly
+- It takes profits
+- It doesn't get stuck in open sell orders
+
+We even made some profit !
+
+## When to use the ChatGPT strategy
+
+Similarly to DCA strategies, the ChatGPT strategy relies on sideways or upward markets to make profits. It is therefore important to always carefully choose the traded assets for the strategy to be able to sell those assets quickly and avoid locking funds in sell orders.
+
+Using the ChatGPT strategy on a downwards market might lock funds is sell orders, while this is not selling at a loss, it is not optimal and can prevent profits from other cryptocurrencies.
+
+## Other resources
+
+If you are interested in knowing more about how to run you how ChatGPT trading strategy on OctoBot, checkout our [Trading using ChatGPT](trading-using-chat-gpt) article which covers the technical details on how to use ChatGPT the way you want, directly from your OctoBot.
+
+![ChatGPT crypto predictions](/images/blog/chatgpt-strategy-deep-dive/chatgpt-crypto-price-predictions.png)
+
+We make ChatGPT trading signals available for free on our [ChatGPT crypto predictions](https://www.octobot.cloud/tools/crypto-prediction), for which you can find more details on our [Trading with ChatGPT signals](introducing-chatgpt-trading-tool) article.
+
+## Warning
+
+Please be advised that the contents of this article are intended FOR GENERAL INFORMATION PURPOSES and not financial advice. The information contained herein is for informational purposes only. Nothing herein shall be construed to be financial legal or tax advice. The content of this article is solely the opinions of the author and/or the OctoBot team. None of those are licensed financial advisors or registered investment advisors. Purchasing cryptocurrencies poses considerable risk of loss. The author and/or the OctoBot team does not guarantee any particular outcome. Past performance does not indicate future results.

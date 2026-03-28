@@ -1,0 +1,160 @@
+---
+title: "With Docker"
+description: "Learn how to install and start your OctoBot on your own computer or server (Windows, Mac or Linux) using the docker version of the bot."
+sidebar_position: 4
+---
+
+
+
+# Install OctoBot with Docker in video
+
+import YouTube from '@site/src/components/YouTube';
+
+<YouTube id="JL7ef3bK8SY" title="Install OctoBot using Docker" />
+
+> For unix distribution only
+
+## Quick install
+
+- In a terminal, enter the command to install the necessary packages:
+
+```bash
+sudo apt install git build-essential ca-certificates curl gnupg lsb-release -y
+```
+
+- Next, enter the command to install Docker:
+
+```bash
+curl -fsSL https://get.docker.com -o get-docker.sh
+sh ./get-docker.sh
+```
+
+- Then download the OctoBot docker-compose file:
+
+```bash
+curl -fs https://raw.githubusercontent.com/Drakkar-Software/OctoBot/master/docker-compose.yml -o docker-compose.yml
+```
+
+- Start OctoBot with the previously downloaded docker-compose file:
+
+```bash
+docker compose up -d
+```
+
+- Don't forget to run the following command at the end of the installation (and logout)
+
+```bash
+sudo usermod -aG docker $USER
+```
+
+## Manual install
+
+### Using the stable image:
+
+1.  Download OctoBot
+
+```bash
+docker pull drakkarsoftware/octobot:stable
+```
+
+2.  Start OctoBot (for linux x64/x86 and raspberry linux arm64/arm32)
+
+```bash
+docker run -itd --name OctoBot -p 80:5001 -v $(pwd)/user:/octobot/user -v $(pwd)/tentacles:/octobot/tentacles -v $(pwd)/logs:/octobot/logs drakkarsoftware/octobot:stable
+```
+
+### Using the latest image (might be unstable):
+
+1.  Download OctoBot latest
+
+```bash
+docker pull drakkarsoftware/octobot:latest
+```
+
+2.  Start OctoBot (for linux x64/x86 and raspberry linux arm64/arm32)
+
+```bash
+docker run -itd --name OctoBot -p 80:5001 -v $(pwd)/user:/octobot/user -v $(pwd)/tentacles:/octobot/tentacles -v $(pwd)/logs:/octobot/logs drakkarsoftware/octobot:latest
+```
+
+### How to look at OctoBot logs ?
+
+```bash
+docker logs OctoBot -f
+```
+
+### How to stop OctoBot ?
+
+```bash
+docker stop OctoBot
+```
+
+### How to restart OctoBot ?
+
+```bash
+docker restart OctoBot
+```
+
+### How to update OctoBot ?
+
+```bash
+docker pull drakkarsoftware/octobot:stable
+docker stop OctoBot
+docker rm OctoBot
+docker run -itd --name OctoBot -p 80:5001 -v $(pwd)/user:/octobot/user -v $(pwd)/tentacles:/octobot/tentacles -v $(pwd)/logs:/octobot/logs drakkarsoftware/octobot:stable
+```
+
+### Running with docker-compose
+
+A simple way to run a docker image is to use docker-compose :
+
+- Install <a href="https://docs.docker.com/compose/install/" rel="nofollow">docker-compose</a>
+- Download the <a href="https://github.com/Drakkar-Software/OctoBot/blob/master/docker-compose.yml" rel="nofollow">docker-compose.yml file</a>
+- Create a `.env` file in the current folder
+- Add `HOST=YOUR_IP_ADDRESS` in the newly created `.env` file. (where YOUR_IP_ADDRESS is the ip address of the computer, can be replaced by `localhost` if it's a local computer)
+- Start OctoBot with docker-compose (with the previous file `docker-compose.yml` in the current folder):
+
+  ```bash
+  docker-compose up -d
+  ```
+
+You can now open the OctoBot web interface at https://YOUR_IP_ADDRESS.
+
+### Start multiple OctoBots with docker
+
+To run a second OctoBot on the same computer :
+
+1.  Create a new directory and enter it
+2.  Start OctoBot's web interface on a new port by changing "-p" option
+
+```bash
+docker run -itd --name OctoBot -p 8000:5001 -v $(pwd)/user:/octobot/user -v $(pwd)/tentacles:/octobot/tentacles -v $(pwd)/logs:/octobot/logs drakkarsoftware/octobot:stable
+```
+
+In this example, the second OctoBot's web interface is accessible at http://127.0.0.1:8000.
+
+Any port can be used except those already used by another OctoBot or any software on your system.
+
+### Start OctoBot with docker managed files
+
+> Warning: It's easier to use but it will not be possible to update it without deleting its files.
+
+-v arguments can be removed from previous start commands but OctoBot's local files will then be managed by docker (and not directly visible).
+
+```bash
+docker run -itd --name OctoBot -p 80:5001 drakkarsoftware/octobot:stable
+```
+
+Local OctoBot files path are located in /var/lib/docker and can be listed with the following command
+
+```bash
+docker inspect -f '{{ .Mounts }}' OctoBot
+```
+
+To copy files of a directory outside the OctoBot container, for example for logs files :
+
+```bash
+docker cp OctoBot:/octobot/logs/. .
+```
+
+Wherer "OctoBot" is your container name
