@@ -30,6 +30,7 @@ from octobot_trading.storage.orders_storage import (
     OrdersStorage,
     get_order_trailing_profile_dict,
     restore_order_storage_origin_value,
+    update_enriched_order,
 )
 
 from octobot_trading.storage import portfolio_storage
@@ -63,6 +64,7 @@ __all__ = [
     "AbstractStorage",
     "TradesStorage",
     "OrdersStorage",
+    "update_enriched_order",
     "get_order_trailing_profile_dict",
     "restore_order_storage_origin_value",
     "PortfolioStorage",

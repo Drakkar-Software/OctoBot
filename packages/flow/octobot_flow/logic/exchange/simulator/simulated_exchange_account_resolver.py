@@ -68,6 +68,7 @@ class SimulatedExchangeAccountResolver:
             self._simulation_exchange_context.automation_state.exchange_account_details,
             self._simulation_exchange_context.automation_state.automation.metadata.automation_id,
             set(dsl_import.get_actions_symbol_dependencies(self._actions, minimal_profile_data)),
+            as_simulator=True
         )
 
     async def resolve(self) -> None:
@@ -114,9 +115,6 @@ class SimulatedExchangeAccountResolver:
 
                 # simulation is now synchronized, sync the account elements from the updated simulated exchange manager
                 account_elements.sync_from_exchange_manager(simulated_exchange_manager)
-                fetched_exchange_data.authenticated_data.sync_from_exchange_manager(
-                    simulated_exchange_manager
-                )
 
     def _logger(self) -> commons_logging.BotLogger:
         return commons_logging.get_logger(self.__class__.__name__)

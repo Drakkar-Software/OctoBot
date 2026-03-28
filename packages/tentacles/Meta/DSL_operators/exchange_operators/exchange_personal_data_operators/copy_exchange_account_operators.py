@@ -163,7 +163,7 @@ def create_copy_exchange_account_operators(
                 copier_exchange_manager,
                 copier_trading_mode,
             )
-            orders = await account_copier.execute_rebalance_if_needed()
+            orders = await account_copier.copy_account()
             self.value = self.create_re_callable_result_dict(
                 waiting_time=octobot_copy.constants.DEFAULT_COPY_WAITING_TIME,
                 last_execution_time=execution_time,
