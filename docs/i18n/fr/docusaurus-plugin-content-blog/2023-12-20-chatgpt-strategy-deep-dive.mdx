@@ -1,0 +1,80 @@
+---
+title: "Making of de la stratégie de trading ChatGPT"
+description: "Découvrez comment nous avons créé la stratégie de trading basée sur ChatGPT d'OctoBot cloud en alliant les bénéfices de l'IA et des stratégies de Smart DCA"
+slug: "chatgpt-strategy-deep-dive"
+date: "2023-12-20"
+authors: ["paul"]
+tags: ["ChatGPT", "AI", "DCA", "Strategy designer", "Backtesting", "Cryptocurrency", "Trading", "OctoBot cloud", "Educational"]
+image: "/images/blog/chatgpt-strategy-deep-dive/cover.png"
+---
+
+
+
+# Making of de la stratégie de trading ChatGPT
+
+Depuis quelques mois maintenant, nous expérimentons des stratégies de trading basées sur <a href="https://chat.openai.com/" rel="nofollow">ChatGPT</a>. Nous avons commencé par ajouter la [possibilité d'utiliser ChatGPT en tant qu'indicateur OctoBot](/guides/octobot-trading-modes/chatgpt-trading) et avons continué à construire des stratégies.
+
+import YouTube from '@site/src/components/YouTube';
+
+<YouTube id="P23oiE8gW4Y" title="Making of de la stratégie de trading ChatGPT" />
+
+Dans cette vidéo, nous détaillons comment fonctionne la stratégie et parcourons ses performances historiques et réelles en suivant un OctoBot tradant avec cette stratégie depuis 4 semaines.
+
+Nous présentons aujourd'hui notre dernière stratégie ChatGPT, une stratégie qui bénéficie des avantages à la fois des optimisations de [Smart DCA (Dollar Cost Averaging)](smart-dca-making-of) et des prédictions d'intelligence artificielle.
+
+## Fonctionnement de la stratégie ChatGPT
+
+Le concept de cette stratégie est d'identifier les entrée sur les marchés tradés en utilisant les prédictions de ChatGPT. C'est à dire lorsque ChatGPT prédit que le marché va bientôt monter.
+
+Pour cela, nous fournissons à ChatGPT le contexte du marché en lui mettant à disposition les données de marché récente. Ensuite nous demandons à ChatGPT une projection pour savoir si la prochaine évolution de marché sera ascendante ou descendante.
+
+Une fois l'entrée identifiée, la partie DCA de la stratégie entre en jeu et optimise les étapes d'achat et de vente
+
+## Focus vidéo
+
+### Création des ordres
+
+Les ordres d'achat sont créés lorsque ChatGPT prédit avec un degré de confiance suffisant que le marché va augmenter.
+
+Chaque signal d'achat déclenche ensuite une stratégie rapide de DCA où plusieurs ordres d'achat à différents prix sont créés. L'utilisation de plusieurs prix d'achat permet de tirer profit des petites baisses du marché pour réduire le prix moyen d'achat.
+
+Une fois rempli, chaque ordre d'achat est remplacé par un ordre de vente du même montant. Cet ordre de vente a pour objectif un profit optimisé et est conçu pour être exécuté dans les prochaines heures ou jours, générant ainsi des bénéfices à court terme.
+
+### Backtest de la stratégie
+
+Pour concevoir la stratégie ChatGPT, nous avons effectué d'importantes campagnes de [backtesting](/guides/octobot-usage/backtesting) afin de trouver les meilleurs marchés et paramètres et optimiser les trades effectués.
+
+To design the ChatGPT strategy, we ran extensive backtesting campaigns in order to find the best markets and settings to trade on.
+
+![le strategy designer avec bitcoin et la stratégie ChatGPT](/images/blog/chatgpt-strategy-deep-dive/strategy-designer-bitcoin-with-chat-gpt-strategy.png)
+
+De manière similaire aux [actifs complémentaires Smart DCA](smart-dca-making-of#les-actifs-complémentaires), la stratégie ChatGPT bénéficie du trading simultané de plusieurs actifs complémentaires. Il est donc important d'identifier les marchés appropriés afin d'optimiser vos profits en utilisant cette stratégie.
+
+### Résultats live
+
+Nous testons actuellement la stratégie ChatGPT avec des robots de trading réels depuis quelques semaines et nous sommes très heureux de constater qu'elle se comporte comme prévu, c'est à dire que l'OctoBot associé :
+
+- Achète et vend rapidement.
+- Réalise des profits.
+- Ne reste pas bloquée dans des ordres de vente ouverts.
+
+Nous avons même réalisé des bénéfices !
+
+## Quand utiliser la stratégie ChatGPT
+
+De la même façon que les stratégies de DCA, la stratégie ChatGPT requière un marché stable ou ascendant pour faire des profits. Il est alors important de toujours bien choisir le marchés tradés pour que la stratégie soit capable de vendre ses cryptomonnaies rapidement et éviter de les bloquer dans des ordres de vente.
+
+Utiliser la stratégie ChatGPT sur un marché descendant peut bloquer les cryptomonnaies achetées dans des ordres de vente. Bien que la stratégie ne vende pas à perte, cette situation n'est pas optimale et peut empêcher de trader d'autres cryptomonnaies.
+
+## Autres resources
+
+Si vous souhaitez en savoir plus sur la manière d'exécuter votre stratégie de trading ChatGPT sur OctoBot, consultez notre article [Trader avec ChatGPT](trading-using-chat-gpt) qui couvre les détails techniques sur la façon d'utiliser ChatGPT selon vos préférences, directement depuis votre OctoBot.
+
+![prédictions de prix crypto par ChatGPT](/images/blog/chatgpt-strategy-deep-dive/chatgpt-crypto-price-predictions.png)
+
+Nous publions gratuitement nos signaux de trading ChatGPT sur [l'outil Prédictions de prix des crypto-monnaies avec ChatGPT](https://www.octobot.cloud/tools/crypto-prediction), pour lequel vous pouvez trouver plus de détails dans notre article [Trading avec les signaux ChatGPT
+](introducing-chatgpt-trading-tool).
+
+## Avertissement
+
+Veuillez noter que le contenu de cet article est destiné à DES FINS D'INFORMATION GÉNÉRALE et non pas à des conseils financiers. Les informations contenues ici sont uniquement à titre informatif. Rien dans ce document ne doit être interprété comme un conseil financier, juridique ou fiscal. Le contenu de cet article reflète uniquement les opinions de l'auteur et/ou de l'équipe d'OctoBot. Aucun d'entre eux n'est un conseiller financier agréé ou un conseiller en investissement. L'achat de cryptomonnaies comporte des risques considérables de perte. L'auteur et/ou l'équipe OctoBot ne garantissent aucun résultat particulier. Les performances passées ne préjugent pas des résultats futurs.

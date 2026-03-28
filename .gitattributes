@@ -1,0 +1,4 @@
+docs/static/**/*.png filter=lfs diff=lfs merge=lfs -text
+docs/static/**/*.jpg filter=lfs diff=lfs merge=lfs -text
+docs/static/**/*.jpeg filter=lfs diff=lfs merge=lfs -text
+docs/static/**/*.webp filter=lfs diff=lfs merge=lfs -text

@@ -1,0 +1,130 @@
+---
+title: "How to create your TradingView strategy with AI"
+description: "Create and trade with your best trading strategies on TradingView using AI. Describe your strategy with your own words, improve it and invest with it."
+slug: "how-to-create-your-tradingview-strategy-with-ai"
+date: "2024-11-09"
+authors: ["paul"]
+tags: ["Crypto", "Trading", "Educational", "TradingView", "AI"]
+image: "/images/blog/how-to-create-your-tradingview-strategy-with-ai/trading-strategy-with-ai-in-5-minutes-using-octobot-cloud-and-free-tradingview-account.png"
+---
+
+
+
+# How to create your TradingView strategy with AI
+
+> What if you could create a trading strategy just by describing it?
+
+This is exactly what we built, and we are very proud to announce that it works really well!
+
+import YouTube from '@site/src/components/YouTube';
+
+<YouTube id="1g4T2IsIKBk" title="TradingView Automated Trading with AI" />
+In this video, Guillaume creates a <a href="https://www.investopedia.com/terms/m/macd.asp" rel="nofollow">MACD</a> + <a href="https://www.investopedia.com/terms/s/sma.asp" rel="nofollow">SMA</a> trading strategy exclusively using the OctoBot AI to
+generate and then improve the strategy. Finally, the strategy is automated on a
+live exchange with a risk-free [virtual money](/investing/paper-trading-a-strategy) TradingView OctoBot using a free
+TradingView account.
+
+<!--truncate-->
+
+Let's go over the highlights of this new way to create TradingView strategies
+
+## Describe your strategy to the AI to create it
+
+Just describe your strategy on the new <a href="https://www.octobot.cloud/creator" rel="nofollow">OctoBot AI strategy generator</a>, and it will create the TradingView equivalent of your strategy using <a href="https://www.tradingview.com/pine-script-docs/welcome/" rel="nofollow">Pine Script</a>.
+
+<div style={{textAlign: "center"}}>
+  <div>
+    ![octobot ai strategy generator creating a macd
+    strategy](/images/blog/how-to-create-your-tradingview-strategy-with-ai/octobot-ai-strategy-generator-creating-a-macd-strategy.png)
+    _prompt: macd strategy_
+  </div>
+</div>
+
+This artificial intelligence is similar to ChatGPT and is specifically trained to generate ready-to-use Pine Script strategies with the following criteria:
+
+- The strategy can be configured using regular TradingView settings
+- No change should be required to run and test the strategy from TradingView
+- The strategy can be automated as is, without having to edit it
+
+Just describe it the strategy you wish to create, and the AI strategy generator will write it for you!
+
+<div style={{textAlign: "center"}}>
+  <div>
+    ![octobot ai strategy generator macd strategy pinescript
+    code](/images/blog/how-to-create-your-tradingview-strategy-with-ai/octobot-ai-strategy-generator-macd-strategy-pinescript-code.png)
+    _Pine Script Code of the generated MACD strategy_
+  </div>
+</div>
+
+This generated strategy can then just be pasted into the TradingView "Pine Editor" and be used right away.
+
+<div style={{textAlign: "center"}}>
+  **[Generate your strategy](https://www.octobot.cloud/creator)**
+</div>
+
+And this is not all. The AI strategy generator can also be used to improve a strategy.
+
+## Improve your trading strategy using AI
+
+Once you created your strategy, you can make changes to it the same way you created it: using natural language and your own words.
+
+Just ask the generator to update the strategy the way you want: you can add an indicator, change the way take profits are made, use multiple time frames or coins. There is no limit.
+
+<div style={{textAlign: "center"}}>
+  <div>
+    ![octobot ai strategy generator macd strategy add moving average to the
+    strategy](/images/blog/how-to-create-your-tradingview-strategy-with-ai/octobot-ai-strategy-generator-macd-strategy-add-moving-average-to-the-strategy.png)
+    _Prompt: add a moving average condition to the strategy to only buy when the price is bellow average and sell when the price is above average_
+  </div>
+</div>
+
+The strategy generator will just do exactly as you tell it to and update your strategy code for you.
+
+<div style={{textAlign: "center"}}>
+  <div>
+    ![octobot ai strategy generator macd sma strategy pinescript
+    code](/images/blog/how-to-create-your-tradingview-strategy-with-ai/octobot-ai-strategy-generator-macd-sma-strategy-pinescript-code.png)
+    _Pine Script Code of the generated MACD + SMA strategy_
+  </div>
+</div>
+
+Here, we asked the AI to also consider moving averages (SMA) when identifying its buy and sell signals. We now have a working MACD + SMA TradingView strategy without writing a line of code.
+
+We can use it directly on TradingView to test and optimize it. It is now just a regular TradingView strategy, just like if you used the code of someone else's strategy, except that it's your own.
+
+<div style={{textAlign: "center"}}>
+  <div>
+    ![octobot ai testing the macd sma strategy on
+    tradingview](/images/blog/how-to-create-your-tradingview-strategy-with-ai/octobot-ai-testing-the-macd-sma-strategy-on-tradingview.png)
+    _Testing the MACD + SMA strategy on TradingView_
+  </div>
+</div>
+
+You now have your own TradingView strategy. What about using it in live condition on your exchange?
+
+## Automate your AI TradingView strategy
+
+Binding your TradingView strategy to your exchange can be done using a TradingView OctoBot. They are special OctoBots that you can start on your target exchange and that can be using:
+
+- **Risk free virtual money** - This is best to test your strategy live before using your real funds
+- **Your funds on exchange** - Once you are confident enough to use your strategy with your funds, you can start making gains with a real-money OctoBot
+
+Your TradingView strategy can be automated with OctoBot using TradingView alerts. Just create an alert, enter your OctoBot TradingView alert email address or webhook URL and set the alert message to `{{strategy.order.alert_message}}`.
+Your OctoBot will then automatically apply your strategy on your exchange account.
+
+Are you wondering where this `{{strategy.order.alert_message}}` comes from ? It's a special parameter that has been set in your strategy code by the AI generator in order to make your strategy ready to be automated by OctoBot without having to change the code.
+
+<div style={{textAlign: "center"}}>
+  **[Automate TradingView](https://www.octobot.cloud/explore?category=tv)**
+</div>
+
+:::info
+  Save money: use email alerts, they are compatible with a TradingView free
+  account.
+:::
+
+## Going further
+
+We create a [set of guides and videos](/investing/tradingview-automated-trading) to help users create and automate their TradingView strategy. If you ever wanted to try something with indicators or TradingView automations of any kind, this is the right place to get started!
+
+Final note: if you wish to use the strategy described on the video, you will find it under the "MACD SMA strategy" on the <a href="https://www.octobot.cloud/explore?category=tv" rel="nofollow">TradingView strategy explorer</a>.

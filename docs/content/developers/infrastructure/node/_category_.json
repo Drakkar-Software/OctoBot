@@ -1,0 +1,8 @@
+{
+  "label": "Node",
+  "position": 3,
+  "link": {
+    "type": "generated-index",
+    "description": "Deploying and operating OctoBot Node."
+  }
+}

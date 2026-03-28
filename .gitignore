@@ -66,6 +66,29 @@ instance/
 # Sphinx documentation
 docs/_build/
 
+# Docusaurus documentation
+docs/node_modules/
+docs/build/
+docs/.docusaurus/
+# Auto-generated tentacle docs (from collect-tentacles.mjs)
+docs/content/creators/
+docs/content/guides/exchanges.md
+docs/content/guides/exchanges/
+docs/content/guides/exchanges/_category_.json
+docs/content/guides/strategies/getting-started.md
+docs/content/guides/strategies/_category_.json
+docs/content/guides/strategies/trading-modes/
+docs/content/guides/strategies/trading-modes/_category_.json
+docs/content/guides/strategies/evaluators/
+docs/content/guides/strategies/evaluators/**/_category_.json
+# Migration script (one-time use, not needed in repo)
+docs/scripts/migrate.mjs
+# Auto-synced root docs (from sync-root-docs.mjs)
+docs/content/developers/contributing.md
+docs/content/developers/changelog.md
+# Auto-generated llms.txt (from generate-llms-txt.mjs)
+docs/static/llms.txt
+
 # PyBuilder
 target/
 
@@ -118,6 +141,7 @@ output
 tentacles
 downloaded_temp_tentacles
 !packages/tentacles
+!docs/content/developers/packages/tentacles
 
 # User config
 user

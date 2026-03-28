@@ -1,0 +1,68 @@
+---
+title: "Local installation"
+description: "Learn how to install your OctoBot on your own computer or server using Docker, the executable or Python and the open source code on github or PIP."
+sidebar_position: 1
+---
+
+
+
+# Install OctoBot on your Computer
+
+## Option 1: With the executable
+
+import YouTube from '@site/src/components/YouTube';
+
+<YouTube id="unbkFUAWXWM" title="Install OctoBot with the executable" />
+
+1. Download the latest version for your system using the <a href="https://github.com/Drakkar-Software/OctoBot/releases/latest" rel="nofollow">latest release on GitHub</a>. There is an OctoBot executable for:
+   - [Windows](with-binary)
+   - [Linux](with-binary)
+   - [MacOS](with-binary)
+   - [Raspberry Pi (arm64)](install-octobot-on-raspberry-pi)
+
+<div style={{textAlign: "center"}}>
+  **[Get the latest release](https://github.com/Drakkar-Software/OctoBot/releases/latest)**
+</div>
+2. Start the downloaded executable. OctoBot opens a terminal, initializes its
+configuration environment and the OctoBot interface opens automatically.
+
+> On Windows, you can just double click the executable.  
+> On Linux, first type `chmod +x OctoBot_linux_x64` and then `./OctoBot_linux_x64` in a terminal open next to your downloaded executable to start OctoBot.
+
+## Option 2: With Docker
+
+
+<YouTube id="JL7ef3bK8SY" title="Install OctoBot using Docker" />
+
+1. If you don't have <a href="https://www.docker.com/" rel="nofollow">Docker</a>, install it on your system. Here is the docker documentation for <a href="https://docs.docker.com/engine/install/ubuntu/" rel="nofollow">Ubuntu</a>, <a href="https://docs.docker.com/engine/install/debian/" rel="nofollow">Debian</a> and <a href="https://phoenixnap.com/kb/docker-on-raspberry-pi/" rel="nofollow">Raspberry pie</a>.
+2. Download the OctoBot image using the command:\
+   `docker pull drakkarsoftware/octobot:stable`
+3. Start your OctoBot using the command:\
+   `docker run -itd --name OctoBot -p 80:5001 -v $(pwd)/user:/octobot/user -v $(pwd)/tentacles:/octobot/tentacles -v $(pwd)/logs:/octobot/logs drakkarsoftware/octobot:stable`
+
+The interface of your OctoBot is available on port 5001 of your system. http://localhost:5001/ or http://ip-address:5001/
+
+Find all the details regarding the docker installation on [our OctoBot with docker guide](install-octobot-with-docker-video)
+
+## Option 3: From the source code
+
+Deploy your OctoBot from the code to be able to use a local Python environment, edit or audit the source code.
+
+1. If you don't already have Python 3.10, install <a href="https://www.python.org/downloads/release/python-31011/" rel="nofollow">Python in version 3.10</a>.
+2. Clone the OctoBot repository\
+   `git clone https://github.com/Drakkar-Software/OctoBot`
+3. Install the Python dependencies\
+   `cd OctoBot`\
+   `python3 -m pip install -Ur requirements.txt`
+4. Start your OctoBot using this command:\
+   `python3 start.py`
+
+The interface of your OctoBot is available on port 5001 of your system. http://localhost:5001/ or http://ip-address:5001/
+
+Find all the details regarding the source code based installation on [the python and git installation guide](install-octobot-with-python-and-git).
+
+## Other option: using a cloud
+
+If you prefer using a server to run your OctoBot, here is the [DigitalOcean cloud installation Guide](cloud-install-octobot-on-digitalocean).
+
+Installing OctoBot on a server is a simple way to let your OctoBot execute its strategies 24/7.

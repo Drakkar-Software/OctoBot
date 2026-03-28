@@ -1,0 +1,12 @@
+{
+  "name": "octobot-docs",
+  "main": "./worker.js",
+  "compatibility_date": "2026-02-24",
+  "placement": {
+    "mode": "smart"
+  },
+  "assets": {
+    "directory": "./build"
+  },
+  "preview_urls": true
+}
