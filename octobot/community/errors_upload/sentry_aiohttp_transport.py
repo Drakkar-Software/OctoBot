@@ -208,7 +208,7 @@ class AiohttpWorker:
             self._kill_task = asyncio.create_task(self.session.close())
 
     async def async_kill(self):
-        self._stopped = type
+        self._stopped = True
         self.kill()
         if self._kill_task and not self._kill_task.done():
             await self._kill_task
