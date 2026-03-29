@@ -1,0 +1,20 @@
+---
+- name: restart stack
+  ansible.builtin.command:
+    cmd: docker compose up -d
+    chdir: "{{ stack_deploy_dir }}"
+
+- name: restart octobot
+  ansible.builtin.command:
+    cmd: docker compose up -d --no-deps --force-recreate octobot
+    chdir: "{{ stack_deploy_dir }}"
+
+- name: restart nginx
+  ansible.builtin.command:
+    cmd: docker compose restart nginx
+    chdir: "{{ stack_deploy_dir }}"
+
+- name: restart tor
+  ansible.builtin.command:
+    cmd: docker compose restart tor
+    chdir: "{{ stack_deploy_dir }}"

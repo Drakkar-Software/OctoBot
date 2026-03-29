@@ -1,0 +1,23 @@
+# Copy to inventories/<env>/hosts.yml and fill in real values.
+#
+# For a single-node dev setup, one master host is enough.
+# For replica mode, add consumer nodes that connect to the master's PostgreSQL.
+
+all:
+  children:
+    octobot_nodes:
+      children:
+        master_nodes:
+          hosts:
+            node-master-1.example.com:
+              ansible_host: 203.0.113.10
+              ansible_user: deploy
+        consumer_nodes:
+          hosts:
+            # Uncomment to add consumer nodes (requires enable_replica_mode: true)
+            # node-consumer-1.example.com:
+            #   ansible_host: 203.0.113.11
+            #   ansible_user: deploy
+            # node-consumer-2.example.com:
+            #   ansible_host: 203.0.113.12
+            #   ansible_user: deploy

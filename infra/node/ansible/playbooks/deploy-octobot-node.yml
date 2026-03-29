@@ -1,0 +1,53 @@
+---
+# App-only rolling update — fast path after CI pushes a new image
+
+- name: Validate inventory topology
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Fail if more than one master node
+      ansible.builtin.assert:
+        that:
+          - groups['master_nodes'] | default([]) | length <= 1
+        fail_msg: >-
+          At most one master node is supported.
+          Found {{ groups['master_nodes'] | default([]) | length }}.
+
+    - name: Fail if consumer nodes defined without replica mode
+      ansible.builtin.assert:
+        that:
+          - groups['consumer_nodes'] | default([]) | length == 0
+        fail_msg: >-
+          Consumer nodes require enable_replica_mode: true.
+          Set it in group_vars or remove consumer nodes.
+      when: not (enable_replica_mode | default(false) | bool)
+
+- name: Rolling deploy of OctoBot Node
+  hosts: octobot_nodes
+  serial: 1
+  max_fail_percentage: 0
+  become: true
+
+  tasks:
+    - name: Pull new OctoBot image
+      ansible.builtin.command:
+        cmd: docker compose pull octobot
+        chdir: "{{ stack_deploy_dir }}"
+      changed_when: false
+
+    - name: Restart OctoBot only
+      ansible.builtin.command:
+        cmd: docker compose up -d --no-deps --force-recreate octobot
+        chdir: "{{ stack_deploy_dir }}"
+      changed_when: true
+
+    - name: Run health checks
+      ansible.builtin.include_role:
+        name: octobot
+        tasks_from: healthcheck
+
+    - name: Pause between nodes
+      ansible.builtin.pause:
+        seconds: 10
+      when: ansible_play_hosts_all | length > 1

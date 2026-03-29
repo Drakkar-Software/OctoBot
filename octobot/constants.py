@@ -145,6 +145,7 @@ DEFAULT_NEW_DEPLOYMENT_TIMEOUT = 2 * octobot_commons.constants.MINUTE_TO_SECONDS
 USE_FETCHED_BOT_CONFIG = os_util.parse_boolean_environment_var("USE_FETCHED_BOT_CONFIG", "false")
 SHOULD_CHECK_TENTACLES = os_util.parse_boolean_environment_var("SHOULD_CHECK_TENTACLES", "true")
 CAN_INSTALL_TENTACLES = os_util.parse_boolean_environment_var("CAN_INSTALL_TENTACLES", str(not IS_CLOUD_ENV))
+INSTALL_DEFAULT_TENTACLES = os_util.parse_boolean_environment_var("INSTALL_DEFAULT_TENTACLES", "true")
 PH_TRACKING_ID = os.getenv("PH_TRACKING_ID", "phc_QSuFy6zqOXXKT7zAYboYS4nJShfKovpB172aa8X9nXf")
 # Profiles download urls to import at startup if missing, split by ","
 TO_DOWNLOAD_PROFILES = os.getenv("TO_DOWNLOAD_PROFILES", None)
