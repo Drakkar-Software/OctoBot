@@ -13,7 +13,7 @@ standard-imghdr==3.13.0 # required by pgpy for image handling
 pgpy==0.6.0
 
 # Error tracking
-sentry-sdk==2.51.0  # always make sure sentry_aiohttp_transport.py keep working
+sentry-sdk==2.56.0  # always make sure sentry_aiohttp_transport.py keep working
 
 # Supabase  ensure supabase_backend_tests keep passing when updating any of those
 supabase==2.27.2   # Supabase client
