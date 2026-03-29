@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import aiofiles
+import io
 import zipfile
 import os
 import os.path as path
@@ -23,6 +24,7 @@ import octobot_commons.logging as commons_logging
 import octobot_commons.aiohttp_util as aiohttp_util
 import octobot_tentacles_manager.constants as constants
 import octobot_tentacles_manager.util as util
+import octobot_tentacles_manager.util.signature_verification as signature_verification
 
 DOWNLOADED_DATA_CHUNK_SIZE = 60000
 
@@ -33,13 +35,20 @@ async def fetch_and_extract_tentacles(
     compressed_file = tentacles_path_or_url
     should_download = _is_url(tentacles_path_or_url)
     try:
+        verified_data = None
         if should_download:
             if aiohttp_session is None:
                 raise RuntimeError("Missing aiohttp_session argument")
             compressed_file = f"downloaded_{tentacles_temp_dir}"
             last_modified = await _download_tentacles(compressed_file, tentacles_path_or_url, aiohttp_session)
             await util.log_tentacles_file_details(compressed_file, last_modified)
-        await _extract_tentacles(compressed_file, tentacles_temp_dir, merge_dirs)
+        # Verify signature for both local and remote files.
+        # Returns verified bytes if signed, None if verification disabled.
+        verified_data = await signature_verification.verify_package(
+            compressed_file, tentacles_path_or_url, aiohttp_session
+        )
+        # Use in-memory verified bytes when available to avoid TOCTOU
+        await _extract_tentacles(compressed_file, tentacles_temp_dir, merge_dirs, verified_data=verified_data)
     except Exception as err:
         commons_logging.get_logger("TentaclesFetching").warning(
             f"Error when fetching tentacles from {'***' if hide_url else tentacles_path_or_url}: "
@@ -71,10 +80,12 @@ async def _download_tentacles(target_file, download_URL, aiohttp_session):
         )
 
 
-async def _extract_tentacles(source_path, target_path, merge_dirs):
+async def _extract_tentacles(source_path, target_path, merge_dirs, verified_data=None):
     if path.exists(target_path) and path.isdir(target_path) and not merge_dirs:
         shutil.rmtree(target_path)
-    with zipfile.ZipFile(source_path) as zipped_tentacles:
+    # Use in-memory verified bytes when available (avoids re-reading the file from disk)
+    source = io.BytesIO(verified_data) if verified_data else source_path
+    with zipfile.ZipFile(source) as zipped_tentacles:
         for archive_member in zipped_tentacles.namelist():
             if _is_tentacle_valid_tentacle_file(archive_member):
                 zipped_tentacles.extract(archive_member, target_path)

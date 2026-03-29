@@ -146,6 +146,8 @@ jobs:
 
     - name: Install tentacles
       if: env.USES_TENTACLES == 'true'
+      env:
+        ALLOW_UNSIGNED_TENTACLES: "true"
       run: |
         mkdir -p output
         OctoBot tentacles -d packages/tentacles -p any_platform.zip
@@ -258,6 +260,8 @@ jobs:
           path: dist/
 
       - name: Install OctoBot & tentacles
+        env:
+          ALLOW_UNSIGNED_TENTACLES: "true"
         run: |
           pip3 install -r dev_requirements.txt
           pip3 install dist/octobot-*.whl
@@ -392,6 +396,7 @@ jobs:
           CLOUDFLARE_TOKEN: ${{ secrets.CLOUDFLARE_TOKEN }}
           CLOUDFLARE_ZONE: ${{ secrets.CLOUDFLARE_ZONE }}
           S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
+          TENTACLES_SIGNING_PRIVATE_KEY: ${{ secrets.TENTACLES_SIGNING_PRIVATE_KEY }}
         run: |
           echo "Publishing tentacles for tag: ${GITHUB_REF_NAME}"
           cp packages/tentacles/metadata.yaml ../metadata.yaml
@@ -409,6 +414,7 @@ jobs:
           CLOUDFLARE_TOKEN: ${{ secrets.CLOUDFLARE_TOKEN }}
           CLOUDFLARE_ZONE: ${{ secrets.CLOUDFLARE_ZONE }}
           S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
+          TENTACLES_SIGNING_PRIVATE_KEY: ${{ secrets.TENTACLES_SIGNING_PRIVATE_KEY }}
         run: |
           cp packages/tentacles/metadata.yaml ../metadata.yaml
           sed -i "s/VERSION_PLACEHOLDER/latest/g" ../metadata.yaml
@@ -425,6 +431,7 @@ jobs:
           CLOUDFLARE_TOKEN: ${{ secrets.CLOUDFLARE_TOKEN }}
           CLOUDFLARE_ZONE: ${{ secrets.CLOUDFLARE_ZONE }}
           S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
+          TENTACLES_SIGNING_PRIVATE_KEY: ${{ secrets.TENTACLES_SIGNING_PRIVATE_KEY }}
         run: |
           cp packages/tentacles/metadata.yaml ../metadata.yaml
           sed -i "s/VERSION_PLACEHOLDER/stable/g" ../metadata.yaml

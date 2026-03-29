@@ -108,7 +108,9 @@ async def _handle_package_manager_command(starting_args,
                                                             single_tentacle_type,
                                                             bot_path=target_dir,
                                                             aiohttp_session=aiohttp_session,
-                                                            bot_install_dir=bot_install_dir)
+                                                            bot_install_dir=bot_install_dir,
+                                                            tentacles_path_or_url=tentacles_urls[0]
+                                                            if tentacles_urls else None)
 
         elif not (starting_args.all or starting_args.tentacle_names):
             LOGGER.error("Please provide at least one tentacle name or add the '--all' parameter")

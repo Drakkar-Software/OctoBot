@@ -26,6 +26,7 @@ import octobot_tentacles_manager.models as models
 import octobot_tentacles_manager.util as util
 import octobot_tentacles_manager.api.uploader as uploader_api
 import octobot_commons.logging as logging
+import octobot_tentacles_manager.util.signature_verification as signature_verification
 
 if TYPE_CHECKING:
     from octobot_tentacles_manager.exporters import TentacleBundleExporter
@@ -57,6 +58,20 @@ async def create_tentacles_package(package_name: str,
                                                                  metadata_file=metadata_file,
                                                                  use_package_as_file_name=use_package_as_file_name,
                                                                  should_cythonize=cythonize).export()
+    # Sign the package if a signing key is available
+    signature_path = None
+    signing_key = os.getenv(constants.ENV_TENTACLES_SIGNING_PRIVATE_KEY)
+    if signing_key and in_zip and tentacle_package.output_path:
+        try:
+            signature_path = await signature_verification.sign_package_file(
+                tentacle_package.output_path, signing_key
+            )
+        except Exception as signing_err:
+            logging.get_logger("TentacleManagerApi").error(
+                f"Failed to sign tentacles package: {signing_err}"
+            )
+            raise
+
     if upload_details is not None and len(upload_details) > 0:
         export_path: str = tentacle_package.output_path
         alias_name: str = os.path.join(tentacle_package.version, os.path.basename(export_path))
@@ -70,6 +85,16 @@ async def create_tentacles_package(package_name: str,
                                                  artifact_path=metadata_file,
                                                  artifact_alias=os.path.join(tentacle_package.version,
                                                                              constants.ARTIFACT_METADATA_FILE))
+        if signature_path and os.path.isfile(signature_path):
+            await uploader_api.upload_file_or_folder(
+                uploader_type=uploader_type,
+                path=upload_details[0],
+                artifact_path=signature_path,
+                artifact_alias=os.path.join(
+                    tentacle_package.version,
+                    os.path.basename(signature_path),
+                ),
+            )
     return export_result
 
 

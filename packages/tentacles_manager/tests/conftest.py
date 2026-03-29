@@ -18,3 +18,18 @@ def mock_bot_version():
         return_value=constants.TENTACLE_INSTALLATION_CONTEXT_OCTOBOT_VERSION_UNKNOWN
     ):
         yield
+
+
+@pytest.fixture(autouse=True)
+def allow_unsigned_test_tentacles(request):
+    """
+    Test zip fixtures are not signed with the Drakkar key.
+    Allow unsigned tentacles globally so tests focus on install/export logic
+    rather than signature verification (which has dedicated tests).
+    Tests marked with @pytest.mark.signature_verification opt out.
+    """
+    if "signature_verification" in request.keywords:
+        yield
+    else:
+        with mock.patch.object(constants, "ALLOW_UNSIGNED_TENTACLES", True):
+            yield

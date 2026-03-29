@@ -49,12 +49,14 @@ async def install_tentacles(tentacle_names, tentacles_path_or_url, bot_path=cons
 
 async def install_single_tentacle(single_tentacle_path, single_tentacle_type, tentacle_path=constants.TENTACLES_PATH,
                                   bot_path=constants.DEFAULT_BOT_PATH, aiohttp_session=None,
-                                  bot_install_dir=constants.DEFAULT_BOT_INSTALL_DIR, authenticator=None) -> int:
+                                  bot_install_dir=constants.DEFAULT_BOT_INSTALL_DIR, authenticator=None,
+                                  tentacles_path_or_url=None) -> int:
     single_install_worker = workers.SingleInstallWorker(constants.TENTACLES_INSTALL_TEMP_DIR, tentacle_path,
                                                         bot_path, False, aiohttp_session,
                                                         bot_install_dir=bot_install_dir)
     single_install_worker.single_tentacle_path = single_tentacle_path
     single_install_worker.single_tentacle_type = single_tentacle_type
+    single_install_worker.tentacles_path_or_url = tentacles_path_or_url
     return await util.manage_tentacles(single_install_worker, None, None, aiohttp_session, authenticator)
 
 
