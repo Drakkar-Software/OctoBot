@@ -41,8 +41,12 @@ class AutomationState(octobot_commons.dataclasses.MinimizableDataclass):
     """
     Defines the state of a single automation which is potentially associated to an exchange account.
     """
+    # Description of the automation
     automation: automation_details_import.AutomationDetails = dataclasses.field(default_factory=automation_details_import.AutomationDetails, repr=True)
+    # Global info of the exchange account of this automation.
+    # Equal to automation account when simulated, conttains the full (not sub) exchange portfolio otherwise
     exchange_account_details: typing.Optional[exchange_account_details_import.ExchangeAccountDetails] = dataclasses.field(default=None, repr=True)
+    # Priority actions to be executed before the automation DAG when they are not already executed
     priority_actions: list[action_details_import.AbstractActionDetails] = dataclasses.field(default_factory=list, repr=True)
 
     def update_automation_actions(self, actions: list[action_details_import.AbstractActionDetails]):
