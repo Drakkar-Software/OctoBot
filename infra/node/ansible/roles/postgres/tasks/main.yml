@@ -1,0 +1,12 @@
+---
+# Pre-flight: ensure consumer nodes can reach the master's PostgreSQL.
+# The Postgres container itself is defined in docker-compose.yml.j2 and
+# started by the octobot role via `docker compose up -d`.
+# This role only validates network connectivity for consumer nodes.
+
+- name: Verify consumer can reach master PostgreSQL
+  ansible.builtin.wait_for:
+    host: "{{ postgres_host }}"
+    port: 5432
+    timeout: 60
+  when: is_consumer_only | default(false) | bool

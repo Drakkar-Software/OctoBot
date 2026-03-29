@@ -1,0 +1,43 @@
+---
+- name: Validate custom_tentacles_zip local path
+  ansible.builtin.assert:
+    that:
+      - custom_tentacles_zip is match('^[a-zA-Z0-9_./\-]+\.zip$')
+      - "'../' not in custom_tentacles_zip"
+    fail_msg: "custom_tentacles_zip local path contains unsafe characters: {{ custom_tentacles_zip }}"
+  when: custom_tentacles_zip is not match('^https?://')
+
+- name: Validate custom_tentacles_zip URL
+  ansible.builtin.assert:
+    that:
+      - custom_tentacles_zip is match('^https?://[a-zA-Z0-9_./:@?&=+%-]+$')
+    fail_msg: "custom_tentacles_zip URL contains unsafe characters: {{ custom_tentacles_zip }}"
+  when: custom_tentacles_zip is match('^https?://')
+
+- name: Copy tentacles ZIP to host
+  ansible.builtin.copy:
+    src: "{{ custom_tentacles_zip }}"
+    dest: "{{ stack_deploy_dir }}/custom-tentacles.zip"
+    owner: deploy
+    group: deploy
+    mode: "0644"
+  when: custom_tentacles_zip is not match('^https?://')
+
+- name: Download tentacles ZIP from URL
+  ansible.builtin.get_url:
+    url: "{{ custom_tentacles_zip }}"
+    dest: "{{ stack_deploy_dir }}/custom-tentacles.zip"
+    owner: deploy
+    group: deploy
+    mode: "0644"
+  when: custom_tentacles_zip is match('^https?://')
+
+- name: Install custom tentacles into OctoBot container
+  ansible.builtin.command:
+    cmd: >-
+      docker compose run --rm
+      -v {{ stack_deploy_dir }}/custom-tentacles.zip:/tmp/custom-tentacles.zip:ro
+      octobot tentacles --install --all --location /tmp/custom-tentacles.zip
+    chdir: "{{ stack_deploy_dir }}"
+  changed_when: true
+  notify: restart octobot

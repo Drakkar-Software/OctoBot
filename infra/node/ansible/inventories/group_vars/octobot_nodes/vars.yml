@@ -1,0 +1,7 @@
+# Master/consumer role is determined by inventory group membership
+is_master: "{{ 'master_nodes' in group_names }}"
+is_consumer_only: "{{ 'consumer_nodes' in group_names }}"
+
+# For replica mode, consumers connect to the master's PostgreSQL
+postgres_host: "{{ hostvars[groups['master_nodes'] | first].ansible_host if (groups['master_nodes'] | default([]) | length > 0) else '127.0.0.1' }}"
+postgres_listen_address: "{{ '0.0.0.0' if (groups['consumer_nodes'] | default([]) | length > 0) else '127.0.0.1' }}"

@@ -87,7 +87,8 @@ def run_tentacles_install_or_update(community_auth, config):
 
 async def _install_or_update_tentacles(community_auth, config):
     additional_tentacles_package_urls = community_auth.get_saved_package_urls()
-    await install_or_update_tentacles(config, additional_tentacles_package_urls, False)
+    only_additional = not constants.INSTALL_DEFAULT_TENTACLES
+    await install_or_update_tentacles(config, additional_tentacles_package_urls, only_additional)
 
 
 def run_update_or_repair_tentacles_if_necessary(community_auth, config, tentacles_setup_config):
@@ -140,7 +141,8 @@ async def update_or_repair_tentacles_if_necessary(community_auth, selected_profi
                 not tentacles_manager_api.are_tentacles_up_to_date(local_profile_tentacles_setup_config, constants.VERSION):
             logger.info("OctoBot tentacles are not up to date. Updating tentacles...")
             _check_tentacles_install_exit()
-            if await install_or_update_tentacles(config, to_install_urls, False):
+            only_additional = not constants.INSTALL_DEFAULT_TENTACLES
+            if await install_or_update_tentacles(config, to_install_urls, only_additional):
                 logger.info("OctoBot tentacles are now up to date.")
         else:
             if to_install_urls:
@@ -151,9 +153,10 @@ async def update_or_repair_tentacles_if_necessary(community_auth, selected_profi
             if tentacles_manager_api.load_tentacles(verbose=True):
                 logger.debug("OctoBot tentacles are up to date.")
             else:
-                logger.info("OctoBot tentacles are damaged. Installing default tentacles only ...")
+                logger.info("OctoBot tentacles are damaged. Reinstalling tentacles ...")
                 _check_tentacles_install_exit()
-                await install_or_update_tentacles(config, [], False)
+                only_additional = not constants.INSTALL_DEFAULT_TENTACLES
+                await install_or_update_tentacles(config, [], only_additional)
     else:
         if tentacles_manager_api.load_tentacles(verbose=True):
             logger.debug("OctoBot tentacles loaded.")
