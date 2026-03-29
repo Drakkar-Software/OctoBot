@@ -121,6 +121,45 @@ def fetch_ohlcv_side_effect_for_close_price(
     return patched_fetch_ohlcv
 
 
+def tickers_repository_fetch_tickers_btc_usdc_close_override(
+    get_btc_usdc_close: typing.Callable[[], typing.Union[int, float]],
+    *,
+    btc_usdc_symbol: str = "BTC/USDC",
+):
+    """
+    TickersRepository.fetch_tickers replacement for tests: forces BTC/USDC close from get_btc_usdc_close()
+    and does not use the process-wide ticker cache on the fetch path.
+    """
+    orig_get_all = exchanges_test_tools.get_all_currencies_price_ticker
+    orig_get_one = exchanges_test_tools.get_price_ticker
+    close_col = trading_enums.ExchangeConstantsTickersColumns.CLOSE.value
+
+    async def patched_get_all_currencies_price_ticker(exchange_manager, **kwargs):
+        tickers = await orig_get_all(exchange_manager, **kwargs)
+        c = get_btc_usdc_close()
+        if btc_usdc_symbol in tickers:
+            tickers[btc_usdc_symbol] = {**tickers[btc_usdc_symbol], close_col: c}
+        else:
+            tickers[btc_usdc_symbol] = {close_col: c}
+        return tickers
+
+    async def patched_get_price_ticker(exchange_manager, symbol: str, **kwargs):
+        if symbol == btc_usdc_symbol:
+            return {close_col: get_btc_usdc_close()}
+        return await orig_get_one(exchange_manager, symbol, **kwargs)
+
+    async def patched_fetch_tickers(self, symbols):
+        if symbols == []:
+            return {}
+        if isinstance(symbols, list) and len(symbols) == 1:
+            return {
+                symbols[0]: await patched_get_price_ticker(self.exchange_manager, symbols[0])
+            }
+        return await patched_get_all_currencies_price_ticker(self.exchange_manager, symbols=None)
+
+    return patched_fetch_tickers
+
+
 @pytest.fixture
 def grid_reference_account():
     """Spot snapshot matching a BTC/USDC grid: half USDC / half BTC by ratio, with 2+2 open limits."""
@@ -206,143 +245,160 @@ def init_action():
     octobot_flow.enums.AutomationRunMode.UPDATE_REFERENCE_EXCHANGE_ACCOUNT_AND_COPY,
 ])
 async def test_simulator_grid_init_from_empty_state(init_action: dict, run_mode: octobot_flow.enums.AutomationRunMode):
-    all_actions = [set_init_action_run_mode(init_action, run_mode), grid_trading_mode_action(init_action)]
-    automation_state = automation_state_dict(resolved_actions(all_actions))
-
-    # 1. run init action
-    async with octobot_flow.AutomationJob(automation_state, [], {}) as automation_job:
-        await automation_job.run()
-    after_init_execution_dump = automation_job.dump()
-
-    # check bot actions execution
-    assert len(automation_job.automation_state.automation.actions_dag.actions) == len(all_actions)
-    for index, action in enumerate(automation_job.automation_state.automation.actions_dag.actions):
-        assert isinstance(action, octobot_flow.entities.AbstractActionDetails)
-        assert action.error_status == octobot_flow.enums.ActionErrorStatus.NO_ERROR.value
-        assert action.result is None
-        if index == 0:
-            assert action.executed_at and action.executed_at >= current_time
-            assert action.previous_execution_result is None
-        else:
-            assert action.executed_at is None
-            assert action.previous_execution_result is None
-
-    # 2. run grid trading mode action
-    async with octobot_flow.AutomationJob(after_init_execution_dump, [], {}) as automation_job:
-        await automation_job.run()
-    after_grid_execution_dump = automation_job.dump()
-    assert len(automation_job.automation_state.automation.actions_dag.actions) == len(all_actions)
-    for index, action in enumerate(automation_job.automation_state.automation.actions_dag.actions):
-        assert isinstance(action, octobot_flow.entities.AbstractActionDetails)
-        assert action.error_status == octobot_flow.enums.ActionErrorStatus.NO_ERROR.value
-        assert action.result is None
-        if index == 0:
-            assert action.executed_at is not None
-            assert action.previous_execution_result is None
-        else:
-            # action is reset: this is a trading mode action: it will be executed again at the next execution
-            assert action.executed_at is None
-            assert isinstance(action.previous_execution_result, dict)
-
-    # scheduled next execution time at 1h after the current execution (1h is the default time when unspecified)
-    assert after_grid_execution_dump["automation"]["execution"]["previous_execution"][
-        "triggered_at"
-    ] >= current_time
-    one_hour = (
-        common_enums.TimeFramesMinutes[common_enums.TimeFrames.ONE_HOUR]
-        * common_constants.MINUTE_TO_SECONDS
+    patched_fetch_tickers = tickers_repository_fetch_tickers_btc_usdc_close_override(
+        lambda: _FIXED_BTC_USDC_CLOSE
     )
-    allowed_execution_time = 20
-    schedule_delay = (
-        after_grid_execution_dump["automation"]["execution"]["current_execution"]["scheduled_to"]
-        - after_grid_execution_dump["automation"]["execution"]["previous_execution"]["triggered_at"]
-    )
-    assert one_hour - allowed_execution_time < schedule_delay < one_hour + allowed_execution_time
+    patched_fetch_ohlcv = fetch_ohlcv_side_effect_for_close_price(lambda: _FIXED_BTC_USDC_CLOSE)
 
-    # check portfolio and open grid orders
-    after_grid_portfolio_content = after_grid_execution_dump["automation"][
-        "client_exchange_account_elements"
-    ]["portfolio"]["content"]
-    assert isinstance(after_grid_execution_dump, dict)
-    assert list(sorted(after_grid_portfolio_content.keys())) == ["BTC", "USDC"]
-    # applied portfolio optimizations and created grid open orders
-    assert 450 < after_grid_portfolio_content["USDC"]["total"] < 550 # USDC holding split in half
-    assert after_grid_portfolio_content["USDC"]["available"] < 200
-    assert 0.001 < after_grid_portfolio_content["BTC"]["total"] < 0.02
-    assert after_grid_portfolio_content["BTC"]["available"] < 0.001
-    if run_mode == octobot_flow.enums.AutomationRunMode.UPDATE_REFERENCE_EXCHANGE_ACCOUNT_AND_COPY:
-        # check reference account portfolio content
-        after_grid_reference_account_portfolio_content = after_grid_execution_dump["automation"]["reference_exchange_account_elements"]["portfolio"]["content"]
-        assert isinstance(after_grid_reference_account_portfolio_content, dict)
-        assert list(sorted(after_grid_reference_account_portfolio_content.keys())) == ["BTC", "USDC"]
+    with (
+        mock.patch.object(
+            octobot_flow.repositories.exchange.TickersRepository,
+            "fetch_tickers",
+            new=patched_fetch_tickers,
+        ),
+        mock.patch.object(
+            octobot_flow.repositories.exchange.OhlcvRepository,
+            "fetch_ohlcv",
+            side_effect=patched_fetch_ohlcv,
+        ),
+    ):
+        all_actions = [set_init_action_run_mode(init_action, run_mode), grid_trading_mode_action(init_action)]
+        automation_state = automation_state_dict(resolved_actions(all_actions))
+    
+        # 1. run init action
+        async with octobot_flow.AutomationJob(automation_state, [], {}) as automation_job:
+            await automation_job.run()
+        after_init_execution_dump = automation_job.dump()
+    
+        # check bot actions execution
+        assert len(automation_job.automation_state.automation.actions_dag.actions) == len(all_actions)
+        for index, action in enumerate(automation_job.automation_state.automation.actions_dag.actions):
+            assert isinstance(action, octobot_flow.entities.AbstractActionDetails)
+            assert action.error_status == octobot_flow.enums.ActionErrorStatus.NO_ERROR.value
+            assert action.result is None
+            if index == 0:
+                assert action.executed_at and action.executed_at >= current_time
+                assert action.previous_execution_result is None
+            else:
+                assert action.executed_at is None
+                assert action.previous_execution_result is None
+    
+        # 2. run grid trading mode action
+        async with octobot_flow.AutomationJob(after_init_execution_dump, [], {}) as automation_job:
+            await automation_job.run()
+        after_grid_execution_dump = automation_job.dump()
+        assert len(automation_job.automation_state.automation.actions_dag.actions) == len(all_actions)
+        for index, action in enumerate(automation_job.automation_state.automation.actions_dag.actions):
+            assert isinstance(action, octobot_flow.entities.AbstractActionDetails)
+            assert action.error_status == octobot_flow.enums.ActionErrorStatus.NO_ERROR.value
+            assert action.result is None
+            if index == 0:
+                assert action.executed_at is not None
+                assert action.previous_execution_result is None
+            else:
+                # action is reset: this is a trading mode action: it will be executed again at the next execution
+                assert action.executed_at is None
+                assert isinstance(action.previous_execution_result, dict)
+    
+        # scheduled next execution time at 1h after the current execution (1h is the default time when unspecified)
+        assert after_grid_execution_dump["automation"]["execution"]["previous_execution"][
+            "triggered_at"
+        ] >= current_time
+        one_hour = (
+            common_enums.TimeFramesMinutes[common_enums.TimeFrames.ONE_HOUR]
+            * common_constants.MINUTE_TO_SECONDS
+        )
+        allowed_execution_time = 20
+        schedule_delay = (
+            after_grid_execution_dump["automation"]["execution"]["current_execution"]["scheduled_to"]
+            - after_grid_execution_dump["automation"]["execution"]["previous_execution"]["triggered_at"]
+        )
+        assert one_hour - allowed_execution_time < schedule_delay < one_hour + allowed_execution_time
+    
+        # check portfolio and open grid orders
+        after_grid_portfolio_content = after_grid_execution_dump["automation"][
+            "client_exchange_account_elements"
+        ]["portfolio"]["content"]
+        assert isinstance(after_grid_execution_dump, dict)
+        assert list(sorted(after_grid_portfolio_content.keys())) == ["BTC", "USDC"]
         # applied portfolio optimizations and created grid open orders
-        assert 450 < after_grid_reference_account_portfolio_content["USDC"]["total"] < 550 # USDC holding split in half
-        assert after_grid_reference_account_portfolio_content["USDC"]["available"] < 200
-        assert 0.001 < after_grid_reference_account_portfolio_content["BTC"]["total"] < 0.02
-        assert after_grid_reference_account_portfolio_content["BTC"]["available"] < 0.001
-    else:
-        assert "reference_exchange_account_elements" not in after_grid_execution_dump["automation"]
-
-    order_portfolio_types = ["client_exchange_account_elements", "reference_exchange_account_elements"] if run_mode == octobot_flow.enums.AutomationRunMode.UPDATE_REFERENCE_EXCHANGE_ACCOUNT_AND_COPY else ["client_exchange_account_elements"]
-    for portfolio_type in order_portfolio_types:
-        open_orders_origin_values = [
-            order[trading_constants.STORAGE_ORIGIN_VALUE]
-            for order in after_grid_execution_dump["automation"][portfolio_type]["orders"][
-                "open_orders"
-            ]
-        ] 
-        buy_orders = sorted([
-            o for o in open_orders_origin_values if o[trading_enums.ExchangeConstantsOrderColumns.SIDE.value] == trading_enums.TradeOrderSide.BUY.value
-        ], key=lambda o: o[trading_enums.ExchangeConstantsOrderColumns.PRICE.value])
-        sell_orders = sorted([
-            o for o in open_orders_origin_values if o[trading_enums.ExchangeConstantsOrderColumns.SIDE.value] == trading_enums.TradeOrderSide.SELL.value
-        ], key=lambda o: o[trading_enums.ExchangeConstantsOrderColumns.PRICE.value])
-        assert len(buy_orders) == len(sell_orders) == 2
-        # check order prices are according to the grid settings
-        price_col = trading_enums.ExchangeConstantsOrderColumns.PRICE.value
-        lowest_buy_price = d_order_price(buy_orders[0][price_col])
-        assert d_order_price(buy_orders[1][price_col]) == lowest_buy_price + D_INCREMENT
-        assert d_order_price(sell_orders[0][price_col]) == lowest_buy_price + D_INCREMENT + D_SPREAD
-        assert d_order_price(sell_orders[1][price_col]) == lowest_buy_price + D_INCREMENT + D_SPREAD + D_INCREMENT
-
-    # 3. trigger again: nothing to do
-    async with octobot_flow.AutomationJob(after_grid_execution_dump, [], {}) as automation_job:
-        await automation_job.run()
-    after_second_call_execution_dump = automation_job.dump()
-    assert len(automation_job.automation_state.automation.actions_dag.actions) == len(all_actions)
-    for index, action in enumerate(automation_job.automation_state.automation.actions_dag.actions):
-        assert isinstance(action, octobot_flow.entities.AbstractActionDetails)
-        assert action.error_status == octobot_flow.enums.ActionErrorStatus.NO_ERROR.value
-        assert action.result is None
-        if index == 0:
-            assert action.executed_at is not None
-            assert action.previous_execution_result is None
+        assert 450 < after_grid_portfolio_content["USDC"]["total"] < 550 # USDC holding split in half
+        assert after_grid_portfolio_content["USDC"]["available"] < 200
+        assert 0.001 < after_grid_portfolio_content["BTC"]["total"] < 0.02
+        assert after_grid_portfolio_content["BTC"]["available"] < 0.001
+        if run_mode == octobot_flow.enums.AutomationRunMode.UPDATE_REFERENCE_EXCHANGE_ACCOUNT_AND_COPY:
+            # check reference account portfolio content
+            after_grid_reference_account_portfolio_content = after_grid_execution_dump["automation"]["reference_exchange_account_elements"]["portfolio"]["content"]
+            assert isinstance(after_grid_reference_account_portfolio_content, dict)
+            assert list(sorted(after_grid_reference_account_portfolio_content.keys())) == ["BTC", "USDC"]
+            # applied portfolio optimizations and created grid open orders
+            assert 450 < after_grid_reference_account_portfolio_content["USDC"]["total"] < 550 # USDC holding split in half
+            assert after_grid_reference_account_portfolio_content["USDC"]["available"] < 200
+            assert 0.001 < after_grid_reference_account_portfolio_content["BTC"]["total"] < 0.02
+            assert after_grid_reference_account_portfolio_content["BTC"]["available"] < 0.001
         else:
-            assert action.executed_at is None
-            assert isinstance(action.previous_execution_result, dict)
-
-    schedule_delay = (
-        after_second_call_execution_dump["automation"]["execution"]["current_execution"]["scheduled_to"]
-        - after_second_call_execution_dump["automation"]["execution"]["previous_execution"]["triggered_at"]
-    )
-    assert one_hour - allowed_execution_time < schedule_delay < one_hour + allowed_execution_time
-
-    after_second_call_portfolio_content = after_second_call_execution_dump["automation"][
-        "client_exchange_account_elements"
-    ]["portfolio"]["content"]
-    assert after_second_call_portfolio_content == after_grid_portfolio_content
-    if run_mode == octobot_flow.enums.AutomationRunMode.UPDATE_REFERENCE_EXCHANGE_ACCOUNT_AND_COPY:
-        # check reference account portfolio content
-        after_second_call_reference_account_portfolio_content = after_second_call_execution_dump["automation"]["reference_exchange_account_elements"]["portfolio"]["content"]
-        assert after_second_call_reference_account_portfolio_content == after_grid_reference_account_portfolio_content
-    else:
-        assert "reference_exchange_account_elements" not in after_second_call_execution_dump["automation"]
-
-
+            assert "reference_exchange_account_elements" not in after_grid_execution_dump["automation"]
+    
+        order_portfolio_types = ["client_exchange_account_elements", "reference_exchange_account_elements"] if run_mode == octobot_flow.enums.AutomationRunMode.UPDATE_REFERENCE_EXCHANGE_ACCOUNT_AND_COPY else ["client_exchange_account_elements"]
+        for portfolio_type in order_portfolio_types:
+            open_orders_origin_values = [
+                order[trading_constants.STORAGE_ORIGIN_VALUE]
+                for order in after_grid_execution_dump["automation"][portfolio_type]["orders"][
+                    "open_orders"
+                ]
+            ] 
+            buy_orders = sorted([
+                o for o in open_orders_origin_values if o[trading_enums.ExchangeConstantsOrderColumns.SIDE.value] == trading_enums.TradeOrderSide.BUY.value
+            ], key=lambda o: o[trading_enums.ExchangeConstantsOrderColumns.PRICE.value])
+            sell_orders = sorted([
+                o for o in open_orders_origin_values if o[trading_enums.ExchangeConstantsOrderColumns.SIDE.value] == trading_enums.TradeOrderSide.SELL.value
+            ], key=lambda o: o[trading_enums.ExchangeConstantsOrderColumns.PRICE.value])
+            assert len(buy_orders) == len(sell_orders) == 2
+            # check order prices are according to the grid settings
+            price_col = trading_enums.ExchangeConstantsOrderColumns.PRICE.value
+            lowest_buy_price = d_order_price(buy_orders[0][price_col])
+            assert d_order_price(buy_orders[1][price_col]) == lowest_buy_price + D_INCREMENT
+            assert d_order_price(sell_orders[0][price_col]) == lowest_buy_price + D_INCREMENT + D_SPREAD
+            assert d_order_price(sell_orders[1][price_col]) == lowest_buy_price + D_INCREMENT + D_SPREAD + D_INCREMENT
+    
+        # 3. trigger again: nothing to do
+        async with octobot_flow.AutomationJob(after_grid_execution_dump, [], {}) as automation_job:
+            await automation_job.run()
+        after_second_call_execution_dump = automation_job.dump()
+        assert len(automation_job.automation_state.automation.actions_dag.actions) == len(all_actions)
+        for index, action in enumerate(automation_job.automation_state.automation.actions_dag.actions):
+            assert isinstance(action, octobot_flow.entities.AbstractActionDetails)
+            assert action.error_status == octobot_flow.enums.ActionErrorStatus.NO_ERROR.value
+            assert action.result is None
+            if index == 0:
+                assert action.executed_at is not None
+                assert action.previous_execution_result is None
+            else:
+                assert action.executed_at is None
+                assert isinstance(action.previous_execution_result, dict)
+    
+        schedule_delay = (
+            after_second_call_execution_dump["automation"]["execution"]["current_execution"]["scheduled_to"]
+            - after_second_call_execution_dump["automation"]["execution"]["previous_execution"]["triggered_at"]
+        )
+        assert one_hour - allowed_execution_time < schedule_delay < one_hour + allowed_execution_time
+    
+        after_second_call_portfolio_content = after_second_call_execution_dump["automation"][
+            "client_exchange_account_elements"
+        ]["portfolio"]["content"]
+        assert after_second_call_portfolio_content == after_grid_portfolio_content
+        if run_mode == octobot_flow.enums.AutomationRunMode.UPDATE_REFERENCE_EXCHANGE_ACCOUNT_AND_COPY:
+            # check reference account portfolio content
+            after_second_call_reference_account_portfolio_content = after_second_call_execution_dump["automation"]["reference_exchange_account_elements"]["portfolio"]["content"]
+            assert after_second_call_reference_account_portfolio_content == after_grid_reference_account_portfolio_content
+        else:
+            assert "reference_exchange_account_elements" not in after_second_call_execution_dump["automation"]
+    
+    
 @pytest.mark.asyncio
 @pytest.mark.parametrize("run_mode", [
-    octobot_flow.enums.AutomationRunMode.UPDATE_CLIENT_EXCHANGE_ACCOUNT_ONLY,
-    octobot_flow.enums.AutomationRunMode.UPDATE_REFERENCE_EXCHANGE_ACCOUNT_AND_COPY,
+        octobot_flow.enums.AutomationRunMode.UPDATE_CLIENT_EXCHANGE_ACCOUNT_ONLY,
+        octobot_flow.enums.AutomationRunMode.UPDATE_REFERENCE_EXCHANGE_ACCOUNT_AND_COPY,
 ])
 async def test_simulator_grid_init_and_fill_sell_order(init_action: dict, run_mode: octobot_flow.enums.AutomationRunMode):
     """
@@ -350,38 +406,18 @@ async def test_simulator_grid_init_and_fill_sell_order(init_action: dict, run_mo
     then run the automation again from the saved state: staggered/grid mode should place a mirror buy
     at (first_sell_price - (spread - increment)).
     """
-    orig_get_all = exchanges_test_tools.get_all_currencies_price_ticker
-    orig_get_one = exchanges_test_tools.get_price_ticker
-    close_col = trading_enums.ExchangeConstantsTickersColumns.CLOSE.value
     btc_usdc = "BTC/USDC"
     simulated_close = {"value": _FIXED_BTC_USDC_CLOSE}
-
-    async def patched_get_all_currencies_price_ticker(exchange_manager, **kwargs):
-        tickers = await orig_get_all(exchange_manager, **kwargs)
-        c = simulated_close["value"]
-        if btc_usdc in tickers:
-            tickers[btc_usdc] = {**tickers[btc_usdc], close_col: c}
-        else:
-            tickers[btc_usdc] = {close_col: c}
-        return tickers
-
-    async def patched_get_price_ticker(exchange_manager, symbol: str, **kwargs):
-        if symbol == btc_usdc:
-            return {close_col: simulated_close["value"]}
-        return await orig_get_one(exchange_manager, symbol, **kwargs)
-
+    patched_fetch_tickers = tickers_repository_fetch_tickers_btc_usdc_close_override(
+        lambda: simulated_close["value"]
+    )
     patched_fetch_ohlcv = fetch_ohlcv_side_effect_for_close_price(lambda: simulated_close["value"])
 
     with (
         mock.patch.object(
-            exchanges_test_tools,
-            "get_all_currencies_price_ticker",
-            side_effect=patched_get_all_currencies_price_ticker,
-        ),
-        mock.patch.object(
-            exchanges_test_tools,
-            "get_price_ticker",
-            side_effect=patched_get_price_ticker,
+            octobot_flow.repositories.exchange.TickersRepository,
+            "fetch_tickers",
+            new=patched_fetch_tickers,
         ),
         mock.patch.object(
             octobot_flow.repositories.exchange.OhlcvRepository,
@@ -500,36 +536,16 @@ async def test_simulator_copy_grid(init_action: dict, grid_reference_account: co
     Copy a reference spot account shaped like a BTC/USDC grid (portfolio + 2/2 open limits)
     onto the client after init, then ensure a no-op second run keeps portfolio and ladder intact.
     """
-    orig_get_all = exchanges_test_tools.get_all_currencies_price_ticker
-    orig_get_one = exchanges_test_tools.get_price_ticker
-    close_col = trading_enums.ExchangeConstantsTickersColumns.CLOSE.value
-    btc_usdc = "BTC/USDC"
-
-    async def patched_get_all_currencies_price_ticker(exchange_manager, **kwargs):
-        tickers = await orig_get_all(exchange_manager, **kwargs)
-        if btc_usdc in tickers:
-            tickers[btc_usdc] = {**tickers[btc_usdc], close_col: _FIXED_BTC_USDC_CLOSE}
-        else:
-            tickers[btc_usdc] = {close_col: _FIXED_BTC_USDC_CLOSE}
-        return tickers
-
-    async def patched_get_price_ticker(exchange_manager, symbol: str, **kwargs):
-        if symbol == btc_usdc:
-            return {close_col: _FIXED_BTC_USDC_CLOSE}
-        return await orig_get_one(exchange_manager, symbol, **kwargs)
-
+    patched_fetch_tickers = tickers_repository_fetch_tickers_btc_usdc_close_override(
+        lambda: _FIXED_BTC_USDC_CLOSE
+    )
     patched_fetch_ohlcv = fetch_ohlcv_side_effect_for_close_price(lambda: _FIXED_BTC_USDC_CLOSE)
 
     with (
         mock.patch.object(
-            exchanges_test_tools,
-            "get_all_currencies_price_ticker",
-            side_effect=patched_get_all_currencies_price_ticker,
-        ),
-        mock.patch.object(
-            exchanges_test_tools,
-            "get_price_ticker",
-            side_effect=patched_get_price_ticker,
+            octobot_flow.repositories.exchange.TickersRepository,
+            "fetch_tickers",
+            new=patched_fetch_tickers,
         ),
         mock.patch.object(
             octobot_flow.repositories.exchange.OhlcvRepository,
