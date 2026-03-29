@@ -20,6 +20,7 @@ from octobot_tentacles_manager.util import tentacle_filter
 from octobot_tentacles_manager.util import tentacle_cleaner
 from octobot_tentacles_manager.util import file_util
 from octobot_tentacles_manager.util import hashing
+from octobot_tentacles_manager.util import signature_verification
 
 from octobot_tentacles_manager.util.os_util import (
     get_os_str,
@@ -60,6 +61,12 @@ from octobot_tentacles_manager.util.hashing import (
     get_tentacles_code_hash,
     get_tentacles_config_hash,
 )
+from octobot_tentacles_manager.util.signature_verification import (
+    SignatureVerificationError,
+    verify_package_signature,
+    verify_package,
+    sign_package_file,
+)
 
 __all__ = [
     "cleanup_temp_dirs",
@@ -87,4 +94,8 @@ __all__ = [
     "filter_tentacles_by_dev_mode_and_package",
     "get_arch_str",
     "get_os_str",
+    "SignatureVerificationError",
+    "verify_package_signature",
+    "verify_package",
+    "sign_package_file",
 ]

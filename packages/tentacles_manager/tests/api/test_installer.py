@@ -55,11 +55,12 @@ async def test_install_single_tentacle():
     tentacle_path = path.join("tests", "static", "momentum_evaluator")
     tentacle_type = "Evaluator/TA"
     async with aiohttp.ClientSession() as session:
-        assert await install_single_tentacle(tentacle_path, tentacle_type, aiohttp_session=session) == 0
+        assert await install_single_tentacle(tentacle_path, tentacle_type, aiohttp_session=session,
+                                             tentacles_path_or_url=_tentacles_local_path()) == 0
     assert path.exists(path.join(TENTACLES_PATH, "Evaluator", "TA", "momentum_evaluator", "momentum_evaluator.py"))
     assert not path.exists(TENTACLES_REQUIREMENTS_INSTALL_TEMP_DIR)
     # check availability of tentacle arch, installed momentum_evaluator and its reddit_service fake requirement
-    assert len(list(walk(TENTACLES_PATH))) == CLEAN_TENTACLES_ARCHITECTURE_FILES_FOLDERS_COUNT + 5
+    assert len(list(walk(TENTACLES_PATH))) == CLEAN_TENTACLES_ARCHITECTURE_FILES_FOLDERS_COUNT + 8
     _cleanup()
 
 
