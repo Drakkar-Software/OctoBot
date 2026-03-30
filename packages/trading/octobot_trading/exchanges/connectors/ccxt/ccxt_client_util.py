@@ -134,7 +134,7 @@ def instantiate_exchange(
     _use_proxy_if_necessary(client, proxy_config)
     if constants.ENABLE_CCXT_REQUESTS_COUNTER and allow_request_counter:
         if proxy_config.socks_proxy or proxy_config.socks_proxy_callback:
-            commons_logging.get_logger(__name__).error("socks proxy and request counter can't yet be used together.")
+            _get_logger().error("socks proxy and request counter can't yet be used together.")
         else:
             _use_request_counter(identifier, client, proxy_config)
     return client
@@ -166,7 +166,7 @@ def filtered_fetched_markets(client, market_filter: typing.Callable[[dict], bool
             for market in all_markets
             if market_filter(market)
         ]
-        commons_logging.get_logger(__name__).info(
+        _get_logger().info(
             f"Keeping {len(filtered_markets)} out of {len(all_markets)} fetched markets"
         )
         return filtered_markets
@@ -408,7 +408,7 @@ def get_custom_domain_config(exchange_class):
     if not (old and new):
         return {}
     if url_config := exchange_class().describe()[ccxt_enums.ExchangeColumns.URLS.value]:
-        commons_logging.get_logger(__name__).info(
+        _get_logger().info(
             f"Using custom domain for {exchange_class.__name__}: {old} is replaced by {new}, hostname has been updated"
         )
         return {
@@ -425,7 +425,7 @@ def _get_replaced_custom_domains(exchange_class):
         if len(split) == 2:
             return split[0], split[1]
         else:
-            commons_logging.get_logger(__name__).error(
+            _get_logger().error(
                 f"Invalid {identifier} custom domain config. Expected syntax is to_replace_domain:updated_domain "
                 f"Example: MEXC_CUSTOM_DOMAIN=mexc.com:mexc.co"
             )
@@ -482,9 +482,9 @@ def _use_request_counter(
         ccxt_client.session = counter_session
         # 4. close replaced session in task to avoid making this function a coroutine
         asyncio.create_task(_close_previous_session_and_connector(previous_session, previous_connector))
-        commons_logging.get_logger(__name__).info(f"Request counter enabled for {identifier}")
+        _get_logger().info(f"Request counter enabled for {identifier}")
     except Exception as err:
-        commons_logging.get_logger(__name__).exception(
+        _get_logger().exception(
             err, True, f"Error when initializing {identifier} request counter: {err}"
         )
 
@@ -587,18 +587,22 @@ def fix_client_missing_markets_fees(
                         (confirmed_fees[symbol] if has_cached_fees else fees_by_pair_suffix[pair_suffix])[1]
                     )
                 )
-                commons_logging.get_logger("fix_missing_markets_fees").info(
+                _get_logger().info(
                     f"Fixed missing {symbol} fees using {'cached fees' if has_cached_fees else str(pair_suffix)} fees: {fees_by_pair_suffix[pair_suffix]}" 
                 )
         except KeyError as err:
-            commons_logging.get_logger("fix_missing_markets_fees").error(
+            _get_logger().error(
                 f"Failed to fix missing market fees for {symbol}: {err}"
             )
         except Exception as err:
-            commons_logging.get_logger("fix_missing_markets_fees").exception(
+            _get_logger().exception(
                 err, True, f"Unexpected error when fixing missing market fees for {symbol}: {err}"
             )
 
 
 def _get_market_symbol_suffix(symbol):
     return symbol[symbol.index(octobot_commons.MARKET_SEPARATOR):]
+
+
+def _get_logger() -> commons_logging.BotLogger:
+    return commons_logging.get_logger("ccxt_client_util")

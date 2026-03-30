@@ -29,6 +29,7 @@ class ReCallingOperatorResultKeys(str, enum.Enum):
 
 @dataclasses.dataclass
 class ReCallingOperatorResult(octobot_commons.dataclasses.MinimizableDataclass):
+    keyword: typing.Optional[str] = None
     reset_to_id: typing.Optional[str] = None
     last_execution_result: typing.Optional[dict] = None
 
@@ -55,6 +56,13 @@ class ReCallingOperatorResult(octobot_commons.dataclasses.MinimizableDataclass):
             ) or time.time()
             return last_execution_time + waiting_time
         return None
+
+    @staticmethod
+    def get_keyword(result: typing.Any) -> typing.Optional[str]:
+        """
+        Returns the keyword from the re-calling operator result.
+        """
+        return result[ReCallingOperatorResult.__name__]["keyword"]
 
 
 class ReCallableOperatorMixin:
@@ -95,6 +103,7 @@ class ReCallableOperatorMixin:
 
     def create_re_callable_result(
         self,
+        keyword: str,
         reset_to_id: typing.Optional[str] = None,
         waiting_time: typing.Optional[float] = None,
         last_execution_time: typing.Optional[float] = None,
@@ -104,6 +113,7 @@ class ReCallableOperatorMixin:
         Builds a re-callable result from the given parameters.
         """
         return ReCallingOperatorResult(
+            keyword=keyword,
             reset_to_id=reset_to_id,
             last_execution_result={
                 ReCallingOperatorResultKeys.WAITING_TIME.value: waiting_time,
@@ -114,6 +124,7 @@ class ReCallableOperatorMixin:
 
     def create_re_callable_result_dict(
         self,
+        keyword: str,
         reset_to_id: typing.Optional[str] = None,
         waiting_time: typing.Optional[float] = None,
         last_execution_time: typing.Optional[float] = None,
@@ -124,6 +135,7 @@ class ReCallableOperatorMixin:
         """
         return {
             ReCallingOperatorResult.__name__: self.create_re_callable_result(
+                keyword=keyword,
                 reset_to_id=reset_to_id,
                 waiting_time=waiting_time,
                 last_execution_time=last_execution_time,

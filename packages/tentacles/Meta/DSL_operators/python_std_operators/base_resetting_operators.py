@@ -73,6 +73,7 @@ class WaitOperator(dsl_interpreter.PreComputingCallOperator, dsl_interpreter.ReC
             # done waiting
             return None
         return self.create_re_callable_result_dict(
+            keyword=self.get_name(),
             last_execution_time=current_time,
             waiting_time=waiting_time,
         )

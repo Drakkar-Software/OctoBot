@@ -431,6 +431,9 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
             self.logger.error(f"Fail to get market status of {symbol}: {html_util.get_html_summary_if_relevant(e)}")
             return {}
 
+    def supports_fetching_balance(self) -> bool:
+        return self.client.has['fetchBalance']
+
     @ccxt_client_util.converted_ccxt_common_errors
     async def get_balance(self, **kwargs: dict):
         """

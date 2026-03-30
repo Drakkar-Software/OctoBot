@@ -128,8 +128,9 @@ def logged_waiter(self, name: str, sleep_time: float = 30) -> typing.Generator[N
     async def _waiter() -> None:
         t0 = time.time()
         try:
-            await asyncio.sleep(sleep_time)
-            self.logger.info(f"{name} is still processing [{time.time() - t0:.2f} seconds] ...")
+            while True:
+                await asyncio.sleep(sleep_time)
+                self.logger.info(f"{name} is still processing [{time.time() - t0:.2f} seconds] ...")
         except asyncio.CancelledError:
             pass
     task = None

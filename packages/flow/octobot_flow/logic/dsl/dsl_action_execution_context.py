@@ -21,6 +21,7 @@ def dsl_action_execution(func):
         except octobot_trading.errors.DisabledFundsTransferError as err:
             action.complete(error_status=octobot_flow.enums.ActionErrorStatus.DISABLED_FUNDS_TRANSFER_ERROR.value)
         except octobot_trading.errors.MissingMinimalExchangeTradeVolume as err:
+            octobot_commons.logging.get_logger("action_execution").exception(err, True, f"Missing minimal exchange trade volume error: {err}")
             action.complete(error_status=octobot_flow.enums.ActionErrorStatus.INVALID_ORDER.value)
         except (octobot_trading.errors.UnsupportedHedgeContractError, octobot_trading.errors.InvalidPositionSide) as err:
             action.complete(error_status=octobot_flow.enums.ActionErrorStatus.UNSUPPORTED_HEDGE_POSITION.value)
@@ -34,6 +35,7 @@ def dsl_action_execution(func):
             else:
                 action.complete(error_status=octobot_flow.enums.ActionErrorStatus.INVALID_ORDER.value)
         except octobot_trading.errors.BlockchainWalletError as err:
+            octobot_commons.logging.get_logger("action_execution").exception(err, True, f"Blockchain wallet error: {err}")
             action.complete(error_status=octobot_flow.enums.ActionErrorStatus.BLOCKCHAIN_WALLET_ERROR.value)
         except Exception as err:
             octobot_commons.logging.get_logger("action_execution").exception(

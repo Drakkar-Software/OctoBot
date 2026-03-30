@@ -124,7 +124,7 @@ class AbstractAuthenticatedExchangeTester:
     # Add method call to subclasses to be able to run them independently
 
     async def test_get_portfolio(self):
-        # encoded_a = _get_encoded_value("") # tool to get encoded values
+        # encoded_a = _get_encoded_value("a") # tool to get encoded values
         # encoded_b = _get_encoded_value("")
         # encoded_c = _get_encoded_value("")
         async with self.local_exchange_manager():

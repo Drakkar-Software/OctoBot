@@ -207,8 +207,17 @@ class TradingViewSignalToDSLTranslator:
         keyword, params = cls._get_dsl_signal_keyword_and_params(parsed_data)
         if not keyword:
             return UNKNOWN_SIGNAL_RESULT
+        return cls.translate_keyword_and_params(keyword, params, other_params=parsed_data)
+
+    @classmethod
+    def translate_keyword_and_params(
+        cls,
+        keyword: str,
+        params: dict[str, typing.Any],
+        other_params: typing.Optional[dict[str, typing.Any]] = None
+    ) -> str:
         if operator_class := cls._get_operator_class(keyword):
-            all_params = cls._resolve_operator_params(operator_class, params, parsed_data)
+            all_params = cls._resolve_operator_params(operator_class, params, other_params or {})
             return f"{operator_class.get_name()}({', '.join(all_params)})"
         return UNKNOWN_SIGNAL_RESULT
 

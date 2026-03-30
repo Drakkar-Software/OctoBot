@@ -203,6 +203,7 @@ class TradingModeOperator(
             {"trigger_source": common_enums.TriggerSource.MANUAL.value}
         )
         return self.create_re_callable_result(
+            self.get_name(),
             waiting_time=trading_mode.get_time_before_next_execution(),
             last_execution_time=last_execution_time,
             state=trading_mode.get_dsl_state(),
@@ -274,6 +275,7 @@ class TradingModeOperator(
             )
 
         return self.create_re_callable_result_dict(
+            keyword=self.get_name(),
             waiting_time=min_waiting_time or None,
             last_execution_time=summary_last_execution_time or None,
             state=json.dumps(merged_state), # stored as str to avoid interpreter parsing

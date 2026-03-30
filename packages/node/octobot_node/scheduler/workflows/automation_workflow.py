@@ -42,7 +42,7 @@ class AutomationWorkflow:
 
     @staticmethod
     @SCHEDULER.INSTANCE.workflow(name="execute_automation")
-    async def execute_automation(inputs: dict) -> None:
+    async def execute_automation(inputs: dict) -> typing.Optional[str]:
         """
         Automation workflow runner: 
         1. Wait for priority actions if any.
@@ -51,7 +51,9 @@ class AutomationWorkflow:
         4. Either:
             A. Reschedule the next iteration as a child workflow to avoid growing the workflow forever.
             B. Complete the workflow and stop the automation.
+        5. If completed, return tthe updated task.content (the automation state) as workflow output
         """
+        output = None
         try:
             parsed_inputs = params.AutomationWorkflowInputs.from_dict(inputs)
             delay = parsed_inputs.execution_time - time.time()
@@ -73,10 +75,13 @@ class AutomationWorkflow:
                 AutomationWorkflow.get_logger(parsed_inputs).info(
                     f"Stopped workflow (remaining steps: {iteration_result.progress_status.remaining_steps})"
                 )
+                # only set output if the workflow is completed
+                output = iteration_result.next_iteration_description
         except Exception as err:
             AutomationWorkflow.get_logger(parsed_inputs).exception(
                 err, True, f"Interrupted workflow: unexpected critical error: {err} ({err.__class__.__name__})"
             )
+        return output
 
     @staticmethod
     @SCHEDULER.INSTANCE.step(
@@ -97,6 +102,7 @@ class AutomationWorkflow:
         parsed_inputs: params.AutomationWorkflowInputs = params.AutomationWorkflowInputs.from_dict(inputs)
         executed_step: str = "no action executed"
         execution_error = next_iteration_description = next_iteration_description_metadata = next_step = next_step_at = None
+        has_next_actions = False
         with octobot_node.scheduler.task_context.encrypted_task(parsed_inputs.task):
             #### Start of decryped task context ####
             result: octobot_flow_client.OctoBotActionsJobResult = None # type: ignore
@@ -123,24 +129,26 @@ class AutomationWorkflow:
                 raise errors.WorkflowInputError(f"Invalid task type: {parsed_inputs.task.type}")
             next_actions = []
             remaining_steps = 0
-            if result.next_actions_description:
+            has_next_actions = result.has_next_actions
+            if has_next_actions:
                 if result.actions_dag:
                     next_actions = result.actions_dag.get_executable_actions()
                     remaining_steps = len(result.actions_dag.get_pending_actions())
-                next_step_at = result.next_actions_description.get_next_execution_time()
-                raw_description = json.dumps(
-                    result.next_actions_description.to_dict(include_default_values=False)
+                next_step_at = result.next_actions_description.get_next_execution_time() if result.next_actions_description else None
+            raw_description = json.dumps(
+                result.next_actions_description.to_dict(include_default_values=False)
+            )
+            next_iteration_description_metadata = None
+            if octobot_node.config.settings.is_node_side_encryption_enabled:
+                next_iteration_description, next_iteration_description_metadata = (
+                    encryption.encrypt_task_content(raw_description)
                 )
-                next_iteration_description_metadata = None
-                if octobot_node.config.settings.is_node_side_encryption_enabled:
-                    next_iteration_description, next_iteration_description_metadata = (
-                        encryption.encrypt_task_content(raw_description)
-                    )
-                else:
-                    next_iteration_description = raw_description
-                next_step = AutomationWorkflow._get_actions_summary(next_actions, minimal=True)
+            else:
+                next_iteration_description = raw_description
+            next_step = AutomationWorkflow._get_actions_summary(next_actions, minimal=True)
+            next_actions_str = f"next immediate actions: {next_actions}" if next_actions else "all actions completed"
             AutomationWorkflow.get_logger(parsed_inputs).info(
-                f"Iteration completed, executed step: '{executed_step}', next immediate actions: {next_actions}"
+                f"Iteration completed, executed step: '{executed_step}', {next_actions_str}"
             )
             should_stop = result.should_stop
             #### End of decryped task context - nothing should be done after this point ####
@@ -156,6 +164,7 @@ class AutomationWorkflow:
             ),
             next_iteration_description=next_iteration_description,
             next_iteration_description_metadata=next_iteration_description_metadata,
+            has_next_actions=has_next_actions,
         ).to_dict(include_default_values=False)
 
     @staticmethod
@@ -173,7 +182,7 @@ class AutomationWorkflow:
         parsed_inputs: params.AutomationWorkflowInputs,
         previous_iteration_result: params.AutomationWorkflowIterationResult
     ) -> bool:
-        if not previous_iteration_result.next_iteration_description:
+        if not previous_iteration_result.has_next_actions:
             return False
         # In case new priority actions were sent, execute them now.
         # Any action sent to this workflow will be lost if not processed by it.
@@ -192,7 +201,7 @@ class AutomationWorkflow:
             latest_iteration_result = params.AutomationWorkflowIterationResult.from_dict(raw_iteration_result)
             if not AutomationWorkflow._should_continue_workflow(parsed_inputs, latest_iteration_result.progress_status, False):
                 return False
-            if not latest_iteration_result.next_iteration_description:
+            if not latest_iteration_result.has_next_actions:
                 raise errors.WorkflowPriorityActionExecutionError(
                     f"Unexpected error: no next iteration description after processing priority actions: {latest_iteration_result}"
                 )

@@ -482,7 +482,7 @@ class OrderFactory:
         )
         base_orders = []
         for valid_amount, valid_price in valid_amount_and_prices:
-            base_order = personal_data.create_order_instance(
+            base_order = create_order_instance(
                 trader=self.exchange_manager.trader,
                 order_type=order_type,
                 symbol=symbol,

@@ -1,4 +1,5 @@
 import dataclasses
+import typing
 
 import octobot_commons.dsl_interpreter
 import octobot_commons.dataclasses
@@ -7,6 +8,31 @@ import octobot_commons.dataclasses
 import octobot_flow.entities.actions.action_details as action_details
 import octobot_flow.enums
 import octobot_flow.errors
+
+
+def _navigate_dict_path(root: typing.Any, path: list[str]) -> typing.Any:
+    cursor = root
+    for i, key in enumerate(path):
+        if isinstance(cursor, dict):
+            try:
+                cursor = cursor[key]
+            except KeyError as err:
+                raise octobot_flow.errors.ActionDependencyError(
+                    f"Dependency result has no path {path[: i + 1]!r} (missing key: {key} in {list(cursor)})"
+                ) from err
+        elif isinstance(cursor, list) and key.isdigit():
+            idx = int(key)
+            if idx >= len(cursor):
+                raise octobot_flow.errors.ActionDependencyError(
+                    f"Dependency result path {path[:i]!r} list index {idx!r} out of range (len={len(cursor)})"
+                )
+            cursor = cursor[idx]
+        else:
+            raise octobot_flow.errors.ActionDependencyError(
+                f"Dependency result path {path[:i]!r} is not a dict or list (got {type(cursor).__name__}), "
+                f"cannot apply segment {key!r}"
+            )
+    return cursor
 
 
 @dataclasses.dataclass
@@ -133,12 +159,22 @@ class ActionsDAG(octobot_commons.dataclasses.FlexibleDataclass):
             if not dependency.parameter:
                 # no parameter name: this dependency is not a parameter: it just needs to have been executed
                 continue
+            value = dependency_action.result
+            if dependency.result_path:
+                value = _navigate_dict_path(value, dependency.result_path)
             resolved_dsl_script = octobot_commons.dsl_interpreter.apply_resolved_parameter_value(
-                resolved_dsl_script, dependency.parameter, dependency_action.result
+                resolved_dsl_script, dependency.parameter, value
             )
         for rescheduled_parameter, rescheduled_value in action.get_rescheduled_parameters().items():
+            operator = octobot_commons.dsl_interpreter.ReCallingOperatorResult.get_keyword(
+                rescheduled_value
+            )
+            if not operator:
+                raise octobot_flow.errors.ActionDependencyError(
+                    f"Dependency {rescheduled_parameter} returned a re-calling operator result with no keyword value: {rescheduled_value}"
+                )
             resolved_dsl_script = octobot_commons.dsl_interpreter.add_resolved_parameter_value(
-                resolved_dsl_script, rescheduled_parameter, rescheduled_value
+                resolved_dsl_script, operator, rescheduled_parameter, rescheduled_value
             )
         action.resolved_dsl_script = resolved_dsl_script
 
