@@ -1,4 +1,11 @@
 ---
+- name: Ensure deploy user exists
+  ansible.builtin.user:
+    name: deploy
+    system: true
+    create_home: false
+    shell: /usr/sbin/nologin
+
 - name: Check if Docker iptables chains are present
   ansible.builtin.command: iptables -L DOCKER-USER -n
   register: docker_chains

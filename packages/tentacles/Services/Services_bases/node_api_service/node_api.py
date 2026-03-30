@@ -75,7 +75,10 @@ class NodeApiService(services.AbstractService):
 
     @staticmethod
     def get_is_enabled(config):
-        # allow to disable node api interface from config, enabled by default otherwise
+        if os.getenv(services_constants.ENV_ENABLE_NODE_API):
+            return commons_constants.parse_boolean_environment_var(
+                services_constants.ENV_ENABLE_NODE_API, "false"
+            )
         return config.get(services_constants.CONFIG_CATEGORY_SERVICES, {}).get(services_constants.CONFIG_NODE_API, {}).get(
             commons_constants.CONFIG_ENABLED_OPTION, False
         )
