@@ -27,7 +27,7 @@
     group: deploy
     mode: "0644"
   notify: restart nginx
-  when: enable_nginx | default(false)
+  when: enable_nginx | default(false) | bool
 
 - name: Copy Tor proxy Dockerfile
   ansible.builtin.copy:
@@ -37,7 +37,7 @@
     group: deploy
     mode: "0644"
   notify: restart tor
-  when: enable_tor | default(false)
+  when: enable_tor | default(false) | bool
 
 - name: Generate self-signed TLS certificate
   ansible.builtin.command:
@@ -48,11 +48,11 @@
       -subj "/CN={{ inventory_hostname | regex_replace('[^a-zA-Z0-9.\\-]', '') }}"
     creates: "{{ stack_deploy_dir }}/origin.crt"
   notify: restart nginx
-  when: enable_nginx | default(false)
+  when: enable_nginx | default(false) | bool
 
 - name: Pull Docker images
   ansible.builtin.command:
-    cmd: docker compose pull --ignore-buildable
+    cmd: docker compose pull --ignore-buildable --ignore-pull-failures
     chdir: "{{ stack_deploy_dir }}"
   changed_when: false
 
