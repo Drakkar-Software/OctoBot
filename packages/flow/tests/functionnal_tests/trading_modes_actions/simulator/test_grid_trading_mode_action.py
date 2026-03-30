@@ -315,6 +315,9 @@ async def test_simulator_grid_init_from_empty_state(init_action: dict, run_mode:
         )
         assert one_hour - allowed_execution_time < schedule_delay < one_hour + allowed_execution_time
     
+        # ensure trades are saved
+        assert len(after_grid_execution_dump["automation"]["client_exchange_account_elements"]["trades"]) == 1
+    
         # check portfolio and open grid orders
         after_grid_portfolio_content = after_grid_execution_dump["automation"][
             "client_exchange_account_elements"
@@ -382,6 +385,9 @@ async def test_simulator_grid_init_from_empty_state(init_action: dict, run_mode:
             - after_second_call_execution_dump["automation"]["execution"]["previous_execution"]["triggered_at"]
         )
         assert one_hour - allowed_execution_time < schedule_delay < one_hour + allowed_execution_time
+    
+        # ensure trades are not erased
+        assert len(after_grid_execution_dump["automation"]["client_exchange_account_elements"]["trades"]) == 1
     
         after_second_call_portfolio_content = after_second_call_execution_dump["automation"][
             "client_exchange_account_elements"

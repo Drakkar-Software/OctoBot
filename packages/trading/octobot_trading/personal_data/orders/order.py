@@ -142,6 +142,8 @@ class Order(util.Initializable):
         self.exchange_creation_params: dict[str, typing.Any] = {}
         # kwargs given to trader.create_order() when this order should be created later on
         self.trader_creation_kwargs: dict[str, typing.Any] = {}
+        # extra params relevant to the current exchange. Should never be used in generic code
+        self.exchange_specific_order_values: dict[str, typing.Any] = {}
 
     @classmethod
     def get_name(cls):
@@ -162,6 +164,7 @@ class Order(util.Initializable):
         associated_entry_id=None, trigger_above=None, trailing_profile: typing.Optional[trailing_profiles.TrailingProfile]=None,
         is_active=None, active_trigger: typing.Optional[base_trigger_import.BaseTrigger] = None,
         cancel_policy: typing.Optional[order_cancel_policy_import.OrderCancelPolicy] = None,
+        exchange_specific_order_values: typing.Optional[dict[str, typing.Any]] = None,
     ) -> bool:
         changed: bool = False
         should_update_total_cost = False
@@ -320,6 +323,10 @@ class Order(util.Initializable):
         if cancel_policy is not None and cancel_policy != self.cancel_policy:
             changed = True
             self.cancel_policy = cancel_policy
+
+        if exchange_specific_order_values is not None and self.exchange_specific_order_values != exchange_specific_order_values:
+            changed = True
+            self.exchange_specific_order_values = exchange_specific_order_values
 
         if should_update_total_cost and not total_cost:
             self._update_total_cost()
@@ -953,7 +960,8 @@ class Order(util.Initializable):
             fee=order_util.parse_raw_fees(raw_order.get(enums.ExchangeConstantsOrderColumns.FEE.value, None)),
             timestamp=raw_order.get(enums.ExchangeConstantsOrderColumns.TIMESTAMP.value, None),
             reduce_only=raw_order.get(enums.ExchangeConstantsOrderColumns.REDUCE_ONLY.value, False),
-            trigger_above=raw_order.get(enums.ExchangeConstantsOrderColumns.TRIGGER_ABOVE.value, None)
+            trigger_above=raw_order.get(enums.ExchangeConstantsOrderColumns.TRIGGER_ABOVE.value, None),
+            exchange_specific_order_values=raw_order.get(enums.ExchangeConstantsOrderColumns.EXCHANGE_SPECIFIC_ORDER_VALUES.value, {}),
         )
 
     async def update_from_order(self, other_order):
@@ -1008,6 +1016,7 @@ class Order(util.Initializable):
             order_dict[enums.ExchangeConstantsOrderColumns.TAKER_OR_MAKER.value]
         ).value if order_dict.get(enums.ExchangeConstantsOrderColumns.TAKER_OR_MAKER.value) else self.taker_or_maker
         self.is_active = order_dict.get(enums.ExchangeConstantsOrderColumns.IS_ACTIVE.value, self.is_active)
+        self.exchange_specific_order_values = order_dict.get(enums.ExchangeConstantsOrderColumns.EXCHANGE_SPECIFIC_ORDER_VALUES.value, {})
         if active_trigger := order_details.get(enums.StoredOrdersAttr.ACTIVE_TRIGGER.value):
             active_trigger_price = (
                 decimal.Decimal(str(active_trigger[enums.StoredOrdersAttr.ACTIVE_TRIGGER_PRICE.value]))
@@ -1167,6 +1176,7 @@ class Order(util.Initializable):
             enums.ExchangeConstantsOrderColumns.BROKER_APPLIED.value: self.broker_applied,
             enums.ExchangeConstantsOrderColumns.TAKER_OR_MAKER.value: self.taker_or_maker,
             enums.ExchangeConstantsOrderColumns.IS_ACTIVE.value: self.is_active,
+            enums.ExchangeConstantsOrderColumns.EXCHANGE_SPECIFIC_ORDER_VALUES.value: self.exchange_specific_order_values,
         }
 
     def clear_active_order_elements(self):

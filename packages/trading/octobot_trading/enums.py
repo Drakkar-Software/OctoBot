@@ -331,6 +331,7 @@ class ExchangeConstantsOrderColumns(enum.Enum):
     VOLUME = "volume"
     BROKER_APPLIED = "broker_applied"
     IS_ACTIVE = "is_active"
+    EXCHANGE_SPECIFIC_ORDER_VALUES = "esov"
 
 
 class TradeExtraConstants(enum.Enum):

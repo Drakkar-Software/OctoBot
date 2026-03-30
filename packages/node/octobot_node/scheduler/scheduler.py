@@ -200,7 +200,7 @@ class Scheduler:
                     if completed_workflow_status.status == dbos.WorkflowStatusString.SUCCESS.value and (
                         task := workflows_util.get_input_task(completed_workflow_status)
                     ):
-                        result = task.content
+                        result = completed_workflow_status.output or task.content
                         description = "Completed"
                         status = octobot_node.models.TaskStatus.COMPLETED
                         metadata = task.content_metadata

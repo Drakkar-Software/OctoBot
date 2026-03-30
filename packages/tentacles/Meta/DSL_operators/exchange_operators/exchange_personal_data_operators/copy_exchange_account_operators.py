@@ -165,6 +165,7 @@ def create_copy_exchange_account_operators(
             )
             orders = await account_copier.copy_account()
             self.value = self.create_re_callable_result_dict(
+                keyword=self.get_name(),
                 waiting_time=octobot_copy.constants.DEFAULT_COPY_WAITING_TIME,
                 last_execution_time=execution_time,
                 state={

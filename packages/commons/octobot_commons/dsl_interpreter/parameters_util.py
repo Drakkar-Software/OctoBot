@@ -120,40 +120,117 @@ def apply_resolved_parameter_value(script: str, parameter: str, value: typing.An
     Apply a resolved parameter value to a DSL script.
     """
     to_replace = f"{parameter}={octobot_commons.constants.UNRESOLVED_PARAMETER_PLACEHOLDER}"
-    if to_replace not in script:
-        raise octobot_commons.errors.ResolvedParameterNotFoundError(
-            f"Parameter {parameter} not found in script: {script}"
+    if to_replace in script:
+        return script.replace(
+            to_replace,
+            f"{parameter}={format_parameter_value(value)}"
         )
-    new_value = f"{parameter}={format_parameter_value(value)}"
-    return script.replace(to_replace, new_value)
+    to_replace_in_dict = f"{parameter!r}: {octobot_commons.constants.UNRESOLVED_PARAMETER_PLACEHOLDER!r}"
+    if to_replace_in_dict in script:
+        return script.replace(
+            to_replace_in_dict,
+            f"{parameter!r}: {format_parameter_value(value)}"
+        )
+    raise octobot_commons.errors.ResolvedParameterNotFoundError(
+        f"Parameter {parameter} not found in script: {script}"
+    )
 
 
-def add_resolved_parameter_value(script: str, parameter: str, value: typing.Any):
+def _find_matching_close_paren(source: str, open_paren_index: int) -> int:
+    if open_paren_index >= len(source) or source[open_paren_index] != "(":
+        raise octobot_commons.errors.InvalidParametersError(
+            f"Expected '(' at index {open_paren_index} in script: {source!r}"
+        )
+    nesting_depth = 0
+    for char_index in range(open_paren_index, len(source)):
+        char = source[char_index]
+        if char == "(":
+            nesting_depth += 1
+        elif char == ")":
+            nesting_depth -= 1
+            if nesting_depth == 0:
+                return char_index
+    raise octobot_commons.errors.InvalidParametersError(
+        f"Script {source} has unclosed parenthesis"
+    )
+
+
+def _inject_kwarg_into_call(
+    source: str,
+    open_paren_index: int,
+    close_paren_index: int,
+    parameter: str,
+    formatted_kwarg: str,
+) -> str:
+    existing_call_arguments = source[open_paren_index + 1 : close_paren_index]
+    # Match keyword only at the top level of this call's argument list: after `(` is
+    # stripped, so use start-of-string or comma — not `(|`, which would miss `op(x=1)`.
+    if re.search(rf"(?:^|,)\s*{re.escape(parameter)}\s*=", existing_call_arguments):
+        raise octobot_commons.errors.InvalidParametersError(
+            f"Parameter {parameter} is already in operator keyword args: "
+            f"{source[open_paren_index : close_paren_index + 1]}"
+        )
+    if not existing_call_arguments.strip():
+        call_arguments_with_kwarg = f"{existing_call_arguments}{formatted_kwarg}"
+    else:
+        call_arguments_with_kwarg = f"{existing_call_arguments.rstrip()}, {formatted_kwarg}"
+    return (
+        source[: open_paren_index + 1]
+        + call_arguments_with_kwarg
+        + source[close_paren_index:]
+    )
+
+
+def add_resolved_parameter_value(script: str, operator: str, parameter: str, value: typing.Any) -> str:
     """
-    Append a resolved parameter value to the end of a DSL script.
+    Append a resolved keyword argument to every call to ``operator`` in ``script``.
     Supports:
-    - Calls with no parenthesis (e.g. op -> op(x='a'))
+    - Calls with no parenthesis when the whole script is only the operator name
+      (e.g. op -> op(x='a'))
     - Calls with no existing params (e.g. op() -> op(x='a'))
     - Calls with existing params (e.g. op(1) -> op(1, x='a'))
-    Raises InvalidParametersError if the parameter is already in the operator keyword args.
+    - Multiple calls (e.g. wait(1) if wait(2) -> both wait(...) gain the new kwarg)
+    Raises InvalidParametersError if the parameter is already in one of those calls' kwargs,
+    or if parentheses are unbalanced.
     """
-    param_str = f"{parameter}={format_parameter_value(value)}"
-    if script[-1] == ")":
-        # Script ends with ) - append to existing call
-        if re.search(rf"(?:\(|,)\s*{re.escape(parameter)}\s*=", script):
-            raise octobot_commons.errors.InvalidParametersError(
-                f"Parameter {parameter} is already in operator keyword args: {script}"
+    formatted_kwarg = f"{parameter}={format_parameter_value(value)}"
+    operator_name_pattern = re.compile(rf"(?<![\w.])\b{re.escape(operator)}\b")
+
+    call_opening_and_closing_indices: list[tuple[int, int]] = []
+    for operator_match in operator_name_pattern.finditer(script):
+        index_after_operator_name = operator_match.end()
+        while index_after_operator_name < len(script) and script[index_after_operator_name] in " \t":
+            index_after_operator_name += 1
+        if index_after_operator_name < len(script) and script[index_after_operator_name] == "(":
+            opening_paren_index = index_after_operator_name
+            closing_paren_index = _find_matching_close_paren(script, opening_paren_index)
+            call_opening_and_closing_indices.append((opening_paren_index, closing_paren_index))
+
+    if call_opening_and_closing_indices:
+        updated_script = script
+        for opening_paren_index, closing_paren_index in sorted(
+            call_opening_and_closing_indices,
+            key=lambda open_close: open_close[0],
+            reverse=True,
+        ):
+            updated_script = _inject_kwarg_into_call(
+                updated_script,
+                opening_paren_index,
+                closing_paren_index,
+                parameter,
+                formatted_kwarg,
             )
-        inner = script[:-1]
-        has_existing_params = inner.rstrip().endswith("(")
-        if has_existing_params:
-            return f"{inner}{param_str})"
-        return f"{inner}, {param_str})"
+        return updated_script
+
     if "(" in script:
         raise octobot_commons.errors.InvalidParametersError(
-            f"Script {script} has unclosed parenthesis"
+            f"Operator {operator!r} call sites not found or script has unclosed parenthesis: {script!r}"
         )
-    return f"{script}({param_str})"
+
+    if operator_name_pattern.fullmatch(script.strip()) is not None:
+        return f"{script.strip()}({formatted_kwarg})"
+
+    return f"{script}({formatted_kwarg})"
 
 
 def has_unresolved_parameters(script: str) -> bool:

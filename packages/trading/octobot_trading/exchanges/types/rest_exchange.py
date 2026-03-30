@@ -59,6 +59,14 @@ def fetching_orders_request(f):
 
 
 class RestExchange(abstract_exchange.AbstractExchange):
+    """
+    RestExchange is using its exchange connector to interact with the exchange.
+    It should be used regardless of the exchange or the exchange library (ccxt or other)
+    Always take and returns octobot formatted data and errors
+    Is used request regardless of the trading type (spot / future / other)
+
+    Is extended in exchange tentacles to define custom behaviors or exchange adapter (override of get_adapter_class)
+    """
     ORDER_NON_EMPTY_FIELDS = [ecoc.EXCHANGE_ID.value, ecoc.TIMESTAMP.value, ecoc.SYMBOL.value, ecoc.TYPE.value,
                               ecoc.SIDE.value, ecoc.PRICE.value, ecoc.AMOUNT.value, ecoc.STATUS.value]
     ORDER_REQUIRED_FIELDS = ORDER_NON_EMPTY_FIELDS + [ecoc.REMAINING.value]
@@ -101,14 +109,6 @@ class RestExchange(abstract_exchange.AbstractExchange):
     STOP_LOSS_EDIT_PRICE_PARAM = ccxt_enums.ExchangeOrderCCXTUnifiedParams.STOP_LOSS_PRICE.value
     STOP_LOSS_CREATE_PRICE_PARAM = ccxt_enums.ExchangeOrderCCXTUnifiedParams.STOP_LOSS_PRICE.value
     WITHDRAW_NETWORK_PARAM_KEY = "network" # key to use in params to specify the network to withdraw to
-    """
-    RestExchange is using its exchange connector to interact with the exchange.
-    It should be used regardless of the exchange or the exchange library (ccxt or other)
-    Always take and returns octobot formatted data and errors
-    Is used request regardless of the trading type (spot / future / other)
-
-    Is extended in exchange tentacles to define custom behaviors or exchange adapter (override of get_adapter_class)
-    """
     # Mark price params
     MARK_PRICE_IN_POSITION = False
     MARK_PRICE_IN_TICKER = False
@@ -694,6 +694,9 @@ class RestExchange(abstract_exchange.AbstractExchange):
 
     async def get_account_id(self, **kwargs: dict) -> str:
         raise NotImplementedError(f"get_account_id is not implemented on {self.exchange_manager.exchange_name}")
+
+    def supports_fetching_balance(self) -> bool:
+        return self.connector.supports_fetching_balance()
 
     async def get_balance(self, **kwargs: dict):
         return await self.connector.get_balance(**kwargs)

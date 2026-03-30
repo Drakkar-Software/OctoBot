@@ -30,9 +30,29 @@ class ActionType(enum.Enum):
     WITHDRAW = "withdraw"
     DEPOSIT = "deposit"
     TRANSFER = "transfer"
+    WAIT_FOR_BLOCKCHAIN_BALANCE = "wait_for_blockchain_balance"
 
 
 CONTENT_KEY = "CONTENT"
+
+# dependency::<action_id>::<k1>::<k2>::... — path into that action's result (dict keys and list indices as digit strings)
+DEPENDENCY_SEPARATOR = "::"
+DEPENDENCY_IDENTIFIER = "dependency"
+DEPENDENCY_PARAM_PREFIX = f"{DEPENDENCY_IDENTIFIER}{DEPENDENCY_SEPARATOR}"
+
+
+def _parse_dependency_param_value(
+    value: str,
+) -> typing.Optional[tuple[str, tuple[str, ...]]]:
+    if not isinstance(value, str) or not value.startswith(DEPENDENCY_PARAM_PREFIX):
+        return None
+    parts = value.split(DEPENDENCY_SEPARATOR)
+    if len(parts) < 3 or parts[0] != DEPENDENCY_IDENTIFIER or not parts[1]:
+        return None
+    path_keys = tuple(parts[2:])
+    if not path_keys or any(not segment for segment in path_keys):
+        return None
+    return parts[1], path_keys
 
 
 @dataclasses.dataclass
@@ -51,6 +71,7 @@ class ActionsDAGParserParams(octobot_commons.dataclasses.FlexibleDataclass):
     ORDER_TAG: typing.Optional[str] = None
     ORDER_REDUCE_ONLY: typing.Optional[bool] = None
     ORDER_TYPE: typing.Optional[str] = None
+    ORDER_EXTRA_PARAMS: typing.Optional[dict] = None
     EXCHANGE_FROM: typing.Optional[str] = None
     MIN_DELAY: typing.Optional[float] = None
     MAX_DELAY: typing.Optional[float] = None
@@ -72,6 +93,10 @@ class ActionsDAGParserParams(octobot_commons.dataclasses.FlexibleDataclass):
     BLOCKCHAIN_TO_SECRET_VIEW_KEY: typing.Optional[str] = None
     BLOCKCHAIN_TO_SECRET_SPEND_KEY: typing.Optional[str] = None
     BLOCKCHAIN_TO_PRIVATE_KEY: typing.Optional[str] = None
+    BLOCKCHAIN_BALANCE_ADDRESS: typing.Optional[str] = None
+    BLOCKCHAIN_BALANCE_AMOUNT: typing.Optional[str] = None
+    BLOCKCHAIN_BALANCE_ASSET: typing.Optional[str] = None
+    BLOCKCHAIN_BALANCE: typing.Optional[str] = None
     CONTENT: typing.Optional[dict] = None
 
     def __post_init__(self):
@@ -149,7 +174,7 @@ class ActionsDAGParserParams(octobot_commons.dataclasses.FlexibleDataclass):
             )
         }
     
-    def get_blockchain_to_wallet_details(
+    def get_blockchain_and_wallet_descriptors_to_wallet_details(
         self
     ) -> blockchain_wallets.BlockchainWalletParameters:
         if (
@@ -179,6 +204,31 @@ class ActionsDAGParserParams(octobot_commons.dataclasses.FlexibleDataclass):
             ),
             wallet_descriptor=blockchain_wallets.WalletDescriptor(
                 address=self.BLOCKCHAIN_TO_ADDRESS,
+                specific_config=wallet_descriptor_specific_config,
+            )
+        )
+    
+    def get_blockchain_and_wallet_descriptors_for_balance_check(
+        self
+    ) -> blockchain_wallets.BlockchainWalletParameters:
+        if (
+            not self.BLOCKCHAIN_BALANCE or 
+            not self.BLOCKCHAIN_BALANCE_ADDRESS or
+            not self.BLOCKCHAIN_BALANCE_ASSET
+        ):
+            raise octobot_flow.errors.InvalidAutomationActionError(
+                f"BLOCKCHAIN_BALANCE, BLOCKCHAIN_BALANCE_ADDRESS and BLOCKCHAIN_BALANCE_ASSET must be provided for a blockchain to wallet"
+            )
+        blockchain, blockchain_descriptor_specific_config, wallet_descriptor_specific_config = self.get_blockchain_and_specific_configs(self.BLOCKCHAIN_BALANCE)
+        return blockchain_wallets.BlockchainWalletParameters(
+            blockchain_descriptor=blockchain_wallets.BlockchainDescriptor(
+                blockchain=blockchain,
+                network=self.BLOCKCHAIN_BALANCE,
+                native_coin_symbol=self.BLOCKCHAIN_BALANCE_ASSET,
+                specific_config=blockchain_descriptor_specific_config,
+            ),
+            wallet_descriptor=blockchain_wallets.WalletDescriptor(
+                address=self.BLOCKCHAIN_BALANCE_ADDRESS,
                 specific_config=wallet_descriptor_specific_config,
             )
         )
@@ -257,6 +307,8 @@ class ActionsDAGParser:
                 return self._create_deposit_action(index)
             case ActionType.TRANSFER.value:
                 return self._create_transfer_action(index)
+            case ActionType.WAIT_FOR_BLOCKCHAIN_BALANCE.value:
+                return self._create_wait_for_blockchain_balance_action(index)
             case ActionType.WAIT.value:
                 return self._create_wait_action(index)
             case _:
@@ -297,6 +349,8 @@ class ActionsDAGParser:
             order_details[trading_view_signals_trading.TradingViewSignalsTradingMode.TAG_KEY] = self.params.ORDER_TAG
         if self.params.ORDER_REDUCE_ONLY:
             order_details[trading_view_signals_trading.TradingViewSignalsTradingMode.REDUCE_ONLY_KEY] = self.params.ORDER_REDUCE_ONLY
+        for extra_param, value in self.params.ORDER_EXTRA_PARAMS.items():
+            order_details[f"{trading_view_signals_trading.TradingViewSignalsTradingMode.PARAM_PREFIX_KEY}{extra_param}"] = value
         return self.create_dsl_script_from_tv_format_action_details(
             f"action_trade_{index}", signal, order_details,
         )
@@ -382,6 +436,29 @@ class ActionsDAGParser:
             dataclasses.asdict(transfer_details),
         )
 
+    def _create_wait_for_blockchain_balance_action(self, index: int) -> octobot_flow.entities.AbstractActionDetails:
+        if not self.params.has_next_schedule():
+            raise octobot_flow.errors.InvalidAutomationActionError(
+                f"{ActionType.WAIT.value} action requires at least a MIN_DELAY"
+            )
+        min_delay, max_delay = self.params._get_next_schedule_delay()
+        amount = self.params.BLOCKCHAIN_BALANCE_AMOUNT
+        if not amount:
+            raise octobot_flow.errors.InvalidAutomationActionError(
+                "BLOCKCHAIN_BALANCE_AMOUNT must be provided for the wait_for_blockchain_balance action"
+            )
+        max_delay_str = f", {max_delay}" if max_delay and max_delay != min_delay else ""
+        blockchain_params = self.params.get_blockchain_and_wallet_descriptors_for_balance_check()
+        wallet_params = dataclasses.asdict(blockchain_params)
+        wallet_check = tradingview_signal_to_dsl_translator.TradingViewSignalToDSLTranslator.translate_keyword_and_params(
+            "blockchain_wallet_balance",
+            wallet_params,
+            {"asset": self.params.BLOCKCHAIN_TO_ASSET},
+        )
+        dsl_script = f"wait({min_delay}{max_delay_str}, return_remaining_time=True) if ({wallet_check} < {float(amount)}) else True"
+        action_id = f"action_blockchain_wallet_balance_{index}"
+        return self._create_dsl_action_with_dependencies_if_any(action_id, dsl_script, wallet_params)
+
     def _create_wait_action(self, index: int) -> octobot_flow.entities.AbstractActionDetails:
         if not self.params.has_next_schedule():
             raise octobot_flow.errors.InvalidAutomationActionError(
@@ -450,6 +527,59 @@ class ActionsDAGParser:
             automation_state.to_dict(include_default_values=False),
         )
 
+    def _collect_dependency_refs_from_details(
+        self, details: dict
+    ) -> list[tuple[str, str, tuple[str, ...], str]]:
+        """
+        Find dependency::... references in string param values.
+        Returns (dsl_parameter_name, dependency_action_id, result_path_keys, source_literal).
+        """
+        refs: list[tuple[str, str, tuple[str, ...], str]] = []
+        for key, value in details.items():
+            if isinstance(value, dict):
+                refs.extend(self._collect_dependency_refs_from_details(value))
+            if not isinstance(value, str):
+                continue
+            parsed = _parse_dependency_param_value(value)
+            if not parsed:
+                continue
+            dep_action_id, result_path = parsed
+            dsl_key = (
+                trading_view_signals_trading.TradingViewSignalsTradingMode.TRADINGVIEW_TO_DSL_PARAM.get(
+                    key, key.lower() if isinstance(key, str) else str(key).lower()
+                )
+            )
+            refs.append((dsl_key, dep_action_id, result_path, value))
+        return refs
+
+    def _inject_dependency_placeholders_in_dsl_script(
+        self, dsl_script: str, refs: list[tuple[str, str, tuple[str, ...], str]]
+    ) -> str:
+        """
+        Turn dependency:: references in the translated DSL into UNRESOLVED_PARAMETER placeholders
+        and use keyword form when the value was emitted as a positional argument.
+        """
+        result = dsl_script
+        placeholder = commons_constants.UNRESOLVED_PARAMETER_PLACEHOLDER
+        for dsl_key, _, __, source_literal in refs:
+            literal_repr = repr(source_literal)
+            kw_form = f"{dsl_key}={literal_repr}"
+            kw_placeholder = f"{dsl_key}={placeholder}"
+            if kw_form in result:
+                result = result.replace(kw_form, kw_placeholder)
+            elif literal_repr in result:
+                count = result.count(literal_repr)
+                if count != 1:
+                    raise octobot_flow.errors.InvalidAutomationActionError(
+                        f"Ambiguous dependency literal {literal_repr} ({count} occurrences) in DSL: {dsl_script}"
+                    )
+                result = result.replace(literal_repr, repr(placeholder), 1)
+            else:
+                raise octobot_flow.errors.InvalidAutomationActionError(
+                    f"Dependency value for DSL parameter {dsl_key!r} ({source_literal!r}) not found in script: {dsl_script}"
+                )
+        return result
+
     def create_dsl_script_from_tv_format_action_details(
         self, action_id: str, signal: str, details: dict
     ) -> octobot_flow.entities.DSLScriptActionDetails:
@@ -460,10 +590,22 @@ class ActionsDAGParser:
             raise octobot_flow.errors.InvalidAutomationActionError(
                 f"Invalid signal: {signal}({details}) (action {action_id})"
             )
-        return octobot_flow.entities.DSLScriptActionDetails(
+        return self._create_dsl_action_with_dependencies_if_any(action_id, dsl_script, details)
+
+    def _create_dsl_action_with_dependencies_if_any(
+        self, action_id:str, dsl_script: str, details: dict
+    ) -> octobot_flow.entities.DSLScriptActionDetails:
+        dependency_refs = self._collect_dependency_refs_from_details(details)
+        if dependency_refs:
+            dsl_script = self._inject_dependency_placeholders_in_dsl_script(dsl_script, dependency_refs)
+        print(f"{dsl_script=}")
+        action = octobot_flow.entities.DSLScriptActionDetails(
             id=action_id,
             dsl_script=dsl_script,
         )
+        for dsl_key, dep_action_id, result_path, _ in dependency_refs:
+            action.add_dependency(dep_action_id, dsl_key, list(result_path))
+        return action
 
     def create_configured_action_details(
         self, action_id: str, action: octobot_flow.enums.ActionType, config: dict
