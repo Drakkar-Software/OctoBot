@@ -13,6 +13,8 @@ class ActionDependency(octobot_commons.dataclasses.FlexibleDataclass):
     action_id: str = dataclasses.field(repr=True)
     # value of the dependency result. Used by an action to resolve its own DSL script when it has dependencies
     parameter: typing.Optional[str] = dataclasses.field(default=None, repr=False)
+    # keys into the dependency action's dict result, e.g. ["exchange_specific_order_values", "address_from"]
+    result_path: typing.Optional[list[str]] = dataclasses.field(default=None, repr=False)
 
 
 @dataclasses.dataclass
@@ -64,8 +66,13 @@ class AbstractActionDetails(octobot_commons.dataclasses.FlexibleDataclass):
     def should_be_historised_in_database(self) -> bool:
         return False
 
-    def add_dependency(self, action_id: str, parameter: typing.Optional[str] = None):
-        self.dependencies.append(ActionDependency(action_id, parameter))
+    def add_dependency(
+        self,
+        action_id: str,
+        parameter: typing.Optional[str] = None,
+        result_path: typing.Optional[list[str]] = None,
+    ):
+        self.dependencies.append(ActionDependency(action_id, parameter, result_path))
 
     def get_summary(self, minimal: bool = False) -> str:
         raise NotImplementedError("get_summary is not implemented for this bot action type")
@@ -82,7 +89,7 @@ class AbstractActionDetails(octobot_commons.dataclasses.FlexibleDataclass):
         return rescheduled_parameters
 
     def reset(self):
-        self.previous_execution_result = self.result
+        self.previous_execution_result = self.result # type: ignore
         self.result = None
         self.error_status = None
         self.executed_at = None

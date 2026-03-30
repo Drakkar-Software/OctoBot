@@ -42,7 +42,7 @@ def encrypt(data):
     try:
         return fernet.Fernet(octobot_commons.OCTOBOT_KEY).encrypt(data.encode())
     except Exception as global_exception:
-        logging.getLogger().error(f"Failed to encrypt : {data}")
+        logging.getLogger("fields_utils").error(f"Failed to encrypt : {data}")
         raise global_exception
 
 
@@ -59,12 +59,12 @@ def decrypt(data, silent_on_invalid_token=False):
         )
     except fernet.InvalidToken as invalid_token_error:
         if not silent_on_invalid_token:
-            logging.getLogger().error(
+            logging.getLogger("fields_utils").error(
                 f"Failed to decrypt : {data} ({invalid_token_error})"
             )
         raise invalid_token_error
     except Exception as global_exception:
-        logging.getLogger().error(f"Failed to decrypt : {data} ({global_exception})")
+        logging.getLogger("fields_utils").error(f"Failed to decrypt : {data} ({global_exception})")
         raise global_exception
 
 

@@ -1,5 +1,6 @@
 import asyncio
 import contextlib
+import typing
 
 import octobot_commons.profiles as commons_profiles
 import octobot_commons.constants as common_constants
@@ -8,6 +9,7 @@ import octobot_commons.list_util as list_util
 import octobot_commons.logging as common_logging
 import octobot_trading.constants as trading_constants
 import octobot_trading.enums
+import octobot_trading.errors
 import octobot_trading.personal_data as personal_data
 import octobot_trading.exchanges.util.exchange_data as exchange_data_import
 import tentacles.Meta.Keywords.scripting_library as scripting_library
@@ -35,10 +37,8 @@ class ExchangeAccountJob(octobot_flow.repositories.exchange.ExchangeContextMixin
         Fetches all public data that might be required for any bot from the exchange 
         """
         self._ensure_exchange_dependencies()
-        await asyncio.gather(
-            self._fetch_ohlcvs(),
-            self._fetch_tickers()
-        )
+        await self._fetch_tickers()
+        await self._fetch_ohlcvs()
 
     async def update_authenticated_data(self, as_reference_account: bool):
         fetched_authenticated_data = octobot_flow.entities.FetchedExchangeAccountElements()
@@ -90,6 +90,24 @@ class ExchangeAccountJob(octobot_flow.repositories.exchange.ExchangeContextMixin
             async with self.exchange_manager_context(as_reference_account=False):
                 yield
 
+    def _create_markets_from_tickers(
+        self, tickers: dict[str, dict[str, typing.Any]], symbols: list[str], time_frames: list[str]
+    ) -> list[exchange_data_import.MarketDetails]:
+        return [
+            exchange_data_import.MarketDetails(
+                symbol=symbol,
+                time_frame=time_frame,
+                close=[tickers[symbol][octobot_trading.enums.ExchangeConstantsTickersColumns.CLOSE.value]],
+                open=[tickers[symbol][octobot_trading.enums.ExchangeConstantsTickersColumns.OPEN.value]],
+                high=[tickers[symbol][octobot_trading.enums.ExchangeConstantsTickersColumns.HIGH.value]],
+                low=[tickers[symbol][octobot_trading.enums.ExchangeConstantsTickersColumns.LOW.value]],
+                volume=[tickers[symbol][octobot_trading.enums.ExchangeConstantsTickersColumns.BASE_VOLUME.value]],
+                time=[tickers[symbol][octobot_trading.enums.ExchangeConstantsTickersColumns.TIMESTAMP.value]],
+            )
+            for symbol in symbols
+            for time_frame in time_frames
+        ]
+
     async def _fetch_and_save_ohlcv(
         self, repository: octobot_flow.repositories.exchange.OhlcvRepository, 
         symbol: str, time_frame: str, limit: int
@@ -105,11 +123,20 @@ class ExchangeAccountJob(octobot_flow.repositories.exchange.ExchangeContextMixin
         history_size = scripting_library.get_required_candles_count(
             self.profile_data_provider.get_profile_data(), trading_constants.MIN_CANDLES_HISTORY_SIZE
         )
-        await asyncio.gather(*[
-            self._fetch_and_save_ohlcv(repository, symbol, time_frame, history_size)
-            for symbol in self._get_traded_symbols()
-            for time_frame in self._get_time_frames()
-        ])
+        symbols = self._get_traded_symbols()
+        time_frames = self._get_time_frames()
+        try:
+            await asyncio.gather(*[
+                self._fetch_and_save_ohlcv(repository, symbol, time_frame, history_size)
+                for symbol in symbols
+                for time_frame in time_frames
+            ])
+        except octobot_trading.errors.NotSupported as e:
+            self._logger.info(f"Fetching OHLCVs is not supported: {e}. Falling back to tickers data.")
+            self.fetched_dependencies.fetched_exchange_data.public_data.markets = self._create_markets_from_tickers(
+                self.fetched_dependencies.fetched_exchange_data.public_data.tickers, symbols, time_frames
+            )
+
 
     async def _fetch_tickers(self):
         repository = self.get_exchange_repository_factory().get_tickers_repository()
@@ -138,7 +165,11 @@ class ExchangeAccountJob(octobot_flow.repositories.exchange.ExchangeContextMixin
     async def _fetch_open_orders(self, fetched_authenticated_data: octobot_flow.entities.FetchedExchangeAccountElements, as_reference_account: bool):
         repository = self.get_exchange_repository_factory().get_orders_repository()
         symbols = self._get_traded_symbols()
-        open_orders = await repository.fetch_open_orders(symbols)
+        try:
+            open_orders = await repository.fetch_open_orders(symbols)
+        except octobot_trading.errors.NotSupported as err:
+            self._logger.info(f"Fetching open orders is not supported: {err}.")
+            open_orders = []
         fetched_authenticated_data.orders.open_orders = repository.update_enriched_orders(
             open_orders,
             self.automation_state.automation.get_exchange_account_elements(as_reference_account).orders.open_orders
@@ -149,10 +180,16 @@ class ExchangeAccountJob(octobot_flow.repositories.exchange.ExchangeContextMixin
         )
 
     async def _fetch_portfolio(self, fetched_authenticated_data: octobot_flow.entities.FetchedExchangeAccountElements, as_reference_account: bool):
-        repository = self.get_exchange_repository_factory().get_portfolio_repository()
-        fetched_authenticated_data.portfolio.full_content = await repository.fetch_portfolio()  # type: ignore
+        repository_factory = self.get_exchange_repository_factory()
+        repository = repository_factory.get_portfolio_repository()
+        try:
+            fetched_authenticated_data.portfolio.full_content = await repository.fetch_portfolio()  # type: ignore
+        except octobot_trading.errors.NotSupported as err:
+            self._logger.info(f"Fetching portfolio is not supported: {err}. Diabling portfolio validations.")
+            fetched_authenticated_data.portfolio.full_content = {}
         self._logger.info(
-            f"Fetched [{self._exchange_manager.exchange_name}] full portfolio: "
+            f"Fetched [{self._exchange_manager.exchange_name}] full "
+            f"[{'simulated' if repository_factory.is_simulated else 'real'}] portfolio: "
             f"{personal_data.get_balance_summary(fetched_authenticated_data.portfolio.full_content, use_exchange_format=False)}"
         )
         if not as_reference_account:

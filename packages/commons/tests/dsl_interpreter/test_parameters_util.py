@@ -338,48 +338,71 @@ class TestApplyResolvedParameterValue:
 
 class TestAddResolvedParameterValue:
     def test_adds_to_call_with_no_parenthesis(self):
-        result = parameters_util.add_resolved_parameter_value("op", "x", "a")
+        result = parameters_util.add_resolved_parameter_value("op", "op", "x", "a")
         assert result == "op(x='a')"
 
     def test_adds_to_empty_params_op(self):
-        result = parameters_util.add_resolved_parameter_value("op()", "x", 42)
+        result = parameters_util.add_resolved_parameter_value("op()", "op", "x", 42)
         assert result == "op(x=42)"
 
     def test_adds_to_empty_params_with_spaces(self):
-        result = parameters_util.add_resolved_parameter_value("op( )", "x", 42)
+        result = parameters_util.add_resolved_parameter_value("op( )", "op", "x", 42)
         assert result == "op( x=42)"
 
     def test_adds_after_positional_arg(self):
-        result = parameters_util.add_resolved_parameter_value("op(1)", "x", 42)
+        result = parameters_util.add_resolved_parameter_value("op(1)", "op", "x", 42)
         assert result == "op(1, x=42)"
 
     def test_adds_after_keyword_arg(self):
-        result = parameters_util.add_resolved_parameter_value("op(a=1)", "x", 42)
+        result = parameters_util.add_resolved_parameter_value("op(a=1)", "op", "x", 42)
         assert result == "op(a=1, x=42)"
 
     def test_adds_after_multiple_args(self):
-        result = parameters_util.add_resolved_parameter_value("op(1, b=2)", "x", 42)
+        result = parameters_util.add_resolved_parameter_value("op(1, b=2)", "op", "x", 42)
         assert result == "op(1, b=2, x=42)"
 
     def test_adds_string_value(self):
-        result = parameters_util.add_resolved_parameter_value("op()", "name", "hello")
+        result = parameters_util.add_resolved_parameter_value("op()", "op", "name", "hello")
         assert result == "op(name='hello')"
+
+    def test_adds_to_all_instances_of_operator(self):
+        script = "wait(1, a=True) if wait(blockchain_wallet_balance() < 1) else True"
+        result = parameters_util.add_resolved_parameter_value(
+            script, "wait", "last_execution_result", [123, "plop"]
+        )
+        assert result == (
+            "wait(1, a=True, last_execution_result=[123, 'plop']) if "
+            "wait(blockchain_wallet_balance() < 1, last_execution_result=[123, 'plop']) else True"
+        )
+
+    def test_does_not_touch_other_operators(self):
+        result = parameters_util.add_resolved_parameter_value(
+            "foo(1) if wait(2) else bar()", "wait", "x", 1
+        )
+        assert result == "foo(1) if wait(2, x=1) else bar()"
+
+    def test_raises_when_operator_not_found_and_script_has_calls(self):
+        with pytest.raises(
+            commons_errors.InvalidParametersError,
+            match=r"Operator 'wait' call sites not found",
+        ):
+            parameters_util.add_resolved_parameter_value("foo(1)", "wait", "x", 1)
 
     def test_raises_when_parameter_already_in_kwargs(self):
         with pytest.raises(commons_errors.InvalidParametersError, match="Parameter x is already in operator keyword args"):
-            parameters_util.add_resolved_parameter_value("op(x=1)", "x", 42)
+            parameters_util.add_resolved_parameter_value("op(x=1)", "op", "x", 42)
 
     def test_raises_when_parameter_already_first_kwarg(self):
         with pytest.raises(commons_errors.InvalidParametersError, match="Parameter a is already"):
-            parameters_util.add_resolved_parameter_value("op(a=1, b=2)", "a", 99)
+            parameters_util.add_resolved_parameter_value("op(a=1, b=2)", "op", "a", 99)
 
     def test_raises_when_parameter_already_last_kwarg(self):
         with pytest.raises(commons_errors.InvalidParametersError, match="Parameter b is already"):
-            parameters_util.add_resolved_parameter_value("op(a=1, b=2)", "b", 99)
+            parameters_util.add_resolved_parameter_value("op(a=1, b=2)", "op", "b", 99)
 
     def test_raises_when_script_has_unclosed_parenthesis(self):
         with pytest.raises(commons_errors.InvalidParametersError, match="has unclosed parenthesis"):
-            parameters_util.add_resolved_parameter_value("op(1", "x", 42)
+            parameters_util.add_resolved_parameter_value("op(1", "op", "x", 42)
 
 
 class TestHasUnresolvedParameters:

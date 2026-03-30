@@ -80,6 +80,7 @@ class OctoBotActionsJobDescription(octobot_commons.dataclasses.MinimizableDatacl
 class OctoBotActionsJobResult:
     processed_actions: list["octobot_flow.AbstractActionDetails"]
     next_actions_description: typing.Optional[OctoBotActionsJobDescription] = None
+    has_next_actions: bool = False
     actions_dag: typing.Optional["octobot_flow.ActionsDAG"] = None
     should_stop: bool = False
 
@@ -123,29 +124,31 @@ class OctoBotActionsJob:
             executed_actions = await automation_job.run()
             self.after_execution_state = automation_job.automation_state
             post_execution_state_dump = automation_job.dump()
+            next_actions_description, has_next_actions = self.get_next_actions_description(post_execution_state_dump)
             return OctoBotActionsJobResult(
                 processed_actions=executed_actions,
-                next_actions_description=self.get_next_actions_description(post_execution_state_dump),
+                next_actions_description=next_actions_description,
+                has_next_actions=has_next_actions,
                 actions_dag=automation_job.automation_state.automation.actions_dag,
                 should_stop=automation_job.automation_state.automation.post_actions.stop_automation,
             )
 
     def get_next_actions_description(
         self, post_execution_state: dict
-    ) -> typing.Optional[OctoBotActionsJobDescription]:
+    ) -> tuple[typing.Optional[OctoBotActionsJobDescription], bool]:
         automation = self.after_execution_state.automation
-        if automation.actions_dag.get_executable_actions():
-            return OctoBotActionsJobDescription(
-                state=post_execution_state,
-                auth_details=self.description.auth_details,
-            )
-        if pending_actions := automation.actions_dag.get_pending_actions():
+        next_actions_description = OctoBotActionsJobDescription(
+            state=post_execution_state,
+            auth_details=self.description.auth_details,
+        )
+        has_next_actions = bool(automation.actions_dag.get_executable_actions())
+        if not has_next_actions and (pending_actions := automation.actions_dag.get_pending_actions()):
             raise ValueError(
                 f"Automation {automation.metadata.automation_id}: actions DAG dependencies issue: "
                 f"no executable actions while there are still "
                 f"{len(pending_actions)} pending actions: {pending_actions}"
             )
-        return None
+        return next_actions_description, has_next_actions
 
     def __repr__(self) -> str:
         parsed_state = octobot_flow.AutomationState.from_dict(self.description.state)

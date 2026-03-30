@@ -32,3 +32,4 @@ class AutomationWorkflowIterationResult(octobot_commons.dataclasses.minimizable_
     progress_status: base_params.ProgressStatus
     next_iteration_description: typing.Optional[str]
     next_iteration_description_metadata: typing.Optional[str] = None
+    has_next_actions: bool = False
