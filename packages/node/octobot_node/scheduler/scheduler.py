@@ -197,28 +197,28 @@ class Scheduler:
             ], load_output=True)
             for completed_workflow_status in completed_workflow_statuses or []:
                 try:
-                    wf_status = completed_workflow_status.status
-                    task_name = completed_workflow_status.workflow_id
-                    metadata = ""
-                    result = ""
-                    if wf_status == dbos.WorkflowStatusString.SUCCESS.value:
-                        result = completed_workflow_status.output
-                        execution_error = result.get("error") if isinstance(result, dict) else None
-                        description = "Error" if execution_error else "Completed"
-                        status = octobot_node.models.TaskStatus.FAILED if execution_error else octobot_node.models.TaskStatus.COMPLETED
-                        if task := workflows_util.get_input_task(completed_workflow_status):
-                            metadata = task.content_metadata
-                            task_name = task.name
+                    if completed_workflow_status.status == dbos.WorkflowStatusString.SUCCESS.value and (
+                        task := workflows_util.get_input_task(completed_workflow_status)
+                    ):
+                        result = task.content
+                        description = "Completed"
+                        status = octobot_node.models.TaskStatus.COMPLETED
+                        metadata = task.content_metadata
+                        task_name = task.name
+
                     else:
-                        description = "Task failed"
+                        result = ""
+                        description = "ERROR"
                         status = octobot_node.models.TaskStatus.FAILED
+                        metadata = ""
+                        task_name = completed_workflow_status.workflow_id
 
                     executions.append(octobot_node.models.Execution(
                         id=completed_workflow_status.workflow_id,
                         name=task_name,
                         description=description,
                         status=status,
-                        result=json.dumps(_sanitize(result.get("history", result))) if isinstance(result, dict) else "",
+                        result=result or "",
                         result_metadata=metadata,
                         scheduled_at=completed_workflow_status.created_at,
                         completed_at=completed_workflow_status.updated_at,
