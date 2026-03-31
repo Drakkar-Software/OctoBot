@@ -175,3 +175,9 @@ class ErrorStatementEncountered(DSLInterpreterError):
     """
     Raised when a error statement is encountered when executing a script
     """
+
+
+class MaxAttemptsExceededError(ErrorStatementEncountered):
+    """
+    Raised when a max attempts is exceeded when executing a script
+    """
