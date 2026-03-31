@@ -1,0 +1,27 @@
+FROM alpine:3.21@sha256:c3f8e73fdb79deaebaa2037150150191b9dcbfba68b4a46d70103204c53f4709
+
+ARG MONERO_VERSION=0.18.3.4
+ARG MONERO_HASH=1cc1b8baee6a5705e2f5f7a1e74de3c0e8e0a35b7e66a5e75fddea0e4e01243e
+
+RUN apk add --no-cache wget curl ca-certificates && \
+    adduser -D -h /home/monero monero && \
+    mkdir -p /home/monero/wallets && \
+    chown monero:monero /home/monero/wallets && \
+    wget -qO /tmp/monero.tar.bz2 \
+      "https://downloads.getmonero.org/cli/monero-linux-x64-v${MONERO_VERSION}.tar.bz2" && \
+    echo "${MONERO_HASH}  /tmp/monero.tar.bz2" | sha256sum -c && \
+    tar xjf /tmp/monero.tar.bz2 -C /tmp && \
+    cp /tmp/monero-x86_64-linux-gnu-v${MONERO_VERSION}/monero-wallet-rpc /usr/local/bin/ && \
+    rm -rf /tmp/monero* && \
+    apk del wget
+
+VOLUME ["/home/monero/wallets"]
+EXPOSE 18083
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -sf -X POST http://127.0.0.1:18083/json_rpc \
+        -d '{"jsonrpc":"2.0","id":"0","method":"get_version"}' || exit 1
+
+USER monero
+
+ENTRYPOINT ["monero-wallet-rpc"]

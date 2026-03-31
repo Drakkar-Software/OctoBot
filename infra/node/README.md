@@ -2,7 +2,7 @@
 
 Deploys an inventory of OctoBot Node instances with zero-downtime rolling updates.
 
-**Stack per node:** OctoBot Node + optional Nginx (reverse proxy) + optional Tor (SOCKS5 proxy) + optional PostgreSQL (on master)
+**Stack per node:** OctoBot Node + optional Nginx (reverse proxy) + optional Tor (SOCKS5 proxy) + optional PostgreSQL (on master) + optional wallet services (Monero, Bitcoin, Ethereum)
 
 ## Prerequisites
 
@@ -67,6 +67,9 @@ Shared defaults live in `roles/octobot/defaults/main.yml`. Overrides go in `inve
 |---|---|---|
 | `enable_hardening` | `false` | Apply OS and SSH hardening via [devsec.hardening](https://github.com/dev-sec/ansible-collection-hardening) |
 | `enable_tor` | `false` | Build and deploy a Tor SOCKS5 proxy sidecar; routes exchange traffic through Tor |
+| `enable_monero_wallet` | `false` | Deploy Monero daemon + wallet RPC sidecar |
+| `enable_bitcoin_wallet` | `false` | Deploy Bitcoin Core with wallet support |
+| `enable_eth_wallet` | `false` | Deploy Geth (go-ethereum) node with HTTP and WebSocket RPC |
 | `enable_replica_mode` | `false` | Deploy PostgreSQL on master, connect all nodes via `SCHEDULER_POSTGRES_URL` |
 | `enable_nginx` | `false` | Deploy Nginx reverse proxy with SSL termination in front of OctoBot |
 | `expose_web_ui` | `false` | Expose the OctoBot web UI (port 5001). When `false`, only the Node API port is exposed and nginx returns 403 for web routes |
@@ -85,6 +88,7 @@ Secrets are passed as Ansible variables (via `--extra-vars`, `vars.yml`, or any 
 | `admin_username` | Admin email (enforced non-default in production) |
 | `admin_password` | Admin password (enforced non-default in production) |
 | `postgres_password` | PostgreSQL password (only when `enable_replica_mode: true`) |
+| `bitcoin_rpc_password` | Bitcoin Core RPC password (only when `enable_bitcoin_wallet: true`) |
 
 Optional task encryption keys:
 
@@ -158,6 +162,50 @@ all:
 ### Tor Proxy
 
 When `enable_tor: true`, a custom Tor SOCKS5 proxy container (Alpine-based, ~8MB) is built and deployed alongside OctoBot. The environment variable `EXCHANGE_SOCKS_PROXY_AUTHENTICATED_URL=socks5h://tor:9050` routes all exchange (CCXT) traffic through the Tor network. The `USE_AUTHENTICATED_EXCHANGE_REQUESTS_ONLY_PROXY=False` flag ensures both authenticated and public requests are proxied.
+
+### Wallet Services
+
+Three optional wallet services can be deployed alongside OctoBot. Each runs in its own isolated Docker network and persists blockchain/wallet data in named volumes.
+
+#### Monero (`enable_monero_wallet: true`)
+
+Deploys a Monero daemon (`monerod`) and `monero-wallet-rpc` sidecar. OctoBot receives `MONERO_WALLET_RPC_URL=http://monero-wallet-rpc:18083/json_rpc`.
+
+| Variable | Default | Description |
+|---|---|---|
+| `monero_network` | `mainnet` | `mainnet` or `stagenet` |
+| `monero_remote_daemon` | `""` | If set, skip local monerod and connect wallet-rpc to this remote daemon address |
+| `monerod_mem_limit` | `4g` | Memory limit for the Monero daemon |
+| `monero_wallet_rpc_mem_limit` | `512m` | Memory limit for wallet-rpc |
+
+> **Note:** Initial blockchain sync can take several days and requires significant disk space (~180 GB for mainnet). Set `monero_remote_daemon` to a trusted remote node to skip running a local daemon.
+
+#### Bitcoin (`enable_bitcoin_wallet: true`)
+
+Deploys Bitcoin Core (`bitcoind`) with wallet and RPC support. OctoBot receives `BITCOIN_RPC_URL`, `BITCOIN_RPC_USER`, and `BITCOIN_RPC_PASSWORD`.
+
+| Variable | Default | Description |
+|---|---|---|
+| `bitcoin_network` | `mainnet` | `mainnet` or `testnet` |
+| `bitcoin_rpc_user` | `octobot` | RPC authentication username |
+| `bitcoin_rpc_password` | `""` | RPC authentication password (secret, pass via `--extra-vars`) |
+| `bitcoin_prune` | `550` | Blockchain pruning target in MiB (`0` for full node) |
+| `bitcoind_mem_limit` | `4g` | Memory limit |
+
+> **Note:** With default pruning (`550` MiB), disk usage stays under ~1 GB. Set `bitcoin_prune: 0` for a full archival node (~600 GB).
+
+#### Ethereum (`enable_eth_wallet: true`)
+
+Deploys Geth (go-ethereum) using the official `ethereum/client-go` image. OctoBot receives `ETH_RPC_HTTP_URL=http://geth:8545` and `ETH_RPC_WS_URL=ws://geth:8546`.
+
+| Variable | Default | Description |
+|---|---|---|
+| `eth_network` | `mainnet` | `mainnet`, `sepolia`, or `holesky` |
+| `eth_syncmode` | `snap` | Sync mode: `snap`, `full`, or `light` |
+| `geth_image` | `docker.io/ethereum/client-go:stable` | Geth Docker image |
+| `geth_mem_limit` | `4g` | Memory limit |
+
+> **Note:** Mainnet snap sync requires ~500 GB of disk space. Use a testnet (`sepolia`) for development.
 
 ### Custom Tentacles
 

@@ -39,6 +39,26 @@
   notify: restart tor
   when: enable_tor | default(false) | bool
 
+- name: Copy Monero Dockerfiles
+  ansible.builtin.copy:
+    src: monero/
+    dest: "{{ stack_deploy_dir }}/monero/"
+    owner: deploy
+    group: deploy
+    mode: "0644"
+  notify: restart monero
+  when: enable_monero_wallet | default(false) | bool
+
+- name: Copy Bitcoin Dockerfile
+  ansible.builtin.copy:
+    src: bitcoin/
+    dest: "{{ stack_deploy_dir }}/bitcoin/"
+    owner: deploy
+    group: deploy
+    mode: "0644"
+  notify: restart bitcoin
+  when: enable_bitcoin_wallet | default(false) | bool
+
 - name: Generate self-signed TLS certificate
   ansible.builtin.command:
     cmd: >-
