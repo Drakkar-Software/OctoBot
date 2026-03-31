@@ -64,8 +64,6 @@ class Task(BaseModel):
     content: typing.Optional[str] = None
     content_metadata: typing.Optional[str] = None
     type: typing.Optional[str] = None
-    result: typing.Optional[typing.Any] = None
-    result_metadata: typing.Optional[str] = None
     executions: list[Execution] = []
 
 class Node(BaseModel):

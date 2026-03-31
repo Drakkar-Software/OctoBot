@@ -205,7 +205,6 @@ class Scheduler:
                         status = octobot_node.models.TaskStatus.COMPLETED
                         metadata = task.content_metadata
                         task_name = task.name
-
                     else:
                         result = ""
                         description = "ERROR"
