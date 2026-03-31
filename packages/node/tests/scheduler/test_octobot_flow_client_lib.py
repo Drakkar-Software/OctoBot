@@ -231,14 +231,19 @@ def trade_transfer_and_check_balance_actions_bundle_no_wait(market_order_action,
                     "dependency::action_trade_1::created_orders::0::esov::address_from"
                 ),
                 "BLOCKCHAIN_BALANCE_ADDRESS": "123_balance_address",
-                "MIN_DELAY": 10,
+                "BLOCKCHAIN_BALANCE_AMOUNT": 1,
+                "BLOCKCHAIN_BALANCE": BLOCKCHAIN,
+                "BLOCKCHAIN_BALANCE_ASSET": "BTC",
+                "LOOP_INTERVAL": 3,
+                "LOOP_TIMEOUT": 10,
+                "LOOP_MAX_ATTEMPTS": 4,
             },
         }
     }
     all["params"]["SIMULATED_PORTFOLIO"] = {
         "BTC": 1,
     }
-    all["params"]["ACTIONS"] = "trade,transfer,wait_for_blockchain_balance"
+    all["params"]["ACTIONS"] = "trade,transfer,loop_until_blockchain_balance"
     return all
 
 
@@ -358,7 +363,7 @@ class TestOctoBotActionsJob:
         assert order["amount"] == 1
         assert order["type"] == "market"
         assert order["side"] == "buy"
-        assert result.next_actions_description is None # no more actions to execute
+        assert result.has_next_actions is False # no more actions to execute
 
         # ensure deposit is successful
         post_deposit_portfolio = job2.after_execution_state.automation.client_exchange_account_elements.portfolio.content
@@ -411,7 +416,7 @@ class TestOctoBotActionsJob:
         assert decimal.Decimal("0.001") < order["price"] < decimal.Decimal("0.2")
         assert order["type"] == "limit"
         assert order["side"] == "buy"
-        assert result.next_actions_description is None # no more actions to execute
+        assert result.has_next_actions is False # no more actions to execute
 
     async def test_run_stop_loss_order_action(self, stop_loss_order_action):
         # step 1: configure the job
@@ -460,7 +465,7 @@ class TestOctoBotActionsJob:
             assert decimal.Decimal("0.001") < order["price"] < decimal.Decimal("0.2")
             assert order["type"] == "stop_loss"
             assert order["side"] == "sell"
-            assert result.next_actions_description is None # no more actions to execute
+            assert result.has_next_actions is False # no more actions to execute
 
     async def test_run_cancel_limit_order_after_instant_wait_action(self, create_limit_instant_wait_and_cancel_order_action):
         # step 1: configure the job
@@ -545,7 +550,7 @@ class TestOctoBotActionsJob:
         assert processed_actions[0].dsl_script.startswith("cancel_order(")
         assert processed_actions[0].result is not None
         assert len(processed_actions[0].result[DSL_operators.CANCELLED_ORDERS_KEY]) == len(get_cancelled_orders(processed_actions)) == 1
-        assert result.next_actions_description is None # no more actions to execute
+        assert result.has_next_actions is False # no more actions to execute
 
     @pytest.mark.skip(reason="restore once polymarket is fully supported")
     async def test_polymarket_trade_action(self, polymarket_order_action): # TODO: update once polymarket is fullly supported
@@ -624,7 +629,7 @@ class TestOctoBotActionsJob:
         assert len(processed_actions) == 1
         assert isinstance(processed_actions[0], octobot_flow.entities.DSLScriptActionDetails)
         assert processed_actions[0].dsl_script is not None and "blockchain_wallet_transfer" in processed_actions[0].dsl_script
-        assert result.next_actions_description is None # no more actions to execute
+        assert result.has_next_actions is False # no more actions to execute
 
         assert processed_actions[0].result is not None
         assert len(processed_actions[0].result[DSL_operators.CREATED_TRANSACTIONS_KEY]) == len(get_deposit_and_withdrawal_details(processed_actions)) == 1
@@ -673,7 +678,7 @@ class TestOctoBotActionsJob:
         assert len(processed_actions) == 1
         assert isinstance(processed_actions[0], octobot_flow.entities.DSLScriptActionDetails)
         assert processed_actions[0].dsl_script is not None and "blockchain_wallet_transfer" in processed_actions[0].dsl_script
-        assert result.next_actions_description is None # no more actions to execute
+        assert result.has_next_actions is False # no more actions to execute
 
         # ensure deposit is successful
         post_deposit_portfolio = job2.after_execution_state.automation.client_exchange_account_elements.portfolio.content
@@ -718,7 +723,7 @@ class TestOctoBotActionsJob:
         assert len(processed_actions) == 1
         assert isinstance(processed_actions[0], octobot_flow.entities.DSLScriptActionDetails)
         assert processed_actions[0].dsl_script.startswith("withdraw(")
-        assert result.next_actions_description is None # no more actions to execute
+        assert result.has_next_actions is False # no more actions to execute
 
         # ensure withdraw is successful
         post_withdraw_portfolio = job2.after_execution_state.automation.client_exchange_account_elements.portfolio.content
@@ -795,7 +800,7 @@ class TestOctoBotActionsJob:
         assert limit_order["amount"] == decimal.Decimal("1")
         assert limit_order["type"] == "limit"
         assert limit_order["side"] == "buy"
-        assert result.next_actions_description is None # no more actions to execute
+        assert result.has_next_actions is False # no more actions to execute
 
         # ensure trades are taken into account in portfolio
         post_deposit_portfolio = job3.after_execution_state.automation.client_exchange_account_elements.portfolio.content
@@ -806,6 +811,7 @@ class TestOctoBotActionsJob:
         # created a buy order but not executed: locked BTC in portfolio
         assert post_deposit_portfolio["BTC"][common_constants.PORTFOLIO_AVAILABLE] < post_deposit_portfolio["BTC"][common_constants.PORTFOLIO_TOTAL]
 
+    # todo update with loop_until_blockchain_balance
     async def test_run_trade_transfer_and_check_balance_actions_bundle_no_wait(self, trade_transfer_and_check_balance_actions_bundle_no_wait):
         # step 1: configure the job (ACTIONS: trade, transfer, wait_for_blockchain_balance)
         job = octobot_flow_client.OctoBotActionsJob(trade_transfer_and_check_balance_actions_bundle_no_wait, [])
@@ -905,9 +911,10 @@ class TestOctoBotActionsJob:
         assert len(next_actions) == 1
         assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
         assert next_actions[0].dsl_script is not None
-        assert next_actions[0].dsl_script.startswith("wait(")
+        assert next_actions[0].dsl_script.startswith("loop_until(")
         assert "blockchain_wallet_balance" in next_actions[0].dsl_script
         assert "123_balance_address" in next_actions[0].dsl_script
+        assert "3, timeout=10, max_attempts=4, return_remaining_time=True)" in next_actions[0].dsl_script
         job4 = octobot_flow_client.OctoBotActionsJob(
             next_actions_description.to_dict(include_default_values=False),
             []
@@ -930,7 +937,7 @@ class TestOctoBotActionsJob:
         assert isinstance(processed_actions[0], octobot_flow.entities.DSLScriptActionDetails)
         wait_dsl = processed_actions[0].dsl_script
         assert wait_dsl is not None
-        assert wait_dsl.startswith("wait(")
+        assert wait_dsl.startswith("loop_until(")
         assert "blockchain_wallet_balance" in wait_dsl
         # action got reset
         assert processed_actions[0].executed_at is None
@@ -943,7 +950,7 @@ class TestOctoBotActionsJob:
         next_actions = parsed_state.automation.actions_dag.get_executable_actions()
         assert len(next_actions) == 1
         assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
-        assert next_actions[0].dsl_script.startswith("wait(")
+        assert next_actions[0].dsl_script.startswith("loop_until(")
         assert next_actions[0].previous_execution_result
         last_execution_result = dsl_interpreter.ReCallingOperatorResult.from_dict(
             next_actions[0].previous_execution_result[dsl_interpreter.ReCallingOperatorResult.__name__]
@@ -955,7 +962,7 @@ class TestOctoBotActionsJob:
 
         # step 4.B: real balance satisfies wait condition — action completes
         next_actions_description = result.next_actions_description
-        assert next_actions_description is not None
+        assert result.has_next_actions is True
         job4b = octobot_flow_client.OctoBotActionsJob(
             next_actions_description.to_dict(include_default_values=False),
             []
@@ -964,9 +971,11 @@ class TestOctoBotActionsJob:
         assert len(result.processed_actions) == 1
         processed_actions = result.processed_actions
         assert isinstance(processed_actions[0], octobot_flow.entities.DSLScriptActionDetails)
-        assert processed_actions[0].dsl_script.startswith("wait(")
+        assert processed_actions[0].dsl_script.startswith("loop_until(")
+        assert processed_actions[0].error_status is None
         assert processed_actions[0].result is True
-        assert result.next_actions_description is None
+        assert result.next_actions_description
+        assert result.has_next_actions is False
 
 
     async def test_run_multiple_actions_bundle_with_wait(self, multiple_action_bundle_with_wait):
@@ -1166,4 +1175,4 @@ class TestOctoBotActionsJob:
         post_withdraw_portfolio = job8.after_execution_state.automation.client_exchange_account_elements.portfolio.content
         assert post_withdraw_portfolio["BTC"] == post_trade_portfolio["BTC"]
         assert "ETH" not in post_withdraw_portfolio
-        assert result.next_actions_description is None # no more actions to execute
+        assert result.has_next_actions is False # no more actions to execute

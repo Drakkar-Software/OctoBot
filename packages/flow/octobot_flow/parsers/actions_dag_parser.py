@@ -30,7 +30,7 @@ class ActionType(enum.Enum):
     WITHDRAW = "withdraw"
     DEPOSIT = "deposit"
     TRANSFER = "transfer"
-    WAIT_FOR_BLOCKCHAIN_BALANCE = "wait_for_blockchain_balance"
+    LOOP_UNTIL_BLOCKCHAIN_BALANCE = "loop_until_blockchain_balance"
 
 
 CONTENT_KEY = "CONTENT"
@@ -97,6 +97,9 @@ class ActionsDAGParserParams(octobot_commons.dataclasses.FlexibleDataclass):
     BLOCKCHAIN_BALANCE_AMOUNT: typing.Optional[str] = None
     BLOCKCHAIN_BALANCE_ASSET: typing.Optional[str] = None
     BLOCKCHAIN_BALANCE: typing.Optional[str] = None
+    LOOP_INTERVAL: typing.Optional[float] = None
+    LOOP_TIMEOUT: typing.Optional[float] = None
+    LOOP_MAX_ATTEMPTS: typing.Optional[int] = None
     CONTENT: typing.Optional[dict] = None
 
     def __post_init__(self):
@@ -307,8 +310,8 @@ class ActionsDAGParser:
                 return self._create_deposit_action(index)
             case ActionType.TRANSFER.value:
                 return self._create_transfer_action(index)
-            case ActionType.WAIT_FOR_BLOCKCHAIN_BALANCE.value:
-                return self._create_wait_for_blockchain_balance_action(index)
+            case ActionType.LOOP_UNTIL_BLOCKCHAIN_BALANCE.value:
+                return self._create_loop_until_blockchain_balance_action(index)
             case ActionType.WAIT.value:
                 return self._create_wait_action(index)
             case _:
@@ -349,8 +352,9 @@ class ActionsDAGParser:
             order_details[trading_view_signals_trading.TradingViewSignalsTradingMode.TAG_KEY] = self.params.ORDER_TAG
         if self.params.ORDER_REDUCE_ONLY:
             order_details[trading_view_signals_trading.TradingViewSignalsTradingMode.REDUCE_ONLY_KEY] = self.params.ORDER_REDUCE_ONLY
-        for extra_param, value in self.params.ORDER_EXTRA_PARAMS.items():
-            order_details[f"{trading_view_signals_trading.TradingViewSignalsTradingMode.PARAM_PREFIX_KEY}{extra_param}"] = value
+        if self.params.ORDER_EXTRA_PARAMS:
+            for extra_param, value in self.params.ORDER_EXTRA_PARAMS.items():
+                order_details[f"{trading_view_signals_trading.TradingViewSignalsTradingMode.PARAM_PREFIX_KEY}{extra_param}"] = value
         return self.create_dsl_script_from_tv_format_action_details(
             f"action_trade_{index}", signal, order_details,
         )
@@ -436,27 +440,28 @@ class ActionsDAGParser:
             dataclasses.asdict(transfer_details),
         )
 
-    def _create_wait_for_blockchain_balance_action(self, index: int) -> octobot_flow.entities.AbstractActionDetails:
-        if not self.params.has_next_schedule():
+    def _create_loop_until_blockchain_balance_action(self, index: int) -> octobot_flow.entities.AbstractActionDetails:
+        loop_interval, loop_timeout, loop_max_attempts = (
+            self.params.LOOP_INTERVAL, self.params.LOOP_TIMEOUT, self.params.LOOP_MAX_ATTEMPTS
+        )
+        if not loop_interval:
             raise octobot_flow.errors.InvalidAutomationActionError(
-                f"{ActionType.WAIT.value} action requires at least a MIN_DELAY"
+                "LOOP_INTERVAL must be provided for the loop_until_blockchain_balance action"
             )
-        min_delay, max_delay = self.params._get_next_schedule_delay()
-        amount = self.params.BLOCKCHAIN_BALANCE_AMOUNT
-        if not amount:
+        amount, asset = self.params.BLOCKCHAIN_BALANCE_AMOUNT, self.params.BLOCKCHAIN_BALANCE_ASSET
+        if not amount or not asset:
             raise octobot_flow.errors.InvalidAutomationActionError(
-                "BLOCKCHAIN_BALANCE_AMOUNT must be provided for the wait_for_blockchain_balance action"
+                "BLOCKCHAIN_BALANCE_AMOUNT and BLOCKCHAIN_BALANCE_ASSET must be provided for the wait_for_blockchain_balance action"
             )
-        max_delay_str = f", {max_delay}" if max_delay and max_delay != min_delay else ""
         blockchain_params = self.params.get_blockchain_and_wallet_descriptors_for_balance_check()
         wallet_params = dataclasses.asdict(blockchain_params)
         wallet_check = tradingview_signal_to_dsl_translator.TradingViewSignalToDSLTranslator.translate_keyword_and_params(
             "blockchain_wallet_balance",
             wallet_params,
-            {"asset": self.params.BLOCKCHAIN_TO_ASSET},
+            {"asset": asset},
         )
-        dsl_script = f"wait({min_delay}{max_delay_str}, return_remaining_time=True) if ({wallet_check} < {float(amount)}) else True"
-        action_id = f"action_blockchain_wallet_balance_{index}"
+        dsl_script = f"loop_until({wallet_check} >= {float(amount)}, {loop_interval}, timeout={loop_timeout}, max_attempts={loop_max_attempts}, return_remaining_time=True)"
+        action_id = f"action_loop_until_blockchain_balance_{index}"
         return self._create_dsl_action_with_dependencies_if_any(action_id, dsl_script, wallet_params)
 
     def _create_wait_action(self, index: int) -> octobot_flow.entities.AbstractActionDetails:
@@ -598,7 +603,6 @@ class ActionsDAGParser:
         dependency_refs = self._collect_dependency_refs_from_details(details)
         if dependency_refs:
             dsl_script = self._inject_dependency_placeholders_in_dsl_script(dsl_script, dependency_refs)
-        print(f"{dsl_script=}")
         action = octobot_flow.entities.DSLScriptActionDetails(
             id=action_id,
             dsl_script=dsl_script,
