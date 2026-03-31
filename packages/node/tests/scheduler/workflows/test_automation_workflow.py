@@ -99,6 +99,7 @@ def iteration_result():
             should_stop=False,
         ),
         next_iteration_description='{"state": {"automation": {}}}',
+        has_next_actions=True,
     )
 
 def required_imports(func):
@@ -122,6 +123,7 @@ class TestExecuteAutomation:
         iter_result = params.AutomationWorkflowIterationResult(
             progress_status=iteration_result.progress_status,
             next_iteration_description=None,
+            has_next_actions=False,
         )
         mock_iteration = mock.AsyncMock(return_value=iter_result.to_dict(include_default_values=False))
         mock_should_continue = mock.Mock(return_value=False)
@@ -144,7 +146,7 @@ class TestExecuteAutomation:
                 octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow.execute_automation,
                 inputs=inputs,
             )
-            assert await handle.get_result() is None
+            assert await handle.get_result() is None # next_iteration_description.next_actions_description is None
             mock_iteration.assert_called_once_with(inputs, [])
             mock_should_continue.assert_called_once()
             mock_process.assert_not_called()
@@ -153,6 +155,7 @@ class TestExecuteAutomation:
         parsed_inputs.execution_time = time.time() + 100
         inputs = parsed_inputs.to_dict(include_default_values=False)
         mock_wait = mock.AsyncMock(return_value=[])
+        iteration_result.next_iteration_description = json.dumps({"state": {"automation": {}}})
         mock_iteration = mock.AsyncMock(return_value=iteration_result.to_dict(include_default_values=False))
         mock_should_continue = mock.Mock(return_value=False)
         mock_process = mock.AsyncMock()
@@ -178,7 +181,7 @@ class TestExecuteAutomation:
                 octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow.execute_automation,
                 inputs=inputs,
             )
-            assert await handle.get_result() is None
+            assert await handle.get_result() == r'{"state": {"automation": {}}}'  # next_iteration_description.next_actions_description is not None
             mock_wait.assert_called_once()
             mock_iteration.assert_called_once_with(inputs, [])
             mock_process.assert_not_called()
@@ -211,7 +214,7 @@ class TestExecuteAutomation:
                 octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow.execute_automation,
                 inputs=inputs,
             )
-            assert await handle.get_result() is None
+            assert await handle.get_result() is None # _should_continue_workflow is True
             mock_wait.assert_called_once()
             mock_iteration.assert_called_once_with(inputs, [])
             mock_should_continue.assert_called_once()
@@ -246,7 +249,7 @@ class TestExecuteAutomation:
                 octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow.execute_automation,
                 inputs=inputs,
             )
-            assert await handle.get_result() is None
+            assert await handle.get_result() == r'{"state": {"automation": {}}}'
             mock_iteration.assert_called_once_with(inputs, priority_actions)
             mock_process.assert_not_called()
 
@@ -278,7 +281,7 @@ class TestExecuteAutomation:
                 octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow.execute_automation,
                 inputs=inputs,
             )
-            assert await handle.get_result() is None
+            assert await handle.get_result() is None # workflow iteration failed: there is no result to return
             mock_logger.exception.assert_called_once()
             mock_process.assert_not_called()
 
@@ -408,7 +411,7 @@ class TestWaitAndTriggerOnPriorityActions:
 class TestProcessPendingPriorityActionsAndReschedule:
     @pytest.mark.asyncio
     async def test_process_pending_returns_false_when_no_next_iteration(self, import_automation_workflow, parsed_inputs, iteration_result):
-        iteration_result.next_iteration_description = None
+        iteration_result.has_next_actions = False
         result = await octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow._process_pending_priority_actions_and_reschedule(
             parsed_inputs, iteration_result
         )
@@ -465,7 +468,8 @@ class TestProcessPendingPriorityActionsAndReschedule:
                 error=None,
                 should_stop=False,
             ),
-            next_iteration_description=None,
+            next_iteration_description=json.dumps({"state": {"automation": {}}}),
+            has_next_actions=False,
         )
         mock_wait = mock.AsyncMock(side_effect=[[{"action": "stop"}], []])
         mock_iteration = mock.AsyncMock(
@@ -507,6 +511,7 @@ class TestProcessPendingPriorityActionsAndReschedule:
                 should_stop=False,
             ),
             next_iteration_description='{"state": {"automation": {}}}',
+            has_next_actions=True,
         )
         mock_wait = mock.AsyncMock(side_effect=[[{"action": "stop"}], []])
         mock_iteration = mock.AsyncMock(
@@ -767,7 +772,8 @@ class TestExecuteAutomationIntegration:
         action = octobot_flow.entities.ConfiguredActionDetails(id="action_1", action="trade")
         success_result = octobot_flow_client.OctoBotActionsJobResult(
             processed_actions=[action],
-            next_actions_description=None,
+            next_actions_description=octobot_flow_client.OctoBotActionsJobDescription(state={"automation": {}}),
+            has_next_actions=False,
             actions_dag=None,
             should_stop=False,
         )
@@ -793,7 +799,7 @@ class TestExecuteAutomationIntegration:
                 octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow.execute_automation,
                 inputs=inputs,
             )
-            assert await handle.get_result() is None
+            assert await handle.get_result() == r'{"state": {"automation": {}}}'
 
         assert mock_job.run.await_count == max_attempts
         mock_logger.exception.assert_not_called()
@@ -837,7 +843,7 @@ class TestExecuteAutomationIntegration:
                 octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow.execute_automation,
                 inputs=inputs,
             )
-            assert await handle.get_result() is None
+            assert await handle.get_result() ==None
 
         assert mock_job.run.await_count == max_attempts
         mock_logger.exception.assert_called_once()

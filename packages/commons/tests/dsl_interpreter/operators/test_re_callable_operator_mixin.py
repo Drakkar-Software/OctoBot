@@ -151,10 +151,12 @@ class TestReCallableOperatorMixin:
     def test_create_re_callable_result_dict(self):
         operator = _TestReCallableOperator()
         result = operator.create_re_callable_result_dict(
+            keyword="recall",
             last_execution_time=1000.0,
             waiting_time=5.0,
         )
         inner = result[re_callable_operator_mixin.ReCallingOperatorResult.__name__]
+        assert inner["keyword"] == "recall"
         assert "last_execution_result" in inner
         assert inner["last_execution_result"][
             re_callable_operator_mixin.ReCallingOperatorResultKeys.LAST_EXECUTION_TIME.value
@@ -166,6 +168,7 @@ class TestReCallableOperatorMixin:
     def test_create_re_callable_result_dict_with_reset_to_id(self):
         operator = _TestReCallableOperator()
         result = operator.create_re_callable_result_dict(
+            keyword="recall",
             reset_to_id="target_123",
             last_execution_time=1000.0,
             waiting_time=5.0,
@@ -177,6 +180,7 @@ class TestReCallableOperatorMixin:
     def test_create_re_callable_result_dict_with_extra_kwargs(self):
         operator = _TestReCallableOperator()
         result = operator.create_re_callable_result_dict(
+            keyword="recall",
             last_execution_time=1000.0,
             waiting_time=5.0,
             extra_field=42,

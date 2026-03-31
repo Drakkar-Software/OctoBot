@@ -135,16 +135,19 @@ class AutomationWorkflow:
                     next_actions = result.actions_dag.get_executable_actions()
                     remaining_steps = len(result.actions_dag.get_pending_actions())
                 next_step_at = result.next_actions_description.get_next_execution_time() if result.next_actions_description else None
-            raw_description = json.dumps(
-                result.next_actions_description.to_dict(include_default_values=False)
-            )
-            next_iteration_description_metadata = None
-            if octobot_node.config.settings.is_node_side_encryption_enabled:
-                next_iteration_description, next_iteration_description_metadata = (
-                    encryption.encrypt_task_content(raw_description)
-                )
+            if result.next_actions_description is None:
+                next_iteration_description = None
             else:
-                next_iteration_description = raw_description
+                raw_description = json.dumps(
+                    result.next_actions_description.to_dict(include_default_values=False)
+                )
+                next_iteration_description_metadata = None
+                if octobot_node.config.settings.is_node_side_encryption_enabled:
+                    next_iteration_description, next_iteration_description_metadata = (
+                        encryption.encrypt_task_content(raw_description)
+                    )
+                else:
+                    next_iteration_description = raw_description
             next_step = AutomationWorkflow._get_actions_summary(next_actions, minimal=True)
             next_actions_str = f"next immediate actions: {next_actions}" if next_actions else "all actions completed"
             AutomationWorkflow.get_logger(parsed_inputs).info(
