@@ -16,6 +16,7 @@ const ImportTask = ({ onSuccess }: ImportTaskProps) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [parsedTasks, setParsedTasks] = useState<CSVRow[]>([])
   const [isParsing, setIsParsing] = useState(false)
+  const [isDragOver, setIsDragOver] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const queryClient = useQueryClient()
   const { showSuccessToast, showErrorToast } = useCustomToast()
@@ -26,10 +27,7 @@ const ImportTask = ({ onSuccess }: ImportTaskProps) => {
     onError: handleError.bind(showErrorToast),
   })
 
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-
+  const processFile = async (file: File) => {
     setSelectedFile(file)
     setIsParsing(true)
 
@@ -51,6 +49,37 @@ const ImportTask = ({ onSuccess }: ImportTaskProps) => {
       setParsedTasks([])
     } finally {
       setIsParsing(false)
+    }
+  }
+
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    await processFile(file)
+  }
+
+  const handleDrop = async (event: React.DragEvent) => {
+    event.preventDefault()
+    setIsDragOver(false)
+    if (isParsing || createTaskMutation.isPending) return
+    const file = event.dataTransfer.files[0]
+    if (!file) return
+    if (!file.name.endsWith(".csv")) {
+      showErrorToast("Only CSV files are accepted")
+      return
+    }
+    await processFile(file)
+  }
+
+  const handleDragOver = (event: React.DragEvent) => {
+    event.preventDefault()
+    setIsDragOver(true)
+  }
+
+  const handleDragLeave = (event: React.DragEvent) => {
+    event.preventDefault()
+    if (!event.currentTarget.contains(event.relatedTarget as Node)) {
+      setIsDragOver(false)
     }
   }
 
@@ -103,7 +132,15 @@ const ImportTask = ({ onSuccess }: ImportTaskProps) => {
       <div className="flex flex-col gap-2">
         <label
           htmlFor="csv-file"
-          className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+          onDragEnter={handleDragOver}
+          onDragLeave={handleDragLeave}
+          className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+            isDragOver
+              ? "border-primary bg-primary/5"
+              : "border-border hover:bg-muted/50"
+          }`}
         >
           <div className="flex flex-col items-center justify-center pt-5 pb-6">
             {selectedFile ? (

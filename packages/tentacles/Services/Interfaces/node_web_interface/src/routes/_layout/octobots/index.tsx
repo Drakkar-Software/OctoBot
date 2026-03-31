@@ -65,9 +65,15 @@ function getStatusGroup(status?: TaskStatus | null) {
   return "stopped"
 }
 
+function getTaskSortDate(task: Task): string | null {
+  const exec = getActiveExecution(task.executions)
+  return (exec?.completed_at ?? exec?.scheduled_at) as string | null
+}
+
 function getDisplayDate(task: Task) {
-  const completed_at = getActiveExecution(task.executions)?.completed_at
-  if (completed_at) return { label: "Executed at", value: completed_at }
+  const exec = getActiveExecution(task.executions)
+  if (exec?.completed_at) return { label: "Executed at", value: exec.completed_at }
+  if (exec?.scheduled_at) return { label: "Scheduled", value: exec.scheduled_at }
   return { label: "Created", value: "—" }
 }
 
@@ -216,33 +222,16 @@ function BotCard({
 
 function BotGrid({
   tasks,
-  filter,
-  search,
+  allTasksEmpty,
   selectedIds,
   onToggleSelect,
 }: {
   tasks: Task[]
-  filter: string
-  search: string
+  allTasksEmpty: boolean
   selectedIds: Set<string>
   onToggleSelect: (id: string) => void
 }) {
-  const filtered = useMemo(() => {
-    const query = search.trim().toLowerCase()
-    return tasks.filter((task) => {
-      const activeExec = getActiveExecution(task.executions)
-      const inFilter =
-        filter === "all" ? true : getStatusGroup(activeExec?.status) === filter
-      const inSearch = query
-        ? `${task.name ?? ""} ${activeExec?.type ?? ""}`
-            .toLowerCase()
-            .includes(query)
-        : true
-      return inFilter && inSearch
-    })
-  }, [tasks, filter, search])
-
-  if (tasks.length === 0) {
+  if (allTasksEmpty) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-20 text-center">
         <Bot className="size-10 text-muted-foreground/50" />
@@ -260,7 +249,7 @@ function BotGrid({
     )
   }
 
-  if (filtered.length === 0) {
+  if (tasks.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-20 text-center">
         <Bot className="size-10 text-muted-foreground/50" />
@@ -280,7 +269,7 @@ function BotGrid({
 
   return (
     <div className="grid gap-4 md:grid-cols-2">
-      {filtered.map((task) => (
+      {tasks.map((task) => (
         <BotCard
           key={task.id}
           task={task}
@@ -470,7 +459,7 @@ function BotsContent() {
 
   const filteredTasks = useMemo(() => {
     const query = searchValue.trim().toLowerCase()
-    return tasks.filter((task) => {
+    const matched = tasks.filter((task) => {
       const activeExec = getActiveExecution(task.executions)
       const inFilter =
         filterValue === "all" ? true : getStatusGroup(activeExec?.status) === filterValue
@@ -481,6 +470,12 @@ function BotsContent() {
         : true
       return inFilter && inSearch
     })
+    const tagged = matched.map((task) => {
+      const d = getTaskSortDate(task)
+      return { task, ts: d ? new Date(d).getTime() : -Infinity }
+    })
+    tagged.sort((a, b) => b.ts - a.ts)
+    return tagged.map(({ task }) => task)
   }, [tasks, filterValue, searchValue])
 
   const counts = useMemo(() => {
@@ -560,9 +555,8 @@ function BotsContent() {
         />
       )}
       <BotGrid
-        tasks={tasks}
-        filter={filterValue}
-        search={searchValue}
+        tasks={filteredTasks}
+        allTasksEmpty={tasks.length === 0}
         selectedIds={selectedIds}
         onToggleSelect={handleToggleSelect}
       />
