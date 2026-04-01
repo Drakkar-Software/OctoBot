@@ -1,0 +1,8 @@
+{
+    "polling_interval_seconds": 10,
+    "min_profit_usd": 5.0,
+    "max_gas_price_gwei": 100,
+    "min_debt_usd": 100.0,
+    "lending_protocol": "aave_v3_polygon",
+    "chain": "polygon"
+}

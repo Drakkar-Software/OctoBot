@@ -1,0 +1,1 @@
+from .aave_v3_polygon import AaveV3PolygonLendingProtocol

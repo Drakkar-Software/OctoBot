@@ -150,6 +150,14 @@ def _load_tentacle_class(tentacle_name):
         except ImportError:
             pass
         try:
+            import octobot_trading.lending_protocols as lending_protocols
+            if tentacle_class := tentacles_management.get_class_from_string(
+                tentacle_name, lending_protocols.AbstractLendingProtocol,
+                tentacles_trading.Lending_protocol, tentacles_management.default_parents_inspection):
+                return tentacle_class
+        except (ImportError, AttributeError):
+            pass
+        try:
             return util.get_tentacle_class_from_extra_tentacles(tentacle_name)
         except KeyError:
             pass

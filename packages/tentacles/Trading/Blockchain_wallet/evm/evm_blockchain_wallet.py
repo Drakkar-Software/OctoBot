@@ -222,6 +222,12 @@ class EVMBlockchainWallet(blockchain_wallets.BlockchainWallet):
     async def transfer_native_coin(
         self, amount: decimal.Decimal, to_address: str
     ) -> blockchain_wallets.Transaction:
+        """
+        Transfer native coin (ETH, POL) to an address.
+        TODO: Implement: build tx dict with to/value/gas, sign with
+        self.wallet_descriptor.private_key via w3.eth.account.sign_transaction(),
+        send via w3.eth.send_raw_transaction(), return Transaction with tx hash.
+        """
         raise NotImplementedError("transfer_native_coin is not yet implemented for EVM")
 
     async def transfer_custom_token(
@@ -230,8 +236,88 @@ class EVMBlockchainWallet(blockchain_wallets.BlockchainWallet):
         amount: decimal.Decimal,
         to_address: str,
     ) -> blockchain_wallets.Transaction:
+        """
+        Transfer an ERC-20 token to an address.
+        TODO: Implement: create contract instance with ERC20 transfer ABI,
+        encode transfer(to, amount) call, build tx, sign, send, return Transaction.
+        """
         raise NotImplementedError(
             "transfer_custom_token is not yet implemented for EVM"
+        )
+
+    @converted_web3_error
+    async def build_and_send_contract_tx(
+        self,
+        contract_address: str,
+        abi: list,
+        function_name: str,
+        *args,
+        value: int = 0,
+        gas_limit: typing.Optional[int] = None,
+    ) -> str:
+        """
+        Build, sign and send a contract write transaction. Returns tx hash.
+        TODO: Implement the following steps:
+        1. contract = self.w3.eth.contract(
+               address=Web3.to_checksum_address(contract_address), abi=abi)
+        2. tx_func = getattr(contract.functions, function_name)(*args)
+        3. nonce = await self.get_nonce()
+        4. gas = gas_limit or await tx_func.estimate_gas(
+               {"from": self._address, "value": value})
+        5. tx = await tx_func.build_transaction({
+               "from": self._address, "nonce": nonce,
+               "gas": gas, "value": value})
+        6. signed = self.w3.eth.account.sign_transaction(
+               tx, self.wallet_descriptor.private_key)
+        7. tx_hash = await self.w3.eth.send_raw_transaction(
+               signed.raw_transaction)
+        8. return tx_hash.hex()
+        """
+        raise NotImplementedError(
+            "build_and_send_contract_tx is not yet implemented for EVM"
+        )
+
+    @converted_web3_error
+    async def estimate_gas(self, tx_params: dict) -> int:
+        """
+        Estimate gas for a transaction.
+        TODO: Implement via:
+        return await self.w3.eth.estimate_gas(tx_params)
+        """
+        raise NotImplementedError("estimate_gas is not yet implemented for EVM")
+
+    @converted_web3_error
+    async def get_nonce(self) -> int:
+        """
+        Get current transaction count/nonce for the wallet address.
+        TODO: Implement via:
+        address = Web3.to_checksum_address(self._address)
+        return await self.w3.eth.get_transaction_count(address)
+        """
+        raise NotImplementedError("get_nonce is not yet implemented for EVM")
+
+    @converted_web3_error
+    async def wait_for_receipt(self, tx_hash: str, timeout: int = 120) -> dict:
+        """
+        Wait for transaction confirmation and return receipt.
+        TODO: Implement via:
+        return await self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout)
+        """
+        raise NotImplementedError("wait_for_receipt is not yet implemented for EVM")
+
+    @converted_web3_error
+    async def call_contract_function(
+        self, contract_address: str, abi: list, function_name: str, *args
+    ):
+        """
+        Execute a read-only contract call (eth_call). Returns decoded result.
+        TODO: Implement via:
+        contract = self.w3.eth.contract(
+            address=Web3.to_checksum_address(contract_address), abi=abi)
+        return await getattr(contract.functions, function_name)(*args).call()
+        """
+        raise NotImplementedError(
+            "call_contract_function is not yet implemented for EVM"
         )
 
     @staticmethod
