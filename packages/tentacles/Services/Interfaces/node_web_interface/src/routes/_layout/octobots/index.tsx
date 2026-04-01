@@ -5,6 +5,7 @@ import { Suspense, useMemo, useState } from "react"
 
 import type { Task_Output as Task, TaskStatus } from "@/client"
 import { TasksService } from "@/client"
+import ExportResultsDialog from "@/components/Tasks/ExportResultsDialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -23,7 +24,6 @@ import {
 } from "@/components/ui/dialog"
 import { LoadingButton } from "@/components/ui/loading-button"
 import useCustomToast from "@/hooks/useCustomToast"
-import { generateCSV, downloadCSV } from "@/lib/csv"
 import { cn } from "@/lib/utils"
 import { getActiveExecution } from "@/utils/executions"
 
@@ -308,6 +308,7 @@ function SelectionToolbar({
   onDeleted: () => void
 }) {
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [exportOpen, setExportOpen] = useState(false)
   const [shareLogsOpen, setShareLogsOpen] = useState(false)
   const [shareLogsLoading, setShareLogsLoading] = useState(false)
   const [shareCreds, setShareCreds] = useState<{ errorId: string; errorSecret: string } | null>(null)
@@ -331,27 +332,23 @@ function SelectionToolbar({
     },
   })
 
+  const exportableTasks = useMemo(
+    () =>
+      allTasks.filter(
+        (t) =>
+          t.id &&
+          selectedIds.has(t.id) &&
+          getStatusGroup(getActiveExecution(t.executions)?.status) === "stopped",
+      ),
+    [allTasks, selectedIds],
+  )
+
   const handleExportResults = () => {
-    const selected = allTasks.filter(
-      (t) => t.id && selectedIds.has(t.id) && getStatusGroup(getActiveExecution(t.executions)?.status) === "stopped"
-    )
-    if (selected.length === 0) {
+    if (exportableTasks.length === 0) {
       showErrorToast("No results to export for selected OctoBots")
       return
     }
-    const headers = ["name", "status", "result", "result_metadata"]
-    const rows = selected.map((t) => {
-      const activeExec = getActiveExecution(t.executions)
-      let resultValue = activeExec?.result
-      try {
-        const parsed = activeExec?.result ? JSON.parse(activeExec.result) : null
-        resultValue = parsed !== null ? JSON.stringify(parsed) : activeExec?.result
-      } catch { /* raw string */ }
-      return [t.name || "", activeExec?.status || "", resultValue || "", activeExec?.result_metadata || ""]
-    })
-    const csv = generateCSV(headers, rows)
-    downloadCSV(csv, `task-results-${new Date().toISOString().split("T")[0]}`)
-    showSuccessToast(`Exported ${selected.length} result${selected.length !== 1 ? "s" : ""}`)
+    setExportOpen(true)
   }
 
   const handleShareLogs = async () => {
@@ -457,6 +454,12 @@ function SelectionToolbar({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ExportResultsDialog
+        open={exportOpen}
+        onOpenChange={setExportOpen}
+        tasks={exportableTasks}
+      />
     </>
   )
 }

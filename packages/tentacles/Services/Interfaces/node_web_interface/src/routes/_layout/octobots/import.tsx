@@ -18,13 +18,16 @@ function ImportOctobots() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Import OctoBots</h1>
         <p className="text-muted-foreground">
-          Upload a CSV file to restore OctoBots.
+          Upload any CSV file. Columns will be auto-detected and mapped to action parameters.
         </p>
       </div>
       <Card>
         <CardHeader>
-          <CardTitle>Upload file</CardTitle>
-          <CardDescription>Accepted format: `.csv`.</CardDescription>
+          <CardTitle>Smart CSV Import</CardTitle>
+          <CardDescription>
+            Upload a CSV with any column format. The system will detect addresses, amounts, symbols,
+            and other parameters automatically, then let you review and adjust before importing.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <ImportTask onSuccess={() => navigate({ to: "/octobots" })} />
