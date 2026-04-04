@@ -85,9 +85,9 @@ def test_fallback_to_default_config():
     """When collections file is missing, DEFAULT_SYNC_CONFIG is returned."""
     config = collections_module.load_sync_config("/nonexistent/path.json")
     assert config.version == 1
-    assert len(config.collections) == 3
+    assert len(config.collections) == 5
     names = {c.name for c in config.collections}
-    assert names == {"bots", "accounts", "errors"}
+    assert names == {"bots", "accounts", "errors", "entitlements", "members"}
     errors = next(c for c in config.collections if c.name == "errors")
     assert errors.read_roles == ["self", "admin"]
     assert errors.write_roles == ["self"]

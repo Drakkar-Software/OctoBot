@@ -24,7 +24,6 @@ from starfish_server.storage.filesystem import FilesystemObjectStore, Filesystem
 import octobot_commons.logging as logging
 import octobot_sync.app as sync_app
 import octobot_sync.auth as auth
-import octobot_sync.chain as chain
 
 def _get_logger():
     return logging.get_logger("OctoBot-Sync")
@@ -35,17 +34,6 @@ def _require_env(key: str) -> str:
     if not value:
         raise RuntimeError(f"Required environment variable missing: {key}")
     return value
-
-
-def _setup_registry() -> chain.ChainRegistry:
-    registry = chain.ChainRegistry()
-    evm_base_rpc = os.getenv("EVM_BASE_RPC")
-    evm_contract_base = os.getenv("EVM_CONTRACT_BASE")
-    if evm_base_rpc and evm_contract_base:
-        registry.register(chain.EvmChain("evm:8453", evm_base_rpc, evm_contract_base))
-    else:
-        registry.register(chain.EvmChain("evm:8453"))
-    return registry
 
 
 def _build_app(platform_pubkey: str | None = None) -> tuple:
@@ -62,12 +50,10 @@ def _build_app(platform_pubkey: str | None = None) -> tuple:
         )
     )
 
-    registry = _setup_registry()
-
     if platform_pubkey:
         os.environ.setdefault("PLATFORM_PUBKEY_EVM", platform_pubkey)
 
-    app = sync_app.create_app(nonce, object_store, registry)
+    app = sync_app.create_app(nonce, object_store)
     return app
 
 
@@ -90,7 +76,6 @@ def _build_replica_app(
         FilesystemStorageOptions(base_dir=resolved_data_dir)
     )
 
-    registry = _setup_registry()
     auth_provider = auth.StarfishAuthProvider(private_key, chain_id)
 
     if platform_pubkey:
@@ -99,7 +84,6 @@ def _build_replica_app(
     app = sync_app.create_app(
         nonce,
         object_store,
-        registry,
         primary_url=primary_url,
         auth_provider=auth_provider,
         write_mode=write_mode,

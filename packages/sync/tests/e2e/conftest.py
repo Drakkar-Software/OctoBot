@@ -24,8 +24,7 @@ from httpx import AsyncClient, ASGITransport
 
 import octobot_sync.app as sync_app
 import octobot_sync.auth as auth
-import octobot_sync.chain as chain
-import tests.mock_chain as mock_chain_module
+from tests.conftest import MockVerifyFn
 
 ADMIN_PUBKEY = "0xE2eAdminPubkey"
 USER_PUBKEY = "0xE2eUserPubkey"
@@ -59,19 +58,22 @@ async def s3_store():
 
 
 @pytest.fixture
-def mock_chain():
-    return mock_chain_module.MockChain(CHAIN_ID)
+def mock_verify():
+    return MockVerifyFn()
 
 
 @pytest.fixture
-def app(s3_store, mock_chain, monkeypatch):
+def app(s3_store, mock_verify, monkeypatch):
     monkeypatch.setenv("PLATFORM_PUBKEY_EVM", ADMIN_PUBKEY)
     monkeypatch.setenv("ENCRYPTION_SECRET", "e2e-encryption-secret")
     monkeypatch.setenv("PLATFORM_ENCRYPTION_SECRET", "e2e-platform-secret")
-    registry = chain.ChainRegistry()
-    registry.register(mock_chain)
     nonce = auth.NonceStore(auth.MemoryStorageAdapter())
-    return sync_app.create_app(nonce, s3_store, registry, collections_path=COLLECTIONS_PATH)
+    return sync_app.create_app(
+        nonce, s3_store,
+        verify_signature=mock_verify,
+        supported_chains={CHAIN_ID},
+        collections_path=COLLECTIONS_PATH,
+    )
 
 
 @pytest.fixture

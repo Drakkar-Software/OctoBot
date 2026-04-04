@@ -21,10 +21,7 @@ import time
 import pytest
 
 import octobot_sync.auth as auth
-import octobot_sync.chain as chain
 import octobot_sync.constants as constants
-import tests.mock_chain as mock_chain_module
-
 
 
 TEST_PUBKEY = "0xTestPubkey1234567890abcdef"
@@ -32,6 +29,17 @@ TEST_ADMIN_PUBKEY = "0xAdminPubkey1234567890abcdef"
 TEST_CHAIN_ID = "mock"
 
 
+class MockVerifyFn:
+    """Async signature verifier backed by a set of valid (canonical, sig, pubkey) tuples."""
+
+    def __init__(self) -> None:
+        self._valid: dict[str, bool] = {}
+
+    def set_valid(self, canonical: str, signature: str, pubkey: str, valid: bool = True) -> None:
+        self._valid[f"{canonical}:{signature}:{pubkey}"] = valid
+
+    async def __call__(self, canonical: str, signature: str, pubkey: str) -> bool:
+        return self._valid.get(f"{canonical}:{signature}:{pubkey}", False)
 
 
 @pytest.fixture
@@ -45,18 +53,8 @@ def nonce_store(memory_storage):
 
 
 @pytest.fixture
-def mock_chain():
-    return mock_chain_module.MockChain(TEST_CHAIN_ID)
-
-
-@pytest.fixture
-def chain_registry(mock_chain):
-    registry = chain.ChainRegistry()
-    registry.register(mock_chain)
-    return registry
-
-
-
+def mock_verify_fn():
+    return MockVerifyFn()
 
 
 class MemoryObjectStore:
@@ -96,24 +94,22 @@ def memory_object_store():
     return MemoryObjectStore()
 
 
-
-
 def make_auth_headers(
-    mock_chain: mock_chain_module.MockChain,
+    mock_verify: MockVerifyFn,
     pubkey: str = TEST_PUBKEY,
     method: str = "GET",
     path: str = "/",
     body: str = "",
     chain_id: str = TEST_CHAIN_ID,
 ) -> dict[str, str]:
-    """Create valid auth headers and configure the mock chain to accept them."""
+    """Create valid auth headers and configure the mock verify fn to accept them."""
     ts = str(int(time.time() * 1000))
     nonce = f"test-nonce-{time.time()}"
     body_hash = auth.hash_body(body)
     canonical = auth.build_canonical(method, path, ts, nonce, body_hash)
     signature = f"sig-{ts}"
 
-    mock_chain.set_signature_valid(canonical, signature, pubkey, True)
+    mock_verify.set_valid(canonical, signature, pubkey)
 
     return {
         constants.HEADER_PUBKEY: pubkey,

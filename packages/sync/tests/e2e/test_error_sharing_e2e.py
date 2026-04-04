@@ -27,9 +27,8 @@ from starfish_sdk import StarfishClient, SyncManager
 
 import octobot_sync.app as sync_app
 import octobot_sync.auth as auth
-import octobot_sync.chain as chain
 import octobot_sync.constants as constants
-import tests.mock_chain as mock_chain_module
+from tests.conftest import MockVerifyFn
 from octobot.community.errors_upload.error_sharing import (
     upload_error,
     ERRORS_PULL_PATH_TEMPLATE,
@@ -45,7 +44,7 @@ pytestmark = pytest.mark.skipif(
 
 
 def _make_auth_provider(
-    mock_chain: mock_chain_module.MockChain,
+    mock_verify: MockVerifyFn,
     pubkey: str,
 ):
     async def auth_provider(
@@ -56,7 +55,7 @@ def _make_auth_provider(
         body_hash = auth.hash_body(body or "")
         canonical = auth.build_canonical(method, path, ts, nonce, body_hash)
         signature = f"err-sig-{ts}"
-        mock_chain.set_signature_valid(canonical, signature, pubkey, True)
+        mock_verify.set_valid(canonical, signature, pubkey)
 
         return {
             constants.HEADER_PUBKEY: pubkey,
@@ -70,14 +69,17 @@ def _make_auth_provider(
 
 
 @pytest.fixture
-async def sync_client(s3_store, mock_chain, monkeypatch):
+async def sync_client(s3_store, mock_verify, monkeypatch):
     monkeypatch.setenv("PLATFORM_PUBKEY_EVM", ADMIN_PUBKEY)
     monkeypatch.setenv("ENCRYPTION_SECRET", "e2e-encryption-secret")
     monkeypatch.setenv("PLATFORM_ENCRYPTION_SECRET", "e2e-platform-secret")
-    registry = chain.ChainRegistry()
-    registry.register(mock_chain)
     nonce = auth.NonceStore(auth.MemoryStorageAdapter())
-    app = sync_app.create_app(nonce, s3_store, registry, collections_path=COLLECTIONS_PATH)
+    app = sync_app.create_app(
+        nonce, s3_store,
+        verify_signature=mock_verify,
+        supported_chains={CHAIN_ID},
+        collections_path=COLLECTIONS_PATH,
+    )
 
     import httpx
 
@@ -85,7 +87,7 @@ async def sync_client(s3_store, mock_chain, monkeypatch):
     http_client = httpx.AsyncClient(transport=transport, base_url="http://test")
     client = StarfishClient(
         base_url="http://test",
-        auth=_make_auth_provider(mock_chain, USER_PUBKEY),
+        auth=_make_auth_provider(mock_verify, USER_PUBKEY),
         client=http_client,
     )
     yield client

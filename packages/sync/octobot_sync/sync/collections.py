@@ -55,6 +55,22 @@ DEFAULT_SYNC_CONFIG = SyncConfig(
             encryption="delegated",
             maxBodyBytes=500_000,
         ),
+        CollectionConfig(
+            name="entitlements",
+            storagePath="users/{identity}/entitlements",
+            readRoles=["self", "admin"],
+            writeRoles=["admin"],
+            encryption="none",
+            maxBodyBytes=constants.MAX_BODY_SIZE_SIGNAL,
+        ),
+        CollectionConfig(
+            name="members",
+            storagePath="products/{productId}/members",
+            readRoles=["member", "owner"],
+            writeRoles=["owner"],
+            encryption="none",
+            maxBodyBytes=constants.MAX_BODY_SIZE_SIGNAL,
+        ),
     ],
 )
 

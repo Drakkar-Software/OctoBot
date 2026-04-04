@@ -25,15 +25,23 @@ from starfish_server.router.route_builder import create_sync_router, SyncRouterO
 from starfish_server.replica import ReplicaManager
 
 import octobot_sync.auth as auth
-import octobot_sync.chain as chain
+import octobot_sync.chain.evm as evm
 import octobot_sync.constants as constants
 import octobot_sync.sync as sync
+from octobot_sync.sync.role_resolver import VerifySignatureFn
+
+DEFAULT_SUPPORTED_CHAINS = frozenset({"evm:8453"})
+
+
+async def _verify_evm(canonical: str, signature: str, pubkey: str) -> bool:
+    return evm.verify_evm(canonical, signature, pubkey)
 
 
 def create_app(
     nonce: auth.NonceStore,
     object_store: AbstractObjectStore,
-    registry: chain.ChainRegistry,
+    verify_signature: VerifySignatureFn = _verify_evm,
+    supported_chains: set[str] | None = None,
     collections_path: str | None = None,
     primary_url: str | None = None,
     auth_provider: auth.StarfishAuthProvider | None = None,
@@ -41,6 +49,9 @@ def create_app(
     sync_interval_ms: int = 60_000,
 ) -> FastAPI:
     app = FastAPI(title="OctoBot Sync — Signal Sync Server")
+
+    if supported_chains is None:
+        supported_chains = DEFAULT_SUPPORTED_CHAINS
 
     platform_pubkey = os.environ["PLATFORM_PUBKEY_EVM"]
     encryption_secret = os.environ["ENCRYPTION_SECRET"]
@@ -66,14 +77,16 @@ def create_app(
         SyncRouterOptions(
             store=object_store,
             config=sync_config,
-            role_resolver=sync.create_role_resolver(registry, nonce, platform_pubkey),
-            role_enricher=sync.create_role_enricher(registry),
+            role_resolver=sync.create_role_resolver(
+                verify_signature, nonce, platform_pubkey, supported_chains,
+            ),
+            role_enricher=sync.create_role_enricher(object_store),
             encryption_secret=encryption_secret,
             identity_encryption_info=constants.HKDF_INFO_USER_DATA,
             server_encryption_secret=platform_encryption_secret,
             server_identity=platform_pubkey,
             server_encryption_info=constants.HKDF_INFO_PLATFORM_DATA,
-            signature_verifier=sync.create_signature_verifier(registry),
+            signature_verifier=sync.create_signature_verifier(verify_signature),
             replica_manager=replica_manager,
         )
     )

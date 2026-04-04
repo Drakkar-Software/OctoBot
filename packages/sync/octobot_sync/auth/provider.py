@@ -36,7 +36,7 @@ class StarfishAuthProvider:
         return self._address
 
     async def sign_payload(self, data: str) -> str:
-        msg_hash = evm._eip191_hash(data)
+        msg_hash = evm.eip191_hash(data)
         signed = self._w3.eth.account._sign_hash(msg_hash, private_key=self._private_key)
         return signed.signature.hex()
 
@@ -47,7 +47,7 @@ class StarfishAuthProvider:
         nonce = str(uuid.uuid4())
         body_hash = canonical.hash_body(body)
         msg = canonical.build_canonical(method, path, ts, nonce, body_hash)
-        msg_hash = evm._eip191_hash(msg)
+        msg_hash = evm.eip191_hash(msg)
         signed = self._w3.eth.account._sign_hash(msg_hash, private_key=self._private_key)
         return {
             constants.HEADER_PUBKEY: self._address,
