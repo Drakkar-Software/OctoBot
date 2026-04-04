@@ -30,11 +30,11 @@ import octobot_services.errors as services_errors
 import tentacles.Services.Services_bases
 
 
-def _get_gpt_service():
+def _get_llm_service():
     try:
-        return tentacles.Services.Services_bases.GPTService
+        return tentacles.Services.Services_bases.LLMSignalService
     except (AttributeError, ImportError):
-        raise ImportError("the gpt_service tentacle is not installed")
+        raise ImportError("the llm_service tentacle is not installed")
 
 
 class GPTEvaluator(evaluators.TAEvaluator):
@@ -66,7 +66,7 @@ class GPTEvaluator(evaluators.TAEvaluator):
         self.source = None
         self.period = None
         self.min_confidence_threshold = 100
-        self.gpt_model = _get_gpt_service().DEFAULT_MODEL
+        self.gpt_model = _get_llm_service().DEFAULT_MODEL
         self.is_backtesting = False
         self.min_allowed_timeframe = os.getenv("MIN_GPT_TIMEFRAME", None)
         self.enable_model_selector = os_util.parse_boolean_environment_var("ENABLE_GPT_MODELS_SELECTOR", "True")
@@ -78,7 +78,7 @@ class GPTEvaluator(evaluators.TAEvaluator):
         except ValueError:
             self.logger.error(f"Invalid timeframe configuration: unknown timeframe: '{self.min_allowed_timeframe}'")
         self.allow_reevaluations = os_util.parse_boolean_environment_var(self.ALLOW_GPT_REEVALUATION_ENV, "True")
-        self.gpt_tokens_limit = _get_gpt_service().NO_TOKEN_LIMIT_VALUE
+        self.gpt_tokens_limit = _get_llm_service().NO_TOKEN_LIMIT_VALUE
         self.services_config = None
 
     def enable_reevaluation(self) -> bool:
@@ -101,7 +101,7 @@ class GPTEvaluator(evaluators.TAEvaluator):
         :return: the filled user input configuration
         """
         self.is_backtesting = self._is_in_backtesting()
-        if self.is_backtesting and not services_api.is_service_used_by_backtestable_feed(_get_gpt_service()):
+        if self.is_backtesting and not services_api.is_service_used_by_backtestable_feed(_get_llm_service()):
             self.logger.error(f"{self.get_name()} is disabled in backtesting. It will only emit neutral evaluations")
         await self._init_GPT_models()
         return await super().load_and_save_user_inputs(bot_id)
@@ -130,7 +130,7 @@ class GPTEvaluator(evaluators.TAEvaluator):
         if self.enable_model_selector:
             current_value = self.specific_config.get("GPT_model")
             models = (list(self.GPT_MODELS) or (
-                [current_value] if current_value else [_get_gpt_service().DEFAULT_MODEL]
+                [current_value] if current_value else [_get_llm_service().DEFAULT_MODEL]
             )) + [self.SAME_MODEL_AS_SERVICE]
             self.gpt_model = self.UI.user_input(
                 "GPT model", enums.UserInputTypes.OPTIONS, self.SAME_MODEL_AS_SERVICE,
@@ -148,18 +148,18 @@ class GPTEvaluator(evaluators.TAEvaluator):
         if self.ALLOW_TOKEN_LIMIT_UPDATE:
             self.gpt_tokens_limit = self.UI.user_input(
                 "max_gpt_tokens", enums.UserInputTypes.INT,
-                self.gpt_tokens_limit, inputs, min_val=_get_gpt_service().NO_TOKEN_LIMIT_VALUE,
+                self.gpt_tokens_limit, inputs, min_val=_get_llm_service().NO_TOKEN_LIMIT_VALUE,
                 title=f"OpenAI token limit: maximum daily number of tokens to consume with a given OctoBot instance. "
-                      f"Use {_get_gpt_service().NO_TOKEN_LIMIT_VALUE} to remove the limit."
+                      f"Use {_get_llm_service().NO_TOKEN_LIMIT_VALUE} to remove the limit."
             )
 
     async def _init_GPT_models(self):
         if not self.GPT_MODELS:
-            self.GPT_MODELS = [_get_gpt_service().DEFAULT_MODEL]
+            self.GPT_MODELS = [_get_llm_service().DEFAULT_MODEL]
             if self.enable_model_selector and not self.is_backtesting:
                 try:
                     service = await services_api.get_service(
-                        _get_gpt_service(), self.is_backtesting, self.services_config
+                        _get_llm_service(), self.is_backtesting, self.services_config
                     )
                     self.GPT_MODELS = service.models
                     self.ALLOW_TOKEN_LIMIT_UPDATE = service.allow_token_limit_update()
@@ -234,7 +234,7 @@ class GPTEvaluator(evaluators.TAEvaluator):
     async def ask_gpt(self, preprompt, inputs, symbol, time_frame, candle_time) -> str:
         try:
             service = await services_api.get_service(
-                _get_gpt_service(),
+                _get_llm_service(),
                 self.is_backtesting,
                 {} if self.is_backtesting else self.services_config
             )
