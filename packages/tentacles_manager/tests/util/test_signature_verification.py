@@ -108,6 +108,24 @@ async def test_sign_and_verify_roundtrip(tmp_path):
 
 
 @pytest.mark.asyncio
+async def test_sign_package_file_whitespace_in_key(tmp_path):
+    private_key_pem, public_key_pem = crypto_signing.generate_ecdsa_key_pair()
+    clean_b64 = base64.b64encode(private_key_pem).decode()
+    # Simulate GitHub secrets with newlines and trailing whitespace
+    dirty_b64 = "\n".join(clean_b64[i:i+76] for i in range(0, len(clean_b64), 76)) + "\n"
+    package_data = b"fake zip content"
+
+    zip_path = str(tmp_path / "test.zip")
+    with open(zip_path, "wb") as f:
+        f.write(package_data)
+
+    sig_path = await sig_verif.sign_package_file(zip_path, dirty_b64)
+    with open(sig_path, "rb") as f:
+        signature = base64.b64decode(f.read())
+    assert crypto_signing.verify_signature(package_data, public_key_pem, signature) is True
+
+
+@pytest.mark.asyncio
 async def test_sign_empty_file(tmp_path):
     private_key_pem, _ = crypto_signing.generate_ecdsa_key_pair()
     private_key_b64 = base64.b64encode(private_key_pem).decode()
