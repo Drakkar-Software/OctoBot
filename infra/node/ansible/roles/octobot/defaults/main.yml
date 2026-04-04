@@ -4,6 +4,7 @@ octobot_image: "docker.io/drakkarsoftware/octobot"
 octobot_image_tag: "stable"
 nginx_image: "docker.io/nginx:1-alpine"
 postgres_image: "docker.io/postgres:16-alpine"
+geth_image: "docker.io/ethereum/client-go:stable"
 
 # Deployment
 stack_deploy_dir: "/opt/octobot-node"
@@ -14,10 +15,17 @@ nginx_port: 80
 nginx_ssl_port: 443
 nginx_mem_limit: "256m"
 tor_mem_limit: "256m"
+monerod_mem_limit: "4g"
+monero_wallet_rpc_mem_limit: "512m"
+bitcoind_mem_limit: "4g"
+geth_mem_limit: "4g"
 
 # Feature flags
 enable_hardening: false
 enable_tor: false
+enable_monero_wallet: false
+enable_bitcoin_wallet: false
+enable_eth_wallet: false
 enable_replica_mode: false
 enable_nginx: false
 expose_web_ui: false
@@ -46,6 +54,18 @@ tasks_inputs_rsa_public_key: ""
 tasks_inputs_ecdsa_private_key: ""
 tasks_outputs_rsa_private_key: ""
 tasks_outputs_ecdsa_public_key: ""
+
+# Wallet configuration
+monero_network: "mainnet"          # mainnet or stagenet
+monero_remote_daemon: ""           # if set, skip local monerod and connect wallet-rpc to this address
+
+bitcoin_network: "mainnet"         # mainnet or testnet
+bitcoin_rpc_user: "octobot"
+bitcoin_rpc_password: ""
+bitcoin_prune: 550                 # prune target in MiB (0 for full node)
+
+eth_network: "mainnet"             # mainnet, sepolia, holesky
+eth_syncmode: "snap"               # snap, full, or light
 
 # Firewall (geerlingguy.firewall)
 firewall_allowed_tcp_ports:

@@ -6,6 +6,9 @@
 #   enable_nginx: true
 #   enable_tor: true
 #   enable_hardening: true
+#   enable_monero_wallet: true
+#   enable_bitcoin_wallet: true
+#   enable_eth_wallet: true
 #   secret_key: "your-secret-key"
 #   admin_username: "admin@yourdomain.com"
 #   admin_password: "your-password"

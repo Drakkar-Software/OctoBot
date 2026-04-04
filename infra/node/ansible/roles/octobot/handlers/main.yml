@@ -1,7 +1,7 @@
 ---
 - name: restart stack
   ansible.builtin.command:
-    cmd: docker compose up -d
+    cmd: docker compose up -d --remove-orphans
     chdir: "{{ stack_deploy_dir }}"
 
 - name: restart octobot
@@ -17,4 +17,19 @@
 - name: restart tor
   ansible.builtin.command:
     cmd: docker compose restart tor
+    chdir: "{{ stack_deploy_dir }}"
+
+- name: restart monero
+  ansible.builtin.command:
+    cmd: docker compose restart monerod monero-wallet-rpc
+    chdir: "{{ stack_deploy_dir }}"
+
+- name: restart bitcoin
+  ansible.builtin.command:
+    cmd: docker compose restart bitcoin
+    chdir: "{{ stack_deploy_dir }}"
+
+- name: restart geth
+  ansible.builtin.command:
+    cmd: docker compose restart geth
     chdir: "{{ stack_deploy_dir }}"

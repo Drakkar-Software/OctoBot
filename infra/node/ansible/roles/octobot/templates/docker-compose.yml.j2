@@ -39,9 +39,16 @@ services:
       timeout: 5s
       retries: 5
       start_period: 60s
-{% if enable_tor | default(false) | bool %}
+{% set _deps = [] %}
+{% if enable_tor | default(false) | bool %}{% if _deps.append('tor') %}{% endif %}{% endif %}
+{% if enable_monero_wallet | default(false) | bool %}{% if _deps.append('monero-wallet-rpc') %}{% endif %}{% endif %}
+{% if enable_bitcoin_wallet | default(false) | bool %}{% if _deps.append('bitcoin') %}{% endif %}{% endif %}
+{% if enable_eth_wallet | default(false) | bool %}{% if _deps.append('geth') %}{% endif %}{% endif %}
+{% if _deps %}
     depends_on:
-      - tor
+{% for dep in _deps %}
+      - {{ dep }}
+{% endfor %}
 {% endif %}
     networks:
       - frontend
@@ -50,6 +57,15 @@ services:
 {% endif %}
 {% if enable_tor | default(false) | bool %}
       - tor_net
+{% endif %}
+{% if enable_monero_wallet | default(false) | bool %}
+      - monero_net
+{% endif %}
+{% if enable_bitcoin_wallet | default(false) | bool %}
+      - bitcoin_net
+{% endif %}
+{% if enable_eth_wallet | default(false) | bool %}
+      - eth_net
 {% endif %}
 
 {% if enable_nginx | default(false) | bool %}
@@ -98,6 +114,155 @@ services:
       - tor_net
 {% endif %}
 
+{% if enable_monero_wallet | default(false) | bool %}
+{% if monero_remote_daemon | default('') | length == 0 %}
+  monerod:
+    build:
+      context: ./monero
+      dockerfile: Dockerfile.monerod
+    restart: always
+    mem_limit: {{ monerod_mem_limit }}
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    volumes:
+      - monerod_data:/home/monero/.bitmonero
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://127.0.0.1:18081/get_info"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    command:
+      - --non-interactive
+      - --restricted-rpc
+      - --rpc-bind-ip=0.0.0.0
+      - --rpc-bind-port=18081
+      - --confirm-external-bind
+{% if monero_network == 'stagenet' %}
+      - --stagenet
+{% endif %}
+    networks:
+      - monero_net
+{% endif %}
+
+  monero-wallet-rpc:
+    build:
+      context: ./monero
+      dockerfile: Dockerfile.wallet-rpc
+    restart: always
+    mem_limit: {{ monero_wallet_rpc_mem_limit }}
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    volumes:
+      - monero_wallet_data:/home/monero/wallets
+{% if monero_remote_daemon | default('') | length > 0 %}
+    command:
+      - --daemon-address={{ monero_remote_daemon }}
+      - --rpc-bind-port=18083
+      - --rpc-bind-ip=0.0.0.0
+      - --confirm-external-bind
+      - --disable-rpc-login
+      - --wallet-dir=/home/monero/wallets
+{% if monero_network == 'stagenet' %}
+      - --stagenet
+{% endif %}
+{% else %}
+    depends_on:
+      monerod:
+        condition: service_healthy
+    command:
+      - --daemon-address=monerod:18081
+      - --rpc-bind-port=18083
+      - --rpc-bind-ip=0.0.0.0
+      - --confirm-external-bind
+      - --disable-rpc-login
+      - --wallet-dir=/home/monero/wallets
+{% if monero_network == 'stagenet' %}
+      - --stagenet
+{% endif %}
+{% endif %}
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "-X", "POST", "http://127.0.0.1:18083/json_rpc", "-d", "{\"jsonrpc\":\"2.0\",\"id\":\"0\",\"method\":\"get_version\"}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - monero_net
+{% endif %}
+
+{% if enable_bitcoin_wallet | default(false) | bool %}
+  bitcoin:
+    build:
+      context: ./bitcoin
+    restart: always
+    mem_limit: {{ bitcoind_mem_limit }}
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    volumes:
+      - bitcoind_data:/home/bitcoin/.bitcoin
+    command:
+      - -server=1
+      - -rpcuser={{ bitcoin_rpc_user }}
+      - -rpcpassword={{ bitcoin_rpc_password }}
+      - -rpcallowip=0.0.0.0/0
+      - -rpcbind=0.0.0.0:8332
+{% if bitcoin_prune | int > 0 %}
+      - -prune={{ bitcoin_prune }}
+{% endif %}
+{% if bitcoin_network == 'testnet' %}
+      - -testnet=1
+{% endif %}
+    healthcheck:
+      test: ["CMD", "bitcoin-cli", "-rpcuser={{ bitcoin_rpc_user }}", "-rpcpassword={{ bitcoin_rpc_password }}", "getblockchaininfo"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    networks:
+      - bitcoin_net
+{% endif %}
+
+{% if enable_eth_wallet | default(false) | bool %}
+  geth:
+    image: {{ geth_image }}
+    restart: always
+    mem_limit: {{ geth_mem_limit }}
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    volumes:
+      - geth_data:/home/geth/.ethereum
+    command:
+      - --http
+      - --http.addr=0.0.0.0
+      - --http.port=8545
+      - --http.api=eth,net,web3,personal
+      - --ws
+      - --ws.addr=0.0.0.0
+      - --ws.port=8546
+      - --ws.api=eth,net,web3,personal
+      - --syncmode={{ eth_syncmode }}
+{% if eth_network != 'mainnet' %}
+      - --{{ eth_network }}
+{% endif %}
+    healthcheck:
+      test: ["CMD", "geth", "attach", "--exec", "eth.syncing", "http://127.0.0.1:8545"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    networks:
+      - eth_net
+{% endif %}
+
 {% if enable_replica_mode | default(false) | bool and is_master | default(false) | bool %}
   postgres:
     image: {{ postgres_image }}
@@ -131,6 +296,18 @@ volumes:
 {% if enable_replica_mode | default(false) | bool and is_master | default(false) | bool %}
   postgres_data:
 {% endif %}
+{% if enable_monero_wallet | default(false) | bool %}
+{% if monero_remote_daemon | default('') | length == 0 %}
+  monerod_data:
+{% endif %}
+  monero_wallet_data:
+{% endif %}
+{% if enable_bitcoin_wallet | default(false) | bool %}
+  bitcoind_data:
+{% endif %}
+{% if enable_eth_wallet | default(false) | bool %}
+  geth_data:
+{% endif %}
 
 networks:
   frontend:
@@ -139,4 +316,13 @@ networks:
 {% endif %}
 {% if enable_tor | default(false) | bool %}
   tor_net:
+{% endif %}
+{% if enable_monero_wallet | default(false) | bool %}
+  monero_net:
+{% endif %}
+{% if enable_bitcoin_wallet | default(false) | bool %}
+  bitcoin_net:
+{% endif %}
+{% if enable_eth_wallet | default(false) | bool %}
+  eth_net:
 {% endif %}

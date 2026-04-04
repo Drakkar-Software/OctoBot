@@ -1,0 +1,27 @@
+FROM debian:bookworm-slim
+
+ARG MONERO_VERSION=0.18.3.4
+ARG MONERO_HASH=51ba03928d189c1c11b5379cab17dd9ae8d2230056dc05c872d0f8dba4a87f1d
+
+RUN apt-get update && apt-get install -y --no-install-recommends wget bzip2 ca-certificates curl && \
+    useradd -m -d /home/monero monero && \
+    mkdir -p /home/monero/wallets && \
+    chown monero:monero /home/monero/wallets && \
+    wget -qO /tmp/monero.tar.bz2 \
+      "https://downloads.getmonero.org/cli/monero-linux-x64-v${MONERO_VERSION}.tar.bz2" && \
+    echo "${MONERO_HASH}  /tmp/monero.tar.bz2" | sha256sum -c && \
+    tar xjf /tmp/monero.tar.bz2 -C /tmp && \
+    cp /tmp/monero-x86_64-linux-gnu-v${MONERO_VERSION}/monero-wallet-rpc /usr/local/bin/ && \
+    rm -rf /tmp/monero* && \
+    apt-get purge -y wget bzip2 && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
+
+VOLUME ["/home/monero/wallets"]
+EXPOSE 18083
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -sf -X POST http://127.0.0.1:18083/json_rpc \
+        -d '{"jsonrpc":"2.0","id":"0","method":"get_version"}' || exit 1
+
+USER monero
+
+ENTRYPOINT ["monero-wallet-rpc"]
