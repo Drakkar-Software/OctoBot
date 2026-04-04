@@ -112,7 +112,7 @@ async def get_authenticated_exchange_manager(
         .is_exchange_only()
     if http_proxy_callback_factory:
         proxy_callback = http_proxy_callback_factory(exchange_builder.exchange_manager)
-        exchange_builder.set_proxy_config(exchanges.ProxyConfig(http_proxy_callback=proxy_callback))
+        exchange_builder.set_proxy_config(exchanges.ExchangeProxyConfig(http_proxy_callback=proxy_callback))
     exchange_manager_instance = await exchange_builder.build()
     # create trader afterwards to init exchange personal data
     exchange_manager_instance.trader.is_enabled = True
