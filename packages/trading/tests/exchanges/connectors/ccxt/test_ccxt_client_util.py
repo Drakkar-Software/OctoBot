@@ -31,7 +31,7 @@ async def test_proxies():
     with mock.patch.object(aiohttp.ClientSession, "_request", mock.AsyncMock()) as _request_mock:
 
         # no proxy
-        proxy_config = exchanges.ProxyConfig()
+        proxy_config = exchanges.ExchangeProxyConfig()
         async with _exchange_with_proxy_config(proxy_config) as exchange:
             _request_mock.assert_not_called()
             await exchange.load_markets()
@@ -43,7 +43,7 @@ async def test_proxies():
             _request_mock.reset_mock()
 
         # http proxy
-        proxy_config = exchanges.ProxyConfig(
+        proxy_config = exchanges.ExchangeProxyConfig(
             http_proxy="http://127.0.0.1:9090",
         )
         async with _exchange_with_proxy_config(proxy_config) as exchange:
@@ -57,7 +57,7 @@ async def test_proxies():
             _request_mock.reset_mock()
 
         # http proxy callback
-        proxy_config = exchanges.ProxyConfig(
+        proxy_config = exchanges.ExchangeProxyConfig(
             http_proxy_callback=lambda url, method, headers, body: "http://9.9.9.9:9090",
         )
         async with _exchange_with_proxy_config(proxy_config) as exchange:
@@ -71,7 +71,7 @@ async def test_proxies():
             _request_mock.reset_mock()
 
         # https proxy
-        proxy_config = exchanges.ProxyConfig(
+        proxy_config = exchanges.ExchangeProxyConfig(
             https_proxy="https://127.0.0.1:9090",
         )
         async with _exchange_with_proxy_config(proxy_config) as exchange:
@@ -85,7 +85,7 @@ async def test_proxies():
             _request_mock.reset_mock()
 
         # https proxy callback
-        proxy_config = exchanges.ProxyConfig(
+        proxy_config = exchanges.ExchangeProxyConfig(
             https_proxy_callback=lambda url, method, headers, body: "https://9.9.9.9:9090",
         )
         async with _exchange_with_proxy_config(proxy_config) as exchange:
@@ -99,7 +99,7 @@ async def test_proxies():
             _request_mock.reset_mock()
 
         # https proxy callback
-        proxy_config = exchanges.ProxyConfig(
+        proxy_config = exchanges.ExchangeProxyConfig(
             https_proxy_callback=lambda url, method, headers, body: "https://9.9.9.9:9090",
         )
         async with _exchange_with_proxy_config(proxy_config) as exchange:
@@ -117,7 +117,7 @@ async def test_proxies():
 async def test_request_counter():
     with mock.patch.object(aiohttp.ClientSession, "_request", mock.AsyncMock()) as _request_mock:
         # without proxy
-        proxy_config = exchanges.ProxyConfig()
+        proxy_config = exchanges.ExchangeProxyConfig()
         with mock.patch.object(constants, "ENABLE_CCXT_REQUESTS_COUNTER", True):
             async with _exchange_with_proxy_config(proxy_config, allow_request_counter=True) as exchange:
                 await exchange.load_markets()
@@ -133,7 +133,7 @@ async def test_request_counter():
         _request_mock.reset_mock()
 
         # with http proxy
-        proxy_config = exchanges.ProxyConfig(http_proxy="http://127.0.0.1:9090")
+        proxy_config = exchanges.ExchangeProxyConfig(http_proxy="http://127.0.0.1:9090")
         with mock.patch.object(constants, "ENABLE_CCXT_REQUESTS_COUNTER", True):
             async with _exchange_with_proxy_config(proxy_config, allow_request_counter=True) as exchange:
                 await exchange.load_markets()
@@ -149,7 +149,7 @@ async def test_request_counter():
         _request_mock.reset_mock()
 
         # with http proxy callback
-        proxy_config = exchanges.ProxyConfig(
+        proxy_config = exchanges.ExchangeProxyConfig(
             http_proxy_callback=lambda url, method, headers, body: "http://9.9.9.9:9090"
         )
         with mock.patch.object(constants, "ENABLE_CCXT_REQUESTS_COUNTER", True):
@@ -168,7 +168,7 @@ async def test_request_counter():
 
 
 @contextlib.asynccontextmanager
-async def _exchange_with_proxy_config(proxy_config: exchanges.ProxyConfig, allow_request_counter=False):
+async def _exchange_with_proxy_config(proxy_config: exchanges.ExchangeProxyConfig, allow_request_counter=False):
     exchange = None
     try:
         exchange = ccxt_client_util.instantiate_exchange(ccxt.kraken, {"enableRateLimit": False}, "test", proxy_config, allow_request_counter=allow_request_counter)

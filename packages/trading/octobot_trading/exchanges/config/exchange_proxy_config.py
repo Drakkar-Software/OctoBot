@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import octobot_commons.proxy_config
 import typing
 import dataclasses
 import urllib.parse
@@ -23,31 +24,12 @@ if typing.TYPE_CHECKING:
     import octobot_trading.exchanges
 
 
-DEFAULT_PROXY_HOST = "DEFAULT PROXY HOST"
-
-
 @dataclasses.dataclass
-class ProxyConfig:
-    # REST proxy
-    http_proxy: typing.Optional[str] = None
-    http_proxy_callback: typing.Optional[typing.Callable[[str, str, dict, typing.Any], typing.Optional[str]]] = None
-    https_proxy: typing.Optional[str] = None
-    https_proxy_callback: typing.Optional[typing.Callable[[str, str, dict, typing.Any], typing.Optional[str]]] = None
-    socks_proxy : typing.Optional[str] = None
-    socks_proxy_callback: typing.Optional[typing.Callable[[str, str, dict, typing.Any], typing.Optional[str]]] = None
-    # Websocket proxy
-    ws_proxy: typing.Optional[str] = None
-    wss_proxy: typing.Optional[str] = None
-    ws_socks_proxy: typing.Optional[str] = None
+class ExchangeProxyConfig(octobot_commons.proxy_config.ProxyConfig):
     # enable trust_env in exchange's aiohttp.ClientSession
     aiohttp_trust_env: bool = octobot_trading.constants.ENABLE_EXCHANGE_HTTP_PROXY_FROM_ENV
     # if set, will be called when exchange stops
     stop_proxy_callback: typing.Optional[typing.Callable] = None
-    # if set, returns the last url given to a callback method that return "True", meaning the last url that used a proxy
-    get_last_proxied_request_url: typing.Optional[typing.Callable[[], typing.Optional[str]]] = None
-    get_proxy_url: typing.Optional[typing.Callable[[], str]] = None
-    # the host of this proxy, used to identify proxy connexion errors
-    proxy_host: str = DEFAULT_PROXY_HOST
     use_authenticated_exchange_requests_only_proxy: bool = False
     _last_proxied_request_url: typing.Optional[str] = None
 
@@ -100,7 +82,7 @@ class ProxyConfig:
         self.ws_socks_proxy_callback = None
         self.get_last_proxied_request_url = None
         self.get_proxy_url = None
-        self.proxy_host = DEFAULT_PROXY_HOST
+        self.proxy_host = octobot_commons.proxy_config.DEFAULT_PROXY_HOST
 
     def _create_callback(
         self,
@@ -136,18 +118,6 @@ class ProxyConfig:
         self.proxy_host = urllib.parse.urlparse(proxy_url).netloc # netloc is host:port
         self._get_logger().info(f"Enabled [{exchange_manager.exchange_name}] authenticated only proxy via {proxy_url}")
         return proxy_callback
-    
-    def has_rest_proxy(self) -> bool:
-        return bool(
-            self.http_proxy or self.https_proxy or self.socks_proxy or 
-            self.http_proxy_callback or self.https_proxy_callback or self.socks_proxy_callback
-        )
-    
-    def has_websocket_proxy(self) -> bool:
-        return bool(self.ws_proxy or self.wss_proxy or self.ws_socks_proxy)
-    
-    def has_proxy(self) -> bool:
-        return self.has_rest_proxy() or self.has_websocket_proxy()
 
     def _get_logger(self) -> octobot_commons.logging.BotLogger:
-        return octobot_commons.logging.get_logger(ProxyConfig.__name__)
+        return octobot_commons.logging.get_logger(ExchangeProxyConfig.__name__)

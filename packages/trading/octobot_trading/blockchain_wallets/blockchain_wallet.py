@@ -17,14 +17,15 @@ import decimal
 import asyncio
 import contextlib
 import typing
+import os
 
 import octobot_commons.logging as commons_logging
+import octobot_commons.proxy_config as proxy_config
 import octobot_trading.constants as constants
 import octobot_trading.errors as errors
 import octobot_trading.blockchain_wallets.blockchain_wallet_parameters as blockchain_wallet_parameters
 import octobot_trading.accounts
 import octobot_trading.blockchain_wallets.adapter as blockchain_wallet_adapter
-
 
 class BlockchainWallet(octobot_trading.accounts.AbstractAccount):
     """
@@ -127,4 +128,15 @@ class BlockchainWallet(octobot_trading.accounts.AbstractAccount):
         raise KeyError(
             f"Token {token_symbol} not found in {self.__class__.__name__} "
             f"wallet's {len(self.blockchain_descriptor.tokens)} pre-configured tokens."
+        )
+
+    @classmethod
+    def get_proxy_config(cls) -> proxy_config.ProxyConfig:
+        return proxy_config.ProxyConfig(
+            http_proxy=os.getenv(f"{cls.BLOCKCHAIN.upper()}_HTTP_PROXY"),
+            https_proxy=os.getenv(f"{cls.BLOCKCHAIN.upper()}_HTTPS_PROXY"),
+            socks_proxy=os.getenv(f"{cls.BLOCKCHAIN.upper()}_SOCKS_PROXY"),
+            ws_proxy=os.getenv(f"{cls.BLOCKCHAIN.upper()}_WS_PROXY"),
+            wss_proxy=os.getenv(f"{cls.BLOCKCHAIN.upper()}_WSS_PROXY"),
+            ws_socks_proxy=os.getenv(f"{cls.BLOCKCHAIN.upper()}_WS_SOCKS_PROXY"),
         )
