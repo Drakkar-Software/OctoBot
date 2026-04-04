@@ -65,7 +65,7 @@ class ExchangeManager(util.Initializable):
         self.disable_unauth_retry: bool = False
         self.check_credentials: bool = True
         self.enable_storage: bool = True
-        self.proxy_config: exchanges.ProxyConfig = exchanges.ProxyConfig.default_env_var_config(self)
+        self.proxy_config: exchanges.ExchangeProxyConfig = exchanges.ExchangeProxyConfig.default_env_var_config(self)
 
         # exchange_only is True when exchange channels are not required (therefore not created)
         self.exchange_only: bool = False

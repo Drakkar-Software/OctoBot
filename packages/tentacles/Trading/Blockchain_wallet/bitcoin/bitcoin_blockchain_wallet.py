@@ -50,7 +50,9 @@ class BitcoinBlockchainWallet(blockchain_wallets.BlockchainWallet):
 
     @contextlib.asynccontextmanager
     async def open(self) -> typing.AsyncGenerator["BitcoinBlockchainWallet", None]:
-        self._session = aiohttp.ClientSession()
+        self._session = aiohttp.ClientSession(
+            **self.get_proxy_config().get_aiohttp_session_proxy_args()
+        )
         try:
             yield self
         finally:

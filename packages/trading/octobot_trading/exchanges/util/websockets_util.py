@@ -17,7 +17,7 @@ import octobot_commons.tentacles_management as tentacles_management
 import octobot_commons.constants as commons_constants
 import octobot_tentacles_manager.api as api
 import octobot_trading.exchanges.abstract_websocket_exchange as abstract_websocket
-import octobot_trading.exchanges.config.proxy_config as proxy_config_import
+import octobot_trading.exchanges.config.exchange_proxy_config as exchange_proxy_config
 
 
 def force_disable_web_socket(config, exchange_name) -> bool:
@@ -30,7 +30,7 @@ def check_web_socket_config(config, exchange_name) -> bool:
 
 
 def is_proxy_config_compatible_with_websocket_connector(
-    websocket_connector_class, proxy_config: proxy_config_import.ProxyConfig
+    websocket_connector_class, proxy_config: exchange_proxy_config.ExchangeProxyConfig
 ) -> bool:
     if websocket_connector_class.REQUIRES_PROXY_IF_REST_PROXY_ENABLED and (
         proxy_config.has_rest_proxy() and not proxy_config.has_websocket_proxy()

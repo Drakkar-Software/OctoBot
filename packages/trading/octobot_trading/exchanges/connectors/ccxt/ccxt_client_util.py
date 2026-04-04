@@ -40,7 +40,7 @@ import octobot_trading.errors as errors
 import octobot_trading.exchanges.connectors.ccxt.constants as ccxt_constants
 import octobot_trading.exchanges.connectors.ccxt.enums as ccxt_enums
 import octobot_trading.exchanges.connectors.ccxt.ccxt_clients_cache as ccxt_clients_cache
-import octobot_trading.exchanges.config.proxy_config as proxy_config_import
+import octobot_trading.exchanges.config.exchange_proxy_config as exchange_proxy_config
 import octobot_trading.exchanges.config.exchange_credentials_data as exchange_credentials_data
 import octobot_trading.exchanges.util.exchange_util as exchange_util
 
@@ -116,7 +116,7 @@ async def close_client(client):
 
 
 def get_unauthenticated_exchange(
-    exchange_class, options, headers, additional_config, identifier: str, proxy_config: proxy_config_import.ProxyConfig
+    exchange_class, options, headers, additional_config, identifier: str, proxy_config: exchange_proxy_config.ExchangeProxyConfig
 ) -> async_ccxt.Exchange:
     return instantiate_exchange(
         exchange_class,
@@ -127,7 +127,7 @@ def get_unauthenticated_exchange(
 
 
 def instantiate_exchange(
-    exchange_class, config: dict, identifier: str, proxy_config: proxy_config_import.ProxyConfig,
+    exchange_class, config: dict, identifier: str, proxy_config: exchange_proxy_config.ExchangeProxyConfig,
     allow_request_counter: bool = True
 ) -> async_ccxt.Exchange:
     client = exchange_class(config)
@@ -309,7 +309,7 @@ def converted_ccxt_common_errors(f):
     return converted_ccxt_common_errors_wrapper
 
 
-def _use_proxy_if_necessary(client, proxy_config: proxy_config_import.ProxyConfig):
+def _use_proxy_if_necessary(client, proxy_config: exchange_proxy_config.ExchangeProxyConfig):
     client.aiohttp_trust_env = proxy_config.aiohttp_trust_env
     if proxy_config.http_proxy:
         client.http_proxy = proxy_config.http_proxy
@@ -452,7 +452,7 @@ async def _close_previous_session_and_connector(session, connector):
 
 
 def _use_request_counter(
-    identifier: str, ccxt_client: async_ccxt.Exchange, proxy_config: proxy_config_import.ProxyConfig
+    identifier: str, ccxt_client: async_ccxt.Exchange, proxy_config: exchange_proxy_config.ExchangeProxyConfig
 ):
     """
     Replaces the given exchange async session by an aiohttp_util.CounterClientSession
