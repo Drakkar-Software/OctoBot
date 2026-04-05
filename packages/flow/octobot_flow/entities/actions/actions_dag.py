@@ -165,7 +165,12 @@ class ActionsDAG(octobot_commons.dataclasses.FlexibleDataclass):
             resolved_dsl_script = octobot_commons.dsl_interpreter.apply_resolved_parameter_value(
                 resolved_dsl_script, dependency.parameter, value
             )
-        for rescheduled_parameter, rescheduled_value in action.get_rescheduled_parameters().items():
+        reschedule_params = action.get_rescheduled_parameters()
+        for rescheduled_parameter, rescheduled_value in reschedule_params.items():
+            if script_override := octobot_commons.dsl_interpreter.ReCallingOperatorResult.get_script_override(rescheduled_value):
+                # the script override is the new DSL script to execute for this action call
+                resolved_dsl_script = script_override
+        for rescheduled_parameter, rescheduled_value in reschedule_params.items():
             operator = octobot_commons.dsl_interpreter.ReCallingOperatorResult.get_keyword(
                 rescheduled_value
             )

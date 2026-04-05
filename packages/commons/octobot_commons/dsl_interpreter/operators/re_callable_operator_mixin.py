@@ -20,11 +20,13 @@ import enum
 
 import octobot_commons.dataclasses
 import octobot_commons.dsl_interpreter.operator_parameter as operator_parameter
+import octobot_commons.dsl_interpreter.parameters_util as parameters_util
 
 
 class ReCallingOperatorResultKeys(str, enum.Enum):
     WAITING_TIME = "waiting_time"
     LAST_EXECUTION_TIME = "last_execution_time"
+    SCRIPT_OVERRIDE = "script_override"
 
 
 @dataclasses.dataclass
@@ -56,6 +58,17 @@ class ReCallingOperatorResult(octobot_commons.dataclasses.MinimizableDataclass):
             ) or time.time()
             return last_execution_time + waiting_time
         return None
+
+    @staticmethod
+    def get_script_override(result: typing.Any) -> typing.Optional[str]:
+        """
+        Returns the script override from the last execution result.
+        """
+        if not ReCallingOperatorResult.is_re_calling_operator_result(result):
+            return None
+        return result[ReCallingOperatorResult.__name__].get("last_execution_result", {}).get(
+            ReCallingOperatorResultKeys.SCRIPT_OVERRIDE.value
+        )
 
     @staticmethod
     def get_keyword(result: typing.Any) -> typing.Optional[str]:
@@ -107,6 +120,7 @@ class ReCallableOperatorMixin:
         reset_to_id: typing.Optional[str] = None,
         waiting_time: typing.Optional[float] = None,
         last_execution_time: typing.Optional[float] = None,
+        script_override: typing.Optional[str] = None,
         **kwargs: typing.Any,
     ) -> ReCallingOperatorResult:
         """
@@ -118,6 +132,7 @@ class ReCallableOperatorMixin:
             last_execution_result={
                 ReCallingOperatorResultKeys.WAITING_TIME.value: waiting_time,
                 ReCallingOperatorResultKeys.LAST_EXECUTION_TIME.value: last_execution_time,
+                ReCallingOperatorResultKeys.SCRIPT_OVERRIDE.value: script_override,
                 **kwargs,
             },
         )
@@ -128,6 +143,7 @@ class ReCallableOperatorMixin:
         reset_to_id: typing.Optional[str] = None,
         waiting_time: typing.Optional[float] = None,
         last_execution_time: typing.Optional[float] = None,
+        script_override: typing.Optional[str] = None,
         **kwargs: typing.Any,
     ) -> dict:
         """
@@ -139,6 +155,14 @@ class ReCallableOperatorMixin:
                 reset_to_id=reset_to_id,
                 waiting_time=waiting_time,
                 last_execution_time=last_execution_time,
+                script_override=script_override,
                 **kwargs,
             ).to_dict(include_default_values=False)
         }
+
+    def re_create_script(self, param_by_name: dict[str, typing.Any]):
+        param_without_re_callable_operator_params = {
+            k: v for k, v in param_by_name.items() if k != self.LAST_EXECUTION_RESULT_KEY
+        }
+        params = parameters_util.resove_operator_params(self, param_without_re_callable_operator_params)
+        return f"{self.get_name()}({', '.join(params)})" # type: ignore

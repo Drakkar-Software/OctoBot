@@ -76,6 +76,7 @@ class WaitOperator(dsl_interpreter.PreComputingCallOperator, dsl_interpreter.ReC
             keyword=self.get_name(),
             last_execution_time=current_time,
             waiting_time=waiting_time,
+            script_override=self.re_create_script(param_by_name),
         )
 
     def _compute_sleep_time(self, param_by_name: dict[str, typing.Any]) -> float:
