@@ -16,7 +16,6 @@
 import base64
 import binascii
 import os
-import re
 
 import aiofiles
 
@@ -137,8 +136,7 @@ async def verify_package(compressed_file, tentacles_path_or_url, aiohttp_session
 
 
 async def sign_package_file(zip_path, private_key_pem_b64):
-    cleaned = re.sub(r'\s', '', private_key_pem_b64)
-    private_key_pem = base64.b64decode(cleaned, validate=True)
+    private_key_pem = crypto_signing.parse_private_key_pem(private_key_pem_b64)
     async with aiofiles.open(zip_path, "rb") as f:
         data = await f.read()
     signature = crypto_signing.sign_data(data, private_key_pem)

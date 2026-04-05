@@ -126,6 +126,23 @@ async def test_sign_package_file_whitespace_in_key(tmp_path):
 
 
 @pytest.mark.asyncio
+async def test_sign_package_file_raw_pem_key(tmp_path):
+    private_key_pem, public_key_pem = crypto_signing.generate_ecdsa_key_pair()
+    # Pass the raw PEM string directly (as a GitHub secret might contain it)
+    raw_pem_str = private_key_pem.decode("utf-8")
+    package_data = b"fake zip content for raw pem test"
+
+    zip_path = str(tmp_path / "test.zip")
+    with open(zip_path, "wb") as f:
+        f.write(package_data)
+
+    sig_path = await sig_verif.sign_package_file(zip_path, raw_pem_str)
+    with open(sig_path, "rb") as f:
+        signature = base64.b64decode(f.read())
+    assert crypto_signing.verify_signature(package_data, public_key_pem, signature) is True
+
+
+@pytest.mark.asyncio
 async def test_sign_empty_file(tmp_path):
     private_key_pem, _ = crypto_signing.generate_ecdsa_key_pair()
     private_key_b64 = base64.b64encode(private_key_pem).decode()

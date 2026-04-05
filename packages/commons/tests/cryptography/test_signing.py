@@ -13,6 +13,8 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import base64
+
 import pytest
 
 from cryptography.hazmat.primitives.asymmetric import ec
@@ -171,6 +173,40 @@ def test_verify_signature_invalid_public_key():
 
     with pytest.raises(ValueError):
         cryptography.verify_signature(data, invalid_key, signature)
+
+
+def test_parse_private_key_pem_raw_pem():
+    private_key_pem, _ = cryptography.generate_ecdsa_key_pair()
+    raw_pem_str = private_key_pem.decode("utf-8")
+    result = cryptography.parse_private_key_pem(raw_pem_str)
+    assert result == private_key_pem.strip()
+
+
+def test_parse_private_key_pem_base64_encoded():
+    private_key_pem, _ = cryptography.generate_ecdsa_key_pair()
+    b64_str = base64.b64encode(private_key_pem).decode()
+    result = cryptography.parse_private_key_pem(b64_str)
+    assert result == private_key_pem
+
+
+def test_parse_private_key_pem_base64_with_whitespace():
+    private_key_pem, _ = cryptography.generate_ecdsa_key_pair()
+    clean_b64 = base64.b64encode(private_key_pem).decode()
+    dirty_b64 = "\n".join(clean_b64[i:i+76] for i in range(0, len(clean_b64), 76)) + "\n"
+    result = cryptography.parse_private_key_pem(dirty_b64)
+    assert result == private_key_pem
+
+
+def test_parse_private_key_pem_raw_pem_with_whitespace():
+    private_key_pem, _ = cryptography.generate_ecdsa_key_pair()
+    padded_pem = "  \n" + private_key_pem.decode("utf-8") + "\n  "
+    result = cryptography.parse_private_key_pem(padded_pem)
+    assert result == private_key_pem.strip()
+
+
+def test_parse_private_key_pem_invalid_base64():
+    with pytest.raises(Exception):
+        cryptography.parse_private_key_pem("not-valid-base64!!!")
 
 
 def test_sign_data_with_rsa_key_raises_error():
