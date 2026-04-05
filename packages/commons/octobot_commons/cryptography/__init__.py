@@ -30,6 +30,7 @@ from octobot_commons.cryptography.encryption import (
 from octobot_commons.cryptography import signing
 from octobot_commons.cryptography.signing import (
     generate_ecdsa_key_pair,
+    parse_private_key_pem,
     sign_data,
     verify_signature,
 )
@@ -47,6 +48,7 @@ __all__ = [
     "pbkdf2_encrypt_aes_key",
     "pbkdf2_decrypt_aes_key",
     "generate_ecdsa_key_pair",
+    "parse_private_key_pem",
     "sign_data",
     "verify_signature",
 ]

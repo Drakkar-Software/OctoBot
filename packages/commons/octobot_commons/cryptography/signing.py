@@ -15,6 +15,9 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
+import base64
+import re
+
 from typing import Tuple, Optional
 from cryptography.exceptions import InvalidSignature
 
@@ -57,6 +60,25 @@ def generate_ecdsa_key_pair(
     )
 
     return private_key_pem, public_key_pem
+
+
+def parse_private_key_pem(private_key_input: str) -> bytes:
+    """Parse a private key from either raw PEM text or a base64-encoded PEM string.
+
+    Handles two formats:
+    - Raw PEM: starts with "-----BEGIN" (e.g. from a GitHub secret storing PEM directly)
+    - Base64-encoded PEM: the PEM content encoded as base64 (whitespace is stripped before decoding)
+
+    :param private_key_input: The private key as a raw PEM string or base64-encoded PEM.
+    :type private_key_input: str
+    :return: The private key PEM as bytes.
+    :rtype: bytes
+    """
+    stripped = private_key_input.strip()
+    if stripped.startswith("-----BEGIN"):
+        return stripped.encode("utf-8")
+    cleaned = re.sub(r'\s', '', private_key_input)
+    return base64.b64decode(cleaned, validate=True)
 
 
 def sign_data(data: bytes, private_key_pem: bytes) -> bytes:
