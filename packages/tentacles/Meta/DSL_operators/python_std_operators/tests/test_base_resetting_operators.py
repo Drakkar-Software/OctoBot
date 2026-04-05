@@ -64,6 +64,7 @@ class TestWaitOperator:
                     "last_execution_result": {
                         dsl_interpreter.ReCallingOperatorResultKeys.LAST_EXECUTION_TIME.value: 1000.0,
                         dsl_interpreter.ReCallingOperatorResultKeys.WAITING_TIME.value: 5,
+                        dsl_interpreter.ReCallingOperatorResultKeys.SCRIPT_OVERRIDE.value: "wait(5, max_seconds=None, return_remaining_time=True)",
                     },
                     "keyword": "wait",
                 }

@@ -17,6 +17,7 @@ import time
 import mock
 
 import octobot_commons.dsl_interpreter as dsl_interpreter
+import octobot_commons.dsl_interpreter.operator_parameter as operator_parameter
 import octobot_commons.dsl_interpreter.operators.re_callable_operator_mixin as re_callable_operator_mixin
 
 
@@ -90,6 +91,34 @@ class _TestReCallableOperator(dsl_interpreter.ReCallableOperatorMixin):
 
     def __init__(self):
         pass
+
+
+class _ReCreateScriptTestOperator(dsl_interpreter.Operator, dsl_interpreter.ReCallableOperatorMixin):
+    """Operator with parameters so re_create_script can call resove_operator_params."""
+
+    @staticmethod
+    def get_name() -> str:
+        return "test_wait"
+
+    @classmethod
+    def get_parameters(cls):
+        return [
+            operator_parameter.OperatorParameter(
+                name="seconds",
+                description="wait duration",
+                required=True,
+                type=float,
+            ),
+            operator_parameter.OperatorParameter(
+                name="label",
+                description="optional label",
+                required=False,
+                type=str,
+            ),
+        ]
+
+    def compute(self):
+        return None
 
 
 class TestReCallableOperatorMixin:
@@ -187,3 +216,33 @@ class TestReCallableOperatorMixin:
         )
         inner = result[re_callable_operator_mixin.ReCallingOperatorResult.__name__]
         assert inner["last_execution_result"]["extra_field"] == 42
+
+    def test_re_create_script_drops_last_execution_result_and_formats_params(self):
+        operator = _ReCreateScriptTestOperator(0.0)
+        previous_call_payload = {
+            re_callable_operator_mixin.ReCallingOperatorResult.__name__: {
+                "keyword": "recall",
+                "last_execution_result": {"waiting_time": 1.0},
+            },
+        }
+        script = operator.re_create_script({
+            "seconds": 9.0,
+            "label": "retry",
+            dsl_interpreter.ReCallableOperatorMixin.LAST_EXECUTION_RESULT_KEY: previous_call_payload,
+        })
+        assert script == "test_wait(9.0, label='retry')"
+        assert dsl_interpreter.ReCallableOperatorMixin.LAST_EXECUTION_RESULT_KEY not in script
+
+    def test_re_create_script_with_only_last_execution_result_yields_empty_call(self):
+        operator = _ReCreateScriptTestOperator(1.0)
+        script = operator.re_create_script({
+            dsl_interpreter.ReCallableOperatorMixin.LAST_EXECUTION_RESULT_KEY: {
+                re_callable_operator_mixin.ReCallingOperatorResult.__name__: {},
+            },
+        })
+        assert script == "test_wait()"
+
+    def test_re_create_script_required_only(self):
+        operator = _ReCreateScriptTestOperator(0.0)
+        script = operator.re_create_script({"seconds": 42})
+        assert script == "test_wait(42)"
