@@ -195,7 +195,7 @@ def _parse_order_dict(
     return None
 
 
-def _parse_order_into_dict(
+def parse_order_into_dict(
     exchange_manager, order: dict, force_open_or_pending_creation: bool, ignore_unsupported_orders: bool
 ) -> typing.Optional[dict]:
     if (
@@ -235,7 +235,7 @@ def _parse_order_into_dict(
 async def _get_open_orders(exchange_manager, symbol: str, open_orders: list, ignore_unsupported_orders: bool):
     orders = await exchange_manager.exchange.get_open_orders(symbol=symbol)
     for order in orders:
-        if order_dict := _parse_order_into_dict(
+        if order_dict := parse_order_into_dict(
             exchange_manager, order, True,  ignore_unsupported_orders
         ):
             open_orders.append(order_dict)
@@ -281,7 +281,7 @@ async def get_order(
 async def _get_cancelled_orders(exchange_manager, symbol: str, cancelled_orders: list, ignore_unsupported_orders: bool):
     orders = await exchange_manager.exchange.get_cancelled_orders(symbol=symbol)
     for order in orders:
-        if order_dict := _parse_order_into_dict(
+        if order_dict := parse_order_into_dict(
             exchange_manager, order, False, ignore_unsupported_orders
         ):
             cancelled_orders.append(order_dict)

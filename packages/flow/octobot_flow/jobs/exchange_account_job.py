@@ -11,6 +11,8 @@ import octobot_trading.constants as trading_constants
 import octobot_trading.enums
 import octobot_trading.errors
 import octobot_trading.personal_data as personal_data
+import octobot_trading.exchanges
+import octobot_trading.exchange_data
 import octobot_trading.exchanges.util.exchange_data as exchange_data_import
 import tentacles.Meta.Keywords.scripting_library as scripting_library
 import octobot_flow.repositories.exchange
@@ -84,35 +86,34 @@ class ExchangeAccountJob(octobot_flow.repositories.exchange.ExchangeContextMixin
             )
             await sub_portfolio_resolver.resolve()
 
+    async def _create_exchange_producers(self, exchange_manager):
+        await octobot_trading.exchanges.create_exchange_channels(exchange_manager)
+        await octobot_trading.exchanges.create_producers(
+            exchange_manager, 
+            octobot_trading.exchange_data.UNAUTHENTICATED_UPDATER_PRODUCERS,
+            start_producers=False,
+            subscribe_indirect_producers_if_not_started=False
+        )
+        if not self.profile_data_provider.get_profile_data().trader_simulator.enabled:
+            await octobot_trading.exchanges.create_producers(
+                self._exchange_manager,
+                personal_data.AUTHENTICATED_UPDATER_PRODUCERS,
+                start_producers=False,
+                subscribe_indirect_producers_if_not_started=False
+            )
+
     @contextlib.asynccontextmanager
     async def account_exchange_context(self, global_profile_data: commons_profiles.ProfileData):
         with self.profile_data_provider.profile_data_context(global_profile_data):
-            async with self.exchange_manager_context(as_reference_account=False):
+            async with self.exchange_manager_context(as_reference_account=False) as exchange_manager:
+                await self._create_exchange_producers(exchange_manager)
                 yield
-
-    def _create_markets_from_tickers(
-        self, tickers: dict[str, dict[str, typing.Any]], symbols: list[str], time_frames: list[str]
-    ) -> list[exchange_data_import.MarketDetails]:
-        return [
-            exchange_data_import.MarketDetails(
-                symbol=symbol,
-                time_frame=time_frame,
-                close=[tickers[symbol][octobot_trading.enums.ExchangeConstantsTickersColumns.CLOSE.value]],
-                open=[tickers[symbol][octobot_trading.enums.ExchangeConstantsTickersColumns.OPEN.value]],
-                high=[tickers[symbol][octobot_trading.enums.ExchangeConstantsTickersColumns.HIGH.value]],
-                low=[tickers[symbol][octobot_trading.enums.ExchangeConstantsTickersColumns.LOW.value]],
-                volume=[tickers[symbol][octobot_trading.enums.ExchangeConstantsTickersColumns.BASE_VOLUME.value]],
-                time=[tickers[symbol][octobot_trading.enums.ExchangeConstantsTickersColumns.TIMESTAMP.value]],
-            )
-            for symbol in symbols
-            for time_frame in time_frames
-        ]
 
     async def _fetch_and_save_ohlcv(
         self, repository: octobot_flow.repositories.exchange.OhlcvRepository, 
-        symbol: str, time_frame: str, limit: int
+        symbol: str, time_frame: str, limit: int, tickers: dict[str, dict[str, typing.Any]]
     ):
-        market = await repository.fetch_ohlcv(symbol, time_frame, limit)
+        market = await repository.fetch_ohlcv(symbol, time_frame, limit, tickers)
         self._logger.info(
             f"Fetched [{self._exchange_manager.exchange_name}] OHLCV for {symbol} {time_frame}: ({len(market.close)} candles)"
         )
@@ -125,17 +126,14 @@ class ExchangeAccountJob(octobot_flow.repositories.exchange.ExchangeContextMixin
         )
         symbols = self._get_traded_symbols()
         time_frames = self._get_time_frames()
-        try:
-            await asyncio.gather(*[
-                self._fetch_and_save_ohlcv(repository, symbol, time_frame, history_size)
-                for symbol in symbols
-                for time_frame in time_frames
-            ])
-        except octobot_trading.errors.NotSupported as e:
-            self._logger.info(f"Fetching OHLCVs is not supported: {e}. Falling back to tickers data.")
-            self.fetched_dependencies.fetched_exchange_data.public_data.markets = self._create_markets_from_tickers(
-                self.fetched_dependencies.fetched_exchange_data.public_data.tickers, symbols, time_frames
+        await asyncio.gather(*[
+            self._fetch_and_save_ohlcv(
+                repository, symbol, time_frame, history_size,
+                self.fetched_dependencies.fetched_exchange_data.public_data.tickers
             )
+            for symbol in symbols
+            for time_frame in time_frames
+        ])
 
 
     async def _fetch_tickers(self):

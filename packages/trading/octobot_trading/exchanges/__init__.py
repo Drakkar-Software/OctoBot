@@ -25,6 +25,7 @@ from octobot_trading.exchanges.exchanges import (
 from octobot_trading.exchanges import exchange_channels
 from octobot_trading.exchanges.exchange_channels import (
     requires_refresh_trigger,
+    create_producers,
     create_exchange_channels,
     create_exchange_producers,
     create_authenticated_producer_from_parent,
@@ -184,6 +185,7 @@ __all__ = [
     "is_websocket_feed_requiring_init",
     "search_and_create_websocket",
     "requires_refresh_trigger",
+    "create_producers",
     "create_exchange_channels",
     "create_exchange_producers",
     "create_authenticated_producer_from_parent",

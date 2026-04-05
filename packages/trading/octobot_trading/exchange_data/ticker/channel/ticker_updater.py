@@ -16,14 +16,23 @@
 #  License along with this library.
 import asyncio
 import contextlib
+import typing
 
 import octobot_commons.html_util as html_util
 
 import octobot_trading.errors as errors
 import octobot_trading.constants as constants
+import octobot_trading.exchange_data.ticker.ticker_cache as ticker_cache
 import octobot_trading.exchange_data.ticker.channel.ticker as ticker_channel
 import octobot_trading.enums as enums
 import octobot_trading.exchanges.exchange_websocket_factory as exchange_websocket_factory
+import octobot_trading.exchanges.util.exchange_util as exchange_util
+
+
+_TICKER_CACHE = ticker_cache.TickerCache(
+    ttl=constants.TICKER_CACHE_TTL,
+    maxsize=50
+)
 
 
 class TickerUpdater(ticker_channel.TickerProducer):
@@ -100,6 +109,40 @@ class TickerUpdater(ticker_channel.TickerProducer):
     async def trigger_ticker_update(self, symbol: str):
         self.logger.debug(f"Triggered ticker update for {symbol}")
         await self.fetch_and_push_pair(symbol)
+
+    async def fetch_all_tickers(self, symbols: typing.Optional[list[str]]) -> dict[str, dict]:
+        if symbols == []:
+            return {}
+        if isinstance(symbols, list) and len(symbols) == 1:
+            return {
+                symbols[0]: await self.channel.exchange_manager.exchange.get_price_ticker(symbols[0])
+            }
+        exchange_type = exchange_util.get_exchange_type(self.channel.exchange_manager).value
+        if not (tickers := _TICKER_CACHE.get_all_tickers(
+            self.channel.exchange_manager.exchange_name,
+            exchange_type,
+            self.channel.exchange_manager.is_sandboxed
+        )):
+            tickers = await self.channel.exchange_manager.exchange.get_all_currencies_price_ticker()
+            self.set_cache(
+                self.channel.exchange_manager.exchange_name,
+                exchange_type,
+                self.channel.exchange_manager.is_sandboxed,
+                tickers
+            )
+        return tickers
+
+    @staticmethod
+    def set_cache(exchange_name: str, exchange_type: str, sandboxed: bool, tickers: dict):
+        _TICKER_CACHE.set_all_tickers(exchange_name, exchange_type, sandboxed, tickers, replace_all=False)
+
+    @staticmethod
+    def reset_cache():
+        _TICKER_CACHE.reset_all_tickers_cache()
+
+    @staticmethod
+    def get_ticker_cache():
+        return _TICKER_CACHE
 
     @contextlib.contextmanager
     def _single_pair_update(self, pair: str):
