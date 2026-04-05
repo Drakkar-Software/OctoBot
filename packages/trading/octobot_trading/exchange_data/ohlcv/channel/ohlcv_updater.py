@@ -16,7 +16,9 @@
 #  License along with this library.
 import asyncio
 import time
+import typing
 import decimal
+import cachetools
 
 import octobot_commons.constants as common_constants
 import octobot_commons.enums as common_enums
@@ -28,6 +30,12 @@ import octobot_trading.constants as constants
 import octobot_trading.enums as enums
 import octobot_trading.exchange_data.ohlcv.channel.ohlcv as ohlcv_channel
 import octobot_trading.exchanges as exchanges
+
+
+_OHLCV_CACHE: cachetools.TTLCache[tuple, list[dict]] = cachetools.TTLCache(
+    maxsize=512,
+    ttl=constants.OHLCV_CACHE_TTL,
+)
 
 
 class OHLCVUpdater(ohlcv_channel.OHLCVProducer):
@@ -173,9 +181,8 @@ class OHLCVUpdater(ohlcv_channel.OHLCVProducer):
                                                                     time_frame, start_time, end_time):
                 candles += new_candles
             return candles
-        candles: list = await self.channel.exchange_manager.exchange \
-            .get_symbol_prices(pair, time_frame, limit=self.OHLCV_OLD_LIMIT)
-        return candles
+        
+        return await self.fetch_ohlcv(pair, time_frame, self.OHLCV_LIMIT)
 
     async def _initialize_candles(
         self, time_frame: common_enums.TimeFrames, pair: str, should_retry: bool
@@ -255,6 +262,49 @@ class OHLCVUpdater(ohlcv_channel.OHLCVProducer):
         if init_coroutines:
             await asyncio.gather(*init_coroutines)
 
+    async def fetch_ohlcv(
+        self, symbol: str, time_frame: common_enums.TimeFrames, limit: int,
+        allow_cache: bool = False, tickers_backup: typing.Optional[dict[str, dict]] = None
+    ) -> list[dict]:
+        if allow_cache:
+            key = _ohlcv_cache_key(self.channel.exchange_manager, symbol, time_frame, limit)
+            if cached := _OHLCV_CACHE.get(key):
+                return cached
+        try:
+            return await self.channel.exchange_manager.exchange.get_symbol_prices(
+                symbol, time_frame, limit=limit
+            )
+        except errors.NotSupported as err:
+            if (
+                self.channel.exchange_manager.exchange.CREATE_OHLCV_FROM_TICKERS
+                and tickers_backup and symbol in tickers_backup
+            ):
+                self.logger.info(f"Fetching OHLCVs is not supported: {err}. Falling back to tickers data.")
+                return self._create_ohlcv_from_ticker(tickers_backup[symbol], time_frame)
+            # unsupported error: raise
+            raise err
+
+    def _create_ohlcv_from_ticker(self, ticker: dict, time_frame: common_enums.TimeFrames) -> list[dict]:
+        candle_open_time = (
+            ticker[enums.ExchangeConstantsTickersColumns.TIMESTAMP.value] - (
+                ticker[enums.ExchangeConstantsTickersColumns.TIMESTAMP.value] % common_enums.TimeFramesMinutes[time_frame] * common_constants.MINUTE_TO_SECONDS
+            )
+        )
+        return [
+            {
+                common_enums.PriceIndexes.IND_PRICE_TIME.value: candle_open_time,
+                common_enums.PriceIndexes.IND_PRICE_OPEN.value: ticker[enums.ExchangeConstantsTickersColumns.OPEN.value],
+                common_enums.PriceIndexes.IND_PRICE_HIGH.value: ticker[enums.ExchangeConstantsTickersColumns.HIGH.value],
+                common_enums.PriceIndexes.IND_PRICE_LOW.value: ticker[enums.ExchangeConstantsTickersColumns.LOW.value],
+                common_enums.PriceIndexes.IND_PRICE_CLOSE.value: ticker[enums.ExchangeConstantsTickersColumns.CLOSE.value],
+                common_enums.PriceIndexes.IND_PRICE_VOL.value: ticker[enums.ExchangeConstantsTickersColumns.BASE_VOLUME.value],
+            }
+        ]
+
+    @staticmethod
+    def reset_cache() -> None:
+        _OHLCV_CACHE.clear()
+
     async def _candle_update_loop(self, time_frame, pair):
         self.logger.debug(f"Starting ohlcv updater loop for {pair} on {time_frame}")
         time_frame_seconds: int = common_enums.TimeFramesMinutes[time_frame] * common_constants.MINUTE_TO_SECONDS
@@ -275,10 +325,7 @@ class OHLCVUpdater(ohlcv_channel.OHLCVProducer):
                 await self._ensure_candles_initialization(pair)
                 # skip uninitialized candles
                 if self.initialized_candles_by_tf_by_symbol[pair][time_frame]:
-                    candles: list = await self.channel.exchange_manager.exchange.get_symbol_prices(
-                        pair,
-                        time_frame,
-                        limit=self.OHLCV_LIMIT)
+                    candles = await self.fetch_ohlcv(pair, time_frame, self.OHLCV_LIMIT)
                     if candles:
                         last_candle: list = candles[-1]
                     else:
@@ -411,3 +458,18 @@ class OHLCVUpdater(ohlcv_channel.OHLCVProducer):
                 for task in tasks.values():
                     task.cancel()
             self.tasks = {}
+
+
+def _ohlcv_cache_key(
+    exchange_manager: "exchanges.ExchangeManager",
+    symbol: str,
+    time_frame: str,
+    limit: int,
+) -> tuple:
+    exchange_type = exchanges.get_exchange_type(exchange_manager).value
+    scope_key = (
+        f"{exchange_manager.exchange_name}_"
+        f"{exchange_type or common_constants.CONFIG_EXCHANGE_SPOT}_"
+        f"{exchange_manager.is_sandboxed}"
+    )
+    return (scope_key, symbol, time_frame, limit)

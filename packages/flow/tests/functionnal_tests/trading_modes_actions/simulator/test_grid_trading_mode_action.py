@@ -13,6 +13,7 @@ import octobot_copy.constants as copy_constants
 import octobot_copy.entities as copy_entities
 import octobot_trading.constants as trading_constants
 import octobot_trading.enums as trading_enums
+import octobot_trading.exchange_data as trading_exchange_data
 import octobot_trading.exchanges.util.exchange_data as exchange_data
 import octobot_flow
 import octobot_flow.entities
@@ -97,6 +98,7 @@ def fetch_ohlcv_side_effect_for_close_price(
         symbol: str,
         time_frame: str,
         limit: int,
+        _tickers: dict[str, dict[str, typing.Any]],
     ):
         time_frame_seconds = common_enums.TimeFramesMinutes[common_enums.TimeFrames(time_frame)] * 60
         close_price = float(get_close_price())
@@ -478,9 +480,9 @@ async def test_simulator_grid_init_and_fill_sell_order(init_action: dict, run_mo
         assert first_sell_price == lowest_buy_price + D_INCREMENT + D_SPREAD
         assert second_sell_price == lowest_buy_price + D_INCREMENT + D_SPREAD + D_INCREMENT
 
-        # force ticker and OHLCV refresh (flow repositories TTL caches)
-        octobot_flow.repositories.exchange.TickersRepository.reset_tickers_cache()
-        octobot_flow.repositories.exchange.OhlcvRepository.reset_ohlcv_cache()
+        # force ticker and OHLCV refresh (trading updater module caches used by repositories)
+        trading_exchange_data.TickerUpdater.reset_cache()
+        trading_exchange_data.OHLCVUpdater.reset_cache()
 
         # Between first and second sell so the lowest sell limit fills but price stays inside the grid upper bound.
         simulated_close["value"] = float(first_sell_price + D_INCREMENT / decimal.Decimal("2"))

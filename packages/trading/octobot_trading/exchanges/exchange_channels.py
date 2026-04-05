@@ -45,19 +45,19 @@ async def create_exchange_producers(exchange_manager, forced_producers=None) -> 
 
     # Always init exchange user data first on real trading
     if _should_create_authenticated_producers(exchange_manager):
-        await _create_producers(exchange_manager, personal_data.AUTHENTICATED_UPDATER_PRODUCERS)
+        await create_producers(exchange_manager, personal_data.AUTHENTICATED_UPDATER_PRODUCERS)
 
     # Real data producers
     if _should_create_unauthenticated_producers(exchange_manager):
         import octobot_trading.exchange_data as exchange_data
-        await _create_producers(exchange_manager, exchange_data.UNAUTHENTICATED_UPDATER_PRODUCERS)
+        await create_producers(exchange_manager, exchange_data.UNAUTHENTICATED_UPDATER_PRODUCERS)
 
     # Simulated producers
     if _should_create_simulated_producers(exchange_manager):
-        await _create_producers(exchange_manager, personal_data.AUTHENTICATED_UPDATER_SIMULATOR_PRODUCERS)
+        await create_producers(exchange_manager, personal_data.AUTHENTICATED_UPDATER_SIMULATOR_PRODUCERS)
 
     if forced_producers:
-        await _create_producers(exchange_manager, forced_producers)
+        await create_producers(exchange_manager, forced_producers)
 
 
 def _should_create_authenticated_producers(exchange_manager):
@@ -91,14 +91,21 @@ def _should_create_unauthenticated_producers(exchange_manager):
     return not exchange_manager.is_backtesting
 
 
-async def _create_producers(exchange_manager, producers_classes) -> None:
+async def create_producers(
+    exchange_manager: exchanges, producers_classes,
+    start_producers: bool = True, subscribe_indirect_producers_if_not_started: bool = False
+) -> None:
     """
     Create a list of producer instance
     :param exchange_manager: the related exchange manager
     :param producers_classes: the list of producer classes
     """
     for updater in producers_classes:
-        await _create_producer(exchange_manager, updater)
+        await _create_producer(
+            exchange_manager, updater, 
+            start_producers=start_producers, 
+            subscribe_indirect_producers_if_not_started=subscribe_indirect_producers_if_not_started
+        )
 
 
 async def _create_producer(

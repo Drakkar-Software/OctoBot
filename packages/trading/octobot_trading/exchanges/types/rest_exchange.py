@@ -117,6 +117,7 @@ class RestExchange(abstract_exchange.AbstractExchange):
     # set when the exchange returns nothing when fetching historical candles with a too early start time
     # (will iterate historical OHLCV requests over this window)
     MAX_FETCHED_OHLCV_COUNT = None
+    CREATE_OHLCV_FROM_TICKERS = False # set True when the exchange can't fetch OHLCVs but can fetch tickers
 
     # Funding rate params
     FUNDING_WITH_MARK_PRICE = False
