@@ -42,7 +42,7 @@ async def test_raising_automation_runner_job_execution(
     ):
         # test with parsed global state
         automation_state = octobot_flow.entities.AutomationState.from_dict(global_state)
-        automation_state.update_automation_actions(resolved_actions(actions_with_market_orders))
+        automation_state.upsert_automation_actions(resolved_actions(actions_with_market_orders))
         with pytest.raises(type(side_effect)):
             with mock.patch.object(
                 octobot_flow.jobs.automation_runner_job.AutomationRunnerJob, "run", mock.AsyncMock(side_effect=side_effect)

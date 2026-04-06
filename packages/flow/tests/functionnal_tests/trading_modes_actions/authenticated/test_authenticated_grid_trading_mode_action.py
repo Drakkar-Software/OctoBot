@@ -22,6 +22,7 @@ from tests.functionnal_tests import (
     automation_state_dict,
     set_init_action_run_mode,
     AUTHENTICATED_TEST_GROUP,
+    d_order_price,
 )
 
 import tentacles.Trading.Mode.grid_trading_mode.grid_trading as grid_trading
@@ -32,13 +33,6 @@ D_INCREMENT = decimal.Decimal(str(increment))
 D_SPREAD = decimal.Decimal(str(spread))
 # Exchange price rounding (e.g. Binance tick) — ladder spacing is still flat increment/spread.
 _GRID_PRICE_TOLERANCE = decimal.Decimal("0.5")
-
-
-def d_order_price(value: typing.Union[int, float, decimal.Decimal]) -> decimal.Decimal:
-    """Exact decimal view of a stored order price (avoids float + int mix in assertions)."""
-    if isinstance(value, decimal.Decimal):
-        return value
-    return decimal.Decimal(str(value))
 
 
 grid_pair_settings = [
@@ -131,7 +125,7 @@ async def _cancel_all_btc_usdc_orders_for_test(automation_dump: dict) -> None:
         ]
     )
     async with octobot_flow.AutomationJob(automation_dump, [], {}) as automations_job:
-        automations_job.automation_state.update_automation_actions(cancel_grid_orders_actions)
+        automations_job.automation_state.upsert_automation_actions(cancel_grid_orders_actions)
         await automations_job.run()
     cancel_action = automations_job.automation_state.automation.actions_dag.actions[-1]
     assert isinstance(cancel_action, octobot_flow.entities.AbstractActionDetails)

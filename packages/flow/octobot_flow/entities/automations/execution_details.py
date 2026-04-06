@@ -41,10 +41,17 @@ class DegradedStateDetails(octobot_commons.dataclasses.MinimizableDataclass):
 
 
 @dataclasses.dataclass
+class CopyDetails(octobot_commons.dataclasses.MinimizableDataclass):
+    # wall time.time() when the current mirrored open-order grace episode started
+    open_orders_grace_period_started_at: typing.Optional[float] = None
+
+
+@dataclasses.dataclass
 class ExecutionDetails(octobot_commons.dataclasses.MinimizableDataclass):
     previous_execution: TriggerDetails = dataclasses.field(default_factory=TriggerDetails)
     current_execution: TriggerDetails = dataclasses.field(default_factory=TriggerDetails)
     degraded_state: DegradedStateDetails = dataclasses.field(default_factory=DegradedStateDetails)
+    copy_details: CopyDetails = dataclasses.field(default_factory=CopyDetails)
     execution_error: typing.Optional[str] = None
 
     def __post_init__(self):
@@ -54,6 +61,8 @@ class ExecutionDetails(octobot_commons.dataclasses.MinimizableDataclass):
             self.current_execution = TriggerDetails.from_dict(self.current_execution)
         if self.degraded_state and isinstance(self.degraded_state, dict):
             self.degraded_state = DegradedStateDetails.from_dict(self.degraded_state)
+        if self.copy_details and isinstance(self.copy_details, dict):
+            self.copy_details = CopyDetails.from_dict(self.copy_details)
 
     def should_fetch_custom_actions_or_signals(self) -> bool:
         return (

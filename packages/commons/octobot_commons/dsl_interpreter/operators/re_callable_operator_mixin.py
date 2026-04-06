@@ -114,7 +114,7 @@ class ReCallableOperatorMixin:
             ]).last_execution_result
         return None
 
-    def create_re_callable_result(
+    def create_re_callable_result( # pylint: disable=too-many-arguments
         self,
         keyword: str,
         reset_to_id: typing.Optional[str] = None,
@@ -137,7 +137,7 @@ class ReCallableOperatorMixin:
             },
         )
 
-    def create_re_callable_result_dict(
+    def create_re_callable_result_dict( # pylint: disable=too-many-arguments
         self,
         keyword: str,
         reset_to_id: typing.Optional[str] = None,
@@ -161,6 +161,9 @@ class ReCallableOperatorMixin:
         }
 
     def re_create_script(self, param_by_name: dict[str, typing.Any]):
+        """
+        Returns the re-created script from the given parameters.
+        """
         param_without_re_callable_operator_params = {
             k: v for k, v in param_by_name.items() if k != self.LAST_EXECUTION_RESULT_KEY
         }

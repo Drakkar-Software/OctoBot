@@ -32,6 +32,8 @@ import octobot_copy.copiers
 import octobot_copy.entities
 import octobot_copy.constants
 
+import octobot_flow.constants as flow_constants
+
 import tentacles.Meta.DSL_operators.exchange_operators.exchange_personal_data_operators.create_order_operators as create_order_operators
 
 
@@ -163,13 +165,20 @@ def create_copy_exchange_account_operators(
                 copier_exchange_manager,
                 copier_trading_mode,
             )
-            orders = await account_copier.copy_account()
+            copy_result = await account_copier.copy_account()
             self.value = self.create_re_callable_result_dict(
                 keyword=self.get_name(),
                 waiting_time=octobot_copy.constants.DEFAULT_COPY_WAITING_TIME,
                 last_execution_time=execution_time,
                 state={
-                    create_order_operators.CREATED_ORDERS_KEY: [order.to_dict() for order in orders],
+                    create_order_operators.CREATED_ORDERS_KEY: [
+                        order.to_dict() for order in copy_result.created_orders
+                    ],
+                    flow_constants.COPY_TRADING_GRACE_STATE_RESULT_KEY: {
+                        flow_constants.OPEN_ORDERS_GRACE_PERIOD_STARTED_AT_KEY: (
+                            copy_result.open_orders_grace_period_started_at
+                        ),
+                    },
                 },
             )
 

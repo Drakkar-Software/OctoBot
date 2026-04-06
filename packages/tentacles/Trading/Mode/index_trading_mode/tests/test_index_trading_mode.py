@@ -1831,11 +1831,11 @@ async def test_ensure_enough_funds_to_buy_after_selling(trading_tools):
             trader.exchange_manager.exchange_personal_data.portfolio_manager.portfolio_value_holder,
             "get_traded_assets_holdings_value", mock.Mock(return_value=decimal.Decimal("2000"))
     ) as get_traded_assets_holdings_value_mock, mock.patch.object(
-        portfolio_rebalancer, "_get_symbols_and_amounts", mock.AsyncMock()
-    ) as _get_symbols_and_amounts_mock:
+        portfolio_rebalancer, "_get_buy_symbols_and_amounts", mock.AsyncMock()
+    ) as _get_buy_symbols_and_amounts_mock:
         await portfolio_rebalancer.ensure_enough_funds_to_buy_after_selling()
         get_traded_assets_holdings_value_mock.assert_called_once_with("USDT", None)
-        _get_symbols_and_amounts_mock.assert_called_once_with(
+        _get_buy_symbols_and_amounts_mock.assert_called_once_with(
             mode.indexed_coins_prices,
             decimal.Decimal("2000"),
         )
@@ -2471,8 +2471,8 @@ async def test_buy_cleanup_on_rebalance_actions(trading_tools, details, expected
     with mock.patch.object(
         portfolio_rebalancer, "_cancel_symbol_open_orders", mock.AsyncMock()
     ) as cancel_symbol_open_orders_mock, mock.patch.object(
-        portfolio_rebalancer, "_get_symbols_and_amounts", mock.AsyncMock(return_value={})
-    ) as get_symbols_and_amounts_mock, mock.patch.object(
+        portfolio_rebalancer, "_get_buy_symbols_and_amounts", mock.AsyncMock(return_value={})
+    ) as get_buy_symbols_and_amounts_mock, mock.patch.object(
         portfolio_rebalancer, "_buy_coin", mock.AsyncMock()
     ) as buy_coin_mock:
         orders = await portfolio_rebalancer.split_reference_market_into_targeted_coins(
@@ -2487,7 +2487,7 @@ async def test_buy_cleanup_on_rebalance_actions(trading_tools, details, expected
     for call in cancel_symbol_open_orders_mock.call_args_list:
         assert call.kwargs["dependencies"] == dependencies
         assert call.kwargs["allowed_sides"] == {trading_enums.TradeOrderSide.SELL}
-    get_symbols_and_amounts_mock.assert_called_once()
+    get_buy_symbols_and_amounts_mock.assert_called_once()
     buy_coin_mock.assert_not_called()
 
 
@@ -2720,7 +2720,7 @@ async def test_split_reference_market_into_targeted_coins(trading_tools):
     is_simple_buy_without_selling = False
     dependencies = trading_signals.get_orders_dependencies([mock.Mock(order_id="123")])
     with mock.patch.object(
-        rebalancer.AbstractRebalancer, "_get_symbols_and_amounts", mock.AsyncMock(
+        rebalancer.AbstractRebalancer, "_get_buy_symbols_and_amounts", mock.AsyncMock(
             side_effect=lambda coins_prices, reference_market_to_split, *, coins_to_buy=None: {
                 f"{coin}/USDT": {
                     rebalancer.IDEAL_AMOUNT: decimal.Decimal(i + 1),
@@ -2731,7 +2731,7 @@ async def test_split_reference_market_into_targeted_coins(trading_tools):
                 )
             }
         )
-    ) as _get_symbols_and_amounts_mock:
+    ) as _get_buy_symbols_and_amounts_mock:
         with mock.patch.object(
             rebalancer.AbstractRebalancer, "_get_simple_buy_coins", mock.Mock()
         ) as _get_simple_buy_coins_mock:
@@ -2748,8 +2748,8 @@ async def test_split_reference_market_into_targeted_coins(trading_tools):
                     )
                 get_currency_portfolio_mock.assert_called_once_with("USDT")
                 _buy_coin_mock.assert_not_called()
-                _get_symbols_and_amounts_mock.assert_called_once()
-                _get_symbols_and_amounts_mock.reset_mock()
+                _get_buy_symbols_and_amounts_mock.assert_called_once()
+                _get_buy_symbols_and_amounts_mock.reset_mock()
                 _get_simple_buy_coins_mock.assert_not_called()
 
             # coins to swap
@@ -2775,12 +2775,12 @@ async def test_split_reference_market_into_targeted_coins(trading_tools):
                 assert await portfolio_rebalancer.split_reference_market_into_targeted_coins(
                     details, is_simple_buy_without_selling, dependencies,
                 ) == ["order", "order"]
-                _get_symbols_and_amounts_mock.assert_called_once()
-                # Verify _get_symbols_and_amounts was called with correct reference_market_to_distribute
-                assert _get_symbols_and_amounts_mock.call_args[0][1] == reference_market_to_distribute
+                _get_buy_symbols_and_amounts_mock.assert_called_once()
+                # Verify _get_buy_symbols_and_amounts was called with correct reference_market_to_distribute
+                assert _get_buy_symbols_and_amounts_mock.call_args[0][1] == reference_market_to_distribute
                 assert reference_market_reserved == trading_constants.ZERO
                 assert reference_market_to_distribute == reference_market_to_split
-                _get_symbols_and_amounts_mock.reset_mock()
+                _get_buy_symbols_and_amounts_mock.reset_mock()
                 get_traded_assets_holdings_value_mock.assert_called_once_with("USDT", None)
                 get_currency_portfolio_mock.assert_not_called()
                 _get_simple_buy_coins_mock.assert_not_called()
@@ -2800,12 +2800,12 @@ async def test_split_reference_market_into_targeted_coins(trading_tools):
                 assert await portfolio_rebalancer.split_reference_market_into_targeted_coins(
                     details, is_simple_buy_without_selling, dependencies,
                 ) == ["order", "order"]
-                _get_symbols_and_amounts_mock.assert_called_once()
-                # Verify _get_symbols_and_amounts was called with correct reference_market_to_distribute
-                assert _get_symbols_and_amounts_mock.call_args[0][1] == reference_market_to_distribute
+                _get_buy_symbols_and_amounts_mock.assert_called_once()
+                # Verify _get_buy_symbols_and_amounts was called with correct reference_market_to_distribute
+                assert _get_buy_symbols_and_amounts_mock.call_args[0][1] == reference_market_to_distribute
                 assert reference_market_to_distribute == decimal.Decimal("200")
                 assert reference_market_reserved == decimal.Decimal("1800")
-                _get_symbols_and_amounts_mock.reset_mock()
+                _get_buy_symbols_and_amounts_mock.reset_mock()
                 get_traded_assets_holdings_value_mock.assert_called_once_with("USDT", None)
                 _buy_coin_mock.reset_mock()
 
@@ -2825,8 +2825,8 @@ async def test_split_reference_market_into_targeted_coins(trading_tools):
                     await portfolio_rebalancer.split_reference_market_into_targeted_coins(
                         details, is_simple_buy_without_selling, dependencies,
                     )
-                _get_symbols_and_amounts_mock.assert_called_once()
-                _get_symbols_and_amounts_mock.reset_mock()
+                _get_buy_symbols_and_amounts_mock.assert_called_once()
+                _get_buy_symbols_and_amounts_mock.reset_mock()
                 get_currency_portfolio_mock.assert_called_once_with("USDT")
                 _get_simple_buy_coins_mock.assert_not_called()
                 assert _buy_coin_mock.call_count == 2
@@ -2850,12 +2850,12 @@ async def test_split_reference_market_into_targeted_coins(trading_tools):
                 assert await portfolio_rebalancer.split_reference_market_into_targeted_coins(
                     details, is_simple_buy_without_selling, dependencies,
                 ) == ["order", "order"]
-                _get_symbols_and_amounts_mock.assert_called_once()
-                # Verify _get_symbols_and_amounts was called with correct reference_market_to_distribute
-                assert _get_symbols_and_amounts_mock.call_args[0][1] == reference_market_to_distribute
+                _get_buy_symbols_and_amounts_mock.assert_called_once()
+                # Verify _get_buy_symbols_and_amounts was called with correct reference_market_to_distribute
+                assert _get_buy_symbols_and_amounts_mock.call_args[0][1] == reference_market_to_distribute
                 assert reference_market_reserved == trading_constants.ZERO
                 assert reference_market_to_distribute == reference_market_to_split
-                _get_symbols_and_amounts_mock.reset_mock()
+                _get_buy_symbols_and_amounts_mock.reset_mock()
                 get_currency_portfolio_mock.assert_called_once_with("USDT")
                 _get_simple_buy_coins_mock.assert_not_called()
                 assert _buy_coin_mock.call_count == 2
@@ -2876,12 +2876,12 @@ async def test_split_reference_market_into_targeted_coins(trading_tools):
                 assert await portfolio_rebalancer.split_reference_market_into_targeted_coins(
                     details, is_simple_buy_without_selling, dependencies,
                 ) == ["order", "order"]
-                _get_symbols_and_amounts_mock.assert_called_once()
-                # Verify _get_symbols_and_amounts was called with correct reference_market_to_distribute
-                assert _get_symbols_and_amounts_mock.call_args[0][1] == reference_market_to_distribute
+                _get_buy_symbols_and_amounts_mock.assert_called_once()
+                # Verify _get_buy_symbols_and_amounts was called with correct reference_market_to_distribute
+                assert _get_buy_symbols_and_amounts_mock.call_args[0][1] == reference_market_to_distribute
                 assert reference_market_to_distribute == decimal.Decimal("0.3")
                 assert reference_market_reserved == decimal.Decimal("1.7")
-                _get_symbols_and_amounts_mock.reset_mock()
+                _get_buy_symbols_and_amounts_mock.reset_mock()
                 get_currency_portfolio_mock.assert_called_once_with("USDT")
                 _buy_coin_mock.reset_mock()
 
@@ -2911,12 +2911,12 @@ async def test_split_reference_market_into_targeted_coins(trading_tools):
                 assert await portfolio_rebalancer.split_reference_market_into_targeted_coins(
                     details, is_simple_buy_without_selling, dependencies,
                 ) == ["order"]
-                _get_symbols_and_amounts_mock.assert_called_once()
-                # Verify _get_symbols_and_amounts was called with correct reference_market_to_distribute
-                assert _get_symbols_and_amounts_mock.call_args[0][1] == reference_market_to_distribute
+                _get_buy_symbols_and_amounts_mock.assert_called_once()
+                # Verify _get_buy_symbols_and_amounts was called with correct reference_market_to_distribute
+                assert _get_buy_symbols_and_amounts_mock.call_args[0][1] == reference_market_to_distribute
                 assert reference_market_reserved == trading_constants.ZERO
                 assert reference_market_to_distribute == reference_market_to_split
-                _get_symbols_and_amounts_mock.reset_mock()
+                _get_buy_symbols_and_amounts_mock.reset_mock()
                 get_currency_portfolio_mock.assert_not_called()
                 get_traded_assets_holdings_value_mock.assert_called_once_with("USDT", None)
                 _get_simple_buy_coins_mock.assert_called_once_with(details)
@@ -2937,18 +2937,18 @@ async def test_split_reference_market_into_targeted_coins(trading_tools):
                 assert await portfolio_rebalancer.split_reference_market_into_targeted_coins(
                     details, is_simple_buy_without_selling, dependencies,
                 ) == ["order"]
-                _get_symbols_and_amounts_mock.assert_called_once()
-                # Verify _get_symbols_and_amounts was called with correct reference_market_to_distribute
-                assert _get_symbols_and_amounts_mock.call_args[0][1] == reference_market_to_distribute
+                _get_buy_symbols_and_amounts_mock.assert_called_once()
+                # Verify _get_buy_symbols_and_amounts was called with correct reference_market_to_distribute
+                assert _get_buy_symbols_and_amounts_mock.call_args[0][1] == reference_market_to_distribute
                 assert reference_market_to_distribute == decimal.Decimal("400")
                 assert reference_market_reserved == decimal.Decimal("1600")
-                _get_symbols_and_amounts_mock.reset_mock()
+                _get_buy_symbols_and_amounts_mock.reset_mock()
                 get_traded_assets_holdings_value_mock.assert_called_once_with("USDT", None)
                 _get_simple_buy_coins_mock.assert_called_once_with(details)
                 _buy_coin_mock.reset_mock()
 
 @pytest.mark.parametrize("trading_tools", ["spot", "futures"], indirect=True)
-async def test_get_symbols_and_amounts(trading_tools):
+async def test_get_buy_symbols_and_amounts(trading_tools):
     update = {}
     mode, producer, consumer, trader = await _init_mode(trading_tools, _get_config(trading_tools, update))
     trader.exchange_manager.exchange_config.traded_symbols = [
@@ -2960,7 +2960,7 @@ async def test_get_symbols_and_amounts(trading_tools):
     with mock.patch.object(
             trading_personal_data, "get_up_to_date_price", mock.AsyncMock(return_value=decimal.Decimal(1000))
     ) as get_up_to_date_price_mock:
-        assert await portfolio_rebalancer._get_symbols_and_amounts(
+        assert await portfolio_rebalancer._get_buy_symbols_and_amounts(
             {}, decimal.Decimal(3000)
         ) == {
             "BTC/USDT": {
@@ -2970,7 +2970,7 @@ async def test_get_symbols_and_amounts(trading_tools):
         }
         assert get_up_to_date_price_mock.call_count == 1
         get_up_to_date_price_mock.reset_mock()
-        assert await portfolio_rebalancer._get_symbols_and_amounts(
+        assert await portfolio_rebalancer._get_buy_symbols_and_amounts(
             {}, decimal.Decimal(3000),
             coins_to_buy=["BTC", "ETH"],
         ) == {
@@ -2987,7 +2987,7 @@ async def test_get_symbols_and_amounts(trading_tools):
         ]
         mode.ensure_updated_coins_distribution()
         portfolio_rebalancer = mode.create_rebalancer(trader.exchange_manager)
-        assert await portfolio_rebalancer._get_symbols_and_amounts(
+        assert await portfolio_rebalancer._get_buy_symbols_and_amounts(
             {}, decimal.Decimal(3000)
         ) == {
             "BTC/USDT": {
@@ -3016,7 +3016,7 @@ async def test_get_symbols_and_amounts(trading_tools):
             "decimal_check_and_adapt_order_details_if_necessary",
             mock.Mock(return_value=decimal.Decimal("1"))
     ) as decimal_check_mock:
-        await portfolio_rebalancer._get_symbols_and_amounts(
+        await portfolio_rebalancer._get_buy_symbols_and_amounts(
             {}, decimal.Decimal(3000)
         )
         assert decimal_check_mock.call_args[0][0] == decimal.Decimal("1.5")
@@ -3032,7 +3032,7 @@ async def test_get_symbols_and_amounts(trading_tools):
             mock.Mock(return_value=None)
     ) as decimal_check_mock:
         with pytest.raises(trading_errors.MissingMinimalExchangeTradeVolume):
-            await portfolio_rebalancer._get_symbols_and_amounts(
+            await portfolio_rebalancer._get_buy_symbols_and_amounts(
                 {}, decimal.Decimal(3000)
             )
         assert decimal_check_mock.call_args[0][0] == decimal.Decimal("0.3")
@@ -3040,14 +3040,14 @@ async def test_get_symbols_and_amounts(trading_tools):
     # not enough funds
     portfolio_rebalancer = mode.create_rebalancer(trader.exchange_manager)
     with pytest.raises(trading_errors.MissingMinimalExchangeTradeVolume):
-        await portfolio_rebalancer._get_symbols_and_amounts(
+        await portfolio_rebalancer._get_buy_symbols_and_amounts(
             {}, decimal.Decimal(0.0003)
         )
 
     # not enough funds but skipping allowed so it doesn't raise
     mode.allow_skip_asset = True
     portfolio_rebalancer = mode.create_rebalancer(trader.exchange_manager)
-    assert await portfolio_rebalancer._get_symbols_and_amounts(
+    assert await portfolio_rebalancer._get_buy_symbols_and_amounts(
         {}, decimal.Decimal(0.0003)
     ) == {}
     mode.allow_skip_asset = False
@@ -3057,7 +3057,7 @@ async def test_get_symbols_and_amounts(trading_tools):
             trading_personal_data, "get_up_to_date_price", mock.AsyncMock(return_value=decimal.Decimal(0.000000001))
     ) as get_up_to_date_price_mock:
         with pytest.raises(trading_errors.MissingMinimalExchangeTradeVolume):
-            await portfolio_rebalancer._get_symbols_and_amounts(
+            await portfolio_rebalancer._get_buy_symbols_and_amounts(
                 {}, decimal.Decimal(0.01),
                 coins_to_buy=["BTC", "ETH"],
             )
@@ -3085,7 +3085,7 @@ async def test_get_symbols_and_amounts(trading_tools):
             trading_personal_data, "get_up_to_date_price", mock.AsyncMock(return_value=decimal.Decimal(1000))
     ) as get_up_to_date_price_mock:
         # USDT is not counted in orders to create (nothing to buy as USDT is the reference market everything is sold to)
-        assert await portfolio_rebalancer._get_symbols_and_amounts(
+        assert await portfolio_rebalancer._get_buy_symbols_and_amounts(
             {}, decimal.Decimal(3000),
             coins_to_buy=["BTC", "USDT"],
         ) == {

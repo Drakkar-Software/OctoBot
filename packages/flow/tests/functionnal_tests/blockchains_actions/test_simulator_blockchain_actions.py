@@ -98,7 +98,7 @@ async def test_execute_actions_with_blockchain_deposit_and_withdrawal(
         mock.patch.object(trading_constants, 'ALLOW_FUNDS_TRANSFER', True),
     ):
         async with octobot_flow.AutomationJob(global_state, [], auth_details) as automations_job:
-            automations_job.automation_state.update_automation_actions(
+            automations_job.automation_state.upsert_automation_actions(
                 resolved_actions(actions_with_blockchain_deposit_and_withdrawal_with_holding_checks),
             )
             await automations_job.run()
@@ -163,7 +163,7 @@ async def test_execute_actions_with_blockchain_deposit_and_withdrawal_with_holdi
         mock.patch.object(trading_constants, 'ALLOW_FUNDS_TRANSFER', True),
     ):
         async with octobot_flow.AutomationJob(global_state, [], auth_details) as automations_job:
-            automations_job.automation_state.update_automation_actions(
+            automations_job.automation_state.upsert_automation_actions(
                 resolved_actions(actions_with_blockchain_deposit_and_withdrawal_with_holding_checks),
             )
             await automations_job.run()

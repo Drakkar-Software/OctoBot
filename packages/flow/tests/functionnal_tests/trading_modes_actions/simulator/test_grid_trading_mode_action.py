@@ -28,6 +28,7 @@ from tests.functionnal_tests import (
     automation_state_dict,
     set_init_action_run_mode,
     copy_exchange_account_action,
+    d_order_price,
 )
 
 import tentacles.Trading.Mode.grid_trading_mode.grid_trading as grid_trading
@@ -40,12 +41,6 @@ D_SPREAD = decimal.Decimal(str(spread))
 _FIXED_BTC_USDC_CLOSE = 100000.0
 GRID_REFERENCE_LOWEST_BUY = _FIXED_BTC_USDC_CLOSE - (spread / 2) - increment * 2 + 12.12
 
-
-def d_order_price(value: typing.Union[int, float, decimal.Decimal]) -> decimal.Decimal:
-    """Exact decimal view of a stored order price (avoids float + int mix in assertions)."""
-    if isinstance(value, decimal.Decimal):
-        return value
-    return decimal.Decimal(str(value))
 grid_pair_settings = [
     grid_trading.GridTradingMode.get_default_pair_config(
         "BTC/USDC",
@@ -405,8 +400,8 @@ async def test_simulator_grid_init_from_empty_state(init_action: dict, run_mode:
     
 @pytest.mark.asyncio
 @pytest.mark.parametrize("run_mode", [
-        octobot_flow.enums.AutomationRunMode.UPDATE_CLIENT_EXCHANGE_ACCOUNT_ONLY,
-        octobot_flow.enums.AutomationRunMode.UPDATE_REFERENCE_EXCHANGE_ACCOUNT_AND_COPY,
+    octobot_flow.enums.AutomationRunMode.UPDATE_CLIENT_EXCHANGE_ACCOUNT_ONLY,
+    octobot_flow.enums.AutomationRunMode.UPDATE_REFERENCE_EXCHANGE_ACCOUNT_AND_COPY,
 ])
 async def test_simulator_grid_init_and_fill_sell_order(init_action: dict, run_mode: octobot_flow.enums.AutomationRunMode):
     """

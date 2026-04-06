@@ -50,7 +50,7 @@ async def test_exchange_actions_creating_and_waiting_and_cancelling_limit(
         t0 = time.time()
         # 1. execute create limit order action
         automation_state = octobot_flow.entities.AutomationState.from_dict(btc_usdc_global_state)
-        automation_state.update_automation_actions(
+        automation_state.upsert_automation_actions(
 resolved_actions(actions_to_execute),
         )
         async with octobot_flow.AutomationJob(automation_state, [], auth_details) as automations_job:
@@ -241,7 +241,7 @@ async def test_exchange_actions_creating_and_waiting_with_condition_that_is_not_
     ):
         t0 = time.time()
         automation_state = octobot_flow.entities.AutomationState.from_dict(btc_usdc_global_state)
-        automation_state.update_automation_actions(
+        automation_state.upsert_automation_actions(
             resolved_actions(actions_to_execute),
         )
         async with octobot_flow.AutomationJob(automation_state, [], auth_details) as automations_job:
