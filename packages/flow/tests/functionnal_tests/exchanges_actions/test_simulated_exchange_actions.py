@@ -33,7 +33,7 @@ async def test_execute_actions_with_market_orders_and_existing_state(
     ):
         # test with parsed global state
         automation_state = octobot_flow.entities.AutomationState.from_dict(global_state)
-        automation_state.update_automation_actions(resolved_actions(actions_with_market_orders))
+        automation_state.upsert_automation_actions(resolved_actions(actions_with_market_orders))
         async with octobot_flow.AutomationJob(automation_state, [], auth_details) as automations_job:
             await automations_job.run()
 

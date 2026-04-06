@@ -69,7 +69,7 @@ class OctoBotActionsJobDescription(octobot_commons.dataclasses.MinimizableDatacl
                 actions_dag=actions,
             )
         else:
-            automation_state.update_automation_actions(actions.actions)
+            automation_state.upsert_automation_actions(actions.actions)
         self.state = automation_state.to_dict(include_default_values=False)
 
     def get_next_execution_time(self) -> float:

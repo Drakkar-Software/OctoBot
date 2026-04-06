@@ -103,7 +103,7 @@ async def test_execute_actions_with_limit_orders_and_empty_state(
         other_actions = resolved_actions(actions_to_execute)
         automation_id = after_execution_dump["automation"]["metadata"]["automation_id"]
         async with octobot_flow.AutomationJob(state, [], {}) as automations_job:
-            automations_job.automation_state.update_automation_actions(other_actions)
+            automations_job.automation_state.upsert_automation_actions(other_actions)
             await automations_job.run()
 
         # check bot actions execution

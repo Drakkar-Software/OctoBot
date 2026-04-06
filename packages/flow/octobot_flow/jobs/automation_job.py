@@ -1,5 +1,4 @@
 import contextlib
-from octobot_flow.entities.actions.action_details import AbstractActionDetails
 import time
 import typing
 
@@ -298,9 +297,10 @@ class AutomationJob:
                 reference_account = account_copy_util.reference_exchange_elements_to_account(
                     ref_elements, fetched_dependencies.fetched_exchange_data, reference_market # type: ignore
                 )
+                account_copy_settings = account_copy_util.create_account_copy_settings(self.automation_state.automation)
                 copy_actions = [
                     octobot_flow.logic.actions.create_copy_exchange_account_action(
-                        reference_market=reference_market, reference_account=reference_account,
+                        reference_market=reference_market, reference_account=reference_account, account_copy_settings=account_copy_settings
                     )
                 ]
                 # fetch the copy client dependencies (open orders, positions, etc.)

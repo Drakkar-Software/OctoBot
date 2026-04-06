@@ -94,6 +94,9 @@ class AbstractActionDetails(octobot_commons.dataclasses.FlexibleDataclass):
         self.error_status = None
         self.executed_at = None
 
+    def update_configuration(self, action: "AbstractActionDetails"):
+        raise NotImplementedError("update_configuration is not implemented")
+
 
 @dataclasses.dataclass
 class DSLScriptActionDetails(AbstractActionDetails):
@@ -118,6 +121,13 @@ class DSLScriptActionDetails(AbstractActionDetails):
     def clear_resolved_dsl_script(self):
         self.resolved_dsl_script = None
 
+    def update_configuration(self, action: "AbstractActionDetails"):
+        if not isinstance(action, DSLScriptActionDetails):
+            raise TypeError(
+                f"Expected DSLScriptActionDetails, got {type(action).__name__}"
+            )
+        self.dsl_script = action.dsl_script
+
 
 @dataclasses.dataclass
 class ConfiguredActionDetails(AbstractActionDetails):
@@ -128,6 +138,14 @@ class ConfiguredActionDetails(AbstractActionDetails):
 
     def get_summary(self, minimal: bool = False) -> str:
         return self.action
+
+    def update_configuration(self, action: "AbstractActionDetails"):
+        if not isinstance(action, ConfiguredActionDetails):
+            raise TypeError(
+                f"Expected ConfiguredActionDetails, got {type(action).__name__}"
+            )
+        self.action = action.action
+        self.config = dict(action.config) if action.config is not None else None
 
 
 def parse_action_details(action_details: dict) -> AbstractActionDetails:

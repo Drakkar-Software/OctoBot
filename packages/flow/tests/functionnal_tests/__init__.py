@@ -1,4 +1,5 @@
 import contextlib
+import decimal
 import mock
 import pytest
 import time
@@ -23,6 +24,14 @@ import octobot_flow.repositories.community
 import octobot_flow.logic.actions.actions_factory as actions_factory
 
 AUTHENTICATED_TEST_GROUP = "authenticated_xdist_group"
+
+
+def d_order_price(value: typing.Union[int, float, decimal.Decimal]) -> decimal.Decimal:
+    """Exact decimal view of a stored order price (avoids float + int mix in assertions)."""
+    if isinstance(value, decimal.Decimal):
+        return value
+    return decimal.Decimal(str(value))
+
 
 def is_on_github_ci():
     # Always set to true when GitHub Actions is running the workflow.

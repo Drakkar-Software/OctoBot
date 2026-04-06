@@ -12,6 +12,7 @@ from octobot_flow.entities.automations.fetched_dependencies import FetchedDepend
 from octobot_flow.entities.automations.execution_details import (
     TriggerDetails,
     DegradedStateDetails,
+    CopyDetails,
     ExecutionDetails,
 )
 from octobot_flow.entities.automations.additional_actions import AdditionalActions
@@ -30,6 +31,7 @@ __all__ = [
     "FetchedDependencies",
     "TriggerDetails",
     "DegradedStateDetails",
+    "CopyDetails",
     "ExecutionDetails",
     "AdditionalActions",
     "RefreshExchangeBotsAuthenticatedDataDetails",

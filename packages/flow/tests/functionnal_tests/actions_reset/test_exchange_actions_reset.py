@@ -34,7 +34,7 @@ async def test_exchange_actions_reset_executing_market_order_twice(
     ):
         # 1. execute market order actions
         automation_state = octobot_flow.entities.AutomationState.from_dict(global_state)
-        automation_state.update_automation_actions(resolved_actions(actions_with_market_orders))
+        automation_state.upsert_automation_actions(resolved_actions(actions_with_market_orders))
         async with octobot_flow.AutomationJob(automation_state, [], auth_details) as automations_job:
             await automations_job.run()
 
@@ -125,7 +125,7 @@ async def test_exchange_actions_reset_creating_and_cancelling_limit_order_twice(
     ):
         # 1. execute create limit order action
         automation_state = octobot_flow.entities.AutomationState.from_dict(btc_usdc_global_state)
-        automation_state.update_automation_actions(
+        automation_state.upsert_automation_actions(
 resolved_actions(actions_to_execute),
         )
         async with octobot_flow.AutomationJob(automation_state, [], auth_details) as automations_job:

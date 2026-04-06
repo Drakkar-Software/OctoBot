@@ -35,6 +35,9 @@ CONFIG_REBALANCE_TRIGGER_PROFILE_MIN_PERCENT = "min_percent"
 FILL_ORDER_TIMEOUT = 60
 FILL_ORDER_WAIT_TIME = 5
 
+# Mirrored orphan grace: max |simulated_copier_pair_share − ref_pair_share| to allow deferral
+DEFAULT_MIRRORED_ORPHAN_GRACE_PAIR_RATIO_MAX_DELTA = decimal.Decimal("0.02") # 2%
+
 # Account keys
 PORTFOLIO_ASSET_ALLOCATION_RATIO = "allocation_ratio"
 

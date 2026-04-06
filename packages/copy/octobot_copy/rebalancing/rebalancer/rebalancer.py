@@ -60,7 +60,7 @@ class AbstractRebalancer:
         ref_market = self._exchange_interface.portfolio.reference_market
         reference_market_to_split = self._get_traded_assets_holdings_value(ref_market)
         # will raise if funds are missing
-        await self._get_symbols_and_amounts(
+        await self._get_buy_symbols_and_amounts(
             self._target_coins_prices,
             reference_market_to_split,
         )
@@ -73,7 +73,8 @@ class AbstractRebalancer:
         """
         Sells targeted or swapped coins for the reference market.
         """
-        await self._pre_cancel_conflicting_orders(details, dependencies, trading_enums.TradeOrderSide.BUY)
+        pre_cancel_side = trading_enums.TradeOrderSide.BUY if self._rebalance_actions_planner.client.can_include_assets_in_open_orders_in_holdings_ratio else None
+        await self._pre_cancel_conflicting_orders(details, dependencies, pre_cancel_side)
         removed_coins_to_sell_orders = await self._get_removed_coins_to_sell_orders(details, dependencies)
         await self._validate_sold_removed_assets(details, removed_coins_to_sell_orders)
         coins_to_sell_orders = await self._get_coins_to_sell_orders(details, dependencies)
@@ -120,7 +121,9 @@ class AbstractRebalancer:
         Otherwise, a market order will be used.
         """
         orders = []
-        await self._pre_cancel_conflicting_orders(details, dependencies, trading_enums.TradeOrderSide.SELL)
+
+        pre_cancel_side = trading_enums.TradeOrderSide.SELL if self._rebalance_actions_planner.client.can_include_assets_in_open_orders_in_holdings_ratio else None
+        await self._pre_cancel_conflicting_orders(details, dependencies, pre_cancel_side)
         ref_market = self._exchange_interface.portfolio.reference_market
         if details[rebalancer_enums.RebalanceDetails.SWAP.value] or is_simple_buy_without_selling:
             # has to infer total reference market holdings
@@ -150,7 +153,7 @@ class AbstractRebalancer:
                 f"among targeted coins, reserving {reference_market_reserved} {ref_market} for reference market"
             )
 
-        amount_by_symbol = await self._get_symbols_and_amounts(
+        amount_by_symbol = await self._get_buy_symbols_and_amounts(
             self._target_coins_prices,
             reference_market_to_distribute,
             coins_to_buy=coins_to_buy,
@@ -274,7 +277,7 @@ class AbstractRebalancer:
     def _get_free_reference_market_holding(self, reference_market: str) -> decimal.Decimal:
         return self._exchange_interface.portfolio.get_free_reference_market_holding(reference_market)
 
-    async def _get_symbols_and_amounts(
+    async def _get_buy_symbols_and_amounts(
         self,
         coins_prices: dict[str, decimal.Decimal],
         reference_market_to_split: decimal.Decimal,
@@ -369,19 +372,23 @@ class AbstractRebalancer:
         self,
         details: dict[str, typing.Any],
         dependencies: typing.Optional[commons_signals.SignalDependencies],
-        side: trading_enums.TradeOrderSide
+        side: typing.Optional[trading_enums.TradeOrderSide]
     ) -> None:
         symbols_to_cleanup = self._get_pre_cancel_order_symbols(details, side)
         for symbol in symbols_to_cleanup:
             await self._cancel_symbol_open_orders(
                 symbol,
                 dependencies=dependencies,
-                allowed_sides={side}
+                allowed_sides={side} if side else None
             )
 
-    def _get_pre_cancel_order_symbols(self, details: dict[str, typing.Any], side: trading_enums.TradeOrderSide) -> set[str]:
+    def _get_pre_cancel_order_symbols(self, details: dict[str, typing.Any], side: typing.Optional[trading_enums.TradeOrderSide]) -> set[str]:
         symbols_to_cleanup: set[str] = set()
-        keys = self._get_rebalance_details_keys_for_side(side)
+        # if side is None, we need to cleanup both buy and sell orders
+        sides = [side] if side else [trading_enums.TradeOrderSide.BUY, trading_enums.TradeOrderSide.SELL]
+        keys = []
+        for side in sides:
+            keys.extend(self._get_rebalance_details_keys_for_side(side))
 
         for key in keys:
             for coin_or_symbol in details.get(key, {}):

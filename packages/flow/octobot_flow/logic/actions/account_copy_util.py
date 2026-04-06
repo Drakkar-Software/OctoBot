@@ -1,13 +1,15 @@
 import decimal
+import typing
 
 import octobot_commons.constants as common_constants
 import octobot_commons.symbols as symbol_util
 import octobot_commons.logging as logging
 
+import octobot_copy.constants as copy_constants
 import octobot_copy.entities as copy_entities
 
+import octobot_flow.constants as flow_constants
 import octobot_flow.entities
-import octobot_copy.constants as copy_constants
 
 
 
@@ -44,3 +46,19 @@ def reference_exchange_elements_to_account(
     for asset, values in elements.portfolio.content.items():
         content[asset][copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO] = value_by_asset[asset] / total_value
     return copy_entities.Account(content=content, orders=elements.orders.open_orders)
+
+
+def create_account_copy_settings(
+    automation: octobot_flow.entities.AutomationDetails,
+) -> copy_entities.AccountCopySettings:
+    grace_seconds = flow_constants.DEFAULT_COPY_TRADING_ORPHAN_CANCEL_GRACE_SECONDS
+    threshold = flow_constants.DEFAULT_COPY_TRADING_ORPHAN_GRACE_ABORT_THRESHOLD
+    copy_details = automation.execution.copy_details
+    return copy_entities.AccountCopySettings(
+        mirrored_orphan_cancel_grace_seconds=grace_seconds,
+        mirrored_orphan_grace_abort_threshold=threshold,
+        mirrored_orphan_grace_pair_ratio_max_delta=(
+            flow_constants.DEFAULT_COPY_TRADING_ORPHAN_GRACE_PAIR_RATIO_MAX_DELTA
+        ),
+        mirrored_orphan_grace_started_at=copy_details.open_orders_grace_period_started_at,
+    )

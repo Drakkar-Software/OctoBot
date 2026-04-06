@@ -49,11 +49,13 @@ class AutomationState(octobot_commons.dataclasses.MinimizableDataclass):
     # Priority actions to be executed before the automation DAG when they are not already executed
     priority_actions: list[action_details_import.AbstractActionDetails] = dataclasses.field(default_factory=list, repr=True)
 
-    def update_automation_actions(self, actions: list[action_details_import.AbstractActionDetails]):
+    def upsert_automation_actions(self, actions: list[action_details_import.AbstractActionDetails]):
         existing_actions = self.automation.actions_dag.get_actions_by_id()
         for action in actions:
             if action.id not in existing_actions:
                 self.automation.actions_dag.add_action(action)
+            else:
+                existing_actions[action.id].update_configuration(action)
 
     def has_exchange(self) -> bool:
         return bool(

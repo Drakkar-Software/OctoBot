@@ -140,7 +140,7 @@ async def test_start_with_empty_state_action_followed_by_market_orders_no_commun
         state = after_config_execution_dump
         other_actions = resolved_actions(actions_with_market_orders)
         async with octobot_flow.AutomationJob(state, [], {}) as automation_job:
-            automation_job.automation_state.update_automation_actions(
+            automation_job.automation_state.upsert_automation_actions(
                 other_actions
             )
             await automation_job.run()

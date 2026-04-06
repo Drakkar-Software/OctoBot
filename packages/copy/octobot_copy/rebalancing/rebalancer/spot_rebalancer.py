@@ -47,15 +47,18 @@ class SpotRebalancer(base_rebalancer.AbstractRebalancer):
         # ideally use the expected reference_market_available_holdings ratio, fallback to available
         # holdings if necessary
         target_quantity = min(ideal_amount, current_market_holding / order_target_price)
-        effective_current_symbol_holding = current_symbol_holding + self._get_pending_open_quantity(symbol)
+        if self._rebalance_actions_planner.client.can_include_assets_in_open_orders_in_holdings_ratio:
+            effective_current_symbol_holding = current_symbol_holding + self._get_pending_open_quantity(symbol)
+        else:
+            effective_current_symbol_holding = current_symbol_holding # should be >0 ??
         ideal_quantity = target_quantity - effective_current_symbol_holding
+        if ideal_quantity <= trading_constants.ZERO:
+            return []
         if ideal_quantity < ideal_amount * decimal.Decimal("0.9"):
             self._get_logger().warning(
                 f"{symbol} order quantity has to be reduced from {ideal_amount} to "
                 f"{ideal_quantity} to adapt to available funds."
             )
-        if ideal_quantity <= trading_constants.ZERO:
-            return []
         is_price_close_to_market = order_target_price >= current_price * (decimal.Decimal(1) - self.PRICE_THRESHOLD_TO_USE_MARKET_ORDER)
         ideal_order_type = trading_enums.TraderOrderType.BUY_MARKET if is_price_close_to_market else trading_enums.TraderOrderType.BUY_LIMIT
         order_type = (
