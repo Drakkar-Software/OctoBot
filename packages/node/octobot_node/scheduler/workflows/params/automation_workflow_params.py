@@ -28,6 +28,12 @@ class AutomationWorkflowInputs(octobot_commons.dataclasses.minimizable_dataclass
 
 
 @dataclasses.dataclass
+class AutomationWorkflowOutput(octobot_commons.dataclasses.minimizable_dataclass.MinimizableDataclass):
+    state: typing.Optional[str] = None
+    error: typing.Optional[str] = None
+
+
+@dataclasses.dataclass
 class AutomationWorkflowIterationResult(octobot_commons.dataclasses.minimizable_dataclass.MinimizableDataclass):
     progress_status: base_params.ProgressStatus
     next_iteration_description: typing.Optional[str]

@@ -19,10 +19,12 @@ from .base_params import (
 from .automation_workflow_params import (
     AutomationWorkflowInputs,
     AutomationWorkflowIterationResult,
+    AutomationWorkflowOutput,
 )
 
 __all__ = [
     "AutomationWorkflowInputs",
     "AutomationWorkflowIterationResult",
+    "AutomationWorkflowOutput",
     "ProgressStatus",
 ]

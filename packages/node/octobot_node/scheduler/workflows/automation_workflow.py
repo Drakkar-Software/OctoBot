@@ -53,7 +53,7 @@ class AutomationWorkflow:
             B. Complete the workflow and stop the automation.
         5. If completed, return tthe updated task.content (the automation state) as workflow output
         """
-        output = None
+        output: typing.Optional[params.AutomationWorkflowOutput] = None
         try:
             parsed_inputs = params.AutomationWorkflowInputs.from_dict(inputs)
             delay = parsed_inputs.execution_time - time.time()
@@ -68,20 +68,26 @@ class AutomationWorkflow:
             iteration_result = params.AutomationWorkflowIterationResult.from_dict(raw_iteration_result)
             continue_workflow = False
             if AutomationWorkflow._should_continue_workflow(parsed_inputs, iteration_result.progress_status, bool(priority_actions)):
-                continue_workflow = await AutomationWorkflow._process_pending_priority_actions_and_reschedule(
+                # update iteration_result to include the executions of priority actions if any
+                continue_workflow, iteration_result = await AutomationWorkflow._process_pending_priority_actions_and_reschedule(
                     parsed_inputs, iteration_result
                 )
             if not continue_workflow:
                 AutomationWorkflow.get_logger(parsed_inputs).info(
                     f"Stopped workflow (remaining steps: {iteration_result.progress_status.remaining_steps})"
                 )
-                # only set output if the workflow is completed
-                output = iteration_result.next_iteration_description
+                final_state = iteration_result.next_iteration_description
+                final_error = iteration_result.progress_status.error
+                if final_state is not None or final_error is not None:
+                    output = params.AutomationWorkflowOutput(
+                        state=final_state,
+                        error=final_error,
+                    )
         except Exception as err:
             AutomationWorkflow.get_logger(parsed_inputs).exception(
                 err, True, f"Interrupted workflow: unexpected critical error: {err} ({err.__class__.__name__})"
             )
-        return output
+        return json.dumps(output.to_dict(include_default_values=False)) if output else None
 
     @staticmethod
     @SCHEDULER.INSTANCE.step(
@@ -184,9 +190,9 @@ class AutomationWorkflow:
     async def _process_pending_priority_actions_and_reschedule(
         parsed_inputs: params.AutomationWorkflowInputs,
         previous_iteration_result: params.AutomationWorkflowIterationResult
-    ) -> bool:
+    ) -> tuple[bool, params.AutomationWorkflowIterationResult]:
         if not previous_iteration_result.has_next_actions:
-            return False
+            return False, previous_iteration_result
         # In case new priority actions were sent, execute them now.
         # Any action sent to this workflow will be lost if not processed by it.
         latest_iteration_result: params.AutomationWorkflowIterationResult = previous_iteration_result
@@ -203,7 +209,7 @@ class AutomationWorkflow:
             parsed_inputs = params.AutomationWorkflowInputs.from_dict(extra_iteration_inputs)
             latest_iteration_result = params.AutomationWorkflowIterationResult.from_dict(raw_iteration_result)
             if not AutomationWorkflow._should_continue_workflow(parsed_inputs, latest_iteration_result.progress_status, False):
-                return False
+                return False, latest_iteration_result
             if not latest_iteration_result.has_next_actions:
                 raise errors.WorkflowPriorityActionExecutionError(
                     f"Unexpected error: no next iteration description after processing priority actions: {latest_iteration_result}"
@@ -220,7 +226,7 @@ class AutomationWorkflow:
                 latest_iteration_result.progress_status,
                 latest_iteration_result.next_iteration_description_metadata,
             )
-        return True
+        return True, latest_iteration_result
 
     @staticmethod
     async def _schedule_next_iteration(
