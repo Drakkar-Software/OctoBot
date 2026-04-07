@@ -82,6 +82,7 @@ jobs:
           - packages/evaluators
           - packages/node
           - packages/flow
+          - packages/copy
           - packages/services
           - packages/sync
           - packages/tentacles_manager
@@ -89,7 +90,7 @@ jobs:
           - packages/trading_backend
 
     env:
-      USES_TENTACLES: ${{ matrix.package == 'octobot' || matrix.package == 'packages/node' || matrix.package == 'packages/flow' }}
+      USES_TENTACLES: ${{ matrix.package == 'octobot' || matrix.package == 'packages/node' || matrix.package == 'packages/flow' || matrix.package == 'packages/copy' }}
 
     steps:
     - uses: actions/checkout@v6
@@ -159,7 +160,7 @@ jobs:
           pytest tests -n auto --dist loadfile
           pytest --ignore=tentacles/Trading/Exchange tentacles -n auto --dist loadfile
         else
-          if [ "${{ matrix.package }}" = "packages/node" ] || [ "${{ matrix.package }}" = "packages/flow" ]; then
+          if [ "${{ matrix.package }}" = "packages/node" ] || [ "${{ matrix.package }}" = "packages/flow" ] || [ "${{ matrix.package }}" = "packages/copy" ]; then
             echo "Running tests from root dir to allow tentacles import"
             PYTHONPATH=.:$PYTHONPATH pytest ${{ matrix.package }}/tests -n auto --dist loadfile
           else
