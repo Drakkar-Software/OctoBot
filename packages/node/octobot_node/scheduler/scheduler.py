@@ -28,6 +28,7 @@ import octobot_node.enums
 import octobot_node.models
 import octobot_node.constants
 import octobot_node.scheduler.workflows_util as workflows_util
+import octobot_node.scheduler.workflows.params as workflow_params
 try:
     from octobot import VERSION
 except ImportError:
@@ -200,17 +201,22 @@ class Scheduler:
                     if completed_workflow_status.status == dbos.WorkflowStatusString.SUCCESS.value and (
                         task := workflows_util.get_input_task(completed_workflow_status)
                     ):
-                        result = completed_workflow_status.output or task.content
+                        output = workflow_params.AutomationWorkflowOutput.from_dict(
+                            completed_workflow_status.output
+                        )
+                        result = output.state or task.content
                         description = "Completed"
                         status = octobot_node.models.TaskStatus.COMPLETED
                         metadata = task.content_metadata
                         task_name = task.name
+                        error = output.error
                     else:
                         result = ""
                         description = "ERROR"
                         status = octobot_node.models.TaskStatus.FAILED
                         metadata = ""
                         task_name = completed_workflow_status.workflow_id
+                        error = None
 
                     executions.append(octobot_node.models.Execution(
                         id=completed_workflow_status.workflow_id,
@@ -221,6 +227,7 @@ class Scheduler:
                         result_metadata=metadata,
                         scheduled_at=completed_workflow_status.created_at,
                         completed_at=completed_workflow_status.updated_at,
+                        error=error,
                     ))
                 except Exception as e:
                     self.logger.exception(e, True, f"Failed to process result workflow {completed_workflow_status.workflow_id}: {e}")

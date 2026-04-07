@@ -56,6 +56,7 @@ class Execution(BaseModel):
     result_metadata: typing.Optional[str] = None
     scheduled_at: typing.Optional[datetime.datetime] = None
     completed_at: typing.Optional[datetime.datetime] = None
+    error: typing.Optional[str] = None
 
 
 class Task(BaseModel):
