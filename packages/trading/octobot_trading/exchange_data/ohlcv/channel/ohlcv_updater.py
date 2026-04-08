@@ -266,14 +266,18 @@ class OHLCVUpdater(ohlcv_channel.OHLCVProducer):
         self, symbol: str, time_frame: common_enums.TimeFrames, limit: int,
         allow_cache: bool = False, tickers_backup: typing.Optional[dict[str, dict]] = None
     ) -> list[dict]:
+        key = None
         if allow_cache:
             key = _ohlcv_cache_key(self.channel.exchange_manager, symbol, time_frame, limit)
             if cached := _OHLCV_CACHE.get(key):
                 return cached
         try:
-            return await self.channel.exchange_manager.exchange.get_symbol_prices(
+            ohlcvs = await self.channel.exchange_manager.exchange.get_symbol_prices(
                 symbol, time_frame, limit=limit
             )
+            if key is not None:
+                _OHLCV_CACHE[key] = ohlcvs
+            return ohlcvs
         except errors.NotSupported as err:
             if (
                 self.channel.exchange_manager.exchange.CREATE_OHLCV_FROM_TICKERS

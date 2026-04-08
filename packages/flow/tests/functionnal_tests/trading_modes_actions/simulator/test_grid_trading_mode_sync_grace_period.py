@@ -25,7 +25,6 @@ import pytest
 import octobot_commons.constants as common_constants
 import octobot_trading.constants as trading_constants
 import octobot_trading.enums as trading_enums
-import octobot_trading.exchange_data as trading_exchange_data
 
 import octobot_copy.constants as copy_constants
 import octobot_copy.entities as copy_entities
@@ -364,9 +363,6 @@ async def test_grid_copy_grace_elapses_then_orphan_cancelled_and_sell_mirrored(i
 
     update_state_reference_account_details(after_copy_r1, reference_market, reference_r2, settings)
 
-    trading_exchange_data.TickerUpdater.reset_cache()
-    trading_exchange_data.OHLCVUpdater.reset_cache()
-
     with (
         mock.patch.object(
             octobot_flow.repositories.exchange.TickersRepository,
@@ -479,9 +475,6 @@ async def test_grid_copy_grace_aborted_when_second_orphan_exceeds_threshold(init
         now - GRACE_SECONDS + 1.0
     )
 
-    trading_exchange_data.TickerUpdater.reset_cache()
-    trading_exchange_data.OHLCVUpdater.reset_cache()
-
     with (
         mock.patch.object(
             octobot_flow.repositories.exchange.TickersRepository,
@@ -561,9 +554,6 @@ async def test_grid_copy_orphan_resolved_by_client_fill_without_rebalance_orders
 
     update_state_reference_account_details(after_copy_r1, reference_market, reference_r2, settings)
 
-    trading_exchange_data.TickerUpdater.reset_cache()
-    trading_exchange_data.OHLCVUpdater.reset_cache()
-
     with (
         mock.patch.object(
             octobot_flow.repositories.exchange.TickersRepository,
@@ -594,9 +584,6 @@ async def test_grid_copy_orphan_resolved_by_client_fill_without_rebalance_orders
     update_state_reference_account_details(
         after_grace_started, reference_market, reference_r2, settings
     )
-
-    trading_exchange_data.TickerUpdater.reset_cache()
-    trading_exchange_data.OHLCVUpdater.reset_cache()
 
     with (
         mock.patch.object(
