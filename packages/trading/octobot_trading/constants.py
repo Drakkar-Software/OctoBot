@@ -306,3 +306,6 @@ DEFAULT_FUTURES_INITIALIZATION_EVENT_TOPICS = DEFAULT_INITIALIZATION_EVENT_TOPIC
     commons_enums.InitializationEventExchangeTopics.CONTRACTS,
     commons_enums.InitializationEventExchangeTopics.FUNDING,
 ]
+
+# Blockchain wallets
+GENERIC_BLOCKCHAIN_PROXY_CONFIG_KEY = "BLOCKCHAIN"
