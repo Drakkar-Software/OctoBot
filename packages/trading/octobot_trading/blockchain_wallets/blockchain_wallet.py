@@ -132,11 +132,18 @@ class BlockchainWallet(octobot_trading.accounts.AbstractAccount):
 
     @classmethod
     def get_proxy_config(cls) -> proxy_config.ProxyConfig:
+        blockchain_specific_proxy_config = cls._get_proxy_config(cls.BLOCKCHAIN.upper())
+        if blockchain_specific_proxy_config.has_proxy():
+            return blockchain_specific_proxy_config
+        return cls._get_proxy_config(constants.GENERIC_BLOCKCHAIN_PROXY_CONFIG_KEY)
+
+    @staticmethod
+    def _get_proxy_config(key: str) -> proxy_config.ProxyConfig:
         return proxy_config.ProxyConfig(
-            http_proxy=os.getenv(f"{cls.BLOCKCHAIN.upper()}_HTTP_PROXY"),
-            https_proxy=os.getenv(f"{cls.BLOCKCHAIN.upper()}_HTTPS_PROXY"),
-            socks_proxy=os.getenv(f"{cls.BLOCKCHAIN.upper()}_SOCKS_PROXY"),
-            ws_proxy=os.getenv(f"{cls.BLOCKCHAIN.upper()}_WS_PROXY"),
-            wss_proxy=os.getenv(f"{cls.BLOCKCHAIN.upper()}_WSS_PROXY"),
-            ws_socks_proxy=os.getenv(f"{cls.BLOCKCHAIN.upper()}_WS_SOCKS_PROXY"),
+            http_proxy=os.getenv(f"{key}_HTTP_PROXY"),
+            https_proxy=os.getenv(f"{key}_HTTPS_PROXY"),
+            socks_proxy=os.getenv(f"{key}_SOCKS_PROXY"),
+            ws_proxy=os.getenv(f"{key}_WS_PROXY"),
+            wss_proxy=os.getenv(f"{key}_WSS_PROXY"),
+            ws_socks_proxy=os.getenv(f"{key}_WS_SOCKS_PROXY"),
         )
