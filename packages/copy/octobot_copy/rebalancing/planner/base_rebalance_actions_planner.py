@@ -84,29 +84,34 @@ class BaseRebalanceActionsPlanner:
 
         if not rebalance_details[rebalancer_enums.RebalanceDetails.FORCED_REBALANCE.value]:
             self._resolve_swaps(rebalance_details)
-            for origin, target in rebalance_details[rebalancer_enums.RebalanceDetails.SWAP.value].items():
-                origin_ratio = round(
-                    rebalance_details[rebalancer_enums.RebalanceDetails.REMOVE.value][origin]
-                    * trading_constants.ONE_HUNDRED,
-                    3
-                )
-                target_ratio = round(
-                    rebalance_details[rebalancer_enums.RebalanceDetails.ADD.value].get(
-                        target,
-                        rebalance_details[rebalancer_enums.RebalanceDetails.BUY_MORE.value].get(
-                            target, trading_constants.ZERO
-                        )
-                    ) * trading_constants.ONE_HUNDRED,
-                    3
-                ) or "???"
-                self.logger.info(
-                    f"Swapping {origin} (holding ratio: {origin_ratio}%) for {target} (to buy ratio: {target_ratio}%) "
-                    f"on [{self._exchange_interface.exchange_name}]: ratios are similar enough to allow swapping."
-                )
+            self._log_rebalance_swap_details(rebalance_details)
         return (
             should_rebalance or rebalance_details[rebalancer_enums.RebalanceDetails.FORCED_REBALANCE.value],
             rebalance_details,
         )
+
+    def _log_rebalance_swap_details(self, rebalance_details: dict):
+        for origin, target in rebalance_details[rebalancer_enums.RebalanceDetails.SWAP.value].items():
+            logged_origin_ratio = round(
+                rebalance_details[rebalancer_enums.RebalanceDetails.REMOVE.value][origin]
+                * trading_constants.ONE_HUNDRED,
+                3
+            )
+            if not (logged_target_ratio := round(
+                rebalance_details[rebalancer_enums.RebalanceDetails.ADD.value].get(
+                    target,
+                    rebalance_details[rebalancer_enums.RebalanceDetails.BUY_MORE.value].get(
+                        target, trading_constants.ZERO
+                    )
+                ) * trading_constants.ONE_HUNDRED,
+                3
+            )):
+                self.logger.error(f"No target ratio found for {target} in rebalance details: {rebalance_details}")
+                logged_target_ratio = "???" # used for logging only
+            self.logger.info(
+                f"Swapping {origin} (holding ratio: {logged_origin_ratio}%) for {target} (to buy ratio: {logged_target_ratio}%) "
+                f"on [{self._exchange_interface.exchange_name}]: ratios are similar enough to allow swapping."
+            )
 
     def update(
         self,
