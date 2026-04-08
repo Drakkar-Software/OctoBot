@@ -43,6 +43,7 @@ AUTOMATION_WORKFLOW_IMPORTED = False
 try:
     import octobot_flow.entities
     import octobot_flow.enums
+    import octobot_flow.errors
 
 except ImportError:
     IMPORTED_OCTOBOT_FLOW = False
@@ -284,37 +285,62 @@ class TestExecuteAutomation:
             mock_iteration.assert_called_once_with(inputs, priority_actions)
             mock_process.assert_not_called()
 
-        # 5. Exception is caught and logged
+        # 5. Exceptions are caught and mapped to workflow error statuses
         parsed_inputs.execution_time = 0
         inputs = parsed_inputs.to_dict(include_default_values=False)
-        mock_iteration = mock.AsyncMock(side_effect=ValueError("test error"))
-        mock_logger = mock.Mock()
-        mock_process = mock.AsyncMock()
-
-        with mock.patch.object(
-            octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow,
-            "execute_iteration",
-            mock_iteration,
-        ), mock.patch.object(
-            octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow,
-            "_should_continue_workflow",
-            mock.Mock(return_value=False),
-        ), mock.patch.object(
-            octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow,
-            "get_logger",
-            mock.Mock(return_value=mock_logger),
-        ), mock.patch.object(
-            octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow,
-            "_process_pending_priority_actions_and_reschedule",
-            mock_process,
-        ):
-            handle = await temp_dbos_scheduler.INSTANCE.start_workflow_async(
-                octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow.execute_automation,
-                inputs=inputs,
-            )
-            assert await handle.get_result() is None # workflow iteration failed: there is no result to return
-            mock_logger.exception.assert_called_once()
-            mock_process.assert_not_called()
+        failure_cases = [
+            (
+                ValueError("test error"),
+                octobot_flow.enums.AutomationWorkflowErrorStatus.EXCEPTION_DURING_ITERATION.value,
+            ),
+            (
+                octobot_flow.errors.InvalidAutomationActionError("invalid action config"),
+                octobot_flow.enums.AutomationWorkflowErrorStatus.INVALID_ACTION_CONFIGURATION.value,
+            ),
+        ]
+        for raised_exception, expected_error_status in failure_cases:
+            mock_logger = mock.Mock()
+            mock_process = mock.AsyncMock()
+            mock_job = mock.Mock()
+            mock_job.run = mock.AsyncMock(side_effect=raised_exception)
+            with mock.patch(
+                "asyncio.sleep", mock.AsyncMock()
+            ), mock.patch.object(
+                octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow,
+                "_should_continue_workflow",
+                mock.Mock(return_value=False),
+            ), mock.patch.object(
+                octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow,
+                "get_logger",
+                mock.Mock(return_value=mock_logger),
+            ), mock.patch.object(
+                octobot_flow_client,
+                "OctoBotActionsJob",
+                mock.Mock(return_value=mock_job),
+            ), mock.patch.object(
+                octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow,
+                "_process_pending_priority_actions_and_reschedule",
+                mock_process,
+            ):
+                handle = await temp_dbos_scheduler.INSTANCE.start_workflow_async(
+                    octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow.execute_automation,
+                    inputs=inputs,
+                )
+                workflow_result = await handle.get_result()
+                assert workflow_result == json.dumps(
+                    params.AutomationWorkflowOutput(
+                        error=expected_error_status
+                    ).to_dict(include_default_values=False)
+                )
+                parsed_output = _parse_automation_workflow_output(workflow_result)
+                assert parsed_output.state is None
+                assert parsed_output.error == expected_error_status
+                assert (
+                    mock_job.run.await_count
+                    == octobot_node.scheduler.workflows.automation_workflow.MAX_ITERATION_RETRIES
+                )
+                mock_logger.exception.assert_called_once()
+                mock_process.assert_not_called()
 
 
 class TestExecuteIteration:
@@ -995,10 +1021,20 @@ class TestExecuteAutomationIntegration:
                 inputs=inputs,
             )
             workflow_result = await handle.get_result()
-            assert workflow_result is None
+            assert workflow_result == json.dumps(
+                params.AutomationWorkflowOutput(
+                    error=octobot_flow.enums.AutomationWorkflowErrorStatus.EXCEPTION_DURING_ITERATION.value
+                ).to_dict(include_default_values=False)
+            )
+            parsed_output = _parse_automation_workflow_output(workflow_result)
+            assert parsed_output.state is None
+            assert (
+                parsed_output.error
+                == octobot_flow.enums.AutomationWorkflowErrorStatus.EXCEPTION_DURING_ITERATION.value
+            )
             wf_status = await handle.get_status()
             assert wf_status.status == dbos.WorkflowStatusString.SUCCESS.value
-            assert wf_status.output is None
+            assert wf_status.output == workflow_result
 
         assert mock_job.run.await_count == max_attempts
         mock_logger.exception.assert_called_once()

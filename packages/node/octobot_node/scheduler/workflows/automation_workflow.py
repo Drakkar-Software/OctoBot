@@ -16,8 +16,12 @@
 import json
 import time
 import typing
+import dbos
 
 import octobot_commons.logging
+
+import octobot_flow.enums
+import octobot_flow.errors
 
 import octobot_node.config
 import octobot_node.models
@@ -54,6 +58,7 @@ class AutomationWorkflow:
         5. If completed, return tthe updated task.content (the automation state) as workflow output
         """
         output: typing.Optional[params.AutomationWorkflowOutput] = None
+        iteration_result = None
         try:
             parsed_inputs = params.AutomationWorkflowInputs.from_dict(inputs)
             delay = parsed_inputs.execution_time - time.time()
@@ -86,6 +91,12 @@ class AutomationWorkflow:
         except Exception as err:
             AutomationWorkflow.get_logger(parsed_inputs).exception(
                 err, True, f"Interrupted workflow: unexpected critical error: {err} ({err.__class__.__name__})"
+            )
+            output = params.AutomationWorkflowOutput(
+                # use available iteration result when possible (might be the one of the previous iteration)
+                state=iteration_result.next_iteration_description if iteration_result else None,
+                # keep track of the failed iteration
+                error=AutomationWorkflow._get_failed_error_status(err),
             )
         return json.dumps(output.to_dict(include_default_values=False)) if output else None
 
@@ -289,6 +300,14 @@ class AutomationWorkflow:
     @staticmethod
     def _get_actions_summary(actions: list["octobot_flow.entities.AbstractActionDetails"], minimal: bool = False) -> str:
         return ", ".join([action.get_summary(minimal=minimal) for action in actions]) if actions else ""
+
+    @staticmethod
+    def _get_failed_error_status(error: Exception) -> str:
+        if isinstance(error, dbos.error.DBOSMaxStepRetriesExceeded):
+            last_error = error.errors[-1]
+            if isinstance(last_error, octobot_flow.errors.InvalidAutomationActionError):
+                return octobot_flow.enums.AutomationWorkflowErrorStatus.INVALID_ACTION_CONFIGURATION.value
+        return octobot_flow.enums.AutomationWorkflowErrorStatus.EXCEPTION_DURING_ITERATION.value
 
     @staticmethod
     def get_logger(parsed_inputs: params.AutomationWorkflowInputs) -> octobot_commons.logging.BotLogger:

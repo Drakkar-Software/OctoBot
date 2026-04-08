@@ -47,6 +47,11 @@ class ActionErrorStatus(enum.Enum):
     UNSUPPORTED_ACTION_TYPE = "unsupported_action_type"
 
 
+class AutomationWorkflowErrorStatus(enum.Enum):
+    EXCEPTION_DURING_ITERATION = "exception_during_iteration"
+    INVALID_ACTION_CONFIGURATION = "invalid_action_configuration"
+
+
 class AutomationRunMode(enum.StrEnum):
     UPDATE_REFERENCE_EXCHANGE_ACCOUNT_AND_COPY = "update_reference_exchange_account_and_copy"
     UPDATE_CLIENT_EXCHANGE_ACCOUNT_ONLY = "update_client_exchange_account_only"

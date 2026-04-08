@@ -201,9 +201,13 @@ class Scheduler:
                     if completed_workflow_status.status == dbos.WorkflowStatusString.SUCCESS.value and (
                         task := workflows_util.get_input_task(completed_workflow_status)
                     ):
-                        output = workflow_params.AutomationWorkflowOutput.from_dict(
-                            completed_workflow_status.output
-                        )
+                        try:
+                            output = workflow_params.AutomationWorkflowOutput.from_dict(
+                                json.loads(completed_workflow_status.output)
+                            ) if completed_workflow_status.output else workflow_params.AutomationWorkflowOutput()
+                        except Exception as e:
+                            self.logger.warning(f"Failed to parse output for workflow {completed_workflow_status.workflow_id}: {e}")
+                            output = workflow_params.AutomationWorkflowOutput()
                         result = output.state or task.content
                         description = "Completed"
                         status = octobot_node.models.TaskStatus.COMPLETED
