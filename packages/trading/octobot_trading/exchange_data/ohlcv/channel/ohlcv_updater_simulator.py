@@ -148,7 +148,7 @@ class OHLCVUpdaterSimulator(ohlcv_updater.OHLCVUpdater):
                 exchange_name=self.exchange_name,
                 symbol=pair,
                 time_frame=time_frame,
-                limit=self.OHLCV_OLD_LIMIT,
+                limit=self.HISTORICAL_OHLCV_LIMIT,
                 inferior_timestamp=self.initial_timestamp,
                 superior_timestamp=self.initial_timestamp)
             candles_len = len(ohlcv_data)

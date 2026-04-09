@@ -43,7 +43,7 @@ class OHLCVUpdater(ohlcv_channel.OHLCVProducer):
     TO_NOTIFY_ON_TRADED_SYMBOLS_UPDATE: bool = True
     CHANNEL_NAME = constants.OHLCV_CHANNEL
     OHLCV_LIMIT = 5  # should be < to candle manager's MAX_CANDLES_COUNT
-    OHLCV_OLD_LIMIT = constants.DEFAULT_CANDLE_HISTORY_SIZE  # should be <= to candle manager's MAX_CANDLES_COUNT
+    HISTORICAL_OHLCV_LIMIT = constants.DEFAULT_CANDLE_HISTORY_SIZE  # should be <= to candle manager's MAX_CANDLES_COUNT
     OHLCV_ON_ERROR_TIME = 5
     OHLCV_MIN_REFRESH_TIME = 1
     OHLCV_REFRESH_TIME_THRESHOLD_BY_RETRY_ATTEMPT = [
@@ -163,10 +163,10 @@ class OHLCVUpdater(ohlcv_channel.OHLCVProducer):
                 self.logger.warning(f"Can't initialize the required "
                                     f"{self.channel.exchange_manager.exchange_config.required_historical_candles_count}"
                                     f" historical candles: {self.channel.exchange_manager.exchange_name} is not "
-                                    f"supporting large candles history. Using the {self.OHLCV_OLD_LIMIT} "
+                                    f"supporting large candles history. Using the {self.HISTORICAL_OHLCV_LIMIT} "
                                     f"latest candles instead.")
                 self._logged_historical_candles_incompatibility = True
-        return self.OHLCV_OLD_LIMIT
+        return self.HISTORICAL_OHLCV_LIMIT
 
     async def _get_init_candles(self, time_frame, pair):
         historical_candles_count_limit = self._get_historical_candles_count()
@@ -182,7 +182,7 @@ class OHLCVUpdater(ohlcv_channel.OHLCVProducer):
                 candles += new_candles
             return candles
         
-        return await self.fetch_ohlcv(pair, time_frame, self.OHLCV_LIMIT)
+        return await self.fetch_ohlcv(pair, time_frame, self.HISTORICAL_OHLCV_LIMIT)
 
     async def _initialize_candles(
         self, time_frame: common_enums.TimeFrames, pair: str, should_retry: bool
