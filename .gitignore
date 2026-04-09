@@ -71,13 +71,16 @@ docs/node_modules/
 docs/build/
 docs/.docusaurus/
 # Auto-generated tentacle docs (from collect-tentacles.mjs)
-docs/content/guides/strategies/trading-modes/*.md
-docs/content/guides/strategies/evaluators/**/*.md
-docs/content/guides/exchanges/*.md
-# Auto-generated _category_.json files (from collect-tentacles.mjs)
-docs/content/guides/strategies/trading-modes/_category_.json
-docs/content/guides/strategies/evaluators/**/_category_.json
+docs/content/creators/
+docs/content/guides/exchanges.md
+docs/content/guides/exchanges/
 docs/content/guides/exchanges/_category_.json
+docs/content/guides/strategies/getting-started.md
+docs/content/guides/strategies/_category_.json
+docs/content/guides/strategies/trading-modes/
+docs/content/guides/strategies/trading-modes/_category_.json
+docs/content/guides/strategies/evaluators/
+docs/content/guides/strategies/evaluators/**/_category_.json
 # Migration script (one-time use, not needed in repo)
 docs/scripts/migrate.mjs
 # Auto-synced root docs (from sync-root-docs.mjs)
