@@ -392,6 +392,80 @@ async def test_package_exporter_no_include_keeps_all(setup_package_with_build_an
     assert "helper.py" in exported_files, "All files should be kept when no include patterns"
 
 
+def _make_build_tentacle(name, requirements=None, build_command=None):
+    """Create a minimal Tentacle-like object for testing build ordering."""
+    tentacle = models.Tentacle(
+        tentacle_root_path="/fake",
+        name=name,
+        tentacle_type=models.TentacleType(constants.TENTACLES_EVALUATOR_PATH),
+    )
+    tentacle.tentacles_requirements = requirements or []
+    tentacle.build_command = build_command or [f"echo building {name}"]
+    return tentacle
+
+
+def test_sort_by_build_requirements_empty():
+    result = exporters.TentaclePackageExporter._sort_by_build_requirements([])
+    assert result == []
+
+
+def test_sort_by_build_requirements_single():
+    a = _make_build_tentacle("A")
+    result = exporters.TentaclePackageExporter._sort_by_build_requirements([a])
+    assert [t.name for t in result] == ["A"]
+
+
+def test_sort_by_build_requirements_no_deps():
+    a = _make_build_tentacle("A")
+    b = _make_build_tentacle("B")
+    result = exporters.TentaclePackageExporter._sort_by_build_requirements([a, b])
+    assert [t.name for t in result] == ["A", "B"]
+
+
+def test_sort_by_build_requirements_dependency_correct_order():
+    # B depends on A — both have build commands, A already first: order preserved
+    a = _make_build_tentacle("A")
+    b = _make_build_tentacle("B", requirements=["A"])
+    result = exporters.TentaclePackageExporter._sort_by_build_requirements([a, b])
+    assert [t.name for t in result] == ["A", "B"]
+
+
+def test_sort_by_build_requirements_dependency_wrong_order():
+    # B depends on A — B comes first in input, must be moved after A
+    a = _make_build_tentacle("A")
+    b = _make_build_tentacle("B", requirements=["A"])
+    result = exporters.TentaclePackageExporter._sort_by_build_requirements([b, a])
+    assert [t.name for t in result] == ["A", "B"]
+
+
+def test_sort_by_build_requirements_dep_without_build_is_ignored():
+    # B requires C, but C has no build command — C not in the input list, dependency ignored
+    b = _make_build_tentacle("B", requirements=["C"])
+    a = _make_build_tentacle("A")
+    result = exporters.TentaclePackageExporter._sort_by_build_requirements([b, a])
+    # B has no build dependency in the build list, so input order is preserved
+    assert [t.name for t in result] == ["B", "A"]
+
+
+def test_sort_by_build_requirements_chain():
+    # C depends on B, B depends on A: must produce A, B, C
+    a = _make_build_tentacle("A")
+    b = _make_build_tentacle("B", requirements=["A"])
+    c = _make_build_tentacle("C", requirements=["B"])
+    # Feed in worst-case order
+    result = exporters.TentaclePackageExporter._sort_by_build_requirements([c, b, a])
+    assert [t.name for t in result] == ["A", "B", "C"]
+
+
+def test_sort_by_build_requirements_circular_does_not_hang():
+    # A requires B, B requires A: circular — must not infinite-loop, returns all tentacles
+    a = _make_build_tentacle("A", requirements=["B"])
+    b = _make_build_tentacle("B", requirements=["A"])
+    result = exporters.TentaclePackageExporter._sort_by_build_requirements([a, b])
+    assert len(result) == 2
+    assert {t.name for t in result} == {"A", "B"}
+
+
 async def test_wildcard_patterns():
     """Test edge cases with various wildcard patterns like *.py and **/*.js"""
     temp_dir = tempfile.mkdtemp()
