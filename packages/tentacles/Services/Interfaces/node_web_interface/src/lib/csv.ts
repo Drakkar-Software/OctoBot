@@ -225,8 +225,40 @@ function processRow(
   };
 }
 
+export interface CSVRawResult {
+  headers: string[];
+  rows: string[][];
+}
+
+/**
+ * Parse a CSV file into raw headers and row arrays without any
+ * column validation or content building. Used by the smart import flow.
+ */
+export function parseCSVRaw(csvText: string): CSVRawResult {
+  const lines = csvText.trim().replace(/\r\n?/g, "\n").split("\n");
+  if (lines.length === 0) {
+    throw new Error("No lines found in the CSV file");
+  }
+
+  const headerLine = lines[0];
+  const headers = parseHeader(headerLine);
+  if (headers === null || headers.length === 0) {
+    throw new Error("No column names found in the CSV header");
+  }
+
+  const dataLines = lines.slice(1);
+  const rows: string[][] = [];
+
+  for (const line of dataLines) {
+    if (!line.trim()) continue;
+    rows.push(parseCSVLine(line));
+  }
+
+  return { headers, rows };
+}
+
 export function parseCSV(csvText: string): Array<CSVRow> {
-  const lines = csvText.trim().split("\n");
+  const lines = csvText.trim().replace(/\r\n?/g, "\n").split("\n");
   if (lines.length === 0 || lines.length === 1) {
     throw new Error("No lines found in the CSV file");
   }
@@ -272,7 +304,7 @@ export function parseCSV(csvText: string): Array<CSVRow> {
 }
 
 export function isValidCSVFile(file: File): boolean {
-  return file.name.endsWith(".csv");
+  return file.name.toLowerCase().endsWith(".csv");
 }
 
 export async function parseCSVFile(file: File): Promise<CSVRow[]> {
@@ -290,20 +322,27 @@ export async function parseCSVFile(file: File): Promise<CSVRow[]> {
   }
 }
 
+const FORMULA_TRIGGER_CHARS = ["=", "+", "-", "@", "\t", "\r"]
+
 export function escapeCSVValue(value: unknown): string {
   if (value === null || value === undefined) {
     return "";
   }
-  
-  const stringValue = typeof value === "object" 
-    ? JSON.stringify(value) 
+
+  const stringValue = typeof value === "object"
+    ? JSON.stringify(value)
     : String(value);
-  
+
+  // Prevent CSV formula injection by prefixing with a single quote
+  if (FORMULA_TRIGGER_CHARS.some((c) => stringValue.startsWith(c))) {
+    return `"'${stringValue.replace(/"/g, '""')}"`;
+  }
+
   // If value contains comma, quote, or newline, wrap in quotes and escape quotes
-  if (stringValue.includes(",") || stringValue.includes('"') || stringValue.includes("\n")) {
+  if (stringValue.includes(",") || stringValue.includes('"') || stringValue.includes("\n") || stringValue.includes("\r")) {
     return `"${stringValue.replace(/"/g, '""')}"`;
   }
-  
+
   return stringValue;
 }
 
@@ -324,7 +363,8 @@ export function downloadCSV(csvString: string, filename: string): void {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = `${filename}.csv`;
+  const sanitized = filename.replace(/[^a-z0-9\-_]/gi, "_").substring(0, 255);
+  link.download = `${sanitized}.csv`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);

@@ -12,6 +12,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { isLoggedIn } from "@/hooks/useAuth"
+import { loadPassword } from "@/lib/device-key"
 
 export const Route = createFileRoute("/setup/mobile-app")({
   beforeLoad: () => {
@@ -40,9 +41,9 @@ function SetupMobileApp() {
     navigate({ to: "/" })
   }
 
-  const revealQr = () => {
+  const revealQr = async () => {
     const address = localStorage.getItem("auth_username") || ""
-    const passphrase = localStorage.getItem("auth_password") || ""
+    const passphrase = (await loadPassword()) ?? ""
     setQrValue(
       JSON.stringify({
         url: window.location.origin,

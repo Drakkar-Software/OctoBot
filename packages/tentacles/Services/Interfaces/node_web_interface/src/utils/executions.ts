@@ -1,4 +1,12 @@
-import type { Execution } from "@/client"
+import type { Execution, TaskStatus } from "@/client"
+
+export function getStatusGroup(status?: TaskStatus | null): "active" | "stopped" {
+  if (!status) return "active"
+  if (status === "running" || status === "scheduled" || status === "periodic" || status === "pending") {
+    return "active"
+  }
+  return "stopped"
+}
 
 export function getActiveExecution(
   executions: Execution[] | undefined | null,

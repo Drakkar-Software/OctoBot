@@ -1,7 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 
 import ImportTask from "@/components/Tasks/ImportTask"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
 export const Route = createFileRoute("/_layout/octobots/import")({
   component: ImportOctobots,
@@ -18,18 +17,10 @@ function ImportOctobots() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Import OctoBots</h1>
         <p className="text-muted-foreground">
-          Upload a CSV file to restore OctoBots.
+          Upload any CSV file. Columns will be auto-detected and mapped to action parameters.
         </p>
       </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Upload file</CardTitle>
-          <CardDescription>Accepted format: `.csv`.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ImportTask onSuccess={() => navigate({ to: "/octobots" })} />
-        </CardContent>
-      </Card>
+      <ImportTask onSuccess={() => navigate({ to: "/octobots" })} />
     </div>
   )
 }

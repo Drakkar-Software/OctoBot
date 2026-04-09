@@ -82,10 +82,12 @@ class AutomationWorkflow:
                     f"Stopped workflow (remaining steps: {iteration_result.progress_status.remaining_steps})"
                 )
                 final_state = iteration_result.next_iteration_description
+                final_state_metadata = iteration_result.next_iteration_description_metadata
                 final_error = iteration_result.progress_status.error
                 if final_state is not None or final_error is not None:
                     output = params.AutomationWorkflowOutput(
                         state=final_state,
+                        state_metadata=final_state_metadata,
                         error=final_error,
                     )
         except Exception as err:
@@ -95,6 +97,7 @@ class AutomationWorkflow:
             output = params.AutomationWorkflowOutput(
                 # use available iteration result when possible (might be the one of the previous iteration)
                 state=iteration_result.next_iteration_description if iteration_result else None,
+                state_metadata=iteration_result.next_iteration_description_metadata if iteration_result else None,
                 # keep track of the failed iteration
                 error=AutomationWorkflow._get_failed_error_status(err),
             )

@@ -17,7 +17,9 @@
 import typing
 import uuid
 from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 
+import octobot_node.config
 import octobot_node.models
 import octobot_node.scheduler.api
 import octobot_node.scheduler.tasks
@@ -35,6 +37,27 @@ async def create_tasks(tasks: list[octobot_node.models.Task]) -> tuple[int, int]
         else:
             error_count += 1
     return success_count, error_count
+
+
+class EncryptContentRequest(BaseModel):
+    contents: list[str]
+
+
+class EncryptedItem(BaseModel):
+    content: str
+    content_metadata: str
+
+
+@router.post("/encrypt-content", response_model=list[EncryptedItem])
+def encrypt_content(request: EncryptContentRequest) -> list[EncryptedItem]:
+    if not octobot_node.config.settings.is_node_side_encryption_enabled:
+        raise HTTPException(status_code=400, detail="Encryption is not enabled")
+    from octobot_node.scheduler.encryption.task_inputs import encrypt_task_content
+    results = []
+    for content in request.contents:
+        encrypted_content, metadata = encrypt_task_content(content)
+        results.append(EncryptedItem(content=encrypted_content, content_metadata=metadata))
+    return results
 
 
 @router.get("/metrics")

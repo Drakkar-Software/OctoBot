@@ -29,6 +29,7 @@ import octobot_node.models
 import octobot_node.constants
 import octobot_node.scheduler.workflows_util as workflows_util
 import octobot_node.scheduler.workflows.params as workflow_params
+import octobot_node.scheduler.encryption as encryption
 try:
     from octobot import VERSION
 except ImportError:
@@ -208,10 +209,19 @@ class Scheduler:
                         except Exception as e:
                             self.logger.warning(f"Failed to parse output for workflow {completed_workflow_status.workflow_id}: {e}")
                             output = workflow_params.AutomationWorkflowOutput()
-                        result = output.state or task.content
+                        if output.state:
+                            result = output.state
+                            metadata = output.state_metadata
+                        else:
+                            result = task.content
+                            metadata = task.content_metadata
+                        if octobot_node.config.settings.is_node_side_encryption_enabled and result and metadata:
+                            try:
+                                result = encryption.decrypt_task_content(result, metadata)
+                            except Exception as decrypt_err:
+                                self.logger.warning(f"Failed to decrypt result for workflow {completed_workflow_status.workflow_id}: {decrypt_err}")
                         description = "Completed"
                         status = octobot_node.models.TaskStatus.COMPLETED
-                        metadata = task.content_metadata
                         task_name = task.name
                         error = output.error
                     else:
@@ -227,6 +237,7 @@ class Scheduler:
                         name=task_name,
                         description=description,
                         status=status,
+                        content_metadata=task.content_metadata if task else None,
                         result=result or "",
                         result_metadata=metadata,
                         scheduled_at=completed_workflow_status.created_at,
@@ -255,11 +266,13 @@ class Scheduler:
                 task_type = task.type
                 task_actions = task.content #todo confi
 
+        task_content_metadata = task.content_metadata if task else None
         return octobot_node.models.Execution(
             id=task_id,
             name=task_name,
             description=description,
             actions=task_actions,
+            content_metadata=task_content_metadata,
             type=task_type,
             status=status,
         )

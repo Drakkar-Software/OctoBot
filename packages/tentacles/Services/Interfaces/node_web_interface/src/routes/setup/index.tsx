@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input"
 import { LoadingButton } from "@/components/ui/loading-button"
 import { PasswordInput } from "@/components/ui/password-input"
 import useCustomToast from "@/hooks/useCustomToast"
+import { savePassword } from "@/lib/device-key"
 import { handleError } from "@/utils"
 
 export const Route = createFileRoute("/setup/")({
@@ -78,9 +79,9 @@ function SetupWallet() {
       SetupService.initSetup({
         requestBody: { passphrase, node_type: "standalone", private_key: privateKey || undefined },
       }),
-    onSuccess: (result, { passphrase }) => {
+    onSuccess: async (result, { passphrase }) => {
       localStorage.setItem("auth_username", result.address)
-      localStorage.setItem("auth_password", passphrase)
+      await savePassword(passphrase)
       sessionStorage.setItem("setup_in_progress", "true")
       navigate({ to: "/setup/first-bot" })
     },

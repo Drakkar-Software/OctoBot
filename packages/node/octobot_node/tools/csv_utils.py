@@ -29,10 +29,6 @@ from octobot_node.scheduler.encryption.task_outputs import (
     encrypt_task_result,
     decrypt_task_result,
 )
-from octobot_node.scheduler.encryption.task_outputs import (
-    encrypt_task_result,
-    decrypt_task_result,
-)
 
 ################################################################################
 # This file is used to test the functions inside node_web_interface/src/lib/csv.ts
@@ -395,11 +391,6 @@ def set_keys_in_settings(keys_file_path: str = DEFAULT_KEYS_FILE) -> None:
     settings.TASKS_INPUTS_ECDSA_PUBLIC_KEY = to_bytes(keys.get(KEY_NAMES["TASKS_INPUTS_ECDSA_PUBLIC_KEY"]))
     settings.TASKS_INPUTS_ECDSA_PRIVATE_KEY = to_bytes(keys.get(KEY_NAMES["TASKS_INPUTS_ECDSA_PRIVATE_KEY"]))
     
-    settings.TASKS_OUTPUTS_RSA_PUBLIC_KEY = to_bytes(keys.get(KEY_NAMES["TASKS_OUTPUTS_RSA_PUBLIC_KEY"]))
-    settings.TASKS_OUTPUTS_RSA_PRIVATE_KEY = to_bytes(keys.get(KEY_NAMES["TASKS_OUTPUTS_RSA_PRIVATE_KEY"]))
-    settings.TASKS_OUTPUTS_ECDSA_PUBLIC_KEY = to_bytes(keys.get(KEY_NAMES["TASKS_OUTPUTS_ECDSA_PUBLIC_KEY"]))
-    settings.TASKS_OUTPUTS_ECDSA_PRIVATE_KEY = to_bytes(keys.get(KEY_NAMES["TASKS_OUTPUTS_ECDSA_PRIVATE_KEY"]))
-    
     print("Keys successfully loaded into settings")
 
 
@@ -536,11 +527,6 @@ def merge_and_encrypt_csv(
         settings.TASKS_INPUTS_RSA_PRIVATE_KEY = to_bytes(keys.get(KEY_NAMES["TASKS_INPUTS_RSA_PRIVATE_KEY"]))
         settings.TASKS_INPUTS_ECDSA_PUBLIC_KEY = to_bytes(keys.get(KEY_NAMES["TASKS_INPUTS_ECDSA_PUBLIC_KEY"]))
         settings.TASKS_INPUTS_ECDSA_PRIVATE_KEY = to_bytes(keys.get(KEY_NAMES["TASKS_INPUTS_ECDSA_PRIVATE_KEY"]))
-        settings.TASKS_OUTPUTS_RSA_PUBLIC_KEY = to_bytes(keys.get(KEY_NAMES["TASKS_OUTPUTS_RSA_PUBLIC_KEY"]))
-        settings.TASKS_OUTPUTS_RSA_PRIVATE_KEY = to_bytes(keys.get(KEY_NAMES["TASKS_OUTPUTS_RSA_PRIVATE_KEY"]))
-        settings.TASKS_OUTPUTS_ECDSA_PUBLIC_KEY = to_bytes(keys.get(KEY_NAMES["TASKS_OUTPUTS_ECDSA_PUBLIC_KEY"]))
-        settings.TASKS_OUTPUTS_ECDSA_PRIVATE_KEY = to_bytes(keys.get(KEY_NAMES["TASKS_OUTPUTS_ECDSA_PRIVATE_KEY"]))
-    
     rows = parse_csv(input_file_path)
     encrypted_rows = encrypt_csv_content(rows, content_column)
     headers = ["name", content_column, "type", "metadata"]
@@ -559,27 +545,19 @@ def merge_and_encrypt_csv(
 
 def encrypt_result_csv_content(
     csv_rows: List[Dict[str, str]],
-    result_column: str = "result"
+    rsa_public_key: bytes,
+    ecdsa_private_key: bytes,
+    result_column: str = "result",
 ) -> List[Dict[str, str]]:
-    from octobot_node.config import settings
-    
-    if settings.TASKS_OUTPUTS_RSA_PUBLIC_KEY is None or settings.TASKS_OUTPUTS_ECDSA_PRIVATE_KEY is None:
-        raise ValueError(
-            f"Encryption keys are not set in settings. "
-            f"TASKS_OUTPUTS_RSA_PUBLIC_KEY={settings.TASKS_OUTPUTS_RSA_PUBLIC_KEY is not None}, "
-            f"TASKS_OUTPUTS_ECDSA_PRIVATE_KEY={settings.TASKS_OUTPUTS_ECDSA_PRIVATE_KEY is not None}. "
-            f"Call set_keys_in_settings() first."
-        )
-    
     encrypted_rows: List[Dict[str, str]] = []
-    
+
     for row in csv_rows:
         encrypted_row = row.copy()
         result = row.get(result_column, "")
-        
+
         if result:
             try:
-                encrypted_result, metadata = encrypt_task_result(result)
+                encrypted_result, metadata = encrypt_task_result(result, rsa_public_key, ecdsa_private_key)
                 encrypted_row[result_column] = encrypted_result
                 encrypted_row["result_metadata"] = metadata
             except Exception as e:
@@ -587,27 +565,29 @@ def encrypt_result_csv_content(
                 raise Exception(error_msg) from e
         else:
             encrypted_row["result_metadata"] = ""
-        
+
         encrypted_rows.append(encrypted_row)
-    
+
     return encrypted_rows
 
 
 def decrypt_result_csv_content(
     csv_rows: List[Dict[str, str]],
+    rsa_private_key: bytes,
+    ecdsa_public_key: bytes,
     result_column: str = "result",
-    metadata_column: str = "result_metadata"
+    metadata_column: str = "result_metadata",
 ) -> List[Dict[str, str]]:
     decrypted_rows: List[Dict[str, str]] = []
-    
+
     for row in csv_rows:
         decrypted_row = row.copy()
         encrypted_result = row.get(result_column, "")
         metadata = row.get(metadata_column, "")
-        
+
         if encrypted_result and metadata:
             try:
-                decrypted_result = decrypt_task_result(encrypted_result, metadata)
+                decrypted_result = decrypt_task_result(encrypted_result, rsa_private_key, ecdsa_public_key, metadata)
                 result_dict = decrypted_result if isinstance(decrypted_result, dict) else None
                 if result_dict is None:
                     try:
@@ -640,15 +620,17 @@ def decrypt_result_csv_content(
 def encrypt_result_csv_file(
     input_file_path: str,
     output_file_path: str,
-    result_column: str = "result"
+    rsa_public_key: bytes,
+    ecdsa_private_key: bytes,
+    result_column: str = "result",
 ) -> None:
     rows = []
     with open(input_file_path, 'r', encoding='utf-8', newline='') as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
             rows.append(dict(row))
-    
-    encrypted_rows = encrypt_result_csv_content(rows, result_column)
+
+    encrypted_rows = encrypt_result_csv_content(rows, rsa_public_key, ecdsa_private_key, result_column)
     headers = list(rows[0].keys()) if rows else ["name", result_column]
     if "result_metadata" not in headers:
         headers.append("result_metadata")
@@ -663,16 +645,18 @@ def encrypt_result_csv_file(
 def decrypt_result_csv_file(
     input_file_path: str,
     output_file_path: str,
+    rsa_private_key: bytes,
+    ecdsa_public_key: bytes,
     result_column: str = "result",
-    metadata_column: str = "result_metadata"
+    metadata_column: str = "result_metadata",
 ) -> None:
     rows = []
     with open(input_file_path, 'r', encoding='utf-8', newline='') as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
             rows.append(dict(row))
-    
-    decrypted_rows = decrypt_result_csv_content(rows, result_column, metadata_column)
+
+    decrypted_rows = decrypt_result_csv_content(rows, rsa_private_key, ecdsa_public_key, result_column, metadata_column)
     
     all_headers = set()
     for row in decrypted_rows:

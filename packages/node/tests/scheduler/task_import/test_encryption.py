@@ -81,51 +81,45 @@ class TestCSVEncryption:
     def test_decrypt_exported_result_csv(self, tmp_path: Path) -> None:
         test_dir = Path(__file__).parent
         keys_file = str(test_dir / DEFAULT_KEYS_FILE)
-        
-        # Generate keys (same way as test_encrypt_and_decrypt_csv)
+
+        from octobot_node.tools.csv_utils import KEY_NAMES, load_keys
         generate_and_save_keys(keys_file)
-        
-        # Set keys in settings
-        from octobot_node.config import settings
-        from octobot_node.tools.csv_utils import set_keys_in_settings
-        set_keys_in_settings(keys_file)
-        
-        assert settings.TASKS_OUTPUTS_RSA_PUBLIC_KEY is not None, "RSA public key should be set"
-        assert settings.TASKS_OUTPUTS_ECDSA_PRIVATE_KEY is not None, "ECDSA private key should be set"
-        assert settings.TASKS_OUTPUTS_RSA_PRIVATE_KEY is not None, "RSA private key should be set"
-        assert settings.TASKS_OUTPUTS_ECDSA_PUBLIC_KEY is not None, "ECDSA public key should be set"
-        
-        # Create a test result CSV file (save to test directory for reference)
+        keys = load_keys(keys_file)
+        rsa_public_key = keys[KEY_NAMES["TASKS_OUTPUTS_RSA_PUBLIC_KEY"]].encode("utf-8")
+        ecdsa_private_key = keys[KEY_NAMES["TASKS_OUTPUTS_ECDSA_PRIVATE_KEY"]].encode("utf-8")
+        rsa_private_key = keys[KEY_NAMES["TASKS_OUTPUTS_RSA_PRIVATE_KEY"]].encode("utf-8")
+        ecdsa_public_key = keys[KEY_NAMES["TASKS_OUTPUTS_ECDSA_PUBLIC_KEY"]].encode("utf-8")
+
         original_result_csv = test_dir / "test-results.csv"
         encrypted_result_csv = test_dir / "encrypted_results.csv"
         decrypted_result_csv = tmp_path / "decrypted_results.csv"
-        
-        # Create test data with results
+
         test_results = [
             {"name": "Task 1", "result": json.dumps({"status": "completed", "data": "result1"})},
             {"name": "Task 2", "result": json.dumps({"status": "completed", "data": "result2"})},
             {"name": "Task 3", "result": json.dumps({"status": "failed", "error": "test error"})},
         ]
-        
-        # Write original result CSV
+
         with open(original_result_csv, 'w', encoding='utf-8', newline='') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=["name", "result"])
             writer.writeheader()
             for row in test_results:
                 writer.writerow(row)
-        
-        # Encrypt the result CSV
+
         encrypt_result_csv_file(
             str(original_result_csv),
-            str(encrypted_result_csv)
+            str(encrypted_result_csv),
+            rsa_public_key=rsa_public_key,
+            ecdsa_private_key=ecdsa_private_key,
         )
-        
+
         assert encrypted_result_csv.exists(), "Encrypted result CSV file should be created"
-        
-        # Decrypt the result CSV
+
         decrypt_result_csv_file(
             str(encrypted_result_csv),
-            str(decrypted_result_csv)
+            str(decrypted_result_csv),
+            rsa_private_key=rsa_private_key,
+            ecdsa_public_key=ecdsa_public_key,
         )
         
         assert decrypted_result_csv.exists(), "Decrypted result CSV file should be created"

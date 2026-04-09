@@ -18,7 +18,6 @@ import json
 import base64
 
 from typing import Tuple, Optional
-from octobot_node.config import settings
 from octobot_node.scheduler.encryption import (
     ENCRYPTED_AES_KEY_B64_METADATA_KEY, 
     IV_B64_METADATA_KEY, 
@@ -31,7 +30,7 @@ from octobot_node.scheduler.encryption import (
 import octobot_commons.cryptography as cryptography
 
 
-def encrypt_task_result(result: str) -> Tuple[str, str]:
+def encrypt_task_result(result: str, rsa_public_key: bytes, ecdsa_private_key: bytes) -> Tuple[str, str]:
     aes_encryption_key = cryptography.generate_aes_key()
     iv = cryptography.generate_iv()
 
@@ -39,12 +38,12 @@ def encrypt_task_result(result: str) -> Tuple[str, str]:
     if not encrypted_result:
         raise EncryptionTaskError("Failed to encrypt result")
 
-    encrypted_aes_key = cryptography.rsa_encrypt_aes_key(aes_encryption_key, settings.TASKS_OUTPUTS_RSA_PUBLIC_KEY)
+    encrypted_aes_key = cryptography.rsa_encrypt_aes_key(aes_encryption_key, rsa_public_key)
     if not encrypted_aes_key:
         raise EncryptionTaskError("Failed to encrypt AES key")
 
     data_to_sign = encrypted_result + encrypted_aes_key + iv
-    signature = cryptography.sign_data(data_to_sign, settings.TASKS_OUTPUTS_ECDSA_PRIVATE_KEY)
+    signature = cryptography.sign_data(data_to_sign, ecdsa_private_key)
     if not signature:
         raise EncryptionTaskError("Failed to sign data")
 
@@ -57,7 +56,12 @@ def encrypt_task_result(result: str) -> Tuple[str, str]:
     return encrypted_result_b64, json.dumps(metadata)
 
 
-def decrypt_task_result(encrypted_result: str, metadata: Optional[str] = None) -> str:
+def decrypt_task_result(
+    encrypted_result: str,
+    rsa_private_key: bytes,
+    ecdsa_public_key: bytes,
+    metadata: Optional[str] = None,
+) -> str:
     if metadata is None:
         raise MissingMetadataError("No metadata provided for result decryption")
 
@@ -81,10 +85,10 @@ def decrypt_task_result(encrypted_result: str, metadata: Optional[str] = None) -
         raise MetadataParsingError(f"Failed to decode base64-encoded data: {e}")
 
     data_to_verify = encrypted_result_bytes + encrypted_aes_key + iv
-    if not cryptography.verify_signature(data_to_verify, settings.TASKS_OUTPUTS_ECDSA_PUBLIC_KEY, signature):
+    if not cryptography.verify_signature(data_to_verify, ecdsa_public_key, signature):
         raise SignatureVerificationError("Signature verification failed")
 
-    decrypted_aes_key = cryptography.rsa_decrypt_aes_key(encrypted_aes_key, settings.TASKS_OUTPUTS_RSA_PRIVATE_KEY)
+    decrypted_aes_key = cryptography.rsa_decrypt_aes_key(encrypted_aes_key, rsa_private_key)
     if not decrypted_aes_key:
         raise EncryptionTaskError("Failed to decrypt AES key")
 

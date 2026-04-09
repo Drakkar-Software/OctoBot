@@ -50,6 +50,7 @@ class Execution(BaseModel):
     name: typing.Optional[str] = None
     description: typing.Optional[str] = None
     actions: typing.Optional[str] = None
+    content_metadata: typing.Optional[str] = None
     type: typing.Optional[str] = None
     status: typing.Optional[TaskStatus] = None
     result: typing.Optional[str] = None
@@ -66,6 +67,7 @@ class Task(BaseModel):
     content_metadata: typing.Optional[str] = None
     type: typing.Optional[str] = None
     executions: list[Execution] = []
+    error: typing.Optional[str] = None
 
 class Node(BaseModel):
     node_type: str

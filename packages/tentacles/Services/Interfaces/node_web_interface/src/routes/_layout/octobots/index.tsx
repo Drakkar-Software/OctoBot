@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query"
-import { createFileRoute, Link } from "@tanstack/react-router"
-import { Bot, Check, Clock, Layers, Plus, Search, Trash2, X } from "lucide-react"
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
+import { Bot, Check, Clock, Layers, Lock, Plus, Search, Trash2, X } from "lucide-react"
 import { Suspense, useMemo, useState } from "react"
 
 import type { Task_Output as Task, TaskStatus } from "@/client"
@@ -23,21 +23,23 @@ import {
 } from "@/components/ui/dialog"
 import { LoadingButton } from "@/components/ui/loading-button"
 import useCustomToast from "@/hooks/useCustomToast"
-import { generateCSV, downloadCSV } from "@/lib/csv"
+import { loadPassword } from "@/lib/device-key"
+import { getTasksQueryOptions } from "@/lib/task-queries"
 import { cn } from "@/lib/utils"
-import { getActiveExecution } from "@/utils/executions"
+import { getActiveExecution, getStatusGroup } from "@/utils/executions"
 
-function getTasksQueryOptions() {
-  return {
-    queryFn: () => TasksService.getTasks({ page: 1, limit: 100 }),
-    queryKey: ["tasks"],
-    refetchInterval: 2_000,
-  }
+type TaskFilterGroup = "active" | "completed" | "errored"
+
+function getTaskFilterGroup(task: Task): TaskFilterGroup {
+  const status = getActiveExecution(task.executions)?.status
+  if (getStatusGroup(status) === "active") return "active"
+  return task.error ? "errored" : "completed"
 }
 
-const filters = [
+const filters: { value: TaskFilterGroup; label: string }[] = [
   { value: "active", label: "Active" },
-  { value: "stopped", label: "Stopped" },
+  { value: "completed", label: "Completed" },
+  { value: "errored", label: "Errored" },
 ]
 
 const statusLabels: Record<TaskStatus, string> = {
@@ -45,11 +47,12 @@ const statusLabels: Record<TaskStatus, string> = {
   scheduled: "Scheduled",
   periodic: "Recurring",
   running: "Running",
-  completed: "Stopped",
+  completed: "Completed",
   failed: "Failed",
 }
 
-function getStatusVariant(status?: TaskStatus | null) {
+function getStatusVariant(status?: TaskStatus | null, hasError?: boolean) {
+  if (hasError) return "destructive" as const
   if (!status) return "secondary" as const
   if (status === "running") return "default" as const
   if (status === "failed") return "destructive" as const
@@ -57,18 +60,11 @@ function getStatusVariant(status?: TaskStatus | null) {
   return "secondary" as const
 }
 
-function getStatusGroup(status?: TaskStatus | null) {
-  if (!status) return "active"
-  if (status === "running" || status === "scheduled" || status === "periodic" || status === "pending") {
-    return "active"
-  }
-  return "stopped"
-}
-
 function getTaskSortDate(task: Task): string | null {
   const exec = getActiveExecution(task.executions)
   return (exec?.completed_at ?? exec?.scheduled_at) as string | null
 }
+
 
 function getDisplayDate(task: Task) {
   const exec = getActiveExecution(task.executions)
@@ -181,6 +177,7 @@ function BotCard({
 }) {
   const label = task.name || `OctoBot ${task.id?.slice(0, 6) || "new"}`
   const status = (getActiveExecution(task.executions)?.status || "scheduled") as TaskStatus
+  const hasError = !!task.error
 
   return (
     <Card
@@ -189,6 +186,7 @@ function BotCard({
         selected
           ? "ring-2 ring-primary shadow-md"
           : "hover:ring-1 hover:ring-primary/40",
+        hasError && !selected && "ring-1 ring-destructive",
       )}
       onClick={() => task.id && onToggleSelect(task.id)}
     >
@@ -204,14 +202,22 @@ function BotCard({
           </div>
           <div className="min-w-0 flex-1">
             <div className="grid grid-cols-[1fr_auto] items-start gap-2">
-              <span className="truncate text-sm font-semibold leading-tight">{label}</span>
-              <Badge variant={getStatusVariant(status)} className={cn(selected && "mr-6")}>
-                {statusLabels[status]}
+              <span className="flex items-center gap-1.5 truncate text-sm font-semibold leading-tight">
+                <span className="truncate">{label}</span>
+                {task.content_metadata && <Lock className="size-3 shrink-0 text-muted-foreground/50" />}
+              </span>
+              <Badge variant={getStatusVariant(status, hasError)} className={cn(selected && "mr-6")}>
+                {hasError ? "Error" : statusLabels[status]}
               </Badge>
             </div>
-            <span className="mt-0.5 block font-mono text-xs text-muted-foreground">
-              ID: {task.id?.slice(0, 12) || "—"}
-            </span>
+            <div className="mt-0.5 flex items-center justify-between gap-2 min-w-0">
+              <span className="font-mono text-xs text-muted-foreground shrink-0">
+                ID: {task.id?.slice(0, 12) || "—"}
+              </span>
+              {hasError && (
+                <span className="font-mono text-xs text-red-400 truncate text-right">{task.error}</span>
+              )}
+            </div>
           </div>
         </div>
       </CardHeader>
@@ -299,7 +305,9 @@ function SelectionToolbar({
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [shareLogsOpen, setShareLogsOpen] = useState(false)
   const [shareLogsLoading, setShareLogsLoading] = useState(false)
+  const [exportLoading, setExportLoading] = useState(false)
   const [shareCreds, setShareCreds] = useState<{ errorId: string; errorSecret: string } | null>(null)
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { showSuccessToast, showErrorToast } = useCustomToast()
 
@@ -320,34 +328,32 @@ function SelectionToolbar({
     },
   })
 
+  const exportableTasks = useMemo(
+    () =>
+      allTasks.filter(
+        (t) =>
+          t.id &&
+          selectedIds.has(t.id) &&
+          getTaskFilterGroup(t) !== "active",
+      ),
+    [allTasks, selectedIds],
+  )
+
   const handleExportResults = () => {
-    const selected = allTasks.filter(
-      (t) => t.id && selectedIds.has(t.id) && getStatusGroup(getActiveExecution(t.executions)?.status) === "stopped"
-    )
-    if (selected.length === 0) {
+    if (exportableTasks.length === 0) {
       showErrorToast("No results to export for selected OctoBots")
       return
     }
-    const headers = ["name", "status", "result", "result_metadata"]
-    const rows = selected.map((t) => {
-      const activeExec = getActiveExecution(t.executions)
-      let resultValue = activeExec?.result
-      try {
-        const parsed = activeExec?.result ? JSON.parse(activeExec.result) : null
-        resultValue = parsed !== null ? JSON.stringify(parsed) : activeExec?.result
-      } catch { /* raw string */ }
-      return [t.name || "", activeExec?.status || "", resultValue || "", activeExec?.result_metadata || ""]
-    })
-    const csv = generateCSV(headers, rows)
-    downloadCSV(csv, `task-results-${new Date().toISOString().split("T")[0]}`)
-    showSuccessToast(`Exported ${selected.length} result${selected.length !== 1 ? "s" : ""}`)
+    setExportLoading(true)
+    const taskIds = exportableTasks.map((t) => t.id).filter(Boolean).join(",")
+    navigate({ to: "/octobots/export", search: { tasks: taskIds } })
   }
 
   const handleShareLogs = async () => {
     setShareLogsLoading(true)
     try {
       const username = localStorage.getItem("auth_username") || "node"
-      const password = localStorage.getItem("auth_password") || ""
+      const password = (await loadPassword()) ?? ""
       const res = await fetch("/api/v1/logs/share", {
         method: "POST",
         headers: {
@@ -387,9 +393,9 @@ function SelectionToolbar({
           </Button>
         </div>
         <div className="ml-auto flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" onClick={handleExportResults}>
+          <LoadingButton variant="outline" size="sm" loading={exportLoading} onClick={handleExportResults}>
             Export results
-          </Button>
+          </LoadingButton>
           <LoadingButton variant="outline" size="sm" loading={shareLogsLoading} onClick={handleShareLogs}>
             Share logs
           </LoadingButton>
@@ -446,6 +452,7 @@ function SelectionToolbar({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
     </>
   )
 }
@@ -453,7 +460,7 @@ function SelectionToolbar({
 
 function BotsContent() {
   const { data: tasks } = useSuspenseQuery(getTasksQueryOptions())
-  const [filterValue, setFilterValue] = useState("active")
+  const [filterValue, setFilterValue] = useState<TaskFilterGroup>("active")
   const [searchValue, setSearchValue] = useState("")
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 
@@ -461,8 +468,7 @@ function BotsContent() {
     const query = searchValue.trim().toLowerCase()
     const matched = tasks.filter((task) => {
       const activeExec = getActiveExecution(task.executions)
-      const inFilter =
-        filterValue === "all" ? true : getStatusGroup(activeExec?.status) === filterValue
+      const inFilter = getTaskFilterGroup(task) === filterValue
       const inSearch = query
         ? `${task.name ?? ""} ${activeExec?.type ?? ""}`
             .toLowerCase()
@@ -479,10 +485,11 @@ function BotsContent() {
   }, [tasks, filterValue, searchValue])
 
   const counts = useMemo(() => {
-    return {
-      active: tasks.filter((task) => getStatusGroup(getActiveExecution(task.executions)?.status) === "active").length,
-      stopped: tasks.filter((task) => getStatusGroup(getActiveExecution(task.executions)?.status) === "stopped").length,
+    const c = { active: 0, completed: 0, errored: 0 }
+    for (const task of tasks) {
+      c[getTaskFilterGroup(task)]++
     }
+    return c
   }, [tasks])
 
   const handleToggleSelect = (id: string) => {

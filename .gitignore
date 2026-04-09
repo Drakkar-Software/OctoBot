@@ -4,6 +4,9 @@ __pycache__/
 *$py.class
 *.orig
 
+# Node
+node_modules/
+
 # C extensions
 *.so
 

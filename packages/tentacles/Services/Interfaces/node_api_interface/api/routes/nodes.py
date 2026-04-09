@@ -20,6 +20,7 @@ import typing
 from fastapi import APIRouter
 
 import octobot_node.config
+import octobot_node.constants
 import octobot_node.models
 import octobot_node.scheduler.api
 import octobot_node.scheduler.scheduler
@@ -44,6 +45,7 @@ def get_node_config() -> typing.Any:
         "node_type": "master" if octobot_node.config.settings.IS_MASTER_MODE else "standalone",
         "use_dedicated_log_file_per_automation": octobot_node.config.settings.USE_DEDICATED_LOG_FILE_PER_AUTOMATION,
         "tasks_encryption_enabled": octobot_node.config.settings.tasks_encryption_enabled,
+        "server_encryption_env_vars": octobot_node.constants.TASKS_ENCRYPTION_ENV_VARS,
     }
 
 

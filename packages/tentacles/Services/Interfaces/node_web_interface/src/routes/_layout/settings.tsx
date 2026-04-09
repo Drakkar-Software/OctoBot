@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { Check, Copy, Download, FileText, Network, QrCode, Server, ShieldCheck, Sliders, TriangleAlert, Wallet, X } from "lucide-react"
-import { useEffect, useState } from "react"
+import { Check, Copy, Download, FileText, KeyRound, Network, QrCode, Server, ShieldCheck, Sliders, TriangleAlert, Wallet, X } from "lucide-react"
+import { useEffect, useRef, useState } from "react"
 import QRCode from "react-qr-code"
 
 import {
@@ -20,6 +20,20 @@ import {
 } from "@/components/ui/dialog"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import useAuth from "@/hooks/useAuth"
+import {
+  CLIENT_KEY_LABELS,
+  CLIENT_KEY_NAMES,
+  areClientKeysConfigured,
+  emptyKeys,
+} from "@/lib/client-encryption"
+import type { ClientKeys } from "@/lib/client-encryption"
+import {
+  clearClientKeys,
+  hasStoredClientKeys,
+  loadClientKeys,
+  loadPassword,
+  saveClientKeys,
+} from "@/lib/device-key"
 
 export const Route = createFileRoute("/_layout/settings")({
   component: Settings,
@@ -90,9 +104,9 @@ function LoggingCard() {
   )
 }
 
-function buildAuthHeader() {
+async function buildAuthHeader() {
   const username = localStorage.getItem("auth_username") || "node"
-  const password = localStorage.getItem("auth_password") || ""
+  const password = (await loadPassword()) ?? ""
   return `Basic ${btoa(`${username}:${password}`)}`
 }
 
@@ -107,7 +121,7 @@ function ExportWalletDialog() {
     setError(null)
     try {
       const res = await fetch("/api/v1/setup/wallet/export", {
-        headers: { Authorization: buildAuthHeader() },
+        headers: { Authorization: await buildAuthHeader() },
       })
       if (!res.ok) throw new Error(await res.text())
       const data = await res.json()
@@ -179,10 +193,10 @@ function ExportWalletDialog() {
 function PairDeviceDialog() {
   const [qrValue, setQrValue] = useState<string | null>(null)
 
-  const onOpenChange = (open: boolean) => {
+  const onOpenChange = async (open: boolean) => {
     if (open) {
       const address = localStorage.getItem("auth_username") || ""
-      const passphrase = localStorage.getItem("auth_password") || ""
+      const passphrase = (await loadPassword()) ?? ""
       setQrValue(JSON.stringify({
         url: window.location.origin,
         address,
@@ -304,11 +318,15 @@ function NodeTypeCard() {
 
 function EncryptionCard() {
   const [enabled, setEnabled] = useState<boolean | null>(null)
+  const [envVars, setEnvVars] = useState<string[]>([])
 
   useEffect(() => {
     fetch("/api/v1/nodes/config", { credentials: "include" })
       .then((r) => r.json())
-      .then((data) => setEnabled(data.tasks_encryption_enabled ?? false))
+      .then((data) => {
+        setEnabled(data.tasks_encryption_enabled ?? false)
+        setEnvVars(data.server_encryption_env_vars ?? [])
+      })
       .catch(() => setEnabled(false))
   }, [])
 
@@ -323,7 +341,7 @@ function EncryptionCard() {
           Task encryption
         </CardTitle>
         <CardDescription>
-          End-to-end encryption for task inputs and outputs.
+          Server-side encryption keys for task inputs.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -331,7 +349,7 @@ function EncryptionCard() {
           <p className="text-sm text-muted-foreground">Loading…</p>
         ) : enabled ? (
           <span className="text-xs text-muted-foreground">
-            All task encryption keys are configured.
+            All server encryption keys are configured.
           </span>
         ) : (
           <div className="flex flex-col gap-2">
@@ -339,16 +357,167 @@ function EncryptionCard() {
               Define the following environment variables to enable:
             </span>
             <ul className="text-xs font-mono text-muted-foreground flex flex-col gap-0.5 ml-6 list-disc">
-              <li>TASKS_INPUTS_RSA_PRIVATE_KEY</li>
-              <li>TASKS_INPUTS_ECDSA_PUBLIC_KEY</li>
-              <li>TASKS_OUTPUTS_RSA_PUBLIC_KEY</li>
-              <li>TASKS_OUTPUTS_ECDSA_PRIVATE_KEY</li>
-              <li>TASKS_INPUTS_RSA_PUBLIC_KEY</li>
-              <li>TASKS_INPUTS_ECDSA_PRIVATE_KEY</li>
-              <li>TASKS_OUTPUTS_RSA_PRIVATE_KEY</li>
-              <li>TASKS_OUTPUTS_ECDSA_PUBLIC_KEY</li>
+              {envVars.map((v) => (
+                <li key={v}>{v}</li>
+              ))}
             </ul>
           </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+function ClientEncryptionKeysCard() {
+  const [keys, setKeys] = useState<ClientKeys>(emptyKeys)
+  const [status, setStatus] = useState<"loading" | "ready" | "saved" | "error">("loading")
+  const [hasStored, setHasStored] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [error, setError] = useState("")
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const configured = areClientKeysConfigured(keys)
+
+  useEffect(() => {
+    ;(async () => {
+      const stored = await hasStoredClientKeys()
+      setHasStored(stored)
+      if (!stored) {
+        setStatus("ready")
+        return
+      }
+      try {
+        const loaded = await loadClientKeys()
+        if (loaded) setKeys(loaded as ClientKeys)
+        setStatus("ready")
+      } catch {
+        setStatus("error")
+        setError("Failed to decrypt stored keys.")
+      }
+    })()
+  }, [])
+
+  const handleSave = async () => {
+    try {
+      await saveClientKeys(keys)
+      setHasStored(true)
+      setStatus("saved")
+      setEditing(false)
+      setError("")
+      if (timerRef.current) clearTimeout(timerRef.current)
+      timerRef.current = setTimeout(() => setStatus("ready"), 2000)
+    } catch (e) {
+      setStatus("error")
+      setError(e instanceof Error ? e.message : "Encryption failed")
+    }
+  }
+
+  const handleClear = async () => {
+    await clearClientKeys()
+    setHasStored(false)
+    setKeys(emptyKeys())
+    setStatus("ready")
+    setError("")
+  }
+
+  return (
+    <Card className="relative md:col-span-2">
+      <div className="absolute right-4 top-4">
+        <StatusIndicator enabled={configured && hasStored} />
+      </div>
+      <CardHeader className="pr-12">
+        <CardTitle className="flex items-center gap-2">
+          <KeyRound className="size-4" />
+          Client encryption keys
+        </CardTitle>
+        <CardDescription>
+          Browser-stored OUTPUTS keys for decrypting task results. Protected by a device-bound key in IndexedDB. Never sent to the server.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
+        {status === "error" ? (
+          <div className="flex flex-col gap-3">
+            <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+              <TriangleAlert className="mt-0.5 size-4 shrink-0" />
+              <span>{error}</span>
+            </div>
+            <button
+              className="inline-flex w-fit items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent"
+              onClick={handleClear}
+            >
+              Clear stored keys and re-enter
+            </button>
+          </div>
+        ) : status === "loading" ? (
+          <p className="text-sm text-muted-foreground">Decrypting…</p>
+        ) : hasStored && !editing ? (
+          <>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {CLIENT_KEY_NAMES.map((k) => (
+                <div key={k} className="flex flex-col gap-1">
+                  <label className="text-xs font-mono text-muted-foreground">{CLIENT_KEY_LABELS[k]}</label>
+                  <div className="min-h-[80px] w-full rounded-md border bg-muted px-3 py-2 text-xs font-mono text-muted-foreground flex items-center select-none tracking-widest">
+                    {"•".repeat(24)}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center gap-3">
+              {status === "saved" ? (
+                <span className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-green-600 dark:text-green-400">
+                  <Check className="size-4" /> Saved
+                </span>
+              ) : (
+                <button
+                  className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent"
+                  onClick={() => setEditing(true)}
+                >
+                  Edit keys
+                </button>
+              )}
+              <button
+                className="inline-flex items-center gap-2 rounded-md border border-destructive/30 px-3 py-1.5 text-sm font-medium text-destructive hover:bg-destructive/10"
+                onClick={handleClear}
+              >
+                Clear
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {CLIENT_KEY_NAMES.map((k) => (
+                <div key={k} className="flex flex-col gap-1">
+                  <label className="text-xs font-mono text-muted-foreground">{CLIENT_KEY_LABELS[k]}</label>
+                  <textarea
+                    className="min-h-[80px] w-full resize-y rounded-md border bg-muted px-3 py-2 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-ring"
+                    placeholder="-----BEGIN ... KEY-----"
+                    value={keys[k]}
+                    onChange={(e) => setKeys((prev) => ({ ...prev, [k]: e.target.value }))}
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent"
+                onClick={handleSave}
+              >
+                {status === "saved" ? <Check className="size-4" /> : null}
+                {status === "saved" ? "Saved" : "Save keys"}
+              </button>
+              {editing && (
+                <button
+                  className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent"
+                  onClick={() => setEditing(false)}
+                >
+                  Cancel
+                </button>
+              )}
+              {!configured && (
+                <span className="text-xs text-muted-foreground">All 4 keys required for client decryption.</span>
+              )}
+            </div>
+          </>
         )}
       </CardContent>
     </Card>
@@ -363,6 +532,7 @@ function Settings() {
         <NodeTypeCard />
         <LoggingCard />
         <EncryptionCard />
+        <ClientEncryptionKeysCard />
       </div>
     </div>
   )

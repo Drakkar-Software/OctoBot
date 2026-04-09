@@ -1,221 +1,157 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { Upload, FileText } from "lucide-react"
-import { useRef, useState } from "react"
+import { useState } from "react"
 
 import { type Task_Output as Task, TasksService } from "@/client"
-import { LoadingButton } from "@/components/ui/loading-button"
 import useCustomToast from "@/hooks/useCustomToast"
-import { parseCSVFile, type CSVRow } from "@/lib/csv"
-import { handleError } from "@/utils"
+import type { CSVRawResult } from "@/lib/csv"
+
+import CsvUploadStep from "./ImportSteps/CsvUploadStep"
+import ColumnMappingStep, {
+  type ActionRow,
+} from "./ImportSteps/ColumnMappingStep"
+import EncryptStep from "./ImportSteps/EncryptStep"
+import ReviewStep from "./ImportSteps/ReviewStep"
 
 export interface ImportTaskProps {
   onSuccess?: () => void
 }
 
-const ImportTask = ({ onSuccess }: ImportTaskProps) => {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [parsedTasks, setParsedTasks] = useState<CSVRow[]>([])
-  const [isParsing, setIsParsing] = useState(false)
-  const [isDragOver, setIsDragOver] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+type ImportStep = "upload" | "mapping" | "review" | "encrypt"
+
+const STEP_LABELS: Record<ImportStep, string> = {
+  upload: "Upload CSV",
+  mapping: "Map Columns",
+  review: "Review",
+  encrypt: "Import",
+}
+
+const STEPS: ImportStep[] = ["upload", "mapping", "review", "encrypt"]
+
+export default function ImportTask({ onSuccess }: ImportTaskProps) {
+  const [currentStep, setCurrentStep] = useState<ImportStep>("upload")
+  const [csvData, setCsvData] = useState<CSVRawResult | null>(null)
+  const [actionRows, setActionRows] = useState<ActionRow[]>([])
   const queryClient = useQueryClient()
   const { showSuccessToast, showErrorToast } = useCustomToast()
 
   const createTaskMutation = useMutation({
     mutationFn: (data: Array<Task>) =>
       TasksService.createTasks({ requestBody: data }),
-    onError: handleError.bind(showErrorToast),
   })
 
-  const processFile = async (file: File) => {
-    setSelectedFile(file)
-    setIsParsing(true)
-
-    try {
-      const tasks: Array<CSVRow> = await parseCSVFile(file)
-      if (tasks.length === 0) {
-        showErrorToast("No valid tasks found in the CSV file")
-        setSelectedFile(null)
-        setIsParsing(false)
-        return
-      }
-
-      setParsedTasks(tasks)
-    } catch (error) {
-      showErrorToast(
-        error instanceof Error ? error.message : "Failed to parse CSV file"
-      )
-      setSelectedFile(null)
-      setParsedTasks([])
-    } finally {
-      setIsParsing(false)
-    }
+  const handleCsvParsed = (result: CSVRawResult) => {
+    setCsvData(result)
+    setCurrentStep("mapping")
   }
 
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-    await processFile(file)
+  const handleMappingConfirm = (rows: ActionRow[]) => {
+    setActionRows(rows)
+    setCurrentStep("review")
   }
 
-  const handleDrop = async (event: React.DragEvent) => {
-    event.preventDefault()
-    setIsDragOver(false)
-    if (isParsing || createTaskMutation.isPending) return
-    const file = event.dataTransfer.files[0]
-    if (!file) return
-    if (!file.name.endsWith(".csv")) {
-      showErrorToast("Only CSV files are accepted")
-      return
-    }
-    await processFile(file)
-  }
-
-  const handleDragOver = (event: React.DragEvent) => {
-    event.preventDefault()
-    setIsDragOver(true)
-  }
-
-  const handleDragLeave = (event: React.DragEvent) => {
-    event.preventDefault()
-    if (!event.currentTarget.contains(event.relatedTarget as Node)) {
-      setIsDragOver(false)
-    }
-  }
-
-  const handleImport = async () => {
-    if (parsedTasks.length === 0) {
-      showErrorToast("No tasks to import")
+  const handleImport = async (tasks: Task[]) => {
+    if (tasks.length === 0) {
+      showErrorToast("No actions to import")
       return
     }
 
     try {
-      const tasks = parsedTasks.map(task => ({
-        name: task.name,
-        content: task.content,
-        type: task.type,
-        content_metadata: task.metadata,
-      } as Task))
-
-      const [successCount, errorCount] = await createTaskMutation.mutateAsync(tasks)
+      const result = await createTaskMutation.mutateAsync(tasks)
+      const [successCount, errorCount] = result as [number, number]
 
       if (successCount > 0) {
         showSuccessToast(
-          `Successfully imported task${successCount > 1 ? "s" : ""}${
+          `Successfully imported ${successCount} action${successCount > 1 ? "s" : ""}${
             errorCount > 0 ? ` (${errorCount} failed)` : ""
-          }`
+          }`,
         )
       } else {
-        showErrorToast("Failed to import tasks")
+        showErrorToast("Failed to import actions")
       }
 
-      reset()
       queryClient.invalidateQueries({ queryKey: ["tasks"] })
       onSuccess?.()
-    } catch (error) {
+    } catch {
       showErrorToast("An error occurred during import")
     }
   }
 
-  const reset = () => {
-    setSelectedFile(null)
-    setParsedTasks([])
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ""
-    }
-  }
-
-  const isImporting = createTaskMutation.isPending
+  const currentStepIndex = STEPS.indexOf(currentStep)
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-2">
-        <label
-          htmlFor="csv-file"
-          onDrop={handleDrop}
-          onDragOver={handleDragOver}
-          onDragEnter={handleDragOver}
-          onDragLeave={handleDragLeave}
-          className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
-            isDragOver
-              ? "border-primary bg-primary/5"
-              : "border-border hover:bg-muted/50"
-          }`}
-        >
-          <div className="flex flex-col items-center justify-center pt-5 pb-6">
-            {selectedFile ? (
-              <>
-                <FileText className="w-10 h-10 mb-2 text-muted-foreground" />
-                <p className="mb-1 text-sm font-medium text-foreground">
-                  {selectedFile.name}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {parsedTasks.length > 0
-                    ? `${parsedTasks.length} task${parsedTasks.length > 1 ? "s" : ""} found`
-                    : "Processing..."}
-                </p>
-              </>
-            ) : (
-              <>
-                <Upload className="w-10 h-10 mb-2 text-muted-foreground" />
-                <p className="mb-1 text-sm font-medium text-foreground">
-                  Click to upload or drag and drop
-                </p>
-                <p className="text-xs text-muted-foreground">CSV file only</p>
-              </>
-            )}
-          </div>
-          <input
-            ref={fileInputRef}
-            id="csv-file"
-            type="file"
-            accept=".csv"
-            className="hidden"
-            onChange={handleFileSelect}
-            disabled={isParsing || isImporting}
-          />
-        </label>
+    <div className="flex flex-col gap-6">
+      {/* Step indicator */}
+      <div className="flex items-center gap-2">
+        {STEPS.map((step, index) => {
+          const isActive = index === currentStepIndex
+          const isCompleted = index < currentStepIndex
+
+          return (
+            <div key={step} className="flex items-center gap-2">
+              {index > 0 && (
+                <div
+                  className={`h-px w-8 ${
+                    isCompleted ? "bg-primary" : "bg-border"
+                  }`}
+                />
+              )}
+              <div className="flex items-center gap-1.5">
+                <div
+                  className={`flex size-6 items-center justify-center rounded-full text-xs font-medium ${
+                    isActive
+                      ? "bg-primary text-primary-foreground"
+                      : isCompleted
+                        ? "bg-primary/20 text-primary"
+                        : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  {index + 1}
+                </div>
+                <span
+                  className={`text-xs ${
+                    isActive
+                      ? "font-medium text-foreground"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  {STEP_LABELS[step]}
+                </span>
+              </div>
+            </div>
+          )
+        })}
       </div>
 
-      {parsedTasks.length > 0 && (
-        <div className="rounded-md border border-border bg-muted/30 p-3">
-          <p className="text-sm font-medium mb-2">Preview ({parsedTasks.length} tasks):</p>
-          <div className="max-h-32 overflow-y-auto space-y-1">
-            {parsedTasks.slice(0, 5).map((task, index) => (
-              <div key={index} className="text-xs text-muted-foreground">
-                <span className="font-medium">{task.name}</span>
-                <span className="ml-2 text-muted-foreground/70">({task.type})</span>
-              </div>
-            ))}
-            {parsedTasks.length > 5 && (
-              <p className="text-xs text-muted-foreground italic">
-                ... and {parsedTasks.length - 5} more
-              </p>
-            )}
-          </div>
-        </div>
+      {/* Step content */}
+      {currentStep === "upload" && (
+        <CsvUploadStep onParsed={handleCsvParsed} />
       )}
 
-      <div className="rounded-md border border-border bg-muted/30 p-3">
-        <p className="text-xs text-muted-foreground">
-          <strong>CSV Format:</strong> The first row must be a header row with "name" and "type" columns (required), and optionally a "content" column. Additional columns will be included in the content field.
-        </p>
-        <p className="text-xs text-muted-foreground mt-1">
-          Example: <code className="bg-background px-1 rounded">name,content,type</code> or <code className="bg-background px-1 rounded">"Task 1","JSON content","execute_actions"</code>
-        </p>
-      </div>
+      {currentStep === "mapping" && csvData && (
+        <ColumnMappingStep
+          headers={csvData.headers}
+          rows={csvData.rows}
+          onConfirm={handleMappingConfirm}
+          onBack={() => setCurrentStep("upload")}
+        />
+      )}
 
-      <LoadingButton
-        onClick={handleImport}
-        loading={isImporting}
-        disabled={parsedTasks.length === 0 || isParsing}
-      >
-        Import {parsedTasks.length > 0 ? `${parsedTasks.length} ` : ""}Task
-        {parsedTasks.length > 1 ? "s" : ""}
-      </LoadingButton>
+      {currentStep === "review" && (
+        <ReviewStep
+          actions={actionRows}
+          onNext={() => setCurrentStep("encrypt")}
+          onBack={() => setCurrentStep("mapping")}
+        />
+      )}
+
+      {currentStep === "encrypt" && (
+        <EncryptStep
+          actions={actionRows}
+          onImport={handleImport}
+          onBack={() => setCurrentStep("review")}
+          isImporting={createTaskMutation.isPending}
+        />
+      )}
     </div>
   )
 }
-
-export default ImportTask
-

@@ -7,6 +7,7 @@ import {
   type User,
   UsersService,
 } from "@/client"
+import { clearPassword, savePassword } from "@/lib/device-key"
 import { handleError } from "@/utils"
 import useCustomToast from "./useCustomToast"
 
@@ -16,8 +17,7 @@ export type LoginCredentials = {
 }
 
 const isLoggedIn = () => {
-  return localStorage.getItem("auth_username") !== null && 
-         localStorage.getItem("auth_password") !== null
+  return localStorage.getItem("auth_username") !== null
 }
 
 const useAuth = () => {
@@ -32,7 +32,7 @@ const useAuth = () => {
 
   const login = async (data: LoginCredentials) => {
     localStorage.setItem("auth_username", data.username)
-    localStorage.setItem("auth_password", data.password)
+    await savePassword(data.password)
     const user = await LoginService.testAuth()
     // Store the real node address returned by the server
     localStorage.setItem("auth_username", user.email)
@@ -44,13 +44,13 @@ const useAuth = () => {
       navigate({ to: "/" })
     },
     onError: (error) => {
-      localStorage.removeItem("auth_password")
+      void clearPassword()
       handleError.bind(showErrorToast)(error as ApiError)
     },
   })
 
   const logout = () => {
-    localStorage.removeItem("auth_password")
+    void clearPassword()
     navigate({ to: "/login" })
   }
 

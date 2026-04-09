@@ -30,6 +30,7 @@ class AutomationWorkflowInputs(octobot_commons.dataclasses.minimizable_dataclass
 @dataclasses.dataclass
 class AutomationWorkflowOutput(octobot_commons.dataclasses.minimizable_dataclass.MinimizableDataclass):
     state: typing.Optional[str] = None
+    state_metadata: typing.Optional[str] = None
     error: typing.Optional[str] = None
 
 

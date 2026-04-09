@@ -110,6 +110,12 @@ jobs:
         python-version: ${{ matrix.version }}
         architecture: ${{ matrix.arch }}
 
+    - name: Set up Node.js
+      if: matrix.package == 'octobot'
+      uses: actions/setup-node@v6
+      with:
+        node-version: 22
+
     - name: Download build wheel artifact
       uses: actions/download-artifact@v8
       with:
@@ -180,6 +186,16 @@ jobs:
       run: |
         cd ${{ matrix.package }}
         pytest tests --backend=rust -v
+
+    - name: Run frontend tests
+      if: matrix.package == 'octobot'
+      run: |
+        find packages/tentacles -name "package.json" -not -path "*/node_modules/*" | while read pkg; do
+          cd "$(dirname "$pkg")"
+          npm ci
+          npm test
+          cd - > /dev/null
+        done
 
   docker:
     name: Build & Push Docker images
