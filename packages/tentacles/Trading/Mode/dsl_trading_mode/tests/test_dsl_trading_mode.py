@@ -75,6 +75,7 @@ class TestDSLTradingMode:
         assert "total" in interpreter.operators_by_name # create_portfolio_operators
         assert "market" in interpreter.operators_by_name # create_create_order_operators
         assert "cancel_order" in interpreter.operators_by_name # create_cancel_order_operators
+        assert "fetch_order" in interpreter.operators_by_name # create_fetch_order_operators
         assert "blockchain_wallet_balance" in interpreter.operators_by_name # create_blockchain_wallet_operators
 
     @pytest.mark.asyncio

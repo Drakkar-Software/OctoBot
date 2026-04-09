@@ -226,6 +226,7 @@ class TradingViewSignalToDSLTranslator:
         return (
             dsl_operators.create_create_order_operators(None) +
             dsl_operators.create_cancel_order_operators(None) +
+            dsl_operators.create_fetch_order_operators(None) +
             dsl_operators.create_blockchain_wallet_operators(None) +
             dsl_operators.create_portfolio_operators(None)
         )  # type: ignore

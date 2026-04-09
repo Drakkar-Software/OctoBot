@@ -289,9 +289,9 @@ class OHLCVUpdater(ohlcv_channel.OHLCVProducer):
             raise err
 
     def _create_ohlcv_from_ticker(self, ticker: dict, time_frame: common_enums.TimeFrames) -> list[dict]:
-        candle_open_time = (
-            ticker[enums.ExchangeConstantsTickersColumns.TIMESTAMP.value] - (
-                ticker[enums.ExchangeConstantsTickersColumns.TIMESTAMP.value] % common_enums.TimeFramesMinutes[time_frame] * common_constants.MINUTE_TO_SECONDS
+        candle_open_time = ticker[enums.ExchangeConstantsTickersColumns.TIMESTAMP.value] - (
+            ticker[enums.ExchangeConstantsTickersColumns.TIMESTAMP.value] % (
+                common_enums.TimeFramesMinutes[time_frame] * common_constants.MINUTE_TO_SECONDS
             )
         )
         return [

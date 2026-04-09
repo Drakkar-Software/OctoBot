@@ -37,6 +37,7 @@ try:
     import octobot_flow.enums
 
     import tentacles.Meta.DSL_operators as DSL_operators
+    import tentacles.Meta.DSL_operators.exchange_operators.exchange_personal_data_operators.fetch_order_operators as fetch_order_operators_module  # noqa: E501
 
     BLOCKCHAIN = octobot_trading.constants.SIMULATED_BLOCKCHAIN_NETWORK
 except ImportError as err:
@@ -244,6 +245,28 @@ def trade_transfer_and_check_balance_actions_bundle_no_wait(market_order_action,
         "BTC": 1,
     }
     all["params"]["ACTIONS"] = "trade,transfer,loop_until_blockchain_balance"
+    return all
+
+
+@pytest.fixture
+def trade_and_loop_until_order_closed(market_order_action):
+    all = {
+        "params": {
+            **market_order_action["params"],
+            **{
+                "ORDER_EXCHANGE_ID": (
+                    "dependency::action_trade_1::created_orders::0::exchange_id"
+                ),
+                "LOOP_INTERVAL": 3,
+                "LOOP_TIMEOUT": 10,
+                "LOOP_MAX_ATTEMPTS": 4,
+            },
+        }
+    }
+    all["params"]["SIMULATED_PORTFOLIO"] = {
+        "BTC": 1,
+    }
+    all["params"]["ACTIONS"] = "trade,loop_until_order_closed"
     return all
 
 
@@ -811,7 +834,144 @@ class TestOctoBotActionsJob:
         # created a buy order but not executed: locked BTC in portfolio
         assert post_deposit_portfolio["BTC"][common_constants.PORTFOLIO_AVAILABLE] < post_deposit_portfolio["BTC"][common_constants.PORTFOLIO_TOTAL]
 
-    # todo update with loop_until_blockchain_balance
+    async def test_run_trade_and_loop_until_order_closed(self, trade_and_loop_until_order_closed):
+        # Step 1 — Apply automation config (ACTIONS: trade, loop_until_order_closed).
+        # The only runnable action is init/APPLY_CONFIGURATION; portfolio is seeded (e.g. BTC for the later market buy).
+        job = octobot_flow_client.OctoBotActionsJob(trade_and_loop_until_order_closed, [])
+        result = await job.run()
+        assert len(result.processed_actions) == 1
+        processed_actions = result.processed_actions
+        assert len(processed_actions) == 1
+        assert isinstance(processed_actions[0], octobot_flow.entities.ConfiguredActionDetails)
+        assert processed_actions[0].action == octobot_flow.enums.ActionType.APPLY_CONFIGURATION.value
+        assert processed_actions[0].config is not None
+        assert "automation" in processed_actions[0].config
+        assert isinstance(processed_actions[0].config["exchange_account_details"], dict)
+        pre_trade_portfolio = job.after_execution_state.automation.client_exchange_account_elements.portfolio.content
+        assert pre_trade_portfolio["BTC"] == {
+            common_constants.PORTFOLIO_AVAILABLE: 1,
+            common_constants.PORTFOLIO_TOTAL: 1,
+        }
+
+        # Step 2 — Run the market trade node (first executable after init). Produces created_orders data the DAG wires
+        # into loop_until_order_closed via dependency::action_trade_1::created_orders::0::...
+        next_actions_description = result.next_actions_description
+        assert next_actions_description is not None
+        parsed_state = octobot_flow.AutomationState.from_dict(next_actions_description.state)
+        next_actions = parsed_state.automation.actions_dag.get_executable_actions()
+        assert len(next_actions) == 1
+        assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
+        assert next_actions[0].dsl_script is not None and next_actions[0].dsl_script.startswith("market(")
+        job2 = octobot_flow_client.OctoBotActionsJob(
+            next_actions_description.to_dict(include_default_values=False),
+            []
+        )
+        result = await job2.run()
+        assert len(result.processed_actions) == 1
+        processed_actions = result.processed_actions
+        assert len(processed_actions) == 1
+        assert isinstance(processed_actions[0], octobot_flow.entities.DSLScriptActionDetails)
+        assert processed_actions[0].dsl_script is not None and processed_actions[0].dsl_script.startswith("market(")
+        assert processed_actions[0].result is not None
+        assert len(get_created_orders(processed_actions)) == 1
+        order = get_created_orders(processed_actions)[0]
+        assert order["symbol"] == "ETH/BTC"
+        assert order["amount"] == 1
+        assert order["type"] == "market"
+        assert order["side"] == "buy"
+
+        # Step 3 — loop_until_order_closed: DSL polls fetch_order until status != open (simulator reads orders_manager / trades).
+        # Sanity-check the generated script before running it.
+        next_actions_description = result.next_actions_description
+        assert next_actions_description is not None
+        parsed_state = octobot_flow.AutomationState.from_dict(next_actions_description.state)
+        next_actions = parsed_state.automation.actions_dag.get_executable_actions()
+        assert len(next_actions) == 1
+        assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
+        loop_dsl = next_actions[0].dsl_script
+        assert loop_dsl is not None
+        assert loop_dsl.startswith("loop_until(")
+        assert "fetch_order" in loop_dsl
+        assert f"!= '{trading_enums.OrderStatus.OPEN.value}'" in loop_dsl
+        assert "3, timeout=10, max_attempts=4, return_remaining_time=True)" in loop_dsl
+        job3 = octobot_flow_client.OctoBotActionsJob(
+            next_actions_description.to_dict(include_default_values=False),
+            []
+        )
+        # Step 3a — First automation run: pretend the order is still open on the first fetch_order resolution only.
+        # The real loop condition is fetch_order(...)["status"] != "open"; forcing "open" keeps it false once.
+        # With return_remaining_time=True, loop_until does not block: it yields a ReCallingOperatorResult and leaves
+        # the action pending for a later job run (same pattern as blockchain loop_until tests).
+        fetch_resolution_attempt_counter = {"count": 0}
+        real_simulated_fetch_resolve = fetch_order_operators_module._resolve_simulated_fetch_order_dict
+
+        def resolve_simulated_order_first_fetch_reports_open_then_real(
+            exchange_mgr, symbol_param, exchange_order_param
+        ):
+            order_dict = real_simulated_fetch_resolve(exchange_mgr, symbol_param, exchange_order_param)
+            fetch_resolution_attempt_counter["count"] += 1
+            if fetch_resolution_attempt_counter["count"] == 1:
+                dict_with_open_status = dict(order_dict)
+                dict_with_open_status[trading_enums.ExchangeConstantsOrderColumns.STATUS.value] = (
+                    trading_enums.OrderStatus.OPEN.value
+                )
+                return dict_with_open_status
+            return order_dict
+
+        with mock.patch.object(
+            fetch_order_operators_module,
+            "_resolve_simulated_fetch_order_dict",
+            mock.Mock(side_effect=resolve_simulated_order_first_fetch_reports_open_then_real),
+        ):
+            result = await job3.run()
+        # Expect the loop_until action to be re-scheduled, not completed.
+        assert len(result.processed_actions) == 1
+        processed_actions = result.processed_actions
+        assert isinstance(processed_actions[0], octobot_flow.entities.DSLScriptActionDetails)
+        assert processed_actions[0].dsl_script.startswith("loop_until(")
+        assert processed_actions[0].executed_at is None
+        assert processed_actions[0].result is None
+        assert dsl_interpreter.ReCallingOperatorResult.is_re_calling_operator_result(
+            processed_actions[0].previous_execution_result
+        )
+        assert result.next_actions_description is not None
+        assert result.has_next_actions is True
+        # Same loop_until node stays executable; previous_execution_result carries waiting_time for the scheduler.
+        parsed_state = octobot_flow.AutomationState.from_dict(result.next_actions_description.state)
+        next_actions_after_first_attempt = parsed_state.automation.actions_dag.get_executable_actions()
+        assert len(next_actions_after_first_attempt) == 1
+        assert isinstance(next_actions_after_first_attempt[0], octobot_flow.entities.DSLScriptActionDetails)
+        assert next_actions_after_first_attempt[0].dsl_script.startswith("loop_until(")
+        assert next_actions_after_first_attempt[0].previous_execution_result
+        last_loop_execution_result = dsl_interpreter.ReCallingOperatorResult.from_dict(
+            next_actions_after_first_attempt[0].previous_execution_result[
+                dsl_interpreter.ReCallingOperatorResult.__name__
+            ]
+        )
+        assert last_loop_execution_result.last_execution_result is not None
+        assert last_loop_execution_result.last_execution_result[
+            dsl_interpreter.ReCallingOperatorResultKeys.WAITING_TIME.value
+        ] > 0
+
+        # Step 3b — Second automation run: no patch; fetch_order sees the real status (non-open), condition is true,
+        # loop_until completes and the DAG has no further executable actions.
+        next_actions_description = result.next_actions_description
+        job3b = octobot_flow_client.OctoBotActionsJob(
+            next_actions_description.to_dict(include_default_values=False),
+            []
+        )
+        result = await job3b.run()
+        # trade is saved
+        assert len(job3b.after_execution_state.automation.client_exchange_account_elements.trades) == 1
+        assert len(result.processed_actions) == 1
+        processed_actions = result.processed_actions
+        assert isinstance(processed_actions[0], octobot_flow.entities.DSLScriptActionDetails)
+        assert processed_actions[0].dsl_script.startswith("loop_until(")
+        assert processed_actions[0].error_status is None
+        assert processed_actions[0].result is True
+        assert result.next_actions_description
+        assert result.has_next_actions is False
+
     async def test_run_trade_transfer_and_check_balance_actions_bundle_no_wait(self, trade_transfer_and_check_balance_actions_bundle_no_wait):
         # step 1: configure the job (ACTIONS: trade, transfer, wait_for_blockchain_balance)
         job = octobot_flow_client.OctoBotActionsJob(trade_transfer_and_check_balance_actions_bundle_no_wait, [])

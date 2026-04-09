@@ -49,6 +49,7 @@ class DSLExecutor(AbstractActionExecutor):
             + dsl_operators.create_cancel_order_operators(
                 self._exchange_manager, trading_mode=None, dependencies=self._dependencies
             )
+            + dsl_operators.create_fetch_order_operators(self._exchange_manager)
             + dsl_operators.create_blockchain_wallet_operators(self._exchange_manager)
             + trading_modes.create_all_trading_mode_operators(
                 self._exchange_manager, self._dependencies_config

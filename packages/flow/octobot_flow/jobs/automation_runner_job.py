@@ -116,6 +116,8 @@ class AutomationRunnerJob(octobot_flow.repositories.exchange.ExchangeContextMixi
         exchange_data.markets = self.fetched_dependencies.fetched_exchange_data.public_data.markets
         exchange_data.portfolio_details.content = exchange_account_elements.portfolio.content
         exchange_data.orders_details.open_orders = exchange_account_elements.orders.open_orders
+        if isinstance(exchange_account_elements, octobot_flow.entities.ClientExchangeAccountElements):
+            exchange_data.trades = exchange_account_elements.trades
 
     def _get_profile_data(self) -> commons_profiles.ProfileData:
         minimal_profile_data = octobot_flow.logic.configuration.create_profile_data(

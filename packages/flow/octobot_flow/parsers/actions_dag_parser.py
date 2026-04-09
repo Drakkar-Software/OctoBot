@@ -11,6 +11,7 @@ import octobot_commons.dataclasses
 import octobot_trading.blockchain_wallets as blockchain_wallets
 import octobot_trading.blockchain_wallets.simulator.blockchain_wallet_simulator as blockchain_wallets_simulator
 import octobot_trading.exchanges.util.exchange_data as exchange_data_import
+import octobot_trading.enums as trading_enums
 import octobot_flow.errors
 import octobot_flow.entities
 import octobot_flow.enums
@@ -31,6 +32,7 @@ class ActionType(enum.Enum):
     DEPOSIT = "deposit"
     TRANSFER = "transfer"
     LOOP_UNTIL_BLOCKCHAIN_BALANCE = "loop_until_blockchain_balance"
+    LOOP_UNTIL_ORDER_CLOSED = "loop_until_order_closed"
 
 
 CONTENT_KEY = "CONTENT"
@@ -72,6 +74,7 @@ class ActionsDAGParserParams(octobot_commons.dataclasses.FlexibleDataclass):
     ORDER_REDUCE_ONLY: typing.Optional[bool] = None
     ORDER_TYPE: typing.Optional[str] = None
     ORDER_EXTRA_PARAMS: typing.Optional[dict] = None
+    ORDER_EXCHANGE_ID: typing.Optional[str] = None
     EXCHANGE_FROM: typing.Optional[str] = None
     MIN_DELAY: typing.Optional[float] = None
     MAX_DELAY: typing.Optional[float] = None
@@ -312,6 +315,8 @@ class ActionsDAGParser:
                 return self._create_transfer_action(index)
             case ActionType.LOOP_UNTIL_BLOCKCHAIN_BALANCE.value:
                 return self._create_loop_until_blockchain_balance_action(index)
+            case ActionType.LOOP_UNTIL_ORDER_CLOSED.value:
+                return self._create_loop_until_order_closed_action(index)
             case ActionType.WAIT.value:
                 return self._create_wait_action(index)
             case _:
@@ -440,14 +445,31 @@ class ActionsDAGParser:
             dataclasses.asdict(transfer_details),
         )
 
-    def _create_loop_until_blockchain_balance_action(self, index: int) -> octobot_flow.entities.AbstractActionDetails:
+    def _get_loop_params(self) -> tuple[typing.Optional[float], typing.Optional[float], int]:
         loop_interval, loop_timeout, loop_max_attempts = (
             self.params.LOOP_INTERVAL, self.params.LOOP_TIMEOUT, self.params.LOOP_MAX_ATTEMPTS
         )
         if not loop_interval:
             raise octobot_flow.errors.InvalidAutomationActionError(
-                "LOOP_INTERVAL must be provided for the loop_until_blockchain_balance action"
+                "LOOP_INTERVAL must be provided for the loop_until action"
             )
+        return loop_interval, loop_timeout, loop_max_attempts # type: ignore
+
+    def _create_loop_until_order_closed_action(self, index: int) -> octobot_flow.entities.AbstractActionDetails:
+        loop_interval, loop_timeout, loop_max_attempts = self._get_loop_params()
+        self._ensure_params(
+            ["ORDER_EXCHANGE_ID", "ORDER_SYMBOL"],
+            "loop_until_order_closed",
+        )
+        # force the use of keyword form for the exchange_order_id parameter to resolve the dependency
+        fetch_order = f"fetch_order('{self.params.ORDER_SYMBOL}', exchange_order_id='{self.params.ORDER_EXCHANGE_ID}')"
+        dsl_script = f"loop_until({fetch_order}['status'] != '{trading_enums.OrderStatus.OPEN.value}', {loop_interval}, timeout={loop_timeout}, max_attempts={loop_max_attempts}, return_remaining_time=True)"
+        action_id = f"action_loop_until_order_closed_{index}"
+        params = {"exchange_order_id": self.params.ORDER_EXCHANGE_ID, "symbol": self.params.ORDER_SYMBOL}
+        return self._create_dsl_action_with_dependencies_if_any(action_id, dsl_script, params)
+
+    def _create_loop_until_blockchain_balance_action(self, index: int) -> octobot_flow.entities.AbstractActionDetails:
+        loop_interval, loop_timeout, loop_max_attempts = self._get_loop_params()
         amount, asset = self.params.BLOCKCHAIN_BALANCE_AMOUNT, self.params.BLOCKCHAIN_BALANCE_ASSET
         if not amount or not asset:
             raise octobot_flow.errors.InvalidAutomationActionError(
@@ -578,7 +600,7 @@ class ActionsDAGParser:
                     raise octobot_flow.errors.InvalidAutomationActionError(
                         f"Ambiguous dependency literal {literal_repr} ({count} occurrences) in DSL: {dsl_script}"
                     )
-                result = result.replace(literal_repr, repr(placeholder), 1)
+                result = result.replace(literal_repr, placeholder, 1)
             else:
                 raise octobot_flow.errors.InvalidAutomationActionError(
                     f"Dependency value for DSL parameter {dsl_key!r} ({source_literal!r}) not found in script: {dsl_script}"
