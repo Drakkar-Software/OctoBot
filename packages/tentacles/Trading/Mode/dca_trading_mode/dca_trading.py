@@ -23,6 +23,7 @@ import octobot_commons.enums as commons_enums
 import octobot_commons.constants as commons_constants
 import octobot_commons.evaluators_util as evaluators_util
 import octobot_commons.signals as commons_signals
+import octobot_commons.logging as logging
 
 import octobot_evaluators.api as evaluators_api
 import octobot_evaluators.constants as evaluators_constants
@@ -274,7 +275,9 @@ class DCATradingModeConsumer(trading_modes.AbstractTradingModeConsumer):
                         if is_cancelled:
                             next_step_dependencies.extend(new_dependencies)
                     except trading_errors.UnexpectedExchangeSideOrderStateError as err:
-                        self.logger.warning(f"Skipped order cancel: {err}, order: {order}")
+                        self.logger.warning(
+                            f"Skipped order cancel: {err}, order: {logging.get_private_minimized_message_if_necessary(order)}"
+                        )
             else:
                 self.logger.info(
                     f"Skipping {self.exchange_manager.exchange_name} {symbol} entry order cancel as new "

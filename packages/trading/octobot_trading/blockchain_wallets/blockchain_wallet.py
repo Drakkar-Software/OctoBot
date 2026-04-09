@@ -78,7 +78,11 @@ class BlockchainWallet(octobot_trading.accounts.AbstractAccount):
             raise errors.InvalidArgumentError("Simulated addresses are not allowed on a real wallet")
         if not constants.ALLOW_FUNDS_TRANSFER:
             raise errors.DisabledFundsTransferError("Funds transfer is not enabled")
-        self.logger.info(f"Transferring {amount} {asset} from {self.wallet_descriptor.address} to {address}")
+        self.logger.info(
+            f"Transferring {commons_logging.get_private_placeholder_if_necessary(amount)} {asset} from "
+            f"{commons_logging.get_private_minimized_message_if_necessary(self.wallet_descriptor.address)} "
+            f"to {commons_logging.get_private_minimized_message_if_necessary(address)}"
+        )
         if asset == self.blockchain_descriptor.native_coin_symbol:
             transaction = await self.transfer_native_coin(amount, address)
         else:

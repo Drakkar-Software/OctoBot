@@ -388,7 +388,7 @@ def _dump_order(order, is_simulated):
             ID: order.order_id,
         }
     except Exception as err:
-        logging.get_logger("TradingModel").exception(f"Error when dumping order {err}, order: {order}")
+        logging.get_logger("TradingModel").exception(f"Error when dumping order {err}, order: {logging.get_private_minimized_message_if_necessary(order)}")
         return None
 
 

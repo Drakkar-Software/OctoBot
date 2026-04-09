@@ -255,6 +255,10 @@ UNRESOLVED_PARAMETER_PLACEHOLDER = "UNRESOLVED_PARAMETER"
 # Logging
 EXCEPTION_DESC = "exception_desc"
 IS_EXCEPTION_DESC = "is_exception_desc"
+ALLOW_PRIVATE_DATA_LOGS = parse_boolean_environment_var("ALLOW_PRIVATE_DATA_LOGS", "true")
+PRIVATE_MESSAGE_PLACEHOLDER = "***"
+PRIVATE_MESSAGE_ALLOWED_CHARS_COUNT = 3
+
 
 # from https://www.coingecko.com/en/categories/stablecoins
 USD_LIKE_COINS = [

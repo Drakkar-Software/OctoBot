@@ -381,7 +381,9 @@ class PortfolioManager(util.Initializable):
                     self.apply_forced_portfolio()
                 else:
                     self._load_simulated_portfolio_from_history()
-            self.logger.debug(f"{constants.CURRENT_PORTFOLIO_STRING} {self.portfolio.portfolio}")
+            self.logger.debug(
+                f"{constants.CURRENT_PORTFOLIO_STRING} {logging.get_private_placeholder_if_necessary(self.portfolio.portfolio)}"
+            )
 
     def _load_simulated_portfolio_from_history(self):
         portfolio_amount_dict = personal_data.parse_decimal_config_portfolio(

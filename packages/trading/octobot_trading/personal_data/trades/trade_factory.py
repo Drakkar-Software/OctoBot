@@ -57,7 +57,7 @@ def create_trade_from_order(order: "order_class.Order",
                             exchange_trade_id=exchange_trade_id)
     if trade.get_time() < constants.MINIMUM_VAL_TRADE_TIME:
         logging.get_logger("TradeFactory").error(f"Trade with invalid trade time ({trade.get_time()}) "
-                                                 f"from order: {order}")
+                                                 f"from order: {logging.get_private_minimized_message_if_necessary(order)}")
     return trade
 
 

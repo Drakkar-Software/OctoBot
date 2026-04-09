@@ -1171,14 +1171,14 @@ def get_assets_delta_from_orders(
         if delta_quantity < constants.ZERO:
             commons_logging.get_logger(__name__).error(
                 f"Invalid delta quantity: {delta_quantity} for order "
-                f"{order.exchange_order_id} on {order.symbol} "
+                f"{commons_logging.get_private_minimized_message_if_necessary(order.exchange_order_id)} on {order.symbol} "
                 f"ignored filled quantity: {ignored_filled_quantity}."
             )
             continue
         if delta_quantity == constants.ZERO:
             commons_logging.get_logger(__name__).info(
                 f"Skipped zero delta quantity: {delta_quantity} for order "
-                f"{order.exchange_order_id} on {order.symbol} "
+                f"{commons_logging.get_private_minimized_message_if_necessary(order.exchange_order_id)} on {order.symbol} "
                 f"ignored filled quantity: {ignored_filled_quantity}."
             )
             continue

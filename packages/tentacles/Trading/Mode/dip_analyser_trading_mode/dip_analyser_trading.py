@@ -20,6 +20,7 @@ import octobot_commons.constants as commons_constants
 import octobot_commons.enums as commons_enums
 import octobot_commons.evaluators_util as evaluators_util
 import octobot_commons.symbols.symbol_util as symbol_util
+import octobot_commons.logging as commons_logging
 import octobot_evaluators.api as evaluators_api
 import octobot_evaluators.matrix as matrix
 import octobot_evaluators.enums as evaluators_enums
@@ -367,7 +368,10 @@ class DipAnalyserTradingModeConsumer(trading_modes.AbstractTradingModeConsumer):
         created_stop_order = None
         if created_sell_order and created_sell_order.is_open() and current_stop_order:
             created_stop_order = await self.trading_mode.create_order(current_stop_order)
-            self.logger.debug(f"Grouping orders: {sell_order_to_create} and {created_stop_order}")
+            self.logger.debug(
+                f"Grouping orders: {commons_logging.get_private_minimized_message_if_necessary(sell_order_to_create)} "
+                f"and {commons_logging.get_private_minimized_message_if_necessary(created_stop_order)}"
+            )
         return created_sell_order, created_stop_order
 
     def _register_buy_order(self, order_id, price_weight):

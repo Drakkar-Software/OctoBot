@@ -223,11 +223,11 @@ class Trader(util.Initializable):
         created_order = order
         try:
             params = params or {}
-            self.logger.info(f"Creating order: {created_order}")
+            self.logger.info(f"Creating order: {logging.get_private_minimized_message_if_necessary(created_order)}")
             created_order = await self._create_new_order(order, params, wait_for_creation, creation_timeout)
             if created_order is None:
                 self.logger.warning(f"Order not created on {self.exchange_manager.exchange_name} "
-                                    f"(failed attempt to create: {order}). This is likely due to "
+                                    f"(failed attempt to create: {logging.get_private_minimized_message_if_necessary(order)}). This is likely due to "
                                     f"the order being refused by the exchange.")
         except (
             errors.MissingFunds, errors.AuthenticationError,
@@ -238,7 +238,7 @@ class Trader(util.Initializable):
         except Exception as e:
             if raise_all_creation_error:
                 raise
-            self.logger.exception(e, True, f"Unexpected error when creating order: {e}. Order: {order}")
+            self.logger.exception(e, True, f"Unexpected error when creating order: {e}. Order: {logging.get_private_minimized_message_if_necessary(order)}")
             return None
 
         return created_order
@@ -289,7 +289,7 @@ class Trader(util.Initializable):
         :return: True when an order field got updated
         """
         if not order.can_be_edited():
-            raise errors.OrderEditError(f"Order can't be edited, order: {order}")
+            raise errors.OrderEditError(f"Order can't be edited, order: {logging.get_private_minimized_message_if_necessary(order)}")
         changed = False
         previous_exchange_order_id = order.exchange_order_id
         try:
@@ -333,7 +333,7 @@ class Trader(util.Initializable):
                 await self.exchange_manager.exchange_personal_data.handle_order_update_notification(
                     order, enums.OrderUpdateType.EDIT
                 )
-                self.logger.info(f"Edited order: {order}")
+                self.logger.info(f"Edited order: {logging.get_private_minimized_message_if_necessary(order)}")
             return changed
         finally:
             if previous_exchange_order_id != order.exchange_order_id:
@@ -349,7 +349,7 @@ class Trader(util.Initializable):
         params: dict
     ) -> bool:
         self.logger.info(
-            f"Editing order: {order} [edited_quantity: {str(edited_quantity)} edited_price: {str(edited_price)} "
+            f"Editing order: {logging.get_private_minimized_message_if_necessary(order)} [edited_quantity: {str(edited_quantity)} edited_price: {str(edited_price)} "
             f"edited_stop_price: {str(edited_stop_price)} edited_current_price: {str(edited_current_price)}]"
         )
         order_params = self.exchange_manager.exchange.get_order_additional_params(order)
@@ -368,7 +368,8 @@ class Trader(util.Initializable):
         )
         # apply new values from returned order (even order id might have changed)
         self.logger.debug(
-            f"Successfully edited order on {self.exchange_manager.exchange_name}, new order values: {edited_order}"
+            f"Successfully edited order on {self.exchange_manager.exchange_name}, new order values: "
+            f"{logging.get_private_minimized_message_if_necessary(edited_order)}"
         )
         if not self.exchange_manager.exchange_personal_data.portfolio_manager.enable_portfolio_exchange_sync:
             # consider order as cancelled to release portfolio amounts before locking the updated value
@@ -417,7 +418,7 @@ class Trader(util.Initializable):
             )
             if created_order is None:
                 return None
-            self.logger.debug(f"Successfully created order on {self.exchange_manager.exchange_name}: {created_order}")
+            self.logger.debug(f"Successfully created order on {self.exchange_manager.exchange_name}: {logging.get_private_minimized_message_if_necessary(created_order)}")
 
             # get real order from exchange
             updated_order = order_factory.create_order_instance_from_raw(
@@ -524,7 +525,10 @@ class Trader(util.Initializable):
     async def chain_order(self, order, chained_order, update_with_triggering_order_fees, is_bundled, **kwargs):
         await chained_order.set_as_chained_order(order, is_bundled, {}, update_with_triggering_order_fees, **kwargs)
         order.add_chained_order(chained_order)
-        self.logger.info(f"Added chained order [{chained_order}] to [{order}] order.")
+        self.logger.info(
+            f"Added chained order [{logging.get_private_minimized_message_if_necessary(chained_order)}] "
+            f"to [{logging.get_private_minimized_message_if_necessary(order)}] order."
+        )
 
     @enabled_or_forced_only
     async def update_order_as_inactive(
@@ -541,7 +545,10 @@ class Trader(util.Initializable):
                     order, ignored_order, wait_for_cancelling, cancelling_timeout
                 )
         else:
-            self.logger.error(f"Can't update order as inactive: {order} is not open on exchange.")
+            self.logger.error(
+                f"Can't update order as inactive: {logging.get_private_minimized_message_if_necessary(order)} "
+                f"is not open on exchange."
+            )
         return cancelled
 
     @enabled_or_forced_only
@@ -575,7 +582,7 @@ class Trader(util.Initializable):
         :return: None
         """
         if order and order.is_open() or not order.is_active:
-            self.logger.info(f"Cancelling order: {order}")
+            self.logger.info(f"Cancelling order: {logging.get_private_minimized_message_if_necessary(order)}")
             # always cancel this order first to avoid infinite loop followed by deadlock
             return await self._handle_order_cancellation(
                 order, ignored_order, wait_for_cancelling, cancelling_timeout
@@ -618,19 +625,21 @@ class Trader(util.Initializable):
                 else:
                     self.logger.warning(
                         f"Impossible to cancel order ({err} {err.__class__.__name__}). "
-                        f"Considering order as cancelled {order}"
+                        f"Considering order as cancelled {logging.get_private_minimized_message_if_necessary(order)}"
                     )
                     order_status = enums.OrderStatus.CANCELED
             except Exception as err:
-                self.logger.exception(err, True, f"Failed to cancel order {order}")
+                self.logger.exception(
+                    err, True, f"Failed to cancel order {logging.get_private_minimized_message_if_necessary(order)}"
+                )
                 return False
             is_order_refreshing = order.is_refreshing()
             if order_status is enums.OrderStatus.CANCELED:
                 order.status = enums.OrderStatus.CANCELED
-                self.logger.debug(f"Successfully cancelled order {order}")
+                self.logger.debug(f"Successfully cancelled order {logging.get_private_minimized_message_if_necessary(order)}")
             elif order_status is enums.OrderStatus.PENDING_CANCEL:
                 order.status = enums.OrderStatus.PENDING_CANCEL
-                self.logger.debug(f"Order cancel in progress for {order}")
+                self.logger.debug(f"Order cancel in progress for {logging.get_private_minimized_message_if_necessary(order)}")
         else:
             order.status = enums.OrderStatus.CANCELED
 
@@ -657,7 +666,7 @@ class Trader(util.Initializable):
             raise errors.OrderCancelError(
                 f"Error when cancelling order. This order state is unset, which makes "
                 f"it impossible to handle this the issue. Please report it if you see it. "
-                f"Order: {order}"
+                f"Order: {logging.get_private_minimized_message_if_necessary(order)}"
             ) from err
         if order.state.is_refreshing():
             # can't wait for the order state to fully refresh as it will require a portfolio lock which might
@@ -674,7 +683,7 @@ class Trader(util.Initializable):
                 if self._ensure_probably_canceled_order(order, err):
                     return True
         if order.is_cancelled():
-            self.logger.debug(f"Tried to cancel an already cancelled order. Order: {order}")
+            self.logger.debug(f"Tried to cancel an already cancelled order. Order: {logging.get_private_minimized_message_if_necessary(order)}")
             return True
         if order.is_cancelling():
             # don't wait for new state to avoid potential deadlock, just check that order is not filling
@@ -685,32 +694,43 @@ class Trader(util.Initializable):
                 raise errors.OrderNotFoundOnCancelError(
                     f"Tried to cancel an order that can't be found, it might be cancelled or filled already "
                     f"({html_util.get_html_summary_if_relevant(err)}). "
-                    f"Order: {order}"
+                    f"Order: {logging.get_private_minimized_message_if_necessary(order)}"
                 ) from err
             raise errors.OpenOrderError(
-                f"Order is open, but can't be cancelled. This is unexpected. Order: {order}"
+                f"Order is open, but can't be cancelled. This is unexpected. Order: {logging.get_private_minimized_message_if_necessary(order)}"
             ) from err
         elif order.is_filled():
-            raise errors.FilledOrderError(f"Order is filled, it can't be cancelled. Order: {order}") from err
+            raise errors.FilledOrderError(
+                f"Order is filled, it can't be cancelled. Order: {logging.get_private_minimized_message_if_necessary(order)}"
+            ) from err
         elif order.is_closed():
-            raise errors.ClosedOrderError(f"Order is closed, it can't be cancelled. Order: {order}") from err
+            raise errors.ClosedOrderError(
+                f"Order is closed, it can't be cancelled. Order: {logging.get_private_minimized_message_if_necessary(order)}"
+            ) from err
         else:
             # should not happen
             raise errors.OrderCancelError(
-                f"Can't cancel order and unknown post sync order state for order: {order}."
+                f"Can't cancel order and unknown post sync order state for order: "
+                f"{logging.get_private_minimized_message_if_necessary(order)}."
             ) from err
 
     def _ensure_probably_canceled_order(self, order, err: typing.Optional[Exception]) -> bool:
         if order.is_refreshing_filling_state():
-            filled_err = errors.FilledOrderError(f"Order is filled, it can't be cancelled. Order: {order}")
+            filled_err = errors.FilledOrderError(
+                f"Order is filled, it can't be cancelled. Order: {logging.get_private_minimized_message_if_necessary(order)}"
+            )
             if err is None:
                 raise filled_err
             raise filled_err from err
         if order.is_refreshing_canceling_state():
-            self.logger.debug(f"Tried to cancel an already cancelled order. Order: {order}")
+            self.logger.debug(
+                f"Tried to cancel an already cancelled order. Order: {logging.get_private_minimized_message_if_necessary(order)}"
+            )
             return True
         if order.is_pending_cancel_state():
-            self.logger.debug(f"Tried to cancel a pending cancel order. Order: {order}")
+            self.logger.debug(
+                f"Tried to cancel a pending cancel order. Order: {logging.get_private_minimized_message_if_necessary(order)}"
+            )
             return True
         return False
 
@@ -768,9 +788,13 @@ class Trader(util.Initializable):
         return success
 
     async def _wait_for_order_cancel(self, order, cancelling_timeout):
-        self.logger.debug(f"Waiting for order cancelling, order: {order}")
+        self.logger.debug(
+            f"Waiting for order cancelling, order: {logging.get_private_minimized_message_if_necessary(order)}"
+        )
         await order.state.wait_for_terminate(cancelling_timeout)
-        self.logger.debug(f"Completed order cancelling, order: {order}")
+        self.logger.debug(
+            f"Completed order cancelling, order: {logging.get_private_minimized_message_if_necessary(order)}"
+        )
 
     @enabled_or_forced_only
     async def cancel_order_with_id(
@@ -997,7 +1021,7 @@ class Trader(util.Initializable):
         async with self.exchange_manager.exchange_personal_data.portfolio_manager.portfolio.lock:
             self.logger.info(
                 f"Initiating withdrawal of {amount} {asset} from {self.exchange_manager.exchange_name} "
-                f"exchange account to {address}"
+                f"exchange account to {logging.get_private_minimized_message_if_necessary(address)}"
             )
             transaction = await self._withdraw_on_exchange(
                 asset, amount, network, address, tag=tag, params=params

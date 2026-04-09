@@ -130,7 +130,8 @@ class ExchangePersonalData(util.Initializable):
                 except asyncio.TimeoutError:
                     self.logger.error(
                         f"Expected portfolio update timed out after {constants.EXPECTED_PORTFOLIO_UPDATE_TIMEOUT} "
-                        f"seconds when waiting for filled order update. Order: {order}"
+                        f"seconds when waiting for filled order update. Order: "
+                        "{logging.get_private_minimized_message_if_necessary(order)}"
                     )
             if self.exchange_manager.is_future:
                 changed = await self.positions_manager.handle_position_update_from_order(
@@ -279,7 +280,8 @@ class ExchangePersonalData(util.Initializable):
         # seconds/minutes)
         if self._is_out_of_sync_order(exchange_order_id):
             self.logger.debug(f"Ignored update for order with exchange id: {exchange_order_id}: this order "
-                              f"has already been closed (received raw order: {raw_order})")
+                              f"has already been closed (received raw order: "
+                              f"{logging.get_private_minimized_message_if_necessary(raw_order)}")
             # ensure order is not in open orders anymore
             self._ensure_canceled_out_of_sync_order(exchange_order_id)
         else:
@@ -293,7 +295,7 @@ class ExchangePersonalData(util.Initializable):
             except errors.PortfolioNegativeValueError as e:
                 if is_new_order:
                     self.logger.debug(f"Impossible to count new order in portfolio: a synch is necessary "
-                                      f"(order: {raw_order}).")
+                                      f"(order: {logging.get_private_minimized_message_if_necessary(raw_order)}).")
                     # forward to caller: this is a new order: portfolio might not be synchronized
                     raise
                 self.logger.exception(e, True, f"Failed to update order : {e}")
@@ -310,7 +312,7 @@ class ExchangePersonalData(util.Initializable):
             self.orders_manager.remove_order_instance(out_of_sync_open_order)
             self.logger.info(
                 f"Out of sync order with exchange id {exchange_order_id} has been cancelled. "
-                f"Order: {out_of_sync_open_order}."
+                f"Order: {logging.get_private_minimized_message_if_necessary(out_of_sync_open_order)}."
             )
         except KeyError:
             # order is not in open orders anymore: nothing to do
@@ -405,7 +407,10 @@ class ExchangePersonalData(util.Initializable):
                 try:
                     await order.on_active_trigger(strategy_timeout, wait_for_fill_callback)
                 except Exception as err:
-                    self.logger.exception(err, True, f"Failed order on_active_trigger {err} (order: {order})")
+                    self.logger.exception(
+                        err, True, 
+                        f"Failed order on_active_trigger {err} (order: {logging.get_private_minimized_message_if_necessary(order)})"
+                    )
         return handled_orders_count
 
     async def handle_trade_update(self, symbol, trade_id, trade,

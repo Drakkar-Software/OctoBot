@@ -5,6 +5,7 @@ import octobot_commons.dsl_interpreter
 import octobot_commons.signals
 import octobot_commons.errors
 import octobot_commons.profiles
+import octobot_commons.logging
 import octobot_trading.exchanges
 import octobot_trading.dsl
 import octobot_trading.modes as trading_modes
@@ -13,6 +14,7 @@ import tentacles.Meta.DSL_operators as dsl_operators
 
 import octobot_flow.entities
 import octobot_flow.errors
+import octobot_flow.enums
 
 # avoid circular import
 from octobot_flow.logic.dsl.dsl_action_execution_context import dsl_action_execution
@@ -76,10 +78,23 @@ class DSLExecutor(AbstractActionExecutor):
                 statement=expression,
                 result=await self._interpreter.interprete(expression),
             )
-        except octobot_commons.errors.ErrorStatementEncountered as err:
+        except octobot_commons.errors.MaxAttemptsExceededError as err:
+            self._logger().error(f"Max attempts exceeded: {err}")
             return octobot_commons.dsl_interpreter.DSLCallResult(
                 statement=expression,
-                error=err.args[0] if err.args else ""
+                error=octobot_flow.enums.ActionErrorStatus.MAX_ATTEMPTS_EXCEEDED.value
+            )
+        except octobot_commons.errors.ErrorStatementEncountered as err:
+            self._logger().exception(
+                err, True, f"Generic DSL error statement encountered: {err}"
+            )
+            validated_error = (
+                err.args[0] if err.args and err.args[0] in octobot_flow.enums.ActionErrorStatus 
+                else octobot_flow.enums.ActionErrorStatus.DSL_EXECUTION_ERROR.value
+            )
+            return octobot_commons.dsl_interpreter.DSLCallResult(
+                statement=expression,
+                error=validated_error
             )
 
     @contextlib.asynccontextmanager
@@ -115,3 +130,7 @@ class DSLExecutor(AbstractActionExecutor):
                 self._interpreter.prepare(dsl_script)
                 dependencies.extend(self._interpreter.get_dependencies())
         return dependencies
+
+    @classmethod
+    def _logger(cls) -> octobot_commons.logging.BotLogger:
+        return octobot_commons.logging.get_logger(cls.__name__)

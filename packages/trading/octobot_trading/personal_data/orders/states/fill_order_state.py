@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import octobot_commons.html_util as html_util
+import octobot_commons.logging
 
 import octobot_trading.constants as constants
 import octobot_trading.enums as enums
@@ -74,7 +75,10 @@ class FillOrderState(order_state.OrderState):
         can also be still pending
         or be fully filled
         """
-        self.get_logger().info(f"on_refresh_successful [{self.order.status}] for {self.order}")
+        self.get_logger().info(
+            f"on_refresh_successful [{self.order.status}] for "
+            f"{octobot_commons.logging.get_private_minimized_message_if_necessary(self.order)}"
+        )
         if self.order.is_partially_filled():
             self.get_logger().info(f"Partially filled order: {str(self.order)}")
             # notify order partially filled
@@ -112,7 +116,10 @@ class FillOrderState(order_state.OrderState):
                 if self.order.exchange_manager is not None and not self.order.has_exchange_fetched_fees():
                     self.order.fee = self.order.get_computed_fee()
             except KeyError:
-                self.get_logger().error(f"Fail to compute trading fees for {self.order}.")
+                self.get_logger().error(
+                    f"Fail to compute trading fees for "
+                    f"{octobot_commons.logging.get_private_minimized_message_if_necessary(self.order)}."
+                )
 
             async with order_util.ensure_orders_relevancy(
                 order=self.order, enable_associated_orders_creation=self.enable_associated_orders_creation

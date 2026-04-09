@@ -20,6 +20,7 @@ import typing
 
 import octobot_commons.constants as commons_constants
 import octobot_commons.enums as commons_enums
+import octobot_commons.logging as logging
 import octobot_commons.symbols.symbol_util as symbol_util
 import octobot_commons.authentication as authentication
 import octobot_commons.signals as commons_signals
@@ -370,7 +371,9 @@ class IndexTradingModeProducer(trading_modes.AbstractTradingModeProducer):
                     if is_cancelled:
                         dependencies.extend(dependency)
                 except trading_errors.UnexpectedExchangeSideOrderStateError as err:
-                    self.logger.warning(f"Skipped order cancel: {err}, order: {order}")
+                    self.logger.warning(
+                        f"Skipped order cancel: {err}, order: {logging.get_private_minimized_message_if_necessary(order)}"
+                    )
         return dependencies or None
 
 

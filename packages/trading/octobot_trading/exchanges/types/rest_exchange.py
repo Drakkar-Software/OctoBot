@@ -23,6 +23,7 @@ import asyncio
 # import sys        # uncomment for debugging in tests
 
 import ccxt.async_support as ccxt
+from octobot_commons import logging
 import octobot_commons.enums as commons_enums
 import octobot_commons.tree as commons_tree
 import octobot_commons.constants as commons_constants
@@ -274,7 +275,7 @@ class RestExchange(abstract_exchange.AbstractExchange):
                     order_type=order_type, symbol=symbol, quantity=quantity, price=price,
                     stop_price=stop_price, side=side, current_price=current_price,
                     reduce_only=reduce_only, params=params)
-                self.logger.debug(f"Created order: {created_order}")
+                self.logger.debug(f"Created order: {logging.get_private_minimized_message_if_necessary(created_order)}")
                 return await self._verify_order(created_order, order_type, symbol, price, quantity, side)
         return None
 
@@ -400,7 +401,9 @@ class RestExchange(abstract_exchange.AbstractExchange):
             if ecoc.EXCHANGE_ID.value in created_order:
                 order_exchange_id = created_order[ecoc.EXCHANGE_ID.value]
                 if order_exchange_id is None:
-                    self.logger.error(f"No order exchange id on created order: {created_order}")
+                    self.logger.error(
+                        f"No order exchange id on created order: {logging.get_private_minimized_message_if_necessary(created_order)}"
+                    )
                     return None
                 exchange_order_id = created_order[ecoc.EXCHANGE_ID.value]
                 params = self.order_request_kwargs_factory(

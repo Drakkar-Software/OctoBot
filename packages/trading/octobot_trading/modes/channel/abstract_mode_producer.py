@@ -507,7 +507,10 @@ class AbstractTradingModeProducer(modes_channel.ModeChannelProducer):
                     failed_to_cancel = True
             except errors.OctoBotExchangeError as err:
                 # do not propagate exchange error when canceling order
-                self.logger.exception(err, True, f"Error when cancelling order [{order}]: {err}")
+                self.logger.exception(
+                    err, True, 
+                    f"Error when cancelling order [{logging.get_private_minimized_message_if_necessary(order)}]: {err}"
+                )
                 failed_to_cancel = True
         return (cancelled and not failed_to_cancel), cancelled_dependencies or None
 

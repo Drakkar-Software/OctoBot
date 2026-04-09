@@ -31,7 +31,9 @@ async def apply_order_storage_details_if_any(order, exchange_manager, pending_gr
         order.exchange_order_id
     )
     if order_details:
-        logging.get_logger(LOGGER_NAME).debug(f"Updating fetched order {order} using stored order details")
+        logging.get_logger(LOGGER_NAME).debug(
+            f"Updating fetched order {logging.get_private_minimized_message_if_necessary(order)} using stored order details"
+        )
         order.update_from_storage_order_details(order_details)
         await create_orders_storage_related_elements(order, order_details, exchange_manager, pending_groups)
 
@@ -40,7 +42,9 @@ async def create_orders_storage_related_elements(order, order_storage_details, e
     group = group_util.get_or_create_order_group_from_storage_order_details(order_storage_details, exchange_manager)
     if group:
         order.add_to_order_group(group)
-        logging.get_logger(LOGGER_NAME).debug(f"Adding {order} to restored group {group}")
+        logging.get_logger(LOGGER_NAME).debug(
+            f"Adding {logging.get_private_minimized_message_if_necessary(order)} to restored group {group}"
+        )
         pending_groups[group.name] = group
     await order_factory.restore_chained_orders_from_storage_order_details(
         order, order_storage_details, exchange_manager, pending_groups
@@ -79,7 +83,9 @@ async def create_required_virtual_orders(pending_groups, exchange_manager):
     for order_details in virtual_non_grouped_order_details:
         try:
             order = await create_order_from_storage_data(order_details, exchange_manager, pending_groups)
-            logger.debug(f"Restored order from storage: {order}")
+            logger.debug(
+                f"Restored order from storage: {logging.get_private_minimized_message_if_necessary(order)}"
+            )
         except Exception as err:
             logger.exception(err, True, f"Error when restoring virtual order order using stored data: {err}")
 

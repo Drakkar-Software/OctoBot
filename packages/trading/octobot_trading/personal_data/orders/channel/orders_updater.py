@@ -21,6 +21,7 @@ import octobot_commons.tree as commons_tree
 import octobot_commons.enums as commons_enums
 import octobot_commons.html_util as html_util
 import octobot_commons.asyncio_tools as asyncio_tools
+import octobot_commons.logging as logging
 
 import octobot_trading.errors as errors
 import octobot_trading.personal_data.orders.channel.orders as orders_channel
@@ -239,19 +240,19 @@ class OrdersUpdater(orders_channel.OrdersProducer):
         :return: True if the order was updated
         """
         exchange_name = self.channel.exchange_manager.exchange_name
-        self.logger.info(f"Requested update for {order} on {exchange_name}")
+        self.logger.info(f"Requested update for {logging.get_private_minimized_message_if_necessary(order)} on {exchange_name}")
         raw_order = await self.channel.exchange_manager.exchange.get_order(
             order.exchange_order_id, order.symbol, order_type=order.order_type
         )
 
         if raw_order is not None:
-            self.logger.info(f"Received update for {order} on {exchange_name}: {raw_order}")
+            self.logger.info(f"Received update for {logging.get_private_minimized_message_if_necessary(order)} on {exchange_name}: {logging.get_private_minimized_message_if_necessary(raw_order)}")
             await self.channel.exchange_manager.exchange_personal_data.handle_order_update_from_raw(
                 order.exchange_order_id, raw_order, should_notify=should_notify
             )
-            self.logger.info(f"Completed update for {order} on {exchange_name}")
+            self.logger.info(f"Completed update for {logging.get_private_minimized_message_if_necessary(order)} on {exchange_name}")
         else:
-            self.logger.info(f"Can't received update for {order} on {exchange_name}: received order is None")
+            self.logger.info(f"Can't received update for {logging.get_private_minimized_message_if_necessary(order)} on {exchange_name}: received order is None")
 
     def _should_run(self):
         return self.channel.exchange_manager.exchange.is_successfully_authenticated()

@@ -68,7 +68,8 @@ class ActiveOrderSwapStrategy:
             if order.active_trigger is None or order.active_trigger.trigger_price is None:
                 raise ValueError(
                     f"order.active_trigger.trigger_price must be set when using "
-                    f"ActiveOrderSwapTriggerPriceConfiguration.ORDER_PARAMS_ONLY. Order: {order}"
+                    f"ActiveOrderSwapTriggerPriceConfiguration.ORDER_PARAMS_ONLY. Order: "
+                    f"{octobot_commons.logging.get_private_minimized_message_if_necessary(order)}"
                 )
             return order.active_trigger.trigger_price
         raise ValueError(f"Unknown trigger price configuration: {self.trigger_price_configuration}")
@@ -80,7 +81,10 @@ class ActiveOrderSwapStrategy:
         timeout: typing.Optional[float]
     ):
         if inactive_order.order_group is None:
-            raise NotImplementedError(f"Input order is not part of a group, this is unexpected: {inactive_order}")
+            raise NotImplementedError(
+                f"Input order is not part of a group, this is unexpected: "
+                f"{octobot_commons.logging.get_private_minimized_message_if_necessary(inactive_order)}"
+            )
         timeout = self.swap_timeout if timeout is None else timeout
         # strategies should not be executed concurrently or in parallel with other group triggers
         async with inactive_order.order_group.lock_group():
@@ -109,7 +113,9 @@ class ActiveOrderSwapStrategy:
 
     async def _update_group_and_activate_order(self, inactive_order) -> (list, typing.Callable[[list], None]):
         if inactive_order.is_active is True:
-            raise ValueError(f"Order is active already: {inactive_order}")
+            raise ValueError(
+                f"Order is active already: {octobot_commons.logging.get_private_minimized_message_if_necessary(inactive_order)}"
+            )
         # 1. cancel/edit the other order(s) that need to be canceled first and then create this order
         now_maybe_partially_inactive_orders, reverse_update_callback = \
             await inactive_order.order_group.adapt_before_order_becoming_active(inactive_order)

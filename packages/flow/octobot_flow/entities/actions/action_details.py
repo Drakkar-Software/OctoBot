@@ -4,6 +4,8 @@ import time
 
 import octobot_commons.dsl_interpreter
 import octobot_commons.dataclasses
+import octobot_commons.constants
+import octobot_commons.logging
 import octobot_flow.enums
 import octobot_flow.errors
 
@@ -24,7 +26,7 @@ class AbstractActionDetails(octobot_commons.dataclasses.FlexibleDataclass):
     # result of the action. Set after the action is executed
     result: typing.Optional[
         octobot_commons.dsl_interpreter.ComputedOperatorParameterType
-    ] = dataclasses.field(default=None, repr=True)
+    ] = dataclasses.field(default=None, repr=octobot_commons.constants.ALLOW_PRIVATE_DATA_LOGS)
     # error status of the action. Set after the action is executed, in case an error occured
     error_status: typing.Optional[str] = dataclasses.field(default=None, repr=True)       # ActionErrorStatus
     # time at which the action was executed
@@ -101,7 +103,7 @@ class AbstractActionDetails(octobot_commons.dataclasses.FlexibleDataclass):
 @dataclasses.dataclass
 class DSLScriptActionDetails(AbstractActionDetails):
     # DSL script to execute
-    dsl_script: typing.Optional[str] = dataclasses.field(default=None, repr=True) # should be set to the DSL script
+    dsl_script: typing.Optional[str] = dataclasses.field(default=None, repr=octobot_commons.constants.ALLOW_PRIVATE_DATA_LOGS) # should be set to the DSL script
     # resolved DSL script. self.dsl_script where all the dependencies have been replaced by their actual values
     resolved_dsl_script: typing.Optional[str] = dataclasses.field(default=None, repr=False) # should be set to the resolved DSL script
 
@@ -113,9 +115,12 @@ class DSLScriptActionDetails(AbstractActionDetails):
 
     def get_resolved_dsl_script(self) -> str:
         if not self.resolved_dsl_script:
-            raise octobot_flow.errors.UnresolvedDSLScriptError(f"Resolved DSL script is not set: {self.resolved_dsl_script}")
+            raise octobot_flow.errors.UnresolvedDSLScriptError(
+                f"Resolved DSL script is not set: {self.resolved_dsl_script}")
         if octobot_commons.dsl_interpreter.has_unresolved_parameters(self.resolved_dsl_script):
-            raise octobot_flow.errors.UnresolvedDSLScriptError(f"Resolved DSL script has unresolved parameters: {self.resolved_dsl_script}")
+            raise octobot_flow.errors.UnresolvedDSLScriptError(
+                f"Resolved DSL script has unresolved parameters: {octobot_commons.logging.get_private_minimized_message_if_necessary(self.resolved_dsl_script)}"
+            )
         return self.resolved_dsl_script
 
     def clear_resolved_dsl_script(self):

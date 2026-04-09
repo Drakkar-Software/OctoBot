@@ -24,6 +24,7 @@ import octobot_commons.enums as commons_enums
 import octobot_commons.evaluators_util as evaluators_util
 import octobot_commons.pretty_printer as pretty_printer
 import octobot_commons.symbols.symbol_util as symbol_util
+import octobot_commons.logging as logging
 import octobot_commons.signals as signals
 import octobot_evaluators.api as evaluators_api
 import octobot_evaluators.constants as evaluators_constants
@@ -1094,7 +1095,9 @@ class DailyTradingModeProducer(trading_modes.AbstractTradingModeProducer):
                     if is_cancelled:
                         dependencies.extend(dependency)
                 except trading_errors.UnexpectedExchangeSideOrderStateError as err:
-                    self.logger.warning(f"Skipped order cancel: {err}, order: {order}")
+                    self.logger.warning(
+                        f"Skipped order cancel: {err}, order: {logging.get_private_minimized_message_if_necessary(order)}"
+                    )
         return dependencies
 
     async def _send_alert_notification(self, symbol, new_state):

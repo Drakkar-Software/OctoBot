@@ -15,6 +15,7 @@
 #  License along with this library.
 import asyncio
 
+import octobot_commons.logging as logging
 import octobot_trading.exchange_channel as exchanges_channel
 import octobot_trading.exchanges as exchanges
 import octobot_trading.constants as constants
@@ -142,7 +143,7 @@ class OrdersProducer(exchanges_channel.ExchangeChannelProducer):
         Called when open order init failed due to a portfolio sync issue, will now complete their init
         """
         for order in orders:
-            self.logger.debug(f"Completing order init for order: {order}")
+            self.logger.debug(f"Completing order init for order: {logging.get_private_minimized_message_if_necessary(order)}")
             await self.channel.exchange_manager.exchange_personal_data.on_order_refresh_success(order, False, False)
             await self.send(
                 self.channel.exchange_manager.exchange.get_pair_cryptocurrency(order.symbol),

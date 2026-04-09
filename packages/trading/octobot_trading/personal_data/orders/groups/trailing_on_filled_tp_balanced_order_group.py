@@ -16,6 +16,7 @@
 import typing
 import decimal
 
+import octobot_commons.logging
 import octobot_trading.errors
 import octobot_trading.personal_data.orders.groups.balanced_take_profit_and_stop_order_group as \
     balanced_take_profit_and_stop_order_group
@@ -68,7 +69,10 @@ class TrailingSideBalance(balanced_take_profit_and_stop_order_group.SideBalance)
 
     def _get_next_trailing_price(self, order: order_import.Order) -> typing.Optional[decimal.Decimal]:
         if not isinstance(order.trailing_profile, trailing_profiles_import.FilledTakeProfitTrailingProfile):
-            self.get_logger().error(f"Ignored trailing profile: {order.trailing_profile} for order {order}")
+            self.get_logger().error(
+                f"Ignored trailing profile: {order.trailing_profile} for order "
+                f"{octobot_commons.logging.get_private_minimized_message_if_necessary(order)}"
+            )
             return None
         try:
             updated_price = self._get_relevant_price(order)

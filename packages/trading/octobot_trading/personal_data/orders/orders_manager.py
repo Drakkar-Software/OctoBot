@@ -156,7 +156,9 @@ class OrdersManager(util.Initializable):
 
     async def upsert_order_from_raw(self, exchange_order_id: str, raw_order: dict, is_from_exchange: bool) -> tuple[bool, order_class.Order]:
         if not self.has_order(None, exchange_order_id=exchange_order_id):
-            self.logger.debug(f"Including new order fetched from exchange: {raw_order}")
+            self.logger.debug(
+                f"Including new order fetched from exchange: {logging.get_private_minimized_message_if_necessary(raw_order)}"
+            )
             new_order = order_factory.create_order_instance_from_raw(self.trader, raw_order)
             # replace new_order by previously created pending_order if any relevant pending_order
             new_order = await self.get_and_update_pending_order(new_order) or new_order
@@ -172,7 +174,7 @@ class OrdersManager(util.Initializable):
     def register_pending_creation_order(self, pending_order: order_class.Order):
         if self.trader.simulate:
             self.logger.error(f"Called register_pending_creation_order on an simulated trader, "
-                              f"this should not happen. Order: {pending_order}")
+                              f"this should not happen. Order: {logging.get_private_minimized_message_if_necessary(pending_order)}")
         self.pending_creation_orders.append(pending_order)
 
     async def get_and_update_pending_order(self, created_order):
@@ -213,7 +215,7 @@ class OrdersManager(util.Initializable):
             # this should not consume pending orders
             if self._get_pending_order(order, False):
                 self.logger.error(f"Called upsert_order_instance on an order that fits a pending order, "
-                                  f"this should not happen. Order: {order}")
+                                  f"this should not happen. Order: {logging.get_private_minimized_message_if_necessary(order)}")
             order = await self.get_and_update_pending_order(order) or order
             self._add_order(order.order_id, order)
             self._check_orders_size()
@@ -223,7 +225,9 @@ class OrdersManager(util.Initializable):
 
     def _add_order(self, order_id, order):
         if order_id is None:
-            self.logger.warning(f"Adding order with None order_id to order manager: {order}")
+            self.logger.warning(
+                f"Adding order with None order_id to order manager: {logging.get_private_minimized_message_if_necessary(order)}"
+            )
         self.orders[order_id] = order
 
     def has_order(self, order_id, exchange_order_id=None) -> bool:

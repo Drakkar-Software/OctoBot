@@ -119,7 +119,7 @@ class BalancedTakeProfitAndStopOrderGroup(order_group.OrderGroup):
             self.balancing_orders.extend(locally_balancing_orders)
             for order in cancel_actions:
                 self.logger.info(
-                    f"Cancelling order [{order}] from order group as paired order "
+                    f"Cancelling order [{octobot_commons.logging.get_private_minimized_message_if_necessary(order)}] from order group as paired order "
                     f"is becoming active ({order_to_become_active})"
                 )
                 if await order_util.update_order_as_inactive_on_exchange(order, False):
@@ -185,7 +185,11 @@ class BalancedTakeProfitAndStopOrderGroup(order_group.OrderGroup):
                 self.balancing_orders.extend(locally_balancing_orders)
                 for order in cancel_actions:
                     try:
-                        self.logger.debug(f"Cancelling order to keep balance, order: {order} as {closed_order} is closed")
+                        self.logger.debug(
+                            f"Cancelling order to keep balance, order: "
+                            f"{octobot_commons.logging.get_private_minimized_message_if_necessary(order)} as "
+                            f"{octobot_commons.logging.get_private_minimized_message_if_necessary(closed_order)} is closed"
+                        )
                         async with signals.remote_signal_publisher(order.trader.exchange_manager, order.symbol, True):
                             await signals.cancel_order(
                                 order.trader.exchange_manager, signals.should_emit_trading_signal(order.trader.exchange_manager),
@@ -226,7 +230,7 @@ class BalancedTakeProfitAndStopOrderGroup(order_group.OrderGroup):
                 update_info = f"{update_info}Updating price to {update_data[self.UPDATED_PRICE]}. "
                 edited_price = update_data[self.UPDATED_PRICE]
             if edited_quantity or edited_price:
-                self.logger.info(f"{update_info}Order: {order}")
+                self.logger.info(f"{update_info}Order: {octobot_commons.logging.get_private_minimized_message_if_necessary(order)}")
                 async with signals.remote_signal_publisher(order.trader.exchange_manager, order.symbol, emit_trading_signals):
                     await signals.edit_order(
                         order.trader.exchange_manager,
@@ -237,7 +241,7 @@ class BalancedTakeProfitAndStopOrderGroup(order_group.OrderGroup):
                     )
                 applied_updates.append(update_data)
             else:
-                self.logger.info(f"Order already up-to-date, skipped editing: {order}")
+                self.logger.info(f"Order already up-to-date, skipped editing: {octobot_commons.logging.get_private_minimized_message_if_necessary(order)}")
         return applied_updates
 
     def _balances_factory(self, closed_order, filled):

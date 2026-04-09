@@ -190,7 +190,7 @@ def _parse_order_dict(
             err,
             True,
             f"Unexpected error when parsing [{exchange_manager.exchange_name}] "
-            f"order ({err} {err.__class__.__name__}), order ignored: {order}"
+            f"order ({err} {err.__class__.__name__}), order ignored: {logging.get_private_minimized_message_if_necessary(order)}"
         )
     return None
 
@@ -203,7 +203,7 @@ def parse_order_into_dict(
         order[enums.ExchangeConstantsOrderColumns.TYPE.value] == enums.TradeOrderType.UNSUPPORTED.value
     ):
         logging.get_logger("_parse_order_into_dict").warning(
-            f"Ignored unsupported [{exchange_manager.exchange_name}] order: {order}"
+            f"Ignored unsupported [{exchange_manager.exchange_name}] order: {logging.get_private_minimized_message_if_necessary(order)}"
         )
         return None
     if parsed_order := _parse_order_dict(exchange_manager, order, force_open_or_pending_creation):
@@ -223,7 +223,7 @@ def parse_order_into_dict(
                 err,
                 True,
                 f"Unexpected error when converting [{exchange_manager.exchange_name}] order to dict" 
-                f"({err}. {err.__class__.__name__}), order: {order}"
+                f"({err}. {err.__class__.__name__}), order: {logging.get_private_minimized_message_if_necessary(order)}"
             )
     return None
 

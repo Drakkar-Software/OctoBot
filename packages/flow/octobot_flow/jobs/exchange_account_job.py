@@ -185,10 +185,13 @@ class ExchangeAccountJob(octobot_flow.repositories.exchange.ExchangeContextMixin
         except octobot_trading.errors.NotSupported as err:
             self._logger.info(f"Fetching portfolio is not supported: {err}. Diabling portfolio validations.")
             fetched_authenticated_data.portfolio.full_content = {}
+        balance_summary = common_logging.get_private_placeholder_if_necessary(
+            personal_data.get_balance_summary(fetched_authenticated_data.portfolio.full_content, use_exchange_format=False)
+        )
         self._logger.info(
             f"Fetched [{self._exchange_manager.exchange_name}] full "
             f"[{'simulated' if repository_factory.is_simulated else 'real'}] portfolio: "
-            f"{personal_data.get_balance_summary(fetched_authenticated_data.portfolio.full_content, use_exchange_format=False)}"
+            f"{balance_summary}"
         )
         if not as_reference_account:
             # only update the exchange account portfolio when it is the target portfolio

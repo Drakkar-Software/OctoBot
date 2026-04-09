@@ -61,7 +61,9 @@ def create_order_instance_from_raw(
     except Exception as err:
         # log unparsable order to fix it
         logging.get_logger(__name__).exception(
-            err, True, f"Unexpected {err} ({err.__class__.__name__}) error when parsing row order {raw_order}"
+            err, True, 
+            f"Unexpected {err} ({err.__class__.__name__}) error when parsing row order "
+            f"{logging.get_private_minimized_message_if_necessary(raw_order)}"
         )
         raise
 

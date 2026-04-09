@@ -15,6 +15,7 @@
 #  License along with this library.
 import decimal
 
+import octobot_commons.logging as commons_logging
 import octobot_trading.personal_data.portfolios.assets.future_asset as future_asset
 import octobot_trading.personal_data.portfolios.portfolio as portfolio_class
 import octobot_trading.constants as constants
@@ -113,7 +114,9 @@ class FuturePortfolio(portfolio_class.Portfolio):
                                                    position_margin_value=constants.ZERO,
                                                    order_margin_value=real_order_quantity * order.origin_price)
         except (decimal.DivisionByZero, decimal.InvalidOperation) as e:
-            self.logger.error(f"Failed to update available from order : {order} ({e})")
+            self.logger.error(
+                f"Failed to update available from order : {commons_logging.get_private_minimized_message_if_necessary(order)} ({e})"
+            )
 
     def update_portfolio_from_funding(self, position, funding_rate):
         """

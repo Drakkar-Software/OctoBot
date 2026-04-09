@@ -84,13 +84,19 @@ class OrderState(state_class.State):
         Log an order state event
         """
         if state_message is enums.StatesMessages.ALREADY_SYNCHRONIZING:
-            self.get_logger().debug(f"Trying to update a refreshing state for order: {self.order}")
+            self.get_logger().debug(
+                f"Trying to update a refreshing state for order: {logging.get_private_minimized_message_if_necessary(self.order)}"
+            )
         elif state_message is enums.StatesMessages.SYNCHRONIZING_ERROR:
-            self.get_logger().exception(error, True, f"Error when synchronizing order {self.order}: {error}")
+            self.get_logger().exception(
+                error, True, f"Error when synchronizing order {logging.get_private_minimized_message_if_necessary(self.order)}: {error}"
+            )
         else:
             exchange_name = self.order.exchange_manager.exchange_name if self.order.exchange_manager \
                 else 'unknown exchange'
-            self.get_logger().info(f"{self.order} {state_message.value} on {exchange_name}")
+            self.get_logger().info(
+                f"{logging.get_private_minimized_message_if_necessary(self.order)} {state_message.value} on {exchange_name}"
+            )
 
     async def should_be_updated(self) -> bool:
         """
@@ -123,7 +129,7 @@ class OrderState(state_class.State):
         if self.is_max_synchronization_attempts_reached():
             self.get_logger().info(
                 f"Forcing {self.__class__.__name__} final state after {self.MAX_SYNCHRONIZATION_ATTEMPTS} "
-                f"synchronization attempts for order {self.order}"
+                f"synchronization attempts for order {logging.get_private_minimized_message_if_necessary(self.order)}"
             )
             self._force_final_state()
             asyncio.create_task(self.on_refresh_successful())
@@ -131,7 +137,8 @@ class OrderState(state_class.State):
             try:
                 self.ensure_not_cleared(self.order)
                 self.get_logger().info(
-                    f"Synchronizing [{self._underlying_refreshed_state.value}] order {self.order} "
+                    f"Synchronizing [{self._underlying_refreshed_state.value}] order "
+                    f"{logging.get_private_minimized_message_if_necessary(self.order)} "
                     f"with {self.order.exchange_manager.exchange_name} exchange"
                 )
                 self.synchronization_attempts += 1
@@ -153,7 +160,10 @@ class OrderState(state_class.State):
     @staticmethod
     def ensure_not_cleared(order):
         if order is None or order.is_cleared():
-            raise octobot_trading.errors.InvalidOrderState(f"Order has already been cleared. Order: {order}")
+            raise octobot_trading.errors.InvalidOrderState(
+                f"Order has already been cleared. Order: "
+                f"{logging.get_private_minimized_message_if_necessary(order)}"
+            )
 
     def _is_synchronization_enabled(self):
         try:

@@ -19,6 +19,7 @@ import octobot_trading.enums as enums
 import octobot_trading.personal_data.orders.order_state as order_state
 import octobot_trading.personal_data.orders.states.order_state_factory as order_state_factory
 import octobot_trading.personal_data.portfolios.portfolio_util as portfolio_util
+import octobot_commons.logging as commons_logging
 
 
 class OpenOrderState(order_state.OrderState):
@@ -65,7 +66,7 @@ class OpenOrderState(order_state.OrderState):
             )
             self.get_logger().debug(
                 f"Updated [{self.order.exchange_manager.exchange_name}] portfolio available after new open order. "
-                f"Before order: {before_order_details}. After order: {after_order_details}"
+                f"Before order: {commons_logging.get_private_placeholder_if_necessary(before_order_details)}. After order: {commons_logging.get_private_placeholder_if_necessary(after_order_details)}"
             )
 
         return await super().initialize_impl()
@@ -90,7 +91,7 @@ class OpenOrderState(order_state.OrderState):
                 await order_state_factory.create_order_state(self.order, is_from_exchange_data=True)
         else:
             self.get_logger().debug(f"on_refresh_successful triggered from previous state "
-                                    f"after state change on {self.order}")
+                                    f"after state change on {commons_logging.get_private_minimized_message_if_necessary(self.order)}")
 
     def set_is_not_open_anymore(self):
         if not self._is_not_open_anymore.is_set():

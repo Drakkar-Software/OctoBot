@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import typing
+import octobot_commons.logging
 import octobot_trading.personal_data.orders.order_group as order_group
 import octobot_trading.personal_data.orders.order_util as order_util
 import octobot_trading.personal_data.orders.active_order_swap_strategies as active_order_swap_strategies
@@ -65,7 +66,7 @@ class OneCancelsTheOtherOrderGroup(order_group.OrderGroup):
         for order in self.get_group_open_orders():
             if order is not order_to_become_active:
                 self.logger.info(
-                    f"Cancelling order [{order}] from order group as paired order "
+                    f"Cancelling order [{octobot_commons.logging.get_private_minimized_message_if_necessary(order)}] from order group as paired order "
                     f"is becoming active ({order_to_become_active})"
                 )
                 if await order_util.update_order_as_inactive_on_exchange(order, False):
@@ -87,7 +88,11 @@ class OneCancelsTheOtherOrderGroup(order_group.OrderGroup):
         for order in self.get_group_open_orders():
             if order is not triggering_order and order.is_open():
                 try:
-                    self.logger.info(f"Cancelling order [{order}] from order group as {triggering_order} is {trigger}")
+                    self.logger.info(
+                        f"Cancelling order "
+                        f"[{octobot_commons.logging.get_private_minimized_message_if_necessary(order)}] from order group as "
+                        f"{octobot_commons.logging.get_private_minimized_message_if_necessary(triggering_order)} is {trigger}"
+                    )
                     async with signals.remote_signal_publisher(order.trader.exchange_manager, order.symbol, True):
                         await signals.cancel_order(
                             order.trader.exchange_manager,

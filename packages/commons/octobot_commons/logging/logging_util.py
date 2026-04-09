@@ -111,6 +111,31 @@ def set_logging_level(logger_names, level) -> None:
         logging.getLogger(name).setLevel(level)
 
 
+def get_private_minimized_message_if_necessary(message: typing.Any) -> typing.Any:
+    """
+    :param message: the message to minimize
+    :return: the private minimized message if necessary
+    """
+    if constants.ALLOW_PRIVATE_DATA_LOGS or message is None:
+        return message
+    str_message = message if isinstance(message, str) else str(message)
+    return (
+        str_message[:constants.PRIVATE_MESSAGE_ALLOWED_CHARS_COUNT]
+        + constants.PRIVATE_MESSAGE_PLACEHOLDER
+        + str_message[-constants.PRIVATE_MESSAGE_ALLOWED_CHARS_COUNT:]
+    )
+
+
+def get_private_placeholder_if_necessary(message: typing.Any) -> str:
+    """
+    :param message: the message replace with a placeholder
+    :return: the private placeholder if necessary
+    """
+    if constants.ALLOW_PRIVATE_DATA_LOGS:
+        return message
+    return constants.PRIVATE_MESSAGE_PLACEHOLDER
+
+
 def add_log(level, source, message, keep_log=True, call_notifiers=True):
     """
     Add a log to the log database

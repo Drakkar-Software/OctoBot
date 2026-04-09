@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import octobot_commons.html_util as html_util
+import octobot_commons.logging
 import octobot_trading.enums as enums
 import octobot_trading.personal_data.orders.order_state as order_state
 
@@ -59,7 +60,8 @@ class CloseOrderState(order_state.OrderState):
             if self.order.is_in_active_inactive_transition:
                 # orders that are in active/inactive transition should not generate trades nor be removed from open_orders
                 self.get_logger().info(
-                    f"Skipping {enums.StatesMessages.CLOSED} state terminate for {self.order} as "
+                    f"Skipping {enums.StatesMessages.CLOSED} state terminate for "
+                    f"{octobot_commons.logging.get_private_minimized_message_if_necessary(self.order)} as "
                     f"it is in active/inactive transition"
                 )
                 await self.order.on_inactive_from_active()

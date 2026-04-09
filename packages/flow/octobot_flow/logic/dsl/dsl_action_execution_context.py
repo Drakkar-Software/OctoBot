@@ -1,6 +1,7 @@
 import octobot_commons.dsl_interpreter
 import octobot_commons.errors
 import octobot_commons.logging
+import octobot_commons.constants
 import octobot_trading.errors
 import octobot_trading.enums
 
@@ -12,6 +13,10 @@ def dsl_action_execution(func):
     async def _action_execution_error_handler_wrapper(
         self, action: octobot_flow.entities.DSLScriptActionDetails
     ):
+        """
+        Handle the error of the DSL script execution.
+        action.result should only be a value of octobot_flow.enums.ActionErrorStatus.
+        """
         try:
             call_result: octobot_commons.dsl_interpreter.DSLCallResult = await func(self, action)
             if call_result.succeeded():
@@ -39,7 +44,10 @@ def dsl_action_execution(func):
             action.complete(error_status=octobot_flow.enums.ActionErrorStatus.BLOCKCHAIN_WALLET_ERROR.value)
         except Exception as err:
             octobot_commons.logging.get_logger("action_execution").exception(
-                err, True, f"Failed to interpret DSL script '{action.get_summary()}' for action: {action.id}: {err}"
+                err,
+                True,
+                f"Failed to interpret DSL script '{action.get_summary(not octobot_commons.constants.ALLOW_PRIVATE_DATA_LOGS)}' "
+                f"for action: {action.id}: {err}"
             )
             action.complete(error_status=octobot_flow.enums.ActionErrorStatus.INTERNAL_ERROR.value)
     return _action_execution_error_handler_wrapper
