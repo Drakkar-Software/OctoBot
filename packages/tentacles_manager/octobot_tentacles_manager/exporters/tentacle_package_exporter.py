@@ -78,10 +78,10 @@ class TentaclePackageExporter(artifact_exporter.ArtifactExporter):
                 package_filter=self.exported_tentacles_package
             )
 
-        # Execute build commands for tentacles that have them
-        for tentacle in (self.tentacles_white_list or []):
-            if tentacle.build_command:
-                await tentacle_processing.execute_tentacle_build(tentacle, self.logger)
+        # Execute build commands for tentacles that have them, respecting build-time dependencies
+        tentacles_with_builds = [t for t in (self.tentacles_white_list or []) if t.build_command]
+        for tentacle in TentaclePackageExporter._sort_by_build_requirements(tentacles_with_builds):
+            await tentacle_processing.execute_tentacle_build(tentacle, self.logger)
 
         # filter tentacles
         self.tentacles_filter = util.TentacleFilter(self.tentacles, self.tentacles_white_list)
@@ -106,6 +106,33 @@ class TentaclePackageExporter(artifact_exporter.ArtifactExporter):
             return os.path.join(output_dir, artifact.output_path) \
                 if output_dir != constants.CURRENT_DIR_PATH else artifact.output_path
         return output_dir
+
+    @staticmethod
+    def _sort_by_build_requirements(tentacles_with_builds):
+        """
+        Return tentacles sorted so that build dependencies come before dependents.
+        Uses iterative topological sort so that if tentacle B lists A in its
+        tentacles-requirements and A also has a build command, A is built first.
+        """
+        build_names = {t.name for t in tentacles_with_builds}
+        sorted_tentacles = []
+        remaining = list(tentacles_with_builds)
+        while remaining:
+            for tentacle in remaining:
+                build_deps = [
+                    req[0]
+                    for req in tentacle.extract_tentacle_requirements()
+                    if req[0] in build_names
+                ]
+                if all(dep in {t.name for t in sorted_tentacles} for dep in build_deps):
+                    sorted_tentacles.append(tentacle)
+                    remaining.remove(tentacle)
+                    break
+            else:
+                # Circular or unresolvable dependency: append the rest as-is
+                sorted_tentacles.extend(remaining)
+                break
+        return sorted_tentacles
 
     async def after_export(self):
         pass
