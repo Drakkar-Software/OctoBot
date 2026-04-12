@@ -76,6 +76,7 @@ def _grid_reference_storage_order(order_id: str, side: str, price: float, amount
             trading_enums.ExchangeConstantsOrderColumns.STATUS.value: trading_enums.OrderStatus.OPEN.value,
             trading_enums.ExchangeConstantsOrderColumns.FILLED.value: 0.0,
             trading_enums.ExchangeConstantsOrderColumns.REMAINING.value: amount,
+            trading_enums.ExchangeConstantsOrderColumns.TIMESTAMP.value: time.time(),
             trading_enums.ExchangeConstantsOrderColumns.SELF_MANAGED.value: False,
         }
     }

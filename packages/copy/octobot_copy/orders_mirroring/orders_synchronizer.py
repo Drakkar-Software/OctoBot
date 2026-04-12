@@ -31,10 +31,10 @@ class OrdersSynchronizer:
 
     def _get_replicable_reference_orders(self) -> list[dict[str, typing.Any]]:
         replicable: list[dict[str, typing.Any]] = []
-        for doc in self._reference_account.orders:
-            if trading_constants.STORAGE_ORIGIN_VALUE not in doc:
+        for order in self._reference_account.orders:
+            if trading_constants.STORAGE_ORIGIN_VALUE not in order:
                 continue
-            origin = doc[trading_constants.STORAGE_ORIGIN_VALUE]
+            origin = order[trading_constants.STORAGE_ORIGIN_VALUE]
             if (
                 origin.get(trading_enums.ExchangeConstantsOrderColumns.STATUS.value)
                 != trading_enums.OrderStatus.OPEN.value
@@ -44,17 +44,17 @@ class OrdersSynchronizer:
                 continue
             if origin.get(trading_enums.ExchangeConstantsOrderColumns.IS_ACTIVE.value, True) is False:
                 continue
-            replicable.append(doc)
+            replicable.append(order)
         return replicable
 
     def _active_reference_order_ids(self, replicable: list[dict[str, typing.Any]]) -> set:
         return {
             str(
-                doc[trading_constants.STORAGE_ORIGIN_VALUE][
+                order[trading_constants.STORAGE_ORIGIN_VALUE][
                     trading_enums.ExchangeConstantsOrderColumns.ID.value
                 ]
             )
-            for doc in replicable
+            for order in replicable
         }
 
     async def cancel_orders_pending_synchronization(
@@ -66,7 +66,7 @@ class OrdersSynchronizer:
         """
         replicable = replicable_orders or self._get_replicable_reference_orders()
         to_keep_ids = self._active_reference_order_ids(replicable)
-        return await self._cancel_mirrored_orphan_orders(to_keep_ids)
+        return await self._cancel_mirrored_orphan_orders(to_keep_ids, replicable)
 
     def abort_mirrored_orphan_grace(self) -> None:
         self._copy_settings.mirrored_orphan_grace_started_at = None
@@ -75,7 +75,7 @@ class OrdersSynchronizer:
     def is_mirrored_orphan_grace_blocking_rebalance(self) -> bool:
         replicable = self._get_replicable_reference_orders()
         active_reference_ids = self._active_reference_order_ids(replicable)
-        return self._is_grace_blocking_rebalance(active_reference_ids)
+        return self._is_grace_blocking_rebalance(active_reference_ids, replicable)
 
     def _mirrored_orphan_open_orders(self, active_reference_ids: set) -> list[trading_personal_data.Order]:
         return [
@@ -129,21 +129,68 @@ class OrdersSynchronizer:
             return None
         return market_price
 
-    def _simulated_copier_pair_leg_share_after_orphan_fill(
+    def _reference_order_execution_price_from_origin(self, origin: dict) -> typing.Optional[decimal.Decimal]:
+        symbol = origin[trading_enums.ExchangeConstantsOrderColumns.SYMBOL.value]
+        price_val = origin[trading_enums.ExchangeConstantsOrderColumns.PRICE.value]
+        if price_val not in (None, ""):
+            parsed_price = decimal.Decimal(str(price_val))
+            if parsed_price > trading_constants.ZERO:
+                return parsed_price
+        market_price, _ = self._exchange_interface.market.get_potentially_outdated_price(symbol)
+        if market_price <= trading_constants.ZERO:
+            return None
+        return market_price
+
+    def _pair_leg_share_value_weighted(
         self,
-        order: trading_personal_data.Order,
+        base_currency: str,
+        quote_currency: str,
+        base_amount: decimal.Decimal,
+        quote_amount: decimal.Decimal,
     ) -> typing.Optional[decimal.Decimal]:
-        parsed = symbol_util.parse_symbol(order.symbol)
+        if base_amount < trading_constants.ZERO or quote_amount < trading_constants.ZERO:
+            return None
+        value_base = self._copier_asset_value_in_reference_market(base_currency, base_amount)
+        value_quote = self._copier_asset_value_in_reference_market(quote_currency, quote_amount)
+        if value_base is None or value_quote is None:
+            return None
+        value_total = value_base + value_quote
+        if value_total <= trading_constants.ZERO:
+            return None
+        return value_base / value_total
+
+    def _copier_pair_base_quote_totals_for_symbol(
+        self,
+        symbol: str,
+    ) -> typing.Optional[tuple[str, str, decimal.Decimal, decimal.Decimal]]:
+        parsed = symbol_util.parse_symbol(symbol)
         base_currency = parsed.base
         quote_currency = parsed.quote
         if not base_currency or not quote_currency:
             return None
+        base_total = self._exchange_interface.portfolio.get_currency_portfolio_total(base_currency)
+        quote_total = self._exchange_interface.portfolio.get_currency_portfolio_total(quote_currency)
+        return (base_currency, quote_currency, base_total, quote_total)
+
+    def _copier_pair_leg_share(self, symbol: str) -> typing.Optional[decimal.Decimal]:
+        pair_totals = self._copier_pair_base_quote_totals_for_symbol(symbol)
+        if pair_totals is None:
+            return None
+        base_currency, quote_currency, base_total, quote_total = pair_totals
+        return self._pair_leg_share_value_weighted(base_currency, quote_currency, base_total, quote_total)
+
+    def _simulated_copier_pair_leg_share_after_orphan_fill(
+        self,
+        order: trading_personal_data.Order,
+    ) -> typing.Optional[decimal.Decimal]:
+        pair_totals = self._copier_pair_base_quote_totals_for_symbol(order.symbol)
+        if pair_totals is None:
+            return None
+        base_currency, quote_currency, base_total, quote_total = pair_totals
         execution_price = self._orphan_order_execution_price(order)
         if execution_price is None:
             return None
         order_quantity = order.origin_quantity
-        base_total = self._exchange_interface.portfolio.get_currency_portfolio_total(base_currency)
-        quote_total = self._exchange_interface.portfolio.get_currency_portfolio_total(quote_currency)
         if order.side is trading_enums.TradeOrderSide.BUY:
             base_adjusted = base_total + order_quantity
             quote_adjusted = quote_total - order_quantity * execution_price
@@ -152,16 +199,95 @@ class OrdersSynchronizer:
             quote_adjusted = quote_total + order_quantity * execution_price
         else:
             return None
-        if base_adjusted < trading_constants.ZERO or quote_adjusted < trading_constants.ZERO:
+        return self._pair_leg_share_value_weighted(base_currency, quote_currency, base_adjusted, quote_adjusted)
+
+    def _simulated_reference_pair_leg_share_after_order_fill(
+        self,
+        origin: dict,
+    ) -> typing.Optional[decimal.Decimal]:
+        symbol = origin[trading_enums.ExchangeConstantsOrderColumns.SYMBOL.value]
+        parsed = symbol_util.parse_symbol(symbol)
+        base_currency = parsed.base
+        quote_currency = parsed.quote
+        if not base_currency or not quote_currency:
             return None
-        value_base = self._copier_asset_value_in_reference_market(base_currency, base_adjusted)
-        value_quote = self._copier_asset_value_in_reference_market(quote_currency, quote_adjusted)
-        if value_base is None or value_quote is None:
+        side, _trader_order_type = trading_personal_data.parse_order_type(origin)
+        if side is None:
             return None
-        value_total = value_base + value_quote
-        if value_total <= trading_constants.ZERO:
+        execution_price = self._reference_order_execution_price_from_origin(origin)
+        if execution_price is None:
             return None
-        return value_base / value_total
+        amount_raw = origin[trading_enums.ExchangeConstantsOrderColumns.AMOUNT.value]
+        order_quantity = decimal.Decimal(str(amount_raw))
+        if order_quantity <= trading_constants.ZERO:
+            return None
+        reference_content = self._reference_account.content
+        base_holdings = reference_content.get(base_currency, {}) or {}
+        quote_holdings = reference_content.get(quote_currency, {}) or {}
+        base_total = base_holdings.get(commons_constants.PORTFOLIO_TOTAL, trading_constants.ZERO)
+        quote_total = quote_holdings.get(commons_constants.PORTFOLIO_TOTAL, trading_constants.ZERO)
+        if side is trading_enums.TradeOrderSide.BUY:
+            base_adjusted = base_total + order_quantity
+            quote_adjusted = quote_total - order_quantity * execution_price
+        elif side is trading_enums.TradeOrderSide.SELL:
+            base_adjusted = base_total - order_quantity
+            quote_adjusted = quote_total + order_quantity * execution_price
+        else:
+            return None
+        return self._pair_leg_share_value_weighted(base_currency, quote_currency, base_adjusted, quote_adjusted)
+
+    def _passes_late_reference_fill_heuristic(self, order: dict) -> bool:
+        origin = order[trading_constants.STORAGE_ORIGIN_VALUE]
+        symbol = origin[trading_enums.ExchangeConstantsOrderColumns.SYMBOL.value]
+        max_delta = self._copy_settings.mirrored_orphan_grace_pair_ratio_max_delta
+        copier_share = self._copier_pair_leg_share(symbol)
+        simulated_reference_share = self._simulated_reference_pair_leg_share_after_order_fill(origin)
+        if copier_share is None or simulated_reference_share is None:
+            return False
+        return abs(simulated_reference_share - copier_share) <= max_delta
+
+    def _is_late_reference_fill_for_order(self, order: dict, orphan_orders: list[trading_personal_data.Order]) -> bool:
+        origin = order[trading_constants.STORAGE_ORIGIN_VALUE]
+        reference_order_id = str(origin[trading_enums.ExchangeConstantsOrderColumns.ID.value])
+        if self._find_open_order_by_bot_order_id(reference_order_id) is not None:
+            return False
+        reference_side, _trader_order_type = trading_personal_data.parse_order_type(origin)
+        if reference_side is None:
+            return False
+        reference_symbol = origin[trading_enums.ExchangeConstantsOrderColumns.SYMBOL.value]
+        timestamp_raw = origin.get(trading_enums.ExchangeConstantsOrderColumns.TIMESTAMP.value)
+        reference_timestamp: typing.Optional[float] = None
+        if timestamp_raw not in (None, ""):
+            try:
+                reference_timestamp = float(timestamp_raw)
+            except (TypeError, ValueError):
+                reference_timestamp = None
+        if reference_timestamp is not None:
+            for orphan_order in orphan_orders:
+                if orphan_order.symbol != reference_symbol:
+                    continue
+                if orphan_order.side == reference_side:
+                    continue
+                orphan_timestamp = orphan_order.creation_time or orphan_order.timestamp
+                if orphan_timestamp is None:
+                    continue
+                try:
+                    orphan_timestamp_float = float(orphan_timestamp)
+                except (TypeError, ValueError):
+                    continue
+                if reference_timestamp > orphan_timestamp_float:
+                    # reference account order was created after the orphan order, 
+                    # on the same symbol and a different side => it likely is the 
+                    # "other side" equivalent of the orphan order: it's not a late reference fill.
+                    return False
+        return self._passes_late_reference_fill_heuristic(order)
+
+    def _late_reference_fill_candidate_orders(
+        self,
+        replicable: list[dict[str, typing.Any]],
+        orphan_orders: list[trading_personal_data.Order],
+    ) -> list[dict[str, typing.Any]]:
+        return [order for order in replicable if self._is_late_reference_fill_for_order(order, orphan_orders)]
 
     def _mirrored_orphan_batch_eligible_for_grace(
         self,
@@ -177,22 +303,28 @@ class OrdersSynchronizer:
                 return False
         return True
 
-    def _is_grace_blocking_rebalance(self, active_reference_ids: set) -> bool:
+    def _is_grace_blocking_rebalance(
+        self,
+        active_reference_ids: set,
+        replicable: list[dict[str, typing.Any]],
+    ) -> bool:
         settings = self._copy_settings
         grace_seconds = settings.mirrored_orphan_cancel_grace_seconds
         if grace_seconds <= 0:
             return False
         orphan_orders = self._mirrored_orphan_open_orders(active_reference_ids)
         orphan_count = len(orphan_orders)
+        late_reference_fill_count = len(self._late_reference_fill_candidate_orders(replicable, orphan_orders))
+        grace_total = orphan_count + late_reference_fill_count
         threshold = settings.mirrored_orphan_grace_abort_threshold
-        if orphan_count == 0:
+        if grace_total == 0:
             return False
-        if orphan_count >= threshold:
+        if grace_total >= threshold:
             self._get_logger().info(
-                f"Mirrored orphans grace period aborted: {orphan_count} orphans >= threshold ({threshold})"
+                f"Mirrored orphans grace period aborted: {grace_total} grace item(s) >= threshold ({threshold})"
             )
             return False
-        if not self._mirrored_orphan_batch_eligible_for_grace(orphan_orders):
+        if orphan_count > 0 and not self._mirrored_orphan_batch_eligible_for_grace(orphan_orders):
             return False
         started_at = settings.mirrored_orphan_grace_started_at
         if started_at is None:
@@ -206,8 +338,9 @@ class OrdersSynchronizer:
     ) -> set[str]:
         """
         Symbols whose mirrored orphan open orders are still on the copier because cancel is deferred
-        during the grace window. Reference upserts on these symbols are skipped to avoid stacking a new
-        mirrored side (e.g. sell) while an orphan (e.g. buy) may still fill.
+        during the grace window, or symbols with late-reference-fill candidates (copier filled first).
+        Reference upserts on these symbols are skipped to avoid stacking a new mirrored side while
+        alignment is uncertain.
         """
         settings = self._copy_settings
         grace_seconds = settings.mirrored_orphan_cancel_grace_seconds
@@ -216,16 +349,26 @@ class OrdersSynchronizer:
         active_reference_ids = self._active_reference_order_ids(replicable)
         orphan_orders = self._mirrored_orphan_open_orders(active_reference_ids)
         orphan_count = len(orphan_orders)
+        late_fill_orders = (
+            [] if self._force_immediate_orphan_cancel_next
+            else self._late_reference_fill_candidate_orders(replicable, orphan_orders)
+        )
+        late_reference_fill_count = len(late_fill_orders)
+        grace_total = orphan_count + late_reference_fill_count
         threshold = settings.mirrored_orphan_grace_abort_threshold
-        if orphan_count == 0 or orphan_count >= threshold:
+        if grace_total == 0 or grace_total >= threshold:
             return set()
-        if not self._mirrored_orphan_batch_eligible_for_grace(orphan_orders):
+        if orphan_count > 0 and not self._mirrored_orphan_batch_eligible_for_grace(orphan_orders):
             return set()
         started_at = settings.mirrored_orphan_grace_started_at
         now = time.time()
         if started_at is not None and (now - started_at) >= grace_seconds:
             return set()
-        return {order.symbol for order in orphan_orders}
+        symbols = {order.symbol for order in orphan_orders}
+        for late_order in late_fill_orders:
+            late_origin = late_order[trading_constants.STORAGE_ORIGIN_VALUE]
+            symbols.add(late_origin[trading_enums.ExchangeConstantsOrderColumns.SYMBOL.value])
+        return symbols
 
     async def synchronize(self) -> list:
         """Align copier open orders with reference_account.orders (synched mirror rows)."""
@@ -236,8 +379,8 @@ class OrdersSynchronizer:
         replaced_cancelled_count = 0
         already_synchronized_count = 0
         skipped_grace_upserts: list[tuple[str, typing.Any]] = []
-        for doc in replicable:
-            origin = doc[trading_constants.STORAGE_ORIGIN_VALUE]
+        for order in replicable:
+            origin = order[trading_constants.STORAGE_ORIGIN_VALUE]
             order_symbol = origin[trading_enums.ExchangeConstantsOrderColumns.SYMBOL.value]
             if order_symbol in skip_symbols_for_upsert:
                 skipped_grace_upserts.append(
@@ -248,7 +391,7 @@ class OrdersSynchronizer:
                 )
                 continue
             try:
-                batch, replace_count, already_count = await self._upsert_mirrored_reference_order(doc)
+                batch, replace_count, already_count = await self._upsert_mirrored_reference_order(order)
                 created.extend(batch)
                 replaced_cancelled_count += replace_count
                 already_synchronized_count += already_count
@@ -284,29 +427,35 @@ class OrdersSynchronizer:
     async def _cancel_mirrored_orphan_orders(
         self,
         active_reference_ids: set,
+        replicable: list[dict[str, typing.Any]],
     ) -> int:
         orphan_orders = self._mirrored_orphan_open_orders(active_reference_ids)
-        return await self._apply_grace_policy_and_cancel_mirrored_orphans(orphan_orders)
+        return await self._apply_grace_policy_and_cancel_mirrored_orphans(orphan_orders, replicable)
 
     async def _apply_grace_policy_and_cancel_mirrored_orphans(
         self,
         orphan_orders: list[trading_personal_data.Order],
+        replicable: list[dict[str, typing.Any]],
     ) -> int:
         """
-        When mirrored orphans exist (or none, to clear grace state): defer cancel during an active
-        grace window unless ``abort_mirrored_orphan_grace`` requested immediate cancel, grace is
-        disabled, orphan count reaches abort threshold, or wall-clock grace has elapsed.
+        When mirrored orphans exist and/or late-reference-fill candidates exist (or neither, to clear
+        grace state): defer cancel during an active grace window unless ``abort_mirrored_orphan_grace``
+        requested immediate cancel, grace is disabled, combined count reaches abort threshold, or
+        wall-clock grace has elapsed.
         """
         settings = self._copy_settings
+        late_fill_orders = self._late_reference_fill_candidate_orders(replicable, orphan_orders)
+        late_reference_fill_count = len(late_fill_orders)
         orphan_count = len(orphan_orders)
+        grace_total = orphan_count + late_reference_fill_count
 
-        # No mirrored orphans: nothing to cancel; drop any in-memory grace start (episode over or idle).
-        if orphan_count == 0:
+        # Nothing to cancel and no alignment episode: drop in-memory grace start.
+        if grace_total == 0:
             self._force_immediate_orphan_cancel_next = False
             if settings.mirrored_orphan_grace_started_at is not None:
                 self._get_logger().info(
                     "Mirrored open-order grace period ended early: no mirrored orphan orders remain "
-                    "(reference and copier mirrors aligned as expected). "
+                    "and no late-reference-fill candidates. "
                     "Downstream copy flow proceeds without grace deferral."
                 )
             settings.mirrored_orphan_grace_started_at = None
@@ -316,44 +465,57 @@ class OrdersSynchronizer:
         threshold = settings.mirrored_orphan_grace_abort_threshold
         # Explicit abort or grace disabled: cancel orphans immediately, do not start or extend grace.
         if self._force_immediate_orphan_cancel_next or grace_seconds <= 0:
-            self._force_immediate_orphan_cancel_next = False
+            # self._force_immediate_orphan_cancel_next = False
             settings.mirrored_orphan_grace_started_at = None
             return await self._cancel_mirrored_orphan_order_list(orphan_orders)
 
-        # Too many orphans at once: treat as runaway desync, cancel immediately (same as threshold abort).
-        if orphan_count >= threshold:
+        # Too many grace items at once: treat as runaway desync, cancel orphans immediately.
+        if grace_total >= threshold:
             if settings.mirrored_orphan_grace_started_at:
                 self._get_logger().info(
-                    f"Mirrored orphan grace aborted: {orphan_count} orphan(s) >= threshold {threshold}"
+                    f"Mirrored orphan grace aborted: {grace_total} grace item(s) >= threshold {threshold} "
+                    f"({orphan_count} orphan(s), {late_reference_fill_count} late-reference-fill candidate(s))"
                 )
             settings.mirrored_orphan_grace_started_at = None
             return await self._cancel_mirrored_orphan_order_list(orphan_orders)
 
-        if not self._mirrored_orphan_batch_eligible_for_grace(orphan_orders):
-            had_grace_window = settings.mirrored_orphan_grace_started_at is not None
-            settings.mirrored_orphan_grace_started_at = None
-            if had_grace_window:
-                self._get_logger().info(
-                    "Mirrored orphan grace aborted: post-fill pair-ratio heuristic failed for at least one "
-                    f"orphan (threshold={settings.mirrored_orphan_grace_pair_ratio_max_delta}); "
-                    "cancelling immediately"
-                )
-            else:
-                self._get_logger().info(
-                    "Mirrored orphan grace skipped: post-fill pair-ratio heuristic failed for at least one "
-                    f"orphan (threshold={settings.mirrored_orphan_grace_pair_ratio_max_delta}); "
-                    "cancelling immediately"
-                )
-            return await self._cancel_mirrored_orphan_order_list(orphan_orders)
+        if orphan_count > 0 and not self._mirrored_orphan_batch_eligible_for_grace(orphan_orders):
+            cancelled = await self._cancel_mirrored_orphan_order_list(orphan_orders)
+            if late_reference_fill_count == 0:
+                had_grace_window = settings.mirrored_orphan_grace_started_at is not None
+                settings.mirrored_orphan_grace_started_at = None
+                if had_grace_window:
+                    self._get_logger().info(
+                        "Mirrored orphan grace aborted: post-fill pair-ratio heuristic failed for at least one "
+                        f"orphan (threshold={settings.mirrored_orphan_grace_pair_ratio_max_delta}); "
+                        "cancelling immediately"
+                    )
+                else:
+                    self._get_logger().info(
+                        "Mirrored orphan grace skipped: post-fill pair-ratio heuristic failed for at least one "
+                        f"orphan (threshold={settings.mirrored_orphan_grace_pair_ratio_max_delta}); "
+                        "cancelling immediately"
+                    )
+                return cancelled
+            # Orphans cancelled; continue grace driven by late-reference fills (do not clear grace here).
+            orphan_orders = []
+            orphan_count = 0
+            grace_total = late_reference_fill_count
+            self._get_logger().info(
+                f"Mirrored orphan grace ineligible for orphan deferral; {cancelled} orphan order(s) cancelled. "
+                f"Continuing grace window for {late_reference_fill_count} late-reference-fill candidate(s)"
+            )
 
         now = time.time()
         started_at = settings.mirrored_orphan_grace_started_at
-        # First observation of orphans this episode: begin wall-clock grace window, do not cancel yet.
+        # First observation this episode: begin wall-clock grace window, do not cancel orphans yet.
         if started_at is None:
             settings.mirrored_orphan_grace_started_at = now
             self._get_logger().info(
                 f"Mirrored orphan grace period started: deferring cancel of {orphan_count} "
-                f"orphan order(s) for up to {grace_seconds}s"
+                f"orphan order(s) for up to {grace_seconds}s "
+                f"(grace_total={grace_total} including {late_reference_fill_count} late-reference-fill "
+                "candidate(s))"
             )
             return 0
         # Still inside grace window: wait for copier fills / alignment.
@@ -361,6 +523,7 @@ class OrdersSynchronizer:
             remaining_seconds = grace_seconds - (now - started_at)
             self._get_logger().info(
                 f"Mirrored orphan cancel deferred: {orphan_count} orphan(s), "
+                f"{late_reference_fill_count} late-reference-fill candidate(s), "
                 f"{remaining_seconds:.1f}s grace remaining"
             )
             return 0
@@ -459,8 +622,8 @@ class OrdersSynchronizer:
             )
         return None
 
-    async def _upsert_mirrored_reference_order(self, doc: dict) -> tuple[list, int, int]:
-        origin = doc[trading_constants.STORAGE_ORIGIN_VALUE]
+    async def _upsert_mirrored_reference_order(self, order: dict) -> tuple[list, int, int]:
+        origin = order[trading_constants.STORAGE_ORIGIN_VALUE]
         symbol = origin[trading_enums.ExchangeConstantsOrderColumns.SYMBOL.value]
         side, trader_order_type = trading_personal_data.parse_order_type(origin)
         if side is None or trader_order_type is None:
@@ -469,10 +632,19 @@ class OrdersSynchronizer:
             )
             return [], 0, 0
         reference_order_id = str(origin[trading_enums.ExchangeConstantsOrderColumns.ID.value])
+        existing = self._find_open_order_by_bot_order_id(reference_order_id)
+        replicable_orders = self._get_replicable_reference_orders()
+        active_reference_ids = self._active_reference_order_ids(replicable_orders)
+        orphan_orders = self._mirrored_orphan_open_orders(active_reference_ids)
+        if existing is None and not self._force_immediate_orphan_cancel_next and self._is_late_reference_fill_for_order(order, orphan_orders):
+            self._get_logger().info(
+                f"Skipping mirrored order creation (late reference fill on copier): symbol={symbol} "
+                f"reference_order_id={reference_order_id}"
+            )
+            return [], 0, 0
         scaled_quantity = self._scale_mirrored_order_quantity(origin, symbol, side)
         if scaled_quantity is None or scaled_quantity <= trading_constants.ZERO:
             return [], 0, 0
-        existing = self._find_open_order_by_bot_order_id(reference_order_id)
         current_price_val = origin[trading_enums.ExchangeConstantsOrderColumns.PRICE.value]
         order_target_price = (
             decimal.Decimal(str(current_price_val))
@@ -552,11 +724,11 @@ class OrdersSynchronizer:
             raise_all_creation_error=True,
         )
         out = [o for o in created if o is not None]
-        for order in out:
+        for created_order in out:
             self._get_logger().info(
-                f"Created mirrored order: symbol={order.symbol} "
-                f"bot_order_id={order.order_id} side={order.side} type={order.order_type} "
-                f"quantity={order.origin_quantity} (reference_id={reference_order_id})"
+                f"Created mirrored order: symbol={created_order.symbol} "
+                f"bot_order_id={created_order.order_id} side={created_order.side} type={created_order.order_type} "
+                f"quantity={created_order.origin_quantity} (reference_id={reference_order_id})"
             )
         return out, replaced_cancelled, 0
 

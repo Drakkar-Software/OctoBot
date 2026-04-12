@@ -311,6 +311,209 @@ def _orders_by_side_with_id(origins: list[dict], side: str) -> list[tuple[str, f
     )
 
 
+def mutate_client_dump_simulate_early_fill_of_grid_ref_b1(
+    dump: dict[str, typing.Any],
+    _reference_r1: copy_entities.Account,
+) -> None:
+    """
+    Simulate the client having already filled the mirrored ``grid_ref_b1`` buy while the embedded
+    reference snapshot can still list that order as open (late-reference-fill alignment).
+    Base/quote portfolio balances are adjusted using that order's amount and price (same economics
+    as ``reference_replace_highest_buy_with_sell`` on the reference account).
+    """
+    storage = trading_constants.STORAGE_ORIGIN_VALUE
+    id_col = trading_enums.ExchangeConstantsOrderColumns.ID.value
+    amount_col = trading_enums.ExchangeConstantsOrderColumns.AMOUNT.value
+    price_col = trading_enums.ExchangeConstantsOrderColumns.PRICE.value
+    automation = dump["automation"]
+    open_orders = automation["client_exchange_account_elements"]["orders"]["open_orders"]
+    filled_wrapped: typing.Optional[dict] = None
+    for wrapped in open_orders:
+        if wrapped[storage][id_col] == "grid_ref_b1":
+            filled_wrapped = wrapped
+            break
+    if filled_wrapped is None:
+        raise AssertionError("expected open mirrored order grid_ref_b1")
+    filled_origin = filled_wrapped[storage]
+    fill_quantity = decimal.Decimal(str(filled_origin[amount_col]))
+    fill_price = decimal.Decimal(str(filled_origin[price_col]))
+    quote_spent = fill_quantity * fill_price
+
+    automation["client_exchange_account_elements"]["orders"]["open_orders"] = [
+        o for o in open_orders if o[storage][id_col] != "grid_ref_b1"
+    ]
+
+    content = automation["client_exchange_account_elements"]["portfolio"]["content"]
+    base_currency = "BTC"
+    quote_currency = "USDC"
+    btc_entry = content.setdefault(base_currency, {})
+    usdc_entry = content.setdefault(quote_currency, {})
+
+    btc_total = decimal.Decimal(str(btc_entry.get("total", 0)))
+    btc_available = decimal.Decimal(str(btc_entry.get("available", btc_total)))
+    usdc_total = decimal.Decimal(str(usdc_entry.get("total", 0)))
+    usdc_available = decimal.Decimal(str(usdc_entry.get("available", usdc_total)))
+
+    btc_total += fill_quantity
+    btc_available += fill_quantity
+    usdc_total -= quote_spent
+    usdc_available -= quote_spent
+
+    btc_entry["total"] = float(btc_total)
+    btc_entry["available"] = float(btc_available)
+    usdc_entry["total"] = float(usdc_total)
+    usdc_entry["available"] = float(usdc_available)
+
+    mark_price = decimal.Decimal(str(grid_test._FIXED_BTC_USDC_CLOSE))
+    value_base = btc_total * mark_price
+    value_quote = usdc_total
+    value_total = value_base + value_quote
+    if value_total > decimal.Decimal("0"):
+        btc_entry[copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO] = float(value_base / value_total)
+        usdc_entry[copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO] = float(value_quote / value_total)
+
+
+@pytest.mark.asyncio
+async def test_grid_copy_trigger_grace_period_for_unfilled_client_order(init_action: dict):
+    reference_market = "USDC"
+    patched_fetch_tickers = grid_test.tickers_repository_fetch_tickers_btc_usdc_close_override(
+        lambda: grid_test._FIXED_BTC_USDC_CLOSE
+    )
+    patched_fetch_ohlcv = grid_test.fetch_ohlcv_side_effect_for_close_price(
+        lambda: grid_test._FIXED_BTC_USDC_CLOSE
+    )
+    reference_r1 = grid_reference_four_order_account()
+    settings = _grace_account_copy_settings()
+    all_actions = [
+        set_init_action_run_mode(init_action, octobot_flow.enums.AutomationRunMode.UPDATE_CLIENT_EXCHANGE_ACCOUNT_ONLY),
+        copy_exchange_account_action(reference_market, reference_r1, settings),
+    ]
+    automation_state_template = automation_state_dict(resolved_actions(all_actions))
+    with (
+        mock.patch.object(
+            octobot_flow.repositories.exchange.TickersRepository,
+            "fetch_tickers",
+            new=patched_fetch_tickers,
+        ),
+        mock.patch.object(
+            octobot_flow.repositories.exchange.OhlcvRepository,
+            "fetch_ohlcv",
+            side_effect=patched_fetch_ohlcv,
+        ),
+    ):
+        async with octobot_flow.AutomationJob(automation_state_template, [], {}) as job:
+            await job.run()
+        after_init = job.dump()
+
+        async with octobot_flow.AutomationJob(after_init, [], {}) as job:
+            await job.run()
+        after_copy_r1 = job.dump()
+
+    grace_before = after_copy_r1["automation"]["execution"]["copy_details"].get(
+        "open_orders_grace_period_started_at"
+    )
+    assert grace_before is None or grace_before == 0
+
+    reference_r2 = reference_replace_highest_buy_with_sell(reference_r1)
+    update_state_reference_account_details(after_copy_r1, reference_market, reference_r2, settings)
+
+    with (
+        mock.patch.object(
+            octobot_flow.repositories.exchange.TickersRepository,
+            "fetch_tickers",
+            new=patched_fetch_tickers,
+        ),
+        mock.patch.object(
+            octobot_flow.repositories.exchange.OhlcvRepository,
+            "fetch_ohlcv",
+            side_effect=patched_fetch_ohlcv,
+        ),
+    ):
+        async with octobot_flow.AutomationJob(after_copy_r1, [], {}) as job:
+            await job.run()
+        after_grace_trigger = job.dump()
+
+    grace_at = after_grace_trigger["automation"]["execution"]["copy_details"].get(
+        "open_orders_grace_period_started_at"
+    )
+    assert grace_at is not None
+    orphan_still_buy = [
+        origin
+        for origin in _open_orders_origins(after_grace_trigger)
+        if origin[trading_enums.ExchangeConstantsOrderColumns.SIDE.value] == trading_enums.TradeOrderSide.BUY.value
+        and origin[trading_enums.ExchangeConstantsOrderColumns.ID.value] == "grid_ref_b1"
+    ]
+    assert len(orphan_still_buy) == 1
+
+
+@pytest.mark.asyncio
+async def test_grid_copy_trigger_grace_period_for_early_filled_client_order(init_action: dict):
+    reference_market = "USDC"
+    patched_fetch_tickers = grid_test.tickers_repository_fetch_tickers_btc_usdc_close_override(
+        lambda: grid_test._FIXED_BTC_USDC_CLOSE
+    )
+    patched_fetch_ohlcv = grid_test.fetch_ohlcv_side_effect_for_close_price(
+        lambda: grid_test._FIXED_BTC_USDC_CLOSE
+    )
+    reference_r1 = grid_reference_four_order_account()
+    settings = _grace_account_copy_settings()
+    all_actions = [
+        set_init_action_run_mode(init_action, octobot_flow.enums.AutomationRunMode.UPDATE_CLIENT_EXCHANGE_ACCOUNT_ONLY),
+        copy_exchange_account_action(reference_market, reference_r1, settings),
+    ]
+    automation_state_template = automation_state_dict(resolved_actions(all_actions))
+    with (
+        mock.patch.object(
+            octobot_flow.repositories.exchange.TickersRepository,
+            "fetch_tickers",
+            new=patched_fetch_tickers,
+        ),
+        mock.patch.object(
+            octobot_flow.repositories.exchange.OhlcvRepository,
+            "fetch_ohlcv",
+            side_effect=patched_fetch_ohlcv,
+        ),
+    ):
+        async with octobot_flow.AutomationJob(automation_state_template, [], {}) as job:
+            await job.run()
+        after_init = job.dump()
+
+        async with octobot_flow.AutomationJob(after_init, [], {}) as job:
+            await job.run()
+        after_copy_r1 = job.dump()
+
+    mutate_client_dump_simulate_early_fill_of_grid_ref_b1(after_copy_r1, reference_r1)
+    update_state_reference_account_details(after_copy_r1, reference_market, reference_r1, settings)
+
+    with (
+        mock.patch.object(
+            octobot_flow.repositories.exchange.TickersRepository,
+            "fetch_tickers",
+            new=patched_fetch_tickers,
+        ),
+        mock.patch.object(
+            octobot_flow.repositories.exchange.OhlcvRepository,
+            "fetch_ohlcv",
+            side_effect=patched_fetch_ohlcv,
+        ),
+    ):
+        async with octobot_flow.AutomationJob(after_copy_r1, [], {}) as job:
+            await job.run()
+        after_grace_trigger = job.dump()
+
+    grace_at = after_grace_trigger["automation"]["execution"]["copy_details"].get(
+        "open_orders_grace_period_started_at"
+    )
+    assert grace_at is not None
+
+    final_origins = _open_orders_origins(after_grace_trigger)
+    assert len(final_origins) == 3
+    open_ids = {
+        origin[trading_enums.ExchangeConstantsOrderColumns.ID.value] for origin in final_origins
+    }
+    assert "grid_ref_b1" not in open_ids
+
+
 @pytest.mark.asyncio
 async def test_grid_copy_grace_elapses_then_orphan_cancelled_and_sell_mirrored(init_action: dict):
     reference_market = "USDC"
@@ -321,7 +524,6 @@ async def test_grid_copy_grace_elapses_then_orphan_cancelled_and_sell_mirrored(i
         lambda: grid_test._FIXED_BTC_USDC_CLOSE
     )
     reference_r1 = grid_reference_four_order_account()
-    reference_r2 = reference_replace_highest_buy_with_sell(reference_r1)
     settings = _grace_account_copy_settings()
     all_actions = [
         set_init_action_run_mode(init_action, octobot_flow.enums.AutomationRunMode.UPDATE_CLIENT_EXCHANGE_ACCOUNT_ONLY),
@@ -361,6 +563,7 @@ async def test_grid_copy_grace_elapses_then_orphan_cancelled_and_sell_mirrored(i
     assert "grid_ref_b0" in buy_ids_r1
     assert "grid_ref_b1" in buy_ids_r1
 
+    reference_r2 = reference_replace_highest_buy_with_sell(reference_r1)
     update_state_reference_account_details(after_copy_r1, reference_market, reference_r2, settings)
 
     with (
@@ -526,7 +729,6 @@ async def test_grid_copy_orphan_resolved_by_client_fill_without_rebalance_orders
         lambda: simulated_close["value"]
     )
     reference_r1 = grid_reference_four_order_account()
-    reference_r2 = reference_replace_highest_buy_with_sell(reference_r1)
     settings = _grace_account_copy_settings()
     all_actions = [
         set_init_action_run_mode(init_action, octobot_flow.enums.AutomationRunMode.UPDATE_CLIENT_EXCHANGE_ACCOUNT_ONLY),
@@ -552,6 +754,7 @@ async def test_grid_copy_orphan_resolved_by_client_fill_without_rebalance_orders
             await job.run()
         after_copy_r1 = job.dump()
 
+    reference_r2 = reference_replace_highest_buy_with_sell(reference_r1)
     update_state_reference_account_details(after_copy_r1, reference_market, reference_r2, settings)
 
     with (

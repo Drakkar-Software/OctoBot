@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU General Public License along with
 #  OctoBot. If not, see <https://www.gnu.org/licenses/>.
+import asyncio
 import decimal
 
 import mock
@@ -184,3 +185,130 @@ class TestOrdersSynchronizerOrphanGraceHeuristic:
         assert reference_share is not None
         assert simulated_share is not None
         assert simulated_share == reference_share
+
+
+def _replicable_buy_limit_order(
+    *,
+    order_id: str = "ref-late-1",
+    amount: decimal.Decimal = decimal.Decimal("1"),
+    price: decimal.Decimal = decimal.Decimal("2000"),
+) -> dict:
+    return {
+        trading_constants.STORAGE_ORIGIN_VALUE: {
+            trading_enums.ExchangeConstantsOrderColumns.ID.value: order_id,
+            trading_enums.ExchangeConstantsOrderColumns.SYMBOL.value: "ETH/USDT",
+            trading_enums.ExchangeConstantsOrderColumns.SIDE.value: trading_enums.TradeOrderSide.BUY.value,
+            trading_enums.ExchangeConstantsOrderColumns.TYPE.value: trading_enums.TradeOrderType.LIMIT.value,
+            trading_enums.ExchangeConstantsOrderColumns.AMOUNT.value: amount,
+            trading_enums.ExchangeConstantsOrderColumns.PRICE.value: price,
+            trading_enums.ExchangeConstantsOrderColumns.STATUS.value: trading_enums.OrderStatus.OPEN.value,
+        }
+    }
+
+
+class TestLateReferenceFillHeuristic:
+    def test_late_fill_true_when_copier_matches_simulated_reference_fill(self):
+        reference = copy_entities.Account(
+            content={
+                "ETH": {
+                    commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("1"),
+                    copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.25"),
+                },
+                "USDT": {
+                    commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("10000"),
+                    copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.5"),
+                },
+            },
+            orders=[],
+        )
+        currency_totals = {
+            "ETH": decimal.Decimal("2"),
+            "USDT": decimal.Decimal("8000"),
+        }
+        exchange_if = _exchange_interface_stub(
+            currency_totals=currency_totals,
+            market_price=decimal.Decimal("2000"),
+        )
+        exchange_if.orders.get_open_orders = mock.Mock(return_value=[])
+        synchronizer = orders_synchronizer_module.OrdersSynchronizer(
+            reference,
+            exchange_if,
+            copy_entities.AccountCopySettings(),
+        )
+        order = _replicable_buy_limit_order()
+        assert synchronizer._passes_late_reference_fill_heuristic(order) is True
+        assert synchronizer._is_late_reference_fill_for_order(order, []) is True
+
+    def test_late_fill_false_when_new_reference_order_copier_not_yet_filled(self):
+        reference = copy_entities.Account(
+            content={
+                "ETH": {
+                    commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("1"),
+                    copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.25"),
+                },
+                "USDT": {
+                    commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("10000"),
+                    copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.5"),
+                },
+            },
+            orders=[],
+        )
+        currency_totals = {
+            "ETH": decimal.Decimal("1"),
+            "USDT": decimal.Decimal("10000"),
+        }
+        exchange_if = _exchange_interface_stub(
+            currency_totals=currency_totals,
+            market_price=decimal.Decimal("2000"),
+        )
+        exchange_if.orders.get_open_orders = mock.Mock(return_value=[])
+        synchronizer = orders_synchronizer_module.OrdersSynchronizer(
+            reference,
+            exchange_if,
+            copy_entities.AccountCopySettings(),
+        )
+        order = _replicable_buy_limit_order()
+        assert synchronizer._passes_late_reference_fill_heuristic(order) is False
+        assert synchronizer._is_late_reference_fill_for_order(order, []) is False
+
+    def test_grace_started_when_late_fill_only_no_orphans(self):
+        reference = copy_entities.Account(
+            content={
+                "ETH": {
+                    commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("1"),
+                    copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.25"),
+                },
+                "USDT": {
+                    commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("10000"),
+                    copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.5"),
+                },
+            },
+            orders=[],
+        )
+        currency_totals = {
+            "ETH": decimal.Decimal("2"),
+            "USDT": decimal.Decimal("8000"),
+        }
+        exchange_if = _exchange_interface_stub(
+            currency_totals=currency_totals,
+            market_price=decimal.Decimal("2000"),
+        )
+        exchange_if.orders.get_open_orders = mock.Mock(return_value=[])
+        copy_settings = copy_entities.AccountCopySettings(
+            mirrored_orphan_cancel_grace_seconds=60.0,
+            mirrored_orphan_grace_abort_threshold=3,
+        )
+        assert copy_settings.mirrored_orphan_grace_started_at is None
+        synchronizer = orders_synchronizer_module.OrdersSynchronizer(
+            reference,
+            exchange_if,
+            copy_settings,
+        )
+        order = _replicable_buy_limit_order()
+        replicable = [order]
+
+        async def run_grace():
+            return await synchronizer._apply_grace_policy_and_cancel_mirrored_orphans([], replicable)
+
+        asyncio.run(run_grace())
+        assert copy_settings.mirrored_orphan_grace_started_at is not None
