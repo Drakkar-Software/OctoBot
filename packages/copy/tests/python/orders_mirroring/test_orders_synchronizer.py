@@ -15,6 +15,7 @@
 #  OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import asyncio
 import decimal
+import time
 
 import mock
 
@@ -272,7 +273,8 @@ class TestLateReferenceFillHeuristic:
         assert synchronizer._is_late_reference_fill_for_order(order, []) is False
 
     def test_grace_started_when_late_fill_only_no_orphans(self):
-        reference = copy_entities.Account(
+        compliant_snapshot = copy_entities.Account(
+            updated_at=time.time() - 1.0,
             content={
                 "ETH": {
                     commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("1"),
@@ -284,6 +286,21 @@ class TestLateReferenceFillHeuristic:
                 },
             },
             orders=[],
+        )
+        reference = copy_entities.Account(
+            updated_at=time.time(),
+            content={
+                "ETH": {
+                    commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("1"),
+                    copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.25"),
+                },
+                "USDT": {
+                    commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("10000"),
+                    copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.5"),
+                },
+            },
+            orders=[],
+            historical_snapshots=[compliant_snapshot],
         )
         currency_totals = {
             "ETH": decimal.Decimal("2"),
@@ -298,7 +315,6 @@ class TestLateReferenceFillHeuristic:
             mirrored_orphan_cancel_grace_seconds=60.0,
             mirrored_orphan_grace_abort_threshold=3,
         )
-        assert copy_settings.mirrored_orphan_grace_started_at is None
         synchronizer = orders_synchronizer_module.OrdersSynchronizer(
             reference,
             exchange_if,
@@ -311,4 +327,151 @@ class TestLateReferenceFillHeuristic:
             return await synchronizer._apply_grace_policy_and_cancel_mirrored_orphans([], replicable)
 
         asyncio.run(run_grace())
-        assert copy_settings.mirrored_orphan_grace_started_at is not None
+        assert synchronizer.get_mirrored_orphan_grace_started_at() is not None
+
+
+def _replicable_buy_limit_order_id(order_id: str) -> dict:
+    return _replicable_buy_limit_order(order_id=order_id)
+
+
+def _mirrored_eth_buy_order_stub(order_id: str) -> mock.Mock:
+    mirrored = mock.Mock()
+    mirrored.tag = copy_constants.MIRRORED_ORDER_TAG
+    mirrored.order_id = order_id
+    mirrored.symbol = "ETH/USDT"
+    mirrored.side = trading_enums.TradeOrderSide.BUY
+    mirrored.origin_price = decimal.Decimal("2000")
+    mirrored.origin_quantity = decimal.Decimal("1")
+    return mirrored
+
+
+class TestMissedHistoricalSignalsGraceAbort:
+    def test_is_aborted_when_first_compliant_snapshot_index_at_threshold(self):
+        order_m1 = _replicable_buy_limit_order_id("m1")
+        order_m2 = _replicable_buy_limit_order_id("m2")
+        portfolio = {
+            "ETH": {
+                commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("1"),
+                copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.25"),
+            },
+            "USDT": {
+                commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("10000"),
+                copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.5"),
+            },
+        }
+        empty_snapshot = copy_entities.Account(
+            updated_at=time.time(),
+            content=portfolio,
+            orders=[],
+        )
+        empty_snapshot_mid = copy_entities.Account(
+            updated_at=time.time() - 1.0,
+            content=portfolio,
+            orders=[],
+        )
+        compliant_snapshot = copy_entities.Account(
+            updated_at=time.time() - 5.0,
+            content=portfolio,
+            orders=[order_m1, order_m2],
+        )
+        live_reference = copy_entities.Account(
+            updated_at=time.time(),
+            content=portfolio,
+            orders=[order_m1],
+            historical_snapshots=[empty_snapshot, empty_snapshot_mid, compliant_snapshot],
+        )
+        mirror_m1 = _mirrored_eth_buy_order_stub("m1")
+        mirror_m2 = _mirrored_eth_buy_order_stub("m2")
+        exchange_if = mock.MagicMock()
+        exchange_if.orders.get_open_orders = mock.Mock(return_value=[mirror_m1, mirror_m2])
+        exchange_if.portfolio.reference_market = "USDT"
+        exchange_if.portfolio.get_currency_portfolio_total = mock.Mock(
+            return_value=decimal.Decimal("1")
+        )
+        exchange_if.market.get_potentially_outdated_price = mock.Mock(
+            return_value=(decimal.Decimal("2000"), False)
+        )
+        copy_settings = copy_entities.AccountCopySettings(
+            mirrored_orphan_cancel_grace_seconds=60.0,
+            mirrored_orphan_grace_abort_threshold=2,
+            missed_signals_grace_abort_threshold=2,
+        )
+        synchronizer = orders_synchronizer_module.OrdersSynchronizer(
+            live_reference,
+            exchange_if,
+            copy_settings,
+        )
+        assert synchronizer.is_mirrored_orphan_grace_aborted_for_missed_historical_signals() is True
+
+    def test_apply_grace_cancels_immediately_when_missed_signals_abort(self):
+        order_m1 = _replicable_buy_limit_order_id("m1")
+        order_m2 = _replicable_buy_limit_order_id("m2")
+        portfolio = {
+            "ETH": {
+                commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("1"),
+                copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.25"),
+            },
+            "USDT": {
+                commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("10000"),
+                copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.5"),
+            },
+        }
+        empty_snapshot = copy_entities.Account(
+            updated_at=time.time(),
+            content=portfolio,
+            orders=[],
+        )
+        empty_snapshot_mid = copy_entities.Account(
+            updated_at=time.time() - 1.0,
+            content=portfolio,
+            orders=[],
+        )
+        compliant_snapshot = copy_entities.Account(
+            updated_at=time.time() - 5.0,
+            content=portfolio,
+            orders=[order_m1, order_m2],
+        )
+        live_reference = copy_entities.Account(
+            updated_at=time.time(),
+            content=portfolio,
+            orders=[order_m1],
+            historical_snapshots=[empty_snapshot, empty_snapshot_mid, compliant_snapshot],
+        )
+        mirror_m1 = _mirrored_eth_buy_order_stub("m1")
+        mirror_m2 = _mirrored_eth_buy_order_stub("m2")
+        exchange_if = mock.MagicMock()
+        # Two open mirrors so empty-order snapshots see grace_total>=threshold and stay non-compliant;
+        # otherwise a single orphan snapshot "complies" and missed-signals abort never triggers.
+        exchange_if.orders.get_open_orders = mock.Mock(return_value=[mirror_m1, mirror_m2])
+        exchange_if.orders.cancel_order = mock.AsyncMock()
+        exchange_if.portfolio.reference_market = "USDT"
+        currency_totals = {
+            "ETH": decimal.Decimal("1"),
+            "USDT": decimal.Decimal("10000"),
+        }
+        exchange_if.portfolio.get_currency_portfolio_total = mock.Mock(
+            side_effect=lambda currency: currency_totals[currency]
+        )
+        exchange_if.market.get_potentially_outdated_price = mock.Mock(
+            return_value=(decimal.Decimal("2000"), False)
+        )
+        copy_settings = copy_entities.AccountCopySettings(
+            mirrored_orphan_cancel_grace_seconds=60.0,
+            mirrored_orphan_grace_abort_threshold=2,
+            missed_signals_grace_abort_threshold=2,
+        )
+        synchronizer = orders_synchronizer_module.OrdersSynchronizer(
+            live_reference,
+            exchange_if,
+            copy_settings,
+        )
+        replicable = synchronizer._get_replicable_reference_orders()
+
+        async def run_grace():
+            return await synchronizer._apply_grace_policy_and_cancel_mirrored_orphans(
+                [mirror_m2],
+                replicable,
+            )
+
+        asyncio.run(run_grace())
+        exchange_if.orders.cancel_order.assert_called_once_with(mirror_m2)

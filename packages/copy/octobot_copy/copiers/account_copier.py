@@ -47,6 +47,18 @@ class AccountCopier:
     async def copy_account(self) -> copy_entities.AccountCopyResult:
         await self._resync_if_mirrored_open_order_grace_period_elapsed()
         rebalancer, should_rebalance, details = await self._prepare_rebalance_plan()
+        if self._orders_synchronizer.is_mirrored_orphan_grace_invalid_no_compliant_snapshot():
+            self._get_logger().info(
+                "Forcing rebalance: mirrored orphan grace has no compliant reference snapshot "
+                f"on [{self._copier_exchange_interface.exchange_name}]"
+            )
+            should_rebalance = True
+        if self._orders_synchronizer.is_mirrored_orphan_grace_aborted_for_missed_historical_signals():
+            self._get_logger().info(
+                "Forcing rebalance: mirrored orphan grace aborted for missed historical signals "
+                f"on [{self._copier_exchange_interface.exchange_name}]"
+            )
+            should_rebalance = True
         rebalance_orders: list = []
         try:
             if should_rebalance:
@@ -67,27 +79,21 @@ class AccountCopier:
                 await self._copier_exchange_interface.portfolio.refresh_portfolio()
             synched_orders = await self._synchronize_reference_open_orders()
             all_orders: list = rebalance_orders + synched_orders
-            return copy_entities.AccountCopyResult(
-                created_orders=all_orders,
-                open_orders_grace_period_started_at=self._copy_settings.mirrored_orphan_grace_started_at,
-            )
+            return copy_entities.AccountCopyResult(created_orders=all_orders)
         except (trading_errors.MissingMinimalExchangeTradeVolume, copy_errors.RebalanceAborted) as err:
             self._get_logger().exception(
                 err,
                 True,
                 f"Aborted rebalance on {self._copier_exchange_interface.exchange_name}: {err} ({err.__class__.__name__})",
             )
-            return copy_entities.AccountCopyResult(
-                created_orders=[],
-                open_orders_grace_period_started_at=self._copy_settings.mirrored_orphan_grace_started_at,
-            )
+            return copy_entities.AccountCopyResult(created_orders=[])
         finally:
             self._get_logger().info("Portfolio rebalance process complete")
 
     async def _resync_if_mirrored_open_order_grace_period_elapsed(self) -> None:
         copy_settings = self._copy_settings
         grace_seconds = copy_settings.mirrored_orphan_cancel_grace_seconds
-        grace_started_at = copy_settings.mirrored_orphan_grace_started_at
+        grace_started_at = self._orders_synchronizer.get_mirrored_orphan_grace_started_at()
         if (
             grace_seconds > 0
             and grace_started_at is not None
@@ -102,7 +108,6 @@ class AccountCopier:
             self._orders_synchronizer.abort_mirrored_orphan_grace()
             await self._orders_synchronizer.cancel_orders_pending_synchronization(None)
             await self._copier_exchange_interface.portfolio.refresh_portfolio()
-            copy_settings.mirrored_orphan_grace_started_at = None
 
     async def _synchronize_reference_open_orders(self) -> list[trading_personal_data.Order]:
         return await self._orders_synchronizer.synchronize()

@@ -29,9 +29,12 @@ class OrdersSynchronizer:
         self._copy_settings = copy_settings
         self._force_immediate_orphan_cancel_next: bool = False
 
-    def _get_replicable_reference_orders(self) -> list[dict[str, typing.Any]]:
+    def _get_replicable_reference_orders_from(
+        self,
+        reference_account: copy_entities.Account,
+    ) -> list[dict[str, typing.Any]]:
         replicable: list[dict[str, typing.Any]] = []
-        for order in self._reference_account.orders:
+        for order in reference_account.orders:
             if trading_constants.STORAGE_ORIGIN_VALUE not in order:
                 continue
             origin = order[trading_constants.STORAGE_ORIGIN_VALUE]
@@ -46,6 +49,9 @@ class OrdersSynchronizer:
                 continue
             replicable.append(order)
         return replicable
+
+    def _get_replicable_reference_orders(self) -> list[dict[str, typing.Any]]:
+        return self._get_replicable_reference_orders_from(self._reference_account)
 
     def _active_reference_order_ids(self, replicable: list[dict[str, typing.Any]]) -> set:
         return {
@@ -69,8 +75,82 @@ class OrdersSynchronizer:
         return await self._cancel_mirrored_orphan_orders(to_keep_ids, replicable)
 
     def abort_mirrored_orphan_grace(self) -> None:
-        self._copy_settings.mirrored_orphan_grace_started_at = None
         self._force_immediate_orphan_cancel_next = True
+
+    def is_mirrored_orphan_grace_invalid_no_compliant_snapshot(self) -> bool:
+        """
+        True when ``historical_snapshots`` is non-empty but no stored snapshot aligns with the copier
+        under grace checks, so grace cannot be anchored to history. Empty history is **not** invalid:
+        callers without prior reference states use the live account only (see
+        ``get_mirrored_orphan_grace_started_at``).
+        """
+        if not self._reference_account.historical_snapshots:
+            return False
+        for snapshot in self._reference_account.historical_snapshots:
+            if self._reference_state_complies_with_copier_for_grace(snapshot):
+                return False
+        return True
+
+    def get_mirrored_orphan_grace_started_at(self) -> typing.Optional[float]:
+        """
+        Wall-clock start of the mirrored-orphan grace window derived from reference
+        historical_snapshots and updated_at. With no history, uses ``reference_account.updated_at``.
+        None when non-empty history has no compliant snapshot (invalid) or not applicable.
+        """
+        if not self._reference_account.historical_snapshots:
+            return self._reference_account.updated_at
+        if self.is_mirrored_orphan_grace_invalid_no_compliant_snapshot():
+            return None
+        for index, snapshot in enumerate(self._reference_account.historical_snapshots):
+            if self._reference_state_complies_with_copier_for_grace(snapshot):
+                if index > 0:
+                    return self._reference_account.historical_snapshots[index - 1].updated_at
+                return self._reference_account.updated_at
+        return None
+
+    def _reference_state_complies_with_copier_for_grace(
+        self,
+        reference_state: copy_entities.Account,
+    ) -> bool:
+        replicable = self._get_replicable_reference_orders_from(reference_state)
+        active_reference_ids = self._active_reference_order_ids(replicable)
+        orphan_orders = self._mirrored_orphan_open_orders(active_reference_ids)
+        orphan_count = len(orphan_orders)
+        late_fill_orders = self._late_reference_fill_candidate_orders(
+            replicable,
+            orphan_orders,
+            reference_state,
+        )
+        late_reference_fill_count = len(late_fill_orders)
+        grace_total = orphan_count + late_reference_fill_count
+        settings = self._copy_settings
+        threshold = settings.mirrored_orphan_grace_abort_threshold
+        if grace_total == 0:
+            return True
+        if grace_total >= threshold:
+            return False
+        if orphan_count > 0 and not self._mirrored_orphan_batch_eligible_for_grace(
+            orphan_orders,
+            reference_state,
+        ):
+            return False
+        return True
+
+    def is_mirrored_orphan_grace_aborted_for_missed_historical_signals(self) -> bool:
+        """
+        True when ``historical_snapshots`` is non-empty, at least one snapshot complies with
+        ``_reference_state_complies_with_copier_for_grace``, and the first compliant snapshot is at
+        index ``>= missed_signals_grace_abort_threshold`` (newest-first order). Empty history and
+        the no-compliant-snapshot invalid case are handled elsewhere.
+        """
+        snapshots = self._reference_account.historical_snapshots
+        if not snapshots:
+            return False
+        threshold = self._copy_settings.missed_signals_grace_abort_threshold
+        for index, snapshot in enumerate(snapshots):
+            if self._reference_state_complies_with_copier_for_grace(snapshot):
+                return index >= threshold
+        return False
 
     def is_mirrored_orphan_grace_blocking_rebalance(self) -> bool:
         replicable = self._get_replicable_reference_orders()
@@ -85,13 +165,18 @@ class OrdersSynchronizer:
             and str(order.order_id) not in active_reference_ids
         ]
 
-    def _reference_pair_leg_share(self, symbol: str) -> typing.Optional[decimal.Decimal]:
+    def _reference_pair_leg_share(
+        self,
+        symbol: str,
+        reference_state: typing.Optional[copy_entities.Account] = None,
+    ) -> typing.Optional[decimal.Decimal]:
+        reference_account = reference_state or self._reference_account
         parsed = symbol_util.parse_symbol(symbol)
         base_currency = parsed.base
         quote_currency = parsed.quote
         if not base_currency or not quote_currency:
             return None
-        reference_content = self._reference_account.content
+        reference_content = reference_account.content
         if base_currency not in reference_content:
             return trading_constants.ZERO
         if quote_currency not in reference_content:
@@ -204,7 +289,9 @@ class OrdersSynchronizer:
     def _simulated_reference_pair_leg_share_after_order_fill(
         self,
         origin: dict,
+        reference_state: typing.Optional[copy_entities.Account] = None,
     ) -> typing.Optional[decimal.Decimal]:
+        reference_account = reference_state or self._reference_account
         symbol = origin[trading_enums.ExchangeConstantsOrderColumns.SYMBOL.value]
         parsed = symbol_util.parse_symbol(symbol)
         base_currency = parsed.base
@@ -221,7 +308,7 @@ class OrdersSynchronizer:
         order_quantity = decimal.Decimal(str(amount_raw))
         if order_quantity <= trading_constants.ZERO:
             return None
-        reference_content = self._reference_account.content
+        reference_content = reference_account.content
         base_holdings = reference_content.get(base_currency, {}) or {}
         quote_holdings = reference_content.get(quote_currency, {}) or {}
         base_total = base_holdings.get(commons_constants.PORTFOLIO_TOTAL, trading_constants.ZERO)
@@ -236,17 +323,29 @@ class OrdersSynchronizer:
             return None
         return self._pair_leg_share_value_weighted(base_currency, quote_currency, base_adjusted, quote_adjusted)
 
-    def _passes_late_reference_fill_heuristic(self, order: dict) -> bool:
+    def _passes_late_reference_fill_heuristic(
+        self,
+        order: dict,
+        reference_state: typing.Optional[copy_entities.Account] = None,
+    ) -> bool:
         origin = order[trading_constants.STORAGE_ORIGIN_VALUE]
         symbol = origin[trading_enums.ExchangeConstantsOrderColumns.SYMBOL.value]
         max_delta = self._copy_settings.mirrored_orphan_grace_pair_ratio_max_delta
         copier_share = self._copier_pair_leg_share(symbol)
-        simulated_reference_share = self._simulated_reference_pair_leg_share_after_order_fill(origin)
+        simulated_reference_share = self._simulated_reference_pair_leg_share_after_order_fill(
+            origin,
+            reference_state,
+        )
         if copier_share is None or simulated_reference_share is None:
             return False
         return abs(simulated_reference_share - copier_share) <= max_delta
 
-    def _is_late_reference_fill_for_order(self, order: dict, orphan_orders: list[trading_personal_data.Order]) -> bool:
+    def _is_late_reference_fill_for_order(
+        self,
+        order: dict,
+        orphan_orders: list[trading_personal_data.Order],
+        reference_state: typing.Optional[copy_entities.Account] = None,
+    ) -> bool:
         origin = order[trading_constants.STORAGE_ORIGIN_VALUE]
         reference_order_id = str(origin[trading_enums.ExchangeConstantsOrderColumns.ID.value])
         if self._find_open_order_by_bot_order_id(reference_order_id) is not None:
@@ -280,22 +379,28 @@ class OrdersSynchronizer:
                     # on the same symbol and a different side => it likely is the 
                     # "other side" equivalent of the orphan order: it's not a late reference fill.
                     return False
-        return self._passes_late_reference_fill_heuristic(order)
+        return self._passes_late_reference_fill_heuristic(order, reference_state)
 
     def _late_reference_fill_candidate_orders(
         self,
         replicable: list[dict[str, typing.Any]],
         orphan_orders: list[trading_personal_data.Order],
+        reference_state: typing.Optional[copy_entities.Account],
     ) -> list[dict[str, typing.Any]]:
-        return [order for order in replicable if self._is_late_reference_fill_for_order(order, orphan_orders)]
+        return [
+            order
+            for order in replicable
+            if self._is_late_reference_fill_for_order(order, orphan_orders, reference_state)
+        ]
 
     def _mirrored_orphan_batch_eligible_for_grace(
         self,
         orphan_orders: list[trading_personal_data.Order],
+        reference_state: typing.Optional[copy_entities.Account] = None,
     ) -> bool:
         max_delta = self._copy_settings.mirrored_orphan_grace_pair_ratio_max_delta
         for orphan_order in orphan_orders:
-            reference_share = self._reference_pair_leg_share(orphan_order.symbol)
+            reference_share = self._reference_pair_leg_share(orphan_order.symbol, reference_state)
             simulated_share = self._simulated_copier_pair_leg_share_after_orphan_fill(orphan_order)
             if reference_share is None or simulated_share is None:
                 return False
@@ -312,9 +417,18 @@ class OrdersSynchronizer:
         grace_seconds = settings.mirrored_orphan_cancel_grace_seconds
         if grace_seconds <= 0:
             return False
+        if self.is_mirrored_orphan_grace_invalid_no_compliant_snapshot():
+            return False
+        if self.is_mirrored_orphan_grace_aborted_for_missed_historical_signals():
+            missed_threshold = settings.missed_signals_grace_abort_threshold
+            self._get_logger().info(
+                "Mirrored orphans grace period aborted: first compliant reference snapshot index "
+                f">= missed_signals_grace_abort_threshold ({missed_threshold})"
+            )
+            return False
         orphan_orders = self._mirrored_orphan_open_orders(active_reference_ids)
         orphan_count = len(orphan_orders)
-        late_reference_fill_count = len(self._late_reference_fill_candidate_orders(replicable, orphan_orders))
+        late_reference_fill_count = len(self._late_reference_fill_candidate_orders(replicable, orphan_orders, None))
         grace_total = orphan_count + late_reference_fill_count
         threshold = settings.mirrored_orphan_grace_abort_threshold
         if grace_total == 0:
@@ -326,7 +440,7 @@ class OrdersSynchronizer:
             return False
         if orphan_count > 0 and not self._mirrored_orphan_batch_eligible_for_grace(orphan_orders):
             return False
-        started_at = settings.mirrored_orphan_grace_started_at
+        started_at = self.get_mirrored_orphan_grace_started_at()
         if started_at is None:
             return True
         now = time.time()
@@ -346,12 +460,16 @@ class OrdersSynchronizer:
         grace_seconds = settings.mirrored_orphan_cancel_grace_seconds
         if grace_seconds <= 0:
             return set()
+        if self.is_mirrored_orphan_grace_invalid_no_compliant_snapshot():
+            return set()
+        if self.is_mirrored_orphan_grace_aborted_for_missed_historical_signals():
+            return set()
         active_reference_ids = self._active_reference_order_ids(replicable)
         orphan_orders = self._mirrored_orphan_open_orders(active_reference_ids)
         orphan_count = len(orphan_orders)
         late_fill_orders = (
             [] if self._force_immediate_orphan_cancel_next
-            else self._late_reference_fill_candidate_orders(replicable, orphan_orders)
+            else self._late_reference_fill_candidate_orders(replicable, orphan_orders, None)
         )
         late_reference_fill_count = len(late_fill_orders)
         grace_total = orphan_count + late_reference_fill_count
@@ -360,7 +478,7 @@ class OrdersSynchronizer:
             return set()
         if orphan_count > 0 and not self._mirrored_orphan_batch_eligible_for_grace(orphan_orders):
             return set()
-        started_at = settings.mirrored_orphan_grace_started_at
+        started_at = self.get_mirrored_orphan_grace_started_at()
         now = time.time()
         if started_at is not None and (now - started_at) >= grace_seconds:
             return set()
@@ -440,50 +558,62 @@ class OrdersSynchronizer:
         """
         When mirrored orphans exist and/or late-reference-fill candidates exist (or neither, to clear
         grace state): defer cancel during an active grace window unless ``abort_mirrored_orphan_grace``
-        requested immediate cancel, grace is disabled, combined count reaches abort threshold, or
-        wall-clock grace has elapsed.
+        requested immediate cancel, grace is disabled, combined count reaches abort threshold,
+        no compliant reference snapshot exists in ``historical_snapshots``, or wall-clock grace
+        (from ``get_mirrored_orphan_grace_started_at()``) has elapsed, or when the first compliant
+        reference snapshot is too deep in ``historical_snapshots`` (missed historical signals abort).
         """
         settings = self._copy_settings
-        late_fill_orders = self._late_reference_fill_candidate_orders(replicable, orphan_orders)
+        late_fill_orders = self._late_reference_fill_candidate_orders(replicable, orphan_orders, None)
         late_reference_fill_count = len(late_fill_orders)
         orphan_count = len(orphan_orders)
         grace_total = orphan_count + late_reference_fill_count
 
-        # Nothing to cancel and no alignment episode: drop in-memory grace start.
+        # Nothing to cancel and no alignment episode: clear abort flag for the next sync.
         if grace_total == 0:
             self._force_immediate_orphan_cancel_next = False
-            if settings.mirrored_orphan_grace_started_at is not None:
-                self._get_logger().info(
-                    "Mirrored open-order grace period ended early: no mirrored orphan orders remain "
-                    "and no late-reference-fill candidates. "
-                    "Downstream copy flow proceeds without grace deferral."
-                )
-            settings.mirrored_orphan_grace_started_at = None
+            self._get_logger().info(
+                "Mirrored open-order grace episode cleared: no mirrored orphan orders remain "
+                "and no late-reference-fill candidates."
+            )
             return 0
 
         grace_seconds = settings.mirrored_orphan_cancel_grace_seconds
         threshold = settings.mirrored_orphan_grace_abort_threshold
         # Explicit abort or grace disabled: cancel orphans immediately, do not start or extend grace.
         if self._force_immediate_orphan_cancel_next or grace_seconds <= 0:
-            # self._force_immediate_orphan_cancel_next = False
-            settings.mirrored_orphan_grace_started_at = None
+            return await self._cancel_mirrored_orphan_order_list(orphan_orders)
+
+        # No compliant snapshot in reference history: cannot anchor grace; same outcome as runaway desync.
+        if self.is_mirrored_orphan_grace_invalid_no_compliant_snapshot():
+            self._get_logger().info(
+                "Mirrored orphan grace invalid: no compliant reference snapshot in history; "
+                "cancelling orphan order(s) immediately (full resync required)."
+            )
+            return await self._cancel_mirrored_orphan_order_list(orphan_orders)
+
+        if self.is_mirrored_orphan_grace_aborted_for_missed_historical_signals():
+            missed_threshold = settings.missed_signals_grace_abort_threshold
+            self._get_logger().info(
+                "Mirrored orphan grace aborted: first compliant reference snapshot index "
+                f">= missed_signals_grace_abort_threshold ({missed_threshold}); "
+                "cancelling orphan order(s) immediately (reference history desync)."
+            )
             return await self._cancel_mirrored_orphan_order_list(orphan_orders)
 
         # Too many grace items at once: treat as runaway desync, cancel orphans immediately.
         if grace_total >= threshold:
-            if settings.mirrored_orphan_grace_started_at:
-                self._get_logger().info(
-                    f"Mirrored orphan grace aborted: {grace_total} grace item(s) >= threshold {threshold} "
-                    f"({orphan_count} orphan(s), {late_reference_fill_count} late-reference-fill candidate(s))"
-                )
-            settings.mirrored_orphan_grace_started_at = None
+            self._get_logger().info(
+                f"Mirrored orphan grace aborted: {grace_total} grace item(s) >= threshold {threshold} "
+                f"({orphan_count} orphan(s), {late_reference_fill_count} late-reference-fill candidate(s))"
+            )
             return await self._cancel_mirrored_orphan_order_list(orphan_orders)
 
+        # Orphans present but pair-ratio heuristic fails: cancel those orphans; may still defer on late fills.
         if orphan_count > 0 and not self._mirrored_orphan_batch_eligible_for_grace(orphan_orders):
             cancelled = await self._cancel_mirrored_orphan_order_list(orphan_orders)
             if late_reference_fill_count == 0:
-                had_grace_window = settings.mirrored_orphan_grace_started_at is not None
-                settings.mirrored_orphan_grace_started_at = None
+                had_grace_window = self.get_mirrored_orphan_grace_started_at() is not None
                 if had_grace_window:
                     self._get_logger().info(
                         "Mirrored orphan grace aborted: post-fill pair-ratio heuristic failed for at least one "
@@ -497,7 +627,7 @@ class OrdersSynchronizer:
                         "cancelling immediately"
                     )
                 return cancelled
-            # Orphans cancelled; continue grace driven by late-reference fills (do not clear grace here).
+            # Orphans cancelled; continue grace driven by late-reference fills (do not exit deferral here).
             orphan_orders = []
             orphan_count = 0
             grace_total = late_reference_fill_count
@@ -506,18 +636,15 @@ class OrdersSynchronizer:
                 f"Continuing grace window for {late_reference_fill_count} late-reference-fill candidate(s)"
             )
 
+        # Grace window start time is derived from reference historical_snapshots + updated_at (not wall time here).
         now = time.time()
-        started_at = settings.mirrored_orphan_grace_started_at
-        # First observation this episode: begin wall-clock grace window, do not cancel orphans yet.
+        started_at = self.get_mirrored_orphan_grace_started_at()
         if started_at is None:
-            settings.mirrored_orphan_grace_started_at = now
             self._get_logger().info(
-                f"Mirrored orphan grace period started: deferring cancel of {orphan_count} "
-                f"orphan order(s) for up to {grace_seconds}s "
-                f"(grace_total={grace_total} including {late_reference_fill_count} late-reference-fill "
-                "candidate(s))"
+                "Mirrored orphan grace: could not resolve grace start from reference history; "
+                "cancelling orphan order(s) immediately."
             )
-            return 0
+            return await self._cancel_mirrored_orphan_order_list(orphan_orders)
         # Still inside grace window: wait for copier fills / alignment.
         if (now - started_at) < grace_seconds:
             remaining_seconds = grace_seconds - (now - started_at)
@@ -529,7 +656,6 @@ class OrdersSynchronizer:
             return 0
 
         # Grace window finished: cancel orphans that are still open.
-        settings.mirrored_orphan_grace_started_at = None
         self._get_logger().info(
             f"Mirrored orphan grace elapsed after {grace_seconds}s: cancelling {orphan_count} orphan(s)"
         )

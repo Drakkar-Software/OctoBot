@@ -1,5 +1,5 @@
 import decimal
-import typing
+import time
 
 import octobot_commons.constants as common_constants
 import octobot_commons.symbols as symbol_util
@@ -45,7 +45,11 @@ def reference_exchange_elements_to_account(
     total_value = sum(value_by_asset.values())
     for asset, values in elements.portfolio.content.items():
         content[asset][copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO] = value_by_asset[asset] / total_value
-    return copy_entities.Account(content=content, orders=elements.orders.open_orders)
+    return copy_entities.Account(
+        updated_at=time.time(),
+        content=content,
+        orders=elements.orders.open_orders
+    )
 
 
 def create_account_copy_settings(
@@ -53,12 +57,12 @@ def create_account_copy_settings(
 ) -> copy_entities.AccountCopySettings:
     grace_seconds = flow_constants.DEFAULT_COPY_TRADING_ORPHAN_CANCEL_GRACE_SECONDS
     threshold = flow_constants.DEFAULT_COPY_TRADING_ORPHAN_GRACE_ABORT_THRESHOLD
-    copy_details = automation.execution.copy_details
+    missed_signals_threshold = flow_constants.DEFAULT_COPY_TRADING_MISSED_SIGNALS_GRACE_ABORT_THRESHOLD
     return copy_entities.AccountCopySettings(
         mirrored_orphan_cancel_grace_seconds=grace_seconds,
         mirrored_orphan_grace_abort_threshold=threshold,
+        missed_signals_grace_abort_threshold=missed_signals_threshold,
         mirrored_orphan_grace_pair_ratio_max_delta=(
             flow_constants.DEFAULT_COPY_TRADING_ORPHAN_GRACE_PAIR_RATIO_MAX_DELTA
         ),
-        mirrored_orphan_grace_started_at=copy_details.open_orders_grace_period_started_at,
     )

@@ -13,6 +13,7 @@ import octobot_copy.constants as copy_constants
 
 @dataclasses.dataclass
 class Account(commons_dataclasses.MinimizableDataclass):
+    updated_at: float = 0
     # account portfolio: dict of assets with allocation_ratio, available and total amounts
     # the allocation_ratio key is used to compute the distribution allocation
     content: dict[str, dict[str, decimal.Decimal]] = dataclasses.field(default_factory=dict)
@@ -20,6 +21,8 @@ class Account(commons_dataclasses.MinimizableDataclass):
     orders: list[dict[str, typing.Any]] = dataclasses.field(default_factory=list)
     # account positions, dict keys: trading_enums.ExchangeConstantsPositionColumns
     positions: list[dict[str, typing.Any]] = dataclasses.field(default_factory=list)
+    # list of historical snapshots of the account, sorted by updated_at (most recent first) 
+    historical_snapshots: list["Account"] = dataclasses.field(default_factory=list)
 
     def __post_init__(self):
         self.content = {
@@ -28,6 +31,16 @@ class Account(commons_dataclasses.MinimizableDataclass):
             }
             for asset, holdings in self.content.items()
         }
+        if self.historical_snapshots:
+            if isinstance(self.historical_snapshots[0], dict):
+                snapshots = [
+                    Account.from_dict(snapshot) for snapshot in self.historical_snapshots
+                ]
+            else:
+                snapshots = self.historical_snapshots
+            self.historical_snapshots = sorted(
+                snapshots, key=lambda x: x.updated_at, reverse=True
+            )
 
     def create_assets_distribution(self) -> list[dict[str, typing.Any]]:
         amounts: list[tuple[str, decimal.Decimal]] = []

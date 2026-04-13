@@ -4,6 +4,7 @@ import json
 import mock
 import decimal
 import copy
+import time
 
 import octobot_copy.entities as copy_entities
 import octobot_commons.enums as common_enums
@@ -69,6 +70,7 @@ def index_trading_mode_action(dependency_action: dict):
 @pytest.fixture
 def index_reference_account():
     return copy_entities.Account(
+        updated_at=time.time(),
         content={
             "BTC": {
                 common_constants.PORTFOLIO_TOTAL: decimal.Decimal("1"),
@@ -88,6 +90,7 @@ def index_reference_account():
         },
         orders=[],
         positions=[],
+        # no historical snapshots
     )
 
 

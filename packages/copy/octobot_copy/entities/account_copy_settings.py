@@ -28,11 +28,11 @@ class AccountCopySettings(commons_dataclasses.MinimizableDataclass):
     can_include_assets_in_open_orders_in_holdings_ratio: bool = False
     # Defer cancelling mirrored copier orders when reference open orders disappeared (wall time.time)
     mirrored_orphan_cancel_grace_seconds: float = float(copy_constants.FILL_ORDER_TIMEOUT)
-    mirrored_orphan_grace_abort_threshold: int = 2
+    mirrored_orphan_grace_abort_threshold: int = copy_constants.DEFAULT_MIRRORED_ORPHAN_ORDERS_GRACE_ABORT_THRESHOLD
+    missed_signals_grace_abort_threshold: int = copy_constants.DEFAULT_MISSED_SIGNALS_GRACE_ABORT_THRESHOLD
     mirrored_orphan_grace_pair_ratio_max_delta: decimal.Decimal = (
         copy_constants.DEFAULT_MIRRORED_ORPHAN_GRACE_PAIR_RATIO_MAX_DELTA
     )
-    mirrored_orphan_grace_started_at: typing.Optional[float] = None
 
     def __post_init__(self):
         if self.synchronization_policy:

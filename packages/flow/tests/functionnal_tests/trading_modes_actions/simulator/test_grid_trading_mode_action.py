@@ -163,6 +163,7 @@ def grid_reference_account():
     lowest_buy = GRID_REFERENCE_LOWEST_BUY
     order_amount = 0.004
     return copy_entities.Account(
+        updated_at=time.time(),
         content={
             "BTC": {
                 common_constants.PORTFOLIO_TOTAL: decimal.Decimal("0.01"),
@@ -199,6 +200,7 @@ def grid_reference_account():
             ),
         ],
         positions=[],
+        # no historical snapshots
     )
 
 

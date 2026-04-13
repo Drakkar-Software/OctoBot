@@ -10,7 +10,6 @@ import octobot.community
 
 import octobot_flow.entities
 import octobot_flow.repositories.community
-import octobot_flow.constants as flow_constants
 import octobot_flow.logic.dsl
 import octobot_flow.enums
 import octobot_flow.errors
@@ -157,44 +156,11 @@ class ActionsExecutor:
             )
 
     def _sync_after_execution(self):
-        self._sync_execution_copy_details_from_actions_results()
         if exchange_account_elements := self._automation.get_exchange_account_elements(
             self._as_reference_account
         ):
             self._sync_automation_from_actions_results(exchange_account_elements)
             self._sync_exchange_account_elements(exchange_account_elements)
-
-    def _sync_execution_copy_details_from_actions_results(self) -> None:
-        for action in self._actions:
-            if not action.is_completed() or not isinstance(action.result, dict):
-                continue
-            if not re_callable_operator_mixin.ReCallingOperatorResult.is_re_calling_operator_result(
-                action.result
-            ):
-                continue
-            recall_wrapper = action.result.get(re_callable_operator_mixin.ReCallingOperatorResult.__name__)
-            if not isinstance(recall_wrapper, dict):
-                continue
-            last_execution_result = recall_wrapper.get(
-                re_callable_operator_mixin.ReCallableOperatorMixin.LAST_EXECUTION_RESULT_KEY
-            )
-            if not isinstance(last_execution_result, dict):
-                continue
-            state = last_execution_result.get("state")
-            if not isinstance(state, dict):
-                continue
-            grace_payload = state.get(flow_constants.COPY_TRADING_GRACE_STATE_RESULT_KEY)
-            if grace_payload is None:
-                continue
-            started_at: typing.Optional[float] = None
-            if isinstance(grace_payload, dict):
-                started_at = grace_payload.get(
-                    flow_constants.OPEN_ORDERS_GRACE_PERIOD_STARTED_AT_KEY
-                )
-            self._automation.execution.copy_details.open_orders_grace_period_started_at = started_at
-            self._get_logger().info(
-                f"Synced automation execution copy_details open_orders_grace_period_started_at={started_at}"
-            )
 
     def _sync_automation_from_actions_results(
         self,
