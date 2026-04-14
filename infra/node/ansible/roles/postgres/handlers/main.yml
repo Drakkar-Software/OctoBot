@@ -1,5 +1,0 @@
----
-- name: restart postgres
-  ansible.builtin.command:
-    cmd: docker compose restart postgres
-    chdir: "{{ stack_deploy_dir }}"

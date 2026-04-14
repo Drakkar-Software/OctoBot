@@ -742,42 +742,6 @@ jobs:
           asset_name: OctoBot_macos_arm64
           asset_content_type: application/x-binary
 
-  sync:
-    name: Deploy Sync Server
-    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/dev' || startsWith(github.ref, 'refs/tags/')
-    needs: [docker]
-    environment:
-      name: ${{ startsWith(github.ref, 'refs/tags/') && 'Production - Sync Server' || github.ref == 'refs/heads/master' && 'Staging - Sync Server' || 'Development - Sync Server' }}
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Install Ansible
-        run: pip install ansible
-
-      - name: Install Galaxy requirements
-        working-directory: infra/sync/ansible
-        run: ansible-galaxy install -r requirements.yml
-
-      - name: Set up SSH key
-        run: |
-          mkdir -p infra/sync/ansible/inventories/${{ vars.ANSIBLE_ENV }}/.ssh
-          echo "${{ secrets.ANSIBLE_SSH_KEY }}" > infra/sync/ansible/inventories/${{ vars.ANSIBLE_ENV }}/.ssh/id_ed25519
-          chmod 600 infra/sync/ansible/inventories/${{ vars.ANSIBLE_ENV }}/.ssh/id_ed25519
-
-      - name: Deploy to ${{ vars.ANSIBLE_ENV }}
-        working-directory: infra/sync/ansible
-        env:
-          ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
-          ANSIBLE_HOST_KEY_CHECKING: "false"
-        run: |
-          ansible-playbook playbooks/deploy-octobot-sync.yml -i inventories/${{ vars.ANSIBLE_ENV }}
-
-      - name: Clean up SSH key
-        if: always()
-        run: rm -f infra/sync/ansible/inventories/${{ vars.ANSIBLE_ENV }}/.ssh/id_ed25519
-
   notify:
     if: ${{ failure() }}
     needs:
@@ -788,7 +752,6 @@ jobs:
       - tentacles
       - release
       - version
-      - sync
       - docs
     uses: Drakkar-Software/.github/.github/workflows/failure_notify_workflow.yml@master
     secrets:
