@@ -40,21 +40,13 @@ CONTENT_KEY = "CONTENT"
 # dependency::<action_id>::<k1>::<k2>::... — path into that action's result (dict keys and list indices as digit strings)
 DEPENDENCY_SEPARATOR = "::"
 DEPENDENCY_IDENTIFIER = "dependency"
+PARAM_DEPENDENCY_IDENTIFIER = "param_dependency"
 DEPENDENCY_PARAM_PREFIX = f"{DEPENDENCY_IDENTIFIER}{DEPENDENCY_SEPARATOR}"
+PARAM_DEPENDENCY_PREFIX = f"{PARAM_DEPENDENCY_IDENTIFIER}{DEPENDENCY_SEPARATOR}"
 
 
-def _parse_dependency_param_value(
-    value: str,
-) -> typing.Optional[tuple[str, tuple[str, ...]]]:
-    if not isinstance(value, str) or not value.startswith(DEPENDENCY_PARAM_PREFIX):
-        return None
-    parts = value.split(DEPENDENCY_SEPARATOR)
-    if len(parts) < 3 or parts[0] != DEPENDENCY_IDENTIFIER or not parts[1]:
-        return None
-    path_keys = tuple(parts[2:])
-    if not path_keys or any(not segment for segment in path_keys):
-        return None
-    return parts[1], path_keys
+# Returned by _resolve_param_dependency_string_value when the target field is still a param_dependency string.
+_PARAM_DEPENDENCY_RESOLUTION_DEFERRED = object()
 
 
 @dataclasses.dataclass
@@ -109,6 +101,9 @@ class ActionsDAGParserParams(octobot_commons.dataclasses.FlexibleDataclass):
         if self.ACTIONS and isinstance(self.ACTIONS, str):
             # action is a string, convert it to a list
             self.ACTIONS = self.ACTIONS.split(",") # pylint: disable=no-member
+        if isinstance(self.ORDER_EXTRA_PARAMS, str):
+            self.ORDER_EXTRA_PARAMS = json.loads(self.ORDER_EXTRA_PARAMS)
+        self._resolve_param_dependencies()
         self.validate()
 
     def validate(self):
@@ -264,6 +259,80 @@ class ActionsDAGParserParams(octobot_commons.dataclasses.FlexibleDataclass):
             for key, value in dataclasses.asdict(self).items()
             if key.startswith(prefix)
         }
+
+    def _resolve_param_dependencies(self) -> None:
+        valid_field_names = frozenset(self.get_field_names())
+        field_list = dataclasses.fields(self)
+        max_rounds = len(field_list) + 1
+        for _ in range(max_rounds):
+            progressed = False
+            for field in field_list:
+                value = getattr(self, field.name)
+                if isinstance(value, dict):
+                    if self._resolve_param_dependencies_in_mapping(
+                        value, valid_field_names, field.name
+                    ):
+                        progressed = True
+                    continue
+                if not isinstance(value, str) or not value.startswith(PARAM_DEPENDENCY_PREFIX):
+                    continue
+                resolved_value = _resolve_param_dependency_string_value(
+                    self, value, valid_field_names, f"field {field.name!r}"
+                )
+                if resolved_value is _PARAM_DEPENDENCY_RESOLUTION_DEFERRED:
+                    continue
+                object.__setattr__(self, field.name, resolved_value)
+                progressed = True
+            if not progressed:
+                break
+        for field in field_list:
+            value = getattr(self, field.name)
+            if isinstance(value, str) and value.startswith(PARAM_DEPENDENCY_PREFIX):
+                raise octobot_flow.errors.InvalidAutomationActionError(
+                    f"Unresolved param_dependency cycle or chain for field {field.name!r}: {value!r}"
+                )
+            if isinstance(value, dict) and self._mapping_contains_unresolved_param_dependency(value):
+                raise octobot_flow.errors.InvalidAutomationActionError(
+                    f"Unresolved param_dependency cycle or chain inside field {field.name!r}"
+                )
+
+    def _resolve_param_dependencies_in_mapping(
+        self,
+        mapping: dict,
+        valid_field_names: frozenset[str],
+        context_path: str,
+    ) -> bool:
+        """
+        Replace param_dependency::... string values inside a dict (recursively).
+        Returns True if at least one value was resolved this pass.
+        """
+        progressed = False
+        for key, entry_value in mapping.items():
+            entry_path = f"{context_path}[{key!r}]"
+            if isinstance(entry_value, dict):
+                if self._resolve_param_dependencies_in_mapping(
+                    entry_value, valid_field_names, entry_path
+                ):
+                    progressed = True
+            elif isinstance(entry_value, str) and entry_value.startswith(PARAM_DEPENDENCY_PREFIX):
+                resolved_value = _resolve_param_dependency_string_value(
+                    self, entry_value, valid_field_names, entry_path
+                )
+                if resolved_value is _PARAM_DEPENDENCY_RESOLUTION_DEFERRED:
+                    continue
+                mapping[key] = resolved_value
+                progressed = True
+        return progressed
+
+    @staticmethod
+    def _mapping_contains_unresolved_param_dependency(mapping: dict) -> bool:
+        for entry_value in mapping.values():
+            if isinstance(entry_value, dict):
+                if ActionsDAGParserParams._mapping_contains_unresolved_param_dependency(entry_value):
+                    return True
+            elif isinstance(entry_value, str) and entry_value.startswith(PARAM_DEPENDENCY_PREFIX):
+                return True
+        return False
 
 class ActionsDAGParser:
     def __init__(self, params: dict):
@@ -429,10 +498,6 @@ class ActionsDAGParser:
             ["BLOCKCHAIN_FROM_ASSET", "BLOCKCHAIN_FROM_AMOUNT", "BLOCKCHAIN_FROM", "BLOCKCHAIN_TO_ADDRESS"],
             "transfer",
         )
-        if self.params.BLOCKCHAIN_TO != self.params.BLOCKCHAIN_FROM:
-            raise octobot_flow.errors.InvalidAutomationActionError(
-                f"BLOCKCHAIN_TO and BLOCKCHAIN_FROM must be the same for a transfer action"
-            )
         transfer_details = actions_params.TransferFundsParams(
             asset=self.params.BLOCKCHAIN_FROM_ASSET,
             amount=self.params.BLOCKCHAIN_FROM_AMOUNT,
@@ -641,3 +706,66 @@ class ActionsDAGParser:
             action=action.value,
             config=config,
         )
+
+
+def _parse_dependency_param_value(
+    value: str,
+) -> typing.Optional[tuple[str, tuple[str, ...]]]:
+    if not isinstance(value, str) or not value.startswith(DEPENDENCY_PARAM_PREFIX):
+        return None
+    parts = value.split(DEPENDENCY_SEPARATOR)
+    if len(parts) < 3 or parts[0] != DEPENDENCY_IDENTIFIER or not parts[1]:
+        return None
+    path_keys = tuple(parts[2:])
+    if not path_keys or any(not segment for segment in path_keys):
+        return None
+    return parts[1], path_keys
+
+
+def _canonical_param_dependency_field_name(
+    target_name: str,
+    valid_field_names: frozenset[str],
+) -> typing.Optional[str]:
+    """
+    Map a param_dependency target token to the canonical ActionsDAGParserParams field name.
+    Matching is case-insensitive; returns the dataclass field name (typically UPPER_CASE).
+    """
+    if target_name in valid_field_names:
+        return target_name
+    target_lower = target_name.lower()
+    for field_name in valid_field_names:
+        if field_name.lower() == target_lower:
+            return field_name
+    return None
+
+
+def _resolve_param_dependency_string_value(
+    params: typing.Any,
+    raw_value: str,
+    valid_field_names: frozenset[str],
+    context_for_errors: str,
+) -> typing.Any:
+    """
+    Resolve a param_dependency::... string against params fields.
+    Returns _PARAM_DEPENDENCY_RESOLUTION_DEFERRED if the target is not ready yet (still a dependency string).
+    Otherwise returns the resolved value (may be None).
+    """
+    if not isinstance(raw_value, str) or not raw_value.startswith(PARAM_DEPENDENCY_PREFIX):
+        return None
+    target_name = raw_value[len(PARAM_DEPENDENCY_PREFIX):]
+    if not target_name or DEPENDENCY_SEPARATOR in target_name:
+        target_name = None
+    if target_name is None:
+        raise octobot_flow.errors.InvalidAutomationActionError(
+            f"Invalid param_dependency value ({context_for_errors}): {raw_value!r}"
+        )
+    canonical_name = _canonical_param_dependency_field_name(target_name, valid_field_names)
+    if canonical_name is None:
+        raise octobot_flow.errors.InvalidAutomationActionError(
+            f"param_dependency target {target_name!r} is not a valid "
+            f"ActionsDAGParserParams field (referenced from {context_for_errors})"
+        )
+    resolved_value = getattr(params, canonical_name)
+    if isinstance(resolved_value, str) and resolved_value.startswith(PARAM_DEPENDENCY_PREFIX):
+        return _PARAM_DEPENDENCY_RESOLUTION_DEFERRED
+    return resolved_value
