@@ -8,6 +8,8 @@ import {
   DEPOSIT_TEMPLATE,
   TRANSFER_TEMPLATE,
   WAIT_TEMPLATE,
+  LOOP_UNTIL_ORDER_CLOSED_TEMPLATE,
+  LOOP_UNTIL_BLOCKCHAIN_BALANCE_TEMPLATE,
 } from "../action-templates"
 import {
   getTemplateById,
@@ -42,8 +44,8 @@ function buildTaskContent(
 
 describe("action-templates", () => {
   describe("template registry", () => {
-    it("contains all 6 base templates", () => {
-      expect(BASE_ACTION_TEMPLATES).toHaveLength(6)
+    it("contains all base templates", () => {
+      expect(BASE_ACTION_TEMPLATES).toHaveLength(8)
     })
 
     it("each template has a unique id", () => {
@@ -77,6 +79,12 @@ describe("action-templates", () => {
       expect(getTemplateById("deposit")).toBe(DEPOSIT_TEMPLATE)
       expect(getTemplateById("transfer")).toBe(TRANSFER_TEMPLATE)
       expect(getTemplateById("wait")).toBe(WAIT_TEMPLATE)
+      expect(getTemplateById("loop_until_order_closed")).toBe(
+        LOOP_UNTIL_ORDER_CLOSED_TEMPLATE,
+      )
+      expect(getTemplateById("loop_until_blockchain_balance")).toBe(
+        LOOP_UNTIL_BLOCKCHAIN_BALANCE_TEMPLATE,
+      )
     })
 
     it("returns undefined for unknown id", () => {
@@ -94,10 +102,25 @@ describe("action-templates", () => {
       expect(DEPOSIT_TEMPLATE.actionTypes).toEqual(["deposit"])
       expect(TRANSFER_TEMPLATE.actionTypes).toEqual(["transfer"])
       expect(WAIT_TEMPLATE.actionTypes).toEqual(["wait"])
+      expect(LOOP_UNTIL_ORDER_CLOSED_TEMPLATE.actionTypes).toEqual([
+        "loop_until_order_closed",
+      ])
+      expect(LOOP_UNTIL_BLOCKCHAIN_BALANCE_TEMPLATE.actionTypes).toEqual([
+        "loop_until_blockchain_balance",
+      ])
     })
 
     it("actionTypes values only use known keywords", () => {
-      const known = new Set(["trade", "cancel", "withdraw", "deposit", "transfer", "wait"])
+      const known = new Set([
+        "trade",
+        "cancel",
+        "withdraw",
+        "deposit",
+        "transfer",
+        "wait",
+        "loop_until_order_closed",
+        "loop_until_blockchain_balance",
+      ])
       for (const template of BASE_ACTION_TEMPLATES) {
         for (const keyword of template.actionTypes) {
           expect(known.has(keyword)).toBe(true)
@@ -166,6 +189,32 @@ describe("action-templates", () => {
       expect(content.MAX_DELAY).toBe("60")
     })
 
+    it("loop_until_order_closed content includes ACTIONS and loop params", () => {
+      const content = buildTaskContent("loop_until_order_closed", {
+        ORDER_EXCHANGE_ID: "ex-123",
+        ORDER_SYMBOL: "BTC/USDT",
+        LOOP_INTERVAL: "5",
+        LOOP_TIMEOUT: "300",
+        LOOP_MAX_ATTEMPTS: "10",
+      })
+      expect(content.ACTIONS).toBe("loop_until_order_closed")
+      expect(content.ORDER_EXCHANGE_ID).toBe("ex-123")
+      expect(content.LOOP_INTERVAL).toBe("5")
+    })
+
+    it("loop_until_blockchain_balance content includes ACTIONS and balance params", () => {
+      const content = buildTaskContent("loop_until_blockchain_balance", {
+        BLOCKCHAIN_BALANCE_ASSET: "ETH",
+        BLOCKCHAIN_BALANCE: "ethereum",
+        BLOCKCHAIN_BALANCE_ADDRESS: "0x1234567890123456789012345678901234567890",
+        BLOCKCHAIN_BALANCE_AMOUNT: "1.0",
+        LOOP_INTERVAL: "10",
+      })
+      expect(content.ACTIONS).toBe("loop_until_blockchain_balance")
+      expect(content.BLOCKCHAIN_BALANCE_ASSET).toBe("ETH")
+      expect(content.BLOCKCHAIN_BALANCE_AMOUNT).toBe("1.0")
+    })
+
     it("sensitive params are included in content (not stripped)", () => {
       const content = buildTaskContent("deposit", {
         BLOCKCHAIN_FROM_ASSET: "BTC",
@@ -197,7 +246,7 @@ describe("action-templates", () => {
         ORDER_TYPE: "market",
       })
       expect(isValid).toBe(false)
-      expect(missingParams).toContain("Amount")
+      expect(missingParams).toContain("Order Amount")
     })
 
     it("trade action missing ORDER_SYMBOL and ORDER_TYPE reports both", () => {
@@ -227,7 +276,7 @@ describe("action-templates", () => {
     it("wait action without MIN_DELAY is invalid", () => {
       const { isValid, missingParams } = validateAction("wait", {})
       expect(isValid).toBe(false)
-      expect(missingParams).toContain("Min Delay (s)")
+      expect(missingParams).toContain("Wait Min Delay (s)")
     })
 
     it("deposit action requires asset, amount, network and exchange", () => {
@@ -263,6 +312,36 @@ describe("action-templates", () => {
         BLOCKCHAIN_TO_ADDRESS: "0x1234567890123456789012345678901234567890",
       })
       expect(allRequired).toBe(true)
+    })
+
+    it("loop_until_order_closed requires exchange id, symbol, and loop interval", () => {
+      const { isValid: empty } = validateAction("loop_until_order_closed", {})
+      expect(empty).toBe(false)
+
+      const { isValid: ok } = validateAction("loop_until_order_closed", {
+        ORDER_EXCHANGE_ID: "ord-1",
+        ORDER_SYMBOL: "BTC/USDT",
+        LOOP_INTERVAL: "5",
+      })
+      expect(ok).toBe(true)
+    })
+
+    it("loop_until_blockchain_balance requires asset, chain, address, amount, and interval", () => {
+      const { isValid: empty } = validateAction(
+        "loop_until_blockchain_balance",
+        {},
+      )
+      expect(empty).toBe(false)
+
+      const { isValid: ok } = validateAction("loop_until_blockchain_balance", {
+        BLOCKCHAIN_BALANCE_ASSET: "ETH",
+        BLOCKCHAIN_BALANCE: "ethereum",
+        BLOCKCHAIN_BALANCE_ADDRESS:
+          "0x1234567890123456789012345678901234567890",
+        BLOCKCHAIN_BALANCE_AMOUNT: "1",
+        LOOP_INTERVAL: "5",
+      })
+      expect(ok).toBe(true)
     })
 
     it("unknown templateId is always invalid", () => {
@@ -343,6 +422,51 @@ describe("action-templates", () => {
     })
   })
 
+  describe("LOOP_UNTIL_ORDER_CLOSED_TEMPLATE", () => {
+    it("requires exchange order id, symbol, and loop interval", () => {
+      const required = LOOP_UNTIL_ORDER_CLOSED_TEMPLATE.params
+        .filter((p) => p.required)
+        .map((p) => p.key)
+      expect(required).toEqual([
+        "ORDER_EXCHANGE_ID",
+        "ORDER_SYMBOL",
+        "LOOP_INTERVAL",
+      ])
+    })
+
+    it("shares loop timeout and max attempts params with blockchain balance loop", () => {
+      const keys = LOOP_UNTIL_ORDER_CLOSED_TEMPLATE.params.map((p) => p.key)
+      expect(keys).toContain("LOOP_TIMEOUT")
+      expect(keys).toContain("LOOP_MAX_ATTEMPTS")
+    })
+  })
+
+  describe("LOOP_UNTIL_BLOCKCHAIN_BALANCE_TEMPLATE", () => {
+    it("requires balance target fields and loop interval", () => {
+      const required = LOOP_UNTIL_BLOCKCHAIN_BALANCE_TEMPLATE.params
+        .filter((p) => p.required)
+        .map((p) => p.key)
+      expect(required).toEqual([
+        "BLOCKCHAIN_BALANCE_ASSET",
+        "BLOCKCHAIN_BALANCE",
+        "BLOCKCHAIN_BALANCE_ADDRESS",
+        "BLOCKCHAIN_BALANCE_AMOUNT",
+        "LOOP_INTERVAL",
+      ])
+    })
+
+    it("has address detection on BLOCKCHAIN_BALANCE_ADDRESS", () => {
+      const patterns = LOOP_UNTIL_BLOCKCHAIN_BALANCE_TEMPLATE.params.find(
+        (p) => p.key === "BLOCKCHAIN_BALANCE_ADDRESS",
+      )!.detectPatterns!
+      expect(
+        patterns.some((p) =>
+          p.test("0x1234567890123456789012345678901234567890"),
+        ),
+      ).toBe(true)
+    })
+  })
+
   describe("DEPOSIT_TEMPLATE", () => {
     it("requires asset, amount, network, and destination exchange", () => {
       const required = DEPOSIT_TEMPLATE.params.filter((p) => p.required).map((p) => p.key)
@@ -352,11 +476,11 @@ describe("action-templates", () => {
       expect(required).toContain("EXCHANGE_TO")
     })
 
-    it("exposes all optional source params for full deposit flow", () => {
+    it("exposes optional signing and block height params for deposit flow", () => {
       const keys = DEPOSIT_TEMPLATE.params.map((p) => p.key)
-      expect(keys).toContain("BLOCKCHAIN_FROM_ADDRESS")
       expect(keys).toContain("BLOCKCHAIN_FROM_PRIVATE_KEY")
       expect(keys).toContain("BLOCKCHAIN_FROM_MNEMONIC_SEED")
+      expect(keys).toContain("BLOCKCHAIN_FROM_BLOCK_HEIGHT")
     })
 
     it("marks private key and mnemonic as sensitive password fields", () => {
@@ -378,11 +502,11 @@ describe("action-templates", () => {
       expect(required).toContain("BLOCKCHAIN_TO_ADDRESS")
     })
 
-    it("exposes optional source address and signing params", () => {
+    it("exposes optional signing params and block height", () => {
       const keys = TRANSFER_TEMPLATE.params.map((p) => p.key)
-      expect(keys).toContain("BLOCKCHAIN_FROM_ADDRESS")
       expect(keys).toContain("BLOCKCHAIN_FROM_PRIVATE_KEY")
       expect(keys).toContain("BLOCKCHAIN_FROM_MNEMONIC_SEED")
+      expect(keys).toContain("BLOCKCHAIN_FROM_BLOCK_HEIGHT")
     })
 
     it("has EVM and BTC address detection on BLOCKCHAIN_TO_ADDRESS", () => {

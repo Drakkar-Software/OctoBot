@@ -65,6 +65,17 @@ function addressParam(
   }
 }
 
+function blockHeightParam(key: string, label: string, required: boolean): ActionParamDef {
+  return {
+    key,
+    label,
+    required,
+    type: "number",
+    detectPatterns: [PATTERNS.numericAmount],
+    aliasFuzzy: ["block_height", "blockheight", "height"],
+  }
+}
+
 function privateKeyParam(key: string, label: string): ActionParamDef {
   return {
     key,
@@ -101,6 +112,21 @@ function amountParam(
     type: "number",
     detectPatterns: [PATTERNS.numericAmount],
     aliasFuzzy: ["amount", "qty", "quantity", "vol", "volume", "size"],
+  }
+}
+
+function symbolParam(
+  key: string,
+  label: string,
+  required: boolean,
+): ActionParamDef {
+  return {
+    key,
+    label,
+    required,
+    type: "text",
+    detectPatterns: [PATTERNS.tradingPair],
+    aliasFuzzy: ["symbol", "pair", "market", "sym", "ticker"],
   }
 }
 
@@ -147,6 +173,44 @@ function exchangeParam(
   }
 }
 
+function loopIntervalParam(): ActionParamDef {
+  return {
+    key: "LOOP_INTERVAL",
+    label: "Loop Interval (s)",
+    required: true,
+    type: "number",
+    detectPatterns: [PATTERNS.numericAmount],
+    aliasFuzzy: ["loop_interval", "loopinterval", "loop_wait"],
+  }
+}
+
+function loopTimeoutParam(): ActionParamDef {
+  return {
+    key: "LOOP_TIMEOUT",
+    label: "Loop Timeout (s)",
+    required: false,
+    type: "number",
+    detectPatterns: [PATTERNS.numericAmount],
+    aliasFuzzy: ["loop_timeout", "looptimeout", "timeout"],
+  }
+}
+
+function loopMaxAttemptsParam(): ActionParamDef {
+  return {
+    key: "LOOP_MAX_ATTEMPTS",
+    label: "Loop Max Attempts",
+    required: false,
+    type: "number",
+    detectPatterns: [PATTERNS.numericAmount],
+    aliasFuzzy: [
+      "loop_max_attempts",
+      "loopmaxattempts",
+      "max_attempts",
+      "attempts",
+    ],
+  }
+}
+
 // ── Template definitions ───────────────────────────────────────────────
 
 export const TRADE_TEMPLATE: ActionTemplate = {
@@ -155,15 +219,8 @@ export const TRADE_TEMPLATE: ActionTemplate = {
   description: "Place a buy or sell order on an exchange",
   actionTypes: ["trade"],
   params: [
-    {
-      key: "ORDER_SYMBOL",
-      label: "Symbol",
-      required: true,
-      type: "text",
-      detectPatterns: [PATTERNS.tradingPair],
-      aliasFuzzy: ["symbol", "pair", "market", "sym", "ticker"],
-    },
-    amountParam("ORDER_AMOUNT", "Amount", true),
+    symbolParam("ORDER_SYMBOL", "Order Symbol", true),
+    amountParam("ORDER_AMOUNT", "Order Amount", true),
     {
       key: "ORDER_TYPE",
       label: "Order Type",
@@ -175,7 +232,7 @@ export const TRADE_TEMPLATE: ActionTemplate = {
     },
     {
       key: "ORDER_SIDE",
-      label: "Side",
+      label: "Order Side",
       required: false,
       type: "select",
       options: ["buy", "sell"],
@@ -184,7 +241,7 @@ export const TRADE_TEMPLATE: ActionTemplate = {
     },
     {
       key: "ORDER_PRICE",
-      label: "Price",
+      label: "Order Price",
       required: false,
       type: "number",
       detectPatterns: [PATTERNS.numericAmount],
@@ -192,7 +249,7 @@ export const TRADE_TEMPLATE: ActionTemplate = {
     },
     {
       key: "ORDER_STOP_PRICE",
-      label: "Stop Price",
+      label: "Order Stop Price",
       required: false,
       type: "number",
       detectPatterns: [PATTERNS.numericAmount],
@@ -200,14 +257,14 @@ export const TRADE_TEMPLATE: ActionTemplate = {
     },
     {
       key: "ORDER_TAG",
-      label: "Tag",
+      label: "Order Tag",
       required: false,
       type: "text",
       aliasFuzzy: ["tag", "label", "note", "comment"],
     },
     {
       key: "ORDER_REDUCE_ONLY",
-      label: "Reduce Only",
+      label: "Order Reduce Only",
       required: false,
       type: "select",
       options: ["true", "false"],
@@ -215,8 +272,15 @@ export const TRADE_TEMPLATE: ActionTemplate = {
     },
     exchangeParam("EXCHANGE_TO", "Exchange", false),
     {
+      key: "ORDER_EXTRA_PARAMS",
+      label: "Order Extra Params",
+      required: false,
+      type: "text",
+      aliasFuzzy: ["extra_params", "extra"],
+    },
+    {
       key: "API_KEY",
-      label: "API Key",
+      label: "Exchange API Key",
       required: false,
       type: "password",
       sensitive: true,
@@ -224,7 +288,7 @@ export const TRADE_TEMPLATE: ActionTemplate = {
     },
     {
       key: "API_SECRET",
-      label: "API Secret",
+      label: "Exchange API Secret",
       required: false,
       type: "password",
       sensitive: true,
@@ -239,17 +303,10 @@ export const CANCEL_TEMPLATE: ActionTemplate = {
   description: "Cancel open orders on an exchange",
   actionTypes: ["cancel"],
   params: [
-    {
-      key: "ORDER_SYMBOL",
-      label: "Symbol",
-      required: true,
-      type: "text",
-      detectPatterns: [PATTERNS.tradingPair],
-      aliasFuzzy: ["symbol", "pair", "market", "sym", "ticker"],
-    },
+    symbolParam("ORDER_SYMBOL", "Symbol", true),
     {
       key: "ORDER_SIDE",
-      label: "Side",
+      label: "Cancel Order Side",
       required: false,
       type: "select",
       options: ["buy", "sell"],
@@ -258,7 +315,7 @@ export const CANCEL_TEMPLATE: ActionTemplate = {
     },
     {
       key: "ORDER_TAG",
-      label: "Tag",
+      label: "Cancel Order Tag",
       required: false,
       type: "text",
       aliasFuzzy: ["tag", "label", "note"],
@@ -272,11 +329,11 @@ export const WITHDRAW_TEMPLATE: ActionTemplate = {
   description: "Withdraw funds from an exchange to a blockchain address",
   actionTypes: ["withdraw"],
   params: [
-    assetParam("BLOCKCHAIN_TO_ASSET", "Asset", true),
-    blockchainParam("BLOCKCHAIN_TO", "Network", true),
-    addressParam("BLOCKCHAIN_TO_ADDRESS", "Destination Address", true),
-    amountParam("BLOCKCHAIN_TO_AMOUNT", "Amount", false),
-    exchangeParam("EXCHANGE_FROM", "Source Exchange", false),
+    assetParam("BLOCKCHAIN_TO_ASSET", "Withdraw Asset", true),
+    blockchainParam("BLOCKCHAIN_TO", "Withdraw Network", true),
+    addressParam("BLOCKCHAIN_TO_ADDRESS", "Withdraw Address", true),
+    amountParam("BLOCKCHAIN_TO_AMOUNT", "Withdraw Amount", false),
+    exchangeParam("EXCHANGE_FROM", "Withdraw Src Exchange", false),
   ],
 }
 
@@ -286,13 +343,13 @@ export const DEPOSIT_TEMPLATE: ActionTemplate = {
   description: "Deposit funds from a blockchain wallet to an exchange",
   actionTypes: ["deposit"],
   params: [
-    assetParam("BLOCKCHAIN_FROM_ASSET", "Asset", true),
-    amountParam("BLOCKCHAIN_FROM_AMOUNT", "Amount", true),
-    blockchainParam("BLOCKCHAIN_FROM", "Source Network", true),
-    addressParam("BLOCKCHAIN_FROM_ADDRESS", "Source Address", false),
-    privateKeyParam("BLOCKCHAIN_FROM_PRIVATE_KEY", "Source Private Key"),
-    mnemonicParam("BLOCKCHAIN_FROM_MNEMONIC_SEED", "Source Mnemonic"),
-    exchangeParam("EXCHANGE_TO", "Destination Exchange", true),
+    assetParam("BLOCKCHAIN_FROM_ASSET", "Deposit Asset", true),
+    amountParam("BLOCKCHAIN_FROM_AMOUNT", "Deposit Amount", true),
+    blockchainParam("BLOCKCHAIN_FROM", "Deposit Network", true),
+    privateKeyParam("BLOCKCHAIN_FROM_PRIVATE_KEY", "Deposit Src Private Key"),
+    mnemonicParam("BLOCKCHAIN_FROM_MNEMONIC_SEED", "Deposit Src Mnemonic"),
+    blockHeightParam("BLOCKCHAIN_FROM_BLOCK_HEIGHT", "Deposit Src Block Height", false),
+    exchangeParam("EXCHANGE_TO", "Deposit Dst Exchange", true),
   ],
 }
 
@@ -302,13 +359,13 @@ export const TRANSFER_TEMPLATE: ActionTemplate = {
   description: "Transfer funds between blockchain wallets",
   actionTypes: ["transfer"],
   params: [
-    assetParam("BLOCKCHAIN_FROM_ASSET", "Asset", true),
-    amountParam("BLOCKCHAIN_FROM_AMOUNT", "Amount", true),
-    blockchainParam("BLOCKCHAIN_FROM", "Network", true),
-    addressParam("BLOCKCHAIN_FROM_ADDRESS", "Source Address", false),
-    privateKeyParam("BLOCKCHAIN_FROM_PRIVATE_KEY", "Source Private Key"),
-    mnemonicParam("BLOCKCHAIN_FROM_MNEMONIC_SEED", "Source Mnemonic"),
-    addressParam("BLOCKCHAIN_TO_ADDRESS", "Destination Address", true),
+    assetParam("BLOCKCHAIN_FROM_ASSET", "Transfer Asset", true),
+    amountParam("BLOCKCHAIN_FROM_AMOUNT", "Transfer Amount", true),
+    blockchainParam("BLOCKCHAIN_FROM", "Transfer Network", true),
+    privateKeyParam("BLOCKCHAIN_FROM_PRIVATE_KEY", "Transfer Src Private Key"),
+    mnemonicParam("BLOCKCHAIN_FROM_MNEMONIC_SEED", "Transfer Src Mnemonic"),
+    blockHeightParam("BLOCKCHAIN_FROM_BLOCK_HEIGHT", "Transfer Src Block Height", false),
+    addressParam("BLOCKCHAIN_TO_ADDRESS", "Transfer Dst Address", true),
   ],
 }
 
@@ -320,7 +377,7 @@ export const WAIT_TEMPLATE: ActionTemplate = {
   params: [
     {
       key: "MIN_DELAY",
-      label: "Min Delay (s)",
+      label: "Wait Min Delay (s)",
       required: true,
       type: "number",
       detectPatterns: [PATTERNS.numericAmount],
@@ -328,12 +385,49 @@ export const WAIT_TEMPLATE: ActionTemplate = {
     },
     {
       key: "MAX_DELAY",
-      label: "Max Delay (s)",
+      label: "Wait Max Delay (s)",
       required: false,
       type: "number",
       detectPatterns: [PATTERNS.numericAmount],
       aliasFuzzy: ["max_delay", "maxdelay", "max_wait"],
     },
+  ],
+}
+
+export const LOOP_UNTIL_ORDER_CLOSED_TEMPLATE: ActionTemplate = {
+  id: "loop_until_order_closed",
+  label: "Loop Until Order Closed",
+  description: "Loop until an order is closed",
+  actionTypes: ["loop_until_order_closed"],
+  params: [
+    {
+      key: "ORDER_EXCHANGE_ID",
+      label: "Order Exchange ID",
+      required: true,
+      type: "text",
+      aliasFuzzy: ["order_exchange_id", "order_id", "exchange_order_id"],
+    },
+    symbolParam("ORDER_SYMBOL", "Order Symbol", true),
+    loopIntervalParam(),
+    loopTimeoutParam(),
+    loopMaxAttemptsParam(),
+  ],
+}
+
+export const LOOP_UNTIL_BLOCKCHAIN_BALANCE_TEMPLATE: ActionTemplate = {
+
+  id: "loop_until_blockchain_balance",
+  label: "Loop Until Blockchain Balance",
+  description: "Loop until a blockchain balance is reached",
+  actionTypes: ["loop_until_blockchain_balance"],
+  params: [
+    assetParam("BLOCKCHAIN_BALANCE_ASSET", "Balance Asset", true),
+    blockchainParam("BLOCKCHAIN_BALANCE", "Balance Blockchain", true),
+    addressParam("BLOCKCHAIN_BALANCE_ADDRESS", "Balance Address", true),
+    amountParam("BLOCKCHAIN_BALANCE_AMOUNT", "Balance Amount", true),
+    loopIntervalParam(),
+    loopTimeoutParam(),
+    loopMaxAttemptsParam(),
   ],
 }
 
@@ -344,6 +438,8 @@ export const BASE_ACTION_TEMPLATES: ActionTemplate[] = [
   DEPOSIT_TEMPLATE,
   CANCEL_TEMPLATE,
   WAIT_TEMPLATE,
+  LOOP_UNTIL_ORDER_CLOSED_TEMPLATE,
+  LOOP_UNTIL_BLOCKCHAIN_BALANCE_TEMPLATE,
 ]
 
 export function getTemplateById(id: string): ActionTemplate | undefined {
