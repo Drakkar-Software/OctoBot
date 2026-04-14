@@ -5,7 +5,7 @@ import type { Task_Output as Task } from "@/client"
 import { NodesService } from "@/client"
 import { Button } from "@/components/ui/button"
 import { LoadingButton } from "@/components/ui/loading-button"
-import { getTemplateById } from "@/lib/action-templates"
+import { getTemplateById } from "@/lib/meta-templates"
 import { hasStoredClientKeys, loadPassword } from "@/lib/device-key"
 import type { ActionRow } from "./ColumnMappingStep"
 
@@ -21,7 +21,7 @@ function getValidActions(actions: ActionRow[]): ActionRow[] {
     const template = getTemplateById(action.templateId)
     if (!template) return false
     return template.params.every(
-      (p) => !p.required || action.paramValues[p.key]?.trim(),
+      (p) => !p.required || p.hidden || action.paramValues[p.key]?.trim(),
     )
   })
 }

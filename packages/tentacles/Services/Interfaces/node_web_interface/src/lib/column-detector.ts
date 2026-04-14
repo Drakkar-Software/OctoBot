@@ -9,8 +9,8 @@
 import {
   type ActionParamDef,
   type ActionTemplate,
-  ACTION_TEMPLATES,
 } from "./action-templates"
+import { getAllTemplates } from "./meta-templates"
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -197,7 +197,10 @@ function scoreTemplateForRow(
   const mappingByKey = new Map(mappings.map((m) => [m.paramKey, m]))
   let score = 0
 
-  for (const param of template.params) {
+  // Hidden params have pre-set defaults and are invisible to the user — exclude from scoring
+  const visibleParams = template.params.filter((p) => !p.hidden)
+
+  for (const param of visibleParams) {
     const mapping = mappingByKey.get(param.key)
     if (mapping) {
       // Weight by confidence: high = 5, medium = 3, low = 1
@@ -210,7 +213,7 @@ function scoreTemplateForRow(
   }
 
   // Penalize templates that have many params not matching — favors simpler/better-fitting templates
-  const unmatchedOptional = template.params.filter(
+  const unmatchedOptional = visibleParams.filter(
     (p) => !p.required && !mappingByKey.has(p.key),
   ).length
   score -= unmatchedOptional * 0.5
@@ -245,9 +248,10 @@ export function detectColumnsAndTemplates(
 ): RowDetectionResult[] {
   const columnValues = extractColumnValues(headers, rows)
 
-  // Score and assign mappings for each template
-  const templateResults = ACTION_TEMPLATES.map((template) => {
-    const scores = buildScoringMatrix(headers, columnValues, template.params)
+  // Score and assign mappings for each template (hidden params excluded from scoring)
+  const templateResults = getAllTemplates().map((template) => {
+    const visibleParams = template.params.filter((p) => !p.hidden)
+    const scores = buildScoringMatrix(headers, columnValues, visibleParams)
     const mappings = assignMappings(scores)
     const templateScore = scoreTemplateForRow(template, mappings)
     return { template, mappings, templateScore }
@@ -259,7 +263,7 @@ export function detectColumnsAndTemplates(
 
   if (!best) {
     return rows.map(() => ({
-      templateId: ACTION_TEMPLATES[0]?.id ?? "transfer",
+      templateId: getAllTemplates()[0]?.id ?? "transfer",
       templateScore: 0,
       mappings: [],
       paramValues: {},
@@ -309,7 +313,8 @@ export function detectMappingsForTemplate(
   rows: string[][],
 ): ColumnMapping[] {
   const columnValues = extractColumnValues(headers, rows)
-  const scores = buildScoringMatrix(headers, columnValues, template.params)
+  const visibleParams = template.params.filter((p) => !p.hidden)
+  const scores = buildScoringMatrix(headers, columnValues, visibleParams)
   return assignMappings(scores)
 }
 

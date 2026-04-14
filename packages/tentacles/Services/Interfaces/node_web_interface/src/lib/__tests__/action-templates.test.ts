@@ -1,16 +1,17 @@
 import { describe, expect, it } from "vitest"
 
 import {
-  ACTION_TEMPLATES,
-  getTemplateById,
+  BASE_ACTION_TEMPLATES,
   TRADE_TEMPLATE,
   CANCEL_TEMPLATE,
   WITHDRAW_TEMPLATE,
   DEPOSIT_TEMPLATE,
   TRANSFER_TEMPLATE,
   WAIT_TEMPLATE,
-  WAIT_TRADE_BINANCE_TEMPLATE,
 } from "../action-templates"
+import {
+  getTemplateById,
+} from "../meta-templates"
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -41,24 +42,24 @@ function buildTaskContent(
 
 describe("action-templates", () => {
   describe("template registry", () => {
-    it("contains all 7 templates", () => {
-      expect(ACTION_TEMPLATES).toHaveLength(7)
+    it("contains all 6 base templates", () => {
+      expect(BASE_ACTION_TEMPLATES).toHaveLength(6)
     })
 
     it("each template has a unique id", () => {
-      const ids = ACTION_TEMPLATES.map((t) => t.id)
+      const ids = BASE_ACTION_TEMPLATES.map((t) => t.id)
       expect(new Set(ids).size).toBe(ids.length)
     })
 
     it("each template has at least one param and at least one actionType", () => {
-      for (const template of ACTION_TEMPLATES) {
+      for (const template of BASE_ACTION_TEMPLATES) {
         expect(template.params.length).toBeGreaterThan(0)
         expect(template.actionTypes.length).toBeGreaterThan(0)
       }
     })
 
     it("each template has required fields", () => {
-      for (const template of ACTION_TEMPLATES) {
+      for (const template of BASE_ACTION_TEMPLATES) {
         expect(template.id).toBeTruthy()
         expect(template.label).toBeTruthy()
         expect(template.description).toBeTruthy()
@@ -76,7 +77,6 @@ describe("action-templates", () => {
       expect(getTemplateById("deposit")).toBe(DEPOSIT_TEMPLATE)
       expect(getTemplateById("transfer")).toBe(TRANSFER_TEMPLATE)
       expect(getTemplateById("wait")).toBe(WAIT_TEMPLATE)
-      expect(getTemplateById("wait_trade_binance")).toBe(WAIT_TRADE_BINANCE_TEMPLATE)
     })
 
     it("returns undefined for unknown id", () => {
@@ -96,13 +96,9 @@ describe("action-templates", () => {
       expect(WAIT_TEMPLATE.actionTypes).toEqual(["wait"])
     })
 
-    it("WAIT_TRADE_BINANCE_TEMPLATE declares wait then trade, in that order", () => {
-      expect(WAIT_TRADE_BINANCE_TEMPLATE.actionTypes).toEqual(["wait", "trade"])
-    })
-
     it("actionTypes values only use known keywords", () => {
       const known = new Set(["trade", "cancel", "withdraw", "deposit", "transfer", "wait"])
-      for (const template of ACTION_TEMPLATES) {
+      for (const template of BASE_ACTION_TEMPLATES) {
         for (const keyword of template.actionTypes) {
           expect(known.has(keyword)).toBe(true)
         }
@@ -168,20 +164,6 @@ describe("action-templates", () => {
       expect(content.ACTIONS).toBe("wait")
       expect(content.MIN_DELAY).toBe("30")
       expect(content.MAX_DELAY).toBe("60")
-    })
-
-    it("WAIT_TRADE_BINANCE content includes ACTIONS=wait,trade with both param sets", () => {
-      const content = buildTaskContent("wait_trade_binance", {
-        MIN_DELAY: "10",
-        ORDER_SYMBOL: "ETH/USDT",
-        ORDER_AMOUNT: "1",
-        ORDER_TYPE: "market",
-        EXCHANGE_TO: "binance",
-      })
-      expect(content.ACTIONS).toBe("wait,trade")
-      expect(content.MIN_DELAY).toBe("10")
-      expect(content.ORDER_SYMBOL).toBe("ETH/USDT")
-      expect(content.EXCHANGE_TO).toBe("binance")
     })
 
     it("sensitive params are included in content (not stripped)", () => {
@@ -417,38 +399,6 @@ describe("action-templates", () => {
     })
   })
 
-  describe("WAIT_TRADE_BINANCE_TEMPLATE", () => {
-    it("combines WAIT and TRADE action keywords in order", () => {
-      expect(WAIT_TRADE_BINANCE_TEMPLATE.actionTypes).toEqual(["wait", "trade"])
-    })
-
-    it("includes all WAIT_TEMPLATE params", () => {
-      const compositeKeys = WAIT_TRADE_BINANCE_TEMPLATE.params.map((p) => p.key)
-      for (const p of WAIT_TEMPLATE.params) {
-        expect(compositeKeys).toContain(p.key)
-      }
-    })
-
-    it("includes required trade params: ORDER_SYMBOL, ORDER_AMOUNT, ORDER_TYPE", () => {
-      const keys = WAIT_TRADE_BINANCE_TEMPLATE.params.map((p) => p.key)
-      expect(keys).toContain("ORDER_SYMBOL")
-      expect(keys).toContain("ORDER_AMOUNT")
-      expect(keys).toContain("ORDER_TYPE")
-    })
-
-    it("sets defaultValue binance on EXCHANGE_TO", () => {
-      const exchangeParam = WAIT_TRADE_BINANCE_TEMPLATE.params.find((p) => p.key === "EXCHANGE_TO")!
-      expect(exchangeParam.defaultValue).toBe("binance")
-    })
-
-    it("has no duplicate param keys", () => {
-      const keys = WAIT_TRADE_BINANCE_TEMPLATE.params.map((p) => p.key)
-      expect(new Set(keys).size).toBe(keys.length)
-    })
-  })
-
-  // ── Regex pattern edge cases ─────────────────────────────────────────────────
-
   describe("regex pattern edge cases", () => {
     it("tradingPair rejects single-char symbols and those exceeding 10 chars", () => {
       const pattern = TRADE_TEMPLATE.params.find((p) => p.key === "ORDER_SYMBOL")!.detectPatterns![0]
@@ -521,7 +471,7 @@ describe("action-templates", () => {
 
   describe("schema invariants", () => {
     it("all select params have non-empty options arrays", () => {
-      for (const template of ACTION_TEMPLATES) {
+      for (const template of BASE_ACTION_TEMPLATES) {
         for (const param of template.params) {
           if (param.type === "select") {
             expect(param.options).toBeDefined()
@@ -532,7 +482,7 @@ describe("action-templates", () => {
     })
 
     it("each param with detectPatterns contains only RegExp instances", () => {
-      for (const template of ACTION_TEMPLATES) {
+      for (const template of BASE_ACTION_TEMPLATES) {
         for (const param of template.params) {
           for (const pattern of param.detectPatterns ?? []) {
             expect(pattern).toBeInstanceOf(RegExp)
@@ -542,7 +492,7 @@ describe("action-templates", () => {
     })
 
     it("each param with aliasFuzzy contains only non-empty strings", () => {
-      for (const template of ACTION_TEMPLATES) {
+      for (const template of BASE_ACTION_TEMPLATES) {
         for (const param of template.params) {
           for (const alias of param.aliasFuzzy ?? []) {
             expect(alias.length).toBeGreaterThan(0)

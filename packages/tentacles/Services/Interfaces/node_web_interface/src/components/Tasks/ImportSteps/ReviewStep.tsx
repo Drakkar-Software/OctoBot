@@ -8,7 +8,7 @@ import {
   CardContent,
   CardHeader,
 } from "@/components/ui/card"
-import { getTemplateById } from "@/lib/action-templates"
+import { getTemplateById } from "@/lib/meta-templates"
 import type { ActionRow } from "./ColumnMappingStep"
 
 export interface ReviewStepProps {
@@ -28,7 +28,7 @@ function validateAction(action: ActionRow): ValidationResult {
 
   const missingParams: string[] = []
   for (const param of template.params) {
-    if (param.required) {
+    if (param.required && !param.hidden) {
       const value = action.paramValues[param.key]?.trim()
       if (!value) {
         missingParams.push(param.label)
@@ -79,10 +79,11 @@ export default function ReviewStep({
       <div className="max-h-[50vh] overflow-auto space-y-2">
         {validations.map(({ action, validation }) => {
           const template = getTemplateById(action.templateId)
-          const filledCount = Object.values(action.paramValues).filter(
-            (v) => v.trim() !== "",
+          const visibleParams = template?.params.filter((p) => !p.hidden) ?? []
+          const filledCount = visibleParams.filter(
+            (p) => action.paramValues[p.key]?.trim() !== "",
           ).length
-          const totalParams = template?.params.length ?? 0
+          const totalParams = visibleParams.length
 
           return (
             <Card
@@ -114,7 +115,7 @@ export default function ReviewStep({
               <CardContent className="py-2 px-4">
                 <div className="flex flex-wrap gap-x-4 gap-y-1">
                   {template?.params
-                    .filter((p) => action.paramValues[p.key]?.trim())
+                    .filter((p) => !p.hidden && action.paramValues[p.key]?.trim())
                     .map((param) => (
                       <span key={param.key} className="text-xs">
                         <span className="text-muted-foreground">

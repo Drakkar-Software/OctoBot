@@ -5,7 +5,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table"
 import { Trash2 } from "lucide-react"
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useMemo, useRef, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -24,11 +24,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import useCustomToast from "@/hooks/useCustomToast"
+import type { ActionParamDef } from "@/lib/action-templates"
 import {
-  ACTION_TEMPLATES,
-  type ActionParamDef,
+  getAllTemplates,
   getTemplateById,
-} from "@/lib/action-templates"
+  resolveMetaTemplate,
+  saveUserMetaTemplate,
+  validateMetaTemplateJson,
+} from "@/lib/meta-templates"
 import {
   type ColumnMapping,
   type RowDetectionResult,
@@ -72,6 +76,11 @@ export default function ColumnMappingStep({
   onConfirm,
   onBack,
 }: ColumnMappingStepProps) {
+  const { showSuccessToast, showErrorToast } = useCustomToast()
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  // Increment to force re-render after a user template is imported (getAllTemplates reads localStorage)
+  const [, setUserTemplatesVersion] = useState(0)
+
   // Run initial detection
   const initialDetection = useMemo(
     () => detectColumnsAndTemplates(headers, rows),
@@ -151,6 +160,26 @@ export default function ColumnMappingStep({
     [updateRow],
   )
 
+  const handleTemplateFileChange = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0]
+      if (!file) return
+      e.target.value = ""
+      try {
+        const text = await file.text()
+        const json: unknown = JSON.parse(text)
+        const def = validateMetaTemplateJson(json)
+        resolveMetaTemplate(def) // validate it resolves without errors
+        saveUserMetaTemplate(def)
+        setUserTemplatesVersion((v) => v + 1)
+        showSuccessToast(`Template "${def.label}" imported`)
+      } catch (err) {
+        showErrorToast(err instanceof Error ? err.message : "Invalid template file")
+      }
+    },
+    [showSuccessToast, showErrorToast],
+  )
+
   // Build dynamic columns based on the union of all param keys across rows
   const columns = useMemo(() => {
     const cols = [
@@ -192,7 +221,7 @@ export default function ColumnMappingStep({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {ACTION_TEMPLATES.map((t) => (
+              {getAllTemplates().map((t) => (
                 <SelectItem key={t.id} value={t.id}>
                   {t.label}
                 </SelectItem>
@@ -226,6 +255,22 @@ export default function ColumnMappingStep({
             Review auto-detected templates and parameter mappings. Edit values
             or change templates as needed.
           </p>
+        </div>
+        <div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json"
+            className="hidden"
+            onChange={handleTemplateFileChange}
+          />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            Import Template
+          </Button>
         </div>
       </div>
 
@@ -272,8 +317,8 @@ export default function ColumnMappingStep({
                   ))}
                   <TableCell>
                     {(() => {
-                      const requiredParams = template?.params.filter((p) => p.required) ?? []
-                      const optionalParams = template?.params.filter((p) => !p.required) ?? []
+                      const requiredParams = template?.params.filter((p) => p.required && !p.hidden) ?? []
+                      const optionalParams = template?.params.filter((p) => !p.required && !p.hidden) ?? []
                       const filledOptional = optionalParams.filter(
                         (p) => (actionRow.paramValues[p.key] ?? "").trim() !== "",
                       )
