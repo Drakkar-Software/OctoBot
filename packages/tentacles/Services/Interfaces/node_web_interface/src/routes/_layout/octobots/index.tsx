@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
-import { Bot, Check, Clock, Layers, Lock, Plus, Search, Trash2, X } from "lucide-react"
+import { Bot, Check, Clock, Layers, Loader2, Lock, Plus, Search, Trash2, X } from "lucide-react"
 import { Suspense, useMemo, useState } from "react"
 
 import type { Task_Output as Task, TaskStatus } from "@/client"
@@ -580,7 +580,12 @@ export const Route = createFileRoute("/_layout/octobots/")({
 
 function BotsIndex() {
   return (
-    <Suspense fallback={<div>Loading OctoBots...</div>}>
+    <Suspense fallback={
+      <div className="flex flex-col items-center justify-center gap-3 py-40 text-muted-foreground">
+        <Loader2 className="size-8 animate-spin" />
+        <span className="text-sm">Loading OctoBots...</span>
+      </div>
+    }>
       <BotsContent />
     </Suspense>
   )
