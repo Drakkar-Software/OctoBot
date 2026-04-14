@@ -52,7 +52,11 @@ function Login() {
     if (loginMutation.isPending) return
     // Use stored address or a placeholder — backend only checks the passphrase
     const username = localStorage.getItem("auth_username") || "node"
-    loginMutation.mutate({ username, password: data.passphrase })
+    loginMutation.mutate({ username, password: data.passphrase }, {
+      onError: () => {
+        form.setError("passphrase", { message: "Invalid passphrase" })
+      },
+    })
   }
 
   return (

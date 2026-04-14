@@ -24,8 +24,10 @@ OpenAPI.PASSWORD = async () => {
 
 const handleApiError = (error: Error) => {
   if (error instanceof ApiError && [401, 403].includes(error.status)) {
-    void clearPassword()
-    window.location.href = "/app/login"
+    if (!window.location.pathname.endsWith("/login")) {
+      void clearPassword()
+      window.location.href = "/app/login"
+    }
   }
 }
 const queryClient = new QueryClient({
