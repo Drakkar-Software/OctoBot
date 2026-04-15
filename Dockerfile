@@ -22,10 +22,12 @@ RUN apt-get update \
 ENV CRYPTOGRAPHY_DONT_BUILD_RUST=1
 
 COPY dist/octobot-*.whl /tmp/
+COPY extra_requirements.txt /tmp/
 RUN python -m venv /opt/venv \
     && . /opt/venv/bin/activate \
     && pip install --no-cache-dir --upgrade pip setuptools wheel \
-    && pip install --no-cache-dir /tmp/octobot-*.whl
+    && pip install --no-cache-dir /tmp/octobot-*.whl \
+    && pip install --no-cache-dir -r /tmp/extra_requirements.txt
 
 FROM python:3.13-slim-trixie
 
