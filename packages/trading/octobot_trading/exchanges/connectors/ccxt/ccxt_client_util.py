@@ -309,7 +309,7 @@ def converted_ccxt_common_errors(f):
     return converted_ccxt_common_errors_wrapper
 
 
-def _use_proxy_if_necessary(client, proxy_config: exchange_proxy_config.ExchangeProxyConfig):
+def _use_proxy_if_necessary(client: async_ccxt.Exchange, proxy_config: exchange_proxy_config.ExchangeProxyConfig):
     client.aiohttp_trust_env = proxy_config.aiohttp_trust_env
     if proxy_config.http_proxy:
         client.http_proxy = proxy_config.http_proxy
@@ -332,9 +332,12 @@ def _use_proxy_if_necessary(client, proxy_config: exchange_proxy_config.Exchange
     if proxy_config.socks_proxy or proxy_config.socks_proxy_callback:
         # rewrite of async_ccxt.exchange.client.fetch() ProxyConnector creation
         _init_ccxt_client_session_requirements(client)
-        if proxy_config.get_proxy_url is None:
-            raise ValueError("Proxy .get_proxy_url() must be set to use a socks proxy")
-        proxy_url = proxy_config.get_proxy_url()
+        if proxy_config.get_proxy_url is None and proxy_config.socks_proxy:
+            proxy_url = proxy_config.socks_proxy
+        elif proxy_config.get_proxy_url is not None:
+            proxy_url = proxy_config.get_proxy_url()
+        else:
+            raise ValueError("socks_proxy or get_proxy_url() must be set to use a socks proxy")
         if (client.socks_proxy_sessions is None):
             client.socks_proxy_sessions = {}
         if (proxy_url not in client.socks_proxy_sessions):
