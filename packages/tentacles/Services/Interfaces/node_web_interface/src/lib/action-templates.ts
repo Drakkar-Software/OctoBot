@@ -294,6 +294,13 @@ export const TRADE_TEMPLATE: ActionTemplate = {
       sensitive: true,
       aliasFuzzy: ["api_secret", "apisecret"],
     },
+    {
+      key: "SIMULATED_PORTFOLIO",
+      label: "Simulated Portfolio",
+      required: false,
+      type: "text",
+      aliasFuzzy: ["simulated_portfolio", "simulatedportfolio"],
+    },
   ],
 }
 

@@ -103,6 +103,8 @@ class ActionsDAGParserParams(octobot_commons.dataclasses.FlexibleDataclass):
             self.ACTIONS = self.ACTIONS.split(",") # pylint: disable=no-member
         if isinstance(self.ORDER_EXTRA_PARAMS, str):
             self.ORDER_EXTRA_PARAMS = json.loads(self.ORDER_EXTRA_PARAMS)
+        if isinstance(self.SIMULATED_PORTFOLIO, str):
+            self.SIMULATED_PORTFOLIO = json.loads(self.SIMULATED_PORTFOLIO)
         self._resolve_param_dependencies()
         self.validate()
 
