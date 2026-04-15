@@ -1,0 +1,8 @@
+import dataclasses
+import octobot_commons.dataclasses
+import octobot_copy.entities
+
+
+@dataclasses.dataclass
+class TradingSignal(octobot_commons.dataclasses.MinimizableDataclass):
+    account: octobot_copy.entities.Account

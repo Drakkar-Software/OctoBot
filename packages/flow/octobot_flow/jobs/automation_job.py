@@ -10,6 +10,7 @@ import octobot_flow.enums
 import octobot_flow.errors
 import octobot_flow.logic.configuration
 import octobot_flow.logic.dsl
+import octobot_flow.logic.actions.account_copy_util as account_copy_util
 import octobot_flow.parsers.sanitizer
 import octobot_flow.repositories.community
 import octobot_flow.encryption
@@ -271,6 +272,10 @@ class AutomationJob:
             self._logger.info(
                 f"{automation_signature} successfully updated in {round(time.time() - start_time, 2)} seconds"
             )
+            if automation.metadata.emit_signals:
+                await self._emit_trading_signals(
+                    maybe_community_repository, automation, fetched_dependencies
+                )
         except octobot_flow.errors.AutomationValidationError as err:
             self._logger.error(
                 f"{automation_signature} automation configuration is invalid: {err}"
@@ -282,6 +287,32 @@ class AutomationJob:
             )
             raise
         return to_execute_actions
+
+    async def _emit_trading_signals(
+        self,
+        maybe_community_repository: typing.Optional[octobot_flow.repositories.community.CommunityRepository],
+        automation: octobot_flow.entities.AutomationDetails,
+        fetched_dependencies: octobot_flow.entities.FetchedDependencies,
+    ):
+        if not maybe_community_repository:
+            raise octobot_flow.errors.CommunityTradingSignalError(
+                "Community authentication is required to emit trading signals"
+            )
+        reference_market = octobot_flow.logic.configuration.infer_reference_market(
+            self.automation_state.exchange_account_details, [],
+        )
+        account = account_copy_util.reference_exchange_elements_to_account(
+            automation.exchange_account_elements,
+            fetched_dependencies.fetched_exchange_data,
+            reference_market
+        )
+        trading_signals_repository = octobot_flow.repositories.community.TradingSignalsRepository(
+            maybe_community_repository.authenticator
+        )
+        await trading_signals_repository.insert_trading_signal(
+            octobot_flow.entities.TradingSignal(account=account)
+        )
+        
 
     def _get_actions_to_execute(self) -> tuple[list[octobot_flow.entities.AbstractActionDetails], bool]:
         if pending_priority_actions := self._get_pending_priority_actions():

@@ -30,7 +30,8 @@ from octobot_flow.entities.automations import (
     PostIterationActionsDetails,
 )
 from octobot_flow.entities.community import (
-    UserAuthentication
+    UserAuthentication,
+    TradingSignal,
 )
 __all__ = [
     "AccountElements",
@@ -59,4 +60,5 @@ __all__ = [
     "ExecutionDetails",
     "AdditionalActions",
     "UserAuthentication",
+    "TradingSignal",
 ]

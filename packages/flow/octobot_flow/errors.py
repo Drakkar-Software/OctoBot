@@ -61,6 +61,10 @@ class CommunityAuthenticationRequiredError(CommunityError):
     """raise when community authentication is required"""
 
 
+class CommunityTradingSignalError(CommunityError):
+    """an error related to the trading signal of the bot"""
+
+
 class UnresolvedDSLScriptError(AutomationActionError):
     """raise when a DSL script is not resolved"""
 

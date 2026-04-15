@@ -11,7 +11,10 @@ import octobot_flow.entities.automations.post_iteration_actions_details as post_
 
 
 @dataclasses.dataclass
-class AutomationMetadata(octobot_commons.dataclasses.MinimizableDataclass):
+class AutomationMetadata(
+    octobot_commons.dataclasses.MinimizableDataclass,
+    octobot_commons.dataclasses.UpdatableDataclass
+):
     automation_id: str = dataclasses.field(default="", repr=True)
     emit_signals: bool = dataclasses.field(default=False, repr=True)
 

@@ -20,6 +20,7 @@ def reference_exchange_elements_to_account(
 ) -> copy_entities.Account:
     content: dict[str, dict[str, decimal.Decimal]] = {}
     value_by_asset = {}
+    zero_value = decimal.Decimal("0")
     for asset, values in elements.portfolio.content.items():
         content[asset] = {
             key: decimal.Decimal(str(amount)) for key, amount in values.items()
@@ -27,11 +28,12 @@ def reference_exchange_elements_to_account(
         if asset == reference_market:
             value_by_asset[asset] = decimal.Decimal(str(values[common_constants.PORTFOLIO_TOTAL]))
         else:
+            asset_value = zero_value
             try:
                 if price := fetched_exchange_data.get_last_price(
                     symbol_util.merge_currencies(asset, reference_market)
                 ):
-                    value_by_asset[asset] = decimal.Decimal(str(values[common_constants.PORTFOLIO_TOTAL])) * price
+                    asset_value = decimal.Decimal(str(values[common_constants.PORTFOLIO_TOTAL])) * price
                 else:
                     logging.get_logger("account_copy_util").error(
                         f"No ticker price found for {symbol_util.merge_currencies(asset, reference_market)}. "
@@ -42,9 +44,13 @@ def reference_exchange_elements_to_account(
                     f"Impossible to evaluate {symbol_util.merge_currencies(asset, reference_market)} price: "
                     f"no fetched ticker price ({err})"
                 )
+            value_by_asset[asset] = asset_value
     total_value = sum(value_by_asset.values())
     for asset, values in elements.portfolio.content.items():
-        content[asset][copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO] = value_by_asset[asset] / total_value
+        if total_value == zero_value:
+            content[asset][copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO] = zero_value
+        else:
+            content[asset][copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO] = value_by_asset[asset] / total_value
     return copy_entities.Account(
         updated_at=time.time(),
         content=content,
