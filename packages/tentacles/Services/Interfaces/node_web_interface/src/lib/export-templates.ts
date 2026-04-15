@@ -36,35 +36,53 @@ export const GENERAL_EXPORT_TEMPLATE: ExportTemplate = {
   ],
 }
 
+const TRADE_STATE_PREFIX = "state.automation.client_exchange_account_elements.trades[0]"
+
 export const TRADE_EXPORT_TEMPLATE: ExportTemplate = {
   id: "trade",
   label: "Trade Results",
-  description: "Trading execution details: symbol, side, amount, price",
+  description: "Exchange trade details",
   columns: [
     { key: "name", label: "Name", jsonPath: "__task_name__", formatter: "text" },
     { key: "status", label: "Status", jsonPath: "__exec_status__", formatter: "text" },
-    { key: "symbol", label: "Symbol", jsonPath: "symbol", formatter: "text" },
-    { key: "side", label: "Side", jsonPath: "side", formatter: "text" },
-    { key: "amount", label: "Amount", jsonPath: "amount", formatter: "number" },
-    { key: "price", label: "Price", jsonPath: "price", formatter: "number" },
-    { key: "exchange", label: "Exchange", jsonPath: "exchange", formatter: "text" },
-    { key: "order_id", label: "Order ID", jsonPath: "order_id", formatter: "text" },
+    { key: "timestamp", label: "Timestamp", jsonPath: `${TRADE_STATE_PREFIX}.timestamp`, formatter: "date" },
+    { key: "symbol", label: "Symbol", jsonPath: `${TRADE_STATE_PREFIX}.symbol`, formatter: "text" },
+    { key: "type", label: "Type", jsonPath: `${TRADE_STATE_PREFIX}.type`, formatter: "text" },
+    { key: "side", label: "Side", jsonPath: `${TRADE_STATE_PREFIX}.side`, formatter: "text" },
+    { key: "amount", label: "Amount", jsonPath: `${TRADE_STATE_PREFIX}.amount`, formatter: "number" },
+    { key: "price", label: "Price", jsonPath: `${TRADE_STATE_PREFIX}.price`, formatter: "number" },
+    { key: "cost", label: "Cost", jsonPath: `${TRADE_STATE_PREFIX}.cost`, formatter: "number" },
+    { key: "creation_time", label: "Creation Time", jsonPath: `${TRADE_STATE_PREFIX}.creation_time`, formatter: "date" },
+    { key: "entries", label: "Entries", jsonPath: `${TRADE_STATE_PREFIX}.entries`, formatter: "json" },
+    { key: "exchange_id", label: "Exchange ID", jsonPath: `${TRADE_STATE_PREFIX}.exchange_id`, formatter: "text" },
+    { key: "exchange_trade_id", label: "Exchange Trade ID", jsonPath: `${TRADE_STATE_PREFIX}.exchange_trade_id`, formatter: "text" },
+    { key: "fee_cost", label: "Fee Cost", jsonPath: `${TRADE_STATE_PREFIX}.fee.cost`, formatter: "number" },
+    { key: "fee_currency", label: "Fee Currency", jsonPath: `${TRADE_STATE_PREFIX}.fee.currency`, formatter: "text" },
+    { key: "quantity_currency", label: "Quantity Currency", jsonPath: `${TRADE_STATE_PREFIX}.quantity_currency`, formatter: "text" },
+    { key: "reduce_only", label: "Reduce Only", jsonPath: `${TRADE_STATE_PREFIX}.reduceOnly`, formatter: "text" },
+    { key: "trade_status", label: "Trade Status", jsonPath: `${TRADE_STATE_PREFIX}.status`, formatter: "text" },
+    { key: "tag", label: "Tag", jsonPath: `${TRADE_STATE_PREFIX}.tag`, formatter: "text" },
   ],
 }
+
+const AUTOMATION_STATE_PREFIX = "state.automation.client_exchange_account_elements.transactions[0]"
 
 export const TRANSFER_EXPORT_TEMPLATE: ExportTemplate = {
   id: "transfer",
   label: "Transfer Results",
-  description: "Blockchain transfer details: addresses, amounts, tx hash",
+  description: "Blockchain transfer details",
   columns: [
     { key: "name", label: "Name", jsonPath: "__task_name__", formatter: "text" },
     { key: "status", label: "Status", jsonPath: "__exec_status__", formatter: "text" },
-    { key: "from_address", label: "From Address", jsonPath: "from_address", formatter: "text" },
-    { key: "to_address", label: "To Address", jsonPath: "to_address", formatter: "text" },
-    { key: "amount", label: "Amount", jsonPath: "amount", formatter: "number" },
-    { key: "asset", label: "Asset", jsonPath: "asset", formatter: "text" },
-    { key: "tx_hash", label: "TX Hash", jsonPath: "tx_hash", formatter: "text" },
-    { key: "network", label: "Network", jsonPath: "network", formatter: "text" },
+    { key: "address_from", label: "From Address", jsonPath: `${AUTOMATION_STATE_PREFIX}.address_from`, formatter: "text" },
+    { key: "address_to", label: "To Address", jsonPath: `${AUTOMATION_STATE_PREFIX}.address_to`, formatter: "text" },
+    { key: "amount", label: "Amount", jsonPath: `${AUTOMATION_STATE_PREFIX}.amount`, formatter: "number" },
+    { key: "currency", label: "Currency", jsonPath: `${AUTOMATION_STATE_PREFIX}.currency`, formatter: "text" },
+    { key: "txid", label: "TX Id", jsonPath: `${AUTOMATION_STATE_PREFIX}.txid`, formatter: "text" },
+    { key: "fee_cost", label: "Fee Cost", jsonPath: `${AUTOMATION_STATE_PREFIX}.fee.cost`, formatter: "number" },
+    { key: "fee_currency", label: "Fee Currency", jsonPath: `${AUTOMATION_STATE_PREFIX}.fee.currency`, formatter: "text" },
+    { key: "timestamp", label: "Time", jsonPath: `${AUTOMATION_STATE_PREFIX}.timestamp`, formatter: "date" },
+    { key: "network", label: "Network", jsonPath: `${AUTOMATION_STATE_PREFIX}.network`, formatter: "text" },
   ],
 }
 

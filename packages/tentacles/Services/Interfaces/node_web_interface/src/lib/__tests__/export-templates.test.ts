@@ -80,33 +80,44 @@ describe("export-templates", () => {
   })
 
   describe("TRADE_EXPORT_TEMPLATE", () => {
-    it("has trade-specific columns", () => {
+    it("has trade-specific columns from client exchange account state", () => {
       const keys = TRADE_EXPORT_TEMPLATE.columns.map((c) => c.key)
       expect(keys).toContain("symbol")
       expect(keys).toContain("side")
       expect(keys).toContain("amount")
       expect(keys).toContain("price")
-      expect(keys).toContain("exchange")
+      expect(keys).toContain("exchange_trade_id")
+      expect(keys).toContain("trade_status")
+      const prefix =
+        "state.automation.client_exchange_account_elements.trades[0]"
+      const amountCol = TRADE_EXPORT_TEMPLATE.columns.find(
+        (c) => c.key === "amount",
+      )
+      expect(amountCol?.jsonPath).toBe(`${prefix}.amount`)
     })
 
-    it("uses number formatter for amount and price", () => {
+    it("uses number formatter for amount, price, and cost", () => {
       const amountCol = TRADE_EXPORT_TEMPLATE.columns.find(
         (c) => c.key === "amount",
       )
       const priceCol = TRADE_EXPORT_TEMPLATE.columns.find(
         (c) => c.key === "price",
       )
+      const costCol = TRADE_EXPORT_TEMPLATE.columns.find(
+        (c) => c.key === "cost",
+      )
       expect(amountCol?.formatter).toBe("number")
       expect(priceCol?.formatter).toBe("number")
+      expect(costCol?.formatter).toBe("number")
     })
   })
 
   describe("TRANSFER_EXPORT_TEMPLATE", () => {
-    it("has address and tx_hash columns", () => {
+    it("has address and transaction columns", () => {
       const keys = TRANSFER_EXPORT_TEMPLATE.columns.map((c) => c.key)
-      expect(keys).toContain("from_address")
-      expect(keys).toContain("to_address")
-      expect(keys).toContain("tx_hash")
+      expect(keys).toContain("address_from")
+      expect(keys).toContain("address_to")
+      expect(keys).toContain("txid")
     })
   })
 
