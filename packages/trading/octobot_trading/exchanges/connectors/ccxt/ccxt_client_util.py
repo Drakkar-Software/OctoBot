@@ -340,18 +340,22 @@ def _use_proxy_if_necessary(client: async_ccxt.Exchange, proxy_config: exchange_
             raise ValueError("socks_proxy or get_proxy_url() must be set to use a socks proxy")
         if (client.socks_proxy_sessions is None):
             client.socks_proxy_sessions = {}
-        if (proxy_url not in client.socks_proxy_sessions):
+        # from ccxt get_socks_proxy_session()
+        reverse_dns = proxy_url.startswith('socks5h://')
+        selected_proxy_url = proxy_url if not reverse_dns else proxy_url.replace('socks5h://', 'socks5://')
+        if (selected_proxy_url not in client.socks_proxy_sessions):
             try:
                 import aiohttp_socks
                 previous_aiohttp_socks_connector = client.aiohttp_socks_connector
                 client.aiohttp_socks_connector = aiohttp_socks.ProxyConnector.from_url(
-                    proxy_url,
+                    selected_proxy_url,
                     # extra args copied from self.open()
                     ssl=client.ssl_context,
                     loop=client.asyncio_loop,
-                    enable_cleanup_closed=True
+                    enable_cleanup_closed=True,
+                    rdns=reverse_dns if reverse_dns else None
                 )
-                client.socks_proxy_sessions[proxy_url] = aiohttp.ClientSession(
+                client.socks_proxy_sessions[selected_proxy_url] = aiohttp.ClientSession(
                     loop=client.asyncio_loop, connector=client.aiohttp_socks_connector,
                     trust_env=client.aiohttp_trust_env
                 )
