@@ -87,16 +87,24 @@ export default function ColumnMappingStep({
     [headers, rows],
   )
 
-  const [actionRows, setActionRows] = useState<ActionRow[]>(() =>
-    initialDetection.map((det, idx) => ({
-      rowIndex: idx,
-      templateId: det.templateId,
-      paramValues: det.paramValues,
-      mappings: det.mappings,
-      unmappedColumns: det.unmappedColumns,
-      name: `Action ${idx + 1}`,
-    })),
-  )
+  const [actionRows, setActionRows] = useState<ActionRow[]>(() => {
+    const nameIdx = headers.findIndex((h) => h.trim().toLowerCase() === "name")
+    return initialDetection.map((det, idx) => {
+      const nameFromCsv = nameIdx >= 0 ? (rows[idx]?.[nameIdx] ?? "").trim() : ""
+      const unmappedColumns =
+        nameIdx >= 0 && det.unmappedColumns.includes(nameIdx)
+          ? det.unmappedColumns.filter((i) => i !== nameIdx)
+          : det.unmappedColumns
+      return {
+        rowIndex: idx,
+        templateId: det.templateId,
+        paramValues: det.paramValues,
+        mappings: det.mappings,
+        unmappedColumns,
+        name: nameFromCsv || `Action ${idx + 1}`,
+      }
+    })
+  })
 
   const updateRow = useCallback(
     (rowIndex: number, update: Partial<ActionRow>) => {
@@ -317,14 +325,15 @@ export default function ColumnMappingStep({
                   ))}
                   <TableCell>
                     {(() => {
-                      const requiredParams = template?.params.filter((p) => p.required && !p.hidden) ?? []
+                      const byLabel = (a: ActionParamDef, b: ActionParamDef) => a.label.localeCompare(b.label)
+                      const requiredParams = (template?.params.filter((p) => p.required && !p.hidden) ?? []).sort(byLabel)
                       const optionalParams = template?.params.filter((p) => !p.required && !p.hidden) ?? []
                       const filledOptional = optionalParams.filter(
                         (p) => (actionRow.paramValues[p.key] ?? "").trim() !== "",
-                      )
+                      ).sort(byLabel)
                       const emptyOptional = optionalParams.filter(
                         (p) => (actionRow.paramValues[p.key] ?? "").trim() === "",
-                      )
+                      ).sort(byLabel)
 
                       const renderParam = (param: ActionParamDef) => {
                         const value = actionRow.paramValues[param.key] ?? ""
