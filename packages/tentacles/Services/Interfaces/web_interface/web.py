@@ -18,11 +18,13 @@ import socket
 import time
 import flask
 import flask_cors
+import werkzeug.middleware.proxy_fix
 import flask_socketio
 from flask_compress import Compress
 from flask_caching import Cache
 
 import octobot_commons.logging as bot_logging
+import octobot_commons.os_util as os_util
 import octobot_services.constants as services_constants
 import octobot_services.interfaces as services_interfaces
 import octobot_services.interfaces.util as interfaces_util
@@ -176,6 +178,11 @@ class WebInterface(services_interfaces.AbstractWebInterface):
             flask_cors.CORS(self.server_instance, origins=flask_util.get_user_defined_cors_allowed_origins())
 
         self.server_instance.config['SEND_FILE_MAX_AGE_DEFAULT'] = 604800
+        if os_util.parse_boolean_environment_var("OCTOBOT_PROXY_FIX_SCRIPT_NAME", "False"):
+            # Trust X-Script-Name from reverse proxy so url_for() generates correct prefixed paths
+            self.server_instance.wsgi_app = werkzeug.middleware.proxy_fix.ProxyFix(
+                self.server_instance.wsgi_app, x_script_name=1
+            )
 
         if self.dev_mode:
             server_instance.config['TEMPLATES_AUTO_RELOAD'] = True
