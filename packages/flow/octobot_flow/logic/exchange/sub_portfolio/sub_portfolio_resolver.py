@@ -1,5 +1,7 @@
-import octobot_flow.entities
 import octobot_commons.constants as common_constants
+
+import octobot_flow.entities
+import octobot_flow.errors
 
 
 class SubPortfolioResolver:
@@ -20,7 +22,11 @@ class SubPortfolioResolver:
         raise NotImplementedError("SubPortfolioResolver._resolve_sub_portfolio is not implemented")
 
     async def _resolve_full_portfolio(self, automation: octobot_flow.entities.AutomationDetails):
-        automation.client_exchange_account_elements.portfolio.content = {
+        if automation.exchange_account_elements is None:
+            raise octobot_flow.errors.ExchangeAccountInitializationError(
+                "Exchange account elements are required to resolve the portfolio"
+            )
+        automation.exchange_account_elements.portfolio.content = {
             asset.asset: {
                 common_constants.PORTFOLIO_AVAILABLE: asset.available,
                 common_constants.PORTFOLIO_TOTAL: asset.total,

@@ -357,7 +357,7 @@ class TestOctoBotActionsJob:
         assert processed_actions[0].config is not None
         assert "automation" in processed_actions[0].config
         assert isinstance(processed_actions[0].config["exchange_account_details"], dict)
-        pre_trade_portfolio = job.after_execution_state.automation.client_exchange_account_elements.portfolio.content
+        pre_trade_portfolio = job.after_execution_state.automation.exchange_account_elements.portfolio.content
         assert pre_trade_portfolio["BTC"] == {
             common_constants.PORTFOLIO_AVAILABLE: 1,
             common_constants.PORTFOLIO_TOTAL: 1,
@@ -389,7 +389,7 @@ class TestOctoBotActionsJob:
         assert result.has_next_actions is False # no more actions to execute
 
         # ensure deposit is successful
-        post_deposit_portfolio = job2.after_execution_state.automation.client_exchange_account_elements.portfolio.content
+        post_deposit_portfolio = job2.after_execution_state.automation.exchange_account_elements.portfolio.content
         assert post_deposit_portfolio["BTC"][common_constants.PORTFOLIO_AVAILABLE] < pre_trade_portfolio["BTC"][common_constants.PORTFOLIO_AVAILABLE]
         assert post_deposit_portfolio["BTC"][common_constants.PORTFOLIO_TOTAL] < pre_trade_portfolio["BTC"][common_constants.PORTFOLIO_TOTAL]
 
@@ -409,7 +409,7 @@ class TestOctoBotActionsJob:
         assert processed_actions[0].config is not None
         assert "automation" in processed_actions[0].config
         assert isinstance(processed_actions[0].config["exchange_account_details"], dict)
-        pre_trade_portfolio = job.after_execution_state.automation.client_exchange_account_elements.portfolio.content
+        pre_trade_portfolio = job.after_execution_state.automation.exchange_account_elements.portfolio.content
         assert pre_trade_portfolio["BTC"] == {
             common_constants.PORTFOLIO_AVAILABLE: 1,
             common_constants.PORTFOLIO_TOTAL: 1,
@@ -453,7 +453,7 @@ class TestOctoBotActionsJob:
         assert processed_actions[0].config is not None
         assert "automation" in processed_actions[0].config
         assert isinstance(processed_actions[0].config["exchange_account_details"], dict)
-        pre_trade_portfolio = job.after_execution_state.automation.client_exchange_account_elements.portfolio.content
+        pre_trade_portfolio = job.after_execution_state.automation.exchange_account_elements.portfolio.content
         assert pre_trade_portfolio["ETH"] == {
             common_constants.PORTFOLIO_AVAILABLE: 1,
             common_constants.PORTFOLIO_TOTAL: 1,
@@ -502,7 +502,7 @@ class TestOctoBotActionsJob:
         assert processed_actions[0].config is not None
         assert "automation" in processed_actions[0].config
         assert isinstance(processed_actions[0].config["exchange_account_details"], dict)
-        pre_trade_portfolio = job.after_execution_state.automation.client_exchange_account_elements.portfolio.content
+        pre_trade_portfolio = job.after_execution_state.automation.exchange_account_elements.portfolio.content
         assert pre_trade_portfolio["BTC"] == {
             common_constants.PORTFOLIO_AVAILABLE: 1,
             common_constants.PORTFOLIO_TOTAL: 1,
@@ -588,7 +588,7 @@ class TestOctoBotActionsJob:
         assert processed_actions[0].config is not None
         assert "automation" in processed_actions[0].config
         assert isinstance(processed_actions[0].config["exchange_account_details"], dict)
-        pre_trade_portfolio = job.after_execution_state.automation.client_exchange_account_elements.portfolio.content
+        pre_trade_portfolio = job.after_execution_state.automation.exchange_account_elements.portfolio.content
         assert pre_trade_portfolio["USDC"] == {
             common_constants.PORTFOLIO_AVAILABLE: 100,
             common_constants.PORTFOLIO_TOTAL: 100,
@@ -631,8 +631,7 @@ class TestOctoBotActionsJob:
         assert processed_actions[0].action == octobot_flow.enums.ActionType.APPLY_CONFIGURATION.value
         assert processed_actions[0].config is not None
         assert "automation" in processed_actions[0].config
-        assert job.after_execution_state.automation.reference_exchange_account_elements is None
-        assert job.after_execution_state.automation.client_exchange_account_elements.portfolio.content == {}
+        assert job.after_execution_state.automation.exchange_account_elements.portfolio.content == {}
 
         # step 2: run the transfer action
         next_actions_description = result.next_actions_description
@@ -677,7 +676,7 @@ class TestOctoBotActionsJob:
         assert processed_actions[0].config is not None
         assert "automation" in processed_actions[0].config
         assert isinstance(processed_actions[0].config["exchange_account_details"], dict)
-        pre_deposit_portfolio = job.after_execution_state.automation.client_exchange_account_elements.portfolio.content
+        pre_deposit_portfolio = job.after_execution_state.automation.exchange_account_elements.portfolio.content
         assert pre_deposit_portfolio["BTC"] == {
             common_constants.PORTFOLIO_AVAILABLE: 0.01,
             common_constants.PORTFOLIO_TOTAL: 0.01,
@@ -704,7 +703,7 @@ class TestOctoBotActionsJob:
         assert result.has_next_actions is False # no more actions to execute
 
         # ensure deposit is successful
-        post_deposit_portfolio = job2.after_execution_state.automation.client_exchange_account_elements.portfolio.content
+        post_deposit_portfolio = job2.after_execution_state.automation.exchange_account_elements.portfolio.content
         assert post_deposit_portfolio["BTC"] == {
             common_constants.PORTFOLIO_AVAILABLE: pre_deposit_portfolio["BTC"][common_constants.PORTFOLIO_AVAILABLE] + deposit_action["params"]["BLOCKCHAIN_FROM_AMOUNT"],
             common_constants.PORTFOLIO_TOTAL: pre_deposit_portfolio["BTC"][common_constants.PORTFOLIO_TOTAL] + deposit_action["params"]["BLOCKCHAIN_FROM_AMOUNT"],
@@ -722,7 +721,7 @@ class TestOctoBotActionsJob:
         assert processed_actions[0].config is not None
         assert "automation" in processed_actions[0].config
         assert isinstance(processed_actions[0].config["exchange_account_details"], dict)
-        pre_withdraw_portfolio = job.after_execution_state.automation.client_exchange_account_elements.portfolio.content
+        pre_withdraw_portfolio = job.after_execution_state.automation.exchange_account_elements.portfolio.content
         assert pre_withdraw_portfolio["ETH"] == {
             common_constants.PORTFOLIO_AVAILABLE: 2,
             common_constants.PORTFOLIO_TOTAL: 2,
@@ -749,7 +748,7 @@ class TestOctoBotActionsJob:
         assert result.has_next_actions is False # no more actions to execute
 
         # ensure withdraw is successful
-        post_withdraw_portfolio = job2.after_execution_state.automation.client_exchange_account_elements.portfolio.content
+        post_withdraw_portfolio = job2.after_execution_state.automation.exchange_account_elements.portfolio.content
         assert post_withdraw_portfolio == {}  # portfolio should now be empty
 
     async def test_run_multiple_actions_bundle_no_wait(self, multiple_actions_bundle_no_wait):
@@ -765,7 +764,7 @@ class TestOctoBotActionsJob:
         assert processed_actions[0].config is not None
         assert "automation" in processed_actions[0].config
         assert isinstance(processed_actions[0].config["exchange_account_details"], dict)
-        pre_trade_portfolio = job.after_execution_state.automation.client_exchange_account_elements.portfolio.content
+        pre_trade_portfolio = job.after_execution_state.automation.exchange_account_elements.portfolio.content
         assert pre_trade_portfolio["BTC"] == {
             common_constants.PORTFOLIO_AVAILABLE: 1,
             common_constants.PORTFOLIO_TOTAL: 1,
@@ -826,7 +825,7 @@ class TestOctoBotActionsJob:
         assert result.has_next_actions is False # no more actions to execute
 
         # ensure trades are taken into account in portfolio
-        post_deposit_portfolio = job3.after_execution_state.automation.client_exchange_account_elements.portfolio.content
+        post_deposit_portfolio = job3.after_execution_state.automation.exchange_account_elements.portfolio.content
 
         assert "ETH" not in post_deposit_portfolio # ETH order has not been executed (still open)
 
@@ -847,7 +846,7 @@ class TestOctoBotActionsJob:
         assert processed_actions[0].config is not None
         assert "automation" in processed_actions[0].config
         assert isinstance(processed_actions[0].config["exchange_account_details"], dict)
-        pre_trade_portfolio = job.after_execution_state.automation.client_exchange_account_elements.portfolio.content
+        pre_trade_portfolio = job.after_execution_state.automation.exchange_account_elements.portfolio.content
         assert pre_trade_portfolio["BTC"] == {
             common_constants.PORTFOLIO_AVAILABLE: 1,
             common_constants.PORTFOLIO_TOTAL: 1,
@@ -962,7 +961,7 @@ class TestOctoBotActionsJob:
         )
         result = await job3b.run()
         # trade is saved
-        assert len(job3b.after_execution_state.automation.client_exchange_account_elements.trades) == 1
+        assert len(job3b.after_execution_state.automation.exchange_account_elements.trades) == 1
         assert len(result.processed_actions) == 1
         processed_actions = result.processed_actions
         assert isinstance(processed_actions[0], octobot_flow.entities.DSLScriptActionDetails)
@@ -984,7 +983,7 @@ class TestOctoBotActionsJob:
         assert processed_actions[0].config is not None
         assert "automation" in processed_actions[0].config
         assert isinstance(processed_actions[0].config["exchange_account_details"], dict)
-        pre_trade_portfolio = job.after_execution_state.automation.client_exchange_account_elements.portfolio.content
+        pre_trade_portfolio = job.after_execution_state.automation.exchange_account_elements.portfolio.content
         assert pre_trade_portfolio["BTC"] == {
             common_constants.PORTFOLIO_AVAILABLE: 1,
             common_constants.PORTFOLIO_TOTAL: 1,
@@ -1160,7 +1159,7 @@ class TestOctoBotActionsJob:
         assert processed_actions[0].config is not None
         assert "automation" in processed_actions[0].config
         assert isinstance(processed_actions[0].config["exchange_account_details"], dict)
-        pre_trade_portfolio = job.after_execution_state.automation.client_exchange_account_elements.portfolio.content
+        pre_trade_portfolio = job.after_execution_state.automation.exchange_account_elements.portfolio.content
         assert pre_trade_portfolio["BTC"] == {
             common_constants.PORTFOLIO_AVAILABLE: 1,
             common_constants.PORTFOLIO_TOTAL: 1,
@@ -1243,7 +1242,7 @@ class TestOctoBotActionsJob:
         assert len(next_actions) == 1
         assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
         assert next_actions[0].dsl_script.startswith("market(")
-        post_deposit_portfolio = job2.after_execution_state.automation.client_exchange_account_elements.portfolio.content
+        post_deposit_portfolio = job2.after_execution_state.automation.exchange_account_elements.portfolio.content
         assert post_deposit_portfolio["BTC"] == {
             common_constants.PORTFOLIO_AVAILABLE: 2,
             common_constants.PORTFOLIO_TOTAL: 2,
@@ -1269,7 +1268,7 @@ class TestOctoBotActionsJob:
         assert processed_actions[0].dsl_script.startswith("market(")
         assert processed_actions[0].result is not None
         assert len(processed_actions[0].result[DSL_operators.CREATED_ORDERS_KEY]) == len(get_created_orders(processed_actions)) == 1
-        post_trade_portfolio = job5.after_execution_state.automation.client_exchange_account_elements.portfolio.content
+        post_trade_portfolio = job5.after_execution_state.automation.exchange_account_elements.portfolio.content
         assert post_trade_portfolio["BTC"][common_constants.PORTFOLIO_AVAILABLE] < post_deposit_portfolio["BTC"][common_constants.PORTFOLIO_AVAILABLE]
         assert 0.990 < post_trade_portfolio["ETH"][common_constants.PORTFOLIO_AVAILABLE] <= 0.999
         assert 0.990 < post_trade_portfolio["ETH"][common_constants.PORTFOLIO_TOTAL] <= 0.999
@@ -1332,7 +1331,7 @@ class TestOctoBotActionsJob:
         assert 0.990 < transaction[trading_enums.ExchangeConstantsTransactionColumns.AMOUNT.value] <= 0.999
         assert transaction[trading_enums.ExchangeConstantsTransactionColumns.NETWORK.value] == "ethereum"
         assert transaction[trading_enums.ExchangeConstantsTransactionColumns.ADDRESS_TO.value] == "0x1234567890123456789012345678901234567890"
-        post_withdraw_portfolio = job8.after_execution_state.automation.client_exchange_account_elements.portfolio.content
+        post_withdraw_portfolio = job8.after_execution_state.automation.exchange_account_elements.portfolio.content
         assert post_withdraw_portfolio["BTC"] == post_trade_portfolio["BTC"]
         assert "ETH" not in post_withdraw_portfolio
         assert result.has_next_actions is False # no more actions to execute

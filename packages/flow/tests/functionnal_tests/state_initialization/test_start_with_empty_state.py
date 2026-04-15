@@ -20,7 +20,7 @@ def init_action():
                 "metadata": {
                     "automation_id": "automation_1",
                 },
-                "client_exchange_account_elements": {
+                "exchange_account_elements": {
                     "portfolio": {
                         "content": {
                             "USDT": {
@@ -80,7 +80,7 @@ async def test_start_with_empty_state_and_reschedule_no_community_auth(init_acti
         assert portfolio["content"] == []
         assert portfolio["unit"] == ""
         # assert automation portfolio
-        portfolio_content = after_execution_dump["automation"]["client_exchange_account_elements"]["portfolio"]["content"]
+        portfolio_content = after_execution_dump["automation"]["exchange_account_elements"]["portfolio"]["content"]
         assert portfolio_content == {
             "USDT": {
                 "available": 1000.0,
@@ -122,7 +122,7 @@ async def test_start_with_empty_state_action_followed_by_market_orders_no_commun
             assert action.result is None
         # check portfolio content
         after_config_execution_dump = init_automation_job.dump()
-        assert after_config_execution_dump["automation"]["client_exchange_account_elements"]["portfolio"]["content"] == {
+        assert after_config_execution_dump["automation"]["exchange_account_elements"]["portfolio"]["content"] == {
             "USDT": {
                 "available": 1000.0,
                 "total": 1000.0,
@@ -162,7 +162,7 @@ async def test_start_with_empty_state_action_followed_by_market_orders_no_commun
                 assert created_order["type"] == "market"
 
         after_execution_dump = automation_job.dump()
-        after_execution_portfolio_content = after_execution_dump["automation"]["client_exchange_account_elements"]["portfolio"]["content"]
+        after_execution_portfolio_content = after_execution_dump["automation"]["exchange_account_elements"]["portfolio"]["content"]
         assert list(sorted(after_execution_portfolio_content.keys())) == ["BTC", "ETH", "USDT"]
         for asset_type in [common_constants.PORTFOLIO_AVAILABLE, common_constants.PORTFOLIO_TOTAL]:
             assert 950 < after_execution_portfolio_content["USDT"][asset_type] < 1000 # spent some USDT to buy BTC

@@ -14,12 +14,13 @@ import octobot_flow.entities.accounts.account_elements as account_elements_impor
 
 
 @dataclasses.dataclass
-class ReferenceExchangeAccountElements(account_elements_import.AccountElements):
+class ExchangeAccountElements(account_elements_import.AccountElements):
     """
     Defines the ideal exchange account state of an automation. Only contains sharable data
     """
     orders: exchange_data_import.OrdersDetails = dataclasses.field(default_factory=exchange_data_import.OrdersDetails)
     positions: list[exchange_data_import.PositionDetails] = dataclasses.field(default_factory=list)
+    trades: list[dict] = dataclasses.field(default_factory=list)
 
     def __post_init__(self):
         super().__post_init__()
@@ -28,6 +29,10 @@ class ReferenceExchangeAccountElements(account_elements_import.AccountElements):
         if self.positions and isinstance(self.positions[0], dict):
             self.positions = [
                 exchange_data_import.PositionDetails.from_dict(position) for position in self.positions # type: ignore
+            ]
+        if self.trades and isinstance(self.trades[0], dict):
+            self.trades = [
+                dict(trade) for trade in self.trades # type: ignore
             ]
 
     def has_pending_chained_orders(self) -> bool:
@@ -50,6 +55,8 @@ class ReferenceExchangeAccountElements(account_elements_import.AccountElements):
             changed_elements.append(octobot_flow.enums.ChangedElements.PORTFOLIO)
         if self.sync_positions_from_exchange_manager(exchange_manager):
             changed_elements.append(octobot_flow.enums.ChangedElements.POSITIONS)
+        if self._sync_trades_from_exchange_manager(exchange_manager):
+            changed_elements.append(octobot_flow.enums.ChangedElements.TRADES)
         return changed_elements
 
     def sync_orders_from_exchange_manager(self, exchange_manager: octobot_trading.exchanges.ExchangeManager) -> bool:
@@ -93,3 +100,18 @@ class ReferenceExchangeAccountElements(account_elements_import.AccountElements):
             for position in octobot_trading.api.get_positions(exchange_manager)
         ]
         return previous_positions != self.positions
+
+    def _sync_trades_from_exchange_manager(self, exchange_manager: octobot_trading.exchanges.ExchangeManager) -> bool:
+        previous_trades_count = len(self.trades)
+        if update_trades := octobot_trading.api.get_trade_history(exchange_manager, as_dict=True):
+            current_trade_ids = {
+                trade[octobot_trading.enums.ExchangeConstantsOrderColumns.EXCHANGE_TRADE_ID.value]
+                for trade in self.trades
+            }
+            if new_trades := tuple(
+                trade
+                for trade in update_trades
+                if trade[octobot_trading.enums.ExchangeConstantsOrderColumns.EXCHANGE_TRADE_ID.value] not in current_trade_ids
+            ):
+                self.trades.extend(new_trades)
+        return previous_trades_count != len(self.trades)

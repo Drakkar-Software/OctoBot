@@ -20,7 +20,6 @@ from tests.functionnal_tests import (
     current_time,
     resolved_actions,
     automation_state_dict,
-    set_init_action_run_mode,
     AUTHENTICATED_TEST_GROUP,
     d_order_price,
 )
@@ -135,8 +134,7 @@ async def _cancel_all_btc_usdc_orders_for_test(automation_dump: dict) -> None:
     assert len(cancel_action.result["cancelled_orders"]) >= 4
 
     after_cancel_dump = automations_job.dump()
-    assert _btc_usdc_open_order_count(after_cancel_dump, "client_exchange_account_elements") == 0 #todo
-    assert _btc_usdc_open_order_count(after_cancel_dump, "reference_exchange_account_elements") == 0
+    assert _btc_usdc_open_order_count(after_cancel_dump, "exchange_account_elements") == 0
 
 
 @pytest.fixture
@@ -153,7 +151,7 @@ def init_action():
                 "metadata": {
                     "automation_id": "automation_1",
                 },
-                "client_exchange_account_elements": {
+                "exchange_account_elements": {
                     "portfolio": {
                         "content": {
                             "USDC": {
@@ -182,14 +180,13 @@ def init_action():
 
 @pytest.mark.asyncio
 @pytest.mark.xdist_group(name=AUTHENTICATED_TEST_GROUP)
-async def test_authenticated_grid_init_from_empty_state_copying_reference_account(init_action: dict):
+async def test_authenticated_grid_init_from_empty_state(init_action: dict):
     """
-    Same flow as the simulator grid test with UPDATE_REFERENCE_EXCHANGE_ACCOUNT_AND_COPY, but against a
-    real authenticated account: current market price anchors the ladder (no ticker/ohlcv mocks).
+    Same flow as the simulator grid test, but against a real authenticated account: current market price
+    anchors the ladder (no ticker/ohlcv mocks).
     Requires spot USD/BTC balance sufficient for the grid on the configured exchange.
     """
-    run_mode = octobot_flow.enums.AutomationRunMode.UPDATE_REFERENCE_EXCHANGE_ACCOUNT_AND_COPY
-    all_actions = [set_init_action_run_mode(init_action, run_mode), grid_trading_mode_action(init_action)]
+    all_actions = [init_action, grid_trading_mode_action(init_action)]
     automation_state = automation_state_dict(resolved_actions(all_actions))
 
     with (
@@ -251,19 +248,19 @@ async def test_authenticated_grid_init_from_empty_state_copying_reference_accoun
 
             # check portfolio and open grid orders (balances depend on the live account)
             after_grid_portfolio_content = after_grid_execution_dump["automation"][
-                "client_exchange_account_elements"
+                "exchange_account_elements"
             ]["portfolio"]["content"]
             assert isinstance(after_grid_execution_dump, dict)
             _assert_nonempty_btc_usdc_portfolio(after_grid_portfolio_content)
 
             after_grid_reference_account_portfolio_content = after_grid_execution_dump["automation"][
-                "reference_exchange_account_elements"
+                "exchange_account_elements"
             ]["portfolio"]["content"]
             assert isinstance(after_grid_reference_account_portfolio_content, dict)
             _assert_nonempty_btc_usdc_portfolio(after_grid_reference_account_portfolio_content)
 
             price_col = trading_enums.ExchangeConstantsOrderColumns.PRICE.value
-            order_portfolio_types = ["client_exchange_account_elements", "reference_exchange_account_elements"]
+            order_portfolio_types = ["exchange_account_elements"]
             for portfolio_type in order_portfolio_types:
                 open_orders_origin_values = [
                     order[trading_constants.STORAGE_ORIGIN_VALUE]
@@ -318,20 +315,19 @@ async def test_authenticated_grid_init_from_empty_state_copying_reference_accoun
             assert one_hour - allowed_execution_time < schedule_delay < one_hour + allowed_execution_time
 
             after_second_call_portfolio_content = cleanup_dump["automation"][
-                "client_exchange_account_elements"
+                "exchange_account_elements"
             ]["portfolio"]["content"]
             _assert_btc_usdc_balances_unchanged(
                 after_grid_portfolio_content,
                 after_second_call_portfolio_content,
             )
             after_second_call_reference_account_portfolio_content = cleanup_dump["automation"][
-                "reference_exchange_account_elements"
+                "exchange_account_elements"
             ]["portfolio"]["content"]
             _assert_btc_usdc_balances_unchanged(
                 after_grid_reference_account_portfolio_content,
                 after_second_call_reference_account_portfolio_content,
             )
-
         finally:
             if cleanup_dump is not None:
                 await _cancel_all_btc_usdc_orders_for_test(cleanup_dump)

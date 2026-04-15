@@ -734,7 +734,7 @@ class TestExecuteAutomationIntegration:
             "action": octobot_flow.enums.ActionType.APPLY_CONFIGURATION.value,
             "config": {
                 "automation": {"metadata": {"automation_id": "automation_1"}},
-                "client_exchange_account_elements": {
+                "exchange_account_elements": {
                     "portfolio": {
                         "content": {
                             "ETH": {"total": 1, "available": 1},
@@ -755,7 +755,7 @@ class TestExecuteAutomationIntegration:
         }
         all_actions = [init_action, dsl_action_1, dsl_action_2]
         state_dict = _automation_state_dict(all_actions)
-        state_dict["automation"]["client_exchange_account_elements"] = {
+        state_dict["automation"]["exchange_account_elements"] = {
             "portfolio": {"content": {"ETH": {"total": 1, "available": 1}}},
         }
         state_dict["automation"]["execution"] = {
@@ -824,7 +824,7 @@ class TestExecuteAutomationIntegration:
         automation_state = state_tree["state"]["automation"]
         assert automation_state["metadata"]["automation_id"] == "automation_1"
         assert "actions_dag" in automation_state
-        assert "client_exchange_account_elements" in automation_state
+        assert "exchange_account_elements" in automation_state
 
     @pytest.mark.asyncio
     @required_imports

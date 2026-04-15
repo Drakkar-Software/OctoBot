@@ -61,7 +61,7 @@ class ExchangeContextMixin:
 
     @contextlib.asynccontextmanager
     async def exchange_manager_context(
-        self, as_reference_account: bool
+        self,
     ) -> typing.AsyncGenerator[typing.Optional[octobot_trading.exchanges.ExchangeManager], None]:
         exchange_manager_bot_id = None
         profile_data = self.profile_data_provider.get_profile_data()
@@ -69,8 +69,14 @@ class ExchangeContextMixin:
             # no need to initialize an exchange manager
             yield None
             return
+        automation_elements = self.automation_state.automation.exchange_account_elements
+        portfolio_content = (
+            automation_elements.portfolio.content
+            if automation_elements is not None
+            else {}
+        )
         exchange_data = self.automation_state.exchange_account_details.to_minimal_exchange_data(
-            self.automation_state.automation.get_exchange_account_elements(as_reference_account).portfolio.content
+            portfolio_content
         )
         try:
             if self.USE_PREDICTIVE_ORDERS_SYNC:

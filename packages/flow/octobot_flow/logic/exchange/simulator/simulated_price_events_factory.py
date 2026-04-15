@@ -23,7 +23,7 @@ class SimulatedPriceEventsFactory:
 
     def push_mark_price_and_recent_trades_updates(
         self,
-        account_elements: entities_import.ReferenceExchangeAccountElements,
+        account_elements: entities_import.ExchangeAccountElements,
         fetched_exchange_data: entities_import.FetchedExchangeData,
     ) -> None:
         symbols = self._symbols_for_mark_price_updates(

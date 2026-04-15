@@ -60,7 +60,7 @@ async def test_exchange_actions_reset_executing_market_order_twice(
         # no next execution time scheduled: trigger immediately
         assert after_execution_dump["automation"]["execution"]["current_execution"]["scheduled_to"] == 0
         # check portfolio content
-        after_execution_portfolio_content = after_execution_dump["automation"]["client_exchange_account_elements"]["portfolio"]["content"]
+        after_execution_portfolio_content = after_execution_dump["automation"]["exchange_account_elements"]["portfolio"]["content"]
         assert isinstance(after_execution_dump, dict)
         assert list(sorted(after_execution_portfolio_content.keys())) == ["BTC", "ETH", "USDT"]
         for asset_type in [common_constants.PORTFOLIO_AVAILABLE, common_constants.PORTFOLIO_TOTAL]:
@@ -101,7 +101,7 @@ async def test_exchange_actions_reset_executing_market_order_twice(
         # no next execution time scheduled: trigger immediately
         assert after_execution_dump_2["automation"]["execution"]["current_execution"]["scheduled_to"] == 0
         # check portfolio content
-        after_execution_portfolio_content_2 = after_execution_dump_2["automation"]["client_exchange_account_elements"]["portfolio"]["content"]
+        after_execution_portfolio_content_2 = after_execution_dump_2["automation"]["exchange_account_elements"]["portfolio"]["content"]
         for asset_type in [common_constants.PORTFOLIO_AVAILABLE, common_constants.PORTFOLIO_TOTAL]:
             # spent some more USDT to buy BTC
             assert after_execution_portfolio_content_2["USDT"][asset_type] < after_execution_portfolio_content["USDT"][asset_type]
@@ -172,7 +172,7 @@ resolved_actions(actions_to_execute),
         assert len(cancelled[0]) > 2  # id of the cancelled order
 
         after_execution_dump = automations_job_2.dump()
-        after_execution_portfolio_content = after_execution_dump["automation"]["client_exchange_account_elements"]["portfolio"]["content"]
+        after_execution_portfolio_content = after_execution_dump["automation"]["exchange_account_elements"]["portfolio"]["content"]
         assert "USDC" in after_execution_portfolio_content
         for asset_type in [common_constants.PORTFOLIO_AVAILABLE, common_constants.PORTFOLIO_TOTAL]:
             assert 5 <= after_execution_portfolio_content["USDC"][asset_type] < 10_000_000
@@ -235,7 +235,7 @@ resolved_actions(actions_to_execute),
         assert len(cancelled[0]) > 2  # id of the cancelled order
 
         after_execution_dump = automations_job_4.dump()
-        after_execution_portfolio_content = after_execution_dump["automation"]["client_exchange_account_elements"]["portfolio"]["content"]
+        after_execution_portfolio_content = after_execution_dump["automation"]["exchange_account_elements"]["portfolio"]["content"]
         assert "USDC" in after_execution_portfolio_content
         for asset_type in [common_constants.PORTFOLIO_AVAILABLE, common_constants.PORTFOLIO_TOTAL]:
             assert 5 <= after_execution_portfolio_content["USDC"][asset_type] < 10_000_000

@@ -33,7 +33,7 @@ def init_action():
         "config": {
             "automation": {
                 "metadata": {"automation_id": "automation_1"},
-                "client_exchange_account_elements": {
+                "exchange_account_elements": {
                     "portfolio": {"content": {}},
                 },
             },
@@ -87,7 +87,7 @@ async def test_execute_actions_with_limit_orders_and_empty_state(
         assert portfolio["content"] == []
         assert portfolio["unit"] == ""
         # assert automation portfolio (not fetched yet)
-        portfolio_content = after_execution_dump["automation"]["client_exchange_account_elements"]["portfolio"]["content"]
+        portfolio_content = after_execution_dump["automation"]["exchange_account_elements"]["portfolio"]["content"]
         assert portfolio_content == {}
         # reported next execution time to the current execution triggered_at
         assert automation_execution["previous_execution"]["triggered_at"] >= current_time
@@ -132,7 +132,7 @@ async def test_execute_actions_with_limit_orders_and_empty_state(
         assert len(cancelled[0]) > 2  # id of the cancelled order
 
         after_execution_dump = automations_job.dump()
-        after_execution_portfolio_content = after_execution_dump["automation"]["client_exchange_account_elements"]["portfolio"]["content"]
+        after_execution_portfolio_content = after_execution_dump["automation"]["exchange_account_elements"]["portfolio"]["content"]
         assert "USDC" in after_execution_portfolio_content
         for asset_type in [common_constants.PORTFOLIO_AVAILABLE, common_constants.PORTFOLIO_TOTAL]:
             assert 5 <= after_execution_portfolio_content["USDC"][asset_type] < 10_000_000

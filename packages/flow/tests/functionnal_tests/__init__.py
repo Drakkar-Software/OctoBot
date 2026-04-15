@@ -17,7 +17,6 @@ import octobot.community as community
 import octobot_copy.entities as copy_entities
 
 import octobot_flow.entities
-import octobot_flow.enums
 
 import octobot_flow.environment
 import octobot_flow.repositories.community
@@ -118,7 +117,7 @@ def global_state():
                 "metadata": {
                     "automation_id": "automation_1",
                 },
-                "client_exchange_account_elements": {
+                "exchange_account_elements": {
                     "portfolio": {
                         "content": {
                             "USDT": {
@@ -184,7 +183,7 @@ def btc_usdc_global_state():
             "metadata": {
                 "automation_id": "automation_1",
             },
-            "client_exchange_account_elements": {
+            "exchange_account_elements": {
                     "portfolio": {
                         "content": {
                             "USDC": {
@@ -283,13 +282,6 @@ def automation_state_dict(
             "actions_dag": {"actions": resolved_actions}
         }
     }
-
-
-def set_init_action_run_mode(
-    init_action: dict[str, typing.Any], run_mode: octobot_flow.enums.AutomationRunMode
-) -> dict[str, typing.Any]:
-    init_action["config"]["automation"]["metadata"]["run_mode"] = run_mode.value
-    return init_action
 
 
 def resolved_actions(actions: list[dict[str, typing.Any]]) -> list[octobot_flow.entities.AbstractActionDetails]:

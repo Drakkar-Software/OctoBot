@@ -70,7 +70,7 @@ class AutomationState(octobot_commons.dataclasses.MinimizableDataclass):
         )
 
     def _get_automation_portfolio(self) -> dict[str, dict[str, decimal.Decimal]]:
-        elements = self.automation.get_exchange_account_elements(False)
+        elements = self.automation.exchange_account_elements
         return elements.portfolio.content if elements else {}  # type: ignore
 
     def update_priority_actions(self, added_actions: list[action_details_import.AbstractActionDetails]):

@@ -44,7 +44,6 @@ from tests.functionnal_tests import (
     copy_exchange_account_action,
     d_order_price,
     resolved_actions,
-    set_init_action_run_mode,
 )
 
 ORDER_AMOUNT = 0.004
@@ -62,7 +61,7 @@ def init_action():
                 "metadata": {
                     "automation_id": "automation_1",
                 },
-                "client_exchange_account_elements": {
+                "exchange_account_elements": {
                     "portfolio": {
                         "content": {
                             "USDC": {
@@ -336,7 +335,7 @@ def age_grace_started_at_in_dump(
 def _open_orders_origins(dump: dict[str, typing.Any]) -> list[dict]:
     return [
         o[trading_constants.STORAGE_ORIGIN_VALUE]
-        for o in dump["automation"]["client_exchange_account_elements"]["orders"]["open_orders"]
+        for o in dump["automation"]["exchange_account_elements"]["orders"]["open_orders"]
     ]
 
 
@@ -405,7 +404,7 @@ def mutate_client_dump_simulate_early_fill_of_grid_ref_b1(
     amount_col = trading_enums.ExchangeConstantsOrderColumns.AMOUNT.value
     price_col = trading_enums.ExchangeConstantsOrderColumns.PRICE.value
     automation = dump["automation"]
-    open_orders = automation["client_exchange_account_elements"]["orders"]["open_orders"]
+    open_orders = automation["exchange_account_elements"]["orders"]["open_orders"]
     filled_wrapped: typing.Optional[dict] = None
     for wrapped in open_orders:
         if wrapped[storage][id_col] == "grid_ref_b1":
@@ -418,11 +417,11 @@ def mutate_client_dump_simulate_early_fill_of_grid_ref_b1(
     fill_price = decimal.Decimal(str(filled_origin[price_col]))
     quote_spent = fill_quantity * fill_price
 
-    automation["client_exchange_account_elements"]["orders"]["open_orders"] = [
+    automation["exchange_account_elements"]["orders"]["open_orders"] = [
         o for o in open_orders if o[storage][id_col] != "grid_ref_b1"
     ]
 
-    content = automation["client_exchange_account_elements"]["portfolio"]["content"]
+    content = automation["exchange_account_elements"]["portfolio"]["content"]
     base_currency = "BTC"
     quote_currency = "USDC"
     btc_entry = content.setdefault(base_currency, {})
@@ -464,7 +463,7 @@ async def test_grid_copy_trigger_grace_period_for_unfilled_client_order(init_act
     reference_r1 = grid_reference_four_order_account()
     settings = _grace_account_copy_settings()
     all_actions = [
-        set_init_action_run_mode(init_action, octobot_flow.enums.AutomationRunMode.UPDATE_CLIENT_EXCHANGE_ACCOUNT_ONLY),
+        init_action,
         copy_exchange_account_action(reference_market, reference_r1, settings),
     ]
     automation_state_template = automation_state_dict(resolved_actions(all_actions))
@@ -528,7 +527,7 @@ async def test_grid_copy_missed_signals_abort_cancels_orphan_immediately(init_ac
     reference_r1 = grid_reference_four_order_account()
     settings = _grace_account_copy_settings(missed_signals_grace_abort_threshold=2)
     all_actions = [
-        set_init_action_run_mode(init_action, octobot_flow.enums.AutomationRunMode.UPDATE_CLIENT_EXCHANGE_ACCOUNT_ONLY),
+        init_action,
         copy_exchange_account_action(reference_market, reference_r1, settings),
     ]
     automation_state_template = automation_state_dict(resolved_actions(all_actions))
@@ -607,7 +606,7 @@ async def test_grid_copy_trigger_grace_period_for_early_filled_client_order(init
     reference_r1 = grid_reference_four_order_account()
     settings = _grace_account_copy_settings()
     all_actions = [
-        set_init_action_run_mode(init_action, octobot_flow.enums.AutomationRunMode.UPDATE_CLIENT_EXCHANGE_ACCOUNT_ONLY),
+        init_action,
         copy_exchange_account_action(reference_market, reference_r1, settings),
     ]
     automation_state_template = automation_state_dict(resolved_actions(all_actions))
@@ -670,7 +669,7 @@ async def test_grid_copy_grace_elapses_then_orphan_cancelled_and_sell_mirrored(i
     reference_r1 = grid_reference_four_order_account()
     settings = _grace_account_copy_settings()
     all_actions = [
-        set_init_action_run_mode(init_action, octobot_flow.enums.AutomationRunMode.UPDATE_CLIENT_EXCHANGE_ACCOUNT_ONLY),
+        init_action,
         copy_exchange_account_action(reference_market, reference_r1, settings),
     ]
     automation_state_template = automation_state_dict(resolved_actions(all_actions))
@@ -785,7 +784,7 @@ async def test_grid_copy_grace_aborted_when_second_orphan_exceeds_threshold(init
     reference_r2 = reference_replace_both_buys_with_sells(reference_r1)
     settings = _grace_account_copy_settings()
     all_actions = [
-        set_init_action_run_mode(init_action, octobot_flow.enums.AutomationRunMode.UPDATE_CLIENT_EXCHANGE_ACCOUNT_ONLY),
+        init_action,
         copy_exchange_account_action(reference_market, reference_r1, settings),
     ]
     automation_state_template = automation_state_dict(resolved_actions(all_actions))
@@ -870,7 +869,7 @@ async def test_grid_copy_orphan_resolved_by_client_fill_without_rebalance_orders
     reference_r1 = grid_reference_four_order_account()
     settings = _grace_account_copy_settings()
     all_actions = [
-        set_init_action_run_mode(init_action, octobot_flow.enums.AutomationRunMode.UPDATE_CLIENT_EXCHANGE_ACCOUNT_ONLY),
+        init_action,
         copy_exchange_account_action(reference_market, reference_r1, settings),
     ]
     automation_state_template = automation_state_dict(resolved_actions(all_actions))
@@ -983,7 +982,7 @@ async def test_grid_copy_early_filled_client_order_grace_period_resolved_by_refe
     reference_r1 = grid_reference_four_order_account()
     settings = _grace_account_copy_settings()
     all_actions = [
-        set_init_action_run_mode(init_action, octobot_flow.enums.AutomationRunMode.UPDATE_CLIENT_EXCHANGE_ACCOUNT_ONLY),
+        init_action,
         copy_exchange_account_action(reference_market, reference_r1, settings),
     ]
     automation_state_template = automation_state_dict(resolved_actions(all_actions))

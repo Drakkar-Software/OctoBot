@@ -26,7 +26,6 @@ class ActionsExecutor:
         profile_data: octobot_commons.profiles.ProfileData,
         automation: octobot_flow.entities.AutomationDetails,
         actions: list[octobot_flow.entities.AbstractActionDetails],
-        as_reference_account: bool,
         update_execution_details: bool,
     ):
         self.changed_elements: list[octobot_flow.enums.ChangedElements] = []
@@ -39,7 +38,6 @@ class ActionsExecutor:
         self._profile_data: octobot_commons.profiles.ProfileData = profile_data
         self._automation: octobot_flow.entities.AutomationDetails = automation
         self._actions: list[octobot_flow.entities.AbstractActionDetails] = actions
-        self._as_reference_account: bool = as_reference_account
         self._update_execution_details: bool = update_execution_details
 
     async def execute(self):
@@ -156,18 +154,13 @@ class ActionsExecutor:
             )
 
     def _sync_after_execution(self):
-        if exchange_account_elements := self._automation.get_exchange_account_elements(
-            self._as_reference_account
-        ):
+        if exchange_account_elements := self._automation.exchange_account_elements:
             self._sync_automation_from_actions_results(exchange_account_elements)
             self._sync_exchange_account_elements(exchange_account_elements)
 
     def _sync_automation_from_actions_results(
         self,
-        exchange_account_elements: typing.Union[
-            octobot_flow.entities.ReferenceExchangeAccountElements,
-            octobot_flow.entities.ClientExchangeAccountElements
-        ]
+        exchange_account_elements: octobot_flow.entities.ExchangeAccountElements,
     ):
         for action in self._actions:
             if not action.is_completed() or not isinstance(action.result, dict):
@@ -179,11 +172,8 @@ class ActionsExecutor:
                 exchange_account_elements.transactions.extend(created_transactions)
 
     def _sync_exchange_account_elements(
-        self, 
-        exchange_account_elements: typing.Union[
-            octobot_flow.entities.ReferenceExchangeAccountElements,
-            octobot_flow.entities.ClientExchangeAccountElements
-        ]
+        self,
+        exchange_account_elements: octobot_flow.entities.ExchangeAccountElements,
     ):
         if self._exchange_manager:
             self.changed_elements = exchange_account_elements.sync_from_exchange_manager(self._exchange_manager)

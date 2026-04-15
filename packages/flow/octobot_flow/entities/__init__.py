@@ -1,7 +1,6 @@
 from octobot_flow.entities.accounts import (
     PortfolioAssetHolding,
-    ReferenceExchangeAccountElements,
-    ClientExchangeAccountElements,
+    ExchangeAccountElements,
     ExchangeAccountDetails,
     ExchangeAccountPortfolio,
     AccountElements,
@@ -35,8 +34,7 @@ from octobot_flow.entities.community import (
 )
 __all__ = [
     "AccountElements",
-    "ReferenceExchangeAccountElements",
-    "ClientExchangeAccountElements",
+    "ExchangeAccountElements",
     "PortfolioAssetHolding",
     "ExchangeAccountDetails",
     "ExchangeAccountPortfolio",

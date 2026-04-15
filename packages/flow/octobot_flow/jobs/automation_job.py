@@ -10,8 +10,6 @@ import octobot_flow.enums
 import octobot_flow.errors
 import octobot_flow.logic.configuration
 import octobot_flow.logic.dsl
-import octobot_flow.logic.actions
-import octobot_flow.logic.actions.account_copy_util as account_copy_util
 import octobot_flow.parsers.sanitizer
 import octobot_flow.repositories.community
 import octobot_flow.encryption
@@ -70,9 +68,8 @@ class AutomationJob:
                         True
                     )
                 # fetch the dependencies of the automation environment
-                as_reference_account = self.automation_state.automation.metadata.maintains_a_reference_exchange_account()
                 fetched_dependencies = await self._fetch_dependencies(
-                    as_reference_account, maybe_community_repository, to_execute_actions
+                    maybe_community_repository, to_execute_actions
                 )
                 # Align on the previous scheduled time when possible when running priority actions
                 # to keep sleep cycles consistency when a priority action is processed.
@@ -182,14 +179,13 @@ class AutomationJob:
 
     async def _fetch_dependencies(
         self,
-        as_reference_account: bool,
         maybe_community_repository: typing.Optional[octobot_flow.repositories.community.CommunityRepository],
         to_execute_actions: list[octobot_flow.entities.AbstractActionDetails],
     ) -> octobot_flow.entities.FetchedDependencies:
         self._logger.info("Fetching automation dependencies.")
         fetched_exchange_data = (
             await self._init_all_required_exchange_data(
-                self.automation_state.exchange_account_details, as_reference_account,
+                self.automation_state.exchange_account_details,
                 maybe_community_repository, to_execute_actions,
             )
             if self.automation_state.has_exchange() else None
@@ -201,7 +197,6 @@ class AutomationJob:
     async def _init_all_required_exchange_data(
         self,
         exchange_account_details: octobot_flow.entities.ExchangeAccountDetails,
-        as_reference_account: bool,
         maybe_community_repository: typing.Optional[octobot_flow.repositories.community.CommunityRepository],
         to_execute_actions: list[octobot_flow.entities.AbstractActionDetails],
     ) -> octobot_flow.entities.FetchedExchangeData:
@@ -230,7 +225,7 @@ class AutomationJob:
                 self.automation_state.exchange_account_details,
                 self.automation_state.automation.metadata.automation_id,
                 symbols,
-                as_simulator=True if as_reference_account else None
+                as_simulator=None,
             )
         ):
             await exchange_account_job.update_public_data()
@@ -238,7 +233,7 @@ class AutomationJob:
                 f"Public data updated for {exchange_account_details.exchange_details.internal_name} in {round(time.time() - t0, 2)} seconds"
             )
             t1 = time.time()
-            await exchange_account_job.update_authenticated_data(as_reference_account)
+            await exchange_account_job.update_authenticated_data()
             self._logger.info(
                 f"Authenticated data updated for {exchange_account_details.exchange_details.internal_name} in {round(time.time() - t1, 2)} seconds"
             )
@@ -265,54 +260,14 @@ class AutomationJob:
         )
         automation_signature = f"{exchange_account_desc} automation {automation.metadata.automation_id}"
         try:
-            self._logger.info(f"Updating {automation_signature} with run mode: {automation.metadata.run_mode}")
+            self._logger.info(f"Updating {automation_signature}")
             automation_runner_job.validate(automation)
             start_time = time.time()
-            execute_dag_on_client_account_only = (
-                automation.metadata.run_mode == octobot_flow.enums.AutomationRunMode.UPDATE_CLIENT_EXCHANGE_ACCOUNT_ONLY.value
-            )
-            excecute_dag_on_ref_account_and_copy_on_client = (
-                automation.metadata.run_mode 
-                == octobot_flow.enums.AutomationRunMode.UPDATE_REFERENCE_EXCHANGE_ACCOUNT_AND_COPY.value
-            )
-            if execute_dag_on_client_account_only or excecute_dag_on_ref_account_and_copy_on_client:
-                # automation DAG should be executed
-                async with automation_runner_job.actions_context(
-                    to_execute_actions,
-                    as_reference_account=excecute_dag_on_ref_account_and_copy_on_client,
-                    update_execution_details=True
-                ):
-                    await automation_runner_job.run()
-            if excecute_dag_on_ref_account_and_copy_on_client:
-                # copy reference account on client account
-                ref_elements = automation.get_exchange_account_elements(True)
-                if ref_elements is None:
-                    raise octobot_flow.errors.AutomationValidationError(
-                        "Reference exchange account elements are required to copy to the client account"
-                    )
-                reference_market = octobot_flow.logic.configuration.infer_reference_market(
-                    self.automation_state.exchange_account_details,
-                    [],
-                )
-                reference_account = account_copy_util.reference_exchange_elements_to_account(
-                    ref_elements, fetched_dependencies.fetched_exchange_data, reference_market # type: ignore
-                )
-                account_copy_settings = account_copy_util.create_account_copy_settings(self.automation_state.automation)
-                copy_actions = [
-                    octobot_flow.logic.actions.create_copy_exchange_account_action(
-                        reference_market=reference_market, reference_account=reference_account, account_copy_settings=account_copy_settings
-                    )
-                ]
-                # fetch the copy client dependencies (open orders, positions, etc.)
-                copy_client_fetched_dependencies = await self._fetch_dependencies(
-                    False, maybe_community_repository, copy_actions
-                )
-                automation_runner_job.set_fetched_dependencies(copy_client_fetched_dependencies)
-                self._logger.info(f"Copying reference account to client account")
-                async with automation_runner_job.actions_context(
-                    copy_actions, as_reference_account=False, update_execution_details=execute_dag_on_client_account_only
-                ):
-                    await automation_runner_job.run()
+            async with automation_runner_job.actions_context(
+                to_execute_actions,
+                update_execution_details=True,
+            ):
+                await automation_runner_job.run()
             self._logger.info(
                 f"{automation_signature} successfully updated in {round(time.time() - start_time, 2)} seconds"
             )

@@ -23,16 +23,12 @@ class _SimulatedResolutionExchangeContext(exchange_context_mixin_import.Exchange
         self,
         automation_state: entities_import.AutomationState,
         fetched_dependencies: entities_import.FetchedDependencies,
-        as_reference_account: bool,
     ):
         # enable order fill events to simulate fills from events
         super().__init__(automation_state, fetched_dependencies, True)
-        self._resolution_as_reference_account: bool = as_reference_account
 
     def init_predictive_orders_exchange_data(self, exchange_data: exchange_data_import.ExchangeData) -> None:
-        exchange_account_elements = self.automation_state.automation.get_exchange_account_elements(
-            self._resolution_as_reference_account
-        )
+        exchange_account_elements = self.automation_state.automation.exchange_account_elements
         if exchange_account_elements is None:
             return
         fetched_exchange_data = self.fetched_dependencies.fetched_exchange_data
@@ -50,13 +46,11 @@ class SimulatedExchangeAccountResolver:
         automation_state: entities_import.AutomationState,
         fetched_dependencies: entities_import.FetchedDependencies,
         actions: list[entities_import.AbstractActionDetails],
-        as_reference_account: bool,
     ):
         self._simulation_exchange_context: _SimulatedResolutionExchangeContext = _SimulatedResolutionExchangeContext(
-            automation_state, fetched_dependencies, as_reference_account
+            automation_state, fetched_dependencies
         )
         self._actions: list[entities_import.AbstractActionDetails] = actions
-        self._as_reference_account: bool = as_reference_account
 
     def _get_profile_data(self) -> commons_profiles.ProfileData:
         minimal_profile_data = configuration_import.create_profile_data(
@@ -72,13 +66,10 @@ class SimulatedExchangeAccountResolver:
         )
 
     async def resolve(self) -> None:
-        account_elements = self._simulation_exchange_context.automation_state.automation.get_exchange_account_elements(
-            self._as_reference_account
-        )
+        account_elements = self._simulation_exchange_context.automation_state.automation.exchange_account_elements
         if account_elements is None:
             self._logger().debug(
-                "SimulatedExchangeAccountResolver: no exchange account elements for "
-                f"as_reference_account={self._as_reference_account}, skipping"
+                "SimulatedExchangeAccountResolver: no exchange account elements, skipping"
             )
             return
 
@@ -91,7 +82,7 @@ class SimulatedExchangeAccountResolver:
         with self._simulation_exchange_context.profile_data_provider.profile_data_context(
             self._get_profile_data()
         ):
-            async with self._simulation_exchange_context.exchange_manager_context(self._as_reference_account) as simulated_exchange_manager:
+            async with self._simulation_exchange_context.exchange_manager_context() as simulated_exchange_manager:
                 if simulated_exchange_manager is None:
                     raise flow_errors.ExchangeAccountInitializationError(
                         "Simulated exchange manager was not initialized inside exchange_manager_context"

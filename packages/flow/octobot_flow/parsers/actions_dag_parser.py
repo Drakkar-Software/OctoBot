@@ -604,7 +604,7 @@ class ActionsDAGParser:
             metadata=octobot_flow.entities.AutomationMetadata(
                 automation_id=automation_id,
             ),
-            client_exchange_account_elements=octobot_flow.entities.ClientExchangeAccountElements(
+            exchange_account_elements=octobot_flow.entities.ExchangeAccountElements(
                 portfolio=exchange_data_import.PortfolioDetails(
                     content=formatted_simulated_portfolio,
                 )

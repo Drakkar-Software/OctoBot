@@ -57,7 +57,7 @@ async def test_execute_actions_with_market_orders_and_existing_state(
         # no next execution time scheduled: trigger immediately
         assert after_execution_dump["automation"]["execution"]["current_execution"]["scheduled_to"] == 0
         # check portfolio content
-        after_execution_portfolio_content = after_execution_dump["automation"]["client_exchange_account_elements"]["portfolio"]["content"]
+        after_execution_portfolio_content = after_execution_dump["automation"]["exchange_account_elements"]["portfolio"]["content"]
         assert isinstance(after_execution_dump, dict)
         assert list(sorted(after_execution_portfolio_content.keys())) == ["BTC", "ETH", "USDT"]
         for asset_type in [common_constants.PORTFOLIO_AVAILABLE, common_constants.PORTFOLIO_TOTAL]:

@@ -128,7 +128,7 @@ async def test_start_with_empty_state_and_execute_simple_condition_action(
         assert after_config_execution_dump["exchange_account_details"]["portfolio"]["content"] == []
         assert "automation" in after_config_execution_dump
         assert "reference_exchange_account_elements" not in after_config_execution_dump["automation"]
-        assert "client_exchange_account_elements" not in after_config_execution_dump["automation"]
+        assert "exchange_account_elements" not in after_config_execution_dump["automation"]
 
         # 2. execute simple condition action
         state = after_config_execution_dump
@@ -153,7 +153,7 @@ async def test_start_with_empty_state_and_execute_simple_condition_action(
         # still no portfolio
         assert after_execution_dump["exchange_account_details"]["portfolio"]["content"] == []
         assert "reference_exchange_account_elements" not in after_execution_dump["automation"]
-        assert "client_exchange_account_elements" not in after_execution_dump["automation"]
+        assert "exchange_account_elements" not in after_execution_dump["automation"]
 
 
 @pytest.mark.asyncio
@@ -188,7 +188,7 @@ async def test_start_with_empty_state_and_execute_blockchain_transfer_without_ex
         assert after_config_execution_dump["exchange_account_details"]["portfolio"]["content"] == []
         assert "automation" in after_config_execution_dump
         assert "reference_exchange_account_elements" not in after_config_execution_dump["automation"]
-        assert "client_exchange_account_elements" not in after_config_execution_dump["automation"]
+        assert "exchange_account_elements" not in after_config_execution_dump["automation"]
         # communit auth is not used in this test
         login_mock.assert_not_called()
         insert_bot_logs_mock.assert_not_called()
@@ -230,7 +230,7 @@ async def test_start_with_empty_state_and_execute_blockchain_transfer_without_ex
         # still no portfolio
         assert after_execution_dump["exchange_account_details"]["portfolio"]["content"] == []
         assert "reference_exchange_account_elements" not in after_execution_dump["automation"]
-        assert "client_exchange_account_elements" not in after_execution_dump["automation"]
+        assert "exchange_account_elements" not in after_execution_dump["automation"]
         
         # communit auth is not used in this test
         login_mock.assert_not_called()

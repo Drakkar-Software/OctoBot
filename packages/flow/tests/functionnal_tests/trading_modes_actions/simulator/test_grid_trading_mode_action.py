@@ -25,7 +25,6 @@ from tests.functionnal_tests import (
     current_time,
     resolved_actions,
     automation_state_dict,
-    set_init_action_run_mode,
     copy_exchange_account_action,
     d_order_price,
 )
@@ -214,7 +213,7 @@ def init_action():
                 "metadata": {
                     "automation_id": "automation_1",
                 },
-                "client_exchange_account_elements": {
+                "exchange_account_elements": {
                     "portfolio": {
                         "content": {
                             "USDC": {
@@ -239,11 +238,7 @@ def init_action():
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("run_mode", [
-    octobot_flow.enums.AutomationRunMode.UPDATE_CLIENT_EXCHANGE_ACCOUNT_ONLY,
-    octobot_flow.enums.AutomationRunMode.UPDATE_REFERENCE_EXCHANGE_ACCOUNT_AND_COPY,
-])
-async def test_simulator_grid_init_from_empty_state(init_action: dict, run_mode: octobot_flow.enums.AutomationRunMode):
+async def test_simulator_grid_init_from_empty_state(init_action: dict):
     patched_fetch_tickers = tickers_repository_fetch_tickers_btc_usdc_close_override(
         lambda: _FIXED_BTC_USDC_CLOSE
     )
@@ -261,7 +256,7 @@ async def test_simulator_grid_init_from_empty_state(init_action: dict, run_mode:
             side_effect=patched_fetch_ohlcv,
         ),
     ):
-        all_actions = [set_init_action_run_mode(init_action, run_mode), grid_trading_mode_action(init_action)]
+        all_actions = [init_action, grid_trading_mode_action(init_action)]
         automation_state = automation_state_dict(resolved_actions(all_actions))
     
         # 1. run init action
@@ -315,11 +310,11 @@ async def test_simulator_grid_init_from_empty_state(init_action: dict, run_mode:
         assert one_hour - allowed_execution_time < schedule_delay < one_hour + allowed_execution_time
     
         # ensure trades are saved
-        assert len(after_grid_execution_dump["automation"]["client_exchange_account_elements"]["trades"]) == 1
+        assert len(after_grid_execution_dump["automation"]["exchange_account_elements"]["trades"]) == 1
     
         # check portfolio and open grid orders
         after_grid_portfolio_content = after_grid_execution_dump["automation"][
-            "client_exchange_account_elements"
+            "exchange_account_elements"
         ]["portfolio"]["content"]
         assert isinstance(after_grid_execution_dump, dict)
         assert list(sorted(after_grid_portfolio_content.keys())) == ["BTC", "USDC"]
@@ -328,20 +323,18 @@ async def test_simulator_grid_init_from_empty_state(init_action: dict, run_mode:
         assert after_grid_portfolio_content["USDC"]["available"] < 200
         assert 0.001 < after_grid_portfolio_content["BTC"]["total"] < 0.02
         assert after_grid_portfolio_content["BTC"]["available"] < 0.001
-        if run_mode == octobot_flow.enums.AutomationRunMode.UPDATE_REFERENCE_EXCHANGE_ACCOUNT_AND_COPY:
-            # check reference account portfolio content
-            after_grid_reference_account_portfolio_content = after_grid_execution_dump["automation"]["reference_exchange_account_elements"]["portfolio"]["content"]
-            assert isinstance(after_grid_reference_account_portfolio_content, dict)
-            assert list(sorted(after_grid_reference_account_portfolio_content.keys())) == ["BTC", "USDC"]
-            # applied portfolio optimizations and created grid open orders
-            assert 450 < after_grid_reference_account_portfolio_content["USDC"]["total"] < 550 # USDC holding split in half
-            assert after_grid_reference_account_portfolio_content["USDC"]["available"] < 200
-            assert 0.001 < after_grid_reference_account_portfolio_content["BTC"]["total"] < 0.02
-            assert after_grid_reference_account_portfolio_content["BTC"]["available"] < 0.001
-        else:
-            assert "reference_exchange_account_elements" not in after_grid_execution_dump["automation"]
-    
-        order_portfolio_types = ["client_exchange_account_elements", "reference_exchange_account_elements"] if run_mode == octobot_flow.enums.AutomationRunMode.UPDATE_REFERENCE_EXCHANGE_ACCOUNT_AND_COPY else ["client_exchange_account_elements"]
+
+        after_grid_reference_account_portfolio_content = after_grid_execution_dump["automation"][
+            "exchange_account_elements"
+        ]["portfolio"]["content"]
+        assert isinstance(after_grid_reference_account_portfolio_content, dict)
+        assert list(sorted(after_grid_reference_account_portfolio_content.keys())) == ["BTC", "USDC"]
+        assert 450 < after_grid_reference_account_portfolio_content["USDC"]["total"] < 550  # USDC holding split in half
+        assert after_grid_reference_account_portfolio_content["USDC"]["available"] < 200
+        assert 0.001 < after_grid_reference_account_portfolio_content["BTC"]["total"] < 0.02
+        assert after_grid_reference_account_portfolio_content["BTC"]["available"] < 0.001
+
+        order_portfolio_types = ["exchange_account_elements"]
         for portfolio_type in order_portfolio_types:
             open_orders_origin_values = [
                 order[trading_constants.STORAGE_ORIGIN_VALUE]
@@ -386,26 +379,20 @@ async def test_simulator_grid_init_from_empty_state(init_action: dict, run_mode:
         assert one_hour - allowed_execution_time < schedule_delay < one_hour + allowed_execution_time
     
         # ensure trades are not erased
-        assert len(after_grid_execution_dump["automation"]["client_exchange_account_elements"]["trades"]) == 1
+        assert len(after_grid_execution_dump["automation"]["exchange_account_elements"]["trades"]) == 1
     
         after_second_call_portfolio_content = after_second_call_execution_dump["automation"][
-            "client_exchange_account_elements"
+            "exchange_account_elements"
         ]["portfolio"]["content"]
         assert after_second_call_portfolio_content == after_grid_portfolio_content
-        if run_mode == octobot_flow.enums.AutomationRunMode.UPDATE_REFERENCE_EXCHANGE_ACCOUNT_AND_COPY:
-            # check reference account portfolio content
-            after_second_call_reference_account_portfolio_content = after_second_call_execution_dump["automation"]["reference_exchange_account_elements"]["portfolio"]["content"]
-            assert after_second_call_reference_account_portfolio_content == after_grid_reference_account_portfolio_content
-        else:
-            assert "reference_exchange_account_elements" not in after_second_call_execution_dump["automation"]
-    
-    
+        after_second_call_reference_account_portfolio_content = after_second_call_execution_dump["automation"][
+            "exchange_account_elements"
+        ]["portfolio"]["content"]
+        assert after_second_call_reference_account_portfolio_content == after_grid_reference_account_portfolio_content
+
+
 @pytest.mark.asyncio
-@pytest.mark.parametrize("run_mode", [
-    octobot_flow.enums.AutomationRunMode.UPDATE_CLIENT_EXCHANGE_ACCOUNT_ONLY,
-    octobot_flow.enums.AutomationRunMode.UPDATE_REFERENCE_EXCHANGE_ACCOUNT_AND_COPY,
-])
-async def test_simulator_grid_init_and_fill_sell_order(init_action: dict, run_mode: octobot_flow.enums.AutomationRunMode):
+async def test_simulator_grid_init_and_fill_sell_order(init_action: dict):
     """
     Initialize a grid at a fixed BTC/USDC price, move the market above the first sell limit so it fills,
     then run the automation again from the saved state: staggered/grid mode should place a mirror buy
@@ -431,7 +418,7 @@ async def test_simulator_grid_init_and_fill_sell_order(init_action: dict, run_mo
         ),
     ):
         all_actions = [
-            set_init_action_run_mode(init_action, run_mode),
+            init_action,
             grid_trading_mode_action(init_action),
         ]
         automation_state = automation_state_dict(resolved_actions(all_actions))
@@ -446,7 +433,7 @@ async def test_simulator_grid_init_and_fill_sell_order(init_action: dict, run_mo
 
         open_after_grid = [
             order[trading_constants.STORAGE_ORIGIN_VALUE]
-            for order in after_grid_execution_dump["automation"]["client_exchange_account_elements"]["orders"][
+            for order in after_grid_execution_dump["automation"]["exchange_account_elements"]["orders"][
                 "open_orders"
             ]
         ]
@@ -489,7 +476,7 @@ async def test_simulator_grid_init_and_fill_sell_order(init_action: dict, run_mo
 
     final_open = [
         order[trading_constants.STORAGE_ORIGIN_VALUE]
-        for order in final_dump["automation"]["client_exchange_account_elements"]["orders"]["open_orders"]
+        for order in final_dump["automation"]["exchange_account_elements"]["orders"]["open_orders"]
     ]
     buy_orders = sorted(
         [
@@ -556,9 +543,7 @@ async def test_simulator_copy_grid(init_action: dict, grid_reference_account: co
     ):
         reference_market = init_action["config"]["exchange_account_details"]["portfolio"]["unit"]
         all_actions = [
-            set_init_action_run_mode(
-                init_action, octobot_flow.enums.AutomationRunMode.UPDATE_CLIENT_EXCHANGE_ACCOUNT_ONLY
-            ),
+            init_action,
             copy_exchange_account_action(reference_market, grid_reference_account),
         ]
         automation_state = automation_state_dict(resolved_actions(all_actions))
@@ -614,7 +599,7 @@ async def test_simulator_copy_grid(init_action: dict, grid_reference_account: co
         )
 
         after_initial_portfolio_content = after_initial_copy_execution_dump["automation"][
-            "client_exchange_account_elements"
+            "exchange_account_elements"
         ]["portfolio"]["content"]
         assert isinstance(after_initial_copy_execution_dump, dict)
         assert list(sorted(after_initial_portfolio_content.keys())) == ["BTC", "USDC"]
@@ -627,9 +612,19 @@ async def test_simulator_copy_grid(init_action: dict, grid_reference_account: co
         )
         assert "reference_exchange_account_elements" not in after_initial_copy_execution_dump["automation"]
 
+        after_initial_reference_account_portfolio_content = after_initial_copy_execution_dump["automation"][
+            "exchange_account_elements"
+        ]["portfolio"]["content"]
+        assert isinstance(after_initial_reference_account_portfolio_content, dict)
+        assert list(sorted(after_initial_reference_account_portfolio_content.keys())) == ["BTC", "USDC"]
+        assert 450 < after_initial_reference_account_portfolio_content["USDC"]["total"] < 550
+        assert 100 < after_initial_reference_account_portfolio_content["USDC"]["available"] < 150
+        assert 0.0045 < after_initial_reference_account_portfolio_content["BTC"]["total"] < 0.055
+        assert after_initial_reference_account_portfolio_content["BTC"]["available"] < 0.0015
+
         open_orders_origin_values = [
             order[trading_constants.STORAGE_ORIGIN_VALUE]
-            for order in after_initial_copy_execution_dump["automation"]["client_exchange_account_elements"]["orders"][
+            for order in after_initial_copy_execution_dump["automation"]["exchange_account_elements"]["orders"][
                 "open_orders"
             ]
         ]
@@ -685,14 +680,18 @@ async def test_simulator_copy_grid(init_action: dict, grid_reference_account: co
         )
 
         after_second_call_portfolio_content = after_second_call_execution_dump["automation"][
-            "client_exchange_account_elements"
+            "exchange_account_elements"
         ]["portfolio"]["content"]
         assert after_second_call_portfolio_content == after_initial_portfolio_content
         assert "reference_exchange_account_elements" not in after_second_call_execution_dump["automation"]
+        after_second_call_reference_account_portfolio_content = after_second_call_execution_dump["automation"][
+            "exchange_account_elements"
+        ]["portfolio"]["content"]
+        assert after_second_call_reference_account_portfolio_content == after_initial_reference_account_portfolio_content
 
         second_open_orders_origin_values = [
             order[trading_constants.STORAGE_ORIGIN_VALUE]
-            for order in after_second_call_execution_dump["automation"]["client_exchange_account_elements"]["orders"][
+            for order in after_second_call_execution_dump["automation"]["exchange_account_elements"]["orders"][
                 "open_orders"
             ]
         ]

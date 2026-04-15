@@ -197,7 +197,7 @@ resolved_actions(actions_to_execute),
         assert len(cancelled[0]) > 2  # id of the cancelled order
 
         after_execution_dump = automations_job_4.dump()
-        after_execution_portfolio_content = after_execution_dump["automation"]["client_exchange_account_elements"]["portfolio"]["content"]
+        after_execution_portfolio_content = after_execution_dump["automation"]["exchange_account_elements"]["portfolio"]["content"]
         assert "USDC" in after_execution_portfolio_content
         for asset_type in [common_constants.PORTFOLIO_AVAILABLE, common_constants.PORTFOLIO_TOTAL]:
             assert 5 <= after_execution_portfolio_content["USDC"][asset_type] < 10_000_000

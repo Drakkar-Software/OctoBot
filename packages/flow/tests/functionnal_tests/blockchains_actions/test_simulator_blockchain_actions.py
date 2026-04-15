@@ -124,7 +124,7 @@ async def test_execute_actions_with_blockchain_deposit_and_withdrawal(
         # no next execution time scheduled: trigger immediately
         assert after_execution_dump["automation"]["execution"]["current_execution"]["scheduled_to"] == 0
         # check portfolio content
-        after_execution_portfolio_content = after_execution_dump["automation"]["client_exchange_account_elements"]["portfolio"]["content"]
+        after_execution_portfolio_content = after_execution_dump["automation"]["exchange_account_elements"]["portfolio"]["content"]
         assert isinstance(after_execution_dump, dict)
         assert list(sorted(after_execution_portfolio_content.keys())) == ["BTC", "ETH", "USDT"]  # BTC is now added to the portfolio
         assert after_execution_portfolio_content["USDT"]["available"] > 2000  # sold BTC, therefore added some USDT to the portfolio (initially 1000 USDT)
@@ -133,7 +133,7 @@ async def test_execute_actions_with_blockchain_deposit_and_withdrawal(
         assert 0.009 < after_execution_portfolio_content["BTC"]["available"] <= 0.01  # deposited 0.1 BTC, sold 0.04 BTC and withdrew 0.05 BTC
         
         # check transactions
-        after_execution_transactions = after_execution_dump["automation"]["client_exchange_account_elements"]["transactions"]
+        after_execution_transactions = after_execution_dump["automation"]["exchange_account_elements"]["transactions"]
         assert isinstance(after_execution_transactions, list)
         assert len(after_execution_transactions) == 2
         # first transaction is the deposit
@@ -189,7 +189,7 @@ async def test_execute_actions_with_blockchain_deposit_and_withdrawal_with_holdi
         # no next execution time scheduled: trigger immediately
         assert after_execution_dump["automation"]["execution"]["current_execution"]["scheduled_to"] == 0
         # check portfolio content
-        after_execution_portfolio_content = after_execution_dump["automation"]["client_exchange_account_elements"]["portfolio"]["content"]
+        after_execution_portfolio_content = after_execution_dump["automation"]["exchange_account_elements"]["portfolio"]["content"]
         assert isinstance(after_execution_dump, dict)
         assert list(sorted(after_execution_portfolio_content.keys())) == ["BTC", "ETH", "USDT"]  # BTC is now added to the portfolio
         assert after_execution_portfolio_content["USDT"]["available"] > 2000  # sold BTC, therefore added some USDT to the portfolio (initially 1000 USDT)
@@ -197,7 +197,7 @@ async def test_execute_actions_with_blockchain_deposit_and_withdrawal_with_holdi
         assert 0.009 < after_execution_portfolio_content["BTC"]["total"] <= 0.01  # deposited 0.1 BTC, sold 0.04 BTC and withdrew 0.05 BTC
         assert 0.009 < after_execution_portfolio_content["BTC"]["available"] <= 0.01  # deposited 0.1 BTC, sold 0.04 BTC and withdrew 0.05 BTC
         # check transactions
-        after_execution_transactions = after_execution_dump["automation"]["client_exchange_account_elements"]["transactions"]
+        after_execution_transactions = after_execution_dump["automation"]["exchange_account_elements"]["transactions"]
         assert isinstance(after_execution_transactions, list)
         assert len(after_execution_transactions) == 2
         # first transaction is the deposit

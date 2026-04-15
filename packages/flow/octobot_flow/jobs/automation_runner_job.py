@@ -35,7 +35,6 @@ class AutomationRunnerJob(octobot_flow.repositories.exchange.ExchangeContextMixi
         self._maybe_community_repository: typing.Optional[
             octobot_flow.repositories.community.CommunityRepository
         ] = maybe_community_repository
-        self._as_reference_account: bool = False
         self._to_execute_actions: list[octobot_flow.entities.AbstractActionDetails] = None # type: ignore
         self._default_next_execution_scheduled_to: float = default_next_execution_scheduled_to
         self._update_execution_details: bool = True
@@ -74,7 +73,6 @@ class AutomationRunnerJob(octobot_flow.repositories.exchange.ExchangeContextMixi
             self._maybe_community_repository, self._exchange_manager, 
             self.profile_data_provider.get_profile_data(),
             self.automation_state.automation, self._to_execute_actions,
-            self._as_reference_account,
             self._update_execution_details,
         )
         await actions_executor.execute()
@@ -88,7 +86,9 @@ class AutomationRunnerJob(octobot_flow.repositories.exchange.ExchangeContextMixi
         # update chained orders, groups and other mechanics if necessary
         if not self.automation_state.has_exchange():
             return
-        exchange_account_elements = self.automation_state.automation.get_exchange_account_elements(self._as_reference_account)
+        exchange_account_elements = self.automation_state.automation.exchange_account_elements
+        if exchange_account_elements is None:
+            return
         if exchange_account_elements.has_pending_chained_orders():
             await self._update_chained_orders()
         if exchange_account_elements.has_pending_groups():
@@ -112,12 +112,13 @@ class AutomationRunnerJob(octobot_flow.repositories.exchange.ExchangeContextMixi
             await self._update_stopped_automation_sub_portfolio_if_necessary()
 
     def init_predictive_orders_exchange_data(self, exchange_data: exchange_data_import.ExchangeData):
-        exchange_account_elements = self.automation_state.automation.get_exchange_account_elements(self._as_reference_account)
+        exchange_account_elements = self.automation_state.automation.exchange_account_elements
+        if exchange_account_elements is None:
+            return
         exchange_data.markets = self.fetched_dependencies.fetched_exchange_data.public_data.markets
         exchange_data.portfolio_details.content = exchange_account_elements.portfolio.content
         exchange_data.orders_details.open_orders = exchange_account_elements.orders.open_orders
-        if isinstance(exchange_account_elements, octobot_flow.entities.ClientExchangeAccountElements):
-            exchange_data.trades = exchange_account_elements.trades
+        exchange_data.trades = exchange_account_elements.trades
 
     def _get_profile_data(self) -> commons_profiles.ProfileData:
         minimal_profile_data = octobot_flow.logic.configuration.create_profile_data(
@@ -131,18 +132,16 @@ class AutomationRunnerJob(octobot_flow.repositories.exchange.ExchangeContextMixi
             set(octobot_flow.logic.dsl.get_actions_symbol_dependencies(
                 self._to_execute_actions, minimal_profile_data
             )),
-            as_simulator=True if self._as_reference_account else None
+            as_simulator=None,
         )
 
     @contextlib.asynccontextmanager
     async def actions_context(
         self,
         actions: list[octobot_flow.entities.AbstractActionDetails],
-        as_reference_account: bool,
         update_execution_details: bool,
     ):
         try:
-            self._as_reference_account = as_reference_account
             self._to_execute_actions = actions
             self._update_execution_details = update_execution_details
             with (
@@ -155,7 +154,7 @@ class AutomationRunnerJob(octobot_flow.repositories.exchange.ExchangeContextMixi
                     raise octobot_flow.errors.AutomationValidationError(
                         f"A bot_id is required to run a bot. Found: {self.profile_data_provider.get_profile_data().profile_details.bot_id}"
                     )
-                async with self.exchange_manager_context(as_reference_account=self._as_reference_account):
+                async with self.exchange_manager_context():
                     yield self
         finally:
             self._to_execute_actions = None # type: ignore

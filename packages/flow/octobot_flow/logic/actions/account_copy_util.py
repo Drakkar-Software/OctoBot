@@ -14,7 +14,7 @@ import octobot_flow.entities
 
 
 def reference_exchange_elements_to_account(
-    elements: octobot_flow.entities.ReferenceExchangeAccountElements,
+    elements: octobot_flow.entities.ExchangeAccountElements,
     fetched_exchange_data: octobot_flow.entities.FetchedExchangeData,
     reference_market: str,
 ) -> copy_entities.Account:
