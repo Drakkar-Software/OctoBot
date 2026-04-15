@@ -66,9 +66,9 @@ class ExchangeProxyConfig(octobot_commons.proxy_config.ProxyConfig):
                     self.socks_proxy_callback = self._create_callback(exchange_manager, self.socks_proxy)
                     self.socks_proxy = None
             else:
-                self._get_logger().info(f"Enabled [{exchange_manager.exchange.name}] proxy")
+                self._get_logger().info(f"Enabled [{exchange_manager.exchange_name}] proxy")
         if self.has_websocket_proxy():
-            self._get_logger().info(f"Enabled [{exchange_manager.exchange.name}] websocket proxy")
+            self._get_logger().info(f"Enabled [{exchange_manager.exchange_name}] websocket proxy")
 
     def stop(self):
         if self.stop_proxy_callback:
