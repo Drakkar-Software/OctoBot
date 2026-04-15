@@ -230,3 +230,38 @@ async def test_error_operator(interpreter):
         await interpreter.interprete("error('123-error') if True else 'ok'")
 
     assert await interpreter.interprete("error('123-error') if False else 'ok'") == "ok"
+
+
+@pytest.mark.asyncio
+async def test_value_if_operator(interpreter):
+    assert "value_if" in interpreter.operators_by_name
+
+    # truthy inner result returns value
+    assert await interpreter.interprete("value_if(15, ' > 12')") == 15
+
+    # falsy inner result returns False
+    assert await interpreter.interprete("value_if(15, ' < 10')") is False
+
+    # string value via repr (inner: 'ab' in 'abc')
+    assert await interpreter.interprete('value_if(\'ab\', " in \'abc\'")') == "ab"
+
+    # truthy non-boolean inner result (inner expression evaluates to 5)
+    assert await interpreter.interprete("value_if(0, ' + 5')") == 0
+
+    # invalid condition type
+    with pytest.raises(octobot_commons.errors.InvalidParametersError):
+        await interpreter.interprete("value_if(1, 2)")
+
+    # computed value (not a literal)
+    assert await interpreter.interprete("value_if(10 + 5, ' > 12')") == 15
+    assert await interpreter.interprete("value_if(min(3, 1, 4), ' > 0')") == 1
+    assert await interpreter.interprete("value_if((2 + 3) * 2, ' == 10')") == 10
+
+    # computed condition via string concatenation
+    assert await interpreter.interprete("value_if(15, ' >' + ' 12')") == 15
+    assert await interpreter.interprete("value_if(15, ' <' + ' 10')") is False
+
+    # both value and condition are computed sub-expressions
+    assert await interpreter.interprete("value_if(min(5, 9, 3), ' >' + ' 2')") == 3
+    assert await interpreter.interprete("value_if((2 + 3) * 2, ' ==' + ' 10 - 1 + 1')") == 10
+    assert await interpreter.interprete("value_if((2 + 3) * 2, ' ==' + ' 10 - 1 + 2')") is False

@@ -264,6 +264,51 @@ class OscillatorOperator(dsl_interpreter.CallOperator):
         return base_value + oscillation_value
 
 
+class ValueIfOperator(dsl_interpreter.PreComputingCallOperator):
+    NAME = "value_if"
+    DESCRIPTION = (
+        "Returns the computed value if the inner DSL expression formed by repr(value) plus the "
+        "condition string evaluates to a truthy result; otherwise False. "
+        "The condition must be a string DSL fragment appended after repr(value)."
+    )
+    EXAMPLE = "value_if(15, ' > 12')"
+
+    @staticmethod
+    def get_name() -> str:
+        return "value_if"
+
+    @classmethod
+    def get_parameters(cls) -> list[dsl_interpreter.OperatorParameter]:
+        return [
+            dsl_interpreter.OperatorParameter(
+                name="value",
+                description="the value to compare; inner script is repr(value) plus condition",
+                required=True,
+                type=object,
+            ),
+            dsl_interpreter.OperatorParameter(
+                name="condition",
+                description="DSL script fragment (suffix) appended after repr(value) for inner evaluation",
+                required=True,
+                type=str,
+            ),
+        ]
+
+    async def pre_compute(self) -> None:
+        await super().pre_compute()
+        param_by_name = self.get_computed_value_by_parameter()
+        computed_value = param_by_name["value"]
+        condition_script = param_by_name["condition"]
+        if not isinstance(condition_script, str):
+            raise octobot_commons.errors.InvalidParametersError(
+                f"value_if() requires condition to be a str, got {type(condition_script).__name__}"
+            )
+        inner_expression = repr(computed_value) + condition_script
+        nested_interpreter = dsl_interpreter.Interpreter(dsl_interpreter.get_all_operators())
+        condition_result = await nested_interpreter.interprete(inner_expression)
+        self.value = computed_value if bool(condition_result) else False
+
+
 class ErrorOperator(dsl_interpreter.CallOperator):
     NAME = "error"
     DESCRIPTION = "Raises a ErrorStatementEncountered exception with the given parameters."
