@@ -55,3 +55,32 @@ openssl ec -in ecdsa_private.pem -pubout -out ecdsa_public.pem
 The four INPUTS PEM strings go into the node's `.env` file. The four OUTPUTS PEM strings are entered in the browser Settings page and stored locally — they are never sent to the server.
 
 Encryption is opt-in. If the INPUTS keys are absent from the environment, the corresponding path is skipped and the field stays plaintext, which is the backward-compatible default.
+
+## Template importing
+
+Both the CSV import flow and the export results page support user-defined templates loaded from JSON files. This lets teams share reusable configurations without touching application code.
+
+**Import templates** (used during CSV task import) compose multiple base action templates into a single combined template by listing them as ordered steps. Each step can pre-fill parameter values as defaults and mark parameters as hidden so they don't appear in the form. The import UI validates the JSON with a Zod schema, checks that every referenced base template exists, and rejects any hidden required parameter that lacks a default — preventing the form from silently blocking submission. Templates that pass validation are saved to `localStorage` and appear alongside the built-in templates in the action dropdown immediately.
+
+**Export templates** (used on the export results page) define flat column mappings: each column specifies a label, a JSON path into the task result object, and an optional formatter (`text`, `number`, `date`, or `json`). JSON paths starting and ending with double underscores (e.g. `__task_name__`) resolve against task-level metadata rather than the result payload. Like import templates, export templates are Zod-validated on ingest, stored in `localStorage`, and appear in the template dropdown without a page reload.
+
+Both systems use the same localStorage-backed CRUD pattern — load, upsert by ID, delete — and silently skip malformed entries on load so a corrupted template doesn't break the entire list. Built-in template IDs are reserved; attempting to import a user template with the same ID as a built-in raises an error.
+
+Example files for both systems ship with the application:
+- Import meta-template examples: `public/meta-template-examples/`
+- Export template examples: `public/export-template-examples/`
+
+The export template JSON format:
+
+```json
+{
+  "id": "my_export",
+  "label": "My Export",
+  "description": "Custom export columns",
+  "columns": [
+    { "key": "name", "label": "Name", "jsonPath": "__task_name__", "formatter": "text" },
+    { "key": "amount", "label": "Amount", "jsonPath": "amount", "formatter": "number" },
+    { "key": "fee", "label": "Fee", "jsonPath": "fee.cost", "formatter": "number" }
+  ]
+}
+```

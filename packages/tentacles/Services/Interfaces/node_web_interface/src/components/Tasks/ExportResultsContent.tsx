@@ -9,8 +9,8 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { ArrowLeft, ArrowUpDown, Download, Eye, EyeOff, Plus, Search, X } from "lucide-react"
-import { useCallback, useMemo, useState } from "react"
+import { ArrowLeft, ArrowUpDown, Download, Eye, EyeOff, Plus, Search, Upload, X } from "lucide-react"
+import { useCallback, useMemo, useRef, useState } from "react"
 
 import type { Task_Output as Task } from "@/client"
 import { Badge } from "@/components/ui/badge"
@@ -34,8 +34,12 @@ import {
 import { generateCSV, downloadCSV } from "@/lib/csv"
 import {
   EXPORT_TEMPLATES,
+  getAllExportTemplates,
+  validateExportTemplateJson,
+  saveUserExportTemplate,
   type ExportColumnDef,
 } from "@/lib/export-templates"
+import useCustomToast from "@/hooks/useCustomToast"
 import {
   extractValue,
   discoverPaths,
@@ -135,6 +139,9 @@ export default function ExportResultsContent({
   tasks,
   onClose,
 }: ExportResultsContentProps) {
+  const { showSuccessToast, showErrorToast } = useCustomToast()
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [userTemplatesVersion, setUserTemplatesVersion] = useState(0)
   const [selectedTemplateId, setSelectedTemplateId] = useState("general")
   const [customColumns, setCustomColumns] = useState<ExportColumnDef[]>([])
   const [addColumnPath, setAddColumnPath] = useState("")
@@ -157,8 +164,8 @@ export default function ExportResultsContent({
   }, [exportRows])
 
   const activeTemplate = useMemo(
-    () => EXPORT_TEMPLATES.find((t) => t.id === selectedTemplateId),
-    [selectedTemplateId],
+    () => getAllExportTemplates().find((t) => t.id === selectedTemplateId),
+    [selectedTemplateId, userTemplatesVersion],
   )
 
   const templateColumns = useMemo((): ExportColumnDef[] => {
@@ -220,6 +227,25 @@ export default function ExportResultsContent({
     globalFilterFn: "includesString",
   })
 
+  const handleTemplateFileChange = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0]
+      if (!file) return
+      e.target.value = ""
+      try {
+        const text = await file.text()
+        const json: unknown = JSON.parse(text)
+        const def = validateExportTemplateJson(json)
+        saveUserExportTemplate(def)
+        setUserTemplatesVersion((v) => v + 1)
+        showSuccessToast(`Export template "${def.label}" imported`)
+      } catch (err) {
+        showErrorToast(err instanceof Error ? err.message : "Invalid template file")
+      }
+    },
+    [showSuccessToast, showErrorToast],
+  )
+
   const handleAddColumn = useCallback(() => {
     const path = addColumnPath.trim()
     const label = addColumnLabel.trim() || path
@@ -259,6 +285,13 @@ export default function ExportResultsContent({
     <div className="flex flex-col gap-3">
       {/* Controls row */}
       <div className="flex flex-wrap items-center gap-2">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".json"
+          className="hidden"
+          onChange={handleTemplateFileChange}
+        />
         <Select
           value={selectedTemplateId}
           onValueChange={setSelectedTemplateId}
@@ -267,13 +300,21 @@ export default function ExportResultsContent({
             <SelectValue placeholder="Template" />
           </SelectTrigger>
           <SelectContent>
-            {EXPORT_TEMPLATES.map((t) => (
+            {getAllExportTemplates().map((t) => (
               <SelectItem key={t.id} value={t.id}>
                 {t.label}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => fileInputRef.current?.click()}
+        >
+          <Upload className="size-3.5 mr-1" />
+          Import Template
+        </Button>
 
         <div className="relative flex items-center">
           <Search className="pointer-events-none absolute left-2.5 size-3.5 text-muted-foreground" />

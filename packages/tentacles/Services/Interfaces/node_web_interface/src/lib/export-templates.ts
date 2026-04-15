@@ -3,6 +3,8 @@
  * Pre-defined templates cover common use cases; users can also add custom columns.
  */
 
+import { z } from "zod"
+
 export type ColumnFormatter = "date" | "number" | "json" | "text"
 
 export interface ExportColumnDef {
@@ -81,5 +83,66 @@ export const EXPORT_TEMPLATES: ExportTemplate[] = [
 ]
 
 export function getExportTemplateById(id: string): ExportTemplate | undefined {
-  return EXPORT_TEMPLATES.find((t) => t.id === id)
+  return getAllExportTemplates().find((t) => t.id === id)
+}
+
+const ExportColumnDefSchema = z.object({
+  key: z.string().min(1),
+  label: z.string().min(1),
+  jsonPath: z.string().min(1),
+  formatter: z.enum(["date", "number", "json", "text"]).optional(),
+})
+
+const ExportTemplateDefSchema = z.object({
+  id: z.string().min(1),
+  label: z.string().min(1),
+  description: z.string(),
+  columns: z.array(ExportColumnDefSchema),
+})
+
+export function validateExportTemplateJson(json: unknown): ExportTemplate {
+  return ExportTemplateDefSchema.parse(json)
+}
+
+const STORAGE_KEY = "user_export_templates"
+
+const RESERVED_IDS: ReadonlySet<string> = new Set(
+  EXPORT_TEMPLATES.map((t) => t.id),
+)
+
+export function loadUserExportTemplates(): ExportTemplate[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return []
+    const parsed: unknown = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+    return parsed.flatMap((item) => {
+      const result = ExportTemplateDefSchema.safeParse(item)
+      return result.success ? [result.data] : []
+    })
+  } catch {
+    return []
+  }
+}
+
+export function saveUserExportTemplate(def: ExportTemplate): void {
+  if (RESERVED_IDS.has(def.id)) {
+    throw new Error(
+      `Template ID "${def.id}" is reserved and cannot be used for user templates`,
+    )
+  }
+  const existing = loadUserExportTemplates()
+  const updated = existing.filter((t) => t.id !== def.id)
+  updated.push(def)
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
+}
+
+export function deleteUserExportTemplate(id: string): void {
+  const existing = loadUserExportTemplates()
+  const updated = existing.filter((t) => t.id !== id)
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
+}
+
+export function getAllExportTemplates(): ExportTemplate[] {
+  return [...EXPORT_TEMPLATES, ...loadUserExportTemplates()]
 }
