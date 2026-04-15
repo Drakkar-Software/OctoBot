@@ -1,4 +1,4 @@
-FROM python:3.13-slim-bookworm AS base
+FROM python:3.13-slim-trixie AS base
 
 WORKDIR /tmp
 
@@ -27,7 +27,7 @@ RUN python -m venv /opt/venv \
     && pip install --no-cache-dir --upgrade pip setuptools wheel \
     && pip install --no-cache-dir /tmp/octobot-*.whl
 
-FROM python:3.13-slim-bookworm
+FROM python:3.13-slim-trixie
 
 ARG TENTACLES_URL_TAG=""
 ARG VERSION=""
