@@ -66,7 +66,98 @@ export interface ColumnMappingStepProps {
   onBack: () => void
 }
 
-// ── Component ──────────────────────────────────────────────────────────
+interface RowParamsCellProps {
+  actionRow: ActionRow
+  headers: string[]
+  rows: string[][]
+  onParamChange: (rowIndex: number, paramKey: string, value: string) => void
+}
+
+function RowParamsCell({ actionRow, headers, rows, onParamChange }: RowParamsCellProps) {
+  const { requiredParams, sortedOptional } = useMemo(() => {
+    const template = getTemplateById(actionRow.templateId)
+    const byLabel = (a: ActionParamDef, b: ActionParamDef) => a.label.localeCompare(b.label)
+    return {
+      requiredParams: (template?.params.filter((p) => p.required && !p.hidden) ?? []).sort(byLabel),
+      sortedOptional: (template?.params.filter((p) => !p.required && !p.hidden) ?? []).sort(byLabel),
+    }
+  }, [actionRow.templateId])
+
+  const filledOptional = sortedOptional.filter(
+    (p) => (actionRow.paramValues[p.key] ?? "").trim() !== "",
+  )
+  const emptyOptional = sortedOptional.filter(
+    (p) => (actionRow.paramValues[p.key] ?? "").trim() === "",
+  )
+
+  const renderParam = (param: ActionParamDef) => {
+    const value = actionRow.paramValues[param.key] ?? ""
+    return (
+      <div key={param.key} className="flex items-center gap-1">
+        <span className="text-xs text-muted-foreground whitespace-nowrap">
+          {param.label}
+          {param.required && <span className="text-destructive">*</span>}:
+        </span>
+        <Input
+          value={value}
+          onChange={(e) => onParamChange(actionRow.rowIndex, param.key, e.target.value)}
+          type={
+            param.type === "number"
+              ? "number"
+              : param.type === "password"
+                ? "password"
+                : "text"
+          }
+          placeholder={param.label}
+          className="h-6 text-xs w-28"
+        />
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-1.5">
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-1.5">
+        {requiredParams.map(renderParam)}
+        {filledOptional.map(renderParam)}
+      </div>
+      {emptyOptional.length > 0 && (
+        <details>
+          <summary className="text-[10px] text-muted-foreground cursor-pointer">
+            {emptyOptional.length} optional parameter{emptyOptional.length !== 1 ? "s" : ""}
+          </summary>
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-1.5 mt-1.5">
+            {emptyOptional.map(renderParam)}
+          </div>
+        </details>
+      )}
+      {actionRow.unmappedColumns.length > 0 && (
+        <details>
+          <summary className="text-[10px] text-muted-foreground cursor-pointer">
+            {actionRow.unmappedColumns.length} unmapped column
+            {actionRow.unmappedColumns.length !== 1 ? "s" : ""}
+          </summary>
+          <div className="flex flex-wrap gap-1 mt-1">
+            {actionRow.unmappedColumns.map((colIdx) => {
+              const header = headers[colIdx] ?? ""
+              const value = rows[actionRow.rowIndex]?.[colIdx] ?? ""
+              const masked = isSensitiveHeader(header)
+              return (
+                <span
+                  key={colIdx}
+                  className="text-[10px] bg-muted px-1.5 py-0.5 rounded"
+                >
+                  {header}:{" "}
+                  {masked ? "\u2022\u2022\u2022\u2022\u2022\u2022" : value}
+                </span>
+              )
+            })}
+          </div>
+        </details>
+      )}
+    </div>
+  )
+}
 
 const columnHelper = createColumnHelper<ActionRow>()
 
@@ -308,7 +399,6 @@ export default function ColumnMappingStep({
           <TableBody>
             {table.getRowModel().rows.map((row) => {
               const actionRow = row.original
-              const template = getTemplateById(actionRow.templateId)
 
               return (
                 <TableRow key={row.id}>
@@ -324,97 +414,12 @@ export default function ColumnMappingStep({
                     </TableCell>
                   ))}
                   <TableCell>
-                    {(() => {
-                      const byLabel = (a: ActionParamDef, b: ActionParamDef) => a.label.localeCompare(b.label)
-                      const requiredParams = (template?.params.filter((p) => p.required && !p.hidden) ?? []).sort(byLabel)
-                      const optionalParams = template?.params.filter((p) => !p.required && !p.hidden) ?? []
-                      const filledOptional = optionalParams.filter(
-                        (p) => (actionRow.paramValues[p.key] ?? "").trim() !== "",
-                      ).sort(byLabel)
-                      const emptyOptional = optionalParams.filter(
-                        (p) => (actionRow.paramValues[p.key] ?? "").trim() === "",
-                      ).sort(byLabel)
-
-                      const renderParam = (param: ActionParamDef) => {
-                        const value = actionRow.paramValues[param.key] ?? ""
-                        return (
-                          <div
-                            key={param.key}
-                            className="flex items-center gap-1"
-                          >
-                            <span className="text-xs text-muted-foreground whitespace-nowrap">
-                              {param.label}
-                              {param.required && (
-                                <span className="text-destructive">*</span>
-                              )}
-                              :
-                            </span>
-                            <Input
-                              value={value}
-                              onChange={(e) =>
-                                handleParamChange(
-                                  actionRow.rowIndex,
-                                  param.key,
-                                  e.target.value,
-                                )
-                              }
-                              type={
-                                param.type === "number"
-                                  ? "number"
-                                  : param.type === "password"
-                                    ? "password"
-                                    : "text"
-                              }
-                              placeholder={param.label}
-                              className="h-6 text-xs w-28"
-                            />
-                          </div>
-                        )
-                      }
-
-                      return (
-                        <div className="space-y-1.5">
-                          <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-1.5">
-                            {requiredParams.map(renderParam)}
-                            {filledOptional.map(renderParam)}
-                          </div>
-                          {emptyOptional.length > 0 && (
-                            <details>
-                              <summary className="text-[10px] text-muted-foreground cursor-pointer">
-                                {emptyOptional.length} optional parameter{emptyOptional.length !== 1 ? "s" : ""}
-                              </summary>
-                              <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-1.5 mt-1.5">
-                                {emptyOptional.map(renderParam)}
-                              </div>
-                            </details>
-                          )}
-                          {actionRow.unmappedColumns.length > 0 && (
-                            <details>
-                              <summary className="text-[10px] text-muted-foreground cursor-pointer">
-                                {actionRow.unmappedColumns.length} unmapped column
-                                {actionRow.unmappedColumns.length !== 1 ? "s" : ""}
-                              </summary>
-                              <div className="flex flex-wrap gap-1 mt-1">
-                                {actionRow.unmappedColumns.map((colIdx) => {
-                                  const header = headers[colIdx] ?? ""
-                                  const value = rows[actionRow.rowIndex]?.[colIdx] ?? ""
-                                  const masked = isSensitiveHeader(header)
-                                  return (
-                                    <span
-                                      key={colIdx}
-                                      className="text-[10px] bg-muted px-1.5 py-0.5 rounded"
-                                    >
-                                      {header}:{" "}
-                                      {masked ? "\u2022\u2022\u2022\u2022\u2022\u2022" : value}
-                                    </span>
-                                  )
-                                })}
-                              </div>
-                            </details>
-                          )}
-                        </div>
-                      )
-                    })()}
+                    <RowParamsCell
+                      actionRow={actionRow}
+                      headers={headers}
+                      rows={rows}
+                      onParamChange={handleParamChange}
+                    />
                   </TableCell>
                   <TableCell>
                     <Button
