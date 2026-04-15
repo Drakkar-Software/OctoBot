@@ -528,7 +528,11 @@ class ActionsDAGParser:
         )
         # force the use of keyword form for the exchange_order_id parameter to resolve the dependency
         fetch_order = f"fetch_order('{self.params.ORDER_SYMBOL}', exchange_order_id='{self.params.ORDER_EXCHANGE_ID}')"
-        dsl_script = f"loop_until({fetch_order}['status'] != '{trading_enums.OrderStatus.OPEN.value}', {loop_interval}, timeout={loop_timeout}, max_attempts={loop_max_attempts}, return_remaining_time=True)"
+        dsl_script = (
+            f"loop_until({fetch_order}['status'] != '{trading_enums.OrderStatus.OPEN.value}', "
+            f"{loop_interval}, timeout={loop_timeout}, max_attempts={loop_max_attempts}, "
+            f"return_remaining_time=True)"
+        )
         action_id = f"action_loop_until_order_closed_{index}"
         params = {"exchange_order_id": self.params.ORDER_EXCHANGE_ID, "symbol": self.params.ORDER_SYMBOL}
         return self._create_dsl_action_with_dependencies_if_any(action_id, dsl_script, params)
@@ -547,7 +551,11 @@ class ActionsDAGParser:
             wallet_params,
             {"asset": asset},
         )
-        dsl_script = f"loop_until({wallet_check} >= {float(amount)}, {loop_interval}, timeout={loop_timeout}, max_attempts={loop_max_attempts}, return_remaining_time=True)"
+        dsl_script = (
+            f"loop_until(value_if({wallet_check}, ' >= {float(amount)}'), "
+            f"{loop_interval}, timeout={loop_timeout}, max_attempts={loop_max_attempts}, "
+            f"return_remaining_time=True)"
+        )
         action_id = f"action_loop_until_blockchain_balance_{index}"
         return self._create_dsl_action_with_dependencies_if_any(action_id, dsl_script, wallet_params)
 

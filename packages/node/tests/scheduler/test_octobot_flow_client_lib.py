@@ -1131,9 +1131,9 @@ class TestOctoBotActionsJob:
         assert len(result.processed_actions) == 1
         processed_actions = result.processed_actions
         assert isinstance(processed_actions[0], octobot_flow.entities.DSLScriptActionDetails)
-        assert processed_actions[0].dsl_script.startswith("loop_until(")
+        assert processed_actions[0].dsl_script.startswith("loop_until(value_if(")
         assert processed_actions[0].error_status is None
-        assert processed_actions[0].result is True
+        assert processed_actions[0].result == 1.0  # return fetched balance
         assert result.next_actions_description
         assert result.has_next_actions is False
 
