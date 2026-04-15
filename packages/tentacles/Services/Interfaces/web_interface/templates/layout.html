@@ -109,6 +109,8 @@
             {% include "distributions/market_making/navbar.html" %}
         {% elif get_distribution() == 'prediction_market' %}
             {% include "distributions/prediction_market/navbar.html" %}
+        {% elif get_distribution() == 'node' %}
+            {% include "distributions/node/navbar.html" %}
         {% else %}
             {% include "distributions/default/navbar.html" %}
         {% endif %}
@@ -174,6 +176,8 @@
             {% include "distributions/market_making/footer.html" %}
         {% elif get_distribution() == 'prediction_market' %}
             {% include "distributions/prediction_market/footer.html" %}
+        {% elif get_distribution() == 'node' %}
+            {% include "distributions/node/footer.html" %}
         {% else %}
             {% include "distributions/default/footer.html" %}
         {% endif %}
