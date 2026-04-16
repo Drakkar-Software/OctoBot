@@ -54,6 +54,7 @@ function addressParam(
   key: string,
   label: string,
   required: boolean,
+  aliasFuzzy?: string[],
 ): ActionParamDef {
   return {
     key,
@@ -61,7 +62,7 @@ function addressParam(
     required,
     type: "text",
     detectPatterns: [PATTERNS.evmAddress, PATTERNS.btcAddress],
-    aliasFuzzy: ["addr", "address", "wallet", "destination", "recipient"],
+    aliasFuzzy: aliasFuzzy || ["addr", "address", "wallet", "destination", "recipient"],
   }
 }
 
@@ -369,10 +370,11 @@ export const TRANSFER_TEMPLATE: ActionTemplate = {
     assetParam("BLOCKCHAIN_FROM_ASSET", "Transfer Asset", true),
     amountParam("BLOCKCHAIN_FROM_AMOUNT", "Transfer Amount", true),
     blockchainParam("BLOCKCHAIN_FROM", "Transfer Network", true),
+    addressParam("BLOCKCHAIN_FROM_ADDRESS", "Transfer From Address", false, ["from_address", "blockchain_from_address"]),
     privateKeyParam("BLOCKCHAIN_FROM_PRIVATE_KEY", "Transfer Src Private Key"),
     mnemonicParam("BLOCKCHAIN_FROM_MNEMONIC_SEED", "Transfer Src Mnemonic"),
     blockHeightParam("BLOCKCHAIN_FROM_BLOCK_HEIGHT", "Transfer Src Block Height", false),
-    addressParam("BLOCKCHAIN_TO_ADDRESS", "Transfer Dst Address", true),
+    addressParam("BLOCKCHAIN_TO_ADDRESS", "Transfer Dst Address", true, ["to_address", "blockchain_to_address"]),
   ],
 }
 
