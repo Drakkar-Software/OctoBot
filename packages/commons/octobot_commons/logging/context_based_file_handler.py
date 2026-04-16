@@ -74,7 +74,6 @@ class ContextBasedFileHandler(logging.Handler):
         for handler in root_logger.handlers:
             if isinstance(handler, logging.FileHandler) and handler.formatter:
                 # reuse the user configured formatter
-                print(f"Reusing user configured formatter: {handler.formatter}")
                 file_handler.setFormatter(handler.formatter)
                 break
         else:
