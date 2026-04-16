@@ -36,7 +36,7 @@ export const GENERAL_EXPORT_TEMPLATE: ExportTemplate = {
   ],
 }
 
-const TRADE_STATE_PREFIX = "state.automation.client_exchange_account_elements.trades[0]"
+const TRADE_STATE_PREFIX = "state.automation.exchange_account_elements.trades[0]"
 
 export const TRADE_EXPORT_TEMPLATE: ExportTemplate = {
   id: "trade",
@@ -65,7 +65,7 @@ export const TRADE_EXPORT_TEMPLATE: ExportTemplate = {
   ],
 }
 
-const AUTOMATION_STATE_PREFIX = "state.automation.client_exchange_account_elements.transactions[0]"
+const AUTOMATION_STATE_PREFIX = "state.automation.exchange_account_elements.transactions[0]"
 
 export const TRANSFER_EXPORT_TEMPLATE: ExportTemplate = {
   id: "transfer",

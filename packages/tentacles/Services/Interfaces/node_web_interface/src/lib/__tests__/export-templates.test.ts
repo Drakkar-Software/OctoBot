@@ -80,7 +80,7 @@ describe("export-templates", () => {
   })
 
   describe("TRADE_EXPORT_TEMPLATE", () => {
-    it("has trade-specific columns from client exchange account state", () => {
+    it("has trade-specific columns from exchange account state", () => {
       const keys = TRADE_EXPORT_TEMPLATE.columns.map((c) => c.key)
       expect(keys).toContain("symbol")
       expect(keys).toContain("side")
@@ -89,7 +89,7 @@ describe("export-templates", () => {
       expect(keys).toContain("exchange_trade_id")
       expect(keys).toContain("trade_status")
       const prefix =
-        "state.automation.client_exchange_account_elements.trades[0]"
+        "state.automation.exchange_account_elements.trades[0]"
       const amountCol = TRADE_EXPORT_TEMPLATE.columns.find(
         (c) => c.key === "amount",
       )
