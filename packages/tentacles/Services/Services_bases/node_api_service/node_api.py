@@ -21,6 +21,7 @@ import octobot_commons.constants as commons_constants
 import octobot_services.constants as services_constants
 import octobot_services.services as services
 import octobot_node.scheduler
+import octobot_node.scheduler.internal_trading_signals as internal_trading_signals
 
 
 LOCAL_HOST_IP = "127.0.0.1"
@@ -109,6 +110,7 @@ class NodeApiService(services.AbstractService):
         self._sync_config()
         if self.get_is_enabled(self.config) and not octobot_node.scheduler.is_initialized():
             octobot_node.scheduler.initialize_scheduler()
+            await internal_trading_signals.subscribe_internal_trading_signal_consumer()
 
     def _sync_config(self):
         defaults = self.get_default_value()

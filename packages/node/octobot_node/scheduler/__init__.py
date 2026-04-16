@@ -37,3 +37,12 @@ def initialize_scheduler():
     SCHEDULER.create()
     octobot_node.scheduler.workflows.register_workflows()
     SCHEDULER.start()
+
+
+async def shutdown_scheduler_and_trading_signal_channel() -> None:
+    try:
+        import octobot_flow.repositories.community.trading_signals_channel as trading_signals_channel
+        await trading_signals_channel.shutdown_internal_trading_signal_channel()
+    except ImportError:
+        pass
+    SCHEDULER.stop()

@@ -112,8 +112,8 @@ class NodeApiInterface(services_interfaces.AbstractInterface):
         @asynccontextmanager
         async def lifespan(app: FastAPI):
             yield
-            # Shutdown
-            scheduler.SCHEDULER.stop()
+            # Shutdown: trading signal channel first, then DBOS
+            await scheduler.shutdown_scheduler_and_trading_signal_channel()
 
         app = FastAPI(
             title=cls.API_NAME,
