@@ -129,7 +129,7 @@ class PortfolioManager(util.Initializable):
                     self.portfolio.update_portfolio_from_funding(position, funding_rate)
                     return True
                 # on real trading: reload portfolio to ensure portfolio sync
-                return await self._refresh_real_trader_portfolio()
+                return await self.refresh_real_trader_portfolio()
         return False
 
     async def handle_balance_update_from_withdrawal(
@@ -259,14 +259,14 @@ class PortfolioManager(util.Initializable):
             self.enable_portfolio_available_update_from_order = previous_enable_portfolio_available_update_from_order
             self.enable_portfolio_exchange_sync = previous_enable_portfolio_exchange_sync
 
-    async def _refresh_real_trader_portfolio(self) -> bool:
+    async def refresh_real_trader_portfolio(self, force_manual_refresh: bool = False) -> bool:
         """
         Call BALANCE_CHANNEL producer to refresh real trader portfolio
         :return: True if the portfolio was updated
         """
         return await exchange_channel.get_chan(
             constants.BALANCE_CHANNEL, self.exchange_manager.id
-        ).get_internal_producer().refresh_real_trader_portfolio()
+        ).get_internal_producer().refresh_real_trader_portfolio(force_manual_refresh=force_manual_refresh)
 
     async def start_expected_portfolio_update_checker(self) -> None:
         if not await exchange_channel.get_chan(
@@ -469,7 +469,7 @@ class PortfolioManager(util.Initializable):
         # for real trading only:
         # reload portfolio to ensure portfolio sync
         self.pending_portfolio_update_events.append(event)
-        refreshed = await self._refresh_real_trader_portfolio()
+        refreshed = await self.refresh_real_trader_portfolio()
         if not update_expected:
             return refreshed, None
         # refreshing real trader portfolio might have set the event,

@@ -170,24 +170,9 @@ class OrdersInterface:
         return self._exchange_manager.exchange_personal_data.orders_manager.enable_order_auto_synchronization
 
     async def wait_for_orders_to_fill(self, orders: list) -> None:
-        if orders:
-            if self._exchange_manager.trader.simulate or self.automatically_synchronize_orders():
-                # order will be synchronized by the orders manager
-                await asyncio.gather(
-                    *[
-                        trading_personal_data.wait_for_order_fill(
-                            order, copy_constants.FILL_ORDER_TIMEOUT, True
-                        )
-                        for order in orders
-                    ],
-                    return_exceptions=True,
-                )
-            else:
-                # todo for subportfolio: smartly wait for orders to fill instead of waiting for a fixed time
-                self._get_logger().info(
-                    f"Waiting for {copy_constants.FILL_ORDER_WAIT_TIME} seconds to let {len(orders)} orders fill..."
-                )
-                await asyncio.sleep(copy_constants.FILL_ORDER_WAIT_TIME)
+        return await trading_personal_data.wait_for_orders_to_fill_considering_order_auto_synchronization(
+            self._exchange_manager, orders, copy_constants.FILL_ORDER_TIMEOUT, True, temp_refresh_portfolio_on_static_wait=False
+        )
 
     def get_open_orders(self, symbol: typing.Optional[str] = None, active: typing.Optional[bool] = None) -> list:
         return trading_api.get_open_orders(self._exchange_manager, symbol=symbol, active=active)

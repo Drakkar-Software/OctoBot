@@ -1136,12 +1136,8 @@ class DCATradingMode(trading_modes.AbstractTradingMode):
                     err, True, f"Error when creating order to sell {asset} into {common_quote}: {err}"
                 )
         if created_orders:
-            await asyncio.gather(
-                *[
-                    trading_personal_data.wait_for_order_fill(
-                        order, self.HEALTH_CHECK_FILL_ORDERS_TIMEOUT, True
-                    ) for order in created_orders
-                ]
+            await trading_personal_data.wait_for_orders_to_fill_considering_order_auto_synchronization(
+                self.exchange_manager, created_orders, self.HEALTH_CHECK_FILL_ORDERS_TIMEOUT, True
             )
             for producer in self.producers:
                 producer.last_activity = trading_modes.TradingModeActivity(

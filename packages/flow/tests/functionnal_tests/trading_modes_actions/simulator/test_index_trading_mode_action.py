@@ -5,7 +5,6 @@ import mock
 import decimal
 import copy
 import time
-import contextlib
 
 import octobot_copy.entities as copy_entities
 import octobot_commons.enums as common_enums
@@ -16,13 +15,20 @@ import octobot_copy.rebalancing as rebalancing
 import octobot_flow
 import octobot_flow.entities
 import octobot_flow.enums
-import octobot_flow.repositories.community
 import octobot_copy.constants as copy_constants
 
 import tentacles.Trading.Mode.index_trading_mode as index_trading_mode
 
 import tests.functionnal_tests as functionnal_tests
-from tests.functionnal_tests import current_time, resolved_actions, automation_state_dict, copy_exchange_account_action
+from tests.functionnal_tests import (
+    assert_emitted_signal_account_allocation_ratios,
+    automation_state_dict,
+    copy_exchange_account_action,
+    current_time,
+    resolved_actions,
+    set_emit_signals_metadata,
+    trading_signal_emission_patches,
+)
 
 import octobot_copy.enums as rebalancer_enums
 
@@ -69,60 +75,6 @@ def index_trading_mode_action(dependency_action: dict):
     }
 
 
-def _set_emit_signals_metadata(automation_state: dict, emit_signals: bool) -> None:
-    automation_state["automation"]["metadata"]["emit_signals"] = emit_signals
-
-
-def _assert_emitted_signal_account_allocation_ratios(
-    content: dict,
-    *,
-    allow_zero_ratio_assets: frozenset[str] = frozenset(),
-    allow_negligible_ratio_assets: frozenset[str] = frozenset(),
-) -> None:
-    """Allocation checks for `TradingSignal.account.content` from `insert_trading_signal` only."""
-    ratio_key = copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO
-    total_value = decimal.Decimal(0)
-    for asset, balances in content.items():
-        assert ratio_key in balances, f"missing {ratio_key} for {asset}"
-        ratio = balances[ratio_key]
-        assert isinstance(ratio, decimal.Decimal)
-        total_value += ratio
-        ratio_float = float(ratio)
-        if asset in allow_zero_ratio_assets:
-            assert ratio_float == pytest.approx(0.0, abs=1e-18)
-        elif asset in allow_negligible_ratio_assets:
-            assert ratio_float < 0.05, f"{asset} expected negligible allocation_ratio, got {ratio_float}"
-        else:
-            assert ratio_float > 0, f"{asset} allocation_ratio should be > 0, got {ratio_float}"
-    assert float(total_value) == pytest.approx(1.0, abs=1e-3)
-
-
-@contextlib.contextmanager
-def _trading_signal_emission_patches(emit_signals: bool):
-    with contextlib.ExitStack() as stack:
-        insert_mock = stack.enter_context(
-            mock.patch.object(
-                octobot_flow.repositories.community.TradingSignalsRepository,
-                "insert_trading_signal",
-                mock.AsyncMock(),
-            )
-        )
-        if emit_signals:
-
-            @contextlib.asynccontextmanager
-            async def _fake_maybe_authenticator(self):
-                yield mock.MagicMock()
-
-            stack.enter_context(
-                mock.patch.object(
-                    octobot_flow.AutomationJob,
-                    "_maybe_authenticator",
-                    _fake_maybe_authenticator,
-                )
-            )
-        yield insert_mock
-
-
 def _assert_trading_signal_account_fields(trading_signal: octobot_flow.entities.TradingSignal) -> None:
     """
     Matches octobot_flow.logic.actions.account_copy_util.reference_exchange_elements_to_account:
@@ -147,12 +99,17 @@ def _assert_trading_signal_btc_eth_usdt_index_portfolio(
     assert 0 < float(content["USDT"][common_constants.PORTFOLIO_AVAILABLE]) < 5
     assert 0.1 < float(content["ETH"][common_constants.PORTFOLIO_AVAILABLE]) < 0.4
     assert 0.001 < float(content["BTC"][common_constants.PORTFOLIO_AVAILABLE]) < 0.01
-    _assert_emitted_signal_account_allocation_ratios(content, allow_zero_ratio_assets=allow_zero_ratio_assets)
+    assert 0 < float(content["USDT"][common_constants.PORTFOLIO_TOTAL]) < 5
+    assert 0.1 < float(content["ETH"][common_constants.PORTFOLIO_TOTAL]) < 0.4
+    assert 0.001 < float(content["BTC"][common_constants.PORTFOLIO_TOTAL]) < 0.01
+    assert_emitted_signal_account_allocation_ratios(content, allow_zero_ratio_assets=allow_zero_ratio_assets)
     _assert_trading_signal_account_fields(trading_signal)
 
 
 def _assert_trading_signal_btc_eth_sol_usdt_after_btc_sol_rebalance(
     trading_signal: octobot_flow.entities.TradingSignal,
+    *,
+    allow_zero_ratio_assets: frozenset[str] = frozenset(),
 ) -> None:
     content = trading_signal.account.content
     assert list(sorted(content.keys())) == ["BTC", "ETH", "SOL", "USDT"]
@@ -160,8 +117,13 @@ def _assert_trading_signal_btc_eth_sol_usdt_after_btc_sol_rebalance(
     assert 0.001 < float(content["BTC"][common_constants.PORTFOLIO_AVAILABLE]) < 0.02
     assert 0.5 < float(content["SOL"][common_constants.PORTFOLIO_AVAILABLE]) < 20
     assert 0 < float(content["ETH"][common_constants.PORTFOLIO_AVAILABLE]) < 0.001
-    _assert_emitted_signal_account_allocation_ratios(
+    assert 0 < float(content["USDT"][common_constants.PORTFOLIO_TOTAL]) < 5
+    assert 0.001 < float(content["BTC"][common_constants.PORTFOLIO_TOTAL]) < 0.02
+    assert 0.5 < float(content["SOL"][common_constants.PORTFOLIO_TOTAL]) < 20
+    assert 0 < float(content["ETH"][common_constants.PORTFOLIO_TOTAL]) < 0.001
+    assert_emitted_signal_account_allocation_ratios(
         content,
+        allow_negligible_ratio_assets=allow_zero_ratio_assets,
     )
     _assert_trading_signal_account_fields(trading_signal)
 
@@ -232,9 +194,9 @@ def init_action():
 async def test_simulator_index_init_from_empty_state(init_action: dict, emit_signals: bool):
     all_actions = [init_action, index_trading_mode_action(init_action)]
     automation_state = automation_state_dict(resolved_actions(all_actions))
-    _set_emit_signals_metadata(automation_state, emit_signals)
+    set_emit_signals_metadata(automation_state, emit_signals)
 
-    with _trading_signal_emission_patches(emit_signals) as insert_trading_signal_mock:
+    with trading_signal_emission_patches(emit_signals) as insert_trading_signal_mock:
         # 1. run init action
         async with octobot_flow.AutomationJob(automation_state, [], {}) as automation_job:
             await automation_job.run()
@@ -346,9 +308,9 @@ async def test_simulator_index_rebalance_after_index_content_switch_btc_eth_to_b
 ):
     all_actions = [init_action, index_trading_mode_action(init_action)]
     automation_state = automation_state_dict(resolved_actions(all_actions))
-    _set_emit_signals_metadata(automation_state, emit_signals)
+    set_emit_signals_metadata(automation_state, emit_signals)
 
-    with _trading_signal_emission_patches(emit_signals) as insert_trading_signal_mock:
+    with trading_signal_emission_patches(emit_signals) as insert_trading_signal_mock:
         # 1. run init action
         async with octobot_flow.AutomationJob(automation_state, [], {}) as automation_job:
             await automation_job.run()
@@ -482,9 +444,9 @@ async def test_simulator_index_rebalance_after_index_content_switch_btc_eth_to_b
 async def test_simulator_index_with_added_traded_pairs(init_action: dict, emit_signals: bool):
     all_actions = [init_action, index_trading_mode_action(init_action)]
     automation_state = automation_state_dict(resolved_actions(all_actions))
-    _set_emit_signals_metadata(automation_state, emit_signals)
+    set_emit_signals_metadata(automation_state, emit_signals)
 
-    with _trading_signal_emission_patches(emit_signals) as insert_trading_signal_mock:
+    with trading_signal_emission_patches(emit_signals) as insert_trading_signal_mock:
         # 1. run init action
         async with octobot_flow.AutomationJob(automation_state, [], {}) as automation_job:
             await automation_job.run()
@@ -584,9 +546,9 @@ async def test_simulator_copy_index(
         copy_exchange_account_action(reference_market, index_reference_account)
     ]
     automation_state = automation_state_dict(resolved_actions(all_actions))
-    _set_emit_signals_metadata(automation_state, emit_signals)
+    set_emit_signals_metadata(automation_state, emit_signals)
 
-    with _trading_signal_emission_patches(emit_signals) as insert_trading_signal_mock:
+    with trading_signal_emission_patches(emit_signals) as insert_trading_signal_mock:
         # 1. run init action
         async with octobot_flow.AutomationJob(automation_state, [], {}) as automation_job:
             await automation_job.run()

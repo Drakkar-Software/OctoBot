@@ -55,21 +55,9 @@ class PortfolioInterface:
         return portfolio.get_currency_portfolio(currency).available
 
     async def refresh_portfolio(self) -> bool:
-        if self._exchange_manager.trader.simulate:
-            # nothing to do in simulated mode
-            return False
-        # todo update this when subportfolio is implemented
-        balance = personal_data.filter_empty_values(
-            await self._exchange_manager.exchange.get_balance()
+        return await self._exchange_manager.exchange_personal_data.portfolio_manager.refresh_real_trader_portfolio(
+            force_manual_refresh=True
         )
-        self._get_logger().info(
-            "Refreshed portfolio, new balance: %s",
-            personal_data.get_balance_summary(balance, use_exchange_format=True)
-        )
-        changed = await self._exchange_manager.exchange_personal_data.handle_portfolio_update(
-            balance=balance, should_notify=False, is_diff_update=False
-        )
-        return changed
 
     def _get_logger(self) -> commons_logging.BotLogger:
         return commons_logging.get_logger(self.__class__.__name__)

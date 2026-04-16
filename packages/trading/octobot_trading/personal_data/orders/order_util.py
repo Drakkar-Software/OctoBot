@@ -842,6 +842,37 @@ async def create_and_register_chained_order_on_base_order(
     return params, chained_order
 
 
+async def wait_for_orders_to_fill_considering_order_auto_synchronization(
+    exchange_manager: "octobot_trading.exchanges.ExchangeManager", 
+    orders: list, timeout: float, wait_for_portfolio_update: bool,
+
+    # todo subportfolio: remove these parameters when supported
+    temp_static_wait_time: float = 2, temp_refresh_portfolio_on_static_wait: bool = True
+) -> None:
+    if orders:
+        if exchange_manager.trader.simulate or exchange_manager.exchange_personal_data.orders_manager.enable_order_auto_synchronization:
+            # order will be synchronized by the orders manager
+            await asyncio.gather(
+                *[
+                    wait_for_order_fill(
+                        order, timeout, wait_for_portfolio_update
+                    )
+                    for order in orders
+                ],
+                return_exceptions=True,
+            )
+        else:
+            # todo subportfolio: smartly wait for orders to fill instead of waiting for a fixed time
+            logging.get_logger(LOGGER_NAME).info(
+                f"Waiting for {temp_static_wait_time} seconds to let {len(orders)} orders fill..."
+            )
+            await asyncio.sleep(temp_static_wait_time)
+            if temp_refresh_portfolio_on_static_wait:
+                await exchange_manager.exchange_personal_data.portfolio_manager.refresh_real_trader_portfolio(
+                    force_manual_refresh=True
+                )
+
+
 async def wait_for_order_fill(order, timeout, wait_for_portfolio_update):
     if order.is_open():
         if order.state is None:

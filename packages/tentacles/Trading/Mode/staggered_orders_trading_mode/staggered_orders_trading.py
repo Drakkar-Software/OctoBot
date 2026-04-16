@@ -395,14 +395,9 @@ class StaggeredOrdersTradingMode(trading_modes.AbstractTradingMode):
         orders = await trading_modes.convert_assets_to_target_asset(
             list(to_sell_assets), common_quote, tickers, dependencies=dependencies, trading_mode=self,
         )
-        if orders:
-            await asyncio.gather(
-                *[
-                    trading_personal_data.wait_for_order_fill(
-                        order, producer.MISSING_MIRROR_ORDERS_MARKET_REBALANCE_TIMEOUT, True
-                    ) for order in orders
-                ]
-            )
+        await trading_personal_data.wait_for_orders_to_fill_considering_order_auto_synchronization(
+            self.exchange_manager, orders, producer.MISSING_MIRROR_ORDERS_MARKET_REBALANCE_TIMEOUT, True
+        )
         return orders
 
     async def _buy_assets(
@@ -424,14 +419,9 @@ class StaggeredOrdersTradingMode(trading_modes.AbstractTradingMode):
                 )
             except Exception as err:
                 self.logger.exception(err, True, f"Error when creating order to buy {base}: {err}")
-        if created_orders:
-            await asyncio.gather(
-                *[
-                    trading_personal_data.wait_for_order_fill(
-                        order, producer.MISSING_MIRROR_ORDERS_MARKET_REBALANCE_TIMEOUT, True
-                    ) for order in created_orders
-                ]
-            )
+        await trading_personal_data.wait_for_orders_to_fill_considering_order_auto_synchronization(
+            self.exchange_manager, created_orders, producer.MISSING_MIRROR_ORDERS_MARKET_REBALANCE_TIMEOUT, True
+        )
         return created_orders
 
     def _get_converted_quote_amount_per_symbol(self, portfolio, pair_bases, common_quote) -> decimal.Decimal:
@@ -1469,8 +1459,8 @@ class StaggeredOrdersTradingModeProducer(trading_modes.AbstractTradingModeProduc
             )
             created_order = await self.trading_mode.create_order(balancing_order)
             # wait for order to be filled
-            await trading_personal_data.wait_for_order_fill(
-                created_order, self.MISSING_MIRROR_ORDERS_MARKET_REBALANCE_TIMEOUT, True
+            await trading_personal_data.wait_for_orders_to_fill_considering_order_auto_synchronization(
+                self.exchange_manager, [created_order], self.MISSING_MIRROR_ORDERS_MARKET_REBALANCE_TIMEOUT, True
             )
 
     def _get_just_filled_unmirrored_missing_order_trade(self, sorted_trades, missing_order_price, missing_order_side):
@@ -1693,12 +1683,9 @@ class StaggeredOrdersTradingModeProducer(trading_modes.AbstractTradingModeProduc
             trading_mode=self.trading_mode,
         )
         orders = [order for order in orders if order is not None]
-        if orders:
-            await asyncio.gather(*[
-                trading_personal_data.wait_for_order_fill(
-                    order, self.MISSING_MIRROR_ORDERS_MARKET_REBALANCE_TIMEOUT, True
-                ) for order in orders
-            ])
+        await trading_personal_data.wait_for_orders_to_fill_considering_order_auto_synchronization(
+            self.exchange_manager, orders, self.MISSING_MIRROR_ORDERS_MARKET_REBALANCE_TIMEOUT, True
+        )
         return orders
 
     def _get_updated_trailing_orders(
@@ -1896,12 +1883,9 @@ class StaggeredOrdersTradingModeProducer(trading_modes.AbstractTradingModeProduc
                     dependencies=convert_dependencies,
                     trading_mode=self.trading_mode,
                 )
-                if orders:
-                    await asyncio.gather(*[
-                        trading_personal_data.wait_for_order_fill(
-                            order, self.MISSING_MIRROR_ORDERS_MARKET_REBALANCE_TIMEOUT, True
-                        ) for order in orders
-                    ])
+                await trading_personal_data.wait_for_orders_to_fill_considering_order_auto_synchronization(
+                    self.exchange_manager, orders, self.MISSING_MIRROR_ORDERS_MARKET_REBALANCE_TIMEOUT, True
+                )
             else:
                 self.logger.info(f"{log_header}nothing to buy or sell. Current funds are enough")
         except Exception as err:

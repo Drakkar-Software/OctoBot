@@ -594,7 +594,11 @@ class GridTradingModeProducer(staggered_orders_trading.StaggeredOrdersTradingMod
     def _get_grid_trades_or_orders(self, trades_or_orders):
         if not trades_or_orders:
             return trades_or_orders
-        sorted_elements = sorted(trades_or_orders, key=lambda t: self.get_trade_or_order_price(t))
+        limit_orders = [
+            order for order in trades_or_orders
+            if order.order_type in (trading_enums.TraderOrderType.BUY_LIMIT, trading_enums.TraderOrderType.SELL_LIMIT)
+        ]
+        sorted_elements = sorted(limit_orders, key=lambda t: self.get_trade_or_order_price(t))
         four = decimal.Decimal("4")
         increment_lower_bound = - self.flat_increment / four
         increment_higher_bound = self.flat_increment / four
