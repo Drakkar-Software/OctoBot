@@ -106,6 +106,20 @@ class TestGetWebsocketProxyUrl:
         assert proxy_config.ProxyConfig().get_websocket_proxy_url() is None
 
 
+class TestParseSocksProxyUrlForConnector:
+    def test_socks5_keeps_url_and_disables_rdns_flag(self):
+        url = "socks5://proxy.example:1080"
+        reverse_dns, selected_url = proxy_config.parse_socks_proxy_url_for_connector(url)
+        assert reverse_dns is False
+        assert selected_url == url
+
+    def test_socks5h_normalizes_scheme_and_enables_rdns_flag(self):
+        url = "socks5h://proxy.example:1080"
+        reverse_dns, selected_url = proxy_config.parse_socks_proxy_url_for_connector(url)
+        assert reverse_dns is True
+        assert selected_url == "socks5://proxy.example:1080"
+
+
 class TestSocksProxyFactory:
     def test_raises_import_error_when_socks_unavailable(self):
         config = proxy_config.ProxyConfig()
@@ -119,7 +133,35 @@ class TestSocksProxyFactory:
             with pytest.raises(ValueError, match="socks_proxy proxy url is not set"):
                 config._socks_proxy_factory(None, "socks_proxy")
 
-    def test_calls_from_url(self):
+    def test_calls_from_url_with_socks5_passes_normalized_url_and_rdns_none(self):
+        if not proxy_config.SOCKS_PROXY_AVAILABLE:
+            pytest.skip("aiohttp_socks is not installed")
+        with mock.patch.object(proxy_config, "SOCKS_PROXY_AVAILABLE", True):
+            with mock.patch.object(
+                proxy_config.aiohttp_socks.ProxyConnector,
+                "from_url",
+                mock.Mock(return_value="connector"),
+            ) as from_url_mock:
+                config = proxy_config.ProxyConfig()
+                result = config._socks_proxy_factory("socks5://host:1080", "socks_proxy")
+        from_url_mock.assert_called_once_with("socks5://host:1080", rdns=None)
+        assert result == "connector"
+
+    def test_calls_from_url_with_socks5h_passes_socks5_url_and_rdns_true(self):
+        if not proxy_config.SOCKS_PROXY_AVAILABLE:
+            pytest.skip("aiohttp_socks is not installed")
+        with mock.patch.object(proxy_config, "SOCKS_PROXY_AVAILABLE", True):
+            with mock.patch.object(
+                proxy_config.aiohttp_socks.ProxyConnector,
+                "from_url",
+                mock.Mock(return_value="connector-h"),
+            ) as from_url_mock:
+                config = proxy_config.ProxyConfig()
+                result = config._socks_proxy_factory("socks5h://host:1080", "socks_proxy")
+        from_url_mock.assert_called_once_with("socks5://host:1080", rdns=True)
+        assert result == "connector-h"
+
+    def test_calls_from_url_integration(self):
         if not proxy_config.SOCKS_PROXY_AVAILABLE:
             pytest.skip("aiohttp_socks is not installed")
 

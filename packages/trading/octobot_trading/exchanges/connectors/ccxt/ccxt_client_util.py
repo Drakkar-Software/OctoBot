@@ -31,6 +31,7 @@ import ccxt.pro as ccxt_pro
 import ccxt.async_support as async_ccxt
 
 import octobot_commons
+import octobot_commons.proxy_config as commons_proxy_config
 import octobot_commons.time_frame_manager as time_frame_manager
 import octobot_commons.aiohttp_util as aiohttp_util
 import octobot_commons.logging as commons_logging
@@ -341,8 +342,7 @@ def _use_proxy_if_necessary(client: async_ccxt.Exchange, proxy_config: exchange_
         if (client.socks_proxy_sessions is None):
             client.socks_proxy_sessions = {}
         # from ccxt get_socks_proxy_session()
-        reverse_dns = proxy_url.startswith('socks5h://')
-        selected_proxy_url = proxy_url if not reverse_dns else proxy_url.replace('socks5h://', 'socks5://')
+        reverse_dns, selected_proxy_url = commons_proxy_config.parse_socks_proxy_url_for_connector(proxy_url)
         if (selected_proxy_url not in client.socks_proxy_sessions):
             try:
                 import aiohttp_socks

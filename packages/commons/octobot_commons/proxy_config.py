@@ -27,6 +27,20 @@ except ImportError:
 DEFAULT_PROXY_HOST = "DEFAULT PROXY HOST"
 
 
+def parse_socks_proxy_url_for_connector(proxy_url: str) -> typing.Tuple[bool, str]:
+    """
+    Split a SOCKS proxy URL into reverse-DNS flag and URL for aiohttp_socks.ProxyConnector.from_url.
+
+    socks5h:// means the proxy resolves hostnames remotely (reverse DNS). aiohttp_socks expects
+    socks5:// with rdns=True in that case.
+    """
+    reverse_dns = proxy_url.startswith('socks5h://')
+    selected_proxy_url = (
+        proxy_url if not reverse_dns else proxy_url.replace('socks5h://', 'socks5://')
+    )
+    return reverse_dns, selected_proxy_url
+
+
 @dataclasses.dataclass
 class ProxyConfig:
     """
@@ -117,7 +131,11 @@ class ProxyConfig:
             raise ImportError("aiohttp_socks is not available")
         if proxy_url is None:
             raise ValueError(f"{proxy_type} proxy url is not set")
-        return aiohttp_socks.ProxyConnector.from_url(proxy_url)
+        reverse_dns, selected_proxy_url = parse_socks_proxy_url_for_connector(proxy_url)
+        return aiohttp_socks.ProxyConnector.from_url(
+            selected_proxy_url,
+            rdns=reverse_dns if reverse_dns else None,
+        )
 
     def get_aiohttp_session_proxy_args(self) -> dict:
         """
