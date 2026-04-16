@@ -27,6 +27,7 @@ import octobot_services.interfaces as services_interfaces
 import octobot_node.config as node_config
 import octobot_node.scheduler as scheduler # noqa: F401
 
+
 # Service_bases is only needed at runtime, not for build
 try:
     import tentacles.Services.Services_bases as Service_bases
@@ -76,14 +77,8 @@ class NodeApiInterface(services_interfaces.AbstractInterface):
             self.node_api_service = Service_bases.NodeApiService.instance()
         self.host = self.node_api_service.get_bind_host()
         self.port = self.node_api_service.get_bind_port()
-        admin_username = self.node_api_service.get_admin_username()
-        admin_password = self.node_api_service.get_admin_password()
         node_sqlite_file = self.node_api_service.get_node_sqlite_file()
         node_postgres_url = self.node_api_service.get_node_postgres_url()
-        if admin_username:
-            node_config.settings.ADMIN_USERNAME = admin_username
-        if admin_password:
-            node_config.settings.ADMIN_PASSWORD = admin_password
         if node_sqlite_file:
             node_config.settings.SCHEDULER_SQLITE_FILE = node_sqlite_file
         if node_postgres_url is not None:
@@ -122,12 +117,12 @@ class NodeApiInterface(services_interfaces.AbstractInterface):
 
         app = FastAPI(
             title=cls.API_NAME,
-            openapi_url=f"{node_config.settings.API_V1_STR}/openapi.json",
+            openapi_url="/api/v1/openapi.json",
             generate_unique_id_function=custom_generate_unique_id,
             lifespan=lifespan,
         )
 
-        app.include_router(build_api_router(), prefix=node_config.settings.API_V1_STR)
+        app.include_router(build_api_router(), prefix="/api/v1")
 
         # Get the path to the dist folder (works for both development and installed packages)
         dist_dir = get_dist_directory()

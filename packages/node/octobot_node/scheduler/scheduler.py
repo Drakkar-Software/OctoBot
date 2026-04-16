@@ -107,10 +107,7 @@ class Scheduler:
 
     def is_enabled(self) -> bool:
         # enabled if master mode or consumer only mode
-        return (
-            octobot_node.config.settings.IS_MASTER_MODE
-            or octobot_node.config.settings.CONSUMER_ONLY
-        )
+        return octobot_node.config.settings.CONSUMER_ONLY
 
     def is_initialized(self) -> bool:
         return self.INSTANCE is not None

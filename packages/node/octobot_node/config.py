@@ -14,26 +14,18 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
-import logging
-import secrets
 import sys
 from typing import Annotated, Any, Literal
 
 from pydantic import (
     AnyUrl,
     BeforeValidator,
-    EmailStr,
     HttpUrl,
     computed_field,
-    model_validator,
     Field,
 )
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing_extensions import Self
 
-
-DEFAULT_ADMIN_USERNAME: EmailStr = "admin@example.com"
-DEFAULT_ADMIN_PASSWORD: str = "changethis"
 
 def _get_env_file() -> str:
     # Check if pytest module is imported
@@ -65,10 +57,6 @@ class Settings(BaseSettings):
         env_ignore_empty=True,
         extra="ignore",
     )
-    API_V1_STR: str = "/api/v1"
-    SECRET_KEY: str = secrets.token_urlsafe(32)
-    # 60 minutes * 24 hours * 8 days = 8 days
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
     NODE_ENVIRONMENT: Literal["local", "production"] = "production"
     BACKEND_HOST: str = "http://localhost:8000"
     FRONTEND_HOST: str = "http://localhost:5173" if NODE_ENVIRONMENT == "local" else BACKEND_HOST
@@ -89,11 +77,7 @@ class Settings(BaseSettings):
     SCHEDULER_SQLITE_FILE: str = "tasks.db" # example tasks.db
     CONSUMER_ONLY: bool = False  # True: start OctoBot Node in consumer mode only (requires a postgres database)
     SCHEDULER_MAX_EXECUTOR_THREADS: int = 200 #todo reduce after dbos 2.13.0 is released
-    IS_MASTER_MODE: bool = False  # Enable master node mode
     POSTGRES_STORAGE_CERTS_PATH: str | None = None
-
-    ADMIN_USERNAME: EmailStr = DEFAULT_ADMIN_USERNAME
-    ADMIN_PASSWORD: str = DEFAULT_ADMIN_PASSWORD
 
     # Task encryption keys (server-side)
     TASKS_INPUTS_RSA_PRIVATE_KEY: Annotated[bytes | None, BeforeValidator(parse_key_to_bytes)] = None
@@ -117,26 +101,6 @@ class Settings(BaseSettings):
     @property
     def tasks_encryption_enabled(self) -> bool:
         return self.is_node_side_encryption_enabled
-
-    def _check_default_secret(self, var_name: str, value: str | None, default_value: EmailStr | None) -> None:
-        if value == default_value:
-            message = (
-                f'The value of {var_name} is "{default_value}", '
-                "for security, please change it, at least for deployments."
-            )
-            if self.NODE_ENVIRONMENT == "local":
-                logging.getLogger("Settings").warning(message)
-            else:
-                raise ValueError(message)
-
-    @model_validator(mode="after")
-    def _enforce_non_default_secrets(self) -> Self:
-        if self.IS_MASTER_MODE:
-            self._check_default_secret("ADMIN_USERNAME", self.ADMIN_USERNAME, DEFAULT_ADMIN_USERNAME)
-            self._check_default_secret(
-                "ADMIN_PASSWORD", self.ADMIN_PASSWORD, DEFAULT_ADMIN_PASSWORD
-            )
-        return self
 
 
 settings = Settings()  # type: ignore
