@@ -22,6 +22,7 @@ class ChangedElements(enum.Enum):
     TRADES = "trades"
     PORTFOLIO = "portfolio"
     POSITIONS = "positions"
+    TRANSACTIONS = "transactions"
 
 
 class ActionType(enum.Enum):

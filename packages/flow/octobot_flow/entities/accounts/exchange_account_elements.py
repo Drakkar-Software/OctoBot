@@ -1,4 +1,5 @@
 import dataclasses
+import typing
 
 import octobot_commons.logging
 import octobot_trading.exchanges.util.exchange_data as exchange_data_import
@@ -46,17 +47,20 @@ class ExchangeAccountElements(account_elements_import.AccountElements):
         return False
 
     def sync_from_exchange_manager(
-        self, exchange_manager: octobot_trading.exchanges.ExchangeManager
+        self,
+        exchange_manager: typing.Optional[octobot_trading.exchanges.ExchangeManager],
+        transactions: list[dict]
     ) -> list[octobot_flow.enums.ChangedElements]:
-        changed_elements = []
-        if self.sync_orders_from_exchange_manager(exchange_manager):
-            changed_elements.append(octobot_flow.enums.ChangedElements.ORDERS)
-        if self.sync_portfolio_from_exchange_manager(exchange_manager):
-            changed_elements.append(octobot_flow.enums.ChangedElements.PORTFOLIO)
-        if self.sync_positions_from_exchange_manager(exchange_manager):
-            changed_elements.append(octobot_flow.enums.ChangedElements.POSITIONS)
-        if self._sync_trades_from_exchange_manager(exchange_manager):
-            changed_elements.append(octobot_flow.enums.ChangedElements.TRADES)
+        changed_elements = self.sync_from_transactions(transactions)
+        if exchange_manager:
+            if self.sync_orders_from_exchange_manager(exchange_manager):
+                changed_elements.append(octobot_flow.enums.ChangedElements.ORDERS)
+            if self.sync_portfolio_from_exchange_manager(exchange_manager):
+                changed_elements.append(octobot_flow.enums.ChangedElements.PORTFOLIO)
+            if self.sync_positions_from_exchange_manager(exchange_manager):
+                changed_elements.append(octobot_flow.enums.ChangedElements.POSITIONS)
+            if self._sync_trades_from_exchange_manager(exchange_manager):
+                changed_elements.append(octobot_flow.enums.ChangedElements.TRADES)
         return changed_elements
 
     def sync_orders_from_exchange_manager(self, exchange_manager: octobot_trading.exchanges.ExchangeManager) -> bool:

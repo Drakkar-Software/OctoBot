@@ -105,7 +105,7 @@ class SimulatedExchangeAccountResolver:
                     await asyncio_tools.wait_asyncio_next_cycle()
 
                 # simulation is now synchronized, sync the account elements from the updated simulated exchange manager
-                account_elements.sync_from_exchange_manager(simulated_exchange_manager)
+                account_elements.sync_from_exchange_manager(simulated_exchange_manager, [])
 
     def _logger(self) -> commons_logging.BotLogger:
         return commons_logging.get_logger(self.__class__.__name__)

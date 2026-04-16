@@ -155,13 +155,14 @@ class ActionsExecutor:
 
     def _sync_after_execution(self):
         if exchange_account_elements := self._automation.exchange_account_elements:
-            self._sync_automation_from_actions_results(exchange_account_elements)
-            self._sync_exchange_account_elements(exchange_account_elements)
+            new_transactions = self._get_new_transactions_from_actions_results(exchange_account_elements)
+            self._sync_exchange_account_elements(exchange_account_elements, new_transactions)
 
-    def _sync_automation_from_actions_results(
+    def _get_new_transactions_from_actions_results(
         self,
         exchange_account_elements: octobot_flow.entities.ExchangeAccountElements,
     ):
+        new_transactions = []
         for action in self._actions:
             if not action.is_completed() or not isinstance(action.result, dict):
                 continue
@@ -169,14 +170,16 @@ class ActionsExecutor:
                 action.result.get(exchange_operators.CREATED_WITHDRAWALS_KEY, [])
                 + action.result.get(blockchain_wallet_operators.CREATED_TRANSACTIONS_KEY, [])
             ):
-                exchange_account_elements.transactions.extend(created_transactions)
+                new_transactions.extend(created_transactions)
+        return new_transactions
 
     def _sync_exchange_account_elements(
         self,
         exchange_account_elements: octobot_flow.entities.ExchangeAccountElements,
+        new_transactions: list[dict],
     ):
-        if self._exchange_manager:
-            self.changed_elements = exchange_account_elements.sync_from_exchange_manager(self._exchange_manager)
+        if self._exchange_manager or new_transactions:
+            self.changed_elements = exchange_account_elements.sync_from_exchange_manager(self._exchange_manager, new_transactions)
 
     def _get_logger(self) -> octobot_commons.logging.BotLogger:
         return octobot_commons.logging.get_logger(self.__class__.__name__)

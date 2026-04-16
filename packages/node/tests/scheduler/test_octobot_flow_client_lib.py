@@ -161,6 +161,7 @@ def transfer_blockchain_action():
             "ACTIONS": "transfer",
             "BLOCKCHAIN_FROM_ASSET": "BTC",
             "BLOCKCHAIN_FROM_AMOUNT": 1,
+            "BLOCKCHAIN_FROM_ADDRESS": "0x123_simulated_transfer_from_address_BTC",
             "BLOCKCHAIN_FROM": BLOCKCHAIN,
             "BLOCKCHAIN_TO": BLOCKCHAIN,
             "BLOCKCHAIN_TO_ASSET": "BTC",
@@ -657,10 +658,14 @@ class TestOctoBotActionsJob:
         assert len(processed_actions[0].result[DSL_operators.CREATED_TRANSACTIONS_KEY]) == len(get_deposit_and_withdrawal_details(processed_actions)) == 1
         assert len(get_deposit_and_withdrawal_details(processed_actions)) == 1
         transaction = get_deposit_and_withdrawal_details(processed_actions)[0]
+        state_transaction = job2.after_execution_state.automation.exchange_account_elements.transactions
+        assert len(state_transaction) == 1
+        assert state_transaction[0] == transaction
         assert transaction[trading_enums.ExchangeConstantsTransactionColumns.CURRENCY.value] == "BTC"
         assert transaction[trading_enums.ExchangeConstantsTransactionColumns.AMOUNT.value] == decimal.Decimal("1")
         assert transaction[trading_enums.ExchangeConstantsTransactionColumns.NETWORK.value] == BLOCKCHAIN
         assert transaction[trading_enums.ExchangeConstantsTransactionColumns.ADDRESS_TO.value] == "0x123_simulated_transfer_to_address_BTC"
+        assert transaction[trading_enums.ExchangeConstantsTransactionColumns.ADDRESS_FROM.value] == "0x123_simulated_transfer_from_address_BTC"
 
 
 
