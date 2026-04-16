@@ -31,16 +31,18 @@ logger = logging.getLogger(__name__)
 
 def get_node_status() -> dict[str, str | int | None | uuid.UUID]:
     consumer_running = (
-        octobot_node.scheduler.SCHEDULER.INSTANCE 
+        octobot_node.scheduler.SCHEDULER.INSTANCE
         and octobot_node.scheduler.SCHEDULER.INSTANCE._launched
     )
-    is_running = bool(consumer_running)
+    is_running = octobot_node.config.settings.IS_MASTER_MODE or bool(consumer_running)
     status = "running" if is_running else "stopped"
 
     backend_type = "postgres" if octobot_node.config.settings.SCHEDULER_POSTGRES_URL else "sqlite"
     workers = 1
 
-    if octobot_node.config.settings.CONSUMER_ONLY:
+    if octobot_node.config.settings.IS_MASTER_MODE:
+        node_type = "both"
+    elif octobot_node.config.settings.CONSUMER_ONLY:
         node_type = "consumer"
     else:
         # no worker should run

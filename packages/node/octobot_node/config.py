@@ -75,6 +75,7 @@ class Settings(BaseSettings):
     SENTRY_DSN: HttpUrl | None = None
     SCHEDULER_POSTGRES_URL: AnyUrl | None = None  # examplee: postgresql://postgres:password@localhost:5432/dbos_example
     SCHEDULER_SQLITE_FILE: str = "tasks.db" # example tasks.db
+    IS_MASTER_MODE: bool = False  # True: start OctoBot Node as master (enables master-side features)
     CONSUMER_ONLY: bool = False  # True: start OctoBot Node in consumer mode only (requires a postgres database)
     SCHEDULER_MAX_EXECUTOR_THREADS: int = 200 #todo reduce after dbos 2.13.0 is released
     POSTGRES_STORAGE_CERTS_PATH: str | None = None

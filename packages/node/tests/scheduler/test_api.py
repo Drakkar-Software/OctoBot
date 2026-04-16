@@ -30,6 +30,55 @@ from tests.scheduler import temp_dbos_scheduler
 class TestGetNodeStatus:
     """Tests for get_node_status function."""
 
+    def test_get_node_status_master_node_with_postgres(self) -> None:
+        """Test node status for master node with Postgres backend."""
+        mock_settings = mock.Mock()
+        mock_settings.IS_MASTER_MODE = True
+        mock_settings.SCHEDULER_POSTGRES_URL = "postgresql://localhost/db"
+        mock_settings.SCHEDULER_SQLITE_FILE = "tasks.db"
+
+        with mock.patch("octobot_node.config.settings", mock_settings):
+            result = get_node_status()
+
+            assert result["node_type"] == "both"
+            assert result["backend_type"] == "postgres"
+            assert result["workers"] == 1
+            assert result["status"] == "running"
+            assert result["redis_url"] is None
+            assert result["sqlite_file"] is None
+
+    def test_get_node_status_master_node_always_running(self) -> None:
+        """Test that master node is always running regardless of consumer state."""
+        mock_settings = mock.Mock()
+        mock_settings.IS_MASTER_MODE = True
+        mock_settings.SCHEDULER_POSTGRES_URL = None
+        mock_settings.SCHEDULER_SQLITE_FILE = "tasks.db"
+
+        mock_scheduler = mock.Mock()
+        mock_scheduler.INSTANCE = mock.Mock(_launched=False)
+
+        with mock.patch("octobot_node.config.settings", mock_settings), \
+             mock.patch("octobot_node.scheduler.SCHEDULER", mock_scheduler):
+            result = get_node_status()
+
+            assert result["status"] == "running"
+            assert result["node_type"] == "both"
+
+    def test_get_node_status_both_master_and_consumers(self) -> None:
+        """Test node status when both master mode and consumers are enabled."""
+        mock_settings = mock.Mock()
+        mock_settings.IS_MASTER_MODE = True
+        mock_settings.SCHEDULER_POSTGRES_URL = "postgresql://localhost/db"
+        mock_settings.SCHEDULER_SQLITE_FILE = "tasks.db"
+
+        with mock.patch("octobot_node.config.settings", mock_settings):
+            result = get_node_status()
+
+            assert result["node_type"] == "both"
+            assert result["backend_type"] == "postgres"
+            assert result["workers"] == 1 # multi workers are not supported yet
+            assert result["status"] == "running"
+
     def test_get_node_status_none(self) -> None:
         """Test node status when neither master mode nor consumers are enabled."""
         mock_settings = mock.Mock()
