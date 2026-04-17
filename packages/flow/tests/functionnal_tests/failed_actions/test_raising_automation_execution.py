@@ -47,7 +47,7 @@ async def test_raising_automation_runner_job_execution(
             with mock.patch.object(
                 octobot_flow.jobs.automation_runner_job.AutomationRunnerJob, "run", mock.AsyncMock(side_effect=side_effect)
             ) as run_mock:
-                async with octobot_flow.AutomationJob(automation_state, [], auth_details) as automations_job:
+                async with octobot_flow.AutomationJob(automation_state, [], [], auth_details) as automations_job:
                     await automations_job.run()
                 run_mock.assert_awaited_once()
 

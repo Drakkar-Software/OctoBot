@@ -55,7 +55,7 @@ async def test_start_with_empty_state_and_reschedule_no_community_auth(init_acti
         functionnal_tests.mocked_community_repository() as insert_bot_logs_mock,
     ):
         automation_state = automation_state_dict(resolved_actions(all_actions))
-        async with octobot_flow.AutomationJob(automation_state, [], {}) as automation_job:
+        async with octobot_flow.AutomationJob(automation_state, [], [], {}) as automation_job:
             await automation_job.run()
 
         # check bot actions execution
@@ -112,7 +112,7 @@ async def test_start_with_empty_state_action_followed_by_market_orders_no_commun
     ):
         # 1. initialize bot with configuration
         automation_state = automation_state_dict(resolved_actions(init_actions))
-        async with octobot_flow.AutomationJob(automation_state, [], {}) as init_automation_job:
+        async with octobot_flow.AutomationJob(automation_state, [], [], {}) as init_automation_job:
             await init_automation_job.run()
         # check actions execution
         assert len(init_automation_job.automation_state.automation.actions_dag.actions) == len(init_actions)
@@ -139,7 +139,7 @@ async def test_start_with_empty_state_action_followed_by_market_orders_no_commun
         # 2. second call: execute received market orders bot actions
         state = after_config_execution_dump
         other_actions = resolved_actions(actions_with_market_orders)
-        async with octobot_flow.AutomationJob(state, [], {}) as automation_job:
+        async with octobot_flow.AutomationJob(state, [], [], {}) as automation_job:
             automation_job.automation_state.upsert_automation_actions(
                 other_actions
             )

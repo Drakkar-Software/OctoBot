@@ -11,5 +11,5 @@ class TradingSignalsRepository:
     async def insert_trading_signal(self, trading_signal: octobot_flow.entities.TradingSignal):
         await trading_signals_channel.send_internal_trading_signal(trading_signal)
 
-    async def fetch_trading_signals(self, user_id: str) -> list[octobot_flow.entities.TradingSignal]:
+    async def fetch_trading_signals(self, strategy_ids: list[str], history_size: int) -> list[octobot_flow.entities.TradingSignal]:
         raise NotImplementedError("TODO: fetch_trading_signals")

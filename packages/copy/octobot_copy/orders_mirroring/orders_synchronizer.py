@@ -47,6 +47,13 @@ class OrdersSynchronizer:
                 continue
             if origin.get(trading_enums.ExchangeConstantsOrderColumns.IS_ACTIVE.value, True) is False:
                 continue
+            _, trader_order_type = trading_personal_data.parse_order_type(origin)
+            if trader_order_type in (
+                trading_enums.TraderOrderType.BUY_MARKET,
+                trading_enums.TraderOrderType.SELL_MARKET,
+            ):
+                # ignore market orders: they can't be replicated
+                continue
             replicable.append(order)
         return replicable
 
@@ -163,6 +170,12 @@ class OrdersSynchronizer:
             for order in self._exchange_interface.orders.get_open_orders()
             if order.tag == copy_constants.MIRRORED_ORDER_TAG
             and str(order.order_id) not in active_reference_ids
+            and order.order_type
+            not in (
+                # market orders can't be orphaned or cancelled: they are always filled
+                trading_enums.TraderOrderType.BUY_MARKET,
+                trading_enums.TraderOrderType.SELL_MARKET,
+            )
         ]
 
     def _reference_pair_leg_share(

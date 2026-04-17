@@ -35,7 +35,7 @@ async def test_exchange_actions_reset_executing_market_order_twice(
         # 1. execute market order actions
         automation_state = octobot_flow.entities.AutomationState.from_dict(global_state)
         automation_state.upsert_automation_actions(resolved_actions(actions_with_market_orders))
-        async with octobot_flow.AutomationJob(automation_state, [], auth_details) as automations_job:
+        async with octobot_flow.AutomationJob(automation_state, [], [], auth_details) as automations_job:
             await automations_job.run()
 
         # check bot actions execution
@@ -77,7 +77,7 @@ async def test_exchange_actions_reset_executing_market_order_twice(
         assert post_first_buy_state.automation.actions_dag.actions[1].executed_at is not None
 
         # 3. execute market order actions again
-        async with octobot_flow.AutomationJob(post_first_buy_state, [], auth_details) as automations_job_2:
+        async with octobot_flow.AutomationJob(post_first_buy_state, [], [], auth_details) as automations_job_2:
             await automations_job_2.run()
 
         # check bot actions execution
@@ -128,7 +128,7 @@ async def test_exchange_actions_reset_creating_and_cancelling_limit_order_twice(
         automation_state.upsert_automation_actions(
 resolved_actions(actions_to_execute),
         )
-        async with octobot_flow.AutomationJob(automation_state, [], auth_details) as automations_job:
+        async with octobot_flow.AutomationJob(automation_state, [], [], auth_details) as automations_job:
             await automations_job.run()
 
         # check bot actions execution
@@ -154,7 +154,7 @@ resolved_actions(actions_to_execute),
 
         # 2. execute cancel limit order action
         automation_state_2 = automations_job.automation_state
-        async with octobot_flow.AutomationJob(automation_state_2, [], auth_details) as automations_job_2:
+        async with octobot_flow.AutomationJob(automation_state_2, [], [], auth_details) as automations_job_2:
             await automations_job_2.run()
 
         # check bot actions execution
@@ -191,7 +191,7 @@ resolved_actions(actions_to_execute),
             assert action.result is None
         
         # 4. execute create limit order action again
-        async with octobot_flow.AutomationJob(limit_order_state_3, [], auth_details) as automations_job_3:
+        async with octobot_flow.AutomationJob(limit_order_state_3, [], [], auth_details) as automations_job_3:
             await automations_job_3.run()
 
         # check bot actions execution
@@ -217,7 +217,7 @@ resolved_actions(actions_to_execute),
 
         # 5. execute cancel limit order action
         automation_state_4 = automations_job_3.automation_state
-        async with octobot_flow.AutomationJob(automation_state_4, [], auth_details) as automations_job_4:
+        async with octobot_flow.AutomationJob(automation_state_4, [], [], auth_details) as automations_job_4:
             await automations_job_4.run()
 
         # check bot actions execution

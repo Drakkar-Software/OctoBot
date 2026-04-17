@@ -23,3 +23,9 @@ import octobot_commons.dsl_interpreter as dsl_interpreter
 class SymbolDependency(dsl_interpreter.InterpreterDependency):
     symbol: str
     time_frame: typing.Optional[str] = None
+
+
+@dataclasses.dataclass(unsafe_hash=True)
+class CopyTradingDependency(dsl_interpreter.InterpreterDependency):
+    strategy_id: str = dataclasses.field(hash=True)
+    refresh_required: bool = dataclasses.field(hash=True)

@@ -16,8 +16,10 @@
 
 from octobot_trading.dsl.dsl_dependencies import (
     SymbolDependency,
+    CopyTradingDependency,
 )
 
 __all__ = [
     "SymbolDependency",
+    "CopyTradingDependency",
 ]

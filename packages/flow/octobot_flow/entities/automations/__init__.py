@@ -3,6 +3,9 @@ from octobot_flow.entities.automations.fetched_exchange_data import (
     FetchedExchangePublicData,
     FetchedExchangeData,
 )
+from octobot_flow.entities.automations.fetched_copy_trading_data import (
+    FetchedCopyTradingData,
+)
 from octobot_flow.entities.automations.automation_details import (
     AutomationMetadata,
     AutomationDetails,
@@ -24,6 +27,7 @@ __all__ = [
     "FetchedExchangeAccountElements",
     "FetchedExchangePublicData",
     "FetchedExchangeData",
+    "FetchedCopyTradingData",
     "AutomationMetadata",
     "AutomationDetails",
     "AutomationState",

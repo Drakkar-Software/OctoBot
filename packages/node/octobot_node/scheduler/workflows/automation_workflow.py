@@ -24,6 +24,7 @@ import octobot_flow.enums
 import octobot_flow.errors
 
 import octobot_node.config
+import octobot_node.enums
 import octobot_node.models
 import octobot_node.scheduler.encryption as encryption
 import octobot_node.scheduler.octobot_flow_client as octobot_flow_client
@@ -64,15 +65,15 @@ class AutomationWorkflow:
             delay = parsed_inputs.execution_time - time.time()
             delay_str = f" in {delay:.2f} seconds" if delay > 0 else ""
             AutomationWorkflow.get_logger(parsed_inputs).info(f"{AutomationWorkflow.__name__} starting{delay_str}.")
-            priority_actions: list[dict] = []
+            actions_update: typing.Optional[dict] = None
             if delay > 0:
-                priority_actions = await AutomationWorkflow._wait_and_trigger_on_priority_actions(
+                actions_update = await AutomationWorkflow._wait_and_trigger_on_actions_update(
                     parsed_inputs, parsed_inputs.execution_time
                 )
-            raw_iteration_result = await AutomationWorkflow.execute_iteration(inputs, priority_actions)
+            raw_iteration_result = await AutomationWorkflow.execute_iteration(inputs, actions_update)
             iteration_result = params.AutomationWorkflowIterationResult.from_dict(raw_iteration_result)
             continue_workflow = False
-            if AutomationWorkflow._should_continue_workflow(parsed_inputs, iteration_result.progress_status, bool(priority_actions)):
+            if AutomationWorkflow._should_continue_workflow(parsed_inputs, iteration_result.progress_status, bool(actions_update)):
                 # update iteration_result to include the executions of priority actions if any
                 continue_workflow, iteration_result = await AutomationWorkflow._process_pending_priority_actions_and_reschedule(
                     parsed_inputs, iteration_result
@@ -107,7 +108,7 @@ class AutomationWorkflow:
     @SCHEDULER.INSTANCE.step(
         name="execute_iteration", retries_allowed=True, max_attempts=MAX_ITERATION_RETRIES
     )
-    async def execute_iteration(inputs: dict, user_actions: list[dict]) -> dict:
+    async def execute_iteration(inputs: dict, actions_update: typing.Optional[dict]) -> dict:
         """
         Execute an automation iteration: executed actions can be received priority actions or DAG's executable actions.
         In case of priority actions, the returned next scheduled time will be the same as the previous one to respect
@@ -127,14 +128,12 @@ class AutomationWorkflow:
             #### Start of decryped task context ####
             result: octobot_flow_client.OctoBotActionsJobResult = None # type: ignore
             if parsed_inputs.task.type == octobot_node.models.TaskType.EXECUTE_ACTIONS.value:
-                if user_actions:
-                    AutomationWorkflow.get_logger(parsed_inputs).info(f"Executing user actions: {user_actions}")
-                else:
-                    AutomationWorkflow.get_logger(parsed_inputs).info(
-                        f"Executing {parsed_inputs.task.name} DAG's executable actions"
-                    )
+                user_actions, trading_signals = AutomationWorkflow._parse_actions_update_envelope(actions_update)
+                AutomationWorkflow._log_iteration_execution_intent(
+                    parsed_inputs, user_actions, trading_signals
+                )
                 result = await octobot_flow_client.OctoBotActionsJob(
-                    parsed_inputs.task.content, user_actions
+                    parsed_inputs.task.content, user_actions, trading_signals
                 ).run()
                 if result.processed_actions:
                     if latest_step := AutomationWorkflow._get_actions_summary(result.processed_actions, minimal=True):
@@ -191,14 +190,42 @@ class AutomationWorkflow:
         ).to_dict(include_default_values=False)
 
     @staticmethod
-    async def _wait_and_trigger_on_priority_actions(
+    async def _wait_and_trigger_on_actions_update(
         parsed_inputs: params.AutomationWorkflowInputs, resume_execution_time: float
-    ) -> list[dict]:
+    ) -> typing.Optional[dict]:
         delay = max(0, resume_execution_time - time.time())
-        if priority_actions := await SCHEDULER.INSTANCE.recv_async(topic="user_actions", timeout_seconds=delay):
-            AutomationWorkflow.get_logger(parsed_inputs).info(f"Received user actions: {priority_actions}")
-            return priority_actions
-        return []
+        actions_topic = octobot_node.enums.AutomationWorkflowMessageTopics.ACTIONS_UPDATE.value
+        if recv_payload := await SCHEDULER.INSTANCE.recv_async(topic=actions_topic, timeout_seconds=delay):
+            AutomationWorkflow.get_logger(parsed_inputs).info(f"Received actions updates: {recv_payload}")
+            return recv_payload
+        return None
+
+    @staticmethod
+    def _parse_actions_update_envelope(
+        actions_update: typing.Optional[dict],
+    ) -> tuple[list[dict], list[dict]]:
+        if not actions_update:
+            return [], []
+        envelope = params.AutomationWorkflowActionUpdate.from_dict(actions_update)
+        if envelope.actions_type == octobot_node.enums.AutomationWorkflowActionTypes.USER_ACTIONS.value:
+            return list(envelope.actions_details), []
+        if envelope.actions_type == octobot_node.enums.AutomationWorkflowActionTypes.TRADING_SIGNAL.value:
+            return [], list(envelope.actions_details)
+        return [], []
+
+    @staticmethod
+    def _log_iteration_execution_intent(
+        parsed_inputs: params.AutomationWorkflowInputs,
+        user_actions: list[dict],
+        trading_signals: list[dict],
+    ) -> None:
+        logger = AutomationWorkflow.get_logger(parsed_inputs)
+        if user_actions:
+            logger.info(f"Executing user actions: {user_actions}")
+        if trading_signals:
+            logger.info(f"Executing trading signals: {trading_signals}")
+        if not user_actions and not trading_signals:
+            logger.info(f"Executing {parsed_inputs.task.name} DAG's executable actions")
 
     @staticmethod
     async def _process_pending_priority_actions_and_reschedule(
@@ -210,7 +237,7 @@ class AutomationWorkflow:
         # In case new priority actions were sent, execute them now.
         # Any action sent to this workflow will be lost if not processed by it.
         latest_iteration_result: params.AutomationWorkflowIterationResult = previous_iteration_result
-        while new_priority_actions := await AutomationWorkflow._wait_and_trigger_on_priority_actions(
+        while new_actions_update := await AutomationWorkflow._wait_and_trigger_on_actions_update(
             parsed_inputs, 0
         ):
             extra_iteration_inputs = AutomationWorkflow._create_next_iteration_inputs(
@@ -218,7 +245,7 @@ class AutomationWorkflow:
                 latest_iteration_result.next_iteration_description_metadata,
             )
             # execute the iteration on the updated state from last iteration
-            raw_iteration_result = await AutomationWorkflow.execute_iteration(extra_iteration_inputs, new_priority_actions)
+            raw_iteration_result = await AutomationWorkflow.execute_iteration(extra_iteration_inputs, new_actions_update)
             # use the new inputs for the next iteration of this loop
             parsed_inputs = params.AutomationWorkflowInputs.from_dict(extra_iteration_inputs)
             latest_iteration_result = params.AutomationWorkflowIterationResult.from_dict(raw_iteration_result)

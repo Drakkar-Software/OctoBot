@@ -24,6 +24,7 @@ import octobot_node.scheduler.workflows.params as params
 
 try:
     import octobot_flow
+    import octobot_flow.parsers
 except ImportError:
     octobot_commons.logging.get_logger("octobot_node.scheduler.workflows_util").warning(
         "octobot_flow is not installed, workflows utilities will not be available"
@@ -33,10 +34,18 @@ except ImportError:
 STATE_KEY = "state"
 
 
-def get_automation_state(workflow_status: dbos_lib.WorkflowStatus) -> typing.Optional["octobot_flow.AutomationState"]:
+def get_automation_copied_strategy_ids(workflow_status: dbos_lib.WorkflowStatus) -> list[str]:
+    if reader := get_automation_state_reader(workflow_status):
+        return reader.get_automation_copied_strategy_ids()
+    return []
+
+
+def get_automation_state_reader(workflow_status: dbos_lib.WorkflowStatus) -> typing.Optional["octobot_flow.parsers.AutomationStateReader"]:
     """Get the automation state from the workflow status"""
     if state_dict := get_automation_state_dict(workflow_status):
-        return octobot_flow.AutomationState.from_dict(state_dict)
+        return octobot_flow.parsers.AutomationStateReader(
+            octobot_flow.AutomationState.from_dict(state_dict)
+        )
     return None
 
 

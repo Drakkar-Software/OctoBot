@@ -2,15 +2,87 @@ import decimal
 import time
 
 import octobot_commons.constants as common_constants
+import octobot_commons.dsl_interpreter
+import octobot_commons.profiles as commons_profiles
 import octobot_commons.symbols as symbol_util
 import octobot_commons.logging as logging
 
 import octobot_copy.constants as copy_constants
 import octobot_copy.entities as copy_entities
 
-import octobot_flow.constants as flow_constants
+import octobot_flow.constants
 import octobot_flow.entities
+import octobot_flow.errors
+import octobot_flow.logic.actions.actions_factory as actions_factory
+import octobot_flow.logic.dsl as dsl_logic
 
+import tentacles.Meta.DSL_operators.exchange_operators as exchange_operators
+
+
+def update_action_trading_signal_if_relevant(
+    action: octobot_flow.entities.AbstractActionDetails,
+    trading_signal: octobot_flow.entities.TradingSignal,
+    default_reference_market: str,
+) -> None:
+    if not isinstance(action, octobot_flow.entities.DSLScriptActionDetails):
+        return
+    dsl_script = action.dsl_script
+    if dsl_script is None or not str(dsl_script).strip():
+        raise octobot_flow.errors.InvalidAutomationActionError(
+            "DSL script is required to update trading signal on a DSL action"
+        )
+    dsl_script_str = str(dsl_script)
+    if common_constants.UNRESOLVED_PARAMETER_PLACEHOLDER in dsl_script_str:
+        raise octobot_flow.errors.UnresolvedDSLScriptError(
+            "DSL script has unresolved parameters; resolve dependencies before applying trading signals"
+        )
+    dsl_executor = dsl_logic.DSLExecutor(
+        commons_profiles.ProfileData(),
+        None,
+        dsl_script_str,
+    )
+    top = dsl_executor.get_top_operator()
+    if not isinstance(top, octobot_commons.dsl_interpreter.Operator):
+        return
+    if top.get_name() not in (
+        exchange_operators.CopyExchangeAccountOperatorNames.COPY_EXCHANGE_ACCOUNT.value,
+    ):
+        return
+    params = top.get_computed_value_by_parameter()
+    dsl_strategy_id = str(params["strategy_id"])
+    if dsl_strategy_id != str(trading_signal.strategy_id):
+        raise octobot_flow.errors.CommunityTradingSignalError(
+            f"Trading signal strategy_id {trading_signal.strategy_id!r} does not match "
+            f"copy_exchange_account strategy_id {dsl_strategy_id!r}"
+        )
+    account_copy_settings = copy_entities.parse_account_copy_settings(
+        params.get("account_copy_settings")
+    )
+    reference_market = str(params["reference_market"]) or default_reference_market
+    new_details = actions_factory.create_copy_exchange_account_action(
+        params["strategy_id"], # type: ignore
+        reference_market,
+        trading_signal.account,
+        account_copy_settings,
+    )
+    action.dsl_script = new_details.dsl_script
+    action.resolved_dsl_script = new_details.resolved_dsl_script
+
+
+def update_trading_signals(
+    actions: list[octobot_flow.entities.AbstractActionDetails],
+    trading_signals: list[octobot_flow.entities.TradingSignal],
+    default_reference_market: str,
+) -> None:
+    for trading_signal in trading_signals:
+        for action in actions:
+            try:
+                update_action_trading_signal_if_relevant(
+                    action, trading_signal, default_reference_market
+                )
+            except octobot_flow.errors.CommunityTradingSignalError:
+                # Signal applies to a different strategy than this copy_exchange_account action.
+                continue
 
 
 def reference_exchange_elements_to_account(
@@ -61,14 +133,14 @@ def reference_exchange_elements_to_account(
 def create_account_copy_settings(
     automation: octobot_flow.entities.AutomationDetails,
 ) -> copy_entities.AccountCopySettings:
-    grace_seconds = flow_constants.DEFAULT_COPY_TRADING_ORPHAN_CANCEL_GRACE_SECONDS
-    threshold = flow_constants.DEFAULT_COPY_TRADING_ORPHAN_GRACE_ABORT_THRESHOLD
-    missed_signals_threshold = flow_constants.DEFAULT_COPY_TRADING_MISSED_SIGNALS_GRACE_ABORT_THRESHOLD
+    grace_seconds = octobot_flow.constants.DEFAULT_COPY_TRADING_ORPHAN_CANCEL_GRACE_SECONDS
+    threshold = octobot_flow.constants.DEFAULT_COPY_TRADING_ORPHAN_GRACE_ABORT_THRESHOLD
+    missed_signals_threshold = octobot_flow.constants.DEFAULT_COPY_TRADING_MISSED_SIGNALS_GRACE_ABORT_THRESHOLD
     return copy_entities.AccountCopySettings(
         mirrored_orphan_cancel_grace_seconds=grace_seconds,
         mirrored_orphan_grace_abort_threshold=threshold,
         missed_signals_grace_abort_threshold=missed_signals_threshold,
         mirrored_orphan_grace_pair_ratio_max_delta=(
-            flow_constants.DEFAULT_COPY_TRADING_ORPHAN_GRACE_PAIR_RATIO_MAX_DELTA
+            octobot_flow.constants.DEFAULT_COPY_TRADING_ORPHAN_GRACE_PAIR_RATIO_MAX_DELTA
         ),
     )

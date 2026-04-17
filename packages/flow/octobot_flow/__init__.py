@@ -16,6 +16,7 @@ if _import_tentacles:
         parse_action_details,
         AutomationState,
         ActionsDAG,
+        TradingSignal,
     )
 
 
@@ -25,4 +26,5 @@ if _import_tentacles:
         "parse_action_details",
         "ActionsDAG",
         "AutomationState",
+        "TradingSignal",
     ]

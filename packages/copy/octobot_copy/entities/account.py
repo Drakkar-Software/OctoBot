@@ -13,16 +13,16 @@ import octobot_copy.constants as copy_constants
 
 @dataclasses.dataclass
 class Account(commons_dataclasses.MinimizableDataclass):
-    updated_at: float = 0
+    updated_at: float = dataclasses.field(default=0, repr=True)
     # account portfolio: dict of assets with allocation_ratio, available and total amounts
     # the allocation_ratio key is used to compute the distribution allocation
-    content: dict[str, dict[str, decimal.Decimal]] = dataclasses.field(default_factory=dict)
+    content: dict[str, dict[str, decimal.Decimal]] = dataclasses.field(default_factory=dict, repr=True)
     # account enriched orders formatted as trading_storage.orders_storage._format_order
-    orders: list[dict[str, typing.Any]] = dataclasses.field(default_factory=list)
+    orders: list[dict[str, typing.Any]] = dataclasses.field(default_factory=list, repr=True)
     # account positions, dict keys: trading_enums.ExchangeConstantsPositionColumns
-    positions: list[dict[str, typing.Any]] = dataclasses.field(default_factory=list)
+    positions: list[dict[str, typing.Any]] = dataclasses.field(default_factory=list, repr=True)
     # list of historical snapshots of the account, sorted by updated_at (most recent first) 
-    historical_snapshots: list["Account"] = dataclasses.field(default_factory=list)
+    historical_snapshots: list["Account"] = dataclasses.field(default_factory=list, repr=True)
 
     def __post_init__(self):
         self.content = {

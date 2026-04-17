@@ -4,13 +4,15 @@ import typing
 
 import octobot_commons.logging as common_logging
 import octobot.community
+import octobot_commons.profiles.profile_data as profile_data_import
 
 import octobot_flow.entities
+import octobot_flow.constants
 import octobot_flow.enums
 import octobot_flow.errors
+import octobot_flow.logic.actions
 import octobot_flow.logic.configuration
 import octobot_flow.logic.dsl
-import octobot_flow.logic.actions.account_copy_util as account_copy_util
 import octobot_flow.parsers.sanitizer
 import octobot_flow.repositories.community
 import octobot_flow.encryption
@@ -29,6 +31,7 @@ class AutomationJob:
         self,
         automation_state: dict[str, typing.Any],
         added_priority_actions: list[octobot_flow.entities.AbstractActionDetails],
+        updated_trading_signals: list[octobot_flow.entities.TradingSignal],
         auth_details: typing.Union[octobot_flow.entities.UserAuthentication, dict],
     ):
         self.automation_state: octobot_flow.entities.AutomationState = (
@@ -38,6 +41,15 @@ class AutomationJob:
             # Include added priority actions in the automation state. 
             # All pending priority actions will be executed before any other actions.
             self.automation_state.update_priority_actions(added_priority_actions)
+        if updated_trading_signals:
+            default_reference_market = octobot_flow.logic.configuration.infer_reference_market(
+                self.automation_state.exchange_account_details, [],
+            )
+            octobot_flow.logic.actions.update_trading_signals(
+                self.automation_state.automation.actions_dag.actions,
+                updated_trading_signals,
+                default_reference_market,
+            )
         self._validate_input()
         self.auth_details: octobot_flow.entities.UserAuthentication = octobot_flow.entities.UserAuthentication.from_dict(auth_details) if isinstance(auth_details, dict) else auth_details
         self.is_initialization_run = self._requires_initialization_run()
@@ -87,6 +99,23 @@ class AutomationJob:
                 self._clear_resolved_dsl_scripts(executed_actions)
         self._logger.info(f"Automation updated successfully in {round(time.time() - t0, 2)} seconds")
         return executed_actions
+
+    def update_actions_from_copy_trading_data(
+        self,
+        actions: list[octobot_flow.entities.AbstractActionDetails],
+        copy_trading_data: octobot_flow.entities.FetchedCopyTradingData,
+        default_reference_market: str,
+    ):
+        # adapt actions to reflect the new trading signals
+        for trading_signal in copy_trading_data.trading_signals:
+            for action in actions:
+                try:
+                    octobot_flow.logic.actions.update_action_trading_signal_if_relevant(
+                        action, trading_signal, default_reference_market
+                    )
+                except octobot_flow.errors.CommunityTradingSignalError:
+                    # Signal applies to a different strategy than this copy_exchange_account action.
+                    continue
 
     @contextlib.asynccontextmanager
     async def _maybe_authenticator(self) -> typing.AsyncGenerator[typing.Optional[octobot.community.CommunityAuthentication], None]:
@@ -184,15 +213,31 @@ class AutomationJob:
         to_execute_actions: list[octobot_flow.entities.AbstractActionDetails],
     ) -> octobot_flow.entities.FetchedDependencies:
         self._logger.info("Fetching automation dependencies.")
+        minimal_profile_data = octobot_flow.logic.configuration.create_profile_data(
+            self.automation_state.exchange_account_details,
+            self.automation_state.automation.metadata.automation_id,
+            set()
+        )
+        if fetched_copy_trading_data := await self._init_all_required_copy_trading_data(
+            maybe_community_repository, to_execute_actions, minimal_profile_data,
+        ):
+            default_reference_market = octobot_flow.logic.configuration.infer_reference_market(
+                self.automation_state.exchange_account_details, [],
+            )
+            self.update_actions_from_copy_trading_data(
+                to_execute_actions, fetched_copy_trading_data, default_reference_market
+            )
         fetched_exchange_data = (
             await self._init_all_required_exchange_data(
                 self.automation_state.exchange_account_details,
                 maybe_community_repository, to_execute_actions,
+                minimal_profile_data,
             )
             if self.automation_state.has_exchange() else None
         )
         return octobot_flow.entities.FetchedDependencies(
-            fetched_exchange_data=fetched_exchange_data
+            fetched_exchange_data=fetched_exchange_data,
+            fetched_copy_trading_data=fetched_copy_trading_data,
         )
 
     async def _init_all_required_exchange_data(
@@ -200,6 +245,7 @@ class AutomationJob:
         exchange_account_details: octobot_flow.entities.ExchangeAccountDetails,
         maybe_community_repository: typing.Optional[octobot_flow.repositories.community.CommunityRepository],
         to_execute_actions: list[octobot_flow.entities.AbstractActionDetails],
+        minimal_profile_data: profile_data_import.ProfileData,
     ) -> octobot_flow.entities.FetchedExchangeData:
         t0 = time.time()
         exchange_summary = (
@@ -209,11 +255,6 @@ class AutomationJob:
         self._logger.info(f"Initializing all required data for {exchange_summary}.")
         exchange_account_job = exchange_account_job_import.ExchangeAccountJob(
             self.automation_state, self.fetched_actions
-        )
-        minimal_profile_data = octobot_flow.logic.configuration.create_profile_data(
-            self.automation_state.exchange_account_details,
-            self.automation_state.automation.metadata.automation_id,
-            set()
         )
         symbols = set(
             exchange_account_job.get_all_actions_symbols(minimal_profile_data)
@@ -242,6 +283,37 @@ class AutomationJob:
             f"Initialized all required data for {exchange_summary} in {round(time.time() - t0, 2)} seconds."
         )
         return exchange_account_job.fetched_dependencies.fetched_exchange_data  # type: ignore
+
+    async def _init_all_required_copy_trading_data(
+        self,
+        maybe_community_repository: typing.Optional[octobot_flow.repositories.community.CommunityRepository],
+        to_execute_actions: list[octobot_flow.entities.AbstractActionDetails],
+        minimal_profile_data: profile_data_import.ProfileData,
+    ) -> typing.Optional[octobot_flow.entities.FetchedCopyTradingData]:
+        copy_trading_data = None
+        if to_fetch_signals := [
+            copy_trading_dependency.strategy_id
+            for copy_trading_dependency in octobot_flow.logic.dsl.get_copy_trading_dependencies(
+                to_execute_actions, minimal_profile_data
+            )
+            if copy_trading_dependency.refresh_required
+        ]:
+            if maybe_community_repository is None:
+                raise octobot_flow.errors.CommunityTradingSignalError(
+                    "Community authentication is required to fetch copy trading signals"
+                )
+            trading_signals_repository = octobot_flow.repositories.community.TradingSignalsRepository(
+                maybe_community_repository.authenticator
+            )
+            self._logger.info(f"Fetching copy trading signals for {to_fetch_signals} strategies")
+            trading_signals = await trading_signals_repository.fetch_trading_signals(
+                to_fetch_signals,
+                octobot_flow.constants.DEFAULT_COPY_TRADING_MISSED_SIGNALS_GRACE_ABORT_THRESHOLD
+            )
+            copy_trading_data = octobot_flow.entities.FetchedCopyTradingData(
+                trading_signals=trading_signals
+            )
+        return copy_trading_data
 
     async def _execute_automation_actions(
         self,
@@ -301,7 +373,7 @@ class AutomationJob:
         reference_market = octobot_flow.logic.configuration.infer_reference_market(
             self.automation_state.exchange_account_details, [],
         )
-        account = account_copy_util.reference_exchange_elements_to_account(
+        account = octobot_flow.logic.actions.reference_exchange_elements_to_account(
             automation.exchange_account_elements,
             fetched_dependencies.fetched_exchange_data,
             reference_market
@@ -310,10 +382,11 @@ class AutomationJob:
             maybe_community_repository.authenticator
         )
         await trading_signals_repository.insert_trading_signal(
-            octobot_flow.entities.TradingSignal(account=account)
+            octobot_flow.entities.TradingSignal(
+                strategy_id=automation.metadata.strategy_id, account=account
+            )
         )
         
-
     def _get_actions_to_execute(self) -> tuple[list[octobot_flow.entities.AbstractActionDetails], bool]:
         if pending_priority_actions := self._get_pending_priority_actions():
             return pending_priority_actions, True
@@ -321,9 +394,7 @@ class AutomationJob:
         return executable_actions + self.fetched_actions, False
 
     def _get_pending_priority_actions(self) -> list[octobot_flow.entities.AbstractActionDetails]:
-        return [
-            action for action in self.automation_state.priority_actions if not action.is_completed()
-        ]
+        return self.automation_state.get_pending_priority_actions()
 
     def _resolve_dsl_scripts(
         self, actions: list[octobot_flow.entities.AbstractActionDetails],

@@ -39,6 +39,7 @@ from tentacles.Meta.DSL_operators.exchange_operators.exchange_personal_data_oper
 )
 from tentacles.Meta.DSL_operators.exchange_operators.exchange_personal_data_operators.copy_exchange_account_operators import (
     create_copy_exchange_account_operators,
+    CopyExchangeAccountOperatorNames,
 )
 __all__ = [
     "create_portfolio_operators",

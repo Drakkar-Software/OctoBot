@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
+from typing_extensions import Reader
 import dbos
 import json
 import logging
@@ -146,10 +147,10 @@ class Scheduler:
             pending_workflow_statuses = await self.INSTANCE.list_workflows_async(status=[dbos.WorkflowStatusString.ENQUEUED.value, dbos.WorkflowStatusString.PENDING.value])
             for pending_workflow_status in pending_workflow_statuses or []:
                 try:
-                    if state := workflows_util.get_automation_state(pending_workflow_status):
+                    if reader := workflows_util.get_automation_state_reader(pending_workflow_status):
                         next_step = ", ".join([
                             action.get_summary()
-                            for action in state.automation.actions_dag.get_executable_actions()
+                            for action in reader.get_executable_actions()
                         ])
                         description = f"next steps: {next_step}"
                     else:

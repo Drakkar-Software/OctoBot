@@ -40,3 +40,9 @@ class AutomationWorkflowIterationResult(octobot_commons.dataclasses.minimizable_
     next_iteration_description: typing.Optional[str]
     next_iteration_description_metadata: typing.Optional[str] = None
     has_next_actions: bool = False
+
+
+@dataclasses.dataclass
+class AutomationWorkflowActionUpdate(octobot_commons.dataclasses.minimizable_dataclass.MinimizableDataclass):
+    actions_type: str  # octobot_node.enums.AutomationWorkflowActionTypes value
+    actions_details: list[dict] # list of actions dicts

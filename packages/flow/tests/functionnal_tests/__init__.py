@@ -27,6 +27,9 @@ import octobot_flow.logic.actions.actions_factory as actions_factory
 
 AUTHENTICATED_TEST_GROUP = "authenticated_xdist_group"
 
+# Passed as copy_exchange_account(strategy_id=...) in functional DSL so copy-trading dependencies resolve.
+FUNCTIONAL_TEST_COPY_STRATEGY_ID = "functional_test_copy_strategy"
+
 
 def d_order_price(value: typing.Union[int, float, decimal.Decimal]) -> decimal.Decimal:
     """Exact decimal view of a stored order price (avoids float + int mix in assertions)."""
@@ -329,12 +332,25 @@ def copy_exchange_account_action(
     reference_market: str,
     reference_account: copy_entities.Account,
     account_copy_settings: typing.Optional[copy_entities.AccountCopySettings] = None,
+    strategy_id: str = FUNCTIONAL_TEST_COPY_STRATEGY_ID,
 ) -> dict:
     return {
         "id": "action_copy_exchange_account",
         "dsl_script": actions_factory.create_copy_exchange_account_action(
-            reference_market, reference_account, account_copy_settings
+            strategy_id, reference_market, reference_account, account_copy_settings
         ).dsl_script,
+    }
+
+
+def empty_copy_exchange_account_action(
+    strategy_id: str = FUNCTIONAL_TEST_COPY_STRATEGY_ID,
+) -> dict:
+    """Copy action with empty reference fields until a trading signal fills the DSL (refresh_required)."""
+    return {
+        "id": "action_copy_exchange_account",
+        "dsl_script": (
+            f"copy_exchange_account(strategy_id={json.dumps(strategy_id)}, reference_market='', reference_account='')"
+        ),
     }
 
 

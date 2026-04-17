@@ -16,6 +16,7 @@ def _json_serialize_for_dsl(obj: typing.Any) -> typing.Any:
 
 
 def create_copy_exchange_account_action(
+    strategy_id: str,
     reference_market: str,
     reference_account: copy_entities.Account,
     account_copy_settings: typing.Optional[copy_entities.AccountCopySettings] = None,
@@ -25,8 +26,8 @@ def create_copy_exchange_account_action(
     ref_json = json.dumps(reference_dict, default=_json_serialize_for_dsl)
     settings_json = json.dumps(settings_dict, default=_json_serialize_for_dsl)
     dsl_script = (
-        f"copy_exchange_account(reference_market='{reference_market}', reference_account='{ref_json}', "
-        f"account_copy_settings='{settings_json}')"
+        f"copy_exchange_account(strategy_id={json.dumps(strategy_id)}, reference_market='{reference_market}', "
+        f"reference_account='{ref_json}', account_copy_settings='{settings_json}')"
     )
     return octobot_flow.entities.DSLScriptActionDetails(
         id="copy_exchange_account",

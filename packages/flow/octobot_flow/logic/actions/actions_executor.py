@@ -2,7 +2,6 @@ import typing
 
 import octobot_commons.logging
 import octobot_commons.dsl_interpreter
-import octobot_commons.dsl_interpreter.operators.re_callable_operator_mixin as re_callable_operator_mixin
 import octobot_commons.profiles
 import octobot_trading.exchanges
 

@@ -53,7 +53,7 @@ async def test_exchange_actions_creating_and_waiting_and_cancelling_limit(
         automation_state.upsert_automation_actions(
 resolved_actions(actions_to_execute),
         )
-        async with octobot_flow.AutomationJob(automation_state, [], auth_details) as automations_job:
+        async with octobot_flow.AutomationJob(automation_state, [], [], auth_details) as automations_job:
             await automations_job.run()
 
         # check bot actions execution
@@ -84,7 +84,7 @@ resolved_actions(actions_to_execute),
         # 2.A execute wait action 1/3
         automation_state_2 = automations_job.automation_state
         with mock.patch.object(asyncio, "sleep", mock.AsyncMock(return_value=None)) as sleep_mock:
-            async with octobot_flow.AutomationJob(automation_state_2, [], auth_details) as automations_job_2:
+            async with octobot_flow.AutomationJob(automation_state_2, [], [], auth_details) as automations_job_2:
                 await automations_job_2.run()
                 for call in sleep_mock.mock_calls:
                     # there was no call for the wait action
@@ -118,7 +118,7 @@ resolved_actions(actions_to_execute),
         # 2.B execute wait action 2/3
         automation_state_3 = automations_job.automation_state
         with mock.patch.object(asyncio, "sleep", mock.AsyncMock(return_value=None)) as sleep_mock:
-            async with octobot_flow.AutomationJob(automation_state_3, [], auth_details) as automations_job_3:
+            async with octobot_flow.AutomationJob(automation_state_3, [], [], auth_details) as automations_job_3:
                 await automations_job_3.run()
                 for call in sleep_mock.mock_calls:
                     # there was no call for the wait action
@@ -155,7 +155,7 @@ resolved_actions(actions_to_execute),
             mock.patch.object(asyncio, "sleep", mock.AsyncMock(return_value=None)) as sleep_mock,
             mock.patch.object(time, "time", mock.Mock(return_value=t0 + waiting_time_1 + 50)),
         ):
-            async with octobot_flow.AutomationJob(automation_state_4, [], auth_details) as automations_job_4:
+            async with octobot_flow.AutomationJob(automation_state_4, [], [], auth_details) as automations_job_4:
                 await automations_job_4.run()
                 for call in sleep_mock.mock_calls:
                     # there was no call for the wait action
@@ -177,7 +177,7 @@ resolved_actions(actions_to_execute),
 
         # 3. execute cancel limit order action
         automation_state_4 = automations_job_4.automation_state
-        async with octobot_flow.AutomationJob(automation_state_4, [], auth_details) as automations_job_4:
+        async with octobot_flow.AutomationJob(automation_state_4, [], [], auth_details) as automations_job_4:
             await automations_job_4.run()
 
         # check bot actions execution
@@ -244,7 +244,7 @@ async def test_exchange_actions_creating_and_waiting_with_condition_that_is_not_
         automation_state.upsert_automation_actions(
             resolved_actions(actions_to_execute),
         )
-        async with octobot_flow.AutomationJob(automation_state, [], auth_details) as automations_job:
+        async with octobot_flow.AutomationJob(automation_state, [], [], auth_details) as automations_job:
             await automations_job.run()
 
         actions = automations_job.automation_state.automation.actions_dag.actions
@@ -259,7 +259,7 @@ async def test_exchange_actions_creating_and_waiting_with_condition_that_is_not_
 
         automation_state_2 = automations_job.automation_state
         with mock.patch.object(asyncio, "sleep", mock.AsyncMock(return_value=None)) as sleep_mock:
-            async with octobot_flow.AutomationJob(automation_state_2, [], auth_details) as automations_job_2:
+            async with octobot_flow.AutomationJob(automation_state_2, [], [], auth_details) as automations_job_2:
                 await automations_job_2.run()
                 for call in sleep_mock.mock_calls:
                     assert call.args[0] < 1
@@ -289,7 +289,7 @@ async def test_exchange_actions_creating_and_waiting_with_condition_that_is_not_
 
         automation_state_3 = automations_job_2.automation_state
         with mock.patch.object(asyncio, "sleep", mock.AsyncMock(return_value=None)) as sleep_mock:
-            async with octobot_flow.AutomationJob(automation_state_3, [], auth_details) as automations_job_3:
+            async with octobot_flow.AutomationJob(automation_state_3, [], [], auth_details) as automations_job_3:
                 await automations_job_3.run()
                 for call in sleep_mock.mock_calls:
                     assert call.args[0] < 1
@@ -317,7 +317,7 @@ async def test_exchange_actions_creating_and_waiting_with_condition_that_is_not_
             mock.patch.object(asyncio, "sleep", mock.AsyncMock(return_value=None)) as sleep_mock,
             mock.patch.object(time, "time", mock.Mock(return_value=t0 + waiting_time_1 + 50)),
         ):
-            async with octobot_flow.AutomationJob(automation_state_4, [], auth_details) as automations_job_4:
+            async with octobot_flow.AutomationJob(automation_state_4, [], [], auth_details) as automations_job_4:
                 await automations_job_4.run()
                 for call in sleep_mock.mock_calls:
                     assert call.args[0] < 1
@@ -329,7 +329,7 @@ async def test_exchange_actions_creating_and_waiting_with_condition_that_is_not_
         assert cancel_action.executed_at is None
 
         automation_state_5 = automations_job_4.automation_state
-        async with octobot_flow.AutomationJob(automation_state_5, [], auth_details) as automations_job_5:
+        async with octobot_flow.AutomationJob(automation_state_5, [], [], auth_details) as automations_job_5:
             await automations_job_5.run()
 
         actions = automations_job_5.automation_state.automation.actions_dag.actions

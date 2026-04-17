@@ -34,7 +34,7 @@ async def test_insert_trading_signal_delivers_to_subscriber(internal_channel_nam
     await channel.new_consumer(capture_callback)
 
     account = copy_entities.Account()
-    signal = octobot_flow.entities.TradingSignal(account=account)
+    signal = octobot_flow.entities.TradingSignal(account=account, strategy_id="test-strategy-id")
     repository = trading_signals_repository.TradingSignalsRepository(mock.MagicMock())
     await repository.insert_trading_signal(signal)
 

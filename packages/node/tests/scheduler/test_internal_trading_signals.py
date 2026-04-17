@@ -50,7 +50,7 @@ async def test_insert_trading_signal_completes_without_error_after_subscribe():
 
     async_channel_channels.del_chan(_channel_name())
     await internal_trading_signals.subscribe_internal_trading_signal_consumer()
-    signal = flow_entities.TradingSignal(account=copy_entities.Account())
+    signal = flow_entities.TradingSignal(account=copy_entities.Account(), strategy_id="test-strategy-id")
     repository = trading_signals_repository.TradingSignalsRepository(object())  # type: ignore[arg-type]
     await repository.insert_trading_signal(signal)
     await asyncio.sleep(0.05)

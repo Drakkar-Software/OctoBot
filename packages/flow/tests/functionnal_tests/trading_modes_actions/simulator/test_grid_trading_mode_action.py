@@ -1,3 +1,4 @@
+import contextlib
 import decimal
 import logging
 import typing
@@ -15,8 +16,10 @@ import octobot_trading.constants as trading_constants
 import octobot_trading.enums as trading_enums
 import octobot_trading.exchanges.util.exchange_data as exchange_data
 import octobot_flow
+import octobot_flow.constants
 import octobot_flow.entities
 import octobot_flow.enums
+import octobot_flow.repositories.community
 import octobot_flow.repositories.exchange
 import octobot_trading.util.test_tools.exchanges_test_tools as exchanges_test_tools
 
@@ -27,6 +30,7 @@ from tests.functionnal_tests import (
     copy_exchange_account_action,
     current_time,
     d_order_price,
+    empty_copy_exchange_account_action,
     resolved_actions,
     set_emit_signals_metadata,
     trading_signal_emission_patches,
@@ -417,7 +421,7 @@ async def test_simulator_grid_init_from_empty_state(init_action: dict, emit_sign
             set_emit_signals_metadata(automation_state, emit_signals)
 
             # 1. run init action
-            async with octobot_flow.AutomationJob(automation_state, [], {}) as automation_job:
+            async with octobot_flow.AutomationJob(automation_state, [], [], {}) as automation_job:
                 await automation_job.run()
             after_init_execution_dump = automation_job.dump()
 
@@ -435,7 +439,7 @@ async def test_simulator_grid_init_from_empty_state(init_action: dict, emit_sign
                     assert action.previous_execution_result is None
 
             # 2. run grid trading mode action
-            async with octobot_flow.AutomationJob(after_init_execution_dump, [], {}) as automation_job:
+            async with octobot_flow.AutomationJob(after_init_execution_dump, [], [], {}) as automation_job:
                 await automation_job.run()
             after_grid_execution_dump = automation_job.dump()
             assert len(automation_job.automation_state.automation.actions_dag.actions) == len(all_actions)
@@ -514,7 +518,7 @@ async def test_simulator_grid_init_from_empty_state(init_action: dict, emit_sign
                 assert d_order_price(sell_orders[1][price_col]) == lowest_buy_price + D_INCREMENT + D_SPREAD + D_INCREMENT
 
             # 3. trigger again: nothing to do
-            async with octobot_flow.AutomationJob(after_grid_execution_dump, [], {}) as automation_job:
+            async with octobot_flow.AutomationJob(after_grid_execution_dump, [], [], {}) as automation_job:
                 await automation_job.run()
             after_second_call_execution_dump = automation_job.dump()
             assert len(automation_job.automation_state.automation.actions_dag.actions) == len(all_actions)
@@ -590,11 +594,11 @@ async def test_simulator_grid_init_and_fill_sell_order(init_action: dict, emit_s
             automation_state = automation_state_dict(resolved_actions(all_actions))
             set_emit_signals_metadata(automation_state, emit_signals)
 
-            async with octobot_flow.AutomationJob(automation_state, [], {}) as automation_job:
+            async with octobot_flow.AutomationJob(automation_state, [], [], {}) as automation_job:
                 await automation_job.run()
             after_init_execution_dump = automation_job.dump()
 
-            async with octobot_flow.AutomationJob(after_init_execution_dump, [], {}) as automation_job:
+            async with octobot_flow.AutomationJob(after_init_execution_dump, [], [], {}) as automation_job:
                 await automation_job.run()
             after_grid_execution_dump = automation_job.dump()
 
@@ -634,7 +638,7 @@ async def test_simulator_grid_init_and_fill_sell_order(init_action: dict, emit_s
             # Between first and second sell so the lowest sell limit fills but price stays inside the grid upper bound.
             simulated_close["value"] = float(first_sell_price + D_INCREMENT / decimal.Decimal("2"))
 
-            async with octobot_flow.AutomationJob(after_grid_execution_dump, [], {}) as automation_job:
+            async with octobot_flow.AutomationJob(after_grid_execution_dump, [], [], {}) as automation_job:
                 await automation_job.run()
                 final_dump = automation_job.dump()
                 for action in automation_job.automation_state.automation.actions_dag.actions:
@@ -699,216 +703,278 @@ async def test_simulator_grid_init_and_fill_sell_order(init_action: dict, emit_s
                 insert_trading_signal_mock.assert_not_awaited()
 
 
-@pytest.mark.parametrize("emit_signals", [False, True])
+@pytest.mark.parametrize("start_as_uninitialized_copy_keyword", [
+    False,
+    True,
+])
+@pytest.mark.parametrize("emit_signals", [
+    False,
+    True,
+])
 @pytest.mark.asyncio
 async def test_simulator_copy_grid(
     init_action: dict,
     grid_reference_account: copy_entities.Account,
     emit_signals: bool,
+    start_as_uninitialized_copy_keyword: bool,
 ):
     """
     Copy a reference spot account shaped like a BTC/USDC grid (portfolio + 2/2 open limits)
     onto the client after init, then ensure a no-op second run keeps portfolio and ladder intact.
+
+    When start_as_uninitialized_copy_keyword is True, the copy action is stored with empty reference_market /
+    reference_account until a fetched trading signal fills the DSL; otherwise the reference account
+    is embedded in the action from the start.
     """
     patched_fetch_tickers = tickers_repository_fetch_tickers_btc_usdc_close_override(
         lambda: _FIXED_BTC_USDC_CLOSE
     )
     patched_fetch_ohlcv = fetch_ohlcv_side_effect_for_close_price(lambda: _FIXED_BTC_USDC_CLOSE)
 
-    with (
-        mock.patch.object(
-            octobot_flow.repositories.exchange.TickersRepository,
-            "fetch_tickers",
-            new=patched_fetch_tickers,
-        ),
-        mock.patch.object(
-            octobot_flow.repositories.exchange.OhlcvRepository,
-            "fetch_ohlcv",
-            side_effect=patched_fetch_ohlcv,
-        ),
-    ):
-        with trading_signal_emission_patches(emit_signals) as insert_trading_signal_mock:
-            reference_market = init_action["config"]["exchange_account_details"]["portfolio"]["unit"]
-            all_actions = [
-                init_action,
-                copy_exchange_account_action(reference_market, grid_reference_account),
-            ]
-            automation_state = automation_state_dict(resolved_actions(all_actions))
-            set_emit_signals_metadata(automation_state, emit_signals)
-
-            # 1. run init action
-            async with octobot_flow.AutomationJob(automation_state, [], {}) as automation_job:
-                await automation_job.run()
-            after_init_execution_dump = automation_job.dump()
-
-            # check bot actions execution
-            assert len(automation_job.automation_state.automation.actions_dag.actions) == len(all_actions)
-            for index, action in enumerate(automation_job.automation_state.automation.actions_dag.actions):
-                assert isinstance(action, octobot_flow.entities.AbstractActionDetails)
-                assert action.error_status == octobot_flow.enums.ActionErrorStatus.NO_ERROR.value
-                assert action.result is None
-                if index == 0:
-                    assert action.executed_at and action.executed_at >= current_time
-                    assert action.previous_execution_result is None
-                else:
-                    assert action.executed_at is None
-                    assert action.previous_execution_result is None
-
-            # 2. run copy exchange account action (rebalance + mirror reference grid orders)
-            async with octobot_flow.AutomationJob(after_init_execution_dump, [], {}) as automation_job:
-                await automation_job.run()
-            after_initial_copy_execution_dump = automation_job.dump()
-            assert len(automation_job.automation_state.automation.actions_dag.actions) == len(all_actions)
-            for index, action in enumerate(automation_job.automation_state.automation.actions_dag.actions):
-                assert isinstance(action, octobot_flow.entities.AbstractActionDetails)
-                assert action.error_status == octobot_flow.enums.ActionErrorStatus.NO_ERROR.value
-                assert action.result is None
-                if index == 0:
-                    assert action.executed_at is not None
-                    assert action.previous_execution_result is None
-                else:
-                    assert action.executed_at is None
-                    assert isinstance(action.previous_execution_result, dict)
-
-            # scheduled next execution: default copy interval (4h)
-            assert (
-                after_initial_copy_execution_dump["automation"]["execution"]["previous_execution"]["triggered_at"]
-                >= current_time
+    fetch_trading_signals_mock = mock.AsyncMock()
+    if start_as_uninitialized_copy_keyword:
+        fetch_trading_signals_mock.return_value = [
+            octobot_flow.entities.TradingSignal(
+                strategy_id=functionnal_tests.FUNCTIONAL_TEST_COPY_STRATEGY_ID,
+                account=grid_reference_account,
             )
-            allowed_execution_time = 20
-            schedule_delay = (
-                after_initial_copy_execution_dump["automation"]["execution"]["current_execution"]["scheduled_to"]
-                - after_initial_copy_execution_dump["automation"]["execution"]["previous_execution"]["triggered_at"]
-            )
-            assert (
-                copy_constants.DEFAULT_COPY_WAITING_TIME - allowed_execution_time
-                < schedule_delay
-                < copy_constants.DEFAULT_COPY_WAITING_TIME + allowed_execution_time
-            )
+        ]
 
-            after_initial_portfolio_content = after_initial_copy_execution_dump["automation"][
-                "exchange_account_elements"
-            ]["portfolio"]["content"]
-            assert isinstance(after_initial_copy_execution_dump, dict)
-            assert list(sorted(after_initial_portfolio_content.keys())) == ["BTC", "USDC"]
-            assert 450 < after_initial_portfolio_content["USDC"]["total"] < 550
-            assert 100 < after_initial_portfolio_content["USDC"]["available"] < 150
-            assert 0.0045 < after_initial_portfolio_content["BTC"]["total"] < 0.055
-            assert after_initial_portfolio_content["BTC"]["available"] < 0.0015
-            logging.getLogger("test_simulator_copy_grid").info(
-                f"after_copy_portfolio_content: {after_initial_portfolio_content}"
+    with contextlib.ExitStack() as patch_stack:
+        patch_stack.enter_context(
+            mock.patch.object(
+                octobot_flow.repositories.exchange.TickersRepository,
+                "fetch_tickers",
+                new=patched_fetch_tickers,
             )
-
-            after_initial_reference_account_portfolio_content = after_initial_copy_execution_dump["automation"][
-                "exchange_account_elements"
-            ]["portfolio"]["content"]
-            assert isinstance(after_initial_reference_account_portfolio_content, dict)
-            assert list(sorted(after_initial_reference_account_portfolio_content.keys())) == ["BTC", "USDC"]
-            assert 450 < after_initial_reference_account_portfolio_content["USDC"]["total"] < 550
-            assert 100 < after_initial_reference_account_portfolio_content["USDC"]["available"] < 150
-            assert 0.0045 < after_initial_reference_account_portfolio_content["BTC"]["total"] < 0.055
-            assert after_initial_reference_account_portfolio_content["BTC"]["available"] < 0.0015
-
-            open_orders_origin_values = [
-                order[trading_constants.STORAGE_ORIGIN_VALUE]
-                for order in after_initial_copy_execution_dump["automation"]["exchange_account_elements"]["orders"][
-                    "open_orders"
-                ]
-            ]
-            buy_orders = sorted(
-                [
-                    o
-                    for o in open_orders_origin_values
-                    if o[trading_enums.ExchangeConstantsOrderColumns.SIDE.value] == trading_enums.TradeOrderSide.BUY.value
-                ],
-                key=lambda o: o[trading_enums.ExchangeConstantsOrderColumns.PRICE.value],
+        )
+        patch_stack.enter_context(
+            mock.patch.object(
+                octobot_flow.repositories.exchange.OhlcvRepository,
+                "fetch_ohlcv",
+                side_effect=patched_fetch_ohlcv,
             )
-            sell_orders = sorted(
-                [
-                    o
-                    for o in open_orders_origin_values
-                    if o[trading_enums.ExchangeConstantsOrderColumns.SIDE.value]
-                    == trading_enums.TradeOrderSide.SELL.value
-                ],
-                key=lambda o: o[trading_enums.ExchangeConstantsOrderColumns.PRICE.value],
+        )
+        patch_stack.enter_context(
+            mock.patch.object(
+                octobot_flow.repositories.community.TradingSignalsRepository,
+                "fetch_trading_signals",
+                fetch_trading_signals_mock,
             )
-            assert len(buy_orders) == len(sell_orders) == 2
-            price_col = trading_enums.ExchangeConstantsOrderColumns.PRICE.value
-            lowest_buy_price = d_order_price(buy_orders[0][price_col])
-            assert lowest_buy_price == d_order_price(GRID_REFERENCE_LOWEST_BUY)
-            assert d_order_price(buy_orders[1][price_col]) == lowest_buy_price + D_INCREMENT
-            assert d_order_price(sell_orders[0][price_col]) == lowest_buy_price + D_INCREMENT + D_SPREAD
-            assert d_order_price(sell_orders[1][price_col]) == lowest_buy_price + D_INCREMENT + D_SPREAD + D_INCREMENT
+        )
+        if start_as_uninitialized_copy_keyword and not emit_signals:
 
-            # 3. trigger again: portfolio and mirrored grid should be unchanged
-            async with octobot_flow.AutomationJob(after_initial_copy_execution_dump, [], {}) as automation_job:
-                await automation_job.run()
-            after_second_call_execution_dump = automation_job.dump()
-            assert len(automation_job.automation_state.automation.actions_dag.actions) == len(all_actions)
-            for index, action in enumerate(automation_job.automation_state.automation.actions_dag.actions):
-                assert isinstance(action, octobot_flow.entities.AbstractActionDetails)
-                assert action.error_status == octobot_flow.enums.ActionErrorStatus.NO_ERROR.value
-                assert action.result is None
-                if index == 0:
-                    assert action.executed_at is not None
-                    assert action.previous_execution_result is None
-                else:
-                    assert action.executed_at is None
-                    assert isinstance(action.previous_execution_result, dict)
+            @contextlib.asynccontextmanager
+            async def _fake_maybe_authenticator(self):
+                yield mock.MagicMock()
 
-            schedule_delay = (
-                after_second_call_execution_dump["automation"]["execution"]["current_execution"]["scheduled_to"]
-                - after_second_call_execution_dump["automation"]["execution"]["previous_execution"]["triggered_at"]
+            patch_stack.enter_context(
+                mock.patch.object(
+                    octobot_flow.AutomationJob,
+                    "_maybe_authenticator",
+                    _fake_maybe_authenticator,
+                )
             )
-            assert (
-                copy_constants.DEFAULT_COPY_WAITING_TIME - allowed_execution_time
-                < schedule_delay
-                < copy_constants.DEFAULT_COPY_WAITING_TIME + allowed_execution_time
-            )
+        insert_trading_signal_mock = patch_stack.enter_context(trading_signal_emission_patches(emit_signals))
 
-            after_second_call_portfolio_content = after_second_call_execution_dump["automation"][
-                "exchange_account_elements"
-            ]["portfolio"]["content"]
-            assert after_second_call_portfolio_content == after_initial_portfolio_content
-            after_second_call_reference_account_portfolio_content = after_second_call_execution_dump["automation"][
-                "exchange_account_elements"
-            ]["portfolio"]["content"]
-            assert after_second_call_reference_account_portfolio_content == after_initial_reference_account_portfolio_content
+        reference_market = init_action["config"]["exchange_account_details"]["portfolio"]["unit"]
+        if start_as_uninitialized_copy_keyword:
+            copy_action = empty_copy_exchange_account_action()
+        else:
+            copy_action = copy_exchange_account_action(reference_market, grid_reference_account)
+        all_actions = [
+            init_action,
+            copy_action,
+        ]
+        automation_state = automation_state_dict(resolved_actions(all_actions))
+        set_emit_signals_metadata(automation_state, emit_signals)
 
-            second_open_orders_origin_values = [
-                order[trading_constants.STORAGE_ORIGIN_VALUE]
-                for order in after_second_call_execution_dump["automation"]["exchange_account_elements"]["orders"][
-                    "open_orders"
-                ]
-            ]
-            second_buy_orders = sorted(
-                [
-                    o
-                    for o in second_open_orders_origin_values
-                    if o[trading_enums.ExchangeConstantsOrderColumns.SIDE.value] == trading_enums.TradeOrderSide.BUY.value
-                ],
-                key=lambda o: o[trading_enums.ExchangeConstantsOrderColumns.PRICE.value],
-            )
-            second_sell_orders = sorted(
-                [
-                    o
-                    for o in second_open_orders_origin_values
-                    if o[trading_enums.ExchangeConstantsOrderColumns.SIDE.value]
-                    == trading_enums.TradeOrderSide.SELL.value
-                ],
-                key=lambda o: o[trading_enums.ExchangeConstantsOrderColumns.PRICE.value],
-            )
-            price_col = trading_enums.ExchangeConstantsOrderColumns.PRICE.value
-            assert [d_order_price(o[price_col]) for o in second_buy_orders] == [
-                d_order_price(o[price_col]) for o in buy_orders
-            ]
-            assert [d_order_price(o[price_col]) for o in second_sell_orders] == [
-                d_order_price(o[price_col]) for o in sell_orders
-            ]
+        # 1. run init action
+        async with octobot_flow.AutomationJob(automation_state, [], [], {}) as automation_job:
+            await automation_job.run()
+        after_init_execution_dump = automation_job.dump()
 
-            if emit_signals:
-                assert insert_trading_signal_mock.await_count == 2
-                for await_args in insert_trading_signal_mock.await_args_list:
-                    _assert_trading_signal_grid_copy_reference_shape(await_args.args[0])
+        # check bot actions execution
+        assert len(automation_job.automation_state.automation.actions_dag.actions) == len(all_actions)
+        for index, action in enumerate(automation_job.automation_state.automation.actions_dag.actions):
+            assert isinstance(action, octobot_flow.entities.AbstractActionDetails)
+            assert action.error_status == octobot_flow.enums.ActionErrorStatus.NO_ERROR.value
+            assert action.result is None
+            if index == 0:
+                assert action.executed_at and action.executed_at >= current_time
+                assert action.previous_execution_result is None
             else:
-                insert_trading_signal_mock.assert_not_awaited()
+                assert action.executed_at is None
+                assert action.previous_execution_result is None
+
+        # 2. run copy exchange account action (rebalance + mirror reference grid orders)
+        async with octobot_flow.AutomationJob(after_init_execution_dump, [], [], {}) as automation_job:
+            await automation_job.run()
+        after_initial_copy_execution_dump = automation_job.dump()
+        assert len(automation_job.automation_state.automation.actions_dag.actions) == len(all_actions)
+        for index, action in enumerate(automation_job.automation_state.automation.actions_dag.actions):
+            assert isinstance(action, octobot_flow.entities.AbstractActionDetails)
+            assert action.error_status == octobot_flow.enums.ActionErrorStatus.NO_ERROR.value
+            assert action.result is None
+            if index == 0:
+                assert action.executed_at is not None
+                assert action.previous_execution_result is None
+            else:
+                assert action.executed_at is None
+                assert isinstance(action.previous_execution_result, dict)
+
+        if start_as_uninitialized_copy_keyword:
+            assert fetch_trading_signals_mock.await_count == 1
+            fetch_call = fetch_trading_signals_mock.await_args
+            assert functionnal_tests.FUNCTIONAL_TEST_COPY_STRATEGY_ID in fetch_call.args[0]
+            assert fetch_call.args[1] == octobot_flow.constants.DEFAULT_COPY_TRADING_MISSED_SIGNALS_GRACE_ABORT_THRESHOLD
+        else:
+            fetch_trading_signals_mock.assert_not_awaited()
+
+        # scheduled next execution: default copy interval (4h)
+        assert (
+            after_initial_copy_execution_dump["automation"]["execution"]["previous_execution"]["triggered_at"]
+            >= current_time
+        )
+        allowed_execution_time = 20
+        schedule_delay = (
+            after_initial_copy_execution_dump["automation"]["execution"]["current_execution"]["scheduled_to"]
+            - after_initial_copy_execution_dump["automation"]["execution"]["previous_execution"]["triggered_at"]
+        )
+        assert (
+            copy_constants.DEFAULT_COPY_WAITING_TIME - allowed_execution_time
+            < schedule_delay
+            < copy_constants.DEFAULT_COPY_WAITING_TIME + allowed_execution_time
+        )
+
+        after_initial_portfolio_content = after_initial_copy_execution_dump["automation"][
+            "exchange_account_elements"
+        ]["portfolio"]["content"]
+        assert isinstance(after_initial_copy_execution_dump, dict)
+        assert list(sorted(after_initial_portfolio_content.keys())) == ["BTC", "USDC"]
+        assert 450 < after_initial_portfolio_content["USDC"]["total"] < 550
+        assert 100 < after_initial_portfolio_content["USDC"]["available"] < 150
+        assert 0.0045 < after_initial_portfolio_content["BTC"]["total"] < 0.055
+        assert after_initial_portfolio_content["BTC"]["available"] < 0.0015
+        logging.getLogger("test_simulator_copy_grid").info(
+            f"after_copy_portfolio_content: {after_initial_portfolio_content}"
+        )
+
+        after_initial_reference_account_portfolio_content = after_initial_copy_execution_dump["automation"][
+            "exchange_account_elements"
+        ]["portfolio"]["content"]
+        assert isinstance(after_initial_reference_account_portfolio_content, dict)
+        assert list(sorted(after_initial_reference_account_portfolio_content.keys())) == ["BTC", "USDC"]
+        assert 450 < after_initial_reference_account_portfolio_content["USDC"]["total"] < 550
+        assert 100 < after_initial_reference_account_portfolio_content["USDC"]["available"] < 150
+        assert 0.0045 < after_initial_reference_account_portfolio_content["BTC"]["total"] < 0.055
+        assert after_initial_reference_account_portfolio_content["BTC"]["available"] < 0.0015
+
+        open_orders_origin_values = [
+            order[trading_constants.STORAGE_ORIGIN_VALUE]
+            for order in after_initial_copy_execution_dump["automation"]["exchange_account_elements"]["orders"][
+                "open_orders"
+            ]
+        ]
+        buy_orders = sorted(
+            [
+                o
+                for o in open_orders_origin_values
+                if o[trading_enums.ExchangeConstantsOrderColumns.SIDE.value] == trading_enums.TradeOrderSide.BUY.value
+            ],
+            key=lambda o: o[trading_enums.ExchangeConstantsOrderColumns.PRICE.value],
+        )
+        sell_orders = sorted(
+            [
+                o
+                for o in open_orders_origin_values
+                if o[trading_enums.ExchangeConstantsOrderColumns.SIDE.value]
+                == trading_enums.TradeOrderSide.SELL.value
+            ],
+            key=lambda o: o[trading_enums.ExchangeConstantsOrderColumns.PRICE.value],
+        )
+        assert len(buy_orders) == len(sell_orders) == 2
+        price_col = trading_enums.ExchangeConstantsOrderColumns.PRICE.value
+        lowest_buy_price = d_order_price(buy_orders[0][price_col])
+        assert lowest_buy_price == d_order_price(GRID_REFERENCE_LOWEST_BUY)
+        assert d_order_price(buy_orders[1][price_col]) == lowest_buy_price + D_INCREMENT
+        assert d_order_price(sell_orders[0][price_col]) == lowest_buy_price + D_INCREMENT + D_SPREAD
+        assert d_order_price(sell_orders[1][price_col]) == lowest_buy_price + D_INCREMENT + D_SPREAD + D_INCREMENT
+
+        # 3. trigger again: portfolio and mirrored grid should be unchanged
+        async with octobot_flow.AutomationJob(after_initial_copy_execution_dump, [], [], {}) as automation_job:
+            await automation_job.run()
+        after_second_call_execution_dump = automation_job.dump()
+        assert len(automation_job.automation_state.automation.actions_dag.actions) == len(all_actions)
+        for index, action in enumerate(automation_job.automation_state.automation.actions_dag.actions):
+            assert isinstance(action, octobot_flow.entities.AbstractActionDetails)
+            assert action.error_status == octobot_flow.enums.ActionErrorStatus.NO_ERROR.value
+            assert action.result is None
+            if index == 0:
+                assert action.executed_at is not None
+                assert action.previous_execution_result is None
+            else:
+                assert action.executed_at is None
+                assert isinstance(action.previous_execution_result, dict)
+
+        schedule_delay = (
+            after_second_call_execution_dump["automation"]["execution"]["current_execution"]["scheduled_to"]
+            - after_second_call_execution_dump["automation"]["execution"]["previous_execution"]["triggered_at"]
+        )
+        assert (
+            copy_constants.DEFAULT_COPY_WAITING_TIME - allowed_execution_time
+            < schedule_delay
+            < copy_constants.DEFAULT_COPY_WAITING_TIME + allowed_execution_time
+        )
+
+        after_second_call_portfolio_content = after_second_call_execution_dump["automation"][
+            "exchange_account_elements"
+        ]["portfolio"]["content"]
+        assert after_second_call_portfolio_content == after_initial_portfolio_content
+        after_second_call_reference_account_portfolio_content = after_second_call_execution_dump["automation"][
+            "exchange_account_elements"
+        ]["portfolio"]["content"]
+        assert after_second_call_reference_account_portfolio_content == after_initial_reference_account_portfolio_content
+
+        second_open_orders_origin_values = [
+            order[trading_constants.STORAGE_ORIGIN_VALUE]
+            for order in after_second_call_execution_dump["automation"]["exchange_account_elements"]["orders"][
+                "open_orders"
+            ]
+        ]
+        second_buy_orders = sorted(
+            [
+                o
+                for o in second_open_orders_origin_values
+                if o[trading_enums.ExchangeConstantsOrderColumns.SIDE.value] == trading_enums.TradeOrderSide.BUY.value
+            ],
+            key=lambda o: o[trading_enums.ExchangeConstantsOrderColumns.PRICE.value],
+        )
+        second_sell_orders = sorted(
+            [
+                o
+                for o in second_open_orders_origin_values
+                if o[trading_enums.ExchangeConstantsOrderColumns.SIDE.value]
+                == trading_enums.TradeOrderSide.SELL.value
+            ],
+            key=lambda o: o[trading_enums.ExchangeConstantsOrderColumns.PRICE.value],
+        )
+        price_col = trading_enums.ExchangeConstantsOrderColumns.PRICE.value
+        assert [d_order_price(o[price_col]) for o in second_buy_orders] == [
+            d_order_price(o[price_col]) for o in buy_orders
+        ]
+        assert [d_order_price(o[price_col]) for o in second_sell_orders] == [
+            d_order_price(o[price_col]) for o in sell_orders
+        ]
+
+        if start_as_uninitialized_copy_keyword:
+            assert fetch_trading_signals_mock.call_count == 1
+        else:
+            fetch_trading_signals_mock.assert_not_called()
+
+        if emit_signals:
+            assert insert_trading_signal_mock.await_count == 2
+            for await_args in insert_trading_signal_mock.await_args_list:
+                _assert_trading_signal_grid_copy_reference_shape(await_args.args[0])
+        else:
+            insert_trading_signal_mock.assert_not_awaited()

@@ -207,6 +207,63 @@ def _replicable_buy_limit_order(
     }
 
 
+def _replicable_buy_market_order(
+    *,
+    order_id: str = "ref-market-1",
+    amount: decimal.Decimal = decimal.Decimal("1"),
+    price: decimal.Decimal = decimal.Decimal("2000"),
+) -> dict:
+    return {
+        trading_constants.STORAGE_ORIGIN_VALUE: {
+            trading_enums.ExchangeConstantsOrderColumns.ID.value: order_id,
+            trading_enums.ExchangeConstantsOrderColumns.SYMBOL.value: "ETH/USDT",
+            trading_enums.ExchangeConstantsOrderColumns.SIDE.value: trading_enums.TradeOrderSide.BUY.value,
+            trading_enums.ExchangeConstantsOrderColumns.TYPE.value: trading_enums.TradeOrderType.MARKET.value,
+            trading_enums.ExchangeConstantsOrderColumns.AMOUNT.value: amount,
+            trading_enums.ExchangeConstantsOrderColumns.PRICE.value: price,
+            trading_enums.ExchangeConstantsOrderColumns.STATUS.value: trading_enums.OrderStatus.OPEN.value,
+        }
+    }
+
+
+class TestMarketOrderExclusion:
+    def test_replicable_reference_orders_omit_market_include_limit(self):
+        limit_order = _replicable_buy_limit_order(order_id="limit-1")
+        market_order = _replicable_buy_market_order(order_id="market-1")
+        reference = copy_entities.Account(
+            content={},
+            orders=[market_order, limit_order],
+        )
+        exchange_if = mock.MagicMock()
+        synchronizer = orders_synchronizer_module.OrdersSynchronizer(
+            reference,
+            exchange_if,
+            copy_entities.AccountCopySettings(),
+        )
+        replicable = synchronizer._get_replicable_reference_orders()
+        assert replicable == [limit_order]
+
+    def test_mirrored_orphan_open_orders_excludes_copier_market_orders(self):
+        reference = copy_entities.Account(content={}, orders=[])
+        exchange_if = mock.MagicMock()
+        synchronizer = orders_synchronizer_module.OrdersSynchronizer(
+            reference,
+            exchange_if,
+            copy_entities.AccountCopySettings(),
+        )
+        market_mirror = mock.Mock()
+        market_mirror.tag = copy_constants.MIRRORED_ORDER_TAG
+        market_mirror.order_id = "not-in-reference"
+        market_mirror.order_type = trading_enums.TraderOrderType.BUY_MARKET
+        limit_mirror = mock.Mock()
+        limit_mirror.tag = copy_constants.MIRRORED_ORDER_TAG
+        limit_mirror.order_id = "orphan-limit"
+        limit_mirror.order_type = trading_enums.TraderOrderType.BUY_LIMIT
+        exchange_if.orders.get_open_orders = mock.Mock(return_value=[market_mirror, limit_mirror])
+        orphans = synchronizer._mirrored_orphan_open_orders(set())
+        assert orphans == [limit_mirror]
+
+
 class TestLateReferenceFillHeuristic:
     def test_late_fill_true_when_copier_matches_simulated_reference_fill(self):
         reference = copy_entities.Account(

@@ -86,7 +86,12 @@ class OctoBotActionsJobResult:
 
 
 class OctoBotActionsJob:
-    def __init__(self, description: typing.Union[str, dict], user_actions: list[dict]):
+    def __init__(
+        self,
+        description: typing.Union[str, dict],
+        user_actions: list[dict],
+        updated_trading_signals: list[dict],
+    ):
         parsed_description = self._parse_description(description)
         self.description: OctoBotActionsJobDescription = OctoBotActionsJobDescription.from_dict(
             parsed_description
@@ -95,6 +100,10 @@ class OctoBotActionsJob:
             octobot_flow.parse_action_details(
                 user_action
             ) for user_action in user_actions
+        ]
+        self.updated_trading_signals: list[octobot_flow.entities.TradingSignal] = [
+            octobot_flow.entities.TradingSignal.from_dict(trading_signal_dict)
+            for trading_signal_dict in updated_trading_signals
         ]
         self.after_execution_state = None
 
@@ -114,7 +123,10 @@ class OctoBotActionsJob:
 
     async def run(self) -> OctoBotActionsJobResult:
         async with octobot_flow.AutomationJob(
-            self.description.state, self.priority_user_actions, self.description.auth_details,
+            self.description.state,
+            self.priority_user_actions,
+            self.updated_trading_signals,
+            self.description.auth_details,
         ) as automation_job:
             selected_actions = (
                 self.priority_user_actions

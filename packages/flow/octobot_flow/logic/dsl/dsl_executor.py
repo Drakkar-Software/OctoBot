@@ -67,6 +67,12 @@ class DSLExecutor(AbstractActionExecutor):
     ]:
         return self._interpreter.get_dependencies()
 
+    def get_top_operator(self) -> typing.Union[
+        octobot_commons.dsl_interpreter.Operator,
+        octobot_commons.dsl_interpreter.ComputedOperatorParameterType,
+    ]:
+        return self._interpreter.get_top_operator()
+
     @dsl_action_execution
     async def execute_action(self, action: octobot_flow.entities.DSLScriptActionDetails) -> typing.Any:
         self._interpreter = self._create_interpreter(

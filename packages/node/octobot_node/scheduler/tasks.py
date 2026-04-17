@@ -13,6 +13,8 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
+import octobot_flow.entities
+import octobot_node.enums
 import octobot_node.models
 import octobot_node.scheduler.workflows_util as workflows_util
 import octobot_node.scheduler.workflows.params as params
@@ -36,6 +38,25 @@ async def trigger_task(task: octobot_node.models.Task) -> bool:
 async def send_actions_to_automation(actions: list[dict], automation_id: str):
     import octobot_node.scheduler  # avoid circular import
     workflow_status = await workflows_util.get_automation_workflow_status(automation_id)
+    payload = params.AutomationWorkflowActionUpdate(
+        actions_type=octobot_node.enums.AutomationWorkflowActionTypes.USER_ACTIONS.value,
+        actions_details=actions,
+    ).to_dict(include_default_values=False)
     await octobot_node.scheduler.SCHEDULER.INSTANCE.send_async(
-        workflow_status.workflow_id, actions, topic="user_actions"
+        workflow_status.workflow_id,
+        payload,
+        topic=octobot_node.enums.AutomationWorkflowMessageTopics.ACTIONS_UPDATE.value,
+    )
+
+
+async def trigger_copier_automation(automation_id: str, trading_signal: octobot_flow.entities.TradingSignal) -> None:
+    import octobot_node.scheduler  # avoid circular import
+    payload = params.AutomationWorkflowActionUpdate(
+        actions_type=octobot_node.enums.AutomationWorkflowActionTypes.TRADING_SIGNAL.value,
+        actions_details=[trading_signal.to_dict(include_default_values=False)],
+    ).to_dict(include_default_values=False)
+    await octobot_node.scheduler.SCHEDULER.INSTANCE.send_async(
+        automation_id,
+        payload,
+        topic=octobot_node.enums.AutomationWorkflowMessageTopics.ACTIONS_UPDATE.value,
     )

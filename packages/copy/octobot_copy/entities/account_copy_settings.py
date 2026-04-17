@@ -1,8 +1,10 @@
 import dataclasses
 import decimal
+import json
 import typing
 
 import octobot_commons.dataclasses as commons_dataclasses
+import octobot_commons.errors as commons_errors
 import octobot_copy.constants as copy_constants
 import octobot_copy.enums as copy_enums
 
@@ -49,3 +51,23 @@ class AccountCopySettings(commons_dataclasses.MinimizableDataclass):
             self.mirrored_orphan_grace_pair_ratio_max_delta = decimal.Decimal(
                 str(self.mirrored_orphan_grace_pair_ratio_max_delta)
             )
+
+
+def parse_account_copy_settings(raw: typing.Any) -> "AccountCopySettings":
+    """
+    Parse ``account_copy_settings`` from a DSL parameter (JSON string, dict, or None for defaults).
+    """
+    if raw is None:
+        return AccountCopySettings()
+    if isinstance(raw, dict):
+        return AccountCopySettings.from_dict(raw)
+    if not isinstance(raw, str):
+        raise commons_errors.InvalidParameterFormatError(
+            f"account_copy_settings must be a JSON string, got {type(raw).__name__}"
+        )
+    try:
+        return AccountCopySettings.from_dict(json.loads(raw))
+    except json.JSONDecodeError as err:
+        raise commons_errors.InvalidParameterFormatError(
+            f"Invalid account_copy_settings JSON: {err}"
+        ) from err

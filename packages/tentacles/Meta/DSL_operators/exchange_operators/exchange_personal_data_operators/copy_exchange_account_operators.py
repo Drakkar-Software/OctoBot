@@ -17,6 +17,7 @@
 import json
 import typing
 import time
+import enum
 
 import octobot_commons.constants as commons_constants
 import octobot_commons.dsl_interpreter as dsl_interpreter
@@ -35,6 +36,10 @@ import octobot_copy.constants
 import tentacles.Meta.DSL_operators.exchange_operators.exchange_personal_data_operators.create_order_operators as create_order_operators
 
 
+class CopyExchangeAccountOperatorNames(enum.StrEnum):
+    COPY_EXCHANGE_ACCOUNT = "copy_exchange_account"
+
+
 def create_copy_exchange_account_operators(
     copier_exchange_manager: typing.Optional[octobot_trading.exchanges.ExchangeManager] = None,
     copier_trading_mode: typing.Optional[octobot_trading.modes.AbstractTradingMode] = None,
@@ -42,12 +47,14 @@ def create_copy_exchange_account_operators(
     class _CopyExchangeAccountOperator(dsl_interpreter.PreComputingCallOperator, dsl_interpreter.ReCallableOperatorMixin):
         DESCRIPTION = (
             "Rebalances the copier exchange toward the reference account allocation. "
+            "strategy_id identifies the copied community strategy (first parameter; used for copy-trading dependencies). "
             "reference_account is JSON for octobot_copy.entities.Account (portfolio content, orders, positions). "
             "account_copy_settings is optional JSON for AccountCopySettings; "
             "reference market comes from the copier portfolio."
         )
         EXAMPLE = (
-            r"""copy_exchange_account(reference_account='{"content":{"BTC":{"available":"0.01","total":"0.01"}}}', """
+            r"""copy_exchange_account(strategy_id='community-strategy-1', reference_market='USDT', """
+            r"""reference_account='{"content":{"BTC":{"available":"0.01","total":"0.01"}}}', """
             r"""account_copy_settings='{"reference_market_ratio":"1","allow_skip_asset":false}')"""
         )
 
@@ -57,11 +64,19 @@ def create_copy_exchange_account_operators(
 
         @staticmethod
         def get_name() -> str:
-            return "copy_exchange_account"
+            return CopyExchangeAccountOperatorNames.COPY_EXCHANGE_ACCOUNT.value
 
         @classmethod
         def get_parameters(cls) -> list[dsl_interpreter.OperatorParameter]:
             return [
+                dsl_interpreter.OperatorParameter(
+                    name="strategy_id",
+                    description=(
+                        "Identifier of the copied community strategy."
+                    ),
+                    required=True,
+                    type=str,
+                ),
                 dsl_interpreter.OperatorParameter(
                     name="reference_market",
                     description="Quote asset symbol for rebalance (e.g. USDT).",
@@ -113,32 +128,25 @@ def create_copy_exchange_account_operators(
                 )
             return octobot_copy.entities.Account.from_dict(payload)
 
-        def _parse_account_copy_settings(self, raw: typing.Any) -> octobot_copy.entities.AccountCopySettings:
-            if raw is None:
-                return octobot_copy.entities.AccountCopySettings()
-            if isinstance(raw, dict):
-                return octobot_copy.entities.AccountCopySettings.from_dict(raw)
-            if not isinstance(raw, str):
-                raise commons_errors.InvalidParameterFormatError(
-                    f"account_copy_settings must be a JSON string, got {type(raw).__name__}"
-                )
-            try:
-                return octobot_copy.entities.AccountCopySettings.from_dict(json.loads(raw))
-            except json.JSONDecodeError as err:
-                raise commons_errors.InvalidParameterFormatError(
-                    f"Invalid account_copy_settings JSON: {err}"
-                ) from err
-
         def get_dependencies(self) -> list[dsl_interpreter.InterpreterDependency]:
             dependencies = super().get_dependencies()
             params = self.get_computed_value_by_parameter()
-            ref_market = params.get("reference_market")
             try:
-                account = self._parse_reference_account(params.get("reference_account"))
+                reference_account = self._parse_reference_account(params.get("reference_account"))
             except commons_errors.InvalidParameterFormatError:
+                reference_account = None
+            if strategy_id := params.get("strategy_id"):
+                # no reference account: a refresh is required to fetch it
+                refresh_required = reference_account is None
+                dependencies.append(trading_dsl.CopyTradingDependency(
+                    strategy_id=str(strategy_id), refresh_required=refresh_required
+                ))
+            if reference_account is None:
                 return dependencies
+            # there are account details: add symbol dependencies
+            ref_market = params.get("reference_market")
             seen: set[str] = set()
-            for asset in account.content:
+            for asset in reference_account.content:
                 if asset == ref_market:
                     continue
                 symbol = symbol_util.merge_currencies(asset, ref_market)
@@ -156,7 +164,9 @@ def create_copy_exchange_account_operators(
                 )
             params = self.get_computed_value_by_parameter()
             reference_account = self._parse_reference_account(params.get("reference_account"))
-            copy_settings = self._parse_account_copy_settings(params.get("account_copy_settings"))
+            copy_settings = octobot_copy.entities.parse_account_copy_settings(
+                params.get("account_copy_settings")
+            )
             account_copier = octobot_copy.copiers.create_account_copier(
                 reference_account,
                 copy_settings,
@@ -178,4 +188,4 @@ def create_copy_exchange_account_operators(
     return [_CopyExchangeAccountOperator]
 
 
-__all__ = ["create_copy_exchange_account_operators"]
+__all__ = ["CopyExchangeAccountOperatorNames", "create_copy_exchange_account_operators"]

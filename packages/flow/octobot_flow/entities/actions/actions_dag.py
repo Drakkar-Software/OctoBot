@@ -4,7 +4,6 @@ import typing
 import octobot_commons.dsl_interpreter
 import octobot_commons.dataclasses
 
-
 import octobot_flow.entities.actions.action_details as action_details
 import octobot_flow.enums
 import octobot_flow.errors

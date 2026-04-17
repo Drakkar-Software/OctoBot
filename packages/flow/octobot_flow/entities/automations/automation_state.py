@@ -25,7 +25,6 @@ import octobot_flow.entities.accounts.exchange_account_details as exchange_accou
 import octobot_flow.entities.automations.automation_details as automation_details_import
 import octobot_flow.errors
 import octobot_flow.entities.actions.action_details as action_details_import
-import octobot_flow.entities.actions.actions_dag as actions_dag_import
 
 
 def required_exchange_account_details(func: typing.Callable) -> typing.Callable:
@@ -82,6 +81,11 @@ class AutomationState(octobot_commons.dataclasses.MinimizableDataclass):
             for action in added_actions
             if action.id not in included_action_ids
         )
+
+    def get_pending_priority_actions(self) -> list[action_details_import.AbstractActionDetails]:
+        return [
+            action for action in self.priority_actions if not action.is_completed()
+        ]
 
     def __post_init__(self):
         if self.automation and isinstance(self.automation, dict):

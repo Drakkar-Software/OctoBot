@@ -34,8 +34,8 @@ from tentacles.Meta.DSL_operators.exchange_operators.exchange_personal_data_oper
     CREATED_ORDERS_KEY,
     CANCELLED_ORDERS_KEY,
     CREATED_WITHDRAWALS_KEY,
+    CopyExchangeAccountOperatorNames,
 )
-
 
 __all__ = [
     "OHLCVOperator",
@@ -52,4 +52,5 @@ __all__ = [
     "CREATED_ORDERS_KEY",
     "CANCELLED_ORDERS_KEY",
     "CREATED_WITHDRAWALS_KEY",
+    "CopyExchangeAccountOperatorNames",
 ]

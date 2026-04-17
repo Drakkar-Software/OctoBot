@@ -189,7 +189,7 @@ async def _cancel_all_btc_usdc_orders_for_test(automation_dump: dict) -> None:
             }
         ]
     )
-    async with octobot_flow.AutomationJob(automation_dump, [], {}) as automations_job:
+    async with octobot_flow.AutomationJob(automation_dump, [], [], {}) as automations_job:
         automations_job.automation_state.upsert_automation_actions(cancel_grid_orders_actions)
         await automations_job.run()
     cancel_action = automations_job.automation_state.automation.actions_dag.actions[-1]
@@ -329,7 +329,7 @@ async def test_authenticated_grid_init_from_empty_state(init_action: dict):
         trading_signal_emission_patches(emit_signals) as insert_trading_signal_mock,
     ):
         # 1. run init action
-        async with octobot_flow.AutomationJob(automation_state, [], {}) as automation_job:
+        async with octobot_flow.AutomationJob(automation_state, [], [], {}) as automation_job:
             await automation_job.run()
         after_init_execution_dump = automation_job.dump()
 
@@ -349,7 +349,7 @@ async def test_authenticated_grid_init_from_empty_state(init_action: dict):
         # 2. run grid trading mode action (orders may exist on the exchange after this completes)
         cleanup_dump: typing.Optional[dict] = None
         try:
-            async with octobot_flow.AutomationJob(after_init_execution_dump, [], {}) as automation_job:
+            async with octobot_flow.AutomationJob(after_init_execution_dump, [], [], {}) as automation_job:
                 await automation_job.run()
             cleanup_dump = automation_job.dump()
 
@@ -425,7 +425,7 @@ async def test_authenticated_grid_init_from_empty_state(init_action: dict):
                 _assert_grid_ladder_prices(buy_orders, sell_orders, price_col)
 
             # 3. trigger again: nothing to do
-            async with octobot_flow.AutomationJob(cleanup_dump, [], {}) as automation_job:
+            async with octobot_flow.AutomationJob(cleanup_dump, [], [], {}) as automation_job:
                 await automation_job.run()
             cleanup_dump = automation_job.dump()
 
@@ -501,7 +501,7 @@ async def test_authenticated_copy_grid(init_action: dict):
     ):
         cleanup_dump: typing.Optional[dict] = None
         try:
-            async with octobot_flow.AutomationJob(automation_state, [], {}) as automation_job:
+            async with octobot_flow.AutomationJob(automation_state, [], [], {}) as automation_job:
                 await automation_job.run()
             after_init_execution_dump = automation_job.dump()
 
@@ -517,7 +517,7 @@ async def test_authenticated_copy_grid(init_action: dict):
                     assert action.executed_at is None
                     assert action.previous_execution_result is None
 
-            async with octobot_flow.AutomationJob(after_init_execution_dump, [], {}) as automation_job:
+            async with octobot_flow.AutomationJob(after_init_execution_dump, [], [], {}) as automation_job:
                 await automation_job.run()
             after_initial_copy_execution_dump = automation_job.dump()
             cleanup_dump = after_initial_copy_execution_dump
@@ -588,7 +588,7 @@ async def test_authenticated_copy_grid(init_action: dict):
             )
             _assert_grid_ladder_prices(buy_orders, sell_orders, price_col)
 
-            async with octobot_flow.AutomationJob(after_initial_copy_execution_dump, [], {}) as automation_job:
+            async with octobot_flow.AutomationJob(after_initial_copy_execution_dump, [], [], {}) as automation_job:
                 await automation_job.run()
             after_second_call_execution_dump = automation_job.dump()
             cleanup_dump = after_second_call_execution_dump
