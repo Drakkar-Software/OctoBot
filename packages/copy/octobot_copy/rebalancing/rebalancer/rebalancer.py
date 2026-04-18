@@ -52,6 +52,17 @@ class AbstractRebalancer:
     async def prepare_coin_rebalancing(self, coin: str):
         raise NotImplementedError("prepare_coin_rebalancing is not implemented")
 
+    async def try_efficient_spot_rebalance(
+        self,
+        details: dict[str, typing.Any],
+        dependencies: typing.Optional[commons_signals.SignalDependencies] = None,
+    ) -> typing.Optional[list]:
+        """
+        When applicable, executes a cheaper spot rebalance (e.g. single delta trade) and returns
+        created orders. Returns None to use the default sell-all-then-buy pipeline instead.
+        """
+        return None
+
     async def ensure_enough_funds_to_buy_after_selling(self) -> None:
         """
         Raises MissingMinimalExchangeTradeVolume if there are not enough funds

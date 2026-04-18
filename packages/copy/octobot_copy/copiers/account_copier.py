@@ -134,6 +134,12 @@ class AccountCopier:
         details: dict,
     ) -> list[trading_personal_data.Order]:
         orders: list = []
+        efficient_orders = await rebalancer.try_efficient_spot_rebalance(details, None)
+        if efficient_orders is not None:
+            self._get_logger().info("Efficient spot rebalance completed (skipped sell/split pipeline)")
+            if efficient_orders and not self._copier_exchange_interface.orders.automatically_synchronize_orders():
+                await self._copier_exchange_interface.portfolio.refresh_portfolio()
+            return efficient_orders
         self._get_logger().info("Step 1/3: ensuring enough funds are available for rebalance")
         await rebalancer.ensure_enough_funds_to_buy_after_selling()
         is_simple_buy_without_selling = rebalancer.can_simply_buy_coins_without_selling(details)

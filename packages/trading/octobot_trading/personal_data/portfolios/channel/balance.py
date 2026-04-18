@@ -50,7 +50,7 @@ class BalanceProducer(exchanges_channel.ExchangeChannelProducer):
             })
 
     async def refresh_real_trader_portfolio(self, force_manual_refresh: bool = False) -> bool:
-        if self.channel.exchange_manager.is_simulated:
+        if self.channel.exchange_manager.is_simulated or self.channel.exchange_manager.is_backtesting:
             # simulated portfolio can't be out of sync
             await self.channel.exchange_manager.exchange_personal_data.resolve_pending_portfolio_update_events()
             return True

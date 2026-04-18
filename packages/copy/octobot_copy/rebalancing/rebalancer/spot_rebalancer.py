@@ -17,11 +17,15 @@ import decimal
 import typing
 
 import octobot_commons.signals as commons_signals
+import octobot_commons.symbols.symbol_util as symbol_util
 import octobot_trading.constants as trading_constants
 import octobot_trading.enums as trading_enums
 import octobot_trading.errors as trading_errors
+import octobot_trading.modes.modes_util as modes_util
+import octobot_trading.personal_data as trading_personal_data
 
 import octobot_copy.constants as copy_constants
+import octobot_copy.enums as rebalancer_enums
 import octobot_copy.rebalancing.rebalancer.rebalancer as base_rebalancer
 
 
@@ -30,6 +34,114 @@ class SpotRebalancer(base_rebalancer.AbstractRebalancer):
     async def prepare_coin_rebalancing(self, coin: str):
         # Nothing to do in SPOT
         pass
+
+    async def try_efficient_spot_rebalance(
+        self,
+        details: dict[str, typing.Any],
+        dependencies: typing.Optional[commons_signals.SignalDependencies] = None,
+    ) -> typing.Optional[list]:
+        if not self._is_two_asset_spot_delta_eligible(details):
+            return None
+        ref_market = self._exchange_interface.portfolio.reference_market
+        base_currency = self._get_single_non_reference_targeted_coin()
+        if base_currency is None:
+            return None
+        symbol = symbol_util.merge_currencies(base_currency, ref_market)
+        price = await self._exchange_interface.market.get_up_to_date_price(symbol)
+        price = self._target_coins_prices.get(symbol, price)
+        if not price or price <= trading_constants.ZERO:
+            return None
+        portfolio_value_ref = self._get_traded_assets_holdings_value(ref_market)
+        reference_market_ratio = self._rebalance_actions_planner.client.reference_market_ratio
+        if reference_market_ratio > trading_constants.ZERO:
+            value_to_distribute = portfolio_value_ref * reference_market_ratio
+        else:
+            value_to_distribute = portfolio_value_ref
+        target_ratio = self._rebalance_actions_planner.get_target_ratio(base_currency)
+        target_base_quantity = target_ratio * value_to_distribute / price
+        if self._rebalance_actions_planner.client.can_include_assets_in_open_orders_in_holdings_ratio:
+            current_base_quantity = (
+                self._exchange_interface.portfolio.get_currency_portfolio_available(base_currency)
+                + self._get_pending_open_quantity(symbol)
+            )
+        else:
+            current_base_quantity = self._exchange_interface.portfolio.get_currency_portfolio_available(
+                base_currency
+            )
+        delta_base = current_base_quantity - target_base_quantity
+        exchange_manager = self._exchange_interface.orders._exchange_manager
+        if delta_base > trading_constants.ZERO:
+            await self._pre_cancel_conflicting_orders(
+                details, dependencies, trading_enums.TradeOrderSide.BUY
+            )
+            adapted_chunks, _symbol_market = (
+                self._exchange_interface.orders.check_and_adapt_order_details_if_necessary(
+                    symbol,
+                    delta_base,
+                    price,
+                )
+            )
+            if not adapted_chunks:
+                # dust amounts: delta_base is too small to be traded
+                return None
+            sell_orders = await modes_util.convert_asset_to_target_asset(
+                base_currency,
+                ref_market,
+                {},
+                asset_amount=delta_base,
+                dependencies=dependencies,
+                raise_all_order_errors=self._rebalance_actions_planner.client.raise_all_order_errors,
+                exchange_manager=exchange_manager,
+            )
+            if not sell_orders:
+                return None
+            await self._exchange_interface.orders.wait_for_orders_to_fill(sell_orders)
+            return sell_orders
+        if delta_base < trading_constants.ZERO:
+            await self._pre_cancel_conflicting_orders(
+                details, dependencies, trading_enums.TradeOrderSide.SELL
+            )
+            ideal_price = self._target_coins_prices.get(symbol, price)
+            try:
+                buy_orders = await self._buy_coin(
+                    symbol,
+                    target_base_quantity,
+                    ideal_price,
+                    dependencies,
+                )
+            except trading_errors.MissingMinimalExchangeTradeVolume:
+                # e.g. free quote is mostly locked in open (mirrored) orders: delta buy is not
+                # executable at min size; fall back to legacy sell-all-then-buy.
+                return None
+            if not buy_orders:
+                # buy order is too small to be traded
+                return None
+            await self._exchange_interface.orders.wait_for_orders_to_fill(buy_orders)
+            return buy_orders
+        return None
+
+    def _is_two_asset_spot_delta_eligible(self, details: dict[str, typing.Any]) -> bool:
+        if details[rebalancer_enums.RebalanceDetails.FORCED_REBALANCE.value]:
+            return False
+        if details[rebalancer_enums.RebalanceDetails.REMOVE.value]:
+            return False
+        if details[rebalancer_enums.RebalanceDetails.ADD.value]:
+            return False
+        if details[rebalancer_enums.RebalanceDetails.SWAP.value]:
+            return False
+        ref_market = self._exchange_interface.portfolio.reference_market
+        targeted = self._rebalance_actions_planner.targeted_coins
+        if len(targeted) != 2 or ref_market not in targeted:
+            return False
+        non_reference = [coin for coin in targeted if coin != ref_market]
+        return len(non_reference) == 1
+
+    def _get_single_non_reference_targeted_coin(self) -> typing.Optional[str]:
+        ref_market = self._exchange_interface.portfolio.reference_market
+        for coin in self._rebalance_actions_planner.targeted_coins:
+            if coin != ref_market:
+                return coin
+        return None
 
     async def _buy_coin(
         self,
