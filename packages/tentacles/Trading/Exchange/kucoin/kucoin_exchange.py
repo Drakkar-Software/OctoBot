@@ -21,6 +21,7 @@ import ccxt
 
 import octobot_commons.constants as commons_constants
 import octobot_commons.logging as logging
+import octobot_commons.enums as commons_enums
 import octobot_trading.errors
 import octobot_trading.exchanges as exchanges
 import octobot_trading.exchanges.connectors.ccxt.ccxt_connector as ccxt_connector
@@ -329,6 +330,11 @@ class Kucoin(exchanges.RestExchange):
             # prevent ccxt from fillings the end param (not working when trying to get the 1st candle times)
             kwargs["to"] = int(time.time() * commons_constants.MSECONDS_TO_SECONDS)
         return await super().get_symbol_prices(symbol, time_frame, limit=limit, **kwargs)
+
+    @_kucoin_retrier
+    async def get_kline_price(self, symbol: str, time_frame: commons_enums.TimeFrames,
+                              **kwargs: dict) -> typing.Optional[list]:
+        return await super().get_kline_price(symbol, time_frame, **kwargs)
 
     @_kucoin_retrier
     async def get_recent_trades(self, symbol, limit=50, **kwargs):
