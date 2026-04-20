@@ -902,9 +902,11 @@ class TestOctoBotActionsJob:
         real_simulated_fetch_resolve = fetch_order_operators_module._resolve_simulated_fetch_order_dict
 
         def resolve_simulated_order_first_fetch_reports_open_then_real(
-            exchange_mgr, symbol_param, exchange_order_param
+            exchange_mgr, symbol_param, exchange_order_param, raise_if_not_found=False
         ):
-            order_dict = real_simulated_fetch_resolve(exchange_mgr, symbol_param, exchange_order_param)
+            order_dict = real_simulated_fetch_resolve(
+                exchange_mgr, symbol_param, exchange_order_param, raise_if_not_found=raise_if_not_found
+            )
             fetch_resolution_attempt_counter["count"] += 1
             if fetch_resolution_attempt_counter["count"] == 1:
                 dict_with_open_status = dict(order_dict)
@@ -961,9 +963,14 @@ class TestOctoBotActionsJob:
         assert len(result.processed_actions) == 1
         processed_actions = result.processed_actions
         assert isinstance(processed_actions[0], octobot_flow.entities.DSLScriptActionDetails)
-        assert processed_actions[0].dsl_script.startswith("loop_until(")
+        assert processed_actions[0].dsl_script.startswith("loop_until(value_if(fetch_order('")
         assert processed_actions[0].error_status is None
-        assert processed_actions[0].result is True
+        # value_if returns the fetch_order dict when the condition is true, not a boolean
+        loop_result = processed_actions[0].result
+        assert isinstance(loop_result, dict)
+        assert loop_result[trading_enums.ExchangeConstantsOrderColumns.STATUS.value] != (
+            trading_enums.OrderStatus.OPEN.value
+        )
         assert result.next_actions_description
         assert result.has_next_actions is False
 

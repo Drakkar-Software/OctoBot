@@ -163,6 +163,45 @@ class TestFetchOrderOperator:
                 SYMBOL,
                 exchange_order_id=EXCHANGE_ORDER_ID,
             )
+            await operator.pre_compute()
+            assert operator.value is None
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "trader_mode",
+        ("simulated", "real_trading"),
+    )
+    async def test_pre_compute_order_not_found_raises_when_raise_if_not_found(
+        self, fetch_order_operators_list, backtesting_trader, trader_mode
+    ):
+        _config, exchange_manager, _trader = backtesting_trader
+        fetch_order_op_class, = fetch_order_operators_list
+        with contextlib.ExitStack() as stack:
+            if trader_mode == "simulated":
+                stack.enter_context(mock.patch.object(
+                    exchange_manager.exchange_personal_data.orders_manager,
+                    "get_order",
+                    mock.Mock(side_effect=KeyError(EXCHANGE_ORDER_ID)),
+                ))
+                stack.enter_context(mock.patch.object(
+                    exchange_manager.exchange_personal_data.trades_manager,
+                    "get_trades",
+                    mock.Mock(return_value=[]),
+                ))
+            else:
+                stack.enter_context(mock.patch.object(
+                    exchange_manager, "is_trader_simulated", False,
+                ))
+                stack.enter_context(mock.patch.object(
+                    exchange_manager.exchange,
+                    "get_order",
+                    mock.AsyncMock(return_value=None),
+                ))
+            operator = fetch_order_op_class(
+                SYMBOL,
+                exchange_order_id=EXCHANGE_ORDER_ID,
+                raise_if_not_found=True,
+            )
             with pytest.raises(
                 octobot_commons.errors.InvalidParametersError,
                 match="No .* order found for symbol=.*exchange_order_id=",
@@ -305,6 +344,45 @@ class TestFetchOrderOperator:
                 f"fetch_order('{SYMBOL}', exchange_order_id='{EXCHANGE_ORDER_ID}')"
             )
         assert resolved == FORMATTED_ORDER_SENTINEL
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "trader_mode",
+        ("simulated", "real_trading"),
+    )
+    async def test_fetch_order_call_as_dsl_raise_if_not_found_true(
+        self, interpreter, backtesting_trader, trader_mode
+    ):
+        _config, exchange_manager, _trader = backtesting_trader
+        with contextlib.ExitStack() as stack:
+            if trader_mode == "simulated":
+                stack.enter_context(mock.patch.object(
+                    exchange_manager.exchange_personal_data.orders_manager,
+                    "get_order",
+                    mock.Mock(side_effect=KeyError(EXCHANGE_ORDER_ID)),
+                ))
+                stack.enter_context(mock.patch.object(
+                    exchange_manager.exchange_personal_data.trades_manager,
+                    "get_trades",
+                    mock.Mock(return_value=[]),
+                ))
+            else:
+                stack.enter_context(mock.patch.object(
+                    exchange_manager, "is_trader_simulated", False,
+                ))
+                stack.enter_context(mock.patch.object(
+                    exchange_manager.exchange,
+                    "get_order",
+                    mock.AsyncMock(return_value=None),
+                ))
+            with pytest.raises(
+                octobot_commons.errors.InvalidParametersError,
+                match="No .* order found for symbol=.*exchange_order_id=",
+            ):
+                await interpreter.interprete(
+                    f"fetch_order('{SYMBOL}', exchange_order_id='{EXCHANGE_ORDER_ID}', "
+                    f"raise_if_not_found=True)"
+                )
 
 
 class TestGetDependencies:

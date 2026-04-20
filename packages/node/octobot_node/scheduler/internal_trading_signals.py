@@ -13,7 +13,6 @@ async def subscribe_internal_trading_signal_consumer() -> None:
     Signals can from from a local signal emitter or from send_internal_trading_signal
     """
     async def _on_internal_trading_signal(trading_signal: octobot_flow.entities.TradingSignal) -> None:
-        print(trading_signal)
         await _trigger_copier_automation(trading_signal)
 
     channel = await trading_signals_channel.get_or_create_internal_trading_signal_channel()

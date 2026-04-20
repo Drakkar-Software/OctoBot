@@ -17,8 +17,11 @@
 import math
 import time
 
+import octobot_commons.constants as octobot_commons_constants
 import octobot_commons.errors
 import octobot_commons.dsl_interpreter as dsl_interpreter
+import octobot_commons.json_util as json_util
+
 
 
 class MinOperator(dsl_interpreter.CallOperator):
@@ -264,14 +267,40 @@ class OscillatorOperator(dsl_interpreter.CallOperator):
         return base_value + oscillation_value
 
 
+class GetOperator(dsl_interpreter.CallOperator):
+    MIN_PARAMS = 3
+    MAX_PARAMS = 3
+    NAME = "get"
+    DESCRIPTION = (
+        "Returns element.get(key, default) for mapping-like objects. "
+        "On TypeError or AttributeError, returns default."
+    )
+    EXAMPLE = 'get(dict_var, "color", "blue")'
+
+    @staticmethod
+    def get_name() -> str:
+        return "get"
+
+    def compute(self) -> dsl_interpreter.ComputedOperatorParameterType:
+        computed_parameters = self.get_computed_parameters()
+        element = computed_parameters[0]
+        key = computed_parameters[1]
+        default = computed_parameters[2]
+        try:
+            return element.get(key, default) # type: ignore
+        except (TypeError, AttributeError):
+            return default
+
+
 class ValueIfOperator(dsl_interpreter.PreComputingCallOperator):
     NAME = "value_if"
     DESCRIPTION = (
-        "Returns the computed value if the inner DSL expression formed by repr(value) plus the "
-        "condition string evaluates to a truthy result; otherwise False. "
-        "The condition must be a string DSL fragment appended after repr(value)."
+        "Returns the computed value if the inner DSL expression evaluates to a truthy result; "
+        "otherwise False. If the condition string contains the LOCAL_VALUE_PLACEHOLDER placeholder, "
+        "that placeholder is replaced by repr(sanitize(value)) and the result is the full inner expression. "
+        "Otherwise the inner expression is repr(value) followed by the condition string (suffix mode)."
     )
-    EXAMPLE = "value_if(15, ' > 12')"
+    EXAMPLE = "value_if(15, ' > 12') or value_if(order, \"get(LOCAL_VALUE_PLACEHOLDER, 'status', 'x') == 'open'\")"
 
     @staticmethod
     def get_name() -> str:
@@ -282,13 +311,19 @@ class ValueIfOperator(dsl_interpreter.PreComputingCallOperator):
         return [
             dsl_interpreter.OperatorParameter(
                 name="value",
-                description="the value to compare; inner script is repr(value) plus condition",
+                description=(
+                    "the value to compare; used as repr(value) in suffix mode or to replace "
+                    "LOCAL_VALUE_PLACEHOLDER with repr(sanitize(value)) when present"
+                ),
                 required=True,
                 type=object,
             ),
             dsl_interpreter.OperatorParameter(
                 name="condition",
-                description="DSL script fragment (suffix) appended after repr(value) for inner evaluation",
+                description=(
+                    "DSL string: either a suffix appended after repr(value), or a full expression "
+                    "where LOCAL_VALUE_PLACEHOLDER is replaced by repr(sanitize(value))"
+                ),
                 required=True,
                 type=str,
             ),
@@ -303,7 +338,13 @@ class ValueIfOperator(dsl_interpreter.PreComputingCallOperator):
             raise octobot_commons.errors.InvalidParametersError(
                 f"value_if() requires condition to be a str, got {type(condition_script).__name__}"
             )
-        inner_expression = repr(computed_value) + condition_script
+        if octobot_commons_constants.LOCAL_VALUE_PLACEHOLDER not in condition_script:
+            inner_expression = repr(computed_value) + condition_script
+        else:
+            inner_expression = condition_script.replace(
+                octobot_commons_constants.LOCAL_VALUE_PLACEHOLDER,
+                repr(json_util.sanitize(computed_value)),
+            )
         nested_interpreter = dsl_interpreter.Interpreter(dsl_interpreter.get_all_operators())
         condition_result = await nested_interpreter.interprete(inner_expression)
         self.value = computed_value if bool(condition_result) else False

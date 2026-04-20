@@ -34,6 +34,7 @@ class ExchangeAccountDetails(octobot_commons.dataclasses.MinimizableDataclass):
         return exchange_data
 
     def is_simulated(self) -> bool:
+        # is simulated if no auth details are provided
         return not (
             self.auth_details.api_key
             or self.auth_details.api_secret

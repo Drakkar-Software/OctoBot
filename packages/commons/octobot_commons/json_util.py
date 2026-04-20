@@ -17,6 +17,10 @@
 import json
 import os.path
 import shutil
+import decimal
+import typing
+
+import octobot_commons.dataclasses as commons_dataclasses
 import octobot_commons.logging
 import octobot_commons.constants
 
@@ -151,3 +155,39 @@ def dump_formatted_json(json_data) -> str:
     :return: the dumped json data
     """
     return json.dumps(json_data, indent=4, sort_keys=True)
+
+
+def _get_sanitized_value(value: typing.Any) -> typing.Any:
+    if isinstance(value, (list, dict)):
+        return sanitize(value)
+    if isinstance(value, decimal.Decimal):
+        return float(value)
+    return value
+
+
+def sanitize(values: typing.Any) -> typing.Any:
+    """
+    Sanitize the given values by converting decimal.Decimal to float and 
+    recursively sanitizing lists, dictionaries and dataclasses.
+    """
+    if isinstance(values, (list, tuple)):
+        return type(values)(
+            sanitize(val)
+            for val in values
+        )
+    if isinstance(values, dict):
+        for key, val in values.items():
+            values[key] = _get_sanitized_value(val)
+    elif isinstance(values, commons_dataclasses.FlexibleDataclass):
+        for field in values.get_field_names():
+            setattr(values, field, sanitize(getattr(values, field)))
+    return values
+
+
+def sanitized(f):
+    """
+    Decorator to sanitize the result of an asynchronous function.
+    """
+    async def sanitized_wrapper(*args, **kwargs):
+        return sanitize(await f(*args, **kwargs))
+    return sanitized_wrapper

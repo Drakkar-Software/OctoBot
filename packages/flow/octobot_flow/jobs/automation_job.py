@@ -2,6 +2,7 @@ import contextlib
 import time
 import typing
 
+import octobot_commons.json_util as json_util
 import octobot_commons.logging as common_logging
 import octobot.community
 import octobot_commons.profiles.profile_data as profile_data_import
@@ -13,7 +14,6 @@ import octobot_flow.errors
 import octobot_flow.logic.actions
 import octobot_flow.logic.configuration
 import octobot_flow.logic.dsl
-import octobot_flow.parsers.sanitizer
 import octobot_flow.repositories.community
 import octobot_flow.encryption
 import octobot_flow.jobs.exchange_account_job as exchange_account_job_import
@@ -414,7 +414,7 @@ class AutomationJob:
                 action.clear_resolved_dsl_script()
 
     def dump(self) -> dict:
-        return octobot_flow.parsers.sanitizer.sanitize(
+        return json_util.sanitize(
             self.automation_state.to_dict(include_default_values=False)
         )  # type: ignore
 

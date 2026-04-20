@@ -416,6 +416,7 @@ export const LOOP_UNTIL_ORDER_CLOSED_TEMPLATE: ActionTemplate = {
       type: "text",
       aliasFuzzy: ["order_exchange_id", "order_id", "exchange_order_id"],
     },
+    exchangeParam("EXCHANGE_TO", "Exchange", false),
     symbolParam("ORDER_SYMBOL", "Order Symbol", true),
     loopIntervalParam(),
     loopTimeoutParam(),

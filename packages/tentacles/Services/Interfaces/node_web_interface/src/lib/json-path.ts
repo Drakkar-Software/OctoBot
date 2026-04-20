@@ -9,6 +9,7 @@
  * Supports array indexing with bracket notation: "items[0].name"
  */
 const DANGEROUS_KEYS = new Set(["__proto__", "constructor", "prototype"])
+const EARLIEST_VALID_DATE_MS = 956256098000 // April 20, 2000 at 18:41:38
 
 export function extractValue(obj: unknown, path: string): unknown {
   if (obj === null || obj === undefined) return undefined
@@ -103,22 +104,23 @@ export function formatCellValue(
 
   switch (formatter) {
     case "date": {
-      const dateStr = String(value)
       try {
+        const nbValue = Number(value)
+        const date_ms = nbValue < EARLIEST_VALID_DATE_MS ? nbValue * 1000 : nbValue
         return new Intl.DateTimeFormat(undefined, {
           month: "short",
           day: "numeric",
           year: "numeric",
           hour: "2-digit",
           minute: "2-digit",
-        }).format(new Date(dateStr))
+        }).format(new Date(date_ms))
       } catch {
-        return dateStr
+        return String(value)
       }
     }
     case "number": {
       const num = Number(value)
-      return Number.isNaN(num) ? String(value) : num.toLocaleString()
+      return Number.isNaN(num) ? String(value) : num > 1 ? num.toLocaleString() : String(num)
     }
     case "json":
       return typeof value === "object" ? JSON.stringify(value, null, 2) : String(value)

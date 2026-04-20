@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import decimal
 import math
 import pytest
 import mock
@@ -20,6 +21,9 @@ import time
 
 import octobot_commons.dsl_interpreter as dsl_interpreter
 import octobot_commons.errors
+import octobot_commons.constants as commons_constants
+
+import tentacles.Meta.DSL_operators.python_std_operators.base_call_operators as base_call_operators
 
 
 @pytest.fixture
@@ -149,6 +153,12 @@ async def test_interpreter_call_operations(interpreter):
     assert 190 <= await interpreter.interprete("oscillate(200, 5, 120)") <= 210  # 200 ± 5%
     assert 185 <= await interpreter.interprete("oscillate(150 + oscillate(50, 10, 60), 5, 120)") <= 215  # 200 ± 5%
 
+    assert await interpreter.interprete("get({'color': 'red'}, 'color', 'blue')") == "red"
+    assert await interpreter.interprete("get({'color': 'red'}, 'missing', 'blue')") == "blue"
+    assert await interpreter.interprete("get(None, 'k', 'd')") == "d"
+    assert await interpreter.interprete("get(1, 'k', 'd')") == "d"
+    assert await interpreter.interprete("get({'a': 1}, [], 'd')") == "d"
+
 
 @pytest.mark.asyncio
 async def test_interpreter_oscillate_operations(interpreter):
@@ -214,6 +224,12 @@ async def test_interpreter_insupported_operations(interpreter):
         await interpreter.interprete("oscillate(100, 10, -1)")
     with pytest.raises(octobot_commons.errors.InvalidParametersError):
         await interpreter.interprete("oscillate(100, 10, 0)")
+    with pytest.raises(octobot_commons.errors.InvalidParametersError):
+        await interpreter.interprete("get({})")
+    with pytest.raises(octobot_commons.errors.InvalidParametersError):
+        await interpreter.interprete("get(1, 2)")
+    with pytest.raises(octobot_commons.errors.InvalidParametersError):
+        await interpreter.interprete("get(1, 2, 3, 4)")
 
 
 @pytest.mark.asyncio
@@ -265,3 +281,28 @@ async def test_value_if_operator(interpreter):
     assert await interpreter.interprete("value_if(min(5, 9, 3), ' >' + ' 2')") == 3
     assert await interpreter.interprete("value_if((2 + 3) * 2, ' ==' + ' 10 - 1 + 1')") == 10
     assert await interpreter.interprete("value_if((2 + 3) * 2, ' ==' + ' 10 - 1 + 2')") is False
+
+    # LOCAL_VALUE_PLACEHOLDER in condition: substitute repr(sanitize(value)), full expression as inner script
+    assert await interpreter.interprete(
+        f"value_if({{'status': 'open', 'qty': 1.5}}, \"get({commons_constants.LOCAL_VALUE_PLACEHOLDER}, 'status', 'closed') == 'open'\")"
+    ) == {"status": "open", "qty": 1.5}
+    assert await interpreter.interprete(
+        f"value_if({{'status': 'closed', 'qty': 1.5}}, \"get({commons_constants.LOCAL_VALUE_PLACEHOLDER}, 'status', 'closed') == 'open'\")"
+    ) is False
+
+    # same placeholder pattern with dict keys built from inner operations (e.g. 'sta'+'tus' -> 'status')
+    assert await interpreter.interprete(
+        "value_if({'sta'+'tus': 'open'}, \"get(LOCAL_VALUE_PLACEHOLDER, 'status', 'closed') == 'open'\")"
+    ) == {"status": "open"}
+    assert await interpreter.interprete(
+        "value_if({'sta'+'tus': 'closed'}, \"get(LOCAL_VALUE_PLACEHOLDER, 'status', 'closed') == 'open'\")"
+    ) is False
+
+    # LOCAL_VALUE_PLACEHOLDER + decimal in value dict (sanitize before repr for inner DSL)
+    payload = {"status": "open", "qty": decimal.Decimal("0.25")}
+    condition = (
+        f"get({commons_constants.LOCAL_VALUE_PLACEHOLDER}, 'status', 'closed') == 'open'"
+    )
+    operator = base_call_operators.ValueIfOperator(payload, condition)
+    await operator.pre_compute()
+    assert operator.compute() == {"status": "open", "qty": 0.25}

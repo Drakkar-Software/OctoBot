@@ -8,6 +8,7 @@ import octobot_commons.constants as commons_constants
 import octobot_commons.symbols
 import octobot_commons.profiles.profile_data as profiles_import
 import octobot_commons.dataclasses
+import octobot_commons.configuration
 import octobot_trading.blockchain_wallets as blockchain_wallets
 import octobot_trading.blockchain_wallets.simulator.blockchain_wallet_simulator as blockchain_wallets_simulator
 import octobot_trading.exchanges.util.exchange_data as exchange_data_import
@@ -528,10 +529,19 @@ class ActionsDAGParser:
             ["ORDER_EXCHANGE_ID", "ORDER_SYMBOL"],
             "loop_until_order_closed",
         )
+        if not self.params.get_exchange_internal_name():
+            raise octobot_flow.errors.InvalidAutomationActionError(
+                "EXCHANGE_TO or EXCHANGE_FROM must be provided for the loop_until_order_closed action"
+            )
         # force the use of keyword form for the exchange_order_id parameter to resolve the dependency
         fetch_order = f"fetch_order('{self.params.ORDER_SYMBOL}', exchange_order_id='{self.params.ORDER_EXCHANGE_ID}')"
+        selector = (
+            f"value_if({fetch_order}, "
+            f"\"get({commons_constants.LOCAL_VALUE_PLACEHOLDER}, 'status', '{trading_enums.OrderStatus.OPEN.value}') "
+            f"!= '{trading_enums.OrderStatus.OPEN.value}'\")"
+        )
         dsl_script = (
-            f"loop_until({fetch_order}['status'] != '{trading_enums.OrderStatus.OPEN.value}', "
+            f"loop_until({selector}, "
             f"{loop_interval}, timeout={loop_timeout}, max_attempts={loop_max_attempts}, "
             f"return_remaining_time=True)"
         )
@@ -584,7 +594,10 @@ class ActionsDAGParser:
                 f"Missing keys: {', '.join(missing_keys)} (required: {', '.join(keys)}) "
                 f"for a {action} action"
             )
-    
+
+    def _get_empty_exchange_api_key(self) -> str:
+        return octobot_commons.configuration.encrypt("").decode()
+
     def _create_init_action(
         self,
         automation_id: str,
@@ -615,7 +628,8 @@ class ActionsDAGParser:
                 internal_name=exchange_internal_name,
             ),
             auth_details=exchange_data_import.ExchangeAuthDetails(
-                api_key=api_key or "",
+                # use empty key to simulate the exchange without an account
+                api_key=api_key or ("" if simulated_portfolio else self._get_empty_exchange_api_key()),
                 api_secret=api_secret or "",
             ),
         ) if exchange_internal_name else None

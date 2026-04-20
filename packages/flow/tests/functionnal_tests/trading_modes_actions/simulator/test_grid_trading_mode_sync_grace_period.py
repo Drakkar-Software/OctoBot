@@ -23,6 +23,7 @@ import mock
 import pytest
 
 import octobot_commons.constants as common_constants
+import octobot_commons.json_util as json_util
 import octobot_trading.constants as trading_constants
 import octobot_trading.enums as trading_enums
 
@@ -32,7 +33,6 @@ import octobot_flow
 import octobot_flow.entities as flow_entities
 import octobot_flow.enums
 import octobot_flow.logic.actions as flow_actions
-import octobot_flow.parsers.sanitizer as flow_sanitizer
 import octobot_flow.repositories.exchange
 
 import octobot_commons.dsl_interpreter.operators.re_callable_operator_mixin as re_callable_operator_mixin
@@ -311,7 +311,7 @@ def update_state_reference_account_details(
     if COPY_ACTION_ID not in automation_state.automation.actions_dag.get_actions_by_id():
         raise AssertionError(f"DAG action {COPY_ACTION_ID!r} not found")
     automation_state.upsert_automation_actions([dsl_details])
-    dump["automation"]["actions_dag"]["actions"] = flow_sanitizer.sanitize(
+    dump["automation"]["actions_dag"]["actions"] = json_util.sanitize(
         automation_state.to_dict(include_default_values=False)["automation"]["actions_dag"]["actions"]
     )
 

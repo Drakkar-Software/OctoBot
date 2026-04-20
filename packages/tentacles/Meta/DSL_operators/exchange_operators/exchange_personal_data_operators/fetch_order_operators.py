@@ -60,7 +60,8 @@ def _resolve_simulated_fetch_order_dict(
     exchange_manager: octobot_trading.exchanges.ExchangeManager,
     symbol: str,
     exchange_order_id: str,
-) -> dict:
+    raise_if_not_found: bool = False,
+) -> typing.Optional[dict]:
     orders_manager = exchange_manager.exchange_personal_data.orders_manager
     try:
         managed_order = orders_manager.get_order(None, exchange_order_id=exchange_order_id)
@@ -70,10 +71,12 @@ def _resolve_simulated_fetch_order_dict(
         )
         if from_trades is not None:
             return from_trades
-        raise octobot_commons.errors.InvalidParametersError(
-            f"No [{exchange_manager.exchange_name}] order found for symbol={symbol!r} "
-            f"exchange_order_id={exchange_order_id!r}"
-        ) from None
+        if raise_if_not_found:
+            raise octobot_commons.errors.InvalidParametersError(
+                f"No [{exchange_manager.exchange_name}] order found for symbol={symbol!r} "
+                f"exchange_order_id={exchange_order_id!r}"
+            ) from None
+        return None
     if managed_order.symbol != symbol:
         raise octobot_commons.errors.InvalidParametersError(
             f"Order exchange_order_id={exchange_order_id!r} is for symbol "
@@ -86,15 +89,18 @@ async def _resolve_real_trading_fetch_order_dict(
     exchange_manager: octobot_trading.exchanges.ExchangeManager,
     symbol: str,
     exchange_order_id: str,
-) -> dict:
+    raise_if_not_found: bool = False,
+) -> typing.Optional[dict]:
     if raw_order := await exchange_manager.exchange.get_order(exchange_order_id, symbol=symbol):
         return personal_data.create_order_instance_from_raw(
             exchange_manager.trader, raw_order
         ).to_dict()
-    raise octobot_commons.errors.InvalidParametersError(
-        f"No [{exchange_manager.exchange_name}] order found for symbol={symbol!r} "
-        f"exchange_order_id={exchange_order_id!r}"
-    )
+    if raise_if_not_found:
+        raise octobot_commons.errors.InvalidParametersError(
+            f"No [{exchange_manager.exchange_name}] order found for symbol={symbol!r} "
+            f"exchange_order_id={exchange_order_id!r}"
+        ) from None
+    return None
 
 
 def create_fetch_order_operators(
@@ -102,8 +108,16 @@ def create_fetch_order_operators(
 ) -> list:
 
     class _FetchOrderOperator(exchange_operator.ExchangeOperator):
-        DESCRIPTION = "Fetches one order from the exchange by symbol and exchange order id"
-        EXAMPLE = "fetch_order('BTC/USDT', exchange_order_id='12345')"
+        DESCRIPTION = (
+            "Fetches one order from the exchange by symbol and exchange order id. "
+            "When the order cannot be resolved (simulated: not in orders or matching trades; "
+            "real: exchange returns no order), the result is None unless raise_if_not_found is True, "
+            "in which case an error is raised."
+        )
+        EXAMPLE = (
+            "fetch_order('BTC/USDT', exchange_order_id='12345') "
+            "or fetch_order('BTC/USDT', exchange_order_id='12345', raise_if_not_found=True)"
+        )
 
         @staticmethod
         def get_name() -> str:
@@ -126,6 +140,15 @@ def create_fetch_order_operators(
                     type=str,
                     default=None,
                 ),
+                dsl_interpreter.OperatorParameter(
+                    name="raise_if_not_found",
+                    description=(
+                        "if True, raise when the order cannot be resolved; if False, return None."
+                    ),
+                    required=False,
+                    type=bool,
+                    default=False,
+                ),
             ]
 
         def get_dependencies(self) -> typing.List[dsl_interpreter.InterpreterDependency]:
@@ -143,17 +166,24 @@ def create_fetch_order_operators(
             param_by_name = self.get_computed_value_by_parameter()
             symbol = param_by_name.get("symbol")
             exchange_order_id = param_by_name.get("exchange_order_id")
+            raise_if_not_found = bool(param_by_name.get("raise_if_not_found", False))
             if not symbol or not exchange_order_id:
                 raise octobot_commons.errors.DSLInterpreterError(
                     "symbol and exchange_order_id are required for fetch_order operator"
                 )
             if exchange_manager.is_trader_simulated:
                 self.value = _resolve_simulated_fetch_order_dict(
-                    exchange_manager, symbol, exchange_order_id
+                    exchange_manager,
+                    symbol,
+                    exchange_order_id,
+                    raise_if_not_found=raise_if_not_found,
                 )
             else:
                 self.value = await _resolve_real_trading_fetch_order_dict(
-                    exchange_manager, symbol, exchange_order_id
+                    exchange_manager,
+                    symbol,
+                    exchange_order_id,
+                    raise_if_not_found=raise_if_not_found,
                 )
 
     return [
