@@ -52,7 +52,7 @@ from octobot.community.supabase_backend import (
     retried_failed_supabase_request,
     CommunitySupabaseClient,
 )
-
+from octobot.community import local_authenticator
 from octobot.community import community_analysis
 from octobot.community import community_manager
 from octobot.community import authentication
@@ -108,7 +108,11 @@ from octobot.community.history_backend import (
 from octobot.community.community_bot import (
     CommunityBot,
 )
-
+from octobot.community.local_authenticator import (
+    get_stateless_configuration,
+    local_user_authenticator,
+    local_anon_user_authenticator,  
+)
 __all__ = [
     "RequestError",
     "StatusCodeRequestError",
@@ -169,4 +173,7 @@ __all__ = [
     "MissingProductsSubscriptionError",
     "upload_error",
     "share_logs",
+    "get_stateless_configuration",
+    "local_user_authenticator",
+    "local_anon_user_authenticator",
 ]

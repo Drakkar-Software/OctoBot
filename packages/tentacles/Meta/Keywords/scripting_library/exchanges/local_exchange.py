@@ -3,8 +3,7 @@ import typing
 
 import octobot_trading.exchanges as exchanges
 import octobot_trading.exchanges.util.exchange_data as exchange_data_import
-
-import tentacles.Meta.Keywords.scripting_library.configuration.profile_data_configuration as profile_data_configuration
+import octobot_trading.util.config_util as config_util
 
 
 @contextlib.asynccontextmanager
@@ -13,10 +12,10 @@ async def local_ccxt_exchange_manager(
     tentacles_setup_config,
     exchange_config_by_exchange: typing.Optional[dict[str, dict]] = None,
 ):
-    exchange_config = profile_data_configuration.get_exchange_config(
+    exchange_config = config_util.get_exchange_config(
         exchange_data, tentacles_setup_config, exchange_config_by_exchange, False
     )
-    ignore_config = not profile_data_configuration.is_auth_required_exchanges(
+    ignore_config = not exchanges.is_auth_required_exchanges(
         exchange_data, tentacles_setup_config, exchange_config_by_exchange
     )
     async with exchanges.get_local_exchange_manager(

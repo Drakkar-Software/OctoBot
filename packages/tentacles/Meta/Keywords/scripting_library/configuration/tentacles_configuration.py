@@ -44,14 +44,8 @@ def is_exchange_tentacle(tentacle_name: str) -> bool:
     return tentacles_management.default_parents_inspection(tentacle_class, exchanges.RestExchange)
 
 
-# cached to avoid calling default_parents_inspection when unnecessary
-@functools.lru_cache(maxsize=2)
-def get_all_exchange_tentacles() -> list[type[exchanges.RestExchange]]:
-    return tentacles_management.get_all_classes_from_parent(exchanges.RestExchange)
-
-
 def get_exchange_tentacle_from_name(tentacle_name: str) -> type[exchanges.RestExchange]:
-    for exchange_tentacle in get_all_exchange_tentacles():
+    for exchange_tentacle in octobot_tentacles_manager.api.get_all_exchange_tentacles():
         if exchange_tentacle.get_name() == tentacle_name:
             return exchange_tentacle
     raise ValueError(f"No exchange tentacle found for name: {tentacle_name}")

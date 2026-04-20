@@ -13,7 +13,6 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-import logging
 import typing
 import os
 import sortedcontainers
@@ -25,24 +24,23 @@ import octobot_commons.enums as common_enums
 import octobot_commons.configuration as commons_configuration
 import octobot_commons.profiles as commons_profiles
 import octobot_commons.profiles.profile_data as commons_profile_data
-import octobot_commons.time_frame_manager as time_frame_manager
 import octobot_commons.symbols
 import octobot_commons.logging
 
 import octobot_evaluators.constants as evaluators_constants
 
+import octobot_tentacles_manager.api
+
 import octobot_trading.constants as trading_constants
-import octobot_trading.exchanges as exchanges
 import octobot_trading.exchanges.util.exchange_data as exchange_data_import
+import octobot_trading.util.config_util as config_util
 import octobot_trading.api
 import octobot_trading.enums
 
 import octobot_tentacles_manager.api
-import octobot_tentacles_manager.configuration
 
 
 import tentacles.Trading.Mode.index_trading_mode.index_trading as index_trading
-import tentacles.Trading.Mode.index_trading_mode.index_distribution as index_distribution
 import octobot_copy.enums as copy_enums
 import tentacles.Meta.Keywords.scripting_library.errors as scr_errors
 import tentacles.Meta.Keywords.scripting_library.constants as scr_constants
@@ -50,7 +48,6 @@ import tentacles.Meta.Keywords.scripting_library.configuration.tentacles_configu
 import tentacles.Meta.Keywords.scripting_library.configuration.indexes_configuration as indexes_configuration
 
 
-_AUTH_REQUIRED_EXCHANGES: dict[str, bool] = {}
 
 
 def minimal_profile_data() -> commons_profiles.ProfileData:
@@ -70,73 +67,12 @@ def create_backtesting_config(
     profile_data: commons_profiles.ProfileData,
     exchange_data: exchange_data_import.ExchangeData,
 ) -> commons_configuration.Configuration:
-    tentacles_config = get_full_tentacles_setup_config(profile_data)
+    tentacles_config = octobot_tentacles_manager.api.get_full_tentacles_setup_config(profile_data)
     apply_leverage_config(profile_data)
     profile_data.exchanges = [] # clear exchange to avoid conflicts with backtesting exchanges
-    return get_config(
+    return config_util.get_config(
         profile_data, exchange_data, tentacles_config, False, False, False
     )
-
-
-def get_config(
-    profile_data: commons_profiles.ProfileData,
-    exchange_data: exchange_data_import.ExchangeData,
-    tentacles_setup_config,
-    auth: bool,
-    ignore_symbols_in_exchange_init: bool,
-    use_exchange_data_portfolio: bool,
-) -> commons_configuration.Configuration:
-    config = commons_configuration.Configuration(None, None)
-    config.logger.logger.setLevel(logging.WARNING)  # disable "using XYZ profile." log
-    config.config = {}
-    initial_backtesting_context = profile_data.backtesting_context
-    # always use exchange data on real trading
-    # use exchange data on simulated only when exchange_data.portfolio_details.content is available
-    if use_exchange_data_portfolio and (
-        not profile_data.trader_simulator.enabled or exchange_data.portfolio_details.content
-    ):
-        _set_portfolio(profile_data, exchange_data.portfolio_details.content)
-        # do not allow using backtesting context when using exchange data portfolio
-        profile_data.backtesting_context = None # type: ignore
-    profile = profile_data.to_profile(None)
-    profile_data.backtesting_context = initial_backtesting_context
-    config.profile_by_id[profile.profile_id] = profile
-    config.select_profile(profile.profile_id)
-    config.config[common_constants.CONFIG_EXCHANGES][exchange_data.exchange_details.name] = get_exchange_config(
-        exchange_data, tentacles_setup_config, get_config_by_tentacle(profile_data), auth
-    )
-    if ignore_symbols_in_exchange_init:
-        config.config[common_constants.CONFIG_CRYPTO_CURRENCIES] = {}
-    config.config[common_constants.CONFIG_TIME_FRAME] = time_frame_manager.sort_time_frames(list(set(
-        common_enums.TimeFrames(market.time_frame)
-        for market in exchange_data.markets
-    )))
-    return config
-
-
-def get_exchange_config(
-    exchange_data: exchange_data_import.ExchangeData,
-    tentacles_setup_config,
-    exchange_config_by_exchange: typing.Optional[dict[str, dict]],
-    auth: bool
-):
-    auth_details = exchange_data.auth_details
-    if not auth:
-        always_auth = is_auth_required_exchanges(exchange_data, tentacles_setup_config, exchange_config_by_exchange)
-        if always_auth:
-            auth_details = get_readonly_exchange_auth_details(exchange_data.exchange_details.name)
-            auth = True
-
-    exchange_config = {
-        common_constants.CONFIG_EXCHANGE_KEY: auth_details.api_key if auth else None,
-        common_constants.CONFIG_EXCHANGE_SECRET: auth_details.api_secret if auth else None,
-        common_constants.CONFIG_EXCHANGE_PASSWORD: auth_details.api_password if auth else None,
-        common_constants.CONFIG_EXCHANGE_ACCESS_TOKEN: auth_details.access_token if auth else None,
-        common_constants.CONFIG_EXCHANGE_TYPE: auth_details.exchange_type or common_constants.CONFIG_EXCHANGE_SPOT,
-    }
-    exchange_config[common_constants.CONFIG_EXCHANGE_SANDBOXED] = auth_details.sandboxed
-    return exchange_config
-
 
 
 def create_profile_data_from_tentacles_config_history(
@@ -182,9 +118,9 @@ def register_historical_configs(
             add_traded_symbols(master_profile_data, added_pairs)
 
     # 2. register historical tentacles_config
-    config_by_tentacle = get_config_by_tentacle(master_profile_data)
+    config_by_tentacle = master_profile_data.get_config_by_tentacle()
     for historical_time, historical_profile in historical_profile_data_by_time.items():
-        historical_config_by_tentacle = get_config_by_tentacle(historical_profile)
+        historical_config_by_tentacle = historical_profile.get_config_by_tentacle()
         for tentacle, config in historical_config_by_tentacle.items():
             master_config = config_by_tentacle[tentacle]
             if config is not master_config:
@@ -216,11 +152,11 @@ def get_historical_added_config_trading_pairs(
         historical_pairs = [
             pair
             for historical_profile in historical_profile_data
-            for pair in get_traded_symbols(historical_profile)
+            for pair in historical_profile.get_traded_symbols()
         ]
     else:
         historical_pairs = get_historical_traded_pairs(master_profile_data)
-    registered_pairs = get_traded_symbols(master_profile_data)
+    registered_pairs = master_profile_data.get_traded_symbols()
     added_pairs = []
     for pair in historical_pairs:
         if pair not in registered_pairs:
@@ -269,7 +205,7 @@ def add_traded_symbols(
     profile_data: commons_profiles.ProfileData,
     added_symbols: typing.Iterable[str]
 ):
-    traded_symbols = get_traded_symbols(profile_data)
+    traded_symbols = profile_data.get_traded_symbols()
     to_add_symbols = [
         symbol
         for symbol in added_symbols
@@ -292,7 +228,7 @@ def expand_traded_pairs_into_currencies(profile_data, pairs: list[str]):
 
 
 def filter_out_missing_symbols(profile_data: commons_profiles.ProfileData, available_symbols: list[str]) -> list[str]:
-    traded_pairs = get_traded_symbols(profile_data)
+    traded_pairs = profile_data.get_traded_symbols()
     removed_symbols = [symbol for symbol in traded_pairs if symbol not in available_symbols]
     if removed_symbols:
         profile_data.crypto_currencies = []
@@ -324,41 +260,6 @@ def _get_readonly_exchange_credential_from_env(exchange_name, cred_suffix, allow
     )
 
 
-def is_auth_required_exchanges(
-    exchange_data: exchange_data_import.ExchangeData,
-    tentacles_setup_config,
-    exchange_config_by_exchange: typing.Optional[dict[str, dict]]
-):
-    try:
-        if exchange_config_by_exchange and any(
-            exchange_config.get(common_constants.CONFIG_FORCE_AUTHENTICATION, False)
-            for exchange_config in exchange_config_by_exchange.values()
-        ):
-            # don't use cache when force authentication is True: this can be specific to this context
-            return _get_is_auth_required_exchange(
-                exchange_data, tentacles_setup_config, exchange_config_by_exchange
-            )
-        # use cache to avoid using introspection each time
-        return _AUTH_REQUIRED_EXCHANGES[exchange_data.exchange_details.name]
-    except KeyError:
-        _AUTH_REQUIRED_EXCHANGES[exchange_data.exchange_details.name] = _get_is_auth_required_exchange(
-            exchange_data, tentacles_setup_config, exchange_config_by_exchange
-        )
-        return _AUTH_REQUIRED_EXCHANGES[exchange_data.exchange_details.name]
-
-def _get_is_auth_required_exchange(
-    exchange_data: exchange_data_import.ExchangeData,
-    tentacles_setup_config,
-    exchange_config_by_exchange: typing.Optional[dict[str, dict]]
-):
-    exchange_class = exchanges.get_rest_exchange_class(
-        exchange_data.exchange_details.name, tentacles_setup_config, exchange_config_by_exchange
-    )
-    return exchange_class.requires_authentication(
-        None, tentacles_setup_config, exchange_config_by_exchange
-    )
-
-
 def get_required_candles_count(profile_data: commons_profiles.ProfileData, min_candles_count: int) -> int:
     for tentacle_config in profile_data.tentacles:
         if common_constants.CONFIG_TENTACLES_REQUIRED_CANDLES_COUNT in tentacle_config.config:
@@ -367,13 +268,6 @@ def get_required_candles_count(profile_data: commons_profiles.ProfileData, min_c
                 min_candles_count
             )
     return min_candles_count
-
-
-def _set_portfolio(
-    profile_data: commons_profiles.ProfileData,
-    portfolio: dict
-):
-    profile_data.trader_simulator.starting_portfolio = get_formatted_portfolio(portfolio)
 
 
 def update_position_levarage(
@@ -388,53 +282,12 @@ def update_position_levarage(
     position.position[octobot_trading.enums.ExchangeConstantsPositionColumns.LEVERAGE.value] = leverage
 
 
-def get_formatted_portfolio(portfolio: dict):
-    for asset in portfolio.values():
-        if common_constants.PORTFOLIO_AVAILABLE not in asset:
-            asset[common_constants.PORTFOLIO_AVAILABLE] = asset[trading_constants.CONFIG_PORTFOLIO_FREE]
-    return portfolio
-
-
-def get_config_by_tentacle(profile_data: commons_profiles.ProfileData) -> dict[str, dict]:
-    return {
-        tentacle.name: tentacle.config
-        for tentacle in profile_data.tentacles
-    }
-
-
-def get_full_tentacles_setup_config(
-    profile_data: commons_profiles.ProfileData = None,
-    ensure_tentacle_info: bool = True,
-    extra_tentacle_names: list = None
-) -> octobot_tentacles_manager.configuration.TentaclesSetupConfiguration:
-    if ensure_tentacle_info:
-        octobot_tentacles_manager.api.ensure_tentacle_info()
-    classes = [
-        tentacle_class.__name__
-        for tentacle_class in tentacles_configuration.get_all_exchange_tentacles()
-        if not (tentacle_class.is_default_exchange() or tentacle_class.__name__ == exchanges.ExchangeSimulator.__name__)
-    ]
-    if profile_data:
-        try:
-            classes.extend(
-                # always use tentacle class names here as tentacles are indexed by name
-                tentacle_data.name if extra_tentacle_names and tentacle_data.name in extra_tentacle_names
-                else octobot_tentacles_manager.api.get_tentacle_class_from_string(tentacle_data.name).__name__
-                for tentacle_data in profile_data.tentacles
-            )
-        except RuntimeError as err:
-            raise scr_errors.InvalidTentacleProfileError(err) from err
-        if extra_tentacle_names:
-            classes.extend(extra_tentacle_names)
-    return octobot_tentacles_manager.api.create_tentacles_setup_config_with_tentacles(*classes)
-
-
 def merge_profile_data(
     profile_data: commons_profiles.ProfileData,
     previous_profile_data: commons_profiles.ProfileData,
 ) -> commons_profiles.ProfileData:
     # previous config crypto currencies are merged
-    current_traded_pairs = set(get_traded_symbols(profile_data))
+    current_traded_pairs = set(profile_data.get_traded_symbols())
     for currency_data in previous_profile_data.crypto_currencies:
         for previous_traded_pair in currency_data.trading_pairs:
             to_add_pairs = set()
@@ -471,26 +324,17 @@ def apply_leverage_config_to_trading_mode_config_if_necessary(trading_mode_confi
 
 def _get_trading_mode_config(profile_data: commons_profiles.ProfileData):
     trading_mode = get_trading_mode(profile_data)
-    config_by_tentacle = get_config_by_tentacle(profile_data)
+    config_by_tentacle = profile_data.get_config_by_tentacle()
     if trading_mode in config_by_tentacle:
         return config_by_tentacle[trading_mode]
     raise KeyError(f"No trading mode config found in {list(config_by_tentacle)} tentacles config")
 
 
 def get_trading_mode(profile_data: commons_profiles.ProfileData) -> typing.Optional[str]:
-    for tentacle_name in get_config_by_tentacle(profile_data):
+    for tentacle_name in profile_data.get_config_by_tentacle():
         if tentacles_configuration.is_trading_mode_tentacle(tentacle_name):
             return tentacle_name
     return None
-
-
-def get_traded_symbols(
-    profile_data: commons_profiles.ProfileData
-) -> list[str]:
-    symbols = []
-    for crypto_currency in profile_data.crypto_currencies:
-        symbols.extend(crypto_currency.trading_pairs)
-    return symbols
 
 
 def get_traded_coins(
@@ -502,7 +346,7 @@ def get_traded_coins(
     # 2. traded assets
     # 3. stablecoins if include_stablecoins is True
     coins = [profile_data.trading.reference_market, ]
-    for symbol in get_traded_symbols(profile_data):
+    for symbol in profile_data.get_traded_symbols():
         base, quote = octobot_commons.symbols.parse_symbol(symbol).base_and_quote()
         if base not in coins:
             coins.append(base)
@@ -520,7 +364,7 @@ def get_traded_coins(
 def get_time_frames(
     profile_data: commons_profiles.ProfileData, for_historical_data=False
 ) -> list[str]:
-    for config in get_config_by_tentacle(profile_data).values():
+    for config in profile_data.get_config_by_tentacle().values():
         if evaluators_constants.STRATEGIES_REQUIRED_TIME_FRAME in config:
             return config[evaluators_constants.STRATEGIES_REQUIRED_TIME_FRAME]
     return [_get_default_time_frame(profile_data, for_historical_data)]
@@ -597,7 +441,7 @@ def set_backtesting_portfolio(profile_data, exchange_data):
 def get_oldest_historical_config_symbols_and_time(profile_data: commons_profiles.ProfileData, default) -> (list, float):
     first_historical_config_time = _get_first_historical_config_time(profile_data, default)
     if first_historical_config_time == default:
-        base_traded_symbols = get_traded_symbols(profile_data)
+        base_traded_symbols = profile_data.get_traded_symbols()
         return base_traded_symbols, base_traded_symbols, default
     first_traded_symbols = _get_all_tentacles_configured_traded_symbols(profile_data, first_historical_config_time)
     last_traded_symbols = _get_all_tentacles_configured_traded_symbols(profile_data, None)
@@ -608,7 +452,7 @@ def _get_all_tentacles_configured_traded_symbols(
     profile_data: commons_profiles.ProfileData, first_historical_config_time: typing.Optional[float]
 ) -> set:
     traded_symbols = set()
-    tentacles_config = get_config_by_tentacle(profile_data)
+    tentacles_config = profile_data.get_config_by_tentacle()
     for tentacle, tentacle_config in tentacles_config.items():
         if first_historical_config_time is None:
             config = tentacle_config
@@ -630,7 +474,7 @@ def _get_all_tentacles_configured_traded_symbols(
 
 
 def _get_first_historical_config_time(profile_data: commons_profiles.ProfileData, default) -> float:
-    tentacles_config = get_config_by_tentacle(profile_data)
+    tentacles_config = profile_data.get_config_by_tentacle()
     oldest_config_times = []
     for tentacle, config in tentacles_config.items():
         try:

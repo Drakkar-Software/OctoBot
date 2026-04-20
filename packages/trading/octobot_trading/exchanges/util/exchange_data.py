@@ -90,6 +90,19 @@ class MarketDetails(octobot_commons.dataclasses.FlexibleDataclass, octobot_commo
         ohlcv[common_enums.PriceIndexes.IND_PRICE_VOL.value] = self.volume[index]
         return ohlcv
 
+    @staticmethod
+    def from_ohlcvs(symbol: str, time_frame: str, ohlcvs: list[dict]) -> "MarketDetails":
+        return MarketDetails(
+            symbol=symbol,
+            time_frame=time_frame,
+            close=[ohlcv[common_enums.PriceIndexes.IND_PRICE_CLOSE.value] for ohlcv in ohlcvs],
+            open=[ohlcv[common_enums.PriceIndexes.IND_PRICE_OPEN.value] for ohlcv in ohlcvs],
+            high=[ohlcv[common_enums.PriceIndexes.IND_PRICE_HIGH.value] for ohlcv in ohlcvs],
+            low=[ohlcv[common_enums.PriceIndexes.IND_PRICE_LOW.value] for ohlcv in ohlcvs],
+            volume=[ohlcv[common_enums.PriceIndexes.IND_PRICE_VOL.value] for ohlcv in ohlcvs],
+            time=[ohlcv[common_enums.PriceIndexes.IND_PRICE_TIME.value] for ohlcv in ohlcvs],
+        )
+
 
 @dataclasses.dataclass
 class OrdersDetails(octobot_commons.dataclasses.FlexibleDataclass, octobot_commons.dataclasses.UpdatableDataclass):
@@ -134,3 +147,25 @@ class ExchangeData(octobot_commons.dataclasses.MinimizableDataclass, octobot_com
             if market.symbol == symbol:
                 return market.close[-1]
         raise KeyError(symbol)
+
+
+def exchange_data_factory(
+    exchange_internal_name: str,
+    exchange_type: typing.Optional[str] = None,
+    sandboxed: bool = False,
+    exchange_credential_id: typing.Optional[str] = None,
+    auth_details: typing.Optional[ExchangeAuthDetails] = None,
+) -> ExchangeData:
+    exchange_data = ExchangeData()
+    exchange_data.exchange_details.name = exchange_internal_name
+    exchange_data.auth_details.sandboxed = sandboxed
+    exchange_data.auth_details.exchange_credential_id = exchange_credential_id
+    if exchange_type:
+        exchange_data.auth_details.exchange_type = exchange_type
+    if auth_details:
+        exchange_data.auth_details.api_key = auth_details.api_key
+        exchange_data.auth_details.api_secret = auth_details.api_secret
+        exchange_data.auth_details.api_password = auth_details.api_password
+        exchange_data.auth_details.access_token = auth_details.access_token
+        exchange_data.auth_details.encrypted = auth_details.encrypted
+    return exchange_data

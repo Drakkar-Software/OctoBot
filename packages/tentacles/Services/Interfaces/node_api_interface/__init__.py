@@ -16,4 +16,4 @@
 
 import octobot_commons.constants as commons_constants
 if not commons_constants.USE_MINIMAL_LIBS:
-    from .node_api_interface import NodeApiInterface
+    from .node_api import NodeApiInterface

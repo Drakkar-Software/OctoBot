@@ -72,7 +72,7 @@ class BlockchainWallet(octobot_trading.accounts.AbstractAccount):
         asset: str, 
         amount: decimal.Decimal, 
         network: str,
-        address: str, 
+        address: str,
     ) -> dict:
         if constants.SIMULATED_DEPOSIT_ADDRESS in address and not self.IS_SIMULATED:
             raise errors.InvalidArgumentError("Simulated addresses are not allowed on a real wallet")

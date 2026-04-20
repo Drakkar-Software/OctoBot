@@ -29,6 +29,7 @@ import octobot_commons.logging
 import octobot_trading.exchanges
 import octobot_trading.exchanges.util.exchange_data as exchange_data_import
 import octobot_trading.util.test_tools.exchanges_test_tools as exchanges_test_tools
+import octobot_tentacles_manager.api
 
 import octobot.community
 import octobot.enums
@@ -101,7 +102,7 @@ def _get_backtesting_run_details(
         and scr_constants.PRICE_UPDATE_TIME_FRAME.value not in time_frames
     ):
         time_frames.append(scr_constants.PRICE_UPDATE_TIME_FRAME)
-    symbols = scr_configuration.get_traded_symbols(profile_data)
+    symbols = profile_data.get_traded_symbols()
     return start_time, end_time, time_frames, symbols
 
 
@@ -182,8 +183,8 @@ async def data_collector_ccxt_exchange_manager(
     exchange_data: exchange_data_import.ExchangeData,
 ):
     exchange_data.exchange_details.name = profile_data.backtesting_context.exchanges[0]
-    tentacles_setup_config = scr_configuration.get_full_tentacles_setup_config()
-    exchange_config_by_exchange = scr_configuration.get_config_by_tentacle(profile_data)
+    tentacles_setup_config = octobot_tentacles_manager.api.get_full_tentacles_setup_config()
+    exchange_config_by_exchange = profile_data.get_config_by_tentacle()
     async with src_exchanges.local_ccxt_exchange_manager(
         exchange_data, tentacles_setup_config,
         exchange_config_by_exchange=exchange_config_by_exchange,

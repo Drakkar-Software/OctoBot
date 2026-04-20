@@ -2,9 +2,8 @@ import contextlib
 import typing
 
 import octobot_flow.entities
-import octobot_commons.logging as common_logging
 import octobot.community as community
-import octobot_flow.repositories.community.initializer as initializer
+import octobot.community.local_authenticator as local_community_auth
 
 
 class CommunityAuthenticatorFactory:
@@ -25,53 +24,21 @@ class CommunityAuthenticatorFactory:
     async def local_authenticator(self) -> typing.AsyncGenerator[community.CommunityAuthentication, None]:
         if not self.auth_details.email:
             raise ValueError("auth_details.email is required")
-        community.IdentifiersProvider.use_production()
-        local_instance = None
-        configuration = initializer.get_stateless_configuration()
-        try:
-            local_instance = community.CommunityAuthentication(
-                config=configuration, backend_url=self.backend_url, use_as_singleton=False
-            )
-            local_instance.supabase_client.is_admin = False
-            local_instance.silent_auth = self.auth_details.hidden
-            # minimal operations: just authenticate
-            if self.auth_details.auth_key:
-                # auth key authentication
-                auth_key = self.auth_details.auth_key
-                password = None
-            else:
-                # password authentication
-                password = self.auth_details.password
-                auth_key = None
-            await local_instance.login(
-                self.auth_details.email, password, password_token=None, auth_key=auth_key, minimal=True
-            )
-            common_logging.get_logger("local_community_user_authenticator").info(
-                f"Authenticated as {self.auth_details.email[:3]}[...]{self.auth_details.email[-4:]}"
-            )
+        async with local_community_auth.local_user_authenticator(
+            email=self.auth_details.email,
+            hidden=self.auth_details.hidden,
+            backend_url=self.backend_url,
+            password=self.auth_details.password if not self.auth_details.auth_key else None,
+            auth_key=self.auth_details.auth_key if self.auth_details.auth_key else None,
+        ) as local_instance:
             yield local_instance
-        finally:
-            if local_instance is not None:
-                await local_instance.logout()
-                await local_instance.stop()
 
     @contextlib.asynccontextmanager
     async def local_anon_authenticator(self) -> typing.AsyncGenerator[community.CommunityAuthentication, None]:
         if not self.anon_key:
             raise ValueError("Anon key is required")
-        community.IdentifiersProvider.use_production()
-        local_instance = None
-        configuration = initializer.get_stateless_configuration()
-        try:
-            local_instance = community.CommunityAuthentication(
-                config=configuration, backend_url=self.backend_url, backend_key=self.anon_key, use_as_singleton=False
-            )
-            local_instance.supabase_client.is_admin = False
-            common_logging.get_logger("local_community_user_authenticator").info(
-                f"Authenticated as anonymous user"
-            )
+        async with local_community_auth.local_anon_user_authenticator(
+            backend_url=self.backend_url,
+            anon_key=self.anon_key,
+        ) as local_instance:
             yield local_instance
-        finally:
-            if local_instance is not None:
-                await local_instance.logout()
-                await local_instance.stop()

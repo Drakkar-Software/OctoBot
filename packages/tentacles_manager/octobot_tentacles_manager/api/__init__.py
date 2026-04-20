@@ -97,6 +97,8 @@ from octobot_tentacles_manager.api.inspector import (
     get_installed_packages_from_url,
     get_tentacles_from_package_name,
     get_all_installed_package_urls,
+    get_all_exchange_tentacles,
+    get_full_tentacles_setup_config,
 )
 from octobot_tentacles_manager.api.uninstaller import (
     uninstall_all_tentacles,
@@ -167,6 +169,8 @@ __all__ = [
     "get_installed_packages_from_url",
     "get_tentacles_from_package_name",
     "get_all_installed_package_urls",
+    "get_all_exchange_tentacles",
+    "get_full_tentacles_setup_config",
     "uninstall_all_tentacles",
     "uninstall_tentacles",
     "start_tentacle_creator",

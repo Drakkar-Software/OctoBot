@@ -49,7 +49,6 @@ import octobot.storage as storage
 import octobot.limits as limits
 import octobot.constants as constants
 import octobot.errors as errors
-import octobot.databases_util as databases_util
 
 
 class OctoBotBacktesting:
@@ -113,7 +112,7 @@ class OctoBotBacktesting:
         self.start_time = time.time()
         await commons_databases.init_bot_storage(
             self.bot_id,
-            databases_util.get_run_databases_identifier(
+            trading_api.get_run_databases_identifier(
                 self.backtesting_config,
                 self.tentacles_setup_config,
                 enable_storage=self.enable_storage,

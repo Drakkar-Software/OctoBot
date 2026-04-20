@@ -32,10 +32,10 @@ def test_register_historical_configs_adds_traded_pairs():
     historical.tentacles = [commons_profile_data.TentaclesData(name=tentacle_name, config={})]
     scripting_library.add_traded_symbols(historical, ["BTC/USDT"])
     historicals = {1000.0: historical}
-    assert [] == scripting_library.get_traded_symbols(master)
+    assert [] == master.get_traded_symbols()
     scripting_library.register_historical_configs(master, historicals, True, False)
     # Master should now have the traded pair
-    assert ["BTC/USDT"] == scripting_library.get_traded_symbols(master)
+    assert ["BTC/USDT"] == master.get_traded_symbols()
 
 
 def test_register_historical_configs_registers_historical_tentacle_config():

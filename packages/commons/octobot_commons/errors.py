@@ -51,6 +51,12 @@ class ProfileImportError(Exception):
     """
 
 
+class ProfileDataError(Exception):
+    """
+    Profile related Exception: raised when the profile data is invalid
+    """
+
+
 class ConfigEvaluatorError(Exception):
     """
     Evaluator config related Exception

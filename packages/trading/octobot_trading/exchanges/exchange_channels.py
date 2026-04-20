@@ -60,6 +60,29 @@ async def create_exchange_producers(exchange_manager, forced_producers=None) -> 
         await create_producers(exchange_manager, forced_producers)
 
 
+async def create_temporary_exchange_channels_and_producers(
+    exchange_manager: "exchanges.ExchangeManager",
+    create_authenticated_producers: bool,
+    start_producers: bool = False,
+    subscribe_indirect_producers_if_not_started: bool = False,
+):
+    await create_exchange_channels(exchange_manager)
+    await create_producers(
+        exchange_manager, 
+        exchange_data_import.UNAUTHENTICATED_UPDATER_PRODUCERS,
+        start_producers=start_producers,
+        subscribe_indirect_producers_if_not_started=subscribe_indirect_producers_if_not_started
+    )
+    if create_authenticated_producers:
+        import octobot_trading.personal_data as personal_data
+        await create_producers(
+            exchange_manager,
+            personal_data.AUTHENTICATED_UPDATER_PRODUCERS,
+            start_producers=start_producers,
+            subscribe_indirect_producers_if_not_started=subscribe_indirect_producers_if_not_started
+        )
+
+
 def _should_create_authenticated_producers(exchange_manager):
     """
     :param exchange_manager: the related exchange manager
@@ -92,7 +115,7 @@ def _should_create_unauthenticated_producers(exchange_manager):
 
 
 async def create_producers(
-    exchange_manager: exchanges, producers_classes,
+    exchange_manager: "exchanges.ExchangeManager", producers_classes,
     start_producers: bool = True, subscribe_indirect_producers_if_not_started: bool = False
 ) -> None:
     """

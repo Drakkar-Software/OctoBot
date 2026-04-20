@@ -61,7 +61,6 @@ import octobot.community as community
 import octobot.constants as octobot_constants
 import octobot.enums as octobot_enums
 import octobot.configuration_manager as configuration_manager
-import octobot.databases_util as octobot_databases_util
 import tentacles.Services.Interfaces.web_interface.constants as constants
 import tentacles.Services.Interfaces.web_interface.models as models
 import tentacles.Services.Interfaces.web_interface.models.json_schemas as json_schemas
@@ -738,7 +737,7 @@ async def _reset_profile_portfolio_history(current_edited_config):
         trading_api.get_exchange_name(exchange_manager): exchange_manager
         for exchange_manager in trading_api.get_exchange_managers_from_exchange_ids(trading_api.get_exchange_ids())
     }
-    run_dbs_identifier = octobot_databases_util.get_run_databases_identifier(
+    run_dbs_identifier = trading_api.get_run_databases_identifier(
         current_edited_config.config,
         interfaces_util.get_edited_tentacles_config()
     )

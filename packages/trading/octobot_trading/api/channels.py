@@ -33,3 +33,18 @@ async def subscribe_to_order_channel(callback, exchange_id):
 async def _subscribe_to_channel(callback, exchange_id, channel):
     channel = exchange_channel.get_chan(channel.get_name(), exchange_id)
     await channel.new_consumer(callback)
+
+
+def get_channel_updater(exchange_manager, channel_name: str) -> exchange_channel.ExchangeChannelProducer:
+    for name, channel in exchange_channel.get_exchange_channels(exchange_manager.id).items():
+        if name == channel_name:
+            if producers := channel.get_producers():
+                updater = next(iter(producers))
+                if isinstance(updater, exchange_channel.ExchangeChannelProducer):
+                    return updater
+            raise KeyError(
+                f"Missing producer for channel {channel_name}"
+            )
+    raise KeyError(
+        f"Channel {channel_name} not found for exchange {exchange_manager.exchange_name}"
+    )

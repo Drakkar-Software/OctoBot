@@ -68,6 +68,7 @@ from octobot_trading.api.channels import (
     subscribe_to_ohlcv_channel,
     subscribe_to_trades_channel,
     subscribe_to_order_channel,
+    get_channel_updater,
 )
 from octobot_trading.api.exchange import (
     create_exchange_builder,
@@ -116,6 +117,8 @@ from octobot_trading.api.exchange import (
     get_all_exchange_symbols,
     get_all_exchange_time_frames,
     get_trading_symbols,
+    get_all_available_symbols,
+    get_all_available_time_frames,
     get_trading_timeframes,
     get_watched_timeframes,
     get_relevant_time_frames,
@@ -234,6 +237,7 @@ from octobot_trading.api.contracts import (
     create_default_option_contract,
 )
 from octobot_trading.api.storage import (
+    get_run_databases_identifier,
     clear_trades_storage_history,
     clear_candles_storage_history,
     clear_database_storage_history,
@@ -284,6 +288,7 @@ __all__ = [
     "subscribe_to_ohlcv_channel",
     "subscribe_to_trades_channel",
     "subscribe_to_order_channel",
+    "get_channel_updater",
     "create_exchange_builder",
     "get_exchange_configurations_from_exchange_name",
     "get_exchange_manager_from_exchange_name_and_id",
@@ -330,6 +335,8 @@ __all__ = [
     "get_all_exchange_symbols",
     "get_all_exchange_time_frames",
     "get_trading_symbols",
+    "get_all_available_symbols",
+    "get_all_available_time_frames",
     "get_trading_timeframes",
     "get_watched_timeframes",
     "get_relevant_time_frames",
@@ -430,6 +437,7 @@ __all__ = [
     "create_default_option_contract",
     "set_is_exclusively_using_exchange_position_details",
     "update_position_mark_price",
+    "get_run_databases_identifier",
     "clear_trades_storage_history",
     "clear_candles_storage_history",
     "clear_database_storage_history",

@@ -28,6 +28,7 @@ import octobot_backtesting.backtest_data
 import octobot_backtesting.api
 
 import octobot_tentacles_manager.configuration
+import octobot_tentacles_manager.api
 
 import octobot.backtesting.independent_backtesting
 import octobot.backtesting.minimal_data_importer as minimal_data_importer
@@ -53,7 +54,7 @@ async def init_and_run_backtesting(
         exchange_data, 
         profile_data, 
         scripting_library.create_backtesting_config(profile_data, exchange_data),
-        scripting_library.get_full_tentacles_setup_config(profile_data),
+        octobot_tentacles_manager.api.get_full_tentacles_setup_config(profile_data),
     ) as independent_backtesting:
         yield independent_backtesting
 

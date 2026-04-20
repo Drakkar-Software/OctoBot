@@ -49,6 +49,8 @@ from octobot_trading.util.config_util import (
     get_reference_market,
     get_traded_pairs_by_currency,
     get_current_bot_live_id,
+    get_config,
+    get_formatted_portfolio,
 )
 
 __all__ = [
@@ -72,4 +74,6 @@ __all__ = [
     "get_reference_market",
     "get_traded_pairs_by_currency",
     "get_current_bot_live_id",
+    "get_config",
+    "get_formatted_portfolio",
 ]

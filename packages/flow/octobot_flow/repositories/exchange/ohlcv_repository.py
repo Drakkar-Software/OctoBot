@@ -19,14 +19,5 @@ class OhlcvRepository(base_exchange_repository_import.BaseExchangeRepository):
         ohlcvs = await updater.fetch_ohlcv(
             symbol, common_enums.TimeFrames(time_frame), limit, allow_cache=True, tickers_backup=tickers
         )
-        return exchange_data_import.MarketDetails(
-            symbol=symbol,
-            time_frame=time_frame,
-            close=[ohlcv[common_enums.PriceIndexes.IND_PRICE_CLOSE.value] for ohlcv in ohlcvs],
-            open=[ohlcv[common_enums.PriceIndexes.IND_PRICE_OPEN.value] for ohlcv in ohlcvs],
-            high=[ohlcv[common_enums.PriceIndexes.IND_PRICE_HIGH.value] for ohlcv in ohlcvs],
-            low=[ohlcv[common_enums.PriceIndexes.IND_PRICE_LOW.value] for ohlcv in ohlcvs],
-            volume=[ohlcv[common_enums.PriceIndexes.IND_PRICE_VOL.value] for ohlcv in ohlcvs],
-            time=[ohlcv[common_enums.PriceIndexes.IND_PRICE_TIME.value] for ohlcv in ohlcvs],
-        )
+        return exchange_data_import.MarketDetails.from_ohlcvs(symbol, time_frame, ohlcvs)
 

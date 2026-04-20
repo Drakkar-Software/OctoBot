@@ -84,27 +84,14 @@ class ExchangeAccountJob(octobot_flow.repositories.exchange.ExchangeContextMixin
             )
             await sub_portfolio_resolver.resolve()
 
-    async def _create_exchange_producers(self, exchange_manager):
-        await octobot_trading.exchanges.create_exchange_channels(exchange_manager)
-        await octobot_trading.exchanges.create_producers(
-            exchange_manager, 
-            octobot_trading.exchange_data.UNAUTHENTICATED_UPDATER_PRODUCERS,
-            start_producers=False,
-            subscribe_indirect_producers_if_not_started=False
-        )
-        if not self.profile_data_provider.get_profile_data().trader_simulator.enabled:
-            await octobot_trading.exchanges.create_producers(
-                self._exchange_manager,
-                personal_data.AUTHENTICATED_UPDATER_PRODUCERS,
-                start_producers=False,
-                subscribe_indirect_producers_if_not_started=False
-            )
-
     @contextlib.asynccontextmanager
     async def account_exchange_context(self, global_profile_data: commons_profiles.ProfileData):
         with self.profile_data_provider.profile_data_context(global_profile_data):
             async with self.exchange_manager_context() as exchange_manager:
-                await self._create_exchange_producers(exchange_manager)
+                await octobot_trading.exchanges.create_temporary_exchange_channels_and_producers(
+                    exchange_manager,
+                    create_authenticated_producers=not self.profile_data_provider.get_profile_data().trader_simulator.enabled,
+                )
                 yield
 
     async def _fetch_and_save_ohlcv(
@@ -215,7 +202,7 @@ class ExchangeAccountJob(octobot_flow.repositories.exchange.ExchangeContextMixin
 
     def _get_traded_symbols(self) -> list[str]:
         profile_data = self.profile_data_provider.get_profile_data()
-        config_symbols = scripting_library.get_traded_symbols(profile_data)
+        config_symbols = profile_data.get_traded_symbols()
         return list_util.deduplicate(
             config_symbols + self.get_all_actions_symbols(profile_data)
         )

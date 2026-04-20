@@ -24,6 +24,22 @@ import octobot_commons.constants as constants
 import octobot_commons.logging as logging_util
 
 
+_BACKGROUND_FINGERPRINT_ASYNC_EXECUTOR = None
+
+
+def run_background_fingerprint_async_executor(fingerprint: str, coroutine) -> bool:
+    """
+    Run a coroutine in the background async executor
+    :param fingerprint: the fingerprint of the coroutine
+    :param coroutine: the coroutine to run
+    :return: True if the coroutine was submitted, False if it was already processing
+    """
+    global _BACKGROUND_FINGERPRINT_ASYNC_EXECUTOR # pylint: disable=global-statement
+    if _BACKGROUND_FINGERPRINT_ASYNC_EXECUTOR is None:
+        _BACKGROUND_FINGERPRINT_ASYNC_EXECUTOR = BackgroundFingerprintAsyncExecutor()
+    return _BACKGROUND_FINGERPRINT_ASYNC_EXECUTOR.submit(fingerprint, coroutine)
+
+
 def run_coroutine_in_asyncio_loop(
     coroutine, async_loop, log_exceptions=True, timeout=constants.DEFAULT_FUTURE_TIMEOUT
 ):
@@ -169,3 +185,46 @@ class RLock(asyncio.Lock):
         if self._depth == 0:
             super().release()
             self._task = None
+
+
+class BackgroundFingerprintAsyncExecutor:
+    """
+    BackgroundFingerprintAsyncExecutor is used to run coroutines in a background thread
+    """
+    def __init__(self):
+        self.executor = concurrent.futures.ThreadPoolExecutor(
+            thread_name_prefix="bg-async-executor"
+        )  # let pool decide how many workers
+        self.submitted: set[str] = set()
+        logging_util.get_logger(self.__class__.__name__).info(
+            f"Initialized pool using {self.executor._max_workers} workers"
+        )
+
+    def submit(self, fingerprint: str, coroutine):
+        """
+        Submit a coroutine to the background executor
+        :param fingerprint: the fingerprint of the coroutine
+        :param coroutine: the coroutine to run
+        :return: True if the coroutine was submitted, False if it was already processing
+        """
+        if fingerprint in self.submitted:
+            # already processing
+            return False
+        self.submitted.add(fingerprint)
+
+        def coro_wrapper():
+            t_start = time.time()
+            try:
+                logging_util.get_logger(self.__class__.__name__).info(
+                    f"Submitting {fingerprint}"
+                )
+                asyncio.run(coroutine)
+            finally:
+                logging_util.get_logger(self.__class__.__name__).info(
+                    f"Completed {fingerprint} in {time.time() - t_start:.2f} seconds"
+                )
+                if fingerprint in self.submitted:
+                    self.submitted.remove(fingerprint)
+
+        self.executor.submit(coro_wrapper)
+        return True

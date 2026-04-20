@@ -58,6 +58,7 @@ from octobot_trading.storage.util import (
     get_account_type_suffix_from_exchange_manager,
     get_account_type_suffix_from_run_metadata,
     get_account_type_suffix,
+    get_run_databases_identifier,
 )
 
 __all__ = [
@@ -74,4 +75,5 @@ __all__ = [
     "get_account_type_suffix_from_exchange_manager",
     "get_account_type_suffix_from_run_metadata",
     "get_account_type_suffix",
+    "get_run_databases_identifier",
 ]

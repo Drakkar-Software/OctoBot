@@ -13,14 +13,20 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import functools
 import packaging.version as packaging_version
+import typing
 
 import octobot_commons.logging as logging
+import octobot_commons.profiles as commons_profiles
+import octobot_commons.errors as commons_errors
 import octobot_commons.tentacles_management as tentacles_management
 
 import octobot_tentacles_manager.constants as constants
 import octobot_tentacles_manager.loaders as loaders
 import octobot_tentacles_manager.util as util
+import octobot_tentacles_manager.configuration
+import octobot_tentacles_manager.api.configurator
 
 
 def get_installed_tentacles_modules() -> set:
@@ -188,3 +194,40 @@ def get_tentacles_from_package_name(package_name: str) -> list[str]:
         for tentacle in get_installed_tentacles_modules()
         if tentacle.origin_package == package_name
     ]
+
+
+# cached to avoid calling default_parents_inspection when unnecessary
+@functools.lru_cache(maxsize=2)
+def get_all_exchange_tentacles() -> list:
+    import octobot_trading.exchanges as exchanges
+    return tentacles_management.get_all_classes_from_parent(exchanges.RestExchange)
+
+
+def get_full_tentacles_setup_config(
+    profile_data: typing.Optional[commons_profiles.ProfileData] = None,
+    ensure_tentacle_info: bool = True,
+    extra_tentacle_names: list = None
+) -> octobot_tentacles_manager.configuration.TentaclesSetupConfiguration:
+    import octobot_trading.exchanges as exchanges
+    if ensure_tentacle_info:
+        loaders.ensure_tentacles_metadata(constants.TENTACLES_PATH)
+    classes = [
+        tentacle_class.__name__
+        for tentacle_class in get_all_exchange_tentacles()
+        if not (tentacle_class.is_default_exchange() or tentacle_class.__name__ == exchanges.ExchangeSimulator.__name__)
+    ]
+    if profile_data:
+        try:
+            classes.extend(
+                # always use tentacle class names here as tentacles are indexed by name
+                tentacle_data.name if extra_tentacle_names and tentacle_data.name in extra_tentacle_names
+                else get_tentacle_class_from_string(tentacle_data.name).__name__
+                for tentacle_data in profile_data.tentacles
+            )
+        except RuntimeError as err:
+            raise commons_errors.ProfileDataError(err) from err
+        if extra_tentacle_names:
+            classes.extend(extra_tentacle_names)
+    return octobot_tentacles_manager.api.configurator.create_tentacles_setup_config_with_tentacles(
+        *classes
+    )

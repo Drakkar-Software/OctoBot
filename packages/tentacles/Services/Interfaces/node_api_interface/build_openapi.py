@@ -10,11 +10,11 @@ from pathlib import Path
 # Add current directory to path to enable imports
 sys.path.insert(0, str(Path(__file__).parent))
 
-# Import node_api_interface module
-import node_api_interface
+# Import node_api module
+import node_api
 
 # Generate OpenAPI spec
-app = node_api_interface.NodeApiInterface.create_app()
+app = node_api.NodeApiInterface.create_app()
 openapi_spec = app.openapi()
 
 # Output to stdout

@@ -23,6 +23,16 @@ from octobot_trading.exchanges.util import symbol_details
 from octobot_trading.exchanges.util.symbol_details import (
     SymbolDetails,
 )
+from octobot_trading.exchanges.util.exchange_data import (
+    ExchangeData,
+    exchange_data_factory,
+    MarketDetails,
+    OrdersDetails,
+    PortfolioDetails,
+    PositionDetails,
+    ExchangeAuthDetails,
+    ExchangeDetails,
+)
 from octobot_trading.exchanges.util import exchange_util
 from octobot_trading.exchanges.util.exchange_util import (
     get_rest_exchange_class,
@@ -31,6 +41,8 @@ from octobot_trading.exchanges.util.exchange_util import (
     get_partners_explanation_message,
     get_enabled_exchanges,
     get_local_exchange_manager,
+    exchange_manager_from_exchange_data,
+    is_auth_required_exchanges,
     exchange_error_translator,
     is_compatible_account,
     get_historical_ohlcv,
@@ -59,15 +71,25 @@ from octobot_trading.exchanges.util.websockets_util import (
 )
 
 __all__ = [
+    "ExchangeData",
+    "exchange_data_factory",
     "ExchangeMarketStatusFixer",
     "is_ms_valid",
     "SymbolDetails",
+    "MarketDetails",
+    "OrdersDetails",
+    "PortfolioDetails",
+    "PositionDetails",
+    "ExchangeAuthDetails",
+    "ExchangeDetails",
     "get_rest_exchange_class",
     "get_order_side",
     "log_time_sync_error",
     "get_partners_explanation_message",
     "get_enabled_exchanges",
     "get_local_exchange_manager",
+    "is_auth_required_exchanges",
+    "exchange_manager_from_exchange_data",
     "exchange_error_translator",
     "is_compatible_account",
     "get_historical_ohlcv",

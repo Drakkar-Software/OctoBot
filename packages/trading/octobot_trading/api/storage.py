@@ -13,7 +13,18 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import octobot_commons.databases as databases
+
 import octobot_trading.storage as storage
+import octobot_trading.storage.util as storage_util
+
+
+def get_run_databases_identifier(
+    config: dict, tentacles_setup_config, trading_mode_class=None, enable_storage=True
+) -> databases.RunDatabasesIdentifier:
+    return storage_util.get_run_databases_identifier(
+        config, tentacles_setup_config, trading_mode_class, enable_storage
+    )
 
 
 async def clear_trades_storage_history(exchange_manager, flush=True):

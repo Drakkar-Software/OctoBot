@@ -16,6 +16,7 @@
 import contextlib
 import typing
 import ccxt
+import uuid
 import decimal
 import trading_backend
 
@@ -23,9 +24,14 @@ import octobot_commons.logging as logging
 import octobot_commons.constants as common_constants
 import octobot_commons.enums as common_enums
 import octobot_commons.symbols as common_symbols
+import octobot_commons.configuration as common_configuration
 import octobot_commons.tentacles_management as tentacles_management
+import octobot_commons.databases as databases
+import octobot_commons.tree as commons_tree
+import octobot_commons.profiles as commons_profiles
 
 import octobot_tentacles_manager.api as api
+import octobot_tentacles_manager.configuration as tentacles_setup_configuration
 
 import octobot_trading.enums as enums
 import octobot_trading.errors as errors
@@ -36,9 +42,15 @@ import octobot_trading.exchanges.connectors.ccxt.enums as ccxt_enums
 import octobot_trading.exchanges.connectors.ccxt.ccxt_client_util as ccxt_client_util
 import octobot_trading.exchanges.exchange_details as exchange_details
 import octobot_trading.exchanges.exchange_builder as exchange_builder
+import octobot_trading.exchange_data
+import octobot_trading.storage.util as storage_util
+import octobot_trading.util as util
 
 if typing.TYPE_CHECKING:
-    import octobot_trading.exchanges.exchange_manager
+    import octobot_trading.exchanges
+
+
+_AUTH_REQUIRED_EXCHANGES: dict[str, bool] = {}
 
 def get_rest_exchange_class(
     exchange_name: str, tentacles_setup_config, exchange_config_by_exchange: typing.Optional[dict[str, dict]]
@@ -216,6 +228,98 @@ def get_enabled_exchanges(config):
                 common_constants.CONFIG_ENABLED_OPTION, True
         )
     ]
+
+async def _get_exchange_builder_from_exchange_data(
+    exchange_data: "octobot_trading.exchanges.ExchangeData",
+    config: common_configuration.Configuration,
+    real_trading: bool,
+    tentacles_setup_config,
+) -> "octobot_trading.exchanges.ExchangeBuilder":
+    bot_id = str(uuid.uuid4())
+    if tentacles_setup_config is not None:
+        await databases.init_bot_storage(
+            bot_id,
+            storage_util.get_run_databases_identifier(
+                config.config,
+                tentacles_setup_config,
+                enable_storage=False,
+            ),
+            False
+        )
+    builder = octobot_trading.exchanges.ExchangeBuilder(
+        config.config,
+        exchange_data.exchange_details.name
+    ) \
+        .set_bot_id(bot_id) \
+        .enable_storage(False)
+    if real_trading:
+        builder.is_real()
+    else:
+        builder.is_simulated()
+    return builder
+
+
+@contextlib.asynccontextmanager
+async def exchange_manager_from_exchange_data(
+    exchange_data: "octobot_trading.exchanges.ExchangeData",
+    profile_data: commons_profiles.ProfileData,
+    tentacles_setup_config: tentacles_setup_configuration.TentaclesSetupConfiguration,
+    price_fallback: typing.Optional[typing.Callable[["octobot_trading.exchanges.ExchangeData", str], float]] = None,
+) -> typing.AsyncGenerator[
+    typing.Optional["octobot_trading.exchanges.exchange_manager.ExchangeManager"],
+    None
+]:
+    exchange_manager_bot_id = None
+    try:
+        as_simulator = profile_data.trader_simulator.enabled
+        authentication_required = not as_simulator
+        config = util.get_config(profile_data, exchange_data, tentacles_setup_config, authentication_required, False, True)
+        builder = await _get_exchange_builder_from_exchange_data(
+            exchange_data,
+            config,
+            authentication_required,
+            tentacles_setup_config,
+        )
+        exchange_config_by_exchange = profile_data.get_config_by_tentacle()
+        exchange_config = builder.config[common_constants.CONFIG_EXCHANGES][exchange_data.exchange_details.name]
+        ignore_config = (
+            not authentication_required and not is_auth_required_exchanges(
+                exchange_data, tentacles_setup_config, exchange_config_by_exchange
+            )
+        )
+
+        def _get_price_from_exchange_data_or_fallback(exchange_data: "octobot_trading.exchanges.ExchangeData", symbol: str) -> typing.Optional[float]:
+            try:
+                return exchange_data.get_price(symbol)
+            except (IndexError, KeyError):
+                if price_fallback is None:
+                    raise
+                return price_fallback(exchange_data, symbol)
+
+        async with get_local_exchange_manager(
+            exchange_data.exchange_details.name, exchange_config, tentacles_setup_config,
+            exchange_data.auth_details.sandboxed, ignore_config=ignore_config,
+            builder=builder, use_cached_markets=True,
+            is_broker_enabled=exchange_data.auth_details.broker_enabled,
+            exchange_config_by_exchange=exchange_config_by_exchange,
+            disable_unauth_retry=True,  # unauth fallback is never required, if auth fails, this should fail
+        ) as exchange_manager:
+            exchange_manager_bot_id = exchange_manager.bot_id
+            octobot_trading.exchange_data.initialize_contracts_from_exchange_data(exchange_manager, exchange_data)
+            price_by_symbol = {
+                market.symbol: _get_price_from_exchange_data_or_fallback(exchange_data, market.symbol)
+                for market in exchange_data.markets
+            }
+            await exchange_manager.initialize_from_exchange_data(
+                exchange_data, price_by_symbol, False,
+                False, as_simulator
+            )
+            yield exchange_manager
+    finally:
+        if exchange_manager_bot_id:
+            if databases.RunDatabasesProvider.instance().has_bot_id(exchange_manager_bot_id):
+                databases.RunDatabasesProvider.instance().remove_bot_id(exchange_manager_bot_id)
+            commons_tree.EventProvider.instance().remove_event_tree(exchange_manager_bot_id)
 
 
 @contextlib.asynccontextmanager
@@ -505,3 +609,39 @@ def force_set_mark_price(
 ) -> None:
     exchange_manager.exchange_symbols_data.get_exchange_symbol_data(symbol).prices_manager.\
         set_mark_price(decimal.Decimal(str(price)), enums.MarkPriceSources.EXCHANGE_MARK_PRICE.value)
+
+
+def is_auth_required_exchanges(
+    exchange_data: "octobot_trading.exchanges.ExchangeData",
+    tentacles_setup_config,
+    exchange_config_by_exchange: typing.Optional[dict[str, dict]]
+):
+    try:
+        if exchange_config_by_exchange and any(
+            exchange_config.get(common_constants.CONFIG_FORCE_AUTHENTICATION, False)
+            for exchange_config in exchange_config_by_exchange.values()
+        ):
+            # don't use cache when force authentication is True: this can be specific to this context
+            return _get_is_auth_required_exchange(
+                exchange_data, tentacles_setup_config, exchange_config_by_exchange
+            )
+        # use cache to avoid using introspection each time
+        return _AUTH_REQUIRED_EXCHANGES[exchange_data.exchange_details.name]
+    except KeyError:
+        _AUTH_REQUIRED_EXCHANGES[exchange_data.exchange_details.name] = _get_is_auth_required_exchange(
+            exchange_data, tentacles_setup_config, exchange_config_by_exchange
+        )
+        return _AUTH_REQUIRED_EXCHANGES[exchange_data.exchange_details.name]
+
+
+def _get_is_auth_required_exchange(
+    exchange_data: "octobot_trading.exchanges.ExchangeData",
+    tentacles_setup_config,
+    exchange_config_by_exchange: typing.Optional[dict[str, dict]]
+):
+    exchange_class = get_rest_exchange_class(
+        exchange_data.exchange_details.name, tentacles_setup_config, exchange_config_by_exchange
+    )
+    return exchange_class.requires_authentication(
+        None, tentacles_setup_config, exchange_config_by_exchange
+    )

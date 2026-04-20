@@ -13,12 +13,21 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library
+import typing
 import collections
+import logging
+
 import octobot_commons.constants as commons_constants
+import octobot_commons.enums as common_enums
+import octobot_commons.configuration as commons_configuration
+import octobot_commons.profiles as commons_profiles
+import octobot_commons.symbols as symbol_util
+import octobot_commons.time_frame_manager as time_frame_manager
 import octobot_trading.constants as trading_constants
 import octobot_trading.enums as trading_enums
-import octobot_commons.symbols as symbol_util
 
+if typing.TYPE_CHECKING:
+    import octobot_trading.exchanges
 
 def is_trading_paused(config) -> bool:
     try:
@@ -98,6 +107,7 @@ def get_symbol_trading_type(symbol) -> str:
             return trading_enums.FutureContractType.LINEAR_EXPIRABLE.value
         if parsed_symbol.is_inverse():
             return trading_enums.FutureContractType.INVERSE_EXPIRABLE.value
+    raise ValueError(f"Invalid symbol: {symbol}")
 
 
 def get_symbol_types_counts(config, enabled_only) -> dict:
@@ -158,3 +168,73 @@ def get_current_bot_live_id(config):
         commons_constants.CONFIG_CURRENT_LIVE_ID,
         commons_constants.DEFAULT_CURRENT_LIVE_ID
     )
+
+
+def get_formatted_portfolio(portfolio: dict):
+    for asset in portfolio.values():
+        if commons_constants.PORTFOLIO_AVAILABLE not in asset:
+            asset[commons_constants.PORTFOLIO_AVAILABLE] = asset[trading_constants.CONFIG_PORTFOLIO_FREE]
+    return portfolio
+
+
+def get_exchange_config(
+    exchange_data: "octobot_trading.exchanges.ExchangeData",
+    tentacles_setup_config,
+    exchange_config_by_exchange: typing.Optional[dict[str, dict]],
+    auth: bool
+):
+    auth_details = exchange_data.auth_details
+    if not auth:
+        import octobot_trading.exchanges.util # avoid circular import
+        always_auth = octobot_trading.exchanges.util.is_auth_required_exchanges(exchange_data, tentacles_setup_config, exchange_config_by_exchange)
+        if always_auth:
+            # force authentication when required on exchanges
+            auth = True
+
+    exchange_config = {
+        commons_constants.CONFIG_EXCHANGE_KEY: auth_details.api_key if auth else None,
+        commons_constants.CONFIG_EXCHANGE_SECRET: auth_details.api_secret if auth else None,
+        commons_constants.CONFIG_EXCHANGE_PASSWORD: auth_details.api_password if auth else None,
+        commons_constants.CONFIG_EXCHANGE_ACCESS_TOKEN: auth_details.access_token if auth else None,
+        commons_constants.CONFIG_EXCHANGE_TYPE: auth_details.exchange_type or commons_constants.CONFIG_EXCHANGE_SPOT,
+    }
+    exchange_config[commons_constants.CONFIG_EXCHANGE_SANDBOXED] = auth_details.sandboxed
+    return exchange_config
+
+
+def get_config(
+    profile_data: commons_profiles.ProfileData,
+    exchange_data: "octobot_trading.exchanges.ExchangeData",
+    tentacles_setup_config,
+    auth: bool,
+    ignore_symbols_in_exchange_init: bool,
+    use_exchange_data_portfolio: bool,
+) -> commons_configuration.Configuration:
+    config = commons_configuration.Configuration(None, None)
+    config.logger.logger.setLevel(logging.WARNING)  # disable "using XYZ profile." log
+    config.config = {}
+    initial_backtesting_context = profile_data.backtesting_context
+    # always use exchange data on real trading
+    # use exchange data on simulated only when exchange_data.portfolio_details.content is available
+    if use_exchange_data_portfolio and (
+        not profile_data.trader_simulator.enabled or exchange_data.portfolio_details.content
+    ):
+        profile_data.trader_simulator.starting_portfolio = get_formatted_portfolio(
+            exchange_data.portfolio_details.content
+        )
+        # do not allow using backtesting context when using exchange data portfolio
+        profile_data.backtesting_context = None # type: ignore
+    profile = profile_data.to_profile(None)
+    profile_data.backtesting_context = initial_backtesting_context
+    config.profile_by_id[profile.profile_id] = profile
+    config.select_profile(profile.profile_id)
+    config.config[commons_constants.CONFIG_EXCHANGES][exchange_data.exchange_details.name] = get_exchange_config(
+        exchange_data, tentacles_setup_config, profile_data.get_config_by_tentacle(), auth
+    )
+    if ignore_symbols_in_exchange_init:
+        config.config[commons_constants.CONFIG_CRYPTO_CURRENCIES] = {}
+    config.config[commons_constants.CONFIG_TIME_FRAME] = time_frame_manager.sort_time_frames(list(set(
+        common_enums.TimeFrames(market.time_frame)
+        for market in exchange_data.markets
+    )))
+    return config

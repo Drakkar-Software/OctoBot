@@ -26,11 +26,11 @@ import octobot_trading.exchanges.util as exchange_util
 if typing.TYPE_CHECKING:
     import octobot_trading.exchanges.exchange_manager
 
-def get_symbol_data(exchange_manager, symbol, allow_creation=True) -> exchange_data.ExchangeSymbolData:
+def get_symbol_data(exchange_manager, symbol, allow_creation=True) -> "exchange_data.ExchangeSymbolData":
     return exchange_manager.exchange_symbols_data.get_exchange_symbol_data(symbol, allow_creation=allow_creation)
 
 
-def get_symbol_candles_manager(symbol_data, time_frame) -> exchange_data.CandlesManager:
+def get_symbol_candles_manager(symbol_data, time_frame) -> "exchange_data.CandlesManager":
     return symbol_data.symbol_candles[octobot_commons.enums.TimeFrames(time_frame)]
 
 
@@ -146,7 +146,7 @@ def get_symbol_time_candles(symbol_data, time_frame, limit=-1, include_in_constr
     return exchange_data.get_symbol_time_candles(symbol_data, time_frame, limit, include_in_construction)
 
 
-def create_new_candles_manager(candles=None, max_candles_count=None) -> exchange_data.CandlesManager:
+def create_new_candles_manager(candles=None, max_candles_count=None) -> "exchange_data.CandlesManager":
     manager = exchange_data.CandlesManager(max_candles_count=max_candles_count)
     if candles is not None:
         manager.replace_all_candles(candles)

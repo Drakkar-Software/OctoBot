@@ -1,0 +1,27 @@
+{
+  "required_strategies": [],
+  "pair_settings": [
+    {
+    "trading_pair": "BTC/USDT",
+    "min_spread": 0.5,
+    "max_spread": 5,
+    "bids_count": 5,
+    "asks_count": 5,
+    "order_book_depth": {
+      "cumulated_volume_percent": 1,
+      "percent_daily_trading_volume": 2
+    },
+    "orders_distribution": "linear",
+    "funds_distribution": "valley",
+    "auto_adapt_config": true,
+    "max_base_budget": 0.1,
+    "max_quote_budget": 3000,
+    "reference_price": [{
+      "exchange": "kucoin",
+      "weight": 1,
+      "pair": "BTC/USDT"
+    }],
+    "refresh_period": 30
+    }
+  ]
+}

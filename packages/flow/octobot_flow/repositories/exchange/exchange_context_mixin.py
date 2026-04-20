@@ -1,18 +1,13 @@
 import contextlib
 import typing
-import uuid
 
-import octobot_commons.databases as databases
-import octobot_commons.tree as commons_tree
 import octobot_commons.constants as common_constants
 import octobot_commons.profiles as commons_profiles
 import octobot_commons.logging as commons_logging
 import octobot_trading.api
 import octobot_trading.exchanges
-import octobot_trading.exchange_data
 import octobot_trading.exchanges.util.exchange_data as exchange_data_import
 import octobot_tentacles_manager.api
-import octobot.databases_util as databases_util
 import tentacles.Meta.Keywords.scripting_library as scripting_library
 import octobot_flow.errors
 import octobot_flow.entities
@@ -63,7 +58,6 @@ class ExchangeContextMixin:
     async def exchange_manager_context(
         self,
     ) -> typing.AsyncGenerator[typing.Optional[octobot_trading.exchanges.ExchangeManager], None]:
-        exchange_manager_bot_id = None
         profile_data = self.profile_data_provider.get_profile_data()
         if not self.automation_state.has_exchange():
             # no need to initialize an exchange manager
@@ -82,41 +76,14 @@ class ExchangeContextMixin:
             if self.USE_PREDICTIVE_ORDERS_SYNC:
                 # make all markets available to the strategy, it will use the required ones
                 self.init_predictive_orders_exchange_data(exchange_data)
-            tentacles_setup_config = scripting_library.get_full_tentacles_setup_config()
-            exchange_config_by_exchange = scripting_library.get_config_by_tentacle(profile_data)
-            auth = profile_data.trader_simulator.enabled is False
-            builder = await self._get_exchange_builder(
-                profile_data,
-                exchange_data,
-                auth,
-                tentacles_setup_config,
-                exchange_config_by_exchange,
-            )
+            tentacles_setup_config = octobot_tentacles_manager.api.get_full_tentacles_setup_config()
             octobot_tentacles_manager.api.set_tentacle_config_proxy(scripting_library.empty_config_proxy)
-            exchange_config = builder.config[common_constants.CONFIG_EXCHANGES][exchange_data.exchange_details.name]
-            ignore_config = (
-                not auth and not scripting_library.is_auth_required_exchanges(
-                    exchange_data, tentacles_setup_config, exchange_config_by_exchange
-                )
-            )
-            async with octobot_trading.exchanges.get_local_exchange_manager(
-                exchange_data.exchange_details.name, exchange_config, tentacles_setup_config,
-                exchange_data.auth_details.sandboxed, ignore_config=ignore_config,
-                builder=builder, use_cached_markets=True,
-                is_broker_enabled=exchange_data.auth_details.broker_enabled,
-                exchange_config_by_exchange=exchange_config_by_exchange,
-                disable_unauth_retry=True,  # unauth fallback is never required, if auth fails, this should fail
+            async with octobot_trading.exchanges.exchange_manager_from_exchange_data(
+                exchange_data,
+                profile_data,
+                tentacles_setup_config,
+                price_fallback=self._get_price_from_cached_tickers,
             ) as exchange_manager:
-                exchange_manager_bot_id = exchange_manager.bot_id
-                octobot_trading.exchange_data.initialize_contracts_from_exchange_data(exchange_manager, exchange_data)
-                price_by_symbol = {
-                    market.symbol: self.get_price_from_exchange_data_or_cached_tickers(exchange_data, market.symbol)
-                    for market in exchange_data.markets
-                }
-                await exchange_manager.initialize_from_exchange_data(
-                    exchange_data, price_by_symbol, False,
-                    False, profile_data.trader_simulator.enabled
-                )
                 portfolio_config = {
                     asset: portfolio_element[common_constants.PORTFOLIO_TOTAL]
                     for asset, portfolio_element in exchange_data.portfolio_details.content.items()
@@ -136,74 +103,29 @@ class ExchangeContextMixin:
                 else:
                     yield exchange_manager
         finally:
-            if exchange_manager_bot_id:
-                if databases.RunDatabasesProvider.instance().has_bot_id(exchange_manager_bot_id):
-                    databases.RunDatabasesProvider.instance().remove_bot_id(exchange_manager_bot_id)
-                commons_tree.EventProvider.instance().remove_event_tree(exchange_manager_bot_id)
             self._exchange_manager = None
 
     def get_exchange_config(self) -> dict:
         raise NotImplementedError("get_exchange_config not implemented")
 
-    def get_price_from_exchange_data_or_cached_tickers(
+    def _get_price_from_cached_tickers(
         self, exchange_data: exchange_data_import.ExchangeData, symbol: str
     ) -> typing.Optional[float]:
         try:
-            return exchange_data.get_price(symbol)
-        except (IndexError, KeyError):
-            try:
-                price = tickers_repository.TickersRepository.get_cached_market_price_from_exchange_data(
-                    exchange_data, symbol
-                )
-                commons_logging.get_logger(self.__class__.__name__).warning(
-                    f"Using {symbol} [{exchange_data.exchange_details.name}] "
-                    f"ticker price for mark price: candles are missing"
-                )
-                return price
-            except KeyError:
-                commons_logging.get_logger(self.__class__.__name__).error(
-                    f"Impossible to initialize {symbol} price on {exchange_data.exchange_details.name}: no "
-                    f"candle or cached ticker price"
-                )
-        return None
-
-    async def _get_exchange_builder(
-        self,
-        profile_data: commons_profiles.ProfileData,
-        exchange_data: exchange_data_import.ExchangeData,
-        auth: bool,
-        tentacles_setup_config,
-        exchange_config_by_exchange,
-        matrix_id=None,
-        ignore_symbols_in_exchange_init=False
-    ) -> octobot_trading.exchanges.ExchangeBuilder:
-        config = scripting_library.get_config(
-            profile_data, exchange_data, tentacles_setup_config, auth, ignore_symbols_in_exchange_init, True
-        )
-        bot_id = str(uuid.uuid4())
-        if tentacles_setup_config is not None:
-            await databases.init_bot_storage(
-                bot_id,
-                databases_util.get_run_databases_identifier(
-                    config.config,
-                    tentacles_setup_config,
-                    enable_storage=False,
-                ),
-                False
+            price = tickers_repository.TickersRepository.get_cached_market_price_from_exchange_data(
+                exchange_data, symbol
             )
-        builder = octobot_trading.exchanges.ExchangeBuilder(
-            config.config,
-            exchange_data.exchange_details.name
-        ) \
-            .set_bot_id(bot_id) \
-            .enable_storage(False)
-        if auth:
-            builder.is_real()
-        else:
-            builder.is_simulated()
-        if matrix_id:
-            builder.has_matrix(matrix_id)
-        return builder
+            commons_logging.get_logger(self.__class__.__name__).warning(
+                f"Using {symbol} [{exchange_data.exchange_details.name}] "
+                f"ticker price for mark price: candles are missing"
+            )
+            return price
+        except KeyError:
+            commons_logging.get_logger(self.__class__.__name__).error(
+                f"Impossible to initialize {symbol} price on {exchange_data.exchange_details.name}: no "
+                f"candle or cached ticker price"
+            )
+        return None
 
     @contextlib.asynccontextmanager
     async def _predictive_order_sync_context(

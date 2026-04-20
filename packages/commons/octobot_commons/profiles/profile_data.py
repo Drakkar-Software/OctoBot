@@ -293,6 +293,24 @@ class ProfileData(
             for tentacle, config in config_by_tentacle.items()
         ]
 
+    def get_config_by_tentacle(self) -> dict[typing.Optional[str], dict]:
+        """
+        Returns a dictionary of tentacle names and their configurations
+        """
+        return {
+            tentacle.name: tentacle.config
+            for tentacle in self.tentacles
+        }
+
+    def get_traded_symbols(self) -> list[str]:
+        """
+        Returns a list of traded symbols
+        """
+        symbols = []
+        for crypto_currency in self.crypto_currencies:
+            symbols.extend(crypto_currency.trading_pairs)
+        return symbols
+
     def _to_profile_dict(self) -> dict:
         return {
             constants.PROFILE_CONFIG: {

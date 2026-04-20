@@ -14,8 +14,34 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library
 import octobot_commons.constants as commons_constants
+import octobot_commons.databases as databases
 import octobot_commons.enums as commons_enums
+import octobot_commons.errors as commons_errors
+import octobot_commons.optimization_campaign as optimization_campaign
 import octobot_trading.enums as enums
+import octobot_trading.modes as modes
+import octobot_trading.util
+
+
+def get_run_databases_identifier(
+    config: dict, tentacles_setup_config, trading_mode_class=None, enable_storage=True
+) -> databases.RunDatabasesIdentifier:
+    trading_mode = commons_constants.DEFAULT_STORAGE_TRADING_MODE
+    try:
+        trading_mode = trading_mode_class or modes.get_activated_trading_mode(tentacles_setup_config)
+    except commons_errors.ConfigTradingError:
+        # use default value
+        pass
+    return databases.RunDatabasesIdentifier(
+        trading_mode,
+        optimization_campaign.OptimizationCampaign.get_campaign_name(tentacles_setup_config),
+        backtesting_id=config.get(commons_constants.CONFIG_BACKTESTING_ID),
+        optimizer_id=config.get(commons_constants.CONFIG_OPTIMIZER_ID),
+        live_id=octobot_trading.util.get_current_bot_live_id(config),
+        enable_storage=enable_storage
+    )
+
+
 
 
 def get_account_type_suffix_from_exchange_manager(exchange_manager) -> str:

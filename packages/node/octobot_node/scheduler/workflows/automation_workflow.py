@@ -108,6 +108,7 @@ class AutomationWorkflow:
         interval_seconds = constants.AUTOMATION_WORKFLOW_RETRY_INTERVAL_SECONDS,
         max_attempts=constants.AUTOMATION_WORKFLOW_MAX_ITERATION_RETRIES,
         backoff_rate=constants.AUTOMATION_WORKFLOW_BACKOFF_RATE,
+        # should_retry=XXX # todo add in dbos 2.20.0
     )
     async def execute_iteration(inputs: dict, actions_update: typing.Optional[dict]) -> dict:
         """

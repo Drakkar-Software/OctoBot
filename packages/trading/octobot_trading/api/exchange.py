@@ -273,6 +273,29 @@ def get_trading_symbols(exchange_manager, include_additional_pairs: bool = False
         return exchange_manager.exchange_config.traded_symbols
 
 
+def get_all_available_symbols(
+    exchange_manager, exchange_type: typing.Optional[octobot_trading.enums.ExchangeTypes] = None
+) -> list[str]:
+    all_symbols = exchange_manager.exchange.get_all_available_symbols(active_only=True)
+    if exchange_type is None:
+        return all_symbols
+    return [
+        symbol
+        for symbol in all_symbols
+        if (
+            exchange_type is octobot_trading.enums.ExchangeTypes.SPOT
+            and commons_symbols.parse_symbol(symbol).is_spot()
+        ) or (
+            exchange_type is octobot_trading.enums.ExchangeTypes.FUTURE
+            and commons_symbols.parse_symbol(symbol).is_future()
+        )
+    ]
+
+
+def get_all_available_time_frames(exchange_manager) -> set[str]:
+    return exchange_manager.exchange.connector.get_client_time_frames()
+
+
 def get_trading_timeframes(exchange_manager) -> list:
     return exchange_manager.exchange_config.traded_time_frames
 
