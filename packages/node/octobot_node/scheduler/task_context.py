@@ -33,7 +33,7 @@ def encrypted_task(
 ):
     """
     Context manager for automatically decrypting task content.
-    Decrypts task.content if TASKS_INPUTS_RSA_PRIVATE_KEY is provided,
+    Decrypts task.content if TASKS_SERVER_RSA_PRIVATE_KEY is provided,
     and restores original content on exit.
     """
     original_content = task.content
@@ -41,15 +41,14 @@ def encrypted_task(
     try:
         # Decrypt content if input encryption keys are configured
         settings = octobot_node.config.settings
-        if (settings.TASKS_INPUTS_RSA_PRIVATE_KEY
-                and settings.TASKS_INPUTS_ECDSA_PUBLIC_KEY
+        if (settings.TASKS_SERVER_RSA_PRIVATE_KEY
+                and settings.TASKS_USER_ECDSA_PUBLIC_KEY
                 and task.content_metadata):
             try:
                 decrypted_content = encryption.decrypt_task_content(task.content, task.content_metadata)
                 task.content = decrypted_content
             except Exception as e:
                 logger.error(f"Failed to decrypt content: {e}")
-
         yield task
     finally:
         # Restore original content if it was modified

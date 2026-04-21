@@ -20,15 +20,32 @@ import base64
 from typing import Optional, Tuple
 from octobot_node.config import settings
 from octobot_node.scheduler.encryption import (
-    ENCRYPTED_AES_KEY_B64_METADATA_KEY, 
-    IV_B64_METADATA_KEY, 
-    SIGNATURE_B64_METADATA_KEY, 
-    MissingMetadataError, 
-    EncryptionTaskError, 
-    MetadataParsingError, 
+    ENCRYPTED_AES_KEY_B64_METADATA_KEY,
+    IV_B64_METADATA_KEY,
+    SIGNATURE_B64_METADATA_KEY,
+    MissingMetadataError,
+    EncryptionTaskError,
+    MetadataParsingError,
     SignatureVerificationError
 )
 import octobot_commons.cryptography as cryptography
+
+
+import functools
+
+@functools.lru_cache(maxsize=1)
+def _server_rsa_public_key_bytes() -> bytes:
+    from cryptography.hazmat.primitives.serialization import load_pem_private_key, Encoding, PublicFormat
+    private = load_pem_private_key(settings.TASKS_SERVER_RSA_PRIVATE_KEY, password=None)
+    return private.public_key().public_bytes(Encoding.PEM, PublicFormat.SubjectPublicKeyInfo)
+
+
+@functools.lru_cache(maxsize=1)
+def _server_ecdsa_public_key_bytes() -> bytes:
+    from cryptography.hazmat.primitives.serialization import load_pem_private_key, Encoding, PublicFormat
+    private = load_pem_private_key(settings.TASKS_SERVER_ECDSA_PRIVATE_KEY, password=None)
+    return private.public_key().public_bytes(Encoding.PEM, PublicFormat.SubjectPublicKeyInfo)
+
 
 def decrypt_task_content(content: str, metadata: Optional[str] = None) -> str:
     if metadata is None:
@@ -54,10 +71,13 @@ def decrypt_task_content(content: str, metadata: Optional[str] = None) -> str:
         raise MetadataParsingError(f"Failed to decode base64-encoded data: {e}")
 
     data_to_verify = content_bytes + encrypted_aes_key + iv
-    if not cryptography.verify_signature(data_to_verify, settings.TASKS_INPUTS_ECDSA_PUBLIC_KEY, signature):
-        raise SignatureVerificationError("Signature verification failed")
+    # Browser-submitted tasks are signed with USER_ECDSA_PRIVATE; server-generated tasks with SERVER_ECDSA_PRIVATE.
+    if not cryptography.verify_signature(data_to_verify, settings.TASKS_USER_ECDSA_PUBLIC_KEY, signature):
+        if not (settings.TASKS_SERVER_ECDSA_PRIVATE_KEY and
+                cryptography.verify_signature(data_to_verify, _server_ecdsa_public_key_bytes(), signature)):
+            raise SignatureVerificationError("Signature verification failed")
 
-    decrypted_aes_key = cryptography.rsa_decrypt_aes_key(encrypted_aes_key, settings.TASKS_INPUTS_RSA_PRIVATE_KEY)
+    decrypted_aes_key = cryptography.rsa_decrypt_aes_key(encrypted_aes_key, settings.TASKS_SERVER_RSA_PRIVATE_KEY)
     if not decrypted_aes_key:
         raise EncryptionTaskError("Failed to decrypt AES key")
 
@@ -76,12 +96,12 @@ def encrypt_task_content(content: str) -> Tuple[str, str]:
     if not encrypted_content:
         raise EncryptionTaskError("Failed to encrypt content")
 
-    encrypted_aes_key = cryptography.rsa_encrypt_aes_key(aes_encryption_key, settings.TASKS_INPUTS_RSA_PUBLIC_KEY)
+    encrypted_aes_key = cryptography.rsa_encrypt_aes_key(aes_encryption_key, _server_rsa_public_key_bytes())
     if not encrypted_aes_key:
         raise EncryptionTaskError("Failed to encrypt AES key")
 
     data_to_sign = encrypted_content + encrypted_aes_key + iv
-    signature = cryptography.sign_data(data_to_sign, settings.TASKS_INPUTS_ECDSA_PRIVATE_KEY)
+    signature = cryptography.sign_data(data_to_sign, settings.TASKS_SERVER_ECDSA_PRIVATE_KEY)
     if not signature:
         raise EncryptionTaskError("Failed to sign data")
 

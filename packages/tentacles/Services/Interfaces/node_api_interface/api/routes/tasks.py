@@ -39,25 +39,17 @@ async def create_tasks(tasks: list[octobot_node.models.Task]) -> tuple[int, int]
     return success_count, error_count
 
 
-class EncryptContentRequest(BaseModel):
-    contents: list[str]
-
-
-class EncryptedItem(BaseModel):
-    content: str
-    content_metadata: str
-
-
-@router.post("/encrypt-content", response_model=list[EncryptedItem])
-def encrypt_content(request: EncryptContentRequest) -> list[EncryptedItem]:
+@router.get("/server-public-keys")
+def get_server_public_keys() -> dict:
     if not octobot_node.config.settings.is_node_side_encryption_enabled:
-        raise HTTPException(status_code=400, detail="Encryption is not enabled")
-    from octobot_node.scheduler.encryption.task_inputs import encrypt_task_content
-    results = []
-    for content in request.contents:
-        encrypted_content, metadata = encrypt_task_content(content)
-        results.append(EncryptedItem(content=encrypted_content, content_metadata=metadata))
-    return results
+        raise HTTPException(status_code=400, detail="Server encryption keys not configured")
+    from cryptography.hazmat.primitives.serialization import load_pem_private_key, Encoding, PublicFormat
+    rsa_private = load_pem_private_key(octobot_node.config.settings.TASKS_SERVER_RSA_PRIVATE_KEY, password=None)
+    ecdsa_private = load_pem_private_key(octobot_node.config.settings.TASKS_SERVER_ECDSA_PRIVATE_KEY, password=None)
+    return {
+        "server_rsa_public_pem": rsa_private.public_key().public_bytes(Encoding.PEM, PublicFormat.SubjectPublicKeyInfo).decode(),
+        "server_ecdsa_public_pem": ecdsa_private.public_key().public_bytes(Encoding.PEM, PublicFormat.SubjectPublicKeyInfo).decode(),
+    }
 
 
 @router.get("/metrics")

@@ -25,8 +25,8 @@ from octobot_node.models import Task
 class TestEncryptedTask:
     def test_encrypted_task_no_encryption_keys(self) -> None:
         mock_settings = mock.Mock()
-        mock_settings.TASKS_INPUTS_RSA_PRIVATE_KEY = None
-        mock_settings.TASKS_INPUTS_ECDSA_PUBLIC_KEY = None
+        mock_settings.TASKS_SERVER_RSA_PRIVATE_KEY = None
+        mock_settings.TASKS_USER_ECDSA_PUBLIC_KEY = None
 
         with mock.patch("octobot_node.config.settings", mock_settings):
             task = Task(
@@ -44,8 +44,8 @@ class TestEncryptedTask:
 
     def test_encrypted_task_decryption_error(self) -> None:
         mock_settings = mock.Mock()
-        mock_settings.TASKS_INPUTS_RSA_PRIVATE_KEY = b"private_key"
-        mock_settings.TASKS_INPUTS_ECDSA_PUBLIC_KEY = b"public_key"
+        mock_settings.TASKS_SERVER_RSA_PRIVATE_KEY = b"private_key"
+        mock_settings.TASKS_USER_ECDSA_PUBLIC_KEY = b"public_key"
 
         task = Task(
             name="test_task",
@@ -70,8 +70,8 @@ class TestEncryptedTask:
 
     def test_encrypted_task_exception_during_context(self) -> None:
         mock_settings = mock.Mock()
-        mock_settings.TASKS_INPUTS_RSA_PRIVATE_KEY = b"private_key"
-        mock_settings.TASKS_INPUTS_ECDSA_PUBLIC_KEY = b"public_key"
+        mock_settings.TASKS_SERVER_RSA_PRIVATE_KEY = b"private_key"
+        mock_settings.TASKS_USER_ECDSA_PUBLIC_KEY = b"public_key"
 
         task = Task(
             name="test_task",
@@ -98,8 +98,8 @@ class TestEncryptedTask:
 
     def test_encrypted_task_to_update_result_with_description_encrypts_and_clears(self) -> None:
         mock_settings = mock.Mock()
-        mock_settings.TASKS_INPUTS_RSA_PRIVATE_KEY = None
-        mock_settings.TASKS_INPUTS_ECDSA_PUBLIC_KEY = None
+        mock_settings.TASKS_SERVER_RSA_PRIVATE_KEY = None
+        mock_settings.TASKS_USER_ECDSA_PUBLIC_KEY = None
 
         job_description = octobot_flow_client.OctoBotActionsJobDescription(
             state={}, auth_details={}, params={}
@@ -133,8 +133,8 @@ class TestEncryptedTask:
 
     def test_encrypted_task_to_update_result_without_description_clears_sensitive_fields(self) -> None:
         mock_settings = mock.Mock()
-        mock_settings.TASKS_INPUTS_RSA_PRIVATE_KEY = None
-        mock_settings.TASKS_INPUTS_ECDSA_PUBLIC_KEY = None
+        mock_settings.TASKS_SERVER_RSA_PRIVATE_KEY = None
+        mock_settings.TASKS_USER_ECDSA_PUBLIC_KEY = None
 
         processed_action = mock.Mock()
         actions_dag = mock.Mock()
@@ -163,8 +163,8 @@ class TestEncryptedTask:
 
     def test_encrypted_task_to_update_result_runs_finally_after_exception(self) -> None:
         mock_settings = mock.Mock()
-        mock_settings.TASKS_INPUTS_RSA_PRIVATE_KEY = None
-        mock_settings.TASKS_INPUTS_ECDSA_PUBLIC_KEY = None
+        mock_settings.TASKS_SERVER_RSA_PRIVATE_KEY = None
+        mock_settings.TASKS_USER_ECDSA_PUBLIC_KEY = None
 
         job_description = octobot_flow_client.OctoBotActionsJobDescription(
             state={}, auth_details={}, params={}

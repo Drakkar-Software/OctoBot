@@ -28,33 +28,61 @@ Log messages emitted inside any workflow or step are routed to a per-workflow fi
 
 Task payloads are optionally encrypted using a hybrid RSA/AES-GCM/ECDSA scheme. Each encryption call generates a fresh AES-256-GCM key and IV; the AES key is wrapped with RSA-OAEP so the bulk payload never travels under the asymmetric key directly. An ECDSA signature over the ciphertext — computed as `ciphertext + encrypted_aes_key + iv` concatenated — is verified before any decryption attempt, preventing chosen-ciphertext attacks.
 
-**Key split between server and browser.** Keys are divided strictly by who needs them at runtime. The server holds the four INPUTS keys — used to decrypt incoming task content and verify its signature before execution, and to re-sign and re-encrypt results before storage. These are the only keys the node process ever loads, set via four environment variables (`TASKS_INPUTS_RSA_PRIVATE_KEY`, `TASKS_INPUTS_ECDSA_PUBLIC_KEY`, `TASKS_INPUTS_RSA_PUBLIC_KEY`, `TASKS_INPUTS_ECDSA_PRIVATE_KEY`). The four OUTPUTS keys — used to decrypt results produced by the node — are never loaded by the server. They exist only in the browser, entered once in the Settings page and stored locally. A node process running with only the four INPUTS keys in its environment is fully functional; the OUTPUTS keys have no server-side role.
+**Split-ownership key model.** Eight keys participate in the system, divided by owner rather than by direction. The server holds four keys set via environment variables:
 
-**Metadata format asymmetry.** The accompanying metadata envelope — which carries `ENCRYPTED_AES_KEY_B64`, `IV_B64`, and `SIGNATURE_B64` — is serialised differently depending on direction. For task inputs, `encrypt_task_content` returns the metadata as `base64(JSON)`: the JSON object is first serialised to a string, then base64-encoded again. The corresponding `decrypt_task_content` therefore base64-decodes then JSON-parses. For task outputs, `encrypt_task_result` returns the metadata as a plain JSON string with no outer base64 layer, and `decrypt_task_result` JSON-parses directly. The asymmetry exists because input metadata is transmitted as a CSV or API field where a single opaque string is easier to embed without escaping, while output metadata is stored in the database and consumed programmatically by code that already handles JSON. Being aware of this distinction matters when building a producer or any tooling that reads raw database records.
+| Environment variable | Purpose |
+|---|---|
+| `TASKS_SERVER_RSA_PRIVATE_KEY` | Decrypts incoming task content (wrapped AES key) |
+| `TASKS_SERVER_ECDSA_PRIVATE_KEY` | Signs outgoing task results |
+| `TASKS_USER_RSA_PUBLIC_KEY` | Encrypts outgoing task results |
+| `TASKS_USER_ECDSA_PUBLIC_KEY` | Verifies incoming task content signatures |
 
-**`encrypted_task` context manager.** This wraps each task execution transparently. On entry it decrypts `task.content` if the input keys are present and `task.content_metadata` is non-null. On exit it encrypts `task.result` if the output keys are present. The two directions are independent — a node can be configured to decrypt inputs only, encrypt outputs only, or both. If decryption fails, the context manager does not propagate the exception into the workflow; instead it writes a structured error dict to `task.result`, so the failure is observable via the API without crashing the scheduler.
+The browser holds two private keys, entered once in the Settings page and stored locally:
 
-**Security boundary with `octobot_flow`.** The `encrypted_task` context manager wraps the call to `octobot_flow`'s `AutomationJob.run()` inside the node's workflow step. This means the scheduler — the master node that stores and routes tasks — only ever sees encrypted payloads. Task content is decrypted just before execution on the consumer node that holds the private keys, and the result is re-encrypted immediately after. The scheduler database, its API, and any intermediary never handle plaintext. A compromised scheduler leaks only ciphertext. From flow's perspective, nothing changes — it receives a plaintext `AutomationState` dict and returns an updated one. The flow package has no awareness of encryption, which means the same engine works identically in encrypted node deployments, unencrypted nodes, and standalone bots.
+| Browser key | Purpose |
+|---|---|
+| `USER_RSA_PRIVATE_KEY` | Decrypts result content from the server |
+| `USER_ECDSA_PRIVATE_KEY` | Signs task content before submission |
 
-**Key loading and validation.** The four INPUTS keys are accepted as PEM-encoded strings via environment variables, decoded to `bytes` at process startup by a `BeforeValidator` in the pydantic `Settings` model. There is no lazy loading — `settings` is a module-level singleton instantiated at import time, so a misconfigured key value fails fast before any requests are served. The `is_node_side_encryption_enabled` computed property checks whether all four INPUTS keys are present simultaneously, and `tasks_encryption_enabled` is an alias for it — enabling clean conditional logic throughout the codebase without repeating null checks.
+The server public keys (`SERVER_RSA_PUBLIC_KEY` and `SERVER_ECDSA_PUBLIC_KEY`) are never entered manually — the browser fetches them on demand from `GET /tasks/server-public-keys`, which derives and returns them from the server's private keys at runtime. The server never loads the user's private keys; the browser never loads the server's private keys.
 
-**Browser key storage.** The OUTPUTS keys entered in the browser Settings page, and the login passphrase, are both stored in `IndexedDB` encrypted with a device-bound, non-extractable AES-256-GCM key. That device key is generated on first login using `crypto.subtle.generateKey` with `extractable: false`, stored in the same `IndexedDB` database, and can be used by the browser but never exported or read as raw bytes — not even from a filesystem dump of the database file. The device key is origin-bound, so it cannot be used from another domain or browser profile. Neither the passphrase nor the OUTPUTS keys are ever stored in `localStorage` or sent to the server.
+**Encryption in the browser.** When submitting encrypted tasks the browser performs all cryptographic operations locally using the Web Crypto API (`crypto.subtle`), without sending any key material to the server. The `encryptAndSign` function first fetches the server's RSA public key from `GET /tasks/server-public-keys`, generates a fresh AES-256-GCM key, encrypts the task payload, wraps the AES key with that server RSA public key (RSA-OAEP), then signs the concatenation of ciphertext, wrapped key, and IV with `USER_ECDSA_PRIVATE_KEY`. The ECDSA signature is converted from the IEEE P1363 format that Web Crypto produces to DER format before transmission, because Python's `cryptography` library expects DER.
 
-**Key generation.** For a fresh deployment, `generate_and_save_keys` creates all four key pairs at once — two 4096-bit RSA pairs (one for inputs, one for outputs) and two ECDSA pairs on the SECP256R1 curve — and writes them to a single `task_encryption_keys.json` file. From that file, the server operator copies the four INPUTS keys into the node's environment variables, and enters the four OUTPUTS keys into the browser Settings page. Keys can also be generated manually with openssl:
+**Metadata format.** The accompanying metadata envelope carries `ENCRYPTED_AES_KEY_B64`, `IV_B64`, and `SIGNATURE_B64`. For task inputs, `content_metadata` is `base64(JSON)` — the JSON object is serialised then base64-encoded — because it travels as a CSV or API field where a single opaque string is easiest to embed. For task results, `result_metadata` is a plain JSON string; it is stored in the database and consumed by code that already handles JSON, so the extra base64 layer would be noise. Being aware of this distinction matters when building tooling that reads raw database records.
+
+**`encrypted_task` context manager.** This wraps each task execution on the consumer node transparently. On entry it decrypts `task.content` using `TASKS_SERVER_RSA_PRIVATE_KEY` and verifies the signature when `task.content_metadata` is non-null. Signature verification tries `TASKS_USER_ECDSA_PUBLIC_KEY` first (browser-submitted tasks, signed with `USER_ECDSA_PRIVATE_KEY`) then falls back to the server's own ECDSA public key (server-generated internal state, signed with `TASKS_SERVER_ECDSA_PRIVATE_KEY`). If decryption fails the context manager logs the error and continues with the original encrypted content — it does not crash the workflow. On exit it restores the original `task.content` and does not touch results.
+
+**Internal state and result encryption.** Between iterations the automation state is stored in DBOS encrypted with `encrypt_task_content` (AES-GCM wrapped with SERVER_RSA_PUBLIC, signed with SERVER_ECDSA_PRIVATE), making it readable only by the server. When completed executions are fetched via the API, the scheduler decrypts the stored state using the `encrypted_task` context manager (SERVER_RSA_PRIVATE + SERVER/USER ECDSA public), then immediately re-encrypts it with `encrypt_task_result` (AES-GCM wrapped with USER_RSA_PUBLIC, signed with SERVER_ECDSA_PRIVATE) before returning it. The API surface therefore only ever exposes ciphertext targeted at the browser. Decryption happens in the browser using `USER_RSA_PRIVATE_KEY`, with the signature verified against `SERVER_ECDSA_PUBLIC_KEY`.
+
+**Security boundary with `octobot_flow`.** The `encrypted_task` context manager wraps the call to `octobot_flow`'s `AutomationJob.run()` inside the node's workflow step. Task content is decrypted just before execution on the consumer node that holds the server private keys. From flow's perspective nothing changes — it receives a plaintext `AutomationState` dict and returns an updated one. The flow package has no awareness of encryption, which means the same engine works identically in encrypted node deployments, unencrypted nodes, and standalone bots.
+
+**Key loading and validation.** The four server keys are accepted as PEM-encoded strings via environment variables, decoded to `bytes` at process startup by a `BeforeValidator` in the pydantic `Settings` model. There is no lazy loading — `settings` is a module-level singleton instantiated at import time, so a misconfigured key value fails fast before any requests are served. The `is_node_side_encryption_enabled` property checks whether all four server keys are present simultaneously, and `tasks_encryption_enabled` is an alias used in API responses.
+
+**Browser key storage.** The browser keys entered in the Settings page, and the login passphrase, are stored in `IndexedDB` encrypted with a device-bound, non-extractable AES-256-GCM key. That device key is generated on first login using `crypto.subtle.generateKey` with `extractable: false` and can never be exported or read as raw bytes — not even from a filesystem dump of the database file. It is origin-bound, so it cannot be used from another domain or browser profile. Neither the passphrase nor the user keys are ever stored in `localStorage` or sent to the server.
+
+**Key generation.** Generate the two RSA and two ECDSA key pairs with openssl:
 
 ```bash
-# RSA 4096-bit key pair (repeat for inputs and outputs)
-openssl genrsa -out rsa_private.pem 4096
-openssl rsa -in rsa_private.pem -pubout -out rsa_public.pem
+# Server RSA-4096 keypair (private key → TASKS_SERVER_RSA_PRIVATE_KEY env var)
+openssl genrsa -out server_rsa_private.pem 4096
 
-# ECDSA SECP256R1 key pair (repeat for inputs and outputs)
-openssl ecparam -genkey -name prime256v1 -noout -out ecdsa_private.pem
-openssl ec -in ecdsa_private.pem -pubout -out ecdsa_public.pem
+# Server ECDSA-P256 keypair (private key → TASKS_SERVER_ECDSA_PRIVATE_KEY env var)
+openssl ecparam -genkey -name prime256v1 -noout -out server_ecdsa_ec.pem
+openssl pkcs8 -topk8 -nocrypt -in server_ecdsa_ec.pem -out server_ecdsa_private.pem
+
+# User RSA-4096 keypair (public key → TASKS_USER_RSA_PUBLIC_KEY env var; private key → browser Settings)
+openssl genrsa -out user_rsa_private.pem 4096
+openssl rsa -in user_rsa_private.pem -pubout -out user_rsa_public.pem
+
+# User ECDSA-P256 keypair (public key → TASKS_USER_ECDSA_PUBLIC_KEY env var; private key → browser Settings)
+openssl ecparam -genkey -name prime256v1 -noout -out user_ecdsa_ec.pem
+openssl pkcs8 -topk8 -nocrypt -in user_ecdsa_ec.pem -out user_ecdsa_private.pem
+openssl ec -in user_ecdsa_ec.pem -pubout -out user_ecdsa_public.pem
 ```
 
-The four INPUTS PEM strings go into the node's `.env` file. The four OUTPUTS PEM strings are entered in the browser Settings page and stored locally — they are never sent to the server.
+The server public keys are never distributed manually — the browser fetches them via `GET /tasks/server-public-keys` at runtime.
 
-Encryption is opt-in. If the INPUTS keys are absent from the environment, the corresponding path is skipped and the field stays plaintext, which is the backward-compatible default.
+Encryption is opt-in. If the server keys are absent from the environment, the corresponding path is skipped and fields stay plaintext, which is the backward-compatible default.
 
 ## Template importing
 

@@ -6,7 +6,11 @@ import { NodesService } from "@/client"
 import { Button } from "@/components/ui/button"
 import { LoadingButton } from "@/components/ui/loading-button"
 import { getTemplateById } from "@/lib/meta-templates"
-import { hasStoredClientKeys, loadPassword } from "@/lib/device-key"
+import { hasStoredClientKeys, loadClientKeys } from "@/lib/device-key"
+import { encryptAndSign } from "@/lib/client-encryption"
+import type { ClientKeys } from "@/lib/client-encryption"
+import { fetchServerPublicKeys } from "@/lib/server-keys"
+import useCustomToast from "@/hooks/useCustomToast"
 import type { ActionRow } from "./ColumnMappingStep"
 
 export interface EncryptStepProps {
@@ -42,6 +46,7 @@ export default function EncryptStep({
   const [envVars, setEnvVars] = useState<string[]>([])
   const [clientKeysStored, setClientKeysStored] = useState(false)
   const validActions = getValidActions(actions)
+  const { showErrorToast } = useCustomToast()
 
   useEffect(() => {
     NodesService.getNodeConfig()
@@ -62,35 +67,24 @@ export default function EncryptStep({
     }))
 
   const handleImportWithEncryption = async () => {
-    const contents = validActions.map((action) =>
-      buildContentString(action),
-    )
-
-    const username = localStorage.getItem("auth_username") || "node"
-    const password = (await loadPassword()) ?? ""
-    const res = await fetch("/api/v1/tasks/encrypt-content", {
-      method: "POST",
-      headers: {
-        Authorization: `Basic ${btoa(`${username}:${password}`)}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ contents }),
-    })
-
-    if (!res.ok) {
-      throw new Error("Encryption failed")
+    try {
+      const clientKeys = await loadClientKeys()
+      if (!clientKeys) throw new Error("Browser keys not configured — add them in Settings")
+      const serverKeys = await fetchServerPublicKeys()
+      const tasks: Task[] = await Promise.all(
+        validActions.map(async (action) => {
+          const { content, content_metadata } = await encryptAndSign(
+            buildContentString(action),
+            clientKeys as ClientKeys,
+            serverKeys.rsa_public,
+          )
+          return { name: action.name, content, content_metadata, type: "execute_actions" }
+        }),
+      )
+      onImport(tasks)
+    } catch (err) {
+      showErrorToast(err instanceof Error ? err.message : "Encryption failed")
     }
-
-    const encrypted: { content: string; content_metadata: string }[] = await res.json()
-
-    const tasks: Task[] = validActions.map((action, i) => ({
-      name: action.name,
-      content: encrypted[i].content,
-      content_metadata: encrypted[i].content_metadata,
-      type: "execute_actions",
-    }))
-
-    onImport(tasks)
   }
 
   const handleImportWithoutEncryption = () => {
@@ -140,7 +134,7 @@ export default function EncryptStep({
                 <p className="text-sm font-medium">Client decryption keys not configured</p>
                 <p className="text-xs text-muted-foreground mt-1">
                   You can still import encrypted tasks, but won't be able to decrypt results in the browser.
-                  Configure OUTPUTS keys in Settings.
+                  Configure browser keys in Settings.
                 </p>
               </div>
             </div>
@@ -193,7 +187,7 @@ export default function EncryptStep({
               <div>
                 <p className="text-sm font-medium">Client decryption keys not configured</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Configure OUTPUTS keys in Settings to decrypt task results in the browser.
+                  Configure browser keys in Settings to decrypt task results in the browser.
                 </p>
               </div>
             </div>

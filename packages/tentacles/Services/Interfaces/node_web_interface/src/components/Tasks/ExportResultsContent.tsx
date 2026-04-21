@@ -9,8 +9,8 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { ArrowLeft, ArrowUpDown, Download, Eye, EyeOff, Plus, Search, Upload, X } from "lucide-react"
-import { useCallback, useMemo, useRef, useState } from "react"
+import { ArrowLeft, ArrowUpDown, Download, Eye, EyeOff, Loader2, Plus, Search, Upload, X } from "lucide-react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import type { Task_Output as Task } from "@/client"
 import { Badge } from "@/components/ui/badge"
@@ -40,11 +40,14 @@ import {
   type ExportColumnDef,
 } from "@/lib/export-templates"
 import useCustomToast from "@/hooks/useCustomToast"
+import { decryptAndVerify, type ClientKeys } from "@/lib/client-encryption"
 import {
   extractValue,
   discoverPaths,
   formatCellValue,
 } from "@/lib/json-path"
+import { loadClientKeys } from "@/lib/device-key"
+import { fetchServerPublicKeys } from "@/lib/server-keys"
 import { getActiveExecution } from "@/utils/executions"
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -152,16 +155,76 @@ export default function ExportResultsContent({
   const [globalFilter, setGlobalFilter] = useState("")
 
   const exportRows = useMemo(() => buildExportRows(tasks), [tasks])
+  const [decryptedRows, setDecryptedRows] = useState<ExportRow[] | null>(null)
+  const [isDecrypting, setIsDecrypting] = useState(false)
+
+  const showErrorToastRef = useRef(showErrorToast)
+  showErrorToastRef.current = showErrorToast
+
+  useEffect(() => {
+    let cancelled = false
+    async function tryDecryptAll() {
+      const rawKeys = await loadClientKeys()
+      if (!rawKeys?.rsa_private?.trim()) return
+      const keys = rawKeys as ClientKeys
+      let serverKeys: { rsa_public: string; ecdsa_public: string }
+      try {
+        serverKeys = await fetchServerPublicKeys()
+      } catch {
+        return
+      }
+      if (cancelled) return
+      setDecryptedRows(null)
+      setIsDecrypting(true)
+      let failCount = 0
+      try {
+        const base = buildExportRows(tasks)
+        const rows = await Promise.all(
+          tasks.map(async (task, i) => {
+            const activeExec = getActiveExecution(task.executions)
+            if (!activeExec?.result_metadata || !activeExec?.result) return base[i]
+            try {
+              const decrypted = await decryptAndVerify(activeExec.result, activeExec.result_metadata, keys, serverKeys.ecdsa_public)
+              let resultData: Record<string, unknown> = {}
+              try {
+                const parsed: unknown = JSON.parse(decrypted)
+                resultData =
+                  typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)
+                    ? (parsed as Record<string, unknown>)
+                    : { result: parsed }
+              } catch {
+                resultData = { result: decrypted }
+              }
+              return { ...base[i], resultData }
+            } catch {
+              failCount++
+              return base[i]
+            }
+          }),
+        )
+        if (!cancelled) {
+          setDecryptedRows(rows)
+          if (failCount > 0) showErrorToastRef.current(`Failed to decrypt ${failCount} result(s) — check your keys`)
+        }
+      } finally {
+        if (!cancelled) setIsDecrypting(false)
+      }
+    }
+    tryDecryptAll()
+    return () => { cancelled = true }
+  }, [tasks])
+
+  const displayRows = decryptedRows ?? exportRows
 
   const discoveredPaths = useMemo(() => {
     const paths = new Set<string>()
-    for (const row of exportRows) {
+    for (const row of displayRows) {
       for (const path of discoverPaths(row.resultData)) {
         paths.add(path)
       }
     }
     return Array.from(paths).sort()
-  }, [exportRows])
+  }, [displayRows])
 
   const activeTemplate = useMemo(
     () => getAllExportTemplates().find((t) => t.id === selectedTemplateId),
@@ -170,10 +233,10 @@ export default function ExportResultsContent({
 
   const templateColumns = useMemo((): ExportColumnDef[] => {
     if (selectedTemplateId === "full") {
-      return buildColumnsForFullDetails(exportRows)
+      return buildColumnsForFullDetails(displayRows)
     }
     return activeTemplate?.columns ?? []
-  }, [activeTemplate, selectedTemplateId, exportRows])
+  }, [activeTemplate, selectedTemplateId, displayRows])
 
   const allColumns = useMemo(
     () => [...templateColumns, ...customColumns],
@@ -214,7 +277,7 @@ export default function ExportResultsContent({
   }, [allColumns])
 
   const table = useReactTable({
-    data: exportRows,
+    data: displayRows,
     columns: tableColumns,
     state: { sorting, columnFilters, columnVisibility, globalFilter },
     onSortingChange: setSorting,
@@ -462,9 +525,11 @@ export default function ExportResultsContent({
         </Table>
       </div>
 
-      <p className="text-xs text-muted-foreground">
-        Showing {table.getFilteredRowModel().rows.length} of{" "}
-        {exportRows.length} rows
+      <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+        {isDecrypting && <Loader2 className="size-3 animate-spin" />}
+        {isDecrypting ? "Decrypting results…" : (
+          <>Showing {table.getFilteredRowModel().rows.length} of {displayRows.length} rows</>
+        )}
       </p>
 
       {/* Footer */}

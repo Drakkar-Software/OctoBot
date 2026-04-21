@@ -430,7 +430,7 @@ function ClientEncryptionKeysCard() {
           Client encryption keys
         </CardTitle>
         <CardDescription>
-          Browser-stored OUTPUTS keys for decrypting task results. Protected by a device-bound key in IndexedDB. Never sent to the server.
+          Browser-stored user keys for encrypting tasks and decrypting results. Protected by a device-bound key in IndexedDB. Never sent to the server.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
@@ -514,7 +514,7 @@ function ClientEncryptionKeysCard() {
                 </button>
               )}
               {!configured && (
-                <span className="text-xs text-muted-foreground">All 4 keys required for client decryption.</span>
+                <span className="text-xs text-muted-foreground">Both keys required for client decryption.</span>
               )}
             </div>
           </>

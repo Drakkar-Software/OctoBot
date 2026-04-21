@@ -31,6 +31,7 @@ import octobot_node.constants
 import octobot_node.scheduler.workflows_util as workflows_util
 import octobot_node.scheduler.workflows.params as workflow_params
 import octobot_node.scheduler.encryption as encryption
+import octobot_node.scheduler.task_context as task_context
 try:
     from octobot import VERSION
 except ImportError:
@@ -213,14 +214,27 @@ class Scheduler:
                         if output.state:
                             result = output.state
                             metadata = output.state_metadata
+                            if octobot_node.config.settings.is_node_side_encryption_enabled:
+                                try:
+                                    result_task = octobot_node.models.Task(
+                                        name="", content=output.state,
+                                        content_metadata=output.state_metadata, type="execute_actions"
+                                    )
+                                    with task_context.encrypted_task(result_task):
+                                        # encrypted_task swallows decryption errors; unchanged content means
+                                        # decryption silently failed and re-encrypting would produce double-encrypted garbage
+                                        if result_task.content == output.state and output.state_metadata:
+                                            raise encryption.EncryptionTaskError("Internal state decryption silently failed")
+                                        result, metadata = encryption.encrypt_task_result(
+                                            result_task.content,
+                                            rsa_public_key=octobot_node.config.settings.TASKS_USER_RSA_PUBLIC_KEY,
+                                            ecdsa_private_key=octobot_node.config.settings.TASKS_SERVER_ECDSA_PRIVATE_KEY,
+                                        )
+                                except encryption.EncryptionTaskError as encrypt_err:
+                                    self.logger.warning(f"Failed to encrypt result for workflow {completed_workflow_status.workflow_id}: {encrypt_err}")
                         else:
                             result = task.content
                             metadata = task.content_metadata
-                        if octobot_node.config.settings.is_node_side_encryption_enabled and result and metadata:
-                            try:
-                                result = encryption.decrypt_task_content(result, metadata)
-                            except Exception as decrypt_err:
-                                self.logger.warning(f"Failed to decrypt result for workflow {completed_workflow_status.workflow_id}: {decrypt_err}")
                         description = "Completed"
                         status = octobot_node.models.TaskStatus.COMPLETED
                         task_name = task.name
@@ -262,6 +276,7 @@ class Scheduler:
         task_name = workflow_status.name
         task_type = None
         task_actions = None
+        task = None
         if workflow_status.input:
             if task := workflows_util.get_input_task(workflow_status):
                 task_type = task.type

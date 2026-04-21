@@ -36,10 +36,8 @@ All notable changes to this project will be documented in this file.
 - CSV encryption utilities for task imports (`encrypt_csv_content`, `decrypt_csv_content`, `merge_and_encrypt_csv`)
 - Key generation and management utilities for encryption keys
 - Encryption key configuration via environment variables:
-  - `TASKS_INPUTS_RSA_PUBLIC_KEY` and `TASKS_INPUTS_RSA_PRIVATE_KEY`
-  - `TASKS_INPUTS_ECDSA_PUBLIC_KEY` and `TASKS_INPUTS_ECDSA_PRIVATE_KEY`
-  - `TASKS_OUTPUTS_RSA_PUBLIC_KEY` and `TASKS_OUTPUTS_RSA_PRIVATE_KEY`
-  - `TASKS_OUTPUTS_ECDSA_PUBLIC_KEY` and `TASKS_OUTPUTS_ECDSA_PRIVATE_KEY`
+  - `TASKS_SERVER_RSA_PRIVATE_KEY` and `TASKS_SERVER_ECDSA_PRIVATE_KEY` (server-held private keys)
+  - `TASKS_USER_RSA_PUBLIC_KEY` and `TASKS_USER_ECDSA_PUBLIC_KEY` (user-provided public keys)
 - Custom exception classes for encryption errors: `EncryptionTaskError`, `MissingMetadataError`, `MetadataParsingError`, `SignatureVerificationError`
 - Comprehensive encryption module documentation (README.md)
 

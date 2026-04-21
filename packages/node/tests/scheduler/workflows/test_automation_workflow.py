@@ -1200,19 +1200,23 @@ class TestExecuteAutomationIntegration:
             "ORDER_SYMBOL": "ETH/BTC", "ORDER_AMOUNT": 1, "ORDER_TYPE": "market",
             "ORDER_SIDE": "BUY", "SIMULATED_PORTFOLIO": {"BTC": 1}}})
 
-        # Patch all four TASKS_INPUTS_* keys on settings for the duration of each block below.
+        # Clear derived-key caches so patched settings take effect immediately.
+        task_inputs_encryption._server_rsa_public_key_bytes.cache_clear()
+        task_inputs_encryption._server_ecdsa_public_key_bytes.cache_clear()
+
+        # Patch all four encryption keys on settings for the duration of each block below.
         encryption_patches = (
             mock.patch.object(
-                octobot_node.config.settings, "TASKS_INPUTS_RSA_PRIVATE_KEY", rsa_private_key
+                octobot_node.config.settings, "TASKS_SERVER_RSA_PRIVATE_KEY", rsa_private_key
             ),
             mock.patch.object(
-                octobot_node.config.settings, "TASKS_INPUTS_RSA_PUBLIC_KEY", rsa_public_key
+                octobot_node.config.settings, "TASKS_SERVER_ECDSA_PRIVATE_KEY", ecdsa_private_key
             ),
             mock.patch.object(
-                octobot_node.config.settings, "TASKS_INPUTS_ECDSA_PRIVATE_KEY", ecdsa_private_key
+                octobot_node.config.settings, "TASKS_USER_RSA_PUBLIC_KEY", rsa_public_key
             ),
             mock.patch.object(
-                octobot_node.config.settings, "TASKS_INPUTS_ECDSA_PUBLIC_KEY", ecdsa_public_key
+                octobot_node.config.settings, "TASKS_USER_ECDSA_PUBLIC_KEY", ecdsa_public_key
             ),
         )
 

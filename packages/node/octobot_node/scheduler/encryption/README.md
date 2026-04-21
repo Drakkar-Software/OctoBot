@@ -165,19 +165,15 @@ except EncryptionTaskError as e:
 
 ### Configuration Keys
 
-The system uses separate RSA and ECDSA key pairs for task inputs and outputs:
+The system uses two server key pairs plus the user's public keys:
 
-**Task Inputs:**
-- `TASKS_INPUTS_RSA_PUBLIC_KEY`: RSA public key for encrypting AES keys in task inputs
-- `TASKS_INPUTS_RSA_PRIVATE_KEY`: RSA private key for decrypting AES keys in task inputs
-- `TASKS_INPUTS_ECDSA_PUBLIC_KEY`: ECDSA public key for verifying signatures on task inputs
-- `TASKS_INPUTS_ECDSA_PRIVATE_KEY`: ECDSA private key for signing task inputs
+**Server keys (private keys only — public keys are derived internally):**
+- `TASKS_SERVER_RSA_PRIVATE_KEY`: RSA private key for decrypting incoming task AES keys
+- `TASKS_SERVER_ECDSA_PRIVATE_KEY`: ECDSA private key for signing task output results
 
-**Task Outputs:**
-- `TASKS_OUTPUTS_RSA_PUBLIC_KEY`: RSA public key for encrypting AES keys in task outputs
-- `TASKS_OUTPUTS_RSA_PRIVATE_KEY`: RSA private key for decrypting AES keys in task outputs
-- `TASKS_OUTPUTS_ECDSA_PUBLIC_KEY`: ECDSA public key for verifying signatures on task outputs
-- `TASKS_OUTPUTS_ECDSA_PRIVATE_KEY`: ECDSA private key for signing task outputs
+**User public keys (provided by the user, held by the server):**
+- `TASKS_USER_RSA_PUBLIC_KEY`: User's RSA public key for encrypting task output results
+- `TASKS_USER_ECDSA_PUBLIC_KEY`: User's ECDSA public key for verifying incoming task signatures
 
 ### Key Generation
 
@@ -203,14 +199,10 @@ Keys are configured via environment variables in the application settings:
 
 ```python
 # In .env or environment variables
-TASKS_INPUTS_RSA_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----\n..."
-TASKS_INPUTS_RSA_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\n..."
-TASKS_INPUTS_ECDSA_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----\n..."
-TASKS_INPUTS_ECDSA_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n..."
-TASKS_OUTPUTS_RSA_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----\n..."
-TASKS_OUTPUTS_RSA_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\n..."
-TASKS_OUTPUTS_ECDSA_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----\n..."
-TASKS_OUTPUTS_ECDSA_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n..."
+TASKS_SERVER_RSA_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\n..."
+TASKS_SERVER_ECDSA_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n..."
+TASKS_USER_RSA_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----\n..."
+TASKS_USER_ECDSA_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----\n..."
 ```
 
 **Note**: If keys are not configured (`None`), encryption/decryption is skipped and tasks operate in plaintext mode. This allows for development and testing without encryption overhead.

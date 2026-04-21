@@ -81,10 +81,10 @@ class Settings(BaseSettings):
     POSTGRES_STORAGE_CERTS_PATH: str | None = None
 
     # Task encryption keys (server-side)
-    TASKS_INPUTS_RSA_PRIVATE_KEY: Annotated[bytes | None, BeforeValidator(parse_key_to_bytes)] = None
-    TASKS_INPUTS_ECDSA_PUBLIC_KEY: Annotated[bytes | None, BeforeValidator(parse_key_to_bytes)] = None
-    TASKS_INPUTS_RSA_PUBLIC_KEY: Annotated[bytes | None, BeforeValidator(parse_key_to_bytes)] = None
-    TASKS_INPUTS_ECDSA_PRIVATE_KEY: Annotated[bytes | None, BeforeValidator(parse_key_to_bytes)] = None
+    TASKS_SERVER_RSA_PRIVATE_KEY: Annotated[bytes | None, BeforeValidator(parse_key_to_bytes)] = None
+    TASKS_SERVER_ECDSA_PRIVATE_KEY: Annotated[bytes | None, BeforeValidator(parse_key_to_bytes)] = None
+    TASKS_USER_RSA_PUBLIC_KEY: Annotated[bytes | None, BeforeValidator(parse_key_to_bytes)] = None
+    TASKS_USER_ECDSA_PUBLIC_KEY: Annotated[bytes | None, BeforeValidator(parse_key_to_bytes)] = None
 
     USE_DEDICATED_LOG_FILE_PER_AUTOMATION: bool = True
 
@@ -92,10 +92,10 @@ class Settings(BaseSettings):
     @property
     def is_node_side_encryption_enabled(self) -> bool:
         return all([
-            self.TASKS_INPUTS_RSA_PRIVATE_KEY,
-            self.TASKS_INPUTS_ECDSA_PUBLIC_KEY,
-            self.TASKS_INPUTS_RSA_PUBLIC_KEY,
-            self.TASKS_INPUTS_ECDSA_PRIVATE_KEY,
+            self.TASKS_SERVER_RSA_PRIVATE_KEY,
+            self.TASKS_SERVER_ECDSA_PRIVATE_KEY,
+            self.TASKS_USER_RSA_PUBLIC_KEY,
+            self.TASKS_USER_ECDSA_PUBLIC_KEY,
         ])
 
     @computed_field
