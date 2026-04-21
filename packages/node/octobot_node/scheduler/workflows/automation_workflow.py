@@ -23,10 +23,8 @@ import octobot_commons.logging
 import octobot_flow.enums
 import octobot_flow.errors
 
-import octobot_node.config
 import octobot_node.enums
 import octobot_node.models
-import octobot_node.scheduler.encryption as encryption
 import octobot_node.scheduler.octobot_flow_client as octobot_flow_client
 import octobot_node.scheduler.task_context
 import octobot_node.scheduler.workflows.params as params
@@ -38,7 +36,9 @@ if typing.TYPE_CHECKING:
 from octobot_node.scheduler import SCHEDULER  # avoid circular import
 
 
+INTERVAL_SECONDS = 1.0
 MAX_ITERATION_RETRIES = 3
+BACKOFF_RATE = 2.0
 
 
 @SCHEDULER.INSTANCE.dbos_class()
@@ -106,7 +106,11 @@ class AutomationWorkflow:
 
     @staticmethod
     @SCHEDULER.INSTANCE.step(
-        name="execute_iteration", retries_allowed=True, max_attempts=MAX_ITERATION_RETRIES
+        name="execute_iteration",
+        retries_allowed=True,
+        interval_seconds = INTERVAL_SECONDS,
+        max_attempts=MAX_ITERATION_RETRIES,
+        backoff_rate=BACKOFF_RATE,
     )
     async def execute_iteration(inputs: dict, actions_update: typing.Optional[dict]) -> dict:
         """
@@ -122,18 +126,17 @@ class AutomationWorkflow:
         """
         parsed_inputs: params.AutomationWorkflowInputs = params.AutomationWorkflowInputs.from_dict(inputs)
         executed_step: str = "no action executed"
-        execution_error = next_iteration_description = next_iteration_description_metadata = next_step = next_step_at = None
-        has_next_actions = False
-        with octobot_node.scheduler.task_context.encrypted_task(parsed_inputs.task):
+        execution_error = next_step = next_step_at = None
+        result = octobot_flow_client.OctoBotActionsJobResult()
+        with octobot_node.scheduler.task_context.encrypted_task(parsed_inputs.task, result):
             #### Start of decryped task context ####
-            result: octobot_flow_client.OctoBotActionsJobResult = None # type: ignore
             if parsed_inputs.task.type == octobot_node.models.TaskType.EXECUTE_ACTIONS.value:
                 user_actions, trading_signals = AutomationWorkflow._parse_actions_update_envelope(actions_update)
                 AutomationWorkflow._log_iteration_execution_intent(
                     parsed_inputs, user_actions, trading_signals
                 )
-                result = await octobot_flow_client.OctoBotActionsJob(
-                    parsed_inputs.task.content, user_actions, trading_signals
+                await octobot_flow_client.OctoBotActionsJob(
+                    parsed_inputs.task.content, user_actions, trading_signals, result
                 ).run()
                 if result.processed_actions:
                     if latest_step := AutomationWorkflow._get_actions_summary(result.processed_actions, minimal=True):
@@ -144,36 +147,21 @@ class AutomationWorkflow:
                                 f"Error: {action.error_status} when executing action {action.id}: {action.get_summary()} "
                             )
                             execution_error = action.error_status
-            if result is None:
+            else:
                 raise errors.WorkflowInputError(f"Invalid task type: {parsed_inputs.task.type}")
             next_actions = []
             remaining_steps = 0
-            has_next_actions = result.has_next_actions
-            if has_next_actions:
+            if result.has_next_actions:
                 if result.actions_dag:
                     next_actions = result.actions_dag.get_executable_actions()
                     remaining_steps = len(result.actions_dag.get_pending_actions())
                 next_step_at = result.next_actions_description.get_next_execution_time() if result.next_actions_description else None
-            if result.next_actions_description is None:
-                next_iteration_description = None
-            else:
-                raw_description = json.dumps(
-                    result.next_actions_description.to_dict(include_default_values=False)
-                )
-                next_iteration_description_metadata = None
-                if octobot_node.config.settings.is_node_side_encryption_enabled:
-                    next_iteration_description, next_iteration_description_metadata = (
-                        encryption.encrypt_task_content(raw_description)
-                    )
-                else:
-                    next_iteration_description = raw_description
             next_step = AutomationWorkflow._get_actions_summary(next_actions, minimal=True)
             next_actions_str = f"next immediate actions: {next_actions}" if next_actions else "all actions completed"
             AutomationWorkflow.get_logger(parsed_inputs).info(
                 f"Iteration completed, executed step: '{executed_step}', {next_actions_str}"
             )
-            should_stop = result.should_stop
-            #### End of decryped task context - nothing should be done after this point ####
+            #### End of decryped task context - no clear data after this point in encrypted context ####
 
         return params.AutomationWorkflowIterationResult(
             progress_status=params.ProgressStatus(
@@ -182,11 +170,11 @@ class AutomationWorkflow:
                 next_step_at=next_step_at,
                 remaining_steps=remaining_steps,
                 error=execution_error,
-                should_stop=should_stop,
+                should_stop=result.should_stop,
             ),
-            next_iteration_description=next_iteration_description,
-            next_iteration_description_metadata=next_iteration_description_metadata,
-            has_next_actions=has_next_actions,
+            next_iteration_description=result.maybe_encrypted_next_actions_description,
+            next_iteration_description_metadata=result.next_actions_description_encryption_metadata,
+            has_next_actions=result.has_next_actions,
         ).to_dict(include_default_values=False)
 
     @staticmethod

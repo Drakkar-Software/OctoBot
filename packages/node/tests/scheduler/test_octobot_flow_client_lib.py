@@ -348,8 +348,11 @@ class TestOctoBotActionsJob:
 
     async def test_run_market_order_action(self, market_order_action):
         # step 1: configure the job
-        job = octobot_flow_client.OctoBotActionsJob(market_order_action, [], [])
-        result = await job.run()
+        job = octobot_flow_client.OctoBotActionsJob(
+            market_order_action, [], [], octobot_flow_client.OctoBotActionsJobResult(),
+        )
+        await job.run()
+        result = job.result
         assert len(result.processed_actions) == 1
         processed_actions = result.processed_actions
         assert len(processed_actions) == 1
@@ -373,9 +376,11 @@ class TestOctoBotActionsJob:
         assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
         assert next_actions[0].dsl_script == "market('buy', 'ETH/BTC', 1)"
         job2 = octobot_flow_client.OctoBotActionsJob(
-            next_actions_description.to_dict(include_default_values=False), [], []
+            next_actions_description.to_dict(include_default_values=False), [], [],
+            octobot_flow_client.OctoBotActionsJobResult(),
         )
-        result = await job2.run()
+        await job2.run()
+        result = job2.result
         assert len(result.processed_actions) == 1
         processed_actions = result.processed_actions
         assert len(processed_actions) == 1
@@ -400,8 +405,9 @@ class TestOctoBotActionsJob:
 
     async def test_run_limit_order_action(self, limit_order_action):
         # step 1: configure the job
-        job = octobot_flow_client.OctoBotActionsJob(limit_order_action, [], [])
-        result = await job.run()
+        job = octobot_flow_client.OctoBotActionsJob(limit_order_action, [], [], octobot_flow_client.OctoBotActionsJobResult())
+        await job.run()
+        result = job.result
         assert len(result.processed_actions) == 1
         processed_actions = result.processed_actions
         assert len(processed_actions) == 1
@@ -425,9 +431,11 @@ class TestOctoBotActionsJob:
         assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
         assert next_actions[0].dsl_script == "limit('buy', 'ETH/BTC', 1, '-10%')"
         job2 = octobot_flow_client.OctoBotActionsJob(
-            next_actions_description.to_dict(include_default_values=False), [], []
+            next_actions_description.to_dict(include_default_values=False), [], [],
+            octobot_flow_client.OctoBotActionsJobResult(),
         )
-        result = await job2.run()
+        await job2.run()
+        result = job2.result
         assert len(result.processed_actions) == 1
         processed_actions = result.processed_actions
         assert len(processed_actions) == 1
@@ -444,8 +452,9 @@ class TestOctoBotActionsJob:
 
     async def test_run_stop_loss_order_action(self, stop_loss_order_action):
         # step 1: configure the job
-        job = octobot_flow_client.OctoBotActionsJob(stop_loss_order_action, [], [])
-        result = await job.run()
+        job = octobot_flow_client.OctoBotActionsJob(stop_loss_order_action, [], [], octobot_flow_client.OctoBotActionsJobResult())
+        await job.run()
+        result = job.result
         assert len(result.processed_actions) == 1
         processed_actions = result.processed_actions
         assert len(processed_actions) == 1
@@ -473,9 +482,11 @@ class TestOctoBotActionsJob:
             assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
             assert next_actions[0].dsl_script.startswith("stop_loss('sell', 'ETH/BTC', '10%', '-10%')")
             job2 = octobot_flow_client.OctoBotActionsJob(
-                next_actions_description.to_dict(include_default_values=False), [], []
+                next_actions_description.to_dict(include_default_values=False), [], [],
+                octobot_flow_client.OctoBotActionsJobResult(),
             )
-            result = await job2.run()
+            await job2.run()
+            result = job2.result
             assert len(result.processed_actions) == 1
             processed_actions = result.processed_actions
             assert len(processed_actions) == 1
@@ -493,8 +504,9 @@ class TestOctoBotActionsJob:
 
     async def test_run_cancel_limit_order_after_instant_wait_action(self, create_limit_instant_wait_and_cancel_order_action):
         # step 1: configure the job
-        job = octobot_flow_client.OctoBotActionsJob(create_limit_instant_wait_and_cancel_order_action, [], [])
-        result = await job.run()
+        job = octobot_flow_client.OctoBotActionsJob(create_limit_instant_wait_and_cancel_order_action, [], [], octobot_flow_client.OctoBotActionsJobResult())
+        await job.run()
+        result = job.result
         assert len(result.processed_actions) == 1
         processed_actions = result.processed_actions
         assert len(processed_actions) == 1
@@ -518,9 +530,11 @@ class TestOctoBotActionsJob:
         assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
         assert next_actions[0].dsl_script == "limit('buy', 'ETH/BTC', 1, '-10%')"
         job2 = octobot_flow_client.OctoBotActionsJob(
-            next_actions_description.to_dict(include_default_values=False), [], []
+            next_actions_description.to_dict(include_default_values=False), [], [],
+            octobot_flow_client.OctoBotActionsJobResult(),
         )
-        result = await job2.run()
+        await job2.run()
+        result = job2.result
         assert len(result.processed_actions) == 1
         processed_actions = result.processed_actions
         assert len(processed_actions) == 1
@@ -544,9 +558,11 @@ class TestOctoBotActionsJob:
         assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
         assert next_actions[0].dsl_script.startswith("wait(")
         job3 = octobot_flow_client.OctoBotActionsJob(
-            next_actions_description.to_dict(include_default_values=False), [], []
+            next_actions_description.to_dict(include_default_values=False), [], [],
+            octobot_flow_client.OctoBotActionsJobResult(),
         )
-        result = await job3.run()
+        await job3.run()
+        result = job3.result
         assert len(result.processed_actions) == 1
         processed_actions = result.processed_actions
         assert len(processed_actions) == 1
@@ -564,9 +580,11 @@ class TestOctoBotActionsJob:
         assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
         assert next_actions[0].dsl_script == "cancel_order('ETH/BTC', side='buy')"
         job4 = octobot_flow_client.OctoBotActionsJob(
-            next_actions_description.to_dict(include_default_values=False), [], []
+            next_actions_description.to_dict(include_default_values=False), [], [],
+            octobot_flow_client.OctoBotActionsJobResult(),
         )
-        result = await job4.run()
+        await job4.run()
+        result = job4.result
         assert len(result.processed_actions) == 1
         processed_actions = result.processed_actions
         assert len(processed_actions) == 1
@@ -579,8 +597,9 @@ class TestOctoBotActionsJob:
     @pytest.mark.skip(reason="restore once polymarket is fully supported")
     async def test_polymarket_trade_action(self, polymarket_order_action): # TODO: update once polymarket is fullly supported
         # step 1: configure the job
-        job = octobot_flow_client.OctoBotActionsJob(polymarket_order_action, [], [])
-        result = await job.run()
+        job = octobot_flow_client.OctoBotActionsJob(polymarket_order_action, [], [], octobot_flow_client.OctoBotActionsJobResult())
+        await job.run()
+        result = job.result
         assert len(result.processed_actions) == 1
         processed_actions = result.processed_actions
         assert len(processed_actions) == 1
@@ -604,26 +623,29 @@ class TestOctoBotActionsJob:
         assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
         assert next_actions[0].dsl_script.startswith("market(")
         job2 = octobot_flow_client.OctoBotActionsJob(
-            next_actions_description.to_dict(include_default_values=False), [], []
+            next_actions_description.to_dict(include_default_values=False), [], [],
+            octobot_flow_client.OctoBotActionsJobResult(),
         )
         with pytest.raises(octobot_trading.errors.FailedRequest): # TODO: update once supported
-            result = await job2.run()
-            assert len(result.processed_actions) == 1
-            processed_actions = result.processed_actions
-            assert len(processed_actions) == 1
-            assert isinstance(processed_actions[0], octobot_flow.entities.DSLScriptActionDetails)
-            assert processed_actions[0].dsl_script.startswith("market(")
-            assert len(get_created_orders(processed_actions)) == 1
-            order = get_created_orders(processed_actions)[0]
-            assert order["symbol"] == "what-price-will-bitcoin-hit-in-january-2026/USDC:USDC-260131-0-YES"
-            assert order["amount"] == decimal.Decimal("1")
-            assert order["type"] == "market"
-            assert order["side"] == "buy"
+            await job2.run()
+        result = job2.result
+        assert len(result.processed_actions) == 1
+        processed_actions = result.processed_actions
+        assert len(processed_actions) == 1
+        assert isinstance(processed_actions[0], octobot_flow.entities.DSLScriptActionDetails)
+        assert processed_actions[0].dsl_script.startswith("market(")
+        assert len(get_created_orders(processed_actions)) == 1
+        order = get_created_orders(processed_actions)[0]
+        assert order["symbol"] == "what-price-will-bitcoin-hit-in-january-2026/USDC:USDC-260131-0-YES"
+        assert order["amount"] == decimal.Decimal("1")
+        assert order["type"] == "market"
+        assert order["side"] == "buy"
 
     async def test_run_transfer_blockchain_only_action(self, transfer_blockchain_action):
         # step 1: configure the job
-        job = octobot_flow_client.OctoBotActionsJob(transfer_blockchain_action, [], [])
-        result = await job.run()
+        job = octobot_flow_client.OctoBotActionsJob(transfer_blockchain_action, [], [], octobot_flow_client.OctoBotActionsJobResult())
+        await job.run()
+        result = job.result
         assert len(result.processed_actions) == 1
         processed_actions = result.processed_actions
         assert len(processed_actions) == 1
@@ -642,9 +664,11 @@ class TestOctoBotActionsJob:
         assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
         assert next_actions[0].dsl_script is not None and "blockchain_wallet_transfer" in next_actions[0].dsl_script
         job2 = octobot_flow_client.OctoBotActionsJob(
-            next_actions_description.to_dict(include_default_values=False), [], []
+            next_actions_description.to_dict(include_default_values=False), [], [],
+            octobot_flow_client.OctoBotActionsJobResult(),
         )
-        result = await job2.run()
+        await job2.run()
+        result = job2.result
         assert len(result.processed_actions) == 1
         processed_actions = result.processed_actions
         assert len(processed_actions) == 1
@@ -669,8 +693,9 @@ class TestOctoBotActionsJob:
 
     async def test_run_deposit_action(self, deposit_action):
         # step 1: configure the job
-        job = octobot_flow_client.OctoBotActionsJob(deposit_action, [], [])
-        result = await job.run()
+        job = octobot_flow_client.OctoBotActionsJob(deposit_action, [], [], octobot_flow_client.OctoBotActionsJobResult())
+        await job.run()
+        result = job.result
         assert len(result.processed_actions) == 1
         processed_actions = result.processed_actions
         assert len(processed_actions) == 1
@@ -694,9 +719,11 @@ class TestOctoBotActionsJob:
         assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
         assert next_actions[0].dsl_script is not None and "blockchain_wallet_transfer" in next_actions[0].dsl_script
         job2 = octobot_flow_client.OctoBotActionsJob(
-            next_actions_description.to_dict(include_default_values=False), [], []
+            next_actions_description.to_dict(include_default_values=False), [], [],
+            octobot_flow_client.OctoBotActionsJobResult(),
         )
-        result = await job2.run()
+        await job2.run()
+        result = job2.result
         assert len(result.processed_actions) == 1
         processed_actions = result.processed_actions
         assert len(processed_actions) == 1
@@ -713,8 +740,9 @@ class TestOctoBotActionsJob:
 
     async def test_run_withdraw_action(self, withdraw_action):
         # step 1: configure the job
-        job = octobot_flow_client.OctoBotActionsJob(withdraw_action, [], [])
-        result = await job.run()
+        job = octobot_flow_client.OctoBotActionsJob(withdraw_action, [], [], octobot_flow_client.OctoBotActionsJobResult())
+        await job.run()
+        result = job.result
         assert len(result.processed_actions) == 1
         processed_actions = result.processed_actions
         assert len(processed_actions) == 1
@@ -738,9 +766,11 @@ class TestOctoBotActionsJob:
         assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
         assert next_actions[0].dsl_script.startswith("withdraw(")
         job2 = octobot_flow_client.OctoBotActionsJob(
-            next_actions_description.to_dict(include_default_values=False), [], []
+            next_actions_description.to_dict(include_default_values=False), [], [],
+            octobot_flow_client.OctoBotActionsJobResult(),
         )
-        result = await job2.run()
+        await job2.run()
+        result = job2.result
         assert len(result.processed_actions) == 1
         processed_actions = result.processed_actions
         assert len(processed_actions) == 1
@@ -754,9 +784,10 @@ class TestOctoBotActionsJob:
 
     async def test_run_multiple_actions_bundle_no_wait(self, multiple_actions_bundle_no_wait):
         # step 1: configure the job
-        job = octobot_flow_client.OctoBotActionsJob(multiple_actions_bundle_no_wait, [], [])
+        job = octobot_flow_client.OctoBotActionsJob(multiple_actions_bundle_no_wait, [], [], octobot_flow_client.OctoBotActionsJobResult())
         # ensure wait keywords have been considered
-        result = await job.run()
+        await job.run()
+        result = job.result
         assert len(result.processed_actions) == 1
         processed_actions = result.processed_actions
         assert len(processed_actions) == 1
@@ -780,9 +811,11 @@ class TestOctoBotActionsJob:
         assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
         assert next_actions[0].dsl_script is not None and "blockchain_wallet_transfer" in next_actions[0].dsl_script
         job2 = octobot_flow_client.OctoBotActionsJob(
-            next_actions_description.to_dict(include_default_values=False), [], []
+            next_actions_description.to_dict(include_default_values=False), [], [],
+            octobot_flow_client.OctoBotActionsJobResult(),
         )
-        result = await job2.run()
+        await job2.run()
+        result = job2.result
         assert len(result.processed_actions) == 1
         processed_actions = result.processed_actions
         assert len(processed_actions) == 1
@@ -807,9 +840,11 @@ class TestOctoBotActionsJob:
         assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
         assert next_actions[0].dsl_script.startswith("limit(")
         job3 = octobot_flow_client.OctoBotActionsJob(
-            next_actions_description.to_dict(include_default_values=False), [], []
+            next_actions_description.to_dict(include_default_values=False), [], [],
+            octobot_flow_client.OctoBotActionsJobResult(),
         )
-        result = await job3.run()
+        await job3.run()
+        result = job3.result
         assert len(result.processed_actions) == 1
         processed_actions = result.processed_actions
         assert len(processed_actions) == 1
@@ -835,8 +870,9 @@ class TestOctoBotActionsJob:
     async def test_run_trade_and_loop_until_order_closed(self, trade_and_loop_until_order_closed):
         # Step 1 — Apply automation config (ACTIONS: trade, loop_until_order_closed).
         # The only runnable action is init/APPLY_CONFIGURATION; portfolio is seeded (e.g. BTC for the later market buy).
-        job = octobot_flow_client.OctoBotActionsJob(trade_and_loop_until_order_closed, [], [])
-        result = await job.run()
+        job = octobot_flow_client.OctoBotActionsJob(trade_and_loop_until_order_closed, [], [], octobot_flow_client.OctoBotActionsJobResult())
+        await job.run()
+        result = job.result
         assert len(result.processed_actions) == 1
         processed_actions = result.processed_actions
         assert len(processed_actions) == 1
@@ -861,9 +897,11 @@ class TestOctoBotActionsJob:
         assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
         assert next_actions[0].dsl_script is not None and next_actions[0].dsl_script.startswith("market(")
         job2 = octobot_flow_client.OctoBotActionsJob(
-            next_actions_description.to_dict(include_default_values=False), [], []
+            next_actions_description.to_dict(include_default_values=False), [], [],
+            octobot_flow_client.OctoBotActionsJobResult(),
         )
-        result = await job2.run()
+        await job2.run()
+        result = job2.result
         assert len(result.processed_actions) == 1
         processed_actions = result.processed_actions
         assert len(processed_actions) == 1
@@ -892,7 +930,8 @@ class TestOctoBotActionsJob:
         assert f"!= '{trading_enums.OrderStatus.OPEN.value}'" in loop_dsl
         assert "3, timeout=10, max_attempts=4, return_remaining_time=True)" in loop_dsl
         job3 = octobot_flow_client.OctoBotActionsJob(
-            next_actions_description.to_dict(include_default_values=False), [], []
+            next_actions_description.to_dict(include_default_values=False), [], [],
+            octobot_flow_client.OctoBotActionsJobResult(),
         )
         # Step 3a — First automation run: pretend the order is still open on the first fetch_order resolution only.
         # The real loop condition is fetch_order(...)["status"] != "open"; forcing "open" keeps it false once.
@@ -921,7 +960,8 @@ class TestOctoBotActionsJob:
             "_resolve_simulated_fetch_order_dict",
             mock.Mock(side_effect=resolve_simulated_order_first_fetch_reports_open_then_real),
         ):
-            result = await job3.run()
+            await job3.run()
+        result = job3.result
         # Expect the loop_until action to be re-scheduled, not completed.
         assert len(result.processed_actions) == 1
         processed_actions = result.processed_actions
@@ -955,9 +995,11 @@ class TestOctoBotActionsJob:
         # loop_until completes and the DAG has no further executable actions.
         next_actions_description = result.next_actions_description
         job3b = octobot_flow_client.OctoBotActionsJob(
-            next_actions_description.to_dict(include_default_values=False), [], []
+            next_actions_description.to_dict(include_default_values=False), [], [],
+            octobot_flow_client.OctoBotActionsJobResult(),
         )
-        result = await job3b.run()
+        await job3b.run()
+        result = job3b.result
         # trade is saved
         assert len(job3b.after_execution_state.automation.exchange_account_elements.trades) == 1
         assert len(result.processed_actions) == 1
@@ -976,8 +1018,9 @@ class TestOctoBotActionsJob:
 
     async def test_run_trade_transfer_and_check_balance_actions_bundle_no_wait(self, trade_transfer_and_check_balance_actions_bundle_no_wait):
         # step 1: configure the job (ACTIONS: trade, transfer, wait_for_blockchain_balance)
-        job = octobot_flow_client.OctoBotActionsJob(trade_transfer_and_check_balance_actions_bundle_no_wait, [], [])
-        result = await job.run()
+        job = octobot_flow_client.OctoBotActionsJob(trade_transfer_and_check_balance_actions_bundle_no_wait, [], [], octobot_flow_client.OctoBotActionsJobResult())
+        await job.run()
+        result = job.result
         assert len(result.processed_actions) == 1
         processed_actions = result.processed_actions
         assert len(processed_actions) == 1
@@ -1001,7 +1044,8 @@ class TestOctoBotActionsJob:
         assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
         assert next_actions[0].dsl_script is not None and next_actions[0].dsl_script.startswith("market(")
         job2 = octobot_flow_client.OctoBotActionsJob(
-            next_actions_description.to_dict(include_default_values=False), [], []
+            next_actions_description.to_dict(include_default_values=False), [], [],
+            octobot_flow_client.OctoBotActionsJobResult(),
         )
         _real_create_order_instance = order_factory.create_order_instance
 
@@ -1014,7 +1058,8 @@ class TestOctoBotActionsJob:
             order_factory, "create_order_instance",
             mock.Mock(side_effect=_create_order_instance_with_address_from),
         ) as create_order_instance_mock:
-            result = await job2.run()
+            await job2.run()
+        result = job2.result
         assert len(result.processed_actions) == 1
         create_order_instance_mock.assert_called_once()
         assert create_order_instance_mock.mock_calls[0].kwargs["exchange_creation_params"] == {
@@ -1046,9 +1091,11 @@ class TestOctoBotActionsJob:
         assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
         assert next_actions[0].dsl_script is not None and "blockchain_wallet_transfer" in next_actions[0].dsl_script
         job3 = octobot_flow_client.OctoBotActionsJob(
-            next_actions_description.to_dict(include_default_values=False), [], []
+            next_actions_description.to_dict(include_default_values=False), [], [],
+            octobot_flow_client.OctoBotActionsJobResult(),
         )
-        result = await job3.run()
+        await job3.run()
+        result = job3.result
         assert len(result.processed_actions) == 1
         processed_actions = result.processed_actions
         assert len(processed_actions) == 1
@@ -1076,7 +1123,8 @@ class TestOctoBotActionsJob:
         assert "123_balance_address" in next_actions[0].dsl_script
         assert "3, timeout=10, max_attempts=4, return_remaining_time=True)" in next_actions[0].dsl_script
         job4 = octobot_flow_client.OctoBotActionsJob(
-            next_actions_description.to_dict(include_default_values=False), [], []
+            next_actions_description.to_dict(include_default_values=False), [], [],
+            octobot_flow_client.OctoBotActionsJobResult(),
         )
         zero_btc_portfolio = {
             "BTC": {
@@ -1090,7 +1138,8 @@ class TestOctoBotActionsJob:
             "get_balance",
             mock.AsyncMock(return_value=zero_btc_portfolio),
         ):
-            result = await job4.run()
+            await job4.run()
+        result = job4.result
         assert len(result.processed_actions) == 1
         processed_actions = result.processed_actions
         assert isinstance(processed_actions[0], octobot_flow.entities.DSLScriptActionDetails)
@@ -1123,9 +1172,11 @@ class TestOctoBotActionsJob:
         next_actions_description = result.next_actions_description
         assert result.has_next_actions is True
         job4b = octobot_flow_client.OctoBotActionsJob(
-            next_actions_description.to_dict(include_default_values=False), [], []
+            next_actions_description.to_dict(include_default_values=False), [], [],
+            octobot_flow_client.OctoBotActionsJobResult(),
         )
-        result = await job4b.run()
+        await job4b.run()
+        result = job4b.result
         assert len(result.processed_actions) == 1
         processed_actions = result.processed_actions
         assert isinstance(processed_actions[0], octobot_flow.entities.DSLScriptActionDetails)
@@ -1138,7 +1189,7 @@ class TestOctoBotActionsJob:
 
     async def test_run_multiple_actions_bundle_with_wait(self, multiple_action_bundle_with_wait):
         # step 1: configure the job
-        job = octobot_flow_client.OctoBotActionsJob(multiple_action_bundle_with_wait, [], [])
+        job = octobot_flow_client.OctoBotActionsJob(multiple_action_bundle_with_wait, [], [], octobot_flow_client.OctoBotActionsJobResult())
         # ensure wait keywords have been considered
         automation = job.description.state["automation"]
         dag = automation["actions_dag"]
@@ -1149,7 +1200,8 @@ class TestOctoBotActionsJob:
             for dsl_script, keyword in zip(dsl_scripts, ["blockchain_wallet_transfer", "wait", "market", "wait", "withdraw"])
         )
         # run the job
-        result = await job.run()
+        await job.run()
+        result = job.result
         assert len(result.processed_actions) == 1
         processed_actions = result.processed_actions
         assert len(processed_actions) == 1
@@ -1173,9 +1225,11 @@ class TestOctoBotActionsJob:
         assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
         assert next_actions[0].dsl_script is not None and "blockchain_wallet_transfer" in next_actions[0].dsl_script
         job2 = octobot_flow_client.OctoBotActionsJob(
-            next_actions_description.to_dict(include_default_values=False), [], []
+            next_actions_description.to_dict(include_default_values=False), [], [],
+            octobot_flow_client.OctoBotActionsJobResult(),
         )
-        result = await job2.run()
+        await job2.run()
+        result = job2.result
         next_actions_description = result.next_actions_description
         assert len(result.processed_actions) == 1
         processed_actions = result.processed_actions
@@ -1198,9 +1252,11 @@ class TestOctoBotActionsJob:
 
         # step 3.A: run the wait action
         job3 = octobot_flow_client.OctoBotActionsJob(
-            next_actions_description.to_dict(include_default_values=False), [], []
+            next_actions_description.to_dict(include_default_values=False), [], [],
+            octobot_flow_client.OctoBotActionsJobResult(),
         )
-        result = await job3.run()
+        await job3.run()
+        result = job3.result
         next_actions_description = result.next_actions_description
         assert len(result.processed_actions) == 1
         processed_actions = result.processed_actions
@@ -1222,9 +1278,11 @@ class TestOctoBotActionsJob:
         # step 3.B: complete the wait action
         with mock.patch.object(time, "time", mock.Mock(return_value=time.time() + waiting_time)):
             job4 = octobot_flow_client.OctoBotActionsJob(
-                next_actions_description.to_dict(include_default_values=False), [], []
+                next_actions_description.to_dict(include_default_values=False), [], [],
+                octobot_flow_client.OctoBotActionsJobResult(),
             )
-            result = await job4.run()
+            await job4.run()
+        result = job4.result
         assert len(result.processed_actions) == 1
         processed_actions = result.processed_actions
         assert len(processed_actions) == 1
@@ -1253,9 +1311,11 @@ class TestOctoBotActionsJob:
         assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
         assert next_actions[0].dsl_script.startswith("market(")
         job5 = octobot_flow_client.OctoBotActionsJob(
-            next_actions_description.to_dict(include_default_values=False), [], []
+            next_actions_description.to_dict(include_default_values=False), [], [],
+            octobot_flow_client.OctoBotActionsJobResult(),
         )
-        result = await job5.run()
+        await job5.run()
+        result = job5.result
         assert len(result.processed_actions) == 1
         processed_actions = result.processed_actions
         assert len(processed_actions) == 1
@@ -1270,9 +1330,11 @@ class TestOctoBotActionsJob:
         # step 5.A: run the wait action
         next_actions_description = result.next_actions_description
         job6 = octobot_flow_client.OctoBotActionsJob(
-            next_actions_description.to_dict(include_default_values=False), [], []
+            next_actions_description.to_dict(include_default_values=False), [], [],
+            octobot_flow_client.OctoBotActionsJobResult(),
         )
-        result = await job6.run()
+        await job6.run()
+        result = job6.result
         assert len(result.processed_actions) == 1
         processed_actions = result.processed_actions
         assert len(processed_actions) == 1
@@ -1288,9 +1350,11 @@ class TestOctoBotActionsJob:
         next_actions_description = result.next_actions_description
         with mock.patch.object(time, "time", mock.Mock(return_value=time.time() + waiting_time)):
             job7 = octobot_flow_client.OctoBotActionsJob(
-                next_actions_description.to_dict(include_default_values=False), [], []
+                next_actions_description.to_dict(include_default_values=False), [], [],
+                octobot_flow_client.OctoBotActionsJobResult(),
             )
-            result = await job7.run()
+            await job7.run()
+            result = job7.result
         assert len(result.processed_actions) == 1
         processed_actions = result.processed_actions
         assert isinstance(processed_actions[0], octobot_flow.entities.DSLScriptActionDetails)
@@ -1308,9 +1372,11 @@ class TestOctoBotActionsJob:
         assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
         assert next_actions[0].dsl_script.startswith("withdraw(")
         job8 = octobot_flow_client.OctoBotActionsJob(
-            next_actions_description.to_dict(include_default_values=False), [], []
+            next_actions_description.to_dict(include_default_values=False), [], [],
+            octobot_flow_client.OctoBotActionsJobResult(),
         )
-        result = await job8.run()
+        await job8.run()
+        result = job8.result
         assert len(result.processed_actions) == 1
         processed_actions = result.processed_actions
         assert len(processed_actions) == 1

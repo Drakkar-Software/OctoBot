@@ -25,8 +25,10 @@ import tempfile
 import dbos
 
 import octobot_trading.constants
+import octobot_commons.cryptography
 
 import octobot_copy.entities
+import octobot_node.config
 import octobot_node.enums
 import octobot_node.scheduler
 import octobot_node.scheduler.workflows
@@ -34,6 +36,7 @@ import octobot_node.errors as errors
 import octobot_node.models
 import octobot_node.scheduler.workflows.params as params
 import octobot_node.scheduler.octobot_flow_client as octobot_flow_client
+import octobot_node.scheduler.encryption.task_inputs as task_inputs_encryption
 import octobot_node.scheduler.task_context as task_context
 
 
@@ -96,6 +99,59 @@ def _job_description_dict_from_output(parsed: params.AutomationWorkflowOutput) -
     """Decode ``parsed.state`` (OctoBotActionsJobDescription JSON text)."""
     assert isinstance(parsed.state, str)
     return json.loads(parsed.state)
+
+
+def _apply_octobot_actions_job_result_template(
+    target: octobot_flow_client.OctoBotActionsJobResult,
+    template: octobot_flow_client.OctoBotActionsJobResult,
+) -> None:
+    """Copy fields from ``template`` onto ``target`` (real ``run()`` mutates ``OctoBotActionsJob.result`` in place)."""
+    target.processed_actions = template.processed_actions
+    target.next_actions_description = template.next_actions_description
+    target.has_next_actions = template.has_next_actions
+    target.actions_dag = template.actions_dag
+    target.should_stop = template.should_stop
+
+
+def _octobot_actions_job_mock_class(
+    *,
+    run_on_result: typing.Callable[[octobot_flow_client.OctoBotActionsJobResult], typing.Any] | None = None,
+    run_side_effect: typing.Any = None,
+    latest_result_ref: list[octobot_flow_client.OctoBotActionsJobResult | None] | None = None,
+) -> tuple[mock.Mock, mock.AsyncMock | None]:
+    """
+    Patch target for ``OctoBotActionsJob``: each constructor call receives ``result`` at index 3.
+
+    Use ``run_on_result`` to mutate that object like production ``run()`` (one ``run`` mock per job instance).
+
+    Use ``run_side_effect`` with a **shared** ``run`` mock so ``await_count`` aggregates across job instances
+    (exceptions, retries, or repeated failures). When ``run_side_effect`` needs the current ``OctoBotActionsJobResult``,
+    pass ``latest_result_ref=[None]`` and assign ``latest_result_ref[0] = args[3]`` on each construction.
+    """
+    if (run_on_result is None) == (run_side_effect is None):
+        raise ValueError("Pass exactly one of run_on_result or run_side_effect")
+
+    if run_side_effect is not None:
+        run_mock = mock.AsyncMock(side_effect=run_side_effect)
+
+        def mock_job_factory(*args, **kwargs):
+            if latest_result_ref is not None:
+                latest_result_ref[0] = args[3]
+            return mock.Mock(run=run_mock)
+
+        return mock.Mock(side_effect=mock_job_factory), run_mock
+
+    def mock_job_factory(*args, **kwargs):
+        result_ref = args[3]
+
+        async def assign_result(*args, **kwargs):
+            outcome = run_on_result(result_ref)
+            if asyncio.iscoroutine(outcome):
+                await outcome
+
+        return mock.Mock(run=mock.AsyncMock(side_effect=assign_result))
+
+    return mock.Mock(side_effect=mock_job_factory), None
 
 
 def _user_actions_update_envelope(user_action_dicts: list[dict]) -> dict[str, typing.Any]:
@@ -317,8 +373,9 @@ class TestExecuteAutomation:
         for raised_exception, expected_error_status in failure_cases:
             mock_logger = mock.Mock()
             mock_process = mock.AsyncMock()
-            mock_job = mock.Mock()
-            mock_job.run = mock.AsyncMock(side_effect=raised_exception)
+            mock_octobot_actions_job_class, run_mock = _octobot_actions_job_mock_class(
+                run_side_effect=raised_exception
+            )
             with mock.patch(
                 "asyncio.sleep", mock.AsyncMock()
             ), mock.patch.object(
@@ -332,7 +389,7 @@ class TestExecuteAutomation:
             ), mock.patch.object(
                 octobot_flow_client,
                 "OctoBotActionsJob",
-                mock.Mock(return_value=mock_job),
+                mock_octobot_actions_job_class,
             ), mock.patch.object(
                 octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow,
                 "_process_pending_priority_actions_and_reschedule",
@@ -352,7 +409,7 @@ class TestExecuteAutomation:
                 assert parsed_output.state is None
                 assert parsed_output.error == expected_error_status
                 assert (
-                    mock_job.run.await_count
+                    run_mock.await_count
                     == octobot_node.scheduler.workflows.automation_workflow.MAX_ITERATION_RETRIES
                 )
                 mock_logger.exception.assert_called_once()
@@ -385,18 +442,16 @@ class TestExecuteIteration:
             actions_dag=None,
             should_stop=False,
         )
-        mock_job = mock.Mock()
-        mock_job.run = mock.AsyncMock(return_value=mock_result)
+        mock_octobot_actions_job_class, _ = _octobot_actions_job_mock_class(
+            run_on_result=lambda result_ref: _apply_octobot_actions_job_result_template(result_ref, mock_result),
+        )
 
-        with mock.patch.object(task_context, "encrypted_task", mock.MagicMock()) as mock_encrypted:
-            mock_encrypted.return_value.__enter__ = mock.Mock(return_value=None)
-            mock_encrypted.return_value.__exit__ = mock.Mock(return_value=None)
-            with mock.patch.object(
-                octobot_flow_client,
-                "OctoBotActionsJob",
-                mock.Mock(return_value=mock_job),
-            ):
-                result = await octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow.execute_iteration(inputs, None)
+        with mock.patch.object(
+            octobot_flow_client,
+            "OctoBotActionsJob",
+            mock_octobot_actions_job_class,
+        ):
+            result = await octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow.execute_iteration(inputs, None)
 
         assert "progress_status" in result
         assert "next_iteration_description" in result
@@ -430,25 +485,17 @@ class TestExecuteIteration:
             action="trade",
             error_status="some_error",
         )
-
-        mock_result = octobot_flow_client.OctoBotActionsJobResult(
-            processed_actions=[action],
-            next_actions_description=None,
-            actions_dag=None,
-            should_stop=False,
+        template_result = octobot_flow_client.OctoBotActionsJobResult(processed_actions=[action])
+        mock_octobot_actions_job_class, _ = _octobot_actions_job_mock_class(
+            run_on_result=lambda result_ref: _apply_octobot_actions_job_result_template(result_ref, template_result),
         )
-        mock_job = mock.Mock()
-        mock_job.run = mock.AsyncMock(return_value=mock_result)
 
-        with mock.patch.object(task_context, "encrypted_task", mock.MagicMock()) as mock_encrypted:
-            mock_encrypted.return_value.__enter__ = mock.Mock(return_value=None)
-            mock_encrypted.return_value.__exit__ = mock.Mock(return_value=None)
-            with mock.patch.object(
-                octobot_flow_client,
-                "OctoBotActionsJob",
-                mock.Mock(return_value=mock_job),
-            ):
-                result = await octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow.execute_iteration(inputs, None)
+        with mock.patch.object(
+            octobot_flow_client,
+            "OctoBotActionsJob",
+            mock_octobot_actions_job_class,
+        ):
+            result = await octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow.execute_iteration(inputs, None)
 
         parsed_progress_status = params.ProgressStatus.model_validate(result["progress_status"])
         assert parsed_progress_status.error == "some_error"
@@ -477,8 +524,9 @@ class TestExecuteIteration:
             actions_dag=None,
             should_stop=False,
         )
-        mock_job = mock.Mock()
-        mock_job.run = mock.AsyncMock(return_value=mock_result)
+        mock_octobot_actions_job_class, _ = _octobot_actions_job_mock_class(
+            run_on_result=lambda result_ref: _apply_octobot_actions_job_result_template(result_ref, mock_result),
+        )
 
         with mock.patch.object(task_context, "encrypted_task", mock.MagicMock()) as mock_encrypted:
             mock_encrypted.return_value.__enter__ = mock.Mock(return_value=None)
@@ -486,7 +534,7 @@ class TestExecuteIteration:
             with mock.patch.object(
                 octobot_flow_client,
                 "OctoBotActionsJob",
-                mock.Mock(return_value=mock_job),
+                mock_octobot_actions_job_class,
             ) as mock_job_factory:
                 await octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow.execute_iteration(
                     inputs, actions_update
@@ -937,8 +985,14 @@ class TestExecuteAutomationIntegration:
             actions_dag=None,
             should_stop=True,
         )
-        mock_job = mock.Mock()
-        mock_job.run = mock.AsyncMock(side_effect=[dag_iteration_result, stop_iteration_result])
+        iteration_templates = [dag_iteration_result, stop_iteration_result]
+        iteration_index = [0]
+
+        def run_on_iteration_result(result_ref: octobot_flow_client.OctoBotActionsJobResult) -> None:
+            _apply_octobot_actions_job_result_template(result_ref, iteration_templates[iteration_index[0]])
+            iteration_index[0] += 1
+
+        mock_octobot_actions_job_class, _ = _octobot_actions_job_mock_class(run_on_result=run_on_iteration_result)
         stop_envelope = _user_actions_update_envelope([{"action": "stop"}])
         mock_recv = mock.AsyncMock(side_effect=[stop_envelope, []])
 
@@ -948,7 +1002,7 @@ class TestExecuteAutomationIntegration:
         ), mock.patch.object(
             octobot_flow_client,
             "OctoBotActionsJob",
-            mock.Mock(return_value=mock_job),
+            mock_octobot_actions_job_class,
         ) as mock_job_factory:
             handle = await temp_dbos_scheduler.INSTANCE.start_workflow_async(
                 octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow.execute_automation,
@@ -959,7 +1013,7 @@ class TestExecuteAutomationIntegration:
                 stop_iteration_result.next_actions_description.to_dict(include_default_values=False)
             )
             assert workflow_result == _expected_automation_workflow_envelope_json(expected_state_str)
-            assert mock_job.run.await_count == 2
+            assert iteration_index[0] == 2
             assert mock_recv.await_count == 1
             stop_user_actions = mock_job_factory.call_args_list[1][0][1]
             assert stop_user_actions == [{"action": "stop"}]
@@ -1008,9 +1062,19 @@ class TestExecuteAutomationIntegration:
             actions_dag=None,
             should_stop=False,
         )
-        mock_job = mock.Mock()
-        mock_job.run = mock.AsyncMock(
-            side_effect=[*[RuntimeError("simulated transient failure")] * (max_attempts - 1), success_result]
+        latest_result: list[octobot_flow_client.OctoBotActionsJobResult | None] = [None]
+        attempt = [0]
+
+        async def run_with_retries_then_apply_success(*args, **kwargs) -> None:
+            attempt[0] += 1
+            if attempt[0] < max_attempts:
+                raise RuntimeError("simulated transient failure")
+            assert latest_result[0] is not None
+            _apply_octobot_actions_job_result_template(latest_result[0], success_result)
+
+        mock_octobot_actions_job_class, run_mock = _octobot_actions_job_mock_class(
+            run_side_effect=run_with_retries_then_apply_success,
+            latest_result_ref=latest_result,
         )
         mock_logger = mock.Mock()
 
@@ -1020,7 +1084,7 @@ class TestExecuteAutomationIntegration:
         ), mock.patch.object(
             octobot_flow_client,
             "OctoBotActionsJob",
-            mock.Mock(return_value=mock_job),
+            mock_octobot_actions_job_class,
         ), mock.patch.object(
             octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow,
             "get_logger",
@@ -1046,7 +1110,7 @@ class TestExecuteAutomationIntegration:
             assert wf_status.output == workflow_result
             assert parsed_output == _parse_automation_workflow_output(wf_status.output)
 
-        assert mock_job.run.await_count == max_attempts
+        assert run_mock.await_count == max_attempts
         mock_logger.exception.assert_not_called()
 
     @pytest.mark.asyncio
@@ -1068,8 +1132,9 @@ class TestExecuteAutomationIntegration:
         )
         inputs["task"] = task.model_dump(exclude_defaults=True)
 
-        mock_job = mock.Mock()
-        mock_job.run = mock.AsyncMock(side_effect=RuntimeError("persistent failure"))
+        mock_octobot_actions_job_class, run_mock = _octobot_actions_job_mock_class(
+            run_side_effect=RuntimeError("persistent failure")
+        )
         mock_logger = mock.Mock()
 
         recv_path = "octobot_node.scheduler.workflows.automation_workflow.SCHEDULER.INSTANCE.recv_async"
@@ -1078,7 +1143,7 @@ class TestExecuteAutomationIntegration:
         ), mock.patch.object(
             octobot_flow_client,
             "OctoBotActionsJob",
-            mock.Mock(return_value=mock_job),
+            mock_octobot_actions_job_class,
         ), mock.patch.object(
             octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow,
             "get_logger",
@@ -1104,6 +1169,234 @@ class TestExecuteAutomationIntegration:
             assert wf_status.status == dbos.WorkflowStatusString.SUCCESS.value
             assert wf_status.output == workflow_result
 
-        assert mock_job.run.await_count == max_attempts
+        assert run_mock.await_count == max_attempts
         mock_logger.exception.assert_called_once()
         assert "Interrupted workflow: unexpected critical error: " in str(mock_logger.exception.call_args[0][2])
+
+    @pytest.mark.asyncio
+    @required_imports
+    async def test_encrypted_task_decrypts_for_octobot_actions_job_and_encrypts_iteration_and_workflow_outputs(
+        self,
+        import_automation_workflow,
+        temp_dbos_scheduler,
+    ):
+        """
+        With node-side encryption keys set:
+
+        - ``execute_iteration`` receives tasks whose ``content`` is ciphertext; ``encrypted_task`` decrypts
+          before ``OctoBotActionsJob`` is constructed, so the mock must see plaintext ``task.content``.
+        - Iteration outputs expose ``next_iteration_description`` / metadata as encrypted when enabled.
+        - ``execute_automation`` returns encrypted ``state`` / ``state_metadata`` when the run stops with
+          a next-state payload; rescheduling passes encrypted ``task.content`` / ``content_metadata`` to
+        ``enqueue_async``.
+        """
+        # --- Keys: real RSA/ECDSA material so encrypt_task_content / decrypt_task_content and
+        #     encrypted_task use the same crypto path as production (settings.is_node_side_encryption_enabled).
+        rsa_private_key, rsa_public_key = octobot_commons.cryptography.generate_rsa_key_pair(2048)
+        ecdsa_private_key, ecdsa_public_key = octobot_commons.cryptography.generate_ecdsa_key_pair()
+
+        # Plaintext task.content as stored client-side before upload (what decrypt must reproduce).
+        plain_task_content = json.dumps({"params": {"ACTIONS": "trade", "EXCHANGE_FROM": "binance",
+            "ORDER_SYMBOL": "ETH/BTC", "ORDER_AMOUNT": 1, "ORDER_TYPE": "market",
+            "ORDER_SIDE": "BUY", "SIMULATED_PORTFOLIO": {"BTC": 1}}})
+
+        # Patch all four TASKS_INPUTS_* keys on settings for the duration of each block below.
+        encryption_patches = (
+            mock.patch.object(
+                octobot_node.config.settings, "TASKS_INPUTS_RSA_PRIVATE_KEY", rsa_private_key
+            ),
+            mock.patch.object(
+                octobot_node.config.settings, "TASKS_INPUTS_RSA_PUBLIC_KEY", rsa_public_key
+            ),
+            mock.patch.object(
+                octobot_node.config.settings, "TASKS_INPUTS_ECDSA_PRIVATE_KEY", ecdsa_private_key
+            ),
+            mock.patch.object(
+                octobot_node.config.settings, "TASKS_INPUTS_ECDSA_PUBLIC_KEY", ecdsa_public_key
+            ),
+        )
+
+        with encryption_patches[0], encryption_patches[1], encryption_patches[2], encryption_patches[3]:
+            assert octobot_node.config.settings.is_node_side_encryption_enabled is True
+
+            # Simulate API/CSV: task content is ciphertext + metadata (inputs remain encrypted at rest).
+            encrypted_task_content, task_content_metadata = task_inputs_encryption.encrypt_task_content(
+                plain_task_content
+            )
+            assert encrypted_task_content != plain_task_content
+
+        # OctoBotActionsJob result templates applied by mocks (mutate job.result like real run()).
+        next_state_for_stop = {
+            "automation": {
+                "metadata": {"automation_id": "encryption_integration"},
+                "stopped": True,
+                "by_encryption_test": True,
+            }
+        }
+        next_state_for_schedule = {
+            "automation": {
+                "metadata": {"automation_id": "encryption_integration"},
+                "execution": {"current_execution": {"scheduled_to": 0.0}},
+            }
+        }
+
+        stop_result_template = octobot_flow_client.OctoBotActionsJobResult(
+            processed_actions=[],
+            next_actions_description=octobot_flow_client.OctoBotActionsJobDescription(
+                state=next_state_for_stop
+            ),
+            has_next_actions=False,
+            actions_dag=None,
+            should_stop=True,
+        )
+
+        schedule_result_template = octobot_flow_client.OctoBotActionsJobResult(
+            processed_actions=[],
+            next_actions_description=octobot_flow_client.OctoBotActionsJobDescription(
+                state=next_state_for_schedule
+            ),
+            has_next_actions=True,
+            actions_dag=None,
+            should_stop=False,
+        )
+
+        # Stop path: one iteration then workflow completes with AutomationWorkflowOutput.
+        mock_octobot_actions_job_class_stop, _ = _octobot_actions_job_mock_class(
+            run_on_result=lambda result_ref: _apply_octobot_actions_job_result_template(
+                result_ref, stop_result_template
+            ),
+        )
+
+        # Schedule path: one iteration with has_next_actions True so _schedule_next_iteration enqueues child workflow.
+        mock_octobot_actions_job_class_schedule, _ = _octobot_actions_job_mock_class(
+            run_on_result=lambda result_ref: _apply_octobot_actions_job_result_template(
+                result_ref, schedule_result_template
+            ),
+        )
+
+        def _encrypted_description_raw_json(template: octobot_flow_client.OctoBotActionsJobResult) -> str:
+            assert template.next_actions_description is not None
+            return json.dumps(
+                template.next_actions_description.to_dict(include_default_values=False)
+            )
+
+        recv_path = "octobot_node.scheduler.workflows.automation_workflow.SCHEDULER.INSTANCE.recv_async"
+        automation_wf = octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow
+
+        # Step 1 — execute_iteration: encrypted_task decrypts before OctoBotActionsJob; exit encrypts next state.
+        # Assert mock sees plaintext description arg; iteration dict carries ciphertext + metadata.
+        with encryption_patches[0], encryption_patches[1], encryption_patches[2], encryption_patches[3]:
+            enc_task = octobot_node.models.Task(
+                name="encryption_integration",
+                content=encrypted_task_content,
+                content_metadata=task_content_metadata,
+                type=octobot_node.models.TaskType.EXECUTE_ACTIONS.value,
+            )
+            inputs_dict = params.AutomationWorkflowInputs(task=enc_task, execution_time=0).to_dict(
+                include_default_values=False
+            )
+            inputs_dict["task"] = enc_task.model_dump(exclude_defaults=True)
+
+            with mock.patch.object(
+                octobot_flow_client,
+                "OctoBotActionsJob",
+                mock_octobot_actions_job_class_stop,
+            ) as mock_job_cls:
+                iteration_payload = await automation_wf.execute_iteration(inputs_dict, None)
+
+            mock_job_cls.assert_called_once()
+            job_ctor_content_arg = mock_job_cls.call_args[0][0]
+            assert job_ctor_content_arg == plain_task_content
+
+            iteration_model = params.AutomationWorkflowIterationResult.from_dict(iteration_payload)
+            raw_stop_description_json = _encrypted_description_raw_json(stop_result_template)
+            assert iteration_model.next_iteration_description != raw_stop_description_json
+            assert isinstance(iteration_model.next_iteration_description, str)
+            assert isinstance(iteration_model.next_iteration_description_metadata, str) 
+            decrypted_iteration_state = task_inputs_encryption.decrypt_task_content(
+                iteration_model.next_iteration_description,
+                iteration_model.next_iteration_description_metadata,
+            )
+            assert json.loads(decrypted_iteration_state) == json.loads(raw_stop_description_json)
+
+        # Step 2 — execute_automation (should_stop): final workflow JSON uses encrypted state/metadata;
+        # decrypt rounds back to the same next-actions description JSON as the mock template.
+        with encryption_patches[0], encryption_patches[1], encryption_patches[2], encryption_patches[3]:
+            enc_task_wf = octobot_node.models.Task(
+                name="encryption_integration_wf_stop",
+                content=encrypted_task_content,
+                content_metadata=task_content_metadata,
+                type=octobot_node.models.TaskType.EXECUTE_ACTIONS.value,
+            )
+            wf_inputs = params.AutomationWorkflowInputs(task=enc_task_wf, execution_time=0).to_dict(
+                include_default_values=False
+            )
+            wf_inputs["task"] = enc_task_wf.model_dump(exclude_defaults=True)
+
+            with mock.patch(recv_path, mock.AsyncMock(return_value=[])), mock.patch(
+                "asyncio.sleep", mock.AsyncMock()
+            ), mock.patch.object(
+                octobot_flow_client,
+                "OctoBotActionsJob",
+                mock_octobot_actions_job_class_stop,
+            ):
+                handle = await temp_dbos_scheduler.INSTANCE.start_workflow_async(
+                    automation_wf.execute_automation,
+                    inputs=wf_inputs,
+                )
+                workflow_result = await handle.get_result()
+
+            assert isinstance(workflow_result, str)
+            parsed_final = _parse_automation_workflow_output(workflow_result)
+            assert isinstance(parsed_final.state, str)
+            assert isinstance(parsed_final.state_metadata, str)
+            raw_final_json = _encrypted_description_raw_json(stop_result_template)
+            assert parsed_final.state != raw_final_json
+            decrypted_final = task_inputs_encryption.decrypt_task_content(
+                parsed_final.state, parsed_final.state_metadata
+            )
+            assert json.loads(decrypted_final) == json.loads(raw_final_json)
+
+        # Step 3 — execute_automation (reschedule): _schedule_next_iteration calls enqueue_async with
+        # next_iteration_description as task.content (and metadata) as encrypted values
+        enqueue_mock = mock.AsyncMock(return_value=None)
+        with encryption_patches[0], encryption_patches[1], encryption_patches[2], encryption_patches[3]:
+            enc_task_sched = octobot_node.models.Task(
+                name="encryption_integration_enqueue",
+                content=encrypted_task_content,
+                content_metadata=task_content_metadata,
+                type=octobot_node.models.TaskType.EXECUTE_ACTIONS.value,
+            )
+            sched_inputs = params.AutomationWorkflowInputs(task=enc_task_sched, execution_time=0).to_dict(
+                include_default_values=False
+            )
+            sched_inputs["task"] = enc_task_sched.model_dump(exclude_defaults=True)
+
+            with mock.patch(recv_path, mock.AsyncMock(return_value=[])), mock.patch(
+                "asyncio.sleep", mock.AsyncMock()
+            ), mock.patch.object(
+                octobot_flow_client,
+                "OctoBotActionsJob",
+                mock_octobot_actions_job_class_schedule,
+            ), mock.patch.object(
+                octobot_node.scheduler.SCHEDULER.AUTOMATION_WORKFLOW_QUEUE,
+                "enqueue_async",
+                enqueue_mock,
+            ):
+                schedule_handle = await temp_dbos_scheduler.INSTANCE.start_workflow_async(
+                    automation_wf.execute_automation,
+                    inputs=sched_inputs,
+                )
+                await schedule_handle.get_result()
+
+            enqueue_mock.assert_called_once()
+            assert len(enqueue_mock.call_args.args) == 1 # function to call
+            assert len(enqueue_mock.call_args.kwargs) == 1 # inputs
+            enqueued_inputs = enqueue_mock.call_args.kwargs["inputs"]
+            schedule_plaintext_state = _encrypted_description_raw_json(schedule_result_template)
+            assert enqueued_inputs["task"]["content"] != schedule_plaintext_state
+            assert isinstance(enqueued_inputs["task"]["content_metadata"], str)
+            decrypted_enqueued = task_inputs_encryption.decrypt_task_content(
+                enqueued_inputs["task"]["content"], enqueued_inputs["task"]["content_metadata"]
+            )
+            assert json.loads(decrypted_enqueued) == json.loads(schedule_plaintext_state)

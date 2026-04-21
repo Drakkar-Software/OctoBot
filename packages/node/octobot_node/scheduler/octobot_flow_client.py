@@ -78,8 +78,10 @@ class OctoBotActionsJobDescription(octobot_commons.dataclasses.MinimizableDatacl
 
 @dataclasses.dataclass
 class OctoBotActionsJobResult:
-    processed_actions: list["octobot_flow.AbstractActionDetails"]
+    processed_actions: list["octobot_flow.AbstractActionDetails"] = dataclasses.field(default_factory=list)
     next_actions_description: typing.Optional[OctoBotActionsJobDescription] = None
+    maybe_encrypted_next_actions_description: typing.Optional[str] = None
+    next_actions_description_encryption_metadata: typing.Optional[str] = None
     has_next_actions: bool = False
     actions_dag: typing.Optional["octobot_flow.ActionsDAG"] = None
     should_stop: bool = False
@@ -91,6 +93,7 @@ class OctoBotActionsJob:
         description: typing.Union[str, dict],
         user_actions: list[dict],
         updated_trading_signals: list[dict],
+        result: OctoBotActionsJobResult,
     ):
         parsed_description = self._parse_description(description)
         self.description: OctoBotActionsJobDescription = OctoBotActionsJobDescription.from_dict(
@@ -106,6 +109,7 @@ class OctoBotActionsJob:
             for trading_signal_dict in updated_trading_signals
         ]
         self.after_execution_state = None
+        self.result: OctoBotActionsJobResult = result
 
     def _parse_description(self, description: typing.Union[str, dict]) -> dict:
         try:
@@ -121,7 +125,7 @@ class OctoBotActionsJob:
                 }
         return parsed_description
 
-    async def run(self) -> OctoBotActionsJobResult:
+    async def run(self) -> None:
         async with octobot_flow.AutomationJob(
             self.description.state,
             self.priority_user_actions,
@@ -137,13 +141,11 @@ class OctoBotActionsJob:
             self.after_execution_state = automation_job.automation_state
             post_execution_state_dump = automation_job.dump()
             next_actions_description, has_next_actions = self.get_next_actions_description(post_execution_state_dump)
-            return OctoBotActionsJobResult(
-                processed_actions=executed_actions,
-                next_actions_description=next_actions_description,
-                has_next_actions=has_next_actions,
-                actions_dag=automation_job.automation_state.automation.actions_dag,
-                should_stop=automation_job.automation_state.automation.post_actions.stop_automation,
-            )
+            self.result.processed_actions = executed_actions
+            self.result.next_actions_description = next_actions_description
+            self.result.has_next_actions = has_next_actions
+            self.result.actions_dag = automation_job.automation_state.automation.actions_dag
+            self.result.should_stop = automation_job.automation_state.automation.post_actions.stop_automation
 
     def get_next_actions_description(
         self, post_execution_state: dict

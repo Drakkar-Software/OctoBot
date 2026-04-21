@@ -94,3 +94,15 @@ def encrypt_task_content(content: str) -> Tuple[str, str]:
     metadata_json = json.dumps(metadata)
     metadata_b64 = base64.b64encode(metadata_json.encode('utf-8')).decode('utf-8')
     return encrypted_content_b64, metadata_b64
+
+
+def get_next_encrypted_if_needed_content_and_metadata(result: dict) -> tuple[str, Optional[str]]:
+    raw_description = json.dumps(result)
+    next_content_metadata = None
+    if settings.is_node_side_encryption_enabled:
+        next_content, next_content_metadata = (
+            encrypt_task_content(raw_description)
+        )
+    else:
+        next_content = raw_description
+    return next_content, next_content_metadata

@@ -33,7 +33,7 @@ class SignatureVerificationError(Exception):
     pass
 
 from octobot_node.scheduler.encryption import task_inputs
-from octobot_node.scheduler.encryption.task_inputs import (decrypt_task_content, encrypt_task_content)
+from octobot_node.scheduler.encryption.task_inputs import (decrypt_task_content, encrypt_task_content, get_next_encrypted_if_needed_content_and_metadata)
 
 from octobot_node.scheduler.encryption import task_outputs
 from octobot_node.scheduler.encryption.task_outputs import (encrypt_task_result, decrypt_task_result)
@@ -49,5 +49,6 @@ __all__ = [
     "decrypt_task_content",
     "encrypt_task_content",
     "encrypt_task_result",
-    "decrypt_task_result"
+    "decrypt_task_result",
+    "get_next_encrypted_if_needed_content_and_metadata"
 ]
