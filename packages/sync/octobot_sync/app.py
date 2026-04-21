@@ -22,7 +22,7 @@ import httpx
 from fastapi import FastAPI
 from starfish_server.storage.base import AbstractObjectStore
 from starfish_server.router.route_builder import create_sync_router, SyncRouterOptions
-from starfish_server.replica import ReplicaManager, create_replica_router
+from starfish_server.replica import ReplicaManager
 
 import octobot_sync.auth as auth
 import octobot_sync.chain as chain
@@ -60,12 +60,6 @@ def create_app(
             collections=sync_config.collections,
             client=replica_client,
         )
-
-        replica_router = create_replica_router(
-            replica_manager=replica_manager,
-            collections=sync_config.collections,
-        )
-        app.include_router(replica_router)
 
     # Starfish sync router (handles all sync collections)
     sync_router = create_sync_router(

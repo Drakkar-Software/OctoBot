@@ -50,10 +50,10 @@ DEFAULT_SYNC_CONFIG = SyncConfig(
         CollectionConfig(
             name="errors",
             storagePath="users/{identity}/errors/{errorId}",
-            readRoles=["admin"],
-            writeRoles=["user"],
+            readRoles=["self", "admin"],
+            writeRoles=["self"],
             encryption="delegated",
-            maxBodyBytes=constants.MAX_BODY_SIZE_SIGNAL,
+            maxBodyBytes=500_000,
         ),
     ],
 )

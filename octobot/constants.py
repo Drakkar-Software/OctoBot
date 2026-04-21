@@ -110,8 +110,8 @@ CREATE_ICEBERG_DB_IF_MISSING = os_util.parse_boolean_environment_var("CREATE_ICE
 OCTOBOT_MARKET_MAKING_URL = os.getenv("OCTOBOT_MARKET_MAKING_URL", "https://market-making.octobot.cloud")
 
 # sync server
-SYNC_SERVER_URL = os.getenv("SYNC_SERVER_URL", "https://sync.octobot.cloud")
-STAGING_SYNC_SERVER_URL = os.getenv("SYNC_SERVER_URL", "https://sync-beta.octobot.cloud")
+SYNC_SERVER_URL = os.getenv("SYNC_SERVER_URL", "https://prod-sync.drakkar.software")
+STAGING_SYNC_SERVER_URL = os.getenv("SYNC_SERVER_URL", "https://beta-sync.drakkar.software")
 SYNC_CHAIN_ID = os.getenv("SYNC_CHAIN_ID", "evm:8453")
 ENABLE_REPLICA_SERVER = os_util.parse_boolean_environment_var(
     "ENABLE_REPLICA_SERVER",

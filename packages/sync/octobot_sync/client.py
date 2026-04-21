@@ -20,6 +20,7 @@ from starfish_sdk import StarfishClient
 
 import octobot_commons.logging as logging
 import octobot_sync.auth as auth
+import octobot_sync.constants as constants
 import octobot_sync.server as server
 
 _local_server_thread: threading.Thread | None = None
@@ -50,6 +51,7 @@ def create_sync_client(
     client = StarfishClient(
         base_url=sync_url,
         auth=auth_provider,
+        namespace=None if start_replica_server else constants.SYNC_NAMESPACE,
     )
     logging.get_logger("SyncClient").info(f"Sync client initialized (sync server: {sync_url}, address: {auth_provider.address})")
     return client, auth_provider.address, auth_provider.sign_payload
