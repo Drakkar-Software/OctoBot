@@ -26,10 +26,10 @@ MAX_PUBKEY_LENGTH = 256
 MAX_SIGNATURE_LENGTH = 512
 TIMESTAMP_WINDOW_MS = 10_000
 
-HEADER_PUBKEY = "X-OctoBot-Pubkey"
-HEADER_SIGNATURE = "X-OctoBot-Signature"
-HEADER_TIMESTAMP = "X-OctoBot-Timestamp"
-HEADER_NONCE = "X-OctoBot-Nonce"
-HEADER_CHAIN = "X-OctoBot-Chain"
+HEADER_PUBKEY = "X-Starfish-Pubkey"
+HEADER_SIGNATURE = "X-Starfish-Signature"
+HEADER_TIMESTAMP = "X-Starfish-Timestamp"
+HEADER_NONCE = "X-Starfish-Nonce"
+HEADER_CHAIN = "X-Starfish-Chain"
 COLLECTIONS_FILE = "collections.json"
 SYNC_NAMESPACE = "octobot"
