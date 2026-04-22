@@ -63,16 +63,19 @@ def _load_all_metadata(tentacles):
 
 def _parse_all_tentacles(root: str):
     factory = models.TentacleFactory(root)
-    return [
-        factory.create_tentacle_from_type(tentacle_entry.name, tentacle_type)
-        for tentacle_type in _get_tentacle_types(root)
-        for tentacle_entry in os.scandir(path.join(root, tentacle_type.to_path()))
-        if not (tentacle_entry.name == constants.PYTHON_INIT_FILE or
-                tentacle_entry.name in constants.FOLDERS_BLACK_LIST)
-    ] + [
-        factory.create_tentacle_from_type(tentacle_name, tentacle_type, [tentacle_name])
-        for tentacle_name, (tentacle_type, _) in _extra_tentacle_data_by_name.items()
-    ]
+    return sorted(
+        [
+            factory.create_tentacle_from_type(tentacle_entry.name, tentacle_type)
+            for tentacle_type in _get_tentacle_types(root)
+            for tentacle_entry in os.scandir(path.join(root, tentacle_type.to_path()))
+            if not (tentacle_entry.name == constants.PYTHON_INIT_FILE or
+                    tentacle_entry.name in constants.FOLDERS_BLACK_LIST)
+        ] + [
+            factory.create_tentacle_from_type(tentacle_name, tentacle_type, [tentacle_name])
+            for tentacle_name, (tentacle_type, _) in _extra_tentacle_data_by_name.items()
+        ], 
+        key=lambda x: x.name # ensure parsed order stays consistent
+    )
 
 
 def _get_tentacle_types(ref_tentacles_root):
