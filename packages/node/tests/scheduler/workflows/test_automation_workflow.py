@@ -29,6 +29,7 @@ import octobot_commons.cryptography
 
 import octobot_copy.entities
 import octobot_node.config
+import octobot_node.constants
 import octobot_node.enums
 import octobot_node.scheduler
 import octobot_node.scheduler.workflows
@@ -410,7 +411,7 @@ class TestExecuteAutomation:
                 assert parsed_output.error == expected_error_status
                 assert (
                     run_mock.await_count
-                    == octobot_node.scheduler.workflows.automation_workflow.MAX_ITERATION_RETRIES
+                    == octobot_node.constants.AUTOMATION_WORKFLOW_MAX_ITERATION_RETRIES
                 )
                 mock_logger.exception.assert_called_once()
                 mock_process.assert_not_called()
@@ -1033,12 +1034,12 @@ class TestExecuteAutomationIntegration:
         temp_dbos_scheduler,
     ):
         """
-        DBOS execute_iteration is configured with max_attempts=MAX_ITERATION_RETRIES.
+        DBOS execute_iteration is configured with max_attempts=AUTOMATION_WORKFLOW_MAX_ITERATION_RETRIES.
         When OctoBotActionsJob.run() fails on early attempts then succeeds, the step should
         retry and eventually complete without failing the workflow. A processed action may still
         report an error_status; that value is copied to AutomationWorkflowOutput.error on completion.
         """
-        max_attempts = octobot_node.scheduler.workflows.automation_workflow.MAX_ITERATION_RETRIES
+        max_attempts = octobot_node.constants.AUTOMATION_WORKFLOW_MAX_ITERATION_RETRIES
         task = octobot_node.models.Task(
             name="retry_policy_test",
             content="{}",
@@ -1120,8 +1121,8 @@ class TestExecuteAutomationIntegration:
         import_automation_workflow,
         temp_dbos_scheduler,
     ):
-        """After MAX_ITERATION_RETRIES failed OctoBotActionsJob.run() calls, the step must stop retrying."""
-        max_attempts = octobot_node.scheduler.workflows.automation_workflow.MAX_ITERATION_RETRIES
+        """After AUTOMATION_WORKFLOW_MAX_ITERATION_RETRIES failed OctoBotActionsJob.run() calls, the step must stop retrying."""
+        max_attempts = octobot_node.constants.AUTOMATION_WORKFLOW_MAX_ITERATION_RETRIES
         task = octobot_node.models.Task(
             name="retry_exhausted_test",
             content="{}",

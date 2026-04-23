@@ -13,6 +13,8 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
+import os
+
 try:
     import octobot.constants as octobot_constants
     BASE_LOGS_FOLDER = octobot_constants.LOGS_FOLDER
@@ -21,6 +23,11 @@ except ImportError:
 
 AUTOMATION_LOGS_FOLDER = f"{BASE_LOGS_FOLDER}/automations"
 PARENT_WORKFLOW_ID_LENGTH = 36 # length of a UUID4
+
+# default to 10 retry after 1, 2, 4, 8, 16, ... 1024 seconds (total of 2047 seconds)
+AUTOMATION_WORKFLOW_RETRY_INTERVAL_SECONDS = float(os.getenv("AUTOMATION_WORKFLOW_RETRY_INTERVAL_SECONDS", 1.0))
+AUTOMATION_WORKFLOW_MAX_ITERATION_RETRIES = int(os.getenv("AUTOMATION_WORKFLOW_MAX_ITERATION_RETRIES", 10))
+AUTOMATION_WORKFLOW_BACKOFF_RATE = float(os.getenv("AUTOMATION_WORKFLOW_BACKOFF_RATE", 2))
 
 TASKS_ENCRYPTION_ENV_VARS = [
     "TASKS_SERVER_RSA_PRIVATE_KEY",

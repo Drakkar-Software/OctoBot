@@ -17,6 +17,7 @@ import json
 import time
 import typing
 import dbos
+import os
 
 import octobot_commons.logging
 
@@ -27,6 +28,7 @@ import octobot_node.enums
 import octobot_node.models
 import octobot_node.scheduler.octobot_flow_client as octobot_flow_client
 import octobot_node.scheduler.task_context
+import octobot_node.constants as constants
 import octobot_node.scheduler.workflows.params as params
 import octobot_node.errors as errors
 
@@ -34,11 +36,6 @@ if typing.TYPE_CHECKING:
     import octobot_flow.entities
 
 from octobot_node.scheduler import SCHEDULER  # avoid circular import
-
-
-INTERVAL_SECONDS = 1.0
-MAX_ITERATION_RETRIES = 3
-BACKOFF_RATE = 2.0
 
 
 @SCHEDULER.INSTANCE.dbos_class()
@@ -108,9 +105,9 @@ class AutomationWorkflow:
     @SCHEDULER.INSTANCE.step(
         name="execute_iteration",
         retries_allowed=True,
-        interval_seconds = INTERVAL_SECONDS,
-        max_attempts=MAX_ITERATION_RETRIES,
-        backoff_rate=BACKOFF_RATE,
+        interval_seconds = constants.AUTOMATION_WORKFLOW_RETRY_INTERVAL_SECONDS,
+        max_attempts=constants.AUTOMATION_WORKFLOW_MAX_ITERATION_RETRIES,
+        backoff_rate=constants.AUTOMATION_WORKFLOW_BACKOFF_RATE,
     )
     async def execute_iteration(inputs: dict, actions_update: typing.Optional[dict]) -> dict:
         """
