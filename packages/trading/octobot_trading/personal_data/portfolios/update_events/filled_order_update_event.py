@@ -30,17 +30,22 @@ class FilledOrderUpdateEvent(portfolio_update_event.PortfolioUpdateEvent):
         order: "octobot_trading.personal_data.Order"
     ):
         super().__init__()
-        if order.trader.exchange_manager.is_future:
-            raise NotImplementedError("Futures are not supported yet")
         # don't save the full order to avoid memory issues
         self.origin_quantity: decimal.Decimal = order.origin_quantity
         self.origin_price: decimal.Decimal = order.origin_price
         self.side: enums.TradeOrderSide = order.side
         self.symbol: str = order.symbol
+        self.resolve_immediately = (
+            # TODO: add a more accurate check for futures and options resolution if needed
+            order.trader.exchange_manager.is_future 
+            or order.trader.exchange_manager.is_option
+        )
 
     def is_resolved(
         self, updated_portfolio: "octobot_trading.personal_data.Portfolio"
     ) -> bool:
+        if self.resolve_immediately:
+            return True
         checked_amount = (
             self.origin_quantity if self.side == enums.TradeOrderSide.BUY 
             else (self.origin_quantity * self.origin_price)
