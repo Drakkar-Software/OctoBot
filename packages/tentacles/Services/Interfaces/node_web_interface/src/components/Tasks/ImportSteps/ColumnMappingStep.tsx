@@ -25,7 +25,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import useCustomToast from "@/hooks/useCustomToast"
-import type { ActionParamDef } from "@/lib/action-templates"
+import { isParamValueValid, type ActionParamDef } from "@/lib/action-templates"
 import {
   getAllTemplates,
   getTemplateById,
@@ -84,10 +84,10 @@ function RowParamsCell({ actionRow, headers, rows, onParamChange }: RowParamsCel
   }, [actionRow.templateId])
 
   const filledOptional = sortedOptional.filter(
-    (p) => (actionRow.paramValues[p.key] ?? "").trim() !== "",
+    (p) => isParamValueValid(p, actionRow.paramValues[p.key]),
   )
   const emptyOptional = sortedOptional.filter(
-    (p) => (actionRow.paramValues[p.key] ?? "").trim() === "",
+    (p) => !isParamValueValid(p, actionRow.paramValues[p.key]),
   )
 
   const renderParam = (param: ActionParamDef) => {

@@ -455,3 +455,13 @@ export const BASE_ACTION_TEMPLATES: ActionTemplate[] = [
 export function getTemplateById(id: string): ActionTemplate | undefined {
   return BASE_ACTION_TEMPLATES.find((t) => t.id === id)
 }
+
+export function isParamValueValid(param: ActionParamDef, rawValue: string | undefined): boolean {
+  const value = rawValue?.trim() ?? ""
+  if (!value) return false
+  if (param.type === "number") {
+    const n = Number(value)
+    return Number.isFinite(n)
+  }
+  return true
+}

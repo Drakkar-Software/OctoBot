@@ -10,6 +10,7 @@ import {
   WAIT_TEMPLATE,
   LOOP_UNTIL_ORDER_CLOSED_TEMPLATE,
   LOOP_UNTIL_BLOCKCHAIN_BALANCE_TEMPLATE,
+  isParamValueValid,
 } from "../action-templates"
 import {
   getTemplateById,
@@ -25,7 +26,7 @@ function validateAction(
   const template = getTemplateById(templateId)
   if (!template) return { isValid: false, missingParams: ["Unknown template"] }
   const missingParams = template.params
-    .filter((p) => p.required && !paramValues[p.key]?.trim())
+    .filter((p) => p.required && !isParamValueValid(p, paramValues[p.key]))
     .map((p) => p.label)
   return { isValid: missingParams.length === 0, missingParams }
 }
@@ -243,6 +244,18 @@ describe("action-templates", () => {
     it("trade action missing ORDER_AMOUNT is invalid", () => {
       const { isValid, missingParams } = validateAction("trade", {
         ORDER_SYMBOL: "BTC/USDT",
+        ORDER_TYPE: "market",
+      })
+      expect(isValid).toBe(false)
+      expect(missingParams).toContain("Order Amount")
+    })
+
+    it("trade action with non-numeric ORDER_AMOUNT is invalid", () => {
+      // CSV mapping may stash a non-numeric string in a number field; the
+      // <input type=number> silently hides it so the UI must still flag it.
+      const { isValid, missingParams } = validateAction("trade", {
+        ORDER_SYMBOL: "BTC/USDT",
+        ORDER_AMOUNT: "not-a-number",
         ORDER_TYPE: "market",
       })
       expect(isValid).toBe(false)

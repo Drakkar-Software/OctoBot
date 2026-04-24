@@ -5,6 +5,7 @@ import type { Task_Output as Task } from "@/client"
 import { NodesService } from "@/client"
 import { Button } from "@/components/ui/button"
 import { LoadingButton } from "@/components/ui/loading-button"
+import { isParamValueValid } from "@/lib/action-templates"
 import { getTemplateById } from "@/lib/meta-templates"
 import { hasStoredClientKeys, loadClientKeys } from "@/lib/device-key"
 import { encryptAndSign, derivePublicPemsFromPrivates } from "@/lib/client-encryption"
@@ -25,7 +26,7 @@ function getValidActions(actions: ActionRow[]): ActionRow[] {
     const template = getTemplateById(action.templateId)
     if (!template) return false
     return template.params.every(
-      (p) => !p.required || p.hidden || action.paramValues[p.key]?.trim(),
+      (p) => !p.required || p.hidden || isParamValueValid(p, action.paramValues[p.key]),
     )
   })
 }
