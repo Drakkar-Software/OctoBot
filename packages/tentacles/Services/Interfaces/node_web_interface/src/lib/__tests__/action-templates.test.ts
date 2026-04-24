@@ -602,6 +602,43 @@ describe("action-templates", () => {
       }
       expect(patterns.some((p) => p.test("oco"))).toBe(false)
     })
+
+    it("isoDate matches date-only and datetime strings, rejects non-dates", () => {
+      const param = TRANSFER_TEMPLATE.params.find((p) => p.key === "BLOCKCHAIN_FROM_BLOCK_HEIGHT")!
+      const patterns = param.detectPatterns!
+      for (const v of ["2026-04-24", "2026-04-24T12:00:00Z", "2026-04-24T12:00:00+02:00", "2026-04-24T12:00"]) {
+        expect(patterns.some((p) => p.test(v))).toBe(true)
+      }
+      for (const v of ["04-24-2026", "not-a-date", "2026/04/24"]) {
+        expect(patterns.some((p) => p.test(v))).toBe(false)
+      }
+    })
+  })
+
+  // ── isParamValueValid ────────────────────────────────────────────────────────
+
+  describe("isParamValueValid", () => {
+    const blockHeightParam = TRANSFER_TEMPLATE.params.find((p) => p.key === "BLOCKCHAIN_FROM_BLOCK_HEIGHT")!
+
+    it("accepts block number strings", () => {
+      expect(isParamValueValid(blockHeightParam, "22045930")).toBe(true)
+      expect(isParamValueValid(blockHeightParam, "0")).toBe(true)
+    })
+
+    it("accepts ISO date strings", () => {
+      expect(isParamValueValid(blockHeightParam, "2026-04-24")).toBe(true)
+      expect(isParamValueValid(blockHeightParam, "2026-04-24T12:00:00Z")).toBe(true)
+    })
+
+    it("rejects empty and non-date non-number strings", () => {
+      expect(isParamValueValid(blockHeightParam, "")).toBe(false)
+      expect(isParamValueValid(blockHeightParam, undefined)).toBe(false)
+      expect(isParamValueValid(blockHeightParam, "abc")).toBe(false)
+    })
+
+    it("blockHeightParam has type numberOrDate", () => {
+      expect(blockHeightParam.type).toBe("numberOrDate")
+    })
   })
 
   // ── Schema invariants ────────────────────────────────────────────────────────

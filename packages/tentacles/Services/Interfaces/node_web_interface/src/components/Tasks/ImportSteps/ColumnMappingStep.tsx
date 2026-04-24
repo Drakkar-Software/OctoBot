@@ -103,14 +103,8 @@ function RowParamsCell({ actionRow, headers, rows, onParamChange }: RowParamsCel
         <Input
           value={value}
           onChange={(e) => onParamChange(actionRow.rowIndex, param.key, e.target.value)}
-          type={
-            param.type === "number"
-              ? "number"
-              : param.type === "password"
-                ? "password"
-                : "text"
-          }
-          placeholder={param.label}
+          type={param.type === "number" ? "number" : param.type === "password" ? "password" : "text"}
+          placeholder={param.type === "numberOrDate" ? `${param.label} (number or date)` : param.label}
           className="h-6 text-xs w-28"
         />
       </div>

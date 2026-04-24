@@ -6,7 +6,7 @@
  * (on column headers) used by the column detector to auto-map CSV columns.
  */
 
-export type ParamInputType = "text" | "number" | "select" | "password"
+export type ParamInputType = "text" | "number" | "select" | "password" | "numberOrDate"
 
 export interface ActionParamDef {
   key: string
@@ -42,6 +42,7 @@ const PATTERNS = {
   mnemonicSeed: /^(?:\S+\s+){11,23}\S+$/,
   tradingPair: /^[A-Z]{2,10}\/[A-Z]{2,10}$/i,
   numericAmount: /^-?\d+(\.\d+)?$/,
+  isoDate: /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2})?(\.\d+)?(Z|[+-]\d{2}:?\d{2})?)?$/,
   exchangeName:
     /^(binance|coinbase|kraken|kucoin|bybit|okx|gate\.?io|huobi|htx|bitfinex|bitstamp|gemini|mexc|bitget|ascendex|hollaex)$/i,
   orderSide: /^(buy|sell|long|short)$/i,
@@ -71,8 +72,8 @@ function blockHeightParam(key: string, label: string, required: boolean): Action
     key,
     label,
     required,
-    type: "number",
-    detectPatterns: [PATTERNS.numericAmount],
+    type: "numberOrDate",
+    detectPatterns: [PATTERNS.numericAmount, PATTERNS.isoDate],
     aliasFuzzy: ["block_height", "blockheight", "height"],
   }
 }
@@ -460,8 +461,11 @@ export function isParamValueValid(param: ActionParamDef, rawValue: string | unde
   const value = rawValue?.trim() ?? ""
   if (!value) return false
   if (param.type === "number") {
-    const n = Number(value)
-    return Number.isFinite(n)
+    return Number.isFinite(Number(value))
+  }
+  if (param.type === "numberOrDate") {
+    if (Number.isFinite(Number(value))) return true
+    return Number.isFinite(Date.parse(value))
   }
   return true
 }
