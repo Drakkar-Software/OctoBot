@@ -312,11 +312,7 @@ function SelectionToolbar({
   const { showSuccessToast, showErrorToast } = useCustomToast()
 
   const deleteMutation = useMutation({
-    mutationFn: async () => {
-      await Promise.all(
-        Array.from(selectedIds).map((id) => TasksService.deleteTask({ taskId: id }))
-      )
-    },
+    mutationFn: () => TasksService.deleteTasks({ taskIds: Array.from(selectedIds) }),
     onSuccess: () => {
       showSuccessToast(`Deleted ${selectedIds.size} OctoBot${selectedIds.size !== 1 ? "s" : ""}`)
       setDeleteOpen(false)

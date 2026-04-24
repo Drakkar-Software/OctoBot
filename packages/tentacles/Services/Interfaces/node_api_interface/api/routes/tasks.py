@@ -16,7 +16,7 @@
 
 import typing
 import uuid
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
 import octobot_node.config
@@ -70,10 +70,9 @@ def update_task(taskId: uuid.UUID, task: octobot_node.models.Task) -> typing.Any
     # TODO
     return task
 
-@router.delete("/", response_model=str)
-async def delete_task(taskId: uuid.UUID) -> str:
+@router.delete("/", response_model=list[str])
+async def delete_tasks(taskIds: list[uuid.UUID] = Query(...)) -> list[str]:
     try:
-        await octobot_node.scheduler.api.delete_task(str(taskId))
+        return await octobot_node.scheduler.api.delete_tasks([str(t) for t in taskIds])
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
-    return str(taskId)

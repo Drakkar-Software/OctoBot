@@ -148,9 +148,9 @@ async def get_all_tasks() -> list[octobot_node.models.Task]:
     return tasks
 
 
-async def delete_task(task_id: str) -> str:
-    await octobot_node.scheduler.SCHEDULER.delete_workflows([task_id])
-    return task_id
+async def delete_tasks(task_ids: list[str]) -> list[str]:
+    await octobot_node.scheduler.SCHEDULER.delete_workflows(task_ids)
+    return task_ids
 
 
 async def get_task_result(task_id: str):
