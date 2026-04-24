@@ -8,6 +8,11 @@ import {
   UsersService,
 } from "@/client"
 import { clearPassword, savePassword } from "@/lib/device-key"
+
+const clearAuth = async () => {
+  localStorage.removeItem("auth_username")
+  await clearPassword()
+}
 import { handleError } from "@/utils"
 import useCustomToast from "./useCustomToast"
 
@@ -44,13 +49,13 @@ const useAuth = () => {
       navigate({ to: "/" })
     },
     onError: (error) => {
-      void clearPassword()
+      void clearAuth()
       handleError.bind(showErrorToast)(error as ApiError)
     },
   })
 
   const logout = () => {
-    void clearPassword()
+    void clearAuth()
     navigate({ to: "/login" })
   }
 
