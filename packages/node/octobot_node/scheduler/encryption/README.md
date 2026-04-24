@@ -82,11 +82,11 @@ The module defines specific exceptions for different error scenarios:
 The module provides four main functions for encrypting and decrypting task data:
 
 ### Task Inputs
-- `encrypt_task_content(content: str) -> Tuple[str, str]`: Encrypts task input content
-- `decrypt_task_content(content: str, metadata: Optional[str]) -> str`: Decrypts task input content
+- `encrypt_task_content(content: str) -> Tuple[str, str]`: Encrypts task input content (server-side internal state)
+- `decrypt_task_content(content: str, metadata: Optional[str], user_ecdsa_public_key: Optional[bytes] = None) -> str`: Decrypts task input content; verifies signature against the provided per-task key, then env-var fallback, then server ECDSA key
 
 ### Task Outputs
-- `encrypt_task_result(result: str) -> Tuple[str, str]`: Encrypts task output result
+- `encrypt_task_result(result: str, rsa_public_key: bytes, ecdsa_private_key: bytes) -> Tuple[str, str]`: Encrypts task output result for a specific user (wraps AES key with the user's RSA public key)
 - `decrypt_task_result(encrypted_result: str, metadata: Optional[str]) -> str`: Decrypts task output result
 
 ## Usage Examples
@@ -131,9 +131,13 @@ except EncryptionTaskError as e:
 ```python
 from octobot_node.scheduler.encryption import encrypt_task_result
 
-# Encrypt a task result
+# Encrypt a task result for a specific browser user (keys come from the task payload)
 result = '{"status": "success", "data": "sensitive information"}'
-encrypted_result, metadata = encrypt_task_result(result)
+encrypted_result, metadata = encrypt_task_result(
+    result,
+    rsa_public_key=task.user_rsa_public_key.encode(),
+    ecdsa_private_key=settings.TASKS_SERVER_ECDSA_PRIVATE_KEY,
+)
 
 # Store both encrypted_result and metadata
 # metadata must be preserved for decryption
@@ -165,15 +169,13 @@ except EncryptionTaskError as e:
 
 ### Configuration Keys
 
-The system uses two server key pairs plus the user's public keys:
+The server requires two key pairs, configured via environment variables:
 
 **Server keys (private keys only — public keys are derived internally):**
 - `TASKS_SERVER_RSA_PRIVATE_KEY`: RSA private key for decrypting incoming task AES keys
 - `TASKS_SERVER_ECDSA_PRIVATE_KEY`: ECDSA private key for signing task output results
 
-**User public keys (provided by the user, held by the server):**
-- `TASKS_USER_RSA_PUBLIC_KEY`: User's RSA public key for encrypting task output results
-- `TASKS_USER_ECDSA_PUBLIC_KEY`: User's ECDSA public key for verifying incoming task signatures
+User public keys are not configured on the server. The browser derives them from the user's locally-stored private keys and embeds them in each task payload (`user_rsa_public_key`, `user_ecdsa_public_key`). The server reads these per-task fields to verify signatures and encrypt results, allowing a single node to serve multiple browser users with different keypairs without reconfiguration.
 
 ### Key Generation
 
@@ -201,11 +203,9 @@ Keys are configured via environment variables in the application settings:
 # In .env or environment variables
 TASKS_SERVER_RSA_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\n..."
 TASKS_SERVER_ECDSA_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n..."
-TASKS_USER_RSA_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----\n..."
-TASKS_USER_ECDSA_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----\n..."
 ```
 
-**Note**: If keys are not configured (`None`), encryption/decryption is skipped and tasks operate in plaintext mode. This allows for development and testing without encryption overhead.
+**Note**: If server keys are not configured (`None`), encryption/decryption is skipped and tasks operate in plaintext mode. This allows for development and testing without encryption overhead.
 
 ## Best Practices
 

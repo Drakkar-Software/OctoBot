@@ -214,6 +214,10 @@ class Scheduler:
                         if output.state:
                             result = output.state
                             metadata = output.state_metadata
+                            user_rsa_key = (
+                                task.user_rsa_public_key.encode('utf-8') if task.user_rsa_public_key
+                                else octobot_node.config.settings.TASKS_USER_RSA_PUBLIC_KEY
+                            )
                             if octobot_node.config.settings.is_node_side_encryption_enabled:
                                 try:
                                     result_task = octobot_node.models.Task(
@@ -225,11 +229,17 @@ class Scheduler:
                                         # decryption silently failed and re-encrypting would produce double-encrypted garbage
                                         if result_task.content == output.state and output.state_metadata:
                                             raise encryption.EncryptionTaskError("Internal state decryption silently failed")
-                                        result, metadata = encryption.encrypt_task_result(
-                                            result_task.content,
-                                            rsa_public_key=octobot_node.config.settings.TASKS_USER_RSA_PUBLIC_KEY,
-                                            ecdsa_private_key=octobot_node.config.settings.TASKS_SERVER_ECDSA_PRIVATE_KEY,
-                                        )
+                                        if user_rsa_key:
+                                            result, metadata = encryption.encrypt_task_result(
+                                                result_task.content,
+                                                rsa_public_key=user_rsa_key,
+                                                ecdsa_private_key=octobot_node.config.settings.TASKS_SERVER_ECDSA_PRIVATE_KEY,
+                                            )
+                                        else:
+                                            # No user RSA public key: the server-encrypted state is unreadable by the browser.
+                                            # Return plaintext so the caller sees the actual automation output.
+                                            result = result_task.content
+                                            metadata = ""
                                 except encryption.EncryptionTaskError as encrypt_err:
                                     self.logger.warning(f"Failed to encrypt result for workflow {completed_workflow_status.workflow_id}: {encrypt_err}")
                         else:

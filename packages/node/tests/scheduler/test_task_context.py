@@ -189,3 +189,25 @@ class TestEncryptedTask:
         assert to_update_result.maybe_encrypted_next_actions_description == "enc"
         assert to_update_result.next_actions_description_encryption_metadata == "meta"
         assert to_update_result.processed_actions == []
+
+    def test_encrypted_task_per_task_ecdsa_key_takes_precedence(self) -> None:
+        mock_settings = mock.Mock()
+        mock_settings.TASKS_SERVER_RSA_PRIVATE_KEY = b"server_rsa_priv"
+        mock_settings.TASKS_USER_ECDSA_PUBLIC_KEY = b"env_global_key"
+
+        task = Task(
+            name="test_task",
+            content="encrypted_content",
+            content_metadata="metadata",
+            user_ecdsa_public_key="per_task_key",
+        )
+        mock_decrypt = mock.Mock(return_value="decrypted_content")
+
+        with mock.patch("octobot_node.config.settings", mock_settings), \
+             mock.patch("octobot_node.scheduler.encryption.decrypt_task_content", mock_decrypt):
+            with encrypted_task(task):
+                assert task.content == "decrypted_content"
+
+        mock_decrypt.assert_called_once_with(
+            "encrypted_content", "metadata", user_ecdsa_public_key=b"per_task_key"
+        )

@@ -161,6 +161,11 @@ export default function ExportResultsContent({
   const showErrorToastRef = useRef(showErrorToast)
   showErrorToastRef.current = showErrorToast
 
+  const encryptedTaskCount = useMemo(
+    () => tasks.filter((t) => getActiveExecution(t.executions)?.result_metadata).length,
+    [tasks],
+  )
+
   useEffect(() => {
     let cancelled = false
     async function tryDecryptAll() {
@@ -171,6 +176,7 @@ export default function ExportResultsContent({
       try {
         serverKeys = await fetchServerPublicKeys()
       } catch {
+        showErrorToastRef.current("Failed to fetch server keys — encrypted results cannot be decrypted")
         return
       }
       if (cancelled) return
@@ -342,7 +348,12 @@ export default function ExportResultsContent({
     )
     const csv = generateCSV(headers, csvRows)
     downloadCSV(csv, `task-results-${new Date().toISOString().split("T")[0]}`)
-  }, [table, allColumns])
+    if (encryptedTaskCount > 0 && decryptedRows === null && !isDecrypting) {
+      showErrorToast(`${encryptedTaskCount} encrypted result(s) exported as raw ciphertext — configure browser keys in Settings to decrypt`)
+    } else {
+      showSuccessToast(`Exported ${visibleRows.length} row(s)`)
+    }
+  }, [table, allColumns, encryptedTaskCount, decryptedRows, isDecrypting, showErrorToast, showSuccessToast])
 
   return (
     <div className="flex flex-col gap-3">

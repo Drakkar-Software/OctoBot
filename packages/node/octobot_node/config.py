@@ -91,12 +91,7 @@ class Settings(BaseSettings):
     @computed_field
     @property
     def is_node_side_encryption_enabled(self) -> bool:
-        return all([
-            self.TASKS_SERVER_RSA_PRIVATE_KEY,
-            self.TASKS_SERVER_ECDSA_PRIVATE_KEY,
-            self.TASKS_USER_RSA_PUBLIC_KEY,
-            self.TASKS_USER_ECDSA_PUBLIC_KEY,
-        ])
+        return bool(self.TASKS_SERVER_RSA_PRIVATE_KEY and self.TASKS_SERVER_ECDSA_PRIVATE_KEY)
 
     @computed_field
     @property

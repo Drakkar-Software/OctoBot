@@ -109,12 +109,17 @@ def _build_tasks_from_executions(
     tasks = []
     for parent_id, group in grouped.items():
         active = _get_active_execution(group)
+        active_name = active.name if active else None
+        active_content = active.actions if active else None
         error = active.error if active else None
+        for execution in group:
+            execution.name = None
+            if active is None or execution.id != active.id:
+                execution.result_metadata = None
         tasks.append(octobot_node.models.Task(
             id=parent_id,
-            name=active.name if active else None,
-            content=active.actions if active else None,
-            content_metadata=active.content_metadata if active else None,
+            name=active_name,
+            content=active_content,
             executions=group,
             error=error,
         ))

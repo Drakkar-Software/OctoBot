@@ -6,6 +6,7 @@ import {
   CLIENT_KEY_NAMES,
   areClientKeysConfigured,
   decryptAndVerify,
+  derivePublicPemsFromPrivates,
   emptyKeys,
   encryptAndSign,
   pemToDer,
@@ -495,6 +496,56 @@ describe("client-encryption", () => {
       }
       const decrypted = await decryptAndVerify(content, result_metadata, crlfKeys, serverEcdsaPublicPem.replace(/\n/g, "\r\n"))
       expect(decrypted).toBe("crlf pem")
+    })
+  })
+
+  describe("derivePublicPemsFromPrivates", () => {
+    it("derived RSA public key matches the private key (encrypt + decrypt roundtrip)", async () => {
+      const { rsa_public_pem } = await derivePublicPemsFromPrivates(testKeys)
+      const derivedPub = await crypto.subtle.importKey(
+        "spki",
+        pemToDer(rsa_public_pem).buffer as ArrayBuffer,
+        { name: "RSA-OAEP", hash: "SHA-256" },
+        false,
+        ["wrapKey"],
+      )
+      const aesKey = await crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, true, ["encrypt"])
+      const wrapped = await crypto.subtle.wrapKey("raw", aesKey, derivedPub, { name: "RSA-OAEP" })
+      const unwrapped = await crypto.subtle.unwrapKey(
+        "raw", wrapped, rsaPrivateKey, { name: "RSA-OAEP" }, { name: "AES-GCM", length: 256 }, false, ["decrypt"],
+      )
+      const iv = crypto.getRandomValues(new Uint8Array(12))
+      const cipher = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, aesKey, new TextEncoder().encode("roundtrip"))
+      const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, unwrapped, cipher)
+      expect(new TextDecoder().decode(plain)).toBe("roundtrip")
+    })
+
+    it("derived ECDSA public key matches the private key (sign + verify roundtrip)", async () => {
+      const { ecdsa_public_pem } = await derivePublicPemsFromPrivates(testKeys)
+      const derivedPub = await crypto.subtle.importKey(
+        "spki",
+        pemToDer(ecdsa_public_pem).buffer as ArrayBuffer,
+        { name: "ECDSA", namedCurve: "P-256" },
+        false,
+        ["verify"],
+      )
+      const ecPriv = await crypto.subtle.importKey(
+        "pkcs8",
+        pemToDer(testKeys.ecdsa_private).buffer as ArrayBuffer,
+        { name: "ECDSA", namedCurve: "P-256" },
+        false,
+        ["sign"],
+      )
+      const data = new TextEncoder().encode("sign-verify roundtrip")
+      const sig = await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, ecPriv, data)
+      const valid = await crypto.subtle.verify({ name: "ECDSA", hash: "SHA-256" }, derivedPub, sig, data)
+      expect(valid).toBe(true)
+    })
+
+    it("derived PEMs are in SPKI format (-----BEGIN PUBLIC KEY-----)", async () => {
+      const { rsa_public_pem, ecdsa_public_pem } = await derivePublicPemsFromPrivates(testKeys)
+      expect(rsa_public_pem).toContain("-----BEGIN PUBLIC KEY-----")
+      expect(ecdsa_public_pem).toContain("-----BEGIN PUBLIC KEY-----")
     })
   })
 })

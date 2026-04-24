@@ -68,6 +68,8 @@ class Task(BaseModel):
     type: typing.Optional[str] = None
     executions: list[Execution] = []
     error: typing.Optional[str] = None
+    user_rsa_public_key: typing.Optional[str] = None
+    user_ecdsa_public_key: typing.Optional[str] = None
 
 class Node(BaseModel):
     node_type: str

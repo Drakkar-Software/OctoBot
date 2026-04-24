@@ -56,7 +56,7 @@ def get_server_public_keys() -> dict:
 async def get_metrics() -> typing.Any:
     return await octobot_node.scheduler.api.get_task_metrics()
 
-@router.get("/", response_model=list[octobot_node.models.Task])
+@router.get("/", response_model=list[octobot_node.models.Task], response_model_exclude_none=True)
 async def get_tasks(page: int = 1, limit: int = 100) -> typing.Any:
     tasks_data = await octobot_node.scheduler.api.get_all_tasks()
     

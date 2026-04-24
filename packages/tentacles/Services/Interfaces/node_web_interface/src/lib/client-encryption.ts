@@ -32,6 +32,71 @@ function toB64(buf: Uint8Array): string {
   return btoa(binary)
 }
 
+function toPem(label: string, spki: ArrayBuffer): string {
+  const b64 = btoa(String.fromCharCode(...new Uint8Array(spki)))
+  const lines = b64.match(/.{1,64}/g)?.join("\n") ?? b64
+  return `-----BEGIN ${label}-----\n${lines}\n-----END ${label}-----\n`
+}
+
+/**
+ * Derive RSA and ECDSA public PEMs from the browser-stored private PEMs.
+ * Used to embed per-task user public keys in the task payload so the server
+ * can verify signatures and encrypt results without a global env-var user key.
+ */
+export async function derivePublicPemsFromPrivates(keys: ClientKeys): Promise<{
+  rsa_public_pem: string
+  ecdsa_public_pem: string
+}> {
+  const ecPrivJwk = await crypto.subtle.exportKey(
+    "jwk",
+    await crypto.subtle.importKey(
+      "pkcs8",
+      pemToDer(keys.ecdsa_private).buffer as ArrayBuffer,
+      { name: "ECDSA", namedCurve: "P-256" },
+      true,
+      ["sign"],
+    ),
+  )
+  const { d: _d, ...ecPubJwk } = ecPrivJwk
+  const ecdsaSpki = await crypto.subtle.exportKey(
+    "spki",
+    await crypto.subtle.importKey(
+      "jwk",
+      { ...ecPubJwk, key_ops: ["verify"] },
+      { name: "ECDSA", namedCurve: "P-256" },
+      true,
+      ["verify"],
+    ),
+  )
+
+  const rsaPrivJwk = await crypto.subtle.exportKey(
+    "jwk",
+    await crypto.subtle.importKey(
+      "pkcs8",
+      pemToDer(keys.rsa_private).buffer as ArrayBuffer,
+      { name: "RSA-OAEP", hash: "SHA-256" },
+      true,
+      ["unwrapKey"],
+    ),
+  )
+  const { d: _d2, p: _p, q: _q, dp: _dp, dq: _dq, qi: _qi, ...rsaPubJwk } = rsaPrivJwk
+  const rsaSpki = await crypto.subtle.exportKey(
+    "spki",
+    await crypto.subtle.importKey(
+      "jwk",
+      { ...rsaPubJwk, key_ops: ["wrapKey"] },
+      { name: "RSA-OAEP", hash: "SHA-256" },
+      true,
+      ["wrapKey"],
+    ),
+  )
+
+  return {
+    rsa_public_pem: toPem("PUBLIC KEY", rsaSpki),
+    ecdsa_public_pem: toPem("PUBLIC KEY", ecdsaSpki),
+  }
+}
+
 /**
  * Encrypt content for the server using browser-stored keys.
  * Encrypts with serverRsaPublicPem (SERVER_RSA_PUBLIC), signs with USER_ECDSA_PRIVATE (keys.ecdsa_private).

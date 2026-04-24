@@ -28,14 +28,12 @@ Log messages emitted inside any workflow or step are routed to a per-workflow fi
 
 Task payloads are optionally encrypted using a hybrid RSA/AES-GCM/ECDSA scheme. Each encryption call generates a fresh AES-256-GCM key and IV; the AES key is wrapped with RSA-OAEP so the bulk payload never travels under the asymmetric key directly. An ECDSA signature over the ciphertext — computed as `ciphertext + encrypted_aes_key + iv` concatenated — is verified before any decryption attempt, preventing chosen-ciphertext attacks.
 
-**Split-ownership key model.** Eight keys participate in the system, divided by owner rather than by direction. The server holds four keys set via environment variables:
+**Split-ownership key model.** The server holds two private keys set via environment variables:
 
 | Environment variable | Purpose |
 |---|---|
 | `TASKS_SERVER_RSA_PRIVATE_KEY` | Decrypts incoming task content (wrapped AES key) |
 | `TASKS_SERVER_ECDSA_PRIVATE_KEY` | Signs outgoing task results |
-| `TASKS_USER_RSA_PUBLIC_KEY` | Encrypts outgoing task results |
-| `TASKS_USER_ECDSA_PUBLIC_KEY` | Verifies incoming task content signatures |
 
 The browser holds two private keys, entered once in the Settings page and stored locally:
 
@@ -44,23 +42,25 @@ The browser holds two private keys, entered once in the Settings page and stored
 | `USER_RSA_PRIVATE_KEY` | Decrypts result content from the server |
 | `USER_ECDSA_PRIVATE_KEY` | Signs task content before submission |
 
+User public keys are not configured on the server. When the browser submits an encrypted task, it derives both public keys from the stored private keys using the Web Crypto API and embeds them in the task payload (`user_rsa_public_key`, `user_ecdsa_public_key`). The server uses those per-task keys to verify the input signature and encrypt the result — which means a single node instance can serve any number of browser users with different keypairs without reconfiguration.
+
 The server public keys (`SERVER_RSA_PUBLIC_KEY` and `SERVER_ECDSA_PUBLIC_KEY`) are never entered manually — the browser fetches them on demand from `GET /tasks/server-public-keys`, which derives and returns them from the server's private keys at runtime. The server never loads the user's private keys; the browser never loads the server's private keys.
 
 **Encryption in the browser.** When submitting encrypted tasks the browser performs all cryptographic operations locally using the Web Crypto API (`crypto.subtle`), without sending any key material to the server. The `encryptAndSign` function first fetches the server's RSA public key from `GET /tasks/server-public-keys`, generates a fresh AES-256-GCM key, encrypts the task payload, wraps the AES key with that server RSA public key (RSA-OAEP), then signs the concatenation of ciphertext, wrapped key, and IV with `USER_ECDSA_PRIVATE_KEY`. The ECDSA signature is converted from the IEEE P1363 format that Web Crypto produces to DER format before transmission, because Python's `cryptography` library expects DER.
 
 **Metadata format.** The accompanying metadata envelope carries `ENCRYPTED_AES_KEY_B64`, `IV_B64`, and `SIGNATURE_B64`. For task inputs, `content_metadata` is `base64(JSON)` — the JSON object is serialised then base64-encoded — because it travels as a CSV or API field where a single opaque string is easiest to embed. For task results, `result_metadata` is a plain JSON string; it is stored in the database and consumed by code that already handles JSON, so the extra base64 layer would be noise. Being aware of this distinction matters when building tooling that reads raw database records.
 
-**`encrypted_task` context manager.** This wraps each task execution on the consumer node transparently. On entry it decrypts `task.content` using `TASKS_SERVER_RSA_PRIVATE_KEY` and verifies the signature when `task.content_metadata` is non-null. Signature verification tries `TASKS_USER_ECDSA_PUBLIC_KEY` first (browser-submitted tasks, signed with `USER_ECDSA_PRIVATE_KEY`) then falls back to the server's own ECDSA public key (server-generated internal state, signed with `TASKS_SERVER_ECDSA_PRIVATE_KEY`). If decryption fails the context manager logs the error and continues with the original encrypted content — it does not crash the workflow. On exit it restores the original `task.content` and does not touch results.
+**`encrypted_task` context manager.** This wraps each task execution on the consumer node transparently. On entry it decrypts `task.content` using `TASKS_SERVER_RSA_PRIVATE_KEY` and verifies the signature when `task.content_metadata` is non-null. Signature verification uses the task's own `user_ecdsa_public_key` field first (browser-submitted tasks carry it inline); if absent, falls back to the `TASKS_USER_ECDSA_PUBLIC_KEY` env var (legacy single-user deployments); then falls back to the server's own ECDSA public key (server-generated internal state, signed with `TASKS_SERVER_ECDSA_PRIVATE_KEY`). If decryption fails the context manager logs the error and continues with the original encrypted content — it does not crash the workflow. On exit it restores the original `task.content` and does not touch results.
 
-**Internal state and result encryption.** Between iterations the automation state is stored in DBOS encrypted with `encrypt_task_content` (AES-GCM wrapped with SERVER_RSA_PUBLIC, signed with SERVER_ECDSA_PRIVATE), making it readable only by the server. When completed executions are fetched via the API, the scheduler decrypts the stored state using the `encrypted_task` context manager (SERVER_RSA_PRIVATE + SERVER/USER ECDSA public), then immediately re-encrypts it with `encrypt_task_result` (AES-GCM wrapped with USER_RSA_PUBLIC, signed with SERVER_ECDSA_PRIVATE) before returning it. The API surface therefore only ever exposes ciphertext targeted at the browser. Decryption happens in the browser using `USER_RSA_PRIVATE_KEY`, with the signature verified against `SERVER_ECDSA_PUBLIC_KEY`.
+**Internal state and result encryption.** Between iterations the automation state is stored in DBOS encrypted with `encrypt_task_content` (AES-GCM wrapped with SERVER_RSA_PUBLIC, signed with SERVER_ECDSA_PRIVATE), making it readable only by the server. When completed executions are fetched via the API, the scheduler decrypts the stored state using the `encrypted_task` context manager (SERVER_RSA_PRIVATE + SERVER/USER ECDSA public), then immediately re-encrypts it with `encrypt_task_result` (AES-GCM wrapped with the task's `user_rsa_public_key` field, signed with SERVER_ECDSA_PRIVATE) before returning it. The API surface therefore only ever exposes ciphertext targeted at the specific browser user who submitted the task. Decryption happens in the browser using `USER_RSA_PRIVATE_KEY`, with the signature verified against `SERVER_ECDSA_PUBLIC_KEY`.
 
 **Security boundary with `octobot_flow`.** The `encrypted_task` context manager wraps the call to `octobot_flow`'s `AutomationJob.run()` inside the node's workflow step. Task content is decrypted just before execution on the consumer node that holds the server private keys. From flow's perspective nothing changes — it receives a plaintext `AutomationState` dict and returns an updated one. The flow package has no awareness of encryption, which means the same engine works identically in encrypted node deployments, unencrypted nodes, and standalone bots.
 
-**Key loading and validation.** The four server keys are accepted as PEM-encoded strings via environment variables, decoded to `bytes` at process startup by a `BeforeValidator` in the pydantic `Settings` model. There is no lazy loading — `settings` is a module-level singleton instantiated at import time, so a misconfigured key value fails fast before any requests are served. The `is_node_side_encryption_enabled` property checks whether all four server keys are present simultaneously, and `tasks_encryption_enabled` is an alias used in API responses.
+**Key loading and validation.** The two server keys are accepted as PEM-encoded strings via environment variables, decoded to `bytes` at process startup by a `BeforeValidator` in the pydantic `Settings` model. There is no lazy loading — `settings` is a module-level singleton instantiated at import time, so a misconfigured key value fails fast before any requests are served. The `is_node_side_encryption_enabled` property checks whether both server keys are present, and `tasks_encryption_enabled` is an alias used in API responses.
 
 **Browser key storage.** The browser keys entered in the Settings page, and the login passphrase, are stored in `IndexedDB` encrypted with a device-bound, non-extractable AES-256-GCM key. That device key is generated on first login using `crypto.subtle.generateKey` with `extractable: false` and can never be exported or read as raw bytes — not even from a filesystem dump of the database file. It is origin-bound, so it cannot be used from another domain or browser profile. Neither the passphrase nor the user keys are ever stored in `localStorage` or sent to the server.
 
-**Key generation.** Generate the two RSA and two ECDSA key pairs with openssl:
+**Key generation.** Generate the server key pairs with openssl:
 
 ```bash
 # Server RSA-4096 keypair (private key → TASKS_SERVER_RSA_PRIVATE_KEY env var)
@@ -69,18 +69,11 @@ openssl genrsa -out server_rsa_private.pem 4096
 # Server ECDSA-P256 keypair (private key → TASKS_SERVER_ECDSA_PRIVATE_KEY env var)
 openssl ecparam -genkey -name prime256v1 -noout -out server_ecdsa_ec.pem
 openssl pkcs8 -topk8 -nocrypt -in server_ecdsa_ec.pem -out server_ecdsa_private.pem
-
-# User RSA-4096 keypair (public key → TASKS_USER_RSA_PUBLIC_KEY env var; private key → browser Settings)
-openssl genrsa -out user_rsa_private.pem 4096
-openssl rsa -in user_rsa_private.pem -pubout -out user_rsa_public.pem
-
-# User ECDSA-P256 keypair (public key → TASKS_USER_ECDSA_PUBLIC_KEY env var; private key → browser Settings)
-openssl ecparam -genkey -name prime256v1 -noout -out user_ecdsa_ec.pem
-openssl pkcs8 -topk8 -nocrypt -in user_ecdsa_ec.pem -out user_ecdsa_private.pem
-openssl ec -in user_ecdsa_ec.pem -pubout -out user_ecdsa_public.pem
 ```
 
 The server public keys are never distributed manually — the browser fetches them via `GET /tasks/server-public-keys` at runtime.
+
+User key pairs are generated by the browser on first use and stored locally in the Settings page. The browser derives the corresponding public keys from the stored private keys using the Web Crypto API and embeds them in each task at submission time. No user public key configuration is required on the server.
 
 Encryption is opt-in. If the server keys are absent from the environment, the corresponding path is skipped and fields stay plaintext, which is the backward-compatible default.
 

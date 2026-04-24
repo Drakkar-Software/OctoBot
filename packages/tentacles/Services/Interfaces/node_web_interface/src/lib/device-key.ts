@@ -146,10 +146,6 @@ export async function clearClientKeys(): Promise<void> {
 }
 
 export async function hasStoredClientKeys(): Promise<boolean> {
-  const db = await openDB()
-  const record = await idbGet(
-    db.transaction(STORE_NAME, "readonly").objectStore(STORE_NAME),
-    CLIENT_KEYS_RECORD,
-  )
-  return record !== undefined
+  const keys = await loadClientKeys()
+  return keys !== null && Object.values(keys).every((v) => v.trim().length > 0)
 }

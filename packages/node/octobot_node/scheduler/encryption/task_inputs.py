@@ -47,7 +47,7 @@ def _server_ecdsa_public_key_bytes() -> bytes:
     return private.public_key().public_bytes(Encoding.PEM, PublicFormat.SubjectPublicKeyInfo)
 
 
-def decrypt_task_content(content: str, metadata: Optional[str] = None) -> str:
+def decrypt_task_content(content: str, metadata: Optional[str] = None, user_ecdsa_public_key: Optional[bytes] = None) -> str:
     if metadata is None:
         raise MissingMetadataError("No metadata provided for content decryption")
 
@@ -72,7 +72,10 @@ def decrypt_task_content(content: str, metadata: Optional[str] = None) -> str:
 
     data_to_verify = content_bytes + encrypted_aes_key + iv
     # Browser-submitted tasks are signed with USER_ECDSA_PRIVATE; server-generated tasks with SERVER_ECDSA_PRIVATE.
-    if not cryptography.verify_signature(data_to_verify, settings.TASKS_USER_ECDSA_PUBLIC_KEY, signature):
+    # Per-task key takes precedence; falls back to the global env-var, then tries the server's own ECDSA key.
+    effective_user_key = user_ecdsa_public_key or settings.TASKS_USER_ECDSA_PUBLIC_KEY
+    user_sig_valid = bool(effective_user_key and cryptography.verify_signature(data_to_verify, effective_user_key, signature))
+    if not user_sig_valid:
         if not (settings.TASKS_SERVER_ECDSA_PRIVATE_KEY and
                 cryptography.verify_signature(data_to_verify, _server_ecdsa_public_key_bytes(), signature)):
             raise SignatureVerificationError("Signature verification failed")

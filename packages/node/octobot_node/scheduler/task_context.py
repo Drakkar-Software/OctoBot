@@ -39,13 +39,12 @@ def encrypted_task(
     original_content = task.content
 
     try:
-        # Decrypt content if input encryption keys are configured
+        # Decrypt content if server keys are available. Per-task ECDSA key takes precedence over env var.
         settings = octobot_node.config.settings
-        if (settings.TASKS_SERVER_RSA_PRIVATE_KEY
-                and settings.TASKS_USER_ECDSA_PUBLIC_KEY
-                and task.content_metadata):
+        user_ecdsa_key = task.user_ecdsa_public_key.encode('utf-8') if task.user_ecdsa_public_key else None
+        if (settings.TASKS_SERVER_RSA_PRIVATE_KEY and task.content_metadata):
             try:
-                decrypted_content = encryption.decrypt_task_content(task.content, task.content_metadata)
+                decrypted_content = encryption.decrypt_task_content(task.content, task.content_metadata, user_ecdsa_public_key=user_ecdsa_key)
                 task.content = decrypted_content
             except Exception as e:
                 logger.error(f"Failed to decrypt content: {e}")

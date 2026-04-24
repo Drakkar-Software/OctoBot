@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { LoadingButton } from "@/components/ui/loading-button"
 import { getTemplateById } from "@/lib/meta-templates"
 import { hasStoredClientKeys, loadClientKeys } from "@/lib/device-key"
-import { encryptAndSign } from "@/lib/client-encryption"
+import { encryptAndSign, derivePublicPemsFromPrivates } from "@/lib/client-encryption"
 import type { ClientKeys } from "@/lib/client-encryption"
 import { fetchServerPublicKeys } from "@/lib/server-keys"
 import useCustomToast from "@/hooks/useCustomToast"
@@ -71,6 +71,7 @@ export default function EncryptStep({
       const clientKeys = await loadClientKeys()
       if (!clientKeys) throw new Error("Browser keys not configured — add them in Settings")
       const serverKeys = await fetchServerPublicKeys()
+      const { rsa_public_pem, ecdsa_public_pem } = await derivePublicPemsFromPrivates(clientKeys as ClientKeys)
       const tasks: Task[] = await Promise.all(
         validActions.map(async (action) => {
           const { content, content_metadata } = await encryptAndSign(
@@ -78,7 +79,14 @@ export default function EncryptStep({
             clientKeys as ClientKeys,
             serverKeys.rsa_public,
           )
-          return { name: action.name, content, content_metadata, type: "execute_actions" }
+          return {
+            name: action.name,
+            content,
+            content_metadata,
+            type: "execute_actions",
+            user_rsa_public_key: rsa_public_pem,
+            user_ecdsa_public_key: ecdsa_public_pem,
+          }
         }),
       )
       onImport(tasks)
@@ -133,8 +141,7 @@ export default function EncryptStep({
               <div>
                 <p className="text-sm font-medium">Client decryption keys not configured</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  You can still import encrypted tasks, but won't be able to decrypt results in the browser.
-                  Configure browser keys in Settings.
+                  Task will be imported without encryption. Configure browser keys in Settings to enable encrypted import.
                 </p>
               </div>
             </div>
@@ -146,10 +153,11 @@ export default function EncryptStep({
             </Button>
             <LoadingButton
               loading={isImporting}
-              onClick={handleImportWithEncryption}
+              onClick={clientKeysStored ? handleImportWithEncryption : handleImportWithoutEncryption}
+              variant={clientKeysStored ? "default" : "secondary"}
               disabled={validActions.length === 0}
             >
-              <Lock className="size-3.5 mr-1.5" />
+              {clientKeysStored ? <Lock className="size-3.5 mr-1.5" /> : <LockOpen className="size-3.5 mr-1.5" />}
               Import {validActions.length} Action{validActions.length !== 1 ? "s" : ""}
             </LoadingButton>
           </div>

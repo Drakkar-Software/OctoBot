@@ -204,7 +204,7 @@ function BotCard({
             <div className="grid grid-cols-[1fr_auto] items-start gap-2">
               <span className="flex items-center gap-1.5 truncate text-sm font-semibold leading-tight">
                 <span className="truncate">{label}</span>
-                {task.content_metadata && <Lock className="size-3 shrink-0 text-muted-foreground/50" />}
+                {task.executions?.find((e) => e.id === task.id)?.content_metadata && <Lock className="size-3 shrink-0 text-muted-foreground/50" />}
               </span>
               <Badge variant={getStatusVariant(status, hasError)} className={cn(selected && "mr-6")}>
                 {hasError ? "Error" : statusLabels[status]}
