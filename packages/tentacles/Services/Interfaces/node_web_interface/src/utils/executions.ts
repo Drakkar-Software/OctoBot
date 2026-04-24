@@ -22,3 +22,7 @@ export function getActiveExecution(
     )
   return dated[0] ?? executions[executions.length - 1]
 }
+
+export function hasStartedExecution(executions: Execution[] | null | undefined): boolean {
+  return !!executions?.some((e) => e.status === "running" || e.completed_at != null)
+}
