@@ -164,3 +164,15 @@ export function deleteUserExportTemplate(id: string): void {
 export function getAllExportTemplates(): ExportTemplate[] {
   return [...EXPORT_TEMPLATES, ...loadUserExportTemplates()]
 }
+
+const LAST_USED_KEY = "last_used_export_template"
+
+export function getLastUsedExportTemplateId(): string | null {
+  const id = localStorage.getItem(LAST_USED_KEY)
+  if (!id) return null
+  return getAllExportTemplates().some((t) => t.id === id) ? id : null
+}
+
+export function setLastUsedExportTemplateId(id: string): void {
+  localStorage.setItem(LAST_USED_KEY, id)
+}

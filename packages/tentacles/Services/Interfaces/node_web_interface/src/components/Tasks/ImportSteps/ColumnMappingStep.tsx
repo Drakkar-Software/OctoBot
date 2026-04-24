@@ -29,6 +29,8 @@ import { isParamValueValid, type ActionParamDef } from "@/lib/action-templates"
 import {
   getAllTemplates,
   getTemplateById,
+  getLastUsedImportTemplateId,
+  setLastUsedImportTemplateId,
   resolveMetaTemplate,
   saveUserMetaTemplate,
   validateMetaTemplateJson,
@@ -174,7 +176,7 @@ export default function ColumnMappingStep({
 
   // Run initial detection
   const initialDetection = useMemo(
-    () => detectColumnsAndTemplates(headers, rows),
+    () => detectColumnsAndTemplates(headers, rows, getLastUsedImportTemplateId() ?? undefined),
     [headers, rows],
   )
 
@@ -227,6 +229,7 @@ export default function ColumnMappingStep({
         .map((_, i) => i)
         .filter((i) => !mappedCols.has(i))
 
+      setLastUsedImportTemplateId(newTemplateId)
       updateRow(rowIndex, {
         templateId: newTemplateId,
         mappings: newMappings,

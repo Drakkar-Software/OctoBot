@@ -245,6 +245,7 @@ export function extractColumnValues(
 export function detectColumnsAndTemplates(
   headers: string[],
   rows: string[][],
+  preferredTemplateId?: string,
 ): RowDetectionResult[] {
   const columnValues = extractColumnValues(headers, rows)
 
@@ -259,11 +260,17 @@ export function detectColumnsAndTemplates(
 
   // Pick the best template (global for now, applied to all rows)
   templateResults.sort((a, b) => b.templateScore - a.templateScore)
-  const best = templateResults[0]
+  let best = templateResults[0]
+
+  // Prefer last-used template when set — use it unconditionally if it exists
+  if (preferredTemplateId) {
+    const preferred = templateResults.find((r) => r.template.id === preferredTemplateId)
+    if (preferred) best = preferred
+  }
 
   if (!best) {
     return rows.map(() => ({
-      templateId: getAllTemplates()[0]?.id ?? "transfer",
+      templateId: preferredTemplateId ?? getAllTemplates()[0]?.id ?? "transfer",
       templateScore: 0,
       mappings: [],
       paramValues: {},

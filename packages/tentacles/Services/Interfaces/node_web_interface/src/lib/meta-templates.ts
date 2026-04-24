@@ -167,3 +167,15 @@ export function getAllTemplates(): ActionTemplate[] {
 export function getTemplateById(id: string): ActionTemplate | undefined {
   return getAllTemplates().find((t) => t.id === id)
 }
+
+const LAST_USED_KEY = "last_used_import_template"
+
+export function getLastUsedImportTemplateId(): string | null {
+  const id = localStorage.getItem(LAST_USED_KEY)
+  if (!id) return null
+  return getAllTemplates().some((t) => t.id === id) ? id : null
+}
+
+export function setLastUsedImportTemplateId(id: string): void {
+  localStorage.setItem(LAST_USED_KEY, id)
+}

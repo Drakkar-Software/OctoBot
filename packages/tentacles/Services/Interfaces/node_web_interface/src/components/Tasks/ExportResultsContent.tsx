@@ -37,6 +37,8 @@ import {
   getAllExportTemplates,
   validateExportTemplateJson,
   saveUserExportTemplate,
+  getLastUsedExportTemplateId,
+  setLastUsedExportTemplateId,
   type ExportColumnDef,
 } from "@/lib/export-templates"
 import useCustomToast from "@/hooks/useCustomToast"
@@ -145,7 +147,7 @@ export default function ExportResultsContent({
   const { showSuccessToast, showErrorToast } = useCustomToast()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [userTemplatesVersion, setUserTemplatesVersion] = useState(0)
-  const [selectedTemplateId, setSelectedTemplateId] = useState("general")
+  const [selectedTemplateId, setSelectedTemplateId] = useState(() => getLastUsedExportTemplateId() ?? "general")
   const [customColumns, setCustomColumns] = useState<ExportColumnDef[]>([])
   const [addColumnPath, setAddColumnPath] = useState("")
   const [addColumnLabel, setAddColumnLabel] = useState("")
@@ -368,7 +370,10 @@ export default function ExportResultsContent({
         />
         <Select
           value={selectedTemplateId}
-          onValueChange={setSelectedTemplateId}
+          onValueChange={(id) => {
+              setSelectedTemplateId(id)
+              setLastUsedExportTemplateId(id)
+            }}
         >
           <SelectTrigger size="sm" className="w-44">
             <SelectValue placeholder="Template" />

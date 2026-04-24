@@ -91,7 +91,7 @@ export default function ReviewStep({
               className={
                 validation.isValid
                   ? ""
-                  : "border-destructive/50"
+                  : "border-2 border-destructive ring-1 ring-destructive/30"
               }
             >
               <CardHeader className="py-2 px-4">
@@ -147,8 +147,11 @@ export default function ReviewStep({
         <Button
           onClick={onNext}
           disabled={validCount === 0}
+          variant={allValid ? "default" : "destructive"}
         >
-          Review {validCount} Action{validCount !== 1 ? "s" : ""}
+          {allValid
+            ? "Submit all actions"
+            : `Submit ${validCount}/${actions.length} actions`}
         </Button>
       </div>
     </div>
