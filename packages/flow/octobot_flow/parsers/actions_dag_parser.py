@@ -76,7 +76,7 @@ class ActionsDAGParserParams(octobot_commons.dataclasses.FlexibleDataclass):
     BLOCKCHAIN_FROM_ASSET: typing.Optional[str] = None
     BLOCKCHAIN_FROM_ADDRESS: typing.Optional[str] = None
     BLOCKCHAIN_FROM_MNEMONIC_SEED: typing.Optional[str] = None
-    BLOCKCHAIN_FROM_BLOCK_HEIGHT: typing.Optional[int] = None
+    BLOCKCHAIN_FROM_BLOCK_HEIGHT: typing.Union[int, str, None] = None
     BLOCKCHAIN_FROM_SECRET_VIEW_KEY: typing.Optional[str] = None
     BLOCKCHAIN_FROM_SECRET_SPEND_KEY: typing.Optional[str] = None
     BLOCKCHAIN_FROM_PRIVATE_KEY: typing.Optional[str] = None
@@ -85,7 +85,7 @@ class ActionsDAGParserParams(octobot_commons.dataclasses.FlexibleDataclass):
     BLOCKCHAIN_TO_AMOUNT: typing.Optional[float] = None
     BLOCKCHAIN_TO_ADDRESS: typing.Optional[str] = None
     BLOCKCHAIN_TO_MNEMONIC_SEED: typing.Optional[str] = None
-    BLOCKCHAIN_TO_BLOCK_HEIGHT: typing.Optional[int] = None
+    BLOCKCHAIN_TO_BLOCK_HEIGHT: typing.Union[int, str, None] = None
     BLOCKCHAIN_TO_SECRET_VIEW_KEY: typing.Optional[str] = None
     BLOCKCHAIN_TO_SECRET_SPEND_KEY: typing.Optional[str] = None
     BLOCKCHAIN_TO_PRIVATE_KEY: typing.Optional[str] = None
