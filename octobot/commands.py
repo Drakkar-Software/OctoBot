@@ -43,6 +43,8 @@ COMMANDS_LOGGER_NAME = "Commands"
 IGNORED_COMMAND_WHEN_RESTART = ["-u", "--update"]
 
 GLOBAL_BOT_INSTANCE = None
+_signal_interrupt_count = 0
+_signal_interrupt_lock = threading.Lock()
 
 
 def call_tentacles_manager(command_args):
@@ -266,21 +268,46 @@ def set_global_bot_instance(bot_instance):
     GLOBAL_BOT_INSTANCE = bot_instance
 
 
-def _signal_handler(_, __):
-    # run Commands.BOT.stop_threads in thread because can't use the current asyncio loop
-    stopping_thread = threading.Thread(target=GLOBAL_BOT_INSTANCE.task_manager.stop_tasks(),
-                                       name="Commands signal_handler stop_tasks")
-    stopping_thread.start()
-    stopping_thread.join()
-    os._exit(0)
+def _signal_handler(signum, _):
+    # Handle SIGINT/SIGTERM: first delivery stops the bot; a second delivery exits without stop_tasks()
+    # if the first stop is stuck.
+    global _signal_interrupt_count
+    commands_logger = logging.get_logger(COMMANDS_LOGGER_NAME)
+    signal_text = signal.strsignal(signum)
+    if not signal_text:
+        signal_text = f"signal {signum}"
+    with _signal_interrupt_lock:
+        _signal_interrupt_count += 1
+        interrupt_count = _signal_interrupt_count
+    if interrupt_count >= 2:
+        commands_logger.warning(
+            f"Received signal {signum} ({signal_text}) (delivery {interrupt_count}): "
+            f"forcing immediate process exit without stop_tasks()"
+        )
+        os._exit(128 + signum if isinstance(signum, int) and 0 < signum < 32 else 1)
+    commands_logger.info(
+        f"Received signal {signum} ({signal_text}) (delivery {interrupt_count})"
+    )
+    if GLOBAL_BOT_INSTANCE is not None:
+        commands_logger.info("Stopping OctoBot after signal (stop_bot, force=True)")
+        stop_bot(GLOBAL_BOT_INSTANCE, force=True)
+    else:
+        commands_logger.info("Exiting: no bot instance was registered (signal handler)")
+        os._exit(0)
 
 
 def run_bot(bot, logger):
-    # handle CTRL+C signal
+    # handle SIGINT (Ctrl+C) and SIGTERM (e.g. docker stop)
     try:
         signal.signal(signal.SIGINT, _signal_handler)
     except ValueError as e:
         logger.warning(f"Can't setup signal handler : {e}")
+    sigterm = getattr(signal, "SIGTERM", None)
+    if sigterm is not None:
+        try:
+            signal.signal(sigterm, _signal_handler)
+        except ValueError as e:
+            logger.warning(f"Can't setup SIGTERM handler : {e}")
 
     # start bot
     bot.task_manager.run_forever(start_bot(bot, logger))
