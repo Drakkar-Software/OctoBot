@@ -17,6 +17,7 @@
 import os
 import octobot_commons.logging as logging
 import octobot_commons.constants as commons_constants
+import octobot_commons.user_root_folder_provider as user_root_folder_provider
 import octobot_commons.configuration.fields_utils as fields_utils
 import octobot_commons.json_util as json_util
 
@@ -29,7 +30,9 @@ def get_user_config() -> str:
     Return user config path
     :return: user config path
     """
-    return os.path.join(commons_constants.USER_FOLDER, commons_constants.CONFIG_FILE)
+    return os.path.join(
+        user_root_folder_provider.get_user_root_folder(), commons_constants.CONFIG_FILE
+    )
 
 
 def load(config_file, should_raise=True, fill_missing_fields=False) -> dict:

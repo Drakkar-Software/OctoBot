@@ -19,6 +19,7 @@ import os.path as path
 import shutil
 
 import octobot_commons.logging as logging
+import octobot_commons.user_root_folder_provider as user_root_folder_provider
 
 import octobot_tentacles_manager.configuration as configuration
 import octobot_tentacles_manager.constants as constants
@@ -88,7 +89,12 @@ class TentaclesSetupManager:
 
     async def create_missing_tentacles_arch(self):
         # tentacle user config folder
-        await util.find_or_create(path.join(self.bot_installation_path, constants.USER_REFERENCE_TENTACLE_SPECIFIC_CONFIG_PATH))
+        await util.find_or_create(
+            path.join(
+                self.bot_installation_path,
+                user_root_folder_provider.get_user_reference_tentacle_specific_config_path(),
+            )
+        )
         # tentacles folder
         found_existing_installation = not await util.find_or_create(self.tentacle_setup_root_path)
         # tentacle main python init file
@@ -152,8 +158,9 @@ class TentaclesSetupManager:
         if TentaclesSetupManager.is_tentacles_arch_valid(verbose=False, raises=raises) \
                 or (force and path.exists(path.join(bot_installation_path, tentacles_folder_name))):
             shutil.rmtree(path.join(bot_installation_path, tentacles_folder_name))
-        if with_user_config and path.exists(path.join(bot_installation_path, constants.USER_REFERENCE_TENTACLE_CONFIG_PATH)):
-            shutil.rmtree(path.join(bot_installation_path, constants.USER_REFERENCE_TENTACLE_CONFIG_PATH))
+        ref_cfg = user_root_folder_provider.get_user_reference_tentacle_config_path()
+        if with_user_config and path.exists(path.join(bot_installation_path, ref_cfg)):
+            shutil.rmtree(path.join(bot_installation_path, ref_cfg))
 
     @staticmethod
     def get_available_tentacles_repos():

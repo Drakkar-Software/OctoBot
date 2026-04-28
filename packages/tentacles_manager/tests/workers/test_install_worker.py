@@ -20,9 +20,11 @@ import os
 from logging import INFO
 
 import octobot_commons.constants as commons_constants
+import octobot_commons.user_root_folder_provider as user_root_folder_provider
+import octobot_tentacles_manager.constants as tm_constants
 from octobot_commons.logging.logging_util import set_logging_level
-from octobot_tentacles_manager.constants import USER_REFERENCE_TENTACLE_SPECIFIC_CONFIG_PATH, \
-    TENTACLES_REQUIREMENTS_INSTALL_TEMP_DIR, USER_REFERENCE_TENTACLE_CONFIG_FILE_PATH, TENTACLES_PATH, DEFAULT_BOT_PATH, \
+from octobot_tentacles_manager.constants import \
+    TENTACLES_REQUIREMENTS_INSTALL_TEMP_DIR, TENTACLES_PATH, DEFAULT_BOT_PATH, \
     UNKNOWN_TENTACLES_PACKAGE_LOCATION, TENTACLES_SPECIFIC_CONFIG_FOLDER
 from octobot_tentacles_manager.workers.install_worker import InstallWorker
 from octobot_tentacles_manager.models.tentacle import Tentacle
@@ -48,12 +50,12 @@ async def test_install_two_tentacles(clean):
     assert trading_mode_files_count == 1
     backtesting_mode_files_count = sum(1 for _ in os.walk(os.path.join(TENTACLES_PATH, "Backtesting", "importers")))
     assert backtesting_mode_files_count == 7
-    config_files = [f for f in os.walk(USER_REFERENCE_TENTACLE_SPECIFIC_CONFIG_PATH)]
+    config_files = [f for f in os.walk(user_root_folder_provider.get_user_reference_tentacle_specific_config_path())]
     config_files_count = len(config_files)
     assert config_files_count == 1
 
     # test tentacles config
-    with open(USER_REFERENCE_TENTACLE_CONFIG_FILE_PATH, "r") as config_f:
+    with open(user_root_folder_provider.get_user_reference_tentacle_config_file_path(), "r") as config_f:
         ref_profile_config = json.load(config_f)
         assert ref_profile_config == {
             'installation_context': {
@@ -88,12 +90,12 @@ async def test_install_one_tentacle_with_requirement(clean):
     # test installed files
     trading_mode_files_count = sum(1 for _ in os.walk(os.path.join(TENTACLES_PATH, "Trading", "Mode")))
     assert trading_mode_files_count == 1
-    config_files = [f for f in os.walk(USER_REFERENCE_TENTACLE_SPECIFIC_CONFIG_PATH)]
+    config_files = [f for f in os.walk(user_root_folder_provider.get_user_reference_tentacle_specific_config_path())]
     assert len(config_files) == 1
     assert len(config_files[0][2]) == 0
 
     # test tentacles config
-    with open(USER_REFERENCE_TENTACLE_CONFIG_FILE_PATH, "r") as config_f:
+    with open(user_root_folder_provider.get_user_reference_tentacle_config_file_path(), "r") as config_f:
         assert json.load(config_f) == {
             'installation_context': {
                 'octobot_version': 'unknown'
@@ -125,12 +127,12 @@ async def test_install_all_tentacles(clean):
     # test installed files
     trading_mode_files_count = sum(1 for _ in os.walk(os.path.join(TENTACLES_PATH, "Trading", "Mode")))
     assert trading_mode_files_count == 5
-    config_files = [f for f in os.walk(USER_REFERENCE_TENTACLE_SPECIFIC_CONFIG_PATH)]
+    config_files = [f for f in os.walk(user_root_folder_provider.get_user_reference_tentacle_specific_config_path())]
     config_files_count = len(config_files)
     assert config_files_count == 1
 
     # test tentacles config
-    with open(USER_REFERENCE_TENTACLE_CONFIG_FILE_PATH, "r") as config_f:
+    with open(user_root_folder_provider.get_user_reference_tentacle_config_file_path(), "r") as config_f:
         assert json.load(config_f) == {
             'installation_context': {
                 'octobot_version': 'unknown'
@@ -165,7 +167,7 @@ async def test_install_all_tentacles(clean):
 
 async def test_install_all_tentacles_with_profile(clean):
     _enable_loggers()
-    profile_path = os.path.join(commons_constants.USER_PROFILES_FOLDER, "many_traded_elements")
+    profile_path = os.path.join(user_root_folder_provider.get_user_profiles_folder(), "many_traded_elements")
     assert not os.path.isfile(os.path.join(profile_path, commons_constants.PROFILE_CONFIG_FILE))
     tentacles_path = os.path.join("tests", "static", "tentacles_with_profile.zip")
     await fetch_and_extract_tentacles(TEMP_DIR, tentacles_path, None)
@@ -204,28 +206,29 @@ async def test_profiles_update(clean, fake_profiles):
     assert await worker.process() == 0
 
     # test tentacles setup config
-    with open(USER_REFERENCE_TENTACLE_CONFIG_FILE_PATH) as config_f:
+    with open(user_root_folder_provider.get_user_reference_tentacle_config_file_path()) as config_f:
         ref_profile_config = json.load(config_f)
-
+        user_profiles = user_root_folder_provider.get_user_profiles_folder()
         # test profiles tentacles config
-        with open(os.path.join(commons_constants.USER_PROFILES_FOLDER,
+        with open(os.path.join(user_profiles,
                                commons_constants.DEFAULT_PROFILE,
                                commons_constants.CONFIG_TENTACLES_FILE)) as default_c:
             assert ref_profile_config == json.load(default_c)
-        with open(os.path.join(commons_constants.USER_PROFILES_FOLDER,
+        with open(os.path.join(user_profiles,
                                OTHER_PROFILE,
                                commons_constants.CONFIG_TENTACLES_FILE)) as other_c:
             assert ref_profile_config == json.load(other_c)
 
     # test specific tentacles config
-    default_profile_tentacles_config = os.path.join(commons_constants.USER_PROFILES_FOLDER,
+    default_profile_tentacles_config = os.path.join(user_profiles,
                                                     commons_constants.DEFAULT_PROFILE,
                                                     TENTACLES_SPECIFIC_CONFIG_FOLDER)
-    other_profile_tentacles_config = os.path.join(commons_constants.USER_PROFILES_FOLDER,
+    other_profile_tentacles_config = os.path.join(user_profiles,
                                                   OTHER_PROFILE,
                                                   TENTACLES_SPECIFIC_CONFIG_FOLDER)
-    for tentacle_config in os.scandir(os.path.join(os.path.split(USER_REFERENCE_TENTACLE_CONFIG_FILE_PATH)[0],
-                                                   TENTACLES_SPECIFIC_CONFIG_FOLDER)):
+    for tentacle_config in os.scandir(os.path.join(os.path.dirname(
+            user_root_folder_provider.get_user_reference_tentacle_config_file_path()),
+            TENTACLES_SPECIFIC_CONFIG_FOLDER)):
         with open(tentacle_config) as ref_config_file:
             ref_config = json.load(ref_config_file)
         with open(os.path.join(default_profile_tentacles_config, tentacle_config.name)) as default_profile_config_file:
@@ -256,7 +259,7 @@ async def test_install_all_tentacles_fetching_requirements(clean):
 
     trading_mode_files_count = sum(1 for _ in os.walk(os.path.join(TENTACLES_PATH, "Trading", "Mode")))
     assert trading_mode_files_count == 5
-    config_files = [f for f in os.walk(USER_REFERENCE_TENTACLE_SPECIFIC_CONFIG_PATH)]
+    config_files = [f for f in os.walk(user_root_folder_provider.get_user_reference_tentacle_specific_config_path())]
     config_files_count = len(config_files)
     assert config_files_count == 1
     # ensure fetched InstantFluctuationsEvaluator requirement

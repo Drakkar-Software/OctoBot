@@ -47,6 +47,7 @@ except ImportError:
 from octobot_commons.profiles.profile import Profile
 import octobot_commons.profiles.profile_data as profile_data_import
 import octobot_commons.profiles.profile_data_import as profile_data_importer
+import octobot_commons.user_root_folder_provider as user_root_folder_provider
 
 
 NON_OVERWRITTEN_PROFILE_FOLDERS = []
@@ -331,7 +332,10 @@ def _get_target_import_path(
     :return: (the final target import path, True if the profile is replaced)
     """
     target_import_path = os.path.join(
-        bot_install_path, constants.USER_PROFILES_FOLDER, profile_name
+        bot_install_path,
+        user_root_folder_provider.get_user_root_folder(),
+        constants.PROFILES_FOLDER,
+        profile_name,
     )
     if replace_if_exists:
         return target_import_path

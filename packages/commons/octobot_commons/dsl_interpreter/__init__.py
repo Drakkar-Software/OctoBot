@@ -41,6 +41,8 @@ from octobot_commons.dsl_interpreter.operators import (
     ReCallableOperatorMixin,
     ReCallingOperatorResult,
     ReCallingOperatorResultKeys,
+    ProcessBoundOperatorMixin,
+    is_process_bound,
 )
 from octobot_commons.dsl_interpreter.interpreter_dependency import (
     InterpreterDependency,
@@ -73,6 +75,8 @@ __all__ = [
     "ExpressionOperator",
     "PreComputingCallOperator",
     "ReCallableOperatorMixin",
+    "ProcessBoundOperatorMixin",
+    "is_process_bound",
     "InterpreterDependency",
     "format_parameter_value",
     "resove_operator_params",

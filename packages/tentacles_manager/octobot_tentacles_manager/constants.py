@@ -70,12 +70,7 @@ DEFAULT_ARTIFACT_METADATA_AUTHOR = "DrakkarSoftware"
 TENTACLE_REQUIREMENT_VERSION_EQUALS = "=="
 
 # Tentacle user config files and folders
-USER_REFERENCE_TENTACLE_CONFIG_PATH = path.join(constants.USER_FOLDER, "reference_tentacles_config")
-USER_REFERENCE_TENTACLE_CONFIG_FILE_PATH = path.join(USER_REFERENCE_TENTACLE_CONFIG_PATH,
-                                                     constants.CONFIG_TENTACLES_FILE)
 TENTACLES_SPECIFIC_CONFIG_FOLDER = "specific_config"
-USER_REFERENCE_TENTACLE_SPECIFIC_CONFIG_PATH = path.join(USER_REFERENCE_TENTACLE_CONFIG_PATH,
-                                                         TENTACLES_SPECIFIC_CONFIG_FOLDER)
 
 # Current minimum default tentacles version
 TENTACLE_CURRENT_MINIMUM_DEFAULT_TENTACLES_VERSION = "1.2.0"

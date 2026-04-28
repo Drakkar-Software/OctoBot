@@ -15,6 +15,7 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import argparse
 import os
+import pathlib
 import sys
 import multiprocessing
 import asyncio
@@ -30,6 +31,7 @@ try:
     import octobot_commons.authentication as authentication
     import octobot_commons.constants as common_constants
     import octobot_commons.errors as errors
+    import octobot_commons.user_root_folder_provider as user_root_folder_provider
 
     import octobot_services.api as service_api
 
@@ -103,6 +105,14 @@ def _disable_interface_from_param(interface_identifier, param_value, logger):
             logger.info(interface_identifier.capitalize() + " interface disabled")
 
 
+def _set_user_root_from_cli(user_folder: str) -> None:
+    if not (user_folder and str(user_folder).strip()):
+        raise errors.ConfigError("User folder must be a non-empty path.")
+    if ".." in pathlib.PurePath(user_folder).parts:
+        raise errors.ConfigError("Invalid user folder: parent directory segments are not allowed.")
+    user_root_folder_provider.instance().set_root(os.path.normpath(user_folder))
+
+
 def _log_environment(logger):
     try:
         bot_type = "cloud" if constants.IS_CLOUD_ENV else "self-hosted"
@@ -115,10 +125,12 @@ def _log_environment(logger):
 
 def _create_configuration():
     config_path = configuration.get_user_config()
-    config = configuration.Configuration(config_path,
-                                         common_constants.USER_PROFILES_FOLDER,
-                                         constants.CONFIG_FILE_SCHEMA,
-                                         constants.PROFILE_FILE_SCHEMA)
+    config = configuration.Configuration(
+        config_path,
+        user_root_folder_provider.get_user_profiles_folder(),
+        constants.CONFIG_FILE_SCHEMA,
+        constants.PROFILE_FILE_SCHEMA,
+    )
     return config
 
 
@@ -297,7 +309,9 @@ def _load_or_create_tentacles(community_auth, config, logger):
     # add tentacles folder to Python path
     sys.path.append(os.path.realpath(os.getcwd()))
 
-    if os.path.isfile(tentacles_manager_constants.USER_REFERENCE_TENTACLE_CONFIG_FILE_PATH):
+    if os.path.isfile(
+        user_root_folder_provider.get_user_reference_tentacle_config_file_path()
+    ):
         # when tentacles folder already exists
         config.load_profiles_if_possible_and_necessary()
         tentacles_setup_config = tentacles_manager_api.get_tentacles_setup_config(
@@ -318,9 +332,13 @@ def start_octobot(args, default_config_file=None):
             print(constants.LONG_VERSION)
             return
 
-        # log folder can be overridden by the LOGS_FOLDER environment variable, 
-        # useful to run multiple bots from the same folder
-        logger = octobot_logger.init_logger(logs_folder=constants.LOGS_FOLDER)
+        user_folder = getattr(args, "user_folder", None)
+        if user_folder:
+            _set_user_root_from_cli(user_folder)
+
+        # log folder: --log-folder overrides default (from LOGS_FOLDER env at import + default "logs")
+        logs_folder = getattr(args, "log_folder", None) or constants.LOGS_FOLDER
+        logger = octobot_logger.init_logger(logs_folder=logs_folder)
         startup_messages = []
 
         # Version
@@ -383,6 +401,11 @@ def start_octobot(args, default_config_file=None):
             bot = octobot_class.OctoBot(config, community_authenticator=community_auth,
                                         reset_trading_history=args.reset_trading_history,
                                         startup_messages=startup_messages)
+
+        if not args.backtesting:
+            path = getattr(args, "dump_state", None)
+            if path:
+                bot.dump_state_path = os.path.normpath(path)
 
         # set global bot instance
         commands.set_global_bot_instance(bot)
@@ -473,6 +496,18 @@ def octobot_parser(parser, default_config_file=None):
                              'When disabled, the backtesting run will not be interrupted during execution',
                         action='store_true')
     parser.add_argument('-r', '--risk', type=float, help='Force a specific risk configuration (between 0 and 1).')
+    parser.add_argument(
+        '--user-folder',
+        type=str,
+        default=None,
+        help='User data root (config, profiles, reference tentacles). Relative to the current working directory.',
+    )
+    parser.add_argument(
+        '--log-folder',
+        type=str,
+        default=None,
+        help='Log files directory. When set, overrides the LOGS_FOLDER environment variable and default "logs".',
+    )
     parser.add_argument('-nw', '--no_web', help="Don't start OctoBot web interface.",
                         action='store_true')
     parser.add_argument('-nl', '--no_logs', help="Disable OctoBot logs in backtesting.",
@@ -486,6 +521,13 @@ def octobot_parser(parser, default_config_file=None):
                                             " exchanges configuration in your config.json without using any interface "
                                             "(ie the web interface that handle encryption automatically).",
                         action='store_true')
+    parser.add_argument(
+        "--dump-state",
+        type=str,
+        default=None,
+        help="Absolute path of the JSON file where OctoBot periodically writes ProcessBotState (liveness, "
+        "next to the user config directory). Omitted in normal use; spawned DSL children pass this explicitly.",
+    )
     parser.add_argument('--identifier', help="OctoBot community identifier.", type=str, nargs=1)
     parser.add_argument('-o', '--strategy_optimizer', help='Start Octobot strategy optimizer. This mode will make '
                                                            'octobot play backtesting scenarii located in '
@@ -603,6 +645,8 @@ def start_background_octobot_with_args(
     in_subprocess=False,
     reset_trading_history=False,
     default_config_file=None,
+    user_folder=None,
+    log_folder=None,
 ):
     if backtesting_files is None:
         backtesting_files = []
@@ -621,7 +665,9 @@ def start_background_octobot_with_args(
                               enable_backtesting_timeout=enable_backtesting_timeout,
                               simulate=simulate,
                               risk=risk,
-                              reset_trading_history=reset_trading_history)
+                              reset_trading_history=reset_trading_history,
+                              user_folder=user_folder,
+                              log_folder=log_folder)
     if in_subprocess:
         bot_process = multiprocessing.Process(target=start_octobot, args=(args, default_config_file))
         bot_process.start()

@@ -13,8 +13,11 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import asyncio
 import time
 import mock
+
+import pytest
 
 import octobot_commons.dsl_interpreter as dsl_interpreter
 import octobot_commons.dsl_interpreter.operator_parameter as operator_parameter
@@ -91,6 +94,22 @@ class _TestReCallableOperator(dsl_interpreter.ReCallableOperatorMixin):
 
     def __init__(self):
         pass
+
+    @staticmethod
+    def get_name() -> str:
+        return "test_recallable_minimal"
+
+
+class _TestExecutionStopA(dsl_interpreter.ReCallableOperatorMixin):
+    @staticmethod
+    def get_name() -> str:
+        return "op_exec_stop_a"
+
+
+class _TestExecutionStopB(dsl_interpreter.ReCallableOperatorMixin):
+    @staticmethod
+    def get_name() -> str:
+        return "op_exec_stop_b"
 
 
 class _ReCreateScriptTestOperator(dsl_interpreter.Operator, dsl_interpreter.ReCallableOperatorMixin):
@@ -246,3 +265,60 @@ class TestReCallableOperatorMixin:
         operator = _ReCreateScriptTestOperator(0.0)
         script = operator.re_create_script({"seconds": 42})
         assert script == "test_wait(42)"
+
+    def test_get_execution_stop_false_by_default(self):
+        assert _TestExecutionStopA.get_execution_stop() is False
+        assert _TestExecutionStopB.get_execution_stop() is False
+
+    def test_set_execution_stop_scopes_to_class_only(self):
+        with _TestExecutionStopA.set_execution_stop():
+            assert _TestExecutionStopA.get_execution_stop() is True
+            assert _TestExecutionStopB.get_execution_stop() is False
+        assert _TestExecutionStopA.get_execution_stop() is False
+
+    def test_set_execution_stop_nested_restores(self):
+        with _TestExecutionStopA.set_execution_stop():
+            assert _TestExecutionStopA.get_execution_stop() is True
+            with _TestExecutionStopB.set_execution_stop():
+                assert _TestExecutionStopA.get_execution_stop() is True
+                assert _TestExecutionStopB.get_execution_stop() is True
+            assert _TestExecutionStopB.get_execution_stop() is False
+            assert _TestExecutionStopA.get_execution_stop() is True
+        assert _TestExecutionStopA.get_execution_stop() is False
+
+    def test_should_run_execution_stop_for_result_default_false(self):
+        assert _TestExecutionStopA.should_run_execution_stop_for_result(
+            {re_callable_operator_mixin.ReCallingOperatorResult.__name__: {"keyword": "x"}},
+        ) is False
+
+
+class TestReCallableOperatorMixinSetExecutionStopConcurrentAsyncio:
+    @pytest.mark.asyncio
+    async def test_set_execution_stop_isolated_across_two_asyncio_tasks(self):
+        """
+        ContextVar-backed execution stop must not leak between concurrent tasks:
+        each task keeps its own set_execution_stop() view while the other runs.
+        """
+
+        async def assert_task_a_does_not_see_b():
+            with _TestExecutionStopA.set_execution_stop():
+                await asyncio.sleep(0.05)
+                assert _TestExecutionStopA.get_execution_stop() is True
+                assert _TestExecutionStopB.get_execution_stop() is False
+                await asyncio.sleep(0.1)
+            assert _TestExecutionStopA.get_execution_stop() is False
+
+        async def assert_task_b_does_not_see_a():
+            with _TestExecutionStopB.set_execution_stop():
+                await asyncio.sleep(0.05)
+                assert _TestExecutionStopB.get_execution_stop() is True
+                assert _TestExecutionStopA.get_execution_stop() is False
+                await asyncio.sleep(0.1)
+            assert _TestExecutionStopB.get_execution_stop() is False
+
+        await asyncio.gather(
+            assert_task_a_does_not_see_b(),
+            assert_task_b_does_not_see_a(),
+        )
+        assert _TestExecutionStopA.get_execution_stop() is False
+        assert _TestExecutionStopB.get_execution_stop() is False

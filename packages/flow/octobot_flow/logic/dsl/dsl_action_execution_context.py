@@ -11,14 +11,16 @@ import octobot_flow.enums
 
 def dsl_action_execution(func):
     async def _action_execution_error_handler_wrapper(
-        self, action: octobot_flow.entities.DSLScriptActionDetails
+        self, action: octobot_flow.entities.DSLScriptActionDetails, **kwargs
     ):
         """
         Handle the error of the DSL script execution.
         action.result should only be a value of octobot_flow.enums.ActionErrorStatus.
         """
         try:
-            call_result: octobot_commons.dsl_interpreter.DSLCallResult = await func(self, action)
+            call_result: octobot_commons.dsl_interpreter.DSLCallResult = await func(
+                self, action, **kwargs
+            )
             if call_result.succeeded():
                 action.complete(result=call_result.result)
             else:

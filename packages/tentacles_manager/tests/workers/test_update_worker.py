@@ -21,9 +21,10 @@ import os
 from os import walk, path
 
 import octobot_commons.constants as commons_constants
+import octobot_commons.user_root_folder_provider as user_root_folder_provider
 from octobot_commons.logging.logging_util import set_logging_level
-from octobot_tentacles_manager.constants import USER_REFERENCE_TENTACLE_SPECIFIC_CONFIG_PATH, \
-    USER_REFERENCE_TENTACLE_CONFIG_FILE_PATH, TENTACLES_PATH, DEFAULT_BOT_PATH, UNKNOWN_TENTACLES_PACKAGE_LOCATION, \
+import octobot_tentacles_manager.constants as tm_constants
+from octobot_tentacles_manager.constants import TENTACLES_PATH, DEFAULT_BOT_PATH, UNKNOWN_TENTACLES_PACKAGE_LOCATION, \
     TENTACLE_CONFIG, TENTACLES_SPECIFIC_CONFIG_FOLDER
 from octobot_tentacles_manager.workers.install_worker import InstallWorker
 from octobot_tentacles_manager.models.tentacle_factory import TentacleFactory
@@ -58,12 +59,12 @@ async def test_update_two_tentacles(clean):
     assert trading_mode_files_count == 1
     backtesting_mode_files_count = sum(1 for _ in walk(path.join(TENTACLES_PATH, "Backtesting", "importers")))
     assert backtesting_mode_files_count == 7
-    config_files = [f for f in walk(USER_REFERENCE_TENTACLE_SPECIFIC_CONFIG_PATH)]
+    config_files = [f for f in walk(user_root_folder_provider.get_user_reference_tentacle_specific_config_path())]
     config_files_count = len(config_files)
     assert config_files_count == 1
 
     # test tentacles config
-    with open(USER_REFERENCE_TENTACLE_CONFIG_FILE_PATH, "r") as config_f:
+    with open(user_root_folder_provider.get_user_reference_tentacle_config_file_path(), "r") as config_f:
         assert json.load(config_f) == {
             'installation_context': {
                 'octobot_version': 'unknown'

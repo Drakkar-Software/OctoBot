@@ -77,6 +77,10 @@ class AutomationDAGResetError(AutomationActionError):
     """raise when a DAG reset fails"""
 
 
+class SynchronizedExchangeConflictError(AutomationActionError):
+    """raise when external exchange snapshots and a live exchange manager would both apply in one pass"""
+
+
 class ActionDependencyNotFoundError(ActionDependencyError):
     """raise when an action dependency is not found"""
 

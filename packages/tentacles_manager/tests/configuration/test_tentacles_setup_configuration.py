@@ -25,6 +25,7 @@ import octobot_tentacles_manager.models as models
 import octobot_tentacles_manager.util as util
 import octobot_tentacles_manager.api as api
 from octobot_tentacles_manager.configuration import TentaclesSetupConfiguration
+import octobot_commons.user_root_folder_provider as user_root_folder_provider
 import octobot_tentacles_manager.constants as constants
 
 # All test coroutines will be treated as marked.
@@ -132,5 +133,6 @@ def _cleanup():
         rmtree(constants.TENTACLES_PATH)
     if path.exists(constants.TENTACLE_CONFIG_FILE_NAME):
         os.remove(constants.TENTACLE_CONFIG_FILE_NAME)
-    if path.exists(constants.USER_REFERENCE_TENTACLE_CONFIG_PATH):
-        rmtree(constants.USER_REFERENCE_TENTACLE_CONFIG_PATH)
+    ref_tent = user_root_folder_provider.get_user_reference_tentacle_config_path()
+    if path.exists(ref_tent):
+        rmtree(ref_tent)

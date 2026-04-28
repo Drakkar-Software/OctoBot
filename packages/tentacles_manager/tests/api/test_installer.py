@@ -23,12 +23,13 @@ import pytest
 from os import path, walk
 
 import octobot_commons.constants as commons_constants
+import octobot_commons.user_root_folder_provider as user_root_folder_provider
 from octobot_tentacles_manager.api.installer import install_all_tentacles, install_tentacles, install_single_tentacle, \
     repair_installation
 from octobot_tentacles_manager.configuration.tentacles_setup_configuration import TentaclesSetupConfiguration
+import octobot_tentacles_manager.constants as tentacles_manager_constants
 from octobot_tentacles_manager.constants import TENTACLES_PATH, TENTACLES_REQUIREMENTS_INSTALL_TEMP_DIR, \
-    PYTHON_INIT_FILE, TENTACLES_NOTIFIERS_PATH, USER_REFERENCE_TENTACLE_CONFIG_PATH, \
-    USER_REFERENCE_TENTACLE_SPECIFIC_CONFIG_PATH, TENTACLES_SERVICES_PATH, TENTACLES_BACKTESTING_PATH, TENTACLES_EVALUATOR_PATH
+    PYTHON_INIT_FILE, TENTACLES_NOTIFIERS_PATH, TENTACLES_SERVICES_PATH, TENTACLES_BACKTESTING_PATH, TENTACLES_EVALUATOR_PATH
 from octobot_tentacles_manager.managers.tentacles_setup_manager import TentaclesSetupManager
 from tests import event_loop, CLEAN_TENTACLES_ARCHITECTURE_FILES_FOLDERS_COUNT
 
@@ -104,7 +105,9 @@ async def test_repair_installation():
                "OtherInstantFluctuationsEvaluator, SecondOtherInstantFluctuationsEvaluator" in f.readlines()
 
     # restore tentacles_config.json validity and content
-    user_config_path = path.join(broken_install, USER_REFERENCE_TENTACLE_CONFIG_PATH)
+    user_config_path = path.join(
+        broken_install, user_root_folder_provider.get_user_reference_tentacle_config_path()
+    )
     with open(path.join(user_config_path, commons_constants.CONFIG_TENTACLES_FILE)) as f:
         activations = json.load(f)[TentaclesSetupConfiguration.TENTACLE_ACTIVATION_KEY]
         # Evaluators are disabled by default by DEFAULT_DEACTIVATABLE_TENTACLE_SUB_TYPES

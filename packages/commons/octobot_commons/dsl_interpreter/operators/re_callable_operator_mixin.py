@@ -13,10 +13,12 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import contextlib
+import contextvars
 import dataclasses
-import typing
-import time
 import enum
+import time
+import typing
 
 import octobot_commons.dataclasses
 import octobot_commons.dsl_interpreter.operator_parameter as operator_parameter
@@ -78,11 +80,58 @@ class ReCallingOperatorResult(octobot_commons.dataclasses.MinimizableDataclass):
         return result[ReCallingOperatorResult.__name__]["keyword"]
 
 
+# Per logical context (e.g. asyncio Task), not process-global: concurrent or nested `interprete`
+# calls do not share this value. Values are operator `get_name()` strings for which
+# `set_execution_stop()` is active; `get_execution_stop()` checks membership for one class only.
+_execution_stop_operator_names: contextvars.ContextVar[frozenset[str]] = contextvars.ContextVar(
+    "re_callable_execution_stop_operator_names",
+    default=frozenset(),
+)
+
+
 class ReCallableOperatorMixin:
     """
     Mixin for re-callable operators.
     """
     LAST_EXECUTION_RESULT_KEY = "last_execution_result"
+
+    @classmethod
+    def get_execution_stop(cls) -> bool:
+        """
+        True when this operator class is the current execution_stop target
+        (see set_execution_stop). Scopes per operator get_name() so one class
+        does not see another's stop mode.
+        """
+        return cls.get_name() in _execution_stop_operator_names.get()
+
+    @classmethod
+    @contextlib.contextmanager
+    def set_execution_stop(cls) -> typing.Iterator[None]:
+        """
+        Context manager: for the duration of the block, get_execution_stop() is
+        True for this class only (other re-callable classes remain False unless
+        also entered in an outer or parallel context).
+        """
+        previous = _execution_stop_operator_names.get()
+        token = _execution_stop_operator_names.set(
+            frozenset(previous | {cls.get_name()})
+        )
+        try:
+            yield
+        finally:
+            _execution_stop_operator_names.reset(token)
+
+    @classmethod
+    def should_run_execution_stop_for_result( # pylint: disable=unused-argument
+        cls, re_calling_result: typing.Optional[dict]
+    ) -> bool:
+        """
+        When draining execution_stop for automation shutdown, return whether this
+        operator should run a stop branch for the given previous re-calling
+        result dict (the same shape as last_execution_result on the action).
+        Default: do nothing (subclasses e.g. run_octobot may override).
+        """
+        return False
 
     @classmethod
     def get_re_callable_parameters(cls) -> list[operator_parameter.OperatorParameter]:

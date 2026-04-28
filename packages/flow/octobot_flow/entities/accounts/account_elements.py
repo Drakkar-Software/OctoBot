@@ -26,16 +26,27 @@ class AccountElements(octobot_commons.dataclasses.MinimizableDataclass, octobot_
         if self._sync_transactions(transactions):
             changed_elements.append(octobot_flow.enums.ChangedElements.TRANSACTIONS)
         return changed_elements
-    
-    def _sync_transactions(self, transactions: list[dict]) -> bool:
-        previous_transactions_ids = {
-            transaction[octobot_trading.enums.ExchangeConstantsTransactionColumns.TXID.value]
+
+    def append_new_transactions_deduped(self, transactions: list[dict]) -> bool:
+        tx_id_key = octobot_trading.enums.ExchangeConstantsTransactionColumns.TXID.value
+        known_txids = {
+            transaction[tx_id_key]
             for transaction in self.transactions
+            if tx_id_key in transaction
         }
-        added_transactions = [
-            transaction
-            for transaction in transactions
-            if transaction[octobot_trading.enums.ExchangeConstantsTransactionColumns.TXID.value] not in previous_transactions_ids
-        ]
-        self.transactions.extend(added_transactions)
-        return bool(added_transactions)
+        added = False
+        for transaction in transactions:
+            tx_id = transaction.get(tx_id_key)
+            if tx_id is None or tx_id in known_txids:
+                continue
+            known_txids.add(tx_id)
+            self.transactions.append(dict(transaction))
+            added = True
+        return added
+
+    def merge_transactions_from_account_elements(self, other: "AccountElements") -> bool:
+        """Append transactions from ``other`` excluding tx ids already on ``self``."""
+        return self.append_new_transactions_deduped(other.transactions)
+
+    def _sync_transactions(self, transactions: list[dict]) -> bool:
+        return self.append_new_transactions_deduped(transactions)

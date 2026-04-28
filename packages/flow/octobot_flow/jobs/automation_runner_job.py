@@ -115,7 +115,8 @@ class AutomationRunnerJob(octobot_flow.repositories.exchange.ExchangeContextMixi
         exchange_account_elements = self.automation_state.automation.exchange_account_elements
         if exchange_account_elements is None:
             return
-        exchange_data.markets = self.fetched_dependencies.fetched_exchange_data.public_data.markets
+        if self.fetched_dependencies.fetched_exchange_data:
+            exchange_data.markets = self.fetched_dependencies.fetched_exchange_data.public_data.markets
         exchange_data.portfolio_details.content = exchange_account_elements.portfolio.content
         exchange_data.orders_details.open_orders = exchange_account_elements.orders.open_orders
         exchange_data.trades = exchange_account_elements.trades

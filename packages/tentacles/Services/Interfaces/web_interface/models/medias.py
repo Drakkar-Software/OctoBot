@@ -14,7 +14,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import octobot_tentacles_manager.constants as tentacles_manager_constants
-import octobot_commons.constants as commons_constants
+import octobot_commons.user_root_folder_provider as user_root_folder_provider
 
 ALLOWED_IMAGE_FORMATS = ["png", "jpg", "jpeg", "gif", "svg"]
 ALLOWED_SOUNDS_FORMATS = ["mp3"]
@@ -31,7 +31,9 @@ def is_valid_tentacle_image_path(path):
 
 def is_valid_profile_image_path(path):
     path_ending = path.split(".")[-1].lower()
-    return path_ending in ALLOWED_IMAGE_FORMATS and _is_valid_path(path, commons_constants.USER_PROFILES_FOLDER)
+    return path_ending in ALLOWED_IMAGE_FORMATS and _is_valid_path(
+        path, user_root_folder_provider.get_user_profiles_folder()
+    )
 
 
 def is_valid_audio_path(path):

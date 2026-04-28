@@ -76,13 +76,10 @@ class AutomationJob:
                     # fetch the actions and signals if any
                     await self._fetch_actions(maybe_authenticator)
                     # resolve the DSL scripts in case it has dependencies on other actions
-                    self._resolve_dsl_scripts(
-                        self.automation_state.automation.actions_dag.get_executable_actions(),
-                        True
-                    )
+                    self._resolve_dsl_scripts(to_execute_actions, True)
                 # fetch the dependencies of the automation environment
                 fetched_dependencies = await self._fetch_dependencies(
-                    maybe_community_repository, to_execute_actions
+                    maybe_community_repository, to_execute_actions, 
                 )
                 # Align on the previous scheduled time when possible when running priority actions
                 # to keep sleep cycles consistency when a priority action is processed.
@@ -218,6 +215,18 @@ class AutomationJob:
             self.automation_state.automation.metadata.automation_id,
             set()
         )
+        dag_actions = self.automation_state.automation.actions_dag.get_executable_actions()
+        # check are_all_actions_process_bound_only from dag actions only
+        if octobot_flow.logic.dsl.are_all_actions_process_bound_only(
+            minimal_profile_data, dag_actions
+        ):
+            self._logger.info(
+                "Skipping copy-trading and exchange dependency initialization (process-bound DSL actions only)."
+            )
+            return octobot_flow.entities.FetchedDependencies(
+                fetched_exchange_data=None,
+                fetched_copy_trading_data=None,
+            )
         if fetched_copy_trading_data := await self._init_all_required_copy_trading_data(
             maybe_community_repository, to_execute_actions, minimal_profile_data,
         ):

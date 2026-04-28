@@ -18,6 +18,7 @@ import os.path as path
 
 import octobot_commons.logging as logging
 import octobot_commons.constants as commons_constants
+import octobot_commons.user_root_folder_provider as user_root_folder_provider
 import octobot_commons.profiles as commons_profiles
 
 import octobot_tentacles_manager.constants as constants
@@ -39,10 +40,11 @@ class TentaclesSetupConfiguration:
         constants.TENTACLES_TRADING_SUPERVISOR_PATH,
     }
 
-    def __init__(self, bot_installation_path=constants.DEFAULT_BOT_PATH,
-                 config_path=constants.USER_REFERENCE_TENTACLE_CONFIG_FILE_PATH):
+    def __init__(self, bot_installation_path=constants.DEFAULT_BOT_PATH, config_path=None):
         self.logger = logging.get_logger(self.__class__.__name__)
         self.bot_installation_path = bot_installation_path
+        if config_path is None:
+            config_path = user_root_folder_provider.get_user_reference_tentacle_config_file_path()
         self.config_path = path.join(bot_installation_path, config_path)
         self.tentacles_activation = {}
         self.registered_tentacles = {}
@@ -98,10 +100,12 @@ class TentaclesSetupConfiguration:
 
     def refresh_profiles_tentacles_config(self,
                                           tentacles,
-                                          profiles_path=commons_constants.USER_PROFILES_FOLDER,
+                                          profiles_path=None,
                                           newly_installed_tentacles=None,
                                           uninstalled_tentacles=None
                                           ):
+        if profiles_path is None:
+            profiles_path = user_root_folder_provider.get_user_profiles_folder()
         bot_profiles_path = os.path.join(self.bot_installation_path, profiles_path)
         if not path.isdir(bot_profiles_path):
             return
@@ -205,7 +209,7 @@ class TentaclesSetupConfiguration:
 
     def _apply_default_profile_activation(self):
         default_profile = commons_profiles.Profile.load_profile(
-            commons_constants.USER_PROFILES_FOLDER,
+            user_root_folder_provider.get_user_profiles_folder(),
             commons_constants.DEFAULT_PROFILE
         )
         profile_setup_config = configuration.TentaclesSetupConfiguration(
@@ -220,7 +224,9 @@ class TentaclesSetupConfiguration:
                 self._apply_default_profile_activation()
             else:
                 self._from_dict(
-                    configuration.read_config(constants.USER_REFERENCE_TENTACLE_CONFIG_FILE_PATH),
+                    configuration.read_config(
+                        user_root_folder_provider.get_user_reference_tentacle_config_file_path()
+                    ),
                     read_activation_config
                 )
         except Exception as err:

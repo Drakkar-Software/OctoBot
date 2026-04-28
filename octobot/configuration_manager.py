@@ -20,6 +20,7 @@ import shutil
 import octobot.constants as constants
 import octobot_commons.configuration as configuration
 import octobot_commons.constants as common_constants
+import octobot_commons.user_root_folder_provider as user_root_folder_provider
 import octobot_commons.logging as logging
 import octobot_commons.json_util as json_util
 import octobot_tentacles_manager.constants as tentacles_manager_constants
@@ -123,8 +124,9 @@ def init_config(
     :param from_config_file: the default config file path
     """
     try:
-        if not os.path.exists(common_constants.USER_FOLDER):
-            os.makedirs(common_constants.USER_FOLDER)
+        user_root = user_root_folder_provider.get_user_root_folder()
+        if not os.path.exists(user_root):
+            os.makedirs(user_root)
 
         shutil.copyfile(from_config_file, config_file)
     except Exception as global_exception:
@@ -169,35 +171,48 @@ def get_default_tentacles_url(version=None):
 
 def get_user_local_config_file():
     try:
-        import octobot_commons.constants as commons_constants
-        return f"{commons_constants.USER_FOLDER}/logging_config.ini"
+        import octobot_commons.user_root_folder_provider as user_root_folder_provider
+
+        return os.path.join(
+            user_root_folder_provider.get_user_root_folder(), "logging_config.ini"
+        )
     except ImportError:
         return None
 
 
 def load_default_tentacles_config(profile_folder):
-    if os.path.isdir(tentacles_manager_constants.USER_REFERENCE_TENTACLE_CONFIG_PATH):
-        shutil.copyfile(tentacles_manager_constants.USER_REFERENCE_TENTACLE_CONFIG_FILE_PATH,
-                        os.path.join(profile_folder, tentacles_manager_constants.constants.CONFIG_TENTACLES_FILE))
-        shutil.copytree(tentacles_manager_constants.USER_REFERENCE_TENTACLE_SPECIFIC_CONFIG_PATH,
-                        os.path.join(profile_folder, tentacles_manager_constants.TENTACLES_SPECIFIC_CONFIG_FOLDER))
+    ref_path = user_root_folder_provider.get_user_reference_tentacle_config_path()
+    ref_file = user_root_folder_provider.get_user_reference_tentacle_config_file_path()
+    ref_spec = user_root_folder_provider.get_user_reference_tentacle_specific_config_path()
+    if os.path.isdir(ref_path):
+        shutil.copyfile(
+            ref_file,
+            os.path.join(profile_folder, tentacles_manager_constants.constants.CONFIG_TENTACLES_FILE),
+        )
+        shutil.copytree(
+            ref_spec,
+            os.path.join(profile_folder, tentacles_manager_constants.TENTACLES_SPECIFIC_CONFIG_FOLDER),
+        )
 
 
 def migrate_from_previous_config(config):
     logger = logging.get_logger(LOGGER_NAME)
     # migrate tentacles configuration if necessary
-    previous_tentacles_config = os.path.join(common_constants.USER_FOLDER, "tentacles_config")
-    previous_tentacles_config_save = os.path.join(common_constants.USER_FOLDER, "tentacles_config.back")
-    if os.path.isdir(previous_tentacles_config) and \
-            not os.path.isdir(tentacles_manager_constants.USER_REFERENCE_TENTACLE_CONFIG_PATH):
+    user_root = user_root_folder_provider.get_user_root_folder()
+    ref_tent_path = user_root_folder_provider.get_user_reference_tentacle_config_path()
+    previous_tentacles_config = os.path.join(user_root, "tentacles_config")
+    previous_tentacles_config_save = os.path.join(user_root, "tentacles_config.back")
+    if os.path.isdir(previous_tentacles_config) and not os.path.isdir(ref_tent_path):
         logger.info(
             f"Updating your tentacles configuration located in {previous_tentacles_config} into the new format. "
             f"A save of your previous tentacles config is available in {previous_tentacles_config_save}")
-        shutil.copytree(previous_tentacles_config,
-                        tentacles_manager_constants.USER_REFERENCE_TENTACLE_CONFIG_PATH)
+        shutil.copytree(previous_tentacles_config, ref_tent_path)
         shutil.move(previous_tentacles_config, previous_tentacles_config_save)
         load_default_tentacles_config(
-            os.path.join(common_constants.USER_PROFILES_FOLDER, common_constants.DEFAULT_PROFILE)
+            os.path.join(
+                user_root_folder_provider.get_user_profiles_folder(),
+                common_constants.DEFAULT_PROFILE,
+            )
         )
     # migrate global configuration if necessary
     config_path = configuration.get_user_config()

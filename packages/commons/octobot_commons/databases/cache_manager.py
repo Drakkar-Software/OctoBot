@@ -23,6 +23,7 @@ import octobot_commons.constants as common_constants
 import octobot_commons.symbols.symbol_util as symbol_util
 import octobot_commons.errors as common_errors
 import octobot_commons.tree as tree
+import octobot_commons.user_root_folder_provider as user_root_folder_provider
 
 
 class CacheManager:
@@ -350,7 +351,7 @@ class CacheManager:
                 identifying_tentacles, tentacles_setup_config
             )
             return os.path.join(
-                common_constants.USER_FOLDER,
+                user_root_folder_provider.get_user_root_folder(),
                 common_constants.CACHE_FOLDER,
                 tentacle_name,
                 exchange_name,

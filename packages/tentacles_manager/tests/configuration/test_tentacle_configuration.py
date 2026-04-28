@@ -27,6 +27,7 @@ import octobot_tentacles_manager.api as api
 from octobot_tentacles_manager.configuration.tentacle_configuration import get_config, update_config, \
     factory_reset_config, get_config_schema_path
 import octobot_tentacles_manager.util as util
+import octobot_commons.user_root_folder_provider as user_root_folder_provider
 import octobot_tentacles_manager.constants as constants
 from octobot_tentacles_manager.loaders.tentacle_loading import reload_tentacle_by_tentacle_class
 
@@ -286,5 +287,6 @@ def _cleanup():
         rmtree(constants.TENTACLES_PATH)
     if path.exists(constants.TENTACLE_CONFIG_FILE_NAME):
         os.remove(constants.TENTACLE_CONFIG_FILE_NAME)
-    if path.exists(constants.USER_REFERENCE_TENTACLE_CONFIG_PATH):
-        rmtree(constants.USER_REFERENCE_TENTACLE_CONFIG_PATH)
+    ref_tent = user_root_folder_provider.get_user_reference_tentacle_config_path()
+    if path.exists(ref_tent):
+        rmtree(ref_tent)

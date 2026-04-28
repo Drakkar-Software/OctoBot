@@ -22,6 +22,7 @@ import os.path as path
 
 import octobot_commons.asyncio_tools as asyncio_tools
 import octobot_commons.constants as commons_constants
+import octobot_commons.user_root_folder_provider as user_root_folder_provider
 import octobot_tentacles_manager.constants as constants
 
 
@@ -66,8 +67,9 @@ def clean():
 
 @pytest.fixture
 def fake_profiles():
-    default_profile = path.join(commons_constants.USER_PROFILES_FOLDER, commons_constants.DEFAULT_PROFILE)
-    other_profile = path.join(commons_constants.USER_PROFILES_FOLDER, OTHER_PROFILE)
+    user_profiles = user_root_folder_provider.get_user_profiles_folder()
+    default_profile = path.join(user_profiles, commons_constants.DEFAULT_PROFILE)
+    other_profile = path.join(user_profiles, OTHER_PROFILE)
     _reset_profile(default_profile)
     _reset_profile(other_profile)
     yield
@@ -80,10 +82,12 @@ def _cleanup():
         shutil.rmtree(TEMP_DIR)
     if path.exists(constants.TENTACLES_PATH):
         shutil.rmtree(constants.TENTACLES_PATH)
-    if path.exists(constants.USER_REFERENCE_TENTACLE_CONFIG_PATH):
-        shutil.rmtree(constants.USER_REFERENCE_TENTACLE_CONFIG_PATH)
-    if os.path.isdir(commons_constants.USER_PROFILES_FOLDER):
-        shutil.rmtree(commons_constants.USER_PROFILES_FOLDER)
+    ref_config = user_root_folder_provider.get_user_reference_tentacle_config_path()
+    if path.exists(ref_config):
+        shutil.rmtree(ref_config)
+    user_profiles = user_root_folder_provider.get_user_profiles_folder()
+    if os.path.isdir(user_profiles):
+        shutil.rmtree(user_profiles)
 
 
 def _reset_profile(profile_path, re_create=True):

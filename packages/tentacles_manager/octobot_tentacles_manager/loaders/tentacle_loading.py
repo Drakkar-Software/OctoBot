@@ -87,7 +87,10 @@ def get_documentation(klass) -> str:
         doc_content = ""
         if path.isfile(doc_file):
             with open(doc_file, "r") as doc_file:
-                doc_content = doc_file.read()
+                try:
+                    doc_content = doc_file.read()
+                except UnicodeDecodeError:
+                    doc_content = ""
         _tentacle_documentation_by_class_name[doc_key] = doc_content
     return doc_content
 

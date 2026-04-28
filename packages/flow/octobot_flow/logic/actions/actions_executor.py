@@ -1,7 +1,6 @@
 import typing
 
 import octobot_commons.logging
-import octobot_commons.dsl_interpreter
 import octobot_commons.profiles
 import octobot_trading.exchanges
 
@@ -10,7 +9,7 @@ import octobot.community
 import octobot_flow.entities
 import octobot_flow.repositories.community
 import octobot_flow.logic.dsl
-import octobot_flow.enums
+import octobot_flow.enums as octobot_flow_enums_import
 import octobot_flow.errors
 
 import tentacles.Meta.DSL_operators.exchange_operators as exchange_operators
@@ -27,7 +26,7 @@ class ActionsExecutor:
         actions: list[octobot_flow.entities.AbstractActionDetails],
         update_execution_details: bool,
     ):
-        self.changed_elements: list[octobot_flow.enums.ChangedElements] = []
+        self.changed_elements: list[octobot_flow_enums_import.ChangedElements] = []
         self.next_execution_scheduled_to: float = 0
 
         self._maybe_community_repository: typing.Optional[
@@ -48,14 +47,17 @@ class ActionsExecutor:
         if self._exchange_manager:
             await octobot_trading.exchanges.create_exchange_channels(self._exchange_manager)
         recall_dag_details: typing.Optional[octobot_commons.dsl_interpreter.ReCallingOperatorResult] = None
+        synchronized_exchange_account_elements: list[octobot_flow.entities.ExchangeAccountElements] = []
         async with dsl_executor.dependencies_context(self._actions):
             for index, action in enumerate(self._actions):
                 await self._execute_action(dsl_executor, action)
                 if self._update_execution_details:
-                    recall_dag_details, should_stop_processing = self._handle_execution_result(action, index)
+                    recall_dag_details, should_stop_processing = await self._handle_execution_result(
+                        dsl_executor, action, index, synchronized_exchange_account_elements
+                    )
                     if should_stop_processing:
                         break
-        self._sync_after_execution()
+        self._sync_after_execution(synchronized_exchange_account_elements)
         if self._update_execution_details:
             await self._update_actions_history()
         await self._insert_execution_bot_logs(dsl_executor.pending_bot_logs)
@@ -69,21 +71,46 @@ class ActionsExecutor:
             # no reset: schedule immediately
             self.next_execution_scheduled_to = 0
 
-    def _handle_execution_result(
-        self, action: octobot_flow.entities.AbstractActionDetails, index: int
+    async def _handle_execution_result(
+        self,
+        dsl_executor: "octobot_flow.logic.dsl.DSLExecutor",
+        action: octobot_flow.entities.AbstractActionDetails,
+        index: int,
+        synchronized_exchange_account_elements: list[octobot_flow.entities.ExchangeAccountElements],
     ) -> tuple[typing.Optional[octobot_commons.dsl_interpreter.ReCallingOperatorResult], bool]:
         if not isinstance(action.result, dict):
             return None, False
-        if octobot_flow.entities.PostIterationActionsDetails.__name__ in action.result:
+        post_iteration_source: typing.Optional[dict] = None
+        post_iter_name = octobot_flow.entities.PostIterationActionsDetails.__name__
+        if post_iter_name in action.result:
+            post_iteration_source = action.result
+        elif octobot_commons.dsl_interpreter.ReCallingOperatorResult.is_re_calling_operator_result(action.result):
+            recall_wrapper = octobot_commons.dsl_interpreter.ReCallingOperatorResult.from_dict(
+                action.result[octobot_commons.dsl_interpreter.ReCallingOperatorResult.__name__]
+            )
+            inner_last = recall_wrapper.last_execution_result
+            if inner_last and post_iter_name in inner_last:
+                post_iteration_source = inner_last
+        if post_iteration_source is not None:
             post_iteration_actions_details = octobot_flow.entities.PostIterationActionsDetails.from_dict(
-                action.result[octobot_flow.entities.PostIterationActionsDetails.__name__]
+                post_iteration_source[post_iter_name]
             )
             if post_iteration_actions_details.stop_automation:
                 self._get_logger().info(f"Stopping automation: {self._automation.metadata.automation_id}")
                 self._automation.post_actions.stop_automation = True
                 # todo cancel open orders and sell assets if required in action config
+                await self._await_recallable_execution_stops(dsl_executor)
                 return None, True
-            return None, False
+            if post_iteration_actions_details.updated_exchange_account_elements is not None:
+                synchronized_exchange_account_elements.append(
+                    octobot_flow.entities.ExchangeAccountElements.from_dict(
+                        post_iteration_actions_details.updated_exchange_account_elements
+                    )
+                )
+                if not octobot_commons.dsl_interpreter.ReCallingOperatorResult.is_re_calling_operator_result(action.result):
+                    return None, False
+            elif not octobot_commons.dsl_interpreter.ReCallingOperatorResult.is_re_calling_operator_result(action.result):
+                return None, False
         if octobot_commons.dsl_interpreter.ReCallingOperatorResult.is_re_calling_operator_result(action.result):
             recall_dag_details = octobot_commons.dsl_interpreter.ReCallingOperatorResult.from_dict(
                 action.result[octobot_commons.dsl_interpreter.ReCallingOperatorResult.__name__]
@@ -106,6 +133,57 @@ class ActionsExecutor:
                 )
                 return recall_dag_details, True
         return None, False
+
+    @staticmethod
+    def _re_calling_payload_for_execution_stop(
+        action: octobot_flow.entities.DSLScriptActionDetails,
+    ) -> typing.Optional[dict]:
+        for candidate in (action.previous_execution_result, action.result):
+            if (
+                candidate
+                and octobot_commons.dsl_interpreter.ReCallingOperatorResult.is_re_calling_operator_result(
+                    candidate
+                )
+            ):
+                return candidate
+        return None
+
+    async def _await_recallable_execution_stops(
+        self, dsl_executor: "octobot_flow.logic.dsl.DSLExecutor"
+    ) -> None:
+        self._automation.actions_dag.resolve_dsl_scripts(self._automation.actions_dag.actions)
+        operators_by_name: typing.Optional[
+            dict[str, typing.Type[octobot_commons.dsl_interpreter.Operator]]
+        ] = None
+        for dag_action in self._automation.actions_dag.actions:
+            if not isinstance(dag_action, octobot_flow.entities.DSLScriptActionDetails):
+                continue
+            re_payload = self._re_calling_payload_for_execution_stop(dag_action)
+            if re_payload is None:
+                continue
+            try:
+                keyword = octobot_commons.dsl_interpreter.ReCallingOperatorResult.get_keyword(
+                    re_payload
+                )
+            except (KeyError, TypeError, AttributeError):
+                continue
+            if operators_by_name is None:
+                operators_by_name = {
+                    operator_class.get_name(): operator_class
+                    for operator_class in dsl_executor.get_flow_operator_classes()
+                }
+            operator_class = operators_by_name.get(keyword)
+            if operator_class is None or not issubclass(
+                operator_class,
+                octobot_commons.dsl_interpreter.ReCallableOperatorMixin,
+            ):
+                continue
+            if not operator_class.should_run_execution_stop_for_result(re_payload):
+                continue
+            await dsl_executor.execute_action(
+                dag_action,
+                execution_stop_for=operator_class,
+            )
 
     async def _execute_action(
         self,
@@ -152,9 +230,27 @@ class ActionsExecutor:
                 "No available community repository: bot logs upload is skipped"
             )
 
-    def _sync_after_execution(self):
+    def _sync_after_execution(
+        self,
+        synchronized_exchange_account_elements: list[octobot_flow.entities.ExchangeAccountElements],
+    ):
+        if synchronized_exchange_account_elements:
+            self._get_logger().info(
+                f"Exchange account elements are being updated from {len(synchronized_exchange_account_elements)}"
+                f"synchronized exchange account elements on {[s.name for s in synchronized_exchange_account_elements]}"
+                f"returned by actions; this iteration does not apply sync_from_exchange_manager from the "
+                f"local exchange_manager.",
+            )
+            if self._automation.exchange_account_elements is None:
+                self._automation.exchange_account_elements = octobot_flow.entities.ExchangeAccountElements()
+            self.changed_elements = self._automation.exchange_account_elements.merge_synchronized_snapshots(
+                synchronized_exchange_account_elements
+            )
+            return
         if exchange_account_elements := self._automation.exchange_account_elements:
-            new_transactions = self._get_new_transactions_from_actions_results(exchange_account_elements)
+            new_transactions = self._get_new_transactions_from_actions_results(
+                exchange_account_elements
+            )
             self._sync_exchange_account_elements(exchange_account_elements, new_transactions)
 
     def _get_new_transactions_from_actions_results(
@@ -178,7 +274,9 @@ class ActionsExecutor:
         new_transactions: list[dict],
     ):
         if self._exchange_manager or new_transactions:
-            self.changed_elements = exchange_account_elements.sync_from_exchange_manager(self._exchange_manager, new_transactions)
+            self.changed_elements = exchange_account_elements.sync_from_exchange_manager(
+                self._exchange_manager, new_transactions
+            )
 
     def _get_logger(self) -> octobot_commons.logging.BotLogger:
         return octobot_commons.logging.get_logger(self.__class__.__name__)

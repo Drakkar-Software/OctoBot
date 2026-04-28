@@ -105,6 +105,9 @@ class OctoBot:
         self.initializer = initializer.Initializer(self)
         self.task_manager = task_manager.TaskManager(self)
         self._init_metadata_run_task = None
+        # optional path for periodic ProcessBotState JSON (see cli --dump-state)
+        self.dump_state_path = None
+        self._process_bot_state_dump_task = None
 
         # Producers
         self.exchange_producer = None
@@ -211,6 +214,9 @@ class OctoBot:
             self.logger.debug("Stopping ...")
             if self._init_metadata_run_task is not None and not self._init_metadata_run_task.done():
                 self._init_metadata_run_task.cancel()
+            if self._process_bot_state_dump_task is not None and not self._process_bot_state_dump_task.done():
+                self._process_bot_state_dump_task.cancel()
+            self._process_bot_state_dump_task = None
             signals.SignalPublisher.instance().stop()
             if self.evaluator_producer is not None:
                 await self.evaluator_producer.stop()

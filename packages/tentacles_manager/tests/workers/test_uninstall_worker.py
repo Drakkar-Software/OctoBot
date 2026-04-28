@@ -19,9 +19,11 @@ from logging import INFO
 import os
 
 import octobot_commons.constants as commons_constants
+import octobot_commons.user_root_folder_provider as user_root_folder_provider
+import octobot_tentacles_manager.constants as tm_constants
 from octobot_commons.logging.logging_util import set_logging_level
 from octobot_tentacles_manager.constants import TENTACLES_PATH, \
-    USER_REFERENCE_TENTACLE_CONFIG_FILE_PATH, DEFAULT_BOT_PATH, TENTACLE_CONFIG, TENTACLES_EVALUATOR_PATH, \
+    DEFAULT_BOT_PATH, TENTACLE_CONFIG, TENTACLES_EVALUATOR_PATH, \
     TENTACLES_EVALUATOR_REALTIME_PATH
 from octobot_tentacles_manager.workers.install_worker import InstallWorker
 
@@ -54,7 +56,7 @@ async def test_uninstall_two_tentacles(clean):
     tentacles_files_count_after_uninstall = sum(1 for _ in os.walk(TENTACLES_PATH))
     # After uninstalling 2 tentacles, there should be fewer directories than after full install
     assert tentacles_files_count_after_uninstall < tentacles_files_count_after_install
-    with open(USER_REFERENCE_TENTACLE_CONFIG_FILE_PATH, "r") as config_f:
+    with open(user_root_folder_provider.get_user_reference_tentacle_config_file_path(), "r") as config_f:
         assert json.load(config_f) == {
             'installation_context': {
                 'octobot_version': 'unknown'
@@ -111,15 +113,15 @@ async def test_profiles_update(clean, fake_profiles):
     assert await uninstall_worker.process(["instant_fluctuations_evaluator", "generic_exchange_importer"]) == 0
 
     # test tentacles setup config
-    with open(USER_REFERENCE_TENTACLE_CONFIG_FILE_PATH) as config_f:
+    with open(user_root_folder_provider.get_user_reference_tentacle_config_file_path()) as config_f:
         ref_profile_config = json.load(config_f)
-
+        user_profiles = user_root_folder_provider.get_user_profiles_folder()
         # test profiles tentacles config
-        with open(os.path.join(commons_constants.USER_PROFILES_FOLDER,
+        with open(os.path.join(user_profiles,
                                commons_constants.DEFAULT_PROFILE,
                                commons_constants.CONFIG_TENTACLES_FILE)) as default_c:
             assert ref_profile_config == json.load(default_c)
-        with open(os.path.join(commons_constants.USER_PROFILES_FOLDER,
+        with open(os.path.join(user_profiles,
                                OTHER_PROFILE,
                                commons_constants.CONFIG_TENTACLES_FILE)) as other_c:
             assert ref_profile_config == json.load(other_c)
@@ -143,7 +145,7 @@ async def test_uninstall_all_tentacles(clean):
     assert await uninstall_worker.process() == 0
     tentacles_files_count = sum(1 for _ in os.walk(TENTACLES_PATH))
     assert tentacles_files_count == CLEAN_TENTACLES_ARCHITECTURE_FILES_FOLDERS_COUNT
-    with open(USER_REFERENCE_TENTACLE_CONFIG_FILE_PATH, "r") as config_f:
+    with open(user_root_folder_provider.get_user_reference_tentacle_config_file_path(), "r") as config_f:
         assert json.load(config_f) == {
             'installation_context': {
                 'octobot_version': 'unknown'

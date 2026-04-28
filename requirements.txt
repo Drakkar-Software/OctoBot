@@ -23,6 +23,7 @@ websockets==15.0.1 # used by supabase, a recent version is required, see https:/
 
 # async http requests
 aiohttp==3.13.3
+aiofiles==25.1.0
 # updating to aiodns==3.2.0 is incompatible (and failing CI)
 # raises RuntimeError: aiodns needs a SelectorEventLoop on Windows. See more: https://github.com/saghul/aiodns/issues/86
 aiodns==3.1.1   # used by aiohttp

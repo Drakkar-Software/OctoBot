@@ -46,6 +46,8 @@ CONFIG_ENABLED_OPTION = "enabled"
 CONFIG_DEBUG_OPTION = "DEV-MODE"
 CONFIG_TIME_FRAME = "time_frame"
 USER_FOLDER = "user"
+AUTOMATIONS_FOLDER = "automations"
+USER_AUTOMATIONS_FOLDER = f"{USER_FOLDER}/{AUTOMATIONS_FOLDER}"
 CONFIG_FOLDER = "config"
 CONFIG_FILE = "config.json"
 SAFE_DUMP_SUFFIX = ".back"
@@ -301,4 +303,5 @@ KNOWN_POTENTIALLY_SSL_FAILED_REQUIRED_URL = (
     "https://tentacles.octobot.online/officials/packages/full/base/1.0.9/metadata.yaml"
 )
 IS_DEV_MODE_ENABLED = parse_boolean_environment_var(CONFIG_DEBUG_OPTION, "False")
-USE_MINIMAL_LIBS = parse_boolean_environment_var("USE_MINIMAL_LIBS", "false")
+ENV_USE_MINIMAL_LIBS = "USE_MINIMAL_LIBS"
+USE_MINIMAL_LIBS = parse_boolean_environment_var(ENV_USE_MINIMAL_LIBS, "false")

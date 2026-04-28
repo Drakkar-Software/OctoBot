@@ -38,6 +38,7 @@ import octobot_trading.personal_data as personal_data
 
 import octobot.constants as constants
 import octobot.configuration_manager as configuration_manager
+import octobot_commons.user_root_folder_provider as user_root_folder_provider
 
 BOT_CHANNEL_LOGGER = None
 LOGGER_PRIORITY_LEVEL = channel_enums.ChannelConsumerPriorityLevels.OPTIONAL.value
@@ -51,7 +52,7 @@ def _log_uncaught_exceptions(ex_cls, ex, tb):
 def init_logger(logs_folder: str = constants.DEFAULT_LOGS_FOLDER):
     try:
         if not os.path.exists(logs_folder):
-            os.mkdir(logs_folder)
+            os.makedirs(logs_folder)
         _load_logger_config(logs_folder)
         init_bot_channel_logger()
     except KeyError:
@@ -88,8 +89,9 @@ def _load_logger_config(logs_folder: str):
     try:
         # use local logging file to allow users to customize the log level
         if not os.path.isfile(configuration_manager.get_user_local_config_file()):
-            if not os.path.exists(commons_constants.USER_FOLDER):
-                os.mkdir(commons_constants.USER_FOLDER)
+            user_root = user_root_folder_provider.get_user_root_folder()
+            if not os.path.exists(user_root):
+                os.mkdir(user_root)
             shutil.copyfile(constants.LOGGING_CONFIG_FILE, configuration_manager.get_user_local_config_file())
         logging.config.fileConfig(configuration_manager.get_user_local_config_file())
         logger = logging.getLogger("Logging Configuration")

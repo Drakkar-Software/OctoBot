@@ -63,6 +63,80 @@ class ExchangeAccountElements(account_elements_import.AccountElements):
                 changed_elements.append(octobot_flow.enums.ChangedElements.TRADES)
         return changed_elements
 
+    def append_new_trades_deduped(self, trades: list[dict]) -> bool:
+        exchange_trade_id_key = octobot_trading.enums.ExchangeConstantsOrderColumns.EXCHANGE_TRADE_ID.value
+        exchange_order_exchange_id_key = octobot_trading.enums.ExchangeConstantsOrderColumns.EXCHANGE_ID.value
+
+        def _identity_key(trade: dict) -> typing.Optional[tuple[str, typing.Hashable]]:
+            exchange_trade_id = trade.get(exchange_trade_id_key)
+            if exchange_trade_id is not None:
+                return exchange_trade_id_key, exchange_trade_id
+            exchange_order_exchange_id = trade.get(exchange_order_exchange_id_key)
+            if exchange_order_exchange_id is not None:
+                return exchange_order_exchange_id_key, exchange_order_exchange_id
+            return None
+
+        known_trade_keys: set[tuple[str, typing.Hashable]] = set()
+        for trade in self.trades:
+            key = _identity_key(trade)
+            if key is not None:
+                known_trade_keys.add(key)
+        added = False
+        for trade in trades:
+            key = _identity_key(trade)
+            if key is None or key in known_trade_keys:
+                continue
+            known_trade_keys.add(key)
+            self.trades.append(dict(trade))
+            added = True
+        return added
+
+    def merge_trades_from_exchange_account_elements(
+        self,
+        other: "ExchangeAccountElements",
+    ) -> bool:
+        """Append trades from ``other`` excluding exchange trade ids already on ``self``."""
+        return self.append_new_trades_deduped(other.trades)
+
+    def merge_synchronized_snapshots(
+        self,
+        snapshots: list["ExchangeAccountElements"],
+    ) -> list[octobot_flow.enums.ChangedElements]:
+        """
+        Merge ordered external snapshots into this account: upsert trades/transactions by stable id,
+        then replace orders/portfolio/positions (and name when set) from the last snapshot.
+        """
+        if not snapshots:
+            return []
+        trades_changed = False
+        transactions_changed = False
+        for snapshot in snapshots:
+            if self.merge_trades_from_exchange_account_elements(snapshot):
+                trades_changed = True
+            if self.merge_transactions_from_account_elements(snapshot):
+                transactions_changed = True
+        last_snapshot = snapshots[-1]
+        orders_changed = self.orders != last_snapshot.orders
+        portfolio_changed = self.portfolio != last_snapshot.portfolio
+        positions_changed = self.positions != last_snapshot.positions
+        self.orders = last_snapshot.orders
+        self.portfolio = last_snapshot.portfolio
+        self.positions = list(last_snapshot.positions)
+        if last_snapshot.name is not None:
+            self.name = last_snapshot.name
+        changed: list[octobot_flow.enums.ChangedElements] = []
+        if trades_changed:
+            changed.append(octobot_flow.enums.ChangedElements.TRADES)
+        if transactions_changed:
+            changed.append(octobot_flow.enums.ChangedElements.TRANSACTIONS)
+        if orders_changed:
+            changed.append(octobot_flow.enums.ChangedElements.ORDERS)
+        if portfolio_changed:
+            changed.append(octobot_flow.enums.ChangedElements.PORTFOLIO)
+        if positions_changed:
+            changed.append(octobot_flow.enums.ChangedElements.POSITIONS)
+        return changed
+
     def sync_orders_from_exchange_manager(self, exchange_manager: octobot_trading.exchanges.ExchangeManager) -> bool:
         previous_orders = self.orders
         updated_open_orders_exchange_ids = set()
@@ -108,14 +182,5 @@ class ExchangeAccountElements(account_elements_import.AccountElements):
     def _sync_trades_from_exchange_manager(self, exchange_manager: octobot_trading.exchanges.ExchangeManager) -> bool:
         previous_trades_count = len(self.trades)
         if update_trades := octobot_trading.api.get_trade_history(exchange_manager, as_dict=True):
-            current_trade_ids = {
-                trade[octobot_trading.enums.ExchangeConstantsOrderColumns.EXCHANGE_TRADE_ID.value]
-                for trade in self.trades
-            }
-            if new_trades := tuple(
-                trade
-                for trade in update_trades
-                if trade[octobot_trading.enums.ExchangeConstantsOrderColumns.EXCHANGE_TRADE_ID.value] not in current_trade_ids
-            ):
-                self.trades.extend(new_trades)
+            self.append_new_trades_deduped(update_trades)
         return previous_trades_count != len(self.trades)

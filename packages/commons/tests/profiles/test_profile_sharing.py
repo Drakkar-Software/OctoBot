@@ -23,6 +23,7 @@ import pathlib
 import pytest
 
 import octobot_commons.constants as constants
+import octobot_commons.user_root_folder_provider as user_root_folder_provider
 import octobot_commons.errors as commons_errors
 import octobot_commons.profiles as profiles
 import octobot_commons.profiles.profile_sharing as profile_sharing
@@ -102,13 +103,13 @@ def test_import_install_profile(profile, invalid_profile):
     exported_file = f"{export_path}.zip"
     spec_tentacles_config = os.path.join(get_profile_path(), "specific_config")
     tentacles_config = os.path.join(get_profile_path(), "tentacles_config.json")
-    other_profile = os.path.join(constants.USER_PROFILES_FOLDER, "default")
+    other_profile = os.path.join(user_root_folder_provider.get_user_profiles_folder(), "default")
     profile_schema = os.path.join(test_config.TEST_CONFIG_FOLDER, "profile_schema.json")
     with _cleaned_tentacles(export_path,
                             exported_file,
                             tentacles_config,
                             dir1=other_profile,
-                            dir2=constants.USER_FOLDER,
+                            dir2=user_root_folder_provider.get_user_root_folder(),
                             dir3=spec_tentacles_config):
         # create fake tentacles config
         shutil.copy(profile.config_file(), tentacles_config)
@@ -116,7 +117,7 @@ def test_import_install_profile(profile, invalid_profile):
         shutil.copy(profile.config_file(), os.path.join(spec_tentacles_config, "t1.json"))
         shutil.copy(profile.config_file(), os.path.join(spec_tentacles_config, "t2.json"))
         profiles.export_profile(profile, export_path)
-        imported_profile_path = os.path.join(constants.USER_PROFILES_FOLDER, "default")
+        imported_profile_path = os.path.join(user_root_folder_provider.get_user_profiles_folder(), "default")
         with mock.patch.object(profile_sharing, "_ensure_unique_profile_id", mock.Mock()) \
                 as _ensure_unique_profile_id_mock:
             imported_profile = profiles.import_profile(exported_file, profile_schema, origin_url="plop.wow")

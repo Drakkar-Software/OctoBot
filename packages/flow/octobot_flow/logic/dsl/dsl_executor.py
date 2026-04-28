@@ -11,6 +11,7 @@ import octobot_trading.dsl
 import octobot_trading.modes as trading_modes
 
 import tentacles.Meta.DSL_operators as dsl_operators
+import tentacles.Meta.DSL_operators.octobot_process_operators.octobot_process_ops as octobot_process_ops
 
 import octobot_flow.entities
 import octobot_flow.errors
@@ -38,10 +39,10 @@ class DSLExecutor(AbstractActionExecutor):
         if dsl_script:
             self._interpreter.prepare(dsl_script)
 
-    def _create_interpreter(
-        self, previous_execution_result: typing.Optional[dict]
-    ):
-        return octobot_commons.dsl_interpreter.Interpreter(
+    def get_flow_operator_classes(
+        self,
+    ) -> list[typing.Type[octobot_commons.dsl_interpreter.Operator]]:
+        return (
             octobot_commons.dsl_interpreter.get_all_operators()
             + dsl_operators.create_ohlcv_operators(self._exchange_manager, None, None)
             + dsl_operators.create_portfolio_operators(self._exchange_manager)
@@ -60,6 +61,14 @@ class DSLExecutor(AbstractActionExecutor):
                 copier_exchange_manager=self._exchange_manager,
                 copier_trading_mode=None,
             )
+            + [octobot_process_ops.EnsureOctobotProcessOperator]
+        )
+
+    def _create_interpreter(
+        self, previous_execution_result: typing.Optional[dict]
+    ):
+        return octobot_commons.dsl_interpreter.Interpreter(
+            self.get_flow_operator_classes()
         )
 
     def get_dependencies(self) -> list[
@@ -74,15 +83,27 @@ class DSLExecutor(AbstractActionExecutor):
         return self._interpreter.get_top_operator()
 
     @dsl_action_execution
-    async def execute_action(self, action: octobot_flow.entities.DSLScriptActionDetails) -> typing.Any:
+    async def execute_action(
+        self,
+        action: octobot_flow.entities.DSLScriptActionDetails,
+        *,
+        execution_stop_for: typing.Optional[typing.Type[
+            octobot_commons.dsl_interpreter.ReCallableOperatorMixin
+        ]] = None,
+    ) -> typing.Any:
         self._interpreter = self._create_interpreter(
             action.previous_execution_result
         )
         expression = action.get_resolved_dsl_script()
         try:
+            if execution_stop_for is not None:
+                with execution_stop_for.set_execution_stop():
+                    interpretation = await self._interpreter.interprete(expression)
+            else:
+                interpretation = await self._interpreter.interprete(expression)
             return octobot_commons.dsl_interpreter.DSLCallResult(
                 statement=expression,
-                result=await self._interpreter.interprete(expression),
+                result=interpretation,
             )
         except octobot_commons.errors.MaxAttemptsExceededError as err:
             self._logger().error(f"Max attempts exceeded: {err}")
