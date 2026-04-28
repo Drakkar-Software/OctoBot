@@ -58,10 +58,11 @@ class Execution(BaseModel):
     scheduled_at: typing.Optional[datetime.datetime] = None
     completed_at: typing.Optional[datetime.datetime] = None
     error: typing.Optional[str] = None
+    wallet_address: typing.Optional[str] = None
 
 
 class Task(BaseModel):
-    id: str = str(uuid.uuid4())
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: typing.Optional[str] = None
     content: typing.Optional[str] = None
     content_metadata: typing.Optional[str] = None
@@ -70,6 +71,7 @@ class Task(BaseModel):
     error: typing.Optional[str] = None
     user_rsa_public_key: typing.Optional[str] = None
     user_ecdsa_public_key: typing.Optional[str] = None
+    wallet_address: typing.Optional[str] = None
 
 class Node(BaseModel):
     node_type: str

@@ -1,7 +1,7 @@
 import { Check, Clock, Layers, Lock } from "lucide-react"
 import { memo } from "react"
 
-import type { Task_Output as Task, TaskStatus } from "@/client"
+import type { Task, TaskStatus } from "@/client"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"

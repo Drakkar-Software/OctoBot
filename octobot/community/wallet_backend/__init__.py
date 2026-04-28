@@ -18,7 +18,25 @@ from octobot.community.wallet_backend import community_wallet
 from octobot.community.wallet_backend.community_wallet import (
     WalletBackend,
 )
+from octobot.community.wallet_backend import wallet_storage
+from octobot.community.wallet_backend.wallet_storage import (
+    WalletStorage,
+    ConfigJsonWalletStorage,
+    DedicatedFileWalletStorage,
+    EnvVarWalletStorage,
+    build_wallet_storage,
+)
+from octobot.community.wallet_backend import postgres_wallet_storage
+from octobot.community.wallet_backend.postgres_wallet_storage import (
+    PostgresWalletStorage,
+)
 
 __all__ = [
     "WalletBackend",
+    "WalletStorage",
+    "ConfigJsonWalletStorage",
+    "DedicatedFileWalletStorage",
+    "EnvVarWalletStorage",
+    "PostgresWalletStorage",
+    "build_wallet_storage",
 ]

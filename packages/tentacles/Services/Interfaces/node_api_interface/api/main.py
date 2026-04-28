@@ -29,6 +29,7 @@ try:
         logs,
         setup,
         exchanges,
+        wallets,
     )
 except ImportError:
     from api.route_provider import register_all_provider_routes
@@ -40,6 +41,7 @@ except ImportError:
         logs,
         setup,
         exchanges,
+        wallets,
     )
 
 
@@ -50,6 +52,7 @@ def build_api_router() -> APIRouter:
     api_router.include_router(exchanges.router)
     register_all_provider_routes(api_router)
     api_router.include_router(users.router, prefix="/users")
+    api_router.include_router(wallets.router, prefix="/wallets")
     api_router.include_router(tasks.router, prefix="/tasks")
     api_router.include_router(nodes.router, prefix="/nodes")
     api_router.include_router(logs.router, prefix="/logs")

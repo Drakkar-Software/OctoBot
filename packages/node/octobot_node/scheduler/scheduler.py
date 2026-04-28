@@ -268,6 +268,7 @@ class Scheduler:
                         scheduled_at=completed_workflow_status.created_at,
                         completed_at=completed_workflow_status.updated_at,
                         error=error,
+                        wallet_address=task.wallet_address if task else None,
                     ))
                 except Exception as e:
                     self.logger.exception(e, True, f"Failed to process result workflow {completed_workflow_status.workflow_id}: {e}")
@@ -293,6 +294,7 @@ class Scheduler:
                 task_actions = task.content #todo confi
 
         task_content_metadata = task.content_metadata if task else None
+        task_wallet_address = task.wallet_address if task else None
         return octobot_node.models.Execution(
             id=task_id,
             name=task_name,
@@ -301,6 +303,7 @@ class Scheduler:
             content_metadata=task_content_metadata,
             type=task_type,
             status=status,
+            wallet_address=task_wallet_address,
         )
 
     def get_task_name(self, task_data: dict | octobot_node.models.Task | None, default_value: typing.Optional[str] = None) -> typing.Optional[str]:

@@ -59,27 +59,36 @@ def get_node_status() -> dict[str, str | int | None | uuid.UUID]:
     }
 
 
-async def get_task_metrics() -> dict[str, int]:
+async def get_task_metrics(
+    wallet_address: typing.Optional[str] = None,
+) -> dict[str, int]:
     try:
-        instance = octobot_node.scheduler.SCHEDULER.INSTANCE
-        if instance is None:
-            logger.warning("Scheduler instance not initialized")
-            pending, completed, periodic = [], [], []
-        else:
-            pending, completed, periodic = await asyncio.gather(
-                instance.list_workflows_async(status=[
-                    dbos.WorkflowStatusString.ENQUEUED.value, dbos.WorkflowStatusString.PENDING.value
-                ]),
-                instance.list_workflows_async(status=[
-                    dbos.WorkflowStatusString.SUCCESS.value, dbos.WorkflowStatusString.ERROR.value
-                ]),
-                octobot_node.scheduler.SCHEDULER.get_periodic_tasks()
+        tasks = await get_all_tasks(wallet_address=wallet_address)
+        pending = sum(
+            1 for t in tasks
+            if any(
+                e.status in (
+                    octobot_node.models.TaskStatus.PENDING,
+                    octobot_node.models.TaskStatus.RUNNING,
+                )
+                for e in t.executions
             )
-        return {
-            "pending": len(pending),
-            "scheduled": len(periodic),
-            "results": len(completed),
-        }
+        )
+        scheduled = sum(
+            1 for t in tasks
+            if any(e.status == octobot_node.models.TaskStatus.PERIODIC for e in t.executions)
+        )
+        results = sum(
+            1 for t in tasks
+            if any(
+                e.status in (
+                    octobot_node.models.TaskStatus.COMPLETED,
+                    octobot_node.models.TaskStatus.FAILED,
+                )
+                for e in t.executions
+            )
+        )
+        return {"pending": pending, "scheduled": scheduled, "results": results}
     except Exception as e:
         logger.error(f"Failed to retrieve task metrics from scheduler: {e}")
         return {"pending": 0, "scheduled": 0, "results": 0}
@@ -112,6 +121,7 @@ def _build_tasks_from_executions(
         active_name = active.name if active else None
         active_content = active.actions if active else None
         error = active.error if active else None
+        active_wallet = active.wallet_address if active else None
         for execution in group:
             execution.name = None
             if active is None or execution.id != active.id:
@@ -122,11 +132,14 @@ def _build_tasks_from_executions(
             content=active_content,
             executions=group,
             error=error,
+            wallet_address=active_wallet,
         ))
     return tasks
 
 
-async def get_all_tasks() -> list[octobot_node.models.Task]:
+async def get_all_tasks(
+    wallet_address: typing.Optional[str] = None,
+) -> list[octobot_node.models.Task]:
     executions: list[octobot_node.models.Execution] = []
     try:
         periodic, pending, scheduled, results = await asyncio.gather(
@@ -144,6 +157,8 @@ async def get_all_tasks() -> list[octobot_node.models.Task]:
         return []
 
     tasks = _build_tasks_from_executions(executions)
+    if wallet_address is not None:
+        tasks = [t for t in tasks if t.wallet_address == wallet_address]
     logger.debug("Returning %d total tasks from %d executions", len(tasks), len(executions))
     return tasks
 

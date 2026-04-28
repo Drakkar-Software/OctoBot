@@ -44,8 +44,6 @@ def _get_client_and_address(passphrase: str | None = None) -> tuple[StarfishClie
         return None
     if passphrase:
         authenticator.init_sync_client_with_passphrase(passphrase)
-    else:
-        authenticator.init_sync_client()
     if authenticator._sync_client is None:
         return None
     return authenticator._sync_client, authenticator._sync_address, authenticator._sync_data_signer

@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { Check, Copy, Download, FileText, KeyRound, Network, QrCode, Server, ShieldCheck, Sliders, TriangleAlert, Wallet, X } from "lucide-react"
+import { Check, Copy, Download, FileText, KeyRound, Network, Plus, QrCode, Server, ShieldCheck, Sliders, Trash2, TriangleAlert, Wallet, X } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import QRCode from "react-qr-code"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import {
   Card,
@@ -20,6 +21,8 @@ import {
 } from "@/components/ui/dialog"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import useAuth from "@/hooks/useAuth"
+import { WalletsService, type WalletInfo } from "@/client"
+import { truncateAddress } from "@/lib/wallet-utils"
 import {
   CLIENT_KEY_LABELS,
   CLIENT_KEY_NAMES,
@@ -141,6 +144,7 @@ function ExportWalletDialog() {
   }
 
   const onOpenChange = (open: boolean) => {
+    if (open) { void fetchPrivateKey() }
     if (!open) { setPrivateKey(null); setError(null) }
   }
 
@@ -149,7 +153,6 @@ function ExportWalletDialog() {
       <DialogTrigger asChild>
         <button
           className="inline-flex w-fit items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent"
-          onClick={fetchPrivateKey}
         >
           <Download className="size-4" />
           Export wallet
@@ -394,6 +397,9 @@ function ClientEncryptionKeysCard() {
         setError("Failed to decrypt stored keys.")
       }
     })()
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current)
+    }
   }, [])
 
   const handleSave = async () => {
@@ -524,7 +530,366 @@ function ClientEncryptionKeysCard() {
   )
 }
 
+function AddWalletDialog({ onSuccess }: { onSuccess: () => void }) {
+  const [open, setOpen] = useState(false)
+  const [name, setName] = useState("")
+  const [passphrase, setPassphrase] = useState("")
+  const [privateKey, setPrivateKey] = useState("")
+  const [importMode, setImportMode] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const mutation = useMutation({
+    mutationFn: () =>
+      WalletsService.createWallet({
+        requestBody: {
+          passphrase,
+          name: name.trim() || null,
+          private_key: importMode && privateKey.trim() ? privateKey.trim() : null,
+        },
+      }),
+    onSuccess: () => {
+      setOpen(false)
+      setName("")
+      setPassphrase("")
+      setPrivateKey("")
+      setImportMode(false)
+      setError(null)
+      onSuccess()
+    },
+    onError: (e: unknown) => {
+      const msg = e instanceof Error ? e.message : "Failed to add wallet"
+      setError(msg)
+    },
+  })
+
+  const handleOpenChange = (v: boolean) => {
+    if (!v) {
+      setName("")
+      setPassphrase("")
+      setPrivateKey("")
+      setImportMode(false)
+      setError(null)
+      mutation.reset()
+    }
+    setOpen(v)
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogTrigger asChild>
+        <button className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent">
+          <Plus className="size-4" />
+          Add wallet
+        </button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Add wallet</DialogTitle>
+          <DialogDescription>
+            Create a new wallet or import one with a private key.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex flex-col gap-4">
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => { setImportMode(false); setError(null) }}
+              className={`flex-1 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors ${!importMode ? "bg-primary text-primary-foreground" : "hover:bg-accent"}`}
+            >
+              Create new
+            </button>
+            <button
+              type="button"
+              onClick={() => { setImportMode(true); setError(null) }}
+              className={`flex-1 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors ${importMode ? "bg-primary text-primary-foreground" : "hover:bg-accent"}`}
+            >
+              Import
+            </button>
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-muted-foreground">Display name (optional)</label>
+            <input
+              className="rounded-md border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+              placeholder="e.g. Alice"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-muted-foreground">Passphrase</label>
+            <input
+              type="password"
+              className="rounded-md border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+              placeholder="Choose a passphrase"
+              value={passphrase}
+              onChange={(e) => setPassphrase(e.target.value)}
+            />
+          </div>
+          {importMode && (
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-muted-foreground">Private key</label>
+              <input
+                type="password"
+                className="rounded-md border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring font-mono"
+                placeholder="0x..."
+                value={privateKey}
+                onChange={(e) => setPrivateKey(e.target.value)}
+              />
+            </div>
+          )}
+          {error && (
+            <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+              <TriangleAlert className="mt-0.5 size-4 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+          <button
+            type="button"
+            disabled={passphrase.length < 8 || (importMode && !/^(0x)?[0-9a-fA-F]{64}$/.test(privateKey.trim())) || mutation.isPending}
+            onClick={() => {
+              if (passphrase.length < 8) {
+                setError("Passphrase must be at least 8 characters")
+                return
+              }
+              if (importMode) {
+                const pkClean = privateKey.trim().replace(/^0x/, "")
+                if (!/^[0-9a-fA-F]{64}$/.test(pkClean)) {
+                  setError("Private key must be a 64-character hex string (with or without 0x prefix)")
+                  return
+                }
+              }
+              mutation.mutate()
+            }}
+            className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {mutation.isPending ? "Adding…" : importMode ? "Import wallet" : "Create wallet"}
+          </button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function RemoveWalletDialog({
+  wallet,
+  onSuccess,
+}: {
+  wallet: WalletInfo
+  onSuccess: () => void
+}) {
+  const [open, setOpen] = useState(false)
+
+  const mutation = useMutation({
+    mutationFn: () => WalletsService.deleteWallet({ address: wallet.address }),
+    onSuccess: () => {
+      setOpen(false)
+      onSuccess()
+    },
+  })
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => { mutation.reset(); setOpen(v) }}>
+      <DialogTrigger asChild>
+        <button
+          className="text-muted-foreground hover:text-destructive transition-colors"
+          title="Remove wallet"
+          aria-label="Remove wallet"
+        >
+          <Trash2 className="size-4" />
+        </button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Remove wallet</DialogTitle>
+          <DialogDescription>
+            This will permanently remove{" "}
+            <span className="font-mono">{wallet.name || truncateAddress(wallet.address)}</span>{" "}
+            from this node.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex flex-col gap-4">
+          <div className="flex items-start gap-2 rounded-md border border-yellow-500/40 bg-yellow-500/10 p-3 text-sm text-yellow-600 dark:text-yellow-400">
+            <TriangleAlert className="mt-0.5 size-4 shrink-0" />
+            <span>
+              Tasks associated with this wallet will become orphaned (visible to admins only). This action cannot be undone.
+            </span>
+          </div>
+          {mutation.isError && (
+            <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+              <TriangleAlert className="mt-0.5 size-4 shrink-0" />
+              <span>{mutation.error instanceof Error ? mutation.error.message : "Failed to remove wallet"}</span>
+            </div>
+          )}
+          <div className="flex gap-2 justify-end">
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              disabled={mutation.isPending}
+              onClick={() => mutation.mutate()}
+              className="inline-flex items-center gap-2 rounded-md bg-destructive px-3 py-1.5 text-sm font-medium text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50"
+            >
+              {mutation.isPending ? "Removing…" : "Remove"}
+            </button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function WalletRow({
+  wallet,
+  onRefresh,
+}: {
+  wallet: WalletInfo
+  onRefresh: () => void
+}) {
+  const [editing, setEditing] = useState(false)
+  const [nameValue, setNameValue] = useState(wallet.name ?? "")
+  const [renameError, setRenameError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!editing) setNameValue(wallet.name ?? "")
+  }, [wallet.name, editing])
+
+  const mutation = useMutation({
+    mutationFn: (name: string | null) =>
+      WalletsService.updateWallet({
+        address: wallet.address,
+        requestBody: { name },
+      }),
+    onSuccess: () => {
+      setEditing(false)
+      setRenameError(null)
+      onRefresh()
+    },
+    onError: (e: unknown) => {
+      setRenameError(e instanceof Error ? e.message : "Failed to rename wallet")
+    },
+  })
+
+  const handleSave = () => {
+    mutation.mutate(nameValue.trim() || null)
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") handleSave()
+    if (e.key === "Escape") { setEditing(false); setNameValue(wallet.name ?? "") }
+  }
+
+  return (
+    <div className="flex items-center gap-3 rounded-lg border p-3">
+      <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+        {editing ? (
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <input
+                autoFocus
+                className="rounded border bg-background px-2 py-0.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                value={nameValue}
+                onChange={(e) => setNameValue(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Display name"
+              />
+              <button
+                onClick={handleSave}
+                disabled={mutation.isPending}
+                className="text-xs text-primary hover:underline disabled:opacity-50"
+              >
+                {mutation.isPending ? "Saving…" : "Save"}
+              </button>
+              <button
+                onClick={() => { setEditing(false); setNameValue(wallet.name ?? ""); setRenameError(null); mutation.reset() }}
+                className="text-xs text-muted-foreground hover:underline"
+              >
+                Cancel
+              </button>
+            </div>
+            {renameError && <span className="text-xs text-destructive">{renameError}</span>}
+          </div>
+        ) : (
+          <button
+            onClick={() => setEditing(true)}
+            className="flex items-center gap-1.5 w-fit text-left group"
+            title="Click to edit name"
+          >
+            <span className="text-sm font-medium group-hover:underline underline-offset-2">
+              {wallet.name || <span className="text-muted-foreground italic">No name</span>}
+            </span>
+          </button>
+        )}
+        <span className="text-xs text-muted-foreground font-mono">
+          {truncateAddress(wallet.address)}
+        </span>
+      </div>
+      <div className="flex items-center gap-2 shrink-0">
+        {wallet.is_admin && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span>
+                <ShieldCheck className="size-4 text-primary" />
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="left">Admin wallet</TooltipContent>
+          </Tooltip>
+        )}
+        {wallet.is_admin === false && (
+          <RemoveWalletDialog wallet={wallet} onSuccess={onRefresh} />
+        )}
+      </div>
+    </div>
+  )
+}
+
+function WalletManagementCard() {
+  const queryClient = useQueryClient()
+  const { data: wallets = [], isLoading } = useQuery({
+    queryKey: ["wallets"],
+    queryFn: () => WalletsService.listWallets(),
+  })
+
+  const refresh = () => {
+    void queryClient.invalidateQueries({ queryKey: ["wallets"] })
+  }
+
+  return (
+    <Card className="md:col-span-2">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Wallet className="size-4" />
+          Wallet management
+        </CardTitle>
+        <CardDescription>
+          Manage wallets that can log in to this node. Each wallet has its own passphrase and task visibility.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
+        {isLoading ? (
+          <p className="text-sm text-muted-foreground">Loading wallets…</p>
+        ) : (
+          <>
+            <div className="flex flex-col gap-2">
+              {wallets.map((wallet) => (
+                <WalletRow key={wallet.address} wallet={wallet} onRefresh={refresh} />
+              ))}
+            </div>
+            <AddWalletDialog onSuccess={refresh} />
+          </>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
 function Settings() {
+  const { user } = useAuth()
+
   return (
     <div className="flex flex-col gap-8">
       <div className="grid gap-4 md:grid-cols-2">
@@ -533,6 +898,7 @@ function Settings() {
         <LoggingCard />
         <EncryptionCard />
         <ClientEncryptionKeysCard />
+        {user?.is_superuser && <WalletManagementCard />}
       </div>
     </div>
   )

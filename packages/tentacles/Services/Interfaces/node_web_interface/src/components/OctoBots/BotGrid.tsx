@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router"
 import { Bot, Plus } from "lucide-react"
 
-import type { Task_Output as Task } from "@/client"
+import type { Task } from "@/client"
 import { Button } from "@/components/ui/button"
 import { BotCard } from "./BotCard"
 

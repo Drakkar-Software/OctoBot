@@ -12,7 +12,7 @@ import {
 import { ArrowLeft, ArrowUpDown, Download, Eye, EyeOff, Loader2, Plus, Search, Upload, X } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
-import type { Task_Output as Task } from "@/client"
+import type { Task } from "@/client"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"

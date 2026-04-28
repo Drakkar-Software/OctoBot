@@ -13,6 +13,8 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import pathlib
+import sys
 from contextlib import asynccontextmanager
 
 import uvicorn
@@ -39,6 +41,9 @@ try:
     from tentacles.Services.Interfaces.node_api_interface.utils import get_dist_directory
     from tentacles.Services.Interfaces.node_api_interface.api.main import build_api_router
 except ImportError:
+    _pkg_dir = str(pathlib.Path(__file__).resolve().parent)
+    if _pkg_dir not in sys.path:
+        sys.path.insert(0, _pkg_dir)
     import utils
     import api.main
     get_dist_directory = utils.get_dist_directory

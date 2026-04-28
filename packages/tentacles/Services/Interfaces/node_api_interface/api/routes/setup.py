@@ -26,7 +26,7 @@ import octobot.community.authentication as community_auth
 try:
     from tentacles.Services.Interfaces.node_api_interface.api.deps import CurrentUser, security_basic
 except ImportError:
-    from api.deps import CurrentUser, security_basic
+    from api.deps import CurrentUser, security_basic  # type: ignore[no-redef]
 
 router = APIRouter(tags=["setup"])
 
@@ -39,6 +39,7 @@ class SetupInit(pydantic.BaseModel):
     passphrase: str
     node_type: typing.Literal["standalone", "master"]
     private_key: typing.Optional[str] = None
+    name: typing.Optional[str] = None
 
 
 class SetupResult(pydantic.BaseModel):
@@ -53,7 +54,7 @@ class WalletExport(pydantic.BaseModel):
 @router.get("/setup/status", response_model=SetupStatus)
 def get_setup_status() -> SetupStatus:
     auth = community_auth.CommunityAuthentication.instance()
-    configured = auth is not None and auth.is_node_wallet_configured()
+    configured = auth is not None and bool(auth.list_wallets())
     return SetupStatus(configured=configured)
 
 
@@ -65,17 +66,35 @@ def init_setup(body: SetupInit) -> SetupResult:
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Service not initialized",
         )
-    if auth.is_node_wallet_configured():
+    already_configured = bool(auth.list_wallets())
+    if already_configured:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Node is already configured",
         )
     try:
         if body.private_key:
-            wallet = auth.import_and_encrypt_node_wallet(body.private_key, body.passphrase)
+            wallet = auth.import_wallet(
+                private_key=body.private_key,
+                passphrase=body.passphrase,
+                name=body.name,
+                is_admin=True,
+            )
         else:
-            wallet = auth.create_and_encrypt_node_wallet(body.passphrase)
+            wallet = auth.create_wallet(
+                name=body.name,
+                passphrase=body.passphrase,
+                is_admin=True,
+            )
     except ValueError as err:
+        # A duplicate-address/duplicate-admin error under concurrent requests means
+        # the node was configured by the racing request — surface 409, not 422.
+        msg = str(err).lower()
+        if "already exists" in msg or "already configured" in msg:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=str(err),
+            ) from err
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=str(err),
@@ -95,5 +114,16 @@ def export_wallet(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Node not configured",
         )
-    wallet = auth.decrypt_node_wallet(credentials.password)
+    try:
+        wallet = auth.decrypt_wallet_by_address(current_user.email, credentials.password)
+    except KeyError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Wallet not found",
+        )
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid passphrase",
+        )
     return WalletExport(address=wallet.address, private_key=wallet.private_key)

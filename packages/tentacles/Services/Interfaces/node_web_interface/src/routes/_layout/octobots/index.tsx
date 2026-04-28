@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router"
 import { Loader2 } from "lucide-react"
 import { Suspense, useCallback, useMemo, useState } from "react"
 
-import type { Task_Output as Task } from "@/client"
+import type { Task } from "@/client"
 import { BotsFilterBar } from "@/components/OctoBots/BotsFilterBar"
 import { BotGrid } from "@/components/OctoBots/BotGrid"
 import { SelectionToolbar } from "@/components/OctoBots/SelectionToolbar"

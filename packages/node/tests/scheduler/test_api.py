@@ -101,28 +101,33 @@ class TestGetTaskMetrics:
     @pytest.mark.asyncio
     async def test_get_task_metrics_success(self, temp_dbos_scheduler) -> None:
         """Test successful retrieval of task metrics."""
-        call_responses = [[mock.Mock()] * 5, [mock.Mock()] * 10]
-        call_idx = [0]
-
-        async def mock_list_workflows(*args, **kwargs):
-            result = call_responses[call_idx[0]]
-            call_idx[0] += 1
-            return result
-
-        mock_get_periodic = mock.AsyncMock(return_value=[
-            {"id": "task1"},
-            {"id": "task2"},
-        ])
+        periodic_execs = [
+            Execution(id=f"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa{i}", status=TaskStatus.PERIODIC)
+            for i in range(2)
+        ]
+        pending_execs = [
+            Execution(id=f"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb{i}", status=TaskStatus.PENDING)
+            for i in range(5)
+        ]
+        result_execs = [
+            Execution(id=f"cccccccc-cccc-cccc-cccc-ccccccccccc{i}", status=TaskStatus.COMPLETED)
+            for i in range(10)
+        ]
 
         with mock.patch.object(
-            temp_dbos_scheduler.INSTANCE, "list_workflows_async", side_effect=mock_list_workflows
-        ), mock.patch.object(temp_dbos_scheduler, "get_periodic_tasks", mock_get_periodic):
+            temp_dbos_scheduler, "get_periodic_tasks", mock.AsyncMock(return_value=periodic_execs)
+        ), mock.patch.object(
+            temp_dbos_scheduler, "get_pending_tasks", mock.AsyncMock(return_value=pending_execs)
+        ), mock.patch.object(
+            temp_dbos_scheduler, "get_scheduled_tasks", mock.AsyncMock(return_value=[])
+        ), mock.patch.object(
+            temp_dbos_scheduler, "get_results", mock.AsyncMock(return_value=result_execs)
+        ):
             result = await get_task_metrics()
 
             assert result["pending"] == 5
             assert result["scheduled"] == 2
             assert result["results"] == 10
-            mock_get_periodic.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_get_task_metrics_uninitialized_scheduler(self) -> None:
@@ -153,20 +158,20 @@ class TestGetTaskMetrics:
     @pytest.mark.asyncio
     async def test_get_task_metrics_no_periodic_tasks(self) -> None:
         """Test task metrics when there are no periodic tasks."""
-        call_responses = [[mock.Mock()] * 2, [mock.Mock()] * 5]
-        call_idx = [0]
-
-        async def mock_list_workflows(*args, **kwargs):
-            result = call_responses[call_idx[0]]
-            call_idx[0] += 1
-            return result
-
-        mock_instance = mock.AsyncMock()
-        mock_instance.list_workflows_async.side_effect = mock_list_workflows
+        pending_execs = [
+            Execution(id=f"dddddddd-dddd-dddd-dddd-ddddddddddd{i}", status=TaskStatus.PENDING)
+            for i in range(2)
+        ]
+        result_execs = [
+            Execution(id=f"eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee{i}", status=TaskStatus.COMPLETED)
+            for i in range(5)
+        ]
 
         mock_scheduler = mock.Mock()
-        mock_scheduler.INSTANCE = mock_instance
         mock_scheduler.get_periodic_tasks = mock.AsyncMock(return_value=[])
+        mock_scheduler.get_pending_tasks = mock.AsyncMock(return_value=pending_execs)
+        mock_scheduler.get_scheduled_tasks = mock.AsyncMock(return_value=[])
+        mock_scheduler.get_results = mock.AsyncMock(return_value=result_execs)
 
         with mock.patch("octobot_node.scheduler.SCHEDULER", mock_scheduler):
             result = await get_task_metrics()
