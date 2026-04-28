@@ -35,32 +35,65 @@ def spawn_managed_subprocess(
     working_directory: str,
     environment: typing.Optional[typing.Mapping[str, str]] = None,
     hide_console_window: bool = False,
+    forward_terminal_output: bool = False,
 ) -> subprocess.Popen:
     """
     Launch a child process without a shell (``creationflags``: hide console on Windows when asked).
+
+    When ``forward_terminal_output`` is True, the child inherits the parent stdout/stderr (live terminal
+    output). On Windows, ``hide_console_window`` is ignored in that case: ``CREATE_NO_WINDOW`` would
+    detach console output and hide logs even when streams are inherited.
+
+    When ``forward_terminal_output`` is False, stdout and stderr are discarded (``subprocess.DEVNULL``).
     """
     resolved_env = dict(environment) if environment is not None else os.environ.copy()
-    creationflags = subprocess.CREATE_NO_WINDOW if (hide_console_window and sys.platform == "win32") else 0
+    use_hidden_console = (
+        hide_console_window and sys.platform == "win32" and not forward_terminal_output
+    )
+    # subprocess.CREATE_NO_WINDOW exists only on Windows; tests may patch platform on Linux CI.
+    creationflags = (
+        getattr(subprocess, "CREATE_NO_WINDOW", 0) if use_hidden_console else 0
+    )
+    if forward_terminal_output:
+        child_stdout: typing.Optional[int] = None
+        child_stderr: typing.Optional[int] = None
+    else:
+        child_stdout = subprocess.DEVNULL
+        child_stderr = subprocess.DEVNULL
     return subprocess.Popen(
         argv,
         cwd=working_directory,
         env=resolved_env,
         creationflags=creationflags,
+        stdout=child_stdout,
+        stderr=child_stderr,
     )
 
 
-def pid_is_running(pid: int) -> bool:
-    """Best-effort: whether ``pid`` denotes a running OS process."""
+def pid_is_running(pid: int) -> bool: # pylint: disable=too-many-return-statements
+    """Best-effort: whether ``pid`` denotes a running OS process (zombies are treated as not running)."""
     if pid <= 0:
         return False
-    if psutil is not None:
-        try:
-            return psutil.Process(pid).is_running()
-        except psutil.NoSuchProcess:
+    try:
+        proc = psutil.Process(pid)
+    except psutil.NoSuchProcess:
+        return False
+    except psutil.AccessDenied:
+        return True
+    try:
+        if proc.status() == psutil.STATUS_ZOMBIE:
             return False
-        except psutil.AccessDenied:
-            return True
-    return pid > 0
+    except psutil.ZombieProcess:
+        return False
+    except psutil.NoSuchProcess:
+        # PID can disappear between Process() creation and status() (e.g. SIGTERM on Windows).
+        return False
+    try:
+        return proc.is_running()
+    except psutil.ZombieProcess:
+        return False
+    except psutil.NoSuchProcess:
+        return False
 
 
 def request_graceful_stop_via_sigterm(

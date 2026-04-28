@@ -9,6 +9,17 @@ import octobot_flow.entities
 import octobot_flow.enums
 
 
+def _dsl_action_error_call_result(
+    action: octobot_flow.entities.DSLScriptActionDetails,
+    error_status,
+) -> octobot_commons.dsl_interpreter.DSLCallResult:
+    action.complete(error_status=error_status)
+    return octobot_commons.dsl_interpreter.DSLCallResult(
+        statement=action.get_resolved_dsl_script(),
+        error=error_status,
+    )
+
+
 def dsl_action_execution(func):
     async def _action_execution_error_handler_wrapper(
         self, action: octobot_flow.entities.DSLScriptActionDetails, **kwargs
@@ -25,25 +36,46 @@ def dsl_action_execution(func):
                 action.complete(result=call_result.result)
             else:
                 action.complete(error_status=call_result.error)
-        except octobot_trading.errors.DisabledFundsTransferError as err:
-            action.complete(error_status=octobot_flow.enums.ActionErrorStatus.DISABLED_FUNDS_TRANSFER_ERROR.value)
+            return call_result
+        except octobot_trading.errors.DisabledFundsTransferError:
+            return _dsl_action_error_call_result(
+                action,
+                octobot_flow.enums.ActionErrorStatus.DISABLED_FUNDS_TRANSFER_ERROR.value,
+            )
         except octobot_trading.errors.MissingMinimalExchangeTradeVolume as err:
             octobot_commons.logging.get_logger("action_execution").exception(err, True, f"Missing minimal exchange trade volume error: {err}")
-            action.complete(error_status=octobot_flow.enums.ActionErrorStatus.INVALID_ORDER.value)
-        except (octobot_trading.errors.UnsupportedHedgeContractError, octobot_trading.errors.InvalidPositionSide) as err:
-            action.complete(error_status=octobot_flow.enums.ActionErrorStatus.UNSUPPORTED_HEDGE_POSITION.value)
-        except octobot_trading.errors.ExchangeAccountSymbolPermissionError as err:
-            action.complete(error_status=octobot_flow.enums.ActionErrorStatus.SYMBOL_INCOMPATIBLE_WITH_ACCOUNT.value)
-        except octobot_commons.errors.InvalidParameterFormatError as err:
-            action.complete(error_status=octobot_flow.enums.ActionErrorStatus.INVALID_SIGNAL_FORMAT.value)
+            return _dsl_action_error_call_result(
+                action,
+                octobot_flow.enums.ActionErrorStatus.INVALID_ORDER.value,
+            )
+        except (octobot_trading.errors.UnsupportedHedgeContractError, octobot_trading.errors.InvalidPositionSide):
+            return _dsl_action_error_call_result(
+                action,
+                octobot_flow.enums.ActionErrorStatus.UNSUPPORTED_HEDGE_POSITION.value,
+            )
+        except octobot_trading.errors.ExchangeAccountSymbolPermissionError:
+            return _dsl_action_error_call_result(
+                action,
+                octobot_flow.enums.ActionErrorStatus.SYMBOL_INCOMPATIBLE_WITH_ACCOUNT.value,
+            )
+        except octobot_commons.errors.InvalidParameterFormatError:
+            return _dsl_action_error_call_result(
+                action,
+                octobot_flow.enums.ActionErrorStatus.INVALID_SIGNAL_FORMAT.value,
+            )
         except octobot_trading.errors.NotSupportedOrderTypeError as err:
-            if err.order_type == octobot_trading.enums.TraderOrderType.STOP_LOSS:
-                action.complete(error_status=octobot_flow.enums.ActionErrorStatus.UNSUPPORTED_STOP_ORDER.value)
-            else:
-                action.complete(error_status=octobot_flow.enums.ActionErrorStatus.INVALID_ORDER.value)
+            error_status_value = (
+                octobot_flow.enums.ActionErrorStatus.UNSUPPORTED_STOP_ORDER.value
+                if err.order_type == octobot_trading.enums.TraderOrderType.STOP_LOSS
+                else octobot_flow.enums.ActionErrorStatus.INVALID_ORDER.value
+            )
+            return _dsl_action_error_call_result(action, error_status_value)
         except octobot_trading.errors.BlockchainWalletError as err:
             octobot_commons.logging.get_logger("action_execution").exception(err, True, f"Blockchain wallet error: {err}")
-            action.complete(error_status=octobot_flow.enums.ActionErrorStatus.BLOCKCHAIN_WALLET_ERROR.value)
+            return _dsl_action_error_call_result(
+                action,
+                octobot_flow.enums.ActionErrorStatus.BLOCKCHAIN_WALLET_ERROR.value,
+            )
         except Exception as err:
             octobot_commons.logging.get_logger("action_execution").exception(
                 err,
@@ -51,5 +83,8 @@ def dsl_action_execution(func):
                 f"Failed to interpret DSL script '{action.get_summary(not octobot_commons.constants.ALLOW_PRIVATE_DATA_LOGS)}' "
                 f"for action: {action.id}: {err}"
             )
-            action.complete(error_status=octobot_flow.enums.ActionErrorStatus.INTERNAL_ERROR.value)
+            return _dsl_action_error_call_result(
+                action,
+                octobot_flow.enums.ActionErrorStatus.INTERNAL_ERROR.value,
+            )
     return _action_execution_error_handler_wrapper

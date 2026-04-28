@@ -24,6 +24,7 @@ class NextIterationDetails(octobot_commons.dataclasses.FlexibleDataclass):
 @dataclasses.dataclass
 class PostIterationActionsDetails(octobot_commons.dataclasses.MinimizableDataclass):
     stop_automation: bool = False
+    configuration_update: typing.Optional[str] = None
     updated_exchange_account_elements: typing.Optional[dict] = None
     postpone_execution: bool = False
     postpone_reason: typing.Optional[str] = None

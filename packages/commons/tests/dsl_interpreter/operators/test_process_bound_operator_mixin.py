@@ -77,6 +77,30 @@ class TestRequestGracefulStop:
         stop_mock.assert_called_once_with(99, logger=mock.sentinel.log)
 
 
+@pytest.mark.asyncio
+class TestWaitUntilPidStopped:
+    async def test_non_positive_pid_returns_without_poll(self):
+        bound = process_bound_operator_mixin.ProcessBoundOperatorMixin()
+        with mock.patch.object(process_util, "pid_is_running") as running_mock:
+            await bound.wait_until_pid_stopped(0, timeout_seconds=5.0, logger=mock.Mock())
+        running_mock.assert_not_called()
+
+    async def test_returns_when_pid_not_running(self):
+        bound = process_bound_operator_mixin.ProcessBoundOperatorMixin()
+        with mock.patch.object(process_util, "pid_is_running", return_value=False):
+            await bound.wait_until_pid_stopped(7, timeout_seconds=5.0)
+
+    async def test_timeout_raises_dsl_error(self):
+        bound = process_bound_operator_mixin.ProcessBoundOperatorMixin()
+        with mock.patch.object(process_util, "pid_is_running", return_value=True):
+            with pytest.raises(commons_errors.DSLInterpreterError, match="Timed out"):
+                await bound.wait_until_pid_stopped(
+                    99,
+                    timeout_seconds=0.05,
+                    poll_interval=0.01,
+                )
+
+
 class TestSpawnSubprocess:
     def test_sets_self_pid_from_child_and_returns_popen(self):
         bound = process_bound_operator_mixin.ProcessBoundOperatorMixin()
@@ -110,36 +134,6 @@ class TestRejectUserPathSegment:
     def test_raises_on_parent_directory_parts(self):
         with pytest.raises(commons_errors.DSLInterpreterError, match="parent directory"):
             process_bound_operator_mixin.ProcessBoundOperatorMixin.reject_user_path_segment("a/../b")
-
-
-class TestFindFirstFreeListenPortAfterBase:
-    def test_returns_base_when_free(self):
-        mixin = process_bound_operator_mixin.ProcessBoundOperatorMixin
-        with mock.patch.object(mixin, "_tcp_port_is_free", return_value=True):
-            listen_port = mixin.find_first_free_listen_port_after_base("127.0.0.1", 50000)
-        assert listen_port == 50000
-
-    def test_skips_until_first_free_port(self):
-        mixin = process_bound_operator_mixin.ProcessBoundOperatorMixin
-        with mock.patch.object(mixin, "_tcp_port_is_free", side_effect=[False, False, True]):
-            listen_port = mixin.find_first_free_listen_port_after_base("127.0.0.1", 50100)
-        assert listen_port == 50102
-
-    def test_skips_blocklisted_ports(self):
-        mixin = process_bound_operator_mixin.ProcessBoundOperatorMixin
-        with mock.patch.object(mixin, "_tcp_port_is_free", return_value=True):
-            listen_port = mixin.find_first_free_listen_port_after_base(
-                "127.0.0.1",
-                50200,
-                blocklist=[50200],
-            )
-        assert listen_port == 50201
-
-    def test_raises_when_scan_exhausted(self):
-        mixin = process_bound_operator_mixin.ProcessBoundOperatorMixin
-        with mock.patch.object(mixin, "_tcp_port_is_free", return_value=False):
-            with pytest.raises(commons_errors.DSLInterpreterError, match="No free listen port"):
-                mixin.find_first_free_listen_port_after_base("127.0.0.1", 50300, max_offset=2)
 
 
 class TestBindAddressForEnvAndProbeHosts:

@@ -54,14 +54,26 @@ class SimpleMarketMakingProfileDataAdapter(octobot_commons.profiles.TentaclesPro
         profile_data: octobot_commons.profiles.ProfileData,
         auth_data: list[octobot_commons.profiles.exchange_auth_data.ExchangeAuthData]
     ) -> None:
-        exchange_configs = self.additional_data.get(community_enums.BotConfigKeys.EXCHANGES.value)
-        if not exchange_configs:
-            # legacy exchange configs were stored in options
-            exchange_configs = self.additional_data[community_enums.BotConfigKeys.OPTIONS.value][EXCHANGE_CONFIGS]
-            commons_logging.get_logger(self.__class__.__name__).warning(
-                f"Using legacy exchange configs stored in options: {exchange_configs}"
+        exchange_configs: typing.Optional[list] = None
+        if self.additional_data:
+            exchange_configs = self.additional_data.get(
+                community_enums.BotConfigKeys.EXCHANGES.value
             )
-        is_simulated = bool(self.additional_data.get(community_enums.BotConfigKeys.IS_SIMULATED.value, False))
+            if not exchange_configs:
+                if options := self.additional_data.get(
+                    community_enums.BotConfigKeys.OPTIONS.value
+                ):
+                    if legacy_exchange_configs := options.get(EXCHANGE_CONFIGS):
+                        exchange_configs = legacy_exchange_configs
+                        commons_logging.get_logger(self.__class__.__name__).warning(
+                            f"Using legacy exchange configs stored in options: {exchange_configs}"
+                        )
+        is_simulated = bool(
+            self.additional_data.get(
+                community_enums.BotConfigKeys.IS_SIMULATED.value,
+                False,
+            )
+        ) if self.additional_data else False
         can_trade = True # init at True to allow predicted book calls
         if profile_data.profile_details.bot_id:
             # this is a running bot, check if it can trade
@@ -101,37 +113,45 @@ class SimpleMarketMakingProfileDataAdapter(octobot_commons.profiles.TentaclesPro
                 exchange_type=exchange_config.get(EXCHANGE_TYPE, octobot_commons.constants.DEFAULT_EXCHANGE_TYPE),
             )
             for exchange_config in exchange_configs
-        }
+        } if exchange_configs else {}
         exchange_account_id_by_name = {
             exchange_config[NAME]: exchange_config.get(EXCHANGE_ACCOUNT_ID)
             for exchange_config in exchange_configs
-        }
-        profile_data.exchanges = [
-            octobot_commons.profiles.profile_data.ExchangeData(
-                internal_name=auth_data.internal_name,
-                exchange_account_id=exchange_account_id_by_name.get(auth_data.internal_name),
-            )
-            for auth_data in exchange_auth_data_by_name.values()
-        ]
-        reference_price_exchanges = set(
-            ref_exchange[simple_market_making_trading_mode.SimpleMarketMakingTradingMode.EXCHANGE]
-            for pair_config in pair_configs
-            for ref_exchange in pair_config[
-                simple_market_making_trading_mode.SimpleMarketMakingTradingMode.REFERENCE_PRICE
+        } if exchange_configs else {}
+        if exchange_configs is None:
+            if not profile_data.exchanges:
+                raise ValueError(
+                    "No exchanges found in profile data and no exchange "
+                    "configs provided in additional data"
+                )
+        else:
+            # configure exchanges from exchange auth data and reference price exchanges
+            profile_data.exchanges = [
+                octobot_commons.profiles.profile_data.ExchangeData(
+                    internal_name=auth_data.internal_name,
+                    exchange_account_id=exchange_account_id_by_name.get(auth_data.internal_name),
+                )
+                for auth_data in exchange_auth_data_by_name.values()
             ]
-            if ref_exchange[simple_market_making_trading_mode.SimpleMarketMakingTradingMode.EXCHANGE] !=
-            simple_market_making_trading_mode.SimpleMarketMakingTradingMode.LOCAL_EXCHANGE_PRICE
-        )
-        profile_data.exchanges += [
-            octobot_commons.profiles.profile_data.ExchangeData(internal_name=exchange)
-            for exchange in reference_price_exchanges
-            if exchange not in exchange_auth_data_by_name
-        ]
-        # register auto-filled exchange config if any
-        self._register_exchange_configs(profile_data, exchange_configs)
+            reference_price_exchanges = set(
+                ref_exchange[simple_market_making_trading_mode.SimpleMarketMakingTradingMode.EXCHANGE]
+                for pair_config in pair_configs
+                for ref_exchange in pair_config[
+                    simple_market_making_trading_mode.SimpleMarketMakingTradingMode.REFERENCE_PRICE
+                ]
+                if ref_exchange[simple_market_making_trading_mode.SimpleMarketMakingTradingMode.EXCHANGE] !=
+                simple_market_making_trading_mode.SimpleMarketMakingTradingMode.LOCAL_EXCHANGE_PRICE
+            )
+            profile_data.exchanges += [
+                octobot_commons.profiles.profile_data.ExchangeData(internal_name=exchange)
+                for exchange in reference_price_exchanges
+                if exchange not in exchange_auth_data_by_name
+            ]
+            # register auto-filled exchange config if any
+            self._register_exchange_configs(profile_data, exchange_configs)
 
         # register automations config
-        self._register_automations_config(profile_data, exchange_configs, pair_configs)
+        self._register_automations_config(profile_data, pair_configs)
 
         # ensure all required fields are present
         for tentacle_config in self.tentacles_data:
@@ -216,10 +236,10 @@ class SimpleMarketMakingProfileDataAdapter(octobot_commons.profiles.TentaclesPro
                 )
 
     @staticmethod
-    def _get_pair_exchange_name(pair_config: dict, exchange_configs: typing.Iterable[dict]) -> str:
-        for exchange_config in exchange_configs:
-            exchange_name = exchange_config.get(NAME, "")
-            if simple_market_making_trading_mode.SimpleMarketMakingTradingMode.is_exchange_compatible_pair_setting(
+    def _get_pair_exchange_name(pair_config: dict, profile_data: octobot_commons.profiles.ProfileData) -> str:
+        for exchange_config in profile_data.exchanges:
+            exchange_name = exchange_config.internal_name
+            if exchange_name and simple_market_making_trading_mode.SimpleMarketMakingTradingMode.is_exchange_compatible_pair_setting(
                 pair_config, exchange_name
             ):
                 return exchange_name
@@ -228,14 +248,13 @@ class SimpleMarketMakingProfileDataAdapter(octobot_commons.profiles.TentaclesPro
     def _register_automations_config(
         self,
         profile_data: octobot_commons.profiles.ProfileData,
-        exchange_configs: typing.Iterable[dict],
         pair_configs: typing.Iterable[dict]
     ):
         automations = {}
 
         for pair_config in pair_configs:
             exchange_name = self._get_pair_exchange_name(
-                pair_config, exchange_configs
+                pair_config, profile_data
             )
             conditions_configs = pair_config.get("stop_conditions")
             if not conditions_configs:

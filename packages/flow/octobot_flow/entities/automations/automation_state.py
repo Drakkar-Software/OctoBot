@@ -92,3 +92,10 @@ class AutomationState(octobot_commons.dataclasses.MinimizableDataclass):
             self.automation = automation_details_import.AutomationDetails.from_dict(self.automation)
         if self.exchange_account_details and isinstance(self.exchange_account_details, dict):
             self.exchange_account_details = exchange_account_details_import.ExchangeAccountDetails.from_dict(self.exchange_account_details)
+        if self.priority_actions:
+            self.priority_actions = [
+                action_details_import.parse_action_details(action)
+                if isinstance(action, dict)
+                else action
+                for action in self.priority_actions
+            ]

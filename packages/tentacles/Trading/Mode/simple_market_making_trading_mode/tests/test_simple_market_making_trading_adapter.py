@@ -151,7 +151,7 @@ class TestAdapt:
         assert ["binance", "kucoin"] == sorted([e.internal_name for e in profile_data.exchanges])
 
         register_exchange_configs_mock.assert_called_once_with(profile_data, exchange_configs)
-        register_automations_config_mock.assert_called_once_with(profile_data, exchange_configs, pair_configs)
+        register_automations_config_mock.assert_called_once_with(profile_data, pair_configs)
         should_fill_exchange_auth_mock.assert_called_once_with()
 
     async def test_adapt_uses_legacy_exchange_configs_when_exchanges_missing(
@@ -183,7 +183,81 @@ class TestAdapt:
             await adapter.adapt(profile_data, auth_data)
 
         register_exchange_configs_mock.assert_called_once_with(profile_data, exchange_configs)
-        register_automations_config_mock.assert_called_once_with(profile_data, exchange_configs, pair_configs)
+        register_automations_config_mock.assert_called_once_with(profile_data, pair_configs)
+
+    async def test_adapt_with_empty_additional_data_uses_profile_exchanges(
+        self, adapter, profile_data, auth_data
+    ):
+        profile_data.profile_details.bot_id = None
+        adapter.additional_data.clear()
+        pair_configs = self._build_pair_configs(reference_exchange="binance")
+        mm_tentacle_config = {SimpleMarketMakingTradingMode.CONFIG_PAIR_SETTINGS: pair_configs}
+        adapter.tentacles_data = [
+            octobot_commons.profiles.profile_data.TentaclesData(
+                name=SimpleMarketMakingTradingMode.get_name(),
+                config=mm_tentacle_config,
+            )
+        ]
+        register_exchange_configs_mock = mock.Mock()
+        register_automations_config_mock = mock.Mock()
+        adapter._register_exchange_configs = register_exchange_configs_mock  # type: ignore
+        adapter._register_automations_config = register_automations_config_mock  # type: ignore
+        adapter._should_fill_exchange_auth = mock.Mock(return_value=False)  # type: ignore
+
+        expected_exchange_names = [exchange.internal_name for exchange in profile_data.exchanges]
+
+        with mock.patch(
+            "tentacles.Trading.Mode.simple_market_making_trading_mode.simple_market_making_profile_data_adapter.symbols_util.get_most_common_usd_like_symbol",
+            mock.Mock(return_value="USDT"),
+        ):
+            await adapter.adapt(profile_data, auth_data)
+
+        assert [exchange.internal_name for exchange in profile_data.exchanges] == expected_exchange_names
+        traded_pairs = {currency.name for currency in profile_data.crypto_currencies}
+        assert traded_pairs == {"BTC/USDT"}
+        register_exchange_configs_mock.assert_not_called()
+        register_automations_config_mock.assert_called_once_with(profile_data, pair_configs)
+
+        mm_tentacle_configs = [
+            tentacle.config
+            for tentacle in profile_data.tentacles
+            if tentacle.name == SimpleMarketMakingTradingMode.get_name()
+        ]
+        assert len(mm_tentacle_configs) == 1
+        for pair_setting in mm_tentacle_configs[0][SimpleMarketMakingTradingMode.CONFIG_PAIR_SETTINGS]:
+            for ref in pair_setting[SimpleMarketMakingTradingMode.REFERENCE_PRICE]:
+                assert (
+                    ref[SimpleMarketMakingTradingMode.EXCHANGE]
+                    in expected_exchange_names
+                )
+
+    async def test_adapt_with_empty_additional_data_raises_when_profile_has_no_exchanges(
+        self, adapter, profile_data, auth_data
+    ):
+        profile_data.profile_details.bot_id = None
+        profile_data.exchanges = []
+        adapter.additional_data.clear()
+        pair_configs = self._build_pair_configs(reference_exchange="binance")
+        mm_tentacle_config = {SimpleMarketMakingTradingMode.CONFIG_PAIR_SETTINGS: pair_configs}
+        adapter.tentacles_data = [
+            octobot_commons.profiles.profile_data.TentaclesData(
+                name=SimpleMarketMakingTradingMode.get_name(),
+                config=mm_tentacle_config,
+            )
+        ]
+        adapter._register_exchange_configs = mock.Mock()  # type: ignore
+        adapter._register_automations_config = mock.Mock()  # type: ignore
+        adapter._should_fill_exchange_auth = mock.Mock(return_value=False)  # type: ignore
+
+        with mock.patch(
+            "tentacles.Trading.Mode.simple_market_making_trading_mode.simple_market_making_profile_data_adapter.symbols_util.get_most_common_usd_like_symbol",
+            mock.Mock(return_value="USDT"),
+        ):
+            with pytest.raises(
+                ValueError,
+                match="No exchanges found in profile data and no exchange",
+            ):
+                await adapter.adapt(profile_data, auth_data)
 
     async def test_adapt_sets_reference_market_from_usd_like_symbol(
         self, adapter, profile_data, auth_data
@@ -473,11 +547,6 @@ class TestRegisterExchangeConfigs:
 
 class TestRegisterAutomationsConfig:
     def test_register_automations_config_adds_volatility_automation(self, adapter, profile_data):
-        exchange_configs = [
-            {
-                simple_market_making_profile_data_adapter.NAME: "binance",
-            }
-        ]
         pair_configs = [
             {
                 SimpleMarketMakingTradingMode.CONFIG_PAIR: "BTC/USDT",
@@ -490,7 +559,7 @@ class TestRegisterAutomationsConfig:
             }
         ]
 
-        adapter._register_automations_config(profile_data, exchange_configs, pair_configs)  # type: ignore
+        adapter._register_automations_config(profile_data, pair_configs)
 
         # one automation tentacle added
         assert len(profile_data.tentacles) == 1
@@ -520,11 +589,6 @@ class TestRegisterAutomationsConfig:
     def test_register_automations_config_volatility_still_parses_legacy_average_prive_key(
         self, adapter, profile_data
     ):
-        exchange_configs = [
-            {
-                simple_market_making_profile_data_adapter.NAME: "binance",
-            }
-        ]
         pair_configs = [
             {
                 SimpleMarketMakingTradingMode.CONFIG_PAIR: "BTC/USDT",
@@ -537,7 +601,7 @@ class TestRegisterAutomationsConfig:
             }
         ]
 
-        adapter._register_automations_config(profile_data, exchange_configs, pair_configs)  # type: ignore
+        adapter._register_automations_config(profile_data, pair_configs)
 
         assert len(profile_data.tentacles) == 1
         tentacle = profile_data.tentacles[0]
@@ -548,11 +612,6 @@ class TestRegisterAutomationsConfig:
     def test_register_automations_config_adds_holding_threshold_automations_for_base_and_quote(
         self, adapter, profile_data
     ):
-        exchange_configs = [
-            {
-                simple_market_making_profile_data_adapter.NAME: "binance",
-            }
-        ]
         pair_configs = [
             {
                 SimpleMarketMakingTradingMode.CONFIG_PAIR: "BTC/USDT",
@@ -564,7 +623,7 @@ class TestRegisterAutomationsConfig:
             }
         ]
 
-        adapter._register_automations_config(profile_data, exchange_configs, pair_configs)  # type: ignore
+        adapter._register_automations_config(profile_data, pair_configs)
 
         # expecting a single automations tentacle
         assert len(profile_data.tentacles) == 1
@@ -604,11 +663,6 @@ class TestRegisterAutomationsConfig:
         }
 
     def test_register_automations_config_adds_holding_threshold_automations_for_base_and_quote_and_volatility_threshold(self, adapter, profile_data):
-        exchange_configs = [
-            {
-                simple_market_making_profile_data_adapter.NAME: "binance",
-            }
-        ]
         pair_configs = [
             {
                 SimpleMarketMakingTradingMode.CONFIG_PAIR: "BTC/USDT",
@@ -623,7 +677,7 @@ class TestRegisterAutomationsConfig:
             }
         ]
 
-        adapter._register_automations_config(profile_data, exchange_configs, pair_configs)  # type: ignore
+        adapter._register_automations_config(profile_data, pair_configs)
 
         # expecting a single automations tentacle
         assert len(profile_data.tentacles) == 1
@@ -676,11 +730,6 @@ class TestRegisterAutomationsConfig:
         }
 
     def test_register_automations_config_ignores_pairs_without_stop_conditions(self, adapter, profile_data):
-        exchange_configs = [
-            {
-                simple_market_making_profile_data_adapter.NAME: "binance",
-            }
-        ]
         pair_configs = [
             {
                 SimpleMarketMakingTradingMode.CONFIG_PAIR: "BTC/USDT",
@@ -689,7 +738,7 @@ class TestRegisterAutomationsConfig:
             }
         ]
 
-        adapter._register_automations_config(profile_data, exchange_configs, pair_configs)  # type: ignore
+        adapter._register_automations_config(profile_data, pair_configs)
 
         # no automations => no tentacles added
         assert profile_data.tentacles == []

@@ -14,13 +14,15 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
+import asyncio
 import pathlib
-import socket
 import subprocess
+import time
 import typing
 
 import octobot_commons.dsl_interpreter.operator as dsl_interpreter_operator
 import octobot_commons.errors as commons_errors
+import octobot_commons.logging as commons_logging
 import octobot_commons.process_util as process_util
 
 
@@ -52,6 +54,37 @@ class ProcessBoundOperatorMixin:
             )
         return process_util.request_graceful_stop_via_sigterm(self.pid, logger=logger)
 
+    async def wait_until_pid_stopped(
+        self,
+        pid: int,
+        *,
+        logger: typing.Optional[typing.Any] = None,
+        timeout_seconds: float,
+        poll_interval: float = 0.2,
+    ) -> None:
+        """Poll until ``pid`` is gone or ``timeout_seconds`` elapses (after e.g. SIGTERM)."""
+        resolved_logger = logger or commons_logging.get_logger(self.__class__.__name__)
+        if pid <= 0:
+            resolved_logger.info(
+                "wait_until_pid_stopped: pid=%s treated as already stopped (non-positive)",
+                pid,
+            )
+            return
+        resolved_logger.info(
+            "wait_until_pid_stopped: waiting for pid=%s to exit (timeout=%ss)",
+            pid,
+            timeout_seconds,
+        )
+        deadline = time.monotonic() + timeout_seconds
+        while time.monotonic() < deadline:
+            if not process_util.pid_is_running(pid):
+                resolved_logger.info("wait_until_pid_stopped: pid=%s exited", pid)
+                return
+            await asyncio.sleep(poll_interval)
+        raise commons_errors.DSLInterpreterError(
+            f"Timed out after {timeout_seconds}s waiting for pid={pid} to exit."
+        )
+
     def spawn_subprocess(
         self,
         argv: list[str],
@@ -77,42 +110,6 @@ class ProcessBoundOperatorMixin:
             raise commons_errors.DSLInterpreterError(
                 "Invalid path: parent directory segments are not allowed."
             )
-
-    @staticmethod
-    def _tcp_port_is_free(bind_host: str, port: int) -> bool:
-        """True if nothing is currently bound to (host, port) for TCP."""
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            try:
-                sock.bind((bind_host, port))
-            except OSError:
-                return False
-        return True
-
-    @staticmethod
-    def find_first_free_listen_port_after_base(
-        bind_host_for_probe: str,
-        listen_port_base: int,
-        max_offset: int = 256,
-        blocklist: list[int] = None,
-    ) -> int:
-        """
-        First offset where ``listen_port_base + offset`` is TCP-free on ``bind_host_for_probe``
-        (optional: require ``paired_listen_port_base + offset`` free as well, same scan step).
-        Returns ``listen_port``.
-        """
-        for offset_from_base in range(max_offset):
-            listen_port = listen_port_base + offset_from_base
-            if blocklist and listen_port in blocklist:
-                continue
-            if not ProcessBoundOperatorMixin._tcp_port_is_free(
-                bind_host_for_probe, listen_port
-            ):
-                continue
-            return listen_port
-        raise commons_errors.DSLInterpreterError(
-            "No free listen port found in the scanned range."
-        )
 
     @staticmethod
     def bind_address_for_env_and_probe_hosts(

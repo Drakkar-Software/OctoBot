@@ -19,6 +19,7 @@ import os
 import shutil
 import sys
 import time
+import types
 import typing
 import uuid
 import aiofiles
@@ -29,9 +30,13 @@ import octobot_commons.dsl_interpreter as dsl_interpreter
 import octobot_commons.errors as commons_errors
 import octobot_commons.json_util as json_util
 import octobot_commons.logging as commons_logging
+import octobot_commons.os_util as os_util
 import octobot_commons.profiles.profile_data as profile_data_module
 import octobot_commons.profiles.profile_data_import as profile_data_import
+import octobot_commons.profiles.exchange_auth_data as exchange_auth_data_module
+import octobot_commons.profiles.tentacles_profile_data_translator as tentacles_profile_data_translator
 import octobot_commons.enums as commons_enums
+import octobot_commons.configuration
 
 import octobot.constants as octobot_constants
 import octobot_flow.entities as octobot_flow_entities
@@ -69,6 +74,8 @@ _RECALL_OVERRIDABLE_KEYS = frozenset(
         dsl_interpreter.ReCallingOperatorResultKeys.LAST_EXECUTION_TIME.value,
     }
 )
+
+_DEFAULT_ENCRYPTED_VALUE = octobot_commons.configuration.encrypt("").decode()
 
 
 def _resolve_state_file_path(recall_state: EnsureOctobotProcessState) -> str:
@@ -114,11 +121,99 @@ def _parse_ensure_recall_state(raw: dict) -> typing.Optional[EnsureOctobotProces
         return None
 
 
+def _remove_path_for_fresh_start(path: str, *, logger: typing.Any) -> None:
+    if not path or not str(path).strip():
+        logger.info("configuration update: skip remove (empty path)")
+        return
+    if not os.path.exists(path):
+        logger.info("configuration update: skip remove (path missing): %s", path)
+        return
+    logger.info("configuration update: removing path for fresh start: %s", path)
+    shutil.rmtree(path, ignore_errors=True)
+
+
+async def _convert_profile_data_to_profile_directory(
+    profile_data: profile_data_module.ProfileData,
+    temp_profile_path: str,
+) -> None:
+    tentacles_snapshot = list(profile_data.tentacles)
+    if tentacles_snapshot:
+        profile_data.tentacles = []
+        try:
+            # in case a translator is enabled on the given tentacles,
+            # apply it to the profile data
+            await tentacles_profile_data_translator.TentaclesProfileDataTranslator(
+                profile_data, []
+            ).translate(tentacles_snapshot, {}, None, None)
+        except KeyError:
+            # no translator found, restore tentacles
+            profile_data.tentacles = tentacles_snapshot
+    await profile_data_import.convert_profile_data_to_profile_directory(
+        profile_data,
+        temp_profile_path,
+        description=profile_data.profile_details.name or "",
+        risk=commons_enums.ProfileRisk.MODERATE,
+        auto_update=False,
+        slug=None,
+        avatar_url=None,
+        force_simulator=False,
+    )
+
+
+def _write_user_root_config_json(
+    config_path: str,
+    profile_id: str,
+    profile_data: typing.Optional[profile_data_module.ProfileData] = None,
+    exchange_auth_data: typing.Optional[
+        list[exchange_auth_data_module.ExchangeAuthData]
+    ] = None,
+) -> None:
+    """
+    Writes user-root ``config.json``: selected profile, disabled web auto-open for DSL-spawned
+    processes, optional exchange stubs from ``profile_data``, then credentials from
+    ``exchange_auth_data`` (merged into ``exchanges``).
+    """
+    # Load packaged defaults; pin profile and disable browser auto-open for headless DSL children.
+    default_cfg = json_util.read_file(octobot_constants.DEFAULT_CONFIG_FILE)
+    default_cfg[commons_constants.CONFIG_PROFILE] = profile_id
+    default_cfg[commons_constants.CONFIG_ACCEPTED_TERMS] = True
+    services_cfg = default_cfg.setdefault(services_constants.CONFIG_CATEGORY_SERVICES, {})
+    web_cfg = services_cfg.setdefault(services_constants.CONFIG_WEB, {})
+    web_cfg[services_constants.CONFIG_AUTO_OPEN_IN_WEB_BROWSER] = False
+    # Seed top-level exchanges so partially-managed merge targets exist before applying secrets.
+    if profile_data is not None:
+        exchanges_cfg = default_cfg.setdefault(commons_constants.CONFIG_EXCHANGES, {})
+        for exchange_details in profile_data.exchanges:
+            internal_exchange_name = exchange_details.internal_name
+            if not internal_exchange_name:
+                continue
+            exchange_entry = exchanges_cfg.setdefault(internal_exchange_name, {})
+            exchange_entry.setdefault(commons_constants.CONFIG_ENABLED_OPTION, True)
+            exchange_entry.setdefault(
+                commons_constants.CONFIG_EXCHANGE_TYPE,
+                exchange_details.exchange_type or commons_constants.DEFAULT_EXCHANGE_TYPE,
+            )
+    # Overlay credentials onto matching exchange entries (adds exchange if missing).
+    if exchange_auth_data:
+        exchange_config_holder = types.SimpleNamespace(config=default_cfg)
+        for auth_element in exchange_auth_data:
+            auth_element.apply_to_exchange_config(exchange_config_holder)
+    exchanges_cfg = default_cfg.get(commons_constants.CONFIG_EXCHANGES) or {}
+    for exchange_cfg in exchanges_cfg.values():
+        if isinstance(exchange_cfg, dict):
+            exchange_cfg.setdefault(commons_constants.CONFIG_EXCHANGE_KEY, _DEFAULT_ENCRYPTED_VALUE)
+            exchange_cfg.setdefault(commons_constants.CONFIG_EXCHANGE_SECRET, _DEFAULT_ENCRYPTED_VALUE)
+    json_util.safe_dump(default_cfg, config_path)
+
+
 async def ensure_user_profile_and_layout(
     user_folder: str,
     working_directory: str,
     profile_data_dict: dict,
     source_reference_tentacles_config: str | None,
+    exchange_auth_data: typing.Optional[
+        list[exchange_auth_data_module.ExchangeAuthData]
+    ] = None,
 ) -> dict[str, typing.Any]:
     """
     One-time layout under user_root (<working_directory>/user/automations/<user_folder>/):
@@ -157,15 +252,8 @@ async def ensure_user_profile_and_layout(
     os.makedirs(os.path.dirname(temp_profile_path), exist_ok=True)
 
     profile_data = profile_data_module.ProfileData.from_dict(profile_data_dict)
-    await profile_data_import.convert_profile_data_to_profile_directory(
-        profile_data,
-        temp_profile_path,
-        description=profile_data.profile_details.name or "",
-        risk=commons_enums.ProfileRisk.MODERATE,
-        auto_update=False,
-        slug=None,
-        avatar_url=None,
-        force_simulator=False,
+    await _convert_profile_data_to_profile_directory(
+        profile_data, temp_profile_path
     )
 
     profile_file = os.path.join(temp_profile_path, commons_constants.PROFILE_CONFIG_FILE)
@@ -180,13 +268,7 @@ async def ensure_user_profile_and_layout(
             shutil.rmtree(final_profile_path)
         os.replace(temp_profile_path, final_profile_path)
 
-    # Top-level user config.json: selected profile; disable auto-open (DSL-spawned child, no local browser).
-    default_cfg = json_util.read_file(octobot_constants.DEFAULT_CONFIG_FILE)
-    default_cfg[commons_constants.CONFIG_PROFILE] = profile_id
-    services_cfg = default_cfg.setdefault(services_constants.CONFIG_CATEGORY_SERVICES, {})
-    web_cfg = services_cfg.setdefault(services_constants.CONFIG_WEB, {})
-    web_cfg[services_constants.CONFIG_AUTO_OPEN_IN_WEB_BROWSER] = False
-    json_util.safe_dump(default_cfg, config_path)
+    _write_user_root_config_json(config_path, profile_id, profile_data, exchange_auth_data)
 
     # Mirror default reference tentacles layout expected by the child.
     ref_src = source_reference_tentacles_config or os.path.join(
@@ -276,13 +358,12 @@ def _listen_port_pair_with_shared_scan_offset(
     max_offset: int = 256,
 ) -> tuple[int, int]:
     """Delegates to ``find_first_free_listen_port_after_base`` paired scan (one loop)."""
-    mixin = dsl_interpreter.ProcessBoundOperatorMixin
-    primary_listen_port = mixin.find_first_free_listen_port_after_base(
+    primary_listen_port = os_util.find_first_free_listen_port_after_base(
         probe_host,
         primary_listen_port_base,
         max_offset=max_offset,
     )
-    secondary_listen_port = mixin.find_first_free_listen_port_after_base(
+    secondary_listen_port = os_util.find_first_free_listen_port_after_base(
         probe_host,
         secondary_listen_port_base,
         max_offset=max_offset,
@@ -291,365 +372,475 @@ def _listen_port_pair_with_shared_scan_offset(
     return primary_listen_port, secondary_listen_port
 
 
-# Child process: user layout, ports, process_bot_state.json liveness (re-callable).
-class EnsureOctobotProcessOperator(
-    dsl_interpreter.PreComputingCallOperator,
-    dsl_interpreter.ReCallableOperatorMixin,
-    dsl_interpreter.ProcessBoundOperatorMixin,
-):
-    DESCRIPTION = (
-        "Prepares a per-bot user directory (profile + config + reference_tentacles_config), "
-        "spawns an OctoBot child with unique WEB/NODE ports and --dump-state for process_bot_state.json. "
-        "Always re-callable: each fresh state file (updated_at within twice the dump interval) schedules the next check (see waiting_time). "
-        "If the state file never becomes live before ping_timeout from the first spawn, the keyword fails and the child is killed."
-    )
-    EXAMPLE = (
-        "run_octobot_process(user_folder='bots/b1', profile_data={...}, "
-        "last_execution_result=None)"
-    )
-
-    @staticmethod
-    def get_library() -> str:
-        return commons_constants.CONTEXTUAL_OPERATORS_LIBRARY
-
-    @staticmethod
-    def get_name() -> str:
-        return "run_octobot_process"
-
-    @classmethod
-    def get_parameters(cls) -> list[dsl_interpreter.OperatorParameter]:
-        return [
-            dsl_interpreter.OperatorParameter(
-                name="user_folder",
-                description=(
-                    "Path segment(s) under <cwd>/user/automations/ for this bot."
-                ),
-                required=True,
-                type=str,
-            ),
-            dsl_interpreter.OperatorParameter(
-                name="profile_data",
-                description="Object compatible with octobot_commons.profiles.profile_data.ProfileData.",
-                required=True,
-                type=dict,
-            ),
-            dsl_interpreter.OperatorParameter(
-                name="web_port_base",
-                description="Base port for the web interface (uses base+offset; default from services constants).",
-                required=False,
-                type=int,
-                default=services_constants.DEFAULT_SERVER_PORT,
-            ),
-            dsl_interpreter.OperatorParameter(
-                name="node_port_base",
-                description="Base port for the node API (uses base+offset).",
-                required=False,
-                type=int,
-                default=services_constants.DEFAULT_NODE_API_PORT,
-            ),
-            dsl_interpreter.OperatorParameter(
-                name="bind_host",
-                description="Host used for free-port checks and WEB_ADDRESS / NODE_API_ADDRESS for the child.",
-                required=False,
-                type=str,
-                default="127.0.0.1",
-            ),
-            dsl_interpreter.OperatorParameter(
-                name="http_scheme",
-                description="Scheme for http_base_url (default http).",
-                required=False,
-                type=str,
-                default="http",
-            ),
-            dsl_interpreter.OperatorParameter(
-                name="no_telegram",
-                description="If true, spawns with -nt (default true).",
-                required=False,
-                type=bool,
-                default=True,
-            ),
-            dsl_interpreter.OperatorParameter(
-                name="ping_timeout",
-                description=(
-                    "Init-only: max seconds from the first spawn until process_bot_state.json is first considered live "
-                    "(fresh updated_at / next_updated_at). After that, the child is killed and the keyword fails. "
-                    "Does not cap liveness re-calls once up."
-                ),
-                required=False,
-                type=float,
-                default=DEFAULT_ENSURE_TIMEOUT,
-            ),
-            dsl_interpreter.OperatorParameter(
-                name="waiting_time",
-                description=(
-                    "Fixed interval in seconds before each re-call (init polling and ongoing liveness while the state file is live)."
-                ),
-                required=False,
-                type=float,
-                default=DEFAULT_PING_WAITING_TIME,
-            ),
-        ] + super().get_re_callable_parameters()
-
-    @classmethod
-    def should_run_execution_stop_for_result(
-        cls, re_calling_result: typing.Optional[dict]
-    ) -> bool:
-        if not re_calling_result or not dsl_interpreter.ReCallingOperatorResult.is_re_calling_operator_result(
-            re_calling_result
-        ):
-            return False
-        try:
-            keyword = dsl_interpreter.ReCallingOperatorResult.get_keyword(re_calling_result)
-        except (KeyError, TypeError, AttributeError):
-            return False
-        if keyword != cls.get_name():
-            return False
-        rec = re_calling_result.get(dsl_interpreter.ReCallingOperatorResult.__name__)
-        if not isinstance(rec, dict):
-            return False
-        inner = rec.get("last_execution_result")
-        if not isinstance(inner, dict):
-            return False
-        return _parse_ensure_recall_state(inner) is not None
-
-    def _emit_ensure_recall(
-        self,
-        *,
-        state: EnsureOctobotProcessState,
-        last_result: dict,
-        start_time: float,
-        recall_interval: float,
-        parsed_process_bot_state: typing.Optional[process_bot_state_import.ProcessBotState] = None,
-    ) -> None:
-        re_call_payload = {**state.model_dump()}
-        for payload_key, payload_value in last_result.items():
-            if payload_key in re_call_payload or payload_key in _RECALL_OVERRIDABLE_KEYS:
-                continue
-            re_call_payload[payload_key] = payload_value
-        if parsed_process_bot_state is not None:
-            re_call_payload[octobot_flow_entities.PostIterationActionsDetails.__name__] = (
-                octobot_flow_entities.PostIterationActionsDetails(
-                    updated_exchange_account_elements=(
-                        parsed_process_bot_state.exchange_account_elements.to_dict(
-                            include_default_values=True
-                        )
-                    ),
-                ).to_dict(include_default_values=False)
-            )
-        self.value = self.create_re_callable_result_dict(
-            keyword=self.get_name(),
-            waiting_time=recall_interval,
-            last_execution_time=start_time,
-            **re_call_payload,
+def create_octobot_process_operators(
+    signals: typing.Optional[dsl_interpreter.OperatorSignals] = None
+) -> list[type[dsl_interpreter.Operator]]:
+    # Child process: user layout, ports, process_bot_state.json liveness (re-callable).
+    class EnsureOctobotProcessOperator(
+        dsl_interpreter.PreComputingCallOperator,
+        dsl_interpreter.ReCallableOperatorMixin,
+        dsl_interpreter.SignalableOperatorMixin,
+        dsl_interpreter.ProcessBoundOperatorMixin,
+    ):
+        DESCRIPTION = (
+            "Prepares a per-bot user directory (profile + config + reference_tentacles_config), "
+            "spawns an OctoBot child with unique WEB/NODE ports and --dump-state for process_bot_state.json. "
+            "Always re-callable: each fresh state file (updated_at within twice the dump interval) schedules the next check (see waiting_time). "
+            "If the state file never becomes live before ping_timeout from the first spawn, the keyword fails and the child is killed."
+        )
+        EXAMPLE = (
+            "run_octobot_process(user_folder='bots/b1', profile_data={...}, "
+            "exchange_auth_data=[{'internal_name': 'binance', 'api_key': '...', 'api_secret': '...'}], "
+            "last_execution_result=None)"
         )
 
-    async def _pre_compute_recall_path(
-        self,
-        recall_state: EnsureOctobotProcessState,
-        last_result: dict,
-        *,
-        start_time: float,
-        recall_interval: float,
-        ping_timeout: float,
-    ) -> None:
-        state_path = _resolve_state_file_path(recall_state)
-        # Init window: fail and kill the child if the state file never became live in time.
-        if (
-            not recall_state.init_state_ok
-            and time.time() - recall_state.started_waiting_at > ping_timeout
-        ):
-            self.value = self.request_graceful_stop(logger=_get_logger())
-            raise commons_errors.DSLInterpreterError(
-                "Timed out waiting for OctoBot process_bot_state.json during init (see ping_timeout).",
+        def __init__(self, *args, **kwargs):
+            dsl_interpreter.PreComputingCallOperator.__init__(self, *args, **kwargs)
+            dsl_interpreter.ProcessBoundOperatorMixin.__init__(self)
+            dsl_interpreter.SignalableOperatorMixin.__init__(self, signals)
+
+        @staticmethod
+        def get_library() -> str:
+            return commons_constants.CONTEXTUAL_OPERATORS_LIBRARY
+
+        @staticmethod
+        def get_name() -> str:
+            return "run_octobot_process"
+
+        @classmethod
+        def get_parameters(cls) -> list[dsl_interpreter.OperatorParameter]:
+            return [
+                dsl_interpreter.OperatorParameter(
+                    name="user_folder",
+                    description=(
+                        "Path segment(s) under <cwd>/user/automations/ for this bot."
+                    ),
+                    required=True,
+                    type=str,
+                ),
+                dsl_interpreter.OperatorParameter(
+                    name="profile_data",
+                    description="Object compatible with octobot_commons.profiles.profile_data.ProfileData.",
+                    required=True,
+                    type=dict,
+                ),
+                dsl_interpreter.OperatorParameter(
+                    name="exchange_auth_data",
+                    description=(
+                        "Optional list of dicts compatible with "
+                        "octobot_commons.profiles.exchange_auth_data.ExchangeAuthData "
+                        "(e.g. internal_name, api_key, api_secret, api_password, exchange_type, sandboxed)."
+                    ),
+                    required=False,
+                    type=list[dict],
+                    default=None,
+                ),
+                dsl_interpreter.OperatorParameter(
+                    name="web_port_base",
+                    description="Base port for the web interface (uses base+offset; default from services constants).",
+                    required=False,
+                    type=int,
+                    default=services_constants.DEFAULT_SERVER_PORT,
+                ),
+                dsl_interpreter.OperatorParameter(
+                    name="node_port_base",
+                    description="Base port for the node API (uses base+offset).",
+                    required=False,
+                    type=int,
+                    default=services_constants.DEFAULT_NODE_API_PORT,
+                ),
+                dsl_interpreter.OperatorParameter(
+                    name="bind_host",
+                    description="Host used for free-port checks and WEB_ADDRESS / NODE_API_ADDRESS for the child.",
+                    required=False,
+                    type=str,
+                    default="127.0.0.1",
+                ),
+                dsl_interpreter.OperatorParameter(
+                    name="http_scheme",
+                    description="Scheme for http_base_url (default http).",
+                    required=False,
+                    type=str,
+                    default="http",
+                ),
+                dsl_interpreter.OperatorParameter(
+                    name="no_telegram",
+                    description="If true, spawns with -nt (default true).",
+                    required=False,
+                    type=bool,
+                    default=True,
+                ),
+                dsl_interpreter.OperatorParameter(
+                    name="ping_timeout",
+                    description=(
+                        "Init-only: max seconds from the first spawn until process_bot_state.json is first considered live "
+                        "(fresh updated_at / next_updated_at). After that, the child is killed and the keyword fails. "
+                        "Does not cap liveness re-calls once up."
+                    ),
+                    required=False,
+                    type=float,
+                    default=DEFAULT_ENSURE_TIMEOUT,
+                ),
+                dsl_interpreter.OperatorParameter(
+                    name="waiting_time",
+                    description=(
+                        "Fixed interval in seconds before each re-call (init polling and ongoing liveness while the state file is live)."
+                    ),
+                    required=False,
+                    type=float,
+                    default=DEFAULT_PING_WAITING_TIME,
+                ),
+            ] + super().get_re_callable_parameters()
+
+        @classmethod
+        def _re_calling_result_dispatches_this_ensure(
+            cls,
+            re_calling_result: typing.Optional[dict],
+        ) -> bool:
+            if not re_calling_result or not dsl_interpreter.ReCallingOperatorResult.is_re_calling_operator_result(
+                re_calling_result
+            ):
+                return False
+            try:
+                keyword = dsl_interpreter.ReCallingOperatorResult.get_keyword(re_calling_result)
+            except (KeyError, TypeError, AttributeError):
+                return False
+            if keyword != cls.get_name():
+                return False
+            rec = re_calling_result.get(dsl_interpreter.ReCallingOperatorResult.__name__)
+            if not isinstance(rec, dict):
+                return False
+            inner = rec.get("last_execution_result")
+            if not isinstance(inner, dict):
+                return False
+            return _parse_ensure_recall_state(inner) is not None
+
+        @classmethod
+        def should_dispatch_operator_signal_for_result(
+            cls,
+            signal: str,
+            re_calling_result: typing.Optional[dict],
+        ) -> bool:
+            if signal not in (
+                dsl_interpreter.OperatorSignal.STOP.value,
+                dsl_interpreter.OperatorSignal.UPDATE_CONFIG.value,
+            ):
+                return False
+            return cls._re_calling_result_dispatches_this_ensure(re_calling_result)
+
+        def _emit_ensure_recall(
+            self,
+            *,
+            state: EnsureOctobotProcessState,
+            last_result: dict,
+            start_time: float,
+            recall_interval: float,
+            parsed_process_bot_state: typing.Optional[process_bot_state_import.ProcessBotState] = None,
+        ) -> None:
+            re_call_payload = {**state.model_dump()}
+            for payload_key, payload_value in last_result.items():
+                if payload_key in re_call_payload or payload_key in _RECALL_OVERRIDABLE_KEYS:
+                    continue
+                re_call_payload[payload_key] = payload_value
+            if parsed_process_bot_state is not None:
+                re_call_payload[octobot_flow_entities.PostIterationActionsDetails.__name__] = (
+                    octobot_flow_entities.PostIterationActionsDetails(
+                        updated_exchange_account_elements=(
+                            parsed_process_bot_state.exchange_account_elements.to_dict(
+                                include_default_values=True
+                            )
+                        ),
+                    ).to_dict(include_default_values=False)
+                )
+            self.value = self.create_re_callable_result_dict(
+                keyword=self.get_name(),
+                waiting_time=recall_interval,
+                last_execution_time=start_time,
+                **re_call_payload,
             )
-        _get_logger().info("process state path (re-call path): %s", state_path)
-        loaded = await _load_process_bot_state(state_path)
-        is_live = loaded is not None and _is_process_state_alive(loaded)
-        if is_live:
+
+        async def _pre_compute_recall_path(
+            self,
+            recall_state: EnsureOctobotProcessState,
+            last_result: dict,
+            *,
+            start_time: float,
+            recall_interval: float,
+            ping_timeout: float,
+        ) -> None:
+            state_path = _resolve_state_file_path(recall_state)
+            # Init window: fail and kill the child if the state file never became live in time.
+            if (
+                not recall_state.init_state_ok
+                and time.time() - recall_state.started_waiting_at > ping_timeout
+            ):
+                self.value = self.request_graceful_stop(logger=_get_logger())
+                raise commons_errors.DSLInterpreterError(
+                    "Timed out waiting for OctoBot process_bot_state.json during init (see ping_timeout).",
+                )
+            _get_logger().info("process state path (re-call path): %s", state_path)
+            loaded = await _load_process_bot_state(state_path)
+            is_live = loaded is not None and _is_process_state_alive(loaded)
+            if is_live:
+                _get_logger().info(
+                    "OctoBot is running (re-call path): user_folder=%r base_url=%r pid=%s",
+                    recall_state.user_folder,
+                    recall_state.http_base_url,
+                    recall_state.pid,
+                )
+                updated = recall_state.model_copy(
+                    update={"init_state_ok": True, "state_file_path": state_path}
+                )
+                self._emit_ensure_recall(
+                    state=updated,
+                    last_result=last_result,
+                    start_time=start_time,
+                    recall_interval=recall_interval,
+                    parsed_process_bot_state=loaded,
+                )
+                return
             _get_logger().info(
-                "OctoBot is running (re-call path): user_folder=%r base_url=%r pid=%s",
+                "OctoBot is still starting (re-call path, process state not live): user_folder=%r "
+                "base_url=%r pid=%s state_path=%s",
                 recall_state.user_folder,
                 recall_state.http_base_url,
                 recall_state.pid,
-            )
-            updated = recall_state.model_copy(
-                update={"init_state_ok": True, "state_file_path": state_path}
+                state_path,
             )
             self._emit_ensure_recall(
-                state=updated,
+                state=recall_state.model_copy(update={"state_file_path": state_path}),
                 last_result=last_result,
                 start_time=start_time,
                 recall_interval=recall_interval,
                 parsed_process_bot_state=loaded,
             )
-            return
-        _get_logger().info(
-            "OctoBot is still starting (re-call path, process state not live): user_folder=%r "
-            "base_url=%r pid=%s state_path=%s",
-            recall_state.user_folder,
-            recall_state.http_base_url,
-            recall_state.pid,
-            state_path,
-        )
-        self._emit_ensure_recall(
-            state=recall_state.model_copy(update={"state_file_path": state_path}),
-            last_result=last_result,
-            start_time=start_time,
-            recall_interval=recall_interval,
-            parsed_process_bot_state=loaded,
-        )
 
-    async def _pre_compute_first_spawn(
-        self,
-        user_folder: str,
-        working_directory: str,
-        params: dict,
-        last_result: dict,
-        *,
-        start_time: float,
-        recall_interval: float,
-    ) -> None:
-        # One-time (or re-) materialization, free ports, env, and `Popen` at project root.
-        init_info = await ensure_user_profile_and_layout(
-            user_folder,
-            working_directory,
-            params["profile_data"],
-            None,
-        )
-        user_root = init_info["user_root"]
-        log_folder = _ensure_log_folder_path(working_directory, user_folder)
-        bind_host, probe_host = (
-            dsl_interpreter.ProcessBoundOperatorMixin.bind_address_for_env_and_probe_hosts(
-                params
+        async def _pre_compute_first_spawn(
+            self,
+            user_folder: str,
+            working_directory: str,
+            params: dict,
+            last_result: dict,
+            *,
+            start_time: float,
+            recall_interval: float,
+        ) -> None:
+            # One-time (or re-) materialization, free ports, env, and `Popen` at project root.
+            raw_exchange_auth = params.get("exchange_auth_data")
+            exchange_auth: typing.Optional[
+                list[exchange_auth_data_module.ExchangeAuthData]
+            ] = None
+            if raw_exchange_auth:
+                exchange_auth = [
+                    exchange_auth_data_module.ExchangeAuthData.from_dict(entry)
+                    if isinstance(entry, dict)
+                    else entry
+                    for entry in raw_exchange_auth
+                ]
+            init_info = await ensure_user_profile_and_layout(
+                user_folder,
+                working_directory,
+                params["profile_data"],
+                None,
+                exchange_auth,
             )
-        )
-        web_b = int(params.get("web_port_base") or services_constants.DEFAULT_SERVER_PORT)
-        node_b = int(params.get("node_port_base") or services_constants.DEFAULT_NODE_API_PORT)
-        web_port, node_port = _listen_port_pair_with_shared_scan_offset(
-            probe_host, web_b, node_b
-        )
-        start_script = os.path.join(working_directory, "start.py")
-        if not os.path.isfile(start_script):
-            raise commons_errors.DSLInterpreterError(
-                f"start.py not found at {start_script} (current working directory must be the OctoBot project root)."
+            user_root = init_info["user_root"]
+            log_folder = _ensure_log_folder_path(working_directory, user_folder)
+            bind_host, probe_host = (
+                dsl_interpreter.ProcessBoundOperatorMixin.bind_address_for_env_and_probe_hosts(
+                    params
+                )
             )
-        child_env = _ensure_child_environ(web_port, node_port, bind_host)
-        rel_user = os.path.relpath(user_root, working_directory)
-        rel_log = os.path.relpath(log_folder, working_directory)
-        state_file_path = os.path.normpath(
-            os.path.join(user_root, octobot_constants.PROCESS_BOT_STATE_FILE_NAME)
-        )
-        cmd = _ensure_start_cmd(
-            start_script,
-            rel_user,
-            rel_log,
-            bool(params.get("no_telegram", True)),
-            state_file_path,
-        )
-        self.spawn_subprocess(
-            cmd,
-            working_directory=working_directory,
-            environment=child_env,
-            hide_console_window=True,
-        )
-        scheme = str(params.get("http_scheme") or "http").rstrip(":/")
-        http_base_url = f"{scheme}://{bind_host}:{web_port}"
-        state = EnsureOctobotProcessState(
-            http_base_url=http_base_url,
-            web_port=web_port,
-            node_port=node_port,
-            user_root=user_root,
-            user_folder=str(user_folder),
-            log_folder=log_folder,
-            profile_id=init_info.get("profile_id"),
-            pid=self.pid or 0,
-            state_file_path=state_file_path,
-            started_waiting_at=start_time,
-        )
-        # First process state check after spawn (init cap still uses `state.started_waiting_at`).
-        loaded = await _load_process_bot_state(state_file_path)
-        is_live = loaded is not None and _is_process_state_alive(loaded)
-        if is_live:
+            web_b = int(params.get("web_port_base") or services_constants.DEFAULT_SERVER_PORT)
+            node_b = int(params.get("node_port_base") or services_constants.DEFAULT_NODE_API_PORT)
+            web_port, node_port = _listen_port_pair_with_shared_scan_offset(
+                probe_host, web_b, node_b
+            )
+            start_script = os.path.join(working_directory, "start.py")
+            if not os.path.isfile(start_script):
+                raise commons_errors.DSLInterpreterError(
+                    f"start.py not found at {start_script} (current working directory must be the OctoBot project root)."
+                )
+            child_env = _ensure_child_environ(web_port, node_port, bind_host)
+            rel_user = os.path.relpath(user_root, working_directory)
+            rel_log = os.path.relpath(log_folder, working_directory)
+            state_file_path = os.path.normpath(
+                os.path.join(user_root, octobot_constants.PROCESS_BOT_STATE_FILE_NAME)
+            )
+            cmd = _ensure_start_cmd(
+                start_script,
+                rel_user,
+                rel_log,
+                bool(params.get("no_telegram", True)),
+                state_file_path,
+            )
+            self.spawn_subprocess(
+                cmd,
+                working_directory=working_directory,
+                environment=child_env,
+                hide_console_window=True,
+            )
+            scheme = str(params.get("http_scheme") or "http").rstrip(":/")
+            http_base_url = f"{scheme}://{bind_host}:{web_port}"
+            state = EnsureOctobotProcessState(
+                http_base_url=http_base_url,
+                web_port=web_port,
+                node_port=node_port,
+                user_root=user_root,
+                user_folder=str(user_folder),
+                log_folder=log_folder,
+                profile_id=init_info.get("profile_id"),
+                pid=self.pid or 0,
+                state_file_path=state_file_path,
+                started_waiting_at=start_time,
+            )
+            # First process state check after spawn (init cap still uses `state.started_waiting_at`).
+            loaded = await _load_process_bot_state(state_file_path)
+            is_live = loaded is not None and _is_process_state_alive(loaded)
+            if is_live:
+                _get_logger().info(
+                    "OctoBot is running (first-spawn path): user_folder=%r base_url=%r pid=%s",
+                    user_folder,
+                    http_base_url,
+                    self.pid,
+                )
+                ready = state.model_copy(update={"init_state_ok": True})
+                self._emit_ensure_recall(
+                    state=ready,
+                    last_result=last_result,
+                    start_time=start_time,
+                    recall_interval=recall_interval,
+                    parsed_process_bot_state=loaded,
+                )
+                return
             _get_logger().info(
-                "OctoBot is running (first-spawn path): user_folder=%r base_url=%r pid=%s",
+                "OctoBot is still starting (first-spawn path, process state not live): user_folder=%r base_url=%r "
+                "pid=%s state_path=%s",
                 user_folder,
                 http_base_url,
                 self.pid,
+                state_file_path,
             )
-            ready = state.model_copy(update={"init_state_ok": True})
             self._emit_ensure_recall(
-                state=ready,
+                state=state,
                 last_result=last_result,
                 start_time=start_time,
                 recall_interval=recall_interval,
                 parsed_process_bot_state=loaded,
             )
-            return
-        _get_logger().info(
-            "OctoBot is still starting (first-spawn path, process state not live): user_folder=%r base_url=%r "
-            "pid=%s state_path=%s",
-            user_folder,
-            http_base_url,
-            self.pid,
-            state_file_path,
-        )
-        self._emit_ensure_recall(
-            state=state,
-            last_result=last_result,
-            start_time=start_time,
-            recall_interval=recall_interval,
-            parsed_process_bot_state=loaded,
-        )
 
-    async def pre_compute(self) -> None:
-        await super().pre_compute()
-        # Resolve params, project root, and a fixed re-call interval for this run.
-        params = self.get_computed_value_by_parameter()
-        if type(self).get_execution_stop():
-            last_result = self.get_last_execution_result(params) or {}
+        async def _pre_compute_update_config_refresh(
+            self,
+            last_result: dict,
+            user_folder: str,
+            working_directory: str,
+            params: dict,
+            *,
+            start_time: float,
+            recall_interval: float,
+            ping_timeout: float,
+        ) -> None:
+            # Resolve prior child layout from re-call payload; required for stop, wait, and paths to remove.
             recall_state = self._try_parse_ensure_recall_state(last_result)
             if recall_state is None:
                 raise commons_errors.DSLInterpreterError(
-                    "run_octobot_process(execution_stop) requires last_execution_result from a prior run_octobot_process call.",
+                    "run_octobot_process(UPDATE_CONFIG) requires last_execution_result from a prior "
+                    "run_octobot_process call.",
                 )
-            self.value = self.request_graceful_stop(logger=_get_logger())
-            return
-        working_directory = os.path.normpath(os.getcwd())
-        user_folder = params["user_folder"]
-        if not user_folder or not str(user_folder).strip():
-            raise commons_errors.DSLInterpreterError("user_folder is required")
-        dsl_interpreter.ProcessBoundOperatorMixin.reject_user_path_segment(user_folder)
-        last_result = self.get_last_execution_result(params) or {}
-        start_time = time.time()
-        ping_timeout = float(params.get("ping_timeout") or DEFAULT_ENSURE_TIMEOUT)
-        recall_interval = float(params.get("waiting_time") or DEFAULT_PING_WAITING_TIME)
-        recall_state = self._try_parse_ensure_recall_state(last_result)
-        if recall_state is not None and self.is_process_running():
-            await self._pre_compute_recall_path(
-                recall_state,
+            process_logger = _get_logger()
+            process_logger.info(
+                "configuration update: begin refresh user_folder=%r user_root=%r log_folder=%r pid=%s",
+                user_folder,
+                recall_state.user_root,
+                recall_state.log_folder,
+                recall_state.pid,
+            )
+            stop_outcome = self.request_graceful_stop(logger=process_logger)
+            process_logger.info("configuration update: graceful stop outcome: %s", stop_outcome)
+            await self.wait_until_pid_stopped(
+                recall_state.pid,
+                logger=process_logger,
+                timeout_seconds=ping_timeout,
+            )
+            process_logger.info("configuration update: removing automation user and log directories")
+            _remove_path_for_fresh_start(recall_state.user_root, logger=process_logger)
+            _remove_path_for_fresh_start(recall_state.log_folder, logger=process_logger)
+            process_logger.info("configuration update: spawning new OctoBot process from current parameters")
+            await self._pre_compute_first_spawn(
+                user_folder,
+                working_directory,
+                params,
+                {},
+                start_time=start_time,
+                recall_interval=recall_interval,
+            )
+
+        async def pre_compute(self) -> None:
+            await super().pre_compute()
+            # Resolve params, project root, and a fixed re-call interval for this run.
+            params = self.get_computed_value_by_parameter()
+            if self.matches_operator_signal(dsl_interpreter.OperatorSignal.STOP.value):
+                last_result = self.get_last_execution_result(params) or {}
+                recall_state = self._try_parse_ensure_recall_state(last_result)
+                if recall_state is None:
+                    raise commons_errors.DSLInterpreterError(
+                        "run_octobot_process(execution_stop) requires last_execution_result from a prior run_octobot_process call.",
+                    )
+                if not self.is_process_running():
+                    self.value = {"status": "already_stopped", "reason": "not_running"}
+                    return
+                self.value = self.request_graceful_stop(logger=_get_logger())
+                return
+            working_directory = os.path.normpath(os.getcwd())
+            user_folder = params["user_folder"]
+            if not user_folder or not str(user_folder).strip():
+                raise commons_errors.DSLInterpreterError("user_folder is required")
+            dsl_interpreter.ProcessBoundOperatorMixin.reject_user_path_segment(user_folder)
+            last_result = self.get_last_execution_result(params) or {}
+            start_time = time.time()
+            ping_timeout = float(params.get("ping_timeout") or DEFAULT_ENSURE_TIMEOUT)
+            recall_interval = float(params.get("waiting_time") or DEFAULT_PING_WAITING_TIME)
+            if self.matches_operator_signal(dsl_interpreter.OperatorSignal.UPDATE_CONFIG.value):
+                await self._pre_compute_update_config_refresh(
+                    last_result,
+                    user_folder,
+                    working_directory,
+                    params,
+                    start_time=start_time,
+                    recall_interval=recall_interval,
+                    ping_timeout=ping_timeout,
+                )
+                return
+            recall_state = self._try_parse_ensure_recall_state(last_result)
+            if recall_state is not None and self.is_process_running():
+                await self._pre_compute_recall_path(
+                    recall_state,
+                    last_result,
+                    start_time=start_time,
+                    recall_interval=recall_interval,
+                    ping_timeout=ping_timeout,
+                )
+                return
+            await self._pre_compute_first_spawn(
+                user_folder,
+                working_directory,
+                params,
                 last_result,
                 start_time=start_time,
                 recall_interval=recall_interval,
-                ping_timeout=ping_timeout,
             )
-            return
-        await self._pre_compute_first_spawn(
-            user_folder,
-            working_directory,
-            params,
-            last_result,
-            start_time=start_time,
-            recall_interval=recall_interval,
-        )
 
 
-    def _try_parse_ensure_recall_state(self, raw: dict) -> typing.Optional[EnsureOctobotProcessState]:
-        if state := _parse_ensure_recall_state(raw):
-            if state.pid:
-                self.pid = state.pid
-            return state
-        return None
+        def _try_parse_ensure_recall_state(self, raw: dict) -> typing.Optional[EnsureOctobotProcessState]:
+            if state := _parse_ensure_recall_state(raw):
+                if state.pid:
+                    self.pid = state.pid
+                return state
+            return None
+    
+    return [EnsureOctobotProcessOperator]
+
 
 
 def _get_logger():
-    return commons_logging.get_logger("octobot_process_ops")
+    return commons_logging.get_logger("OctoBotProcessOperators")

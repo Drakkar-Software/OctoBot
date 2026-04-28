@@ -35,6 +35,7 @@ class DSLExecutor(AbstractActionExecutor):
         self._exchange_manager = exchange_manager
         self._dependencies = dependencies
         self._dependencies_config: dict = profile_data.to_profile("").config
+        self._interpreter_signals: octobot_commons.dsl_interpreter.OperatorSignals = None # type: ignore (reset when interpreter is created)
         self._interpreter: octobot_commons.dsl_interpreter.Interpreter = self._create_interpreter(None)
         if dsl_script:
             self._interpreter.prepare(dsl_script)
@@ -61,12 +62,15 @@ class DSLExecutor(AbstractActionExecutor):
                 copier_exchange_manager=self._exchange_manager,
                 copier_trading_mode=None,
             )
-            + [octobot_process_ops.EnsureOctobotProcessOperator]
-        )
+            + octobot_process_ops.create_octobot_process_operators(
+                self._interpreter_signals
+            )
+        ) # type: ignore (list[type[Operator]])
 
     def _create_interpreter(
         self, previous_execution_result: typing.Optional[dict]
-    ):
+    ) -> octobot_commons.dsl_interpreter.Interpreter:
+        self._interpreter_signals = octobot_commons.dsl_interpreter.OperatorSignals()
         return octobot_commons.dsl_interpreter.Interpreter(
             self.get_flow_operator_classes()
         )
@@ -87,20 +91,28 @@ class DSLExecutor(AbstractActionExecutor):
         self,
         action: octobot_flow.entities.DSLScriptActionDetails,
         *,
-        execution_stop_for: typing.Optional[typing.Type[
-            octobot_commons.dsl_interpreter.ReCallableOperatorMixin
-        ]] = None,
-    ) -> typing.Any:
+        operator_signals: typing.Optional[
+            list[tuple[
+                typing.Type[octobot_commons.dsl_interpreter.SignalableOperatorMixin],
+                str
+            ]]
+        ] = None,
+    ) -> octobot_commons.dsl_interpreter.DSLCallResult:
         self._interpreter = self._create_interpreter(
             action.previous_execution_result
         )
         expression = action.get_resolved_dsl_script()
         try:
-            if execution_stop_for is not None:
-                with execution_stop_for.set_execution_stop():
-                    interpretation = await self._interpreter.interprete(expression)
+            if operator_signals:
+                signals_update = {
+                    operator_class.get_name(): signal # type: ignore
+                    for operator_class, signal in operator_signals
+                }
+                self._logger().info(f"Executing action with operator signals: {signals_update}")
             else:
-                interpretation = await self._interpreter.interprete(expression)
+                signals_update = {}
+            self._interpreter_signals.sync(signals_update)
+            interpretation = await self._interpreter.interprete(expression)
             return octobot_commons.dsl_interpreter.DSLCallResult(
                 statement=expression,
                 result=interpretation,

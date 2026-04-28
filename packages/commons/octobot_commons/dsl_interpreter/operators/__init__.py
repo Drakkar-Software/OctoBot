@@ -50,6 +50,11 @@ from octobot_commons.dsl_interpreter.operators.re_callable_operator_mixin import
     ReCallingOperatorResult,
     ReCallingOperatorResultKeys,
 )
+from octobot_commons.dsl_interpreter.operators.signalable_operator_mixin import (
+    OperatorSignal,
+    OperatorSignals,
+    SignalableOperatorMixin,
+)
 from octobot_commons.dsl_interpreter.operators.process_bound_operator_mixin import (
     ProcessBoundOperatorMixin,
     is_process_bound,
@@ -69,6 +74,9 @@ __all__ = [
     "ReCallableOperatorMixin",
     "ReCallingOperatorResult",
     "ReCallingOperatorResultKeys",
+    "SignalableOperatorMixin",
+    "OperatorSignal",
+    "OperatorSignals",
     "ProcessBoundOperatorMixin",
     "is_process_bound",
 ]

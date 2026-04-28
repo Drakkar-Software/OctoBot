@@ -24,6 +24,7 @@ import octobot_commons.logging as logging
 import octobot_commons.constants as commons_constants
 
 import octobot.constants as constants
+import octobot.storage.process_bot_state_dumper as process_bot_state_dumper
 
 
 ASYNC_IGNORED_ERROR_MESSAGES = ["'message': 'Unclosed client session'"]
@@ -48,6 +49,8 @@ class TaskManager:
         self.executors = None
         self.bot_main_task = None
         self.loop_forever_thread = None
+        
+        self._process_bot_state_dump_task = None
 
     def init_async_loop(self):
         self.async_loop = asyncio.new_event_loop()
@@ -63,6 +66,12 @@ class TaskManager:
         self.ready = True
         self.tools_task_group = asyncio.gather(*task_list)
         self.create_pool_executor()
+        if self.octobot.dump_state_path:
+            self._process_bot_state_dump_task = asyncio.create_task(
+                process_bot_state_dumper.run_periodic_dump_loop(
+                    self.octobot.dump_state_path, self.octobot
+                )
+            )
 
     def run_bot_in_thread(self, coroutine):
         self.init_async_loop()
@@ -98,6 +107,10 @@ class TaskManager:
 
         if self.tools_task_group:
             self.tools_task_group.cancel()
+
+        if self._process_bot_state_dump_task is not None and not self._process_bot_state_dump_task.done():
+            self._process_bot_state_dump_task.cancel()
+        self._process_bot_state_dump_task = None
 
         # close community session
         if self.octobot.community_handler:

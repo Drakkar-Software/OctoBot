@@ -215,9 +215,6 @@ DEFAULT_TENTACLES_PACKAGE_NAME = "OctoBot-Default-Tentacles"
 DEFAULT_LOGS_FOLDER = "logs"
 LOGS_FOLDER = os.getenv("LOGS_FOLDER", DEFAULT_LOGS_FOLDER)
 
-# Web automation: child process sets OCTOBOT_WEB_API_KEY
-ENV_WEB_API_KEY = "OCTOBOT_WEB_API_KEY"
-WEB_API_KEY_HEADER = "X-Octobot-Api-Key"
 # Process bot state JSON next to user config (--dump-state); liveness for run_octobot_process
 PROCESS_BOT_STATE_FILE_NAME = "process_bot_state.json"
 ENV_PROCESS_BOT_STATE_DUMP_INTERVAL_SECONDS = "OCTOBOT_PROCESS_BOT_STATE_DUMP_INTERVAL_SECONDS"

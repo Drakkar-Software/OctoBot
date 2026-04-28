@@ -21,6 +21,7 @@ import uuid
 
 import aiofiles
 import octobot_commons.json_util as json_util
+import octobot_commons.logging as logging
 import octobot_trading.api as trading_api
 
 import octobot.constants as octobot_app_constants
@@ -28,9 +29,12 @@ import octobot_flow.entities.accounts.exchange_account_elements as exchange_acco
 import octobot_flow.entities.accounts.process_bot_state as process_bot_state_import
 
 
+if typing.TYPE_CHECKING:
+    import octobot.octobot
+
+
 def _synced_exchange_account_elements_for_first_trading_exchange(
-    octobot: typing.Any,
-    logger: typing.Any,
+    octobot: "octobot.octobot.OctoBot",
 ) -> exchange_account_elements_import.ExchangeAccountElements:
     """
     Build one snapshot for the first trading exchange only. If several are trading, log an error
@@ -51,7 +55,7 @@ def _synced_exchange_account_elements_for_first_trading_exchange(
     elements.name = trading_api.get_exchange_name(first_exchange_manager)
     elements.sync_from_exchange_manager(first_exchange_manager, [])
     for skipped_exchange_manager in trading_managers[1:]:
-        logger.error(
+        _get_logger().error(
             "process bot state dump includes only the first trading exchange; dumping %s (%s). "
             "Skipping additional trading exchange %s (%s).",
             trading_api.get_exchange_name(first_exchange_manager),
@@ -65,14 +69,13 @@ def _synced_exchange_account_elements_for_first_trading_exchange(
 async def _write_state_file_async(
     state_file_path: str,
     interval: float,
-    bot: typing.Any,
-    logger: typing.Any,
+    bot: "octobot.octobot.OctoBot",
 ) -> None:
     now = time.time()
     state = process_bot_state_import.ProcessBotState(
         metadata=process_bot_state_import.Metadata(updated_at=now, next_updated_at=now + interval),
         exchange_account_elements=_synced_exchange_account_elements_for_first_trading_exchange(
-            bot, logger
+            bot,
         ),
     )
     content = state.to_dict(include_default_values=False)
@@ -95,19 +98,23 @@ async def _write_state_file_async(
         raise
 
 
-async def run_periodic_dump_loop(state_file_path: str, logger, bot: typing.Any) -> None:
+async def run_periodic_dump_loop(state_file_path: str, bot: "octobot.octobot.OctoBot") -> None:
     """
     Periodically write ProcessBotState next to the user config. Cancel the task to stop.
     """
     interval = octobot_app_constants.PROCESS_BOT_STATE_DUMP_INTERVAL_SECONDS
     while True:
         try:
-            await _write_state_file_async(state_file_path, interval, bot, logger)
+            await _write_state_file_async(state_file_path, interval, bot)
         except asyncio.CancelledError:
             raise
         except Exception as err:  # pylint: disable=broad-except
-            logger.exception("process bot state dump failed: %s", err)
+            _get_logger().exception(err, True, "process bot state dump failed: %s", err)
         try:
             await asyncio.sleep(interval)
         except asyncio.CancelledError:
             break
+
+
+def _get_logger() -> logging.BotLogger:
+    return logging.get_logger("ProcessBotStateDumper")

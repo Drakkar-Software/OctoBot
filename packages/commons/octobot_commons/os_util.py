@@ -15,10 +15,11 @@
 #  License along with this library.
 
 
-import sys
+import ctypes
 import os
 import platform
-import ctypes
+import socket
+import sys
 
 import octobot_commons.constants as constants
 import octobot_commons.enums as enums
@@ -178,6 +179,40 @@ def parse_boolean_environment_var(env_key: str, default_value: str) -> bool:
     :return: the boolean value
     """
     return constants.parse_boolean_environment_var(env_key, default_value)
+
+
+def tcp_port_is_free(bind_host: str, port: int) -> bool:
+    """
+    :return: True if nothing is currently bound to (host, port) for TCP
+    """
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        try:
+            sock.bind((bind_host, port))
+        except OSError:
+            return False
+    return True
+
+
+def find_first_free_listen_port_after_base(
+    bind_host_for_probe: str,
+    listen_port_base: int,
+    max_offset: int = 256,
+    blocklist: list[int] | None = None,
+) -> int:
+    """
+    First offset where ``listen_port_base + offset`` is TCP-free on ``bind_host_for_probe``
+    (optional: require ``paired_listen_port_base + offset`` free as well, same scan step).
+    Returns ``listen_port``.
+    """
+    for offset_from_base in range(max_offset):
+        listen_port = listen_port_base + offset_from_base
+        if blocklist and listen_port in blocklist:
+            continue
+        if not tcp_port_is_free(bind_host_for_probe, listen_port):
+            continue
+        return listen_port
+    raise ValueError("No free listen port found in the scanned range.")
 
 
 def get_cpu_and_ram_usage(

@@ -39,8 +39,6 @@ import octobot.constants as constants
 import octobot.community.tentacles_packages as community_tentacles_packages
 import octobot.configuration_manager as configuration_manager
 
-import octobot.storage.process_bot_state_dumper as process_bot_state_dumper
-
 COMMANDS_LOGGER_NAME = "Commands"
 IGNORED_COMMAND_WHEN_RESTART = ["-u", "--update"]
 
@@ -326,12 +324,6 @@ async def start_bot(bot, logger, catch=False):
             await bot.initialize()
         except asyncio.CancelledError:
             logger.info("Core engine tasks cancelled.")
-        else:
-            if bot.dump_state_path:
-
-                bot._process_bot_state_dump_task = asyncio.create_task(
-                    process_bot_state_dumper.run_periodic_dump_loop(bot.dump_state_path, logger, bot)
-                )
 
     except Exception as e:
         logger.exception(e)

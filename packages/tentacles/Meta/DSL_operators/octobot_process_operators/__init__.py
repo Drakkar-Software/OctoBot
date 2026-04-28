@@ -16,11 +16,11 @@
 
 import tentacles.Meta.DSL_operators.octobot_process_operators.octobot_process_ops
 from tentacles.Meta.DSL_operators.octobot_process_operators.octobot_process_ops import (
-    EnsureOctobotProcessOperator,
+    create_octobot_process_operators,
     ensure_user_profile_and_layout,
 )
 
 __all__ = [
-    "EnsureOctobotProcessOperator",
+    "create_octobot_process_operators",
     "ensure_user_profile_and_layout",
 ]

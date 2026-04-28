@@ -67,7 +67,11 @@ class TestSpawnManagedSubprocess:
         ) as popen_mock:
             process_util.spawn_managed_subprocess([], working_directory="/w", hide_console_window=True)
         _args, keywords = popen_mock.call_args
-        assert keywords["creationflags"] == subprocess.CREATE_NO_WINDOW
+        assert keywords["creationflags"] == getattr(
+            subprocess,
+            "CREATE_NO_WINDOW",
+            0,
+        )
 
 
 class TestPidIsRunning:
@@ -77,10 +81,26 @@ class TestPidIsRunning:
 
     def test_with_psutil_process_running_true(self):
         fake_process = mock.Mock()
+        fake_process.status.return_value = process_util.psutil.STATUS_RUNNING
         fake_process.is_running.return_value = True
         with mock.patch.object(process_util.psutil, "Process", return_value=fake_process):
             assert process_util.pid_is_running(42) is True
         fake_process.is_running.assert_called_once()
+
+    def test_with_psutil_zombie_is_not_running(self):
+        """``is_running()`` can stay True for Linux zombies; we treat them as stopped for lifecycle waits."""
+        fake_process = mock.Mock()
+        fake_process.status.return_value = process_util.psutil.STATUS_ZOMBIE
+        fake_process.is_running.return_value = True
+        with mock.patch.object(process_util.psutil, "Process", return_value=fake_process):
+            assert process_util.pid_is_running(42) is False
+        fake_process.is_running.assert_not_called()
+
+    def test_with_psutil_zombie_process_exception_from_status(self):
+        fake_process = mock.Mock()
+        fake_process.status.side_effect = process_util.psutil.ZombieProcess(42)
+        with mock.patch.object(process_util.psutil, "Process", return_value=fake_process):
+            assert process_util.pid_is_running(42) is False
 
     def test_with_psutil_no_such_process(self):
         fake_process_constructor = mock.Mock(
@@ -89,11 +109,19 @@ class TestPidIsRunning:
         with mock.patch.object(process_util.psutil, "Process", fake_process_constructor):
             assert process_util.pid_is_running(42) is False
 
-    def test_without_psutil_true_for_positive_pid(self):
-        """Fallback path when ``psutil`` is absent: naive ``pid > 0`` (see ``process_util``)."""
-        with mock.patch.object(process_util, "psutil", None):
-            assert process_util.pid_is_running(1) is True
-            assert process_util.pid_is_running(999_999_999) is True
+    def test_with_psutil_no_such_process_from_status_after_process_ctor(self):
+        """Process() succeeds but status() raises (race: exited between ctor and probe, common on Windows)."""
+        fake_process = mock.Mock()
+        fake_process.status.side_effect = process_util.psutil.NoSuchProcess(42)
+        with mock.patch.object(process_util.psutil, "Process", return_value=fake_process):
+            assert process_util.pid_is_running(42) is False
+
+    def test_with_psutil_no_such_process_from_is_running(self):
+        fake_process = mock.Mock()
+        fake_process.status.return_value = process_util.psutil.STATUS_RUNNING
+        fake_process.is_running.side_effect = process_util.psutil.NoSuchProcess(42)
+        with mock.patch.object(process_util.psutil, "Process", return_value=fake_process):
+            assert process_util.pid_is_running(42) is False
 
 
 class TestRequestGracefulStopViaSigterm:
