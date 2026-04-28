@@ -1,0 +1,49 @@
+[package]
+name = "octobot-launcher-cli"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "octobot-launcher"
+path = "src/main.rs"
+
+[lints]
+workspace = true
+
+[dependencies]
+octobot-launcher-core = { path = "../octobot-launcher-core" }
+octobot-launcher-config = { path = "../octobot-launcher-config" }
+octobot-launcher-service = { path = "../octobot-launcher-service" }
+octobot-launcher-update = { path = "../octobot-launcher-update" }
+octobot-launcher-api = { path = "../octobot-launcher-api" }
+octobot-launcher-docker = { path = "../octobot-launcher-docker" }
+octobot-launcher-binary = { path = "../octobot-launcher-binary" }
+octobot-launcher-python = { path = "../octobot-launcher-python" }
+clap = { version = "4", features = ["derive", "env"] }
+tokio = { version = "1", features = ["full"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+anyhow = "1"
+serde_json = "1"
+chrono = { version = "0.4", features = ["serde"] }
+fs2 = "0.4"
+qrcode = "0.14"
+uuid = { version = "1", features = ["v4"] }
+serde = { version = "1", features = ["derive"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "stream"] }
+futures-util = { version = "0.3", default-features = false, features = ["std"] }
+
+[target.'cfg(unix)'.dependencies]
+hyper = { version = "1", features = ["http1"] }
+hyper-util = { version = "0.1", features = ["tokio"] }
+http-body-util = "0.1"
+bytes = "1"
+
+[dev-dependencies]
+octobot-launcher-core = { path = "../octobot-launcher-core", features = ["testing"] }
+assert_cmd = "2"
+predicates = "3"
+tempfile = "3"

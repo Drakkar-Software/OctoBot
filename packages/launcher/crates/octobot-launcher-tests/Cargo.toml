@@ -1,0 +1,33 @@
+[package]
+name = "octobot-launcher-tests"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+octobot-launcher-core = { path = "../octobot-launcher-core" }
+octobot-launcher-config = { path = "../octobot-launcher-config" }
+octobot-launcher-api = { path = "../octobot-launcher-api" }
+octobot-launcher-update = { path = "../octobot-launcher-update" }
+assert_cmd = "2"
+predicates = "3"
+tempfile = "3"
+wiremock = "0.6"
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
+chrono = { version = "0.4", features = ["serde"] }
+serde = { version = "1", features = ["derive"] }
+ed25519-dalek = { version = "2", features = ["rand_core"] }
+rand = "0.8"
+hex = "0.4"
+sha2 = "0.10"
+semver = "1"
+axum = { version = "0.8", features = ["macros"] }
+axum-test = "20"
