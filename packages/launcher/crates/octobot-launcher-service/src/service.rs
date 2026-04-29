@@ -12,6 +12,7 @@ use tracing::debug;
 use crate::error::{Result, ServiceError};
 
 const REVERSE_DNS_LABEL: &str = "org.drakkar.octobot-launcher";
+pub const ENV_FOREGROUND: &str = "OCTOBOT_LAUNCHER_FOREGROUND";
 
 #[cfg(target_os = "linux")]
 const SYSTEMD_SERVICE_NAME: &str = "octobot-launcher.service";
@@ -115,7 +116,7 @@ impl LauncherService {
                 program,
                 args,
                 working_directory: None,
-                environment: Some(vec![("OCTOBOT_LAUNCHER_FOREGROUND".into(), "1".into())]),
+                environment: Some(vec![(ENV_FOREGROUND.into(), "1".into())]),
                 autostart: true,
                 username: None,
                 contents: None,

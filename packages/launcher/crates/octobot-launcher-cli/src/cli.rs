@@ -45,6 +45,7 @@ pub enum ServiceCommands {
     Uninstall,
     Start,
     Stop,
+    Restart,
     Status,
     #[command(hide = true)]
     Run,

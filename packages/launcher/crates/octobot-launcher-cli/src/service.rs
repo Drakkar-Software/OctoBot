@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use anyhow::{Context, Result};
 use octobot_launcher_config::{LauncherConfig, Store};
-use octobot_launcher_service::{LauncherService, ServiceLevel, ServiceStatus, auto_level};
+use octobot_launcher_service::{ENV_FOREGROUND, LauncherService, ServiceLevel, ServiceStatus, auto_level};
 
 use crate::cli::{ServiceArgs, ServiceCommands};
 use crate::supervisor::run_supervisor;
@@ -25,7 +25,7 @@ fn spawn_daemon(config: &LauncherConfig) -> Result<()> {
 
     let child = std::process::Command::new(exe)
         .args(&args)
-        .env("OCTOBOT_LAUNCHER_FOREGROUND", "1")
+        .env(ENV_FOREGROUND, "1")
         .stdin(Stdio::null())
         .stdout(log_file.try_clone().context("clone log file handle")?)
         .stderr(log_file)
@@ -67,6 +67,14 @@ pub async fn handle_service(args: ServiceArgs, config: &LauncherConfig) -> Resul
             println!("Service stopped.");
             Ok(())
         }
+        ServiceCommands::Restart => {
+            let level = auto_level();
+            let svc = LauncherService::new(level).context("create service manager")?;
+            svc.stop().context("stop service")?;
+            svc.start().context("start service")?;
+            println!("Service restarted.");
+            Ok(())
+        }
         ServiceCommands::Status => {
             let level = auto_level();
             let svc = LauncherService::new(level).context("create service manager")?;
@@ -80,7 +88,7 @@ pub async fn handle_service(args: ServiceArgs, config: &LauncherConfig) -> Resul
             Ok(())
         }
         ServiceCommands::Run => {
-            if std::env::var("OCTOBOT_LAUNCHER_FOREGROUND").is_err() {
+            if std::env::var(ENV_FOREGROUND).is_err() {
                 return spawn_daemon(config);
             }
             let store = Arc::new(

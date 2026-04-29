@@ -1,5 +1,8 @@
 use std::path::PathBuf;
 
+const DOCKER_SOCKET_UNIX: &str = "/var/run/docker.sock";
+const DOCKER_SOCKET_WINDOWS: &str = "npipe:////./pipe/docker_engine";
+
 use figment::{
     providers::{Env, Format, Toml},
     Figment,
@@ -79,11 +82,11 @@ fn default_backends_section() -> BackendsSection {
         docker: DockerBackendConfig {
             enabled: true,
             #[cfg(unix)]
-            socket: "/var/run/docker.sock".to_string(),
+            socket: DOCKER_SOCKET_UNIX.to_string(),
             #[cfg(windows)]
-            socket: "npipe:////./pipe/docker_engine".to_string(),
+            socket: DOCKER_SOCKET_WINDOWS.to_string(),
             #[cfg(not(any(unix, windows)))]
-            socket: "/var/run/docker.sock".to_string(),
+            socket: DOCKER_SOCKET_UNIX.to_string(),
         },
         binary: BinaryBackendConfig { enabled: true },
         python: PythonBackendConfig {

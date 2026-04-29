@@ -11,7 +11,7 @@ use octobot_launcher_core::model::{
     HealthStatus, InstanceId, InstanceSpec, InstanceState, RuntimeKind,
 };
 use octobot_launcher_core::Backend;
-use octobot_launcher_update::{ArtifactKind, Updater};
+use octobot_launcher_update::{ArtifactKind, Updater, fetch_latest_octobot_binary};
 use tokio::process::Child;
 use tokio::sync::Mutex;
 use tracing::{info, warn};
@@ -139,6 +139,43 @@ impl Backend for BinaryBackend {
         send_progress(progress, "Preparing data directory");
         std::fs::create_dir_all(spec.data_dir.join("bin"))?;
         std::fs::create_dir_all(spec.data_dir.join("logs"))?;
+
+        // If a custom binary_path is specified the caller manages the binary.
+        if spec.runtime_options.get("binary_path").is_some() {
+            return Ok(());
+        }
+
+        let bin = binary_path(&spec.data_dir);
+        if !bin.exists() {
+            let dest_dir = spec.data_dir.join("bin");
+            send_progress(progress, format!("Downloading OctoBot {}", spec.version));
+
+            let downloaded = if let Some(updater) = self.updater.as_ref() {
+                // Use manifest-based updater when configured (production).
+                // TODO: re-enable updates.drakkar.software manifest once server is live.
+                updater
+                    .fetch_artifact(ArtifactKind::OctoBotBinary, &dest_dir)
+                    .await
+                    .map_err(|e| LauncherError::Backend(e.to_string()))?
+            } else {
+                // Fallback: fetch latest release from GitHub.
+                fetch_latest_octobot_binary(&dest_dir)
+                    .await
+                    .map_err(|e| LauncherError::Backend(e.to_string()))?
+            };
+
+            send_progress(progress, "Installing binary");
+            let new_path = new_binary_path(&spec.data_dir);
+            std::fs::rename(&downloaded, &new_path)?;
+            std::fs::rename(&new_path, &bin)?;
+
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                std::fs::set_permissions(&bin, std::fs::Permissions::from_mode(0o755))?;
+            }
+        }
+
         Ok(())
     }
 

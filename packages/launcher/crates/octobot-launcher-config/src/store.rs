@@ -6,6 +6,8 @@ pub const STATE_DIR: &str = "state";
 pub const INSTANCES_SUBDIR: &str = "instances";
 pub const TOKENS_FILENAME: &str = "tokens.json";
 pub const BOOTSTRAP_TOKEN_FILENAME: &str = "bootstrap_token.txt";
+pub const SOCKET_FILENAME: &str = "launcher.sock";
+pub const LOCK_FILENAME: &str = "launcher.lock";
 use serde::{de::DeserializeOwned, Serialize};
 use tracing::warn;
 

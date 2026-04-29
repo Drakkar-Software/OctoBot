@@ -1,9 +1,11 @@
 pub mod error;
+pub mod github;
 pub mod manifest;
 pub mod restart;
 pub mod updater;
 
 pub use error::{Result, UpdateError};
+pub use github::fetch_latest_octobot_binary;
 pub use manifest::{Artifact, ArtifactSet, Channel, Manifest, PythonArtifact};
 pub use restart::RestartAttempts;
 pub use updater::{AppliedUpdate, ArtifactKind, UpdateAvailability, Updater, UpdaterConfig};

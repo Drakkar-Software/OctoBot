@@ -68,6 +68,37 @@ impl Updater {
         }
     }
 
+    /// Build an `Updater` from the baked-in public key hex and config strings.
+    /// Returns `None` if the pubkey cannot be parsed (e.g. dev builds with all-zero placeholder).
+    pub fn from_baked_config(
+        manifest_url: String,
+        channel: String,
+        pubkey_hex: &str,
+        state_dir: PathBuf,
+        cache_dir: PathBuf,
+    ) -> Option<Self> {
+        let bytes = hex::decode(pubkey_hex).ok()?;
+        let arr: [u8; 32] = bytes.try_into().ok()?;
+        // Reject the dev placeholder (all zeros) — not a real key.
+        if arr == [0u8; 32] {
+            return None;
+        }
+        let pubkey = VerifyingKey::from_bytes(&arr).ok()?;
+        let version = Version::parse(env!("CARGO_PKG_VERSION")).ok()?;
+        let config = UpdaterConfig {
+            manifest_url,
+            channel,
+            current_launcher_version: version,
+            current_target_triple: env!("LAUNCHER_TARGET_TRIPLE"),
+            pubkey,
+            allow_downgrade: false,
+            user_agent: format!("octobot-launcher/{}", env!("CARGO_PKG_VERSION")),
+            state_dir,
+            cache_dir,
+        };
+        Some(Self::new(config))
+    }
+
     #[cfg(test)]
     pub fn with_replacer(mut self, replacer: Replacer) -> Self {
         self.replacer = replacer;
@@ -738,6 +769,47 @@ mod tests {
             let updater = Updater::new(config);
             let result = updater.apply_launcher_update(&manifest).await;
             assert!(matches!(result, Err(UpdateError::Locked)));
+        }
+    }
+
+    mod baked_config {
+        use super::*;
+
+        #[test]
+        fn all_zero_pubkey_returns_none() {
+            let zeros = "0".repeat(64);
+            let result = Updater::from_baked_config(
+                "https://example.com/manifest.json".to_string(),
+                "stable".to_string(),
+                &zeros,
+                std::path::PathBuf::from("/tmp"),
+                std::path::PathBuf::from("/tmp"),
+            );
+            assert!(result.is_none(), "dev placeholder key must not produce an updater");
+        }
+
+        #[test]
+        fn invalid_hex_returns_none() {
+            let result = Updater::from_baked_config(
+                "https://example.com/manifest.json".to_string(),
+                "stable".to_string(),
+                "not-valid-hex",
+                std::path::PathBuf::from("/tmp"),
+                std::path::PathBuf::from("/tmp"),
+            );
+            assert!(result.is_none());
+        }
+
+        #[test]
+        fn wrong_length_hex_returns_none() {
+            let result = Updater::from_baked_config(
+                "https://example.com/manifest.json".to_string(),
+                "stable".to_string(),
+                "deadbeef",
+                std::path::PathBuf::from("/tmp"),
+                std::path::PathBuf::from("/tmp"),
+            );
+            assert!(result.is_none());
         }
     }
 }

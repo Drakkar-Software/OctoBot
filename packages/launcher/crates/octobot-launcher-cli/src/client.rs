@@ -50,7 +50,7 @@ impl ApiClient {
     pub fn from_config(config: &octobot_launcher_config::LauncherConfig, token: Option<String>) -> Self {
         #[cfg(unix)]
         {
-            let socket_path = config.launcher.data_root.join("launcher.sock");
+            let socket_path = config.launcher.data_root.join(octobot_launcher_config::SOCKET_FILENAME);
             if socket_path.exists() {
                 return Self {
                     base_url: format!("http://{}", config.launcher.api_bind),

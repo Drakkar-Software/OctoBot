@@ -6,15 +6,18 @@ use fs2::FileExt;
 use octobot_launcher_api::{ApiServer, ApiState, ListenerConfig};
 use octobot_launcher_api::token_store::TokenStore;
 use octobot_launcher_binary::{BinaryBackend, BinaryBackendConfig};
-use octobot_launcher_config::{DesiredState, LauncherConfig, Store, BOOTSTRAP_TOKEN_FILENAME};
+use octobot_launcher_config::{
+    DesiredState, LauncherConfig, LOCK_FILENAME, SOCKET_FILENAME, Store, BOOTSTRAP_TOKEN_FILENAME,
+};
 use octobot_launcher_core::Backend;
 use octobot_launcher_docker::DockerBackend;
 use octobot_launcher_python::{PythonBackend, PythonBackendConfig, PythonDistMode};
+use octobot_launcher_update::{BAKED_PUBKEY_HEX, Updater};
 
 use crate::write_bootstrap_token;
 
 pub async fn run_supervisor(config: LauncherConfig, store: Arc<Store>) -> Result<()> {
-    let lock_path = config.launcher.data_root.join("launcher.lock");
+    let lock_path = config.launcher.data_root.join(LOCK_FILENAME);
     std::fs::create_dir_all(&config.launcher.data_root)
         .with_context(|| format!("create data root {}", config.launcher.data_root.display()))?;
     let lock_file = File::create(&lock_path)
@@ -43,7 +46,11 @@ pub async fn run_supervisor(config: LauncherConfig, store: Arc<Store>) -> Result
     }
 
     if config.backends.binary.enabled {
-        backends.push(Box::new(BinaryBackend::new(BinaryBackendConfig::default())));
+        let mut binary_backend = BinaryBackend::new(BinaryBackendConfig::default());
+        if let Some(updater) = build_updater(&config, &store) {
+            binary_backend = binary_backend.with_updater(Arc::new(updater));
+        }
+        backends.push(Box::new(binary_backend));
     }
 
     if config.backends.python.enabled {
@@ -66,7 +73,7 @@ pub async fn run_supervisor(config: LauncherConfig, store: Arc<Store>) -> Result
     let unix_socket_path = {
         #[cfg(unix)]
         {
-            Some(config.launcher.data_root.join("launcher.sock"))
+            Some(config.launcher.data_root.join(SOCKET_FILENAME))
         }
         #[cfg(not(unix))]
         {
@@ -143,4 +150,14 @@ pub async fn run_supervisor(config: LauncherConfig, store: Arc<Store>) -> Result
     }
 
     Ok(())
+}
+
+fn build_updater(config: &LauncherConfig, store: &Store) -> Option<Updater> {
+    Updater::from_baked_config(
+        config.update.manifest_url.clone(),
+        config.update.channel.clone(),
+        BAKED_PUBKEY_HEX,
+        store.data_root().join("update-state"),
+        store.data_root().join("update-cache"),
+    )
 }

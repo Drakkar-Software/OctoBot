@@ -14,7 +14,8 @@ pub use config::{
 pub use error::{ConfigError, Result};
 pub use record::{DesiredState, InstanceRecord};
 pub use store::{
-    Store, BOOTSTRAP_TOKEN_FILENAME, INSTANCES_SUBDIR, STATE_DIR, TOKENS_FILENAME,
+    Store, BOOTSTRAP_TOKEN_FILENAME, INSTANCES_SUBDIR, LOCK_FILENAME, SOCKET_FILENAME,
+    STATE_DIR, TOKENS_FILENAME,
 };
 
 #[cfg(test)]
