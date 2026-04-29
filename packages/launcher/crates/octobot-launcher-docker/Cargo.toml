@@ -1,0 +1,21 @@
+[package]
+name = "octobot-launcher-docker"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+octobot-launcher-core = { path = "../octobot-launcher-core" }
+bollard = { version = "0.19", features = ["chrono"] }
+async-trait = "0.1"
+futures-util = "0.3"
+tokio = { version = "1", features = ["full"] }
+tracing = "0.1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+chrono = { version = "0.4", features = ["serde"] }

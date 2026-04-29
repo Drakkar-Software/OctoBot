@@ -1,0 +1,34 @@
+[package]
+name = "octobot-launcher-update"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+octobot-launcher-core = { path = "../octobot-launcher-core" }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "stream"] }
+tokio = { version = "1", features = ["full"] }
+ed25519-dalek = "2"
+sha2 = { version = "0.10", features = [] }
+hex = "0.4"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+semver = "1"
+tempfile = "3"
+self-replace = "1.5"
+thiserror = "2"
+tracing = "0.1"
+chrono = { version = "0.4", features = ["serde"] }
+
+[build-dependencies]
+
+[dev-dependencies]
+wiremock = "0.6"
+tokio = { version = "1", features = ["full"] }
+ed25519-dalek = { version = "2", features = ["rand_core"] }
+rand = "0.8"
