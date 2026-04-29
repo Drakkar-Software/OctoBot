@@ -66,11 +66,27 @@ def _prepare_response_extra_headers(include_security_headers):
     return response_extra_headers
 
 
+def _decoded_redirect_has_controls_or_del(candidate: str) -> bool:
+    """
+    Percent-decoded redirects must not contain C0 ASCII controls (tabs, NUL, …) or DEL.
+    %-encoded slashes/tabs/etc. fool naive urljoin/urlparse parity checks vs user agents.
+    """
+    decoded_for_scan = urllib.parse.unquote(
+        candidate, encoding='utf-8', errors='replace'
+    )
+    for character in decoded_for_scan:
+        code_point = ord(character)
+        if code_point < 32 or code_point == 127:
+            return True
+    return False
+
+
 def is_safe_redirect_url(target) -> bool:
     """
     True if target is usable with flask.redirect without open-redirect risk:
     same host and scheme as the current request, or absent/blank (caller supplies
-    a default destination).
+    a default destination); rejects percent-encoded or literal C0 controls / DEL
+    (e.g. ``%09``) which clients may normalize differently than urllib.
     """
     if target is None:
         return True
@@ -81,6 +97,8 @@ def is_safe_redirect_url(target) -> bool:
         return True
     # Only allow absolute paths starting with exactly one slash
     if not re.match(r'^/[^/]', target):
+        return False
+    if _decoded_redirect_has_controls_or_del(stripped):
         return False
     ref_url = urllib.parse.urlparse(flask.request.host_url)
     test_url = urllib.parse.urlparse(urllib.parse.urljoin(flask.request.host_url, stripped))
