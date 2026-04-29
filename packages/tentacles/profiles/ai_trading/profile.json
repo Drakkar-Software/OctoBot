@@ -1,0 +1,55 @@
+{
+    "config": {
+        "crypto-currencies": {
+            "Bitcoin": {
+                "enabled": true,
+                "pairs": [
+                    "BTC/USDT"
+                ]
+            },
+            "Ethereum": {
+                "enabled": true,
+                "pairs": [
+                    "ETH/USDT"
+                ]
+            }
+        },
+        "exchanges": {
+            "binance": {
+                "enabled": true
+            }
+        },
+        "trader": {
+            "enabled": false,
+            "load-trade-history": false
+        },
+        "trader-simulator": {
+            "enabled": true,
+            "fees": {
+                "maker": 0.1,
+                "taker": 0.1
+            },
+            "starting-portfolio": {
+                "BTC": 1,
+                "ETH": 10,
+                "USDT": 10000
+            }
+        },
+        "trading": {
+            "reference-market": "USDT",
+            "risk": 0.3
+        },
+        "services": {
+            "gpt_service": {
+                "enabled": true
+            }
+        }
+    },
+    "profile": {
+        "avatar": "default_profile.png",
+        "description": "AI trading profile.",
+        "id": "ai_trading",
+        "name": "AI Trading",
+        "read_only": false
+    }
+}

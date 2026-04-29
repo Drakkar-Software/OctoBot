@@ -21,6 +21,7 @@ import pytest_asyncio
 import mock
 
 import octobot.community as community
+import octobot.community.authentication
 import octobot.constants as constants
 import octobot_commons.authentication as authentication
 import octobot_commons.configuration
@@ -195,7 +196,7 @@ async def test_fetch_bot_profile_data_without_tentacles_options(auth):
         )
         executed_product_details = community.ExecutedProductDetails(
             product_id="product_id_123",
-            started_at=1723659202.0, # not nested config: use bot created_at (2024-08-14T22:13:22.1111+04:00)
+            started_at=1723659202.1111, # not nested config: use bot created_at (2024-08-14T22:13:22.1111+04:00)
         )
         assert await auth.supabase_client.fetch_bot_profile_data("bot_id", {"mexc": "USDC"}) == (
             parsed_data, executed_product_details
@@ -291,7 +292,7 @@ async def test_fetch_bot_profile_data_with_tentacles_options(auth):
         )
         executed_product_details = community.ExecutedProductDetails(
             product_id="product_id_123",
-            started_at=1723644802.0, # not nested config: use bot created_at (2024-08-14T22:13:22.1111+08:00)
+            started_at=1723644802.1111, # not nested config: use bot created_at (2024-08-14T22:13:22.1111+08:00)
         )
         assert await auth.supabase_client.fetch_bot_profile_data("bot_id", {}) == (
             parsed_data, executed_product_details
@@ -412,6 +413,77 @@ def test_init_account(auth):
         create_task_mock.assert_called_once_with("coro")
         _auth_and_fetch_account_mock.assert_called_once()
         assert auth._fetch_account_task == "task"
+
+
+async def test_bot_data_update(auth):
+    with (
+        mock.patch.object(auth, "is_logged_in_and_has_selected_bot", mock.Mock(return_value=True)) as is_logged_in_and_has_selected_bot_mock,
+        mock.patch.object(auth.supabase_client, "refresh_session", mock.AsyncMock()) as refresh_session_mock,
+        mock.patch.object(auth, "auto_reauthenticate", mock.AsyncMock(return_value=True)) as auto_reauthenticate_mock,
+        mock.patch.object(auth, "logout", mock.AsyncMock()) as logout_mock,
+    ):
+        @community.authentication._bot_data_update
+        async def ok_func(*args, **kwargs):
+            # do not raise
+            return "result"
+        
+        await ok_func(auth)
+        is_logged_in_and_has_selected_bot_mock.assert_called_once()
+        refresh_session_mock.assert_not_called()
+        auto_reauthenticate_mock.assert_not_called()
+        logout_mock.assert_not_called()
+        is_logged_in_and_has_selected_bot_mock.reset_mock()
+
+        @community.authentication._bot_data_update
+        async def error_func(*args, **kwargs):
+            raise Exception("error")
+        await error_func(auth)
+        is_logged_in_and_has_selected_bot_mock.assert_called_once()
+        refresh_session_mock.assert_not_called()
+        auto_reauthenticate_mock.assert_not_called()
+        logout_mock.assert_not_called()
+        is_logged_in_and_has_selected_bot_mock.reset_mock()
+
+        _calls = []
+        @community.authentication._bot_data_update
+        async def expired_session_and_retry_error_func(*args, **kwargs):
+            if len(_calls) == 0:
+                _calls.append(1)
+                raise postgrest.exceptions.APIError({'message': 'JWT expired', 'code': 'PGRST303', 'hint': None, 'details': None})
+        await expired_session_and_retry_error_func(auth)
+        assert is_logged_in_and_has_selected_bot_mock.call_count == 2 # called twice: once for the 1st call, once after the refresh session call
+        refresh_session_mock.assert_called_once() # refresh session has been called
+        auto_reauthenticate_mock.assert_not_called()
+        logout_mock.assert_not_called()
+        is_logged_in_and_has_selected_bot_mock.reset_mock()
+        refresh_session_mock.reset_mock()
+
+        _calls = []
+        @community.authentication._bot_data_update
+        async def expired_session_ok_after_reauthenticate_error_func(*args, **kwargs):
+            if len(_calls) < 2:
+                _calls.append(1)
+                raise postgrest.exceptions.APIError({'message': 'JWT expired', 'code': 'PGRST303', 'hint': None, 'details': None})
+            return "result"
+        await expired_session_ok_after_reauthenticate_error_func(auth)
+        assert is_logged_in_and_has_selected_bot_mock.call_count == 3 # called 3 times: once for the 1st call, once after the refresh session call, once after the auto reauthenticate call
+        refresh_session_mock.assert_called_once() # refresh session has been called
+        auto_reauthenticate_mock.assert_called_once()
+        logout_mock.assert_not_called()
+        is_logged_in_and_has_selected_bot_mock.reset_mock()
+        refresh_session_mock.reset_mock()
+
+        with mock.patch.object(auth, "auto_reauthenticate", mock.AsyncMock(return_value=False)) as auto_reauthenticate_mock:
+            @community.authentication._bot_data_update
+            async def always_expired_session_error_func(*args, **kwargs):
+                raise postgrest.exceptions.APIError({'message': 'JWT expired', 'code': 'PGRST303', 'hint': None, 'details': None})
+            await always_expired_session_error_func(auth)
+            assert is_logged_in_and_has_selected_bot_mock.call_count == 2 # called 2 times: once for the 1st call, once after the refresh session call
+            refresh_session_mock.assert_called_once() # refresh session has been called
+            auto_reauthenticate_mock.assert_called_once()
+            logout_mock.assert_called_once()
+            is_logged_in_and_has_selected_bot_mock.reset_mock()
+            refresh_session_mock.reset_mock()
 
 
 @pytest.mark.asyncio

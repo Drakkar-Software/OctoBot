@@ -1,0 +1,10 @@
+{
+    "close_to_current_price_difference": 0.02,
+    "required_strategies": [
+        "MoveSignalsStrategyEvaluator"
+    ],
+    "max_currency_percent": 100,
+    "use_maximum_size_orders": false,
+    "use_prices_close_to_current_price": false,
+    "use_stop_orders": true
+}

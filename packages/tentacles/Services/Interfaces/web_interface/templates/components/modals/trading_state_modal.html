@@ -1,0 +1,36 @@
+{% import 'macros/trading_state.html' as m_trading_state %}
+{% macro create_trading_state_modal(is_real_trading, enabled_trader) -%}
+    <div class="modal fade" id="tradingSwitchModal" tabindex="-1" role="dialog" aria-labelledby="#tradingSwitchModalTitle" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="tradingSwitchModalTitle">Currently using : {{ m_trading_state.display_trading_state(is_real_trading, enabled_trader, False, True) }}</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+                {% if is_real_trading %}
+                    <p>By switching to simulated trading, OctoBot will only use its simulation mode on real market conditions.</p>
+                    <p>It will no longer create trade with your exchange account, it will use a simulated portfolio managed by OctoBot.</p>
+                {% else %}
+                    <p>By switching to real trading, OctoBot will use your <b>real</b> funds</p>
+                {% endif %}
+                <div class="alert alert-warning w-100" role="alert">
+                    <strong>Warning!</strong> The switch button will also restart OctoBot
+                </div>
+          </div>
+          <div class="modal-footer text-center">
+            <a class="my-2 btn btn-outline-primary waves-effect" href="" data-dismiss="modal" aria-label="Close">Stay</a>
+              {% if is_real_trading %}
+                <a class="my-2 btn btn-primary waves-effect trading-mode-switch-button" href="#" update-url="/config" href="/" config-type="global_config"
+                    config-key="trader-simulator_enabled" current-value="True">Switch to simulated trading</a>
+              {% else %}
+                <a class="my-2 btn btn-danger waves-effect trading-mode-switch-button" href="#" update-url="/config" config-type="global_config" config-key="trader_enabled"
+                    current-value="True">Switch to real trading</a>
+              {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+{%- endmacro %}

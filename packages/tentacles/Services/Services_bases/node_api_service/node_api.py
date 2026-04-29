@@ -1,0 +1,178 @@
+#  Drakkar-Software OctoBot-Tentacles
+#  Copyright (c) Drakkar-Software, All rights reserved.
+#
+#  This library is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU Lesser General Public
+#  License as published by the Free Software Foundation; either
+#  version 3.0 of the License, or (at your option) any later version.
+#
+#  This library is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#  Lesser General Public License for more details.
+#
+#  You should have received a copy of the GNU Lesser General Public
+#  License along with this library.
+
+import os
+import socket
+
+import octobot_commons.constants as commons_constants
+import octobot_services.constants as services_constants
+import octobot_services.services as services
+import octobot_node.scheduler
+import octobot_node.scheduler.internal_trading_signals as internal_trading_signals
+
+
+LOCAL_HOST_IP = "127.0.0.1"
+
+
+class NodeApiService(services.AbstractService):
+    BACKTESTING_ENABLED = True
+
+    def __init__(self):
+        super().__init__()
+        self.api_app = None
+        self.node_api_url = None
+        self.node_sqlite_file = None
+        self.node_redis_url = None
+        self.backend_cors_origins = None
+
+    def get_fields_description(self):
+        return {
+            services_constants.CONFIG_NODE_API_PORT: "Port to access the OctoBot Node API interface from.",
+            services_constants.NODE_API_URL: "Base URL used by the Node Web UI to reach the Node API.",
+            services_constants.NODE_SQLITE_FILE: "SQLite database file path for the Node scheduler.",
+            services_constants.NODE_REDIS_URL: "Redis URI for the Node scheduler (optional).",
+            services_constants.BACKEND_CORS_ALLOWED_ORIGINS: "Allowed CORS origins for the Node API backend.",
+            commons_constants.CONFIG_ENABLED_OPTION: "Enable the Node API interface.",
+        }
+
+    def get_default_value(self):
+        return {
+            services_constants.CONFIG_NODE_API_PORT: services_constants.DEFAULT_NODE_API_PORT,
+            services_constants.NODE_API_URL: self._get_default_node_api_url(),
+            services_constants.NODE_SQLITE_FILE: "tasks.db",
+            services_constants.NODE_REDIS_URL: None,
+            services_constants.BACKEND_CORS_ALLOWED_ORIGINS: services_constants.DEFAULT_BACKEND_CORS_ALLOWED_ORIGINS,
+            commons_constants.CONFIG_ENABLED_OPTION: False,
+        }
+
+    def get_required_config(self):
+        return [services_constants.CONFIG_NODE_API_PORT]
+
+    @staticmethod
+    def is_setup_correctly(config):
+        return services_constants.CONFIG_NODE_API in config[services_constants.CONFIG_CATEGORY_SERVICES] \
+               and services_constants.CONFIG_SERVICE_INSTANCE in config[services_constants.CONFIG_CATEGORY_SERVICES][
+                   services_constants.CONFIG_NODE_API
+               ]
+
+    @staticmethod
+    def get_is_enabled(config):
+        if os.getenv(services_constants.ENV_ENABLE_NODE_API):
+            return commons_constants.parse_boolean_environment_var(
+                services_constants.ENV_ENABLE_NODE_API, "false"
+            )
+        return config.get(services_constants.CONFIG_CATEGORY_SERVICES, {}).get(services_constants.CONFIG_NODE_API, {}).get(
+            commons_constants.CONFIG_ENABLED_OPTION, False
+        )
+
+    def has_required_configuration(self):
+        return self.get_is_enabled(self.config)
+
+    def get_endpoint(self) -> None:
+        return self.api_app
+
+    def get_type(self) -> None:
+        return services_constants.CONFIG_NODE_API
+
+    @staticmethod
+    def get_should_warn():
+        return False
+
+    async def stop(self):
+        if self.api_app:
+            self.api_app.stop()
+
+    async def prepare(self) -> None:
+        try:
+            node_config = self.config[services_constants.CONFIG_CATEGORY_SERVICES][services_constants.CONFIG_NODE_API]
+            self.node_api_url = node_config.get(services_constants.NODE_API_URL)
+            self.node_sqlite_file = node_config.get(services_constants.NODE_SQLITE_FILE)
+            self.node_redis_url = node_config.get(services_constants.NODE_REDIS_URL)
+            self.backend_cors_origins = node_config.get(services_constants.BACKEND_CORS_ALLOWED_ORIGINS)
+        except KeyError:
+            self.node_api_url = None
+            self.node_sqlite_file = None
+            self.node_redis_url = None
+            self.backend_cors_origins = None
+        self._sync_config()
+        if self.get_is_enabled(self.config) and not octobot_node.scheduler.is_initialized():
+            octobot_node.scheduler.initialize_scheduler()
+            await internal_trading_signals.subscribe_internal_trading_signal_consumer()
+
+    def _sync_config(self):
+        defaults = self.get_default_value()
+        updated_config = {}
+        if not self.node_api_url:
+            self.node_api_url = defaults[services_constants.NODE_API_URL]
+            updated_config[services_constants.NODE_API_URL] = self.node_api_url
+        if not self.node_sqlite_file:
+            self.node_sqlite_file = defaults[services_constants.NODE_SQLITE_FILE]
+            updated_config[services_constants.NODE_SQLITE_FILE] = self.node_sqlite_file
+        if self.node_redis_url is None:
+            self.node_redis_url = defaults[services_constants.NODE_REDIS_URL]
+            updated_config[services_constants.NODE_REDIS_URL] = self.node_redis_url
+        if not self.backend_cors_origins:
+            self.backend_cors_origins = defaults[services_constants.BACKEND_CORS_ALLOWED_ORIGINS]
+            updated_config[services_constants.BACKEND_CORS_ALLOWED_ORIGINS] = self.backend_cors_origins
+
+        if updated_config:
+            self.save_service_config(services_constants.CONFIG_NODE_API, updated_config, update=True)
+
+    def _get_default_node_api_url(self):
+        port = self._get_node_api_server_port()
+        return f"http://{LOCAL_HOST_IP}:{port}"
+
+    def _get_node_api_server_port(self) -> str:
+        try:
+            return os.getenv(
+                services_constants.ENV_NODE_API_PORT,
+                self.config.get(services_constants.CONFIG_CATEGORY_SERVICES, {}).get(services_constants.CONFIG_NODE_API, {}).get(
+                    services_constants.CONFIG_NODE_API_PORT, services_constants.DEFAULT_NODE_API_PORT
+                ),
+            )
+        except (KeyError, ValueError, AttributeError) as err:
+            return services_constants.DEFAULT_NODE_API_PORT
+
+    def _get_node_api_server_url(self):
+        port = self._get_node_api_server_port()
+        try:
+            return f"{os.getenv(services_constants.ENV_NODE_API_ADDRESS, socket.gethostbyname(socket.gethostname()))}:{port}"
+        except OSError as err:
+            self.logger.warning(
+                f"Impossible to find local node web interface url, using default instead: {err} ({err.__class__.__name__})"
+            )
+        return f"{LOCAL_HOST_IP}:{port}"
+
+    def get_successful_startup_message(self):
+        return f"Node API interface successfully initialized and accessible at: http://{self._get_node_api_server_url()}.", True
+
+    def get_bind_host(self):
+        return os.getenv(services_constants.ENV_NODE_API_ADDRESS, services_constants.DEFAULT_NODE_API_IP)
+
+    def get_bind_port(self):
+        return int(self._get_node_api_server_port())
+
+    def get_node_api_url(self):
+        return self.node_api_url or self._get_default_node_api_url()
+
+    def get_node_sqlite_file(self):
+        return os.getenv(services_constants.ENV_NODE_SQLITE_FILE, self.node_sqlite_file)
+
+    def get_node_postgres_url(self):
+        return os.getenv(services_constants.ENV_NODE_POSTGRES_URL, self.node_redis_url)
+
+    def get_backend_cors_origins(self):
+        return os.getenv(services_constants.ENV_BACKEND_CORS_ALLOWED_ORIGINS, self.backend_cors_origins)

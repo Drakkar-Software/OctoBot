@@ -29,12 +29,14 @@ import octobot.community as community
 @pytest.mark.timeout(12)
 @pytest.mark.asyncio
 async def test_run_bot():
+    # use custom logs folder
+    logs_folder = "tests/functional_tests/logs"
     # avoid web interface in this test
     WebInterface.enabled = False
     community.IdentifiersProvider.use_production()
     bot = OctoBot(load_test_config(dict_only=False), ignore_config=True)
     bot.task_manager.init_async_loop()
-    await start_bot(bot, init_logger())
+    await start_bot(bot, init_logger(logs_folder=logs_folder))
     await asyncio.sleep(10)
     await stop_bot(bot)
 

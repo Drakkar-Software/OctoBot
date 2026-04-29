@@ -74,15 +74,18 @@ class InterfaceProducer(octobot_channels.OctoBotChannelProducer):
             await service_api.process_pending_notifications()
 
     async def _register_existing_exchanges(self, instance):
-        for exchange_id in self.octobot.exchange_producer.exchange_manager_ids:
-            await self._register_exchange(instance, exchange_id)
+        if self.octobot.exchange_producer is not None:
+            for exchange_id in self.octobot.exchange_producer.exchange_manager_ids:
+                await self._register_exchange(instance, exchange_id)
 
     async def _create_interfaces(self, in_backtesting):
         # do not overwrite data in case of inner bots init (backtesting)
-        if service_interfaces.get_bot_api() is None:
-            service_api.initialize_global_project_data(self.octobot.octobot_api,
-                                                       constants.PROJECT_NAME,
-                                                       constants.LONG_VERSION)
+        try: 
+            service_interfaces.get_bot_api()
+        except KeyError:
+            service_api.initialize_global_project_data(
+                self.octobot.bot_id, constants.PROJECT_NAME, constants.LONG_VERSION
+            )
         interface_factory = service_api.create_interface_factory(self.octobot.config)
         interface_list = interface_factory.get_available_interfaces()
         for interface_class in interface_list:
@@ -145,7 +148,7 @@ class InterfaceProducer(octobot_channels.OctoBotChannelProducer):
                tentacles_manager_api.is_tentacle_activated_in_tentacles_setup_config(
                    self.octobot.tentacles_setup_config,
                    interface_class.get_name()) and \
-               all(service.get_is_enabled(self.octobot.config) for service in interface_class.REQUIRED_SERVICES) and \
+               all(service.get_is_enabled(self.octobot.config) for service in (interface_class.REQUIRED_SERVICES or [])) and \
                (not backtesting_enabled or (
                            backtesting_enabled and service_api.is_enabled_in_backtesting(interface_class)))
 

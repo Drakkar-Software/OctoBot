@@ -1,0 +1,11 @@
+{
+    "required_strategies": [],
+    "refresh_interval": 0,
+    "rebalance_trigger_min_percent": 5,
+    "exchange_profile_ids": [],
+    "per_exchange_profile_portfolio_ratio": 20,
+    "allocation_padding_ratio": 20,
+    "min_order_size_margin": 1,
+    "new_position_only": false,
+    "allow_skip_asset": true
+}

@@ -1,0 +1,74 @@
+---
+title: "Trader avec ChatGPT"
+description: "Apprenez à utiliser les prédictions de ChatGPT sur OctoBot pour améliorer vos stratégies de trading crypto avec des prédictions du marché basées sur l'IA."
+sidebar_position: 4
+---
+
+
+
+# Trader avec ChatGPT
+
+Avec OctoBot, il est possible de trader avec des intelligences artificielles telles que [ChatGPT](/guides/octobot-interfaces/chatgpt) en utilisant le [DCA trading mode](dca-trading-mode) et le [Daily trading mode](daily-trading-mode).
+
+import YouTube from '@site/src/components/YouTube';
+
+<YouTube id="BV4ZHQrIpRQ" title="Stratégie de trading crypto avec ChatGPT sur OctoBot" />
+
+Dans cette vidéo, nous montrons comment l'une des stratégies de trading ChatGPT d'[OctoBot cloud](/) fonctionne.
+
+Dans OctoBot, ChatGPT est utilisé comme un indicateur de trading et non comme un moyen de passer des ordres. Cela signifie que plusieurs [trading modes](trading-modes) peuvent utiliser ChatGPT.
+
+## Utiliser ChatGPT dans vos trading modes
+
+Lorsque vous utilisez le [DCA trading mode](dca-trading-mode) intégré et [Daily trading mode](daily-trading-mode), vous pouvez choisir d'activer le GPTEvaluator. En le faisant, vos trading modes prendront en compte les prédictions de ChatGPT lors de leur trading.
+
+<div style={{textAlign: "center"}}>
+  ![ai trading illustrated by octobot head with chatgpt logo trading bitcoin
+  ethereum litecoin usd
+  logos](/images/guides/ai-trading-illustrated-by-octobot-head-with-chatgpt-logo-trading-bitcoin-ethereum-litecoin-usd-logos.png)
+</div>
+
+Vous pouvez donc choisir de trader uniquement avec les prédictions ChatGPT en activant l'évaluateur ChatGPT uniquement ou les consolider avec d'autres évaluateurs.
+
+## Fonctionnement de l'évaluateur ChatGPT
+
+L'évaluateur ChatGPT fonctionne en 3 étapes :
+
+1. Collecte des données du marché : Selon la configuration choisie pour votre évaluateur ChatGPT, les données du marché sont traitées puis envoyées à ChatGPT pour lui demander une prédiction.
+2. Demande la prédiction : Octobot demande à ChatGPT une prédiction concernant le marché basée sur les données fournies. Cette prédiction consiste à demander à ChatGPT si le marché est plus susceptible de monter ou de descendre dans un avenir proche avec un certain pourcentage de confiance.
+3. Analyse de la prédiction ChatGPT : Selon la réponse donnée par ChatGPT, l'évaluateur ChatGPT émet une évaluation. Le côté de l'évaluation dépendra de la réponse "UP" ou "DOWN" de l'IA, et son poids est basée sur le niveau de confiance donné par ChatGPT sur sa prédiction.
+
+## Configurations de l'évaluateur ChatGPT
+
+L'évaluateur ChatGPT peut être configuré de différentes manières pour personnaliser la façon dont vous souhaitez que ChatGPT fasse des prédictions.
+
+![configuration du trading avec chatgpt dans octobot avec le GPTEvaluator](/images/guides/trading-with-chatgpt-in-octobot-GPTEvaluator-configuration.png)
+
+- `Indicator` définit la manière dont vous souhaitez prétraiter les données du marché avant de les envoyer à ChatGPT. Vous pouvez choisir d'envoyer les bougies brutes (sans prétraitement), une moyenne mobile ou d'autres types de valeurs transformées.
+- `Source` est l'entrée à donner à l'`Indicator` lorsqu'il est sélectionné
+- `Period` est le réglage de la période de l'`Indicator` lorsqu'il est sélectionné
+- `Minimum confidence threshold` est une valeur en % à partir de laquelle il envoyer `1` ou `-1` au lieu d'une valeur **comprise entre** -1 et 1. Ce paramètre est particulièrement utile lorsque vous utilisez le [DCA trading mode](dca-trading-mode) avec un DCA basé sur les évaluateurs, qui nécessitent une évaluation à `1` ou `-1`
+- `GPT Model` vous permet de sélectionner le <a href="https://platform.openai.com/docs/models" rel="nofollow">modèle GPT OpenAI</a> à utiliser pour vos évaluations. Notez que certains modèles peuvent avoir un tarif différent. D'autres modèles peuvent aussi être utilisés en se connectant à un [autre serveur de LLM](../octobot-interfaces/chatgpt#prédictions-avec-un-llm-personnalisé).
+- `Allow Reevaluation` est utilisée lorsque vous utilisez l'évaluateur ChatGPT en même temps que d'autres évaluateurs tels que des évaluateurs en temps réel qui peuvent nécessiter des réévaluations. Comme les réévaluations peuvent se produire à une fréquence élevée, la désactivation de ces réévaluations est une mesure de sécurité pour éviter d'utiliser trop de [tokens OpenAI](/guides/octobot-interfaces/chatgpt#costs) au cas où cela se produirait
+- `OpenAI token limit` est le montant maximum de jetons OpenAI qui peut être dépensé dans une journée. Vous pouvez utiliser ce paramètre pour définir une limite d'utilisation de jetons si vous n'êtes pas certains du coût total de votre stratégie.
+
+:::info
+  Lorsque vous utilisez OctoBot en open source, l'évaluateur ChatGPT nécessite
+  la configuration de l'[interface
+  ChatGPT](/fr/guides/octobot-interfaces/chatgpt) pour pouvoir fonctionner.
+:::
+
+## Backtesting avec l'évaluateur ChatGPT
+
+Il n'est pas vraiment possible de demander efficacement à ChatGPT les milliers de prédictions requises lors d'un [backtesting](/guides/octobot-usage/backtesting). Cela prendrait des heures et coûterait énormément en termes de jetons OpenAI
+
+Cependant, chez OctoBot cloud, nous avons décidé de prendre en charge ce coût pour vous sur les paires de trading utilisées dans les [stratégies OctoBot cloud](/). Cela signifie que le backtesting avec l'évaluateur ChatGPT est possible sur les paires de trading utilisées par les stratégies OctoBot cloud. Lorsque vous sélectionnez ces paires, votre OctoBot récupérera automatiquement les prédictions historiques de ChatGPT et exécutera votre backtesting en avec cet historique.
+
+## Allez plus loin avec le trading ChatGPT
+
+Plus d'info sur les stratégies de trading basées sur ChatGPT sur nos articles de blog dédiés::
+
+- [Trader avec ChatGPT](/blog/trading-using-chat-gpt)
+- [Making of de la stratégie de trading ChatGPT](/blog/chatgpt-strategy-deep-dive)
+- [Trading avec les signaux ChatGPT
+  ](/fr/blog/introducing-chatgpt-trading-tool)

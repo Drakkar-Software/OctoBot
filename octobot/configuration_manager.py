@@ -95,6 +95,7 @@ def config_health_check(config: configuration.Configuration, in_backtesting: boo
 
     # 3 inform about configuration issues
     if not (in_backtesting or
+            get_distribution(config.config) == enums.OctoBotDistribution.NODE or
             trading_api.is_trader_enabled_in_config(config.config) or
             trading_api.is_trader_simulator_enabled_in_config(config.config)):
         logger.error(f"Real trader and trader simulator are deactivated in configuration. This will prevent OctoBot "
@@ -221,7 +222,12 @@ def migrate_from_previous_config(config):
 
 
 def get_distribution(config: dict) -> enums.OctoBotDistribution:
+    if constants.FORCED_DISTRIBUTION:
+        # if there is a forced distribution, use it
+        return enums.OctoBotDistribution(constants.FORCED_DISTRIBUTION)
     try:
+        # if there is no forced distribution, use the distribution from the config
         return enums.OctoBotDistribution(config[common_constants.CONFIG_DISTRIBUTION])
     except KeyError:
-        return enums.OctoBotDistribution.DEFAULT
+        # default distribution
+        return enums.OctoBotDistribution(common_constants.DEFAULT_DISTRIBUTION)

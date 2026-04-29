@@ -1,0 +1,11 @@
+{
+    "tentacle_activation": {
+        "Services": {
+            "TradingViewService": true,
+            "TradingViewServiceFeed": true
+        },
+        "Trading": {
+            "TradingViewSignalsTradingMode": true
+        }
+    }
+}

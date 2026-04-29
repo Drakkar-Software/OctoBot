@@ -1,0 +1,25 @@
+{
+  "required_strategies": [],
+  "pair_settings": [
+    {
+      "pair": "BTC/USDT",
+      "flat_spread": 1300,
+      "flat_increment": 800,
+      "buy_orders_count": 15,
+      "sell_orders_count": 15,
+      "sell_funds": 0,
+      "buy_funds": 0,
+      "starting_price": 0,
+      "buy_volume_per_order": 0,
+      "sell_volume_per_order": 0,
+      "ignore_exchange_fees": false,
+      "use_fixed_volume_for_mirror_orders": false,
+      "mirror_order_delay": 0,
+      "use_existing_orders_only": false,
+      "allow_funds_redispatch": false,
+      "enable_trailing_up": true,
+      "enable_trailing_down": false,
+      "funds_redispatch_interval": 24
+    }
+  ]
+}

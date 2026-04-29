@@ -1,0 +1,25 @@
+{% extends "layout.html" %}
+{% set active_page = "profile" %}
+
+{% import 'macros/flash_messages.html' as m_flash_messages %}
+{% import 'macros/starting_waiter.html' as m_starting_waiter %}
+{% import 'components/config/exchange_card.html' as m_config_exchange_card %}
+
+{% block body %}
+<br>
+{{ m_flash_messages.flash_messages() }}
+<div class="mb-2" id="restart-loader"
+     data-redirect-url="{{next_url}}">
+{{ m_starting_waiter.display_loading_message("Your OctoBot is restarting using the " + current_profile_name + " profile.",
+                                             "You will be taken to your OctoBot dashboard when it will be ready.",
+                                             next_url=next_url)}}
+</div>
+
+
+<br>
+
+{% endblock %}
+
+{% block additional_scripts %}
+<script src="{{ url_for('static', filename='js/components/wait_reboot.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+{% endblock additional_scripts %}

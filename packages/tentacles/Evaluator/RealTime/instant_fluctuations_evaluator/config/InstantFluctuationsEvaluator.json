@@ -1,0 +1,5 @@
+{
+    "price_difference_threshold_percent": 1,
+    "volume_difference_threshold_percent": 400,
+    "time_frame": "1m"
+}

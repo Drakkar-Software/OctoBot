@@ -1,0 +1,26 @@
+{% macro tentacles_config_editor(name, class_name) %}
+    <div class="{{class_name}}" id="configEditorBody"
+         data-edit-details-url="{{ url_for('config_tentacle_edit_details', tentacle=name) }}">
+        <div id="configEditor"></div>
+        <div id="editor-waiter" class="text-center my-4">
+            <div>
+                <h2>Loading configuration</h2>
+            </div>
+            <div>
+                <h2><i class="fa fa-spinner fa-spin"></i></h2>
+            </div>
+        </div>
+        <div id="noConfigMessage" style='display: none;'>
+            This {{ tentacle_type }} can't be configured.
+        </div>
+        <div id="configErrorDetails" style='display: none;'>
+            <div>
+                Error when fetching tentacle config. Resetting its configuration should fix the issue.
+            </div>
+            <div>
+                <button class="btn btn-warning waves-effect" data-role='factoryResetConfig'
+                        update-url="{{ url_for('config_tentacle', name=name, action='factory_reset') }}"><i class="fas fa-recycle"></i> Reset configuration to default values</button>
+            </div>
+        </div>
+    </div>
+{% endmacro %}

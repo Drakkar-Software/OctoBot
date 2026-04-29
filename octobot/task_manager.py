@@ -78,9 +78,11 @@ class TaskManager:
                 target=self.run_bot_in_thread, args=(coroutine,),
                 name="OctoBot Main Thread")
             self.loop_forever_thread.start()
-            if sys.version_info.minor >= 9:
-                # only required for python 3.9 +
-                self.loop_forever_thread.join()
+            # Avoid a single indefinite join() on the main thread: on Windows the main
+            # thread must return to the interpreter periodically or SIGINT (Ctrl+C) is
+            # not delivered to the custom handler. Short timeouts mirror that wake-up.
+            while self.loop_forever_thread.is_alive():
+                self.loop_forever_thread.join(timeout=1)
 
     def stop_tasks(self, stop_octobot=True):
         self.logger.info("Stopping tasks...")

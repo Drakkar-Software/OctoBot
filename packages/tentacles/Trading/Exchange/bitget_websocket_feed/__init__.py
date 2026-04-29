@@ -1,0 +1,1 @@
+from .bitget_websocket import BitgetCCXTWebsocketConnector

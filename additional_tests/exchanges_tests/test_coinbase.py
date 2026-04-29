@@ -32,13 +32,14 @@ class TestCoinbaseAuthenticatedExchange(
     SETTLEMENT_CURRENCY = "USDC"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
     ORDER_SIZE = 70  # % of portfolio to include in test orders
-    MIN_TRADE_USD_VALUE = decimal.Decimal("0.004")
+    MIN_TRADE_USD_VALUE = decimal.Decimal("0.0004")
     CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES = True
     VALID_ORDER_ID = "8bb80a81-27f7-4415-aa50-911ea46d841c"
     USE_ORDER_OPERATION_TO_CHECK_API_KEY_RIGHTS = True    # set True when api key rights can't be checked using a
     EXPECT_MISSING_FEE_IN_CANCELLED_ORDERS = False
     IS_BROKER_ENABLED_ACCOUNT = False
     IS_AUTHENTICATED_REQUEST_CHECK_AVAILABLE = True    # set True when is_authenticated_request is implemented
+    SLEEP_SECONDS_BEFORE_CHECKING_PORTFOLIO = 8
 
     SPECIAL_ORDER_TYPES_BY_EXCHANGE_ID: dict[
         str, (

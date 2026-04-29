@@ -1,0 +1,121 @@
+---
+title: "Stratégie RSI en Bull Market"
+description: "Optimisez vos gains en Bull Market en profitant de la montée des altcoins en prenant de l'avance sur les mouvements du marché en utilisant le RSI."
+sidebar_position: 1
+---
+
+
+
+# Stratégie TradingView de Bull Market avec le RSI en vidéo
+
+Comment profiter au mieux du Bull Market quand il est là ?  
+Dans cette stratégie, nous explorons comment utiliser le RSI pour acheter et vendre en avance, dès que la tendance commence à changer.
+
+import YouTube from '@site/src/components/YouTube';
+
+<YouTube id="Hksh9vnDvy4" title="Optimiser son Bull Market Crypto avec le RSI" />
+
+## L'objectif de la stratégie RSI en Bull Market
+
+En <a href="https://www.investopedia.com/terms/b/bullmarket.asp" rel="nofollow">Bull Market</a>, le prix des crypto monte régulièrement. Afin d'optimiser ses gains, il est important de pouvoir acheter les coins qui vont prendre en valeur avant que leur prix n'augmente trop. Il faut aussi idéalement pouvoir vendre rapidement lorsque le maximum est atteint. Vendre vous permettra de réaliser un achat à plus bas prix ou de débloquer vos fonds pour tirer profit d'une autre crypto prometteuse.
+
+C'est ce sur quoi cette stratégie se spécialise: **profiter des hausses temporaires**.
+
+## Le principe de la stratégie
+
+Utiliser le <a href="https://www.investopedia.com/terms/r/rsi.asp" rel="nofollow">Relative Strength Index</a>, afin d'identifier les zones de surachat et de survente, est intéressant pour:
+
+1. Acheter avant que le prix ne commence vraiment à monter
+2. Vendre uniquement lorsque le maximum local est atteint
+
+<div style={{textAlign: "center"}}>
+  ![strategie RSI de bull market qui achete et vend du
+  solana](/images/guides/tradingview-tutos/strategie-RSI-de-bull-market-qui-achete-et-vend-du-solana.png)
+</div>
+
+## Configuration de la stratégie
+
+L'objectif de la stratégie est de trader lorsqu'un maximum est atteint. Il est identifié grâce aux changements de tendance de RSI. Voici la confguration de RSI et d'alertes utilisée dans cette vidéo.
+
+Cette stratégie utilise TradingView afin d'automatiser l'analyse RSI de tout type de cryptomonnaie. Pour plus d'information sur la façon d'utiliser TradingView et OctoBot, consulter le [tutorial de trading avec TradingView](../tradingview-trading-tutorial).
+
+### Configuration TradingView
+
+#### Le RSI pour identifier les tendances
+
+<div style={{textAlign: "center"}}>
+  ![configuration RSI avec rolling moving
+  averages](/images/guides/tradingview-tutos/configuration-RSI-avec-rolling-moving-averages.png)
+</div>
+- Longueur de 14, activation sur prix de fermeture (configuration standard) - MA
+Type: SMMA, c'est à dire Rolling Moving Average. Cela permet de donner plus de
+poids aux dernières valeurs et avoir une moyenne plus réactive que la moyenne
+utilisée par défaut - Longueur MA: 9 - BB StdDev: 1
+
+#### Les ordres d'achat
+
+1. Achat en cas de forte survente pour tirer profit des baisses de prix importantes
+   <div style={{textAlign: "center"}}>
+     ![extreme buy solana sur rsi ema seuil tradingview alert
+     configuration](/images/guides/tradingview-tutos/extreme-buy-solana-sur-rsi-ema-seuil-tradingview-alert-configuration.png)
+   </div>
+
+- Lorsque la moyenne mobile du RSI (RSI-based MA) croise vers le haut le seuil de 39.57
+- Une fois par barre (clôture)
+- Référence d'une automation d'achat sur OctoBot
+
+2. Achat en cas de survente standard pour tirer profit des faibles baisses de prix de Bull Market
+   <div style={{textAlign: "center"}}>
+     ![regular buy solana sur rsi ema seuil tradingview alert
+     configuration](/images/guides/tradingview-tutos/regular-buy-solana-sur-rsi-ema-seuil-tradingview-alert-configuration.png)
+   </div>
+
+- Lorsque la moyenne mobile du RSI (RSI-based MA) croise vers le haut le seuil de 48.62
+- Une fois par barre (clôture)
+- Référence d'une automation d'achat sur OctoBot
+
+#### Les ordres de vente
+
+1. Vente en cas sur fort surachat pour tirer profit des augmentations de prix importantes
+   <div style={{textAlign: "center"}}>
+     ![extreme sell solana sur rsi ema seuil tradingview alert
+     configuration](/images/guides/tradingview-tutos/extreme-sell-solana-sur-rsi-ema-seuil-tradingview-alert-configuration.png)
+   </div>
+
+- Lorsque la moyenne mobile du RSI (RSI-based MA) croise vers le bas le seuil de 67.45
+- Une fois par barre (clôture)
+- Référence d'une automation de vente sur OctoBot
+
+2. Vente en cas de surachat standard pour tirer profit des des augmentations de prix régulières du Bull Market
+   <div style={{textAlign: "center"}}>
+     ![regular sell solana sur rsi ema seuil tradingview alert
+     configuration](/images/guides/tradingview-tutos/regular-sell-solana-sur-rsi-ema-seuil-tradingview-alert-configuration.png)
+   </div>
+
+- Lorsque la moyenne mobile du RSI (RSI-based MA) croise vers le bas le seuil de 53.63
+- Une fois par barre (clôture)
+- Référence d'une automation de vente sur OctoBot
+
+### Configuration OctoBot
+
+Une automatisation d'achat et de vente de la crypto à trader, avec le montant que vous désirez.
+
+<div style={{textAlign: "center"}}>
+  ![automatisations octobot de la strategie RSI de bull
+  market](/images/guides/tradingview-tutos/automatisations-octobot-de-la-strategie-RSI-de-bull-market.png)
+</div>
+
+Pour plus d'information sur les automatisations d'OctoBot permettant d'acheter et vendre avec TradingView dans la section `Les automatisations pour créer vos stratégies` du [guide de trading avec TradingView](../tradingview-automated-trading#les-automatisations-pour-créer-vos-stratégies).
+
+## Optimisations possibles
+
+Dans cette vidéo, nous vous présentons une version mono-crypto de la stratégie. Afin d'optimiser les gains de cette stratégie, plusieurs améliorations peuvent être réalisées:
+
+- **Trader contre Bitcoin** au lieu d'USDT afin de profiter aussi de la montée du prix du Bitcoin
+- Utiliser la stratégie sur **plusieurs crypto à la fois**: si leurs phases ascendantes ne sont pas simultanées, alors cela permet de profiter des montées de l'une quand l'autre est stable
+- Utiliser **plusieurs ordres d'achat et de vente** pour optimiser le prix des ordres selon davantage de seuils RSI ou même depuis d'autres indicateurs techniques
+
+:::info
+  Attention : La stratégie présentée ici est uniquement destinée à des fins
+  éducatives et ne constitue pas un conseil financier.
+:::

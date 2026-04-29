@@ -1,0 +1,8 @@
+{
+  "version": "1.2.0",
+  "origin_package": "OctoBot-Default-Tentacles",
+  "tentacles": ["RSIMomentumEvaluator", "ADXMomentumEvaluator", "RSIWeightMomentumEvaluator", "BBMomentumEvaluator",
+    "MACDMomentumEvaluator", "KlingerOscillatorMomentumEvaluator",
+    "KlingerOscillatorReversalConfirmationMomentumEvaluator", "EMAMomentumEvaluator"],
+  "tentacles-requirements": []
+}

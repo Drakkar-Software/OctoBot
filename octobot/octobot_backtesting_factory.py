@@ -45,7 +45,8 @@ class OctoBotBacktestingFactory(octobot_class.OctoBot):
                 run_on_common_part_only=self.run_on_common_part_only,
                 join_backtesting_timeout=join_backtesting_timeout,
                 enable_logs=self.enable_logs,
-                enforce_total_databases_max_size_after_run=True)
+                enforce_total_databases_max_size_after_run=True,
+                services_config=self.config)
             await octobot_backtesting_api.initialize_and_run_independent_backtesting(self.independent_backtesting,
                                                                                      log_errors=False)
             await octobot_backtesting_api.join_independent_backtesting(self.independent_backtesting,

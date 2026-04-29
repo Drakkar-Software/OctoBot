@@ -1,0 +1,4 @@
+name,result
+Task 1,"{""status"": ""completed"", ""data"": ""result1""}"
+Task 2,"{""status"": ""completed"", ""data"": ""result2""}"
+Task 3,"{""status"": ""failed"", ""error"": ""test error""}"

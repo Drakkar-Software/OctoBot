@@ -1,0 +1,6 @@
+from evaluator.Util.abstract_util import AbstractUtil
+
+
+class {{ big_name }}Analysis(AbstractUtil):
+    def __init__(self):
+        pass

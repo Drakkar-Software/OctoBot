@@ -1,0 +1,25 @@
+{% extends "advanced_layout.html" %}
+{% set active_page = "advanced.home" %}
+{% block body %}
+<br>
+<div class="card text-center w-50 mx-auto">
+    <h2 class="card-header">Welcome to OctoBot's advanced interface</h2>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }}">
+                {{ message }}
+            </div>
+            {% endfor %}
+      {% endif %}
+    {% endwith %}
+    <div class="card-body py-4">
+        This interface is providing insights on some OctoBot advanced concepts and should be used once OctoBot basic
+        features are understood.
+    </div>
+    <div class="card-footer">
+        <a class="btn btn-sm btn-outline-primary waves-effect" href="{{ url_for('home') }}"><i class="fa fa-home"></i> Back to OctoBot</a>
+    </div>
+</div>
+
+{% endblock %}

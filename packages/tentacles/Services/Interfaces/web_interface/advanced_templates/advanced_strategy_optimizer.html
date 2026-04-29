@@ -1,0 +1,176 @@
+{% extends "advanced_layout.html" %}
+{% set active_page = "advanced.strategy_optimizer" %}
+{% block body %}
+<br>
+<div class="card" id="strategyOptimizerInputs">
+    <div class="card-header">
+        <h1>Strategy optimizer</h1>
+    </div>
+    <div class="card-body" id="paramSettings" update-url="{{ url_for('advanced.strategy_optimizer', update_type='run_params') }}">
+        <div class="alert alert-info" role="alert">
+            <p class="mb-0">
+                For now the strategy optimizer can only be used with the daily trading mode as is helps to
+                identify better evaluators configurations and this trading mode is the only one supporting
+                custom evaluators setups.
+            </p>
+        </div>
+        <div class="input-group">
+          <div class="input-group-prepend mb-3">
+            <label class="input-group-text" for="tradingModeSelect">
+                Trading Mode
+            </label>
+          </div>
+          <select class="custom-select mb-9" id="tradingModeSelect" disabled>
+            <option value={{trading_mode}} selected="selected">
+              {{trading_mode}}
+            </option>
+          </select>
+        </div>
+        <div class="input-group">
+          <div class="input-group-prepend mb-3">
+            <label class="input-group-text" for="strategySelect">
+                Strategy
+            </label>
+          </div>
+          <select class="custom-select mb-9" id="strategySelect" update-url="{{ url_for('advanced.strategy_optimizer', update_type='strategy_params') }}">
+            {% for strategy in strategies %}
+                <option value={{strategy}}
+                    {% if run_params['strategy_name'] and strategy in run_params['strategy_name'] %}
+                        selected="selected"
+                    {% elif strategy == current_strategy and not run_params['strategy_name'] %}
+                        selected="selected"
+                    {% endif %}>
+                      {{strategy}}
+                </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="input-group">
+          <div class="input-group-prepend mb-3">
+            <label class="input-group-text" for="evaluatorsSelect">Evaluators</label>
+          </div>
+          <select class="custom-select multi-select-element mb-9" id="evaluatorsSelect" multiple="multiple">
+            {% for evaluator in evaluators %}
+                <option value={{evaluator}}
+                    {% if run_params['evaluators'] and evaluator in run_params['evaluators'] %}
+                        selected="selected"
+                    {% elif loop.index == 1 and not run_params['evaluators'] %}
+                        selected="selected"
+                    {% endif %}>
+                      {{evaluator}}
+                </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="input-group">
+          <div class="input-group-prepend mb-3">
+            <label class="input-group-text" for="timeFramesSelect">Time Frames</label>
+          </div>
+          <select class="custom-select multi-select-element mb-9" id="timeFramesSelect" multiple="multiple">
+            {% for timeframe in time_frames %}
+                <option value={{timeframe}}
+                    {% if run_params['time_frames'] and timeframe in run_params['time_frames'] %}
+                        selected="selected"
+                    {% elif loop.index == 1 and not run_params['time_frames']%}
+                        selected="selected"
+                    {% endif %}>
+                      {{timeframe}}
+                </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="input-group">
+          <div class="input-group-prepend mb-3">
+            <label class="input-group-text" for="risksSelect">Risks</label>
+          </div>
+          <select class="custom-select multi-select-element mb-9" id="risksSelect" multiple="multiple">
+            {% for risk in risks %}
+                <option value={{risk}}
+                    {% if run_params['risks'] and risk in run_params['risks'] %}
+                        selected="selected"
+                    {% elif loop.index == 1 and not run_params['risks'] %}
+                        selected="selected"
+                    {% endif %}>
+                      {{risk}}
+                </option>
+            {% endfor %}
+          </select>
+        </div>
+        <h2>Number of simulations <span id="numberOfSimulatons" class="badge badge-light">0</span></h2>
+        <span id='progess_bar' style='display: none;'>
+            <div class="card-title">
+                <h2>Strategy optimizer in progress</h2>
+            </div>
+            <div>
+                <canvas id="optimize_doughnutChart" height="70%"></canvas>
+            </div>
+            <div class='progress'>
+                <div id='progess_bar_anim' class='progress-bar progress-bar-striped progress-bar-animated' role='progressbar' aria-valuenow='0' aria-valuemin='0' aria-valuemax='100' style='width: 0%;'></div>
+            </div>
+        </span>
+        <button id="startOptimizer" type="button" class="btn btn-primary waves-effect" update-url="{{ url_for('advanced.strategy_optimizer', update_type='start_optimizer') }}">Start optimizer</button>
+        <div class="alert alert-info" role="alert">
+            <p class="mb-0">
+                <i class="fa-regular fa-lightbulb"></i>
+                If you want to deeply test your strategy, compare its results in different situations and figure out
+                the best settings for your traded markets, we suggest to check out the
+                <a href="https://www.octobot.cloud/{{LOCALE}}/guides/octobot-usage/strategy-designer?utm_source=octobot&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=strategy_optimizer" target="_blank" rel="noopener">
+                    Strategy Designer </a>
+                available on <a href="{{OCTOBOT_COMMUNITY_URL}}/trading-bot?utm_source=octobot&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=strategy_optimizer" target="_blank" rel="noopener">
+                <i class="fa-brands fa-octopus-deploy"></i> OctoBot cloud trading bots plans</a>.
+            </p>
+        </div>
+    </div>
+</div>
+<br>
+<div id="error_info" class="alert alert-danger" role="alert" style='display: none;'>
+    <div id="error_info_text"></div>
+    <a class="nav-link" href="{{ url_for('logs') }}">Details</a>
+</div>
+<br>
+<div id="results_datatable_card" class="card" style='display: none;'>
+    <div class="card-header"><h2>Results</h2></div>
+    <div id="report_datatable_card" class="card-body" style='display: none;'>
+        <table id="report_datatable" class="table table-striped table-responsive-lg" width="95%" update-url="{{ url_for('advanced.strategy_optimizer', update_type='optimizer_report') }}">
+          <caption>Optimizer global report</caption>
+          <thead>
+            <tr>
+                <th scope="col">#</th>
+                <th scope="col">Evaluator(s)</th>
+                <th scope="col">Risk</th>
+                <th scope="col">Average trades count</th>
+                <th scope="col">Comparative score: the lower the better</th>
+            </tr>
+          </thead>
+          <tbody>
+          </tbody>
+        </table>
+    </div>
+    <div class="card-body">
+      <table class="table table-striped table-responsive-lg"  id="results_datatable" width="95%" update-url="{{ url_for('advanced.strategy_optimizer', update_type='optimizer_results') }}">
+          <caption>Iterations results</caption>
+          <thead>
+            <tr>
+                <th scope="col">#</th>
+                <th scope="col">Evaluator(s)</th>
+                <th scope="col">Time Frame(s)</th>
+                <th scope="col">Risk</th>
+                <th scope="col">Average trades count</th>
+                <th scope="col">Score: the higher the better</th>
+            </tr>
+          </thead>
+          <tbody>
+          </tbody>
+      </table>
+    </div>
+</div>
+<br>
+{% endblock %}
+
+{% block additional_scripts %}
+<script src="{{ url_for('static', filename='js/common/custom_elements.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+<script src="{{ url_for('static', filename='js/components/strategy_optimizer.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+<script>
+    recompute_nb_iterations();
+</script>
+{% endblock additional_scripts %}

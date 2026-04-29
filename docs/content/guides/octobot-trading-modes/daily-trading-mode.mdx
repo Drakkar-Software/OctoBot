@@ -1,0 +1,61 @@
+---
+title: "Daily trading mode"
+description: "Using the Daily Trading Mode, you use the most flexible trading strategy on OctoBot. Trade SPOT and futures using any technical, social or AI evaluator."
+sidebar_position: 4
+---
+
+
+
+# Daily Trading Mode
+
+The Daily Trading Mode (or DailyTradingMode) is designed to be the most flexible trading mode. Using the Daily Trading Mode, you can trade using any technical, social, AI or realtime evaluator on SPOT and futures markets.
+
+import YouTube from '@site/src/components/YouTube';
+
+<YouTube id="e-GqmTfrchY" title="The OctoBot Daily Trading Mode" />
+
+It allows you to create highly personalized trading strategies.
+
+Using the Daily Trading mode, the type of the created orders (market or limit) will be defined by the strength of the signal received from evaluators: 
+- A signal closer to -1 will trigger a market buy order
+- A signal closer to -0.5 will trigger a limit buy order.
+- A signal closer to 0.5 will trigger a limit sell order.
+- A signal closer to 1 will trigger a market sell order.
+
+
+## The Daily Trading Mode can
+
+- Buy or Sell when evaluators signal a long or short opportunity
+- Automatically create a take profit order after each entry
+- Automatically create a stop loss order after each entry
+- Only Buy or Sell if configured to
+- Be used to trade SPOT and Futures markets
+
+## Default - Target profits mode disabled
+When the `Target profits mode` is disabled, the Daily Trading Mode will buy when a long signal is received and sell when a short signal is received.
+
+:::info
+  Using the Default mode, the Daily Trading Mode will not consider entry prices when creating exit orders. This means that if a short signal is received, a sell order will be created, even if the asset has been bought at a higher price. Be careful when trading assets that are in a downtrend in this configuration. In some cases, disabling sell orders could help to prevent this issue.
+:::
+
+## Target profits mode
+When the `Target profits mode` is enabled, similarly to the Default mode, the Daily Trading Mode will buy when a long signal is received and sell when a short signal is received.
+
+However in Target profits mode, signals are only used to enter a position (in SPOT or Futures) but never to close it. This mode avoid the described above "selling at a loss" issue of the Default mode. Take profits and stop losses should be configured directly from the Target profits mode configuration and will be created as soon as any entry order is filled.
+
+
+## Configuring orders
+- The Daily Trading mode can create market or limit orders depending on the signal's strengh. When using limit orders, the `Fixed limit prices difference` allows to set the % price difference to compute the order price.
+- All in buy / sell order: can be enabled to trade using the maximum amount in portfolio each time
+- Buy or sell order can be disabled to only consider buy or sell signals
+- Order amounts can be configured using the [order amounts syntax](order-amount-syntax).
+- `Maximum currency percent` can be used to reduce the maximum % allocated to a given currency. This can be useful to prevent multiple buy of the same asset during unusual market conditins. Warning: this is only used when order amounts are auto-computed. It is ignored when order amounts are set in configuration.
+
+
+## When are orders created 
+The goal of the Daily Trading Mode is to have a state (long, neutral or short) and to create orders when this state changes. It means that for as long as the trading mode state remains the same, orders will remain. However if the state changes (from long to short for example), the all previous state orders that are still open will be cancelled and new state orders will be created.
+
+In event or a back and forth switch between neutral and the same state, open orders will simply be replaced.  
+For example a long state will create a limit buy order. If the Daily Trading Mode state later on changes to neutral, open orders won't be cancelled (neutral is not cancelling open orders). Now if the state goes back to long, the previously open buy order will be cancelled and replaced by a new one. If the previously created buy order was filled, a new buy order will be open.
+
+Profits comes from buying when the state is long and then selling when the state is short (or the opposite when shorting in futures trading).

@@ -1,0 +1,6 @@
+{
+    "required_strategies": [],
+    "refresh_interval": 1,
+    "rebalance_trigger_min_percent": 5,
+    "index_content": []
+}

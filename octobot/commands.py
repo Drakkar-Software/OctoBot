@@ -43,6 +43,8 @@ COMMANDS_LOGGER_NAME = "Commands"
 IGNORED_COMMAND_WHEN_RESTART = ["-u", "--update"]
 
 GLOBAL_BOT_INSTANCE = None
+_signal_interrupt_count = 0
+_signal_interrupt_lock = threading.Lock()
 
 
 def call_tentacles_manager(command_args):
@@ -87,7 +89,8 @@ def run_tentacles_install_or_update(community_auth, config):
 
 async def _install_or_update_tentacles(community_auth, config):
     additional_tentacles_package_urls = community_auth.get_saved_package_urls()
-    await install_or_update_tentacles(config, additional_tentacles_package_urls, False)
+    only_additional = not constants.INSTALL_DEFAULT_TENTACLES
+    await install_or_update_tentacles(config, additional_tentacles_package_urls, only_additional)
 
 
 def run_update_or_repair_tentacles_if_necessary(community_auth, config, tentacles_setup_config):
@@ -135,24 +138,35 @@ async def update_or_repair_tentacles_if_necessary(community_auth, selected_profi
     elif force_refresh_tentacles_setup_config:
         community_tentacles_packages.refresh_tentacles_setup_config()
 
-    if local_profile_tentacles_setup_config is None or \
-            not tentacles_manager_api.are_tentacles_up_to_date(local_profile_tentacles_setup_config, constants.VERSION):
-        logger.info("OctoBot tentacles are not up to date. Updating tentacles...")
-        _check_tentacles_install_exit()
-        if await install_or_update_tentacles(config, to_install_urls, False):
-            logger.info("OctoBot tentacles are now up to date.")
-    else:
-        if to_install_urls:
-            logger.debug("Installing new tentacles.")
-            # install additional tentacles only when tentacles arch is valid. Install all tentacles otherwise
-            only_additional = tentacles_manager_api.is_tentacles_architecture_valid()
-            await install_or_update_tentacles(config, to_install_urls, only_additional)
-        if tentacles_manager_api.load_tentacles(verbose=True):
-            logger.debug("OctoBot tentacles are up to date.")
-        else:
-            logger.info("OctoBot tentacles are damaged. Installing default tentacles only ...")
+    if constants.SHOULD_CHECK_TENTACLES:
+        if local_profile_tentacles_setup_config is None or \
+                not tentacles_manager_api.are_tentacles_up_to_date(local_profile_tentacles_setup_config, constants.VERSION):
+            logger.info("OctoBot tentacles are not up to date. Updating tentacles...")
             _check_tentacles_install_exit()
-            await install_or_update_tentacles(config, [], False)
+            only_additional = not constants.INSTALL_DEFAULT_TENTACLES
+            if await install_or_update_tentacles(config, to_install_urls, only_additional):
+                logger.info("OctoBot tentacles are now up to date.")
+        else:
+            if to_install_urls:
+                logger.debug("Installing new tentacles.")
+                # install additional tentacles only when tentacles arch is valid. Install all tentacles otherwise
+                only_additional = tentacles_manager_api.is_tentacles_architecture_valid()
+                await install_or_update_tentacles(config, to_install_urls, only_additional)
+            if tentacles_manager_api.load_tentacles(verbose=True):
+                logger.debug("OctoBot tentacles are up to date.")
+            else:
+                logger.info("OctoBot tentacles are damaged. Reinstalling tentacles ...")
+                _check_tentacles_install_exit()
+                only_additional = not constants.INSTALL_DEFAULT_TENTACLES
+                await install_or_update_tentacles(config, [], only_additional)
+    else:
+        if tentacles_manager_api.load_tentacles(verbose=True):
+            logger.debug("OctoBot tentacles loaded.")
+        else:
+            logger.error(
+                f"OctoBot tentacles are damaged. Continuing anyway as SHOULD_CHECK_TENTACLES "
+                f"is {constants.SHOULD_CHECK_TENTACLES}..."
+            )
 
 
 async def install_or_update_tentacles(
@@ -254,21 +268,46 @@ def set_global_bot_instance(bot_instance):
     GLOBAL_BOT_INSTANCE = bot_instance
 
 
-def _signal_handler(_, __):
-    # run Commands.BOT.stop_threads in thread because can't use the current asyncio loop
-    stopping_thread = threading.Thread(target=GLOBAL_BOT_INSTANCE.task_manager.stop_tasks(),
-                                       name="Commands signal_handler stop_tasks")
-    stopping_thread.start()
-    stopping_thread.join()
-    os._exit(0)
+def _signal_handler(signum, _):
+    # Handle SIGINT/SIGTERM: first delivery stops the bot; a second delivery exits without stop_tasks()
+    # if the first stop is stuck.
+    global _signal_interrupt_count
+    commands_logger = logging.get_logger(COMMANDS_LOGGER_NAME)
+    signal_text = signal.strsignal(signum)
+    if not signal_text:
+        signal_text = f"signal {signum}"
+    with _signal_interrupt_lock:
+        _signal_interrupt_count += 1
+        interrupt_count = _signal_interrupt_count
+    if interrupt_count >= 2:
+        commands_logger.warning(
+            f"Received signal {signum} ({signal_text}) (delivery {interrupt_count}): "
+            f"forcing immediate process exit without stop_tasks()"
+        )
+        os._exit(128 + signum if isinstance(signum, int) and 0 < signum < 32 else 1)
+    commands_logger.info(
+        f"Received signal {signum} ({signal_text}) (delivery {interrupt_count})"
+    )
+    if GLOBAL_BOT_INSTANCE is not None:
+        commands_logger.info("Stopping OctoBot after signal (stop_bot, force=True)")
+        stop_bot(GLOBAL_BOT_INSTANCE, force=True)
+    else:
+        commands_logger.info("Exiting: no bot instance was registered (signal handler)")
+        os._exit(0)
 
 
 def run_bot(bot, logger):
-    # handle CTRL+C signal
+    # handle SIGINT (Ctrl+C) and SIGTERM (e.g. docker stop)
     try:
         signal.signal(signal.SIGINT, _signal_handler)
     except ValueError as e:
         logger.warning(f"Can't setup signal handler : {e}")
+    sigterm = getattr(signal, "SIGTERM", None)
+    if sigterm is not None:
+        try:
+            signal.signal(sigterm, _signal_handler)
+        except ValueError as e:
+            logger.warning(f"Can't setup SIGTERM handler : {e}")
 
     # start bot
     bot.task_manager.run_forever(start_bot(bot, logger))

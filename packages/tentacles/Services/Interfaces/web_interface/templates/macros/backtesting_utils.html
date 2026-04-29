@@ -1,0 +1,87 @@
+{% macro backtesting_report(source, OCTOBOT_DOCS_URL, has_open_source_package) -%}
+
+<span id="backtestingReport" update-url="{{ url_for('backtesting', update_type='backtesting_report', source=source) }}" loading="false" style='display: none;'>
+    <div class="card">
+        <div class="card-header">
+            <h2>
+                Backtesting results
+                <a class="float-right badge badge-info waves-effect" id="reportTradingModeNameLink" href="" base_href="{{ url_for('config_tentacle', name='') }}">
+                    Trading mode: <span id="reportTradingModeName"></span>
+                </a>
+            </h2>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-danger" id="backtestingErrorsAlert" role="alert" style="display: none;">
+              Errors occurred during backtesting, <a href="{{ url_for('logs') }}" class="alert-link">details in logs</a>.
+            </div>
+            <table class="table table-striped table-sm table-responsive-lg">
+              <tbody>
+                <tr>
+                  <td>Bot profitability</td><td id="bProf"></td>
+                </tr>
+                <tr>
+                  <td>Market average profitability</td><td id="maProf"></td>
+                </tr>
+                <tr>
+                  <td>Symbol profitability</td><td id="sProf"></td>
+                </tr>
+                <tr>
+                  <td>End portfolio</td><td id="ePort"></td>
+                </tr>
+                <tr>
+                  <td>Starting portfolio</td><td id="sPort"></td>
+                </tr>
+                <tr>
+                  <td>Reference market</td><td id="refM"></td>
+                </tr>
+              </tbody>
+            </table>
+        </div>
+        {% if not has_open_source_package() %}
+        <div class="card-footer">
+            <i class="fa fa-info-circle"></i> Looking for more in-depth backtesting results? The <a href="{{ url_for('extensions') }}">Strategy designer</a> is specifically designed for advanced backtestings and strategy optimization.
+        </div>
+        {% endif %}
+        <div class="card-footer">
+            <div class="text-right">
+                <label for="timeFrameSelect">Time frame</label>
+                <select class="selectpicker" id="timeFrameSelect" data-live-search="true"></select>
+            </div>
+            <div id="result-graphs">
+            </div>
+            <div>
+                <h4 class="text-center">Trades</h4>
+                <table id="result-trades"
+                     class="w-100 table-striped table-responsive-sm">
+                </table>
+            </div>
+
+            <div class="alert mb-0 text-right">
+                Learn more details on how backtesting works in OctoBot on
+                <a class="" target="_blank" rel="noopener" href="{{OCTOBOT_DOCS_URL}}/octobot-usage/backtesting?utm_source=octobot&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=backtesting_footer">the backtesting guide</a>.
+            </div>
+        </div>
+
+        <div class="card-footer">
+            <i class="fa fa-info-circle"></i> Backtesting results depend on starting conditions such as
+            <a href="{{ url_for('profile')+'#panelEvaluators' }}">evaluator configuration</a> and the <a href="{{ url_for('profile')+'#panelTrading' }}">
+            starting portfolio</a>.
+
+        </div>
+
+    </div>
+</span>
+<div class="d-none">
+    <!--Symbol graph template -->
+    <div class="card result-graph" id="result-graph-Bitcoin">
+        <div class="card-body text-center" name="loadingSpinner">
+            <h2>
+                <i class="fa fa-spinner fa-spin"></i>
+            </h2>
+        </div>
+        <div class="card-body">
+            <div id="graph-symbol-price-Bitcoin"></div>
+        </div>
+    </div>
+</div>
+{%- endmacro %}

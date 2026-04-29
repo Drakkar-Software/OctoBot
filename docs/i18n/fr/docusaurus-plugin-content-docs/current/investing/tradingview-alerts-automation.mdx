@@ -1,0 +1,218 @@
+---
+title: "Automatisation d'alertes TradingView"
+description: "Apprenez à automatiser vos alertes TradingView provenant d'événements de prix, d'indicateurs ou de stratégies Pine Script avec du trading réel ou simulé."
+sidebar_position: 17
+---
+
+
+
+# Automatisation des alertes TradingView
+
+Avec OctoBot cloud, vous pouvez facilement transformer n'importe quelle alerte de prix TradingView, indicateur ou stratégie Pine Script en trades. Vous pouvez ainsi trader sur vos plateformes d'échanges préférées ou sans risque avec le [trading simulé](paper-trading-a-strategy).
+
+<div style={{textAlign: "center"}}>
+  ![automatisations de stratégies TradingView illustré par le logo
+  TradingView](/images/guides/trading-view/tradingview-automation-illustrated-by-tradingview-logo.png)
+</div>
+
+:::info
+  Pour trader sur n'importe quelle alerte TradingView, vous devez d'abord
+  [Configurer l'URL du webhook
+  ](tradingview-trading-tutorial#25-configurer-lurl-du-webhook)
+  pour votre paire de trading si ce n'est pas déjà fait.
+:::
+Si vous voulez des précisions sur la façons d'utiliser les alertes TradingView,
+consultez notre [Tutoriel de trading avec
+TradingView](tradingview-trading-tutorial).
+
+**[Démarrer un bot](https://www.octobot.cloud)**
+
+## Trading automatisé avec des alertes de prix
+
+TradingView peut envoyer automatiquement une alerte lorsque le prix d'un actif franchit une valeur donnée.
+
+<div style={{textAlign: "center"}}>
+  ![creer alerte de prix depuis
+  tradingview](/images/guides/trading-view/creer-alerte-de-prix-depuis-tradingview.png)
+</div>
+
+Cette alerte de prix qui notifiera mon automatisation d'ordre d'achat identifiée par `71e47ccd-2447-4938-8219-968010045a08` si BTC passe sous 40 000 USDT.
+
+## Trading automatisé avec des indicateurs
+
+TradingView peut envoyer automatiquement une alerte lorsqu'il se produit quelque chose sur un indicateur.
+
+<div style={{textAlign: "center"}}>
+  ![creer une alerte depuis un indicateur
+  tradingview](/images/guides/trading-view/creer-une-alerte-depuis-un-indicateur-tradingview.png)
+</div>
+
+Cette alerte d'indicateur utilise <a href="https://www.investopedia.com/terms/r/rsi.asp" rel="nofollow">l'Indice de force relative</a> (ou RSI) qui notifiera mon automatisation d'ordre de vente identifiée par `6f20ebd6-1d98-4630-b640-96afbe98e4b4` si la valeur du RSI dépasse 80, que je considère comme un signal de vente.
+
+Une alerte d'indicateur peut être un événement simple tel que le franchissement d'une valeur configurée ou une condition beaucoup plus avancée comme des divergences baissières ou la sortie d'un canal de prix. Cela est illustré dans l'exemple ci-dessus de l'indicateur RSI.
+
+<div style={{textAlign: "center"}}>
+  ![options de declanchement pour creer une alerte depuis un indicateur
+  tradingview](/images/guides/trading-view/options-de-declanchement-pour-creer-une-alerte-depuis-un-indicateur-tradingview.png)
+</div>
+
+:::info
+  N’importe quel indicateur TradingView (intégré ou personnalisé, payant et
+  gratuit) peut être utilisé pour envoyer des alertes et automatiser vos trades
+  en utilisant vos automations OctoBot via Tradingview.
+:::
+
+## Trading automatisé avec des stratégies Pine script
+
+TradingView peut automatiquement envoyer des alertes quand vos <a href="https://www.tradingview.com/pine-script-docs/en/v5/index.html#" rel="nofollow">stratégies Pine Script</a> créent des ordres.
+
+Pour envoyer des alertes à partir d'une stratégie Pine Script, utiliser le paramètre <a href="https://www.tradingview.com/pine-script-docs/en/v5/concepts/Alerts.html?highlight=alert_message#order-fill-events" rel="nofollow">`alert_message`</a> dans les fonctions de stratégie Pine Script qui peuvent créer des ordres.
+
+![creer une alerte de strategie tradingview](/images/guides/trading-view/creer-une-alerte-de-strategie-tradingview.png)
+
+Pour envoyer des alertes à partir d'une stratégie Pine Script, créer une nouvelle alerte et s'assurer de:
+
+1. Sélectionner le nom de votre stratégie en tant que condition
+2. Remplacer **tout** le contenu du message par exactement `{{strategy.order.alert_message}}`
+
+Dans le code Pine Script de votre stratégie, ajouter `alert_message="yourAutomationIdentifier"` dans vos appels à `entry`, `exit` ou `close`.  
+Exemple avec l'identifiant d'automatisation `71e47ccd-2447-4938-8219-968010045a08`:
+
+> `strategy.entry("Buy", strategy.long, comment="Buy Signal Triggered", alert_message="71e47ccd-2447-4938-8219-968010045a08")`
+
+Pour en savoir plus sur l'automatisation de stratégies TradingView en Pine Script, rendez-vous sur le [tutoriel d'automation de stratégies](how-to-automate-any-tradingview-strategy-on-octobot-cloud).
+
+<div style={{textAlign: "center"}}>
+  **[Générez votre stratégie](https://www.octobot.cloud/fr/creator)**
+</div>
+
+:::info
+  Utiliser les stratégies Pine Script de TradingView pour automatiser votre
+  trading est très puissant car vous pouvez également utiliser le testeur de
+  stratégie intégré à TradingView pour optimiser votre stratégie.
+:::
+
+## Automatisations TradingView personnalisées
+
+À la place automatisations définies à partir de l'interface utilisateur de votre OctoBot TradingView, il est également d'utiliser des alertes avec un contenu personnalisé.
+
+import YouTube from '@site/src/components/YouTube';
+
+<YouTube id="HeOi4PY1ayk" title="Tutorial TradingView: automatiser n" />
+
+Ce format offre une plus grande flexibilité dans la façon d'exécuter les automatisations en spécifiant directement le contenu de votre automatisation dans le message de l'alerte.
+
+Exemple: **un achat au marché de 0.001 BTC sur un bot avec l'id 123**
+
+```bash
+SYMBOL=BTCUSDT;SIGNAL=BUY;VOLUME=0.001;BOT_ID=123
+```
+Voir [tous les exemples](#exemples-dautomatisations-personnalisées).
+
+### Paramètres des automatisations personnalisées
+
+| Paramètre             | Exemple 1                            | Exemple 2                            | Détails                                                                                                                                   |
+| :-------------------- | :----------------------------------- | :----------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------- |
+| `SYMBOL`              | BTCUSDT                              | ETH/USDT                             | Votre symbol tradé, peut aussi être `{{ticker}}`.                                                                                         |
+| `SIGNAL`              | BUY                                  | CANCEL                               | Créer un ordre d'achat, de vente ou en annuler un.                                                                                        |
+| `ORDER_TYPE`          | LIMIT                                | MARKET                               | Type d'order à créer (`MARKET`, `LIMIT`, `STOP`). Valeur par défaut: `MARKET`.                                                            |
+| `VOLUME`              | 0.01                                 | 50q                                  | Le montant à utiliser. Suit la [syntaxe des montants](../guides/octobot-trading-modes/order-amount-syntax).                               |
+| `PRICE`               | 30000                                | -10%                                 | Le prix à utiliser. Suit la [syntaxe des prix](../guides/octobot-trading-modes/order-price-syntax). _Requis lorsque `ORDER_TYPE=LIMIT`_.  |
+| `TAKE_PROFIT_PRICE`   | 45000                                | 10%                                  | Le prix du "take profit" à utiliser. Suit la [syntaxe des prix](../guides/octobot-trading-modes/order-price-syntax).                      |
+| `TAKE_PROFIT_PRICE_2` | 50000                                | 25%                                  | Le prix du "take profit" n°N à utiliser. Suit la [syntaxe des prix](../guides/octobot-trading-modes/order-price-syntax). Les fonds de l'ordre d'entrée seront uniformément répartis entre les take profits sauf si un `TAKE_PROFIT_VOLUME_RATIO` est renseigné pour chaque take profit.                 |
+| `TAKE_PROFIT_VOLUME_RATIO_2` | 30                                | 70                                  | Ratio du montant de l'ordre d'entrée à inclure dans ce take profit. Si utilisé, un `TAKE_PROFIT_VOLUME_RATIO_X` est requis pour chaque take profit.                 |
+| `STOP_PRICE`          | 40000                                | -25%                                 | Le prix du stop loss. Suit la [syntaxe des prix](../guides/octobot-trading-modes/order-price-syntax). _Requis lorsque `ORDER_TYPE=STOP`_. |
+| `TRAILING_PROFILE`    | filled_take_profit                   | filled_take_profit                   | Active les ordres de trailing suivant le [profil de trailing](#profils-de-trailing) donné. Profils supportés: `filled_take_profit`. |
+| `TAG `                | entry1                               | exit2                                | Le tag de cet ordre or le tag des ordres à annuler.                                                                                       |
+| `REDUCE_ONLY`         | false                                | true                                 | Si ordre à créer doit être reduce only. _Utilisé en trading de futures uniquement_. Valeur par défaut: `false`.                           |
+| `LEVERAGE`            | 10                                   | 2                                    | La nouvelle valeur de levier à utiliser. _Utilisé en trading de futures uniquement_.                                                      |
+| `BOT_ID`              | c403ee03-ba4c-4d9d-9d78-ad692333a291 | b403ee03-ba4c-4d9d-9d78-ad692333a292 | L'ID de votre OctoBot sur lequel exécuter le signal.                                                                                      |
+
+Les paramètres doivent être séparés avec le caractère `;` et peuvent être inclus dans n'importe quel ordre.
+
+Note: Le paramètre `BOT_ID` est requis. Votre `BOT_ID` est le dernier segment de l'URL de votre OctoBot TradingView.  
+Exemple: si l'URL de votre OctoBot est `https://www.octobot.cloud/fr/bots/0280badc-e884-4637-bb86-44444444`, alors votre `BOT_ID` est `0280badc-e884-4637-bb86-44444444`.
+```bash
+BOT_ID=0280badc-e884-4637-bb86-44444444;SYMBOL=BTCUSDT;SIGNAL=BUY;ORDER_TYPE=LIMIT;VOLUME=45q;PRICE=-3%
+```
+
+### Exemples d'automatisations personnalisées
+> Un ordre `BUY MARKET` de `20` unités de l'actif de cotation avec un `ticker` dynamique et un bot id de `123`.
+```bash
+SYMBOL={{ticker}};SIGNAL=BUY;VOLUME=20q;BOT_ID=123
+```
+
+> Un ordre `BUY LIMIT`de `0.01 ETH` à `-3%` du prix courant avec un tag `strategy-1`.
+```bash
+SYMBOL=ETHUSDC;SIGNAL=BUY;ORDER_TYPE=LIMIT;VOLUME=0.01;PRICE=-3%;TAG=strategy-1;BOT_ID=123
+```
+
+> Un ordre `BUY LIMIT` de `45 USDT` à `-3%` du prix actuel immédiatement suivi par un `take profit à +10% du prix d'achat` et `un stop loss à -20%` dès que l'ordre d'achat initial est exécuté.  
+Note: lorsque les paramètres `TAKE_PROFIT_PRICE` et `STOP_PRICE` sont renseignés, les take profit et stop loss créés seront des ordres OCO (one cancels the other). Dans ce cas, seul le stop loss sera envoyé à l'échange. Il sera ensuite remplacé par le take profit si le prix de ce take profit est atteint avant celui du stop loss.  
+_Les ordres OCO sont actuellement en beta test et peuvent présenter des instabilités._
+```bash
+SYMBOL=BTCUSDT;SIGNAL=BUY;ORDER_TYPE=LIMIT;VOLUME=45q;PRICE=-3%;BOT_ID=123;TAKE_PROFIT_PRICE=10%;STOP_PRICE=-20%
+```
+
+> Un ordre `BUY MARKET` de `6 SOL` suivi par `3 take profits à 5%, 10% et 20%` du prix d'achat. Ici, chaque take profit aura une quantité de `2 SOL` : la quantité achetée est répartie entre les take profits.
+```bash
+SYMBOL=SOLUSDC;SIGNAL=BUY;VOLUME=6;TAKE_PROFIT_PRICE=5%;TAKE_PROFIT_PRICE_2=10%;TAKE_PROFIT_PRICE_3=20%;BOT_ID=123
+```
+
+> Un ordre `BUY MARKET` de `6 SOL` suivi par `3 take profits à 5%, 10% et 20%` du prix d'achat. Ici, chaque take profit aura respectivement une quantité de 1, 2 et 3 SOL, ce qui correspond à `17`, `33` et `50` % du montant acheté.
+```bash
+SYMBOL=SOLUSDC;SIGNAL=BUY;VOLUME=6;TAKE_PROFIT_PRICE=5%;TAKE_PROFIT_PRICE_2=10%;TAKE_PROFIT_PRICE_3=20%;TAKE_PROFIT_VOLUME_RATIO=17;TAKE_PROFIT_VOLUME_RATIO_2=33,TAKE_PROFIT_VOLUME_RATIO_3=50;BOT_ID=123
+```
+
+> `CANCEL` tous les ordres `SOL/USDC` avec le tag `strategy-1`.
+```bash
+SIGNAL=CANCEL;SYMBOL=SOLUSDT;TAG=strategy-1;BOT_ID=123
+```
+
+**Pour le trading de futures**
+
+> Un ordre `SELL MARKET` de `3 SOL` sur un marché de futures de en `REDUCE_ONLY`.
+```bash
+SYMBOL=SOLUSDC;SIGNAL=SELL;VOLUME=3;REDUCE_ONLY=true;BOT_ID=123
+```
+
+> Un ordre `BUY MARKET` de `200 USDC` qui configure aussi la valeur de levier du contrat `SOL/USDC` à `3`.
+```bash
+SYMBOL=SOLUSDC;SIGNAL=BUY;VOLUME=200q;LEVERAGE=3;BOT_ID=123
+```
+
+### Profils de trailing
+_Profils de trailing sont actuellement en beta test et peuvent présenter des instabilités._
+
+Lorsqu'il est configuré sur un profil valide, `TRAILING_PROFILE` active les ordres trailing selon le profil donné. Voici comment les profils fonctionnent:
+- `filled_take_profit`: Fonctionne avec un stop loss associé à plus d'un take profit. Lorsqu'un take profit est exécuté, le prix du stop loss sera mis à jour, d'abord au prix d'entrée de l'ordre d'achat, puis au prix du take profit précédemment rempli. Ce profil est utile pour s'assurer de toujours clôturer sa position avec un bénéfice dès qu'au moins un take profit a été atteint.
+
+## Exemples de stratégies automatisées
+
+- [Stratégie Death and Golden Cross](tradingview-strategies-tutorials/automating-a-tradingview-death-and-golden-cross-strategy): acheter et vendre en fonction des Golden et Death Cross
+- [Stratégie de RSI pour Bull market](tradingview-strategies-tutorials/bull-market-strategy-from-tradingview-using-rsi-with-video): acheter et vendre en utilisant le RSI pour augmenter ses profits en bull market.
+- [Tutoriel pour automatiser une stratégie TradingView personnalisée](how-to-automate-any-tradingview-strategy-on-octobot-cloud): apprenez à trader automatiquement selon toute stratégie TradingView.
+
+**[Démarrer un bot TradingView](https://www.octobot.cloud)**
+
+## Limite d'utilisation des automatisation
+
+| Type d'automatisation | Limite d'utilisation par heure | Temps moyen d'execution |
+| :-------------------- | :----------------------------- | :---------------------- |
+| Email                 | 20                             | 10 secondes             |
+| Webhook               | 20                             | 5 secondes              |
+
+Afin de réduire l'impact des alertes mal configurées et prévenir tout abus du système, il existe une limite au nombre de fois qu'une automation donnée peut être déclenchée en 60 minutes.
+
+Le nombre de bots et d'automatisations que vous pouvez avoir est illimité, mais chaque automatisation ne peut être déclenchée individuellement que 20 fois maximum en 60 minutes. 
+De plus, un maximum de 80 automatisations peut être déclenchée sur un même compte OctoBot en 60 minutes. Toute tentative pour dépasser cette limitation sans accord écrit préalable de l'équipe OctoBot pourra être sanctionné d'un bannissement temporaire ou permanent du/des compte(s) concerné(s).  
+Contactez-nous si vous avez besoin d'augmenter cette limite.
+
+Le temps moyen d'exécution est le temps mesuré entre le moment où TradingView émet l'alerte et le moment où elle est exécutée par OctoBot. Il s'agit d'une moyenne, ce temps peut donc varier.  
+Cette variation est faible pour les webhooks mais peut, dans de rare cas, atteindre plusieurs dizaines de secondes pour les alertes par email. Ceci s'explique par les contraintes techniques associées au transfert d'email qui est un processus moins optimisé qu'un simple appel à une webhook.
+
+## Securité des alertes
+
+L'infrastructure d'OctoBot cloud est conçue avec la sécurité en priorité. Il en va de même pour l'intégration des alertes TradingView.
+
+Seules les alertes provenant du site officiel de <a href="https://tradingview.com/" rel="nofollow">TradingView</a> peuvent déclencher les automatisations TradingView.

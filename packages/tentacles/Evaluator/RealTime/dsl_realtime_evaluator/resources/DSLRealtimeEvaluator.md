@@ -1,0 +1,1 @@
+DSLRealtimeEvaluator is a generic real-time evaluator that evaluates a DSL condition expression on a configurable trigger channel (OHLCV, Kline, or Ticker). When the condition is truthy, it emits a positive evaluation (+1); when falsy, it emits a negative evaluation (-1).

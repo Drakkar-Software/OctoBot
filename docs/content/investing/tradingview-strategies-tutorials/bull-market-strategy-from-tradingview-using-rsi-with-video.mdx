@@ -1,0 +1,120 @@
+---
+title: "Bull Market RSI Strategy"
+description: "Optimize your Bull Market gains: profit from altcoin moonshots and trade before market trend switches using RSI. Discover this strategy with our video tutorial"
+sidebar_position: 1
+---
+
+
+
+# Bull Market Strategy from TradingView using RSI with video
+
+How to best take advantage of the Bull Market when it's here? In this strategy, we explore how to use RSI to buy and sell in advance, as soon as the trend starts to change!
+
+import YouTube from '@site/src/components/YouTube';
+
+<YouTube id="aa4vr1n2Iwo" title="Optimize your Crypto Bull Market using RSI" />
+
+## Goal of the Bull Market RSI Strategy
+
+In a <a href="https://www.investopedia.com/terms/b/bullmarket.asp" rel="nofollow">Bull Market</a>, the price of cryptocurrencies is rising on a regular basis. To optimize your gains, it is important to be able to buy coins that will increase in value before their prices rise too much. It would be best to also be able to sell quickly when the maximum is reached. Selling allows you to then to take advantage of buying at a lower price or unlock funds to profit from another promising crypto.
+
+This strategy specializes in **taking advantage of temporary price increases**.
+
+## Concept of the strategy
+
+Using the <a href="https://www.investopedia.com/terms/r/rsi.asp" rel="nofollow">Relative Strength Index</a> in order to use overbought and oversold zones to make profit by:
+
+1. Buying before the price really starts going up
+2. Selling only when the local maximum is reached
+
+<div style={{textAlign: "center"}}>
+  ![RSI bull market strategy buying and selling
+  solana](/images/guides/tradingview-tutos/RSI-bull-market-strategy-buying-and-selling-solana.png)
+</div>
+
+## Strategy configuration
+
+The target of the strategy is to trade when a maximum is reached, identified by changes in RSI trend. Here is the RSI configuration and alerts used in this video.
+
+This strategy uses TradingView to automate the RSI analysis of any type of cryptocurrency. For more information on how to use TradingView and OctoBot, check out the [trading with TradingView tutorial](../tradingview-trading-tutorial).
+
+### TradingView configuration
+
+#### RSI to identify trend switches
+
+<div style={{textAlign: "center"}}>
+  ![RSI configuration with rolling moving
+  averages](/images/guides/tradingview-tutos/RSI-configuration-with-rolling-moving-averages.png)
+</div>
+- Length of 14, source: close (standard configuration) - MA Type: SMMA, which is
+a Rolling Moving Average. This allows to give more weight to the latest values
+and therefore get value that is more reactive that the default moving average. -
+MA Length: 9 - BB StdDev: 1
+
+#### Buy orders
+
+1. Buy upon strong oversell to profit from heavy price dips
+   <div style={{textAlign: "center"}}>
+     ![extreme buy solana on rsi ema threshhold tradingview alert
+     configuration](/images/guides/tradingview-tutos/extreme-buy-solana-on-rsi-ema-threshhold-tradingview-alert-configuration.png)
+   </div>
+
+- When the RSI moving average (RSI-based MA) crosses up the 39.57 threshold
+- Once Per Bar Close
+- References a buy automation on the Octobot side
+
+2. Buy upon oversell to profit from regular bull market price dips
+   <div style={{textAlign: "center"}}>
+     ![regular buy solana on rsi ema threshhold tradingview alert
+     configuration](/images/guides/tradingview-tutos/regular-buy-solana-on-rsi-ema-threshhold-tradingview-alert-configuration.png)
+   </div>
+
+- When the RSI moving average (RSI-based MA) crosses up the 48.62 threshold
+- Once Per Bar Close
+- References a buy automation on the Octobot side
+
+#### Sell orders
+
+1. Sell upon strong overbuy to profit from bull market heavy price increases
+   <div style={{textAlign: "center"}}>
+     ![extreme sell solana on rsi ema threshhold tradingview alert
+     configuration](/images/guides/tradingview-tutos/extreme-sell-solana-on-rsi-ema-threshhold-tradingview-alert-configuration.png)
+   </div>
+
+- When the RSI moving average (RSI-based MA) crosses down the 67.45 threshold
+- Once Per Bar Close
+- References a sell automation on the Octobot side
+
+2. Sell upon regular overbuy to profit from bull market smaller price increases
+   <div style={{textAlign: "center"}}>
+     ![regular sell solana on rsi ema threshhold tradingview alert
+     configuration](/images/guides/tradingview-tutos/regular-sell-solana-on-rsi-ema-threshhold-tradingview-alert-configuration.png)
+   </div>
+
+- When the RSI moving average (RSI-based MA) crosses down the 53.63 threshold
+- Once Per Bar Close
+- References a sell automation on the Octobot side
+
+### OctoBot configuration
+
+A buy and sell automation for the crypto you wish to trade, with the amount you wish to trade.
+
+<div style={{textAlign: "center"}}>
+  ![RSI bull market strategy buying and selling octobot
+  automations](/images/guides/tradingview-tutos/RSI-bull-market-strategy-buying-and-selling-octobot-automations.png)
+</div>
+
+For more information on OctoBot automations allowing buying and selling with TradingView in the "Automations to create your strategies" section of the [TradingView trading guide](../tradingview-automated-trading#automations-to-create-your-strategies).
+
+## Further optimisations
+
+In this video, we use a single-crypto version of the strategy. To optimize gains made, several improvements can be implemented:
+
+- **Trading against Bitcoin** instead of USDT to also take advantage of Bitcoin's price increase
+- Use the strategy on **multiple cryptos at once**: if their upward phases are not simultaneous, this allows you to benefit from rising ones while others remain stable
+- Use **multiple buy and sell orders** to optimize order prices based on additional RSI thresholds or event from other technical indicators
+
+:::info
+  Warning: The strategy presented in this tutorial is only meant for educational
+  purposes and is not financial advice.
+:::

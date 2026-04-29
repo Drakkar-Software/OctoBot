@@ -14,6 +14,8 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import asyncio
+import abc
+import typing
 
 import octobot_commons.logging as logging
 import octobot_commons.enums as common_enums
@@ -22,8 +24,13 @@ import octobot_tentacles_manager.api as tentacles_manager_api
 import octobot.automation.bases.abstract_trigger_event as abstract_trigger_event
 import octobot.automation.bases.abstract_condition as abstract_condition
 import octobot.automation.bases.abstract_action as abstract_action
+import octobot.automation.bases.automation_step as automation_step
+import octobot.automation.bases.execution_details as execution_details
 import octobot.constants as constants
 import octobot.errors as errors
+
+if typing.TYPE_CHECKING:
+    import octobot_tentacles_manager.configuration
 
 
 class AutomationDetails:
@@ -47,16 +54,21 @@ class Automation(tentacles_management.AbstractTentacle):
     CONDITIONS = "conditions"
     ACTIONS = "actions"
 
-    def __init__(self, bot_id, tentacles_setup_config, automations_config=None):
+    def __init__(
+        self,
+        bot_id: str,
+        tentacles_setup_config: "octobot_tentacles_manager.configuration.TentaclesSetupConfiguration",
+        automations_config: typing.Optional[dict] = {}
+    ):
         super().__init__()
-        self.logger = logging.get_logger(self.get_name())
-        self.bot_id = bot_id
-        self.tentacles_setup_config = tentacles_setup_config
-        self.automations_config = automations_config
-        self.automation_tasks = []
-        self.automation_details = []
+        self.logger: logging.BotLogger = logging.get_logger(self.get_name())
+        self.bot_id: str = bot_id
+        self.tentacles_setup_config: "octobot_tentacles_manager.configuration.TentaclesSetupConfiguration" = tentacles_setup_config
+        self.automations_config: typing.Optional[dict] = automations_config
+        self.automation_tasks: list[asyncio.Task] = []
+        self.automation_details: list[AutomationDetails] = []
 
-    def get_local_config(self):
+    def get_local_config(self) -> typing.Optional[dict]:
         return self.automations_config
 
     async def initialize(self) -> None:
@@ -70,8 +82,11 @@ class Automation(tentacles_management.AbstractTentacle):
 
     @classmethod
     async def get_raw_config_and_user_inputs(
-            cls, config, tentacles_setup_config, bot_id
-    ):
+        cls,
+        config: dict,
+        tentacles_setup_config: "octobot_tentacles_manager.configuration.TentaclesSetupConfiguration",
+        bot_id: str
+    ) -> tuple[dict, list[dict]]:
         tentacle_config = tentacles_manager_api.get_tentacle_config(tentacles_setup_config, cls)
         local_instance = cls.create_local_instance(
             config, tentacles_setup_config, tentacle_config
@@ -116,11 +131,22 @@ class Automation(tentacles_management.AbstractTentacle):
         )
 
     @classmethod
-    def create_local_instance(cls, config, tentacles_setup_config, tentacle_config):
+    def create_local_instance(cls,
+        config: dict,
+        tentacles_setup_config: "octobot_tentacles_manager.configuration.TentaclesSetupConfiguration",
+        tentacle_config: dict
+    ) -> "Automation":
         return cls(None, tentacles_setup_config, automations_config=tentacle_config)
 
-    def _all_possible_steps(self, base_step):
-        return tentacles_management.get_all_classes_from_parent(base_step)
+    def _all_possible_steps(
+        self,
+        base_step: typing.Type[automation_step.AutomationStep]
+    ) -> list[typing.Type[automation_step.AutomationStep]]:
+        return [
+            element
+            for element in tentacles_management.get_all_classes_from_parent(base_step)
+            if abc.ABC not in element.__bases__
+        ]
 
     def get_all_steps(self):
         all_events = {
@@ -162,11 +188,11 @@ class Automation(tentacles_management.AbstractTentacle):
                                          self.automations_config.get(self.AUTOMATIONS, {}), inputs,
                                          title="Automations")
         default_event, default_conditions, default_actions = self._get_default_steps()
-        for index in range(1, automations_count + 1):
+        for index in range(1, int(automations_count) + 1):
             automation_id = f"{index}"
             # register trigger events
             self.UI.user_input(automation_id, common_enums.UserInputTypes.OBJECT,
-                               automations.get(automation_id, {}), inputs,
+                               automations.get(automation_id, {}), inputs, # type: ignore
                                parent_input_name=self.AUTOMATIONS,
                                title=f"Automation {index}")
             event = self.UI.user_input(self.TRIGGER_EVENT, common_enums.UserInputTypes.OPTIONS,
@@ -191,14 +217,25 @@ class Automation(tentacles_management.AbstractTentacle):
                                          title="Actions for this automation.")
             self._apply_user_inputs(actions, all_actions, inputs, automation_id)
 
-    def _apply_user_inputs(self, step_names, step_classes_by_name: dict, inputs, automation_id):
+    def _apply_user_inputs(
+        self, step_names: list[str],
+        step_classes_by_name: dict[str, typing.Type[automation_step.AutomationStep]],
+        inputs: dict,
+        automation_id: str
+    ) -> None:
         for step_name in step_names:
             try:
                 self._apply_step_user_inputs(step_name, step_classes_by_name[step_name], inputs, automation_id)
             except KeyError:
                 self.logger.error(f"Automation step not found: {step_name} (ignored)")
 
-    def _apply_step_user_inputs(self, step_name, step_class, inputs, automation_id):
+    def _apply_step_user_inputs(
+        self,
+        step_name: str,
+        step_class: typing.Type[automation_step.AutomationStep],
+        inputs: dict,
+        automation_id: str
+    ) -> None:
         step = step_class()
         user_inputs = step.get_user_inputs(self.UI, inputs, step_name)
         if user_inputs:
@@ -210,10 +247,10 @@ class Automation(tentacles_management.AbstractTentacle):
                 title=f"{step_name} configuration"
             )
 
-    def _is_valid_automation_config(self, automation_config):
+    def _is_valid_automation_config(self, automation_config: dict) -> bool:
         return automation_config.get(self.TRIGGER_EVENT) is not None
 
-    def _create_automation_details(self):
+    def _create_automation_details(self) -> None:
         all_events, all_conditions, all_actions = self.get_all_steps()
         automations_count = self.automations_config.get(self.AUTOMATIONS_COUNT, 0)
         for automation_id, automation_config in self.automations_config.get(self.AUTOMATIONS, {}).items():
@@ -232,21 +269,33 @@ class Automation(tentacles_management.AbstractTentacle):
             ]
             self.automation_details.append(AutomationDetails(event, conditions, actions))
 
-    def _create_step(self, automations_config, step_name, classes):
+    def _create_step(
+        self,
+        automations_config: dict,
+        step_name: str,
+        classes: dict[str, typing.Type[automation_step.AutomationStep]]
+    ) -> automation_step.AutomationStep:
         step = classes[step_name]()
         step.apply_config(automations_config.get(step_name, {}))
         return step
 
-    async def _run_automation(self, automation_detail):
+    async def _run_automation(self, automation_detail: AutomationDetails) -> None:
         self.logger.info(f"Starting {automation_detail} automation")
-        async for _ in automation_detail.trigger_event.next_event():
-            self.logger.debug(f"{automation_detail.trigger_event.get_name()} event triggered")
-            if await self._check_conditions(automation_detail):
-                await self._process_actions(automation_detail)
+        try:
+            async for execution_details in automation_detail.trigger_event.next_execution():
+                self.logger.debug(f"{automation_detail.trigger_event.get_name()} event triggered: {execution_details}")
+                if await self._check_conditions(automation_detail, execution_details):
+                    await self._process_actions(automation_detail, execution_details)
+        except errors.AutomationStopped:
+            self.logger.debug(f"{automation_detail.trigger_event.get_name()} automation stopped")
 
-    async def _check_conditions(self, automation_detail):
+    async def _check_conditions(
+        self,
+        automation_detail: AutomationDetails,
+        execution_details: execution_details.ExecutionDetails
+    ) -> bool:
         for condition in automation_detail.conditions:
-            if not await condition.evaluate():
+            if not await condition.call_process(execution_details):
                 # not all conditions are valid, skip event
                 self.logger.debug(f"{condition.get_name()} is not valid: skipping "
                                   f"{automation_detail.trigger_event.get_name()} event")
@@ -255,12 +304,18 @@ class Automation(tentacles_management.AbstractTentacle):
                               f"{automation_detail.trigger_event.get_name()} event trigger")
         return True
 
-    async def _process_actions(self, automation_detail):
+    async def _process_actions(
+        self,
+        automation_detail: AutomationDetails,
+        execution_details: execution_details.ExecutionDetails
+    ) -> None:
         for action in automation_detail.actions:
             try:
-                self.logger.debug(f"Running {action.get_name()} after "
-                                  f"{automation_detail.trigger_event.get_name()} event")
-                await action.process()
+                self.logger.debug(
+                    f"Running {action.get_name()} after "
+                    f"{automation_detail.trigger_event.get_name()} event: {execution_details}"
+                )
+                await action.call_process(execution_details)
             except Exception as err:
                 self.logger.exception(err, True, f"Error when running action: {err}")
 

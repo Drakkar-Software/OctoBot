@@ -84,6 +84,9 @@ class CommunityUserAccount:
     def get_selected_bot_deployment_id(self):
         return self.get_bot_deployment_value(backend_enums.BotDeploymentKeys.ID)
 
+    def get_selected_bot_deployment_error_status(self) -> typing.Optional[str]:
+        return self.get_bot_deployment_value(backend_enums.BotDeploymentKeys.ERROR_STATUS)
+
     def get_bot_deployment_status(self) -> (str, str):
         deployment = self._get_bot_deployment(self._selected_bot_raw_data)
         return (

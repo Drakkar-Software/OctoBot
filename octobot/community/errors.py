@@ -48,6 +48,14 @@ class MissingBotConfigError(BotError):
     pass
 
 
+class MissingProductsSubscriptionError(BotError):
+    pass
+
+
+class MissingDeploymentError(BotError):
+    pass
+
+
 class InvalidBotConfigError(BotError):
     pass
 

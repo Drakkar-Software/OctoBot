@@ -1,0 +1,4 @@
+{% macro display_trading_state(is_real_trading, enabled_trader, hide_on_small=True, use_bold_for_title=False) -%}
+    <span class="{% if hide_on_small %}d-none d-xxl-inline{% endif %}{% if use_bold_for_title %} font-weight-bold{% endif %}">{{ enabled_trader }} </span>
+    <i class="fa {% if is_real_trading %}fa-coins{% else %}fa-robot{% endif %}" data-toggle="tooltip" data-placement="top" title="{{ enabled_trader }}"></i>
+{%- endmacro %}

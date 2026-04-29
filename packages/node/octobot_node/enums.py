@@ -1,0 +1,37 @@
+#  This file is part of OctoBot Node (https://github.com/Drakkar-Software/OctoBot-Node)
+#  Copyright (c) 2025 Drakkar-Software, All rights reserved.
+#
+#  OctoBot is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU General Public License
+#  as published by the Free Software Foundation; either
+#  version 3.0 of the License, or (at your option) any later version.
+#
+#  OctoBot is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#  General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public
+#  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
+
+import enum
+
+class TaskResultKeys(enum.Enum):
+    STATUS = "status"
+    TASK = "task"
+    RESULT = "result"
+    ERROR = "error"
+    METADATA = "metadata"
+
+
+class AutomationWorkflowActionTypes(enum.Enum):
+    USER_ACTIONS = "user_actions"
+    TRADING_SIGNAL = "trading_signal"
+
+
+class AutomationWorkflowMessageTopics(enum.Enum):
+    ACTIONS_UPDATE = "actions_update"
+
+
+class SchedulerQueues(enum.Enum):
+    AUTOMATION_WORKFLOW_QUEUE = "automation_workflow_queue"

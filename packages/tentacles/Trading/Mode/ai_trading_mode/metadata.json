@@ -1,0 +1,15 @@
+{
+  "version": "1.2.0",
+  "origin_package": "OctoBot-Default-Tentacles",
+  "tentacles": ["AIIndexTradingMode"],
+  "tentacles-requirements": [
+    "gpt_service",
+    "distribution_agent",
+    "signal_agent",
+    "bull_bear_research_agent",
+    "risk_judge_agent",
+    "default_critic_agent",
+    "default_memory_agent",
+    "default_manager_agent"
+  ]
+}

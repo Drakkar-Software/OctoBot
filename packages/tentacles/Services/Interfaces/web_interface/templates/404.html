@@ -1,0 +1,18 @@
+{% extends "layout.html" %}
+{% block body %}
+<br>
+<div class="card">
+    <div class="card-header">
+        <h2>We are sorry, but this doesn't exist.</h2>
+    </div>
+    <div class="card-body">
+        You may have mistyped the address or the page may have moved.
+    </div>
+    <div class="card-footer">
+        <button type="button" id="back-button" class="btn btn-lg btn-primary waves-effect">Go back</button>
+    </div>
+</div>
+{% endblock %}
+{% block additional_scripts %}
+<script src="{{ url_for('static', filename='js/common/common_handlers.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+{% endblock additional_scripts %}

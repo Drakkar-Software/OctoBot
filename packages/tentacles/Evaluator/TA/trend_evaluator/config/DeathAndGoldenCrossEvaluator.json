@@ -1,0 +1,6 @@
+{
+    "fast_length": 50,
+    "slow_length": 200,
+    "slow_ma_type": "SMA",
+    "fast_ma_type": "SMA"
+}

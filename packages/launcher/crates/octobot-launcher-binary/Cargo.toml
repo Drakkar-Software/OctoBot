@@ -1,0 +1,33 @@
+[package]
+name = "octobot-launcher-binary"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+octobot-launcher-core = { path = "../octobot-launcher-core" }
+octobot-launcher-update = { path = "../octobot-launcher-update" }
+async-trait = "0.1"
+tokio = { version = "1", features = ["full"] }
+sysinfo = "0.32"
+which = "7"
+tracing = "0.1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+chrono = { version = "0.4", features = ["serde"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
+
+[target.'cfg(unix)'.dependencies]
+nix = { version = "0.29", features = ["signal", "process"] }
+
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.58", features = ["Win32_System_Console", "Win32_System_Threading", "Win32_Foundation"] }
+
+[dev-dependencies]
+tempfile = "3"
+tokio = { version = "1", features = ["full"] }

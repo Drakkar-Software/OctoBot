@@ -34,14 +34,17 @@ import octobot.community.models.formatters as formatters
 import octobot.community.models.strategy_data as strategy_data
 import octobot.community.supabase_backend as supabase_backend
 import octobot.community.supabase_backend.enums as backend_enums
+import octobot.community.wallet_backend as wallet_backend
 import octobot.community.feeds as community_feeds
 import octobot.community.tentacles_packages as community_tentacles_packages
+import octobot.community.community_bot as community_bot
 import octobot_commons.constants as commons_constants
 import octobot_commons.enums as commons_enums
 import octobot_commons.authentication as authentication
 import octobot_commons.configuration as commons_configuration
 import octobot_commons.profiles as commons_profiles
 import octobot_trading.enums as trading_enums
+import octobot_sync.client as sync_client
 
 
 def expired_session_retrier(func):
@@ -75,8 +78,9 @@ def _bot_data_update(func):
             self.logger.debug(f"Skipping {func.__name__} update: no user selected bot.")
             return
         try:
-            self.logger.debug(f"bot_data_update: {func.__name__} initiated.")
-            return await func(*args, **kwargs)
+            with supabase_backend.error_describer():
+                self.logger.debug(f"bot_data_update: {func.__name__} initiated.")
+                return await func(*args, **kwargs)
         except errors.SessionTokenExpiredError:
             # requried by expired_session_retrier
             raise
@@ -104,23 +108,30 @@ class CommunityAuthentication(authentication.Authenticator):
 
     def __init__(self, config=None, backend_url=None, backend_key=None, use_as_singleton=True):
         super().__init__(use_as_singleton=use_as_singleton)
-        self.config = config
-        self.backend_url = backend_url or identifiers_provider.IdentifiersProvider.BACKEND_URL
-        self.backend_key = backend_key or identifiers_provider.IdentifiersProvider.BACKEND_KEY
-        self.configuration_storage = supabase_backend.ASyncConfigurationStorage(self.config)
-        self.supabase_client = self._create_client()
-        self.user_account = community_user_account.CommunityUserAccount()
-        self.public_data = community_public_data.CommunityPublicData()
-        self.successfully_fetched_tentacles_package_urls = False
-        self.silent_auth = False
-        self._community_feed = None
+        self.config: typing.Optional[commons_configuration.Configuration] = config
+        self.backend_url: str = backend_url or identifiers_provider.IdentifiersProvider.BACKEND_URL
+        self.backend_key: str = backend_key or identifiers_provider.IdentifiersProvider.BACKEND_KEY
+        self.configuration_storage: supabase_backend.ASyncConfigurationStorage = supabase_backend.ASyncConfigurationStorage(self.config)
+        self.supabase_client: supabase_backend.CommunitySupabaseClient = self._create_client()
+        self.user_account: community_user_account.CommunityUserAccount = community_user_account.CommunityUserAccount()
+        self.public_data: community_public_data.CommunityPublicData = community_public_data.CommunityPublicData()
+        self.community_bot: community_bot.CommunityBot = community_bot.CommunityBot(self)
+        self.successfully_fetched_tentacles_package_urls: bool = False
+        self.silent_auth: bool = False
+        self._community_feed: typing.Optional[community_feeds.AbstractFeed] = None
 
-        self.initialized_event = None
-        self._login_completed = None
-        self._fetched_private_data = None
-        self._startup_info = None
+        self.initialized_event: typing.Optional[asyncio.Event] = None
+        self._login_completed: typing.Optional[asyncio.Event] = None
+        self._fetched_private_data: typing.Optional[asyncio.Event] = None
+        self._startup_info: typing.Optional[startup_info.StartupInfo] = None
 
-        self._fetch_account_task = None
+        self._fetch_account_task: typing.Optional[asyncio.Task] = None
+        self._sync_client = None
+        self._sync_address: str = ""
+        self._sync_data_signer = None
+        self._wallet_backend: wallet_backend.WalletBackend = wallet_backend.WalletBackend(
+            self.configuration_storage.sync_storage, self.logger
+        )
 
     @staticmethod
     def create(configuration: commons_configuration.Configuration, **kwargs):
@@ -576,6 +587,11 @@ class CommunityAuthentication(authentication.Authenticator):
         await self.supabase_client.aclose()
         if self._community_feed:
             await self._community_feed.stop()
+        if self.community_bot:
+            self.community_bot.clear()
+        if self._sync_client:
+            await self._sync_client.close()
+            self._sync_client = None
         self.logger.debug("Stopped")
 
     def _update_supports(self, resp_status, json_data):
@@ -619,6 +635,74 @@ class CommunityAuthentication(authentication.Authenticator):
             self.logger.exception(e, True, f"Error when fetching community supports: {e}({e.__class__.__name__})")
         finally:
             self.initialized_event.set()
+
+    def _get_or_create_wallet_private_key(self, chain_id: str) -> typing.Optional[str]:
+        return self._wallet_backend.get_or_create_wallet_private_key(chain_id)
+
+    def is_node_wallet_configured(self) -> bool:
+        return self._wallet_backend.is_node_wallet_configured()
+
+    def get_node_wallet_address(self) -> typing.Optional[str]:
+        return self._wallet_backend.get_node_wallet_address()
+
+    def create_and_encrypt_node_wallet(self, passphrase: str):
+        return self._wallet_backend.create_and_encrypt_node_wallet(passphrase)
+
+    def import_and_encrypt_node_wallet(self, private_key: str, passphrase: str):
+        return self._wallet_backend.import_and_encrypt_node_wallet(private_key, passphrase)
+
+    def decrypt_node_wallet(self, passphrase: str):
+        return self._wallet_backend.decrypt_node_wallet(passphrase)
+
+    def verify_node_passphrase(self, passphrase: str) -> bool:
+        return self._wallet_backend.verify_node_passphrase(passphrase)
+
+    def init_sync_client(self):
+        if self._sync_client is not None:
+            return
+        try:
+            chain_id = constants.SYNC_CHAIN_ID
+            sync_url = identifiers_provider.IdentifiersProvider.SYNC_SERVER_URL
+            if not sync_url and not constants.ENABLE_REPLICA_SERVER:
+                self.logger.debug("No sync server URL configured, skipping sync client init")
+                return
+            private_key = self._get_or_create_wallet_private_key(chain_id)
+            if private_key is None:
+                self.logger.debug("Wallet is encrypted: sync client requires passphrase to initialize")
+                return
+            self._sync_client, self._sync_address, self._sync_data_signer = sync_client.create_sync_client(
+                private_key=private_key,
+                chain_id=chain_id,
+                sync_url=sync_url,
+                start_replica_server=constants.ENABLE_REPLICA_SERVER,
+                replica_port=constants.REPLICA_SERVER_PORT,
+                replica_write_mode=constants.REPLICA_WRITE_MODE,
+                replica_sync_interval_ms=constants.REPLICA_SYNC_INTERVAL_MS,
+            )
+        except Exception as e:
+            self.logger.exception(e, True, f"Failed to initialize sync client: {e}")
+
+    def init_sync_client_with_passphrase(self, passphrase: str) -> None:
+        if self._sync_client is not None:
+            return
+        try:
+            chain_id = constants.SYNC_CHAIN_ID
+            sync_url = identifiers_provider.IdentifiersProvider.SYNC_SERVER_URL
+            if not sync_url and not constants.ENABLE_REPLICA_SERVER:
+                self.logger.debug("No sync server URL configured, skipping sync client init")
+                return
+            wallet = self.decrypt_node_wallet(passphrase)
+            self._sync_client, self._sync_address, self._sync_data_signer = sync_client.create_sync_client(
+                private_key=wallet.private_key,
+                chain_id=chain_id,
+                sync_url=sync_url,
+                start_replica_server=constants.ENABLE_REPLICA_SERVER,
+                replica_port=constants.REPLICA_SERVER_PORT,
+                replica_write_mode=constants.REPLICA_WRITE_MODE,
+                replica_sync_interval_ms=constants.REPLICA_SYNC_INTERVAL_MS,
+            )
+        except Exception as e:
+            self.logger.exception(e, True, f"Failed to initialize sync client: {e}")
 
     async def _init_community_data(self, fetch_private_data):
         coros = [

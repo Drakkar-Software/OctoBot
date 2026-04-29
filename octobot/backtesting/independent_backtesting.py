@@ -81,7 +81,7 @@ class IndependentBacktesting:
         self.stopped_event = None
         self.post_backtesting_task = None
         self.join_backtesting_timeout = join_backtesting_timeout
-        self.enable_logs = enable_logs
+        self.enable_logs = common_constants.FORCE_BACKTESTING_LOGS or enable_logs
         self.stop_when_finished = stop_when_finished
         self.previous_log_level = commons_logging.get_global_logger_level()
         self.previous_handlers_log_level = commons_logging.get_logger_level_per_handler()
@@ -225,6 +225,9 @@ class IndependentBacktesting:
                 if description is None:
                     raise RuntimeError(f"Impossible to start backtesting: missing or invalid data file: {data_file}")
                 exchange_name = description[backtesting_enums.DataFormatKeys.EXCHANGE.value]
+                # Skip data files without exchange name (e.g., social data files)
+                if not exchange_name:
+                    continue
                 if exchange_name not in self.symbols_to_create_exchange_classes:
                     self.symbols_to_create_exchange_classes[exchange_name] = []
                 for symbol in description[backtesting_enums.DataFormatKeys.SYMBOLS.value]:
@@ -416,6 +419,8 @@ class IndependentBacktesting:
         forced_contract_type = self.octobot_origin_config.get(common_constants.CONFIG_CONTRACT_TYPE,
                                                               common_constants.USE_CURRENT_PROFILE)
         for symbols in self.symbols_to_create_exchange_classes.values():
+            if not symbols:
+                continue
             symbol = symbols[0]
             if next(iter(self.octobot_backtesting.exchange_type_by_exchange.values())) \
                     == common_constants.CONFIG_EXCHANGE_FUTURE:
@@ -451,7 +456,7 @@ class IndependentBacktesting:
                 if ref_market_candidate != quote and \
                         ref_market_candidates[ref_market_candidate] < ref_market_candidates[quote]:
                     ref_market_candidate = quote
-        return ref_market_candidate
+        return ref_market_candidate or common_constants.DEFAULT_REFERENCE_MARKET
 
     def _add_config_default_backtesting_values(self):
         if backtesting_constants.CONFIG_BACKTESTING not in self.backtesting_config:

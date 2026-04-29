@@ -6,6 +6,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [2.1.1] - 2026-03-28
+### Added
+- [GridTrading] Add reinvest_profits config option
+- [DSLTradingMode] Add DSLTradingMode
+### Updated
+- [CCXT] Update to ccxt 4.5.44
+- [Exchanges]: Improve exchange market status cache
+- [Polymarket]: Improve tickers fetching
+### Fixed
+- [Hyperliquid]: Fix assets valuation and websocket related issues
+- [WebInterface]: Fix GPT settings display
+- [Webinterface]: Improve redirect checks. Special thanks to zhangqy24
+
+## [2.1.0] - 2026-03-17
+### Python version update
+**OctoBot now runs on Python 3.13 and 3.12. 3.10 and 3.11 are not supported anymore**
+### Repositories structure change
+The whole OctoBot code is now located in the https://github.com/Drakkar-Software/OctoBot repository, all OctoBot dependencies have been migrated to the packages folder of this repo.
+### Added
+- [Polymarket] [Beta] Support Polymarket. Dedicated distribution at https://github.com/Drakkar-Software/OctoBot-Prediction-Market
+- [ProfileCopyTradingMode] Add a trading mode to copy a public trading profile, currently used for polymarket copy trading
+- [LBank] Added LBank exchange support
+### Fixed
+- [Coinex]: Fix maker only orders parsing
+
+### Ongoing Development, Beta soon
+- [AI Agents] Support for AI agents trading and backtesting. Dedicated distribution at https://github.com/Drakkar-Software/OctoBot-AI
+
+### Upcoming
+This release is the first step towards a brand new type of OctoBot we are currently working on. This new type of bot will bring more possibilities and flexibility than ever to make it simple to automate any action or strategy on your crypto investments.
+More info soon.
+
+## [2.0.16] - 2025-12-24
+### Added
+- [Automations] add scripted automation condition using the OctoBot DSL
+- [DSL] add portfolio holding keyword
+- [DSL] add web documentation 
+### Updated
+- [Exchanges] update to ccxt 4.5.28
+- [HollaEx] make fee tiers configurable
+### Fixed
+- [Binance]: Fix stop futures orders
+- [HollaEx]: fix missing fee error
+- [Hyperliquid] fix websocket start
+
+
 ## [2.0.15] - 2025-12-08
 ### Breaking pip installation change
 To install the full OctoBot (equivalent to previous versions), OctoBot needs to be installed with the [full] parameter: `pip install octobot[full]` 

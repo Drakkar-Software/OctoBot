@@ -1,0 +1,6 @@
+{
+  "version": "1.2.0",
+  "origin_package": "OctoBot-Default-Tentacles",
+  "tentacles": ["TwitterNewsEvaluator", "CryptoNewsEvaluator"],
+  "tentacles-requirements": ["text_analysis", "twitter_service_feed", "coindesk_service_feed"]
+}

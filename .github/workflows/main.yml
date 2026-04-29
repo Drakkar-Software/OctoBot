@@ -8,127 +8,378 @@ on:
       - '*'
   pull_request:
 
+permissions: read-all
+
 jobs:
-  lint:
-    name: ${{ matrix.os }}${{ matrix.arch }} - Python ${{ matrix.version }} - lint
+  build:
+    name: ${{ matrix.os }}${{ matrix.arch }} - Python ${{ matrix.version }} - Build wheel
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ ubuntu-latest ]
         arch: [ x64 ]
-        version: [ "3.10.x" ]
+        version: [ "3.13.x" ]
     steps:
-    - uses: actions/checkout@v5
-    - name: Set up Python ${{ matrix.version }}
-      uses: actions/setup-python@v6
-      with:
-        python-version: ${{ matrix.version }}
-        architecture: ${{ matrix.arch }}
+      - uses: actions/checkout@v6
 
-    - name: Install dependencies
-      run: pip install wheel && pip install --prefer-binary -r dev_requirements.txt -r requirements.txt -r full_requirements.txt
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.version }}
+          architecture: ${{ matrix.arch }}
 
-#    - name: Black lint
-#      run: black ${{ secrets.PACKAGE_FOLDER }} --diff --check
+      - name: Install Pants
+        uses: pantsbuild/actions/init-pants@v11
+        with:
+          gha-cache-key: ${{ runner.os }}-pants-build
+          named-caches-hash: ${{ hashFiles('pants.toml') }}
 
-    - name: Pylint
-      run: |
-        pylint --rcfile=standard.rc octobot
-        if [ $? -ne 1 ]; then exit 0; fi
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Install Rust toolchain
+        if: hashFiles('packages/*/crates/*/Cargo.toml') != ''
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - name: Rust lint & tests
+        if: hashFiles('packages/*/crates/*/Cargo.toml') != ''
+        run: |
+          cargo clippy --workspace -- -D warnings
+          cargo test --workspace
+
+      - name: Install maturin
+        if: hashFiles('packages/*/crates/*/pyproject.toml') != ''
+        run: pip install maturin
+
+      - name: Build wheels
+        run: pants package :OctoBot $(pants list --filter-target-type=package_shell_command ::)
+
+      - name: Upload wheel artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: octobot-wheel
+          path: dist/*.whl
+          if-no-files-found: error
 
   tests:
-    needs: lint
-    name: ${{ matrix.os }}${{ matrix.arch }} - Python ${{ matrix.version }} - tests
+    needs: [ build ]
+    name: ${{ matrix.os }}${{ matrix.arch }} - Python ${{ matrix.version }} - ${{ matrix.package }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ windows-latest, ubuntu-latest ]
+        os: [ ubuntu-latest ]
         arch: [ x64 ]
-        version: [ "3.10.x" ]
+        version: [ "3.13.x" ]
+        package:
+          - octobot
+          - packages/agents
+          - packages/async_channel
+          - packages/backtesting
+          - packages/commons
+          - packages/evaluators
+          - packages/node
+          - packages/flow
+          - packages/copy
+          - packages/services
+          - packages/sync
+          - packages/tentacles_manager
+          - packages/trading
+          - packages/trading_backend
+
+    env:
+      USES_TENTACLES: ${{ matrix.package == 'octobot' || matrix.package == 'packages/node' || matrix.package == 'packages/flow' || matrix.package == 'packages/copy' }}
 
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
+
+    - name: Detect package features
+      id: detect
+      run: |
+        if ls ${{ matrix.package }}/crates/*/Cargo.toml 1>/dev/null 2>&1; then
+          echo "has_rust=true" >> $GITHUB_OUTPUT
+        else
+          echo "has_rust=false" >> $GITHUB_OUTPUT
+        fi
+
     - name: Set up Python ${{ matrix.version }}
       uses: actions/setup-python@v6
       with:
         python-version: ${{ matrix.version }}
         architecture: ${{ matrix.arch }}
 
-    - name: Wait for tentacles
-      if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
-      uses: fountainhead/action-wait-for-check@v1.0.0
-      id: wait-for-build
+    - name: Set up Node.js
+      if: matrix.package == 'octobot'
+      uses: actions/setup-node@v6
       with:
-        token: ${{ secrets.AUTH_TOKEN }}
-        checkName: "ubuntu-latestx64 - Python - 3.10 - Upload"
-        ref: ${{ github.ref }}
-        repo: OctoBot-Tentacles
-        timeoutSeconds: 3600
+        node-version: 22
 
-    - name: Trigger fail when Tentacles failed
-      if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags') && steps.wait-for-build.outputs.conclusion == 'failure'
-      run: exit 1
+    - name: Download build wheel artifact
+      uses: actions/download-artifact@v8
+      with:
+        name: octobot-wheel
+        path: dist/
 
-    - name: Install dependencies
-      run: pip install wheel && pip install --prefer-binary -r dev_requirements.txt -r requirements.txt -r full_requirements.txt
+    - name: Install OctoBot
+      run: |
+        pip3 install -r dev_requirements.txt
+        pip3 install dist/*.whl
 
-    - name: Install tentacles on Unix
+    - name: Lint package
+      run: |
+        if [ -f "${{ matrix.package }}/standard.rc" ]; then
+          pylint --rcfile=${{ matrix.package }}/standard.rc ${{ matrix.package }}/
+          rc=$?
+        else
+          pylint --rcfile=standard.rc ${{ matrix.package }}/
+          rc=$?
+        fi
+        if [ $rc -eq 1 ]; then exit 1; fi
+
+    - name: Install Rust toolchain
+      if: steps.detect.outputs.has_rust == 'true'
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        components: clippy
+
+    - name: Lint Rust crates
+      if: steps.detect.outputs.has_rust == 'true'
+      run: |
+        for crate in ${{ matrix.package }}/crates/*/; do
+          cargo clippy --manifest-path "$crate/Cargo.toml" -- -D warnings
+        done
+
+    - name: Install tentacles
+      if: env.USES_TENTACLES == 'true'
+      env:
+        ALLOW_UNSIGNED_TENTACLES: "true"
+      run: |
+        mkdir -p output
+        OctoBot tentacles -d packages/tentacles -p any_platform.zip
+        OctoBot tentacles --install --location output/any_platform.zip --all
+
+    - name: Run tests
+      run: |
+        if [ "${{ matrix.package }}" = "octobot" ]; then
+          pytest tests -n auto --dist loadfile
+          pytest --ignore=tentacles/Trading/Exchange tentacles -n auto --dist loadfile
+        else
+          if [ "${{ matrix.package }}" = "packages/node" ] || [ "${{ matrix.package }}" = "packages/flow" ] || [ "${{ matrix.package }}" = "packages/copy" ]; then
+            echo "Running tests from root dir to allow tentacles import"
+            PYTHONPATH=.:$PYTHONPATH pytest ${{ matrix.package }}/tests -n auto --dist loadfile
+          else
+            cd ${{ matrix.package }}
+            if [ "${{ matrix.package }}" = "packages/tentacles_manager" ]; then
+              pytest tests
+            else
+              pytest tests -n auto --dist loadfile
+            fi
+          fi
+        fi
       env:
         DISABLE_SENTRY: True
-      if: matrix.os != 'windows-latest'
-      run: |
-        mkdir user
-        cp ./octobot/config/default_config.json ./user/config.json
-        branch="${GITHUB_HEAD_REF}"
-        echo "Trying to download tentacles package ${branch////_}.zip ..."
-        TENTACLES_REPOSITORY=dev-tentacles TENTACLES_URL_TAG=${branch////_} python3 start.py tentacles -q --install --all || TENTACLES_URL_TAG=latest python3 start.py tentacles --install --all
 
-    - name: Install tentacles on Windows
-      env:
-        DISABLE_SENTRY: True
-      if: matrix.os == 'windows-latest'
+    - name: Run Rust backend tests
+      if: steps.detect.outputs.has_rust == 'true'
       run: |
-        mkdir user
-        copy octobot\config\default_config.json user\config.json
-        $Env:TENTACLES_REPOSITORY = "dev-tentacles"
-        $Env:TENTACLES_URL_TAG = $env:GITHUB_HEAD_REF -replace "/", "_"
-        echo "Trying to download tentacles package $Env:TENTACLES_URL_TAG.zip ..."
-        python start.py tentacles -q --install --all
-        if ($LastExitCode -ne 0)
-        {
-          $Env:TENTACLES_URL_SUBCATEGORY = ""
-          If ($env:GITHUB_REF -like "*refs/tags/*") {
-            $Env:TENTACLES_URL_TAG = ""
-            $Env:TENTACLES_REPOSITORY = ""
-          } else {
-            $Env:TENTACLES_URL_TAG = "latest"
-            $Env:TENTACLES_REPOSITORY = ""
-          }
-          echo "Failed to download branch tentacles, trying to download tentacles package $Env:TENTACLES_URL_TAG.zip ..."
-          python start.py tentacles --install --all
-        }
-      shell: powershell
+        cd ${{ matrix.package }}
+        pytest tests --backend=rust -v
 
-    - name: Pytests
-      env:
-        DISABLE_SENTRY: True
+    - name: Run frontend tests
+      if: matrix.package == 'octobot'
       run: |
-        pytest --cov=. --cov-config=.coveragerc --durations=0 -rw tests
-        pytest --durations=0 -rw --ignore=tentacles/Trading/Exchange tentacles
+        find packages/tentacles -name "package.json" -not -path "*/node_modules/*" | while read pkg; do
+          cd "$(dirname "$pkg")"
+          npm ci
+          npm test
+          cd - > /dev/null
+        done
 
-  build_sdist:
-    needs: tests
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
-    name: Source distribution - Python ${{ matrix.version }} - Deploy
+  docker:
+    name: Build & Push Docker images
+    needs: [ build, tests ]
+    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/dev' || startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: read
+      packages: write
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest ]
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Run hadolint
+        uses: reviewdog/action-hadolint@v1
+        with:
+          github_token: ${{ secrets.github_token }}
+          hadolint_ignore: DL3013 DL3008
+
+      - name: Set Environment Variables
+        run: |
+          OWNER="$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]' | tr -d '-')"
+          IMG=octobot
+          echo "VERSION=${GITHUB_REF##*/}" >> $GITHUB_ENV
+          echo "IMAGE=${OWNER}/${IMG}" >> $GITHUB_ENV
+          echo "LATEST=latest" >> $GITHUB_ENV
+          echo "STAGING=staging" >> $GITHUB_ENV
+          echo "STABLE=stable" >> $GITHUB_ENV
+          echo "TEST=test" >> $GITHUB_ENV
+          echo "SHA=${GITHUB_SHA}" >> $GITHUB_ENV
+          echo "CONTAINER_NAME=octobot" >> $GITHUB_ENV
+          echo "CHECK_TENTACLE_CONTAINER_TIME=10" >> $GITHUB_ENV
+          echo "WAIT_CONTAINER_TIME=80" >> $GITHUB_ENV
+
+      - name: Set up Python ${{ matrix.version }}
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13.x"
+          architecture: x64
+
+      - name: Set up QEMU
+        id: qemu-setup
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: all
+
+      - name: Print available platforms
+        run: echo ${{ steps.qemu.outputs.platforms }}
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker-container
+          use: true
+
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+
+      - name: Login to Docker Hub
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Download build wheel artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: octobot-wheel
+          path: dist/
+
+      - name: Install OctoBot & tentacles
+        env:
+          ALLOW_UNSIGNED_TENTACLES: "true"
+        run: |
+          pip3 install -r dev_requirements.txt
+          pip3 install dist/octobot-*.whl
+          mkdir -p output
+          OctoBot tentacles -d packages/tentacles -p any_platform.zip
+          OctoBot tentacles --install --location output/any_platform.zip --all
+
+      - name: Build latest
+        if: github.event_name != 'push'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          builder: ${{ steps.buildx.outputs.name }}
+          platforms: linux/amd64
+          # Using "load: true" forces the docker driver.
+          # Unfortunately, the "docker" driver does not support
+          # multi-platform builds.
+          load: true
+          push: false
+          tags: ${{ env.IMAGE }}:${{ env.SHA }}
+          build-args: |
+            TENTACLES_URL_TAG=${{ env.LATEST }}
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache
+
+      - name: Docker build test container
+        if: github.event_name != 'push'
+        run: |
+          docker build -f ./tests/Dockerfile --build-arg OCTOBOT_IMAGE=${{ env.IMAGE }}:${{ env.SHA }} -t ${{ env.IMAGE }}:${{ env.TEST }} .
+
+      - name: run tests in docker
+        if: github.event_name != 'push'
+        run: |
+          docker run -i -v $(pwd)/tentacles:/octobot/tentacles -e DISABLE_SENTRY=True ${{ env.IMAGE }}:${{ env.TEST }}
+
+      - name: run and check health after start
+        if: github.event_name != 'push'
+        run: |
+          echo Start OctoBot docker container with tentacles...
+          docker run -id -v $(pwd)/tentacles:/octobot/tentacles -e DISABLE_SENTRY=True --name ${{ env.CONTAINER_NAME }} ${{ env.IMAGE }}:${{ env.LATEST }}
+          sleep ${{ env.WAIT_CONTAINER_TIME }}
+          docker logs ${{ env.CONTAINER_NAME }}
+          docker inspect ${{ env.CONTAINER_NAME }} | jq '.[].State.Health.Status' | grep "healthy"
+
+      - name: Build and push latest
+        if: github.event_name == 'push' && !startsWith(github.ref, 'refs/tags') && github.ref == 'refs/heads/dev'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          builder: ${{ steps.buildx.outputs.name }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ env.IMAGE }}:${{ env.LATEST }}
+          build-args: |
+            TENTACLES_URL_TAG=${{ env.LATEST }}
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache
+
+      - name: Build and push staging
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          builder: ${{ steps.buildx.outputs.name }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ env.IMAGE }}:${{ env.STAGING }}
+          build-args: |
+            TENTACLES_URL_TAG=${{ env.STABLE }}
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache
+
+      - name: Build and push on tag
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          builder: ${{ steps.buildx.outputs.name }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:${{ env.LATEST }}
+            ${{ env.IMAGE }}:${{ env.STABLE }}
+            ${{ env.IMAGE }}:${{ env.VERSION }}
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache
+  
+  tentacles:
+    needs: [ build, tests ]
+    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/dev' || startsWith(github.ref, 'refs/tags/')
+    name: ${{ matrix.os }}${{ matrix.arch }} - Python ${{ matrix.version }} - Upload Tentacles
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ ubuntu-latest ]
         arch: [ x64 ]
-        version: [ "3.10.x" ]
+        version: [ "3.13.x" ]
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Set up Python ${{ matrix.version }}
         uses: actions/setup-python@v6
@@ -136,22 +387,372 @@ jobs:
           python-version: ${{ matrix.version }}
           architecture: ${{ matrix.arch }}
 
-      - name: Install dependencies
-        run: pip install --prefer-binary -r dev_requirements.txt -r requirements.txt -r full_requirements.txt
+      - name: Download build wheel artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: octobot-wheel
+          path: dist/
 
-      - name: Build sdist
-        run: python setup.py sdist
-
-      - name: Publish package
+      - name: Install OctoBot
         run: |
+          pip3 install -r dev_requirements.txt
+          pip3 install dist/octobot-*.whl
+
+      - name: Prepare tentacles package
+        run: |
+          mkdir -p ../new_tentacles
+          cp -r packages/tentacles/Agent packages/tentacles/Automation packages/tentacles/Backtesting packages/tentacles/Evaluator packages/tentacles/Meta packages/tentacles/Services packages/tentacles/Trading packages/tentacles/profiles ../new_tentacles/
+
+      - name: Publish tag tentacles
+        if: startsWith(github.ref, 'refs/tags')
+        env:
+          S3_API_KEY: ${{ secrets.S3_API_KEY }}
+          S3_API_SECRET_KEY: ${{ secrets.S3_API_SECRET_KEY }}
+          S3_REGION_NAME: ${{ secrets.S3_REGION_NAME }}
+          S3_ENDPOINT_URL: ${{ secrets.S3_ENDPOINT_URL }}
+          CLOUDFLARE_TOKEN: ${{ secrets.CLOUDFLARE_TOKEN }}
+          CLOUDFLARE_ZONE: ${{ secrets.CLOUDFLARE_ZONE }}
+          S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
+          TENTACLES_SIGNING_PRIVATE_KEY: ${{ secrets.TENTACLES_SIGNING_PRIVATE_KEY }}
+        run: |
+          echo "Publishing tentacles for tag: ${GITHUB_REF_NAME}"
+          cp packages/tentacles/metadata.yaml ../metadata.yaml
+          sed -i "s/VERSION_PLACEHOLDER/${GITHUB_REF_NAME}/g" ../metadata.yaml
+          OctoBot tentacles -m "../metadata.yaml" -d "../new_tentacles" -p "../any_platform.zip" -ite -ute ${{ secrets.TENTACLES_OFFICIAL_PATH }}/tentacles -upe ${{ secrets.TENTACLES_OFFICIAL_PATH }}/packages/full/${{ secrets.TENTACLES_REPOSITORY_NAME }}/
+          python packages/tentacles/scripts/clear_cloudflare_cache.py ${GITHUB_REF_NAME}
+
+      - name: Publish latest tentacles
+        if: github.ref == 'refs/heads/dev' && startsWith(github.ref, 'refs/tags') != true
+        env:
+          S3_API_KEY: ${{ secrets.S3_API_KEY }}
+          S3_API_SECRET_KEY: ${{ secrets.S3_API_SECRET_KEY }}
+          S3_REGION_NAME: ${{ secrets.S3_REGION_NAME }}
+          S3_ENDPOINT_URL: ${{ secrets.S3_ENDPOINT_URL }}
+          CLOUDFLARE_TOKEN: ${{ secrets.CLOUDFLARE_TOKEN }}
+          CLOUDFLARE_ZONE: ${{ secrets.CLOUDFLARE_ZONE }}
+          S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
+          TENTACLES_SIGNING_PRIVATE_KEY: ${{ secrets.TENTACLES_SIGNING_PRIVATE_KEY }}
+        run: |
+          cp packages/tentacles/metadata.yaml ../metadata.yaml
+          sed -i "s/VERSION_PLACEHOLDER/latest/g" ../metadata.yaml
+          OctoBot tentacles -m "../metadata.yaml" -d "../new_tentacles" -p "../any_platform.zip" -upe ${{ secrets.TENTACLES_OFFICIAL_PATH }}/packages/full/${{ secrets.TENTACLES_REPOSITORY_NAME }}/
+          python packages/tentacles/scripts/clear_cloudflare_cache.py latest
+
+      - name: Publish stable tentacles
+        if: github.ref == 'refs/heads/master'
+        env:
+          S3_API_KEY: ${{ secrets.S3_API_KEY }}
+          S3_API_SECRET_KEY: ${{ secrets.S3_API_SECRET_KEY }}
+          S3_REGION_NAME: ${{ secrets.S3_REGION_NAME }}
+          S3_ENDPOINT_URL: ${{ secrets.S3_ENDPOINT_URL }}
+          CLOUDFLARE_TOKEN: ${{ secrets.CLOUDFLARE_TOKEN }}
+          CLOUDFLARE_ZONE: ${{ secrets.CLOUDFLARE_ZONE }}
+          S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
+          TENTACLES_SIGNING_PRIVATE_KEY: ${{ secrets.TENTACLES_SIGNING_PRIVATE_KEY }}
+        run: |
+          cp packages/tentacles/metadata.yaml ../metadata.yaml
+          sed -i "s/VERSION_PLACEHOLDER/stable/g" ../metadata.yaml
+          OctoBot tentacles -m "../metadata.yaml" -d "../new_tentacles" -p "../any_platform.zip" -upe ${{ secrets.TENTACLES_OFFICIAL_PATH }}/packages/full/${{ secrets.TENTACLES_REPOSITORY_NAME }}/
+          python packages/tentacles/scripts/clear_cloudflare_cache.py stable
+
+  docs:
+    name: Build & Deploy Docs
+    needs: [build, tests]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          lfs: true
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: docs/package-lock.json
+
+      - name: Install dependencies
+        run: cd docs && npm ci
+
+      - name: Build docs
+        run: cd docs && npm run build
+
+      - name: Upload version (preview URL)
+        uses: cloudflare/wrangler-action@v3
+        with:
+          wranglerVersion: "4"
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: docs
+          command: versions upload
+
+      - name: Deploy to production
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          wranglerVersion: "4"
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: docs
+          command: versions deploy --yes
+
+  version:
+    needs: [ build, tests ]
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+    name: Source distribution - Python ${{ matrix.version }} - Deploy
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest ]
+        arch: [ x64 ]
+        version: [ "3.13.x" ]
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python ${{ matrix.version }}
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.version }}
+          architecture: ${{ matrix.arch }}
+
+      - name: Download build wheel artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: octobot-wheel
+          path: dist/
+
+      - name: Publish packages
+        run: |
+          pip install twine
           python -m twine upload --repository-url ${{ secrets.PYPI_OFFICIAL_UPLOAD_URL }} -u __token__ -p ${{ secrets.PYPI_TOKEN }} --skip-existing dist/*
+
+  binary:
+    needs: [ build, tests ]
+    name: ${{ matrix.os }} - ${{ matrix.arch }} - binary
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-latest]
+        arch: [ x64, arm64 ]
+        exclude:
+          - os: windows-latest
+            arch: arm64
+          - os: macos-latest
+            arch: x64
+
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Download wheel artifact
+      uses: actions/download-artifact@v8
+      with:
+        name: octobot-wheel
+        path: dist/
+
+    - name: Set up Python 3.13
+      uses: actions/setup-python@v6
+      with:
+        python-version: '3.13.x'
+        architecture: x64
+
+    - name: Build OctoBot Binary on Linux arm64
+      if: matrix.os == 'ubuntu-latest' && matrix.arch == 'arm64'
+      uses: uraimo/run-on-arch-action@v3.0.1
+      with:
+        arch: aarch64
+        distro: ubuntu24.04
+        githubToken: ${{ github.token }}
+        dockerRunArgs: |
+          --volume "${PWD}/dist:/dist"
+        env: |
+          OCTOBOT_REPOSITORY_DIR: OctoBot
+          NLTK_DATA: nltk_data
+          BUILD_ARCH: ${{ matrix.arch }}
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends python3.12 python3-pip python3-dev python3-venv git gcc musl-dev libc-dev build-essential zlib1g zlib1g-dev
+          python3 -m venv /opt/octobot_venv
+          source /opt/octobot_venv/bin/activate
+          python -m pip install -U pip setuptools wheel
+          python -m pip install -r packages/binary/requirements.txt
+          python -m pip install /dist/octobot-*.whl
+          bash ./packages/binary/build_scripts/unix.sh
+
+    - name: Build OctoBot Binary on Linux
+      if: matrix.os == 'ubuntu-latest' && matrix.arch == 'x64'
+      env:
+        OCTOBOT_REPOSITORY_DIR: OctoBot
+        NLTK_DATA: nltk_data
+        BUILD_ARCH: ${{ matrix.arch }}
+      run: |
+        python3 -m pip install -U pip setuptools wheel
+        python3 -m pip install -r packages/binary/requirements.txt
+        pip3 install dist/octobot-*.whl
+        bash ./packages/binary/build_scripts/unix.sh
+
+    - name: Build OctoBot Binary on MacOS
+      if: matrix.os == 'macos-latest'
+      env:
+        OCTOBOT_REPOSITORY_DIR: OctoBot
+        NLTK_DATA: nltk_data
+        BUILD_ARCH: ${{ matrix.arch }}
+      run: |
+        python3 -m pip install -U pip setuptools wheel
+        python3 -m pip install -r packages/binary/requirements.txt
+        pip3 install dist/octobot-*.whl
+        bash ./packages/binary/build_scripts/unix.sh
+
+    - name: Build OctoBot Binary on Windows
+      if: matrix.os == 'windows-latest'
+      env:
+        OCTOBOT_REPOSITORY_DIR: OctoBot
+        NLTK_DATA: nltk_data
+      run: |
+        python -m pip install -U pip setuptools wheel
+        python -m pip install -r packages\binary\requirements.txt
+        python -m pip install (Get-Item dist/octobot-*.whl).FullName
+        .\packages\binary\build_scripts\windows.ps1
+      shell: powershell
+
+    - name: Upload OctoBot Binary on MacOS
+      uses: actions/upload-artifact@v7
+      if: matrix.os == 'macos-latest'
+      with:
+        name: OctoBot_macos_${{ matrix.arch }}
+        path: OctoBot_${{ matrix.arch }}
+        if-no-files-found: error
+
+    - name: Upload OctoBot Binary on Linux
+      uses: actions/upload-artifact@v7
+      if: matrix.os == 'ubuntu-latest'
+      with:
+        name: OctoBot_linux_${{ matrix.arch }}
+        path: OctoBot_${{ matrix.arch }}
+        if-no-files-found: error
+
+    - name: Upload OctoBot Binary on Windows
+      uses: actions/upload-artifact@v7
+      if: matrix.os == 'windows-latest'
+      with:
+        name: OctoBot_windows_${{ matrix.arch }}.exe
+        path: OctoBot_windows.exe
+        if-no-files-found: error
+
+  release:
+    name: Create Release
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+    needs: [ binary, docker, tentacles ]
+    permissions:
+      contents: write
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest ]
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v8
+        with:
+          pattern: OctoBot_*
+
+      - name: Set version as environement var
+        id: vars
+        run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
+
+      - name: Clean artifact names
+        run: |
+          mkdir bin
+          mv OctoBot_linux_x64/OctoBot_x64 bin/OctoBot_linux_x64
+          mv OctoBot_windows_x64.exe/OctoBot_windows.exe bin/OctoBot_windows_x64.exe
+          mv OctoBot_linux_arm64/OctoBot_arm64 bin/OctoBot_linux_arm64
+          mv OctoBot_macos_arm64/OctoBot_arm64 bin/OctoBot_macos_arm64
+
+      - name: Compute hashes
+        id: hashes
+        run: |
+          echo ::set-output name=octobot_linux_x64_hash::$(openssl sha256 ./bin/OctoBot_linux_x64 | awk '{print $2}')
+          echo ::set-output name=octobot_linux_arm64_hash::$(openssl sha256 ./bin/OctoBot_linux_arm64 | awk '{print $2}')
+          echo ::set-output name=octobot_macos_arm64_hash::$(openssl sha256 ./bin/OctoBot_macos_arm64 | awk '{print $2}')
+          echo ::set-output name=octobot_windows_x64_hash::$(openssl sha256 ./bin/OctoBot_windows_x64.exe | awk '{print $2}')
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.AUTH_TOKEN }}
+        with:
+          tag_name: ${{ steps.vars.outputs.tag }}
+          release_name: Release - ${{ steps.vars.outputs.tag }}
+          owner: ${{ github.repository_owner }}
+          repo: OctoBot
+          draft: true
+          prerelease: false
+          commitish: master
+          body: |
+            | Binary        | Download link | SHA256        |
+            | ------------- |:-------------:|:-------------:|
+            | Windows x64 | [Download](https://github.com/${{ github.repository_owner }}/OctoBot/releases/download/${{ steps.vars.outputs.tag }}/OctoBot_windows_x64.exe) | ${{ steps.hashes.outputs.octobot_windows_x64_hash }} |
+            | Linux x64 | [Download](https://github.com/${{ github.repository_owner }}/OctoBot/releases/download/${{ steps.vars.outputs.tag }}/OctoBot_linux_x64) | ${{ steps.hashes.outputs.octobot_linux_x64_hash }} |
+            | Linux arm64 | [Download](https://github.com/${{ github.repository_owner }}/OctoBot/releases/download/${{ steps.vars.outputs.tag }}/OctoBot_linux_arm64) | ${{ steps.hashes.outputs.octobot_linux_arm64_hash }} |
+            | MacOS arm64 | [Download](https://github.com/${{ github.repository_owner }}/OctoBot/releases/download/${{ steps.vars.outputs.tag }}/OctoBot_macos_arm64) | ${{ steps.hashes.outputs.octobot_macos_arm64_hash }} |
+
+      - name: Upload Release Asset - OctoBot_windows_x64
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.AUTH_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./bin/OctoBot_windows_x64.exe
+          asset_name: OctoBot_windows_x64.exe
+          asset_content_type: application/x-binary
+
+      - name: Upload Release Asset - OctoBot_linux_x64
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.AUTH_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./bin/OctoBot_linux_x64
+          asset_name: OctoBot_linux_x64
+          asset_content_type: application/x-binary
+
+      - name: Upload Release Asset - OctoBot_linux_arm64
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.AUTH_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./bin/OctoBot_linux_arm64
+          asset_name: OctoBot_linux_arm64
+          asset_content_type: application/x-binary
+
+      - name: Upload Release Asset - OctoBot_macos_arm64
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.AUTH_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./bin/OctoBot_macos_arm64
+          asset_name: OctoBot_macos_arm64
+          asset_content_type: application/x-binary
 
   notify:
     if: ${{ failure() }}
     needs:
-      - lint
+      - build
       - tests
-      - build_sdist
+      - docker
+      - binary
+      - tentacles
+      - release
+      - version
+      - docs
     uses: Drakkar-Software/.github/.github/workflows/failure_notify_workflow.yml@master
     secrets:
       DISCORD_GITHUB_WEBHOOK: ${{ secrets.DISCORD_GITHUB_WEBHOOK }}

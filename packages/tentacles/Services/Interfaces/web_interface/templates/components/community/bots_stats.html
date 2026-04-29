@@ -1,0 +1,16 @@
+{% macro bots_stats_card(stats) -%}
+<div class="badge badge-info w-100">
+    <div>
+        <div class="d-flex flex-wrap justify-content-center my-2 w-100">
+            <div class="community-bot-stats-label my-auto py-1 mx-2 mx-md-4">
+                Welcome to the OctoBot community and its
+                <span class="badge community-bot-stats" id="all-bots">{{ stats["total_bots"] }}</span>
+                already installed OctoBots
+            </div>
+<!--            <div class="community-bot-stats-label my-auto py-1 mx-2 mx-md-4">-->
+<!--                <a class="btn btn-outline-danger waves-effect" href="{{url_for('community_metrics')}}">See more</a>-->
+<!--            </div>-->
+        </div>
+    </div>
+</div>
+{%- endmacro %}

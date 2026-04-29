@@ -1,0 +1,2 @@
+# async http requests
+aiohttp>=3.9.5

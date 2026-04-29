@@ -1,0 +1,141 @@
+{% import 'components/community/user_details.html' as m_user_details %}
+
+<!doctype html>
+<html lang="en" data-mdb-theme="{{get_color_mode()}}">
+    {% set active_page = active_page|default('advanced.home') -%}
+    <head>
+        <title>{{ active_page.split(".")[-1] | replace("_", " ") | capitalize }} - OctoBot</title>
+
+        <!-- Required meta tags -->
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+        <!-- Prevent search engines indexing -->
+        <meta name="robots" content="noindex">
+
+        <!-- Favicon -->
+        <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.png') }}">
+
+        {% block additional_meta %}
+        {% endblock additional_meta %}
+
+        <!-- Bootstrap CSS -->
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/css/bootstrap.min.css" integrity="sha384-TX8t27EcRE3e/ihU7zmQxVncDAy5uIKz4rEkgIXeMed4M0jlfIDPvg6uqKI2xXr2" crossorigin="anonymous">
+
+        <!-- Fontawesome CSS -->
+        <link rel="stylesheet" href="https://use.fontawesome.com/releases/v6.4.0/css/all.css" integrity="sha384-iw3OoTErCYJJB9mCa8LNS2hbsQ7M3C0EpIsO/H5+EGAkPGc6rk+V8i04oW/K5xq0" crossorigin="anonymous">
+        <!-- toaster -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.1.4/toastr.min.css" integrity="sha384-YzEqZ2pBV0i9OmlTyoz75PqwTR8If8GsXBv7HLQclEVqIC3VxIt98/U94ES6CJTR" crossorigin="anonymous">
+
+        <!-- mdb CSS -->
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/7.3.2/mdb.min.css" integrity="kj1RBJ7aqGUnavWQDbYyovF5HQGHlvNf6SZ2CfaCNkoBJBEux2JXFCXqGZTAYENh" rel="stylesheet" crossorigin="anonymous">
+
+        <!-- Datatables -->
+        <link rel="stylesheet" href="https://cdn.datatables.net/2.0.8/css/dataTables.dataTables.min.css" integrity="sha384-zUxWDVAcow8yNu+q4VFsyZA3qWsKKGdWPW0SVjaR12LQze4SY8Nr75US6VDhbWkf" crossorigin="anonymous">
+
+        <!-- Select -->
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-select@1.13.14/dist/css/bootstrap-select.min.css" integrity="sha384-2SvkxRa9G/GlZMyFexHk+WN9p0n2T+r38dvBmw5l2/J3gjUcxs9R1GwKs0seeSh3" crossorigin="anonymous">
+
+        <!-- Editable -->
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap-editable.css', u=LAST_UPDATED_STATIC_FILES) }}">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" integrity="sha384-OXVF05DQEe311p6ohU11NwlnX08FzMCsyoXzGOaL+83dKAb3qS17yZJxESl8YrJQ" crossorigin="anonymous">
+
+        <!-- Own -->
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', u=LAST_UPDATED_STATIC_FILES) }}">
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css', u=LAST_UPDATED_STATIC_FILES) }}">
+
+        {% block additional_style %}
+        {% endblock additional_style %}
+    </head>
+    <body style="{% block body_style %}{% endblock body_style %}">
+        <!-- Scripts -->
+        <!-- At the beginning of the page : be available for template scripts -->
+        <script src="https://code.jquery.com/jquery-3.6.4.min.js" integrity="sha384-UG8ao2jwOWB7/oDdObZc6ItJmwUkR/PfMyt9Qs5AwX7PsnYn1CRKCTWyncPTWvaS" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.min.js" integrity="sha384-KA7m0DwgQGmeRC6Xre3hJO+ZxpanOauVh4Czdqbg8lDKJ3bZZYVYmP+y4F31x40L" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ho+j7jyWK8fNQe+A12Hb8AhRq26LrZ/JpcUGGOn+Y7RsweNrtN/tE3MoK7ZeZDyx" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.1.4/toastr.min.js" integrity="sha384-VDls8ImYGI8SwVxpmjX2Bn27U2TcNodzTNROTusVEWO55+lmL+H9NczoQJk6mwZR" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/7.3.2/mdb.umd.min.js" integrity="sha384-TGRlbFTmiVIUuSy+b/aj9mHaUTABC3gid02pJimnu14vfLMvOzODXgRmw03nf7vs" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/2.1.0/showdown.min.js" integrity="sha384-GP2+CwBlakZSDJUr+E4JvbxpM75i1i8+RKkieQxzuyDZLG+5105E1OfHIjzcXyWH" crossorigin="anonymous"></script>
+        <script src="https://cdn.plot.ly/plotly-2.20.0.min.js" integrity="sha384-lqNbLAc8irUVsiXijo8d5LY0Ecc43bEe85kyAJgdi+CAvmBPO/L1SWp6EUxChKM/" crossorigin="anonymous"></script>
+
+        <script src="https://cdn.datatables.net/2.0.8/js/dataTables.min.js" integrity="sha384-nJy9D0UBD2LV93ED7IXSsdWfa9PumZvn70zRSR/oFw5Zq0x6gWwWdpLeGsbVATVg" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap-select@1.13.14/dist/js/bootstrap-select.min.js" integrity="sha384-SfMwgGnc3UiUUZF50PsPetXLqH2HSl/FmkMW/Ja3N2WaJ/fHLbCHPUsXzzrM6aet"  crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js" integrity="sha384-d3UHjPdzJkZuk5H3qKYMLRyWLAQBJbby2yr2Q58hXXtAGF8RSNO9jpLDlKKPv5v3" crossorigin="anonymous"></script>
+
+        <script src="{{ url_for('static', filename='js/lib/bootstrap-editable.min.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+        <script src="{{ url_for('static', filename='js/common/cst.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+        <script src="{{ url_for('static', filename='js/common/util.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+        <script src="{{ url_for('static', filename='js/common/bot_connection.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+        <script src="{{ url_for('static', filename='js/common/dom_updater.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+        <script src="{{ url_for('static', filename='js/common/required.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+        {{ m_user_details.posthog(IS_DEMO, IS_CLOUD, IS_ALLOWING_TRACKING, PH_TRACKING_ID) }}
+
+        <nav class="navbar navbar-expand-md py-0 py-md-2" id="main-nav-bar">
+            <div class="navbar-collapse collapse w-100 order-1 order-md-0 dual-collapse2">
+                <ul class="navbar-nav mr-auto">
+                    <li class="nav-item mx-1 px-0 my-auto {% if 'advanced.home' == active_page %} active{% endif %}">
+                        <a class="nav-link" href="{{ url_for('advanced.home') }}">Home</a>
+                    </li>
+                    <li class="nav-item mx-1 px-0 my-auto {% if 'advanced.matrix' == active_page %} active{% endif %}">
+                        <a class="nav-link" href="{{ url_for('advanced.matrix') }}">Evaluation matrix</a>
+                    </li>
+                    <li class="nav-item mx-1 px-0 my-auto {% if 'advanced.evaluator_config' == active_page %} active{% endif %}">
+                        <a class="nav-link" href="{{ url_for('advanced.evaluator_config') }}">Evaluator configuration</a>
+                    </li>
+                </ul>
+            </div>
+            <div class="mx-auto order-0">
+                <a class="navbar-brand mx-auto" href="{{ url_for('advanced.home') }}">Advanced OctoBot
+                    <i id="navbar-bot-status" class="fa fa-check" data-toggle="tooltip" data-placement="bottom" title="OctoBot operational"></i>
+                </a>
+                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target=".dual-collapse2">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+            </div>
+            <div class="navbar-collapse collapse w-100 order-3 dual-collapse2">
+                <ul class="navbar-nav ml-auto">
+                    {% if is_advanced_interface_enabled %}
+                        {% if CAN_INSTALL_TENTACLES %}
+                        <li class="nav-item mx-1 px-0 my-auto {% if 'advanced.tentacles' == active_page %} active{% endif %}">
+                            <a class="nav-link" href="{{ url_for('advanced.tentacles') }}">Tentacles</a>
+                        </li>
+                        {% endif %}
+                        <li class="nav-item mx-1 px-0 my-auto {% if 'logs' == active_page %} active{% endif %}">
+                            <a id="theme-switch" class="nav-link" href="#" aria-label="Switch theme" data-update-url="{{url_for('api.display_config')}}">
+                                <i class="{{'fa fa-moon' if get_color_mode() == 'light' else 'fas fa-sun'}}" data-toggle="tooltip" data-placement="top"
+                                   title="Use {{'dark' if get_color_mode() == 'light' else 'light'}} theme">
+                            </i></a>
+                        </li>
+                        <li class="nav-item mx-1 px-0 my-auto">
+                            <a class="nav-link" href="{{ url_for('home') }}"><i class="fa fa-home"></i> Back to OctoBot</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </nav>
+
+        <div class="container-fluid">
+            {% block body %}{% endblock %}
+        </div>
+
+        <!-- Artificial padding to separate footer from the rest of the page -->
+        <div class="pb-5"></div>
+        <div class="pb-5"></div>
+        <!-- Artificial padding  -->
+
+        {% include "distributions/default/footer.html" %}
+
+        {% block additional_scripts %}
+        {% endblock additional_scripts %}
+        {{ m_user_details.user_details(
+            USER_EMAIL,
+            USER_SELECTED_BOT_ID,
+            has_open_source_package,
+            PROFILE_NAME,
+            TRADING_MODE_NAME,
+            EXCHANGE_NAMES,
+            IS_REAL_TRADING
+        ) }}
+    </body>
+</html>

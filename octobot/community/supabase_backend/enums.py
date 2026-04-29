@@ -85,6 +85,8 @@ class BotDeploymentStatus(enum.Enum):
 class ProductSubscriptionDesiredStatus(enum.Enum):
     ACTIVE = 'active'
     CANCELED = "canceled"
+    RESTARTING = "restarting"
+    STOPPING = "stopping"
 
 
 class BotDeploymentErrorsStatuses(enum.Enum):
@@ -99,7 +101,7 @@ class BotDeploymentErrorsStatuses(enum.Enum):
     TOO_MANY_ORDERS_TO_EXECUTE_STRATEGY = "too_many_orders_to_execute_strategy"
     MISSING_CONFIG = "missing_config"
     EXPIRED_BOT = "expired_bot"
-    MAX_SIMULATORS_REACHED = "max_simulators_reached"
+    STOP_CONDITION_TRIGGERED = "stop_condition_triggered"
 
 
 class ExchangeAccountStatuses(enum.Enum):

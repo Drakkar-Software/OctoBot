@@ -21,6 +21,7 @@ from octobot.automation.bases import (
     AbstractCondition,
     AbstractTriggerEvent,
     AutomationStep,
+    ExecutionDetails,
 )
 
 
@@ -36,4 +37,5 @@ __all__ = [
     "AbstractTriggerEvent",
     "AutomationStep",
     "Automation",
+    "ExecutionDetails",
 ]

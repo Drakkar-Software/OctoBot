@@ -20,7 +20,15 @@ from octobot.community.errors_upload.sentry_tracker import (
     flush_tracker,
 )
 
+from octobot.community.errors_upload import error_sharing
+from octobot.community.errors_upload.error_sharing import (
+    upload_error,
+    share_logs,
+)
+
 __all__ = [
     "init_sentry_tracker",
     "flush_tracker",
+    "upload_error",
+    "share_logs",
 ]

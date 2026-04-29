@@ -1,0 +1,1 @@
+from .trends import GoogleTrendsEvaluator, MarketCapEvaluator, CryptoMarketCapEvaluator

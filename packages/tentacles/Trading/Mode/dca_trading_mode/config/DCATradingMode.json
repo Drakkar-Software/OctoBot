@@ -1,0 +1,21 @@
+{
+    "default_config": [
+        "SimpleStrategyEvaluator"
+    ],
+    "required_strategies": [
+        "SimpleStrategyEvaluator"
+    ],
+    "buy_order_amount": "50q",
+    "exit_limit_orders_price_percent": 5,
+    "minutes_before_next_buy": 10080,
+    "trigger_mode": "Time based",
+    "use_market_entry_orders": true,
+    "use_secondary_entry_orders": false,
+    "use_secondary_exit_orders": false,
+    "use_stop_losses": false,
+    "use_take_profit_exit_orders": false,
+    "cancel_open_orders_at_each_entry": true,
+    "enable_health_check": false,
+    "health_check_orphan_funds_threshold": 15,
+    "max_asset_holding_percent": 100
+}

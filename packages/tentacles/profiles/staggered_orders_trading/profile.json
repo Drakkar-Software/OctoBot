@@ -1,0 +1,45 @@
+{
+    "config": {
+        "crypto-currencies": {
+            "Bitcoin": {
+                "enabled": true,
+                "pairs": [
+                    "BTC/USDT"
+                ]
+            }
+        },
+        "exchanges": {
+            "binance": {
+                "enabled": true
+            }
+        },
+        "trader": {
+            "enabled": false,
+            "load-trade-history": false
+        },
+        "trader-simulator": {
+            "enabled": true,
+            "fees": {
+                "maker": 0.1,
+                "taker": 0.1
+            },
+            "starting-portfolio": {
+                "BTC": 10,
+                "USDT": 1000
+            }
+        },
+        "trading": {
+            "reference-market": "USDT",
+            "risk": 0.5
+        }
+    },
+    "profile": {
+        "avatar": "default_profile.png",
+        "risk": 1,
+        "complexity": 3,
+        "description": "StaggeredOrdersTrading is a profile configured to create a buy and sell orders at fixed intervals on a specific price range to profit from any market move. When an order is filled, a mirror order is instantly created and generates profit when completed.",
+        "id": "staggered_orders_trading",
+        "name": "Staggered Orders Trading",
+        "read_only": true
+    }
+}

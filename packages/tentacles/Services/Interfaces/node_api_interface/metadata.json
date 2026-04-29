@@ -1,0 +1,7 @@
+{
+  "version": "1.2.0",
+  "origin_package": "OctoBot-Default-Tentacles",
+  "tentacles": ["NodeApiInterface"],
+  "tentacles-requirements": ["node_api_service"],
+  "build": ["python build_openapi.py > ../node_web_interface/openapi.json"]
+}

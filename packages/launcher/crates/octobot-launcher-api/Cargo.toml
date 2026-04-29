@@ -1,0 +1,43 @@
+[package]
+name = "octobot-launcher-api"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+octobot-launcher-core = { path = "../octobot-launcher-core" }
+octobot-launcher-config = { path = "../octobot-launcher-config" }
+axum = { version = "0.8", features = ["macros"] }
+tokio = { version = "1", features = ["full"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["trace", "limit"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tracing = "0.1"
+rand = { version = "0.8", features = ["getrandom"] }
+subtle = "2"
+parking_lot = "0.12"
+argon2 = "0.5"
+sha2 = "0.10"
+hex = "0.4"
+governor = "0.6"
+chrono = { version = "0.4", features = ["serde"] }
+tokio-stream = "0.1"
+futures-util = { version = "0.3", default-features = false }
+uuid = { version = "1", features = ["v4"] }
+thiserror = "2"
+base64 = "0.22"
+
+[target.'cfg(unix)'.dependencies]
+hyperlocal = "0.9"
+
+[dev-dependencies]
+octobot-launcher-core = { path = "../octobot-launcher-core", features = ["testing"] }
+axum-test = "20"
+tempfile = "3"
+tokio = { version = "1", features = ["full"] }

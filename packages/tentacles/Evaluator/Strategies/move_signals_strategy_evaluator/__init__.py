@@ -1,0 +1,1 @@
+from .move_signals_strategy import MoveSignalsStrategyEvaluator

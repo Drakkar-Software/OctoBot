@@ -21,6 +21,8 @@ from octobot.community.errors import (
     BotError,
     BotNotFoundError,
     NoBotDeviceError,
+    MissingDeploymentError,
+    MissingProductsSubscriptionError,
 )
 from octobot.community import models
 from octobot.community.models import (
@@ -41,6 +43,7 @@ from octobot.community.models import (
     get_master_and_nested_product_slug_from_profile_name,
     get_tentacles_data_exchange_config,
     USD_LIKE,
+    from_community_order_to_trading_order,
 )
 from octobot.community.supabase_backend import (
     SyncConfigurationStorage,
@@ -49,7 +52,7 @@ from octobot.community.supabase_backend import (
     retried_failed_supabase_request,
     CommunitySupabaseClient,
 )
-
+from octobot.community import local_authenticator
 from octobot.community import community_analysis
 from octobot.community import community_manager
 from octobot.community import authentication
@@ -90,6 +93,8 @@ from octobot.community.feeds import (
 from octobot.community.errors_upload import (
     init_sentry_tracker,
     flush_tracker,
+    upload_error,
+    share_logs,
 )
 from octobot.community.identifiers_provider import (
     IdentifiersProvider,
@@ -100,7 +105,14 @@ from octobot.community.history_backend import (
     ClickhouseHistoricalBackendClient,
     IcebergHistoricalBackendClient,
 )
-
+from octobot.community.community_bot import (
+    CommunityBot,
+)
+from octobot.community.local_authenticator import (
+    get_stateless_configuration,
+    local_user_authenticator,
+    local_anon_user_authenticator,  
+)
 __all__ = [
     "RequestError",
     "StatusCodeRequestError",
@@ -131,6 +143,7 @@ __all__ = [
     "get_master_and_nested_product_slug_from_profile_name",
     "get_tentacles_data_exchange_config",
     "USD_LIKE",
+    "from_community_order_to_trading_order",
     "SyncConfigurationStorage",
     "ASyncConfigurationStorage",
     "AuthenticatedAsyncSupabaseClient",
@@ -155,4 +168,12 @@ __all__ = [
     "HistoricalBackendClient",
     "ClickhouseHistoricalBackendClient",
     "IcebergHistoricalBackendClient",
+    "CommunityBot",
+    "MissingDeploymentError",
+    "MissingProductsSubscriptionError",
+    "upload_error",
+    "share_logs",
+    "get_stateless_configuration",
+    "local_user_authenticator",
+    "local_anon_user_authenticator",
 ]

@@ -1,0 +1,26 @@
+{% macro create_generic_modal() -%}
+    <div class="modal fade" id="genericModal" tabindex="-1" role="dialog" aria-labelledby="genericModalTitle" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="genericModalTitle"></h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <div id="genericModalContent">
+            </div>
+            <div class="alert alert-warning w-100 d-none" id="genericModalWarning" role="alert">
+                    <strong>Warning!</strong>
+                    <div id="genericModalWarningMessage"></div>
+            </div>
+          </div>
+          <div class="modal-footer text-center">
+              <button class="my-2 btn-primary waves-effect" id="genericModalButtonYes">Yes</button>
+              <button class="my-2 btn-outline-primary waves-effect" id="genericModalButtonNo">No</button>
+          </div>
+        </div>
+      </div>
+    </div>
+{% endmacro %}

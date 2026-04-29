@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import enum
+import octobot_commons.constants as common_constants
 
 
 class CommunityFeedType(enum.Enum):
@@ -74,5 +75,8 @@ class OptimizerConfig(enum.Enum):
 
 
 class OctoBotDistribution(enum.Enum):
-    DEFAULT = "default"
+    DEFAULT = common_constants.DEFAULT_DISTRIBUTION
     MARKET_MAKING = "market_making"
+    PREDICTION_MARKET = "prediction_market"
+    NODE = "node"
+    SYNC = "sync"

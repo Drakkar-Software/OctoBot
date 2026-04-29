@@ -1,0 +1,16 @@
+{% macro text_lines(lines) -%}
+    {% for line in lines %}
+        <p>
+            {{ line }}
+        </p>
+    {% endfor %}
+{%- endmacro %}
+
+{% macro text_split_lines(text) -%}
+    {% for line in text.split("\n") %}
+        {% if not loop.first %}
+            <br>
+        {% endif %}
+        {{ line }}
+    {% endfor %}
+{%- endmacro %}

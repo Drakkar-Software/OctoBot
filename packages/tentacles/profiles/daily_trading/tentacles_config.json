@@ -1,0 +1,12 @@
+{
+    "tentacle_activation": {
+        "Evaluator": {
+            "DoubleMovingAverageTrendEvaluator": true,
+            "RSIMomentumEvaluator": true,
+            "SimpleStrategyEvaluator": true
+        },
+        "Trading": {
+            "DailyTradingMode": true
+        }
+    }
+}

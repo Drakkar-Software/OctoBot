@@ -1,0 +1,9 @@
+{
+    "default_config": ["DSLRealtimeEvaluator"],
+    "required_evaluators": ["DSLRealtimeEvaluator"],
+    "required_time_frames": ["1m"],
+    "required_candles_count": 2,
+    "re_evaluate_TA_when_social_or_realtime_notification": false,
+    "social_evaluators_notification_timeout": 0,
+    "background_social_evaluators": []
+}

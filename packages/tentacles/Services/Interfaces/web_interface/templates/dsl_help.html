@@ -1,0 +1,62 @@
+{% extends "layout.html" %}
+{% set active_page = "profile" %}
+
+
+{% block body %}
+<br>
+<div class="card">
+    <div class="card-header">
+        <h2 id="page-title">OctoBot DSL Help</h2>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <p>
+                The OctoBot DSL is a domain-specific language for creating scripts that can be used in the OctoBot platform. It is based on the Python syntax and adds custom functions and keywords to easily create executable expressions.
+            </p>
+            <p>
+                Keywords can be combined to create more complex expressions.
+            </p>
+        </div>
+        <div class="row">
+            <h3>Syntax and examples</h3>
+            <p>
+                The OctoBot DSL syntax is based on the Python syntax, which includes base operators like +, -, *, /, %, ==, !=, >, <, >=, <=, and, or.
+            </p>
+            <div>
+                Examples:
+                <ul>
+                    <li>"close("BTC/USDT", "1h")[-1]" returns the close price of the last 1h candle of the "BTC/USDT" market</li>
+                    <li>"close("BTC/USDT", "1h")[-1] * 2 + 10" returns the close price of the last 1h candle of the "BTC/USDT" market multiplied by 2 and then added to 10</li>
+                    <li>"ma(close("BTC/USDT", "1h"), 12)[-1]" returns the 12-period moving average of the close prices of the last 1h candles of the "BTC/USDT" market</li>
+                    <li>"100 if close("BTC/USDT", "1h")[-1] > open("BTC/USDT", "1h")[-1] else ((1 + 2) * 3)" returns 100 if the close price of the last 1h candle of the "BTC/USDT" market is greater than the open price of the last 1h candle of the "BTC/USDT" market, otherwise 9</li>
+                </ul>
+            </div>
+        </div>
+        <div class="row">
+            <h3>Keywords</h3>
+            <p>
+                The following keywords are available in the OctoBot DSL:
+            </p>
+            <table class="table table-bordered" id="dsl-keywords-table">
+                <thead>
+                    <tr>
+                        <th>Keyword</th>
+                        <th>Description</th>
+                        <th>Example</th>
+                        <th>Type</th>
+                    </tr>
+                </thead>
+                <tbody id="dsl-keywords-table-body" data-update-url="{{ url_for('api.dsl_keywords_docs') }}">
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<br>
+
+
+{% endblock %}
+
+{% block additional_scripts %}
+<script src="{{ url_for('static', filename='js/components/dsl_help.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+{% endblock additional_scripts %}

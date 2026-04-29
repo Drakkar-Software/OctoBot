@@ -1,0 +1,143 @@
+---
+title: "Strategy Designer"
+description: "Utilisez le meilleur outil pour créer, tester et optimiser votre stratégie de trading. Le Strategy Designer vous permet d'analyser et d'améliorer vos stratégie"
+sidebar_position: 4
+---
+
+
+
+# Strategy Designer
+
+Le Strategy Designer est un outil avancé pour créer, backtester et optimiser efficacement vos stratégies de trading. Il est disponible avec l'[extension premium d'OctoBot](/guides/octobot-configuration/premium-octobot-extension).
+
+import YouTube from '@site/src/components/YouTube';
+
+<YouTube id="V4Z1xUhqWz8" title="Le Strategy Designer d" />
+
+**[Démarrer votre OctoBot](https://www.octobot.cloud)**
+
+Le Strategy Designer vient en complément de l'outil intégré de [backtesting](backtesting) d'OctoBot et permet d'aller beaucoup plus loin lors de la création, du test et de l'optimisation d'une stratégie de trading.
+
+## Backtester une stratégie
+
+![résultats du strategy designer octobot sur doge btc shib](/images/guides/strategy-designer/octobot-strategy-designer-results-on-doge-btc-shib.png)
+
+### Aperçu
+Lorsque vous backtestez une stratégie à l'aide du Strategy Designer, OctoBot utilise le même moteur que celui utilisé pour le [backtesting standard](backtesting). Tout ce qui est mentionné dans le contexte du backtesting standard s'applique également au backtesting avec le Strategy Designer.
+
+En plus des fonctionnalités offertes par le backtesting régulier, le Strategy Designer offre les possibilités suivantes :
+- Enregistrer un historique complet des exécutions de backtesting avec leurs résultats
+- Utiliser des graphiques pour visualiser facilement le comportement de votre stratégie tout au long de l'exécution du backtesting
+- Comparer les résultats de plusieurs exécutions de backtesting
+- Exécuter un backtesting avec des profils dédiés afin de ne pas affecter votre OctoBot actif tout en optimisant une stratégie
+
+### Historique des exécutions du backtesting
+
+Avec le Strategy Designer, vous pouvez consulter les précédentes exécutions de backtesting et sélectionner celles que vous souhaitez voir dans la vue principale.
+
+<div style={{textAlign: "center"}}>
+![strategy designer octobot pour explorer les backtestings du passé](/images/guides/strategy-designer/octobot-strategy-designer-explore-your-past-backtestings.png)
+</div>
+
+L'explorateur permet également de filtres efficacement les exécutions que vous souhaitez afficher et ce que vous voulez afficher lors de la comparaison des exécutions du backtesting.
+
+- Vous pouvez trier vos exécutions par rentabilité tout en filtrant les exécutions avec une rentabilité supérieure à 20%.
+- Ou peut-être souhaitez-vous sélectionner toutes les exécutions où les take profits sont activées et où les bénéfices sont négatifs, c'est également possible.
+
+![strategy designer octobot pour explorer les backtestings du passé avec colonnes personnalisées](/images/guides/strategy-designer/octobot-strategy-designer-explore-your-past-backtestings-customize-columns.png)
+L'explorateur d'exécution du backtesting dispose d'une vue détaillée qui peut être configurée selon vos préférences.
+
+### Graphiques historiques
+
+Les résultats de chaque execution du Strategy Designer peuvent être affichés sous forme de graphiques avec le PNL historique, la valeur du portefeuille, ainsi que sur les trades d'entrées et de sorties.
+![graphiques historiques du strategy designer octobot](/images/guides/strategy-designer/octobot-strategy-designer-historical-charts.png)
+
+L'ensemble de l'interface peut également être redimensionné pour se concentrer sur la zone qui compte.
+
+### Comparaison des executions
+
+Vous pouvez utiliser l'explorateur pour sélectionner une execution. Vous pouvez également sélectionner plusieurs executions pour les afficher ensemble. Cela permet de visualiser facilement les résultats de l'utilisation de différentes stratégies ou de variations de paramètres sur la même stratégie.
+![utiliser le strategy designer octobot pour comparer les résultats de backtesting](/images/guides/strategy-designer/octobot-strategy-designer-compare-run-results.png)
+
+Tout ce qui est affiché est compatible avec ce comparateur: vous pouvez comparer le PNL, l'historique du portefeuille, les trades et plus encore.
+
+### Profil dédié au backtesting
+
+Chaque profil live que vous utilisez sur OctoBot contient également un profil de backtesting activé par le Strategy Designer.  
+Par conséquent, chaque profil live que vous sélectionnez est utilisé comme base pour le profil de backtesting associé. Ce profil de backtesting est créé automatiquement lorsque vous accédez au Strategy Designer et vous permet d'en éditer n'importe quelle configuration sans affecter la session de trading live.
+
+En sélectionnant un autre profil live depuis l'onglet des profils, le profil de backtesting associé sera également sélectionné. De cette manière, vous pouvez avoir autant de profils de backtesting que vous le souhaitez, il suffit juste de se rappeler que chaque profil live est lié à son profil de backtesting utilisé dans le Strategy Designer.
+
+<div style={{textAlign: "center"}}>
+![utiliser un profile du strategy designer octobot en live trading](/images/guides/strategy-designer/octobot-strategy-designer-use-as-live-profile.png)
+</div>
+
+Les profils de backtesting peuvent également être convertis en profils live à tout moment afin que vous puissiez commencer à trader avec votre stratégie optimisée par les tests historiques.
+
+## Création d'une stratégie
+
+Lorsque vous utilisez le Strategy Designer, vous pouvez créer une stratégie de trading grâce à un processus simple étape par étape ou configurer le profil de backtesting actuel en direct.
+
+### Création d'une toute nouvelle stratégie
+
+![sélectionner les coins pour créer une nouvelle statégie avec le strategy designer octobot](/images/guides/strategy-designer/octobot-strategy-designer-create-a-new-strategy-select-coins.png)
+1. Sélectionnez les paires sur lesquelles vous voulez trader.
+
+![sélectionner le portfolio pour créer une nouvelle statégie avec le strategy designer octobot](/images/guides/strategy-designer/octobot-strategy-designer-create-a-new-strategy-select-portfolio.png)
+2. Configurez votre portefeuille initial pour votre profil.
+
+![sélectionner le trading mode pour créer une nouvelle statégie avec le strategy designer octobot](/images/guides/strategy-designer/octobot-strategy-designer-create-a-new-strategy-select-trading-mode.png)
+3. Sélectionnez et configurez le [trading mode](../octobot-trading-modes/trading-modes) à utiliser.
+
+![sélectionner et configurer les evaluators pour créer une nouvelle statégie avec le strategy designer octobot](/images/guides/strategy-designer/octobot-strategy-designer-create-a-new-strategy-select-and-configure-evaluators.png)
+![configurer les evaluators pour créer une nouvelle statégie avec le strategy designer octobot](/images/guides/strategy-designer/octobot-strategy-designer-create-a-new-strategy-configure-evaluators-settings.png)
+4. Sélectionnez et configurez la [stratégie et les évaluateurs](../octobot-trading-modes/trading-modes#evaluators-responsabilities) à utiliser.
+
+![résumé de la nouvelle statégie avec le strategy designer octobot](/images/guides/strategy-designer/octobot-strategy-designer-create-a-new-strategy-summary.png)
+5. Vérifiez que tout est correctement configuré et lancez un test historique avec votre nouvelle stratégie.  
+Astuce : vous pouvez donner un nom à votre test historique pour l'identifier rapidement dans l'explorateur.
+
+### Modification de la stratégie actuelle
+
+Si vous souhaitez simplement modifier le profil de backtesting actuel, vous pouvez utiliser les raccourcis de configuration directement disponibles depuis l'interface du Strategy Designer.
+![confuguration du profil actuel avec strategy designer octobot
+](/images/guides/strategy-designer/octobot-strategy-designer-edit-current-profile.png)
+
+Modifiez rapidement vos trading modes, la configuration de la stratégie et des évaluateurs.
+
+<div style={{textAlign: "center"}}>
+![configuration du profil de backtesting avec strategy designer octobot
+](/images/guides/strategy-designer/octobot-strategy-designer-edit-current-backtesting.png)
+</div>
+
+Ou configurez le contexte de votre backtesting.
+
+<div style={{textAlign: "center"}}>
+![nouveau backtesting avec strategy designer octobot](/images/guides/strategy-designer/octobot-strategy-designer-new-backtesting.png)
+</div>
+
+Et lancez un nouveau test historique avec votre nouvelle configuration.
+
+## Configurer le Strategy Designer
+
+### Campagnes d'optimisation
+Vos backtestings peuvent être associées à une campagne d'optimisation.
+Les campagnes d'optimisation n'affectent pas les résultats de vos backtestings, mais peuvent être utilisées pour sélectionner les backtestings à afficher dans l'explorateur.
+
+<div style={{textAlign: "center"}}>
+![sélection de campagne d'optimisation avec strategy designer octobot](/images/guides/strategy-designer/octobot-strategy-designer-campaigns-selector.png)
+</div>
+
+Vous pouvez avoir autant de campagnes que vous le souhaitez afin de différencier facilement les backtestings provenant de différents contextes et éviter ainsi d'avoir à filtrer manuellement des simulations antérieures ou non liées.
+
+### Affichage
+
+Parfois, vous pourriez vouloir modifier la façon dont le Strategy Designer affiche les résultats.
+<div style={{textAlign: "center"}}>
+![configuration d'affichage du strategy designer octobot](/images/guides/strategy-designer/octobot-strategy-designer-display-settings.png)
+</div>
+Afficher moins d'éléments peut parfois accélérer l'affichage ou même éviter des problèmes liés à la mémoire RAM du navigateur lorsque vous affichez une grande quantité de données sous forme graphique.
+
+Pour résoudre les problèmes de performances du navigateur, vous pouvez réduire la valeur du seuil `Lines plot instead of candlesticks threshold`. Lorsque ce seuil est atteint, les bougies sont transformés en lignes sur le graphique. Contrairement aux bougies, les lignes sont très rapides à traiter sur le navigateur car elles bénéficient d'une accélération GPU.
+
+**[Utiliser le Strategy Designer](https://www.octobot.cloud)**

@@ -1,0 +1,47 @@
+{% macro bot_selector(all_user_bots, selected_user_bot) -%}
+<div>
+    <h4>
+        Multiple bots available on this account, please select the one to use on this OctoBot.
+    </h4>
+    <div id="bot-selector" data-update-url="{{ url_for('api.select_bot') }}">
+        {% for bot in all_user_bots %}
+        <div class="row my-2">
+            <div class="col-8">
+                {{ bot["name"] }}
+            </div>
+            <div class="col-4">
+                {% if selected_user_bot["id"] == bot["id"] %}
+                <button class="btn btn-primary btn-sm waves-effect w-75"
+                        data-role="selected-bot"
+                        disabled>
+                    <i class='fa fa-check'></i>
+                </button>
+                {% else %}
+                <button class="btn btn-primary btn-sm waves-effect w-75 px-1 px-md-4"
+                        data-role="select-bot"
+                        data-bot-id="{{ bot['id'] }}">
+                    Select
+                </button>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+
+    </div>
+    <div class="alert alert-info">
+        Bots allow you to identify and load data about a particular OctoBot through your Community account.
+        <br>
+        <span class="font-weight-bold">
+            Never use the same bot on multiple OctoBots at the same time as it will prevent
+            it from working properly.
+        </span>
+    </div>
+    <div class="text-center">
+        <button class="btn btn-outline-primary waves-effect"
+                id="create-new-bot"
+                data-update-url="{{ url_for('api.create_bot') }}">
+            Create a new bot
+        </button>
+    </div>
+</div>
+{%- endmacro %}

@@ -1,0 +1,52 @@
+{
+    "config": {
+        "crypto-currencies": {
+            "Bitcoin": {
+                "enabled": true,
+                "pairs": [
+                    "BTC/USDT"
+                ]
+            },
+            "Ethereum": {
+                "enabled": true,
+                "pairs": [
+                    "ETH/BTC",
+                    "ETH/USDT"
+                ]
+            }
+        },
+        "exchanges": {
+            "binance": {
+                "enabled": true
+            }
+        },
+        "trader": {
+            "enabled": false,
+            "load-trade-history": false
+        },
+        "trader-simulator": {
+            "enabled": true,
+            "fees": {
+                "maker": 0.1,
+                "taker": 0.1
+            },
+            "starting-portfolio": {
+                "BTC": 10,
+                "USDT": 1000
+            }
+        },
+        "trading": {
+            "reference-market": "USDT",
+            "risk": 0.5
+        }
+    },
+    "profile": {
+        "avatar": "default_profile.png",
+        "risk": 2,
+        "complexity": 1,
+        "description": "DipAnalyser is a profile adapted to volatile markets. It will look for local market bottoms, weight them and buy these bottoms. It never sells except after a buy order is filled.",
+        "id": "dip_analyser",
+        "name": "Dip Analyser",
+        "read_only": true
+    }
+}

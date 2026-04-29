@@ -1,0 +1,25 @@
+{
+    "buy_order_amount": "5%t",
+    "default_config": [
+        "SimpleStrategyEvaluator"
+    ],
+    "required_strategies": [
+        "SimpleStrategyEvaluator"
+	],
+    "entry_limit_orders_price_percent": 0.2,
+    "exit_limit_orders_price_percent": 0.35,
+    "minutes_before_next_buy": 10080,
+    "secondary_entry_orders_amount": "5%t",
+    "secondary_entry_orders_count": 2,
+    "secondary_entry_orders_price_percent": 0.5,
+    "secondary_exit_orders_count": 1,
+    "secondary_exit_orders_price_percent": 0.5,
+    "trigger_mode": "Maximum evaluators signals based",
+    "use_market_entry_orders": false,
+    "use_secondary_entry_orders": true,
+    "use_secondary_exit_orders": true,
+    "use_stop_losses": false,
+    "use_take_profit_exit_orders": true,
+    "enable_health_check": false,
+    "health_check_orphan_funds_threshold": 15
+}

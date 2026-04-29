@@ -1,0 +1,48 @@
+{% import 'macros/tentacles.html' as m_tentacles %}
+
+{% macro config_tentacle_card(name, info, can_be_disabled) %}
+    <a href="#" onclick="return false;"
+       class="col-md-6 col-lg-4 p-1 rounded list-group-item waves-effect {{'list-group-item-success' if info['activation'] else 'list-group-item-light'}} config-element"
+       id="{{ name }}" name="{{ name }}"
+       config-type="tentacle_config" config-key={{name}} current-value={{info['activation']}} config-value={{info['activation']}} startup-config-value={{info['startup_config']}}
+       {{ "no-activation-click='true'" if not can_be_disabled}}
+    >
+        <span class="ps-2">
+            {{ name }}
+        </span>
+        <span class="float-right">
+            <span class="badge {{'badge-warning' if info['startup_config'] != info['activation'] else ('badge-success' if info['activation'] else 'badge-secondary')}}">
+                {{('Activation pending restart' if info['activation'] else 'Deactivation pending restart') if info['startup_config'] != info['activation'] else ('Activated' if info['activation'] else 'Deactivated')}}
+            </span>
+            <button class="btn btn-outline-primary btn-md {{'waves-effect' if info['description'] else 'disabled'}}"  data-toggle="modal" data-target="#{{name}}Modal" no-activation-click="true"><i class="fa fa-info-circle" no-activation-click="true"></i></button>
+        </span>
+    </a>
+    {% if info['description'] %}
+        {{ tentacle_card_modal(name, info) }}
+    {% endif %}
+{% endmacro %}
+
+{% macro tentacle_card_modal(name, info) %}
+    <div class="modal fade" id="{{name}}Modal" tabindex="-1" role="dialog" aria-labelledby="#{{name}}ModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <div class="modal-content modal-text mt-4">
+          <div class="modal-header primary-text">
+              <h5 class="modal-title" id="#{{name}}ModalLabel">
+                  {{name}}
+              </h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+              {{ m_tentacles.tentacle_description(info, strategy, name ) }}
+          </div>
+          <div class="modal-footer">
+            <a href="{{ url_for('config_tentacle', name=name) }}"
+               class="btn btn-primary waves-effect" role="button">Configure</a>
+            <button class="btn btn-primary waves-effect" data-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+{% endmacro %}

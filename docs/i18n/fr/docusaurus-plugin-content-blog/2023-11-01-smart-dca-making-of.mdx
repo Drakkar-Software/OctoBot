@@ -1,0 +1,169 @@
+---
+title: "Making of de la stratégie de trading Smart DCA"
+description: "Discover how we created the Smart DCA trading strategies in OctoBot cloud, from the basics on choosing traded coins to the technical details of order sizing and take profit targets"
+slug: "smart-dca-making-of"
+date: "2023-11-01"
+authors: ["guillaume"]
+tags: ["DCA", "Strategy designer", "Backtesting", "Cryptocurrency", "Trading", "OctoBot cloud", "Educational"]
+image: "/images/blog/smart-dca-making-of/cover.png"
+---
+
+
+
+# Making of de la stratégie de trading Smart DCA
+
+:::info
+  La traduction française de cette page est en cours.
+:::
+
+import YouTube from '@site/src/components/YouTube';
+
+<YouTube id="519pwSV1uwE" title="Smart DCA with OctoBot" />
+
+At OctoBot, we are always trying to find new ways to trade. After experimenting with many types of strategies, we realized that sometimes, keeping it simple just works.
+
+Our idea was to take the concept of Dollar Cost Averaging and adapt it to smaller scale investments.
+
+## Présentation du Smart DCA
+
+<a href="https://www.investopedia.com/terms/d/dollarcostaveraging.asp" rel="nofollow">Dollar Cost Averaging (or DCA)</a> is a very well known investment strategy where you buy on
+a regular basis in order to profit from local price drops. It allows investors
+to reduce their overal buying costs.
+
+The DCA concept can also be applied to selling an asset. Selling something over a long period of time, when the price is going up, is allowing to profit from the whole range of prices and increase your average selling price.
+
+Buying and selling using DCA is a way to maximise profits when investing in and out of a coin.
+
+> After running tons of tests with historical market data, we realized that this idea also works very well on shorter term trades.
+
+We also had the surprise to observe an interesting side effect of smaller term DCA: it's a great way to profit from markets that are not moving synchronously. In other words, it can allow to profit from a rising ETH in the morning, take profits at noon and profit from a rising SOL in the afternoon, as long as ETH and SOL are not moving at the same time.
+
+## Résumé de la vidéo
+
+### Les pours et les contres de la stratégie
+
+1. Advantages of Smart DCA:
+
+- It works very well in sideway markets and uptrends.
+- It does not require big market moves, simple + or minus 0.5 to 1% are enough to make profits.
+- It never sells at a loss.
+
+2. Drawbacks of Smart DCA:
+
+- It should not be used in downward markets as it would lock your funds in sell orders (since it's not selling at a loss).
+
+### Trouver les crypto à trader
+
+In order to multiply trades, trading assets that are moving up and down at different times is optimal. We call such assets **complementary**.
+
+In the end, to optimize profits, the most important part is to include smartly chosen traded assets, so that the strategy trades as much as possible while lowering risk by investing in multiple coins.
+
+## Quand utiliser la stratégie Smart DCA
+
+The Smart DCA strategy is adapted to sideways or upwards markets. In order to be able to quickly fill its sell orders, it relies on the market not being in a pure downtrend.
+
+![cover](/images/blog/smart-dca-making-of/cover.png)
+
+Using the Smart DCA strategy in a downwards market might not allow sell order to be filled and therefore lock funds in open sell orders. While this is not a selling at a loss, it is still non optimal and can prevent generating profits from other cryptocurrencies.
+
+## Analyse des aspects techniques de la stratégie
+
+Let's now explore the very technical aspects of the Smart DCA strategy.
+
+After the initial step of identifying complementary coins to trade, the next part is to optimize the way Smart DCA will trade those coins.
+
+This comes down to how entries and exits should be traded, how much to assign to each entry signal, how to configure take profits, all of this while limiting inherent risks associated with the traded assets.
+
+We will split this into 3 mains topics:
+
+1. Configuring entries and exits.
+2. Taking multiple markets into account.
+3. Going beyond [backtesting](/guides/octobot-usage/backtesting) results.
+
+### Optimiser les entrées et sorties de la stratégie
+
+Profits in Smart DCA come from the difference between the sell and buy prices.
+
+The higher the difference, the bigger the profits. However the bigger the risks of not selling the asset.
+
+In a ideal world, your Smart DCA configuration is so that each entry quickly finds its exit because the exit price is configured according to your traded assets typical behavior. However in reality this is not always true.
+
+Therefore the goal of the strategy's entry and exit configuration is to find the sweet point for your traded assets where the large majority of your exit orders end up filled within the next hours or days at maximum. This allows to quickly free up funds and jump to the next opportunity. We don't want to be waiting for a fill that might take weeks to happen and prevent you from making money with this trade funds using other traded markets.
+
+![profitable results with 0.8 percent take profit](/images/blog/smart-dca-making-of/profitable-results-with-0.8-percent-take-profit.png)
+_Steady portfolio growth and regular trades using 0.8% take profit targets_
+
+At OctoBot cloud, we realized that for the top 50 altcoins, this point is usually around 0.8% profits. This configuration allows to make profits even after exchange fees while quickly freeing funds to multiply trade opportunities and limit asset exposure.
+
+![profitable but risky results with 2 percent take profit](/images/blog/smart-dca-making-of/risky-results-with-2-percent-take-profit.png)
+_Unoptized portfolio growth: missed trades and higher volatily using 2% take profit targets_
+
+Of course this number is highly correlated to the volatility of the traded pairs. If you are trading pairs from top 100 to 200 ranks, it's possible that a 1.5% take profit target would be more profitable as those pairs are much more volatile.
+
+### Trader avec plusieurs paires
+
+A key concept to optimize your returns using Smart DCA is to trade complementary coins. This allows to multiply trades while reducing risk by spreading funds between different assets.
+
+**But how many coins should be traded ?**
+
+Overal, the more the better providing 3 conditions:
+
+1. All assets must remain complementary (not making the same moves at the same time), otherwise profits are not increased.
+2. Assets should display a similar volatility.
+3. Having enough initial funds to create orders on every market.
+
+#### Les actifs complémentaires
+
+As explained on the video, the best way we found to identify complementary assets is to select assets from different naratives. This means coins that serve different purposes and therefore won't be moving from the same market events or trends.
+
+Here are examples of coins naratives:
+
+- Value transfer/storage coins (BTC, XRP)
+- Blockchain coins (ETH, ADA, SOL)
+- Privacy coins (XMR, ZEC)
+- Oracle coins (LINK, BAND)
+- Exchange coins (BNB, UNI)
+- Meme coins ([DOGE](https://www.octobot.cloud/what-is-dogecoin), SHIB)
+- Supply chain coins (VET)
+
+There are many more naratives such as gaming, metaverse, NFTs and others.
+
+An alternative way to explore coin narative is to use coin explorers categories:
+![coingecko top coin categories](/images/blog/smart-dca-making-of/coingecko-coin-categories.png)
+_CoinGecko's <a href="https://www.coingecko.com/en/categories" rel="nofollow">top coin categories</a>_
+
+#### La volatilité
+
+As the goal of the strategy is to quickly go in and out of each asset, it is important that each asset displays overall the same volatily. This allows to fine tune entries and exits goals in an efficient manner.
+
+Using markets with different volatility present the following risks:
+
+- Exiting the market too early and missing on profits from more volatile assets.
+- Not exiting the market when an opportunity arises due to targets adapted for a higher volatility market.
+
+#### Les fonds initiaux
+
+According to our tests, the ideal way to size orders on DCA is to use a small percent of your total traded portfolio value on each order. Here the meaning of _small_ can vary depending on your context and goals but overal the idea is the following:
+
+- Using a `%t` order amount settings to size orders according to the total value of traded assets holdings and keep order sizes consistent.
+- Sizing `%t` in a manner that complies with the exchange minimal order size rules. For example this is usually $5 or $10 (or USD equivalent) on Binance. Please note that the current version of backtesting is very permissive on this topic and it's better to use the live [trading simulator](/guides/octobot-usage/simulator) or manually check order sizes if you are unsure about minimal order sizes
+- Keeping the order amount smaller as you increase the number of traded pairs to profit of each pair and reduce chances of having a large part of your portfolio being stuck in sell orders of a particular asset when your exits did not yet trigger.
+
+![binance trading rules min funds for each market](/images/blog/smart-dca-making-of/binance-trading-rules-min-funds.png)
+_Binance's <a href="https://www.binance.com/en/trade-rule" rel="nofollow">trading rules and minimal order size for each market</a>_
+
+On OctoBot cloud, strategies usually trade with between 5% and 8% of the portfolio in each order. This allows to benefit from multiple pairs while allowing for minimum initial portfolios in the range of 100 to 200 USD-equivalent.
+
+### Au délà des résultats de backtesting
+
+When creating a trading strategy, it's always important to test it with [backtesting](/guides/octobot-usage/backtesting) to make sure the strategy behaves as expected. Backtesting can also be used to optimize a strategy settings. This is what we do at OctoBot when we create a new strategy.
+
+However, it's important to keep in mind that backtesting is only using past data. Therefore there are a few key points to pay attention to:
+
+1. Never over-optimize a strategy for a single backtesting context as the future is very rarely the exact repetition of the past. Prefer finding settings that work good (but not necessarily perfect) in most relevant historical range of your traded assets.
+2. Carefully identify areas with no buy trades when there should be some. This usually means that your portfolio is completely invested and probably that you are missing a few opportunities. Your settings can most likely be improved for the selected market.
+3. Assets that look complementary only based on their past price chart doesn't mean they will keep doing it. That's why having clear fundamental reasons to explain their price complementary (such as the narative) is better than just relying on price charts.
+
+## Avertissement
+
+Veuillez noter que le contenu de cet article est destiné à DES FINS D'INFORMATION GÉNÉRALE et non pas à des conseils financiers. Les informations contenues ici sont uniquement à titre informatif. Rien dans ce document ne doit être interprété comme un conseil financier, juridique ou fiscal. Le contenu de cet article reflète uniquement les opinions de l'auteur et/ou de l'équipe d'OctoBot. Aucun d'entre eux n'est un conseiller financier agréé ou un conseiller en investissement. L'achat de cryptomonnaies comporte des risques considérables de perte. L'auteur et/ou l'équipe OctoBot ne garantissent aucun résultat particulier. Les performances passées ne préjugent pas des résultats futurs.

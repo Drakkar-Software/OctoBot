@@ -1,0 +1,32 @@
+{
+  "time_frame": ["1h", "4h"],
+  "crypto-currencies":{
+    "Bitcoin": {
+      "pairs" : ["BTC/USDT"]
+    },
+    "Ethereum": {
+      "pairs" : ["ETH/USDT", "ETH/BTC"]
+    }
+  },
+  "exchanges": {
+    "binance": {
+      "api-key": "",
+      "api-secret": "",
+      "web-socket": false
+    }
+  },
+  "trading":{
+    "risk": 1,
+    "reference-market": "BTC"
+  },
+  "trader":{
+    "enabled": false
+  },
+  "trader-simulator":{
+    "enabled": true,
+    "starting-portfolio": {
+      "BTC": 10,
+      "USDT": 1000
+    }
+  }
+}

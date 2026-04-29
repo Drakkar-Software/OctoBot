@@ -1,0 +1,3 @@
+# Tentacles compilation requirements
+setuptools
+ccxt

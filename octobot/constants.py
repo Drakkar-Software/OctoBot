@@ -109,6 +109,19 @@ CREATE_ICEBERG_DB_IF_MISSING = os_util.parse_boolean_environment_var("CREATE_ICE
 
 OCTOBOT_MARKET_MAKING_URL = os.getenv("OCTOBOT_MARKET_MAKING_URL", "https://market-making.octobot.cloud")
 
+# sync server
+SYNC_SERVER_URL = os.getenv("SYNC_SERVER_URL", "https://prod-sync.drakkar.software")
+STAGING_SYNC_SERVER_URL = os.getenv("SYNC_SERVER_URL", "https://beta-sync.drakkar.software")
+SYNC_CHAIN_ID = os.getenv("SYNC_CHAIN_ID", "evm:8453")
+ENABLE_REPLICA_SERVER = os_util.parse_boolean_environment_var(
+    "ENABLE_REPLICA_SERVER",
+    os.getenv("ENABLE_LOCAL_SYNC_SERVER", "false"),  # backward compat
+)
+REPLICA_SERVER_PORT = int(os.getenv("REPLICA_SERVER_PORT", os.getenv("LOCAL_SYNC_PORT", "3000")))
+REPLICA_WRITE_MODE = os.getenv("REPLICA_WRITE_MODE", "bidirectional")
+REPLICA_SYNC_INTERVAL_MS = int(os.getenv("REPLICA_SYNC_INTERVAL_MS", "60000"))
+REPLICA_DATA_DIR = os.getenv("REPLICA_DATA_DIR", "")
+
 ERROR_TRACKER_DSN = os.getenv("ERROR_TRACKER_DSN")
 
 CONFIG_COMMUNITY = "community"
@@ -119,6 +132,7 @@ CONFIG_COMMUNITY_TRADINGVIEW_EMAIL_CONFIRMED = "tradingview_email_confirmed"
 CONFIG_COMMUNITY_PACKAGE_URLS = "package_urls"
 CONFIG_COMMUNITY_ENVIRONMENT = "environment"
 CONFIG_COMMUNITY_LOCAL_DATA_IDENTIFIER = "local_data_identifier"
+CONFIG_COMMUNITY_WALLETS = "wallets"
 USE_BETA_EARLY_ACCESS = os_util.parse_boolean_environment_var("USE_BETA_EARLY_ACCESS", "false")
 USER_ACCOUNT_EMAIL = os.getenv("USER_ACCOUNT_EMAIL", "")
 USER_PASSWORD_TOKEN = os.getenv("USER_PASSWORD_TOKEN", None)
@@ -126,8 +140,12 @@ USER_AUTH_KEY = os.getenv("USER_AUTH_KEY", None)
 COMMUNITY_BOT_ID = os.getenv("COMMUNITY_BOT_ID", "")
 IS_DEMO = os_util.parse_boolean_environment_var("IS_DEMO", "False")
 IS_CLOUD_ENV = os_util.parse_boolean_environment_var("IS_CLOUD_ENV", "false")
+DEPLOYMENT_TIME = os.getenv("DEPLOYMENT_TIME") # format: ISO 8601, ex: 2026-02-21T08:08:42.325Z
+DEFAULT_NEW_DEPLOYMENT_TIMEOUT = 2 * octobot_commons.constants.MINUTE_TO_SECONDS
 USE_FETCHED_BOT_CONFIG = os_util.parse_boolean_environment_var("USE_FETCHED_BOT_CONFIG", "false")
+SHOULD_CHECK_TENTACLES = os_util.parse_boolean_environment_var("SHOULD_CHECK_TENTACLES", "true")
 CAN_INSTALL_TENTACLES = os_util.parse_boolean_environment_var("CAN_INSTALL_TENTACLES", str(not IS_CLOUD_ENV))
+INSTALL_DEFAULT_TENTACLES = os_util.parse_boolean_environment_var("INSTALL_DEFAULT_TENTACLES", "true")
 PH_TRACKING_ID = os.getenv("PH_TRACKING_ID", "phc_QSuFy6zqOXXKT7zAYboYS4nJShfKovpB172aa8X9nXf")
 # Profiles download urls to import at startup if missing, split by ","
 TO_DOWNLOAD_PROFILES = os.getenv("TO_DOWNLOAD_PROFILES", None)
@@ -182,9 +200,13 @@ URL_SEPARATOR = ","
 DEFAULT_TENTACLES_PACKAGE_NAME = "OctoBot-Default-Tentacles"
 
 # logs
-LOGS_FOLDER = "logs"
+DEFAULT_LOGS_FOLDER = "logs"
+LOGS_FOLDER = os.getenv("LOGS_FOLDER", DEFAULT_LOGS_FOLDER)
 FORCED_LOG_LEVEL = os.getenv("FORCED_LOG_LEVEL", "")
 ENV_TRADING_ENABLE_DEBUG_LOGS = os_util.parse_boolean_environment_var("ENV_TRADING_ENABLE_DEBUG_LOGS", "False")
+
+# distribution
+FORCED_DISTRIBUTION = os.getenv("DISTRIBUTION")
 
 # system
 ENABLE_CLOCK_SYNCH = os_util.parse_boolean_environment_var("ENABLE_CLOCK_SYNCH", "True")
@@ -218,11 +240,11 @@ EXIT_BEFORE_TENTACLES_AUTO_REINSTALL = os_util.parse_boolean_environment_var("EX
 # Store the path of the octobot directory from this file since it can change depending on the installation path
 # (local sources, python site-packages, ...)
 OCTOBOT_FOLDER = pathlib.Path(__file__).parent.absolute()
-CONFIG_FOLDER = f"{OCTOBOT_FOLDER}/config"
+CONFIG_FOLDER = f"{OCTOBOT_FOLDER}/{octobot_commons.constants.CONFIG_FOLDER}"
 SCHEMA = "schema"
 CONFIG_FILE_SCHEMA = f"{CONFIG_FOLDER}/config_{SCHEMA}.json"
 PROFILE_FILE_SCHEMA = f"{CONFIG_FOLDER}/profile_{SCHEMA}.json"
-DEFAULT_CONFIG_FILE = f"{CONFIG_FOLDER}/default_config.json"
+DEFAULT_CONFIG_FILE = os.getenv("DEFAULT_CONFIG_FILE", f"{CONFIG_FOLDER}/default_config.json")
 DEFAULT_PROFILE_FILE = f"{CONFIG_FOLDER}/default_profile.json"
 DEFAULT_PROFILE_AVATAR_FILE_NAME = "default_profile.png"
 DEFAULT_PROFILE_AVATAR = f"{CONFIG_FOLDER}/{DEFAULT_PROFILE_AVATAR_FILE_NAME}"

@@ -1,0 +1,232 @@
+{% extends "layout.html" %}
+{% set active_page = "home" %}
+
+{% import 'macros/critical_notifications_alert.html' as m_critical_notifications %}
+
+{% block body %}
+    <br>
+    <div update-url="{{ url_for('api.announcements') }}" class="alert alert-danger text-center d-none" role="alert" id="annoncementsAlert"></div>
+
+    {% if display_ph_launch %}
+    <div class="alert alert-primary text-center" role="alert">
+        <h5 class="">
+            🎉 Major news! OctoBot is launching on Product Hunt {{'today' if is_launching else 'on the 10th of July'}}.
+            {% if not is_launching %}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close" data-role="hide-announcement" data-url="{{url_for('api.hide_announcement', key='product_hunt_announcement')}}">
+                <span aria-hidden="true">&times;</span>
+            </button>
+            {% endif %}
+        </h5>
+        <p class="text-center pt-3 mb-0">
+            <a href="https://www.producthunt.com/posts/octobot-open-source?embed=true&utm_source=badge-featured&utm_medium=badge&utm_souce=badge-octobot&#0045;open&#0045;source" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=463219&theme={{get_color_mode()}}" alt="OctoBot&#0032;open&#0032;source - Your&#0032;open&#0032;source&#0032;investment&#0032;strategy&#0032;builder | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
+
+        </p>
+        <p class="text-center pt-3 mb-0">
+            Follow the launch to get your exclusive discount.
+        </p>
+    </div>
+    {% endif %}
+    {% if not IS_CLOUD %}
+    <div class="d-none alert alert-success text-center my-2" role="alert">
+        <h5 class="d-none d-sm-inline">
+            <span class="d-none d-md-inline"><i class="far fa-bell"></i> Good news ! </span>
+            OctoBot version <span update-url="{{ url_for('api.upgrade_version') }}" id="upgradeVersion"></span>
+            is available.
+        </h5>
+        <button route="{{ url_for('commands', cmd='update') }}" type="button" class="btn btn-outline-primary waves-effect">
+            Upgrade now <i class="fas fa-cloud-download-alt"></i>
+        </button>
+    </div>
+    {% endif %}
+    <span id="exchange-specific-data">
+        {% if display_trading_delay_info %}
+            <div class="alert alert-info mt-2" role="alert">
+                <i class="fa-regular fa-lightbulb"></i>
+                A new trading mode has just been selected, OctoBot is now looking for trading opportunities.
+                Depending on the profile settings, a few hours might be required before the first orders are created.
+                Use <a href="backtesting">Backesting</a> to quickly test trading strategies.
+            </div>
+        {% endif %}
+        {% if is_in_stating_community_env() %}
+        <div class="card my-2 my-md-4">
+            <div class="card-header"><h2>
+                Welcome to the OctoBot beta environment
+                </h2>
+            </div>
+            <div class="card-body card-text">
+                <div class="alert alert-info">
+                    When the beta environment is enabled, you will be connected to the "in development"
+                    version of OctoBot cloud (<a href="{{OCTOBOT_COMMUNITY_URL}}?utm_source=octobot&utm_medium=dk&utm_campaign=beta_program&utm_content=dashboard">{{OCTOBOT_COMMUNITY_URL}})</a>.
+                    The beta OctoBot cloud has its own accounts and products.
+                    Please login using your beta account.
+                </div>
+            </div>
+            <div class="card-footer">
+                You can disable the beta environment and go back to the regular one at anytime from the
+                <a href="{{ url_for('about', _anchor='beta-program') }}"> about tab</a>.
+            </div>
+        </div>
+        {% endif %}
+        {{ m_critical_notifications.critical_notifications_alert(critical_notifications) }}
+        <div class="card" id="profitability-display">
+            <div class="card-header">
+                <h4>
+                    <div class="row">
+                        <div class="d-none d-md-flex col-md-3">
+                            Portfolio value
+                        </div>
+                        <div class="col-10 col-md-6 text-md-center">
+                            <span class="d-none align-middle"
+                                  id="flat-profitability">
+                                <span id="flat-profitability-text">
+                                </span>
+                                {{reference_unit}}
+                            </span>
+                            <span class="badge d-none"
+                                  id="profitability-badge"
+                                  data-toggle="tooltip"
+                                  title="Portfolio total value change since the first valuation. You can reset it from the portfolio tab."
+                            ><span id="profitability-value"></span>%</span>
+                        </div>
+                        <div class="col-2 offset-md-1 text-right px-0">
+                            <a class="blue-text"
+                               href="{{url_for('trading', _anchor='panel-pnl')}}"
+                               data-toggle="tooltip"
+                               title="{{ 'Profit and Loss' if has_pnl_history else 'Profit and Loss: requires trading with a PNL compatible trading mode.'}}">
+                                <i class="fa-solid fa-chart-line"></i>
+                            </a>
+                            <a class="blue-text"
+                               href="{{url_for('portfolio')}}"
+                               data-toggle="tooltip"
+                               title="Portfolio details">
+                                <i class="fas fa-chart-pie"></i>
+                            </a>
+                        </div>
+                    </div>
+                </h4>
+            </div>
+            <div class="card-body card-text" id="profitability_graph">
+                <div class="w-100">
+                    <div id="portfolio_historyChart"
+                         data-url="{{url_for('api.historical_portfolio_value', currency=reference_unit, time_frame='')}}"
+                         data-reference-market="{{reference_unit}}"
+                         class="w-100">
+                    </div>
+                </div>
+            </div>
+            <div class="card-body card-text d-none" id="no_profitability_graph">
+                Your daily portfolio value history will be displayed here.
+            </div>
+        </div>
+        <br>
+        <div class="card">
+            <div class="card-header d-flex justify-content-between" id="all-watched-markets">
+                <div>
+                    {% if sandbox_exchanges %}
+                    <h5>
+                        <span class="badge badge-warning"
+                              id="sandbox-badge"
+                              data-toggle="tooltip"
+                              title="{{ sandbox_exchanges | join(' and ')}} testnet / sandbox is enabled. This means that
+                              your OctoBot is trading using testnet prices and accounts, which
+                              might not be representative of real markets. Use the trading simulator to test a trading
+                              strategy in real conditions."
+                        >{{sandbox_exchanges[0] | capitalize}} sandbox</span>
+                    </h5>
+                    {% endif %}
+                </div>
+                <h4>Watched markets</h4>
+                <div>
+                    <a class="waves-effect float-right" href="#" id="display-dashboard-settings-modal-label"
+                       data-toggle="modal" data-target="#dashboard-settings-modal">
+                       <i class="fa fa-1_5x fa-cog"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="card-body d-none text-center" id="loadingMarketsDiv">
+                <h2>
+                    OctoBot is starting, markets will be refreshed when exchanges will be reachable.
+                </h2>
+            </div>
+            <div class="card-body text-center" name="loadingSpinner">
+                <h2>
+                    <i class="fa fa-spinner fa-spin"></i>
+                </h2>
+                <p class="mt-5">
+                    If this loader remains, please make sure that at least one exchange is enabled in
+                    <a href="{{url_for('profile', _anchor='panelExchanges')}}">your profile</a>.
+                </p>
+            </div>
+            {% if backtesting_mode %}
+                <div class="card-body" id="first_symbol_graph" update-url="{{ url_for('first_symbol') }}" backtesting_mode={{backtesting_mode}}>
+                    <div id="graph-symbol-price"></div>
+                </div>
+            {% else %}
+                {% for pair in watched_symbols %}
+                    <div class="card-body candle-graph" id="{{pair}}_graph" backtesting_mode={{backtesting_mode}}>
+                        <div class="watched-symbol-graph" id="{{pair}}_graph-symbol-price" symbol="{{pair}}"></div>
+                    </div>
+                {% endfor %}
+                <div class="card-body candle-graph d-none" id="first_symbol_graph" update-url="{{ url_for('first_symbol') }}" backtesting_mode={{backtesting_mode}}>
+                    <div id="graph-symbol-price"></div>
+                </div>
+                {% if not watched_symbols %}
+                    <div class="card-footer">No watched markets: using a default one. You can add
+                        <a href="#"><i class="far fa-star" aria-label="Watched markets star"></i></a>
+                        watched markets in the <a href="{{ url_for('trading', _anchor='panel-market-status') }}">trading section</a>.
+                    </div>
+                {% endif %}
+            {% endif %}
+        </div>
+        <div class="modal" id="dashboard-settings-modal" tabindex="-1" role="dialog"
+             aria-labelledby="#display-dashboard-settings-modal-label" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered modal-md" role="document">
+            <div class="modal-content modal-text">
+              <div class="modal-header primary-text">
+                <h2 class="modal-title">Settings</h2>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                      <span aria-hidden="true">&times;</span>
+                    </button>
+              </div>
+              <div class="modal-body">
+                  <div class="mx-4">
+                    <label for="timeFrameSelect">Dashboard time frame</label>
+                    <select class="selectpicker" id="timeFrameSelect" data-live-search="true" data-update-url="{{url_for('api.display_config')}}">
+                      {% for time_frame in all_time_frames %}
+                        <option value="{{time_frame.value}}" {{'selected="selected"' if time_frame.value == display_time_frame}}>
+                            {{time_frame.value}}
+                        </option>
+                      {% endfor %}
+                    </select>
+                    <div class="custom-control custom-switch my-auto" id="synchronized-data-only-div">
+                        <input type="checkbox" class="custom-control-input" id="displayOrderToggle" {{'checked' if display_orders}}  data-update-url="{{url_for('api.display_config')}}">
+                        <label class="custom-control-label" for="displayOrderToggle">Display orders</label>
+                    </div>
+                    <div class="font-italic">Add and remove watched symbols from the <a href="{{ url_for('trading', _anchor='panel-market-status') }}">trading tab</a>.</div>
+                  </div>
+              </div>
+            </div>
+          </div>
+        </div>
+    </span>
+    <br>
+    <span class="d-none"
+          data-display-intro="{{display_intro}}"
+          data-selected-profile="{{selected_profile}}"
+    ></span>
+    <span class="d-none" id="feedback-form-data"
+          data-display-form="{{display_feedback_form}}"
+          data-user-id="{{user_id}}"
+          data-form-to-display="{{form_to_display}}"
+          data-on-submit-url="{{url_for('api.register_submitted_form')}}"
+    ></span>
+{% endblock %}
+
+{% block additional_scripts %}
+    <script src="{{ url_for('static', filename='js/common/custom_elements.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+    <script src="{{ url_for('static', filename='js/common/candlesticks.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+    <script src="{{ url_for('static', filename='js/common/portfolio_history.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+    <script src="{{ url_for('static', filename='js/components/dashboard.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+    <script src="{{ url_for('static', filename='js/components/dashboard_tutorial_starter.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+    <script src="{{ url_for('static', filename='js/components/tentacles_configuration.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+{% endblock additional_scripts %}

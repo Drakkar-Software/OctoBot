@@ -1,0 +1,63 @@
+{
+    "config": {
+        "crypto-currencies": {
+            "Bitcoin": {
+                "enabled": true,
+                "pairs": [
+                    "BTC/USDT"
+                ]
+            },
+            "Ethereum": {
+                "enabled": true,
+                "pairs": [
+                    "ETH/USDT"
+                ]
+            },
+            "Solana": {
+                "enabled": true,
+                "pairs": [
+                    "SOL/USDT"
+                ]
+            }
+        },
+        "exchanges": {
+            "binance": {
+                "enabled": true,
+                "exchange-type": "spot"
+            }
+        },
+        "trader": {
+            "enabled": false,
+            "load-trade-history": false
+        },
+        "trader-simulator": {
+            "enabled": true,
+            "fees": {
+                "maker": 0.1,
+                "taker": 0.1
+            },
+            "starting-portfolio": {
+                "USDT": 1000
+            }
+        },
+        "trading": {
+            "reference-market": "USDT",
+            "risk": 0.5
+        }
+    },
+    "profile": {
+        "auto_update": false,
+        "avatar": "default_profile.png",
+        "complexity": 1,
+        "description": "Index Trading will maintain a custom crypto index using each enabled traded coin.",
+        "extra_backtesting_time_frames": [],
+        "id": "index_trading",
+        "imported": false,
+        "name": "Index trading",
+        "origin_url": null,
+        "read_only": true,
+        "risk": 1,
+        "slug": "",
+        "type": "live"
+    }
+}

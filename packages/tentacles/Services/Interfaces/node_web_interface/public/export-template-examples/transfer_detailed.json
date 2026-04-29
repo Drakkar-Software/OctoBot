@@ -1,0 +1,17 @@
+{
+  "id": "transfer_detailed",
+  "label": "Transfer Detailed",
+  "description": "Blockchain transfers with confirmation and block details",
+  "columns": [
+    { "key": "name", "label": "Name", "jsonPath": "__task_name__", "formatter": "text" },
+    { "key": "status", "label": "Status", "jsonPath": "__exec_status__", "formatter": "text" },
+    { "key": "from_address", "label": "From", "jsonPath": "from_address", "formatter": "text" },
+    { "key": "to_address", "label": "To", "jsonPath": "to_address", "formatter": "text" },
+    { "key": "amount", "label": "Amount", "jsonPath": "amount", "formatter": "number" },
+    { "key": "asset", "label": "Asset", "jsonPath": "asset", "formatter": "text" },
+    { "key": "tx_hash", "label": "TX Hash", "jsonPath": "tx_hash", "formatter": "text" },
+    { "key": "confirmations", "label": "Confirmations", "jsonPath": "confirmations", "formatter": "number" },
+    { "key": "block_number", "label": "Block", "jsonPath": "block_number", "formatter": "number" },
+    { "key": "network", "label": "Network", "jsonPath": "network", "formatter": "text" }
+  ]
+}

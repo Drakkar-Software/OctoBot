@@ -1,0 +1,14 @@
+[options]
+packages = find:
+
+[options.packages.find]
+where = .
+include = 
+    octobot*
+    async_channel*
+    trading_backend*
+exclude =
+    tests*
+    packages*
+    octobot_tentacles*
+    octobot_binary*

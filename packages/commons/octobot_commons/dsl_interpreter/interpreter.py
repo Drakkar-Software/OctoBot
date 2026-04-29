@@ -1,0 +1,405 @@
+# pylint: disable=too-many-branches,too-many-return-statements,too-many-locals,too-many-statements
+#  Drakkar-Software OctoBot-Commons
+#  Copyright (c) Drakkar-Software, All rights reserved.
+#
+#  This library is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU Lesser General Public
+#  License as published by the Free Software Foundation; either
+#  version 3.0 of the License, or (at your option) any later version.
+#
+#  This library is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#  Lesser General Public License for more details.
+#
+#  You should have received a copy of the GNU Lesser General Public
+#  License along with this library.
+import ast
+import typing
+import octobot_commons.errors
+import octobot_commons.dsl_interpreter.operator as dsl_interpreter_operator
+import octobot_commons.dsl_interpreter.interpreter_dependency as dsl_interpreter_dependency
+import octobot_commons.dsl_interpreter.parameters_util as parameters_util
+import octobot_commons.dsl_interpreter.dsl_call_result as dsl_call_result
+
+
+class Interpreter:
+    """
+    Interpreter class for parsing and interpreting DSL expressions.
+    Maps AST elements to Operator instances based on operator names.
+    """
+
+    def __init__(
+        self, operators: typing.List[typing.Type[dsl_interpreter_operator.Operator]]
+    ):
+        """
+        Initialize the interpreter with a list of operator classes.
+
+        Args:
+            operators: List of Operator subclasses to be used for interpretation
+        """
+        # Save operators as a dictionary mapping operator name to operator class
+        self.operators_by_name: typing.Dict[
+            str, typing.Type[dsl_interpreter_operator.Operator]
+        ] = {}
+        self.extend(operators)
+        self._operator_tree_or_constant: typing.Union[
+            dsl_interpreter_operator.Operator,
+            dsl_interpreter_operator.ComputedOperatorParameterType,
+        ] = None
+        self._parsed_expression: typing.Optional[str] = None
+
+    def extend(
+        self, operators: typing.List[typing.Type[dsl_interpreter_operator.Operator]]
+    ):
+        """
+        Extend the interpreter with a list of operator classes.
+        """
+        self.operators_by_name.update(
+            {operator_class.get_name(): operator_class for operator_class in operators}
+        )
+
+    async def interprete(
+        self, expression: str
+    ) -> dsl_interpreter_operator.ComputedOperatorParameterType:
+        """
+        Interpret a string expression by parsing it with AST and mapping to operators.
+
+        Args:
+            expression: String expression to interpret
+
+        Returns:
+            Operator instance or literal value representing the interpreted expression
+        """
+        self._parse_expression(expression)
+        return await self.compute_expression()
+
+    def get_dependencies(
+        self,
+    ) -> list[dsl_interpreter_dependency.InterpreterDependency]:
+        """
+        Get the dependencies of the interpreter's parsed expression.
+        """
+        if self._operator_tree_or_constant is None:
+            raise octobot_commons.errors.DSLInterpreterError(
+                "Expression not prepared, call prepare() first"
+            )
+        if isinstance(
+            self._operator_tree_or_constant, dsl_interpreter_operator.Operator
+        ):
+            all_deps = self._operator_tree_or_constant.get_dependencies()
+            # don't use set to avoid forcing the dependency to implement __hash__
+            deduplicated_deps = []
+            for dep in all_deps:
+                if dep not in deduplicated_deps:
+                    deduplicated_deps.append(dep)
+            return deduplicated_deps
+        return []
+
+    def prepare(self, expression: str):
+        """
+        Prepare the expression by parsing it, leaving it ready to be computed one or multiple times.
+        Call await self.compute_expression() to compute the expression.
+        """
+        self._parse_expression(expression)
+
+    def _parse_expression(self, expression: str):
+        """
+        Parse the expression into an AST and store the result in self._operator_tree_or_constant.
+        """
+        # Parse the expression into an AST
+        # mode:  can be 'exec' if source consists of a sequence of statements, 'eval' if
+        # it consists of a single expression, or 'single' if it consists of a single
+        # interactive statement.
+        # docs: https://docs.python.org/3/library/functions.html#compile
+        self._parsed_expression = expression
+        try:
+            tree = ast.parse(expression, mode="eval")
+            self._operator_tree_or_constant = self._visit_node(tree.body)
+        except SyntaxError:
+            tree = ast.parse(expression, mode="single")
+            if len(tree.body) != 1:
+                raise octobot_commons.errors.DSLInterpreterError(
+                    "Single statement required when using statement mode"
+                )
+            self._operator_tree_or_constant = self._visit_node(tree.body[0])
+
+    async def compute_expression(
+        self,
+    ) -> dsl_interpreter_operator.ComputedOperatorParameterType:
+        """
+        Compute the result of the expression stored in self._operator_tree_or_constant.
+        If the expression is a constant, return it directly.
+        If the expression is an operator, pre_compute and compute its result.
+        """
+        if isinstance(
+            self._operator_tree_or_constant, dsl_interpreter_operator.Operator
+        ):
+            await self._operator_tree_or_constant.pre_compute()
+            return self._operator_tree_or_constant.compute()
+        return self._operator_tree_or_constant
+
+    def get_top_operator(self) -> typing.Union[
+        dsl_interpreter_operator.Operator,
+        dsl_interpreter_operator.ComputedOperatorParameterType,
+    ]:
+        """
+        Return the top operator of the parsed expression.
+        """
+        return self._operator_tree_or_constant
+
+    async def compute_expression_with_result(
+        self,
+    ) -> dsl_call_result.DSLCallResult:
+        """
+        Compute the result of the expression stored in self._operator_tree_or_constant.
+        If the expression is a constant, return it directly.
+        If the expression is an operator, pre_compute and compute its result.
+        """
+        try:
+            return dsl_call_result.DSLCallResult(
+                statement=self._parsed_expression,
+                result=await self.compute_expression(),
+            )
+        except octobot_commons.errors.ErrorStatementEncountered as err:
+            return dsl_call_result.DSLCallResult(
+                statement=self._parsed_expression,
+                error=err.args[0] if err.args else ""
+            )
+
+    def _visit_node(self, node: typing.Optional[ast.AST]) -> typing.Union[
+        dsl_interpreter_operator.Operator,
+        dsl_interpreter_operator.ComputedOperatorParameterType,
+    ]:
+        """
+        Recursively visit AST nodes and convert them to Operator instances or values.
+
+        Args:
+            node: AST node to visit
+
+        Returns:
+            Operator instance or literal value representing the node
+        """
+        if node is None:
+            return None
+
+        if isinstance(node, ast.Call):
+            # Function call: func(arg1, arg2, ...)
+            func_name = self._get_name_from_node(node.func)
+            if func_name in self.operators_by_name:
+                operator_class = self.operators_by_name[func_name]
+                # Convert arguments to Operator instances or values
+                args = [
+                    (
+                        self._get_value_from_constant_node(arg)
+                        if isinstance(arg, ast.Constant)
+                        else self._visit_node(arg)
+                    )
+                    for arg in node.args
+                ]
+                kwargs = {}
+                for kw in node.keywords:
+                    value = (
+                        self._get_value_from_constant_node(kw.value)
+                        if isinstance(kw.value, ast.Constant)
+                        else self._visit_node(kw.value)
+                    )
+                    if kw.arg is not None:
+                        kwargs[kw.arg] = value
+                    else:
+                        if isinstance(value, dict):
+                            kwargs.update(value)
+                        else:
+                            raise octobot_commons.errors.UnsupportedOperatorError(
+                                f"**kwargs must unpack a dict, got {type(value).__name__}"
+                            )
+                args, kwargs = parameters_util.resolve_operator_args_and_kwargs(
+                    operator_class, args, kwargs
+                )
+                return operator_class(*args, **kwargs)
+            raise octobot_commons.errors.UnsupportedOperatorError(
+                f"Unknown operator: {func_name}"
+            )
+
+        if isinstance(node, ast.BinOp):
+            # Binary operation: left op right
+            op_name = type(node.op).__name__
+            if op_name in self.operators_by_name:
+                operator_class = self.operators_by_name[op_name]
+                left = self._visit_node(node.left)
+                right = self._visit_node(node.right)
+                return operator_class(left, right)
+            raise octobot_commons.errors.UnsupportedOperatorError(
+                f"Unknown binary operator: {op_name}"
+            )
+
+        if isinstance(node, ast.UnaryOp):
+            # Unary operation: op operand
+            op_name = type(node.op).__name__
+            if op_name in self.operators_by_name:
+                operator_class = self.operators_by_name[op_name]
+                operand = self._visit_node(node.operand)
+                return operator_class(operand)
+            raise octobot_commons.errors.UnsupportedOperatorError(
+                f"Unknown unary operator: {op_name}"
+            )
+
+        if isinstance(node, ast.Compare):
+            # Comparison: left op right
+            # Handles both single comparisons (a < b) and chained comparisons (a < b <= c)
+            # Chained comparisons are decomposed into: (a < b) And (b <= c)
+            comparisons = []
+            left = self._visit_node(node.left)
+            for op, comparator in zip(node.ops, node.comparators):
+                op_name = type(op).__name__
+                if op_name not in self.operators_by_name:
+                    raise octobot_commons.errors.UnsupportedOperatorError(
+                        f"Unknown comparison operator: {op_name}"
+                    )
+                operator_class = self.operators_by_name[op_name]
+                right = self._visit_node(comparator)
+                comparisons.append(operator_class(left, right))
+                left = right
+            if len(comparisons) == 1:
+                return comparisons[0]
+            and_op_name = ast.And.__name__
+            if and_op_name not in self.operators_by_name:
+                raise octobot_commons.errors.UnsupportedOperatorError(
+                    f"Chained comparisons require the '{and_op_name}' operator"
+                )
+            return self.operators_by_name[and_op_name](*comparisons)
+
+        if isinstance(node, (ast.Constant)):
+            # Literal values: numbers, strings, booleans, None
+            return self._get_value_from_constant_node(node)
+
+        if isinstance(node, ast.Name):
+            # Name reference: look up in operators_by_name
+            name = node.id
+            if name in self.operators_by_name:
+                operator_class = self.operators_by_name[name]
+                return operator_class()
+            raise octobot_commons.errors.UnsupportedOperatorError(
+                f"Unknown name: {name}"
+            )
+
+        if isinstance(node, ast.BoolOp):
+            # Boolean operation: left op right
+            op_name = type(node.op).__name__
+            if op_name in self.operators_by_name:
+                operator_class = self.operators_by_name[op_name]
+                operands = [self._visit_node(operand) for operand in node.values]
+                return operator_class(*operands)
+            raise octobot_commons.errors.UnsupportedOperatorError(
+                f"Unknown BoolOp operator: {op_name}"
+            )
+
+        if isinstance(node, ast.IfExp):
+            # If expression: "body if test else orelse"
+            op_name = ast.IfExp.__name__
+            if op_name in self.operators_by_name:
+                operator_class = self.operators_by_name[op_name]
+                test = self._visit_node(node.test)
+                body = self._visit_node(node.body)
+                orelse = self._visit_node(node.orelse)
+                return operator_class(test, body, orelse)
+            raise octobot_commons.errors.UnsupportedOperatorError(
+                f"Unknown IfExp operator: {op_name}"
+            )
+
+        if isinstance(node, ast.Subscript):
+            # Subscript: array[index]
+            op_name = type(node).__name__
+            if op_name in self.operators_by_name:
+                operator_class = self.operators_by_name[op_name]
+                array_or_list = self._visit_node(node.value)
+                index_or_slice = self._visit_node(node.slice)
+                context = node.ctx
+                return operator_class(array_or_list, index_or_slice, context)
+
+        if isinstance(node, ast.List):
+            # List: [1, 2, 3]
+            op_name = ast.List.__name__
+            if op_name in self.operators_by_name:
+                operator_class = self.operators_by_name[op_name]
+                operands = [self._visit_node(operand) for operand in node.elts]
+                return operator_class(*operands)
+
+        if isinstance(node, ast.Dict):
+            # Dict: {"a": 1, "b": 2} or {"a": 1, **other}
+            op_name = ast.Dict.__name__
+            result = {}
+            for key, value in zip(node.keys, node.values):
+                if key is not None:
+                    result[self._visit_node(key)] = self._visit_node(value)
+                else:
+                    unpacked = self._visit_node(value)
+                    if isinstance(unpacked, dict):
+                        result.update(unpacked)
+                    else:
+                        raise octobot_commons.errors.UnsupportedOperatorError(
+                            f"** unpacking in dict requires a dict, got {type(unpacked).__name__}"
+                        )
+            return result
+
+        if isinstance(node, ast.Slice):
+            # Slice: slice(1, 2, 3)
+            op_name = ast.Slice.__name__
+            if op_name in self.operators_by_name:
+                operator_class = self.operators_by_name[op_name]
+                lower = self._visit_node(node.lower)
+                upper = self._visit_node(node.upper)
+                step = self._visit_node(node.step)
+                return operator_class(lower, upper, step)
+
+        if isinstance(node, ast.Raise):
+            # Raise statement: raise exc [from cause] - maps to RaiseOperator
+            op_name = "raise"
+            if op_name in self.operators_by_name:
+                operator_class = self.operators_by_name[op_name]
+                args = []
+                if node.exc is not None:
+                    args.append(
+                        self._get_value_from_constant_node(node.exc)
+                        if isinstance(node.exc, ast.Constant)
+                        else self._visit_node(node.exc)
+                    )
+                if node.cause is not None:
+                    args.append(
+                        self._get_value_from_constant_node(node.cause)
+                        if isinstance(node.cause, ast.Constant)
+                        else self._visit_node(node.cause)
+                    )
+                args, kwargs = parameters_util.resolve_operator_args_and_kwargs(
+                    operator_class, args, {}
+                )
+                return operator_class(*args, **kwargs)
+            raise octobot_commons.errors.UnsupportedOperatorError(
+                f"Unknown operator: {op_name}"
+            )
+
+        raise octobot_commons.errors.UnsupportedOperatorError(
+            f"Unsupported AST node type: {type(node).__name__}. Expression: {self._parsed_expression}"
+        )
+
+    def _get_name_from_node(self, node: ast.AST) -> str:
+        """Extract the name from a function node."""
+        if isinstance(node, ast.Name):
+            return node.id
+        # elif isinstance(node, ast.Attribute): ex: snake.colour => not supported
+        #     return node.attr
+        raise octobot_commons.errors.UnsupportedOperatorError(
+            f"Cannot extract name from node type: {type(node).__name__}"
+        )
+
+    def _get_value_from_constant_node(
+        self, node: ast.Constant
+    ) -> dsl_interpreter_operator.ComputedOperatorParameterType:
+        """Extract a literal value from an AST constant node."""
+        value = node.value
+        # Filter out unsupported types like complex numbers or Ellipsis
+        if isinstance(value, (str, int, float, bool, type(None), dict)):
+            return value
+        raise octobot_commons.errors.UnsupportedOperatorError(
+            f"Unsupported constant type: {type(value).__name__}"
+        )

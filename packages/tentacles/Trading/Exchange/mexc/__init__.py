@@ -1,0 +1,1 @@
+from .mexc_exchange import MEXC

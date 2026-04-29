@@ -1,0 +1,15 @@
+{
+  "default_config": [
+    "FearAndGreedIndexEvaluator",
+    "MarketCapEvaluator",
+    "CryptoNewsEvaluator"
+  ],
+  "required_evaluators": [
+    "FearAndGreedIndexEvaluator",
+    "MarketCapEvaluator",
+    "CryptoNewsEvaluator"
+  ],
+  "required_time_frames": ["1d"],
+  "use_deep_agent": false
+}
+

@@ -1,0 +1,201 @@
+{% extends "layout.html" %}
+{% set active_page = "cloud" %}
+
+{% block body %}
+<br>
+
+<div class="card">
+    <div class="card-header">
+        <h2>
+            The next level of market making, with the transparency of OctoBot
+        </h2>
+    </div>
+    <div class="card-body">
+
+        <div class="py-4 row">
+            <div class="col">
+                <p>
+                    <a target="_blank" rel="noopener"
+                           href="{{OCTOBOT_MARKET_MAKING_URL}}?utm_source=octobot_mm&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=cloud_header_text">
+                        OctoBot cloud Market Making</a>
+                    is a self-service market making automation platform. It is based on an extension of this open source
+                    market making distribution of the <a target="_blank" rel="noopener"
+                           href="{{OCTOBOT_COMMUNITY_URL}}/trading-bot?utm_source=octobot_mm&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=cloud_header_text">
+                        OctoBot trading robot</a>,
+                    which is being actively developed since 2018.
+                </p>
+                <p>
+                    With OctoBot cloud Market Making:
+                    <ul>
+                        <li>
+                            Benefit from advanced liquidity monitoring and strategies
+                        </li>
+                        <li>
+                            Let yourself be guided to configure strategies tailored for your market and exchange
+                        </li>
+                        <li>
+                            Adapt your strategies according to your needs at all time
+                        </li>
+                    </ul>
+                </p>
+                <p>
+                    Using OctoBot cloud for market making is an alternative to this free market making
+                    distribution of OctoBot. While it provides more capabilities and advanced features, the
+                    software you are currently using is and will remain free to help smaller projects and individuals
+                    benefit from market making automation in a simple way.
+                </p>
+            </div>
+        </div>
+        <div class="row mt-5">
+            <div class="col-12 col-lg-6">
+                <h3>
+                    Follow your market's liquidity
+                </h3>
+                <p>
+                    Exchange markets liquidity is measured using via the <a target="_blank" rel="noopener"
+                           href="{{OCTOBOT_MARKET_MAKING_URL}}/{{LOCALE}}/guides/understanding-the-liquidity-score?utm_source=octobot_mm&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=cloud_text">
+                        OctoBot Liquidity Score</a>.
+                    This is a 0 to 10 value measuring how well adapted to the trading demand an order book is.
+                </p>
+                <p>
+                    The Liquidity Score:
+                    <ul>
+                        <li>
+                            Makes it easy to measure your token's liquidity on each exchange
+                        </li>
+                        <li>
+                            Is automatically adapted to the volume requirement of each market
+                        </li>
+                        <li>
+                            Gives you clear insights on the markets you follow
+                        </li>
+                    </ul>
+                </p>
+                <div class="text-center mt-5">
+                    <a type="button" class="btn btn-outline-primary" target="_blank" rel="noopener"
+                       href="{{OCTOBOT_MARKET_MAKING_URL}}/{{LOCALE}}/guides/understanding-the-liquidity-score?utm_source=octobot_mm&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=cloud_button">
+                        Learn more on the Liquidity Score
+                    </a>
+                </div>
+            </div>
+            <div class="col-12 col-lg-6 text-center">
+                 <img class="img-fluid img-feature"
+                      src="{{url_for('static', filename='img/distributions/market_making/octobot-market-making-liquidity-scores-preview.jpg')}}"
+                      alt="octobot market making liquidity scores preview">
+           </div>
+        </div>
+        <div class="row feature-margin">
+            <div class="col-12 col-lg-6">
+                <img class="img-fluid img-feature"
+                      src="{{url_for('static', filename='img/distributions/market_making/configuration-preview.png')}}"
+                      alt="configuration preview">
+            </div>
+            <div class="col-12 col-lg-6">
+                <h3>
+                    Start your advanced market making strategy
+                </h3>
+                <p>
+                     <a target="_blank" rel="noopener"
+                           href="{{OCTOBOT_MARKET_MAKING_URL}}?utm_source=octobot_mm&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=cloud_text">
+                        OctoBot cloud Market Making</a>
+                    provides you with more advanced market making strategies and makes it easier to configure and visualize
+                    your strategy using the built-in order book preview.
+                <p>
+                </p>
+                <p>
+                    More capabilities for better market making:
+                    <ul>
+                        <li>
+                            Unlimited orders in the book and order book profiles
+                        </li>
+                        <li>
+                            Ready-made configurations adapted to your market volume
+                        </li>
+                        <li>
+                            Custom budgeting & automated adjustment upon market volume ups and downs to optimize your funds
+                        </li>
+                    </ul>
+                <div class="text-center mt-5">
+                    <a type="button" class="btn btn-outline-primary" target="_blank" rel="noopener"
+                       href="{{OCTOBOT_MARKET_MAKING_URL}}/{{LOCALE}}/guides/starting-your-market-making-bot?utm_source=octobot_mm&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=cloud_button">
+                        Learn more on advanced strategies
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="row feature-margin">
+            <div class="col-12 col-lg-6">
+                <h3>
+                    Your self-service market making platform
+                </h3>
+                <p>
+                    Create the right market making strategy for your market by yourself. The OctoBot Market Making team
+                    is here to answer your questions and take care of the technical aspect of the bot.
+                </p>
+                <p>
+                    With improved crypto baskets :
+                    <ul>
+                        <li>
+                            Personalized support sessions with the team to make the most of the platform
+                        </li>
+                        <li>
+                            Follow your bot and adapt your strategy within seconds
+                        </li>
+                        <li>
+                            Your bot operational at all time on our secure cloud
+                        </li>
+                    </ul>
+                </p>
+                <div class="text-center mt-5">
+                    <a type="button" class="btn btn-outline-primary" target="_blank" rel="noopener"
+                       href="{{OCTOBOT_MARKET_MAKING_URL}}?utm_source=octobot&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=extensions_button">
+                        Learn more on OctoBot Market Making
+                    </a>
+                </div>
+            </div>
+            <div class="col-12 col-lg-6">
+                <img class="img-fluid img-feature"
+                      src="{{url_for('static', filename='img/distributions/market_making/live-bot-preview.png')}}"
+                      alt="live bot preview">
+            </div>
+        </div>
+        <div class="feature-margin d-flex justify-content-center">
+            <div class="mx-auto">
+                <h3 class="text-center">
+                    And more
+                </h3>
+
+                <p class="">
+                    <ul>
+                        <li>
+                            Direct communication channel to quickly answer your questions
+                        </li>
+                        <li>
+                            Priority new features and improvements requests
+                        </li>
+                        <li>
+                            <a  target="_blank" rel="noopener"
+                                href="https://www.hollaex.com/blog/introducing-market-making-bots-for-crypto-pro-above-simplifying-new-market-creation">
+                                HollaEx-powered exchanges
+                            </a> built-in support
+                        </li>
+                    </ul>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="pb-5 text-center">
+        <a type="button" class="btn btn-primary" target="_blank" rel="noopener"
+           href="{{OCTOBOT_MARKET_MAKING_URL}}?utm_source=octobot&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=extensions_button">
+            Go to OctoBot Market Making
+        </a>
+    </div>
+</div>
+
+<br>
+{% endblock %}
+
+{% block additional_scripts %}
+<script src="{{ url_for('static', filename='js/components/extensions.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+{% endblock additional_scripts %}

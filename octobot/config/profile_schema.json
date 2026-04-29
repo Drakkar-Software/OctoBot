@@ -31,6 +31,9 @@
         "read_only": {
           "type": "boolean"
         },
+        "hidden": {
+          "type": "boolean"
+        },
         "extra_backtesting_time_frames": {
           "type": "array",
           "uniqueItems": true,
@@ -43,6 +46,9 @@
     "config": {
       "type": "object",
       "properties": {
+        "distribution": {
+          "type": "string"
+        },
         "crypto-currencies": {
           "type": "object",
           "patternProperties": {
@@ -168,6 +174,9 @@
             "current-live-id": {
               "type": "integer",
               "minimum": 1
+            },
+            "paused": {
+              "type": "boolean"
             }
           },
           "required": [

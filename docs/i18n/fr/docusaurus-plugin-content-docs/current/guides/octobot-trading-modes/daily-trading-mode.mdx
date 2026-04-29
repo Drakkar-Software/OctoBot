@@ -1,0 +1,62 @@
+---
+title: "Daily trading mode"
+description: "En utilisant le Daily Trading Mode, vous utilisez la stratégie de trading la plus flexible sur OctoBot. Tradez avec des évaluateur techniques, sociaux, ou d'IA."
+sidebar_position: 5
+---
+
+
+
+# Daily Trading Mode
+
+Le Daily Trading Mode (ou DailyTradingMode) est conçu pour être le mode de trading le plus flexible. En utilisant le Daily Trading Mode, vous pouvez trader en utilisant n'importe quel évaluateur technique, social, d'IA ou en temps réel sur les marchés SPOT et futures.
+
+import YouTube from '@site/src/components/YouTube';
+
+<YouTube id="e-GqmTfrchY" title="Le Daily Trading Mode d" />
+
+Il vous permet de créer des stratégies de trading hautement personnalisées.
+
+En utilisant le Daily Trading mode, le type des ordres créés (au marché ou aux limites) sera défini par la force du signal reçu des évaluateurs: 
+- Un signal plus proche de -1 déclenchera un ordre d'achat au marché.
+- Un signal plus proche de -0.5 déclenchera un ordre d'achat aux limites.
+- Un signal plus proche de 0.5 déclenchera un ordre de vente aux limites.
+- Un signal plus proche de 1 déclenchera un ordre de vente au marché.
+
+
+## Le Daily Trading Mode peut
+
+- Acheter ou Vendre lorsque les évaluateurs signalent une opportunité à la hausse (long) ou à la baisse (short)
+- Créer automatiquement un ordre de take profit après chaque entrée
+- Créer automatiquement un ordre de stop loss après chaque entrée
+- Acheter ou Vendre uniquement si configuré pour
+- Être utilisé pour trader sur les marchés SPOT et futures
+
+## Mode par défaut - Target profits mode désactivé
+Lorsque le `Target profits mode` est désactivé, le Daily Trading Mode achètera lorsqu'un signal à la hausse est reçu et vendra lorsqu'un signal à la baisse est reçu.
+
+:::info
+  En utilisant le mode par défaut, le Daily Trading Mode ne prendra pas en compte les prix d'entrée lors de la création des ordres de sortie. Cela signifie que si un signal à la baisse (short) est reçu, un ordre de vente sera créé, même si l'actif a été acheté à un prix plus élevé. Soyez prudent lors de la négociation d'actifs en tendance baissière dans cette configuration. Dans certains cas, désactiver les ordres de vente pourrait aider à éviter ce problème.
+:::
+
+## Target profits mode
+Lorsque le `Target profits mode` est activé, de même qu'avec le mode par défaut, le Daily Trading Mode achètera lorsqu'un signal à la hausse est reçu et vendra lorsqu'un signal à la baisse est reçu.
+
+Cependant, en Target profits mode, les signaux ne sont utilisés que pour acheter (ou vendre en short) mais jamais pour vendre (ou racheter en short). Ce mode évite le problème décrit ci-dessus de "vente à perte" du mode par défaut. Les take profit et les stops loss doivent être configurés directement à partir de la configuration du Target profits mode et seront créés dès que n'importe quel ordre d'entrée est exécuté.
+
+
+## Configurer les ordres
+- Le Daily Trading mode peut créer des ordres au marché ou aux limite en fonction de la force du signal. Lors de l'utilisation d'ordres aux limites, la `Fixed limit prices difference` permet de définir la différence de % pour calculer le prix de l'ordre.
+- All in buy / sell order: peut être activé pour trader en utilisant le montant maximal du portefeuille à chaque fois
+- Les ordres d'achat ou de vente peuvent être désactivés pour ne considérer que les signaux d'achat ou de vente
+- Les montants d'ordre peuvent être configurés en utilisant la [syntaxe des montants d'ordre](order-amount-syntax).
+- Le `Maximum currency percent` peut être utilisé pour réduire le % maximal alloué à une cryptomonnaie donnée. Cela peut être utile pour éviter plusieurs achats du même actif pendant des conditions de marché inhabituelles. Attention : cela n'est utilisé que lorsque les montants d'ordre sont automatiquement calculés. Cette valeur est ignorée lorsque les montants d'ordre sont définis dans la configuration.
+
+
+## La création des ordres 
+L'objectif du Daily Trading Mode est d'avoir un état (long, neutre ou court) et de créer des ordres lorsque cet état change. Cela signifie que tant que l'état du mode de trading reste le même, les ordres resteront en ligne. Cependant, si l'état change (de long à court, par exemple), tous les ordres de l'état précédents qui sont toujours ouverts seront annulés et de nouveaux ordres correspondant à l'état actuel seront créés.
+
+En cas de va-et-vient entre neutre et le même état, les ordres ouverts seront simplement remplacés.
+
+Par exemple, un état long créera un ordre d'achat aux limites. Si l'état du Daily Trading Mode change plus tard à neutre, les ordres ouverts ne seront pas annulés (le neutre n'annule pas les ordres ouverts). Maintenant, si l'état revient à long, l'ordre d'achat précédemment ouvert sera annulé et remplacé par un nouveau. Si l'ordre d'achat précédemment créé a été exécuté, un nouvel ordre d'achat sera ouvert.
+
+Les profits proviennent de l'achat lorsque l'état est long, puis de la vente lorsque l'état est court (ou vice versa lors de la vente à découvert dans le trading de futures).

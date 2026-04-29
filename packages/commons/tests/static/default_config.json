@@ -1,0 +1,19 @@
+{
+  "backtesting": {
+      "files": []
+  },
+  "exchanges": {
+    "binance": {
+      "api-key": "your-api-key-here",
+      "api-secret": "your-api-secret-here"
+    }
+  },
+  "services": {},
+  "notification":{
+    "global-info": true,
+    "price-alerts": true,
+    "trades": true,
+    "notification-type": []
+  },
+  "accepted_terms": false
+}

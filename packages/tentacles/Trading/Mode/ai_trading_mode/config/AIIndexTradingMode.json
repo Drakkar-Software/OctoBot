@@ -1,0 +1,13 @@
+{
+    "default_config": [
+        "CryptoLLMAIStrategyEvaluator",
+        "GlobalLLMAIStrategyEvaluator"
+    ],
+    "required_strategies": [
+        "CryptoLLMAIStrategyEvaluator",
+        "GlobalLLMAIStrategyEvaluator"
+    ],
+    "refresh_interval": 1,
+    "rebalance_trigger_min_percent": 5,
+    "use_deep_agent": false
+}

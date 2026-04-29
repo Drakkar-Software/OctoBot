@@ -1,0 +1,95 @@
+---
+title: "Les Trading modes"
+description: "Découvrez comment fonctionnent les stratégies de trading dans OctoBot et les principaux trading modes basés sur le DCA, le grid trading, l'IA et TradingView."
+sidebar_position: 1
+---
+
+
+
+# Les trading modes d'OctoBot
+
+## Concepts clés
+
+Dans OctoBot, les trading modes définissent la manière de créer, maintenir et annuler les ordres. Ils sont un composant clé de toute stratégie de trading et sont compatibles avec chaque [plateforme d'échange supportée](/guides/exchanges).
+
+import YouTube from '@site/src/components/YouTube';
+
+<YouTube id="Exdl94cmMDQ" title="Configuration de Trading dans OctoBot" />
+
+Un trading mode peut également s'appuyer sur des évaluateurs pour signaler les opportunités à la hausse (long) ou à la baisse (short).
+
+### Les responsabilités des trading modes
+
+Dans OctoBot, les trading modes définissent:
+
+- Le type d'ordre à créer
+- La quantité d'argent à investir dans chaque ordre et à quel prix
+- Comment prendre des bénéfices ou fixer des stop-loss
+- Quand annuler les ordres si nécessaire
+
+### Les responsabilités des evaluators
+
+Alors que les trading modes sont responsables des ordres au sein d'une stratégie de trading, certaines stratégies qui reposent sur des évaluateurs techniques, sociaux, IA ou en temps-réel tels que [les trading modes statistiques](#les-trading-modes-statistiques) utilisent également des `evaluators` et `strategies` pour être notifiées **when** ils doivent créer des ordres.
+
+Cela signifie qu'en utilisant des [trading modes statistiques](#les-trading-modes-statistiques), il est possible qu'il soit nécessaire d'également activer:
+
+- Un ou plusieurs `evaluators` qui seront chargés d'analyser les nouvelles candles et nouveaux prix ou réseaux sociaux afin fournir un signal haussier (long) ou baissier (short) lorsque cela est nécessaire.
+- Une `strategy`, qui rassemble tous les signaux des `evaluators` et les résume en un seul signal donné au trading mode.
+
+<div style={{textAlign: "center"}}>
+  ![ai trading illustrated by octobot head with chatgpt logo trading bitcoin
+  ethereum litecoin usd
+  logos](/images/guides/ai-trading-illustrated-by-octobot-head-with-chatgpt-logo-trading-bitcoin-ethereum-litecoin-usd-logos.png)
+</div>
+
+Un `evaluator` peut être un évaluateur technique tel qu'une évaluation <a href="https://www.investopedia.com/terms/r/rsi.asp" rel="nofollow">RSI</a> des 30 dernières candles, [demander l'opinion de ChatGPT sur le marché](chatgpt-trading), [surveiller reddit](/guides/octobot-interfaces/reddit) ou bien d'autres choses encore. Il n'y a aucune limite à ce que les `evaluators` peuvent faire pour créer les bons signaux pour vos stratégies de trading.
+
+:::info
+  Lors de l'utilisation des `evaluators`, les time frames à utiliser pour vos
+  évaluations sont définis dans la configuration de la `strategy`.
+:::
+
+## Les trading modes
+
+OctoBot est livré avec des modes de trading intégrés. Tous peuvent être configurés et testés en profondeur grâce au [backtesting](/guides/octobot-usage/backtesting).
+
+### Les trading modes statistiques
+
+Les entrées (et éventuellement les sorties) sont calculées à l'aide des statistiques. Cela peut provenir d'évaluateurs techniques, d'IA, des réseaux sociaux, d'événements de prix ou bien plus encore.
+
+<div style={{textAlign: "center"}}>
+  ![dca trading illustrated by a man watering a plant growing
+  money](/images/guides/dca-trading-illustrated-by-a-man-watering-a-plant-growing-money.png)
+</div>
+
+- [DCA trading mode](dca-trading-mode): Utilisez une stratégie de Dollar cost Averaging avancée qui peut (mais pas nécessairement) inclure plusieurs ordres d'achat et de vente, des stop loss, des périodes d'investissement ainsi que des `evaluators` techniques ou basés sur l'intelligence artificielle.
+- [Daily Trading Mode](daily-trading-mode): Créez des ordres d'achat et de vente en fonction de vos `evaluators` techniques, sociaux ou basés sur l'intelligence artificielle.
+- [Dip Analyser trading mode](dip-analyser-trading-mode): Tradez les minimum locaux et optimisez vos profits en utilisant plusieurs niveaux de take profits.
+
+### Les trading modes basés sur une grille
+
+Les ordres d'achat et de vente sont créés de manière déterministe selon la configuration du trading mode. Il n'y a pas de probabilité dans ces algorithmes.
+
+<div style={{textAlign: "center"}}>
+  ![grid trading illustrated by a man stepping up on green stairs grabbing
+  coins](/images/guides/grid-trading-illustrated-by-a-man-stepping-up-on-green-stairs-grabbing-coins.png)
+</div>
+
+- [Grid trading mode](grid-trading-mode): Profitez des marchés stables en utilisant une stratégie simple basée sur la grille.
+- [Staggered Orders trading mode](staggered-orders-trading-mode): Profitez des marchés stables en utilisant une stratégie avancée basée sur la grille.
+
+### Automatiser une stratégie TradingView
+
+<div style={{textAlign: "center"}}>
+  ![tradingview automation illustrated by tradingview
+  logo](/images/guides/interfaces/tradingview-automation-illustrated-by-tradingview-logo.png)
+</div>
+
+Les entrées et sorties sont créées en fonction des signaux provenant de votre compte TradingView. Dans ce mode de trading, le cœur de votre stratégie repose sur TradingView et OctoBot agit en automatisation pour synchroniser votre stratégie avec n'importe quel compte de plateforme d'échange.
+
+- [TradingView trading mode](tradingview-trading-mode): Automatisez facilement les ordres à partir de vos indicateurs ou stratégies TradingView sur n'importe quelle plateforme d'échange supportée par OctoBot.
+
+:::info
+  OctoBot étant open-source, si vous avez quelques connaissances en
+  programmation Python, vous pouvez également créer votre propre trading mode.
+:::

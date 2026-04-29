@@ -1,0 +1,26 @@
+{% import 'components/config/editable_config.html' as m_editable_config %}
+{% macro config_notification(config, config_name, service_name_list) -%}
+    <!-- Card -->
+    <div class="card mb-4 config-card" >
+
+    <div class="card-header"><h4>Enabled notification events</h4></div>
+
+        <!--Card content-->
+        <div class="card-body">
+
+            <p class="card-text config">
+                {% for key in config %}
+                    {{ m_editable_config.editable_key(  config,
+                                                        key,
+                                                        config_name + "_" + key,
+                                                        "global_config",
+                                                        config[key],
+                                                        config[key],
+                                                        suggestions=service_name_list,
+                                                        placeholder_str="Select notification(s) to enable")
+                    }}
+                {% endfor %}
+            </p>
+        </div>
+    </div>
+{%- endmacro %}

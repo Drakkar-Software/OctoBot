@@ -1,0 +1,9 @@
+{
+    "GPT_model": "gpt-3.5-turbo",
+    "indicator": "No indicator: raw candles price data",
+    "max_confidence_threshold": 60,
+    "period": 20,
+    "source": "Full candle (For no indicator only)",
+    "allow_reevaluation": false,
+    "max_gpt_tokens": -1
+}

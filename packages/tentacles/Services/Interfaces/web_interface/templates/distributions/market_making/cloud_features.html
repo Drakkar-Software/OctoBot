@@ -1,0 +1,210 @@
+{% extends "layout.html" %}
+{% set active_page = "community" %}
+{% import "components/community/tentacle_packages.html" as m_tentacle_packages %}
+{% import 'macros/flash_messages.html' as m_flash_messages %}
+
+{% block body %}
+<br>
+
+{{ m_flash_messages.flash_messages() }}
+{{ m_tentacle_packages.pending_tentacles_install_modal(has_owned_packages_to_install) }}
+{{ m_tentacle_packages.waiting_for_owned_packages_to_install_modal(not has_owned_packages_to_install and auto_refresh_packages) }}
+{{ m_tentacle_packages.select_payment_method_modal(OCTOBOT_EXTENSION_PACKAGE_1_NAME) }}
+
+<div class="card">
+    <div class="card-header">
+        <h2>
+            Improve your bot with the {{OCTOBOT_EXTENSION_PACKAGE_1_NAME}}
+        </h2>
+    </div>
+    <div class="card-body">
+
+        <div class="py-5 row">
+            <div class="col">
+                <p>
+                    The {{OCTOBOT_EXTENSION_PACKAGE_1_NAME}} improves your OctoBot
+                    capabilities and simplifies its use.
+                </p>
+                <p>
+                    It adds the <strong>Strategy Designer</strong> to your OctoBot,
+                    greatly <strong>simplifies the TradingView</strong> configuration, improves <strong>crypto basket</strong>
+                    investments much more.
+                </p>
+                <p>
+                    The extension is completely optional and bound to your OctoBot account. This means that updating or
+                    reinstalling your OctoBot will automatically install your extension as long as you are
+                    connected to your OctoBot account.
+                </p>
+            </div>
+            <div class="col text-center my-auto">
+                <div class="text-center">
+                    <h5>${{price}}</h5>
+                </div>
+                <div>
+                    Lifetime improvement of your OctoBot.
+                </div>
+                <div>
+                    No subscription. Pay with crypto or credit card.
+                </div>
+                <div class="mt-4">
+                    {{ m_tentacle_packages.get_package_button(OCTOBOT_EXTENSION_PACKAGE_1_NAME, is_community_authenticated, has_open_source_package) }}
+                </div>
+                {% if is_community_authenticated %}
+                <div class="">
+                    Authenticated as {{current_logged_in_email}}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="row mt-5">
+            <div class="col-12 col-lg-6">
+                <h3>
+                    Optimize your own strategies with the Strategy Designer
+                </h3>
+                <p>
+                    The <a target="_blank" rel="noopener"
+                           href="{{OCTOBOT_COMMUNITY_URL}}/{{LOCALE}}/guides/octobot-usage/strategy-designer?utm_source=octobot&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=extensions_text">
+                        Strategy Designer
+                    </a>
+                    is OctoBot's most advanced strategy optimization and backtesting interface.
+                </p>
+                <p>
+                    Using the Strategy Designer, you can:
+                    <ul>
+                        <li>
+                            Compare backtesting results of your strategies
+                        </li>
+                        <li>
+                            Visualize your strategies behavior through time
+                        </li>
+                        <li>
+                            Optimize your strategy while using a different live profile
+                        </li>
+                    </ul>
+                </p>
+                <div class="text-center mt-5">
+                    <a type="button" class="btn btn-outline-primary" target="_blank" rel="noopener"
+                       href="{{OCTOBOT_COMMUNITY_URL}}/{{LOCALE}}/guides/octobot-usage/strategy-designer?utm_source=octobot&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=extensions_button">
+                        Learn more on the Strategy Designer
+                    </a>
+                </div>
+            </div>
+            <div class="col-12 col-lg-6 text-center">
+                <iframe width="560" height="315" src="https://www.youtube.com/embed/V4Z1xUhqWz8?showinfo=0&amp;rel=0"
+                title="The OctoBot Strategy Designer" frameborder="0" allow="accelerometer; autoplay;
+                clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </div>
+        </div>
+        <div class="row feature-margin">
+            <div class="col-12 col-lg-6">
+                <img class="img-fluid img-feature"
+                         src="{{url_for('static', filename='img/community/tentacles_packages_previews/tradingview-ema-strategy-illustration-with-2-buy-and-2-sell.png')}}" alt="OctoBot cloud">
+            </div>
+            <div class="col-12 col-lg-6">
+                <h3>
+                    Seamlessly connect your TradingView webhook
+                </h3>
+                <p>
+                    In the default version of OctoBot, advanced technical knowledge or a paid external
+                    webhook provider such as Ngrok is required to connect to your TradingView alerts.
+                <p>
+                </p>
+                    Using OctoBot with the {{OCTOBOT_EXTENSION_PACKAGE_1_NAME}} makes TradingView strategies automation:
+                    <ul>
+                        <li>
+                            Free: No TradingView subscription is required to use email alerts, no Ngrok subscription is needed for webhooks
+                        </li>
+                        <li>
+                            Easy: You get a unique alert email address and webhook URL you can use rightaway
+                        </li>
+                        <li>
+                            Secure: Use the OctoBot cloud secure email and webhook system
+                        </li>
+                    </ul>
+                </p>
+                <div class="text-center mt-5">
+                    <a type="button" class="btn btn-outline-primary" target="_blank" rel="noopener"
+                       href="{{OCTOBOT_COMMUNITY_URL}}/{{LOCALE}}/guides/octobot-trading-modes/tradingview-trading-mode?utm_source=octobot&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=extensions_text">
+                        Learn more on TradingView Strategies
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="row feature-margin">
+            <div class="col-12 col-lg-6">
+                <h3>
+                    Use and configure your improved crypto baskets
+                </h3>
+                <p>
+                    OctoBot cloud <a target="_blank" rel="noopener"
+                                     href="{{OCTOBOT_COMMUNITY_URL}}/{{LOCALE}}/features/crypto-basket?utm_source=octobot&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=extensions_text">
+                        crypto baskets
+                    </a>
+                    are special strategies that make it easy to invest in the top crypto of the market or specific themes.
+                </p>
+                <p>
+                    With improved crypto baskets :
+                    <ul>
+                        <li>
+                            Follow automatically updated OctoBot cloud crypto baskets
+                        </li>
+                        <li>
+                            Or start from an existing basket and customize it
+                        </li>
+                        <li>
+                            Watch your portfolio automatically follow the latest trends
+                        </li>
+                    </ul>
+                </p>
+                <div class="text-center mt-5">
+                    <a type="button" class="btn btn-outline-primary" target="_blank" rel="noopener"
+                       href="{{OCTOBOT_COMMUNITY_URL}}/features/crypto-basket?utm_source=octobot&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=extensions_button">
+                        Learn more about crypto baskets
+                    </a>
+                </div>
+            </div>
+            <div class="col-12 col-lg-6">
+                <img class="img-fluid img-feature"
+                             src="{{url_for('static', filename='img/community/tentacles_packages_previews/crypto-basket.png')}}" alt="OctoBot cloud">
+            </div>
+        </div>
+        <div class="feature-margin d-flex justify-content-center">
+            <div class="mx-auto">
+                <h3 class="text-center">
+                    And more!
+                </h3>
+                <p class="text-center">
+                    With the {{OCTOBOT_EXTENSION_PACKAGE_1_NAME}} :
+                </p>
+
+                <p class="">
+                    <ul>
+                        <li>
+                            Invest using exclusive strategies and profiles
+                        </li>
+                        <li>
+                            Join the exclusive Discord channel
+                        </li>
+                    </ul>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="py-4 text-center">
+        <div>
+            {{ m_tentacle_packages.get_package_button(OCTOBOT_EXTENSION_PACKAGE_1_NAME, is_community_authenticated, has_open_source_package) }}
+        </div>
+        <div class="mt-5">
+            Any question on the {{OCTOBOT_EXTENSION_PACKAGE_1_NAME}} ? Just
+            <a href="mailto:contact@octobot.cloud?subject=About the {{OCTOBOT_EXTENSION_PACKAGE_1_NAME}}">ask the team</a>.
+        </div>
+    </div>
+</div>
+
+<br>
+{% endblock %}
+
+{% block additional_scripts %}
+<script src="{{ url_for('static', filename='js/components/extensions.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+{% endblock additional_scripts %}

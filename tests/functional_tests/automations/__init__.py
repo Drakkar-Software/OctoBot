@@ -17,6 +17,7 @@ import mock
 
 import octobot.automation
 import octobot_commons.configuration as configuration
+import octobot.automation.bases.execution_details as execution_details
 
 
 class TestTriggerEvent(octobot.automation.AbstractTriggerEvent):
@@ -45,7 +46,7 @@ class TestCondition(octobot.automation.AbstractCondition):
         super().__init__()
         self.evaluate_mock = mock.AsyncMock()
 
-    async def evaluate(self) -> bool:
+    async def process(self, execution_details: execution_details.ExecutionDetails) -> bool:
         await self.evaluate_mock()
         return True
 
@@ -65,7 +66,9 @@ class TestAction(octobot.automation.AbstractAction):
         super().__init__()
         self.process_mock = mock.AsyncMock()
 
-    async def process(self):
+    async def process(
+        self, execution_details: execution_details.ExecutionDetails
+    ):
         # trigger instantly
         await self.process_mock()
 

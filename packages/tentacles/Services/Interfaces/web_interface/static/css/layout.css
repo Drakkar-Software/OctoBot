@@ -1,0 +1,36 @@
+/* Nav bar disabling */
+a.disabled {
+  /* Make the disabled links grayish*/
+  color: gray;
+  /* And disable the pointer events */
+  pointer-events: none;
+}
+
+.icon-black {
+  color: black;
+}
+
+.danger-color{
+    background-color: #ff4444;
+}
+.danger-color-dark{
+    background-color: #CC0000;
+}
+.warning-color{
+    background-color: #ffbb33;
+}
+.warning-color-dark{
+    background-color: #FF8800;
+}
+.success-color{
+    background-color: #00C851;
+}
+.success-color-dark{
+    background-color: #007E33;
+}
+.info-color{
+    background-color: #33b5e5;
+}
+.info-color-dark{
+    background-color: #0099CC;
+}

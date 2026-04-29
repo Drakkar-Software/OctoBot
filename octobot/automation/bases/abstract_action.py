@@ -16,8 +16,16 @@
 import abc
 
 import octobot.automation.bases.automation_step as automation_step
+import octobot.automation.bases.execution_details as execution_details
 
 
 class AbstractAction(automation_step.AutomationStep, abc.ABC):
-    async def process(self):
+
+    @automation_step.last_execution_details_updater
+    async def call_process(self, execution_details: execution_details.ExecutionDetails) -> bool:
+        return await self.process(execution_details)
+
+    async def process(
+        self, execution_details: execution_details.ExecutionDetails
+    ) -> bool:
         raise NotImplementedError

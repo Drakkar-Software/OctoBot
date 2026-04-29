@@ -2,11 +2,9 @@ pytest>=9.0.0
 pytest-asyncio>=1.3.0
 pytest-cov
 pytest-timeout
+pytest-xdist
 
 mock>=4.0.1
-
-coverage
-coveralls
 
 twine
 pip

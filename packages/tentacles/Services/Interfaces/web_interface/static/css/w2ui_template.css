@@ -1,0 +1,66 @@
+
+/** todo clean up **/
+
+.w2ui-column-check {
+    background: #fff !important;
+    color: #131722 !important;
+}
+
+.w2ui-grid .w2ui-grid-body table .w2ui-col-number {
+    background-color: unset !important;
+}
+
+.w2ui-grid-data-spacer, .w2ui-grid-data  {
+    border-bottom: unset !important;
+}
+
+.w2ui-empty-record *, .w2ui-empty-record {
+    border: none !important;
+    box-shadow:none !important;
+}
+
+.w2ui-btn.close-btn {
+    padding: 24px 9px !important;
+    padding-top: 24px !important;
+}
+
+.w2ui-btn {
+    border-radius: 0 !important;
+    background-color: #131722 !important;
+    font-size: 1rem !important;
+    text-transform: unset !important;
+    padding: 8px 2rem !important;
+    border-color: #fb3 !important;
+    box-shadow: unset !important;
+    color: #fb3 ! important;
+}
+
+.w2ui-btn-blue {
+    color: #00c851 !important;
+    border-color: #00c851 !important;
+}
+
+.w2ui-btn {
+    margin: 0 !important;
+}
+
+input.w2ui-input, .w2ui-overlay *, .w2ui-overlay select, .w2ui-btn {
+    background-color: #131722 !important;
+    color: #b2b5be !important;
+    border-color: #2a2e39 !important;
+    background-image: unset !important;
+}
+
+.w2ui-record, .w2ui-btn {
+    border: 1px solid var(--brdr) !important;
+}
+
+.w2ui-overlay tr:hover, .w2ui-grid-toolbar td:hover, .w2ui-grid-toolbar tr:hover, .w2ui-grid-toolbar table:hover, .w2ui-grid-toolbar tbody:hover, .w2ui-grid-toolbar table tbody tr:hover td, .w2ui-grid-toolbar table.dataTable tbody tr:hover td {
+    -moz-box-shadow: none !important;
+    -webkit-box-shadow: none !important;
+    box-shadow: none !important;
+}
+
+.w2ui-grid .w2ui-grid-body {
+    background-color: var(--bg);
+}

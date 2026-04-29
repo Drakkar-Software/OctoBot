@@ -1,0 +1,181 @@
+{
+  "type": "object",
+  "properties": {
+    "profile": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "imported": {
+          "type": "boolean"
+        },
+        "description": {
+          "type": ["string", "null"]
+        },
+        "avatar": {
+          "type": ["string", "null"]
+        },
+        "origin_url": {
+          "type": ["string", "null"]
+        },
+        "read_only": {
+          "type": "boolean"
+        }
+      }
+    },
+    "config": {
+      "type": "object",
+      "properties": {
+        "distribution": {
+          "type": "string"
+        },
+        "crypto-currencies": {
+          "type": "object",
+          "patternProperties": {
+            "^.*$": {
+              "type": "object",
+              "additionalProperties":false,
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "pairs": {
+                  "type": "array",
+                  "uniqueItems": true,
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "quote": {
+                  "type": "string"
+                },
+                "add": {
+                  "type": "array",
+                  "uniqueItems": true,
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "exchanges": {
+          "type": "object",
+          "patternProperties": {
+            "^.*$": {
+              "type": "object",
+              "additionalProperties":false,
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "exchange-type": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "enabled"
+              ]
+            }
+          }
+        },
+        "trader": {
+          "type": "object",
+          "additionalProperties":false,
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "load-trade-history": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "enabled"
+          ]
+        },
+        "trader-simulator": {
+          "type": "object",
+          "additionalProperties":false,
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "fees": {
+              "type": "object",
+              "additionalProperties":false,
+              "properties": {
+                "maker": {
+                  "type": "number",
+                  "minimum": -100,
+                  "maximum": 100
+                },
+                "taker": {
+                  "type": "number",
+                  "minimum": -100,
+                  "maximum": 100
+                }
+              },
+              "required": [
+                "maker",
+                "taker"
+              ]
+            },
+            "starting-portfolio": {
+              "type": "object",
+              "additionalProperties":false,
+              "patternProperties": {
+                "^.*$": {
+                  "type": "number",
+                  "minimum": 0
+                }
+              }
+            }
+          },
+          "required": [
+            "enabled",
+            "fees",
+            "starting-portfolio"
+          ]
+        },
+        "trading": {
+          "type": "object",
+          "additionalProperties":false,
+          "properties": {
+            "paused": {
+              "type": "boolean"
+            },
+            "reference-market": {
+              "type": "string"
+            },
+            "risk": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "current-live-id": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "reference-market",
+            "risk"
+          ]
+        }
+      },
+      "required": [
+        "crypto-currencies",
+        "exchanges",
+        "trading",
+        "trader",
+        "trader-simulator"
+      ]
+    }
+  }
+}

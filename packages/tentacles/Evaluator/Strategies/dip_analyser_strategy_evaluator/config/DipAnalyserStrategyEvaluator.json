@@ -1,0 +1,14 @@
+{
+    "default_config": [
+        "KlingerOscillatorReversalConfirmationMomentumEvaluator",
+        "RSIWeightMomentumEvaluator"
+    ],
+    "required_evaluators": [
+        "InstantFluctuationsEvaluator",
+        "KlingerOscillatorReversalConfirmationMomentumEvaluator",
+        "RSIWeightMomentumEvaluator"
+    ],
+    "required_time_frames": [
+        "4h"
+    ]
+}

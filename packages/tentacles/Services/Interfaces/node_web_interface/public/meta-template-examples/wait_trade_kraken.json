@@ -1,0 +1,13 @@
+{
+  "id": "wait_trade_kraken",
+  "label": "Wait + Trade (Kraken)",
+  "description": "Wait for a delay, then place an order on Kraken",
+  "steps": [
+    { "templateId": "wait" },
+    {
+      "templateId": "trade",
+      "overrides": { "EXCHANGE_TO": "kraken" },
+      "hiddenParams": ["API_KEY", "API_SECRET"]
+    }
+  ]
+}
