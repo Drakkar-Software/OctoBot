@@ -15,7 +15,6 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
 import asyncio
-import dataclasses
 import json
 import mock
 import os
@@ -69,8 +68,8 @@ _GRID_INCREMENT = 200
 _GRID_SPREAD = 600
 _FIXED_BTC_USDC_CLOSE = 100000.0
 
-_SIMULATOR_GRID_TEST_COMMUNITY_PASSPHRASE = "simulator-copy-grid-functional-test"
-_SIMULATOR_GRID_TEST_COMMUNITY_PUBLIC_KEY = "simulator-copy-grid-functional-test-public-key"
+# Wallet for this flow: set on ``Task.wallet_address``; ``OctoBotActionsJob`` merges it into auth_details (not from task JSON).
+_SIMULATOR_GRID_TEST_COMMUNITY_WALLET_ADDRESS = "simulator-copy-grid-functional-test-wallet-address"
 
 
 def _is_on_github_ci() -> bool:
@@ -82,11 +81,6 @@ def _exchange_internal_name() -> str:
 
 
 if IMPORTED_OCTOBOT_FLOW_GRID_DEPS:
-
-    octobot_flow_entities.register_passphrase(
-        _SIMULATOR_GRID_TEST_COMMUNITY_PUBLIC_KEY, _SIMULATOR_GRID_TEST_COMMUNITY_PASSPHRASE
-    )
-
     _grid_pair_settings = [
         grid_trading_module.GridTradingMode.get_default_pair_config(
             "BTC/USDC",
@@ -274,14 +268,6 @@ if IMPORTED_OCTOBOT_FLOW_GRID_DEPS:
                 "actions_dag": {"actions": all_actions},
             }
         }
-        state_payload["automation"]["execution"] = {
-            "previous_execution": {
-                "trigger_time": time.time() - 600,
-                "trigger_reason": "scheduled",
-                "strategy_execution_time": time.time() - 590,
-            },
-            "current_execution": {"trigger_reason": "scheduled"},
-        }
         return state_payload
 
 
@@ -295,19 +281,12 @@ class TestTriggerTaskGridDbosIntegration:
         patched_fetch_ohlcv = _fetch_ohlcv_side_effect_for_close_price(lambda: _FIXED_BTC_USDC_CLOSE)
 
         state_payload = _build_grid_automation_state_dict()
-        grid_auth_details = octobot_flow_entities.UserAuthentication(
-            public_key=_SIMULATOR_GRID_TEST_COMMUNITY_PUBLIC_KEY,
-        )
-        task_content = json.dumps(
-            {
-                "state": state_payload,
-                "auth_details": dataclasses.asdict(grid_auth_details),
-            }
-        )
+        task_content = json.dumps({"state": state_payload})
         grid_task = octobot_node.models.Task(
             name="test_grid_trigger_automation",
             content=task_content,
             type=octobot_node.models.TaskType.EXECUTE_ACTIONS.value,
+            wallet_address=_SIMULATOR_GRID_TEST_COMMUNITY_WALLET_ADDRESS,
         )
 
         # The only mocks are symbol prices to avoid side effects; everything else runs on the target environment.
@@ -427,11 +406,12 @@ class TestTriggerTaskGridDbosIntegration:
             assert parsed_final.error is None
             final_job = _job_description_dict_from_output(parsed_final)
             # OctoBotActionsJobDescription: only non-default fields are serialized (empty params omitted).
+            # _SIMULATOR_GRID_TEST_COMMUNITY_WALLET_ADDRESS has been added to auth_details
             assert set(final_job.keys()) == {"auth_details", "state"}
             final_auth_details = octobot_flow_entities.UserAuthentication.from_dict(
                 final_job["auth_details"]
             )
-            assert final_auth_details.public_key == _SIMULATOR_GRID_TEST_COMMUNITY_PUBLIC_KEY
+            assert final_auth_details.wallet_address == _SIMULATOR_GRID_TEST_COMMUNITY_WALLET_ADDRESS
             final_automation = final_job["state"]["automation"]
             assert final_automation["post_actions"]["stop_automation"] is True
             final_elements = final_automation["exchange_account_elements"]

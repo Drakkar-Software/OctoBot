@@ -64,7 +64,10 @@ class AutomationJob:
         executed_actions = []
         async with self._maybe_authenticator() as maybe_authenticator:
             maybe_community_repository = (
-                octobot_flow.repositories.community.CommunityRepository(maybe_authenticator)
+                octobot_flow.repositories.community.CommunityRepository(
+                    maybe_authenticator,
+                    wallet_address=self.auth_details.wallet_address,
+                )
                 if maybe_authenticator else None
             )
             with octobot_flow.encryption.decrypted_bots_configurations(self.automation_state):
@@ -311,9 +314,7 @@ class AutomationJob:
                 raise octobot_flow.errors.CommunityTradingSignalError(
                     "Community authentication is required to fetch copy trading signals"
                 )
-            trading_signals_repository = octobot_flow.repositories.community.TradingSignalsRepository(
-                maybe_community_repository.authenticator
-            )
+            trading_signals_repository = octobot_flow.repositories.community.TradingSignalsRepository.from_community_repository(maybe_community_repository)
             self._logger.info(f"Fetching copy trading signals for {to_fetch_signals} strategies")
             trading_signals = await trading_signals_repository.fetch_trading_signals(
                 to_fetch_signals,
@@ -387,8 +388,8 @@ class AutomationJob:
             fetched_dependencies.fetched_exchange_data,
             reference_market
         )
-        trading_signals_repository = octobot_flow.repositories.community.TradingSignalsRepository(
-            maybe_community_repository.authenticator
+        trading_signals_repository = octobot_flow.repositories.community.TradingSignalsRepository.from_community_repository(
+            maybe_community_repository
         )
         await trading_signals_repository.insert_trading_signal(
             octobot_flow.entities.TradingSignal(

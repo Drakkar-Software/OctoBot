@@ -46,6 +46,9 @@ D_SPREAD = decimal.Decimal(str(spread))
 _FIXED_BTC_USDC_CLOSE = 100000.0
 GRID_REFERENCE_LOWEST_BUY = _FIXED_BTC_USDC_CLOSE - (spread / 2) - increment * 2 + 12.12
 
+# Placeholder wallet address for community `UserAuthentication` (tests mock Starfish paths).
+SIMULATOR_COPY_GRID_FUNCTIONAL_TEST_COMMUNITY_WALLET_ADDRESS = "simulator-copy-grid-functional-test-wallet-address"
+
 grid_pair_settings = [
     grid_trading.GridTradingMode.get_default_pair_config(
         "BTC/USDC",
@@ -726,6 +729,9 @@ async def test_simulator_copy_grid(
     reference_account until a fetched trading signal fills the DSL; otherwise the reference account
     is embedded in the action from the start.
     """
+    community_auth_details = octobot_flow.entities.UserAuthentication(
+        wallet_address=SIMULATOR_COPY_GRID_FUNCTIONAL_TEST_COMMUNITY_WALLET_ADDRESS,
+    )
     patched_fetch_tickers = tickers_repository_fetch_tickers_btc_usdc_close_override(
         lambda: _FIXED_BTC_USDC_CLOSE
     )
@@ -762,20 +768,9 @@ async def test_simulator_copy_grid(
                 fetch_trading_signals_mock,
             )
         )
-        if start_as_uninitialized_copy_keyword and not emit_signals:
-
-            @contextlib.asynccontextmanager
-            async def _fake_maybe_authenticator(self):
-                yield mock.MagicMock()
-
-            patch_stack.enter_context(
-                mock.patch.object(
-                    octobot_flow.AutomationJob,
-                    "_maybe_authenticator",
-                    _fake_maybe_authenticator,
-                )
-            )
-        insert_trading_signal_mock = patch_stack.enter_context(trading_signal_emission_patches(emit_signals))
+        insert_trading_signal_mock = patch_stack.enter_context(
+            trading_signal_emission_patches(emit_signals, mock_authenticator=False)
+        )
 
         reference_market = init_action["config"]["exchange_account_details"]["portfolio"]["unit"]
         if start_as_uninitialized_copy_keyword:
@@ -790,7 +785,9 @@ async def test_simulator_copy_grid(
         set_emit_signals_metadata(automation_state, emit_signals)
 
         # 1. run init action
-        async with octobot_flow.AutomationJob(automation_state, [], [], {}) as automation_job:
+        async with octobot_flow.AutomationJob(
+            automation_state, [], [], community_auth_details
+        ) as automation_job:
             await automation_job.run()
         after_init_execution_dump = automation_job.dump()
 
@@ -808,7 +805,9 @@ async def test_simulator_copy_grid(
                 assert action.previous_execution_result is None
 
         # 2. run copy exchange account action (rebalance + mirror reference grid orders)
-        async with octobot_flow.AutomationJob(after_init_execution_dump, [], [], {}) as automation_job:
+        async with octobot_flow.AutomationJob(
+            after_init_execution_dump, [], [], community_auth_details
+        ) as automation_job:
             await automation_job.run()
         after_initial_copy_execution_dump = automation_job.dump()
         assert len(automation_job.automation_state.automation.actions_dag.actions) == len(all_actions)
@@ -902,7 +901,9 @@ async def test_simulator_copy_grid(
         assert d_order_price(sell_orders[1][price_col]) == lowest_buy_price + D_INCREMENT + D_SPREAD + D_INCREMENT
 
         # 3. trigger again: portfolio and mirrored grid should be unchanged
-        async with octobot_flow.AutomationJob(after_initial_copy_execution_dump, [], [], {}) as automation_job:
+        async with octobot_flow.AutomationJob(
+            after_initial_copy_execution_dump, [], [], community_auth_details
+        ) as automation_job:
             await automation_job.run()
         after_second_call_execution_dump = automation_job.dump()
         assert len(automation_job.automation_state.automation.actions_dag.actions) == len(all_actions)

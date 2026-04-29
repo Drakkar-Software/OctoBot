@@ -673,6 +673,12 @@ class CommunityAuthentication(authentication.Authenticator):
     def get_wallet_name(self, address: str) -> typing.Optional[str]:
         return self._wallet_backend.get_wallet_name(address)
 
+    def get_sync_client_for_address(self, address: str) -> sync_client.StarfishClient:
+        self.init_sync_client_for_wallet(address)
+        if self._sync_client is None:
+            raise wallet_backend.WalletNotFoundError("Wallet with address {address} not found")
+        return self._sync_client
+
     def init_sync_client_for_wallet(self, address: str) -> None:
         """Initialize the sync client for the given wallet address without passphrase."""
         if self._sync_client is not None:

@@ -16,39 +16,45 @@ def get_stateless_configuration() -> octobot_commons.configuration.Configuration
 
 @contextlib.asynccontextmanager
 async def local_user_authenticator(
-    email: str,
-    hidden: bool,
+    email: typing.Optional[str] = None,
+    hidden: typing.Optional[bool] = None,
     backend_url: typing.Optional[str] = None,
     password: typing.Optional[str] = None,
     auth_key: typing.Optional[str] = None,
 ) -> typing.AsyncGenerator["community.CommunityAuthentication", None]:
-    if not email:
-        raise ValueError("email is required")
     community.IdentifiersProvider.use_production()
     local_instance = None
     configuration = get_stateless_configuration()
+    authenticate = password or auth_key
+    if authenticate and not email:
+        raise ValueError("email is required when authenticating with password or auth_key")
     try:
         local_instance = community.CommunityAuthentication(
             config=configuration, backend_url=backend_url, use_as_singleton=False
         )
         local_instance.supabase_client.is_admin = False
-        local_instance.silent_auth = hidden
+        local_instance.silent_auth = False if hidden is None else hidden
         if auth_key:
             password_value = None
             auth_key_value = auth_key
         else:
             password_value = password
             auth_key_value = None
-        await local_instance.login(
-            email, password_value, password_token=None, auth_key=auth_key_value, minimal=True
-        )
-        common_logging.get_logger("local_community_user_authenticator").info(
-            f"Authenticated as {email[:3]}[...]{email[-4:]}"
-        )
+        if authenticate:
+            email = typing.cast(str, email) # email is always str here
+            await local_instance.login(
+                email, password_value, password_token=None, auth_key=auth_key_value, minimal=True
+            )
+            auth_logger = common_logging.get_logger("local_community_user_authenticator")
+            if len(email) > 7:
+                auth_logger.info(f"Authenticated as {email[:3]}[...]{email[-4:]}")
+            else:
+                auth_logger.info("Authenticated as local community user")
         yield local_instance
     finally:
         if local_instance is not None:
-            await local_instance.logout()
+            if authenticate:
+                await local_instance.logout()
             await local_instance.stop()
 
 

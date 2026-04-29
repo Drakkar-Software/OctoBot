@@ -11,6 +11,7 @@ class UserAuthentication(octobot_commons.dataclasses.FlexibleDataclass):
     user_id: typing.Optional[str] = None
     auth_key: typing.Optional[str] = None
     encrypted_keys_by_exchange: dict[str, str] = dataclasses.field(default_factory=dict)
+    wallet_address: typing.Optional[str] = None
 
     def has_auth_details(self) -> bool:
-        return bool(self.password or self.auth_key)
+        return bool(self.password or self.auth_key or self.wallet_address)

@@ -22,8 +22,6 @@ class CommunityAuthenticatorFactory:
 
     @contextlib.asynccontextmanager
     async def local_authenticator(self) -> typing.AsyncGenerator[community.CommunityAuthentication, None]:
-        if not self.auth_details.email:
-            raise ValueError("auth_details.email is required")
         async with local_community_auth.local_user_authenticator(
             email=self.auth_details.email,
             hidden=self.auth_details.hidden,

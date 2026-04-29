@@ -94,11 +94,14 @@ class OctoBotActionsJob:
         user_actions: list[dict],
         updated_trading_signals: list[dict],
         result: OctoBotActionsJobResult,
+        wallet_address: typing.Optional[str] = None,
     ):
         parsed_description = self._parse_description(description)
         self.description: OctoBotActionsJobDescription = OctoBotActionsJobDescription.from_dict(
             parsed_description
         )
+        if wallet_address is not None:
+            self.description.auth_details["wallet_address"] = wallet_address
         self.priority_user_actions: list[octobot_flow.AbstractActionDetails] = [
             octobot_flow.parse_action_details(
                 user_action

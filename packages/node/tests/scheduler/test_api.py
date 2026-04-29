@@ -49,6 +49,19 @@ def _make_wf_status(workflow_id: str, status: str, wallet_address: str = "0xaaa"
     return wf
 
 
+def _scheduler_stub_for_get_node_status(
+    *,
+    consumer_launched: bool | None = None,
+) -> mock.Mock:
+    """``octobot_node.scheduler.SCHEDULER`` stand-in so ``get_node_status`` skips the real singleton."""
+    scheduler_stub = mock.Mock()
+    if consumer_launched is None:
+        scheduler_stub.INSTANCE = None
+    else:
+        scheduler_stub.INSTANCE = mock.Mock(_launched=consumer_launched)
+    return scheduler_stub
+
+
 class TestGetNodeStatus:
     """Tests for get_node_status function."""
 
@@ -59,7 +72,11 @@ class TestGetNodeStatus:
         mock_settings.SCHEDULER_POSTGRES_URL = "postgresql://localhost/db"
         mock_settings.SCHEDULER_SQLITE_FILE = "tasks.db"
 
-        with mock.patch("octobot_node.config.settings", mock_settings):
+        with mock.patch("octobot_node.config.settings", mock_settings), \
+             mock.patch(
+                 "octobot_node.scheduler.SCHEDULER",
+                 _scheduler_stub_for_get_node_status(),
+             ):
             result = get_node_status()
 
             assert result["node_type"] == "both"
@@ -76,11 +93,11 @@ class TestGetNodeStatus:
         mock_settings.SCHEDULER_POSTGRES_URL = None
         mock_settings.SCHEDULER_SQLITE_FILE = "tasks.db"
 
-        mock_scheduler = mock.Mock()
-        mock_scheduler.INSTANCE = mock.Mock(_launched=False)
-
         with mock.patch("octobot_node.config.settings", mock_settings), \
-             mock.patch("octobot_node.scheduler.SCHEDULER", mock_scheduler):
+             mock.patch(
+                 "octobot_node.scheduler.SCHEDULER",
+                 _scheduler_stub_for_get_node_status(consumer_launched=False),
+             ):
             result = get_node_status()
 
             assert result["status"] == "running"
@@ -93,7 +110,11 @@ class TestGetNodeStatus:
         mock_settings.SCHEDULER_POSTGRES_URL = "postgresql://localhost/db"
         mock_settings.SCHEDULER_SQLITE_FILE = "tasks.db"
 
-        with mock.patch("octobot_node.config.settings", mock_settings):
+        with mock.patch("octobot_node.config.settings", mock_settings), \
+             mock.patch(
+                 "octobot_node.scheduler.SCHEDULER",
+                 _scheduler_stub_for_get_node_status(),
+             ):
             result = get_node_status()
 
             assert result["node_type"] == "both"
@@ -109,7 +130,11 @@ class TestGetNodeStatus:
         mock_settings.SCHEDULER_POSTGRES_URL = None
         mock_settings.SCHEDULER_SQLITE_FILE = "tasks.db"
 
-        with mock.patch("octobot_node.config.settings", mock_settings):
+        with mock.patch("octobot_node.config.settings", mock_settings), \
+             mock.patch(
+                 "octobot_node.scheduler.SCHEDULER",
+                 _scheduler_stub_for_get_node_status(),
+             ):
             result = get_node_status()
 
             assert result["node_type"] == "none"

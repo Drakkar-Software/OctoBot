@@ -134,7 +134,11 @@ class AutomationWorkflow:
                     parsed_inputs, user_actions, trading_signals
                 )
                 await octobot_flow_client.OctoBotActionsJob(
-                    parsed_inputs.task.content, user_actions, trading_signals, result
+                    parsed_inputs.task.content,
+                    user_actions,
+                    trading_signals,
+                    result,
+                    wallet_address=parsed_inputs.task.wallet_address,
                 ).run()
                 if result.processed_actions:
                     if latest_step := AutomationWorkflow._get_actions_summary(result.processed_actions, minimal=True):

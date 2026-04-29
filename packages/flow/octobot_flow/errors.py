@@ -28,6 +28,10 @@ class AutomationValidationError(ConfigurationError):
     """raise when an automation configuration or state is invalid"""
 
 
+class WalletNotInitializedError(ConfigurationError):
+    """raise when a wallet is not initialized"""
+
+
 class UnsupportedActionTypeError(AutomationActionError):
     """raise when an unsupported action type is encountered"""
 

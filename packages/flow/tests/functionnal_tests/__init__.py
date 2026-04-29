@@ -43,7 +43,7 @@ def set_emit_signals_metadata(automation_state: dict, emit_signals: bool) -> Non
 
 
 @contextlib.contextmanager
-def trading_signal_emission_patches(emit_signals: bool):
+def trading_signal_emission_patches(emit_signals: bool, *, mock_authenticator: bool = True):
     with contextlib.ExitStack() as stack:
         insert_mock = stack.enter_context(
             mock.patch.object(
@@ -52,7 +52,7 @@ def trading_signal_emission_patches(emit_signals: bool):
                 mock.AsyncMock(),
             )
         )
-        if emit_signals:
+        if emit_signals and mock_authenticator:
 
             @contextlib.asynccontextmanager
             async def _fake_maybe_authenticator(self):
