@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest"
 
 import {
+  discoverPaths,
   extractValue,
   flattenJSON,
-  discoverPaths,
   formatCellValue,
 } from "../json-path"
 
@@ -39,7 +39,12 @@ describe("json-path", () => {
     })
 
     it("extracts nested array elements", () => {
-      const obj = { items: [[1, 2], [3, 4]] }
+      const obj = {
+        items: [
+          [1, 2],
+          [3, 4],
+        ],
+      }
       expect(extractValue(obj, "items[0][1]")).toBe(2)
       expect(extractValue(obj, "items[1][0]")).toBe(3)
     })

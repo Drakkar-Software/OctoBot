@@ -1,4 +1,4 @@
-import { Upload, FileText } from "lucide-react"
+import { FileText, Upload } from "lucide-react"
 import { useRef, useState } from "react"
 
 import { Button } from "@/components/ui/button"
@@ -11,7 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import useCustomToast from "@/hooks/useCustomToast"
-import { parseCSVRaw, isValidCSVFile, type CSVRawResult } from "@/lib/csv"
+import { type CSVRawResult, isValidCSVFile, parseCSVRaw } from "@/lib/csv"
 
 export interface CsvUploadStepProps {
   onParsed: (result: CSVRawResult) => void
@@ -128,8 +128,8 @@ export default function CsvUploadStep({ onParsed }: CsvUploadStepProps) {
         <>
           <div className="rounded-md border border-border bg-muted/30 p-3">
             <p className="text-sm font-medium mb-2">
-              Preview (first {Math.min(MAX_PREVIEW_ROWS, preview.rows.length)} of{" "}
-              {preview.rows.length} rows):
+              Preview (first {Math.min(MAX_PREVIEW_ROWS, preview.rows.length)}{" "}
+              of {preview.rows.length} rows):
             </p>
             <div className="max-h-64 overflow-auto">
               <Table>
@@ -141,15 +141,20 @@ export default function CsvUploadStep({ onParsed }: CsvUploadStepProps) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {preview.rows.slice(0, MAX_PREVIEW_ROWS).map((row, rowIdx) => (
-                    <TableRow key={rowIdx}>
-                      {preview.headers.map((_, colIdx) => (
-                        <TableCell key={colIdx} className="max-w-[200px] truncate">
-                          {row[colIdx] ?? ""}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))}
+                  {preview.rows
+                    .slice(0, MAX_PREVIEW_ROWS)
+                    .map((row, rowIdx) => (
+                      <TableRow key={rowIdx}>
+                        {preview.headers.map((_, colIdx) => (
+                          <TableCell
+                            key={colIdx}
+                            className="max-w-[200px] truncate"
+                          >
+                            {row[colIdx] ?? ""}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
                 </TableBody>
               </Table>
             </div>

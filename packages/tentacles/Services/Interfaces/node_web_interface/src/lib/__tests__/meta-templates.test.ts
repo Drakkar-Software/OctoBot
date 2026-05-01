@@ -5,19 +5,25 @@ import {
   getAllTemplates,
   getTemplateById,
   loadUserMetaTemplates,
+  type MetaTemplateDef,
   resolveMetaTemplate,
   saveUserMetaTemplate,
   validateMetaTemplateJson,
-  type MetaTemplateDef,
 } from "../meta-templates"
 
 const localStorageMock = (() => {
   let store: Record<string, string> = {}
   return {
     getItem: (key: string) => store[key] ?? null,
-    setItem: (key: string, value: string) => { store[key] = value },
-    removeItem: (key: string) => { delete store[key] },
-    clear: () => { store = {} },
+    setItem: (key: string, value: string) => {
+      store[key] = value
+    },
+    removeItem: (key: string) => {
+      delete store[key]
+    },
+    clear: () => {
+      store = {}
+    },
   }
 })()
 
@@ -121,11 +127,13 @@ describe("resolveMetaTemplate", () => {
       id: "test",
       label: "Test",
       description: "",
-      steps: [{
-        templateId: "trade",
-        hiddenParams: ["ORDER_SYMBOL"],
-        overrides: { ORDER_SYMBOL: "BTC/USDT" },
-      }],
+      steps: [
+        {
+          templateId: "trade",
+          hiddenParams: ["ORDER_SYMBOL"],
+          overrides: { ORDER_SYMBOL: "BTC/USDT" },
+        },
+      ],
     }
     expect(() => resolveMetaTemplate(def)).not.toThrow()
     const resolved = resolveMetaTemplate(def)
@@ -176,11 +184,13 @@ describe("validateMetaTemplateJson", () => {
       id: "t",
       label: "T",
       description: "",
-      steps: [{
-        templateId: "trade",
-        overrides: { EXCHANGE_TO: "binance" },
-        hiddenParams: ["API_KEY"],
-      }],
+      steps: [
+        {
+          templateId: "trade",
+          overrides: { EXCHANGE_TO: "binance" },
+          hiddenParams: ["API_KEY"],
+        },
+      ],
     }
     expect(() => validateMetaTemplateJson(valid)).not.toThrow()
   })
@@ -227,10 +237,18 @@ describe("loadUserMetaTemplates", () => {
   })
 
   it("silently ignores malformed entries", () => {
-    localStorage.setItem("user_meta_templates", JSON.stringify([
-      { id: "valid", label: "V", description: "", steps: [{ templateId: "wait" }] },
-      { broken: true },
-    ]))
+    localStorage.setItem(
+      "user_meta_templates",
+      JSON.stringify([
+        {
+          id: "valid",
+          label: "V",
+          description: "",
+          steps: [{ templateId: "wait" }],
+        },
+        { broken: true },
+      ]),
+    )
     expect(loadUserMetaTemplates()).toHaveLength(1)
   })
 })
@@ -270,7 +288,6 @@ describe("saveUserMetaTemplate", () => {
     }
     expect(() => saveUserMetaTemplate(def)).toThrow(/reserved/)
   })
-
 })
 
 describe("deleteUserMetaTemplate", () => {
@@ -313,9 +330,17 @@ describe("getAllTemplates", () => {
 
   it("skips user templates that fail to resolve", () => {
     // Inject a template referencing a nonexistent base
-    localStorage.setItem("user_meta_templates", JSON.stringify([
-      { id: "broken_user", label: "Broken", description: "", steps: [{ templateId: "nonexistent" }] },
-    ]))
+    localStorage.setItem(
+      "user_meta_templates",
+      JSON.stringify([
+        {
+          id: "broken_user",
+          label: "Broken",
+          description: "",
+          steps: [{ templateId: "nonexistent" }],
+        },
+      ]),
+    )
     const ids = getAllTemplates().map((t) => t.id)
     expect(ids).not.toContain("broken_user")
   })

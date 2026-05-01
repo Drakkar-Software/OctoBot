@@ -1,6 +1,6 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router"
-import { isLoggedIn } from "@/hooks/useAuth"
 import { SetupService } from "@/client"
+import { isLoggedIn } from "@/hooks/useAuth"
 
 export const Route = createFileRoute("/setup")({
   beforeLoad: async () => {

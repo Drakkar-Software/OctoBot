@@ -2,19 +2,17 @@ import { describe, expect, it } from "vitest"
 
 import {
   BASE_ACTION_TEMPLATES,
-  TRADE_TEMPLATE,
   CANCEL_TEMPLATE,
-  WITHDRAW_TEMPLATE,
   DEPOSIT_TEMPLATE,
+  isParamValueValid,
+  LOOP_UNTIL_BLOCKCHAIN_BALANCE_TEMPLATE,
+  LOOP_UNTIL_ORDER_CLOSED_TEMPLATE,
+  TRADE_TEMPLATE,
   TRANSFER_TEMPLATE,
   WAIT_TEMPLATE,
-  LOOP_UNTIL_ORDER_CLOSED_TEMPLATE,
-  LOOP_UNTIL_BLOCKCHAIN_BALANCE_TEMPLATE,
-  isParamValueValid,
+  WITHDRAW_TEMPLATE,
 } from "../action-templates"
-import {
-  getTemplateById,
-} from "../meta-templates"
+import { getTemplateById } from "../meta-templates"
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -161,7 +159,9 @@ describe("action-templates", () => {
       })
       expect(content.ACTIONS).toBe("transfer")
       expect(content.BLOCKCHAIN_FROM_ASSET).toBe("ETH")
-      expect(content.BLOCKCHAIN_TO_ADDRESS).toBe("0x9876ABCDEF1234567890abcdef1234567890ABCD")
+      expect(content.BLOCKCHAIN_TO_ADDRESS).toBe(
+        "0x9876ABCDEF1234567890abcdef1234567890ABCD",
+      )
     })
 
     it("withdraw content includes ACTIONS=withdraw", () => {
@@ -184,7 +184,10 @@ describe("action-templates", () => {
     })
 
     it("wait content includes ACTIONS=wait and preserves delay values", () => {
-      const content = buildTaskContent("wait", { MIN_DELAY: "30", MAX_DELAY: "60" })
+      const content = buildTaskContent("wait", {
+        MIN_DELAY: "30",
+        MAX_DELAY: "60",
+      })
       expect(content.ACTIONS).toBe("wait")
       expect(content.MIN_DELAY).toBe("30")
       expect(content.MAX_DELAY).toBe("60")
@@ -207,7 +210,8 @@ describe("action-templates", () => {
       const content = buildTaskContent("loop_until_blockchain_balance", {
         BLOCKCHAIN_BALANCE_ASSET: "ETH",
         BLOCKCHAIN_BALANCE: "ethereum",
-        BLOCKCHAIN_BALANCE_ADDRESS: "0x1234567890123456789012345678901234567890",
+        BLOCKCHAIN_BALANCE_ADDRESS:
+          "0x1234567890123456789012345678901234567890",
         BLOCKCHAIN_BALANCE_AMOUNT: "1.0",
         LOOP_INTERVAL: "10",
       })
@@ -276,7 +280,9 @@ describe("action-templates", () => {
     })
 
     it("cancel action with empty ORDER_SYMBOL is invalid", () => {
-      const { isValid, missingParams } = validateAction("cancel", { ORDER_SYMBOL: "  " })
+      const { isValid, missingParams } = validateAction("cancel", {
+        ORDER_SYMBOL: "  ",
+      })
       expect(isValid).toBe(false)
       expect(missingParams).toContain("Symbol")
     })
@@ -358,7 +364,9 @@ describe("action-templates", () => {
     })
 
     it("unknown templateId is always invalid", () => {
-      const { isValid, missingParams } = validateAction("unknown", { anything: "value" })
+      const { isValid, missingParams } = validateAction("unknown", {
+        anything: "value",
+      })
       expect(isValid).toBe(false)
       expect(missingParams).toContain("Unknown template")
     })
@@ -379,21 +387,27 @@ describe("action-templates", () => {
 
   describe("TRADE_TEMPLATE", () => {
     it("requires ORDER_SYMBOL, ORDER_AMOUNT, and ORDER_TYPE", () => {
-      const required = TRADE_TEMPLATE.params.filter((p) => p.required).map((p) => p.key)
+      const required = TRADE_TEMPLATE.params
+        .filter((p) => p.required)
+        .map((p) => p.key)
       expect(required).toContain("ORDER_SYMBOL")
       expect(required).toContain("ORDER_AMOUNT")
       expect(required).toContain("ORDER_TYPE")
     })
 
     it("has trading pair detection on ORDER_SYMBOL", () => {
-      const patterns = TRADE_TEMPLATE.params.find((p) => p.key === "ORDER_SYMBOL")!.detectPatterns!
+      const patterns = TRADE_TEMPLATE.params.find(
+        (p) => p.key === "ORDER_SYMBOL",
+      )!.detectPatterns!
       expect(patterns.some((p) => p.test("BTC/USDT"))).toBe(true)
       expect(patterns.some((p) => p.test("notapair"))).toBe(false)
     })
 
     it("marks API_KEY and API_SECRET as sensitive", () => {
       const apiKey = TRADE_TEMPLATE.params.find((p) => p.key === "API_KEY")
-      const apiSecret = TRADE_TEMPLATE.params.find((p) => p.key === "API_SECRET")
+      const apiSecret = TRADE_TEMPLATE.params.find(
+        (p) => p.key === "API_SECRET",
+      )
       expect(apiKey?.sensitive).toBe(true)
       expect(apiSecret?.sensitive).toBe(true)
     })
@@ -401,12 +415,16 @@ describe("action-templates", () => {
 
   describe("CANCEL_TEMPLATE", () => {
     it("has exactly one required param: ORDER_SYMBOL", () => {
-      const required = CANCEL_TEMPLATE.params.filter((p) => p.required).map((p) => p.key)
+      const required = CANCEL_TEMPLATE.params
+        .filter((p) => p.required)
+        .map((p) => p.key)
       expect(required).toEqual(["ORDER_SYMBOL"])
     })
 
     it("has order side detection", () => {
-      const patterns = CANCEL_TEMPLATE.params.find((p) => p.key === "ORDER_SIDE")!.detectPatterns!
+      const patterns = CANCEL_TEMPLATE.params.find(
+        (p) => p.key === "ORDER_SIDE",
+      )!.detectPatterns!
       expect(patterns.some((p) => p.test("buy"))).toBe(true)
       expect(patterns.some((p) => p.test("sell"))).toBe(true)
     })
@@ -414,7 +432,9 @@ describe("action-templates", () => {
 
   describe("WITHDRAW_TEMPLATE", () => {
     it("requires asset, network, and destination address", () => {
-      const required = WITHDRAW_TEMPLATE.params.filter((p) => p.required).map((p) => p.key)
+      const required = WITHDRAW_TEMPLATE.params
+        .filter((p) => p.required)
+        .map((p) => p.key)
       expect(required).toContain("BLOCKCHAIN_TO_ASSET")
       expect(required).toContain("BLOCKCHAIN_TO")
       expect(required).toContain("BLOCKCHAIN_TO_ADDRESS")
@@ -423,12 +443,15 @@ describe("action-templates", () => {
 
   describe("WAIT_TEMPLATE", () => {
     it("requires MIN_DELAY only; MAX_DELAY is optional", () => {
-      const required = WAIT_TEMPLATE.params.filter((p) => p.required).map((p) => p.key)
+      const required = WAIT_TEMPLATE.params
+        .filter((p) => p.required)
+        .map((p) => p.key)
       expect(required).toEqual(["MIN_DELAY"])
     })
 
     it("has numeric detection on MIN_DELAY", () => {
-      const patterns = WAIT_TEMPLATE.params.find((p) => p.key === "MIN_DELAY")!.detectPatterns!
+      const patterns = WAIT_TEMPLATE.params.find((p) => p.key === "MIN_DELAY")!
+        .detectPatterns!
       expect(patterns.some((p) => p.test("10"))).toBe(true)
       expect(patterns.some((p) => p.test("3.5"))).toBe(true)
       expect(patterns.some((p) => p.test("abc"))).toBe(false)
@@ -482,7 +505,9 @@ describe("action-templates", () => {
 
   describe("DEPOSIT_TEMPLATE", () => {
     it("requires asset, amount, network, and destination exchange", () => {
-      const required = DEPOSIT_TEMPLATE.params.filter((p) => p.required).map((p) => p.key)
+      const required = DEPOSIT_TEMPLATE.params
+        .filter((p) => p.required)
+        .map((p) => p.key)
       expect(required).toContain("BLOCKCHAIN_FROM_ASSET")
       expect(required).toContain("BLOCKCHAIN_FROM_AMOUNT")
       expect(required).toContain("BLOCKCHAIN_FROM")
@@ -497,8 +522,12 @@ describe("action-templates", () => {
     })
 
     it("marks private key and mnemonic as sensitive password fields", () => {
-      const pk = DEPOSIT_TEMPLATE.params.find((p) => p.key === "BLOCKCHAIN_FROM_PRIVATE_KEY")!
-      const mnemonic = DEPOSIT_TEMPLATE.params.find((p) => p.key === "BLOCKCHAIN_FROM_MNEMONIC_SEED")!
+      const pk = DEPOSIT_TEMPLATE.params.find(
+        (p) => p.key === "BLOCKCHAIN_FROM_PRIVATE_KEY",
+      )!
+      const mnemonic = DEPOSIT_TEMPLATE.params.find(
+        (p) => p.key === "BLOCKCHAIN_FROM_MNEMONIC_SEED",
+      )!
       expect(pk.sensitive).toBe(true)
       expect(pk.type).toBe("password")
       expect(mnemonic.sensitive).toBe(true)
@@ -508,7 +537,9 @@ describe("action-templates", () => {
 
   describe("TRANSFER_TEMPLATE", () => {
     it("requires source chain, asset, amount, and destination address", () => {
-      const required = TRANSFER_TEMPLATE.params.filter((p) => p.required).map((p) => p.key)
+      const required = TRANSFER_TEMPLATE.params
+        .filter((p) => p.required)
+        .map((p) => p.key)
       expect(required).toContain("BLOCKCHAIN_FROM")
       expect(required).toContain("BLOCKCHAIN_FROM_ASSET")
       expect(required).toContain("BLOCKCHAIN_FROM_AMOUNT")
@@ -523,14 +554,28 @@ describe("action-templates", () => {
     })
 
     it("has EVM and BTC address detection on BLOCKCHAIN_TO_ADDRESS", () => {
-      const patterns = TRANSFER_TEMPLATE.params.find((p) => p.key === "BLOCKCHAIN_TO_ADDRESS")!.detectPatterns!
-      expect(patterns.some((p) => p.test("0x1234567890123456789012345678901234567890"))).toBe(true)
-      expect(patterns.some((p) => p.test("bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4"))).toBe(true)
-      expect(patterns.some((p) => p.test("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"))).toBe(true)
+      const patterns = TRANSFER_TEMPLATE.params.find(
+        (p) => p.key === "BLOCKCHAIN_TO_ADDRESS",
+      )!.detectPatterns!
+      expect(
+        patterns.some((p) =>
+          p.test("0x1234567890123456789012345678901234567890"),
+        ),
+      ).toBe(true)
+      expect(
+        patterns.some((p) =>
+          p.test("bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4"),
+        ),
+      ).toBe(true)
+      expect(
+        patterns.some((p) => p.test("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa")),
+      ).toBe(true)
     })
 
     it("marks private key as sensitive password field", () => {
-      const pk = TRANSFER_TEMPLATE.params.find((p) => p.key === "BLOCKCHAIN_FROM_PRIVATE_KEY")!
+      const pk = TRANSFER_TEMPLATE.params.find(
+        (p) => p.key === "BLOCKCHAIN_FROM_PRIVATE_KEY",
+      )!
       expect(pk.sensitive).toBe(true)
       expect(pk.type).toBe("password")
     })
@@ -538,39 +583,59 @@ describe("action-templates", () => {
 
   describe("regex pattern edge cases", () => {
     it("tradingPair rejects single-char symbols and those exceeding 10 chars", () => {
-      const pattern = TRADE_TEMPLATE.params.find((p) => p.key === "ORDER_SYMBOL")!.detectPatterns![0]
+      const pattern = TRADE_TEMPLATE.params.find(
+        (p) => p.key === "ORDER_SYMBOL",
+      )!.detectPatterns![0]
       expect(pattern.test("A/B")).toBe(false)
       expect(pattern.test("ABCDEFGHIJK/USDT")).toBe(false)
     })
 
     it("tradingPair matches case-insensitively", () => {
-      const pattern = TRADE_TEMPLATE.params.find((p) => p.key === "ORDER_SYMBOL")!.detectPatterns![0]
+      const pattern = TRADE_TEMPLATE.params.find(
+        (p) => p.key === "ORDER_SYMBOL",
+      )!.detectPatterns![0]
       expect(pattern.test("btc/usdt")).toBe(true)
     })
 
     it("evmAddress rejects wrong-length hex addresses", () => {
-      const pattern = TRANSFER_TEMPLATE.params.find((p) => p.key === "BLOCKCHAIN_TO_ADDRESS")!.detectPatterns![0]
-      expect(pattern.test("0x123456789012345678901234567890123456789")).toBe(false)   // 39 hex
-      expect(pattern.test("0x12345678901234567890123456789012345678901")).toBe(false) // 41 hex
+      const pattern = TRANSFER_TEMPLATE.params.find(
+        (p) => p.key === "BLOCKCHAIN_TO_ADDRESS",
+      )!.detectPatterns![0]
+      expect(pattern.test("0x123456789012345678901234567890123456789")).toBe(
+        false,
+      ) // 39 hex
+      expect(pattern.test("0x12345678901234567890123456789012345678901")).toBe(
+        false,
+      ) // 41 hex
     })
 
     it("privateKeyHex matches 64-char hex with or without 0x prefix", () => {
-      const patterns = TRANSFER_TEMPLATE.params.find((p) => p.key === "BLOCKCHAIN_FROM_PRIVATE_KEY")!.detectPatterns!
+      const patterns = TRANSFER_TEMPLATE.params.find(
+        (p) => p.key === "BLOCKCHAIN_FROM_PRIVATE_KEY",
+      )!.detectPatterns!
       const key64 = "a".repeat(64)
       expect(patterns.some((p) => p.test(key64))).toBe(true)
-      expect(patterns.some((p) => p.test("0x" + key64))).toBe(true)
-      expect(patterns.some((p) => p.test("0x" + "g".repeat(64)))).toBe(false)
+      expect(patterns.some((p) => p.test(`0x${key64}`))).toBe(true)
+      expect(patterns.some((p) => p.test(`0x${"g".repeat(64)}`))).toBe(false)
     })
 
     it("mnemonicSeed matches 12 and 24 word phrases, rejects short ones", () => {
-      const patterns = TRANSFER_TEMPLATE.params.find((p) => p.key === "BLOCKCHAIN_FROM_MNEMONIC_SEED")!.detectPatterns!
-      expect(patterns.some((p) => p.test(Array(12).fill("abandon").join(" ")))).toBe(true)
-      expect(patterns.some((p) => p.test(Array(24).fill("abandon").join(" ")))).toBe(true)
+      const patterns = TRANSFER_TEMPLATE.params.find(
+        (p) => p.key === "BLOCKCHAIN_FROM_MNEMONIC_SEED",
+      )!.detectPatterns!
+      expect(
+        patterns.some((p) => p.test(Array(12).fill("abandon").join(" "))),
+      ).toBe(true)
+      expect(
+        patterns.some((p) => p.test(Array(24).fill("abandon").join(" "))),
+      ).toBe(true)
       expect(patterns.some((p) => p.test("only three words"))).toBe(false)
     })
 
     it("exchange name matches known names case-insensitively, rejects unknowns", () => {
-      const patterns = TRADE_TEMPLATE.params.find((p) => p.key === "EXCHANGE_TO")!.detectPatterns!
+      const patterns = TRADE_TEMPLATE.params.find(
+        (p) => p.key === "EXCHANGE_TO",
+      )!.detectPatterns!
       for (const name of ["binance", "KRAKEN", "coinbase", "bybit", "okx"]) {
         expect(patterns.some((p) => p.test(name))).toBe(true)
       }
@@ -578,7 +643,9 @@ describe("action-templates", () => {
     })
 
     it("numericAmount matches integers and decimals, rejects non-numeric", () => {
-      const patterns = TRADE_TEMPLATE.params.find((p) => p.key === "ORDER_AMOUNT")!.detectPatterns!
+      const patterns = TRADE_TEMPLATE.params.find(
+        (p) => p.key === "ORDER_AMOUNT",
+      )!.detectPatterns!
       for (const v of ["100", "0.5", "-10", "0"]) {
         expect(patterns.some((p) => p.test(v))).toBe(true)
       }
@@ -588,7 +655,9 @@ describe("action-templates", () => {
     })
 
     it("orderSide matches buy/sell/long/short, rejects others", () => {
-      const patterns = TRADE_TEMPLATE.params.find((p) => p.key === "ORDER_SIDE")!.detectPatterns!
+      const patterns = TRADE_TEMPLATE.params.find(
+        (p) => p.key === "ORDER_SIDE",
+      )!.detectPatterns!
       for (const v of ["buy", "sell", "long", "short", "BUY"]) {
         expect(patterns.some((p) => p.test(v))).toBe(true)
       }
@@ -596,17 +665,32 @@ describe("action-templates", () => {
     })
 
     it("orderType matches known types, rejects unknowns", () => {
-      const patterns = TRADE_TEMPLATE.params.find((p) => p.key === "ORDER_TYPE")!.detectPatterns!
-      for (const v of ["market", "limit", "stop", "stop_limit", "trailing_stop"]) {
+      const patterns = TRADE_TEMPLATE.params.find(
+        (p) => p.key === "ORDER_TYPE",
+      )!.detectPatterns!
+      for (const v of [
+        "market",
+        "limit",
+        "stop",
+        "stop_limit",
+        "trailing_stop",
+      ]) {
         expect(patterns.some((p) => p.test(v))).toBe(true)
       }
       expect(patterns.some((p) => p.test("oco"))).toBe(false)
     })
 
     it("isoDate matches date-only and datetime strings, rejects non-dates", () => {
-      const param = TRANSFER_TEMPLATE.params.find((p) => p.key === "BLOCKCHAIN_FROM_BLOCK_HEIGHT")!
+      const param = TRANSFER_TEMPLATE.params.find(
+        (p) => p.key === "BLOCKCHAIN_FROM_BLOCK_HEIGHT",
+      )!
       const patterns = param.detectPatterns!
-      for (const v of ["2026-04-24", "2026-04-24T12:00:00Z", "2026-04-24T12:00:00+02:00", "2026-04-24T12:00"]) {
+      for (const v of [
+        "2026-04-24",
+        "2026-04-24T12:00:00Z",
+        "2026-04-24T12:00:00+02:00",
+        "2026-04-24T12:00",
+      ]) {
         expect(patterns.some((p) => p.test(v))).toBe(true)
       }
       for (const v of ["04-24-2026", "not-a-date", "2026/04/24"]) {
@@ -618,7 +702,9 @@ describe("action-templates", () => {
   // ── isParamValueValid ────────────────────────────────────────────────────────
 
   describe("isParamValueValid", () => {
-    const blockHeightParam = TRANSFER_TEMPLATE.params.find((p) => p.key === "BLOCKCHAIN_FROM_BLOCK_HEIGHT")!
+    const blockHeightParam = TRANSFER_TEMPLATE.params.find(
+      (p) => p.key === "BLOCKCHAIN_FROM_BLOCK_HEIGHT",
+    )!
 
     it("accepts block number strings", () => {
       expect(isParamValueValid(blockHeightParam, "22045930")).toBe(true)
@@ -627,7 +713,9 @@ describe("action-templates", () => {
 
     it("accepts ISO date strings", () => {
       expect(isParamValueValid(blockHeightParam, "2026-04-24")).toBe(true)
-      expect(isParamValueValid(blockHeightParam, "2026-04-24T12:00:00Z")).toBe(true)
+      expect(isParamValueValid(blockHeightParam, "2026-04-24T12:00:00Z")).toBe(
+        true,
+      )
     })
 
     it("rejects empty and non-date non-number strings", () => {

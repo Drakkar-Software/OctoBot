@@ -3,12 +3,47 @@
   "label": "Portfolio Summary",
   "description": "Portfolio and balance focused columns",
   "columns": [
-    { "key": "name", "label": "Name", "jsonPath": "__task_name__", "formatter": "text" },
-    { "key": "status", "label": "Status", "jsonPath": "__exec_status__", "formatter": "text" },
-    { "key": "asset", "label": "Asset", "jsonPath": "asset", "formatter": "text" },
-    { "key": "free", "label": "Free Balance", "jsonPath": "free", "formatter": "number" },
-    { "key": "used", "label": "Used Balance", "jsonPath": "used", "formatter": "number" },
-    { "key": "total", "label": "Total Balance", "jsonPath": "total", "formatter": "number" },
-    { "key": "exchange", "label": "Exchange", "jsonPath": "exchange", "formatter": "text" }
+    {
+      "key": "name",
+      "label": "Name",
+      "jsonPath": "__task_name__",
+      "formatter": "text"
+    },
+    {
+      "key": "status",
+      "label": "Status",
+      "jsonPath": "__exec_status__",
+      "formatter": "text"
+    },
+    {
+      "key": "asset",
+      "label": "Asset",
+      "jsonPath": "asset",
+      "formatter": "text"
+    },
+    {
+      "key": "free",
+      "label": "Free Balance",
+      "jsonPath": "free",
+      "formatter": "number"
+    },
+    {
+      "key": "used",
+      "label": "Used Balance",
+      "jsonPath": "used",
+      "formatter": "number"
+    },
+    {
+      "key": "total",
+      "label": "Total Balance",
+      "jsonPath": "total",
+      "formatter": "number"
+    },
+    {
+      "key": "exchange",
+      "label": "Exchange",
+      "jsonPath": "exchange",
+      "formatter": "text"
+    }
   ]
 }

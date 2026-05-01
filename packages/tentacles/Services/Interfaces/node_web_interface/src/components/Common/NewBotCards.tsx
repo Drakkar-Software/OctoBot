@@ -9,7 +9,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { getAssetPath } from "@/lib/utils"
 
 export function NewBotCards() {
@@ -32,22 +36,20 @@ export function NewBotCards() {
             Pre-configured setup
           </CardTitle>
           <CardDescription>
-            Start fast with curated presets.
-            Available soon on octobot.cloud and from the mobile app.
+            Start fast with curated presets. Available soon on octobot.cloud and
+            from the mobile app.
           </CardDescription>
         </CardHeader>
         <CardContent className="mt-auto flex items-center justify-between pt-2">
           <Tooltip>
             <TooltipTrigger asChild>
-              <span className="inline-flex items-center gap-1 text-amber-400">
-                <Star className="size-5 fill-amber-400" />
+              <span className="inline-flex items-center gap-1 text-warn">
+                <Star className="size-5 fill-warn" />
               </span>
             </TooltipTrigger>
             <TooltipContent>Easy to setup</TooltipContent>
           </Tooltip>
-          <Button disabled>
-            Browse presets
-          </Button>
+          <Button disabled>Browse presets</Button>
         </CardContent>
       </Card>
       <Card className="cursor-not-allowed bg-muted/50 opacity-50">
@@ -63,24 +65,22 @@ export function NewBotCards() {
             Your own rules
           </CardTitle>
           <CardDescription>
-            Build with your own rules.
-            Available soon on octobot.cloud and from the mobile app.
+            Build with your own rules. Available soon on octobot.cloud and from
+            the mobile app.
           </CardDescription>
         </CardHeader>
         <CardContent className="mt-auto flex items-center justify-between pt-2">
           <Tooltip>
             <TooltipTrigger asChild>
-              <span className="inline-flex items-center gap-1 text-amber-400">
-                <Star className="size-5 fill-amber-400" />
-                <Star className="size-5 fill-amber-400" />
+              <span className="inline-flex items-center gap-1 text-warn">
+                <Star className="size-5 fill-warn" />
+                <Star className="size-5 fill-warn" />
               </span>
             </TooltipTrigger>
             <TooltipContent>Easy to medium setup</TooltipContent>
           </Tooltip>
           <Button variant="outline" disabled>
-            <Link to="/octobots/new/builder">
-              Build my OctoBot
-            </Link>
+            <Link to="/octobots/new/builder">Build my OctoBot</Link>
           </Button>
         </CardContent>
       </Card>
@@ -104,10 +104,10 @@ export function NewBotCards() {
         <CardContent className="mt-auto flex items-center justify-between pt-2">
           <Tooltip>
             <TooltipTrigger asChild>
-              <span className="inline-flex items-center gap-1 text-amber-400">
-                <Star className="size-5 fill-amber-400" />
-                <Star className="size-5 fill-amber-400" />
-                <Star className="size-5 fill-amber-400" />
+              <span className="inline-flex items-center gap-1 text-warn">
+                <Star className="size-5 fill-warn" />
+                <Star className="size-5 fill-warn" />
+                <Star className="size-5 fill-warn" />
               </span>
             </TooltipTrigger>
             <TooltipContent>Advanced setup</TooltipContent>
@@ -119,7 +119,10 @@ export function NewBotCards() {
       </Card>
       <div className="col-span-full flex flex-col items-center gap-1 text-sm text-muted-foreground">
         <span>Already have a saved configuration?</span>
-        <Link to="/octobots/import" className="inline-flex items-center gap-1 underline underline-offset-4 hover:text-foreground">
+        <Link
+          to="/octobots/import"
+          className="inline-flex items-center gap-1 underline underline-offset-4 hover:text-foreground"
+        >
           <Upload className="size-3.5" />
           Restore from a file
         </Link>

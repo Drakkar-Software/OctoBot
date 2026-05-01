@@ -6,10 +6,7 @@
  * 2. Score each ActionTemplate per row by how many required params are satisfied
  */
 
-import {
-  type ActionParamDef,
-  type ActionTemplate,
-} from "./action-templates"
+import type { ActionParamDef, ActionTemplate } from "./action-templates"
 import { getAllTemplates } from "./meta-templates"
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -47,15 +44,11 @@ const REQUIRED_PARAM_BONUS = 2
 // ── Column header normalization ────────────────────────────────────────
 
 function normalizeHeader(header: string): string {
-  return header
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, "")
+  return header.toLowerCase().replace(/[^a-z0-9]/g, "")
 }
 
 function normalizeAlias(alias: string): string {
-  return alias
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, "")
+  return alias.toLowerCase().replace(/[^a-z0-9]/g, "")
 }
 
 // ── Value pattern scoring ──────────────────────────────────────────────
@@ -90,10 +83,7 @@ function scoreValuePatterns(
 
 // ── Header fuzzy scoring ───────────────────────────────────────────────
 
-function scoreHeaderMatch(
-  header: string,
-  param: ActionParamDef,
-): number {
+function scoreHeaderMatch(header: string, param: ActionParamDef): number {
   const normalized = normalizeHeader(header)
 
   // Exact key match (highest confidence)
@@ -137,7 +127,8 @@ function buildScoringMatrix(
 
       // Only consider this pair if there's actual evidence (value or header match)
       if (valueScore > 0 || headerScore > 0) {
-        const total = valueScore + headerScore + (param.required ? REQUIRED_PARAM_BONUS : 0)
+        const total =
+          valueScore + headerScore + (param.required ? REQUIRED_PARAM_BONUS : 0)
         scores.push({
           columnIndex: colIdx,
           paramKey: param.key,
@@ -154,9 +145,7 @@ function buildScoringMatrix(
  * Greedily assign columns to params using the scoring matrix.
  * Each column maps to at most one param, each param to at most one column.
  */
-function assignMappings(
-  scores: ColumnScore[],
-): ColumnMapping[] {
+function assignMappings(scores: ColumnScore[]): ColumnMapping[] {
   const usedColumns = new Set<number>()
   const usedParams = new Set<string>()
   const mappings: ColumnMapping[] = []
@@ -205,7 +194,11 @@ function scoreTemplateForRow(
     if (mapping) {
       // Weight by confidence: high = 5, medium = 3, low = 1
       const confidenceWeight =
-        mapping.confidence === "high" ? 5 : mapping.confidence === "medium" ? 3 : 1
+        mapping.confidence === "high"
+          ? 5
+          : mapping.confidence === "medium"
+            ? 3
+            : 1
       score += confidenceWeight * (param.required ? 2 : 1)
     } else if (param.required) {
       score -= 4
@@ -230,9 +223,7 @@ export function extractColumnValues(
   headers: string[],
   rows: string[][],
 ): string[][] {
-  return headers.map((_, colIdx) =>
-    rows.map((row) => row[colIdx] ?? ""),
-  )
+  return headers.map((_, colIdx) => rows.map((row) => row[colIdx] ?? ""))
 }
 
 /**
@@ -264,7 +255,9 @@ export function detectColumnsAndTemplates(
 
   // Prefer last-used template when set — use it unconditionally if it exists
   if (preferredTemplateId) {
-    const preferred = templateResults.find((r) => r.template.id === preferredTemplateId)
+    const preferred = templateResults.find(
+      (r) => r.template.id === preferredTemplateId,
+    )
     if (preferred) best = preferred
   }
 

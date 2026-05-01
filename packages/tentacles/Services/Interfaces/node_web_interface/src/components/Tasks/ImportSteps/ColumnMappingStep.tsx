@@ -25,25 +25,25 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import useCustomToast from "@/hooks/useCustomToast"
-import { isParamValueValid, type ActionParamDef } from "@/lib/action-templates"
+import { type ActionParamDef, isParamValueValid } from "@/lib/action-templates"
 import {
-  getAllTemplates,
-  getTemplateById,
-  getLastUsedImportTemplateId,
-  setLastUsedImportTemplateId,
-  resolveMetaTemplate,
-  saveUserMetaTemplate,
-  validateMetaTemplateJson,
-} from "@/lib/meta-templates"
-import {
+  buildParamValuesForRow,
   type ColumnMapping,
-  type RowDetectionResult,
   detectColumnsAndTemplates,
   detectMappingsForTemplate,
-  buildParamValuesForRow,
 } from "@/lib/column-detector"
+import {
+  getAllTemplates,
+  getLastUsedImportTemplateId,
+  getTemplateById,
+  resolveMetaTemplate,
+  saveUserMetaTemplate,
+  setLastUsedImportTemplateId,
+  validateMetaTemplateJson,
+} from "@/lib/meta-templates"
 
-const SENSITIVE_HEADER_PATTERNS = /\b(key|private|secret|password|mnemonic|seed|pk)\b/i
+const SENSITIVE_HEADER_PATTERNS =
+  /\b(key|private|secret|password|mnemonic|seed|pk)\b/i
 
 function isSensitiveHeader(header: string): boolean {
   return SENSITIVE_HEADER_PATTERNS.test(header)
@@ -75,18 +75,28 @@ interface RowParamsCellProps {
   onParamChange: (rowIndex: number, paramKey: string, value: string) => void
 }
 
-function RowParamsCell({ actionRow, headers, rows, onParamChange }: RowParamsCellProps) {
+function RowParamsCell({
+  actionRow,
+  headers,
+  rows,
+  onParamChange,
+}: RowParamsCellProps) {
   const { requiredParams, sortedOptional } = useMemo(() => {
     const template = getTemplateById(actionRow.templateId)
-    const byLabel = (a: ActionParamDef, b: ActionParamDef) => a.label.localeCompare(b.label)
+    const byLabel = (a: ActionParamDef, b: ActionParamDef) =>
+      a.label.localeCompare(b.label)
     return {
-      requiredParams: (template?.params.filter((p) => p.required && !p.hidden) ?? []).sort(byLabel),
-      sortedOptional: (template?.params.filter((p) => !p.required && !p.hidden) ?? []).sort(byLabel),
+      requiredParams: (
+        template?.params.filter((p) => p.required && !p.hidden) ?? []
+      ).sort(byLabel),
+      sortedOptional: (
+        template?.params.filter((p) => !p.required && !p.hidden) ?? []
+      ).sort(byLabel),
     }
   }, [actionRow.templateId])
 
-  const filledOptional = sortedOptional.filter(
-    (p) => isParamValueValid(p, actionRow.paramValues[p.key]),
+  const filledOptional = sortedOptional.filter((p) =>
+    isParamValueValid(p, actionRow.paramValues[p.key]),
   )
   const emptyOptional = sortedOptional.filter(
     (p) => !isParamValueValid(p, actionRow.paramValues[p.key]),
@@ -102,9 +112,21 @@ function RowParamsCell({ actionRow, headers, rows, onParamChange }: RowParamsCel
         </span>
         <Input
           value={value}
-          onChange={(e) => onParamChange(actionRow.rowIndex, param.key, e.target.value)}
-          type={param.type === "number" ? "number" : param.type === "password" ? "password" : "text"}
-          placeholder={param.type === "numberOrDate" ? `${param.label} (number or date)` : param.label}
+          onChange={(e) =>
+            onParamChange(actionRow.rowIndex, param.key, e.target.value)
+          }
+          type={
+            param.type === "number"
+              ? "number"
+              : param.type === "password"
+                ? "password"
+                : "text"
+          }
+          placeholder={
+            param.type === "numberOrDate"
+              ? `${param.label} (number or date)`
+              : param.label
+          }
           className="h-6 text-xs w-28"
         />
       </div>
@@ -120,7 +142,8 @@ function RowParamsCell({ actionRow, headers, rows, onParamChange }: RowParamsCel
       {emptyOptional.length > 0 && (
         <details>
           <summary className="text-[10px] text-muted-foreground cursor-pointer">
-            {emptyOptional.length} optional parameter{emptyOptional.length !== 1 ? "s" : ""}
+            {emptyOptional.length} optional parameter
+            {emptyOptional.length !== 1 ? "s" : ""}
           </summary>
           <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-1.5 mt-1.5">
             {emptyOptional.map(renderParam)}
@@ -170,14 +193,20 @@ export default function ColumnMappingStep({
 
   // Run initial detection
   const initialDetection = useMemo(
-    () => detectColumnsAndTemplates(headers, rows, getLastUsedImportTemplateId() ?? undefined),
+    () =>
+      detectColumnsAndTemplates(
+        headers,
+        rows,
+        getLastUsedImportTemplateId() ?? undefined,
+      ),
     [headers, rows],
   )
 
   const [actionRows, setActionRows] = useState<ActionRow[]>(() => {
     const nameIdx = headers.findIndex((h) => h.trim().toLowerCase() === "name")
     return initialDetection.map((det, idx) => {
-      const nameFromCsv = nameIdx >= 0 ? (rows[idx]?.[nameIdx] ?? "").trim() : ""
+      const nameFromCsv =
+        nameIdx >= 0 ? (rows[idx]?.[nameIdx] ?? "").trim() : ""
       const unmappedColumns =
         nameIdx >= 0 && det.unmappedColumns.includes(nameIdx)
           ? det.unmappedColumns.filter((i) => i !== nameIdx)
@@ -217,7 +246,11 @@ export default function ColumnMappingStep({
       const csvRow = rows[rowIndex]
       if (!csvRow) return
 
-      const newParamValues = buildParamValuesForRow(csvRow, newMappings, template)
+      const newParamValues = buildParamValuesForRow(
+        csvRow,
+        newMappings,
+        template,
+      )
       const mappedCols = new Set(newMappings.map((m) => m.columnIndex))
       const unmappedColumns = headers
         .map((_, i) => i)
@@ -270,7 +303,9 @@ export default function ColumnMappingStep({
         setUserTemplatesVersion((v) => v + 1)
         showSuccessToast(`Template "${def.label}" imported`)
       } catch (err) {
-        showErrorToast(err instanceof Error ? err.message : "Invalid template file")
+        showErrorToast(
+          err instanceof Error ? err.message : "Invalid template file",
+        )
       }
     },
     [showSuccessToast, showErrorToast],

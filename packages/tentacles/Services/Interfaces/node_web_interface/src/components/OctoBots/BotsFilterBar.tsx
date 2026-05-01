@@ -17,7 +17,7 @@ export function BotsFilterBar({
   onSearchChange: (value: string) => void
 }) {
   return (
-    <div className="inline-flex items-center rounded-lg border p-0.5 self-start">
+    <div className="inline-flex items-center gap-1 rounded-pill border border-rule-soft bg-surface-soft p-1 self-start">
       {filters.map((f) => {
         const active = filterValue === f.value
         return (
@@ -25,27 +25,32 @@ export function BotsFilterBar({
             key={f.value}
             onClick={() => onFilterChange(f.value)}
             className={cn(
-              "rounded-md px-3.5 py-1.5 text-sm font-medium transition-colors",
+              "rounded-pill px-3.5 py-1.5 text-sm font-medium transition-all",
               active
-                ? "bg-foreground text-background shadow-sm"
-                : "text-muted-foreground hover:text-foreground",
+                ? "bg-primary text-primary-foreground shadow-glow"
+                : "text-muted-foreground hover:text-foreground hover:bg-surface-mid",
             )}
           >
             {f.label}
-            <span className={cn("ml-1.5 tabular-nums", active ? "text-background/70" : "text-muted-foreground/60")}>
+            <span
+              className={cn(
+                "ml-1.5 tabular-nums text-xs",
+                active ? "opacity-70" : "opacity-50",
+              )}
+            >
               {counts[f.value]}
             </span>
           </button>
         )
       })}
-      <div className="mx-1 h-5 w-px bg-border" />
+      <div className="mx-1 h-4 w-px bg-rule-soft" />
       <div className="relative flex items-center">
         <Search className="pointer-events-none absolute left-2.5 size-3.5 text-muted-foreground" />
         <input
           value={searchValue}
           onChange={(e) => onSearchChange(e.target.value)}
           placeholder="Search..."
-          className="h-7 w-32 rounded-md bg-transparent pl-8 pr-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
+          className="h-7 w-32 rounded-pill bg-transparent pl-8 pr-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
         />
         {searchValue && (
           <button

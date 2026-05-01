@@ -79,7 +79,15 @@ export async function derivePublicPemsFromPrivates(keys: ClientKeys): Promise<{
       ["unwrapKey"],
     ),
   )
-  const { d: _d2, p: _p, q: _q, dp: _dp, dq: _dq, qi: _qi, ...rsaPubJwk } = rsaPrivJwk
+  const {
+    d: _d2,
+    p: _p,
+    q: _q,
+    dp: _dp,
+    dq: _dq,
+    qi: _qi,
+    ...rsaPubJwk
+  } = rsaPrivJwk
   const rsaSpki = await crypto.subtle.exportKey(
     "spki",
     await crypto.subtle.importKey(
@@ -117,13 +125,15 @@ export async function encryptAndSign(
       ["wrapKey"],
     )
   } catch {
-    throw new Error("Invalid SERVER_RSA_PUBLIC_KEY — expected RSA public key in SPKI PEM format (-----BEGIN PUBLIC KEY-----)")
+    throw new Error(
+      "Invalid SERVER_RSA_PUBLIC_KEY — expected RSA public key in SPKI PEM format (-----BEGIN PUBLIC KEY-----)",
+    )
   }
 
   if (/BEGIN EC PRIVATE KEY/.test(keys.ecdsa_private)) {
     throw new Error(
       "USER_ECDSA_PRIVATE_KEY is in SEC1 format (-----BEGIN EC PRIVATE KEY-----). " +
-      "Convert to PKCS#8: openssl pkcs8 -topk8 -nocrypt -in ecdsa.pem -out ecdsa_pkcs8.pem"
+        "Convert to PKCS#8: openssl pkcs8 -topk8 -nocrypt -in ecdsa.pem -out ecdsa_pkcs8.pem",
     )
   }
 
@@ -138,31 +148,52 @@ export async function encryptAndSign(
     )
   } catch {
     const der = pemToDer(keys.ecdsa_private)
-    const hint = der.length > 500
-      ? " — the key looks like RSA; check you put the ECDSA key in the correct field"
-      : ""
-    throw new Error(`Invalid USER_ECDSA_PRIVATE_KEY — expected P-256 ECDSA private key in PKCS#8 PEM format (-----BEGIN PRIVATE KEY-----)${hint}`)
+    const hint =
+      der.length > 500
+        ? " — the key looks like RSA; check you put the ECDSA key in the correct field"
+        : ""
+    throw new Error(
+      `Invalid USER_ECDSA_PRIVATE_KEY — expected P-256 ECDSA private key in PKCS#8 PEM format (-----BEGIN PRIVATE KEY-----)${hint}`,
+    )
   }
 
-  const aesKey = await crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, true, ["encrypt"])
+  const aesKey = await crypto.subtle.generateKey(
+    { name: "AES-GCM", length: 256 },
+    true,
+    ["encrypt"],
+  )
   const iv = crypto.getRandomValues(new Uint8Array(12))
   const ciphertext = new Uint8Array(
-    await crypto.subtle.encrypt({ name: "AES-GCM", iv }, aesKey, new TextEncoder().encode(content)),
+    await crypto.subtle.encrypt(
+      { name: "AES-GCM", iv },
+      aesKey,
+      new TextEncoder().encode(content),
+    ),
   )
   const wrappedKey = new Uint8Array(
-    await crypto.subtle.wrapKey("raw", aesKey, rsaPublicKey, { name: "RSA-OAEP" }),
+    await crypto.subtle.wrapKey("raw", aesKey, rsaPublicKey, {
+      name: "RSA-OAEP",
+    }),
   )
 
-  const dataToSign = new Uint8Array(ciphertext.length + wrappedKey.length + iv.length)
+  const dataToSign = new Uint8Array(
+    ciphertext.length + wrappedKey.length + iv.length,
+  )
   dataToSign.set(ciphertext, 0)
   dataToSign.set(wrappedKey, ciphertext.length)
   dataToSign.set(iv, ciphertext.length + wrappedKey.length)
 
   const p1363 = new Uint8Array(
-    await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, ecdsaPrivateKey, dataToSign),
+    await crypto.subtle.sign(
+      { name: "ECDSA", hash: "SHA-256" },
+      ecdsaPrivateKey,
+      dataToSign,
+    ),
   )
   // WebCrypto produces IEEE P1363 (compact); Python's cryptography library expects DER
-  const derSig = p256.Signature.fromBytes(p1363, "compact").toBytes("der") as Uint8Array
+  const derSig = p256.Signature.fromBytes(p1363, "compact").toBytes(
+    "der",
+  ) as Uint8Array
 
   const metadata = JSON.stringify({
     ENCRYPTED_AES_KEY_B64: toB64(wrappedKey),
@@ -186,23 +217,35 @@ export async function decryptAndVerify(
   keys: ClientKeys,
   serverEcdsaPublicPem: string,
 ): Promise<string> {
-  let parsed: { ENCRYPTED_AES_KEY_B64: string; IV_B64: string; SIGNATURE_B64: string }
+  let parsed: {
+    ENCRYPTED_AES_KEY_B64: string
+    IV_B64: string
+    SIGNATURE_B64: string
+  }
   try {
     parsed = JSON.parse(resultMetadata)
   } catch {
-    throw new Error("Invalid result metadata — expected plain JSON (not base64)")
+    throw new Error(
+      "Invalid result metadata — expected plain JSON (not base64)",
+    )
   }
   const { ENCRYPTED_AES_KEY_B64, IV_B64, SIGNATURE_B64 } = parsed
   if (!ENCRYPTED_AES_KEY_B64 || !IV_B64 || !SIGNATURE_B64) {
-    throw new Error("Missing required fields in result metadata (ENCRYPTED_AES_KEY_B64, IV_B64, SIGNATURE_B64)")
+    throw new Error(
+      "Missing required fields in result metadata (ENCRYPTED_AES_KEY_B64, IV_B64, SIGNATURE_B64)",
+    )
   }
 
-  const fromB64 = (b64: string) => Uint8Array.from(atob(b64), (c) => c.charCodeAt(0))
+  const fromB64 = (b64: string) =>
+    Uint8Array.from(atob(b64), (c) => c.charCodeAt(0))
   const ciphertext = fromB64(encryptedResult)
   const encryptedAesKey = fromB64(ENCRYPTED_AES_KEY_B64)
   const iv = fromB64(IV_B64)
   // Server produces DER-encoded signature; WebCrypto verify expects IEEE P1363 (compact)
-  const p1363Sig = p256.Signature.fromBytes(fromB64(SIGNATURE_B64), "der").toBytes("compact") as Uint8Array
+  const p1363Sig = p256.Signature.fromBytes(
+    fromB64(SIGNATURE_B64),
+    "der",
+  ).toBytes("compact") as Uint8Array
 
   let ecdsaPublicKey: CryptoKey
   try {
@@ -214,10 +257,14 @@ export async function decryptAndVerify(
       ["verify"],
     )
   } catch {
-    throw new Error("Invalid SERVER_ECDSA_PUBLIC_KEY — expected P-256 ECDSA public key in SPKI PEM format (-----BEGIN PUBLIC KEY-----)")
+    throw new Error(
+      "Invalid SERVER_ECDSA_PUBLIC_KEY — expected P-256 ECDSA public key in SPKI PEM format (-----BEGIN PUBLIC KEY-----)",
+    )
   }
 
-  const dataToVerify = new Uint8Array(ciphertext.length + encryptedAesKey.length + iv.length)
+  const dataToVerify = new Uint8Array(
+    ciphertext.length + encryptedAesKey.length + iv.length,
+  )
   dataToVerify.set(ciphertext, 0)
   dataToVerify.set(encryptedAesKey, ciphertext.length)
   dataToVerify.set(iv, ciphertext.length + encryptedAesKey.length)
@@ -229,7 +276,9 @@ export async function decryptAndVerify(
     dataToVerify,
   )
   if (!valid) {
-    throw new Error("Signature verification failed — result may have been tampered with")
+    throw new Error(
+      "Signature verification failed — result may have been tampered with",
+    )
   }
 
   let rsaPrivateKey: CryptoKey
@@ -242,10 +291,13 @@ export async function decryptAndVerify(
       ["unwrapKey"],
     )
   } catch {
-    const hint = pemToDer(keys.rsa_private).length < 200
-      ? " — the key looks like ECDSA; check you put the RSA key in the correct field"
-      : ""
-    throw new Error(`Invalid USER_RSA_PRIVATE_KEY — expected RSA private key in PKCS#8 PEM format (-----BEGIN PRIVATE KEY-----)${hint}`)
+    const hint =
+      pemToDer(keys.rsa_private).length < 200
+        ? " — the key looks like ECDSA; check you put the RSA key in the correct field"
+        : ""
+    throw new Error(
+      `Invalid USER_RSA_PRIVATE_KEY — expected RSA private key in PKCS#8 PEM format (-----BEGIN PRIVATE KEY-----)${hint}`,
+    )
   }
 
   const aesKey = await crypto.subtle.unwrapKey(
@@ -258,6 +310,10 @@ export async function decryptAndVerify(
     ["decrypt"],
   )
 
-  const plaintext = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, aesKey, ciphertext)
+  const plaintext = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv },
+    aesKey,
+    ciphertext,
+  )
   return new TextDecoder().decode(plaintext)
 }

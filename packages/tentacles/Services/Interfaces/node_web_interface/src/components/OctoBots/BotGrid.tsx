@@ -21,8 +21,12 @@ export function BotGrid({
       <div className="flex flex-col items-center justify-center gap-4 py-20 text-center">
         <Bot className="size-10 text-muted-foreground/50" />
         <div>
-          <p className="text-lg font-medium text-muted-foreground">No OctoBots yet</p>
-          <p className="mt-1 text-sm text-muted-foreground/70">Start your first OctoBot or import a saved configuration.</p>
+          <p className="text-lg font-medium text-muted-foreground">
+            No OctoBots yet
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground/70">
+            Start your first OctoBot or import a saved configuration.
+          </p>
         </div>
         <Button asChild size="lg">
           <Link to="/octobots/new">
@@ -39,8 +43,12 @@ export function BotGrid({
       <div className="flex flex-col items-center justify-center gap-4 py-20 text-center">
         <Bot className="size-10 text-muted-foreground/50" />
         <div>
-          <p className="text-lg font-medium text-muted-foreground">No OctoBots match this filter</p>
-          <p className="mt-1 text-sm text-muted-foreground/70">Try another filter or search term.</p>
+          <p className="text-lg font-medium text-muted-foreground">
+            No OctoBots match this filter
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground/70">
+            Try another filter or search term.
+          </p>
         </div>
         <Button asChild size="lg">
           <Link to="/octobots/new">

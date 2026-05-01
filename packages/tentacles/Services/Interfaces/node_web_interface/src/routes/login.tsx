@@ -1,15 +1,12 @@
 import { zodResolver } from "@hookform/resolvers/zod"
-import {
-  createFileRoute,
-  redirect,
-} from "@tanstack/react-router"
-import { useForm } from "react-hook-form"
-import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { z } from "zod"
+import { createFileRoute, redirect } from "@tanstack/react-router"
 import { ShieldCheck } from "lucide-react"
+import { useState } from "react"
+import { useForm } from "react-hook-form"
+import { z } from "zod"
 
-import { ApiError, WalletsService, type WalletInfo } from "@/client"
+import { ApiError, type WalletInfo, WalletsService } from "@/client"
 import { AuthLayout } from "@/components/Common/AuthLayout"
 import {
   Form,
@@ -46,7 +43,11 @@ function Login() {
   const { loginMutation } = useAuth()
   const [selectedWallet, setSelectedWallet] = useState<WalletInfo | null>(null)
 
-  const { data: wallets = [], isPending: walletsLoading, isError: walletsError } = useQuery({
+  const {
+    data: wallets = [],
+    isPending: walletsLoading,
+    isError: walletsError,
+  } = useQuery({
     queryKey: ["wallets"],
     queryFn: () => WalletsService.listWallets(),
     staleTime: 0,
@@ -78,19 +79,24 @@ function Login() {
       username = "node"
     }
 
-    loginMutation.mutate({ username, password: data.passphrase }, {
-      onError: (err) => {
-        const isAuthError = err instanceof ApiError && err.status === 401
-        form.setError("passphrase", {
-          message: isAuthError ? "Invalid passphrase" : "Service unavailable, please try again",
-        })
-        // Only send user back to wallet picker on auth failure, not network errors
-        if (multiWallet && isAuthError) {
-          setSelectedWallet(null)
-          form.reset()
-        }
+    loginMutation.mutate(
+      { username, password: data.passphrase },
+      {
+        onError: (err) => {
+          const isAuthError = err instanceof ApiError && err.status === 401
+          form.setError("passphrase", {
+            message: isAuthError
+              ? "Invalid passphrase"
+              : "Service unavailable, please try again",
+          })
+          // Only send user back to wallet picker on auth failure, not network errors
+          if (multiWallet && isAuthError) {
+            setSelectedWallet(null)
+            form.reset()
+          }
+        },
       },
-    })
+    )
   }
 
   // Wallet list failed to load — can't determine auth mode
@@ -129,7 +135,11 @@ function Login() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="font-medium truncate">
-                      {wallet.name || <span className="text-muted-foreground italic font-normal">No name</span>}
+                      {wallet.name || (
+                        <span className="text-muted-foreground italic font-normal">
+                          No name
+                        </span>
+                      )}
                     </span>
                     {wallet.is_admin && (
                       <ShieldCheck className="size-4 shrink-0 text-primary" />
@@ -159,7 +169,8 @@ function Login() {
             {multiWallet && selectedWallet ? (
               <>
                 <h1 className="text-2xl font-bold">
-                  {selectedWallet.name || truncateAddress(selectedWallet.address)}
+                  {selectedWallet.name ||
+                    truncateAddress(selectedWallet.address)}
                 </h1>
                 <p className="text-sm text-muted-foreground">
                   Enter the passphrase for this wallet.

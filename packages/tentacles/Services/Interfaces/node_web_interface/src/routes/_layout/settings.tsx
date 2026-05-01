@@ -1,9 +1,26 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
-import { Check, Copy, Download, FileText, KeyRound, LogOut, Network, Plus, QrCode, Server, ShieldCheck, Sliders, Trash2, TriangleAlert, Wallet, X } from "lucide-react"
+import {
+  Check,
+  Copy,
+  Download,
+  FileText,
+  KeyRound,
+  LogOut,
+  Network,
+  Plus,
+  QrCode,
+  Server,
+  ShieldCheck,
+  Sliders,
+  Trash2,
+  TriangleAlert,
+  Wallet,
+  X,
+} from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { QRCode } from "react-qr-code"
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-
+import { type WalletInfo, WalletsService } from "@/client"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -20,17 +37,19 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import useAuth from "@/hooks/useAuth"
-import { WalletsService, type WalletInfo } from "@/client"
-import { truncateAddress } from "@/lib/wallet-utils"
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+import useAuth from "@/hooks/useAuth"
+import type { ClientKeys } from "@/lib/client-encryption"
+import {
+  areClientKeysConfigured,
   CLIENT_KEY_LABELS,
   CLIENT_KEY_NAMES,
-  areClientKeysConfigured,
   emptyKeys,
 } from "@/lib/client-encryption"
-import type { ClientKeys } from "@/lib/client-encryption"
 import {
   clearClientKeys,
   hasStoredClientKeys,
@@ -38,6 +57,7 @@ import {
   loadPassword,
   saveClientKeys,
 } from "@/lib/device-key"
+import { truncateAddress } from "@/lib/wallet-utils"
 
 export const Route = createFileRoute("/_layout/settings")({
   component: Settings,
@@ -74,7 +94,9 @@ function LoggingCard() {
   useEffect(() => {
     fetch("/api/v1/nodes/config", { credentials: "include" })
       .then((r) => r.json())
-      .then((data) => setEnabled(data.use_dedicated_log_file_per_automation ?? true))
+      .then((data) =>
+        setEnabled(data.use_dedicated_log_file_per_automation ?? true),
+      )
       .catch(() => setEnabled(true))
   }, [])
 
@@ -145,8 +167,13 @@ function ExportWalletDialog() {
   }
 
   const onOpenChange = (open: boolean) => {
-    if (open) { void fetchPrivateKey() }
-    if (!open) { setPrivateKey(null); setError(null) }
+    if (open) {
+      void fetchPrivateKey()
+    }
+    if (!open) {
+      setPrivateKey(null)
+      setError(null)
+    }
   }
 
   return (
@@ -168,15 +195,20 @@ function ExportWalletDialog() {
         <DialogHeader>
           <DialogTitle>Export wallet</DialogTitle>
           <DialogDescription>
-            Keep your private key safe. Anyone with access to it controls your wallet.
+            Keep your private key safe. Anyone with access to it controls your
+            wallet.
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-4">
-          <div className="flex items-start gap-2 rounded-md border border-yellow-500/40 bg-yellow-500/10 p-3 text-sm text-yellow-600 dark:text-yellow-400">
+          <div className="flex items-start gap-2 rounded-md border border-warn/30 bg-warn/10 p-3 text-sm text-warn">
             <TriangleAlert className="mt-0.5 size-4 shrink-0" />
-            <span>Never share your private key. Store it in a secure location.</span>
+            <span>
+              Never share your private key. Store it in a secure location.
+            </span>
           </div>
-          {loading && <p className="text-sm text-muted-foreground">Decrypting wallet…</p>}
+          {loading && (
+            <p className="text-sm text-muted-foreground">Decrypting wallet…</p>
+          )}
           {error && <p className="text-sm text-destructive">{error}</p>}
           {privateKey && (
             <div className="flex flex-col gap-2">
@@ -190,7 +222,9 @@ function ExportWalletDialog() {
                   <Copy className="size-4" />
                 </button>
               </div>
-              {copied && <p className="text-xs text-muted-foreground">Copied!</p>}
+              {copied && (
+                <p className="text-xs text-muted-foreground">Copied!</p>
+              )}
             </div>
           )}
         </div>
@@ -209,13 +243,17 @@ function PairDeviceDialog() {
       const address = localStorage.getItem("auth_username") || ""
       const passphrase = (await loadPassword()) ?? ""
       if (!address || !passphrase) {
-        throw new Error("No active wallet session — log out and back in to refresh device key.")
+        throw new Error(
+          "No active wallet session — log out and back in to refresh device key.",
+        )
       }
-      setQrValue(JSON.stringify({
-        url: window.location.origin,
-        address,
-        passphrase,
-      }))
+      setQrValue(
+        JSON.stringify({
+          url: window.location.origin,
+          address,
+          passphrase,
+        }),
+      )
     } catch (e) {
       console.error("PairDeviceDialog: failed to build QR value", e)
       setError(e instanceof Error ? e.message : "Failed to build QR code")
@@ -223,8 +261,13 @@ function PairDeviceDialog() {
   }
 
   const onOpenChange = (open: boolean) => {
-    if (open) { void buildQrValue() }
-    if (!open) { setQrValue(null); setError(null) }
+    if (open) {
+      void buildQrValue()
+    }
+    if (!open) {
+      setQrValue(null)
+      setError(null)
+    }
   }
 
   return (
@@ -246,15 +289,21 @@ function PairDeviceDialog() {
         <DialogHeader>
           <DialogTitle>Pair mobile device</DialogTitle>
           <DialogDescription>
-            Scan this QR code with your OctoBot mobile app to connect to this node.
+            Scan this QR code with your OctoBot mobile app to connect to this
+            node.
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col items-center gap-4">
-          <div className="flex items-start gap-2 rounded-md border border-yellow-500/40 bg-yellow-500/10 p-3 text-sm text-yellow-600 dark:text-yellow-400 w-full">
+          <div className="flex items-start gap-2 rounded-md border border-warn/30 bg-warn/10 p-3 text-sm text-warn w-full">
             <TriangleAlert className="mt-0.5 size-4 shrink-0" />
-            <span>Only scan on a trusted device. The QR code contains your passphrase.</span>
+            <span>
+              Only scan on a trusted device. The QR code contains your
+              passphrase.
+            </span>
           </div>
-          {error && <p className="text-sm text-destructive text-center">{error}</p>}
+          {error && (
+            <p className="text-sm text-destructive text-center">{error}</p>
+          )}
           {qrValue && (
             <div className="rounded-xl bg-white p-4">
               <QRCode value={qrValue} size={220} />
@@ -265,7 +314,6 @@ function PairDeviceDialog() {
     </Dialog>
   )
 }
-
 
 type NodeType = "standalone" | "master"
 
@@ -286,9 +334,7 @@ function NodeTypeCard() {
           <Sliders className="size-4" />
           Node type
         </CardTitle>
-        <CardDescription>
-          How this node is configured to run.
-        </CardDescription>
+        <CardDescription>How this node is configured to run.</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         <div className="grid grid-cols-2 gap-3">
@@ -311,17 +357,19 @@ function NodeTypeCard() {
           </div>
         </div>
         <span className="text-xs text-muted-foreground">
-          The node type can only be changed from the CLI. Use the <code>--node-type</code> flag when starting the node.
+          The node type can only be changed from the CLI. Use the{" "}
+          <code>--node-type</code> flag when starting the node.
         </span>
       </CardContent>
     </Card>
   )
 }
 
-
 function ClientEncryptionKeysCard() {
   const [keys, setKeys] = useState<ClientKeys>(emptyKeys)
-  const [status, setStatus] = useState<"loading" | "ready" | "saved" | "error">("loading")
+  const [status, setStatus] = useState<"loading" | "ready" | "saved" | "error">(
+    "loading",
+  )
   const [hasStored, setHasStored] = useState(false)
   const [editing, setEditing] = useState(false)
   const [error, setError] = useState("")
@@ -388,7 +436,13 @@ function ClientEncryptionKeysCard() {
   return (
     <Card className="relative md:col-span-2">
       <div className="absolute right-4 top-4">
-        <StatusIndicator enabled={serverEnabled === null ? null : serverEnabled === true && configured && hasStored} />
+        <StatusIndicator
+          enabled={
+            serverEnabled === null
+              ? null
+              : serverEnabled === true && configured && hasStored
+          }
+        />
       </div>
       <CardHeader className="pr-12">
         <CardTitle className="flex items-center gap-2">
@@ -396,21 +450,27 @@ function ClientEncryptionKeysCard() {
           Encryption keys
         </CardTitle>
         <CardDescription>
-          Server-side and browser-stored client keys for end-to-end task encryption.
+          Server-side and browser-stored client keys for end-to-end task
+          encryption.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <div className="flex flex-col gap-2">
-          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Server keys</span>
+          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            Server keys
+          </span>
           {serverEnabled === null ? (
             <p className="text-sm text-muted-foreground">Loading…</p>
           ) : serverEnabled ? (
-            <span className="inline-flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400">
-              <ShieldCheck className="size-3.5" /> All server encryption keys are configured.
+            <span className="inline-flex items-center gap-1.5 text-xs text-pos">
+              <ShieldCheck className="size-3.5" /> All server encryption keys
+              are configured.
             </span>
           ) : (
             <div className="flex flex-col gap-1.5">
-              <span className="text-xs text-muted-foreground">Set these environment variables to enable:</span>
+              <span className="text-xs text-muted-foreground">
+                Set these environment variables to enable:
+              </span>
               <ul className="text-xs font-mono text-muted-foreground flex flex-col gap-0.5 ml-6 list-disc">
                 {serverEnvVars.map((v) => (
                   <li key={v}>{v}</li>
@@ -421,92 +481,102 @@ function ClientEncryptionKeysCard() {
         </div>
         <div className="border-t" />
         <div className="flex flex-col gap-4">
-          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Client keys</span>
-        {status === "error" ? (
-          <div className="flex flex-col gap-3">
-            <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
-              <TriangleAlert className="mt-0.5 size-4 shrink-0" />
-              <span>{error}</span>
-            </div>
-            <button
-              className="inline-flex w-fit items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent"
-              onClick={handleClear}
-            >
-              Clear stored keys and re-enter
-            </button>
-          </div>
-        ) : status === "loading" ? (
-          <p className="text-sm text-muted-foreground">Decrypting…</p>
-        ) : hasStored && !editing ? (
-          <>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {CLIENT_KEY_NAMES.map((k) => (
-                <div key={k} className="flex flex-col gap-1">
-                  <label className="text-xs font-mono text-muted-foreground">{CLIENT_KEY_LABELS[k]}</label>
-                  <div className="min-h-[80px] w-full rounded-md border bg-muted px-3 py-2 text-xs font-mono text-muted-foreground flex items-center select-none tracking-widest">
-                    {"•".repeat(24)}
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="flex items-center gap-3">
-              {status === "saved" ? (
-                <span className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-green-600 dark:text-green-400">
-                  <Check className="size-4" /> Saved
-                </span>
-              ) : (
-                <button
-                  className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent"
-                  onClick={() => setEditing(true)}
-                >
-                  Edit keys
-                </button>
-              )}
+          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            Client keys
+          </span>
+          {status === "error" ? (
+            <div className="flex flex-col gap-3">
+              <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+                <TriangleAlert className="mt-0.5 size-4 shrink-0" />
+                <span>{error}</span>
+              </div>
               <button
-                className="inline-flex items-center gap-2 rounded-md border border-destructive/30 px-3 py-1.5 text-sm font-medium text-destructive hover:bg-destructive/10"
+                className="inline-flex w-fit items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent"
                 onClick={handleClear}
               >
-                Clear
+                Clear stored keys and re-enter
               </button>
             </div>
-          </>
-        ) : (
-          <>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {CLIENT_KEY_NAMES.map((k) => (
-                <div key={k} className="flex flex-col gap-1">
-                  <label className="text-xs font-mono text-muted-foreground">{CLIENT_KEY_LABELS[k]}</label>
-                  <textarea
-                    className="min-h-[80px] w-full resize-y rounded-md border bg-muted px-3 py-2 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-ring"
-                    placeholder="-----BEGIN ... KEY-----"
-                    value={keys[k]}
-                    onChange={(e) => setKeys((prev) => ({ ...prev, [k]: e.target.value }))}
-                  />
-                </div>
-              ))}
-            </div>
-            <div className="flex items-center gap-3">
-              <button
-                className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent"
-                onClick={handleSave}
-              >
-                {status === "saved" ? <Check className="size-4" /> : null}
-                {status === "saved" ? "Saved" : "Save keys"}
-              </button>
-              {editing && (
+          ) : status === "loading" ? (
+            <p className="text-sm text-muted-foreground">Decrypting…</p>
+          ) : hasStored && !editing ? (
+            <>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {CLIENT_KEY_NAMES.map((k) => (
+                  <div key={k} className="flex flex-col gap-1">
+                    <label className="text-xs font-mono text-muted-foreground">
+                      {CLIENT_KEY_LABELS[k]}
+                    </label>
+                    <div className="min-h-[80px] w-full rounded-md border bg-muted px-3 py-2 text-xs font-mono text-muted-foreground flex items-center select-none tracking-widest">
+                      {"•".repeat(24)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center gap-3">
+                {status === "saved" ? (
+                  <span className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-pos">
+                    <Check className="size-4" /> Saved
+                  </span>
+                ) : (
+                  <button
+                    className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent"
+                    onClick={() => setEditing(true)}
+                  >
+                    Edit keys
+                  </button>
+                )}
+                <button
+                  className="inline-flex items-center gap-2 rounded-md border border-destructive/30 px-3 py-1.5 text-sm font-medium text-destructive hover:bg-destructive/10"
+                  onClick={handleClear}
+                >
+                  Clear
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {CLIENT_KEY_NAMES.map((k) => (
+                  <div key={k} className="flex flex-col gap-1">
+                    <label className="text-xs font-mono text-muted-foreground">
+                      {CLIENT_KEY_LABELS[k]}
+                    </label>
+                    <textarea
+                      className="min-h-[80px] w-full resize-y rounded-md border bg-muted px-3 py-2 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-ring"
+                      placeholder="-----BEGIN ... KEY-----"
+                      value={keys[k]}
+                      onChange={(e) =>
+                        setKeys((prev) => ({ ...prev, [k]: e.target.value }))
+                      }
+                    />
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center gap-3">
                 <button
                   className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent"
-                  onClick={() => setEditing(false)}
+                  onClick={handleSave}
                 >
-                  Cancel
+                  {status === "saved" ? <Check className="size-4" /> : null}
+                  {status === "saved" ? "Saved" : "Save keys"}
                 </button>
-              )}
-              {!configured && (
-                <span className="text-xs text-muted-foreground">Both keys required for client decryption.</span>
-              )}
-            </div>
-          </>
-        )}
+                {editing && (
+                  <button
+                    className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent"
+                    onClick={() => setEditing(false)}
+                  >
+                    Cancel
+                  </button>
+                )}
+                {!configured && (
+                  <span className="text-xs text-muted-foreground">
+                    Both keys required for client decryption.
+                  </span>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </CardContent>
     </Card>
@@ -527,7 +597,8 @@ function AddWalletDialog({ onSuccess }: { onSuccess: () => void }) {
         requestBody: {
           passphrase,
           name: name.trim() || null,
-          private_key: importMode && privateKey.trim() ? privateKey.trim() : null,
+          private_key:
+            importMode && privateKey.trim() ? privateKey.trim() : null,
         },
       }),
     onSuccess: () => {
@@ -576,33 +647,43 @@ function AddWalletDialog({ onSuccess }: { onSuccess: () => void }) {
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={() => { setImportMode(false); setError(null) }}
+              onClick={() => {
+                setImportMode(false)
+                setError(null)
+              }}
               className={`flex-1 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors ${!importMode ? "bg-primary text-primary-foreground" : "hover:bg-accent"}`}
             >
               Create new
             </button>
             <button
               type="button"
-              onClick={() => { setImportMode(true); setError(null) }}
+              onClick={() => {
+                setImportMode(true)
+                setError(null)
+              }}
               className={`flex-1 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors ${importMode ? "bg-primary text-primary-foreground" : "hover:bg-accent"}`}
             >
               Import
             </button>
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-muted-foreground">Display name (optional)</label>
+            <label className="text-xs font-medium text-muted-foreground">
+              Display name (optional)
+            </label>
             <input
-              className="rounded-md border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+              className="rounded-md border border-rule bg-input px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-frost"
               placeholder="e.g. Alice"
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-muted-foreground">Passphrase</label>
+            <label className="text-xs font-medium text-muted-foreground">
+              Passphrase
+            </label>
             <input
               type="password"
-              className="rounded-md border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+              className="rounded-md border border-rule bg-input px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-frost"
               placeholder="Choose a passphrase"
               value={passphrase}
               onChange={(e) => setPassphrase(e.target.value)}
@@ -610,10 +691,12 @@ function AddWalletDialog({ onSuccess }: { onSuccess: () => void }) {
           </div>
           {importMode && (
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-muted-foreground">Private key</label>
+              <label className="text-xs font-medium text-muted-foreground">
+                Private key
+              </label>
               <input
                 type="password"
-                className="rounded-md border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring font-mono"
+                className="rounded-md border border-rule bg-input px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-frost font-mono"
                 placeholder="0x..."
                 value={privateKey}
                 onChange={(e) => setPrivateKey(e.target.value)}
@@ -628,7 +711,12 @@ function AddWalletDialog({ onSuccess }: { onSuccess: () => void }) {
           )}
           <button
             type="button"
-            disabled={passphrase.length < 8 || (importMode && !/^(0x)?[0-9a-fA-F]{64}$/.test(privateKey.trim())) || mutation.isPending}
+            disabled={
+              passphrase.length < 8 ||
+              (importMode &&
+                !/^(0x)?[0-9a-fA-F]{64}$/.test(privateKey.trim())) ||
+              mutation.isPending
+            }
             onClick={() => {
               if (passphrase.length < 8) {
                 setError("Passphrase must be at least 8 characters")
@@ -637,7 +725,9 @@ function AddWalletDialog({ onSuccess }: { onSuccess: () => void }) {
               if (importMode) {
                 const pkClean = privateKey.trim().replace(/^0x/, "")
                 if (!/^[0-9a-fA-F]{64}$/.test(pkClean)) {
-                  setError("Private key must be a 64-character hex string (with or without 0x prefix)")
+                  setError(
+                    "Private key must be a 64-character hex string (with or without 0x prefix)",
+                  )
                   return
                 }
               }
@@ -645,7 +735,11 @@ function AddWalletDialog({ onSuccess }: { onSuccess: () => void }) {
             }}
             className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {mutation.isPending ? "Adding…" : importMode ? "Import wallet" : "Create wallet"}
+            {mutation.isPending
+              ? "Adding…"
+              : importMode
+                ? "Import wallet"
+                : "Create wallet"}
           </button>
         </div>
       </DialogContent>
@@ -671,7 +765,13 @@ function RemoveWalletDialog({
   })
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { mutation.reset(); setOpen(v) }}>
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        mutation.reset()
+        setOpen(v)
+      }}
+    >
       <DialogTrigger asChild>
         <button
           className="text-muted-foreground hover:text-destructive transition-colors"
@@ -686,21 +786,28 @@ function RemoveWalletDialog({
           <DialogTitle>Remove wallet</DialogTitle>
           <DialogDescription>
             This will permanently remove{" "}
-            <span className="font-mono">{wallet.name || truncateAddress(wallet.address)}</span>{" "}
+            <span className="font-mono">
+              {wallet.name || truncateAddress(wallet.address)}
+            </span>{" "}
             from this node.
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-4">
-          <div className="flex items-start gap-2 rounded-md border border-yellow-500/40 bg-yellow-500/10 p-3 text-sm text-yellow-600 dark:text-yellow-400">
+          <div className="flex items-start gap-2 rounded-md border border-warn/30 bg-warn/10 p-3 text-sm text-warn">
             <TriangleAlert className="mt-0.5 size-4 shrink-0" />
             <span>
-              Tasks associated with this wallet will become orphaned (visible to admins only). This action cannot be undone.
+              Tasks associated with this wallet will become orphaned (visible to
+              admins only). This action cannot be undone.
             </span>
           </div>
           {mutation.isError && (
             <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
               <TriangleAlert className="mt-0.5 size-4 shrink-0" />
-              <span>{mutation.error instanceof Error ? mutation.error.message : "Failed to remove wallet"}</span>
+              <span>
+                {mutation.error instanceof Error
+                  ? mutation.error.message
+                  : "Failed to remove wallet"}
+              </span>
             </div>
           )}
           <div className="flex gap-2 justify-end">
@@ -767,7 +874,10 @@ function WalletRow({
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") handleSave()
-    if (e.key === "Escape") { setEditing(false); setNameValue(wallet.name ?? "") }
+    if (e.key === "Escape") {
+      setEditing(false)
+      setNameValue(wallet.name ?? "")
+    }
   }
 
   return (
@@ -777,8 +887,7 @@ function WalletRow({
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
               <input
-                autoFocus
-                className="rounded border bg-background px-2 py-0.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                className="rounded border border-rule bg-input px-2 py-0.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-frost"
                 value={nameValue}
                 onChange={(e) => setNameValue(e.target.value)}
                 onKeyDown={handleKeyDown}
@@ -792,13 +901,20 @@ function WalletRow({
                 {mutation.isPending ? "Saving…" : "Save"}
               </button>
               <button
-                onClick={() => { setEditing(false); setNameValue(wallet.name ?? ""); setRenameError(null); mutation.reset() }}
+                onClick={() => {
+                  setEditing(false)
+                  setNameValue(wallet.name ?? "")
+                  setRenameError(null)
+                  mutation.reset()
+                }}
                 className="text-xs text-muted-foreground hover:underline"
               >
                 Cancel
               </button>
             </div>
-            {renameError && <span className="text-xs text-destructive">{renameError}</span>}
+            {renameError && (
+              <span className="text-xs text-destructive">{renameError}</span>
+            )}
           </div>
         ) : (
           <button
@@ -807,7 +923,9 @@ function WalletRow({
             title="Click to edit name"
           >
             <span className="text-sm font-medium group-hover:underline underline-offset-2">
-              {wallet.name || <span className="text-muted-foreground italic">No name</span>}
+              {wallet.name || (
+                <span className="text-muted-foreground italic">No name</span>
+              )}
             </span>
           </button>
         )}
@@ -871,7 +989,8 @@ function WalletManagementCard() {
           Wallet management
         </CardTitle>
         <CardDescription>
-          Manage wallets that can log in to this node. Each wallet has its own passphrase and task visibility.
+          Manage wallets that can log in to this node. Each wallet has its own
+          passphrase and task visibility.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
@@ -881,7 +1000,13 @@ function WalletManagementCard() {
           <>
             <div className="flex flex-col gap-2">
               {displayedWallets.map((wallet) => (
-                <WalletRow key={wallet.address} wallet={wallet} onRefresh={refresh} showRemove={user?.is_superuser === true} currentUserAddress={currentAddress} />
+                <WalletRow
+                  key={wallet.address}
+                  wallet={wallet}
+                  onRefresh={refresh}
+                  showRemove={user?.is_superuser === true}
+                  currentUserAddress={currentAddress}
+                />
               ))}
             </div>
             {user?.is_superuser && <AddWalletDialog onSuccess={refresh} />}

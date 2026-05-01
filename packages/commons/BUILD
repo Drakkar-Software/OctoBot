@@ -15,6 +15,6 @@ python_test_utils(
 
 python_tests(
     name="tests",
-    sources=["tests/**/test_*.py", "tests/profiles/**", "!tests/profiles/__init__.py"],
+    sources=["tests/**/test_*.py", "tests/profiles/**/*.py", "!tests/profiles/__init__.py"],
     dependencies=[":octobot_commons", ":reqs", ":full_reqs", "//:dev_reqs", ":test_data", ":test_profiles_utils"],
 )

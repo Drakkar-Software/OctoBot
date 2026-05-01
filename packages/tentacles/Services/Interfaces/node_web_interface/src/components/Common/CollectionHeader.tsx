@@ -1,7 +1,6 @@
-import { ReactNode } from "react"
-
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import type { ReactNode } from "react"
 import { SearchInput } from "@/components/Common/SearchInput"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export type FilterOption = {
   value: string
@@ -37,7 +36,9 @@ export function CollectionHeader({
       {hasHeading && (
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            {title && <h1 className="text-2xl font-bold tracking-tight">{title}</h1>}
+            {title && (
+              <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
+            )}
             {description && (
               <p className="text-muted-foreground">{description}</p>
             )}

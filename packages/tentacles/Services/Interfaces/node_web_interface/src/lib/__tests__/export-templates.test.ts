@@ -1,26 +1,32 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import {
+  deleteUserExportTemplate,
   EXPORT_TEMPLATES,
-  getExportTemplateById,
+  FULL_DETAILS_TEMPLATE,
+  GENERAL_EXPORT_TEMPLATE,
   getAllExportTemplates,
+  getExportTemplateById,
   loadUserExportTemplates,
   saveUserExportTemplate,
-  deleteUserExportTemplate,
-  validateExportTemplateJson,
-  GENERAL_EXPORT_TEMPLATE,
   TRADE_EXPORT_TEMPLATE,
   TRANSFER_EXPORT_TEMPLATE,
-  FULL_DETAILS_TEMPLATE,
+  validateExportTemplateJson,
 } from "../export-templates"
 
 const localStorageMock = (() => {
   let store: Record<string, string> = {}
   return {
     getItem: (key: string) => store[key] ?? null,
-    setItem: (key: string, value: string) => { store[key] = value },
-    removeItem: (key: string) => { delete store[key] },
-    clear: () => { store = {} },
+    setItem: (key: string, value: string) => {
+      store[key] = value
+    },
+    removeItem: (key: string) => {
+      delete store[key]
+    },
+    clear: () => {
+      store = {}
+    },
   }
 })()
 
@@ -88,8 +94,7 @@ describe("export-templates", () => {
       expect(keys).toContain("price")
       expect(keys).toContain("exchange_trade_id")
       expect(keys).toContain("trade_status")
-      const prefix =
-        "state.automation.exchange_account_elements.trades[0]"
+      const prefix = "state.automation.exchange_account_elements.trades[0]"
       const amountCol = TRADE_EXPORT_TEMPLATE.columns.find(
         (c) => c.key === "amount",
       )
@@ -160,7 +165,14 @@ describe("validateExportTemplateJson", () => {
       id: "my_template",
       label: "My Template",
       description: "A description",
-      columns: [{ key: "name", label: "Name", jsonPath: "__task_name__", formatter: "text" }],
+      columns: [
+        {
+          key: "name",
+          label: "Name",
+          jsonPath: "__task_name__",
+          formatter: "text",
+        },
+      ],
     }
     expect(() => validateExportTemplateJson(valid)).not.toThrow()
     const result = validateExportTemplateJson(valid)
@@ -174,7 +186,9 @@ describe("validateExportTemplateJson", () => {
 
   it("accepts columns without optional formatter", () => {
     const valid = {
-      id: "x", label: "X", description: "",
+      id: "x",
+      label: "X",
+      description: "",
       columns: [{ key: "k", label: "L", jsonPath: "path" }],
     }
     expect(() => validateExportTemplateJson(valid)).not.toThrow()
@@ -193,7 +207,9 @@ describe("validateExportTemplateJson", () => {
 
   it("rejects column with empty key", () => {
     const invalid = {
-      id: "x", label: "X", description: "",
+      id: "x",
+      label: "X",
+      description: "",
       columns: [{ key: "", label: "L", jsonPath: "path" }],
     }
     expect(() => validateExportTemplateJson(invalid)).toThrow()
@@ -201,8 +217,12 @@ describe("validateExportTemplateJson", () => {
 
   it("rejects invalid formatter value", () => {
     const invalid = {
-      id: "x", label: "X", description: "",
-      columns: [{ key: "k", label: "L", jsonPath: "path", formatter: "invalid" }],
+      id: "x",
+      label: "X",
+      description: "",
+      columns: [
+        { key: "k", label: "L", jsonPath: "path", formatter: "invalid" },
+      ],
     }
     expect(() => validateExportTemplateJson(invalid)).toThrow()
   })
@@ -216,31 +236,52 @@ describe("loadUserExportTemplates", () => {
   })
 
   it("returns stored templates", () => {
-    localStorage.setItem("user_export_templates", JSON.stringify([
-      { id: "stored", label: "Stored", description: "", columns: [] },
-    ]))
+    localStorage.setItem(
+      "user_export_templates",
+      JSON.stringify([
+        { id: "stored", label: "Stored", description: "", columns: [] },
+      ]),
+    )
     expect(loadUserExportTemplates()).toHaveLength(1)
     expect(loadUserExportTemplates()[0].id).toBe("stored")
   })
 
   it("silently ignores malformed entries", () => {
-    localStorage.setItem("user_export_templates", JSON.stringify([
-      { id: "valid", label: "V", description: "", columns: [] },
-      { broken: true },
-    ]))
+    localStorage.setItem(
+      "user_export_templates",
+      JSON.stringify([
+        { id: "valid", label: "V", description: "", columns: [] },
+        { broken: true },
+      ]),
+    )
     expect(loadUserExportTemplates()).toHaveLength(1)
   })
 })
 
 describe("saveUserExportTemplate", () => {
   it("saves a new template", () => {
-    saveUserExportTemplate({ id: "my_custom", label: "My Custom", description: "", columns: [] })
+    saveUserExportTemplate({
+      id: "my_custom",
+      label: "My Custom",
+      description: "",
+      columns: [],
+    })
     expect(loadUserExportTemplates()).toHaveLength(1)
   })
 
   it("replaces an existing template with the same id", () => {
-    saveUserExportTemplate({ id: "replaceable", label: "Original", description: "", columns: [] })
-    saveUserExportTemplate({ id: "replaceable", label: "Updated", description: "", columns: [] })
+    saveUserExportTemplate({
+      id: "replaceable",
+      label: "Original",
+      description: "",
+      columns: [],
+    })
+    saveUserExportTemplate({
+      id: "replaceable",
+      label: "Updated",
+      description: "",
+      columns: [],
+    })
     const templates = loadUserExportTemplates()
     expect(templates).toHaveLength(1)
     expect(templates[0].label).toBe("Updated")
@@ -248,17 +289,32 @@ describe("saveUserExportTemplate", () => {
 
   it("throws when id collides with a built-in template", () => {
     expect(() =>
-      saveUserExportTemplate({ id: "general", label: "Collision", description: "", columns: [] }),
+      saveUserExportTemplate({
+        id: "general",
+        label: "Collision",
+        description: "",
+        columns: [],
+      }),
     ).toThrow(/reserved/)
     expect(() =>
-      saveUserExportTemplate({ id: "trade", label: "Collision", description: "", columns: [] }),
+      saveUserExportTemplate({
+        id: "trade",
+        label: "Collision",
+        description: "",
+        columns: [],
+      }),
     ).toThrow(/reserved/)
   })
 })
 
 describe("deleteUserExportTemplate", () => {
   it("removes the template with the given id", () => {
-    saveUserExportTemplate({ id: "to_delete", label: "To Delete", description: "", columns: [] })
+    saveUserExportTemplate({
+      id: "to_delete",
+      label: "To Delete",
+      description: "",
+      columns: [],
+    })
     deleteUserExportTemplate("to_delete")
     expect(loadUserExportTemplates()).toHaveLength(0)
   })
@@ -278,15 +334,21 @@ describe("getAllExportTemplates", () => {
   })
 
   it("includes user-imported templates", () => {
-    saveUserExportTemplate({ id: "user_template", label: "User", description: "", columns: [] })
+    saveUserExportTemplate({
+      id: "user_template",
+      label: "User",
+      description: "",
+      columns: [],
+    })
     const ids = getAllExportTemplates().map((t) => t.id)
     expect(ids).toContain("user_template")
   })
 
   it("skips malformed user templates", () => {
-    localStorage.setItem("user_export_templates", JSON.stringify([
-      { broken: true },
-    ]))
+    localStorage.setItem(
+      "user_export_templates",
+      JSON.stringify([{ broken: true }]),
+    )
     const ids = getAllExportTemplates().map((t) => t.id)
     expect(ids).toContain("general")
     expect(ids).toHaveLength(4) // only built-ins

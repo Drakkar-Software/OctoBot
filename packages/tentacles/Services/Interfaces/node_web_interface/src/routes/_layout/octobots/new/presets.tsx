@@ -71,9 +71,12 @@ function StrategyChooser() {
       const matchesFilter =
         filterValue === "all"
           ? true
-          : strategy.origin === filterValue || strategy.difficulty === filterValue
+          : strategy.origin === filterValue ||
+            strategy.difficulty === filterValue
       const matchesQuery = query
-        ? `${strategy.name} ${strategy.description}`.toLowerCase().includes(query)
+        ? `${strategy.name} ${strategy.description}`
+            .toLowerCase()
+            .includes(query)
         : true
       return matchesFilter && matchesQuery
     })
@@ -107,7 +110,10 @@ function StrategyChooser() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
           {filtered.map((strategy) => (
-            <Card key={strategy.id} className="transition-shadow hover:shadow-md">
+            <Card
+              key={strategy.id}
+              className="transition-shadow hover:shadow-md"
+            >
               <CardHeader>
                 <div className="flex items-start justify-between gap-3">
                   <div>

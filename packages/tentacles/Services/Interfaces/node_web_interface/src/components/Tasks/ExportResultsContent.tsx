@@ -1,15 +1,26 @@
 import {
   type ColumnDef,
-  type SortingState,
   type ColumnFiltersState,
-  type VisibilityState,
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
   getSortedRowModel,
+  type SortingState,
   useReactTable,
+  type VisibilityState,
 } from "@tanstack/react-table"
-import { ArrowLeft, ArrowUpDown, Download, Eye, EyeOff, Loader2, Plus, Search, Upload, X } from "lucide-react"
+import {
+  ArrowLeft,
+  ArrowUpDown,
+  Download,
+  Eye,
+  EyeOff,
+  Loader2,
+  Plus,
+  Search,
+  Upload,
+  X,
+} from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import type { Task_Output as Task } from "@/client"
@@ -32,24 +43,23 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { generateCSV, downloadCSV } from "@/lib/csv"
-import {
-  EXPORT_TEMPLATES,
-  getAllExportTemplates,
-  validateExportTemplateJson,
-  saveUserExportTemplate,
-  getLastUsedExportTemplateId,
-  setLastUsedExportTemplateId,
-  type ExportColumnDef,
-} from "@/lib/export-templates"
 import useCustomToast from "@/hooks/useCustomToast"
-import { decryptAndVerify, derivePublicPemsFromPrivates, type ClientKeys } from "@/lib/client-encryption"
 import {
-  extractValue,
-  discoverPaths,
-  formatCellValue,
-} from "@/lib/json-path"
+  type ClientKeys,
+  decryptAndVerify,
+  derivePublicPemsFromPrivates,
+} from "@/lib/client-encryption"
+import { downloadCSV, generateCSV } from "@/lib/csv"
 import { loadClientKeys } from "@/lib/device-key"
+import {
+  type ExportColumnDef,
+  getAllExportTemplates,
+  getLastUsedExportTemplateId,
+  saveUserExportTemplate,
+  setLastUsedExportTemplateId,
+  validateExportTemplateJson,
+} from "@/lib/export-templates"
+import { discoverPaths, extractValue, formatCellValue } from "@/lib/json-path"
 import { fetchServerPublicKeys } from "@/lib/server-keys"
 import { getActiveExecution } from "@/utils/executions"
 
@@ -71,10 +81,7 @@ export interface ExportResultsContentProps {
 // ── Helpers ────────────────────────────────────────────────────────────
 
 /** Resolve a column's jsonPath against a row, checking meta keys first. */
-function resolveValue(
-  row: ExportRow,
-  jsonPath: string,
-): unknown {
+function resolveValue(row: ExportRow, jsonPath: string): unknown {
   if (jsonPath.startsWith("__") && jsonPath.endsWith("__")) {
     return row.meta[jsonPath]
   }
@@ -82,27 +89,27 @@ function resolveValue(
 }
 
 function buildExportRows(tasks: Task[]): ExportRow[] {
-  return tasks
-    .map((task) => {
-      const activeExec = getActiveExecution(task.executions)
-      return {
-        taskId: task.id ?? "",
-        resultData: {},
-        meta: {
-          __task_name__: task.name ?? "",
-          __exec_status__: activeExec?.status ?? "",
-          __task_status__: activeExec?.status === "failed" || activeExec?.error ? "errored" : (activeExec?.status ?? ""),
-          __task_error__: activeExec?.error ?? "",
-          __exec_type__: activeExec?.type ?? "",
-          __exec_completed_at__: activeExec?.completed_at ?? "",
-        },
-      }
-    })
+  return tasks.map((task) => {
+    const activeExec = getActiveExecution(task.executions)
+    return {
+      taskId: task.id ?? "",
+      resultData: {},
+      meta: {
+        __task_name__: task.name ?? "",
+        __exec_status__: activeExec?.status ?? "",
+        __task_status__:
+          activeExec?.status === "failed" || activeExec?.error
+            ? "errored"
+            : (activeExec?.status ?? ""),
+        __task_error__: activeExec?.error ?? "",
+        __exec_type__: activeExec?.type ?? "",
+        __exec_completed_at__: activeExec?.completed_at ?? "",
+      },
+    }
+  })
 }
 
-function buildColumnsForFullDetails(
-  rows: ExportRow[],
-): ExportColumnDef[] {
+function buildColumnsForFullDetails(rows: ExportRow[]): ExportColumnDef[] {
   // Discover all paths across all rows
   const allPaths = new Set<string>()
   for (const row of rows) {
@@ -135,8 +142,10 @@ export default function ExportResultsContent({
 }: ExportResultsContentProps) {
   const { showSuccessToast, showErrorToast } = useCustomToast()
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const [userTemplatesVersion, setUserTemplatesVersion] = useState(0)
-  const [selectedTemplateId, setSelectedTemplateId] = useState(() => getLastUsedExportTemplateId() ?? "general")
+  const [_userTemplatesVersion, setUserTemplatesVersion] = useState(0)
+  const [selectedTemplateId, setSelectedTemplateId] = useState(
+    () => getLastUsedExportTemplateId() ?? "general",
+  )
   const [customColumns, setCustomColumns] = useState<ExportColumnDef[]>([])
   const [addColumnPath, setAddColumnPath] = useState("")
   const [addColumnLabel, setAddColumnLabel] = useState("")
@@ -153,7 +162,12 @@ export default function ExportResultsContent({
   showErrorToastRef.current = showErrorToast
 
   const encryptedTaskCount = useMemo(
-    () => tasks.filter((t) => t.is_encrypted && getActiveExecution(t.executions)?.status === "completed").length,
+    () =>
+      tasks.filter(
+        (t) =>
+          t.is_encrypted &&
+          getActiveExecution(t.executions)?.status === "completed",
+      ).length,
     [tasks],
   )
 
@@ -168,7 +182,9 @@ export default function ExportResultsContent({
 
       const rawKeys = await loadClientKeys()
       const hasClientKeys = !!rawKeys?.rsa_private?.trim()
-      let keys: ClientKeys | null = hasClientKeys ? (rawKeys as ClientKeys) : null
+      const keys: ClientKeys | null = hasClientKeys
+        ? (rawKeys as ClientKeys)
+        : null
       let serverKeys: { rsa_public: string; ecdsa_public: string } | null = null
       let userRsaPublicPem: string | null = null
       if (hasClientKeys && keys) {
@@ -177,7 +193,9 @@ export default function ExportResultsContent({
           userRsaPublicPem = pems.rsa_public_pem
           serverKeys = await fetchServerPublicKeys()
         } catch {
-          showErrorToastRef.current("Failed to fetch server keys — encrypted results cannot be decrypted")
+          showErrorToastRef.current(
+            "Failed to fetch server keys — encrypted results cannot be decrypted",
+          )
         }
       }
       if (cancelled) return
@@ -187,7 +205,10 @@ export default function ExportResultsContent({
       let failCount = 0
       try {
         const exportedResults = await TasksService.exportResults({
-          requestBody: { task_ids: completedTaskIds, user_rsa_public_key: userRsaPublicPem },
+          requestBody: {
+            task_ids: completedTaskIds,
+            user_rsa_public_key: userRsaPublicPem,
+          },
         })
         const base = buildExportRows(tasks)
         const rows = await Promise.all(
@@ -197,7 +218,12 @@ export default function ExportResultsContent({
             try {
               let decrypted: string
               if (entry.result_metadata && keys && serverKeys) {
-                decrypted = await decryptAndVerify(entry.result, entry.result_metadata, keys, serverKeys.ecdsa_public)
+                decrypted = await decryptAndVerify(
+                  entry.result,
+                  entry.result_metadata,
+                  keys,
+                  serverKeys.ecdsa_public,
+                )
               } else if (!entry.result_metadata) {
                 decrypted = entry.result
               } else {
@@ -207,7 +233,9 @@ export default function ExportResultsContent({
               try {
                 const parsed: unknown = JSON.parse(decrypted)
                 resultData =
-                  typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)
+                  typeof parsed === "object" &&
+                  parsed !== null &&
+                  !Array.isArray(parsed)
                     ? (parsed as Record<string, unknown>)
                     : { result: parsed }
               } catch {
@@ -222,14 +250,19 @@ export default function ExportResultsContent({
         )
         if (!cancelled) {
           setDecryptedRows(rows)
-          if (failCount > 0) showErrorToastRef.current(`Failed to decrypt ${failCount} result(s) — check your keys`)
+          if (failCount > 0)
+            showErrorToastRef.current(
+              `Failed to decrypt ${failCount} result(s) — check your keys`,
+            )
         }
       } finally {
         if (!cancelled) setIsDecrypting(false)
       }
     }
     tryDecryptAll()
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [tasks])
 
   const displayRows = decryptedRows ?? exportRows
@@ -246,7 +279,7 @@ export default function ExportResultsContent({
 
   const activeTemplate = useMemo(
     () => getAllExportTemplates().find((t) => t.id === selectedTemplateId),
-    [selectedTemplateId, userTemplatesVersion],
+    [selectedTemplateId],
   )
 
   const templateColumns = useMemo((): ExportColumnDef[] => {
@@ -321,7 +354,9 @@ export default function ExportResultsContent({
         setUserTemplatesVersion((v) => v + 1)
         showSuccessToast(`Export template "${def.label}" imported`)
       } catch (err) {
-        showErrorToast(err instanceof Error ? err.message : "Invalid template file")
+        showErrorToast(
+          err instanceof Error ? err.message : "Invalid template file",
+        )
       }
     },
     [showSuccessToast, showErrorToast],
@@ -361,11 +396,21 @@ export default function ExportResultsContent({
     const csv = generateCSV(headers, csvRows)
     downloadCSV(csv, `task-results-${new Date().toISOString().split("T")[0]}`)
     if (encryptedTaskCount > 0 && decryptedRows === null && !isDecrypting) {
-      showErrorToast(`${encryptedTaskCount} encrypted result(s) exported as raw ciphertext — configure browser keys in Settings to decrypt`)
+      showErrorToast(
+        `${encryptedTaskCount} encrypted result(s) exported as raw ciphertext — configure browser keys in Settings to decrypt`,
+      )
     } else {
       showSuccessToast(`Exported ${visibleRows.length} row(s)`)
     }
-  }, [table, allColumns, encryptedTaskCount, decryptedRows, isDecrypting, showErrorToast, showSuccessToast])
+  }, [
+    table,
+    allColumns,
+    encryptedTaskCount,
+    decryptedRows,
+    isDecrypting,
+    showErrorToast,
+    showSuccessToast,
+  ])
 
   return (
     <div className="flex flex-col gap-3">
@@ -381,9 +426,9 @@ export default function ExportResultsContent({
         <Select
           value={selectedTemplateId}
           onValueChange={(id) => {
-              setSelectedTemplateId(id)
-              setLastUsedExportTemplateId(id)
-            }}
+            setSelectedTemplateId(id)
+            setLastUsedExportTemplateId(id)
+          }}
         >
           <SelectTrigger size="sm" className="w-44">
             <SelectValue placeholder="Template" />
@@ -426,8 +471,7 @@ export default function ExportResultsContent({
         {/* Column visibility toggles */}
         <div className="flex gap-1 ml-auto">
           {allColumns.map((col) => {
-            const isVisible =
-              columnVisibility[col.key] !== false
+            const isVisible = columnVisibility[col.key] !== false
             return (
               <Button
                 key={col.key}
@@ -463,10 +507,7 @@ export default function ExportResultsContent({
           placeholder="Column label"
           className="h-7 w-32 text-xs"
         />
-        <Select
-          value={addColumnPath}
-          onValueChange={setAddColumnPath}
-        >
+        <Select value={addColumnPath} onValueChange={setAddColumnPath}>
           <SelectTrigger size="sm" className="w-48">
             <SelectValue placeholder="Select JSON path..." />
           </SelectTrigger>
@@ -553,8 +594,13 @@ export default function ExportResultsContent({
 
       <p className="text-xs text-muted-foreground flex items-center gap-1.5">
         {isDecrypting && <Loader2 className="size-3 animate-spin" />}
-        {isDecrypting ? "Decrypting results…" : (
-          <>Showing {table.getFilteredRowModel().rows.length} of {displayRows.length} rows</>
+        {isDecrypting ? (
+          "Decrypting results…"
+        ) : (
+          <>
+            Showing {table.getFilteredRowModel().rows.length} of{" "}
+            {displayRows.length} rows
+          </>
         )}
       </p>
 

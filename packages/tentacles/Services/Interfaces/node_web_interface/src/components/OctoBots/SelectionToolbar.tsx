@@ -39,15 +39,21 @@ export function SelectionToolbar({
   const [shareLogsOpen, setShareLogsOpen] = useState(false)
   const [shareLogsLoading, setShareLogsLoading] = useState(false)
   const [exportLoading, setExportLoading] = useState(false)
-  const [shareCreds, setShareCreds] = useState<{ errorId: string; errorSecret: string } | null>(null)
+  const [shareCreds, setShareCreds] = useState<{
+    errorId: string
+    errorSecret: string
+  } | null>(null)
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { showSuccessToast, showErrorToast } = useCustomToast()
 
   const deleteMutation = useMutation({
-    mutationFn: () => TasksService.deleteTasks({ taskIds: Array.from(selectedIds) }),
+    mutationFn: () =>
+      TasksService.deleteTasks({ taskIds: Array.from(selectedIds) }),
     onSuccess: () => {
-      showSuccessToast(`Deleted ${selectedIds.size} OctoBot${selectedIds.size !== 1 ? "s" : ""}`)
+      showSuccessToast(
+        `Deleted ${selectedIds.size} OctoBot${selectedIds.size !== 1 ? "s" : ""}`,
+      )
       setDeleteOpen(false)
       onDeleted()
       queryClient.invalidateQueries({ queryKey: ["tasks"] })
@@ -61,9 +67,7 @@ export function SelectionToolbar({
     () =>
       allTasks.filter(
         (t) =>
-          t.id &&
-          selectedIds.has(t.id) &&
-          getTaskFilterGroup(t) !== "active",
+          t.id && selectedIds.has(t.id) && getTaskFilterGroup(t) !== "active",
       ),
     [allTasks, selectedIds],
   )
@@ -74,7 +78,10 @@ export function SelectionToolbar({
       return
     }
     setExportLoading(true)
-    const taskIds = exportableTasks.map((t) => t.id).filter(Boolean).join(",")
+    const taskIds = exportableTasks
+      .map((t) => t.id)
+      .filter(Boolean)
+      .join(",")
     navigate({ to: "/octobots/export", search: { tasks: taskIds } })
   }
 
@@ -105,11 +112,13 @@ export function SelectionToolbar({
     }
   }
 
-  const allFilteredSelected = filteredTasks.every((t) => t.id && selectedIds.has(t.id))
+  const allFilteredSelected = filteredTasks.every(
+    (t) => t.id && selectedIds.has(t.id),
+  )
 
   return (
     <>
-      <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-muted/50 px-4 py-2 text-sm">
+      <div className="flex flex-wrap items-center gap-2 rounded-card border border-rule bg-surface-soft px-4 py-2 text-sm">
         <span className="font-medium">{selectedIds.size} selected</span>
         <div className="flex gap-2">
           {!allFilteredSelected && (
@@ -122,13 +131,27 @@ export function SelectionToolbar({
           </Button>
         </div>
         <div className="ml-auto flex flex-wrap gap-2">
-          <LoadingButton variant="outline" size="sm" loading={exportLoading} onClick={handleExportResults}>
+          <LoadingButton
+            variant="outline"
+            size="sm"
+            loading={exportLoading}
+            onClick={handleExportResults}
+          >
             Export results
           </LoadingButton>
-          <LoadingButton variant="outline" size="sm" loading={shareLogsLoading} onClick={handleShareLogs}>
+          <LoadingButton
+            variant="outline"
+            size="sm"
+            loading={shareLogsLoading}
+            onClick={handleShareLogs}
+          >
             Share logs
           </LoadingButton>
-          <Button variant="destructive" size="sm" onClick={() => setDeleteOpen(true)}>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => setDeleteOpen(true)}
+          >
             <Trash2 className="size-3.5" />
             Delete
           </Button>
@@ -138,14 +161,20 @@ export function SelectionToolbar({
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Delete {selectedIds.size} OctoBot{selectedIds.size !== 1 ? "s" : ""}</DialogTitle>
+            <DialogTitle>
+              Delete {selectedIds.size} OctoBot
+              {selectedIds.size !== 1 ? "s" : ""}
+            </DialogTitle>
             <DialogDescription>
-              This will permanently delete the selected OctoBots. This action cannot be undone.
+              This will permanently delete the selected OctoBots. This action
+              cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="mt-4">
             <DialogClose asChild>
-              <Button variant="outline" disabled={deleteMutation.isPending}>Cancel</Button>
+              <Button variant="outline" disabled={deleteMutation.isPending}>
+                Cancel
+              </Button>
             </DialogClose>
             <LoadingButton
               variant="destructive"
@@ -163,15 +192,24 @@ export function SelectionToolbar({
           <DialogHeader>
             <DialogTitle>Logs shared</DialogTitle>
             <DialogDescription>
-              Share these credentials with the OctoBot team to help diagnose issues.
+              Share these credentials with the OctoBot team to help diagnose
+              issues.
             </DialogDescription>
           </DialogHeader>
           {shareCreds && (
             <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
-              <span className="font-medium text-muted-foreground">Error ID</span>
-              <span className="select-all break-all font-mono text-xs">{shareCreds.errorId}</span>
-              <span className="font-medium text-muted-foreground">Error Secret</span>
-              <span className="select-all break-all font-mono text-xs">{shareCreds.errorSecret}</span>
+              <span className="font-medium text-muted-foreground">
+                Error ID
+              </span>
+              <span className="select-all break-all font-mono text-xs">
+                {shareCreds.errorId}
+              </span>
+              <span className="font-medium text-muted-foreground">
+                Error Secret
+              </span>
+              <span className="select-all break-all font-mono text-xs">
+                {shareCreds.errorSecret}
+              </span>
             </div>
           )}
           <DialogFooter>

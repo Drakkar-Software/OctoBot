@@ -3,14 +3,54 @@
   "label": "Trade + Fees",
   "description": "Trading execution details including fee breakdowns",
   "columns": [
-    { "key": "name", "label": "Name", "jsonPath": "__task_name__", "formatter": "text" },
-    { "key": "status", "label": "Status", "jsonPath": "__exec_status__", "formatter": "text" },
-    { "key": "symbol", "label": "Symbol", "jsonPath": "symbol", "formatter": "text" },
+    {
+      "key": "name",
+      "label": "Name",
+      "jsonPath": "__task_name__",
+      "formatter": "text"
+    },
+    {
+      "key": "status",
+      "label": "Status",
+      "jsonPath": "__exec_status__",
+      "formatter": "text"
+    },
+    {
+      "key": "symbol",
+      "label": "Symbol",
+      "jsonPath": "symbol",
+      "formatter": "text"
+    },
     { "key": "side", "label": "Side", "jsonPath": "side", "formatter": "text" },
-    { "key": "amount", "label": "Amount", "jsonPath": "amount", "formatter": "number" },
-    { "key": "price", "label": "Price", "jsonPath": "price", "formatter": "number" },
-    { "key": "fee_cost", "label": "Fee Cost", "jsonPath": "fee.cost", "formatter": "number" },
-    { "key": "fee_currency", "label": "Fee Currency", "jsonPath": "fee.currency", "formatter": "text" },
-    { "key": "exchange", "label": "Exchange", "jsonPath": "exchange", "formatter": "text" }
+    {
+      "key": "amount",
+      "label": "Amount",
+      "jsonPath": "amount",
+      "formatter": "number"
+    },
+    {
+      "key": "price",
+      "label": "Price",
+      "jsonPath": "price",
+      "formatter": "number"
+    },
+    {
+      "key": "fee_cost",
+      "label": "Fee Cost",
+      "jsonPath": "fee.cost",
+      "formatter": "number"
+    },
+    {
+      "key": "fee_currency",
+      "label": "Fee Currency",
+      "jsonPath": "fee.currency",
+      "formatter": "text"
+    },
+    {
+      "key": "exchange",
+      "label": "Exchange",
+      "jsonPath": "exchange",
+      "formatter": "text"
+    }
   ]
 }

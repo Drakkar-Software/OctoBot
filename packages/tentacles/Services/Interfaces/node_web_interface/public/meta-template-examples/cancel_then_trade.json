@@ -2,8 +2,5 @@
   "id": "cancel_then_trade",
   "label": "Cancel + Trade",
   "description": "Cancel open orders for a symbol, then place a new order on the same symbol",
-  "steps": [
-    { "templateId": "cancel" },
-    { "templateId": "trade" }
-  ]
+  "steps": [{ "templateId": "cancel" }, { "templateId": "trade" }]
 }

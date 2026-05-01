@@ -17,7 +17,8 @@ function ImportOctobots() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Import OctoBots</h1>
         <p className="text-muted-foreground">
-          Upload any CSV file. Columns will be auto-detected and mapped to action parameters.
+          Upload any CSV file. Columns will be auto-detected and mapped to
+          action parameters.
         </p>
       </div>
       <ImportTask onSuccess={() => navigate({ to: "/octobots" })} />

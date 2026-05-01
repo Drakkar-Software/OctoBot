@@ -3,11 +3,7 @@ import { useMemo } from "react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-} from "@/components/ui/card"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { isParamValueValid } from "@/lib/action-templates"
 import { getTemplateById } from "@/lib/meta-templates"
 import type { ActionRow } from "./ColumnMappingStep"
@@ -48,10 +44,11 @@ export default function ReviewStep({
   onBack,
 }: ReviewStepProps) {
   const validations = useMemo(
-    () => actions.map((action) => ({
-      action,
-      validation: validateAction(action),
-    })),
+    () =>
+      actions.map((action) => ({
+        action,
+        validation: validateAction(action),
+      })),
     [actions],
   )
 
@@ -80,8 +77,8 @@ export default function ReviewStep({
         {validations.map(({ action, validation }) => {
           const template = getTemplateById(action.templateId)
           const visibleParams = template?.params.filter((p) => !p.hidden) ?? []
-          const filledCount = visibleParams.filter(
-            (p) => isParamValueValid(p, action.paramValues[p.key]),
+          const filledCount = visibleParams.filter((p) =>
+            isParamValueValid(p, action.paramValues[p.key]),
           ).length
           const totalParams = visibleParams.length
 
@@ -98,7 +95,7 @@ export default function ReviewStep({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     {validation.isValid ? (
-                      <CheckCircle2 className="size-4 text-green-500" />
+                      <CheckCircle2 className="size-4 text-pos" />
                     ) : (
                       <AlertCircle className="size-4 text-destructive" />
                     )}
@@ -115,7 +112,11 @@ export default function ReviewStep({
               <CardContent className="py-2 px-4">
                 <div className="flex flex-wrap gap-x-4 gap-y-1">
                   {template?.params
-                    .filter((p) => !p.hidden && isParamValueValid(p, action.paramValues[p.key]))
+                    .filter(
+                      (p) =>
+                        !p.hidden &&
+                        isParamValueValid(p, action.paramValues[p.key]),
+                    )
                     .map((param) => (
                       <span key={param.key} className="text-xs">
                         <span className="text-muted-foreground">

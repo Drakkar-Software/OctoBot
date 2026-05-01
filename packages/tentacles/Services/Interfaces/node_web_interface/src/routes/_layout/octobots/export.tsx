@@ -30,7 +30,8 @@ function ExportContent({ taskIds }: { taskIds: string[] }) {
         (t) =>
           t.id &&
           taskIds.includes(t.id) &&
-          getStatusGroup(getActiveExecution(t.executions)?.status) === "stopped",
+          getStatusGroup(getActiveExecution(t.executions)?.status) ===
+            "stopped",
       ),
     [allTasks, taskIds],
   )
@@ -59,7 +60,11 @@ function ExportOctobots() {
   )
 
   return (
-    <Suspense fallback={<div className="text-muted-foreground">Loading export data...</div>}>
+    <Suspense
+      fallback={
+        <div className="text-muted-foreground">Loading export data...</div>
+      }
+    >
       <ExportContent taskIds={taskIds} />
     </Suspense>
   )

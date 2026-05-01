@@ -4,11 +4,10 @@ import { useState } from "react"
 import { type Task_Input as Task, TasksService } from "@/client"
 import useCustomToast from "@/hooks/useCustomToast"
 import type { CSVRawResult } from "@/lib/csv"
-
-import CsvUploadStep from "./ImportSteps/CsvUploadStep"
 import ColumnMappingStep, {
   type ActionRow,
 } from "./ImportSteps/ColumnMappingStep"
+import CsvUploadStep from "./ImportSteps/CsvUploadStep"
 import EncryptStep from "./ImportSteps/EncryptStep"
 import ReviewStep from "./ImportSteps/ReviewStep"
 
@@ -123,9 +122,7 @@ export default function ImportTask({ onSuccess }: ImportTaskProps) {
       </div>
 
       {/* Step content */}
-      {currentStep === "upload" && (
-        <CsvUploadStep onParsed={handleCsvParsed} />
-      )}
+      {currentStep === "upload" && <CsvUploadStep onParsed={handleCsvParsed} />}
 
       {currentStep === "mapping" && csvData && (
         <ColumnMappingStep

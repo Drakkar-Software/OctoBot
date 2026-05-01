@@ -66,7 +66,12 @@ export function resolveMetaTemplate(def: MetaTemplateDef): ActionTemplate {
       const override = step.overrides?.[param.key]
       const isHidden = step.hiddenParams?.includes(param.key) ?? false
 
-      if (isHidden && param.required && override === undefined && !param.defaultValue) {
+      if (
+        isHidden &&
+        param.required &&
+        override === undefined &&
+        !param.defaultValue
+      ) {
         throw new Error(
           `Meta template "${def.id}": param "${param.key}" is hidden and required but has no default value or override`,
         )

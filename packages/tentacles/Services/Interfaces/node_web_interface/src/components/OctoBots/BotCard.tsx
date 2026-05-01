@@ -4,11 +4,29 @@ import { memo } from "react"
 import type { Task_Output as Task, TaskStatus } from "@/client"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
-import { getActiveExecution, getStatusGroup, hasStartedExecution } from "@/utils/executions"
-import { formatDate, formatElapsed, formatIsoTooltip, formatRelativeFuture, parseActionCount } from "@/utils/task-format"
-import { getDisplayDate, getStatusVariant, statusLabels } from "@/utils/task-status"
+import {
+  getActiveExecution,
+  getStatusGroup,
+  hasStartedExecution,
+} from "@/utils/executions"
+import {
+  formatDate,
+  formatElapsed,
+  formatIsoTooltip,
+  formatRelativeFuture,
+  parseActionCount,
+} from "@/utils/task-format"
+import {
+  getDisplayDate,
+  getStatusVariant,
+  statusLabels,
+} from "@/utils/task-status"
 import { BotAvatar } from "./BotAvatar"
 
 function DateRow({ date }: { date: { label: string; value: string } | null }) {
@@ -22,18 +40,31 @@ function DateRow({ date }: { date: { label: string; value: string } | null }) {
         </span>
       </TooltipTrigger>
       <TooltipContent side="bottom">
-        <span className="font-mono text-xs">{formatIsoTooltip(date.value)}</span>
+        <span className="font-mono text-xs">
+          {formatIsoTooltip(date.value)}
+        </span>
       </TooltipContent>
     </Tooltip>
   )
 }
 
-function BotCardBody({ task, isRunning, isScheduled }: { task: Task; isRunning: boolean; isScheduled: boolean }) {
+function BotCardBody({
+  task,
+  isRunning,
+  isScheduled,
+}: {
+  task: Task
+  isRunning: boolean
+  isScheduled: boolean
+}) {
   const activeExec = getActiveExecution(task.executions)
   const group = getStatusGroup(activeExec?.status)
   const date = getDisplayDate(task)
   const runCount = task.executions?.length ?? 0
-  const completedSteps = task.executions?.filter((e) => e.status === "completed" || e.status === "failed").length ?? 0
+  const completedSteps =
+    task.executions?.filter(
+      (e) => e.status === "completed" || e.status === "failed",
+    ).length ?? 0
   const actionCount = parseActionCount(activeExec?.actions)
 
   if (group === "active") {
@@ -44,7 +75,7 @@ function BotCardBody({ task, isRunning, isScheduled }: { task: Task; isRunning: 
         <CardContent className="flex flex-col gap-2 pt-0">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
             {activeExec?.type && (
-              <span className="rounded bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+              <span className="rounded bg-surface-mid px-2 py-0.5 text-xs font-medium text-muted-foreground">
                 {activeExec.type}
               </span>
             )}
@@ -74,12 +105,12 @@ function BotCardBody({ task, isRunning, isScheduled }: { task: Task; isRunning: 
       <CardContent className="flex flex-col gap-2 pt-0">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           {activeExec?.type && (
-            <span className="rounded bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+            <span className="rounded bg-surface-mid px-2 py-0.5 text-xs font-medium text-muted-foreground">
               {activeExec.type}
             </span>
           )}
           {actionCount != null && (
-            <span className="rounded bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+            <span className="rounded bg-surface-mid px-2 py-0.5 text-xs font-medium text-muted-foreground">
               {actionCount} action{actionCount !== 1 ? "s" : ""} queued
             </span>
           )}
@@ -93,7 +124,9 @@ function BotCardBody({ task, isRunning, isScheduled }: { task: Task; isRunning: 
               </span>
             </TooltipTrigger>
             <TooltipContent side="bottom">
-              <span className="font-mono text-xs">{formatIsoTooltip(activeExec.scheduled_at)}</span>
+              <span className="font-mono text-xs">
+                {formatIsoTooltip(activeExec.scheduled_at)}
+              </span>
             </TooltipContent>
           </Tooltip>
         ) : (
@@ -109,7 +142,7 @@ function BotCardBody({ task, isRunning, isScheduled }: { task: Task; isRunning: 
     <CardContent className="flex flex-col gap-2 pt-0">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         {activeExec?.type && (
-          <span className="rounded bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+          <span className="rounded bg-surface-mid px-2 py-0.5 text-xs font-medium text-muted-foreground">
             {activeExec.type}
           </span>
         )}
@@ -120,7 +153,12 @@ function BotCardBody({ task, isRunning, isScheduled }: { task: Task; isRunning: 
           </span>
         )}
       </div>
-      <div className={cn("text-xs", isFailed ? "text-destructive/80" : "text-muted-foreground")}>
+      <div
+        className={cn(
+          "text-xs",
+          isFailed ? "text-destructive/80" : "text-muted-foreground",
+        )}
+      >
         {date ? `${date.label}: ${formatDate(date.value)}` : null}
       </div>
     </CardContent>
@@ -137,7 +175,8 @@ function areTaskPropsEqual(
     prev.task.name === next.task.name &&
     prev.task.error === next.task.error &&
     prev.task.executions?.length === next.task.executions?.length &&
-    JSON.stringify(prev.task.executions) === JSON.stringify(next.task.executions)
+    JSON.stringify(prev.task.executions) ===
+      JSON.stringify(next.task.executions)
   )
 }
 
@@ -156,7 +195,8 @@ export const BotCard = memo(function BotCard({
   const hasError = !!task.error
   const started = hasStartedExecution(task.executions)
 
-  const label = task.name || activeExec?.name || `OctoBot ${task.id?.slice(0, 6) || "new"}`
+  const label =
+    task.name || activeExec?.name || `OctoBot ${task.id?.slice(0, 6) || "new"}`
   const isEncrypted = task.is_encrypted ?? false
 
   let displayLabel: string
@@ -186,11 +226,11 @@ export const BotCard = memo(function BotCard({
   return (
     <Card
       className={cn(
-        "relative cursor-pointer transition-all hover:shadow-md",
+        "relative cursor-pointer transition-all",
         selected
-          ? "ring-2 ring-primary shadow-md"
-          : "hover:ring-1 hover:ring-primary/40",
-        hasError && !selected && "ring-1 ring-destructive",
+          ? "ring-2 ring-primary shadow-glow"
+          : "hover:ring-1 hover:ring-frost/50 hover:border-frost/40",
+        hasError && !selected && "ring-1 ring-neg",
       )}
       onClick={() => task.id && onToggleSelect(task.id)}
     >
@@ -206,11 +246,16 @@ export const BotCard = memo(function BotCard({
             <div className="grid grid-cols-[1fr_auto] items-start gap-2">
               <span className="flex items-center gap-1.5 truncate text-sm font-semibold leading-tight">
                 <span className="truncate">{label}</span>
-                {isEncrypted && <Lock className="size-3 shrink-0 text-muted-foreground/50" />}
+                {isEncrypted && (
+                  <Lock className="size-3 shrink-0 text-muted-foreground/50" />
+                )}
               </span>
               <Badge
                 variant={getStatusVariant(badgeStatus, hasError)}
-                className={cn(selected && "mr-6", isScheduled && "animate-pulse")}
+                className={cn(
+                  selected && "mr-6",
+                  isScheduled && "animate-pulse",
+                )}
               >
                 {displayLabel}
               </Badge>
@@ -220,13 +265,19 @@ export const BotCard = memo(function BotCard({
                 ID: {task.id?.slice(0, 12) || "—"}
               </span>
               {hasError && (
-                <span className="font-mono text-xs text-red-400 truncate text-right">{task.error}</span>
+                <span className="font-mono text-xs text-neg truncate text-right">
+                  {task.error}
+                </span>
               )}
             </div>
           </div>
         </div>
       </CardHeader>
-      <BotCardBody task={task} isRunning={isRunning} isScheduled={isScheduled} />
+      <BotCardBody
+        task={task}
+        isRunning={isRunning}
+        isScheduled={isScheduled}
+      />
     </Card>
   )
 }, areTaskPropsEqual)

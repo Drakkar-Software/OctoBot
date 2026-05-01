@@ -7,7 +7,7 @@ describe("security", () => {
   describe("CSV formula injection prevention", () => {
     it("prefixes values starting with = to prevent formula injection", () => {
       const result = escapeCSVValue("=SUM(A1:A10)")
-      expect(result).toBe("\"'=SUM(A1:A10)\"")
+      expect(result).toBe('"\'=SUM(A1:A10)"')
     })
 
     it("prefixes values starting with + to prevent formula injection", () => {
@@ -17,22 +17,22 @@ describe("security", () => {
 
     it("prefixes values starting with - to prevent formula injection", () => {
       const result = escapeCSVValue("-1+1")
-      expect(result).toBe("\"'-1+1\"")
+      expect(result).toBe('"\'-1+1"')
     })
 
     it("prefixes values starting with @ to prevent formula injection", () => {
       const result = escapeCSVValue("@SUM(A1)")
-      expect(result).toBe("\"'@SUM(A1)\"")
+      expect(result).toBe('"\'@SUM(A1)"')
     })
 
     it("prefixes values starting with tab to prevent formula injection", () => {
       const result = escapeCSVValue("\tcmd")
-      expect(result).toBe("\"'\tcmd\"")
+      expect(result).toBe('"\'\tcmd"')
     })
 
     it("prefixes values starting with carriage return to prevent formula injection", () => {
       const result = escapeCSVValue("\rcmd")
-      expect(result).toBe("\"'\rcmd\"")
+      expect(result).toBe('"\'\rcmd"')
     })
 
     it("does not prefix normal values", () => {
@@ -54,7 +54,7 @@ describe("security", () => {
 
     it("escapes values with both formula chars and quotes", () => {
       const result = escapeCSVValue('=SUM("A1")')
-      expect(result).toBe("\"'=SUM(\"\"A1\"\")\"")
+      expect(result).toBe('"\'=SUM(""A1"")"')
     })
   })
 
@@ -66,7 +66,9 @@ describe("security", () => {
 
     it("blocks constructor traversal", () => {
       const obj = { constructor: { prototype: { polluted: true } } }
-      expect(extractValue(obj, "constructor.prototype.polluted")).toBeUndefined()
+      expect(
+        extractValue(obj, "constructor.prototype.polluted"),
+      ).toBeUndefined()
     })
 
     it("blocks prototype traversal", () => {

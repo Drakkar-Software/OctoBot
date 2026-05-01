@@ -44,7 +44,10 @@ export function Logo({
         <img
           src={variant === "full" ? logoPath : iconPath}
           alt="OctoBot Node"
-          className={cn(variant === "full" ? "h-6 w-auto" : "size-5", className)}
+          className={cn(
+            variant === "full" ? "h-6 w-auto" : "size-5",
+            className,
+          )}
         />
         {variant === "full" && (
           <span className="hidden lg:block text-lg font-semibold">

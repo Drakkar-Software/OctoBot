@@ -51,7 +51,9 @@ export function formatElapsed(value: string): string {
   }
 }
 
-export function parseActionCount(actions: string | null | undefined): number | null {
+export function parseActionCount(
+  actions: string | null | undefined,
+): number | null {
   if (!actions) return null
   try {
     const parsed = JSON.parse(actions)

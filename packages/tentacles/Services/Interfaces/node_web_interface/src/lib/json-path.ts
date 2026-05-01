@@ -106,7 +106,8 @@ export function formatCellValue(
     case "date": {
       try {
         const nbValue = Number(value)
-        const date_ms = nbValue < EARLIEST_VALID_DATE_MS ? nbValue * 1000 : nbValue
+        const date_ms =
+          nbValue < EARLIEST_VALID_DATE_MS ? nbValue * 1000 : nbValue
         return new Intl.DateTimeFormat(undefined, {
           month: "short",
           day: "numeric",
@@ -120,11 +121,16 @@ export function formatCellValue(
     }
     case "number": {
       const num = Number(value)
-      return Number.isNaN(num) ? String(value) : num > 1 ? num.toLocaleString() : String(num)
+      return Number.isNaN(num)
+        ? String(value)
+        : num > 1
+          ? num.toLocaleString()
+          : String(num)
     }
     case "json":
-      return typeof value === "object" ? JSON.stringify(value, null, 2) : String(value)
-    case "text":
+      return typeof value === "object"
+        ? JSON.stringify(value, null, 2)
+        : String(value)
     default:
       return typeof value === "object" ? JSON.stringify(value) : String(value)
   }

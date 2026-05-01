@@ -7,7 +7,6 @@ import {
   derivePassphraseKey,
   hasStoredClientKeys,
   loadClientKeys,
-  loadPassword,
   saveClientKeys,
   savePassword,
 } from "../device-key"
@@ -18,9 +17,15 @@ const localStorageStore: Record<string, string> = {}
 
 const localStorageMock = {
   getItem: (key: string) => localStorageStore[key] ?? null,
-  setItem: (key: string, value: string) => { localStorageStore[key] = value },
-  removeItem: (key: string) => { delete localStorageStore[key] },
-  clear: () => { Object.keys(localStorageStore).forEach((k) => delete localStorageStore[k]) },
+  setItem: (key: string, value: string) => {
+    localStorageStore[key] = value
+  },
+  removeItem: (key: string) => {
+    delete localStorageStore[key]
+  },
+  clear: () => {
+    Object.keys(localStorageStore).forEach((k) => delete localStorageStore[k])
+  },
 }
 
 vi.stubGlobal("localStorage", localStorageMock)
@@ -40,7 +45,10 @@ const WALLET_B = "0xbbbb000000000000000000000000000000000002"
 const PASSPHRASE_A = "passphrase-wallet-a"
 const PASSPHRASE_B = "passphrase-wallet-b"
 
-const SAMPLE_KEYS = { ecdsa_private: "ecdsa-priv-key", rsa_private: "rsa-priv-key" }
+const SAMPLE_KEYS = {
+  ecdsa_private: "ecdsa-priv-key",
+  rsa_private: "rsa-priv-key",
+}
 
 async function clearIDB(): Promise<void> {
   await new Promise<void>((resolve, reject) => {
@@ -90,8 +98,16 @@ describe("derivePassphraseKey", () => {
 
     const iv = crypto.getRandomValues(new Uint8Array(12))
     const encoded = new TextEncoder().encode("test")
-    const ciphertext = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key1, encoded)
-    const plaintext = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key2, ciphertext)
+    const ciphertext = await crypto.subtle.encrypt(
+      { name: "AES-GCM", iv },
+      key1,
+      encoded,
+    )
+    const plaintext = await crypto.subtle.decrypt(
+      { name: "AES-GCM", iv },
+      key2,
+      ciphertext,
+    )
     expect(new TextDecoder().decode(plaintext)).toBe("test")
   })
 
@@ -126,8 +142,14 @@ describe("derivePassphraseKey", () => {
   })
 
   it("address comparison is case-insensitive", async () => {
-    const keyLower = await derivePassphraseKey(PASSPHRASE_A, WALLET_A.toLowerCase())
-    const keyUpper = await derivePassphraseKey(PASSPHRASE_A, WALLET_A.toUpperCase())
+    const keyLower = await derivePassphraseKey(
+      PASSPHRASE_A,
+      WALLET_A.toLowerCase(),
+    )
+    const keyUpper = await derivePassphraseKey(
+      PASSPHRASE_A,
+      WALLET_A.toUpperCase(),
+    )
 
     const iv = crypto.getRandomValues(new Uint8Array(12))
     const ciphertext = await crypto.subtle.encrypt(
@@ -135,7 +157,11 @@ describe("derivePassphraseKey", () => {
       keyLower,
       new TextEncoder().encode("case test"),
     )
-    const plaintext = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, keyUpper, ciphertext)
+    const plaintext = await crypto.subtle.decrypt(
+      { name: "AES-GCM", iv },
+      keyUpper,
+      ciphertext,
+    )
     expect(new TextDecoder().decode(plaintext)).toBe("case test")
   })
 })
@@ -166,13 +192,17 @@ describe("saveClientKeys / loadClientKeys", () => {
 
   it("throws when saving with no active session", async () => {
     clearWallet()
-    await expect(saveClientKeys(SAMPLE_KEYS)).rejects.toThrow("No active wallet session")
+    await expect(saveClientKeys(SAMPLE_KEYS)).rejects.toThrow(
+      "No active wallet session",
+    )
   })
 
   it("throws when saving with no passphrase stored", async () => {
     setWallet(WALLET_A)
     await clearPassword()
-    await expect(saveClientKeys(SAMPLE_KEYS)).rejects.toThrow("No active wallet session")
+    await expect(saveClientKeys(SAMPLE_KEYS)).rejects.toThrow(
+      "No active wallet session",
+    )
   })
 })
 

@@ -2,8 +2,5 @@
   "id": "deposit_then_trade",
   "label": "Deposit + Trade",
   "description": "Deposit funds from a blockchain wallet to an exchange, then place a trade on that exchange",
-  "steps": [
-    { "templateId": "deposit" },
-    { "templateId": "trade" }
-  ]
+  "steps": [{ "templateId": "deposit" }, { "templateId": "trade" }]
 }

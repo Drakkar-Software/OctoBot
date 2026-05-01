@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest"
 
-import { parseCSVRaw, generateCSV, isValidCSVFile, escapeCSVValue } from "../csv"
+import {
+  escapeCSVValue,
+  generateCSV,
+  isValidCSVFile,
+  parseCSVRaw,
+} from "../csv"
 
 describe("parseCSVRaw", () => {
   it("parses simple CSV with headers and rows", () => {
@@ -140,7 +145,13 @@ val1,val2`
 
 describe("generateCSV", () => {
   it("generates CSV from headers and rows", () => {
-    const csv = generateCSV(["name", "value"], [["Alice", "100"], ["Bob", "200"]])
+    const csv = generateCSV(
+      ["name", "value"],
+      [
+        ["Alice", "100"],
+        ["Bob", "200"],
+      ],
+    )
     expect(csv).toBe("name,value\nAlice,100\nBob,200")
   })
 

@@ -1,12 +1,11 @@
 import { describe, expect, it } from "vitest"
-
+import { TRADE_TEMPLATE, TRANSFER_TEMPLATE } from "../action-templates"
 import {
+  buildParamValuesForRow,
   detectColumnsAndTemplates,
   detectMappingsForTemplate,
-  buildParamValuesForRow,
   extractColumnValues,
 } from "../column-detector"
-import { TRANSFER_TEMPLATE, TRADE_TEMPLATE, WAIT_TEMPLATE } from "../action-templates"
 
 describe("column-detector", () => {
   describe("extractColumnValues", () => {
@@ -52,7 +51,13 @@ describe("column-detector", () => {
     })
 
     it("detects trade template from trading pairs and order types", () => {
-      const headers = ["symbol", "order_amount", "order_type", "side", "exchange"]
+      const headers = [
+        "symbol",
+        "order_amount",
+        "order_type",
+        "side",
+        "exchange",
+      ]
       const rows = [["BTC/USDT", "0.5", "market", "buy", "binance"]]
 
       const results = detectColumnsAndTemplates(headers, rows)
@@ -80,9 +85,9 @@ describe("column-detector", () => {
         m.paramKey.includes("ADDRESS"),
       )
       expect(addressMapping).toBeDefined()
-      expect(
-        result.paramValues[addressMapping!.paramKey],
-      ).toBe("bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4")
+      expect(result.paramValues[addressMapping!.paramKey]).toBe(
+        "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4",
+      )
     })
 
     it("handles multiple rows, all get the same detected template", () => {
@@ -175,9 +180,7 @@ describe("column-detector", () => {
       expect(mappings.length).toBeGreaterThan(0)
 
       // Check that address column was matched
-      const addrMapping = mappings.find((m) =>
-        m.paramKey.includes("ADDRESS"),
-      )
+      const addrMapping = mappings.find((m) => m.paramKey.includes("ADDRESS"))
       expect(addrMapping).toBeDefined()
       expect(addrMapping!.columnIndex).toBe(0) // "to_addr"
     })
@@ -186,23 +189,15 @@ describe("column-detector", () => {
       const headers = ["pair", "qty", "type", "exchange"]
       const rows = [["BTC/USDT", "0.1", "limit", "binance"]]
 
-      const mappings = detectMappingsForTemplate(
-        TRADE_TEMPLATE,
-        headers,
-        rows,
-      )
+      const mappings = detectMappingsForTemplate(TRADE_TEMPLATE, headers, rows)
 
-      const symbolMapping = mappings.find(
-        (m) => m.paramKey === "ORDER_SYMBOL",
-      )
+      const symbolMapping = mappings.find((m) => m.paramKey === "ORDER_SYMBOL")
       expect(symbolMapping).toBeDefined()
     })
 
     it("assigns confidence levels", () => {
       const headers = ["address", "amount"]
-      const rows = [
-        ["0x1234567890123456789012345678901234567890", "1.0"],
-      ]
+      const rows = [["0x1234567890123456789012345678901234567890", "1.0"]]
 
       const mappings = detectMappingsForTemplate(
         TRANSFER_TEMPLATE,
@@ -211,9 +206,7 @@ describe("column-detector", () => {
       )
 
       // Address has both value pattern + fuzzy header match => high confidence
-      const addrMapping = mappings.find((m) =>
-        m.paramKey.includes("ADDRESS"),
-      )
+      const addrMapping = mappings.find((m) => m.paramKey.includes("ADDRESS"))
       expect(addrMapping?.confidence).toBe("high")
     })
   })
@@ -222,9 +215,21 @@ describe("column-detector", () => {
     it("extracts values from row based on mappings", () => {
       const row = ["0x1234567890123456789012345678901234567890", "1.5", "ETH"]
       const mappings = [
-        { columnIndex: 0, paramKey: "BLOCKCHAIN_TO_ADDRESS", confidence: "high" as const },
-        { columnIndex: 1, paramKey: "BLOCKCHAIN_FROM_AMOUNT", confidence: "medium" as const },
-        { columnIndex: 2, paramKey: "BLOCKCHAIN_FROM_ASSET", confidence: "low" as const },
+        {
+          columnIndex: 0,
+          paramKey: "BLOCKCHAIN_TO_ADDRESS",
+          confidence: "high" as const,
+        },
+        {
+          columnIndex: 1,
+          paramKey: "BLOCKCHAIN_FROM_AMOUNT",
+          confidence: "medium" as const,
+        },
+        {
+          columnIndex: 2,
+          paramKey: "BLOCKCHAIN_FROM_ASSET",
+          confidence: "low" as const,
+        },
       ]
 
       const values = buildParamValuesForRow(row, mappings)

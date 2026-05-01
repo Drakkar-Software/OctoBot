@@ -6,7 +6,12 @@
  * (on column headers) used by the column detector to auto-map CSV columns.
  */
 
-export type ParamInputType = "text" | "number" | "select" | "password" | "numberOrDate"
+export type ParamInputType =
+  | "text"
+  | "number"
+  | "select"
+  | "password"
+  | "numberOrDate"
 
 export interface ActionParamDef {
   key: string
@@ -42,7 +47,8 @@ const PATTERNS = {
   mnemonicSeed: /^(?:\S+\s+){11,23}\S+$/,
   tradingPair: /^[A-Z]{2,10}\/[A-Z]{2,10}$/i,
   numericAmount: /^-?\d+(\.\d+)?$/,
-  isoDate: /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2})?(\.\d+)?(Z|[+-]\d{2}:?\d{2})?)?$/,
+  isoDate:
+    /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2})?(\.\d+)?(Z|[+-]\d{2}:?\d{2})?)?$/,
   exchangeName:
     /^(binance|coinbase|kraken|kucoin|bybit|okx|gate\.?io|huobi|htx|bitfinex|bitstamp|gemini|mexc|bitget|ascendex|hollaex)$/i,
   orderSide: /^(buy|sell|long|short)$/i,
@@ -63,11 +69,21 @@ function addressParam(
     required,
     type: "text",
     detectPatterns: [PATTERNS.evmAddress, PATTERNS.btcAddress],
-    aliasFuzzy: aliasFuzzy || ["addr", "address", "wallet", "destination", "recipient"],
+    aliasFuzzy: aliasFuzzy || [
+      "addr",
+      "address",
+      "wallet",
+      "destination",
+      "recipient",
+    ],
   }
 }
 
-function blockHeightParam(key: string, label: string, required: boolean): ActionParamDef {
+function blockHeightParam(
+  key: string,
+  label: string,
+  required: boolean,
+): ActionParamDef {
   return {
     key,
     label,
@@ -357,7 +373,11 @@ export const DEPOSIT_TEMPLATE: ActionTemplate = {
     blockchainParam("BLOCKCHAIN_FROM", "Deposit Network", true),
     privateKeyParam("BLOCKCHAIN_FROM_PRIVATE_KEY", "Deposit Src Private Key"),
     mnemonicParam("BLOCKCHAIN_FROM_MNEMONIC_SEED", "Deposit Src Mnemonic"),
-    blockHeightParam("BLOCKCHAIN_FROM_BLOCK_HEIGHT", "Deposit Src Block Height", false),
+    blockHeightParam(
+      "BLOCKCHAIN_FROM_BLOCK_HEIGHT",
+      "Deposit Src Block Height",
+      false,
+    ),
     exchangeParam("EXCHANGE_TO", "Deposit Dst Exchange", true),
   ],
 }
@@ -371,11 +391,21 @@ export const TRANSFER_TEMPLATE: ActionTemplate = {
     assetParam("BLOCKCHAIN_FROM_ASSET", "Transfer Asset", true),
     amountParam("BLOCKCHAIN_FROM_AMOUNT", "Transfer Amount", true),
     blockchainParam("BLOCKCHAIN_FROM", "Transfer Network", true),
-    addressParam("BLOCKCHAIN_FROM_ADDRESS", "Transfer From Address", false, ["from_address", "blockchain_from_address"]),
+    addressParam("BLOCKCHAIN_FROM_ADDRESS", "Transfer From Address", false, [
+      "from_address",
+      "blockchain_from_address",
+    ]),
     privateKeyParam("BLOCKCHAIN_FROM_PRIVATE_KEY", "Transfer Src Private Key"),
     mnemonicParam("BLOCKCHAIN_FROM_MNEMONIC_SEED", "Transfer Src Mnemonic"),
-    blockHeightParam("BLOCKCHAIN_FROM_BLOCK_HEIGHT", "Transfer Src Block Height", false),
-    addressParam("BLOCKCHAIN_TO_ADDRESS", "Transfer Dst Address", true, ["to_address", "blockchain_to_address"]),
+    blockHeightParam(
+      "BLOCKCHAIN_FROM_BLOCK_HEIGHT",
+      "Transfer Src Block Height",
+      false,
+    ),
+    addressParam("BLOCKCHAIN_TO_ADDRESS", "Transfer Dst Address", true, [
+      "to_address",
+      "blockchain_to_address",
+    ]),
   ],
 }
 
@@ -426,7 +456,6 @@ export const LOOP_UNTIL_ORDER_CLOSED_TEMPLATE: ActionTemplate = {
 }
 
 export const LOOP_UNTIL_BLOCKCHAIN_BALANCE_TEMPLATE: ActionTemplate = {
-
   id: "loop_until_blockchain_balance",
   label: "Loop Until Blockchain Balance",
   description: "Loop until a blockchain balance is reached",
@@ -457,7 +486,10 @@ export function getTemplateById(id: string): ActionTemplate | undefined {
   return BASE_ACTION_TEMPLATES.find((t) => t.id === id)
 }
 
-export function isParamValueValid(param: ActionParamDef, rawValue: string | undefined): boolean {
+export function isParamValueValid(
+  param: ActionParamDef,
+  rawValue: string | undefined,
+): boolean {
   const value = rawValue?.trim() ?? ""
   if (!value) return false
   if (param.type === "number") {

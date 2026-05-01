@@ -1,12 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useNavigate } from "@tanstack/react-router"
 
-import {
-  LoginService,
-  type ApiError,
-  type User,
-  UsersService,
-} from "@/client"
+import { type ApiError, LoginService, type User, UsersService } from "@/client"
 import { clearPassword, savePassword } from "@/lib/device-key"
 
 export const clearAuth = async () => {
@@ -14,6 +9,7 @@ export const clearAuth = async () => {
   localStorage.removeItem("auth_wallet_name")
   await clearPassword()
 }
+
 import { handleError } from "@/utils"
 import useCustomToast from "./useCustomToast"
 

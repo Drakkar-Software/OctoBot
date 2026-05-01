@@ -4,12 +4,16 @@ import { Loader2 } from "lucide-react"
 import { Suspense, useCallback, useMemo, useState } from "react"
 
 import type { Task_Output as Task } from "@/client"
-import { BotsFilterBar } from "@/components/OctoBots/BotsFilterBar"
 import { BotGrid } from "@/components/OctoBots/BotGrid"
+import { BotsFilterBar } from "@/components/OctoBots/BotsFilterBar"
 import { SelectionToolbar } from "@/components/OctoBots/SelectionToolbar"
 import { getTasksQueryOptions } from "@/lib/task-queries"
 import { getActiveExecution } from "@/utils/executions"
-import { getTaskFilterGroup, getTaskSortDate, type TaskFilterGroup } from "@/utils/task-status"
+import {
+  getTaskFilterGroup,
+  getTaskSortDate,
+  type TaskFilterGroup,
+} from "@/utils/task-status"
 
 function BotsContent() {
   const { data: tasks } = useSuspenseQuery(getTasksQueryOptions())
@@ -23,7 +27,9 @@ function BotsContent() {
       const activeExec = getActiveExecution(task.executions)
       const inFilter = getTaskFilterGroup(task) === filterValue
       const inSearch = query
-        ? `${task.name ?? ""} ${activeExec?.type ?? ""}`.toLowerCase().includes(query)
+        ? `${task.name ?? ""} ${activeExec?.type ?? ""}`
+            .toLowerCase()
+            .includes(query)
         : true
       return inFilter && inSearch
     })
@@ -98,12 +104,14 @@ export const Route = createFileRoute("/_layout/octobots/")({
 
 function BotsIndex() {
   return (
-    <Suspense fallback={
-      <div className="flex flex-col items-center justify-center gap-3 py-40 text-muted-foreground">
-        <Loader2 className="size-8 animate-spin" />
-        <span className="text-sm">Loading OctoBots...</span>
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="flex flex-col items-center justify-center gap-3 py-40 text-muted-foreground">
+          <Loader2 className="size-8 animate-spin" />
+          <span className="text-sm">Loading OctoBots...</span>
+        </div>
+      }
+    >
       <BotsContent />
     </Suspense>
   )
