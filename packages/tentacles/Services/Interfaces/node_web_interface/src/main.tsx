@@ -11,7 +11,8 @@ import { ApiError, OpenAPI } from "./client"
 import { ThemeProvider } from "./components/theme-provider"
 import { Toaster } from "./components/ui/sonner"
 import "./index.css"
-import { clearPassword, loadPassword } from "./lib/device-key"
+import { loadPassword } from "./lib/device-key"
+import { clearAuth } from "./hooks/useAuth"
 import { routeTree } from "./routeTree.gen"
 
 OpenAPI.BASE = import.meta.env.NODE_API_URL || (import.meta.env.DEV ? "http://localhost:8000" : "")
@@ -25,7 +26,7 @@ OpenAPI.PASSWORD = async () => {
 const handleApiError = (error: Error) => {
   if (error instanceof ApiError && [401, 403].includes(error.status)) {
     if (!window.location.pathname.endsWith("/login")) {
-      void clearPassword()
+      void clearAuth()
       window.location.href = "/app/login"
     }
   }

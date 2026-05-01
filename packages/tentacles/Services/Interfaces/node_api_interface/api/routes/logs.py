@@ -26,9 +26,9 @@ import octobot_node.constants as node_constants
 import octobot.community.errors_upload.error_sharing as error_sharing
 
 try:
-    from tentacles.Services.Interfaces.node_api_interface.api.deps import CurrentUser, security_basic
-except ImportError:
     from api.deps import CurrentUser, security_basic
+except ImportError:
+    from tentacles.Services.Interfaces.node_api_interface.api.deps import CurrentUser, security_basic
 
 router = APIRouter(tags=["logs"])
 

@@ -16,21 +16,34 @@
 
 import typing
 import uuid
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import BaseModel
 
 import octobot_node.config
 import octobot_node.models
+import octobot_node.scheduler
 import octobot_node.scheduler.api
 import octobot_node.scheduler.tasks
 
+try:
+    from tentacles.Services.Interfaces.node_api_interface.api.deps import CurrentUser  # type: ignore[no-redef]
+except ImportError:
+    from api.deps import CurrentUser  # type: ignore[no-redef]
+
 router = APIRouter(tags=["tasks"])
 
+
 @router.post("/", response_model=tuple[int, int])
-async def create_tasks(tasks: list[octobot_node.models.Task]) -> tuple[int, int]:
+async def create_tasks(
+    tasks: list[octobot_node.models.Task],
+    current_user: CurrentUser,
+) -> tuple[int, int]:
+    if not octobot_node.scheduler.is_initialized():
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Scheduler not initialized")
     success_count = 0
     error_count = 0
     for task in tasks:
+        task.wallet_address = current_user.email
         is_scheduled = await octobot_node.scheduler.tasks.trigger_task(task)
         if is_scheduled:
             success_count += 1
@@ -42,7 +55,7 @@ async def create_tasks(tasks: list[octobot_node.models.Task]) -> tuple[int, int]
 @router.get("/server-public-keys")
 def get_server_public_keys() -> dict:
     if not octobot_node.config.settings.is_node_side_encryption_enabled:
-        raise HTTPException(status_code=400, detail="Server encryption keys not configured")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Server encryption keys not configured")
     from cryptography.hazmat.primitives.serialization import load_pem_private_key, Encoding, PublicFormat
     rsa_private = load_pem_private_key(octobot_node.config.settings.TASKS_SERVER_RSA_PRIVATE_KEY, password=None)
     ecdsa_private = load_pem_private_key(octobot_node.config.settings.TASKS_SERVER_ECDSA_PRIVATE_KEY, password=None)
@@ -53,26 +66,61 @@ def get_server_public_keys() -> dict:
 
 
 @router.get("/metrics")
-async def get_metrics() -> typing.Any:
-    return await octobot_node.scheduler.api.get_task_metrics()
+async def get_metrics(current_user: CurrentUser) -> typing.Any:
+    wallet_filter = None if current_user.is_superuser else current_user.email
+    return await octobot_node.scheduler.api.get_task_metrics(wallet_address=wallet_filter)
+
 
 @router.get("/", response_model=list[octobot_node.models.Task], response_model_exclude_none=True)
-async def get_tasks(page: int = 1, limit: int = 100) -> typing.Any:
-    tasks_data = await octobot_node.scheduler.api.get_all_tasks()
-    
+async def get_tasks(
+    current_user: CurrentUser,
+    page: int = 1,
+    limit: int = 100,
+) -> typing.Any:
+    wallet_filter = None if current_user.is_superuser else current_user.email
+    tasks_data = await octobot_node.scheduler.api.get_all_tasks(wallet_address=wallet_filter)
+
     start_idx = (page - 1) * limit
     end_idx = start_idx + limit
-    paginated_tasks = tasks_data[start_idx:end_idx]
-    return paginated_tasks
+    return tasks_data[start_idx:end_idx]
+
 
 @router.put("/", response_model=octobot_node.models.Task)
-def update_task(taskId: uuid.UUID, task: octobot_node.models.Task) -> typing.Any:
-    # TODO
-    return task
+def update_task(current_user: CurrentUser, taskId: uuid.UUID, task: octobot_node.models.Task) -> typing.Any:
+    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Not implemented")
+
+
+class ExportResultsBody(BaseModel):
+    task_ids: list[str]
+    user_rsa_public_key: str | None = None
+
+
+@router.post("/export-results", response_model=dict[str, dict[str, str]])
+async def export_results(body: ExportResultsBody, current_user: CurrentUser) -> dict[str, dict[str, str]]:
+    """Batch-decrypt completed task results for export. One round-trip for all selected tasks."""
+    wallet_filter = None if current_user.is_superuser else current_user.email
+    return await octobot_node.scheduler.api.get_tasks_export_results(
+        body.task_ids, wallet_filter, user_rsa_public_key=body.user_rsa_public_key
+    )
+
 
 @router.delete("/", response_model=list[str])
-async def delete_tasks(taskIds: list[uuid.UUID] = Query(...)) -> list[str]:
+async def delete_tasks(
+    current_user: CurrentUser,
+    taskIds: list[uuid.UUID] = Query(...),
+) -> list[str]:
+    requested_ids = [str(t) for t in taskIds]
+    if not current_user.is_superuser:
+        # Ownership check: only allow deleting own tasks
+        owned_tasks = await octobot_node.scheduler.api.get_all_tasks(wallet_address=current_user.email)
+        owned_ids = {t.id for t in owned_tasks if t.id is not None}
+        unauthorized = [tid for tid in requested_ids if tid not in owned_ids]
+        if unauthorized:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Not authorized to delete tasks: {unauthorized}",
+            )
     try:
-        return await octobot_node.scheduler.api.delete_tasks([str(t) for t in taskIds])
+        return await octobot_node.scheduler.api.delete_tasks(requested_ids)
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))

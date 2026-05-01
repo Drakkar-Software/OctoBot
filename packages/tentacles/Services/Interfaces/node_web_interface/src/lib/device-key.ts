@@ -2,7 +2,7 @@ const DB_NAME = "octobot_device"
 const STORE_NAME = "secure_storage"
 const DEVICE_KEY_RECORD = "device_key"
 const AUTH_PASSWORD_RECORD = "auth_password"
-const CLIENT_KEYS_RECORD = "client_keys"
+const CLIENT_KEYS_PREFIX = "client_keys:"
 
 interface EncryptedRecord {
   iv: Uint8Array
@@ -66,8 +66,7 @@ async function getOrCreateDeviceKey(): Promise<CryptoKey> {
   return key
 }
 
-async function encryptWithDeviceKey(plaintext: string): Promise<EncryptedRecord> {
-  const key = await getOrCreateDeviceKey()
+async function encryptWithKey(key: CryptoKey, plaintext: string): Promise<EncryptedRecord> {
   const iv = crypto.getRandomValues(new Uint8Array(12))
   const ciphertext = await crypto.subtle.encrypt(
     { name: "AES-GCM", iv },
@@ -77,14 +76,21 @@ async function encryptWithDeviceKey(plaintext: string): Promise<EncryptedRecord>
   return { iv, ciphertext }
 }
 
-async function decryptWithDeviceKey(record: EncryptedRecord): Promise<string> {
-  const key = await getOrCreateDeviceKey()
+async function decryptWithKey(key: CryptoKey, record: EncryptedRecord): Promise<string> {
   const plaintext = await crypto.subtle.decrypt(
     { name: "AES-GCM", iv: record.iv as unknown as ArrayBuffer },
     key,
     record.ciphertext,
   )
   return new TextDecoder().decode(plaintext)
+}
+
+async function encryptWithDeviceKey(plaintext: string): Promise<EncryptedRecord> {
+  return encryptWithKey(await getOrCreateDeviceKey(), plaintext)
+}
+
+async function decryptWithDeviceKey(record: EncryptedRecord): Promise<string> {
+  return decryptWithKey(await getOrCreateDeviceKey(), record)
 }
 
 async function idbSaveRecord(recordKey: string, plaintext: string): Promise<void> {
@@ -131,18 +137,76 @@ export async function clearPassword(): Promise<void> {
   await idbClearRecord(AUTH_PASSWORD_RECORD)
 }
 
+// Derive a deterministic AES-GCM key from a wallet passphrase and address via PBKDF2.
+// Each wallet gets a unique key — keys stored by one wallet cannot be decrypted by another.
+export async function derivePassphraseKey(passphrase: string, address: string): Promise<CryptoKey> {
+  const baseKey = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(passphrase),
+    "PBKDF2",
+    false,
+    ["deriveKey"],
+  )
+  return crypto.subtle.deriveKey(
+    {
+      name: "PBKDF2",
+      salt: new TextEncoder().encode(address.toLowerCase()),
+      iterations: 100_000,
+      hash: "SHA-256",
+    },
+    baseKey,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["encrypt", "decrypt"],
+  )
+}
+
+function clientKeysRecord(address: string): string {
+  return `${CLIENT_KEYS_PREFIX}${address.toLowerCase()}`
+}
+
 export async function saveClientKeys(keys: Record<string, string>): Promise<void> {
-  await idbSaveRecord(CLIENT_KEYS_RECORD, JSON.stringify(keys))
+  const address = localStorage.getItem("auth_username")
+  const passphrase = await loadPassword()
+  if (!address || !passphrase) throw new Error("No active wallet session — cannot save client keys")
+  const key = await derivePassphraseKey(passphrase, address)
+  const record = await encryptWithKey(key, JSON.stringify(keys))
+  const db = await openDB()
+  await idbPut(
+    db.transaction(STORE_NAME, "readwrite").objectStore(STORE_NAME),
+    clientKeysRecord(address),
+    record,
+  )
 }
 
 export async function loadClientKeys(): Promise<Record<string, string> | null> {
-  const raw = await idbLoadRecord(CLIENT_KEYS_RECORD)
-  if (!raw) return null
-  return JSON.parse(raw) as Record<string, string>
+  const address = localStorage.getItem("auth_username")
+  const passphrase = await loadPassword()
+  if (!address || !passphrase) return null
+
+  const recordKey = clientKeysRecord(address)
+  const db = await openDB()
+
+  let record = await idbGet<EncryptedRecord>(
+    db.transaction(STORE_NAME, "readonly").objectStore(STORE_NAME),
+    recordKey,
+  )
+
+  if (!record) return null
+
+  try {
+    const key = await derivePassphraseKey(passphrase, address)
+    const raw = await decryptWithKey(key, record)
+    return JSON.parse(raw) as Record<string, string>
+  } catch {
+    return null
+  }
 }
 
 export async function clearClientKeys(): Promise<void> {
-  await idbClearRecord(CLIENT_KEYS_RECORD)
+  const address = localStorage.getItem("auth_username")
+  if (!address) return
+  await idbClearRecord(clientKeysRecord(address))
 }
 
 export async function hasStoredClientKeys(): Promise<boolean> {

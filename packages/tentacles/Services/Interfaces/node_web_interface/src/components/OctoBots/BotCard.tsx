@@ -157,7 +157,7 @@ export const BotCard = memo(function BotCard({
   const started = hasStartedExecution(task.executions)
 
   const label = task.name || activeExec?.name || `OctoBot ${task.id?.slice(0, 6) || "new"}`
-  const isEncrypted = !!task.executions?.some((e) => e.content_metadata)
+  const isEncrypted = task.is_encrypted ?? false
 
   let displayLabel: string
   let badgeStatus: TaskStatus

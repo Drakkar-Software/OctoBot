@@ -1,4 +1,4 @@
-#  This file is part of OctoBot Node (https://github.com/Drakkar-Software/OctoBot-Node)
+#  This file is part of OctoBot (https://github.com/Drakkar-Software/OctoBot)
 #  Copyright (c) 2025 Drakkar-Software, All rights reserved.
 #
 #  OctoBot is free software; you can redistribute it and/or
@@ -14,19 +14,38 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
-import typing
 
-from fastapi import APIRouter
-
-try:
-    from api.deps import CurrentUser
-except ImportError:
-    from tentacles.Services.Interfaces.node_api_interface.api.deps import CurrentUser
-import octobot_node.models
-
-router = APIRouter(tags=["login"])
+class WalletError(Exception):
+    pass
 
 
-@router.get("/login/test", response_model=octobot_node.models.User)
-def test_auth(current_user: CurrentUser) -> typing.Any:
-    return current_user
+class WalletAlreadyExistsError(WalletError):
+    pass
+
+
+class AdminWalletAlreadyExistsError(WalletError):
+    pass
+
+
+class WalletNotFoundError(WalletError):
+    pass
+
+
+class InvalidPassphraseError(WalletError):
+    pass
+
+
+class CannotRemoveLastWalletError(WalletError):
+    pass
+
+
+class CannotRemoveAdminWalletError(WalletError):
+    pass
+
+
+class InvalidPrivateKeyError(WalletError):
+    pass
+
+
+class PassphraseTooShortError(WalletError):
+    pass

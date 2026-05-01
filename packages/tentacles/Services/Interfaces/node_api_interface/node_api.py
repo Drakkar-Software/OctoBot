@@ -34,15 +34,13 @@ try:
 except ImportError:
     Service_bases = None
 
-# Import from tentacles package (runtime) or fallback to direct imports (build)
 try:
     from tentacles.Services.Interfaces.node_api_interface.utils import get_dist_directory
     from tentacles.Services.Interfaces.node_api_interface.api.main import build_api_router
 except ImportError:
-    import utils
-    import api.main
-    get_dist_directory = utils.get_dist_directory
-    build_api_router = api.main.build_api_router
+    from utils import get_dist_directory  # type: ignore[no-redef]
+    import api.main as _api_main  # type: ignore[no-redef]
+    build_api_router = _api_main.build_api_router
 
 def custom_generate_unique_id(route: APIRoute) -> str:
     if route.tags:
@@ -83,6 +81,11 @@ class NodeApiInterface(services_interfaces.AbstractInterface):
             node_config.settings.SCHEDULER_SQLITE_FILE = node_sqlite_file
         if node_postgres_url is not None:
             node_config.settings.SCHEDULER_POSTGRES_URL = node_postgres_url
+        if not scheduler.is_initialized():
+            self.logger.warning(
+                "Scheduler not initialized by NodeApiService.prepare(); initializing now"
+            )
+            scheduler.initialize_scheduler()
         host = self.host
         port = self.port
         community_auth.CommunityAuthentication.instance()

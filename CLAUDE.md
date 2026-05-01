@@ -4,7 +4,7 @@
 
 ```bash
 ROOT=$PWD
-export PYTHONPATH="$ROOT:$ROOT/packages/agents:$ROOT/packages/async_channel:$ROOT/packages/backtesting:$ROOT/packages/binary:$ROOT/packages/commons:$ROOT/packages/evaluators:$ROOT/packages/flow:$ROOT/packages/node:$ROOT/packages/services:$ROOT/packages/sync:$ROOT/packages/tentacles:$ROOT/packages/tentacles_manager:$ROOT/packages/trading:$ROOT/packages/trading_backend"
+export PYTHONPATH="$ROOT:$ROOT/packages:$ROOT/packages/agents:$ROOT/packages/async_channel:$ROOT/packages/backtesting:$ROOT/packages/binary:$ROOT/packages/commons:$ROOT/packages/copy:$ROOT/packages/evaluators:$ROOT/packages/flow:$ROOT/packages/node:$ROOT/packages/services:$ROOT/packages/sync:$ROOT/packages/tentacles:$ROOT/packages/tentacles_manager:$ROOT/packages/trading:$ROOT/packages/trading_backend"
 ```
 
 - **Python**: `venv/bin/python` (workspace venv, one level above repo root)
@@ -35,6 +35,49 @@ Runs and debugs OctoBot Python tests. Handles root-level tests (`tests/`) and pe
 Use when: running tests, debugging test failures, or verifying changes after code modifications.
 
 Trigger: `@agent-test-runner` · Definition: `.claude/agents/test-runner.md`
+
+## Code Conventions
+
+### Enums
+Place enums in `<package_root>/enums.py` (e.g. `octobot/enums.py`, `packages/node/octobot_node/enums.py`). Never define enums inline in module files.
+
+### Constants
+Place module-wide constants in `<package_root>/constants.py`. Private module constants (used only within one file) may stay in that file, prefixed with `_`.
+
+### Typed errors
+Define a typed error hierarchy rather than raising bare `ValueError`/`KeyError`. Pattern:
+```python
+# errors.py (sibling to the feature module)
+class FeatureError(Exception): pass
+class SpecificError(FeatureError): pass
+```
+Re-export from the package `__init__.py`. Use typed catches everywhere — never inspect `str(err).lower()`, and never catch bare `ValueError`/`KeyError` for domain errors.
+
+### TypedDicts for structured dicts
+When a dict has a fixed schema (e.g. wallet info returned to callers), define a `typing.TypedDict`. Place it in the module that owns the data, before the class that produces it.
+
+### File locking
+Use the `filelock` library (cross-platform, POSIX + Windows) instead of `fcntl`/`msvcrt` branching.
+
+### Import priority in tentacle files
+Prefer the installed `tentacles.Services.Interfaces.*` path first; fall back to bare direct imports (build-time fallback). Pattern:
+```python
+try:
+    from tentacles.Services.Interfaces.node_api_interface.api.deps import X
+except ImportError:
+    from api.deps import X  # type: ignore[no-redef]
+```
+All files within a tentacle package should use the same priority order.
+
+### Log levels
+- `debug`: verbose diagnostics, expected no-ops.
+- `info`: normal operational events (startup, shutdown, config loaded).
+- `warning`: unexpected but recoverable (auto-unlock skipped, optional feature unavailable).
+- `error`: configuration/state errors that affect functionality (wallet missing, key wrong).
+- `exception`: unexpected exceptions — always re-raise after logging unless the function is a top-level "best-effort" path that must not crash the caller.
+
+### Shared filter helpers
+Filtering logic used in multiple places belongs in a shared utility module (e.g. `workflows_util.py`), not duplicated inline. Name with a verb: `filter_by_wallet`, not `_filter`.
 
 ## Documentation
 

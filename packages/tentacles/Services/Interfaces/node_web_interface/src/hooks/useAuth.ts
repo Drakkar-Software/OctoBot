@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useNavigate } from "@tanstack/react-router"
 
 import {
@@ -9,8 +9,9 @@ import {
 } from "@/client"
 import { clearPassword, savePassword } from "@/lib/device-key"
 
-const clearAuth = async () => {
+export const clearAuth = async () => {
   localStorage.removeItem("auth_username")
+  localStorage.removeItem("auth_wallet_name")
   await clearPassword()
 }
 import { handleError } from "@/utils"
@@ -27,6 +28,7 @@ const isLoggedIn = () => {
 
 const useAuth = () => {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const { showErrorToast } = useCustomToast()
 
   const { data: user } = useQuery<User | null, Error>({
@@ -38,24 +40,37 @@ const useAuth = () => {
   const login = async (data: LoginCredentials) => {
     localStorage.setItem("auth_username", data.username)
     await savePassword(data.password)
-    const user = await LoginService.testAuth()
-    // Store the real node address returned by the server
-    localStorage.setItem("auth_username", user.email)
+    try {
+      const loggedInUser = await LoginService.testAuth()
+      // Store the real node address returned by the server
+      localStorage.setItem("auth_username", loggedInUser.email)
+      // Store wallet display name for header/menu
+      if (loggedInUser.full_name) {
+        localStorage.setItem("auth_wallet_name", loggedInUser.full_name)
+      } else {
+        localStorage.removeItem("auth_wallet_name")
+      }
+    } catch (err) {
+      // Clean up before propagating so isLoggedIn() never returns true for failed logins
+      await clearAuth()
+      throw err
+    }
   }
 
   const loginMutation = useMutation({
     mutationFn: login,
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["currentUser"] })
       navigate({ to: "/" })
     },
     onError: (error) => {
-      void clearAuth()
+      // clearAuth() already called inside login() before re-throwing
       handleError.bind(showErrorToast)(error as ApiError)
     },
   })
 
-  const logout = () => {
-    void clearAuth()
+  const logout = async () => {
+    await clearAuth()
     navigate({ to: "/login" })
   }
 

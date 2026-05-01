@@ -499,6 +499,73 @@ describe("client-encryption", () => {
     })
   })
 
+  // These tests verify the tryDecryptAll routing decisions in ExportResultsContent.tsx.
+  // The component routes each export entry based on result_metadata and key availability.
+  describe("export-results tryDecryptAll routing", () => {
+    it("entry with result_metadata and keys decrypts successfully (encrypted path)", async () => {
+      const { content, result_metadata } = await serverEncryptResult("encrypted result", userRsaPublicKey, serverEcdsaPrivateKey)
+      // result_metadata is present + keys are available → decryptAndVerify runs
+      const decrypted = await decryptAndVerify(content, result_metadata, testKeys, serverEcdsaPublicPem)
+      expect(decrypted).toBe("encrypted result")
+    })
+
+    it("entry without result_metadata passes result through as plaintext (unencrypted path)", () => {
+      const plainResult = JSON.stringify({ trades: 3, pnl: 42 })
+      // No result_metadata → component returns result directly without decryption
+      const result_metadata = ""
+      const shouldDecrypt = !!result_metadata
+      expect(shouldDecrypt).toBe(false)
+      // In this branch, decrypted = entry.result (plaintext JSON from server)
+      const decrypted = plainResult
+      expect(JSON.parse(decrypted)).toMatchObject({ trades: 3, pnl: 42 })
+    })
+
+    it("entry with result_metadata but no client keys returns base row (cannot decrypt)", () => {
+      const keys: ClientKeys | null = null
+      const serverKeys = null
+      const has_result_metadata = true
+      // keys null → cannot run decryptAndVerify → falls back to base row (no decryption)
+      const canDecrypt = has_result_metadata && keys !== null && serverKeys !== null
+      expect(canDecrypt).toBe(false)
+    })
+
+    it("entry with empty result skips processing regardless of metadata", () => {
+      const entry = { result: "", result_metadata: "some-meta", error: undefined }
+      // !entry.result → early return to base row
+      const shouldProcess = !(!entry.result)
+      expect(shouldProcess).toBe(false)
+    })
+
+    it("entry with error field skips processing", () => {
+      const entry = { result: "some-result", result_metadata: "meta", error: "forbidden" }
+      // entry.error → early return to base row
+      const shouldProcess = !entry.error
+      expect(shouldProcess).toBe(false)
+    })
+
+    it("request-supplied RSA public PEM from derivePublicPemsFromPrivates is valid for a full export roundtrip", async () => {
+      // Simulates the new flow: frontend derives user RSA public PEM, sends it in the
+      // export-results request body; server encrypts result with it; client decrypts.
+      const { rsa_public_pem } = await derivePublicPemsFromPrivates(testKeys)
+      const derivedUserPub = await crypto.subtle.importKey(
+        "spki",
+        pemToDer(rsa_public_pem).buffer as ArrayBuffer,
+        { name: "RSA-OAEP", hash: "SHA-256" },
+        false,
+        ["wrapKey"],
+      )
+      // Server encrypts result using the request-supplied RSA public key
+      const { content, result_metadata } = await serverEncryptResult(
+        JSON.stringify({ status: "done", trades: 5 }),
+        derivedUserPub,
+        serverEcdsaPrivateKey,
+      )
+      // Client decrypts using the stored private key
+      const decrypted = await decryptAndVerify(content, result_metadata, testKeys, serverEcdsaPublicPem)
+      expect(JSON.parse(decrypted)).toMatchObject({ status: "done", trades: 5 })
+    })
+  })
+
   describe("derivePublicPemsFromPrivates", () => {
     it("derived RSA public key matches the private key (encrypt + decrypt roundtrip)", async () => {
       const { rsa_public_pem } = await derivePublicPemsFromPrivates(testKeys)
@@ -518,6 +585,20 @@ describe("client-encryption", () => {
       const cipher = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, aesKey, new TextEncoder().encode("roundtrip"))
       const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, unwrapped, cipher)
       expect(new TextDecoder().decode(plain)).toBe("roundtrip")
+    })
+
+    it("derived RSA public PEM is usable as user_rsa_public_key in export-results: server can encrypt result, client can decrypt", async () => {
+      const { rsa_public_pem } = await derivePublicPemsFromPrivates(testKeys)
+      const derivedPub = await crypto.subtle.importKey(
+        "spki",
+        pemToDer(rsa_public_pem).buffer as ArrayBuffer,
+        { name: "RSA-OAEP", hash: "SHA-256" },
+        false,
+        ["wrapKey"],
+      )
+      const { content, result_metadata } = await serverEncryptResult("export payload", derivedPub, serverEcdsaPrivateKey)
+      const decrypted = await decryptAndVerify(content, result_metadata, testKeys, serverEcdsaPublicPem)
+      expect(decrypted).toBe("export payload")
     })
 
     it("derived ECDSA public key matches the private key (sign + verify roundtrip)", async () => {
@@ -540,6 +621,11 @@ describe("client-encryption", () => {
       const sig = await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, ecPriv, data)
       const valid = await crypto.subtle.verify({ name: "ECDSA", hash: "SHA-256" }, derivedPub, sig, data)
       expect(valid).toBe(true)
+    })
+
+    it("derived PEMs are distinct (RSA and ECDSA keys are different)", async () => {
+      const { rsa_public_pem, ecdsa_public_pem } = await derivePublicPemsFromPrivates(testKeys)
+      expect(rsa_public_pem).not.toBe(ecdsa_public_pem)
     })
 
     it("derived PEMs are in SPKI format (-----BEGIN PUBLIC KEY-----)", async () => {

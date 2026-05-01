@@ -30,6 +30,7 @@ export const Route = createFileRoute("/setup/")({
 })
 
 const baseSchema = z.object({
+  name: z.string().optional(),
   passphrase: z
     .string()
     .min(8, { message: "Passphrase must be at least 8 characters" }),
@@ -64,23 +65,31 @@ function SetupWallet() {
     resolver: zodResolver(generateSchema),
     mode: "onBlur",
     criteriaMode: "all",
-    defaultValues: { passphrase: "", confirmPassphrase: "" },
+    defaultValues: { name: "", passphrase: "", confirmPassphrase: "" },
   })
 
   const importForm = useForm<ImportData>({
     resolver: zodResolver(importSchema),
     mode: "onBlur",
     criteriaMode: "all",
-    defaultValues: { passphrase: "", confirmPassphrase: "", privateKey: "" },
+    defaultValues: { name: "", passphrase: "", confirmPassphrase: "", privateKey: "" },
   })
 
-  const initMutation = useMutation<SetupResult, ApiError, { passphrase: string; privateKey?: string }>({
-    mutationFn: ({ passphrase, privateKey }) =>
+  const initMutation = useMutation<SetupResult, ApiError, { passphrase: string; privateKey?: string; name?: string }>({
+    mutationFn: ({ passphrase, privateKey, name }) =>
       SetupService.initSetup({
-        requestBody: { passphrase, node_type: "standalone", private_key: privateKey || undefined },
+        requestBody: {
+          passphrase,
+          node_type: "standalone",
+          private_key: privateKey || undefined,
+          name: name?.trim() || undefined,
+        },
       }),
-    onSuccess: async (result, { passphrase }) => {
+    onSuccess: async (result, { passphrase, name }) => {
       localStorage.setItem("auth_username", result.address)
+      if (name?.trim()) {
+        localStorage.setItem("auth_wallet_name", name.trim())
+      }
       await savePassword(passphrase)
       sessionStorage.setItem("setup_in_progress", "true")
       navigate({ to: "/setup/first-bot" })
@@ -91,11 +100,11 @@ function SetupWallet() {
   })
 
   const onGenerateSubmit = (data: GenerateData) => {
-    initMutation.mutate({ passphrase: data.passphrase })
+    initMutation.mutate({ passphrase: data.passphrase, name: data.name })
   }
 
   const onImportSubmit = (data: ImportData) => {
-    initMutation.mutate({ passphrase: data.passphrase, privateKey: data.privateKey })
+    initMutation.mutate({ passphrase: data.passphrase, privateKey: data.privateKey, name: data.name })
   }
 
   return (
@@ -142,6 +151,19 @@ function SetupWallet() {
             >
               <FormField
                 control={generateForm.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Wallet name <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g. My node" {...field} />
+                    </FormControl>
+                    <FormMessage className="text-xs" />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={generateForm.control}
                 name="passphrase"
                 render={({ field }) => (
                   <FormItem>
@@ -177,6 +199,19 @@ function SetupWallet() {
               onSubmit={importForm.handleSubmit(onImportSubmit)}
               className="flex flex-col gap-4"
             >
+              <FormField
+                control={importForm.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Wallet name <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g. My node" {...field} />
+                    </FormControl>
+                    <FormMessage className="text-xs" />
+                  </FormItem>
+                )}
+              />
               <FormField
                 control={importForm.control}
                 name="privateKey"

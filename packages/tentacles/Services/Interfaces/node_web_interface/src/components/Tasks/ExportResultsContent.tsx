@@ -13,6 +13,7 @@ import { ArrowLeft, ArrowUpDown, Download, Eye, EyeOff, Loader2, Plus, Search, U
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import type { Task_Output as Task } from "@/client"
+import { TasksService } from "@/client"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -42,7 +43,7 @@ import {
   type ExportColumnDef,
 } from "@/lib/export-templates"
 import useCustomToast from "@/hooks/useCustomToast"
-import { decryptAndVerify, type ClientKeys } from "@/lib/client-encryption"
+import { decryptAndVerify, derivePublicPemsFromPrivates, type ClientKeys } from "@/lib/client-encryption"
 import {
   extractValue,
   discoverPaths,
@@ -84,28 +85,16 @@ function buildExportRows(tasks: Task[]): ExportRow[] {
   return tasks
     .map((task) => {
       const activeExec = getActiveExecution(task.executions)
-      let resultData: Record<string, unknown> = {}
-      try {
-        const parsed = activeExec?.result ? JSON.parse(activeExec.result) : {}
-        resultData =
-          typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)
-            ? parsed
-            : { result: parsed }
-      } catch {
-        resultData = { result: activeExec?.result ?? "" }
-      }
-
       return {
         taskId: task.id ?? "",
-        resultData,
+        resultData: {},
         meta: {
           __task_name__: task.name ?? "",
           __exec_status__: activeExec?.status ?? "",
-          __task_status__: task.error ? "errored" : (activeExec?.status ?? ""),
-          __task_error__: task.error ?? "",
+          __task_status__: activeExec?.status === "failed" || activeExec?.error ? "errored" : (activeExec?.status ?? ""),
+          __task_error__: activeExec?.error ?? "",
           __exec_type__: activeExec?.type ?? "",
           __exec_completed_at__: activeExec?.completed_at ?? "",
-          __exec_result_metadata__: activeExec?.result_metadata ?? "",
         },
       }
     })
@@ -164,35 +153,56 @@ export default function ExportResultsContent({
   showErrorToastRef.current = showErrorToast
 
   const encryptedTaskCount = useMemo(
-    () => tasks.filter((t) => getActiveExecution(t.executions)?.result_metadata).length,
+    () => tasks.filter((t) => t.is_encrypted && getActiveExecution(t.executions)?.status === "completed").length,
     [tasks],
   )
 
   useEffect(() => {
     let cancelled = false
     async function tryDecryptAll() {
+      const completedTaskIds = tasks
+        .filter((t) => getActiveExecution(t.executions)?.status === "completed")
+        .map((t) => t.id ?? "")
+        .filter(Boolean)
+      if (completedTaskIds.length === 0) return
+
       const rawKeys = await loadClientKeys()
-      if (!rawKeys?.rsa_private?.trim()) return
-      const keys = rawKeys as ClientKeys
-      let serverKeys: { rsa_public: string; ecdsa_public: string }
-      try {
-        serverKeys = await fetchServerPublicKeys()
-      } catch {
-        showErrorToastRef.current("Failed to fetch server keys — encrypted results cannot be decrypted")
-        return
+      const hasClientKeys = !!rawKeys?.rsa_private?.trim()
+      let keys: ClientKeys | null = hasClientKeys ? (rawKeys as ClientKeys) : null
+      let serverKeys: { rsa_public: string; ecdsa_public: string } | null = null
+      let userRsaPublicPem: string | null = null
+      if (hasClientKeys && keys) {
+        try {
+          const pems = await derivePublicPemsFromPrivates(keys)
+          userRsaPublicPem = pems.rsa_public_pem
+          serverKeys = await fetchServerPublicKeys()
+        } catch {
+          showErrorToastRef.current("Failed to fetch server keys — encrypted results cannot be decrypted")
+        }
       }
       if (cancelled) return
+
       setDecryptedRows(null)
       setIsDecrypting(true)
       let failCount = 0
       try {
+        const exportedResults = await TasksService.exportResults({
+          requestBody: { task_ids: completedTaskIds, user_rsa_public_key: userRsaPublicPem },
+        })
         const base = buildExportRows(tasks)
         const rows = await Promise.all(
           tasks.map(async (task, i) => {
-            const activeExec = getActiveExecution(task.executions)
-            if (!activeExec?.result_metadata || !activeExec?.result) return base[i]
+            const entry = exportedResults[task.id ?? ""]
+            if (!entry || entry.error || !entry.result) return base[i]
             try {
-              const decrypted = await decryptAndVerify(activeExec.result, activeExec.result_metadata, keys, serverKeys.ecdsa_public)
+              let decrypted: string
+              if (entry.result_metadata && keys && serverKeys) {
+                decrypted = await decryptAndVerify(entry.result, entry.result_metadata, keys, serverKeys.ecdsa_public)
+              } else if (!entry.result_metadata) {
+                decrypted = entry.result
+              } else {
+                return base[i]
+              }
               let resultData: Record<string, unknown> = {}
               try {
                 const parsed: unknown = JSON.parse(decrypted)
@@ -231,7 +241,7 @@ export default function ExportResultsContent({
         paths.add(path)
       }
     }
-    return Array.from(paths).sort()
+    return Array.from(paths).filter(Boolean).sort()
   }, [displayRows])
 
   const activeTemplate = useMemo(

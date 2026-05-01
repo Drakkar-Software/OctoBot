@@ -14,7 +14,7 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
-from typing_extensions import Reader
+import asyncio
 import dbos
 import json
 import logging
@@ -136,18 +136,22 @@ class Scheduler:
     def create_queues(self):
         self.AUTOMATION_WORKFLOW_QUEUE = dbos.Queue(name=octobot_node.enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE.value)
 
-    async def get_periodic_tasks(self) -> list[octobot_node.models.Execution]:
+    async def get_periodic_tasks(self, wallet_address: typing.Optional[str] = None) -> list[octobot_node.models.Execution]:
         """DBOS scheduled workflows are not easily introspectable; return empty list."""
         return [] # TODO
 
-    async def get_pending_tasks(self) -> list[octobot_node.models.Execution]:
+    async def get_pending_tasks(self, wallet_address: typing.Optional[str] = None) -> list[octobot_node.models.Execution]:
         if not self.INSTANCE:
             return []
         executions: list[octobot_node.models.Execution] = []
         try:
-            pending_workflow_statuses = await self.INSTANCE.list_workflows_async(status=[dbos.WorkflowStatusString.ENQUEUED.value, dbos.WorkflowStatusString.PENDING.value])
-            for pending_workflow_status in pending_workflow_statuses or []:
+            pending_workflow_statuses = workflows_util.filter_by_wallet(
+                await self.INSTANCE.list_workflows_async(status=[dbos.WorkflowStatusString.ENQUEUED.value, dbos.WorkflowStatusString.PENDING.value]),
+                wallet_address,
+            )
+            for pending_workflow_status in pending_workflow_statuses:
                 try:
+                    task = workflows_util.get_input_task(pending_workflow_status)
                     if reader := workflows_util.get_automation_state_reader(pending_workflow_status):
                         next_step = ", ".join([
                             action.get_summary()
@@ -174,7 +178,7 @@ class Scheduler:
             workflow_id[:octobot_node.constants.PARENT_WORKFLOW_ID_LENGTH] for workflow_id in to_delete_workflow_ids
         ]
         children_workflow_ids = [
-            workflow.workflow_id for workflow in all_completed_workflows 
+            workflow.workflow_id for workflow in all_completed_workflows
             if any(workflow.workflow_id.startswith(parent_workflow_id) for parent_workflow_id in to_delete_parent_workflow_ids)
         ]
         merged_to_delete_workflow_ids = list(set(to_delete_workflow_ids + children_workflow_ids))
@@ -187,93 +191,154 @@ class Scheduler:
             conn.execute(sqlalchemy.text("VACUUM"))
         self.logger.info(f"Database vacuum completed")
 
-    async def get_scheduled_tasks(self) -> list[octobot_node.models.Execution]:
+    async def get_scheduled_tasks(self, wallet_address: typing.Optional[str] = None) -> list[octobot_node.models.Execution]:
         """DBOS has no direct 'scheduled for later' queue; return empty list."""
         return []
 
-    async def get_results(self) -> list[octobot_node.models.Execution]:
+    async def get_results(self, wallet_address: typing.Optional[str] = None) -> list[octobot_node.models.Execution]:
         if not self.INSTANCE:
             return []
         executions: list[octobot_node.models.Execution] = []
         try:
-            completed_workflow_statuses = await self.INSTANCE.list_workflows_async(status=[
-                dbos.WorkflowStatusString.SUCCESS.value, dbos.WorkflowStatusString.ERROR.value
-            ], load_output=True)
-            for completed_workflow_status in completed_workflow_statuses or []:
+            completed_workflow_statuses = workflows_util.filter_by_wallet(
+                await self.INSTANCE.list_workflows_async(status=[
+                    dbos.WorkflowStatusString.SUCCESS.value, dbos.WorkflowStatusString.ERROR.value
+                ], load_output=True),
+                wallet_address,
+            )
+            for completed_workflow_status in completed_workflow_statuses:
                 try:
-                    if completed_workflow_status.status == dbos.WorkflowStatusString.SUCCESS.value and (
-                        task := workflows_util.get_input_task(completed_workflow_status)
-                    ):
-                        try:
-                            output = workflow_params.AutomationWorkflowOutput.from_dict(
-                                json.loads(completed_workflow_status.output)
-                            ) if completed_workflow_status.output else workflow_params.AutomationWorkflowOutput()
-                        except Exception as e:
-                            self.logger.warning(f"Failed to parse output for workflow {completed_workflow_status.workflow_id}: {e}")
-                            output = workflow_params.AutomationWorkflowOutput()
-                        if output.state:
-                            result = output.state
-                            metadata = output.state_metadata
-                            user_rsa_key = (
-                                task.user_rsa_public_key.encode('utf-8') if task.user_rsa_public_key
-                                else octobot_node.config.settings.TASKS_USER_RSA_PUBLIC_KEY
-                            )
-                            if octobot_node.config.settings.is_node_side_encryption_enabled:
-                                try:
-                                    result_task = octobot_node.models.Task(
-                                        name="", content=output.state,
-                                        content_metadata=output.state_metadata, type="execute_actions"
-                                    )
-                                    with task_context.encrypted_task(result_task):
-                                        # encrypted_task swallows decryption errors; unchanged content means
-                                        # decryption silently failed and re-encrypting would produce double-encrypted garbage
-                                        if result_task.content == output.state and output.state_metadata:
-                                            raise encryption.EncryptionTaskError("Internal state decryption silently failed")
-                                        if user_rsa_key:
-                                            result, metadata = encryption.encrypt_task_result(
-                                                result_task.content,
-                                                rsa_public_key=user_rsa_key,
-                                                ecdsa_private_key=octobot_node.config.settings.TASKS_SERVER_ECDSA_PRIVATE_KEY,
-                                            )
-                                        else:
-                                            # No user RSA public key: the server-encrypted state is unreadable by the browser.
-                                            # Return plaintext so the caller sees the actual automation output.
-                                            result = result_task.content
-                                            metadata = ""
-                                except encryption.EncryptionTaskError as encrypt_err:
-                                    self.logger.warning(f"Failed to encrypt result for workflow {completed_workflow_status.workflow_id}: {encrypt_err}")
+                    task = workflows_util.get_input_task(completed_workflow_status)
+                    if completed_workflow_status.status == dbos.WorkflowStatusString.SUCCESS.value:
+                        output_error = None
+                        if completed_workflow_status.output:
+                            try:
+                                output = workflow_params.AutomationWorkflowOutput.from_dict(
+                                    json.loads(completed_workflow_status.output)
+                                )
+                                output_error = output.error
+                            except Exception as parse_err:
+                                self.logger.warning(
+                                    f"Failed to parse output for workflow {completed_workflow_status.workflow_id}: {parse_err}"
+                                )
+                        if output_error:
+                            status = octobot_node.models.TaskStatus.FAILED
+                            description = "ERROR"
+                            error = output_error
                         else:
-                            result = task.content
-                            metadata = task.content_metadata
-                        description = "Completed"
-                        status = octobot_node.models.TaskStatus.COMPLETED
-                        task_name = task.name
-                        error = output.error
+                            status = octobot_node.models.TaskStatus.COMPLETED
+                            description = "Completed"
+                            error = None
                     else:
-                        result = ""
-                        description = "ERROR"
                         status = octobot_node.models.TaskStatus.FAILED
-                        metadata = ""
-                        task_name = completed_workflow_status.workflow_id
-                        error = None
-
+                        description = "ERROR"
+                        error = str(completed_workflow_status.error) if completed_workflow_status.error else "Execution failed"
                     executions.append(octobot_node.models.Execution(
                         id=completed_workflow_status.workflow_id,
-                        name=task_name,
+                        name=task.name if task else completed_workflow_status.workflow_id,
                         description=description,
                         status=status,
-                        content_metadata=task.content_metadata if task else None,
-                        result=result or "",
-                        result_metadata=metadata,
+                        is_encrypted=bool(task.content_metadata) if task else False,
+                        result="",
+                        result_metadata="",
                         scheduled_at=completed_workflow_status.created_at,
                         completed_at=completed_workflow_status.updated_at,
                         error=error,
+                        wallet_address=task.wallet_address if task else None,
                     ))
                 except Exception as e:
                     self.logger.exception(e, True, f"Failed to process result workflow {completed_workflow_status.workflow_id}: {e}")
         except Exception as e:
             self.logger.warning(f"Failed to list result workflows: {e}")
         return executions
+
+    def _build_export_result_from_status(
+        self,
+        workflow_status: dbos.WorkflowStatus,
+        user_rsa_public_key: typing.Optional[bytes],
+    ) -> dict[str, str]:
+        raw = workflow_status.output
+        try:
+            output = (
+                workflow_params.AutomationWorkflowOutput.from_dict(json.loads(raw))
+                if raw else workflow_params.AutomationWorkflowOutput()
+            )
+        except Exception as e:
+            self.logger.warning(f"Failed to parse output for workflow {workflow_status.workflow_id}: {e}")
+            output = workflow_params.AutomationWorkflowOutput()
+        if not output.state:
+            return {"result": "", "result_metadata": ""}
+        result_task = octobot_node.models.Task(
+            name="", content=output.state,
+            content_metadata=output.state_metadata, type="execute_actions",
+        )
+        with task_context.encrypted_task(result_task):
+            if (result_task.content == output.state and output.state_metadata
+                    and octobot_node.config.settings.TASKS_SERVER_RSA_PRIVATE_KEY):
+                raise encryption.EncryptionTaskError("Internal state decryption silently failed")
+            user_rsa_key = user_rsa_public_key or octobot_node.config.settings.TASKS_USER_RSA_PUBLIC_KEY
+            if not user_rsa_key or not octobot_node.config.settings.TASKS_SERVER_ECDSA_PRIVATE_KEY:
+                return {"result": result_task.content, "result_metadata": ""}
+            result, metadata = encryption.encrypt_task_result(
+                result_task.content,
+                rsa_public_key=user_rsa_key,
+                ecdsa_private_key=octobot_node.config.settings.TASKS_SERVER_ECDSA_PRIVATE_KEY,
+            )
+        return {"result": result, "result_metadata": metadata}
+
+    async def get_workflows_export_results(
+        self,
+        task_ids: list[str],
+        wallet_address: typing.Optional[str],
+        user_rsa_public_key: typing.Optional[str] = None,
+    ) -> dict[str, dict[str, str]]:
+        if not self.INSTANCE:
+            return {}
+        completed = await self.INSTANCE.list_workflows_async(status=[
+            dbos.WorkflowStatusString.SUCCESS.value,
+            dbos.WorkflowStatusString.ERROR.value,
+        ], load_output=True) or []
+
+        by_parent: dict[str, list[dbos.WorkflowStatus]] = {}
+        for w in completed:
+            parent_id = w.workflow_id[:octobot_node.constants.PARENT_WORKFLOW_ID_LENGTH]
+            by_parent.setdefault(parent_id, []).append(w)
+
+        out: dict[str, dict[str, str]] = {}
+        for task_id in task_ids:
+            try:
+                group = by_parent.get(task_id)
+                if not group:
+                    out[task_id] = {"error": "not found"}
+                    continue
+                task = next(
+                    (t for t in (workflows_util.get_input_task(w) for w in group) if t is not None),
+                    None,
+                )
+                if wallet_address is not None and (task is None or task.wallet_address != wallet_address):
+                    out[task_id] = {"error": "forbidden"}
+                    continue
+                chosen = None
+                for w in sorted(group, key=lambda w: w.updated_at or 0):
+                    if w.status == dbos.WorkflowStatusString.SUCCESS.value and w.output:
+                        chosen = w
+                if chosen is None:
+                    error_ws = [w for w in group if w.status == dbos.WorkflowStatusString.ERROR.value]
+                    if error_ws:
+                        err = error_ws[-1].error
+                        out[task_id] = {
+                            "result": "", "result_metadata": "",
+                            "error": str(err) if err else "Execution failed",
+                        }
+                    else:
+                        out[task_id] = {"result": "", "result_metadata": ""}
+                    continue
+                user_rsa = user_rsa_public_key.encode("utf-8") if user_rsa_public_key else None
+                out[task_id] = self._build_export_result_from_status(chosen, user_rsa)
+            except Exception as e:
+                self.logger.warning(f"Failed to export result for {task_id}: {e}")
+                out[task_id] = {"error": str(e)}
+        return out
 
     def _parse_workflow_status(
         self,
@@ -292,15 +357,16 @@ class Scheduler:
                 task_type = task.type
                 task_actions = task.content #todo confi
 
-        task_content_metadata = task.content_metadata if task else None
+        task_wallet_address = task.wallet_address if task else None
         return octobot_node.models.Execution(
             id=task_id,
             name=task_name,
             description=description,
             actions=task_actions,
-            content_metadata=task_content_metadata,
+            is_encrypted=bool(task.content_metadata) if task else False,
             type=task_type,
             status=status,
+            wallet_address=task_wallet_address,
         )
 
     def get_task_name(self, task_data: dict | octobot_node.models.Task | None, default_value: typing.Optional[str] = None) -> typing.Optional[str]:

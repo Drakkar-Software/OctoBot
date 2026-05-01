@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
 
-import { type Task_Output as Task, TasksService } from "@/client"
+import { type Task_Input as Task, TasksService } from "@/client"
 import useCustomToast from "@/hooks/useCustomToast"
 import type { CSVRawResult } from "@/lib/csv"
 

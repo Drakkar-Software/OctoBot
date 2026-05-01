@@ -34,6 +34,21 @@ except ImportError:
 STATE_KEY = "state"
 
 
+def filter_by_wallet(
+    statuses: typing.Optional[list[dbos_lib.WorkflowStatus]],
+    wallet_address: typing.Optional[str],
+) -> list[dbos_lib.WorkflowStatus]:
+    """Return statuses whose task wallet_address matches, or has no wallet restriction."""
+    if not statuses or wallet_address is None:
+        return statuses or []
+    kept = []
+    for s in statuses:
+        task = get_input_task(s)
+        if task is None or not task.wallet_address or task.wallet_address == wallet_address:
+            kept.append(s)
+    return kept
+
+
 def get_automation_copied_strategy_ids(workflow_status: dbos_lib.WorkflowStatus) -> list[str]:
     if reader := get_automation_state_reader(workflow_status):
         return reader.get_automation_copied_strategy_ids()

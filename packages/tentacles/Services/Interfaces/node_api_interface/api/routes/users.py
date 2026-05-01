@@ -19,11 +19,12 @@ from fastapi import APIRouter
 
 import octobot_node.models
 
-# Import from tentacles package (runtime) or fallback to direct imports (build)
+# Prefer the installed tentacles package (production target); fall back to
+# direct imports when running from source (build time, tests).
 try:
     from tentacles.Services.Interfaces.node_api_interface.api.deps import CurrentUser
 except ImportError:
-    from api.deps import CurrentUser
+    from api.deps import CurrentUser  # type: ignore[no-redef]
 
 router = APIRouter(tags=["users"])
 

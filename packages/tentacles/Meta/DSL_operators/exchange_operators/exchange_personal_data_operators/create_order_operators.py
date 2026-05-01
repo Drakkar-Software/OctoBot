@@ -145,7 +145,7 @@ class CreateOrderOperator(exchange_operator.ExchangeOperator):
             raise octobot_commons.errors.InvalidParameterFormatError(e) from e
         except asyncio.TimeoutError as e:
             raise octobot_commons.errors.DSLInterpreterError(
-                f"Impossible to create order for {self.param_by_name["symbol"]} on {order_factory.exchange_manager.exchange_name}: {e} and is necessary to compute the order details."
+                f"Impossible to create order for {self.param_by_name['symbol']} on {order_factory.exchange_manager.exchange_name}: {e} and is necessary to compute the order details."
             )
         return orders
 

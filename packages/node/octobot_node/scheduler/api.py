@@ -25,6 +25,7 @@ import octobot_node.config
 import octobot_node.constants
 import octobot_node.models
 import octobot_node.scheduler
+import octobot_node.scheduler.workflows_util as workflows_util
 
 logger = logging.getLogger(__name__)
 
@@ -59,26 +60,31 @@ def get_node_status() -> dict[str, str | int | None | uuid.UUID]:
     }
 
 
-async def get_task_metrics() -> dict[str, int]:
+
+async def get_task_metrics(
+    wallet_address: typing.Optional[str] = None,
+) -> dict[str, int]:
+    scheduler = octobot_node.scheduler.SCHEDULER
+    if not scheduler.INSTANCE:
+        return {"pending": 0, "scheduled": 0, "results": 0}
     try:
-        instance = octobot_node.scheduler.SCHEDULER.INSTANCE
-        if instance is None:
-            logger.warning("Scheduler instance not initialized")
-            pending, completed, periodic = [], [], []
-        else:
-            pending, completed, periodic = await asyncio.gather(
-                instance.list_workflows_async(status=[
-                    dbos.WorkflowStatusString.ENQUEUED.value, dbos.WorkflowStatusString.PENDING.value
-                ]),
-                instance.list_workflows_async(status=[
-                    dbos.WorkflowStatusString.SUCCESS.value, dbos.WorkflowStatusString.ERROR.value
-                ]),
-                octobot_node.scheduler.SCHEDULER.get_periodic_tasks()
-            )
+        pending_statuses, result_statuses = await asyncio.gather(
+            scheduler.INSTANCE.list_workflows_async(status=[
+                dbos.WorkflowStatusString.ENQUEUED.value,
+                dbos.WorkflowStatusString.PENDING.value,
+            ], load_output=False),
+            scheduler.INSTANCE.list_workflows_async(status=[
+                dbos.WorkflowStatusString.SUCCESS.value,
+                dbos.WorkflowStatusString.ERROR.value,
+            ], load_output=False),
+        )
+        if wallet_address is not None:
+            pending_statuses = workflows_util.filter_by_wallet(pending_statuses, wallet_address)
+            result_statuses = workflows_util.filter_by_wallet(result_statuses, wallet_address)
         return {
-            "pending": len(pending),
-            "scheduled": len(periodic),
-            "results": len(completed),
+            "pending": len(pending_statuses or []),
+            "scheduled": 0,
+            "results": len(result_statuses or []),
         }
     except Exception as e:
         logger.error(f"Failed to retrieve task metrics from scheduler: {e}")
@@ -112,6 +118,8 @@ def _build_tasks_from_executions(
         active_name = active.name if active else None
         active_content = active.actions if active else None
         error = active.error if active else None
+        active_wallet = active.wallet_address if active else None
+        is_encrypted = any(e.is_encrypted for e in group)
         for execution in group:
             execution.name = None
             if active is None or execution.id != active.id:
@@ -120,20 +128,24 @@ def _build_tasks_from_executions(
             id=parent_id,
             name=active_name,
             content=active_content,
+            is_encrypted=is_encrypted,
             executions=group,
             error=error,
+            wallet_address=active_wallet,
         ))
     return tasks
 
 
-async def get_all_tasks() -> list[octobot_node.models.Task]:
+async def get_all_tasks(
+    wallet_address: typing.Optional[str] = None,
+) -> list[octobot_node.models.Task]:
     executions: list[octobot_node.models.Execution] = []
     try:
         periodic, pending, scheduled, results = await asyncio.gather(
-            octobot_node.scheduler.SCHEDULER.get_periodic_tasks(),
-            octobot_node.scheduler.SCHEDULER.get_pending_tasks(),
-            octobot_node.scheduler.SCHEDULER.get_scheduled_tasks(),
-            octobot_node.scheduler.SCHEDULER.get_results(),
+            octobot_node.scheduler.SCHEDULER.get_periodic_tasks(wallet_address=wallet_address),
+            octobot_node.scheduler.SCHEDULER.get_pending_tasks(wallet_address=wallet_address),
+            octobot_node.scheduler.SCHEDULER.get_scheduled_tasks(wallet_address=wallet_address),
+            octobot_node.scheduler.SCHEDULER.get_results(wallet_address=wallet_address),
         )
         executions.extend(periodic)
         executions.extend(pending)
@@ -146,6 +158,18 @@ async def get_all_tasks() -> list[octobot_node.models.Task]:
     tasks = _build_tasks_from_executions(executions)
     logger.debug("Returning %d total tasks from %d executions", len(tasks), len(executions))
     return tasks
+
+
+async def get_tasks_export_results(
+    task_ids: list[str],
+    wallet_address: typing.Optional[str],
+    user_rsa_public_key: typing.Optional[str] = None,
+) -> dict[str, dict[str, str]]:
+    if not task_ids:
+        return {}
+    return await octobot_node.scheduler.SCHEDULER.get_workflows_export_results(
+        task_ids, wallet_address, user_rsa_public_key=user_rsa_public_key
+    )
 
 
 async def delete_tasks(task_ids: list[str]) -> list[str]:

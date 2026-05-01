@@ -21,8 +21,10 @@ import octobot_node.scheduler.workflows.params as params
 
 
 async def trigger_task(task: octobot_node.models.Task) -> bool:
-    import octobot_node.scheduler.workflows.automation_workflow as automation_workflow
     import octobot_node.scheduler  # avoid circular import
+    if not octobot_node.scheduler.is_initialized():
+        raise RuntimeError("Scheduler is not initialized")
+    import octobot_node.scheduler.workflows.automation_workflow as automation_workflow
     handle = None
     # enqueue workflow instead of starting it to dispatch them to multiple workers if possible
     if task.type == octobot_node.models.TaskType.EXECUTE_ACTIONS.value:

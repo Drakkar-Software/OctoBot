@@ -1,7 +1,7 @@
 import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router"
 import { useState } from "react"
 import { Smartphone, TriangleAlert } from "lucide-react"
-import QRCode from "react-qr-code"
+import { QRCode } from "react-qr-code"
 
 import { Button } from "@/components/ui/button"
 import {

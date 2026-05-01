@@ -14,103 +14,217 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import base64
+import dataclasses
+import hashlib
+import hmac
+import secrets
+import threading
 import typing
 
-import octobot_commons.cryptography.encryption as commons_encryption
-
-import octobot.constants as constants
+import octobot_commons.dataclasses as commons_dataclasses
 import octobot_sync.chain as sync_chain
+from octobot.community.wallet_backend.errors import (
+    AdminWalletAlreadyExistsError,
+    CannotRemoveAdminWalletError,
+    CannotRemoveLastWalletError,
+    InvalidPassphraseError,
+    InvalidPrivateKeyError,
+    PassphraseTooShortError,
+    WalletAlreadyExistsError,
+    WalletNotFoundError,
+)
+from octobot.community.wallet_backend.wallet_storage import (
+    WalletStorage,
+    build_wallet_storage,
+)
+
+_PBKDF2_ITERATIONS = 600_000
+_PBKDF2_ALG = "sha256"
+
+
+@dataclasses.dataclass
+class WalletInfo(commons_dataclasses.FlexibleDataclass):
+    address: str = ""
+    name: typing.Optional[str] = None
+    is_admin: bool = False
+
+
+@dataclasses.dataclass
+class WalletEntry(commons_dataclasses.FlexibleDataclass):
+    address: str = ""
+    name: typing.Optional[str] = None
+    is_admin: bool = False
+    private_key: str = ""
+    passphrase_hash: str = ""
+
+
+def _hash_passphrase(passphrase: str) -> str:
+    """Hash a passphrase with PBKDF2-HMAC-SHA256 for storage. Format: salt_b64:key_b64."""
+    salt = secrets.token_bytes(32)
+    key = hashlib.pbkdf2_hmac(_PBKDF2_ALG, passphrase.encode(), salt, _PBKDF2_ITERATIONS)
+    return base64.b64encode(salt).decode() + ":" + base64.b64encode(key).decode()
+
+
+def _verify_passphrase_hash(passphrase: str, stored: str) -> bool:
+    """Constant-time verify of a PBKDF2 passphrase hash created by _hash_passphrase."""
+    try:
+        salt_b64, key_b64 = stored.split(":")
+        salt = base64.b64decode(salt_b64)
+        expected = base64.b64decode(key_b64)
+        actual = hashlib.pbkdf2_hmac(_PBKDF2_ALG, passphrase.encode(), salt, _PBKDF2_ITERATIONS)
+        return hmac.compare_digest(actual, expected)
+    except Exception:
+        return False
 
 
 class WalletBackend:
-    def __init__(self, sync_storage, logger):
+    def __init__(self, sync_storage, logger, storage: typing.Optional[WalletStorage] = None):
         self._sync_storage = sync_storage
         self.logger = logger
+        # threading.Lock is sufficient because wallet mutations only occur in the single
+        # API process. Consumer-only worker processes (--consumer_only) never modify the
+        # wallet list. If multiple API processes ever share config.json (e.g. behind a
+        # load balancer), upgrade to fcntl.flock() for cross-process safety.
+        self._wallet_lock = threading.Lock()
+        self._storage: WalletStorage = storage if storage is not None else build_wallet_storage(sync_storage)
 
-    def get_or_create_wallet_private_key(self, chain_id: str) -> typing.Optional[str]:
-        chain_type, chain_network = chain_id.split(":", 1)
-        wallets = self._sync_storage.get_item(constants.CONFIG_COMMUNITY_WALLETS) or {}
-        chain_wallets = wallets.get(chain_type, {})
-        private_key = chain_wallets.get(chain_network)
-        if isinstance(private_key, dict):
-            # Encrypted keystore — plaintext key unavailable without passphrase
-            return None
-        if private_key:
-            return private_key
+    def _get_node_wallets_list(self) -> list[WalletEntry]:
+        return [WalletEntry.from_dict(e) for e in self._storage.load()]
+
+    def _save_node_wallets_list(self, node_wallets: list[WalletEntry]) -> None:
+        self._storage.save([dataclasses.asdict(e) for e in node_wallets])
+
+    def _wallet_from_entry(self, entry: WalletEntry) -> sync_chain.Wallet:
+        return sync_chain.Wallet(private_key=entry.private_key, address=entry.address)
+
+    def _find_wallet_entry(self, address: str) -> typing.Optional[WalletEntry]:
+        # Addresses are stored lowercase; normalize input to match
+        normalized = address.lower()
+        for entry in self._get_node_wallets_list():
+            if entry.address == normalized:
+                return entry
+        return None
+
+    def list_wallets(self) -> list[WalletInfo]:
+        """Return public wallet info (no key material)."""
+        return [
+            WalletInfo(address=e.address, name=e.name, is_admin=e.is_admin)
+            for e in self._get_node_wallets_list()
+        ]
+
+    def create_wallet(
+        self,
+        name: typing.Optional[str],
+        passphrase: str,
+        is_admin: bool = False,
+    ) -> sync_chain.Wallet:
         wallet = sync_chain.create_evm_wallet()
-        chain_wallets[chain_network] = wallet.private_key
-        wallets[chain_type] = chain_wallets
-        self._sync_storage.set_item(constants.CONFIG_COMMUNITY_WALLETS, wallets)
-        self.logger.info(f"Created new {chain_type} wallet for {chain_id}: {wallet.address}")
-        return wallet.private_key
+        return self._add_wallet_entry(wallet.private_key, wallet.address, name, passphrase, is_admin)
 
-    def _get_node_keystore(self) -> dict:
-        chain_type, chain_network = constants.SYNC_CHAIN_ID.split(":", 1)
-        wallets = self._sync_storage.get_item(constants.CONFIG_COMMUNITY_WALLETS) or {}
-        value = wallets.get(chain_type, {}).get(chain_network)
-        if isinstance(value, dict):
-            return value
-        return {}
-
-    def _save_node_keystore(self, keystore: dict) -> None:
-        chain_type, chain_network = constants.SYNC_CHAIN_ID.split(":", 1)
-        wallets = self._sync_storage.get_item(constants.CONFIG_COMMUNITY_WALLETS) or {}
-        chain_wallets = wallets.get(chain_type, {})
-        chain_wallets[chain_network] = keystore
-        wallets[chain_type] = chain_wallets
-        self._sync_storage.set_item(constants.CONFIG_COMMUNITY_WALLETS, wallets)
-
-    def is_node_wallet_configured(self) -> bool:
-        try:
-            return bool(self._get_node_keystore().get("encrypted_key"))
-        except Exception:
-            return False
-
-    def get_node_wallet_address(self) -> typing.Optional[str]:
-        try:
-            return self._get_node_keystore().get("address") or None
-        except Exception:
-            return None
-
-    def create_and_encrypt_node_wallet(self, passphrase: str) -> sync_chain.Wallet:
-        wallet = sync_chain.create_evm_wallet()
-        key_bytes = bytes.fromhex(wallet.private_key.removeprefix("0x"))
-        encrypted_key, salt, iv = commons_encryption.pbkdf2_encrypt_aes_key(key_bytes, passphrase)
-        self._save_node_keystore({
-            "address": wallet.address,
-            "encrypted_key": base64.b64encode(encrypted_key).decode(),
-            "salt": base64.b64encode(salt).decode(),
-            "iv": base64.b64encode(iv).decode(),
-        })
-        return wallet
-
-    def import_and_encrypt_node_wallet(self, private_key: str, passphrase: str) -> sync_chain.Wallet:
+    def import_wallet(
+        self,
+        private_key: str,
+        passphrase: str,
+        name: typing.Optional[str],
+        is_admin: bool = False,
+    ) -> sync_chain.Wallet:
         try:
             address = sync_chain.address_from_evm_key(private_key)
         except Exception as err:
-            raise ValueError(f"Invalid EVM private key: {err}") from err
-        key_bytes = bytes.fromhex(private_key.removeprefix("0x"))
-        encrypted_key, salt, iv = commons_encryption.pbkdf2_encrypt_aes_key(key_bytes, passphrase)
-        self._save_node_keystore({
-            "address": address,
-            "encrypted_key": base64.b64encode(encrypted_key).decode(),
-            "salt": base64.b64encode(salt).decode(),
-            "iv": base64.b64encode(iv).decode(),
-        })
+            raise InvalidPrivateKeyError(f"Invalid EVM private key: {err}") from err
+        return self._add_wallet_entry(private_key, address, name, passphrase, is_admin)
+
+    def _add_wallet_entry(
+        self,
+        private_key: str,
+        address: str,
+        name: typing.Optional[str],
+        passphrase: str,
+        is_admin: bool,
+    ) -> sync_chain.Wallet:
+        if len(passphrase) < 8:
+            raise PassphraseTooShortError("Passphrase must be at least 8 characters")
+        normalized = address.lower()
+        with self._wallet_lock:
+            node_wallets = self._get_node_wallets_list()
+            if any(e.address == normalized for e in node_wallets):
+                raise WalletAlreadyExistsError(f"Wallet {address} already exists")
+            if is_admin and any(e.is_admin for e in node_wallets):
+                raise AdminWalletAlreadyExistsError("An admin wallet already exists")
+            entry = WalletEntry(
+                address=normalized,
+                name=name or None,
+                is_admin=is_admin,
+                private_key=private_key.removeprefix("0x"),
+                passphrase_hash=_hash_passphrase(passphrase),
+            )
+            node_wallets.append(entry)
+            self._save_node_wallets_list(node_wallets)
         return sync_chain.Wallet(private_key=private_key, address=address)
 
-    def decrypt_node_wallet(self, passphrase: str) -> sync_chain.Wallet:
-        keystore = self._get_node_keystore()
-        encrypted_key = base64.b64decode(keystore["encrypted_key"])
-        salt = base64.b64decode(keystore["salt"])
-        iv = base64.b64decode(keystore["iv"])
-        address = keystore["address"]
-        key_bytes = commons_encryption.pbkdf2_decrypt_aes_key(encrypted_key, passphrase, salt, iv)
-        return sync_chain.Wallet(private_key=key_bytes.hex(), address=address)
+    def authenticate(self, address: str, passphrase: str) -> WalletInfo:
+        """Verify passphrase and return wallet metadata in a single storage read.
 
-    def verify_node_passphrase(self, passphrase: str) -> bool:
+        Returns WalletInfo with is_admin and name.
+        Raises WalletNotFoundError if wallet not found, InvalidPassphraseError if passphrase incorrect.
+        """
+        entry = self._find_wallet_entry(address)
+        if entry is None:
+            raise WalletNotFoundError(f"Wallet {address} not found")
+        if not _verify_passphrase_hash(passphrase, entry.passphrase_hash):
+            raise InvalidPassphraseError("Invalid passphrase")
+        return WalletInfo(is_admin=entry.is_admin, name=entry.name, address=entry.address)
+
+    def verify_wallet_passphrase(self, address: str, passphrase: str) -> bool:
         try:
-            self.decrypt_node_wallet(passphrase)
+            self.authenticate(address, passphrase)
             return True
-        except Exception:
+        except (WalletNotFoundError, InvalidPassphraseError):
             return False
+
+    def decrypt_wallet_by_address(self, address: str, passphrase: str) -> sync_chain.Wallet:
+        entry = self._find_wallet_entry(address)
+        if entry is None:
+            raise WalletNotFoundError(f"Wallet {address} not found")
+        if not _verify_passphrase_hash(passphrase, entry.passphrase_hash):
+            raise InvalidPassphraseError("Invalid passphrase")
+        return self._wallet_from_entry(entry)
+
+    def get_wallet_for_bot(self, address: str) -> sync_chain.Wallet:
+        """Return wallet without passphrase verification — for bot auto-unlock at startup."""
+        entry = self._find_wallet_entry(address)
+        if entry is None:
+            raise WalletNotFoundError(f"Wallet {address} not found")
+        return self._wallet_from_entry(entry)
+
+    def remove_wallet(self, address: str) -> None:
+        normalized = address.lower()
+        with self._wallet_lock:
+            node_wallets = self._get_node_wallets_list()
+            if len(node_wallets) <= 1:
+                raise CannotRemoveLastWalletError("Cannot remove the last wallet")
+            entry = next((e for e in node_wallets if e.address == normalized), None)
+            if entry is None:
+                raise WalletNotFoundError(f"Wallet {address} not found")
+            if entry.is_admin:
+                raise CannotRemoveAdminWalletError("Cannot remove the admin wallet")
+            self._save_node_wallets_list([e for e in node_wallets if e.address != normalized])
+
+    def rename_wallet(self, address: str, name: typing.Optional[str]) -> None:
+        normalized = address.lower()
+        with self._wallet_lock:
+            node_wallets = self._get_node_wallets_list()
+            for entry in node_wallets:
+                if entry.address == normalized:
+                    entry.name = name or None
+                    self._save_node_wallets_list(node_wallets)
+                    return
+        raise WalletNotFoundError(f"Wallet {address} not found")
+
+    def is_admin_wallet(self, address: str) -> bool:
+        entry = self._find_wallet_entry(address)
+        return bool(entry and entry.is_admin)
+
+    def get_wallet_name(self, address: str) -> typing.Optional[str]:
+        entry = self._find_wallet_entry(address)
+        return entry.name if entry else None

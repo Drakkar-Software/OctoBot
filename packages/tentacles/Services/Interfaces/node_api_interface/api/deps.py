@@ -22,33 +22,59 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 
 import octobot_node.models
 import octobot.community.authentication as community_auth
+import octobot.community.wallet_backend as wallet_backend
 
 security_basic = HTTPBasic(auto_error=False)
-
-_BASIC_AUTH_USER_ID = uuid.uuid4()
 
 
 def get_current_user(
     credentials: typing.Annotated[typing.Optional[HTTPBasicCredentials], Depends(security_basic)],
 ) -> octobot_node.models.User:
     auth = community_auth.CommunityAuthentication.instance()
-    if auth is None or not auth.is_node_wallet_configured():
+    if auth is None:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Node not configured",
         )
-    if credentials is None or not auth.verify_node_passphrase(credentials.password):
+
+    # Multi-wallet path: username = wallet address, password = passphrase
+    if credentials is None or not credentials.username:
+        # Check whether the node is configured at all (no credentials → can't auth anyway)
+        if not auth.list_wallets():
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Node not configured",
+            )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect passphrase",
+            detail="Wallet address required as username",
         )
-    address = auth.get_node_wallet_address()
+
+    # Normalize to lowercase so wallet_address == task.wallet_address always
+    wallet_address = credentials.username.lower()
+    passphrase = credentials.password
+    if not passphrase:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Passphrase required",
+        )
+
+    try:
+        wallet_info = auth.authenticate_wallet(wallet_address, passphrase)
+    except wallet_backend.WalletError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect address or passphrase",
+        )
+
+    auth.init_sync_client_for_wallet(wallet_address)
+
     return octobot_node.models.User(
-        id=_BASIC_AUTH_USER_ID,
-        email=address,
+        id=uuid.uuid5(uuid.NAMESPACE_URL, wallet_address),
+        email=wallet_address,
         is_active=True,
-        is_superuser=True,
-        full_name=None,
+        is_superuser=wallet_info.is_admin,
+        full_name=wallet_info.name,
     )
 
 

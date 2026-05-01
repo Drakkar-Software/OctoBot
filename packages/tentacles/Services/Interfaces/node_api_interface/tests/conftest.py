@@ -14,15 +14,58 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
+import os
+import sys
 import typing
+import uuid
+from unittest import mock
 
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from starlette.middleware.cors import CORSMiddleware
 
-
+import octobot.community.wallet_backend as wallet_backend
 import tentacles.Services.Interfaces.node_api_interface as node_api_interface_module
+
+# Allow direct imports from the package (api.* fallback path in route files)
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+
+try:
+    from tentacles.Services.Interfaces.node_api_interface.api.deps import get_current_user
+    from tentacles.Services.Interfaces.node_api_interface.api.main import build_api_router
+except ImportError:
+    from api.deps import get_current_user  # type: ignore[no-redef]
+    from api.main import build_api_router  # type: ignore[no-redef]
+import octobot_node.models
+
+ADMIN_ADDRESS = "0xadmin000000000000000000000000000000000001"
+TENANT_ADDRESS = "0xuser001000000000000000000000000000000001"
+ADMIN_PASSPHRASE = "admin-pass-123"
+TENANT_PASSPHRASE = "tenant-pass-456"
+
+ADMIN_TASK_ID = "a1a1a1a1-a1a1-a1a1-a1a1-a1a1a1a1a1a1"
+TENANT_TASK_ID = "b2b2b2b2-b2b2-b2b2-b2b2-b2b2b2b2b2b2"
+
+
+def make_admin_user() -> octobot_node.models.User:
+    return octobot_node.models.User(
+        id=uuid.uuid5(uuid.NAMESPACE_URL, ADMIN_ADDRESS),
+        email=ADMIN_ADDRESS,
+        is_active=True,
+        is_superuser=True,
+        full_name="Admin",
+    )
+
+
+def make_tenant_user() -> octobot_node.models.User:
+    return octobot_node.models.User(
+        id=uuid.uuid5(uuid.NAMESPACE_URL, TENANT_ADDRESS),
+        email=TENANT_ADDRESS,
+        is_active=True,
+        is_superuser=False,
+        full_name="Alice",
+    )
 
 
 @pytest.fixture()
@@ -43,6 +86,65 @@ def client(app: FastAPI) -> TestClient:
     return TestClient(app)
 
 
+@pytest.fixture
+def unit_app():
+    """Minimal app for unit tests that use dependency_overrides."""
+    application = FastAPI()
+    application.include_router(build_api_router(), prefix="/api/v1")
+    return application
+
+
+@pytest.fixture
+def admin_client(unit_app):
+    unit_app.dependency_overrides[get_current_user] = make_admin_user
+    with TestClient(unit_app, raise_server_exceptions=False) as c:
+        yield c
+    unit_app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def tenant_client(unit_app):
+    unit_app.dependency_overrides[get_current_user] = make_tenant_user
+    with TestClient(unit_app, raise_server_exceptions=False) as c:
+        yield c
+    unit_app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def mock_auth():
+    """Multi-wallet auth mock — two wallets (admin + tenant)."""
+    _wallets = {
+        ADMIN_ADDRESS: {"is_admin": True, "name": "Admin", "passphrase": ADMIN_PASSPHRASE},
+        TENANT_ADDRESS: {"is_admin": False, "name": "Alice", "passphrase": TENANT_PASSPHRASE},
+    }
+
+    def _authenticate(addr, pw):
+        info = _wallets.get(addr)
+        if info is None:
+            raise wallet_backend.WalletNotFoundError(f"Wallet {addr} not found")
+        if pw != info["passphrase"]:
+            raise wallet_backend.InvalidPassphraseError("Invalid passphrase")
+        return wallet_backend.WalletInfo(address=addr, is_admin=info["is_admin"], name=info["name"])
+
+    auth = mock.MagicMock()
+    auth.list_wallets.return_value = [
+        wallet_backend.WalletInfo(address=ADMIN_ADDRESS, name="Admin", is_admin=True),
+        wallet_backend.WalletInfo(address=TENANT_ADDRESS, name="Alice", is_admin=False),
+    ]
+    auth.authenticate_wallet.side_effect = _authenticate
+    auth.verify_wallet_passphrase.side_effect = lambda addr, pw: (
+        (addr == ADMIN_ADDRESS and pw == ADMIN_PASSPHRASE)
+        or (addr == TENANT_ADDRESS and pw == TENANT_PASSPHRASE)
+    )
+    auth.is_admin_wallet.side_effect = lambda addr: addr == ADMIN_ADDRESS
+    auth.get_wallet_name.side_effect = lambda addr: "Admin" if addr == ADMIN_ADDRESS else "Alice"
+    with mock.patch(
+        "octobot.community.authentication.CommunityAuthentication.instance",
+        return_value=auth,
+    ):
+        yield auth
+
+
 def assert_response_headers(
     response,
     expected_content_type: typing.Optional[str] = None,
@@ -57,8 +159,6 @@ def assert_response_headers(
         assert headers["content-type"] == "application/json", (
             f"Content-Type is {headers.get('content-type')}"
         )
-    # Starlette CORSMiddleware only sets this when the request is a CORS request (e.g. Origin set);
-    # plain TestClient POST without Origin may omit the header.
     allow_origin = headers.get("access-control-allow-origin")
     if allow_origin is not None:
         assert allow_origin == "*", (

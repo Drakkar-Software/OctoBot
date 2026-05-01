@@ -1,7 +1,7 @@
 import { AlertTriangle, KeyRound, Lock, LockOpen, ShieldCheck } from "lucide-react"
 import { useEffect, useState } from "react"
 
-import type { Task_Output as Task } from "@/client"
+import type { Task_Input as Task } from "@/client"
 import { NodesService } from "@/client"
 import { Button } from "@/components/ui/button"
 import { LoadingButton } from "@/components/ui/loading-button"
@@ -72,7 +72,7 @@ export default function EncryptStep({
       const clientKeys = await loadClientKeys()
       if (!clientKeys) throw new Error("Browser keys not configured — add them in Settings")
       const serverKeys = await fetchServerPublicKeys()
-      const { rsa_public_pem, ecdsa_public_pem } = await derivePublicPemsFromPrivates(clientKeys as ClientKeys)
+      const { ecdsa_public_pem } = await derivePublicPemsFromPrivates(clientKeys as ClientKeys)
       const tasks: Task[] = await Promise.all(
         validActions.map(async (action) => {
           const { content, content_metadata } = await encryptAndSign(
@@ -85,7 +85,6 @@ export default function EncryptStep({
             content,
             content_metadata,
             type: "execute_actions",
-            user_rsa_public_key: rsa_public_pem,
             user_ecdsa_public_key: ecdsa_public_pem,
           }
         }),

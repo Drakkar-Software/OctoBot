@@ -17,8 +17,44 @@
 from octobot.community.wallet_backend import community_wallet
 from octobot.community.wallet_backend.community_wallet import (
     WalletBackend,
+    WalletInfo,
+)
+from octobot.community.wallet_backend import errors
+from octobot.community.wallet_backend.errors import (
+    WalletError,
+    WalletAlreadyExistsError,
+    AdminWalletAlreadyExistsError,
+    WalletNotFoundError,
+    InvalidPassphraseError,
+    CannotRemoveLastWalletError,
+    CannotRemoveAdminWalletError,
+    InvalidPrivateKeyError,
+    PassphraseTooShortError,
+)
+from octobot.community.wallet_backend import wallet_storage
+from octobot.community.wallet_backend.wallet_storage import (
+    WalletStorage,
+    ConfigJsonWalletStorage,
+    DedicatedFileWalletStorage,
+    EnvVarWalletStorage,
+    build_wallet_storage,
 )
 
 __all__ = [
     "WalletBackend",
+    "WalletInfo",
+    "WalletError",
+    "WalletAlreadyExistsError",
+    "AdminWalletAlreadyExistsError",
+    "WalletNotFoundError",
+    "InvalidPassphraseError",
+    "CannotRemoveLastWalletError",
+    "CannotRemoveAdminWalletError",
+    "InvalidPrivateKeyError",
+    "PassphraseTooShortError",
+    "WalletStorage",
+    "ConfigJsonWalletStorage",
+    "DedicatedFileWalletStorage",
+    "EnvVarWalletStorage",
+    "build_wallet_storage",
 ]

@@ -29,6 +29,12 @@ class CommunityHistoricalBackendType(enum.Enum):
     DEFAULT = Iceberg
 
 
+class WalletStorageBackend(str, enum.Enum):
+    CONFIG = "config"
+    FILE = "file"
+    ENV = "env"
+
+
 class CommunityEnvironments(enum.Enum):
     Staging = "Staging"
     Production = "Production"

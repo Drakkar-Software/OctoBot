@@ -28,9 +28,9 @@ export function getStatusVariant(status?: TaskStatus | null, hasError?: boolean)
 }
 
 export function getTaskFilterGroup(task: Task): TaskFilterGroup {
-  const status = getActiveExecution(task.executions)?.status
-  if (getStatusGroup(status) === "active") return "active"
-  return task.error ? "errored" : "completed"
+  const exec = getActiveExecution(task.executions)
+  if (getStatusGroup(exec?.status) === "active") return "active"
+  return exec?.status === "failed" || exec?.error ? "errored" : "completed"
 }
 
 export function getTaskSortDate(task: Task): string | null {

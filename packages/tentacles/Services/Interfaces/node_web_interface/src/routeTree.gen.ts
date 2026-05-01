@@ -110,13 +110,13 @@ const LayoutOctobotsNewBuilderRoute =
   } as any)
 
 export interface FileRoutesByFullPath {
+  '/': typeof LayoutIndexRoute
   '/login': typeof LoginRoute
   '/setup': typeof SetupRouteWithChildren
   '/octobots': typeof LayoutOctobotsRouteWithChildren
   '/settings': typeof LayoutSettingsRoute
   '/setup/first-bot': typeof SetupFirstBotRoute
   '/setup/mobile-app': typeof SetupMobileAppRoute
-  '/': typeof LayoutIndexRoute
   '/setup/': typeof SetupIndexRoute
   '/octobots/export': typeof LayoutOctobotsExportRoute
   '/octobots/import': typeof LayoutOctobotsImportRoute
@@ -163,13 +163,13 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
+    | '/'
     | '/login'
     | '/setup'
     | '/octobots'
     | '/settings'
     | '/setup/first-bot'
     | '/setup/mobile-app'
-    | '/'
     | '/setup/'
     | '/octobots/export'
     | '/octobots/import'
@@ -238,7 +238,7 @@ declare module '@tanstack/react-router' {
     '/_layout': {
       id: '/_layout'
       path: ''
-      fullPath: ''
+      fullPath: '/'
       preLoaderRoute: typeof LayoutRouteImport
       parentRoute: typeof rootRouteImport
     }

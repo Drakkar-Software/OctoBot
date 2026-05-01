@@ -133,6 +133,18 @@ CONFIG_COMMUNITY_PACKAGE_URLS = "package_urls"
 CONFIG_COMMUNITY_ENVIRONMENT = "environment"
 CONFIG_COMMUNITY_LOCAL_DATA_IDENTIFIER = "local_data_identifier"
 CONFIG_COMMUNITY_WALLETS = "wallets"
+CHAIN_TYPE, CHAIN_NETWORK = SYNC_CHAIN_ID.split(":", 1)
+# Wallet storage backend: "config" (default, inside config.json),
+# "file" (dedicated wallets.json), or "env" (read-only env var injection)
+WALLET_STORAGE_BACKEND = os.getenv("OCTOBOT_WALLET_STORAGE_BACKEND", "config")
+WALLET_FILE_PATH = os.getenv(
+    "OCTOBOT_WALLET_FILE_PATH",
+    f"{octobot_commons.constants.USER_FOLDER}/wallets.json",
+)
+WALLET_ENV_VAR = "OCTOBOT_NODE_WALLETS"
+WALLET_AES_KEY = os.getenv("OCTOBOT_WALLET_AES_KEY", "")
+# 32-byte key for AES-256-GCM envelope encryption of the wallet list at rest.
+# Provide as 64 hex chars or base64. Empty = no envelope encryption.
 USE_BETA_EARLY_ACCESS = os_util.parse_boolean_environment_var("USE_BETA_EARLY_ACCESS", "false")
 USER_ACCOUNT_EMAIL = os.getenv("USER_ACCOUNT_EMAIL", "")
 USER_PASSWORD_TOKEN = os.getenv("USER_PASSWORD_TOKEN", None)

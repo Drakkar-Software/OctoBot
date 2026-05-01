@@ -22,11 +22,12 @@ from fastapi.security import HTTPBasicCredentials
 
 import octobot_node.config as node_config
 import octobot.community.authentication as community_auth
+import octobot.community.wallet_backend as wallet_backend
 
 try:
-    from tentacles.Services.Interfaces.node_api_interface.api.deps import CurrentUser, security_basic
+    from api.deps import CurrentUser, security_basic  # type: ignore[no-redef]
 except ImportError:
-    from api.deps import CurrentUser, security_basic
+    from tentacles.Services.Interfaces.node_api_interface.api.deps import CurrentUser, security_basic
 
 router = APIRouter(tags=["setup"])
 
@@ -39,6 +40,7 @@ class SetupInit(pydantic.BaseModel):
     passphrase: str
     node_type: typing.Literal["standalone", "master"]
     private_key: typing.Optional[str] = None
+    name: typing.Optional[str] = None
 
 
 class SetupResult(pydantic.BaseModel):
@@ -53,7 +55,7 @@ class WalletExport(pydantic.BaseModel):
 @router.get("/setup/status", response_model=SetupStatus)
 def get_setup_status() -> SetupStatus:
     auth = community_auth.CommunityAuthentication.instance()
-    configured = auth is not None and auth.is_node_wallet_configured()
+    configured = auth is not None and (auth.is_node_wallet_configured() or bool(auth.list_wallets()))
     return SetupStatus(configured=configured)
 
 
@@ -65,17 +67,33 @@ def init_setup(body: SetupInit) -> SetupResult:
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Service not initialized",
         )
-    if auth.is_node_wallet_configured():
+    already_configured = auth.is_node_wallet_configured() or bool(auth.list_wallets())
+    if already_configured:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Node is already configured",
         )
     try:
         if body.private_key:
-            wallet = auth.import_and_encrypt_node_wallet(body.private_key, body.passphrase)
+            wallet = auth.import_wallet(
+                private_key=body.private_key,
+                passphrase=body.passphrase,
+                name=body.name,
+                is_admin=True,
+            )
         else:
-            wallet = auth.create_and_encrypt_node_wallet(body.passphrase)
-    except ValueError as err:
+            wallet = auth.create_wallet(
+                name=body.name,
+                passphrase=body.passphrase,
+                is_admin=True,
+            )
+    except (wallet_backend.WalletAlreadyExistsError, wallet_backend.AdminWalletAlreadyExistsError) as err:
+        # A concurrent request already configured the node — surface 409.
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(err),
+        ) from err
+    except wallet_backend.WalletError as err:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=str(err),
@@ -95,5 +113,16 @@ def export_wallet(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Node not configured",
         )
-    wallet = auth.decrypt_node_wallet(credentials.password)
+    try:
+        wallet = auth.decrypt_wallet_by_address(current_user.email, credentials.password)
+    except wallet_backend.WalletNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Wallet not found",
+        )
+    except wallet_backend.WalletError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid passphrase",
+        )
     return WalletExport(address=wallet.address, private_key=wallet.private_key)
