@@ -55,7 +55,7 @@ class WalletExport(pydantic.BaseModel):
 @router.get("/setup/status", response_model=SetupStatus)
 def get_setup_status() -> SetupStatus:
     auth = community_auth.CommunityAuthentication.instance()
-    configured = auth is not None and (auth.is_node_wallet_configured() or bool(auth.list_wallets()))
+    configured = auth is not None and bool(auth.list_wallets())
     return SetupStatus(configured=configured)
 
 
@@ -67,8 +67,7 @@ def init_setup(body: SetupInit) -> SetupResult:
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Service not initialized",
         )
-    already_configured = auth.is_node_wallet_configured() or bool(auth.list_wallets())
-    if already_configured:
+    if auth.list_wallets():
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Node is already configured",

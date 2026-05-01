@@ -29,7 +29,6 @@ _INIT_BODY = {
 
 def test_setup_status_not_configured(client):
     auth = mock.MagicMock()
-    auth.is_node_wallet_configured.return_value = False
     auth.list_wallets.return_value = []
     with mock.patch(
         "octobot.community.authentication.CommunityAuthentication.instance",
@@ -40,22 +39,8 @@ def test_setup_status_not_configured(client):
     assert resp.json() == {"configured": False}
 
 
-def test_setup_status_configured_via_legacy(client):
+def test_setup_status_configured(client):
     auth = mock.MagicMock()
-    auth.is_node_wallet_configured.return_value = True
-    auth.list_wallets.return_value = []
-    with mock.patch(
-        "octobot.community.authentication.CommunityAuthentication.instance",
-        return_value=auth,
-    ):
-        resp = client.get("/api/v1/setup/status")
-    assert resp.status_code == 200
-    assert resp.json() == {"configured": True}
-
-
-def test_setup_status_configured_via_multi_wallet(client):
-    auth = mock.MagicMock()
-    auth.is_node_wallet_configured.return_value = False
     auth.list_wallets.return_value = [{"address": ADMIN_ADDRESS, "is_admin": True}]
     with mock.patch(
         "octobot.community.authentication.CommunityAuthentication.instance",
@@ -68,7 +53,6 @@ def test_setup_status_configured_via_multi_wallet(client):
 
 def test_setup_init_success(client):
     auth = mock.MagicMock()
-    auth.is_node_wallet_configured.return_value = False
     auth.list_wallets.return_value = []
     auth.create_wallet.return_value = mock.MagicMock(address=ADMIN_ADDRESS)
     with mock.patch(
@@ -87,7 +71,6 @@ def test_setup_init_success(client):
 def test_setup_init_with_private_key(client):
     pk = "a" * 64
     auth = mock.MagicMock()
-    auth.is_node_wallet_configured.return_value = False
     auth.list_wallets.return_value = []
     auth.import_wallet.return_value = mock.MagicMock(address=ADMIN_ADDRESS)
     with mock.patch(
@@ -107,8 +90,7 @@ def test_setup_init_with_private_key(client):
 
 def test_setup_init_already_configured_returns_409(client):
     auth = mock.MagicMock()
-    auth.is_node_wallet_configured.return_value = True
-    auth.list_wallets.return_value = []
+    auth.list_wallets.return_value = [{"address": ADMIN_ADDRESS, "is_admin": True}]
     with mock.patch(
         "octobot.community.authentication.CommunityAuthentication.instance",
         return_value=auth,
@@ -119,7 +101,6 @@ def test_setup_init_already_configured_returns_409(client):
 
 def test_setup_init_invalid_passphrase_returns_422(client):
     auth = mock.MagicMock()
-    auth.is_node_wallet_configured.return_value = False
     auth.list_wallets.return_value = []
     auth.create_wallet.side_effect = wallet_backend.WalletError("Passphrase must be at least 8 characters")
     with mock.patch(
