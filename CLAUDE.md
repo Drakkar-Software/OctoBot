@@ -56,9 +56,6 @@ Re-export from the package `__init__.py`. Use typed catches everywhere — never
 ### TypedDicts for structured dicts
 When a dict has a fixed schema (e.g. wallet info returned to callers), define a `typing.TypedDict`. Place it in the module that owns the data, before the class that produces it.
 
-### File locking
-Use the `filelock` library (cross-platform, POSIX + Windows) instead of `fcntl`/`msvcrt` branching.
-
 ### Import priority in tentacle files
 Prefer the installed `tentacles.Services.Interfaces.*` path first; fall back to bare direct imports (build-time fallback). Pattern:
 ```python

@@ -19,9 +19,9 @@ import json
 import os
 import pathlib
 import secrets
+import threading
 import typing
 
-import filelock
 import octobot_commons.cryptography.encryption as commons_encryption
 
 import octobot.constants as constants
@@ -121,15 +121,14 @@ class ConfigJsonWalletStorage(WalletStorage):
 class DedicatedFileWalletStorage(WalletStorage):
     """Stores wallets in a standalone JSON file, separate from config.json.
 
-    Writes are atomic (write to .tmp then rename). Cross-platform file locking
-    is provided by the filelock library (fcntl on POSIX, msvcrt on Windows).
-    The threading.Lock in WalletBackend already prevents concurrent in-process
-    calls, so filelock provides defence-in-depth for multi-process scenarios.
+    Writes are atomic (write to .tmp then rename). Concurrent in-process saves
+    are serialized by a threading.Lock, matching the model used by
+    WalletBackend: only the single API process mutates the wallet list.
     """
 
     def __init__(self, file_path: str):
         self._path = pathlib.Path(file_path)
-        self._lock = filelock.FileLock(str(self._path) + ".lock")
+        self._lock = threading.Lock()
 
     def load(self) -> list:
         if not self._path.exists():
