@@ -47,6 +47,11 @@ import octobot_commons.configuration.fields_utils as fields_utils
 import octobot.constants as constants
 import octobot.community as community
 
+try:
+    from tentacles.Services.Services_bases.gpt_service import provider_adapters
+except ImportError:
+    import provider_adapters  # type: ignore[no-redef]
+
 
 NO_SYSTEM_PROMPT_MODELS = [
     "o1-mini",
@@ -188,14 +193,14 @@ class LLMService(services.AbstractAIService):
         self.ai_provider = enums.AIProvider.OPENAI
         self._tool_call_json_output: bool = True
 
-        # Nvidia NIM: auto-configure when NVIDIA_NIM_API_KEY is set and no other key/url is configured
-        _nvidia_nim_key = os.getenv("NVIDIA_NIM_API_KEY", None) or None
-        if _nvidia_nim_key and self._env_secret_key is None and self._env_base_url is None:
-            self._env_secret_key = _nvidia_nim_key
-            self._env_base_url = "https://integrate.api.nvidia.com/v1"
-            self.ai_provider = enums.AIProvider.NVIDIA
-            if not env_model:
-                self.model = os.getenv("NVIDIA_NIM_MODEL", self.DEFAULT_MODEL)
+        if self._env_secret_key is None and self._env_base_url is None:
+            result = provider_adapters.auto_configure(self.DEFAULT_MODEL, bool(env_model))
+            if result is not None:
+                self._env_secret_key = result.api_key
+                self._env_base_url = result.base_url
+                self.ai_provider = result.provider
+                if result.model is not None:
+                    self.model = result.model
 
     def get_ai_provider_name(self) -> str:
         return self.ai_provider.value if self.ai_provider else enums.AIProvider.OPENAI.value
@@ -1641,6 +1646,8 @@ class LLMService(services.AbstractAIService):
                 pass
         if key and not fields_utils.has_invalid_default_config_value(key):
             return key
+        if self._env_secret_key:
+            return self._env_secret_key
         if self._get_base_url():
             # no key and custom base url: use random key
             return uuid.uuid4().hex
