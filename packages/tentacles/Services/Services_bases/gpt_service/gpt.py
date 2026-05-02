@@ -179,7 +179,7 @@ class LLMService(services.AbstractAIService):
         self.last_consumed_token_date: typing.Optional[datetime.date] = None
         
         self._client: typing.Optional[openai.AsyncOpenAI] = None
-        
+
         # MCP discovered tools cache
         self._mcp_tools: list[dict] = []
         self._mcp_clients: list[typing.Any] = []
@@ -187,6 +187,15 @@ class LLMService(services.AbstractAIService):
 
         self.ai_provider = enums.AIProvider.OPENAI
         self._tool_call_json_output: bool = True
+
+        # Nvidia NIM: auto-configure when NVIDIA_NIM_API_KEY is set and no other key/url is configured
+        _nvidia_nim_key = os.getenv("NVIDIA_NIM_API_KEY", None) or None
+        if _nvidia_nim_key and self._env_secret_key is None and self._env_base_url is None:
+            self._env_secret_key = _nvidia_nim_key
+            self._env_base_url = "https://integrate.api.nvidia.com/v1"
+            self.ai_provider = enums.AIProvider.NVIDIA
+            if not env_model:
+                self.model = os.getenv("NVIDIA_NIM_MODEL", self.DEFAULT_MODEL)
 
     def get_ai_provider_name(self) -> str:
         return self.ai_provider.value if self.ai_provider else enums.AIProvider.OPENAI.value

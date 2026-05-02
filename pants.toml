@@ -40,10 +40,11 @@ root_patterns = [
 [python]
 # Python interpreter compatibility
 interpreter_constraints = [">=3.12"]
+enable_resolves = true
 
 # Module mappings for packages with different import names
 [python.resolves_to_interpreter_constraints]
-python-default = ["==3.13"]
+python-default = ["==3.13.*"]
 
 [python-infer]
 # Enable dependency inference
@@ -57,3 +58,4 @@ build_verbose = true
 env_vars.add = [
   "DOCKER_BUILDKIT=1",
 ]
+

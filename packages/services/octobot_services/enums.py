@@ -55,4 +55,5 @@ class AIProvider(enum.Enum):
     GOOGLE = "google"
     MICROSOFT = "microsoft"
     AMAZON = "amazon"
+    NVIDIA = "nvidia"
     OTHER = "other"

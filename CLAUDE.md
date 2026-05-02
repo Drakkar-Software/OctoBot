@@ -2,13 +2,55 @@
 
 ## Environment
 
+### Installing pants
+
+Pants is not bundled. Install the `scie-pants` launcher once (bootstraps pants 2.30.0 from `pants.toml` on first run):
+
 ```bash
-ROOT=$PWD
-export PYTHONPATH="$ROOT:$ROOT/packages:$ROOT/packages/agents:$ROOT/packages/async_channel:$ROOT/packages/backtesting:$ROOT/packages/binary:$ROOT/packages/commons:$ROOT/packages/copy:$ROOT/packages/evaluators:$ROOT/packages/flow:$ROOT/packages/node:$ROOT/packages/services:$ROOT/packages/sync:$ROOT/packages/tentacles:$ROOT/packages/tentacles_manager:$ROOT/packages/trading:$ROOT/packages/trading_backend"
+curl -fsSL https://github.com/pantsbuild/scie-pants/releases/latest/download/scie-pants-linux-x86_64 \
+  -o /usr/local/bin/pants
+chmod +x /usr/local/bin/pants
+pants --version   # triggers bootstrap; prints 2.30.0 when done
 ```
 
-- **Python**: `venv/bin/python` (workspace venv, one level above repo root)
-- PYTHONPATH must be absolute (`$PWD`-based) — build subprocesses run from tentacle subdirectories and need to resolve all packages.
+If the GitHub releases URL is reachable but the internal pex download is not, point pants at a locally cached pex binary by adding to `pants.toml` temporarily (do not commit):
+
+```toml
+[pex-cli]
+url_template = "file:///path/to/pex"
+```
+
+### Python virtualenv
+
+The project uses a pants-managed lockfile resolve. The lockfile is committed at `3rdparty/python/default.lock`. Create the virtualenv from it:
+
+```bash
+pants export --resolve=python-default
+# venv lands at: dist/export/python/virtualenvs/python-default/<python-version>/
+```
+
+Use `dist/export/python/virtualenvs/python-default/*/bin/python` as the interpreter for running and debugging.
+
+To regenerate the lockfile after changing any `requirements.txt` or `full_requirements.txt`:
+
+```bash
+pants generate-lockfiles --resolve=python-default
+```
+
+> **Interpreter constraint**: `pants.toml` pins the resolve to `==3.13.*` (wildcard required — `==3.13` matches only 3.13.0 exactly and rejects 3.13.1+).
+
+### PYTHONPATH
+
+```bash
+ROOT=$PWD
+# Without tentacles (bare start.py, no tentacle features):
+export PYTHONPATH="$ROOT:$ROOT/packages/agents:$ROOT/packages/async_channel:$ROOT/packages/backtesting:$ROOT/packages/binary:$ROOT/packages/commons:$ROOT/packages/copy:$ROOT/packages/evaluators:$ROOT/packages/flow:$ROOT/packages/node:$ROOT/packages/services:$ROOT/packages/sync:$ROOT/packages/tentacles_manager:$ROOT/packages/trading:$ROOT/packages/trading_backend"
+
+# With tentacles (after python start.py tentacles install):
+export PYTHONPATH="$ROOT:$ROOT/packages/agents:$ROOT/packages/async_channel:$ROOT/packages/backtesting:$ROOT/packages/binary:$ROOT/packages/commons:$ROOT/packages/copy:$ROOT/packages/evaluators:$ROOT/packages/flow:$ROOT/packages/node:$ROOT/packages/services:$ROOT/packages/sync:$ROOT/packages/tentacles:$ROOT/packages/tentacles_manager:$ROOT/packages/trading:$ROOT/packages/trading_backend"
+```
+
+PYTHONPATH must use absolute paths (`$PWD`-based) — build subprocesses run from tentacle subdirectories and need to resolve all packages.
 
 ## Tentacles
 

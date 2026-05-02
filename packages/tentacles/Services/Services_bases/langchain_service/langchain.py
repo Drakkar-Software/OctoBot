@@ -86,12 +86,15 @@ def _get_langchain_client(provider: enums.AIProvider):
         elif provider == enums.AIProvider.AMAZON:
             from langchain_aws import ChatBedrock
             LANGCHAIN_CLIENTS[provider] = ChatBedrock
+        elif provider == enums.AIProvider.NVIDIA:
+            from langchain_nvidia_ai_endpoints import ChatNVIDIA
+            LANGCHAIN_CLIENTS[provider] = ChatNVIDIA
         elif provider == enums.AIProvider.OTHER:
             from langchain_openai import ChatOpenAI
             LANGCHAIN_CLIENTS[provider] = ChatOpenAI
         else:
             raise ValueError(f"Unsupported AI provider: {provider}")
-        
+
         return LANGCHAIN_CLIENTS[provider]
     except ImportError as err:
         raise ImportError(
@@ -186,6 +189,14 @@ class LangChainService(services.AbstractAIService):
         self._client: typing.Any = None
         self.ai_provider: enums.AIProvider = enums.AIProvider.OPENAI
         self._base_url: typing.Optional[str] = None
+
+        # Nvidia NIM: auto-configure when NVIDIA_NIM_API_KEY is set and no other key is configured
+        _nvidia_nim_key = os.getenv("NVIDIA_NIM_API_KEY", None) or None
+        if _nvidia_nim_key and self._env_secret_key is None:
+            self._env_secret_key = _nvidia_nim_key
+            self.ai_provider = enums.AIProvider.NVIDIA
+            if not self.model:
+                self.model = os.getenv("NVIDIA_NIM_MODEL", None)
 
     def _load_model_from_config(self):
         if os.getenv(services_constants.ENV_LANGCHAIN_MODEL, None):
@@ -308,11 +319,21 @@ class LangChainService(services.AbstractAIService):
         elif self.ai_provider == enums.AIProvider.AMAZON:
             kwargs.pop("timeout", None)
             kwargs["model_id"] = kwargs.pop("model")
+        elif self.ai_provider == enums.AIProvider.NVIDIA:
+            nvidia_key = api_key or os.getenv("NVIDIA_NIM_API_KEY", "")
+            nvidia_model = use_model or os.getenv("NVIDIA_NIM_MODEL", "")
+            kwargs = {
+                "model": nvidia_model,
+                "nvidia_api_key": nvidia_key,
+                "temperature": 0.2,
+                "top_p": 0.7,
+                "max_tokens": 1024,
+            }
         elif self.ai_provider == enums.AIProvider.OTHER:
             kwargs["api_key"] = api_key or "not-needed"
             if base_url:
                 kwargs["base_url"] = base_url
-        
+
         return ChatModelClass(**kwargs)
 
     def _get_client(self) -> typing.Any:
