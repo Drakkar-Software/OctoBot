@@ -14,104 +14,83 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
-"""Application factory — creates the FastAPI app with all routes."""
-
 import os
+from collections.abc import Callable
 
-import httpx
 from fastapi import FastAPI
 from starfish_server.storage.base import AbstractObjectStore
 from starfish_server.router.route_builder import create_sync_router, SyncRouterOptions
-from starfish_server.replica import ReplicaManager
+from starfish_server.config.schema import ConfigEndpointOptions
 
 import octobot_sync.auth as auth
-import octobot_sync.chain as chain
 import octobot_sync.constants as constants
 import octobot_sync.sync as sync
+
+
+class NamespaceRewriteMiddleware:
+    """Rewrite /<ns>/<ver>/<rest> -> /<ver>/<ns>/<rest>. Mimics the nginx
+    rewrite used in production so signed canonicals match server routes."""
+
+    def __init__(self, app, namespaces: list[str]):
+        self.app = app
+        self.namespaces = list(namespaces)
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "http":
+            path = scope.get("path", "")
+            root_path = scope.get("root_path", "")
+            # Starlette sets root_path to the mount prefix but leaves path unchanged;
+            # effective_path is what Starlette routes against (path minus root_path).
+            if root_path and path.startswith(root_path) and (len(path) == len(root_path) or path[len(root_path)] == "/"):
+                effective = path[len(root_path):] or "/"
+            else:
+                effective = path
+            ver = constants.STARFISH_SERVER_MAJOR_VERSION
+            for ns in self.namespaces:
+                prefix = f"/{ns}/{ver}"
+                if effective == prefix or effective.startswith(prefix + "/"):
+                    rest = effective[len(prefix):]
+                    new_effective = f"/{ver}/{ns}{rest}"
+                    new_path = root_path + new_effective
+                    scope = dict(scope)
+                    scope["path"] = new_path
+                    if scope.get("raw_path") is not None:
+                        scope["raw_path"] = new_path.encode("ascii")
+                    break
+        await self.app(scope, receive, send)
 
 
 def create_app(
     nonce: auth.NonceStore,
     object_store: AbstractObjectStore,
-    registry: chain.ChainRegistry,
     collections_path: str | None = None,
-    primary_url: str | None = None,
-    auth_provider: auth.StarfishAuthProvider | None = None,
-    write_mode: str = "bidirectional",
-    sync_interval_ms: int = 60_000,
-) -> FastAPI:
-    app = FastAPI(title="OctoBot Sync — Signal Sync Server")
-
-    platform_pubkey = os.environ["PLATFORM_PUBKEY_EVM"]
-    encryption_secret = os.environ["ENCRYPTION_SECRET"]
-    platform_encryption_secret = os.environ["PLATFORM_ENCRYPTION_SECRET"]
+    is_allowed: Callable[[str], bool] | None = None,
+    encryption_secret: str | None = None,
+):
+    if encryption_secret is None:
+        encryption_secret = os.environ.get("ENCRYPTION_SECRET")
 
     sync_config = sync.load_sync_config(collections_path)
 
-    replica_manager = None
-    if primary_url:
-        sync_config = sync.make_replica_config(
-            sync_config, primary_url, write_mode, sync_interval_ms,
-        )
+    app = FastAPI(title="OctoBot Sync — Signal Sync Server")
 
-        replica_client = _create_authenticated_client(auth_provider)
-        replica_manager = ReplicaManager(
-            store=object_store,
-            collections=sync_config.collections,
-            client=replica_client,
-        )
-
-    # Starfish sync router (handles all sync collections)
     sync_router = create_sync_router(
         SyncRouterOptions(
             store=object_store,
             config=sync_config,
-            role_resolver=sync.create_role_resolver(registry, nonce, platform_pubkey),
-            role_enricher=sync.create_role_enricher(registry),
+            role_resolver=sync.create_role_resolver(nonce, is_allowed=is_allowed),
             encryption_secret=encryption_secret,
             identity_encryption_info=constants.HKDF_INFO_USER_DATA,
-            server_encryption_secret=platform_encryption_secret,
-            server_identity=platform_pubkey,
-            server_encryption_info=constants.HKDF_INFO_PLATFORM_DATA,
-            signature_verifier=sync.create_signature_verifier(registry),
-            replica_manager=replica_manager,
+            config_endpoint=ConfigEndpointOptions(auth="public"),
         )
     )
-    app.include_router(sync_router, prefix="/v1")
+    app.include_router(sync_router, prefix=f"/{constants.STARFISH_SERVER_MAJOR_VERSION}")
 
     @app.get("/health")
     async def health():
         return {"ok": True}
 
-    if replica_manager:
-        @app.on_event("startup")
-        async def _start_replica():
-            await replica_manager.start()
-
-        @app.on_event("shutdown")
-        async def _stop_replica():
-            await replica_manager.stop()
-
+    namespaces = list((sync_config.namespaces or {}).keys())
+    if namespaces:
+        return NamespaceRewriteMiddleware(app, namespaces=namespaces)
     return app
-
-
-def _create_authenticated_client(
-    auth_provider: auth.StarfishAuthProvider | None,
-) -> httpx.AsyncClient:
-    """Create an httpx client that signs requests using the StarfishAuthProvider."""
-    if auth_provider is None:
-        return httpx.AsyncClient(timeout=30.0)
-
-    async def _auth_hook(request: httpx.Request):
-        body_str = request.content.decode("utf-8") if request.content else None
-        headers = await auth_provider(
-            method=request.method,
-            path=str(request.url.raw_path, "ascii"),
-            body=body_str,
-        )
-        request.headers.update(headers)
-
-    return httpx.AsyncClient(
-        timeout=30.0,
-        event_hooks={"request": [_auth_hook]},
-    )

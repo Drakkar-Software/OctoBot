@@ -25,11 +25,10 @@ import octobot_sync.constants as constants
 
 
 class StarfishAuthProvider:
-    def __init__(self, private_key: str, chain_id: str) -> None:
+    def __init__(self, private_key: str) -> None:
         self._w3 = Web3()
         self._private_key = private_key
         self._address = evm.address_from_evm_key(private_key)
-        self._chain_id = chain_id
 
     @property
     def address(self) -> str:
@@ -54,5 +53,4 @@ class StarfishAuthProvider:
             constants.HEADER_SIGNATURE: signed.signature.hex(),
             constants.HEADER_TIMESTAMP: ts,
             constants.HEADER_NONCE: nonce,
-            constants.HEADER_CHAIN: self._chain_id,
         }

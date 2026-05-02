@@ -21,17 +21,10 @@ import time
 import pytest
 
 import octobot_sync.auth as auth
-import octobot_sync.chain as chain
 import octobot_sync.constants as constants
-import tests.mock_chain as mock_chain_module
-
 
 
 TEST_PUBKEY = "0xTestPubkey1234567890abcdef"
-TEST_ADMIN_PUBKEY = "0xAdminPubkey1234567890abcdef"
-TEST_CHAIN_ID = "mock"
-
-
 
 
 @pytest.fixture
@@ -42,21 +35,6 @@ def memory_storage():
 @pytest.fixture
 def nonce_store(memory_storage):
     return auth.NonceStore(memory_storage)
-
-
-@pytest.fixture
-def mock_chain():
-    return mock_chain_module.MockChain(TEST_CHAIN_ID)
-
-
-@pytest.fixture
-def chain_registry(mock_chain):
-    registry = chain.ChainRegistry()
-    registry.register(mock_chain)
-    return registry
-
-
-
 
 
 class MemoryObjectStore:
@@ -96,29 +74,26 @@ def memory_object_store():
     return MemoryObjectStore()
 
 
-
-
 def make_auth_headers(
-    mock_chain: mock_chain_module.MockChain,
     pubkey: str = TEST_PUBKEY,
     method: str = "GET",
     path: str = "/",
     body: str = "",
-    chain_id: str = TEST_CHAIN_ID,
 ) -> dict[str, str]:
-    """Create valid auth headers and configure the mock chain to accept them."""
+    """Build auth headers with a deterministic fake signature.
+
+    Callers must patch octobot_sync.chain.verify_evm to return True for the
+    canonical string produced by these headers.
+    """
     ts = str(int(time.time() * 1000))
     nonce = f"test-nonce-{time.time()}"
     body_hash = auth.hash_body(body)
     canonical = auth.build_canonical(method, path, ts, nonce, body_hash)
     signature = f"sig-{ts}"
 
-    mock_chain.set_signature_valid(canonical, signature, pubkey, True)
-
     return {
         constants.HEADER_PUBKEY: pubkey,
         constants.HEADER_SIGNATURE: signature,
         constants.HEADER_TIMESTAMP: ts,
         constants.HEADER_NONCE: nonce,
-        constants.HEADER_CHAIN: chain_id,
-    }
+    }, canonical, signature

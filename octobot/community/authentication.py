@@ -681,36 +681,20 @@ class CommunityAuthentication(authentication.Authenticator):
             if self._sync_client is not None:
                 return  # another thread won the race
             try:
-                chain_id = constants.SYNC_CHAIN_ID
                 sync_url = identifiers_provider.IdentifiersProvider.SYNC_SERVER_URL
-                if not sync_url and not constants.ENABLE_REPLICA_SERVER:
+                if not sync_url:
                     self.logger.debug("No sync server URL configured, skipping sync client init")
                     return
                 wallet = self._wallet_backend.get_wallet_for_bot(address)
                 self._sync_client, self._sync_address, self._sync_data_signer = sync_client.create_sync_client(
                     private_key=wallet.private_key,
-                    chain_id=chain_id,
                     sync_url=sync_url,
-                    start_replica_server=constants.ENABLE_REPLICA_SERVER,
-                    replica_port=constants.REPLICA_SERVER_PORT,
-                    replica_write_mode=constants.REPLICA_WRITE_MODE,
-                    replica_sync_interval_ms=constants.REPLICA_SYNC_INTERVAL_MS,
                 )
             except wallet_backend.WalletError as e:
                 self.logger.error(f"Sync client init skipped for {address}: {e}")
             except Exception as e:
                 self.logger.exception(e, True, f"Failed to initialize sync client for wallet {address}: {e}")
                 raise
-
-    def init_sync_client_with_passphrase(self, passphrase: str) -> None:
-        """Initialize the sync client using the admin wallet passphrase."""
-        wallets = self.list_wallets()
-        if not wallets:
-            self.logger.debug("No wallets configured, cannot initialize sync client")
-            return
-        admin = next((w for w in wallets if w.is_admin), wallets[0])
-        self._wallet_backend.authenticate(admin.address, passphrase)
-        self.init_sync_client_for_wallet(admin.address)
 
     def auto_init_sync_client(self) -> bool:
         """Initialize the sync client without passphrase input.
@@ -729,9 +713,8 @@ class CommunityAuthentication(authentication.Authenticator):
             with self._sync_client_lock:
                 if self._sync_client is not None:
                     return True
-                chain_id = constants.SYNC_CHAIN_ID
                 sync_url = identifiers_provider.IdentifiersProvider.SYNC_SERVER_URL
-                if not sync_url and not constants.ENABLE_REPLICA_SERVER:
+                if not sync_url:
                     self.logger.debug(
                         "No sync server URL configured, skipping auto sync client init"
                     )
@@ -739,12 +722,7 @@ class CommunityAuthentication(authentication.Authenticator):
                 self._sync_client, self._sync_address, self._sync_data_signer = (
                     sync_client.create_sync_client(
                         private_key=wallet.private_key,
-                        chain_id=chain_id,
                         sync_url=sync_url,
-                        start_replica_server=constants.ENABLE_REPLICA_SERVER,
-                        replica_port=constants.REPLICA_SERVER_PORT,
-                        replica_write_mode=constants.REPLICA_WRITE_MODE,
-                        replica_sync_interval_ms=constants.REPLICA_SYNC_INTERVAL_MS,
                     )
                 )
             return True

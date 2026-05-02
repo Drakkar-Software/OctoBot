@@ -32,7 +32,7 @@ def wallet():
 
 @pytest.fixture
 def provider(wallet):
-    return auth.StarfishAuthProvider(wallet.private_key, "evm:8453")
+    return auth.StarfishAuthProvider(wallet.private_key)
 
 
 def test_address_matches_private_key(wallet, provider):
@@ -46,7 +46,6 @@ async def test_call_returns_all_headers(provider):
         constants.HEADER_SIGNATURE,
         constants.HEADER_TIMESTAMP,
         constants.HEADER_NONCE,
-        constants.HEADER_CHAIN,
     }
     assert set(headers.keys()) == expected_keys
 

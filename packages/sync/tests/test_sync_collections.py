@@ -85,11 +85,13 @@ def test_fallback_to_default_config():
     """When collections file is missing, DEFAULT_SYNC_CONFIG is returned."""
     config = collections_module.load_sync_config("/nonexistent/path.json")
     assert config.version == 1
-    assert len(config.collections) == 3
-    names = {c.name for c in config.collections}
-    assert names == {"bots", "accounts", "errors"}
-    errors = next(c for c in config.collections if c.name == "errors")
-    assert errors.read_roles == ["self", "admin"]
+    assert config.namespaces is not None
+    ns_collections = config.namespaces["octobot"].collections
+    assert len(ns_collections) == 2
+    names = {c.name for c in ns_collections}
+    assert names == {"user-data", "errors"}
+    errors = next(c for c in ns_collections if c.name == "errors")
+    assert errors.read_roles == ["self"]
     assert errors.write_roles == ["self"]
     assert errors.max_body_bytes == 500_000
     assert errors.encryption == "delegated"

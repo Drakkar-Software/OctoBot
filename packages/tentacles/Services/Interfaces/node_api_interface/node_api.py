@@ -26,6 +26,7 @@ import octobot.community.authentication as community_auth
 import octobot_services.interfaces as services_interfaces
 import octobot_node.config as node_config
 import octobot_node.scheduler as scheduler # noqa: F401
+import octobot_sync.server as sync_server
 
 
 # Service_bases is only needed at runtime, not for build
@@ -92,7 +93,10 @@ class NodeApiInterface(services_interfaces.AbstractInterface):
         host = self.host
         port = self.port
         community_auth.CommunityAuthentication.instance()
-        self.app = self.create_app()
+        sync_encryption_secret = sync_server.get_or_generate_encryption_secret(
+            self.get_bot_api().get_edited_config(dict_only=False)
+        )
+        self.app = self.create_app(sync_encryption_secret=sync_encryption_secret)
         # Set CORS from service config
         cors_origins_str = self.node_api_service.get_backend_cors_origins()
         cors_origins = [i.strip() for i in cors_origins_str.split(",") if i.strip()] if cors_origins_str else []
@@ -114,7 +118,7 @@ class NodeApiInterface(services_interfaces.AbstractInterface):
             self.server.should_exit = True
 
     @classmethod
-    def create_app(cls) -> FastAPI:
+    def create_app(cls, sync_encryption_secret: str | None = None) -> FastAPI:
         @asynccontextmanager
         async def lifespan(app: FastAPI):
             yield
@@ -129,6 +133,20 @@ class NodeApiInterface(services_interfaces.AbstractInterface):
         )
 
         app.include_router(build_api_router(), prefix="/api/v1")
+
+        def _is_community_wallet(address: str) -> bool:
+            return any(
+                w.address.lower() == address
+                for w in community_auth.CommunityAuthentication.instance().list_wallets()
+            )
+
+        app.mount(
+            "/sync",
+            sync_server.build_default_sync_app(
+                is_allowed=_is_community_wallet,
+                encryption_secret=sync_encryption_secret,
+            ),
+        )
 
         # Get the path to the dist folder (works for both development and installed packages)
         dist_dir = get_dist_directory()

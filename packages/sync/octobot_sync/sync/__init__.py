@@ -18,21 +18,15 @@ from octobot_sync.sync import collections
 from octobot_sync.sync.collections import (
     load_sync_config,
     is_replicable_collection,
-    make_replica_config,
 )
 
 from octobot_sync.sync import role_resolver
 from octobot_sync.sync.role_resolver import (
     create_role_resolver,
-    create_role_enricher,
-    create_signature_verifier,
 )
 
 __all__ = [
     "load_sync_config",
     "is_replicable_collection",
-    "make_replica_config",
     "create_role_resolver",
-    "create_role_enricher",
-    "create_signature_verifier",
 ]

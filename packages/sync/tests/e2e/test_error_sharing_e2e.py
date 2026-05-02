@@ -19,24 +19,23 @@
 import os
 import time
 import uuid
+from unittest.mock import patch
 
 import pytest
 from httpx import ASGITransport
 
-from starfish_sdk import StarfishClient, SyncManager
+from octobot_sync.client import StarfishClient, pull_payload
 
 import octobot_sync.app as sync_app
 import octobot_sync.auth as auth
-import octobot_sync.chain as chain
 import octobot_sync.constants as constants
-import tests.mock_chain as mock_chain_module
 from octobot.community.errors_upload.error_sharing import (
     upload_error,
     ERRORS_PULL_PATH_TEMPLATE,
     ERRORS_PUSH_PATH_TEMPLATE,
     ENCRYPTION_INFO,
 )
-from tests.e2e.conftest import ADMIN_PUBKEY, USER_PUBKEY, CHAIN_ID, COLLECTIONS_PATH
+from tests.e2e.conftest import USER_PUBKEY, COLLECTIONS_PATH
 
 pytestmark = pytest.mark.skipif(
     not os.environ.get("S3_ENDPOINT"),
@@ -44,10 +43,8 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-def _make_auth_provider(
-    mock_chain: mock_chain_module.MockChain,
-    pubkey: str,
-):
+def _make_auth_provider(pubkey: str):
+    """Auth provider that builds fake-signed headers; requires verify_evm to be patched."""
     async def auth_provider(
         *, method: str, path: str, body: str | None
     ) -> dict[str, str]:
@@ -56,28 +53,24 @@ def _make_auth_provider(
         body_hash = auth.hash_body(body or "")
         canonical = auth.build_canonical(method, path, ts, nonce, body_hash)
         signature = f"err-sig-{ts}"
-        mock_chain.set_signature_valid(canonical, signature, pubkey, True)
+        auth_provider._last_canonical = canonical
+        auth_provider._last_sig = signature
 
         return {
             constants.HEADER_PUBKEY: pubkey,
             constants.HEADER_SIGNATURE: signature,
             constants.HEADER_TIMESTAMP: ts,
             constants.HEADER_NONCE: nonce,
-            constants.HEADER_CHAIN: CHAIN_ID,
         }
 
     return auth_provider
 
 
 @pytest.fixture
-async def sync_client(s3_store, mock_chain, monkeypatch):
-    monkeypatch.setenv("PLATFORM_PUBKEY_EVM", ADMIN_PUBKEY)
-    monkeypatch.setenv("ENCRYPTION_SECRET", "e2e-encryption-secret")
-    monkeypatch.setenv("PLATFORM_ENCRYPTION_SECRET", "e2e-platform-secret")
-    registry = chain.ChainRegistry()
-    registry.register(mock_chain)
+async def sync_client(s3_store):
     nonce = auth.NonceStore(auth.MemoryStorageAdapter())
-    app = sync_app.create_app(nonce, s3_store, registry, collections_path=COLLECTIONS_PATH)
+    with patch.dict(os.environ, {"ENCRYPTION_SECRET": "e2e-encryption-secret"}):
+        app = sync_app.create_app(nonce, s3_store, collections_path=COLLECTIONS_PATH)
 
     import httpx
 
@@ -85,10 +78,11 @@ async def sync_client(s3_store, mock_chain, monkeypatch):
     http_client = httpx.AsyncClient(transport=transport, base_url="http://test")
     client = StarfishClient(
         base_url="http://test",
-        auth=_make_auth_provider(mock_chain, USER_PUBKEY),
+        auth=_make_auth_provider(USER_PUBKEY),
         client=http_client,
     )
-    yield client
+    with patch("octobot_sync.chain.verify_evm", return_value=True):
+        yield client
     await client.close()
 
 
@@ -141,55 +135,52 @@ async def test_upload_error_decryptable_with_credentials(sync_client):
     salt = result["errorId"]
     error_secret = result["errorSecret"]
 
-    manager = SyncManager(
-        client=sync_client,
+    data = await pull_payload(
+        sync_client,
         pull_path=ERRORS_PULL_PATH_TEMPLATE.format(pubkey=USER_PUBKEY, errorId=salt),
         push_path=ERRORS_PUSH_PATH_TEMPLATE.format(pubkey=USER_PUBKEY, errorId=salt),
         encryption_secret=error_secret,
         encryption_salt=salt,
         encryption_info=ENCRYPTION_INFO,
     )
-    data = await manager.pull()
     assert data["message"] == "decryption test"
     assert data["type"] == "RuntimeError"
     assert data["context"]["exchange"] == "binance"
 
 
-async def test_upload_error_includes_version(sync_client, monkeypatch):
+async def test_upload_error_includes_version(sync_client):
     """Error payload includes the OctoBot version (verifiable after decryption)."""
-    monkeypatch.setattr("octobot.constants.LONG_VERSION", "1.2.3-test")
-    try:
-        raise TypeError("version check")
-    except TypeError as exc:
-        result = await upload_error(sync_client, USER_PUBKEY, exc)
+    with patch("octobot.constants.LONG_VERSION", "1.2.3-test"):
+        try:
+            raise TypeError("version check")
+        except TypeError as exc:
+            result = await upload_error(sync_client, USER_PUBKEY, exc)
 
-    manager = SyncManager(
-        client=sync_client,
+    data = await pull_payload(
+        sync_client,
         pull_path=ERRORS_PULL_PATH_TEMPLATE.format(pubkey=USER_PUBKEY, errorId=result["errorId"]),
         push_path=ERRORS_PUSH_PATH_TEMPLATE.format(pubkey=USER_PUBKEY, errorId=result["errorId"]),
         encryption_secret=result["errorSecret"],
         encryption_salt=result["errorId"],
         encryption_info=ENCRYPTION_INFO,
     )
-    data = await manager.pull()
     assert data["version"] == "1.2.3-test"
 
 
-async def test_upload_error_includes_bot_id(sync_client, monkeypatch):
+async def test_upload_error_includes_bot_id(sync_client):
     """Error payload includes bot_id when COMMUNITY_BOT_ID is set."""
-    monkeypatch.setattr("octobot.constants.COMMUNITY_BOT_ID", "bot-42")
-    try:
-        raise KeyError("bot id check")
-    except KeyError as exc:
-        result = await upload_error(sync_client, USER_PUBKEY, exc)
+    with patch("octobot.constants.COMMUNITY_BOT_ID", "bot-42"):
+        try:
+            raise KeyError("bot id check")
+        except KeyError as exc:
+            result = await upload_error(sync_client, USER_PUBKEY, exc)
 
-    manager = SyncManager(
-        client=sync_client,
+    data = await pull_payload(
+        sync_client,
         pull_path=ERRORS_PULL_PATH_TEMPLATE.format(pubkey=USER_PUBKEY, errorId=result["errorId"]),
         push_path=ERRORS_PUSH_PATH_TEMPLATE.format(pubkey=USER_PUBKEY, errorId=result["errorId"]),
         encryption_secret=result["errorSecret"],
         encryption_salt=result["errorId"],
         encryption_info=ENCRYPTION_INFO,
     )
-    data = await manager.pull()
     assert data["bot_id"] == "bot-42"

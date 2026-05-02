@@ -14,33 +14,16 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-from octobot_sync.chain import interface
-from octobot_sync.chain.interface import (
-    AbstractChain,
-    Item,
-    Wallet,
-)
-
-from octobot_sync.chain import evm
 from octobot_sync.chain.evm import (
-    EvmChain,
+    Wallet,
     create_evm_wallet,
     address_from_evm_key,
     verify_evm,
 )
 
-from octobot_sync.chain import registry
-from octobot_sync.chain.registry import (
-    ChainRegistry,
-)
-
 __all__ = [
-    "AbstractChain",
-    "Item",
     "Wallet",
-    "EvmChain",
     "create_evm_wallet",
     "address_from_evm_key",
     "verify_evm",
-    "ChainRegistry",
 ]

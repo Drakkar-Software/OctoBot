@@ -24,13 +24,9 @@ from httpx import AsyncClient, ASGITransport
 
 import octobot_sync.app as sync_app
 import octobot_sync.auth as auth
-import octobot_sync.chain as chain
-import tests.mock_chain as mock_chain_module
 
-ADMIN_PUBKEY = "0xE2eAdminPubkey"
 USER_PUBKEY = "0xE2eUserPubkey"
 OTHER_PUBKEY = "0xE2eOtherPubkey"
-CHAIN_ID = "mock"
 
 COLLECTIONS_PATH = str(Path(__file__).resolve().parent.parent / "fixtures" / "collections.json")
 
@@ -50,7 +46,7 @@ async def s3_store():
     )
     yield store
     try:
-        for prefix in ("test/", "products/", "users/", "public/", "platform/"):
+        for prefix in ("test/", "users/", "public/"):
             keys = await store.list_keys(prefix)
             if keys:
                 await store.delete_many(keys)
@@ -59,19 +55,10 @@ async def s3_store():
 
 
 @pytest.fixture
-def mock_chain():
-    return mock_chain_module.MockChain(CHAIN_ID)
-
-
-@pytest.fixture
-def app(s3_store, mock_chain, monkeypatch):
-    monkeypatch.setenv("PLATFORM_PUBKEY_EVM", ADMIN_PUBKEY)
+def app(s3_store, monkeypatch):
     monkeypatch.setenv("ENCRYPTION_SECRET", "e2e-encryption-secret")
-    monkeypatch.setenv("PLATFORM_ENCRYPTION_SECRET", "e2e-platform-secret")
-    registry = chain.ChainRegistry()
-    registry.register(mock_chain)
     nonce = auth.NonceStore(auth.MemoryStorageAdapter())
-    return sync_app.create_app(nonce, s3_store, registry, collections_path=COLLECTIONS_PATH)
+    return sync_app.create_app(nonce, s3_store, collections_path=COLLECTIONS_PATH)
 
 
 @pytest.fixture

@@ -28,7 +28,7 @@ pytestmark = pytest.mark.asyncio
 _FAKE_CLIENT = mock.MagicMock()
 _FAKE_ADDRESS = "0xdeadbeef"
 _FAKE_SIGNER = mock.MagicMock()
-_PUSH_RESULT = {"errorId": "test-salt", "errorSecret": "test-secret"}
+_PUSH_RESULT = {"hash": "abc123"}
 
 
 def _make_zip_bytes(filenames: list[str]) -> bytes:
@@ -50,32 +50,31 @@ def mock_client_and_address():
 
 
 @pytest.fixture
-def mock_sync_manager():
-    push_mock = mock.AsyncMock(return_value=_PUSH_RESULT)
-    with mock.patch("octobot.community.errors_upload.error_sharing.SyncManager") as cls:
-        cls.return_value.push = push_mock
-        yield cls, push_mock
+def mock_push():
+    push_mock = mock.AsyncMock(return_value=dict(_PUSH_RESULT))
+    with mock.patch.object(error_sharing.sync_client, "push_payload", push_mock):
+        yield push_mock
 
 
-async def test_upload_error_returns_result(mock_sync_manager):
-    cls, push_mock = mock_sync_manager
+async def test_upload_error_returns_result(mock_push):
     error = ValueError("boom")
 
     result = await error_sharing.upload_error(_FAKE_CLIENT, _FAKE_ADDRESS, error)
 
-    push_mock.assert_awaited_once()
-    payload = push_mock.await_args[0][0]
+    mock_push.assert_awaited_once()
+    _, kwargs = mock_push.call_args
+    payload = kwargs["payload"]
     assert payload["message"] == "boom"
     assert payload["type"] == "ValueError"
     assert "traceback" in payload
     assert "id" in payload
     assert "timestamp" in payload
-    assert result["errorId"] == _PUSH_RESULT["errorId"]
-    assert result["errorSecret"] == _PUSH_RESULT["errorSecret"]
+    assert result["errorId"] is not None
+    assert result["errorSecret"] is not None
+    assert result["hash"] == "abc123"
 
 
-async def test_upload_error_with_context_and_error_id(mock_sync_manager):
-    _, push_mock = mock_sync_manager
+async def test_upload_error_with_context_and_error_id(mock_push):
     error = RuntimeError("ctx error")
     ctx = {"workflow": "abc"}
 
@@ -84,30 +83,30 @@ async def test_upload_error_with_context_and_error_id(mock_sync_manager):
         context=ctx, error_id="fixed-id"
     )
 
-    payload = push_mock.await_args[0][0]
+    _, kwargs = mock_push.call_args
+    payload = kwargs["payload"]
     assert payload["id"] == "fixed-id"
     assert payload["context"] == ctx
     assert result is not None
 
 
 async def test_upload_error_returns_none_on_push_failure():
-    push_mock = mock.AsyncMock(side_effect=Exception("network error"))
-    with mock.patch("octobot.community.errors_upload.error_sharing.SyncManager") as cls:
-        cls.return_value.push = push_mock
-        result = await error_sharing.upload_error(
-            _FAKE_CLIENT, _FAKE_ADDRESS, ValueError("x")
-        )
+    with mock.patch.object(
+        error_sharing.sync_client,
+        "push_payload",
+        mock.AsyncMock(side_effect=Exception("network error")),
+    ):
+        result = await error_sharing.upload_error(_FAKE_CLIENT, _FAKE_ADDRESS, ValueError("x"))
     assert result is None
 
 
 async def test_share_logs_returns_none_when_no_client():
     with mock.patch.object(error_sharing, "_get_client_and_address", return_value=None):
-        result = await error_sharing.share_logs("/tmp/export")
+        result = await error_sharing.share_logs("/tmp/export")  # no passphrase param
     assert result is None
 
 
-async def test_share_logs_uses_make_archive_when_no_log_paths(mock_client_and_address, mock_sync_manager):
-    _, push_mock = mock_sync_manager
+async def test_share_logs_uses_make_archive_when_no_log_paths(mock_client_and_address, mock_push):
     zip_bytes = _make_zip_bytes(["OctoBot.log"])
 
     with (
@@ -119,15 +118,14 @@ async def test_share_logs_uses_make_archive_when_no_log_paths(mock_client_and_ad
         result = await error_sharing.share_logs("/tmp/export")
 
     make_archive.assert_called_once()
-    payload = push_mock.await_args[0][0]
+    _, kwargs = mock_push.call_args
+    payload = kwargs["payload"]
     assert payload["type"] == "logs"
     assert payload["logs_zip_b64"] == base64.b64encode(zip_bytes).decode("ascii")
-    assert result["errorId"] == _PUSH_RESULT["errorId"]
+    assert result["errorId"] is not None
 
 
-async def test_share_logs_zips_provided_log_paths(mock_client_and_address, mock_sync_manager, tmp_path):
-    _, push_mock = mock_sync_manager
-
+async def test_share_logs_zips_provided_log_paths(mock_client_and_address, mock_push, tmp_path):
     log_file = tmp_path / "abc-123.log"
     log_file.write_text("automation log line")
     missing_file = str(tmp_path / "missing.log")
@@ -137,17 +135,18 @@ async def test_share_logs_zips_provided_log_paths(mock_client_and_address, mock_
         log_paths=[str(log_file), missing_file],
     )
 
-    payload = push_mock.await_args[0][0]
+    _, kwargs = mock_push.call_args
+    payload = kwargs["payload"]
     zip_bytes = base64.b64decode(payload["logs_zip_b64"])
     with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
         names = zf.namelist()
 
     assert "abc-123.log" in names
     assert "missing.log" not in names
-    assert result["errorId"] == _PUSH_RESULT["errorId"]
+    assert result["errorId"] is not None
 
 
-async def test_share_logs_with_log_paths_skips_make_archive(mock_client_and_address, mock_sync_manager, tmp_path):
+async def test_share_logs_with_log_paths_skips_make_archive(mock_client_and_address, mock_push, tmp_path):
     log_file = tmp_path / "wf.log"
     log_file.write_text("wf log")
 
@@ -160,15 +159,14 @@ async def test_share_logs_with_log_paths_skips_make_archive(mock_client_and_addr
     make_archive.assert_not_called()
 
 
-async def test_share_logs_with_empty_log_paths(mock_client_and_address, mock_sync_manager, tmp_path):
-    _, push_mock = mock_sync_manager
-
+async def test_share_logs_with_empty_log_paths(mock_client_and_address, mock_push, tmp_path):
     result = await error_sharing.share_logs(
         str(tmp_path / "export"),
         log_paths=[],
     )
 
-    payload = push_mock.await_args[0][0]
+    _, kwargs = mock_push.call_args
+    payload = kwargs["payload"]
     zip_bytes = base64.b64decode(payload["logs_zip_b64"])
     with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
         assert zf.namelist() == []
@@ -179,9 +177,11 @@ async def test_share_logs_returns_none_on_push_failure(mock_client_and_address, 
     log_file = tmp_path / "wf.log"
     log_file.write_text("wf log")
 
-    push_mock = mock.AsyncMock(side_effect=Exception("push failed"))
-    with mock.patch("octobot.community.errors_upload.error_sharing.SyncManager") as cls:
-        cls.return_value.push = push_mock
+    with mock.patch.object(
+        error_sharing.sync_client,
+        "push_payload",
+        mock.AsyncMock(side_effect=Exception("push failed")),
+    ):
         result = await error_sharing.share_logs(
             str(tmp_path / "export"),
             log_paths=[str(log_file)],

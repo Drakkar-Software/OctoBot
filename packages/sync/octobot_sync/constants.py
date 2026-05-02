@@ -19,7 +19,6 @@ MAX_BODY_SIZE_PERFORMANCE = 64 * 1024  # 64 KB — live performance snapshot
 MAX_BODY_SIZE_PRIVATE = 10 * 1024 * 1024  # 10 MB — private documents
 
 HKDF_INFO_USER_DATA = "octobot-sync-user-data"
-HKDF_INFO_PLATFORM_DATA = "octobot-sync-platform-data"
 
 MAX_NONCE_LENGTH = 128
 MAX_PUBKEY_LENGTH = 256
@@ -30,6 +29,7 @@ HEADER_PUBKEY = "X-Starfish-Pubkey"
 HEADER_SIGNATURE = "X-Starfish-Signature"
 HEADER_TIMESTAMP = "X-Starfish-Timestamp"
 HEADER_NONCE = "X-Starfish-Nonce"
-HEADER_CHAIN = "X-Starfish-Chain"
 COLLECTIONS_FILE = "collections.json"
 SYNC_NAMESPACE = "octobot"
+DEFAULT_ENCRYPTION_INFO = "starfish-e2e"
+STARFISH_SERVER_MAJOR_VERSION = "v1"

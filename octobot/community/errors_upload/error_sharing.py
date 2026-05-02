@@ -16,7 +16,6 @@
 
 import base64
 import os
-import secrets
 import shutil
 import time
 import traceback
@@ -27,7 +26,7 @@ from typing import Any
 import octobot_commons.authentication as authentication
 import octobot_commons.logging as logging
 
-from starfish_sdk import StarfishClient, SyncManager
+import octobot_sync.client as sync_client
 
 import octobot.constants
 
@@ -38,25 +37,15 @@ ERRORS_PULL_PATH_TEMPLATE = "/v1/pull/users/{pubkey}/errors/{errorId}"
 ENCRYPTION_INFO = "octobot-error-data"
 
 
-def _get_client_and_address(passphrase: str | None = None) -> tuple[StarfishClient, str, any] | None:
+def _get_client_and_address() -> tuple[sync_client.StarfishClient, str, any] | None:
     authenticator = authentication.Authenticator.get_instance_if_exists()
-    if authenticator is None:
-        return None
-    if passphrase:
-        authenticator.init_sync_client_with_passphrase(passphrase)
-    if authenticator._sync_client is None:
+    if authenticator is None or authenticator._sync_client is None:
         return None
     return authenticator._sync_client, authenticator._sync_address, authenticator._sync_data_signer
 
 
-def _generate_credentials() -> tuple[str, str]:
-    error_secret = secrets.token_hex(32)
-    salt = secrets.token_hex(16)
-    return error_secret, salt
-
-
 async def upload_error(
-    client: StarfishClient,
+    client: sync_client.StarfishClient,
     address: str,
     error: Exception,
     *,
@@ -64,7 +53,7 @@ async def upload_error(
     error_id: str | None = None,
     sign_data=None,
 ) -> dict[str, Any] | None:
-    error_secret, salt = _generate_credentials()
+    error_secret, salt = sync_client.generate_share_credentials()
     push_path = ERRORS_PUSH_PATH_TEMPLATE.format(pubkey=address, errorId=salt)
     pull_path = ERRORS_PULL_PATH_TEMPLATE.format(pubkey=address, errorId=salt)
 
@@ -82,16 +71,16 @@ async def upload_error(
         payload["context"] = context
 
     try:
-        manager = SyncManager(
-            client=client,
-            pull_path=pull_path,
+        result = await sync_client.push_payload(
+            client,
             push_path=push_path,
+            pull_path=pull_path,
             encryption_secret=error_secret,
             encryption_salt=salt,
+            payload=payload,
             encryption_info=ENCRYPTION_INFO,
             sign_data=sign_data,
         )
-        result = await manager.push(payload)
         if result is not None:
             result["errorId"] = salt
             result["errorSecret"] = error_secret
@@ -103,16 +92,15 @@ async def upload_error(
 
 async def share_logs(
     export_path: str,
-    passphrase: str | None = None,
     log_paths: list[str] | None = None,
 ) -> dict[str, Any] | None:
-    result = _get_client_and_address(passphrase)
+    result = _get_client_and_address()
     if result is None:
         logger.warning("Cannot share logs: no sync client configured")
         return None
     client, address, data_signer = result
 
-    error_secret, salt = _generate_credentials()
+    error_secret, salt = sync_client.generate_share_credentials()
     push_path = ERRORS_PUSH_PATH_TEMPLATE.format(pubkey=address, errorId=salt)
     pull_path = ERRORS_PULL_PATH_TEMPLATE.format(pubkey=address, errorId=salt)
 
@@ -143,16 +131,16 @@ async def share_logs(
         payload["bot_id"] = octobot.constants.COMMUNITY_BOT_ID
 
     try:
-        manager = SyncManager(
-            client=client,
-            pull_path=pull_path,
+        result = await sync_client.push_payload(
+            client,
             push_path=push_path,
+            pull_path=pull_path,
             encryption_secret=error_secret,
             encryption_salt=salt,
+            payload=payload,
             encryption_info=ENCRYPTION_INFO,
             sign_data=data_signer,
         )
-        result = await manager.push(payload)
         if result is not None:
             result["errorId"] = salt
             result["errorSecret"] = error_secret
