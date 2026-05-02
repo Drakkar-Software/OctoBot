@@ -23,6 +23,7 @@ import mock
 import octobot_commons.constants as commons_constants
 import octobot_trading.constants as trading_constants
 import octobot_trading.enums as trading_enums
+import octobot_trading.personal_data.orders.order_util as order_util
 
 import octobot_copy.constants as copy_constants
 import octobot_copy.entities as copy_entities
@@ -656,3 +657,120 @@ class TestMissedHistoricalSignalsGraceAbort:
 
         asyncio.run(run_grace())
         exchange_if.orders.cancel_order.assert_called_once_with(mirror_m2)
+
+
+class TestMirroredOrderSelfLockCreditCompute:
+    """open_mirrored_order credits this line's locked funds so repeat sync does not false quantity mismatch."""
+
+    @staticmethod
+    def _exchange_interface_for_compute(
+        *,
+        total_symbol: decimal.Decimal,
+        total_market: decimal.Decimal,
+        available_symbol: decimal.Decimal,
+        available_market: decimal.Decimal,
+        mark_price: decimal.Decimal,
+    ):
+        symbol_market = mock.Mock()
+        market_quantity_total = total_market / mark_price if mark_price else trading_constants.ZERO
+        market_quantity_available = (
+            available_market / mark_price if mark_price else trading_constants.ZERO
+        )
+        total_row = (
+            total_symbol,
+            total_market,
+            market_quantity_total,
+            mark_price,
+            symbol_market,
+        )
+        available_row = (
+            available_symbol,
+            available_market,
+            market_quantity_available,
+            mark_price,
+            symbol_market,
+        )
+        exchange_if = mock.MagicMock()
+        # Each _compute_mirrored_quantity_type_and_price calls get_pre_order_data twice (TOTAL then AVAILABLE).
+        exchange_if.orders.get_pre_order_data = mock.AsyncMock(
+            side_effect=[total_row, available_row, total_row, available_row]
+        )
+        exchange_if.orders.check_and_adapt_order_details_if_necessary = mock.Mock(
+            side_effect=lambda symbol, quantity, limit_price: ([(quantity, limit_price)], symbol_market)
+        )
+        exchange_if.orders.get_order_locked_amount = order_util.get_order_locked_amount
+        exchange_if.market.is_market_open_for_order_type = mock.Mock(return_value=True)
+        return exchange_if
+
+    def test_buy_open_mirrored_order_adds_locked_quote_to_cap(self):
+        mark_price = decimal.Decimal("2000")
+        exchange_if = self._exchange_interface_for_compute(
+            total_symbol=decimal.Decimal("2"),
+            total_market=decimal.Decimal("10000"),
+            available_symbol=decimal.Decimal("0.25"),
+            available_market=decimal.Decimal("500"),
+            mark_price=mark_price,
+        )
+        synchronizer = orders_synchronizer_module.OrdersSynchronizer(
+            copy_entities.Account(content={}, orders=[]),
+            exchange_if,
+            copy_entities.AccountCopySettings(),
+        )
+        open_buy = mock.Mock()
+        open_buy.side = trading_enums.TradeOrderSide.BUY
+        open_buy.symbol = "ETH/USDT"
+        open_buy.origin_price = mark_price
+        open_buy.get_locked_quantity = mock.Mock(return_value=decimal.Decimal("0.75"))
+        open_buy.get_computed_fee = mock.Mock(return_value=None)
+
+        async def run_compute(open_order):
+            return await synchronizer._compute_mirrored_quantity_type_and_price(
+                "ETH/USDT",
+                trading_enums.TradeOrderSide.BUY,
+                decimal.Decimal("1"),
+                mark_price,
+                trading_enums.TraderOrderType.BUY_LIMIT,
+                open_mirrored_order=open_order,
+            )
+
+        ideal_without, _, _, _ = asyncio.run(run_compute(None))
+        ideal_with, _, _, _ = asyncio.run(run_compute(open_buy))
+        assert ideal_without == decimal.Decimal("0.25")
+        assert ideal_with == decimal.Decimal("1")
+
+    def test_sell_open_mirrored_order_adds_locked_base_to_cap(self):
+        mark_price = decimal.Decimal("2000")
+        exchange_if = self._exchange_interface_for_compute(
+            total_symbol=decimal.Decimal("10"),
+            total_market=decimal.Decimal("10000"),
+            available_symbol=decimal.Decimal("0.05"),
+            available_market=decimal.Decimal("500"),
+            mark_price=mark_price,
+        )
+        synchronizer = orders_synchronizer_module.OrdersSynchronizer(
+            copy_entities.Account(content={}, orders=[]),
+            exchange_if,
+            copy_entities.AccountCopySettings(),
+        )
+        open_sell = mock.Mock()
+        open_sell.side = trading_enums.TradeOrderSide.SELL
+        open_sell.symbol = "ETH/USDT"
+        open_sell.origin_price = mark_price
+        open_sell.get_locked_quantity = mock.Mock(return_value=decimal.Decimal("1"))
+        open_sell.get_computed_fee = mock.Mock(return_value=None)
+
+        async def run_compute(open_order, scaled):
+            return await synchronizer._compute_mirrored_quantity_type_and_price(
+                "ETH/USDT",
+                trading_enums.TradeOrderSide.SELL,
+                scaled,
+                mark_price,
+                trading_enums.TraderOrderType.SELL_LIMIT,
+                open_mirrored_order=open_order,
+            )
+
+        scaled = decimal.Decimal("2")
+        ideal_without, _, _, _ = asyncio.run(run_compute(None, scaled))
+        ideal_with, _, _, _ = asyncio.run(run_compute(open_sell, scaled))
+        assert ideal_without == decimal.Decimal("2")
+        assert ideal_with == decimal.Decimal("1.05")

@@ -204,6 +204,16 @@ class OrdersInterface:
             target_price=target_price,
         )
 
+    def get_order_locked_amount(
+        self,
+        order: trading_personal_data.Order,
+        force_use_origin_quantity_and_price: bool = False,
+    ) -> decimal.Decimal:
+        return order_util.get_order_locked_amount(
+            order,
+            force_use_origin_quantity_and_price=force_use_origin_quantity_and_price,
+        )
+
     def get_futures_max_order_size(
         self,
         symbol: str,

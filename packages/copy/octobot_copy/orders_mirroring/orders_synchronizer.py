@@ -813,6 +813,7 @@ class OrdersSynchronizer:
             scaled_quantity,
             order_target_price,
             trader_order_type,
+            open_mirrored_order=existing,
         )
         if ideal_quantity <= trading_constants.ZERO:
             self._get_logger().error(
@@ -890,10 +891,15 @@ class OrdersSynchronizer:
         scaled_quantity: decimal.Decimal,
         order_target_price: decimal.Decimal,
         trader_order_type: trading_enums.TraderOrderType,
+        open_mirrored_order: typing.Optional[trading_personal_data.Order] = None,
     ) -> tuple[decimal.Decimal, trading_enums.TraderOrderType, decimal.Decimal, decimal.Decimal]:
+        # Buys cap using free quote for new orders (sibling buys reserve quote). When re-checking an open
+        # mirrored buy, add this order's locked quote back so ideal size matches portfolio semantics.
+        # New sells use total base (sibling sell locks still count). Open mirrored sells use available
+        # base plus this order's locked base for the same reason as buys.
         (
             total_symbol_holding,
-            total_market_holding,
+            _total_market_holding,
             _market_quantity,
             current_price,
             _symbol_market,
@@ -901,6 +907,17 @@ class OrdersSynchronizer:
             symbol=symbol,
             timeout=trading_constants.ORDER_DATA_FETCHING_TIMEOUT,
             portfolio_type=commons_constants.PORTFOLIO_TOTAL,
+        )
+        (
+            available_symbol_holding,
+            available_market_holding,
+            _available_market_quantity,
+            _unused_price,
+            _unused_symbol_market,
+        ) = await self._exchange_interface.orders.get_pre_order_data(
+            symbol=symbol,
+            timeout=trading_constants.ORDER_DATA_FETCHING_TIMEOUT,
+            portfolio_type=commons_constants.PORTFOLIO_AVAILABLE,
         )
         effective_target_price = (
             order_target_price
@@ -926,12 +943,28 @@ class OrdersSynchronizer:
             else effective_target_price
         )
         if side is trading_enums.TradeOrderSide.BUY:
+            quote_for_cap = available_market_holding
+            if (
+                open_mirrored_order is not None
+                and open_mirrored_order.side is trading_enums.TradeOrderSide.BUY
+            ):
+                quote_for_cap = available_market_holding + self._exchange_interface.orders.get_order_locked_amount(
+                    open_mirrored_order
+                )
             target_quantity = min(
                 scaled_quantity,
-                total_market_holding / effective_target_price
+                quote_for_cap / effective_target_price
                 if effective_target_price
                 else scaled_quantity,
             )
+        elif (
+            open_mirrored_order is not None
+            and open_mirrored_order.side is trading_enums.TradeOrderSide.SELL
+        ):
+            base_budget = available_symbol_holding + self._exchange_interface.orders.get_order_locked_amount(
+                open_mirrored_order
+            )
+            target_quantity = min(scaled_quantity, base_budget)
         else:
             target_quantity = min(scaled_quantity, total_symbol_holding)
         if target_quantity <= trading_constants.ZERO:

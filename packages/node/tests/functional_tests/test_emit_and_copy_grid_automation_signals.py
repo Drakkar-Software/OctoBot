@@ -15,12 +15,12 @@
 from __future__ import annotations
 
 import asyncio
-import contextlib
-import copy as copy_stdlib
 import decimal
 import json
 import logging
 import mock
+import os
+import tempfile
 import time
 import typing
 
@@ -38,13 +38,19 @@ from tests.scheduler import temp_dbos_scheduler
 IMPORTED_OCTOBOT_FLOW_GRID_DEPS = False
 if grid_sim_util.IMPORTED_OCTOBOT_FLOW_GRID_DEPS:
     try:
+        import octobot.community.local_authenticator as local_authenticator_module
         import octobot_commons.constants as octobot_commons_constants_module
+        import octobot_commons.os_util as commons_os_util_module
         import octobot_copy.constants as octobot_copy_constants_module
-        import octobot_flow
         import octobot_flow.entities as octobot_flow_entities
         import octobot_flow.repositories.community as octobot_flow_repositories_community_module
         import octobot_flow.repositories.exchange as octobot_flow_repositories_exchange_module
         import octobot_trading.enums as trading_enums_module
+        import octobot_sync.constants as octobot_sync_constants_module
+        import octobot_sync.server as octobot_sync_server_module
+        import octobot_sync.sync.collections as sync_collections_module
+        import fastapi as fastapi_module
+        import uvicorn
         IMPORTED_OCTOBOT_FLOW_GRID_DEPS = True
     except ImportError:
         octobot_flow = None  # type: ignore
@@ -53,6 +59,13 @@ if grid_sim_util.IMPORTED_OCTOBOT_FLOW_GRID_DEPS:
         octobot_flow_entities = None  # type: ignore
         octobot_flow_repositories_exchange_module = None  # type: ignore
         octobot_flow_repositories_community_module = None  # type: ignore
+        local_authenticator_module = None  # type: ignore
+        commons_os_util_module = None  # type: ignore
+        octobot_sync_constants_module = None  # type: ignore
+        octobot_sync_server_module = None  # type: ignore
+        sync_collections_module = None  # type: ignore
+        fastapi_module = None  # type: ignore
+        uvicorn = None  # type: ignore
 
 
 _MASTER_AUTOMATION_ID = "master_emit_grid"
@@ -65,18 +78,44 @@ _COPY_INIT_USDC = 2000.0
 _T_ENQUEUE_SECONDS = 5.0
 _T_GRID_SECONDS = 25.0
 _T_BOOTSTRAP_COPY_SECONDS = 25.0
-_T_POST_SHOCK_SECONDS = 35.0
+_T_POST_SHOCK_SECONDS = 55.0
 _T_STOP_SEND_SECONDS = 5.0
 _T_STOP_COMPLETE_SECONDS = 15.0
 
 _D_DECIMAL_INCREMENT = decimal.Decimal(str(grid_sim_util.GRID_INCREMENT))
 
+# Fixed 32-byte secret (hex) for local Starfish identity-encrypted collections; not used outside this test.
+_FUNCTIONAL_TEST_SYNC_ENCRYPTION_SECRET = "0123456789abcdef" * 4
+
 
 if IMPORTED_OCTOBOT_FLOW_GRID_DEPS:
 
-    @contextlib.asynccontextmanager
-    async def _fake_maybe_authenticator(self):  # type: ignore[no-untyped-def]
-        yield mock.MagicMock()
+    def _grid_functional_test_sync_config():
+        """Package default sync config plus a collection for ``TradingSignalsRepository`` HTTP paths."""
+        base_config = sync_collections_module.DEFAULT_SYNC_CONFIG
+        sync_namespace_key = sync_collections_module.constants.SYNC_NAMESPACE
+        octobot_namespace = base_config.namespaces[sync_namespace_key]
+        trading_signals_collection = sync_collections_module.CollectionConfig(
+            name="trading-signals",
+            storagePath="products/{strategyId}/signals/{version}",
+            # OctoBot-Sync ``create_role_resolver`` grants role ``user`` (``self`` is only
+            # added for paths that include ``{identity}`` matching the caller).
+            readRoles=["user"],
+            writeRoles=["user"],
+            encryption="identity",
+            maxBodyBytes=octobot_sync_constants_module.MAX_BODY_SIZE_SIGNAL,
+        )
+        extended_octobot = sync_collections_module.NamespaceConfig(
+            collections=[*octobot_namespace.collections, trading_signals_collection],
+        )
+        return base_config.model_copy(
+            update={
+                "namespaces": {
+                    **base_config.namespaces,
+                    sync_namespace_key: extended_octobot,
+                }
+            }
+        )
 
     def _empty_copy_exchange_account_action_dict() -> dict[str, typing.Any]:
         return {
@@ -246,6 +285,81 @@ if IMPORTED_OCTOBOT_FLOW_GRID_DEPS:
         assert sells, "expected at least one open sell limit"
         return sells[0]
 
+    def _first_fetched_trading_signal(fetched: list[typing.Any]) -> octobot_flow_entities.TradingSignal:
+        assert fetched, "expected fetch_trading_signals to return at least one entry"
+        entry = fetched[0]
+        if isinstance(entry, list):
+            assert entry, "expected non-empty signals list in fetch payload"
+            return entry[-1]
+        return entry
+
+    def _sorted_limit_prices_from_trading_signal_account(
+        trading_signal: octobot_flow_entities.TradingSignal,
+        *,
+        trade_order_side,
+    ) -> list[decimal.Decimal]:
+        wrapper = {"orders": {"open_orders": trading_signal.account.orders}}
+        return _sorted_limit_prices_from_elements(wrapper, trade_order_side=trade_order_side)
+
+    async def _fetch_strategy_signals_from_sync(wallet_address: str) -> list[typing.Any]:
+        async with local_authenticator_module.local_user_authenticator() as auth:
+            repository = octobot_flow_repositories_community_module.TradingSignalsRepository.from_community_repository(
+                octobot_flow_repositories_community_module.CommunityRepository(auth, wallet_address)
+            )
+            return await repository.fetch_trading_signals(
+                [_SHARED_STRATEGY_ID],
+                octobot_copy_constants_module.DEFAULT_MISSED_SIGNALS_GRACE_ABORT_THRESHOLD,
+            )
+
+    def _ladder_limit_prices_match_reference(
+        trading_signal: octobot_flow_entities.TradingSignal,
+        reference_exchange_account_elements: typing.Any,
+    ) -> tuple[bool, str]:
+        mismatch_parts: list[str] = []
+        for order_side in (
+            trading_enums_module.TradeOrderSide.BUY,
+            trading_enums_module.TradeOrderSide.SELL,
+        ):
+            reference_prices = _sorted_limit_prices_from_elements(
+                reference_exchange_account_elements,
+                trade_order_side=order_side,
+            )
+            pulled_prices = _sorted_limit_prices_from_trading_signal_account(
+                trading_signal,
+                trade_order_side=order_side,
+            )
+            if reference_prices != pulled_prices:
+                mismatch_parts.append(
+                    f"{order_side.value}: ref={reference_prices!s} pulled={pulled_prices!s}"
+                )
+        if not mismatch_parts:
+            return True, ""
+        return False, "; ".join(mismatch_parts)
+
+    async def _poll_fetched_trading_signal_until_ladder_matches(
+        wallet_address: str,
+        reference_exchange_account_elements: typing.Any,
+        deadline_seconds: float,
+        failure_label: str,
+    ) -> octobot_flow_entities.TradingSignal:
+        """Wait until ``fetch_trading_signals`` matches the reference ladder (upload can lag the reader)."""
+        poll_interval = grid_sim_util.DEFAULT_GRID_WORKFLOW_POLL_INTERVAL_SECONDS
+        poll_deadline = time.monotonic() + deadline_seconds
+        last_mismatch = ""
+        while time.monotonic() < poll_deadline:
+            fetched_batch = await _fetch_strategy_signals_from_sync(wallet_address)
+            if fetched_batch:
+                candidate_signal = _first_fetched_trading_signal(fetched_batch)
+                matches, detail = _ladder_limit_prices_match_reference(
+                    candidate_signal,
+                    reference_exchange_account_elements,
+                )
+                if matches:
+                    return candidate_signal
+                last_mismatch = detail
+            await asyncio.sleep(poll_interval)
+        pytest.fail(f"Timed out waiting for {failure_label} ({last_mismatch})")
+
     async def _poll_state_reader_until(
         scheduler,
         automation_id: str,
@@ -302,9 +416,10 @@ class TestEmitAndCopyGridAutomationSignals:
         self, temp_dbos_scheduler, caplog
     ):
         """
-        Master grid emits signals → copy bootstraps from mocked fetch_trading_signals → BTC price spikes,
-        master's forced_trigger refills ladder and emits → internal trading signal channel notifies copy →
-        copy mirrors master's open-limit prices; then both automations stop cleanly.
+        Master grid uploads trading signals to a local OctoBot-Sync server; copy bootstraps via real
+        fetch_trading_signals from that server. After a forced trigger and price shock, the sync snapshot
+        matches the master's ladder; copy mirrors master via the internal trading-signal channel; both
+        automations stop cleanly.
         """
         # Deterministic ticker/OHLCV close; bumped later past the lowest sell so that limit can fill.
         simulated_close: dict[str, float] = {"value": float(grid_sim_util.FIXED_BTC_USDC_CLOSE)}
@@ -315,223 +430,258 @@ class TestEmitAndCopyGridAutomationSignals:
             lambda: simulated_close["value"]
         )
 
-        captured_signals: list[octobot_flow_entities.TradingSignal] = []
-        bootstrap_holder: dict[str, typing.Optional[octobot_flow_entities.TradingSignal]] = {"value": None}
-        original_insert = octobot_flow_repositories_community_module.TradingSignalsRepository.insert_trading_signal
-
-        # Preserve real insert logic (broadcast on internal channel) while recording payloads for bootstrap fetch wiring.
-        async def _recording_insert_trading_signal(self, trading_signal: octobot_flow_entities.TradingSignal):
-            captured_signals.append(trading_signal)
-            return await original_insert(self, trading_signal)
-
-        async def _fetch_side_effect(strategy_ids: list[str], history_size: int):
-            # Until bootstrap is seeded, imitate an empty Starfish pull — copy waits for server signals only after freeze.
-            if bootstrap_holder["value"] is None:
-                return []
-            return [copy_stdlib.deepcopy(bootstrap_holder["value"])]
-
-        upload_trading_signal_mock = mock.AsyncMock()
-        fetch_trading_signals_mock = mock.AsyncMock(side_effect=_fetch_side_effect)
-
+        wallet_address = grid_sim_util.SIMULATOR_GRID_TEST_COMMUNITY_WALLET_ADDRESS
         master_task = octobot_node.models.Task(
             name="test_master_emit_grid",
             content=json.dumps({"state": _build_master_grid_state_dict()}),
             type=octobot_node.models.TaskType.EXECUTE_ACTIONS.value,
-            wallet_address=grid_sim_util.SIMULATOR_GRID_TEST_COMMUNITY_WALLET_ADDRESS,
+            wallet_address=wallet_address,
         )
         copy_task = octobot_node.models.Task(
             name="test_copy_grid_follower",
             content=json.dumps({"state": _build_copy_state_dict()}),
             type=octobot_node.models.TaskType.EXECUTE_ACTIONS.value,
-            wallet_address=grid_sim_util.SIMULATOR_GRID_TEST_COMMUNITY_WALLET_ADDRESS,
+            wallet_address=wallet_address,
         )
 
-        # Subscribe internal trading-signal consumer; tear down channel in ``finally``.
         await internal_trading_signals_module.subscribe_internal_trading_signal_consumer()
         try:
-            # Prices patched; `_upload_trading_signal` skips server sync; inserts still hit internal channel (`send_*` untouched).
-            with (
-                mock.patch.object(
-                    octobot_flow_repositories_exchange_module.TickersRepository,
-                    "fetch_tickers",
-                    new=patched_fetch_tickers,
-                ),
-                mock.patch.object(
-                    octobot_flow_repositories_exchange_module.OhlcvRepository,
-                    "fetch_ohlcv",
-                    side_effect=patched_fetch_ohlcv,
-                ),
-                mock.patch.object(
-                    octobot_flow_repositories_community_module.TradingSignalsRepository,
-                    "_upload_trading_signal",
-                    upload_trading_signal_mock,
-                ),
-                mock.patch.object(
-                    octobot_flow_repositories_community_module.TradingSignalsRepository,
-                    "fetch_trading_signals",
-                    fetch_trading_signals_mock,
-                ),
-                mock.patch.object(
-                    octobot_flow_repositories_community_module.TradingSignalsRepository,
-                    "insert_trading_signal",
-                    _recording_insert_trading_signal,
-                ),
-                mock.patch.object(octobot_flow.AutomationJob, "_maybe_authenticator", _fake_maybe_authenticator),
-            ):
-                caplog.set_level(logging.INFO)
-                try:
-                    # Step 1 — enqueue master emitting grid signals; freeze last captured signal into fetch mock bootstrap.
-                    await asyncio.wait_for(
-                        octobot_node.scheduler.tasks.trigger_task(master_task),
-                        timeout=_T_ENQUEUE_SECONDS,
-                    )
-                except TimeoutError as exc:
-                    raise AssertionError("trigger_task timed out enqueueing master workflow") from exc
+            with tempfile.TemporaryDirectory() as tmp_root:
+                sync_data_dir = os.path.join(tmp_root, "sync_data")
+                os.makedirs(sync_data_dir, exist_ok=True)
+                wallet_file_path = os.path.join(tmp_root, "wallets.json")
+                previous_sync_data_dir = os.environ.get("SYNC_DATA_DIR")
+                os.environ["SYNC_DATA_DIR"] = sync_data_dir
 
-                master_reader = await _poll_state_reader_until(
-                    temp_dbos_scheduler,
-                    _MASTER_AUTOMATION_ID,
-                    lambda reader: grid_sim_util.is_simulator_grid_baseline_at_least_one_trade(
-                        *grid_sim_util.buy_sell_trade_counts_from_exchange_elements(
-                            reader.state.automation.exchange_account_elements
+                listen_port = commons_os_util_module.find_first_free_listen_port_after_base(
+                    "127.0.0.1",
+                    31000,
+                    max_offset=256,
+                )
+                sync_url = f"http://127.0.0.1:{listen_port}"
+
+                # A user ``~/.octobot/collections.json`` can omit ``namespaces``; then
+                # ``NamespaceRewriteMiddleware`` is not applied and Starfish paths
+                # ``/octobot/v1/...`` never match (HTTP 404). Use the package default
+                # so the ``octobot`` namespace and rewrite are always active.
+                with mock.patch(
+                    "octobot_sync.app.sync.load_sync_config",
+                    return_value=_grid_functional_test_sync_config(),
+                ):
+                    sync_asgi_app = octobot_sync_server_module.build_default_sync_app(
+                        is_allowed=lambda _address: True,
+                        encryption_secret=_FUNCTIONAL_TEST_SYNC_ENCRYPTION_SECRET,
+                    )
+                    # StarfishClient builds URLs as ``{base}/sync/{namespace}/v1/...`` (see starfish_sdk ``_send_path``).
+                    # Match ``node_api`` by mounting the sync app at ``/sync``.
+                    root_app = fastapi_module.FastAPI()
+                    root_app.mount("/sync", sync_asgi_app)
+                    uvicorn_server = uvicorn.Server(
+                        uvicorn.Config(
+                            root_app,
+                            host="127.0.0.1",
+                            port=listen_port,
+                            log_level="warning",
                         )
-                    ),
-                    _T_GRID_SECONDS,
-                    "master baseline grid (2 buy, 2 sell, >=1 trade)",
-                )
-                master_elements = master_reader.state.automation.exchange_account_elements
-                buy_b, sell_b, trade_b = grid_sim_util.buy_sell_trade_counts_from_exchange_elements(
-                    master_elements
-                )
-                assert grid_sim_util.is_simulator_grid_baseline_at_least_one_trade(buy_b, sell_b, trade_b)
-
-                assert captured_signals, "expected master to emit at least one trading signal before copy starts"
-                bootstrap_holder["value"] = copy_stdlib.deepcopy(captured_signals[-1])
-                bootstrap_signal = bootstrap_holder["value"]
-                assert bootstrap_signal.strategy_id == _SHARED_STRATEGY_ID
-                bootstrap_account = bootstrap_signal.account
-                assert bootstrap_account.content, "bootstrap signal should snapshot portfolio content"
-                assert {"BTC", "USDC"} == set(bootstrap_account.content.keys())
-                assert bootstrap_account.orders, "bootstrap signal should include open ladder orders"
-                assert len(bootstrap_account.orders) == 4
-
-                upload_trading_signal_mock.assert_awaited_with(bootstrap_signal)
-                baseline_upload_count = upload_trading_signal_mock.await_count
-
-                # Step 2 — enqueue copy fed by mocked fetch_trading_signals return value (mirroring server pull semantics).
-                try:
-                    await asyncio.wait_for(
-                        octobot_node.scheduler.tasks.trigger_task(copy_task),
-                        timeout=_T_ENQUEUE_SECONDS,
                     )
-                except TimeoutError as exc:
-                    raise AssertionError("trigger_task timed out enqueueing copy workflow") from exc
-
-                copy_reader = await _poll_state_reader_until(
-                    temp_dbos_scheduler,
-                    _COPY_AUTOMATION_ID,
-                    lambda reader: grid_sim_util.is_simulator_grid_baseline_at_least_one_trade(
-                        *grid_sim_util.buy_sell_trade_counts_from_exchange_elements(
-                            reader.state.automation.exchange_account_elements
-                        )
-                    ),
-                    _T_BOOTSTRAP_COPY_SECONDS,
-                    "copy baseline grid mirroring master",
-                )
-                _assert_open_limit_prices_match_reference(
-                    master_reader.state.automation.exchange_account_elements,
-                    copy_reader.state.automation.exchange_account_elements,
-                )
-                _assert_btc_usdc_value_shares_match_reference(
-                    master_reader.state.automation.exchange_account_elements,
-                    copy_reader.state.automation.exchange_account_elements,
-                    btc_usdc_close=decimal.Decimal(str(simulated_close["value"])),
-                )
-
-                fetch_trading_signals_mock.assert_awaited_once_with(
-                    [_SHARED_STRATEGY_ID],
-                    octobot_copy_constants_module.DEFAULT_MISSED_SIGNALS_GRACE_ABORT_THRESHOLD,
-                )
-
-                caplog.clear()
-
-                # Step 3 — raise mock spot between first sell and neighbour; force-trigger master DAG against new price path.
-                first_sell_price = _first_sell_limit_price(master_reader.state.automation.exchange_account_elements)
-                simulated_close["value"] = float(first_sell_price + _D_DECIMAL_INCREMENT / decimal.Decimal("2"))
-
+                serve_task = asyncio.create_task(uvicorn_server.serve())
+                await asyncio.sleep(0.25)
                 try:
-                    await asyncio.wait_for(
-                        octobot_node.scheduler.tasks.send_forced_trigger_to_automation(_MASTER_AUTOMATION_ID),
-                        timeout=_T_STOP_SEND_SECONDS,
-                    )
-                except TimeoutError as exc:
-                    raise AssertionError("send_forced_trigger_to_automation(master) timed out") from exc
+                    with (
+                        mock.patch("octobot.constants.WALLET_STORAGE_BACKEND", "file"),
+                        mock.patch("octobot.constants.WALLET_FILE_PATH", wallet_file_path),
+                        mock.patch("octobot.constants.SYNC_SERVER_URL", sync_url),
+                    ):
+                        # Seed wallet used by sync client + automation tasks (same key as SIMULATOR_GRID_TEST_*).
+                        async with local_authenticator_module.local_user_authenticator() as seed_auth:
+                            seed_auth.import_wallet(
+                                grid_sim_util.SIMULATOR_GRID_TEST_PRIVATE_KEY,
+                                grid_sim_util.SIMULATOR_GRID_TEST_WALLET_PASSPHRASE,
+                                None,
+                                True,
+                            )
 
-                # Step 4 — master's ladder updates + emits; copy reacts via trading-signal inbox + ``trigger_copier_automation``.
-                master_reader = await _poll_state_reader_until(
-                    temp_dbos_scheduler,
-                    _MASTER_AUTOMATION_ID,
-                    lambda reader: _post_fill_open_order_shape(
-                        *grid_sim_util.buy_sell_trade_counts_from_exchange_elements(
-                            reader.state.automation.exchange_account_elements
-                        )[:2],
-                    ),
-                    _T_POST_SHOCK_SECONDS,
-                    "master post-shock ladder (3 buy, 1 sell open)",
-                )
-
-                copy_reader = await _poll_state_reader_until(
-                    temp_dbos_scheduler,
-                    _COPY_AUTOMATION_ID,
-                    lambda reader: _post_fill_open_order_shape(
-                        *grid_sim_util.buy_sell_trade_counts_from_exchange_elements(
-                            reader.state.automation.exchange_account_elements
-                        )[:2],
-                    ),
-                    _T_POST_SHOCK_SECONDS,
-                    "copy post-signal ladder (3 buy, 1 sell open)",
-                )
-
-                _assert_open_limit_prices_match_reference(
-                    master_reader.state.automation.exchange_account_elements,
-                    copy_reader.state.automation.exchange_account_elements,
-                )
-                _assert_btc_usdc_value_shares_match_reference(
-                    master_reader.state.automation.exchange_account_elements,
-                    copy_reader.state.automation.exchange_account_elements,
-                    btc_usdc_close=decimal.Decimal(str(simulated_close["value"])),
-                )
-
-                assert upload_trading_signal_mock.await_count > baseline_upload_count
-
-                _assert_orders_synchronizer_no_mirror_cancel_or_grace_logs(caplog)
-
-                # Step 5 — priority-stop both workflows; rely on SUCCESS + ``stop_automation`` payloads for each automation_id.
-                stop_priority_action = {
-                    "id": "action_stop_priority",
-                    "dsl_script": "stop_automation()",
-                }
-                for automation_id in (_MASTER_AUTOMATION_ID, _COPY_AUTOMATION_ID):
-                    try:
-                        await asyncio.wait_for(
-                            octobot_node.scheduler.tasks.send_actions_to_automation(
-                                [stop_priority_action], automation_id
+                        with (
+                            mock.patch.object(
+                                octobot_flow_repositories_exchange_module.TickersRepository,
+                                "fetch_tickers",
+                                new=patched_fetch_tickers,
                             ),
-                            timeout=_T_STOP_SEND_SECONDS,
-                        )
-                    except TimeoutError as exc:
-                        raise AssertionError(f"send_actions_to_automation timed out for {automation_id}") from exc
+                            mock.patch.object(
+                                octobot_flow_repositories_exchange_module.OhlcvRepository,
+                                "fetch_ohlcv",
+                                side_effect=patched_fetch_ohlcv,
+                            ),
+                        ):
+                            caplog.set_level(logging.INFO)
 
-                for automation_id in (_MASTER_AUTOMATION_ID, _COPY_AUTOMATION_ID):
-                    final_text = await grid_sim_util.wait_for_stop_success_output(
-                        temp_dbos_scheduler,
-                        automation_id,
-                        _T_STOP_COMPLETE_SECONDS,
-                    )
-                    parsed_final = grid_sim_util.parse_automation_workflow_output(final_text)
-                    assert parsed_final.error is None
-                    final_job = grid_sim_util.job_description_dict_from_output(parsed_final)
-                    assert final_job["state"]["automation"]["post_actions"]["stop_automation"] is True
+                            # Step 1 — enqueue master emitting grid signals (pushes to local sync server).
+                            try:
+                                await asyncio.wait_for(
+                                    octobot_node.scheduler.tasks.trigger_task(master_task),
+                                    timeout=_T_ENQUEUE_SECONDS,
+                                )
+                            except TimeoutError as exc:
+                                raise AssertionError("trigger_task timed out enqueueing master workflow") from exc
+
+                            baseline_master_reader = await _poll_state_reader_until(
+                                temp_dbos_scheduler,
+                                _MASTER_AUTOMATION_ID,
+                                lambda reader: grid_sim_util.is_simulator_grid_baseline_at_least_one_trade(
+                                    *grid_sim_util.buy_sell_trade_counts_from_exchange_elements(
+                                        reader.state.automation.exchange_account_elements
+                                    )
+                                ),
+                                _T_GRID_SECONDS,
+                                "master baseline grid (2 buy, 2 sell, >=1 trade)",
+                            )
+                            baseline_master_elements = baseline_master_reader.state.automation.exchange_account_elements
+                            buy_b, sell_b, trade_b = grid_sim_util.buy_sell_trade_counts_from_exchange_elements(
+                                baseline_master_elements
+                            )
+                            assert grid_sim_util.is_simulator_grid_baseline_at_least_one_trade(
+                                buy_b, sell_b, trade_b
+                            )
+
+                            bootstrap_fetched = await _fetch_strategy_signals_from_sync(wallet_address)
+                            bootstrap_signal = _first_fetched_trading_signal(bootstrap_fetched)
+                            assert bootstrap_signal.strategy_id == _SHARED_STRATEGY_ID
+                            bootstrap_account = bootstrap_signal.account
+                            assert bootstrap_account.content, "bootstrap signal should snapshot portfolio content"
+                            assert {"BTC", "USDC"} == set(bootstrap_account.content.keys())
+                            assert bootstrap_account.orders, "bootstrap signal should include open ladder orders"
+                            assert len(bootstrap_account.orders) == 4
+
+                            # Step 2 — enqueue copy (pulls bootstrap snapshot from server).
+                            try:
+                                await asyncio.wait_for(
+                                    octobot_node.scheduler.tasks.trigger_task(copy_task),
+                                    timeout=_T_ENQUEUE_SECONDS,
+                                )
+                            except TimeoutError as exc:
+                                raise AssertionError("trigger_task timed out enqueueing copy workflow") from exc
+
+                            copy_reader = await _poll_state_reader_until(
+                                temp_dbos_scheduler,
+                                _COPY_AUTOMATION_ID,
+                                lambda reader: grid_sim_util.is_simulator_grid_baseline_at_least_one_trade(
+                                    *grid_sim_util.buy_sell_trade_counts_from_exchange_elements(
+                                        reader.state.automation.exchange_account_elements
+                                    )
+                                ),
+                                _T_BOOTSTRAP_COPY_SECONDS,
+                                "copy baseline grid mirroring master",
+                            )
+                            _assert_open_limit_prices_match_reference(
+                                baseline_master_reader.state.automation.exchange_account_elements,
+                                copy_reader.state.automation.exchange_account_elements,
+                            )
+                            _assert_btc_usdc_value_shares_match_reference(
+                                baseline_master_reader.state.automation.exchange_account_elements,
+                                copy_reader.state.automation.exchange_account_elements,
+                                btc_usdc_close=decimal.Decimal(str(simulated_close["value"])),
+                            )
+
+                            caplog.clear()
+
+                            # Step 3 — raise mock spot between first sell and neighbour; force-trigger master DAG.
+                            first_sell_price = _first_sell_limit_price(baseline_master_elements)
+                            simulated_close["value"] = float(
+                                first_sell_price + _D_DECIMAL_INCREMENT / decimal.Decimal("2")
+                            )
+
+                            try:
+                                await asyncio.wait_for(
+                                    octobot_node.scheduler.tasks.send_forced_trigger_to_automation(
+                                        _MASTER_AUTOMATION_ID
+                                    ),
+                                    timeout=_T_STOP_SEND_SECONDS,
+                                )
+                            except TimeoutError as exc:
+                                raise AssertionError(
+                                    "send_forced_trigger_to_automation(master) timed out"
+                                ) from exc
+
+                            # Step 4 — ladder refresh + emit; copy follows internal trading-signal notifications.
+                            master_reader = await _poll_state_reader_until(
+                                temp_dbos_scheduler,
+                                _MASTER_AUTOMATION_ID,
+                                lambda reader: _post_fill_open_order_shape(
+                                    *grid_sim_util.buy_sell_trade_counts_from_exchange_elements(
+                                        reader.state.automation.exchange_account_elements
+                                    )[:2],
+                                ),
+                                _T_POST_SHOCK_SECONDS,
+                                "master post-shock ladder (3 buy, 1 sell open)",
+                            )
+
+                            copy_reader = await _poll_state_reader_until(
+                                temp_dbos_scheduler,
+                                _COPY_AUTOMATION_ID,
+                                lambda reader: _post_fill_open_order_shape(
+                                    *grid_sim_util.buy_sell_trade_counts_from_exchange_elements(
+                                        reader.state.automation.exchange_account_elements
+                                    )[:2],
+                                ),
+                                _T_POST_SHOCK_SECONDS,
+                                "copy post-signal ladder (3 buy, 1 sell open)",
+                            )
+
+                            _assert_open_limit_prices_match_reference(
+                                master_reader.state.automation.exchange_account_elements,
+                                copy_reader.state.automation.exchange_account_elements,
+                            )
+                            _assert_btc_usdc_value_shares_match_reference(
+                                master_reader.state.automation.exchange_account_elements,
+                                copy_reader.state.automation.exchange_account_elements,
+                                btc_usdc_close=decimal.Decimal(str(simulated_close["value"])),
+                            )
+
+                            master_post_elements = master_reader.state.automation.exchange_account_elements
+                            await _poll_fetched_trading_signal_until_ladder_matches(
+                                wallet_address,
+                                master_post_elements,
+                                deadline_seconds=_T_POST_SHOCK_SECONDS,
+                                failure_label="sync snapshot ladder vs master post-shock",
+                            )
+
+                            _assert_orders_synchronizer_no_mirror_cancel_or_grace_logs(caplog)
+
+                            # Step 5 — priority-stop both workflows.
+                            stop_priority_action = {
+                                "id": "action_stop_priority",
+                                "dsl_script": "stop_automation()",
+                            }
+                            for automation_id in (_MASTER_AUTOMATION_ID, _COPY_AUTOMATION_ID):
+                                try:
+                                    await asyncio.wait_for(
+                                        octobot_node.scheduler.tasks.send_actions_to_automation(
+                                            [stop_priority_action], automation_id
+                                        ),
+                                        timeout=_T_STOP_SEND_SECONDS,
+                                    )
+                                except TimeoutError as exc:
+                                    raise AssertionError(
+                                        f"send_actions_to_automation timed out for {automation_id}"
+                                    ) from exc
+
+                            for automation_id in (_MASTER_AUTOMATION_ID, _COPY_AUTOMATION_ID):
+                                final_text = await grid_sim_util.wait_for_stop_success_output(
+                                    temp_dbos_scheduler,
+                                    automation_id,
+                                    _T_STOP_COMPLETE_SECONDS,
+                                )
+                                parsed_final = grid_sim_util.parse_automation_workflow_output(final_text)
+                                assert parsed_final.error is None
+                                final_job = grid_sim_util.job_description_dict_from_output(parsed_final)
+                                assert final_job["state"]["automation"]["post_actions"]["stop_automation"] is True
+                finally:
+                    uvicorn_server.should_exit = True
+                    await serve_task
+                    if previous_sync_data_dir is None:
+                        os.environ.pop("SYNC_DATA_DIR", None)
+                    else:
+                        os.environ["SYNC_DATA_DIR"] = previous_sync_data_dir
 
         finally:
             await trading_signals_channel_module.shutdown_internal_trading_signal_channel()

@@ -1,10 +1,10 @@
 import contextlib
 import asyncio
 import typing
-import starfish_sdk
 
 import octobot.community
 
+import octobot_sync.client
 import octobot_flow.entities
 import octobot_flow.errors
 
@@ -39,7 +39,7 @@ class CommunityRepository:
         finally:
             self.authenticator.user_account.bot_id = previous_bot_id # type: ignore
 
-    def _get_sync_client(self) -> starfish_sdk.StarfishClient:
+    def _get_sync_client(self) -> octobot_sync.client.StarfishClient:
         if self.wallet_address is None:
             raise octobot_flow.errors.WalletNotInitializedError(
                 "Wallet not initialized: no wallet address provided"

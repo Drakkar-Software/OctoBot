@@ -46,10 +46,7 @@ async def local_user_authenticator(
                 email, password_value, password_token=None, auth_key=auth_key_value, minimal=True
             )
             auth_logger = common_logging.get_logger("local_community_user_authenticator")
-            if len(email) > 7:
-                auth_logger.info(f"Authenticated as {email[:3]}[...]{email[-4:]}")
-            else:
-                auth_logger.info("Authenticated as local community user")
+            auth_logger.info(f"Authenticated as {email[:3]}[...]{email[-4:]}")
         yield local_instance
     finally:
         if local_instance is not None:

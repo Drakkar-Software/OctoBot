@@ -18,6 +18,7 @@ import secrets
 from typing import Any
 
 from starfish_sdk import StarfishClient, SyncManager
+from starfish_sdk.types import ConflictResolver
 
 import octobot_commons.logging as logging
 import octobot_sync.auth as auth
@@ -52,6 +53,7 @@ async def push_payload(
     push_path: str,
     pull_path: str,
     payload: dict[str, Any],
+    on_conflict: ConflictResolver | None = None,
     encryption_secret: str | None = None,
     encryption_salt: str | None = None,
     encryption_info: str = constants.DEFAULT_ENCRYPTION_INFO,
@@ -61,12 +63,14 @@ async def push_payload(
 
     Pass encryption_secret + encryption_salt + encryption_info for end-to-end
     encryption; omit them for plaintext transport.
+    Pass on_conflict to customize optimistic-concurrency merge (default: remote-wins deep merge).
     Returns the raw push result dict.
     """
     manager = SyncManager(
         client=client,
         pull_path=pull_path,
         push_path=push_path,
+        on_conflict=on_conflict,
         encryption_secret=encryption_secret,
         encryption_salt=encryption_salt,
         encryption_info=encryption_info,

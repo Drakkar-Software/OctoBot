@@ -18,7 +18,6 @@ from __future__ import annotations
 
 import asyncio
 import json
-import os
 import time
 import typing
 
@@ -55,7 +54,23 @@ except ImportError:
     workflows_util_module = None  # type: ignore
 
 
-SIMULATOR_GRID_TEST_COMMUNITY_WALLET_ADDRESS = "simulator-copy-grid-functional-test-wallet-address"
+# Passphrase for grid functional tests (WalletBackend requires length >= 8).
+SIMULATOR_GRID_TEST_WALLET_PASSPHRASE = "simgridPW1!"
+
+if IMPORTED_OCTOBOT_FLOW_GRID_DEPS:
+    import octobot_sync.chain.evm as sync_evm_module
+
+    # Hardhat/Anvil-style dev key #0 — deterministic address for CI and local wallet import.
+    SIMULATOR_GRID_TEST_PRIVATE_KEY = (
+        "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+    )
+    SIMULATOR_GRID_TEST_COMMUNITY_WALLET_ADDRESS = sync_evm_module.address_from_evm_key(
+        SIMULATOR_GRID_TEST_PRIVATE_KEY
+    ).lower()
+else:
+    sync_evm_module = None  # type: ignore
+    SIMULATOR_GRID_TEST_PRIVATE_KEY = ""
+    SIMULATOR_GRID_TEST_COMMUNITY_WALLET_ADDRESS = "simulator-copy-grid-functional-test-wallet-address"
 
 GRID_INCREMENT = 200
 GRID_SPREAD = 600
@@ -64,12 +79,9 @@ FIXED_BTC_USDC_CLOSE = 100000.0
 DEFAULT_GRID_WORKFLOW_POLL_INTERVAL_SECONDS = 0.5
 
 
-def is_on_github_ci() -> bool:
-    return bool(os.getenv("GITHUB_ACTIONS"))
-
-
 def exchange_internal_name() -> str:
-    return "binanceus" if is_on_github_ci() else "binance"
+    # Match CI so local runs exercise the same precision/fees as GitHub Actions.
+    return "binanceus"
 
 
 if IMPORTED_OCTOBOT_FLOW_GRID_DEPS:

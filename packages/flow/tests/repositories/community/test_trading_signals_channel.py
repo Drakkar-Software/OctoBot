@@ -1,10 +1,13 @@
 import asyncio
+import decimal
+import json
 import mock
 import pytest
 import pytest_asyncio
 
 import async_channel.channels as async_channel_channels
 
+import octobot_commons.json_util as json_util_module
 import octobot_copy.entities as copy_entities
 
 import octobot_flow.entities
@@ -76,3 +79,120 @@ async def test_shutdown_internal_trading_signal_channel_allows_recreate(internal
 
     new_channel = await trading_signals_channel.get_or_create_internal_trading_signal_channel()
     assert new_channel is not None
+
+
+def _trading_signal(strategy_id: str, updated_at: float) -> octobot_flow.entities.TradingSignal:
+    return octobot_flow.entities.TradingSignal(
+        strategy_id=strategy_id,
+        account=copy_entities.Account(updated_at=updated_at),
+    )
+
+
+def _payload_dict(*signals: octobot_flow.entities.TradingSignal) -> dict:
+    return trading_signals_repository.TradingSignalPayload(signals=list(signals)).to_dict()
+
+
+def _merge_result_updated_at_sequence(merged_dict: dict) -> list[float]:
+    parsed = trading_signals_repository.TradingSignalPayload.from_dict(merged_dict)
+    return [float(signal.account.updated_at) for signal in parsed.signals]
+
+
+def _assert_no_decimal_leaves(value) -> None:
+    """``_merge_trading_signal_documents`` wraps the merged dict in ``json_util.sanitize`` (no nested Decimal)."""
+    if isinstance(value, dict):
+        for nested in value.values():
+            _assert_no_decimal_leaves(nested)
+    elif isinstance(value, (list, tuple)):
+        for item in value:
+            _assert_no_decimal_leaves(item)
+    else:
+        assert not isinstance(value, decimal.Decimal), f"expected sanitized merge, got Decimal: {value!r}"
+
+
+class TestMergeTradingSignalDocuments:
+    """Covers ``_merge_trading_signal_documents``; results are ``json_util.sanitize(merged.to_dict())`` for Starfish push."""
+
+    def test_both_empty_documents_yield_empty_signals(self):
+        merged = trading_signals_repository._merge_trading_signal_documents({}, {})
+        assert merged == json_util_module.sanitize({"signals": []})
+        _assert_no_decimal_leaves(merged)
+        json.dumps(merged)
+
+    def test_empty_remote_yields_local_signals_sorted_chronologically(self):
+        first_later = _trading_signal("s", 200.0)
+        second_earlier = _trading_signal("s", 100.0)
+        merged = trading_signals_repository._merge_trading_signal_documents(
+            _payload_dict(first_later, second_earlier),
+            {},
+        )
+        assert _merge_result_updated_at_sequence(merged) == [100.0, 200.0]
+        _assert_no_decimal_leaves(merged)
+        json.dumps(merged)
+
+    def test_empty_local_yields_remote_signals_sorted_chronologically(self):
+        remote_third = _trading_signal("s", 300.0)
+        remote_first = _trading_signal("s", 100.0)
+        remote_second = _trading_signal("s", 200.0)
+        merged = trading_signals_repository._merge_trading_signal_documents(
+            {},
+            _payload_dict(remote_third, remote_first, remote_second),
+        )
+        assert _merge_result_updated_at_sequence(merged) == [100.0, 200.0, 300.0]
+        _assert_no_decimal_leaves(merged)
+        json.dumps(merged)
+
+    def test_deduplicates_remote_then_appends_new_local_snapshots(self):
+        remote_a = _trading_signal("strat", 1.0)
+        remote_b = _trading_signal("strat", 2.0)
+        local_a = _trading_signal("strat", 1.0)
+        local_b = _trading_signal("strat", 2.0)
+        local_c = _trading_signal("strat", 3.0)
+        merged = trading_signals_repository._merge_trading_signal_documents(
+            _payload_dict(local_a, local_b, local_c),
+            _payload_dict(remote_a, remote_b),
+        )
+        assert _merge_result_updated_at_sequence(merged) == [1.0, 2.0, 3.0]
+        _assert_no_decimal_leaves(merged)
+        json.dumps(merged)
+
+    def test_stable_order_when_two_signals_share_timestamp(self):
+        first_at_tie = _trading_signal("strat", 50.0)
+        second_at_tie = _trading_signal("strat", 50.0)
+        merged = trading_signals_repository._merge_trading_signal_documents(
+            {},
+            _payload_dict(second_at_tie, first_at_tie),
+        )
+        sequence = _merge_result_updated_at_sequence(merged)
+        assert sequence == [50.0, 50.0]
+        _assert_no_decimal_leaves(merged)
+        json.dumps(merged)
+
+    def test_local_only_tail_sorted_when_new_signals_not_in_remote(self):
+        remote_lo = _trading_signal("strat", 10.0)
+        remote_hi = _trading_signal("strat", 20.0)
+        local_newer_first_in_list = _trading_signal("strat", 50.0)
+        local_newer_second_in_list = _trading_signal("strat", 40.0)
+        merged = trading_signals_repository._merge_trading_signal_documents(
+            _payload_dict(remote_lo, remote_hi, local_newer_first_in_list, local_newer_second_in_list),
+            _payload_dict(remote_lo, remote_hi),
+        )
+        assert _merge_result_updated_at_sequence(merged) == [10.0, 20.0, 40.0, 50.0]
+        _assert_no_decimal_leaves(merged)
+        json.dumps(merged)
+
+    def test_merge_with_portfolio_decimals_is_sanitized(self):
+        """Mirrors sync JSON: portfolio totals are Decimals in-domain but must become floats after merge."""
+        account_with_decimals = copy_entities.Account(
+            updated_at=1.0,
+            content={
+                "USDC": {"total": decimal.Decimal("1000.5"), "available": decimal.Decimal("1000.5")},
+            },
+        )
+        signal = octobot_flow.entities.TradingSignal(strategy_id="s", account=account_with_decimals)
+        merged = trading_signals_repository._merge_trading_signal_documents(
+            _payload_dict(signal),
+            {},
+        )
+        _assert_no_decimal_leaves(merged)
+        json.dumps(merged)
+        assert merged["signals"][0]["account"]["content"]["USDC"]["total"] == 1000.5
