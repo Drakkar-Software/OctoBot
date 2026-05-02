@@ -33,6 +33,7 @@ class AIProviderAdapter:
     api_key_env: str
     base_url: str
     model_env: typing.Optional[str] = None
+    rpm_limit_env: typing.Optional[str] = None
 
     def can_auto_configure(self) -> bool:
         return bool(os.getenv(self.api_key_env))
@@ -48,12 +49,30 @@ class AIProviderAdapter:
             return os.getenv(self.model_env, current_model)
         return current_model
 
+    def get_rpm_limit(self) -> typing.Optional[int]:
+        if not self.rpm_limit_env:
+            return None
+        raw = os.getenv(self.rpm_limit_env)
+        if not raw:
+            return None
+        try:
+            value = int(raw)
+        except ValueError:
+            _logger.warning(
+                f"Invalid {self.rpm_limit_env}={raw!r}; expected an integer. RPM throttle disabled."
+            )
+            return None
+        if value <= 0:
+            return None
+        return value
+
 
 class NvidiaAdapter(AIProviderAdapter):
     provider = enums.AIProvider.NVIDIA
     api_key_env = "NVIDIA_NIM_API_KEY"
     base_url = "https://integrate.api.nvidia.com/v1"
     model_env = "NVIDIA_NIM_MODEL"
+    rpm_limit_env = "NVIDIA_NIM_RPM_LIMIT"
 
 
 PROVIDER_ADAPTERS: list[AIProviderAdapter] = [
@@ -66,6 +85,7 @@ class AutoConfigResult(typing.NamedTuple):
     base_url: str
     provider: enums.AIProvider
     model: typing.Optional[str]
+    rpm_limit: typing.Optional[int]
 
 
 def auto_configure(default_model: str, env_model_set: bool) -> typing.Optional[AutoConfigResult]:
@@ -86,16 +106,19 @@ def auto_configure(default_model: str, env_model_set: bool) -> typing.Optional[A
         )
         if key_set:
             model = None if env_model_set else adapter.get_model(default_model)
+            rpm = adapter.get_rpm_limit()
             _logger.info(
                 f"Auto-configured {adapter.provider.value} provider. "
                 f"URL: {adapter.get_base_url()}"
                 + (f", model: {model}" if model else "")
+                + (f", RPM limit: {rpm}" if rpm else "")
             )
             return AutoConfigResult(
                 api_key=adapter.get_api_key(),
                 base_url=adapter.get_base_url(),
                 provider=adapter.provider,
                 model=model,
+                rpm_limit=rpm,
             )
     _logger.debug(f"No provider adapter matched. Checked: {[a.provider.value for a in PROVIDER_ADAPTERS]}")
     return None

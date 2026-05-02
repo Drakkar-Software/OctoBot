@@ -20,7 +20,7 @@ Before running any commands, export ROOT and PYTHONPATH once (do NOT use `$()` o
 
 ```bash
 ROOT=$PWD
-export PYTHONPATH="$ROOT:$ROOT/packages/agents:$ROOT/packages/async_channel:$ROOT/packages/backtesting:$ROOT/packages/binary:$ROOT/packages/commons:$ROOT/packages/evaluators:$ROOT/packages/flow:$ROOT/packages/node:$ROOT/packages/services:$ROOT/packages/sync:$ROOT/packages/tentacles:$ROOT/packages/tentacles_manager:$ROOT/packages/trading:$ROOT/packages/trading_backend"
+export PYTHONPATH="$ROOT:$ROOT/packages/agents:$ROOT/packages/async_channel:$ROOT/packages/backtesting:$ROOT/packages/binary:$ROOT/packages/commons:$ROOT/packages/copy:$ROOT/packages/evaluators:$ROOT/packages/flow:$ROOT/packages/node:$ROOT/packages/services:$ROOT/packages/sync:$ROOT/packages/tentacles:$ROOT/packages/tentacles_manager:$ROOT/packages/trading:$ROOT/packages/trading_backend"
 ```
 
 ## Step 1: Export tentacles to zip
@@ -34,10 +34,10 @@ This packs all tentacles from `packages/tentacles/` into a zip at `output/any_pl
 ## Step 2: Install tentacles from zip
 
 ```bash
-venv/bin/python start.py tentacles -i --all --location output/any_platform.zip
+ALLOW_UNSIGNED_TENTACLES=true venv/bin/python start.py tentacles -i --all --location output/any_platform.zip
 ```
 
-This installs all tentacles from the exported zip.
+This installs all tentacles from the exported zip. `ALLOW_UNSIGNED_TENTACLES=true` is required for locally built packages (no signature file).
 
 ## Generate CCXT exchange tentacles
 
