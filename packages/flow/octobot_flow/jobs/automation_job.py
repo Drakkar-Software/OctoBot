@@ -7,8 +7,9 @@ import octobot_commons.logging as common_logging
 import octobot.community
 import octobot_commons.profiles.profile_data as profile_data_import
 
+import octobot_copy.constants as copy_constants
+
 import octobot_flow.entities
-import octobot_flow.constants
 import octobot_flow.enums
 import octobot_flow.errors
 import octobot_flow.logic.actions
@@ -318,8 +319,9 @@ class AutomationJob:
             self._logger.info(f"Fetching copy trading signals for {to_fetch_signals} strategies")
             trading_signals = await trading_signals_repository.fetch_trading_signals(
                 to_fetch_signals,
-                octobot_flow.constants.DEFAULT_COPY_TRADING_MISSED_SIGNALS_GRACE_ABORT_THRESHOLD
+                copy_constants.DEFAULT_MISSED_SIGNALS_GRACE_ABORT_THRESHOLD,
             )
+            self._logger.info(f"Fetched {len(trading_signals)} copy trading signals")
             copy_trading_data = octobot_flow.entities.FetchedCopyTradingData(
                 trading_signals=trading_signals
             )

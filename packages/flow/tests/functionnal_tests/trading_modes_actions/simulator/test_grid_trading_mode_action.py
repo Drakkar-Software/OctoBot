@@ -16,7 +16,6 @@ import octobot_trading.constants as trading_constants
 import octobot_trading.enums as trading_enums
 import octobot_trading.exchanges.util.exchange_data as exchange_data
 import octobot_flow
-import octobot_flow.constants
 import octobot_flow.entities
 import octobot_flow.enums
 import octobot_flow.repositories.community
@@ -826,7 +825,7 @@ async def test_simulator_copy_grid(
             assert fetch_trading_signals_mock.await_count == 1
             fetch_call = fetch_trading_signals_mock.await_args
             assert functionnal_tests.FUNCTIONAL_TEST_COPY_STRATEGY_ID in fetch_call.args[0]
-            assert fetch_call.args[1] == octobot_flow.constants.DEFAULT_COPY_TRADING_MISSED_SIGNALS_GRACE_ABORT_THRESHOLD
+            assert fetch_call.args[1] == copy_constants.DEFAULT_MISSED_SIGNALS_GRACE_ABORT_THRESHOLD
         else:
             fetch_trading_signals_mock.assert_not_awaited()
 

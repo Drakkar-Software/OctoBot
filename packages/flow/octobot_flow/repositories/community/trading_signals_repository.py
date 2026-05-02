@@ -5,6 +5,7 @@ import octobot_commons.dataclasses
 import octobot_flow.entities
 import octobot_flow.repositories.community.trading_signals_channel as trading_signals_channel
 import octobot_flow.repositories.community.community_repository as community_repository
+import octobot_commons.logging as logging
 
 
 VERSION = "1.0.0"
@@ -85,3 +86,6 @@ class TradingSignalsRepository(community_repository.CommunityRepository):
             push_path=_sync_signals_path("push", strategy_id),
             sign_data=self.authenticator._sync_data_signer,
         )
+
+    def _logger(self) -> logging.BotLogger:
+        return logging.get_logger("TradingSignalsRepository")

@@ -28,6 +28,8 @@ class AccountCopySettings(commons_dataclasses.MinimizableDataclass):
     allow_skip_asset: bool = False
     # When True, planner holdings ratios include value tied up in open orders
     can_include_assets_in_open_orders_in_holdings_ratio: bool = False
+    mirrored_order_quantity_ratio_threshold: decimal.Decimal = copy_constants.DEFAULT_MIRRORED_ORDER_QUANTITY_RATIO_THRESHOLD
+    mirrored_order_price_ratio_threshold: decimal.Decimal = copy_constants.DEFAULT_MIRRORED_ORDER_PRICE_RATIO_THRESHOLD
     # Defer cancelling mirrored copier orders when reference open orders disappeared (wall time.time)
     mirrored_orphan_cancel_grace_seconds: float = float(copy_constants.FILL_ORDER_TIMEOUT)
     mirrored_orphan_grace_abort_threshold: int = copy_constants.DEFAULT_MIRRORED_ORPHAN_ORDERS_GRACE_ABORT_THRESHOLD

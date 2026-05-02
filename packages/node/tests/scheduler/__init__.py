@@ -39,13 +39,13 @@ def temp_dbos_scheduler():
     # from https://docs.dbos.dev/python/tutorials/testing
     # don't use too muck as it is very slow
     with tempfile.NamedTemporaryFile() as temp_file:
-        dbos =init_scheduler(temp_file.name)
-        dbos.reset_system_database()
-        dbos.launch()
+        dbos_runtime = init_scheduler(temp_file.name)
+        dbos_runtime.reset_system_database()
+        dbos_runtime.launch()
         try:
             yield octobot_node.scheduler.SCHEDULER
         finally:
-            dbos.destroy()
+            dbos_runtime.destroy()
 
 
 def init_and_destroy_scheduler(db_file_name: str):

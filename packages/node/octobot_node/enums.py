@@ -27,6 +27,7 @@ class TaskResultKeys(enum.Enum):
 class AutomationWorkflowActionTypes(enum.Enum):
     USER_ACTIONS = "user_actions"
     TRADING_SIGNAL = "trading_signal"
+    FORCED_TRIGGER = "forced_trigger"
 
 
 class AutomationWorkflowMessageTopics(enum.Enum):

@@ -15,6 +15,7 @@
 #  OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import asyncio
 import decimal
+import logging
 import time
 
 import mock
@@ -385,6 +386,129 @@ class TestLateReferenceFillHeuristic:
 
         asyncio.run(run_grace())
         assert synchronizer.get_mirrored_orphan_grace_started_at() is not None
+
+
+class TestApplyGraceGraceEpisodeClearedLogging:
+    _EPISODE_CLEARED_SNIPPET = "Mirrored open-order grace episode cleared"
+    _CANCEL_DEFERRED_SNIPPET = "Mirrored orphan cancel deferred"
+    _GRACE_ELAPSED_SNIPPET = "Mirrored orphan grace elapsed after"
+
+    def _sync_late_fill_only_defer_setup(self, *, frozen_reference_time: float):
+        compliant_snapshot = copy_entities.Account(
+            updated_at=frozen_reference_time - 1.0,
+            content={
+                "ETH": {
+                    commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("1"),
+                    copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.25"),
+                },
+                "USDT": {
+                    commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("10000"),
+                    copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.5"),
+                },
+            },
+            orders=[],
+        )
+        reference = copy_entities.Account(
+            updated_at=frozen_reference_time,
+            content={
+                "ETH": {
+                    commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("1"),
+                    copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.25"),
+                },
+                "USDT": {
+                    commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("10000"),
+                    copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.5"),
+                },
+            },
+            orders=[],
+            historical_snapshots=[compliant_snapshot],
+        )
+        currency_totals = {
+            "ETH": decimal.Decimal("2"),
+            "USDT": decimal.Decimal("8000"),
+        }
+        exchange_if = _exchange_interface_stub(
+            currency_totals=currency_totals,
+            market_price=decimal.Decimal("2000"),
+        )
+        exchange_if.orders.get_open_orders = mock.Mock(return_value=[])
+        copy_settings = copy_entities.AccountCopySettings(
+            mirrored_orphan_cancel_grace_seconds=60.0,
+            mirrored_orphan_grace_abort_threshold=3,
+        )
+        synchronizer = orders_synchronizer_module.OrdersSynchronizer(
+            reference,
+            exchange_if,
+            copy_settings,
+        )
+        return synchronizer, _replicable_buy_limit_order()
+
+    def test_idle_no_episode_cleared_log_when_never_deferred(self, caplog):
+        synchronizer = orders_synchronizer_module.OrdersSynchronizer(
+            copy_entities.Account(content={}, orders=[]),
+            mock.MagicMock(),
+            copy_entities.AccountCopySettings(),
+        )
+        with caplog.at_level(logging.INFO):
+            asyncio.run(synchronizer._apply_grace_policy_and_cancel_mirrored_orphans([], []))
+        assert self._EPISODE_CLEARED_SNIPPET not in caplog.text
+
+    def test_episode_cleared_log_after_defer_then_grace_total_zero(self, caplog):
+        frozen_t0 = 1_700_000_000.0
+        synchronizer, order = self._sync_late_fill_only_defer_setup(frozen_reference_time=frozen_t0)
+        with mock.patch(
+            "octobot_copy.orders_mirroring.orders_synchronizer.time.time",
+            return_value=frozen_t0,
+        ):
+            with caplog.at_level(logging.INFO):
+                asyncio.run(
+                    synchronizer._apply_grace_policy_and_cancel_mirrored_orphans([], [order])
+                )
+        assert self._EPISODE_CLEARED_SNIPPET not in caplog.text
+        assert self._CANCEL_DEFERRED_SNIPPET in caplog.text
+
+        caplog.clear()
+        with mock.patch(
+            "octobot_copy.orders_mirroring.orders_synchronizer.time.time",
+            return_value=frozen_t0,
+        ):
+            with caplog.at_level(logging.INFO):
+                asyncio.run(synchronizer._apply_grace_policy_and_cancel_mirrored_orphans([], []))
+        assert caplog.text.count(self._EPISODE_CLEARED_SNIPPET) == 1
+
+    def test_no_episode_cleared_after_grace_elapsed_flag_reset(self, caplog):
+        frozen_t0 = 1_700_000_000.0
+        synchronizer, order = self._sync_late_fill_only_defer_setup(frozen_reference_time=frozen_t0)
+        with mock.patch(
+            "octobot_copy.orders_mirroring.orders_synchronizer.time.time",
+            return_value=frozen_t0,
+        ):
+            with caplog.at_level(logging.INFO):
+                asyncio.run(
+                    synchronizer._apply_grace_policy_and_cancel_mirrored_orphans([], [order])
+                )
+        assert self._CANCEL_DEFERRED_SNIPPET in caplog.text
+
+        caplog.clear()
+        elapsed_time = frozen_t0 + 70.0
+        with mock.patch(
+            "octobot_copy.orders_mirroring.orders_synchronizer.time.time",
+            return_value=elapsed_time,
+        ):
+            with caplog.at_level(logging.INFO):
+                asyncio.run(
+                    synchronizer._apply_grace_policy_and_cancel_mirrored_orphans([], [order])
+                )
+        assert self._GRACE_ELAPSED_SNIPPET in caplog.text
+
+        caplog.clear()
+        with mock.patch(
+            "octobot_copy.orders_mirroring.orders_synchronizer.time.time",
+            return_value=elapsed_time,
+        ):
+            with caplog.at_level(logging.INFO):
+                asyncio.run(synchronizer._apply_grace_policy_and_cancel_mirrored_orphans([], []))
+        assert self._EPISODE_CLEARED_SNIPPET not in caplog.text
 
 
 def _replicable_buy_limit_order_id(order_id: str) -> dict:

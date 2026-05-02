@@ -135,12 +135,12 @@ def create_account_copy_settings(
 ) -> copy_entities.AccountCopySettings:
     grace_seconds = octobot_flow.constants.DEFAULT_COPY_TRADING_ORPHAN_CANCEL_GRACE_SECONDS
     threshold = octobot_flow.constants.DEFAULT_COPY_TRADING_ORPHAN_GRACE_ABORT_THRESHOLD
-    missed_signals_threshold = octobot_flow.constants.DEFAULT_COPY_TRADING_MISSED_SIGNALS_GRACE_ABORT_THRESHOLD
+    missed_signals_threshold = copy_constants.DEFAULT_MISSED_SIGNALS_GRACE_ABORT_THRESHOLD
     return copy_entities.AccountCopySettings(
         mirrored_orphan_cancel_grace_seconds=grace_seconds,
         mirrored_orphan_grace_abort_threshold=threshold,
         missed_signals_grace_abort_threshold=missed_signals_threshold,
         mirrored_orphan_grace_pair_ratio_max_delta=(
-            octobot_flow.constants.DEFAULT_COPY_TRADING_ORPHAN_GRACE_PAIR_RATIO_MAX_DELTA
+            copy_constants.DEFAULT_MIRRORED_ORPHAN_GRACE_PAIR_RATIO_MAX_DELTA
         ),
     )

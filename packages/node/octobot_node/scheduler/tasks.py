@@ -62,3 +62,17 @@ async def trigger_copier_automation(automation_id: str, trading_signal: octobot_
         payload,
         topic=octobot_node.enums.AutomationWorkflowMessageTopics.ACTIONS_UPDATE.value,
     )
+
+
+async def send_forced_trigger_to_automation(automation_id: str):
+    import octobot_node.scheduler  # avoid circular import
+    workflow_status = await workflows_util.get_automation_workflow_status(automation_id)
+    payload = params.AutomationWorkflowActionUpdate(
+        actions_type=octobot_node.enums.AutomationWorkflowActionTypes.FORCED_TRIGGER.value,
+        actions_details=[],
+    ).to_dict(include_default_values=False)
+    await octobot_node.scheduler.SCHEDULER.INSTANCE.send_async(
+        workflow_status.workflow_id,
+        payload,
+        topic=octobot_node.enums.AutomationWorkflowMessageTopics.ACTIONS_UPDATE.value,
+    )

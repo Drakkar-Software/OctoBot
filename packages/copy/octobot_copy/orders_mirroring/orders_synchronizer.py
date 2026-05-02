@@ -28,6 +28,7 @@ class OrdersSynchronizer:
         self._exchange_interface = exchange_interface
         self._copy_settings = copy_settings
         self._force_immediate_orphan_cancel_next: bool = False
+        self._mirrored_orphan_cancel_was_deferred_in_episode: bool = False
 
     def _get_replicable_reference_orders_from(
         self,
@@ -582,19 +583,23 @@ class OrdersSynchronizer:
         orphan_count = len(orphan_orders)
         grace_total = orphan_count + late_reference_fill_count
 
-        # Nothing to cancel and no alignment episode: clear abort flag for the next sync.
+        # Idle: reset abort flag. Log episode cleared only after a prior deferral of orphan cancel.
         if grace_total == 0:
             self._force_immediate_orphan_cancel_next = False
-            self._get_logger().info(
-                "Mirrored open-order grace episode cleared: no mirrored orphan orders remain "
-                "and no late-reference-fill candidates."
-            )
+            had_cancel_deferred_while_aligned = self._mirrored_orphan_cancel_was_deferred_in_episode
+            self._mirrored_orphan_cancel_was_deferred_in_episode = False
+            if had_cancel_deferred_while_aligned:
+                self._get_logger().info(
+                    "Mirrored open-order grace episode cleared: no mirrored orphan orders remain "
+                    "and no late-reference-fill candidates."
+                )
             return 0
 
         grace_seconds = settings.mirrored_orphan_cancel_grace_seconds
         threshold = settings.mirrored_orphan_grace_abort_threshold
         # Explicit abort or grace disabled: cancel orphans immediately, do not start or extend grace.
         if self._force_immediate_orphan_cancel_next or grace_seconds <= 0:
+            self._mirrored_orphan_cancel_was_deferred_in_episode = False
             return await self._cancel_mirrored_orphan_order_list(orphan_orders)
 
         # No compliant snapshot in reference history: cannot anchor grace; same outcome as runaway desync.
@@ -603,6 +608,7 @@ class OrdersSynchronizer:
                 "Mirrored orphan grace invalid: no compliant reference snapshot in history; "
                 "cancelling orphan order(s) immediately (full resync required)."
             )
+            self._mirrored_orphan_cancel_was_deferred_in_episode = False
             return await self._cancel_mirrored_orphan_order_list(orphan_orders)
 
         if self.is_mirrored_orphan_grace_aborted_for_missed_historical_signals():
@@ -612,6 +618,7 @@ class OrdersSynchronizer:
                 f">= missed_signals_grace_abort_threshold ({missed_threshold}); "
                 "cancelling orphan order(s) immediately (reference history desync)."
             )
+            self._mirrored_orphan_cancel_was_deferred_in_episode = False
             return await self._cancel_mirrored_orphan_order_list(orphan_orders)
 
         # Too many grace items at once: treat as runaway desync, cancel orphans immediately.
@@ -620,6 +627,7 @@ class OrdersSynchronizer:
                 f"Mirrored orphan grace aborted: {grace_total} grace item(s) >= threshold {threshold} "
                 f"({orphan_count} orphan(s), {late_reference_fill_count} late-reference-fill candidate(s))"
             )
+            self._mirrored_orphan_cancel_was_deferred_in_episode = False
             return await self._cancel_mirrored_orphan_order_list(orphan_orders)
 
         # Orphans present but pair-ratio heuristic fails: cancel those orphans; may still defer on late fills.
@@ -639,6 +647,7 @@ class OrdersSynchronizer:
                         f"orphan (threshold={settings.mirrored_orphan_grace_pair_ratio_max_delta}); "
                         "cancelling immediately"
                     )
+                self._mirrored_orphan_cancel_was_deferred_in_episode = False
                 return cancelled
             # Orphans cancelled; continue grace driven by late-reference fills (do not exit deferral here).
             orphan_orders = []
@@ -657,6 +666,7 @@ class OrdersSynchronizer:
                 "Mirrored orphan grace: could not resolve grace start from reference history; "
                 "cancelling orphan order(s) immediately."
             )
+            self._mirrored_orphan_cancel_was_deferred_in_episode = False
             return await self._cancel_mirrored_orphan_order_list(orphan_orders)
         # Still inside grace window: wait for copier fills / alignment.
         if (now - started_at) < grace_seconds:
@@ -666,12 +676,14 @@ class OrdersSynchronizer:
                 f"{late_reference_fill_count} late-reference-fill candidate(s), "
                 f"{remaining_seconds:.1f}s grace remaining"
             )
+            self._mirrored_orphan_cancel_was_deferred_in_episode = True
             return 0
 
         # Grace window finished: cancel orphans that are still open.
         self._get_logger().info(
             f"Mirrored orphan grace elapsed after {grace_seconds}s: cancelling {orphan_count} orphan(s)"
         )
+        self._mirrored_orphan_cancel_was_deferred_in_episode = False
         return await self._cancel_mirrored_orphan_order_list(orphan_orders)
 
     async def _cancel_mirrored_orphan_order_list(
@@ -740,7 +752,7 @@ class OrdersSynchronizer:
             return f"side mismatch (open_order={order.side}, target={side})"
         if order.order_type != order_type:
             return f"order_type mismatch (open_order={order.order_type}, target={order_type})"
-        quantity_tolerance = ideal_quantity * decimal.Decimal("0.002")
+        quantity_tolerance = ideal_quantity * self._copy_settings.mirrored_order_quantity_ratio_threshold
         quantity_threshold = max(quantity_tolerance, decimal.Decimal("1e-12"))
         if abs(order.origin_quantity - ideal_quantity) > quantity_threshold:
             return (
@@ -749,7 +761,7 @@ class OrdersSynchronizer:
             )
         if trading_personal_data.get_trade_order_type(order_type) is trading_enums.TradeOrderType.MARKET:
             return None
-        price_tolerance = order_target_price * decimal.Decimal("0.0001")
+        price_tolerance = order_target_price * self._copy_settings.mirrored_order_price_ratio_threshold
         reference_price = (
             order_target_price if order_target_price > trading_constants.ZERO else current_price
         )

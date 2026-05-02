@@ -17,7 +17,6 @@ import json
 import time
 import typing
 import dbos
-import os
 
 import octobot_commons.logging
 
@@ -201,6 +200,8 @@ class AutomationWorkflow:
             return list(envelope.actions_details), []
         if envelope.actions_type == octobot_node.enums.AutomationWorkflowActionTypes.TRADING_SIGNAL.value:
             return [], list(envelope.actions_details)
+        if envelope.actions_type == octobot_node.enums.AutomationWorkflowActionTypes.FORCED_TRIGGER.value:
+            return [], []
         return [], []
 
     @staticmethod
