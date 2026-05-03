@@ -17,11 +17,6 @@ import octobot_trading.exchanges as exchanges
 
 
 class Bitso(exchanges.RestExchange):
-    DESCRIPTION = ""
-
-    DEFAULT_MAX_LIMIT = 500
-    FIX_MARKET_STATUS = True
-
 
     @classmethod
     def get_name(cls):

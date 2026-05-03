@@ -20,7 +20,6 @@ import pytest
 import octobot_trading.enums as trading_enums
 import octobot_trading.constants as trading_constants
 import octobot_trading.errors as trading_errors
-import trading_backend.enums
 from additional_tests.exchanges_tests import abstract_authenticated_exchange_tester
 
 
@@ -42,7 +41,7 @@ class AbstractAuthenticatedFutureExchangeTester(
             await self.inner_test_get_empty_linear_and_inverse_positions()
 
     async def inner_test_get_empty_linear_and_inverse_positions(self):
-        if self.exchange_manager.exchange.SUPPORTS_SET_MARGIN_TYPE:
+        if self.exchange_manager.exchange.get_option_value(trading_enums.ExchangeClientOptions.SUPPORTS_SET_MARGIN_TYPE):
             await self.set_margin_type(trading_enums.MarginType.ISOLATED)
             await self._inner_test_get_empty_linear_and_inverse_positions_for_margin_type(
                 trading_enums.MarginType.ISOLATED
@@ -101,7 +100,7 @@ class AbstractAuthenticatedFutureExchangeTester(
         await self.set_leverage(origin_leverage)
         await self._check_margin_type_and_leverage(origin_margin_type, origin_leverage)  # did not change margin type
 
-    async def inner_test_get_max_orders_count(self):
+    async def inner_test_get_max_open_orders_count(self):
         self._test_symbol_max_orders_count(self.SYMBOL)
         self._test_symbol_max_orders_count(self.INVERSE_SYMBOL)
 
@@ -116,7 +115,7 @@ class AbstractAuthenticatedFutureExchangeTester(
         origin_leverage = contract.current_leverage
         new_margin_type = trading_enums.MarginType.CROSS \
             if origin_margin_type is trading_enums.MarginType.ISOLATED else trading_enums.MarginType.ISOLATED
-        if not self.exchange_manager.exchange.SUPPORTS_SET_MARGIN_TYPE:
+        if not self.exchange_manager.exchange.get_option_value(trading_enums.ExchangeClientOptions.SUPPORTS_SET_MARGIN_TYPE):
             assert origin_margin_type in (trading_enums.MarginType.ISOLATED, trading_enums.MarginType.CROSS)
             with pytest.raises(trading_errors.NotSupported):
                 await self.exchange_manager.exchange.connector.set_symbol_margin_type(symbol, True)
@@ -124,7 +123,7 @@ class AbstractAuthenticatedFutureExchangeTester(
                 await self.set_margin_type(new_margin_type, symbol=symbol)
             return
         if not has_open_position or (
-            has_open_position and self.exchange_manager.exchange.SUPPORTS_SET_MARGIN_TYPE_ON_OPEN_POSITIONS
+            has_open_position and self.exchange_manager.exchange.get_option_value(trading_enums.ExchangeClientOptions.SUPPORTS_SET_MARGIN_TYPE_ON_OPEN_POSITIONS)
         ):
             await self.set_margin_type(new_margin_type, symbol=symbol)
             position = await self.get_position(symbol=symbol)
@@ -177,7 +176,7 @@ class AbstractAuthenticatedFutureExchangeTester(
             assert position[trading_enums.ExchangeConstantsPositionColumns.POSITION_MODE.value] is position_mode
 
     async def inner_test_create_and_cancel_limit_orders(self, symbol=None, settlement_currency=None, use_both_margin_types=True):
-        if self.exchange_manager.exchange.SUPPORTS_SET_MARGIN_TYPE and use_both_margin_types:
+        if self.exchange_manager.exchange.get_option_value(trading_enums.ExchangeClientOptions.SUPPORTS_SET_MARGIN_TYPE) and use_both_margin_types:
             await self._inner_test_create_and_cancel_limit_orders_for_margin_type(
                 symbol=symbol, settlement_currency=settlement_currency, margin_type=trading_enums.MarginType.ISOLATED
             )
@@ -205,7 +204,7 @@ class AbstractAuthenticatedFutureExchangeTester(
 
     def _ensure_required_permissions(self, permissions):
         super()._ensure_required_permissions(permissions)
-        assert trading_backend.enums.APIKeyRights.FUTURES_TRADING in permissions
+        assert trading_enums.APIKeyRights.FUTURES_TRADING in permissions
 
     async def inner_test_create_and_fill_market_orders(self):
         portfolio = await self.get_portfolio()
@@ -262,7 +261,7 @@ class AbstractAuthenticatedFutureExchangeTester(
 
     async def get_positions(self, symbols=None):
         symbols = symbols or None
-        if symbols is None and self.exchange_manager.exchange.REQUIRES_SYMBOL_FOR_EMPTY_POSITION:
+        if symbols is None and self.exchange_manager.exchange.get_option_value(trading_enums.ExchangeClientOptions.REQUIRES_SYMBOL_FOR_EMPTY_POSITION):
             if self.INVERSE_SYMBOL is None:
                 raise AssertionError(f"INVERSE_SYMBOL is required")
             symbols = [self.SYMBOL, self.INVERSE_SYMBOL]

@@ -88,91 +88,34 @@ import octobot_trading.personal_data as trading_personal_data
 
 
 class Okx(exchanges.RestExchange):
-    DESCRIPTION = ""
-    # set True when even loading markets can make auth calls when creds are set
-    CAN_MAKE_AUTHENTICATED_REQUESTS_WHEN_LOADING_MARKETS = True
 
+    """
+    Deprecated constants kept as comments for reference.
     # text content of errors due to orders not found errors
-    EXCHANGE_PERMISSION_ERRORS: typing.List[typing.Iterable[str]] = [
+    # EXCHANGE_PERMISSION_ERRORS: typing.List[typing.Iterable[str]] = [
         # OKX ex: okx {"msg":"API key doesn't exist","code":"50119"}
         ("api", "key", "doesn't exist"),
     ]
     # text content of errors due to account compliancy issues
-    EXCHANGE_COMPLIANCY_ERRORS: typing.List[typing.Iterable[str]] = [
+    # EXCHANGE_COMPLIANCY_ERRORS: typing.List[typing.Iterable[str]] = [
         # OKX ex: Trading of this pair or contract is restricted due to local compliance requirements
         ("restricted", "compliance"),
         # OKX ex: You can't trade this pair or borrow this crypto due to local compliance restrictions.
         ("restrictions", "compliance"),
     ]
     # text content of errors due to unhandled authentication issues
-    EXCHANGE_AUTHENTICATION_ERRORS: typing.List[typing.Iterable[str]] = [
+    # EXCHANGE_AUTHENTICATION_ERRORS: typing.List[typing.Iterable[str]] = [
         # 'okx {"msg":"API key doesn't exist","code":"50119"}'
         ("api key doesn't exist",),
     ]
     # text content of errors due to unhandled IP white list issues
-    EXCHANGE_IP_WHITELIST_ERRORS: typing.List[typing.Iterable[str]] = [
+    # EXCHANGE_IP_WHITELIST_ERRORS: typing.List[typing.Iterable[str]] = [
         # okx {"msg":"Your IP 1.1.1.1 is not included in your API key's xxxx IP whitelist.","code":"50110"}
         ("is not included in your", "ip whitelist"),
     ]
-
-    FIX_MARKET_STATUS = True
-    ADAPT_MARKET_STATUS_FOR_CONTRACT_SIZE = True
-
-    # DEFAULT_CONNECTOR_CLASS = OkxConnector    # disabled until futures support is back
-    MAX_PAGINATION_LIMIT: int = 100  # value from https://www.okex.com/docs/en/#spot-orders_pending
-
-    # set when the exchange returns nothing when fetching historical candles with a too early start time
-    # (will iterate historical OHLCV requests over this window)
-    MAX_FETCHED_OHLCV_COUNT = 100
-
-    # Okx default take profits are market orders
-    # note: use BUY_MARKET and SELL_MARKET since in reality those are conditional market orders, which behave the same
-    # way as limit order but with higher fees
+    """
     _OKX_BUNDLED_ORDERS = [trading_enums.TraderOrderType.STOP_LOSS, trading_enums.TraderOrderType.TAKE_PROFIT,
                            trading_enums.TraderOrderType.BUY_MARKET, trading_enums.TraderOrderType.SELL_MARKET]
-
-    # should be overridden locally to match exchange support
-    SUPPORTED_ELEMENTS = {
-        trading_enums.ExchangeTypes.FUTURE.value: {
-            # order that should be self-managed by OctoBot
-            trading_enums.ExchangeSupportedElements.UNSUPPORTED_ORDERS.value: [
-                # trading_enums.TraderOrderType.STOP_LOSS,    # supported on futures
-                trading_enums.TraderOrderType.STOP_LOSS_LIMIT,
-                trading_enums.TraderOrderType.TAKE_PROFIT,
-                trading_enums.TraderOrderType.TAKE_PROFIT_LIMIT,
-                trading_enums.TraderOrderType.TRAILING_STOP,
-                trading_enums.TraderOrderType.TRAILING_STOP_LIMIT
-            ],
-            # order that can be bundled together to create them all in one request
-            trading_enums.ExchangeSupportedElements.SUPPORTED_BUNDLED_ORDERS.value: {
-                trading_enums.TraderOrderType.BUY_MARKET: _OKX_BUNDLED_ORDERS,
-                trading_enums.TraderOrderType.SELL_MARKET: _OKX_BUNDLED_ORDERS,
-                trading_enums.TraderOrderType.BUY_LIMIT: _OKX_BUNDLED_ORDERS,
-                trading_enums.TraderOrderType.SELL_LIMIT: _OKX_BUNDLED_ORDERS,
-            },
-        },
-        trading_enums.ExchangeTypes.SPOT.value: {
-            # order that should be self-managed by OctoBot
-            trading_enums.ExchangeSupportedElements.UNSUPPORTED_ORDERS.value: [
-                trading_enums.TraderOrderType.STOP_LOSS,
-                trading_enums.TraderOrderType.STOP_LOSS_LIMIT,
-                trading_enums.TraderOrderType.TAKE_PROFIT,
-                trading_enums.TraderOrderType.TAKE_PROFIT_LIMIT,
-                trading_enums.TraderOrderType.TRAILING_STOP,
-                trading_enums.TraderOrderType.TRAILING_STOP_LIMIT
-            ],
-            # order that can be bundled together to create them all in one request
-            trading_enums.ExchangeSupportedElements.SUPPORTED_BUNDLED_ORDERS.value: {},
-        }
-    }
-
-    # Set True when exchange is not returning empty position details when fetching a position with a specified symbol
-    # Exchange will then fallback to self.get_mocked_empty_position when having get_position returning None
-    REQUIRES_MOCKED_EMPTY_POSITION = True   # https://www.okx.com/learn/complete-guide-to-okex-api-v5-upgrade#h-rest-2
-
-    # set True when get_positions() is not returning empty positions and should use get_position() instead
-    REQUIRES_SYMBOL_FOR_EMPTY_POSITION = True
-    ADJUST_FOR_TIME_DIFFERENCE = True  # set True when the client needs to adjust its requests for time difference with the server
 
     @classmethod
     def get_name(cls):
@@ -195,29 +138,6 @@ class Okx(exchanges.RestExchange):
             trading_enums.ExchangeTypes.FUTURE,
         ]
 
-    def is_authenticated_request(self, url: str, method: str, headers: dict, body) -> bool:
-        signature_identifier = "OK-ACCESS-SIGN"
-        return bool(
-            headers
-            and signature_identifier in headers
-        )
-
-    def _fix_limit(self, limit: int) -> int:
-        return min(self.MAX_PAGINATION_LIMIT, limit) if limit else limit
-
-    async def get_account_id(self, **kwargs: dict) -> str:
-        accounts = await self.connector.client.fetch_accounts()
-        try:
-            with self.connector.error_describer(True):
-                return accounts[0]["id"]
-        except IndexError as err:
-            # should never happen as at least one account should be available
-            raise
-
-    def get_max_orders_count(self, symbol: str, order_type: trading_enums.TraderOrderType) -> int:
-        # unknown (05/06/2025)
-        return super().get_max_orders_count(symbol, order_type)
-
     async def get_sub_account_list(self):
         sub_account_list = (await self.connector.client.privateGetUsersSubaccountList()).get("data", [])
         if not sub_account_list:
@@ -232,9 +152,8 @@ class Okx(exchanges.RestExchange):
         ]
 
     def get_order_additional_params(self, order) -> dict:
-        params = {}
+        params = super().get_order_additional_params(order)
         if self.exchange_manager.is_future:
-            params["reduceOnly"] = order.reduce_only
             params[ccxt_enums.ExchangeOrderCCXTColumns.MARGIN_MODE.value] = self._get_ccxt_margin_type(order.symbol)
         return params
 
@@ -269,7 +188,7 @@ class Okx(exchanges.RestExchange):
 
     async def _get_all_typed_orders(self, method, symbol=None, since=None, limit=None, **kwargs) -> list:
         # todo replace by settings fetch_stop_order_in_different_request method when OKX will be stable again
-        limit = self._fix_limit(limit)
+        # limit = self._fix_limit(limit)
         is_stop_order = kwargs.get("stop", False)
         if is_stop_order and self.connector.adapter.OKX_ORDER_TYPE not in kwargs:
             kwargs[self.connector.adapter.OKX_ORDER_TYPE] = self.connector.adapter.OKX_CONDITIONAL_ORDER_TYPE
@@ -314,31 +233,6 @@ class Okx(exchanges.RestExchange):
                 # fetchOrder() does not support stop orders, use fetchOpenOrders() fetchCanceledOrders() or fetchClosedOrders
                 return await self.get_order_from_open_and_closed_orders(exchange_order_id, symbol=symbol, **kwargs)
             raise
-
-    def order_request_kwargs_factory(
-        self, 
-        exchange_order_id: str, 
-        order_type: typing.Optional[trading_enums.TraderOrderType] = None, 
-        **kwargs
-    ) -> dict:
-        params = kwargs or {}
-        try:
-            if "stop" not in params:
-                order_type = (
-                    order_type or 
-                    self.exchange_manager.exchange_personal_data.orders_manager.get_order(
-                        None, exchange_order_id=exchange_order_id
-                    ).order_type
-                )
-                params["stop"] = (
-                    trading_personal_data.is_stop_order(order_type)
-                    or trading_personal_data.is_take_profit_order(order_type)
-                )
-        except KeyError as err:
-            self.logger.warning(
-                f"Order {exchange_order_id} not found in order manager: considering it a regular (no stop/take profit) order {err}"
-            )
-        return params
 
     def _is_oco_order(self, params):
         return all(
@@ -489,49 +383,6 @@ class OKXCCXTAdapter(exchanges.CCXTAdapter):
     # Funding
     OKX_DEFAULT_FUNDING_TIME = 8 * commons_constants.HOURS_TO_SECONDS
 
-    def fix_order(self, raw, symbol=None, **kwargs):
-        fixed = super().fix_order(raw, symbol=symbol, **kwargs)
-        self._adapt_order_type(fixed)
-        return fixed
-
-    def _adapt_order_type(self, fixed):
-        order_info = fixed[trading_enums.ExchangeConstantsOrderColumns.INFO.value]
-        if fixed.get(ccxt_enums.ExchangeOrderCCXTColumns.TYPE.value, None) not in self.OKX_BASIC_ORDER_TYPES:
-            trigger_price = fixed.get(ccxt_enums.ExchangeOrderCCXTColumns.TRIGGER_PRICE.value, None)
-            last_price = order_info.get(self.OKX_LAST_PRICE, None)
-            stop_loss_trigger_price = order_info.get(self.OKX_STOP_LOSS_TRIGGER_PRICE, None)
-            take_profit_trigger_price = order_info.get(self.OKX_TAKE_PROFIT_TRIGGER_PRICE, None)
-            updated_type = trading_enums.TradeOrderType.UNKNOWN.value
-            if stop_loss_trigger_price and take_profit_trigger_price:
-                # OCO order, unsupported yet
-                self.logger.debug(f"Unsupported OKX OCO (stop loss & take profit in a single order): {fixed}")
-                updated_type = trading_enums.TradeOrderType.UNSUPPORTED.value
-            elif stop_loss_trigger_price is not None:
-                updated_type = trading_enums.TradeOrderType.STOP_LOSS.value
-            elif take_profit_trigger_price is not None:
-                updated_type = trading_enums.TradeOrderType.TAKE_PROFIT.value
-            elif last_price is not None:
-                last_price = float(last_price)
-                side = fixed[trading_enums.ExchangeConstantsOrderColumns.SIDE.value]
-                if side == trading_enums.TradeOrderSide.BUY.value:
-                    # trigger stop loss buy when price goes bellow stop_price, untriggered when last price is above
-                    if last_price > trigger_price:
-                        updated_type = trading_enums.TradeOrderType.STOP_LOSS.value
-                    else:
-                        updated_type = trading_enums.TradeOrderType.TAKE_PROFIT.value
-                else:
-                    # trigger take profit sell when price goes above stop_price, untriggered when last price is bellow
-                    if last_price < trigger_price:
-                        updated_type = trading_enums.TradeOrderType.TAKE_PROFIT.value
-                    else:
-                        updated_type = trading_enums.TradeOrderType.STOP_LOSS.value
-            else:
-                self.logger.error(
-                    f"Unknown [{self.connector.exchange_manager.exchange_name}] order type, order: {fixed}"
-                )
-            # stop loss and take profits are not tagged as such by ccxt, force it
-            fixed[trading_enums.ExchangeConstantsOrderColumns.TYPE.value] = updated_type
-        return fixed
 
     def parse_position(self, fixed, force_empty=False, **kwargs):
         parsed = super().parse_position(fixed, force_empty=force_empty, **kwargs)
@@ -567,17 +418,4 @@ class OKXCCXTAdapter(exchanges.CCXTAdapter):
         ]
         fixed[trading_enums.ExchangeConstantsLeveragePropertyColumns.LEVERAGE.value] = \
             decimal.Decimal(str(leverages[0] or leverages[1]))
-        return fixed
-
-    def parse_funding_rate(self, fixed, from_ticker=False, **kwargs):
-        if from_ticker:
-            # no funding info in ticker
-            return {}
-        fixed = super().parse_funding_rate(fixed, from_ticker=from_ticker, **kwargs)
-        next_funding_timestamp = fixed[trading_enums.ExchangeConstantsFundingColumns.NEXT_FUNDING_TIME.value]
-        fixed.update({
-            # patch LAST_FUNDING_TIME in tentacle
-            trading_enums.ExchangeConstantsFundingColumns.LAST_FUNDING_TIME.value:
-                max(next_funding_timestamp - self.OKX_DEFAULT_FUNDING_TIME, 0)
-        })
         return fixed

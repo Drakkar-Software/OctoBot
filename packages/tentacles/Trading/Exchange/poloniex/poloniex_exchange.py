@@ -18,8 +18,6 @@ import octobot_trading.exchanges as exchanges
 
 
 class Poloniex(exchanges.RestExchange):
-    FIX_MARKET_STATUS = True
-    REMOVE_MARKET_STATUS_PRICE_LIMITS = True
 
     @classmethod
     def get_name(cls):

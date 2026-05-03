@@ -29,6 +29,3 @@ class AscendexCCXTWebsocketConnector(exchanges.CCXTWebsocketConnector):
     @classmethod
     def get_name(cls):
         return ascendex_exchange.AscendEx.get_name()
-
-    def get_adapter_class(self, adapter_class):
-        return ascendex_exchange.AscendexCCXTAdapter

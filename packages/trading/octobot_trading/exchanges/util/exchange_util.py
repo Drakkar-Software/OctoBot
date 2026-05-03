@@ -18,7 +18,6 @@ import typing
 import ccxt
 import uuid
 import decimal
-import trading_backend
 
 import octobot_commons.logging as logging
 import octobot_commons.constants as common_constants
@@ -38,8 +37,8 @@ import octobot_trading.errors as errors
 import octobot_trading.constants as constants
 import octobot_trading.exchanges.types as exchanges_types
 import octobot_trading.exchanges.implementations as exchanges_implementations
-import octobot_trading.exchanges.connectors.ccxt.enums as ccxt_enums
 import octobot_trading.exchanges.connectors.ccxt.ccxt_client_util as ccxt_client_util
+import octobot_trading.exchanges.connectors.ccxt.enums as ccxt_enums
 import octobot_trading.exchanges.exchange_details as exchange_details
 import octobot_trading.exchanges.exchange_builder as exchange_builder
 import octobot_trading.exchange_data
@@ -365,14 +364,9 @@ async def get_local_exchange_manager(
 def exchange_error_translator(exchange_manager):
     try:
         yield
-    except ccxt.ExchangeError as err:
-        # convert permission and compliancy errors while the exchange manager still exists and can be used
-        if exchange_manager.exchange.is_api_permission_error(err):
-            raise errors.AuthenticationError(f"{err} ({err.__class__})") from err
-        if exchange_manager.exchange.is_exchange_rules_compliancy_error(err):
-            raise errors.ExchangeCompliancyError(f"{err} ({err.__class__})") from err
-        # default raise
-        raise
+    except ccxt.PermissionDenied as err:
+        # convert permission errors while the exchange manager still exists and can be used
+        raise errors.AuthenticationError(f"{err} ({err.__class__})") from err
 
 
 async def is_compatible_account(exchange_name: str, exchange_config: dict, tentacles_setup_config, is_sandboxed: bool) \
@@ -385,26 +379,16 @@ async def is_compatible_account(exchange_name: str, exchange_config: dict, tenta
         exchange_name, exchange_config, tentacles_setup_config, is_sandboxed, ignore_config=False,
         disable_unauth_retry=True,
     ) as local_exchange_manager:
-        backend = trading_backend.exchange_factory.create_exchange_backend(local_exchange_manager.exchange)
         try:
-            is_compatible, error = await backend.is_valid_account(always_check_key_rights=True)
-            if not local_exchange_manager.is_spot_only:
-                message = f"Future trading on {exchange_name.capitalize()} requires a supporting account. {error}." \
-                          f"Please create a new {exchange_name.capitalize()} account to use futures trading. "
-                # only ensure compatibility for non spot trading
-                return is_compatible, True, message if error else error
-            else:
-                # auth didn't fail, spot trading is always allowed
-                return True, True, None
-        except trading_backend.TimeSyncError:
-            return False, False, _get_time_sync_error_message(exchange_name, "backend.is_valid_account")
-        except trading_backend.APIKeyPermissionsError as err:
+            await local_exchange_manager.exchange.connector.request_exchange_to_ensure_authentication()
+            return True, True, None
+        except errors.FailedRequest as err:
+            return False, False, str(err)
+        except errors.ExchangeAccountSymbolPermissionError as err:
             return False, False, f"Please update your API Key permissions: {err}"
-        except trading_backend.APIKeyIPWhitelistError as err:
+        except errors.InvalidAPIKeyIPWhitelistError as err:
             return False, False, f"Please update your API Key IP whitelist: {err}"
-        except trading_backend.UnexpectedError as err:
-            return False, False, f"Impossible to check API key: {err}"
-        except trading_backend.ExchangeAuthError:
+        except errors.AuthenticationError as err:
             message = f"Invalid {exchange_name.capitalize()} authentication details"
             if is_sandboxed:
                 message = f"{message}. Warning: exchange sandbox is enabled, " \
@@ -412,7 +396,7 @@ async def is_compatible_account(exchange_name: str, exchange_config: dict, tenta
                           f"{exchange_name.capitalize()} to trade and validate your api key. " \
                           f"Disable sandbox in your accounts configuration if this is not intended."
             return False, False, message
-        except (AttributeError, Exception) as e:
+        except Exception as e:
             return True, False, f"Error when loading exchange account: {e}"
 
 
@@ -451,9 +435,14 @@ async def get_historical_ohlcv(
                 start_time += 1
             else:
                 reached_max = True
-        elif local_exchange_manager.exchange.MAX_FETCHED_OHLCV_COUNT:
+        elif local_exchange_manager.exchange.get_option_value(enums.ExchangeClientOptions.MAX_FETCHED_OHLCV_COUNT):
             # history needs to be fetched step by step
-            start_time = start_time + (time_frame_msec * local_exchange_manager.exchange.MAX_FETCHED_OHLCV_COUNT)
+            start_time = start_time + (
+                time_frame_msec
+                * local_exchange_manager.exchange.get_option_value(
+                    enums.ExchangeClientOptions.MAX_FETCHED_OHLCV_COUNT
+                )
+            )
         else:
             reached_max = True
 
@@ -643,5 +632,8 @@ def _get_is_auth_required_exchange(
         exchange_data.exchange_details.name, tentacles_setup_config, exchange_config_by_exchange
     )
     return exchange_class.requires_authentication(
-        None, tentacles_setup_config, exchange_config_by_exchange
+        None,
+        tentacles_setup_config,
+        exchange_config_by_exchange,
+        ccxt_rest_exchange_id=None,
     )

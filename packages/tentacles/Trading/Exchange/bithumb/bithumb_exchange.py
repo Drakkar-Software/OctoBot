@@ -17,8 +17,6 @@ import octobot_trading.exchanges as exchanges
 
 
 class Bithumb(exchanges.RestExchange):
-    DESCRIPTION = ""
-
     @classmethod
     def get_name(cls):
         return 'bithumb'

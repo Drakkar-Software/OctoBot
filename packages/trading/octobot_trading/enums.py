@@ -672,9 +672,150 @@ class OrderUpdateType(enum.Enum):
     STATE_CHANGE = "state_transition"
 
 
-class ExchangeSupportedElements(enum.Enum):
+class ExchangeFeatureKeys(enum.Enum):
     UNSUPPORTED_ORDERS = "unsupported_orders"
     SUPPORTED_BUNDLED_ORDERS = "supported_bundled_orders"
+
+
+class ExchangeClientOptions(enum.StrEnum):
+    FIX_MARKET_STATUS = "fixMarketStatus"
+    REMOVE_MARKET_STATUS_PRICE_LIMITS = "removeMarketStatusPriceLimits"
+    ADAPT_MARKET_STATUS_FOR_CONTRACT_SIZE = "adaptMarketStatusForContractSize"
+    INCLUDE_DISABLED_SYMBOLS_IN_AVAILABLE_SYMBOLS = "includeDisabledSymbolsInAvailableSymbols"
+    ENABLE_SPOT_BUY_MARKET_WITH_COST = "enableSpotBuyMarketWithCost"
+    REQUIRE_ORDER_FEES_FROM_TRADES = "requireOrderFeesFromTrades"
+    REQUIRE_CLOSED_ORDERS_FROM_RECENT_TRADES = "requireClosedOrdersFromRecentTrades"
+    REQUIRE_RECENT_TRADES_FROM_CLOSED_ORDERS = "requireRecentTradesFromClosedOrders"
+    REQUIRES_MOCKED_EMPTY_POSITION = "requiresMockedEmptyPosition"
+    REQUIRES_SYMBOL_FOR_EMPTY_POSITION = "requiresSymbolForEmptyPosition"
+    REQUIRES_STOP_PARAM_TO_FETCH_ORDER = "requiresStopParamToFetchOrder"
+    REQUIRES_STOP_PARAM_TO_CANCEL_ORDER = "requiresStopParamToCancelOrder"
+    ALLOW_TRADES_FROM_CLOSED_ORDERS = "allowTradesFromClosedOrders"
+    SUPPORTS_SET_MARGIN_TYPE = "supportsSetMarginType"
+    SUPPORTS_SET_MARGIN_TYPE_ON_OPEN_POSITIONS = "supportsSetMarginTypeOnOpenPositions"
+    EXPECT_POSSIBLE_NOT_FOUND_ORDER_DURING_ORDER_CREATION = "expectPossibleNotFoundOrderDuringOrderCreation"
+    ALWAYS_REQUIRES_AUTHENTICATION = "alwaysRequiresAuthentication"
+    CAN_MAKE_AUTHENTICATED_REQUESTS_WHEN_LOADING_MARKETS = "canMakeAuthenticatedRequestsWhenLoadingMarkets"
+    IS_SKIPPING_EMPTY_CANDLES_IN_OHLCV_FETCH = "isSkippingEmptyCandlesInOhlcvFetch"
+    STOP_LOSS_EDIT_PRICE_PARAM = "stopLossEditPriceParam"
+    STOP_LOSS_CREATE_PRICE_PARAM = "stopLossCreatePriceParam"
+    MARK_PRICE_IN_POSITION = "markPriceInPosition"
+    MARK_PRICE_IN_TICKER = "markPriceInTicker"
+    MAX_FETCHED_OHLCV_COUNT = "maxFetchedOhlcvCount"
+    CREATE_OHLCV_FROM_TICKERS = "createOhlcvFromTickers"
+    FUNDING_WITH_MARK_PRICE = "fundingWithMarkPrice"
+    FUNDING_IN_TICKER = "fundingInTicker"
+    MAX_INCREASED_POSITION_QUANTITY_MULTIPLIER = "maxIncreasedPositionQuantityMultiplier"
+    SUPPORT_FETCHING_CANCELLED_ORDERS = "supportFetchingCancelledOrders"
+    CAN_HAVE_DELAYED_OPEN_ORDERS = "canHaveDelayedOpenOrders"
+    CAN_HAVE_DELAYED_CANCELLED_ORDERS = "canHaveDelayedCancelledOrders"
+    SUPPORTS_CUSTOM_LIMIT_ORDER_BOOK_FETCH = "supportsCustomLimitOrderBookFetch"
+    CAN_MISS_TICKERS_IN_ALL_TICKERS = "canMissTickersInAllTickers"
+    LOCAL_FEES_CURRENCIES = "localFeesCurrencies"
+    ADJUST_FOR_TIME_DIFFERENCE = "adjustForTimeDifference"
+    DEFAULT_QUOTE_CURRENCY = "defaultQuoteCurrency"
+    HAS_BROKER = "hasBroker"
+    SUPPORTED_ELEMENTS = "supportedElements"
+
+
+class ExchangeSupportedElements(enum.StrEnum):
+    FUTURES = "futures"
+    SPOT = "spot"
+    ORDERS = "orders"
+    BUNDLED_ORDERS = "bundled_orders"
+
+
+DEFAULT_EXCHANGE_OPTION_VALUES = {
+    # set True when get_fixed_market_status should be called when calling get_market_status
+    ExchangeClientOptions.FIX_MARKET_STATUS: False,
+    # set True when get_fixed_market_status should be remove price limits (when limits are invalid)
+    ExchangeClientOptions.REMOVE_MARKET_STATUS_PRICE_LIMITS: False,
+    # set True when get_fixed_market_status should adapt amounts for contract size
+    # (amounts are in not kept as contract size with OctoBot)
+    ExchangeClientOptions.ADAPT_MARKET_STATUS_FOR_CONTRACT_SIZE: False,
+    # set True when disabled symbols should still be considered
+    # (ex: mexc with its temporary api trading disabled symbols)
+    ExchangeClientOptions.INCLUDE_DISABLED_SYMBOLS_IN_AVAILABLE_SYMBOLS: False,
+    # set True when create_market_buy_order_with_cost should be used to create buy market orders
+    # (useful to predict the exact spent amount)
+    ExchangeClientOptions.ENABLE_SPOT_BUY_MARKET_WITH_COST: False,
+    # set True when get_order is not giving fees on closed orders and fees
+    # should be fetched using recent trades.
+    ExchangeClientOptions.REQUIRE_ORDER_FEES_FROM_TRADES: False,
+    # set True when get_closed_orders is not supported. Incompatible with REQUIRE_RECENT_TRADES_FROM_CLOSED_ORDERS
+    ExchangeClientOptions.REQUIRE_CLOSED_ORDERS_FROM_RECENT_TRADES: False,
+    # set True when get_my_recent_trades should use get_closed_orders. Incompatible with REQUIRE_RECENT_TRADES_FROM_CLOSED_ORDERS
+    ExchangeClientOptions.REQUIRE_RECENT_TRADES_FROM_CLOSED_ORDERS: False,
+    # Set True when exchange is not returning empty position details when fetching a position with a specified symbol
+    # Exchange will then fallback to self.get_mocked_empty_position when having get_position returning None
+    ExchangeClientOptions.REQUIRES_MOCKED_EMPTY_POSITION: False,
+    # set True when get_positions() is not returning empty positions and should use get_position() instead
+    ExchangeClientOptions.REQUIRES_SYMBOL_FOR_EMPTY_POSITION: False,
+    # set True when get_order() requires the stop bool param to fetch a stop order
+    ExchangeClientOptions.REQUIRES_STOP_PARAM_TO_FETCH_ORDER: False,
+    # set True when cancel_order() requires the stop bool param to cancel a stop order
+    ExchangeClientOptions.REQUIRES_STOP_PARAM_TO_CANCEL_ORDER: False,
+    # set True when get_recent_trades should use get_closed_orders when no recent trades are found
+    ExchangeClientOptions.ALLOW_TRADES_FROM_CLOSED_ORDERS: False,
+    # set False when there is no API to switch between cross and isolated margin types
+    ExchangeClientOptions.SUPPORTS_SET_MARGIN_TYPE: True,
+    # set False when the exchange refuses to change margin type when an associated position is open
+    ExchangeClientOptions.SUPPORTS_SET_MARGIN_TYPE_ON_OPEN_POSITIONS: True,
+    # set True when get_order() can return None
+    # (order not found) when orders are being created on exchange and are not fully processed on the exchange side.
+    ExchangeClientOptions.EXPECT_POSSIBLE_NOT_FOUND_ORDER_DURING_ORDER_CREATION: False,
+    # set True when even normally public apis require authentication
+    ExchangeClientOptions.ALWAYS_REQUIRES_AUTHENTICATION: False,
+    # set True when even loading markets can make auth calls when creds are set
+    ExchangeClientOptions.CAN_MAKE_AUTHENTICATED_REQUESTS_WHEN_LOADING_MARKETS: False,
+    # set True when the exchange is known for not returning any candle when no traded happened during a candle
+    # time frame. In this case, a missing candle in backtesting won't trigger an error
+    ExchangeClientOptions.IS_SKIPPING_EMPTY_CANDLES_IN_OHLCV_FETCH: False,
+    # Name of the price param to give ccxt to edit a stop loss
+    ExchangeClientOptions.STOP_LOSS_EDIT_PRICE_PARAM: "stopLossPrice",
+    ExchangeClientOptions.STOP_LOSS_CREATE_PRICE_PARAM: "stopLossPrice",
+    # Mark price params
+    ExchangeClientOptions.MARK_PRICE_IN_POSITION: False,
+    ExchangeClientOptions.MARK_PRICE_IN_TICKER: False,
+    # OHLCV params
+    # set when the exchange returns nothing when fetching historical candles with a too early start time
+    # (will iterate historical OHLCV requests over this window)
+    ExchangeClientOptions.MAX_FETCHED_OHLCV_COUNT: None,
+    # set True when the exchange can't fetch OHLCVs but can fetch tickers
+    ExchangeClientOptions.CREATE_OHLCV_FROM_TICKERS: False,
+    # Funding rate params
+    ExchangeClientOptions.FUNDING_WITH_MARK_PRICE: False,
+    ExchangeClientOptions.FUNDING_IN_TICKER: False,
+    # Set when order cost is not (yet) accurately computed for a given exchange
+    ExchangeClientOptions.MAX_INCREASED_POSITION_QUANTITY_MULTIPLIER: 1,
+    ExchangeClientOptions.SUPPORT_FETCHING_CANCELLED_ORDERS: True,
+    # Set True when get_open_order() can return outdated orders (cancelled or not yet created)
+    ExchangeClientOptions.CAN_HAVE_DELAYED_OPEN_ORDERS: False,
+    # Set True when get_cancelled_order() can return outdated open orders
+    ExchangeClientOptions.CAN_HAVE_DELAYED_CANCELLED_ORDERS: False,
+    # Set True when the "limit" param when fetching order books is taken into account
+    ExchangeClientOptions.SUPPORTS_CUSTOM_LIMIT_ORDER_BOOK_FETCH: False,
+    # set True when fetch_tickers can sometimes miss symbols. In this case, the connector will try to fix it
+    ExchangeClientOptions.CAN_MISS_TICKERS_IN_ALL_TICKERS: True,
+    # set when the exchange can allow users to pay fees in a custom currency (ex: BNB on binance)
+    ExchangeClientOptions.LOCAL_FEES_CURRENCIES: None,
+    # set True when the client needs to adjust its requests for time difference with the server
+    ExchangeClientOptions.ADJUST_FOR_TIME_DIFFERENCE: False,
+    # set when the exchange uses a default quote currency for market orders (ex: USDC on binance)
+    ExchangeClientOptions.DEFAULT_QUOTE_CURRENCY: None,
+    # set True when the exchange supports broker
+    ExchangeClientOptions.HAS_BROKER: False,
+    ExchangeClientOptions.SUPPORTED_ELEMENTS: {
+        ExchangeSupportedElements.FUTURES: {
+            ExchangeSupportedElements.ORDERS: [TradeOrderType.MARKET.value, TradeOrderType.LIMIT.value],
+            ExchangeSupportedElements.BUNDLED_ORDERS: {},
+        },
+        ExchangeSupportedElements.SPOT: {
+            ExchangeSupportedElements.ORDERS: [TradeOrderType.MARKET.value, TradeOrderType.LIMIT.value],
+            ExchangeSupportedElements.BUNDLED_ORDERS: {},
+        },
+    },
+}
 
 
 class TradingModeActivityType(enum.Enum):
@@ -686,3 +827,11 @@ class TradingModeActivityType(enum.Enum):
 class ActiveOrderSwapTriggerPriceConfiguration(enum.Enum):
     FILLING_PRICE = "filling_price"
     ORDER_PARAMS_ONLY = "order_params_only"
+
+
+class APIKeyRights(enum.Enum):
+    READING = "reading"
+    SPOT_TRADING = "spotTrading"
+    MARGIN_TRADING = "marginTrading"
+    FUTURES_TRADING = "futuresTrading"
+    WITHDRAWALS = "withdrawals"

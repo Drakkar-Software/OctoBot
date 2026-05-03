@@ -449,7 +449,7 @@ def _patch_stop_loss_supported(exchange_manager):
     """Patch exchange to support STOP_LOSS orders (binanceus spot does not by default)."""
     return mock.patch.object(
         exchange_manager.exchange,
-        "is_supported_order_type",
+        "supports_order_type",
         mock.Mock(return_value=True),
     )
 
@@ -488,7 +488,7 @@ class TestStopLossOrderOperator:
 
         with mock.patch.object(
             exchange_manager.exchange,
-            "is_supported_order_type",
+            "supports_order_type",
             mock.Mock(return_value=False),
         ):
             operator = stop_loss_op_class("buy", SYMBOL, AMOUNT, PRICE)
@@ -637,7 +637,7 @@ class TestCreateOrderCallAsDsl:
         stop_price = 48000
         with mock.patch.object(
             exchange_manager.exchange,
-            "is_supported_order_type",
+            "supports_order_type",
             mock.Mock(return_value=False),
         ):
             with pytest.raises(
@@ -659,7 +659,7 @@ class TestCreateOrderCallAsDsl:
         stop_loss_price = 48000
         with mock.patch.object(
             exchange_manager.exchange,
-            "is_supported_order_type",
+            "supports_order_type",
             mock.Mock(return_value=False),
         ):
             with pytest.raises(

@@ -39,40 +39,40 @@ class AbstractExchange(octobot_trading.accounts.AbstractAccount):
     SELL_STR = enums.TradeOrderSide.SELL.value
 
     # should be overridden locally to match exchange support
-    SUPPORTED_ELEMENTS = {
-        enums.ExchangeTypes.FUTURE.value: {
-            # order that should be self-managed by OctoBot
-            enums.ExchangeSupportedElements.UNSUPPORTED_ORDERS.value: [
-                enums.TraderOrderType.STOP_LOSS,
-                enums.TraderOrderType.STOP_LOSS_LIMIT,
-                enums.TraderOrderType.TAKE_PROFIT,
-                enums.TraderOrderType.TAKE_PROFIT_LIMIT,
-                enums.TraderOrderType.TRAILING_STOP,
-                enums.TraderOrderType.TRAILING_STOP_LIMIT
-            ],
-            # order that can be bundled together to create them all in one request
-            # format: dict of bundled types by base order type
-            # ex: SUPPORTED_BUNDLED_ORDERS[enums.TraderOrderType.BUY_MARKET] = \
-            # [enums.TraderOrderType.STOP_LOSS, enums.TraderOrderType.TAKE_PROFIT]
-            enums.ExchangeSupportedElements.SUPPORTED_BUNDLED_ORDERS.value: {},
-        },
-        enums.ExchangeTypes.SPOT.value: {
-            # order that should be self-managed by OctoBot
-            enums.ExchangeSupportedElements.UNSUPPORTED_ORDERS.value: [
-                enums.TraderOrderType.STOP_LOSS,
-                enums.TraderOrderType.STOP_LOSS_LIMIT,
-                enums.TraderOrderType.TAKE_PROFIT,
-                enums.TraderOrderType.TAKE_PROFIT_LIMIT,
-                enums.TraderOrderType.TRAILING_STOP,
-                enums.TraderOrderType.TRAILING_STOP_LIMIT
-            ],
-            # order that can be bundled together to create them all in one request
-            # format: dict of bundled types by base order type
-            # ex: SUPPORTED_BUNDLED_ORDERS[enums.TraderOrderType.BUY_MARKET] = \
-            # [enums.TraderOrderType.STOP_LOSS, enums.TraderOrderType.TAKE_PROFIT]
-            enums.ExchangeSupportedElements.SUPPORTED_BUNDLED_ORDERS.value: {},
-        }
-    }
+    # _SUPPORTED_ELEMENTS = {
+    #     enums.ExchangeTypes.FUTURE.value: {
+    #         # order that should be self-managed by OctoBot
+    #         enums.ExchangeFeatureKeys.UNSUPPORTED_ORDERS.value: [
+    #             enums.TraderOrderType.STOP_LOSS,
+    #             enums.TraderOrderType.STOP_LOSS_LIMIT,
+    #             enums.TraderOrderType.TAKE_PROFIT,
+    #             enums.TraderOrderType.TAKE_PROFIT_LIMIT,
+    #             enums.TraderOrderType.TRAILING_STOP,
+    #             enums.TraderOrderType.TRAILING_STOP_LIMIT
+    #         ],
+    #         # order that can be bundled together to create them all in one request
+    #         # format: dict of bundled types by base order type
+    #         # ex: SUPPORTED_BUNDLED_ORDERS[enums.TraderOrderType.BUY_MARKET] = \
+    #         # [enums.TraderOrderType.STOP_LOSS, enums.TraderOrderType.TAKE_PROFIT]
+    #         enums.ExchangeFeatureKeys.SUPPORTED_BUNDLED_ORDERS.value: {},
+    #     },
+    #     enums.ExchangeTypes.SPOT.value: {
+    #         # order that should be self-managed by OctoBot
+    #         enums.ExchangeFeatureKeys.UNSUPPORTED_ORDERS.value: [
+    #             enums.TraderOrderType.STOP_LOSS,
+    #             enums.TraderOrderType.STOP_LOSS_LIMIT,
+    #             enums.TraderOrderType.TAKE_PROFIT,
+    #             enums.TraderOrderType.TAKE_PROFIT_LIMIT,
+    #             enums.TraderOrderType.TRAILING_STOP,
+    #             enums.TraderOrderType.TRAILING_STOP_LIMIT
+    #         ],
+    #         # order that can be bundled together to create them all in one request
+    #         # format: dict of bundled types by base order type
+    #         # ex: SUPPORTED_BUNDLED_ORDERS[enums.TraderOrderType.BUY_MARKET] = \
+    #         # [enums.TraderOrderType.STOP_LOSS, enums.TraderOrderType.TAKE_PROFIT]
+    #         enums.ExchangeFeatureKeys.SUPPORTED_BUNDLED_ORDERS.value: {},
+    #     }
+    # }
     ACCOUNTS = {}
 
     def __init__(self, config, exchange_manager, exchange_config_by_exchange: typing.Optional[dict[str, dict]]):
@@ -182,7 +182,7 @@ class AbstractExchange(octobot_trading.accounts.AbstractAccount):
         """
         raise NotImplementedError("get_uniform_timestamp not implemented")
 
-    def get_supported_elements(self, element_key: enums.ExchangeSupportedElements):
+    def get_supported_elements(self, element_key: enums.ExchangeFeatureKeys):
         """
         :return: the supported elements such as order type and bundle orders for the current exchange and trading type
         """
@@ -461,21 +461,29 @@ class AbstractExchange(octobot_trading.accounts.AbstractAccount):
         """
         return {}
 
-    def supports_bundled_order_on_order_creation(self, base_order, bundled_order_type) -> bool:
+    def get_option_value(self, option_key: enums.ExchangeClientOptions) -> typing.Union[bool, float, int, str, None]:
         """
-        Returns True when this exchange supports orders created upon other orders fill (ex: a stop loss created at
-        the same time as a buy order)
-        :param base_order: the first order of the combo
-        :param bundled_order_type: the type of the order that we try to bundle with base_order
-        :return: True if an order of type tied_order_type can be pushed alongside base_order to the exchange
-        in one request
+        Returns the value of the given option key.
+        :param option_key: the option key
+        :return: the option value
         """
-        try:
-            return bundled_order_type in self.get_supported_elements(
-                enums.ExchangeSupportedElements.SUPPORTED_BUNDLED_ORDERS
-            )[base_order.order_type]
-        except KeyError:
-            return False
+        raise NotImplementedError("get_option_value is not implemented")
+
+    def supports_order_type(
+        self, order_type: enums.TradeOrderType
+    ) -> bool:
+        """
+        Returns True when this exchange supports creating this order type.
+        """
+        raise NotImplementedError("supports_order_type is not implemented")
+
+    def supports_bundled_orders(
+        self, order_type: enums.TradeOrderType
+    ) -> bool:
+        """
+        Returns True when this exchange supports creating this order type as a bundled order.
+        """
+        raise NotImplementedError("supports_bundled_orders is not implemented")
 
     def get_bundled_order_parameters(self, order, stop_loss_price=None, take_profit_price=None) -> dict:
         """
@@ -488,15 +496,6 @@ class AbstractExchange(octobot_trading.accounts.AbstractAccount):
         base order in one request
         """
         raise NotImplementedError("get_bundled_order_parameters is not implemented")
-
-    def is_supported_order_type(self, order_type: enums.TraderOrderType) -> bool:
-        """
-        Check if the order type is supported by the current exchange instance
-        Should be used to know if we should simulate this order or create it on the exchange
-        :param order_type: the order type, should be a member of enums.TraderOrderType
-        :return: True if the order type is supported by the exchange, else False
-        """
-        return order_type not in self.get_supported_elements(enums.ExchangeSupportedElements.UNSUPPORTED_ORDERS)
 
     def is_market_open_for_order_type(self, symbol: str, order_type: enums.TraderOrderType) -> bool:
         """

@@ -185,10 +185,20 @@ TESTED_EXCHANGES = [
     "lbank",
 ])
 DEFAULT_FUTURE_EXCHANGES = sorted(["bybit"])
-SIMULATOR_TESTED_EXCHANGES = sorted(["bitfinex", "bithumb", "bitstamp", "bitmex",
-                              "hitbtc", "kraken", "poloniex", "bitso", "ndax", "upbit",
-                              "myokx", "okxus",
-                              "wavesexchange",])
+SIMULATOR_TESTED_EXCHANGES = sorted([
+    "bitfinex",
+    "bithumb",
+    "bitstamp",
+    "bitmex",
+    "hitbtc",
+    "kraken",
+    "poloniex",
+    "bitso",
+    "ndax",
+    "upbit",
+    "myokx",
+    "okxus",
+])
 
 
 # exchanges

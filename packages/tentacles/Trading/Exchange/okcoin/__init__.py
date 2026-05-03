@@ -1,1 +1,0 @@
-from .okcoin_exchange import Okcoin

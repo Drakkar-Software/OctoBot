@@ -1321,12 +1321,16 @@ def _get_exchange_local_fees_currency_price(orders: list[order_import.Order]) ->
     # use given orders to get the price of the potential local fees currencies
     # if an order trades this currency, then we can use its price to get the price of the currency
     for order in orders:
-        for local_fees_currency in order.trader.exchange_manager.exchange.LOCAL_FEES_CURRENCIES:
-            if local_fees_currency not in exchange_local_fees_currency_price:
-                exchange_local_fees_currency_price[local_fees_currency] = {}
-            if (
-                local_fees_currency in symbol_util.parse_symbol(order.symbol).base_and_quote() 
-                and order.symbol not in exchange_local_fees_currency_price[local_fees_currency]
-            ):
-                exchange_local_fees_currency_price[local_fees_currency][order.symbol] = order.origin_price
+        local_fees_currency = order.trader.exchange_manager.exchange.get_option_value(
+            enums.ExchangeClientOptions.LOCAL_FEES_CURRENCIES
+        )
+        if local_fees_currency is None:
+            continue
+        if local_fees_currency not in exchange_local_fees_currency_price:
+            exchange_local_fees_currency_price[local_fees_currency] = {}
+        if (
+            local_fees_currency in symbol_util.parse_symbol(order.symbol).base_and_quote() 
+            and order.symbol not in exchange_local_fees_currency_price[local_fees_currency]
+        ):
+            exchange_local_fees_currency_price[local_fees_currency][order.symbol] = order.origin_price
     return exchange_local_fees_currency_price

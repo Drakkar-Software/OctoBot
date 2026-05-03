@@ -20,3 +20,5 @@ CCXT_FEES = "fees"
 CCXT_FETCH_MARKETS = "fetchMarkets"
 CCXT_ADJUST_FOR_TIME_DIFFERENCE = "adjustForTimeDifference"
 CCXT_TIME_DIFFERENCE = "timeDifference"
+
+CCXT_OCTOBOT_OPTIONS = "octobot"

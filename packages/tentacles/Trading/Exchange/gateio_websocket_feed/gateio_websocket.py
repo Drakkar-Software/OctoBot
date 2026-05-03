@@ -29,6 +29,3 @@ class GateIOCCXTWebsocketConnector(exchanges.CCXTWebsocketConnector):
     @classmethod
     def get_name(cls):
         return gateio_exchange.GateIO.get_name()
-
-    def get_adapter_class(self, adapter_class):
-        return gateio_exchange.GateioCCXTAdapter

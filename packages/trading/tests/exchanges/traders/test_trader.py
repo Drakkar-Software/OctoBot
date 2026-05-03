@@ -35,7 +35,7 @@ from octobot_commons.tests.test_config import load_test_config
 from octobot_trading.personal_data.orders import Order
 import octobot_trading.errors as errors
 from octobot_trading.enums import TraderOrderType, TradeOrderSide, TradeOrderType, OrderStatus, \
-    ExchangeConstantsPositionColumns, PositionMode, MarginType, TakeProfitStopLossMode, ExchangeSupportedElements, \
+    ExchangeConstantsPositionColumns, PositionMode, MarginType, TakeProfitStopLossMode, \
     ExchangeConstantsTransactionColumns
 from octobot_trading.exchanges.exchange_manager import ExchangeManager
 from octobot_trading.personal_data.orders.order_factory import create_order_instance, create_order_instance_from_raw
@@ -1183,11 +1183,16 @@ class TestTrader:
 
         base_order = BuyLimitOrder(trader_inst)
         chained_order = StopLossOrder(trader_inst)
+        chained_order.order_type = TraderOrderType.STOP_LOSS
         # with bundle support
-        exchange_manager.exchange.get_supported_elements(ExchangeSupportedElements.SUPPORTED_BUNDLED_ORDERS)[
-            base_order.order_type] = [chained_order.order_type]
-        assert await trader_inst.bundle_chained_order_with_uncreated_order(base_order, chained_order, False, kw1=1, kw2="hello") \
-               == {}
+        with patch.object(
+            exchange_manager.exchange, "supports_bundled_orders", Mock(return_value=True)
+        ), patch.object(
+            exchange_manager.exchange, "get_bundled_order_parameters", Mock(return_value={})
+        ):
+            assert await trader_inst.bundle_chained_order_with_uncreated_order(
+                base_order, chained_order, False, kw1=1, kw2="hello"
+            ) == {}
         # bundled chained_order to base_order
         assert chained_order in base_order.chained_orders
         assert chained_order.triggered_by is base_order

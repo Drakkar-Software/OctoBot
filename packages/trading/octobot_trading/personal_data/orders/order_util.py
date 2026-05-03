@@ -352,10 +352,13 @@ def get_futures_max_order_size(exchange_manager, symbol, side, current_price, re
         )
         # apply MAX_INCREASED_POSITION_QUANTITY_MULTIPLIER in case the total order cost computation
         # is not (yet) accurate on this exchange (default is 1, meaning the calculation is accurate)
-        if exchange_manager.exchange.MAX_INCREASED_POSITION_QUANTITY_MULTIPLIER != constants.ONE \
+        max_increased_position_quantity_multiplier = decimal.Decimal(str(exchange_manager.exchange.get_option_value(
+            enums.ExchangeClientOptions.MAX_INCREASED_POSITION_QUANTITY_MULTIPLIER
+        )))
+        if max_increased_position_quantity_multiplier != constants.ONE \
            and not exchange_manager.is_backtesting:
             max_position_increased_order_quantity *= \
-                exchange_manager.exchange.MAX_INCREASED_POSITION_QUANTITY_MULTIPLIER
+                max_increased_position_quantity_multiplier
         # increasing position: always use the same currency
         return max_position_increased_order_quantity + (
             # include reducing position amount to process reverse
@@ -528,8 +531,8 @@ def is_take_profit_order(order_type: enums.TraderOrderType):
 
 
 def ensure_orders_limit(exchange_manager, symbol, added_orders: list[enums.TraderOrderType]):
-    max_limit_orders = exchange_manager.exchange.get_max_orders_count(symbol, enums.TraderOrderType.SELL_LIMIT)
-    max_stop_orders = exchange_manager.exchange.get_max_orders_count(symbol, enums.TraderOrderType.STOP_LOSS)
+    max_limit_orders = exchange_manager.exchange.get_max_open_orders_count(symbol, enums.TraderOrderType.SELL_LIMIT)
+    max_stop_orders = exchange_manager.exchange.get_max_open_orders_count(symbol, enums.TraderOrderType.STOP_LOSS)
     open_orders = exchange_manager.exchange_personal_data.orders_manager.get_open_orders(
         symbol=symbol, active=None  # consider both active and inactive orders of this symbol
     )

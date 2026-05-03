@@ -29,22 +29,19 @@ class TestHyperliquidAuthenticatedExchange(
     ORDER_CURRENCY = "ETH"
     SETTLEMENT_CURRENCY = "USDC"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
-    ORDER_SIZE = 25  # % of portfolio to include in test orders
+    ORDER_SIZE = 40  # % of portfolio to include in test orders
     VALID_ORDER_ID = "1777764898965454848"
     CONVERTS_MARKET_INTO_LIMIT_ORDERS = True   # when market orders are always converted into limit order by the exchange
+    IS_BROKER_ENABLED_ACCOUNT = False
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
 
-    async def test_get_portfolio_with_market_filter(self):
-        # pass if not implemented
-        pass
-
     async def test_untradable_symbols(self):
         await super().test_untradable_symbols()
 
-    async def test_get_max_orders_count(self):
-        await super().test_get_max_orders_count()
+    async def test_get_max_open_orders_count(self):
+        await super().test_get_max_open_orders_count()
 
     async def test_get_account_id(self):
         # pass if not implemented
@@ -70,11 +67,14 @@ class TestHyperliquidAuthenticatedExchange(
     async def test_get_not_found_order(self):
         await super().test_get_not_found_order()
 
-    async def test_is_valid_account(self):
-        await super().test_is_valid_account()
+    async def test_is_broker_enabled(self):
+        await super().test_is_broker_enabled()
 
     async def test_get_special_orders(self):
         await super().test_get_special_orders()
+
+    async def test_cancel_uncancellable_order(self):
+        await super().test_cancel_uncancellable_order()
 
     async def test_create_and_cancel_limit_orders(self):
         await super().test_create_and_cancel_limit_orders()

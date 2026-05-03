@@ -30,6 +30,3 @@ class HyperliquidCCXTWebsocketConnector(exchanges.CCXTWebsocketConnector):
     @classmethod
     def get_name(cls):
         return hyperliquid_exchange.Hyperliquid.get_name()
-
-    def get_adapter_class(self, adapter_class):
-        return hyperliquid_exchange.HyperLiquidCCXTAdapter

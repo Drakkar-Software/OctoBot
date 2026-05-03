@@ -52,6 +52,3 @@ class LBankCCXTWebsocketConnector(exchanges.CCXTWebsocketConnector, lbank_exchan
     @classmethod
     def get_name(cls):
         return lbank_exchange.LBank.get_name()
-
-    def get_adapter_class(self, adapter_class):
-        return lbank_exchange.LBankCCXTAdapter

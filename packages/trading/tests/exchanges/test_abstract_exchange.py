@@ -54,18 +54,9 @@ async def test_log_order_creation_error(abstract_exchange):
     logger_mock.reset_mock()
 
 
-async def test_supports_bundled_order_on_order_creation(abstract_exchange):
-    order_mock = mock.Mock()
-    order_mock.order_type = enums.TraderOrderType.SELL_MARKET
-    assert abstract_exchange.supports_bundled_order_on_order_creation(order_mock, enums.TraderOrderType.STOP_LOSS) \
-           is False
-    abstract_exchange.get_supported_elements(enums.ExchangeSupportedElements.SUPPORTED_BUNDLED_ORDERS)[
-        enums.TraderOrderType.SELL_MARKET
-    ] = [enums.TraderOrderType.SELL_MARKET, enums.TraderOrderType.BUY_LIMIT]
-    assert abstract_exchange.supports_bundled_order_on_order_creation(order_mock, enums.TraderOrderType.STOP_LOSS) \
-           is False
-    assert abstract_exchange.supports_bundled_order_on_order_creation(order_mock, enums.TraderOrderType.BUY_LIMIT) \
-           is True
+async def test_supports_bundled_orders(abstract_exchange):
+    with pytest.raises(NotImplementedError):
+        abstract_exchange.supports_bundled_orders(enums.TradeOrderType.STOP_LOSS)
 
 
 async def test_get_order_additional_params(abstract_exchange):

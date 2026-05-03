@@ -84,13 +84,12 @@ class Exchange:
         try:
             with self.error_describer():
                 await self._inner_cancel_order()
+        except ccxt.PermissionDenied:
+            # does not have trading permission: do not add trading permissions to rights
+            pass
         except ccxt.AuthenticationError as err:
-            if self._exchange.is_api_permission_error(err):
-                # does not have trading permission: do not add trading permissions to rights
-                pass
-            else:
-                self.raise_accurate_auth_error_if_any(err)
-                raise
+            self.raise_accurate_auth_error_if_any(err)
+            raise
         except ccxt.InvalidNonce as err:
             raise trading_backend.errors.TimeSyncError(err) from err
         except (ccxt.BadSymbol, ccxt.OperationFailed) as err:  
@@ -98,7 +97,7 @@ class Exchange:
             raise trading_backend.errors.UnexpectedError(err) from err
         except ccxt.ExchangeError as err:
             self.raise_accurate_auth_error_if_any(err)
-            if not self._exchange.is_api_permission_error(err):
+            if not isinstance(err, ccxt.PermissionDenied):
                 # goal of the check: we are in the expected "order not found" error scenario
                 # => has trading permission
                 rights.append(trading_backend.enums.APIKeyRights.SPOT_TRADING)
@@ -107,9 +106,9 @@ class Exchange:
         return rights
 
     def raise_accurate_auth_error_if_any(self, err):
-        if self._exchange.is_ip_whitelist_error(err):
+        if isinstance(err, ccxt.OBIPWhitelistError):
             raise trading_backend.errors.APIKeyIPWhitelistError(err) from err
-        if self._exchange.is_authentication_error(err):
+        if isinstance(err, ccxt.AuthenticationError):
             raise ccxt.AuthenticationError(err) from err
 
     async def _get_api_key_rights(self) -> list[trading_backend.enums.APIKeyRights]:

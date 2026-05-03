@@ -17,6 +17,7 @@ import typing
 import copy
 
 import octobot_trading.constants as constants
+import octobot_trading.enums as trading_enums
 import octobot_trading.exchanges.util as exchange_util
 import octobot_trading.exchanges.connectors.simulator.exchange_simulator_connector as exchange_simulator_connector
 import octobot_trading.exchanges.types.rest_exchange as rest_exchange
@@ -37,7 +38,7 @@ class ExchangeSimulator(rest_exchange.RestExchange):
         self.exchange_config_by_exchange = exchange_config_by_exchange
         super().__init__(config, exchange_manager, exchange_config_by_exchange)
 
-    def _create_connector(self, config, exchange_manager, connector_class):
+    def _create_connector(self, config, exchange_manager, connector_class, exchange_config_by_exchange):
         return (connector_class or self.DEFAULT_CONNECTOR_CLASS)(
             config,
             exchange_manager,
@@ -89,7 +90,9 @@ class ExchangeSimulator(rest_exchange.RestExchange):
         return exchange_simulator_connector.ExchangeSimulatorConnector.is_supporting_exchange(exchange_candidate_name)
 
     def is_skipping_empty_candles_in_ohlcv_fetch(self):
-        return (self.exchange_tentacle_class or self).IS_SKIPPING_EMPTY_CANDLES_IN_OHLCV_FETCH
+        return self.connector.get_option_value(
+            trading_enums.ExchangeClientOptions.IS_SKIPPING_EMPTY_CANDLES_IN_OHLCV_FETCH
+        )
 
     @classmethod
     def is_simulated_exchange(cls) -> bool:
@@ -99,13 +102,19 @@ class ExchangeSimulator(rest_exchange.RestExchange):
         return await self.connector.create_backtesting_exchange_producers()
 
     def _should_fix_market_status(self):
-        return (self.exchange_tentacle or self).FIX_MARKET_STATUS
+        return self.connector.get_option_value(
+            trading_enums.ExchangeClientOptions.FIX_MARKET_STATUS
+        )
 
     def _should_remove_market_status_limits(self):
-        return (self.exchange_tentacle or self).REMOVE_MARKET_STATUS_PRICE_LIMITS
+        return self.connector.get_option_value(
+            trading_enums.ExchangeClientOptions.REMOVE_MARKET_STATUS_PRICE_LIMITS
+        )
 
     def _should_adapt_market_status_for_contract_size(self):
-        return (self.exchange_tentacle or self).ADAPT_MARKET_STATUS_FOR_CONTRACT_SIZE
+        return self.connector.get_option_value(
+            trading_enums.ExchangeClientOptions.ADAPT_MARKET_STATUS_FOR_CONTRACT_SIZE
+        )
 
     def get_available_time_frames(self):
         return self.connector.get_available_time_frames()

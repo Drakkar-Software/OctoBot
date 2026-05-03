@@ -509,18 +509,20 @@ class TestOrderFactoryClass:
         assert "cost" in str(exc_info.value).lower()
 
     def test_order_factory_ensure_supported_order_type_raises(self):
-        exchange = mock.Mock(is_supported_order_type=mock.Mock(return_value=False))
+        exchange = mock.Mock(supports_order_type=mock.Mock(return_value=False))
         exchange_manager = mock.Mock(exchange=exchange, exchange_name="test_exchange")
         factory = order_factory_module.OrderFactory(exchange_manager, None, None, False, False)
         with pytest.raises(trading_errors.NotSupportedOrderTypeError) as exc_info:
             factory._ensure_supported_order_type(enums.TraderOrderType.STOP_LOSS)
         assert exc_info.value.order_type == enums.TraderOrderType.STOP_LOSS
+        exchange.supports_order_type.assert_called_once_with(enums.TradeOrderType.STOP_LOSS)
 
     def test_order_factory_ensure_supported_order_type_succeeds(self):
-        exchange = mock.Mock(is_supported_order_type=mock.Mock(return_value=True))
+        exchange = mock.Mock(supports_order_type=mock.Mock(return_value=True))
         exchange_manager = mock.Mock(exchange=exchange, exchange_name="test_exchange")
         factory = order_factory_module.OrderFactory(exchange_manager, None, None, False, False)
         factory._ensure_supported_order_type(enums.TraderOrderType.STOP_LOSS)
+        exchange.supports_order_type.assert_called_once_with(enums.TradeOrderType.STOP_LOSS)
 
     @pytest.mark.asyncio
     async def test_order_factory_get_computed_price(self):
@@ -611,7 +613,7 @@ class TestOrderFactoryClass:
             stop_loss_price = decimal.Decimal("45000")
             adapted_price = decimal.Decimal("45000")
             with mock.patch.object(
-                exchange_manager.exchange, "is_supported_order_type", mock.Mock(return_value=True)
+                exchange_manager.exchange, "supports_order_type", mock.Mock(return_value=True)
             ), mock.patch.object(factory, "_get_computed_price", mock.AsyncMock(return_value=adapted_price)):
                 await factory._create_stop_orders(
                     ctx, base_order, symbol_market, params, chained_orders,

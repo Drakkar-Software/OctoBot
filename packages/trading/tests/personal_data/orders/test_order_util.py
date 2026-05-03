@@ -988,7 +988,7 @@ def test_ensure_orders_limit():
     symbol = "BTC/USDT"
     exchange_manager = mock.Mock(
         exchange = mock.Mock(
-            get_max_orders_count = mock.Mock(return_value=5),
+            get_max_open_orders_count = mock.Mock(return_value=5),
         ),
         exchange_personal_data = mock.Mock(
             orders_manager = mock.Mock(
@@ -1007,11 +1007,11 @@ def test_ensure_orders_limit():
 
     # do not raise
     order_util.ensure_orders_limit(exchange_manager, symbol, [])
-    assert exchange_manager.exchange.get_max_orders_count.call_count == 2
-    assert exchange_manager.exchange.get_max_orders_count.mock_calls[0].args == (
+    assert exchange_manager.exchange.get_max_open_orders_count.call_count == 2
+    assert exchange_manager.exchange.get_max_open_orders_count.mock_calls[0].args == (
         symbol, enums.TraderOrderType.SELL_LIMIT
     )
-    assert exchange_manager.exchange.get_max_orders_count.mock_calls[1].args == (
+    assert exchange_manager.exchange.get_max_open_orders_count.mock_calls[1].args == (
         symbol, enums.TraderOrderType.STOP_LOSS
     )
     exchange_manager.exchange_personal_data.orders_manager.get_open_orders.assert_called_once_with(

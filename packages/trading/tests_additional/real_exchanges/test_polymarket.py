@@ -48,6 +48,7 @@ pytestmark = pytest.mark.asyncio
 _markets_cache: dict | None = None
 
 
+# todo update after polymarket api update
 class TestPolymarketRealExchangeTester(RealOptionExchangeTester):
     EXCHANGE_NAME = "polymarket"
     SYMBOL = f"will-bitcoin-replace-sha-256-before-2027/USDC:USDC-261231-0-YES"
@@ -250,7 +251,6 @@ class TestPolymarketRealExchangeTester(RealOptionExchangeTester):
                 check_low=False, 
                 check_close=True,
                 check_base_volume=True, 
-                check_timestamp=True
             )
 
     async def test_fetch_user_positions(self, **kwargs):

@@ -30,7 +30,7 @@ class TestBitMartAuthenticatedExchange(
     ORDER_CURRENCY = "BTC"
     SETTLEMENT_CURRENCY = "USDT"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
-    ORDER_SIZE = 80  # % of portfolio to include in test orders
+    ORDER_SIZE = 3  # % of portfolio to include in test orders
     CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES = True
     VALID_ORDER_ID = "1777764898965454848"
     EXPECTED_GENERATED_ACCOUNT_ID = True
@@ -39,14 +39,11 @@ class TestBitMartAuthenticatedExchange(
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
 
-    async def test_get_portfolio_with_market_filter(self):
-        await super().test_get_portfolio_with_market_filter()
-
     async def test_untradable_symbols(self):
         await super().test_untradable_symbols()
 
-    async def test_get_max_orders_count(self):
-        await super().test_get_max_orders_count()
+    async def test_get_max_open_orders_count(self):
+        await super().test_get_max_open_orders_count()
 
     async def test_get_account_id(self):
         await super().test_get_account_id()
@@ -69,11 +66,14 @@ class TestBitMartAuthenticatedExchange(
     async def test_get_not_found_order(self):
         await super().test_get_not_found_order()
 
-    async def test_is_valid_account(self):
-        await super().test_is_valid_account()
+    async def test_is_broker_enabled(self):
+        await super().test_is_broker_enabled()
 
     async def test_get_special_orders(self):
         await super().test_get_special_orders()
+
+    async def test_cancel_uncancellable_order(self):
+        await super().test_cancel_uncancellable_order()
 
     async def test_create_and_cancel_limit_orders(self):
         await super().test_create_and_cancel_limit_orders()

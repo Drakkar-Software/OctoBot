@@ -17,23 +17,16 @@ import asyncio
 import decimal
 import typing
 
-import octobot_commons.enums as commons_enums
-import octobot_commons.constants as commons_constants
 import octobot_trading.exchanges as exchanges
 import octobot_trading.enums as trading_enums
 
 
 class Phemex(exchanges.RestExchange):
-    DESCRIPTION = ""
     ALLOWED_OHLCV_LIMITS = [5, 10, 50, 100, 500, 1000]
-    FIX_MARKET_STATUS = True
 
     @classmethod
     def get_name(cls):
         return 'phemex'
-
-    def get_adapter_class(self):
-        return PhemexCCXTAdapter
 
     def _get_adapted_limit(self, limit):
         prev = self.ALLOWED_OHLCV_LIMITS[0]
@@ -48,10 +41,6 @@ class Phemex(exchanges.RestExchange):
             limit = self._get_adapted_limit(limit)
         return await super().get_symbol_prices(symbol, time_frame, limit=limit, **kwargs)
 
-    async def get_kline_price(self, symbol: str, time_frame: commons_enums.TimeFrames,
-                              **kwargs: dict) -> typing.Optional[list]:
-        return (await self.get_symbol_prices(symbol, time_frame, limit=5))[-1:]
-
     async def create_order(self, order_type: trading_enums.TraderOrderType, symbol: str, quantity: decimal.Decimal,
                            price: decimal.Decimal = None, stop_price: decimal.Decimal = None,
                            side: trading_enums.TradeOrderSide = None, current_price: decimal.Decimal = None,
@@ -65,17 +54,6 @@ class Phemex(exchanges.RestExchange):
                                           price=price, stop_price=stop_price,
                                           side=side, current_price=current_price,
                                           reduce_only=reduce_only, params=params)
-
-    def _get_ohlcv_params(self, time_frame, limit, **kwargs):
-        if limit is None:
-            return {}
-        to_time = self.connector.client.milliseconds()
-        time_frame_msec = commons_enums.TimeFramesMinutes[time_frame] * commons_constants.MSECONDS_TO_MINUTE
-        kwargs.update({
-            "from": to_time - (time_frame_msec * (limit + 1)),
-            "limit": limit,
-        })
-        return kwargs
 
     async def cancel_order(
             self, exchange_order_id: str, symbol: str, order_type: trading_enums.TraderOrderType, **kwargs: dict
@@ -111,31 +89,3 @@ class Phemex(exchanges.RestExchange):
             else:
                 return order
         return None
-
-
-class PhemexCCXTAdapter(exchanges.CCXTAdapter):
-    PHEMEX_FEE_CURRENCY = "feeCurrency"
-
-    def fix_order(self, raw, **kwargs):
-        fixed = super().fix_order(raw, **kwargs)
-        try:
-            if fixed[
-                trading_enums.ExchangeConstantsOrderColumns.STATUS.value
-            ] == trading_enums.OrderStatus.CLOSED.value \
-                    and fixed[trading_enums.ExchangeConstantsOrderColumns.FEE.value][
-               trading_enums.FeePropertyColumns.CURRENCY.value] is None:
-                order_info = fixed[trading_enums.ExchangeConstantsOrderColumns.INFO.value]
-                fixed[trading_enums.ExchangeConstantsOrderColumns.FEE.value][
-                    trading_enums.FeePropertyColumns.CURRENCY.value] = order_info[self.PHEMEX_FEE_CURRENCY]
-        except KeyError as err:
-            self.logger.debug(f"Failed to fix order fees: {err}")
-        try:
-            if fixed[
-                trading_enums.ExchangeConstantsOrderColumns.STATUS.value
-            ] == trading_enums.OrderStatus.CLOSED.value:
-                base_amount = fixed[trading_enums.ExchangeConstantsOrderColumns.AMOUNT.value]
-                fixed[trading_enums.ExchangeConstantsOrderColumns.AMOUNT.value] = \
-                    base_amount - fixed[trading_enums.ExchangeConstantsOrderColumns.REMAINING.value]
-        except KeyError as err:
-            self.logger.debug(f"Failed to fix order amount: {err}")
-        return fixed

@@ -20,8 +20,11 @@ import random
 import time
 import typing
 import ccxt
-import mock
+from ccxt.base.errors import (
+    OBIPWhitelistError,
+)
 import pytest
+import mock
 
 import octobot_commons.constants as constants
 import octobot_commons.enums as commons_enums
@@ -32,11 +35,11 @@ import octobot_trading.enums as trading_enums
 import octobot_trading.constants as trading_constants
 import octobot_trading.exchanges as trading_exchanges
 import octobot_trading.exchanges.connectors.ccxt.constants as ccxt_constants
+import octobot_trading.exchanges.connectors.ccxt.ccxt_client_util as ccxt_client_util
 import octobot_trading.personal_data as personal_data
 import octobot_trading.personal_data.orders as personal_data_orders
 import octobot_trading.util.test_tools.exchanges_test_tools as exchanges_test_tools
 import octobot_trading.exchanges.util.exchange_data as exchange_data_import
-import trading_backend.enums
 import octobot_tentacles_manager.api as tentacles_manager_api
 from additional_tests.exchanges_tests import get_authenticated_exchange_manager, NoProvidedCredentialsError
 
@@ -77,7 +80,7 @@ class AbstractAuthenticatedExchangeTester:
     EXPECT_MISSING_ORDER_FEES_DUE_TO_ORDERS_TOO_OLD_FOR_RECENT_TRADES = False   # when recent trades are limited and
     # closed orders fees are taken from recent trades
     EXPECT_MISSING_FEE_IN_CANCELLED_ORDERS = True  # when get_cancelled_orders returns None in fee
-    EXPECT_POSSIBLE_ORDER_NOT_FOUND_DURING_ORDER_CREATION = False
+    EXPECT_POSSIBLE_NOT_FOUND_ORDER_DURING_ORDER_CREATION = False
     EXPECT_NOT_SUPPORTED_ERROR_WHEN_FETCHING_CANCELLED_ORDERS = False    # set True when fetching cancelled orders is not supported and should raise a NotSupported error
     CONVERTS_MARKET_INTO_LIMIT_ORDERS = False   # when market orders are always converted into limit order by the exchange
     OPEN_ORDERS_IN_CLOSED_ORDERS = False
@@ -129,26 +132,6 @@ class AbstractAuthenticatedExchangeTester:
         # encoded_c = _get_encoded_value("")
         async with self.local_exchange_manager():
             await self.inner_test_get_portfolio()
-
-    async def test_get_portfolio_with_market_filter(self):
-        # ensure market status are already loaded by another exchange manage and filters are applied
-        async with self.local_exchange_manager():
-            # get portfolio with all markets
-            all_markets_portfolio = await self.get_portfolio()
-
-        # now that market status are cached, test with filters
-        async with self.local_exchange_manager(market_filter=self._get_market_filter()):
-            # check portfolio fetched with filtered markets (should be equal to the one with all markets)
-            filtered_markets_portfolio = await self.get_portfolio()
-            if self.EXPECT_BALANCE_FILTER_BY_MARKET_STATUS:
-                filtered = {
-                    key: val
-                    for key, val in all_markets_portfolio.items()
-                    if key in symbols.parse_symbol(self.SYMBOL).base_and_quote()
-                }
-                assert filtered_markets_portfolio == filtered, f"{filtered_markets_portfolio=} != {filtered=}"
-            else:
-                assert filtered_markets_portfolio == all_markets_portfolio, f"{filtered_markets_portfolio=} != {all_markets_portfolio=}"
 
     async def inner_test_get_portfolio(self):
         self.check_portfolio_content(await self.get_portfolio())
@@ -292,19 +275,19 @@ class AbstractAuthenticatedExchangeTester:
                 await self.cancel_order(buy_limit)
                 print(f"{i+1}/{len(to_test_symbols)} : {symbol} Create & cancel order OK")
 
-    async def test_get_max_orders_count(self):
+    async def test_get_max_open_orders_count(self):
         async with self.local_exchange_manager():
-            await self.inner_test_get_max_orders_count()
+            await self.inner_test_get_max_open_orders_count()
 
-    async def inner_test_get_max_orders_count(self):
+    async def inner_test_get_max_open_orders_count(self):
         self._test_symbol_max_orders_count(self.SYMBOL)
 
     def _test_symbol_max_orders_count(self, symbol):
-        max_base_order_count = self.exchange_manager.exchange.get_max_orders_count(
-            symbol, trading_enums.TraderOrderType.BUY_LIMIT
+        max_base_order_count = self.exchange_manager.exchange.get_max_open_orders_count(
+            symbol, trading_enums.TradeOrderType.LIMIT
         )
-        max_stop_order_count = self.exchange_manager.exchange.get_max_orders_count(
-            symbol, trading_enums.TraderOrderType.STOP_LOSS
+        max_stop_order_count = self.exchange_manager.exchange.get_max_open_orders_count(
+            symbol, trading_enums.TradeOrderType.STOP_LOSS
         )
         if self.SUPPORTS_GET_MAX_ORDERS_COUNT:
             assert (
@@ -312,8 +295,8 @@ class AbstractAuthenticatedExchangeTester:
                 or max_stop_order_count != self.DEFAULT_MAX_STOP_ORDERS_COUNT
             )
         else:
-            assert max_base_order_count == self.DEFAULT_MAX_DEFAULT_ORDERS_COUNT
-            assert max_stop_order_count == self.DEFAULT_MAX_STOP_ORDERS_COUNT
+            assert max_base_order_count == self.DEFAULT_MAX_DEFAULT_ORDERS_COUNT, f"Expected {self.DEFAULT_MAX_DEFAULT_ORDERS_COUNT}, got {max_base_order_count}"
+            assert max_stop_order_count == self.DEFAULT_MAX_STOP_ORDERS_COUNT, f"Expected {self.DEFAULT_MAX_STOP_ORDERS_COUNT}, got {max_stop_order_count}"
 
     async def test_get_account_id(self):
         async with self.local_exchange_manager():
@@ -384,7 +367,9 @@ class AbstractAuthenticatedExchangeTester:
             )
             latest_calls = get_latest_calls()
             for latest_call in latest_calls:
-                if self.exchange_manager.exchange.ALWAYS_REQUIRES_AUTHENTICATION:
+                if self.exchange_manager.exchange.get_option_value(
+                    trading_enums.ExchangeClientOptions.ALWAYS_REQUIRES_AUTHENTICATION
+                ):
                     assert latest_call[1] is True, f"{latest_call} should be authenticated"  # authenticated request
                 else:
                     assert latest_call[1] is False, f"{latest_call} should be NOT authenticated"  # authenticated request
@@ -394,7 +379,9 @@ class AbstractAuthenticatedExchangeTester:
             assert rest_exchange_data["calls"][-1][0][0] != latest_calls[-1][0][0]  # assert latest call's url changed
             latest_calls = get_latest_calls()
             for latest_call in latest_calls:
-                if self.exchange_manager.exchange.ALWAYS_REQUIRES_AUTHENTICATION:
+                if self.exchange_manager.exchange.get_option_value(
+                    trading_enums.ExchangeClientOptions.ALWAYS_REQUIRES_AUTHENTICATION
+                ):
                     assert latest_call[1] is True, f"{latest_call} should be authenticated"  # authenticated request
                 else:
                     assert latest_call[1] is False, f"{latest_call} should be NOT authenticated"  # authenticated request
@@ -434,7 +421,7 @@ class AbstractAuthenticatedExchangeTester:
             latest_calls = get_latest_calls()
             assert_has_at_least_one_authenticated_call(latest_calls)
         else:
-            with pytest.raises(NotImplementedError):
+            with pytest.raises(trading_errors.NotSupported):
                 self.exchange_manager.exchange.is_authenticated_request("", "", {}, None)
             await asyncio.sleep(1.5)  # let initial requests finish to be able to stop exchange manager
 
@@ -454,33 +441,32 @@ class AbstractAuthenticatedExchangeTester:
             await self.inner_test_get_api_key_permissions()
 
     async def inner_test_get_api_key_permissions(self):
-        origin_get_api_key_rights_using_order = self.exchange_manager.exchange_backend._get_api_key_rights_using_order
         with mock.patch.object(
-            self.exchange_manager.exchange_backend,
-            "_get_api_key_rights_using_order", mock.AsyncMock(side_effect=origin_get_api_key_rights_using_order)
-        ) as _get_api_key_rights_using_order_mock:
-            permissions = await self.exchange_manager.exchange_backend._get_api_key_rights()
+            self.exchange_manager.exchange.connector.client,
+            "cancel_order", mock.AsyncMock(wraps=self.exchange_manager.exchange.connector.client.cancel_order)
+        ) as cancel_order_mock:
+            permissions = await self.exchange_manager.exchange.get_permissions()
             self._ensure_required_permissions(permissions)
             if self.USE_ORDER_OPERATION_TO_CHECK_API_KEY_RIGHTS:
                 # failed ? did not use _get_api_key_rights_using_order while expected
-                _get_api_key_rights_using_order_mock.assert_called_once()
+                cancel_order_mock.assert_called_once()
             else:
                 # failed ? used _get_api_key_rights_using_order when not expected
-                _get_api_key_rights_using_order_mock.assert_not_called()
+                cancel_order_mock.assert_not_called()
 
     def _ensure_required_permissions(self, permissions):
         assert len(permissions) > 0
-        assert trading_backend.enums.APIKeyRights.READING in permissions
-        assert trading_backend.enums.APIKeyRights.SPOT_TRADING in permissions
+        assert trading_enums.APIKeyRights.READING in permissions, f"Expected reading permission, got: {permissions}"
+        assert trading_enums.APIKeyRights.SPOT_TRADING in permissions, f"Expected spot trading permission, got: {permissions}"
 
     async def test_missing_trading_api_key_permissions(self):
         async with self.local_exchange_manager(identifiers_suffix="_READONLY"):
             await self.inner_test_missing_trading_api_key_permissions()
 
     async def inner_test_missing_trading_api_key_permissions(self):
-        permissions = await self.exchange_manager.exchange_backend._get_api_key_rights()
+        permissions = await self.exchange_manager.exchange.get_permissions()
         # ensure reading permission only are returned
-        assert permissions == [trading_backend.enums.APIKeyRights.READING], f"Expected reading permission only, got: {permissions}"
+        assert permissions == [trading_enums.APIKeyRights.READING], f"Expected reading permission only, got: {permissions}"
         # ensure order operations returns a permission error
         with pytest.raises(trading_errors.AuthenticationError) as err:
             await self.inner_test_create_and_cancel_limit_orders(use_both_margin_types=False)
@@ -514,20 +500,15 @@ class AbstractAuthenticatedExchangeTester:
         non_existing_order = await self.exchange_manager.exchange.get_order(self.VALID_ORDER_ID, self.SYMBOL)
         assert non_existing_order is None
 
-    async def test_is_valid_account(self):
+    async def test_is_broker_enabled(self):
         async with self.local_exchange_manager():
-            await self.inner_test_is_valid_account()
+            await self.inner_test_is_broker_enabled()
 
-    async def inner_test_is_valid_account(self):
-        is_compatible, error = await self.exchange_manager.exchange_backend.is_valid_account(
-            always_check_key_rights=True
+    async def inner_test_is_broker_enabled(self):
+        is_broker_enabled = self.exchange_manager.exchange.get_option_value(
+            trading_enums.ExchangeClientOptions.HAS_BROKER
         )
-        assert is_compatible is self.IS_BROKER_ENABLED_ACCOUNT
-        if is_compatible:
-            assert error is None
-        else:
-            assert isinstance(error, str)
-            assert len(error) > 0
+        assert is_broker_enabled is self.IS_BROKER_ENABLED_ACCOUNT, f"Expected {self.IS_BROKER_ENABLED_ACCOUNT}, got {is_broker_enabled}"
 
 
     async def test_get_special_orders(self):
@@ -576,7 +557,6 @@ class AbstractAuthenticatedExchangeTester:
 
     async def test_create_and_cancel_limit_orders(self):
         async with self.local_exchange_manager():
-            await self.inner_test_cancel_uncancellable_order()
             await self.inner_test_create_and_cancel_limit_orders()
 
     async def inner_test_create_and_cancel_limit_orders(self, symbol=None, settlement_currency=None, **kwargs):
@@ -664,6 +644,10 @@ class AbstractAuthenticatedExchangeTester:
         assert await self.order_not_in_open_orders(open_orders, limit_order, symbol=symbol)
         assert await self.order_in_cancelled_orders(cancelled_orders, limit_order, symbol=symbol)
 
+    async def test_cancel_uncancellable_order(self):
+        async with self.local_exchange_manager():
+            await self.inner_test_cancel_uncancellable_order()
+
     async def inner_test_cancel_uncancellable_order(self):
         if self.UNCANCELLABLE_ORDER_ID_SYMBOL_TYPE:
             order_id, symbol, order_type = self.UNCANCELLABLE_ORDER_ID_SYMBOL_TYPE
@@ -722,7 +706,9 @@ class AbstractAuthenticatedExchangeTester:
         assert not trading_exchanges.is_missing_trading_fees(order_with_fees)
         order_maybe_without_fees = \
             await self.exchange_manager.exchange.connector.get_order(filled_exchange_order_id, symbol=symbol)
-        if self.exchange_manager.exchange.REQUIRE_ORDER_FEES_FROM_TRADES:
+        if self.exchange_manager.exchange.get_option_value(
+            trading_enums.ExchangeClientOptions.REQUIRE_ORDER_FEES_FROM_TRADES
+        ):
             assert trading_exchanges.is_missing_trading_fees(order_maybe_without_fees)
         else:
             assert not trading_exchanges.is_missing_trading_fees(order_maybe_without_fees)
@@ -738,8 +724,8 @@ class AbstractAuthenticatedExchangeTester:
         portfolio = await self.get_portfolio()
         size = self.get_order_size(portfolio, price, settlement_currency=self._get_edit_order_settlement_currency())
         open_orders = await self.get_open_orders()
-        assert self.exchange_manager.exchange.is_supported_order_type(
-            trading_enums.TraderOrderType.STOP_LOSS
+        assert self.exchange_manager.exchange.supports_order_type(
+            trading_enums.TradeOrderType.STOP_LOSS
         ) is True
         stop_loss = await self.create_market_stop_loss_order(
             current_price, price, size, trading_enums.TradeOrderSide.SELL
@@ -787,7 +773,9 @@ class AbstractAuthenticatedExchangeTester:
             await self.inner_test_get_cancelled_orders()
 
     async def inner_test_get_cancelled_orders(self):
-        if not self.exchange_manager.exchange.SUPPORT_FETCHING_CANCELLED_ORDERS:
+        if not self.exchange_manager.exchange.get_option_value(
+            trading_enums.ExchangeClientOptions.SUPPORT_FETCHING_CANCELLED_ORDERS
+        ):
             assert not self.exchange_manager.exchange.connector.client.has["fetchCanceledOrders"]
             # use get_closed order, no cancelled order is returned
             if self.EXPECT_NOT_SUPPORTED_ERROR_WHEN_FETCHING_CANCELLED_ORDERS:
@@ -1042,14 +1030,18 @@ class AbstractAuthenticatedExchangeTester:
         return await self.exchange_manager.exchange.get_closed_orders(symbol or self.SYMBOL)
 
     async def get_cancelled_orders(self, exchange_data=None, force_fetch=False, _symbols=None):
-        if not force_fetch and not self.exchange_manager.exchange.SUPPORT_FETCHING_CANCELLED_ORDERS:
+        if not force_fetch and not self.exchange_manager.exchange.get_option_value(
+            trading_enums.ExchangeClientOptions.SUPPORT_FETCHING_CANCELLED_ORDERS
+        ):
             # skipped
             return []
         exchange_data = exchange_data or self.get_exchange_data()
         return await exchanges_test_tools.get_cancelled_orders(self.exchange_manager, exchange_data, symbols=_symbols)
 
     async def check_require_closed_orders_from_recent_trades(self, symbol=None):
-        if self.exchange_manager.exchange.REQUIRE_CLOSED_ORDERS_FROM_RECENT_TRADES:
+        if self.exchange_manager.exchange.get_option_value(
+            trading_enums.ExchangeClientOptions.REQUIRE_CLOSED_ORDERS_FROM_RECENT_TRADES
+        ):
             with pytest.raises(trading_errors.NotSupported):
                 await self.exchange_manager.exchange.connector.get_closed_orders(symbol=symbol or self.SYMBOL)
 
@@ -1504,9 +1496,12 @@ class AbstractAuthenticatedExchangeTester:
         await self._get_order_until(order, is_edited, self.EDIT_TIMEOUT, False)
 
     async def _get_order_until(self, order, validation_func, timeout, can_order_be_not_found_on_exchange):
-        allow_not_found_order_on_exchange = \
-            can_order_be_not_found_on_exchange \
-            and self.exchange_manager.exchange.EXPECT_POSSIBLE_ORDER_NOT_FOUND_DURING_ORDER_CREATION
+        allow_not_found_order_on_exchange = (
+            can_order_be_not_found_on_exchange
+            and self.exchange_manager.exchange.get_option_value(
+                trading_enums.ExchangeClientOptions.EXPECT_POSSIBLE_NOT_FOUND_ORDER_DURING_ORDER_CREATION
+            )
+        )
         t0 = time.time()
         iterations = 0
         while time.time() - t0 < timeout:
@@ -1519,8 +1514,8 @@ class AbstractAuthenticatedExchangeTester:
                     raise AssertionError(
                         f"exchange.get_order() returned None, which means order is not found on exchange. "
                         f"This should not happen as "
-                        f"self.exchange_manager.exchange.EXPECT_POSSIBLE_ORDER_NOT_FOUND_DURING_ORDER_CREATION is "
-                        f"{self.exchange_manager.exchange.EXPECT_POSSIBLE_ORDER_NOT_FOUND_DURING_ORDER_CREATION} "
+                        f"{trading_enums.ExchangeClientOptions.EXPECT_POSSIBLE_NOT_FOUND_ORDER_DURING_ORDER_CREATION.value} is "
+                        f"{self.exchange_manager.exchange.get_option_value(trading_enums.ExchangeClientOptions.EXPECT_POSSIBLE_NOT_FOUND_ORDER_DURING_ORDER_CREATION)} "
                         f"and can_order_be_not_found_on_exchange is {can_order_be_not_found_on_exchange}"
                     )
             elif raw_order and validation_func(raw_order):
@@ -1544,8 +1539,15 @@ class AbstractAuthenticatedExchangeTester:
         iterations = 0
         while time.time() - t0 < self.ORDER_IN_OPEN_AND_CANCELLED_ORDERS_TIMEOUT or iterations == 0:
             iterations += 1
-            delay_allowed = self.exchange_manager.exchange.CAN_HAVE_DELAYED_OPEN_ORDERS if \
-                method is self.get_open_orders else self.exchange_manager.exchange.CAN_HAVE_DELAYED_CANCELLED_ORDERS
+            delay_allowed = (
+                self.exchange_manager.exchange.get_option_value(
+                    trading_enums.ExchangeClientOptions.CAN_HAVE_DELAYED_OPEN_ORDERS
+                )
+                if method is self.get_open_orders
+                else self.exchange_manager.exchange.get_option_value(
+                    trading_enums.ExchangeClientOptions.CAN_HAVE_DELAYED_CANCELLED_ORDERS
+                )
+            )
             if iterations > 1 and not delay_allowed:
                 raise AssertionError(
                     f"{self.exchange_manager.exchange_name} is not expecting to have missing {method.__name__} "
@@ -1625,7 +1627,9 @@ class AbstractAuthenticatedExchangeTester:
         )
 
     async def order_in_cancelled_orders(self, previous_cancelled_orders, order, symbol=None):
-        if not self.exchange_manager.exchange.SUPPORT_FETCHING_CANCELLED_ORDERS:
+        if not self.exchange_manager.exchange.get_option_value(
+            trading_enums.ExchangeClientOptions.SUPPORT_FETCHING_CANCELLED_ORDERS
+        ):
             # skipped
             return True
         return await self.order_in_fetched_orders(
@@ -1711,8 +1715,26 @@ class AbstractAuthenticatedExchangeTester:
     def _get_exchange_tentacle_class(self):
         return tentacles_manager_api.get_tentacle_class_from_string(self._get_exchange_tentacle_name())
 
+    def _get_option_value(
+        self, option_key: trading_enums.ExchangeClientOptions
+    ) -> typing.Union[bool, float, int, str, None]:
+        if self.local_exchange_manager:
+            return self.exchange_manager.exchange.get_option_value(option_key)
+        return ccxt_client_util.get_option_value_from_new_ccxt_client(
+            self.EXCHANGE_NAME, option_key
+        )
+
     def _supports_ip_whitelist_error(self):
-        return bool(self._get_exchange_tentacle_class().EXCHANGE_IP_WHITELIST_ERRORS)
+        return self._supports_error(OBIPWhitelistError)
+
+    def _supports_error(self, target_error_class):
+        ex_class = ccxt_client_util.ccxt_exchange_class_factory(self.EXCHANGE_NAME)
+        exceptions = ex_class().describe()["exceptions"] or {}
+        for kind, error_by_description in exceptions.items():
+            for description, error_class in error_by_description.items():
+                if error_class is target_error_class:
+                    return True
+        return False
 
     async def sleep_before_checking_portfolio(self):
         if self.SLEEP_SECONDS_BEFORE_CHECKING_PORTFOLIO > 0:

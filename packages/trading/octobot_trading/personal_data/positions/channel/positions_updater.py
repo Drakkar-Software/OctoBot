@@ -140,7 +140,9 @@ class PositionsUpdater(positions_channel.PositionsProducer):
         Update positions from exchange
         """
         symbols = self._get_pairs_to_update() \
-            if self.channel.exchange_manager.exchange.REQUIRES_SYMBOL_FOR_EMPTY_POSITION else None
+            if self.channel.exchange_manager.exchange.get_option_value(
+                enums.ExchangeClientOptions.REQUIRES_SYMBOL_FOR_EMPTY_POSITION
+            ) else None
         positions = await self.channel.exchange_manager.exchange.retry_n_time(
             retry_attempts,
             self.channel.exchange_manager.exchange.get_positions, symbols=symbols,
@@ -234,7 +236,11 @@ class PositionsUpdater(positions_channel.PositionsProducer):
         return self._has_mark_price_in_position()
 
     def _has_mark_price_in_position(self):
-        return self.channel.exchange_manager.exchange.MARK_PRICE_IN_POSITION
+        return bool(
+            self.channel.exchange_manager.exchange.get_option_value(
+                enums.ExchangeClientOptions.MARK_PRICE_IN_POSITION
+            )
+        )
 
     async def handle_mark_price(self, exchange: str, exchange_id: str, cryptocurrency: str, symbol: str, mark_price):
         """

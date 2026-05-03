@@ -45,11 +45,29 @@ class RealFuturesExchangeTester(RealExchangeTester):
                 )
             )
 
+    async def assert_get_funding_rate(
+        self,
+        *,
+        has_rate=True,
+        has_last_time=True,
+        has_last_time_in_the_future=False,
+        funding_info_in_ticker: bool = True,
+    ):
+        funding_rate, ticker_funding_rate = await self.get_funding_rate()
+        self._check_funding_rate(
+            funding_rate, has_rate=has_rate, has_last_time=has_last_time, has_last_time_in_the_future=has_last_time_in_the_future
+        )
+        # no funding info in ticker
+        self._check_funding_rate(
+            ticker_funding_rate, has_rate=funding_info_in_ticker, has_last_time=funding_info_in_ticker, has_last_time_in_the_future=funding_info_in_ticker, has_next_rate=funding_info_in_ticker, has_next_time=funding_info_in_ticker
+        )
+
     def _check_funding_rate(
         self,
         funding_rate,
         has_rate=True,
         has_last_time=True,
+        has_last_time_in_the_future=False,
         has_next_rate=True,
         has_next_time=True,
         has_next_time_in_the_past=False
@@ -67,10 +85,12 @@ class RealFuturesExchangeTester(RealExchangeTester):
                    and not funding_rate[enums.ExchangeConstantsFundingColumns.FUNDING_RATE.value].is_nan()
         else:
             assert funding_rate[enums.ExchangeConstantsFundingColumns.FUNDING_RATE.value].is_nan()
-        if has_last_time:
-            assert 0 < funding_rate[enums.ExchangeConstantsFundingColumns.LAST_FUNDING_TIME.value] <= self.get_time()
+        if has_last_time_in_the_future:
+            assert funding_rate[enums.ExchangeConstantsFundingColumns.LAST_FUNDING_TIME.value] > self.get_time(), f"{funding_rate[enums.ExchangeConstantsFundingColumns.LAST_FUNDING_TIME.value]=} > {self.get_time()}"
+        elif has_last_time:
+            assert 0 < funding_rate[enums.ExchangeConstantsFundingColumns.LAST_FUNDING_TIME.value] <= self.get_time(), f"{funding_rate[enums.ExchangeConstantsFundingColumns.LAST_FUNDING_TIME.value]=} <= {self.get_time()}"
         else:
-            assert funding_rate[enums.ExchangeConstantsFundingColumns.LAST_FUNDING_TIME.value] == constants.ZERO
+            assert funding_rate[enums.ExchangeConstantsFundingColumns.LAST_FUNDING_TIME.value] == constants.ZERO, f"{funding_rate[enums.ExchangeConstantsFundingColumns.LAST_FUNDING_TIME.value]=}"
         if has_next_rate:
             assert funding_rate[enums.ExchangeConstantsFundingColumns.PREDICTED_FUNDING_RATE.value] \
                    and not funding_rate[enums.ExchangeConstantsFundingColumns.PREDICTED_FUNDING_RATE.value].is_nan()
