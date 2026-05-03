@@ -32,7 +32,10 @@ class LBankSignConnectorMixin:
             if self._force_signed_requests is None:
                 # force sign if the exchange requires authentication or if the connector is authenticated
                 self._force_signed_requests = self.exchange_manager.exchange.requires_authentication(
-                    self.exchange_manager.exchange.tentacle_config, None, None
+                    self.exchange_manager.exchange.tentacle_config,
+                    None,
+                    None,
+                    self.exchange_manager,
                 ) or (
                     self.exchange_manager.exchange.connector 
                     and self.exchange_manager.exchange.connector.is_authenticated
@@ -156,44 +159,7 @@ class LBankConnector(exchanges.CCXTConnector, LBankSignConnectorMixin):
 
 class LBank(exchanges.RestExchange):
     DEFAULT_CONNECTOR_CLASS = LBankConnector
-    FIX_MARKET_STATUS = True
-    REMOVE_MARKET_STATUS_PRICE_LIMITS = True
-    SUPPORT_FETCHING_CANCELLED_ORDERS = False
-    ENABLE_SPOT_BUY_MARKET_WITH_COST = True
-    REQUIRE_ORDER_FEES_FROM_TRADES = True  # set True when get_order is not giving fees on closed orders and fees
-    # should be fetched using recent trades.
 
     @classmethod
     def get_name(cls):
         return 'lbank'
-
-    def get_adapter_class(self):
-        return LBankCCXTAdapter
-
-    async def get_account_id(self, **kwargs: dict) -> str:
-        # not supported
-        return constants.DEFAULT_ACCOUNT_ID
-
-    def get_additional_connector_config(self):
-        # tell ccxt to use amount as provided and not to compute it by multiplying it by price which is done here
-        # (price should not be sent to market orders). Only used for buy market orders
-        return {
-            ccxt_constants.CCXT_OPTIONS: {
-                "createMarketBuyOrderRequiresPrice": False  # disable quote conversion
-            }
-        }
-
-    def is_authenticated_request(self, url: str, method: str, headers: dict, body) -> bool:
-        body_signature_identifiers = "sign="
-        header_signature_method_identifiers = "signature_method"
-        return bool(
-            headers
-            and header_signature_method_identifiers in headers
-        ) or bool(
-            body
-            and body_signature_identifiers in body
-        )
-
-
-class LBankCCXTAdapter(exchanges.CCXTAdapter):
-    pass

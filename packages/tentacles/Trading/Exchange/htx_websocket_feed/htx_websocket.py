@@ -29,6 +29,3 @@ class HtxCCXTWebsocketConnector(exchanges.CCXTWebsocketConnector):
     @classmethod
     def get_name(cls):
         return htx_exchange.Htx.get_name()
-
-    def get_adapter_class(self, adapter_class):
-        return htx_exchange.HtxCCXTAdapter

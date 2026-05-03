@@ -29,6 +29,7 @@ from octobot_commons.enums import TimeFrames
 import octobot_trading.constants
 import octobot_trading.exchanges.connectors.ccxt.ccxt_clients_cache as ccxt_clients_cache
 
+import octobot_trading.enums as enums
 from octobot_commons.tests.test_config import load_test_config
 from octobot_trading.api.exchange import create_exchange_builder, cancel_ccxt_throttle_task
 from octobot_trading.exchanges.exchange_manager import ExchangeManager
@@ -73,6 +74,9 @@ class MockedCCXTConnector(CCXTConnector):
             reload=reload,
         )
 
+    def supports_order_type(self, order_type: enums.TradeOrderType) -> bool:
+        return order_type in [enums.TradeOrderType.MARKET, enums.TradeOrderType.LIMIT]
+
     def _should_authenticate(self):
         return False
 
@@ -82,7 +86,6 @@ class MockedCCXTConnector(CCXTConnector):
 
 class MockedRestExchange(DefaultRestExchange):
     DEFAULT_CONNECTOR_CLASS = MockedCCXTConnector
-    FIX_MARKET_STATUS = True    # true as binanceus needs this and is mainly used
 
     @classmethod
     def get_exchange_connector_class(cls, exchange_manager):

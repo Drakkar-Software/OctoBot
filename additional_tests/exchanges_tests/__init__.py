@@ -109,7 +109,8 @@ async def get_authenticated_exchange_manager(
         .use_market_filter(market_filter) \
         .enable_storage(False) \
         .disable_trading_mode() \
-        .is_exchange_only()
+        .is_exchange_only() \
+        .is_rest_only()
     if http_proxy_callback_factory:
         proxy_callback = http_proxy_callback_factory(exchange_builder.exchange_manager)
         exchange_builder.set_proxy_config(exchanges.ExchangeProxyConfig(http_proxy_callback=proxy_callback))

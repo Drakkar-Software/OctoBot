@@ -194,8 +194,12 @@ class TickerUpdater(ticker_channel.TickerProducer):
     def _should_use_future(self):
         return (
             self.channel.exchange_manager.is_future and (
-                self.channel.exchange_manager.exchange.FUNDING_IN_TICKER
-                or self.channel.exchange_manager.exchange.MARK_PRICE_IN_TICKER
+                self.channel.exchange_manager.exchange.get_option_value(
+                    enums.ExchangeClientOptions.FUNDING_IN_TICKER
+                )
+                or self.channel.exchange_manager.exchange.get_option_value(
+                    enums.ExchangeClientOptions.MARK_PRICE_IN_TICKER
+                )
             )
         )
 

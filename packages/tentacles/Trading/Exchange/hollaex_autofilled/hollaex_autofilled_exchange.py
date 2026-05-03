@@ -317,6 +317,10 @@ class HollaexAutofilled(hollaex):
     def get_rest_name(cls, exchange_manager):
         return hollaex.get_name()
 
+    @classmethod
+    def get_connector_id(cls) -> str:
+        return hollaex.get_name()
+
     def get_associated_websocket_exchange_name(self):
         return self.get_name()
 

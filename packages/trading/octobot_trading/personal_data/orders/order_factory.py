@@ -298,7 +298,8 @@ class OrderFactory:
         )
 
     def _ensure_supported_order_type(self, order_type: enums.TraderOrderType):
-        if not self.exchange_manager.exchange.is_supported_order_type(order_type):
+        trade_order_type = personal_data.get_trade_order_type(order_type)
+        if not self.exchange_manager.exchange.supports_order_type(trade_order_type):
             raise trading_errors.NotSupportedOrderTypeError(
                 f"{order_type.name} orders are not supported on {self.exchange_manager.exchange_name}", 
                 order_type

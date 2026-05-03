@@ -114,8 +114,8 @@ class Polymarket(exchanges.RestExchange):
     DESCRIPTION = ""
     DEFAULT_CONNECTOR_CLASS = PolymarketConnector
 
-    SUPPORT_FETCHING_CANCELLED_ORDERS = False
-    SUPPORTS_SET_MARGIN_TYPE = False
+    # SUPPORT_FETCHING_CANCELLED_ORDERS = False
+    # SUPPORTS_SET_MARGIN_TYPE = False
 
     @classmethod
     def get_name(cls):

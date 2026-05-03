@@ -29,63 +29,11 @@ import octobot_trading.errors
 
 
 class Bybit(exchanges.RestExchange):
-    DESCRIPTION = ""
-
-    FIX_MARKET_STATUS = True
-
     # Bybit default take profits are market orders
     # note: use BUY_MARKET and SELL_MARKET since in reality those are conditional market orders, which behave the same
     # way as limit order but with higher fees
     _BYBIT_BUNDLED_ORDERS = [trading_enums.TraderOrderType.STOP_LOSS, trading_enums.TraderOrderType.TAKE_PROFIT,
                              trading_enums.TraderOrderType.BUY_MARKET, trading_enums.TraderOrderType.SELL_MARKET]
-
-    # should be overridden locally to match exchange support
-    SUPPORTED_ELEMENTS = {
-        trading_enums.ExchangeTypes.FUTURE.value: {
-            # order that should be self-managed by OctoBot
-            trading_enums.ExchangeSupportedElements.UNSUPPORTED_ORDERS.value: [
-                # trading_enums.TraderOrderType.STOP_LOSS,    # supported on futures
-                trading_enums.TraderOrderType.STOP_LOSS_LIMIT,
-                trading_enums.TraderOrderType.TAKE_PROFIT,
-                trading_enums.TraderOrderType.TAKE_PROFIT_LIMIT,
-                trading_enums.TraderOrderType.TRAILING_STOP,
-                trading_enums.TraderOrderType.TRAILING_STOP_LIMIT
-            ],
-            # order that can be bundled together to create them all in one request
-            trading_enums.ExchangeSupportedElements.SUPPORTED_BUNDLED_ORDERS.value: {
-                trading_enums.TraderOrderType.BUY_MARKET: _BYBIT_BUNDLED_ORDERS,
-                trading_enums.TraderOrderType.SELL_MARKET: _BYBIT_BUNDLED_ORDERS,
-                trading_enums.TraderOrderType.BUY_LIMIT: _BYBIT_BUNDLED_ORDERS,
-                trading_enums.TraderOrderType.SELL_LIMIT: _BYBIT_BUNDLED_ORDERS,
-            },
-        },
-        trading_enums.ExchangeTypes.SPOT.value: {
-            # order that should be self-managed by OctoBot
-            trading_enums.ExchangeSupportedElements.UNSUPPORTED_ORDERS.value: [
-                trading_enums.TraderOrderType.STOP_LOSS,
-                trading_enums.TraderOrderType.STOP_LOSS_LIMIT,
-                trading_enums.TraderOrderType.TAKE_PROFIT,
-                trading_enums.TraderOrderType.TAKE_PROFIT_LIMIT,
-                trading_enums.TraderOrderType.TRAILING_STOP,
-                trading_enums.TraderOrderType.TRAILING_STOP_LIMIT
-            ],
-            # order that can be bundled together to create them all in one request
-            trading_enums.ExchangeSupportedElements.SUPPORTED_BUNDLED_ORDERS.value: {},
-        }
-    }
-
-    MARK_PRICE_IN_TICKER = True
-    FUNDING_IN_TICKER = True
-
-    # set True when get_positions() is not returning empty positions and should use get_position() instead
-    REQUIRES_SYMBOL_FOR_EMPTY_POSITION = True
-    REQUIRE_ORDER_FEES_FROM_TRADES = True  # set True when get_order is not giving fees on closed orders and fees
-    EXPECT_POSSIBLE_ORDER_NOT_FOUND_DURING_ORDER_CREATION = True  # set True when get_order() can return None
-    # (order not found) when orders are instantly filled on exchange and are not fully processed on the exchange side.
-
-    # Set True when get_open_order() can return outdated orders (cancelled or not yet created)
-    CAN_HAVE_DELAYED_CANCELLED_ORDERS = True
-    ADJUST_FOR_TIME_DIFFERENCE = True  # set True when the client needs to adjust its requests for time difference with the server
 
     BUY_STR = "Buy"
     SELL_STR = "Sell"
@@ -106,20 +54,6 @@ class Bybit(exchanges.RestExchange):
         super().__init__(config, exchange_manager, exchange_config_by_exchange, connector_class=connector_class)
         self.order_quantity_by_amount = {}
         self.order_quantity_by_id = {}
-
-    def get_additional_connector_config(self):
-        connector_config = {
-            ccxt_constants.CCXT_OPTIONS: {
-                "recvWindow": 60000,    # default is 5000, avoid time related issues
-            }
-        }
-        if not self.exchange_manager.is_future:
-            # tell ccxt to use amount as provided and not to compute it by multiplying it by price which is done here
-            # (price should not be sent to market orders). Only used for buy market orders
-            connector_config[ccxt_constants.CCXT_OPTIONS][
-                "createMarketBuyOrderRequiresPrice"
-            ] = False  # disable quote conversion
-        return connector_config
 
     def get_adapter_class(self):
         return BybitCCXTAdapter
@@ -266,11 +200,10 @@ class Bybit(exchanges.RestExchange):
             raise
 
     def get_order_additional_params(self, order) -> dict:
-        params = {}
+        params = super().get_order_additional_params(order)
         if self.exchange_manager.is_future:
             contract = self.exchange_manager.exchange.get_pair_contract(order.symbol)
             params["positionIdx"] = self._get_position_idx(contract)
-            params["reduceOnly"] = order.reduce_only
         return params
 
     def _get_margin_type_query_params(self, symbol, **kwargs):
@@ -412,12 +345,6 @@ class BybitCCXTAdapter(exchanges.CCXTAdapter):
                     trading_enums.TradeOrderType.STOP_LOSS.value
             else:
                 self.logger.error(f"Unknown [{self.connector.exchange_manager.exchange_name}] trigger order: {fixed}")
-        return fixed
-
-    def fix_ticker(self, raw, **kwargs):
-        fixed = super().fix_ticker(raw, **kwargs)
-        fixed[trading_enums.ExchangeConstantsTickersColumns.TIMESTAMP.value] = \
-            fixed.get(trading_enums.ExchangeConstantsTickersColumns.TIMESTAMP.value) or self.connector.client.seconds()
         return fixed
     
     def parse_position(self, fixed, **kwargs):

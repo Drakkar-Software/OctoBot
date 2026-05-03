@@ -67,7 +67,7 @@ def authentication_required(func):
     async def authenticated_wrapper(self, *args, **kwargs):
         try:
             return await func(self, *args, **kwargs)
-        except errors.AuthenticationError as err:
+        except (errors.AuthenticationError) as err:
             await self.on_invalid_credentials()
             raise err
     return authenticated_wrapper
@@ -475,8 +475,8 @@ class Trader(util.Initializable):
         :return: enums.TraderOrderType.TAKE_PROFIT when order can be bundled and considered as a real take profit
         from exchange and the given order_type otherwise
         """
-        if not self.simulate and self.exchange_manager.exchange.supports_bundled_order_on_order_creation(
-            base_order, enums.TraderOrderType.TAKE_PROFIT
+        if not self.simulate and self.exchange_manager.exchange.supports_bundled_orders(
+            order_util.get_trade_order_type(enums.TraderOrderType.TAKE_PROFIT)
         ):
             # use take profit order type for bundled orders, use default order type otherwise
             return enums.TraderOrderType.TAKE_PROFIT
@@ -496,9 +496,11 @@ class Trader(util.Initializable):
         :return: parameters with chained order details if supported
         """
         params = {}
-        is_bundled = self.exchange_manager.exchange.supports_bundled_order_on_order_creation(
-            order, chained_order.order_type
-        )
+        is_bundled = False
+        if chained_order.order_type is not None:
+            is_bundled = self.exchange_manager.exchange.supports_bundled_orders(
+                order_util.get_trade_order_type(chained_order.order_type)
+            )
         if is_bundled:
             # warning: doesn't work for multiple stop loss / take profits
             if chained_order.order_type is enums.TraderOrderType.STOP_LOSS:

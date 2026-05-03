@@ -280,7 +280,9 @@ class OHLCVUpdater(ohlcv_channel.OHLCVProducer):
             return ohlcvs
         except errors.NotSupported as err:
             if (
-                self.channel.exchange_manager.exchange.CREATE_OHLCV_FROM_TICKERS
+                self.channel.exchange_manager.exchange.get_option_value(
+                    enums.ExchangeClientOptions.CREATE_OHLCV_FROM_TICKERS
+                )
                 and tickers_backup and symbol in tickers_backup
             ):
                 self.logger.info(f"Fetching OHLCVs is not supported: {err}. Falling back to tickers data.")

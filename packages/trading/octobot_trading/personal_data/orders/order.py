@@ -904,9 +904,15 @@ class Order(util.Initializable):
     def is_self_managed(self):
         if self.is_cleared():
             return order_util.is_stop_order(self.order_type) or order_util.is_take_profit_order(self.order_type)
-        return self.trader.allow_artificial_orders and \
-            not self.is_synchronized_with_exchange and \
-            not self.exchange_manager.exchange.is_supported_order_type(self.order_type)
+        if not self.trader.allow_artificial_orders or self.is_synchronized_with_exchange:
+            return False
+        if self.order_type is None:
+            return False
+        try:
+            trade_order_type = order_util.get_trade_order_type(self.order_type)
+            return not self.exchange_manager.exchange.supports_order_type(trade_order_type)
+        except (ValueError, NotImplementedError): # TODO fix when bundleed orders are supported again
+            return False
 
     def is_long(self):
         return self.side is enums.TradeOrderSide.BUY

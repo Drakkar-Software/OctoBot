@@ -620,8 +620,8 @@ async def test_skip_create_entry_order_when_too_many_live_exit_orders(tools):
     )
     with mock.patch.object(mode, "create_order", mock.AsyncMock(side_effect=lambda *args, **kwargs: args[0])) \
             as create_order_mock, \
-        mock.patch.object(trader.exchange_manager.exchange, "get_max_orders_count", mock.Mock(return_value=1)) \
-            as get_max_orders_count_mock, \
+        mock.patch.object(trader.exchange_manager.exchange, "get_max_open_orders_count", mock.Mock(return_value=1)) \
+            as get_max_open_orders_count_mock, \
         mock.patch.object(
             trader.exchange_manager.exchange_personal_data.orders_manager, "get_open_orders",
             mock.Mock(return_value=[mock.Mock(order_type=trading_enums.TraderOrderType.BUY_LIMIT)])
@@ -631,19 +631,19 @@ async def test_skip_create_entry_order_when_too_many_live_exit_orders(tools):
         mode.use_take_profit_exit_orders = False
         with pytest.raises(octobot_trading.errors.MaxOpenOrderReachedForSymbolError):
             await consumer._create_entry_with_chained_exit_orders(entry_order, entry_price, symbol_market, None)
-        assert get_max_orders_count_mock.call_count == 1 * 2   # entry: 1, stop: 0, tp: 0, 2 calls for each
-        get_max_orders_count_mock.reset_mock()
+        assert get_max_open_orders_count_mock.call_count == 1 * 2   # entry: 1, stop: 0, tp: 0, 2 calls for each
+        get_max_open_orders_count_mock.reset_mock()
         create_order_mock.assert_not_called()
         get_open_orders_mock.assert_called_once()
 
         # 1.B can create entry market order
         entry_order.order_type=trading_enums.TraderOrderType.BUY_MARKET
         assert await consumer._create_entry_with_chained_exit_orders(entry_order, entry_price, symbol_market, None)
-        get_max_orders_count_mock.assert_not_called()   # not called for entry marker orders
+        get_max_open_orders_count_mock.assert_not_called()   # not called for entry marker orders
         create_order_mock.assert_called_once_with(entry_order, params=None, dependencies=None)
         create_order_mock.reset_mock()
         assert len(entry_order.chained_orders) == 0
-        get_max_orders_count_mock.reset_mock()
+        get_max_open_orders_count_mock.reset_mock()
         create_order_mock.assert_not_called()
         get_open_orders_mock.assert_called_once()
 
@@ -652,14 +652,14 @@ async def test_skip_create_entry_order_when_too_many_live_exit_orders(tools):
 
     with mock.patch.object(mode, "create_order", mock.AsyncMock(side_effect=lambda *args, **kwargs: args[0])) \
             as create_order_mock, \
-        mock.patch.object(trader.exchange_manager.exchange, "get_max_orders_count", mock.Mock(return_value=1)) \
-            as get_max_orders_count_mock:
+        mock.patch.object(trader.exchange_manager.exchange, "get_max_open_orders_count", mock.Mock(return_value=1)) \
+            as get_max_open_orders_count_mock:
         mode.use_stop_loss = True
         mode.use_take_profit_exit_orders = True
         # 2. chained stop loss & take profit
         assert await consumer._create_entry_with_chained_exit_orders(entry_order, entry_price, symbol_market, None)
-        assert get_max_orders_count_mock.call_count == 3 * 2   # entry: 1, stop: 1, tp: 1, 2 calls for each
-        get_max_orders_count_mock.reset_mock()
+        assert get_max_open_orders_count_mock.call_count == 3 * 2   # entry: 1, stop: 1, tp: 1, 2 calls for each
+        get_max_open_orders_count_mock.reset_mock()
         create_order_mock.assert_called_once_with(entry_order, params=None, dependencies=None)
         create_order_mock.reset_mock()
         assert len(entry_order.chained_orders) == 2
@@ -673,8 +673,8 @@ async def test_skip_create_entry_order_when_too_many_live_exit_orders(tools):
         mode.secondary_exit_orders_count = 1
         with pytest.raises(octobot_trading.errors.MaxOpenOrderReachedForSymbolError):
             await consumer._create_entry_with_chained_exit_orders(entry_order, entry_price, symbol_market, None)
-        assert get_max_orders_count_mock.call_count == 4 * 2   # entry: 1, stop: 1, tp: 2, 2 calls for each
-        get_max_orders_count_mock.reset_mock()
+        assert get_max_open_orders_count_mock.call_count == 4 * 2   # entry: 1, stop: 1, tp: 2, 2 calls for each
+        get_max_open_orders_count_mock.reset_mock()
         create_order_mock.assert_not_called()
 
 

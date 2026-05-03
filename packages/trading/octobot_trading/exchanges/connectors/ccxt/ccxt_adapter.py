@@ -136,11 +136,6 @@ class CCXTAdapter(adapters.AbstractAdapter):
                 int_val = int(self.get_uniformized_timestamp(ohlcv[common_enums.PriceIndexes.IND_PRICE_TIME.value]))
                 ohlcv[common_enums.PriceIndexes.IND_PRICE_TIME.value] = int_val - (int_val % candles_s)
                 self._fix_ohlcv_prices(ohlcv)
-            except TypeError:
-                # the last candle might not be properly set
-                if self.connector.exchange_manager.exchange.DUMP_INCOMPLETE_LAST_CANDLE and index == len(fixed) - 1:
-                    return fixed[:-1]
-                raise
             except KeyError as e:
                 self.logger.error(f"Fail to fix ohlcv ({e})")
         return fixed
@@ -156,11 +151,6 @@ class CCXTAdapter(adapters.AbstractAdapter):
                 kline[common_enums.PriceIndexes.IND_PRICE_TIME.value] = \
                     int(self.get_uniformized_timestamp(kline[common_enums.PriceIndexes.IND_PRICE_TIME.value]))
                 self._fix_ohlcv_prices(kline)
-            except TypeError:
-                # the last candle might not be properly set
-                if self.connector.exchange_manager.exchange.DUMP_INCOMPLETE_LAST_CANDLE and index == len(fixed) - 1:
-                    return fixed[:-1]
-                raise
             except KeyError as e:
                 self.logger.error(f"Fail to fix kline ({e})")
         return fixed

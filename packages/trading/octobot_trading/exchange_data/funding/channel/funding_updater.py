@@ -159,7 +159,9 @@ class FundingUpdater(funding_channel.FundingProducer):
         )
         return (
             (
-                is_ticker_updater_on and not self.channel.exchange_manager.exchange.FUNDING_IN_TICKER
+                is_ticker_updater_on and not self.channel.exchange_manager.exchange.get_option_value(
+                    enums.ExchangeClientOptions.FUNDING_IN_TICKER
+                )
             )
             or not is_ticker_updater_on
         )

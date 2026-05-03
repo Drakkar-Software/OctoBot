@@ -90,10 +90,14 @@ class TickerProducer(exchanges_channel.ExchangeChannelProducer):
             self.logger.error(f"Failed to parse mini ticker : {e}")
 
     async def _push_future_data(self, symbol: str, ticker: dict):
-        if self.channel.exchange_manager.exchange.MARK_PRICE_IN_TICKER:
+        if self.channel.exchange_manager.exchange.get_option_value(
+            enums.ExchangeClientOptions.MARK_PRICE_IN_TICKER
+        ):
             await self._push_mark_price(symbol, ticker)
 
-        if self.channel.exchange_manager.exchange.FUNDING_IN_TICKER:
+        if self.channel.exchange_manager.exchange.get_option_value(
+            enums.ExchangeClientOptions.FUNDING_IN_TICKER
+        ):
             await self._push_funding_rate(symbol, ticker)
 
     async def _push_mark_price(self, symbol: str, ticker: dict):

@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import asyncio
+import decimal
 import contextlib
 try:
     from aiohttp_socks import ProxyConnectionError
@@ -143,7 +144,9 @@ def instantiate_exchange(
 
 def set_sandbox_mode(exchange_connector, is_sandboxed):
     try:
-        if exchange_connector.exchange_manager.exchange.uses_demo_trading_instead_of_sandbox():
+        if exchange_connector.exchange_manager.exchange.uses_demo_trading_instead_of_sandbox(
+            exchange_util.get_exchange_type(exchange_connector.exchange_manager)
+        ):
             exchange_connector.client.enable_demo_trading(is_sandboxed)
         else:
             exchange_connector.client.set_sandbox_mode(is_sandboxed)
@@ -497,6 +500,10 @@ def _use_request_counter(
 
 
 def ccxt_exchange_class_factory(exchange_name):
+    # Prefer OctoBot-specific ccxt subclasses (async_support.ob_<id>) when exported.
+    if not exchange_name.startswith("ob_"):
+        if ob_subclass := getattr(async_ccxt, f"ob_{exchange_name}", None):
+            return ob_subclass
     return getattr(async_ccxt, exchange_name)
 
 
@@ -536,6 +543,61 @@ def _is_retriable_proxy_error(proxy_error: Exception) -> bool:
         if desc in str_err:
             return True
     return False
+
+
+def get_option_value_from_new_ccxt_client(
+    exchange: str, option_key: enums.ExchangeClientOptions
+) -> typing.Union[bool, float, int, str, None]:
+    ex_class = ccxt_exchange_class_factory(exchange)
+    return get_option_value(ex_class(), option_key)
+
+
+def get_option_value(
+    client: async_ccxt.Exchange, option_key: enums.ExchangeClientOptions,
+) -> typing.Union[bool, float, int, str, None]:
+    if octobot_options := client.options.get(ccxt_constants.CCXT_OCTOBOT_OPTIONS):
+        return octobot_options.get(option_key.value, enums.DEFAULT_EXCHANGE_OPTION_VALUES[option_key]) # type: ignore
+    return enums.DEFAULT_EXCHANGE_OPTION_VALUES[option_key]
+
+
+def supports_order_type(
+    client: async_ccxt.Exchange, trading_type: enums.ExchangeTypes, order_type: enums.TradeOrderType
+) -> bool:
+    if supported_elements := _get_supported_elements(client, trading_type):
+        if supported_orders := supported_elements.get(
+            enums.ExchangeSupportedElements.ORDERS.value
+        ):
+            return order_type.value in supported_orders
+    # default to True for market and limit orders
+    return order_type in [enums.TradeOrderType.MARKET, enums.TradeOrderType.LIMIT]
+
+
+def supports_bundled_orders(
+    client: async_ccxt.Exchange, trading_type: enums.ExchangeTypes, order_type: enums.TradeOrderType
+) -> bool:
+    if supported_elements := _get_supported_elements(client, trading_type):
+        if supported_orders := supported_elements.get(
+            enums.ExchangeSupportedElements.BUNDLED_ORDERS.value
+        ):
+            raise NotImplementedError(f"Bundled orders are not supported yet")
+            return order_type in supported_orders
+    return False
+
+
+def _get_supported_elements(
+    client: async_ccxt.Exchange, trading_type: enums.ExchangeTypes
+) -> typing.Optional[dict]:
+    if supported_elements := get_option_value(
+        client, enums.ExchangeClientOptions.SUPPORTED_ELEMENTS
+    ):
+        if trading_type == enums.ExchangeTypes.SPOT:
+            return supported_elements.get(
+                enums.ExchangeSupportedElements.SPOT.value,
+            )
+        return supported_elements.get(
+            enums.ExchangeSupportedElements.FUTURES.value
+        )
+    return None
 
 
 def get_proxy_error_if_any(ccxt_connector, error: Exception) -> typing.Optional[Exception]:

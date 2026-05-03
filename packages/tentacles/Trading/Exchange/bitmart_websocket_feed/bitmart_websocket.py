@@ -29,6 +29,3 @@ class BitMartCCXTWebsocketConnector(exchanges.CCXTWebsocketConnector):
     @classmethod
     def get_name(cls):
         return bitmart_exchange.BitMart.get_name()
-
-    def get_adapter_class(self, adapter_class):
-        return bitmart_exchange.BitMartCCXTAdapter

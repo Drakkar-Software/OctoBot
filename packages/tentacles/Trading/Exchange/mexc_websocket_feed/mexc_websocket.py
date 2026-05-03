@@ -29,6 +29,3 @@ class MEXCCCXTWebsocketConnector(exchanges.CCXTWebsocketConnector):
     @classmethod
     def get_name(cls):
         return mexc_exchange.MEXC.get_name()
-
-    def get_adapter_class(self, adapter_class):
-        return mexc_exchange.MEXCCCXTAdapter

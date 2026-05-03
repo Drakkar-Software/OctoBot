@@ -36,7 +36,7 @@ class TestLBankAuthenticatedExchange(
     ORDER_CURRENCY = "BNB" # WARNING: use a tradable symbol (see test_untradable_symbols)
     SETTLEMENT_CURRENCY = "USDT"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
-    ORDER_SIZE = 15  # % of portfolio to include in test orders
+    ORDER_SIZE = 40  # % of portfolio to include in test orders
     VALID_ORDER_ID = "1777764898965454848"
     IS_ACCOUNT_ID_AVAILABLE = True  # set False when get_account_id is not available and should be checked
     EXPECTED_GENERATED_ACCOUNT_ID = True   # set True when account_id can't be fetch and a generated account id is used
@@ -46,19 +46,17 @@ class TestLBankAuthenticatedExchange(
     # can't test for now due to country restrictions
     # parse/create/fill/cancel or portfolio & trades parsing
     CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES = True
+    IS_BROKER_ENABLED_ACCOUNT = False
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
-
-    async def test_get_portfolio_with_market_filter(self):
-        await super().test_get_portfolio_with_market_filter()
 
     async def test_untradable_symbols(self):
         # self.LIST_TRADABLE_SYMBOLS = True   # uncomment to list tradable symbols
         await super().test_untradable_symbols()
 
-    async def test_get_max_orders_count(self):
-        await super().test_get_max_orders_count()
+    async def test_get_max_open_orders_count(self):
+        await super().test_get_max_open_orders_count()
 
     async def test_get_account_id(self):
         await super().test_get_account_id()
@@ -82,11 +80,14 @@ class TestLBankAuthenticatedExchange(
     async def test_get_not_found_order(self):
         await super().test_get_not_found_order()
 
-    async def test_is_valid_account(self):
-        await super().test_is_valid_account()
+    async def test_is_broker_enabled(self):
+        await super().test_is_broker_enabled()
 
     async def test_get_special_orders(self):
         await super().test_get_special_orders()
+
+    async def test_cancel_uncancellable_order(self):
+        await super().test_cancel_uncancellable_order()
 
     async def test_create_and_cancel_limit_orders(self):
         await super().test_create_and_cancel_limit_orders()

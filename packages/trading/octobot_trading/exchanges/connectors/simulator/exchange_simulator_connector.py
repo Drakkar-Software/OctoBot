@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import decimal
+import typing
 
 import octobot_backtesting.api as backtesting_api
 import octobot_backtesting.importers as importers
@@ -71,6 +72,26 @@ class ExchangeSimulatorConnector(abstract_exchange.AbstractExchange):
 
     def get_adapter_class(self, adapter_class):
         return adapter_class or exchange_simulator_adapter.ExchangeSimulatorAdapter
+
+    def get_option_value(
+        self, option_key: enums.ExchangeClientOptions
+    ) -> typing.Union[bool, float, int, str, None]:
+        return ccxt_client_simulation.get_option_value(
+            self._get_exchange_class_rest_name(), option_key
+        )
+
+    def supports_order_type(self, order_type: enums.TradeOrderType) -> bool:
+        # hard coded for simulator
+        return order_type in [
+            enums.TradeOrderType.MARKET,
+            enums.TradeOrderType.LIMIT,
+            enums.TradeOrderType.STOP_LOSS,
+        ]
+
+    def supports_bundled_orders(self, order_type: enums.TradeOrderType) -> bool:
+        return ccxt_client_simulation.supports_bundled_orders(
+            self._get_exchange_class_rest_name(), util.get_exchange_type(self.exchange_manager), order_type
+        )
 
     def _init_forced_market_statuses(self, additional_client_config):
         def market_filter(market):
@@ -313,6 +334,11 @@ class ExchangeSimulatorConnector(abstract_exchange.AbstractExchange):
 
     def get_pair_cryptocurrency(self, pair) -> str:
         return self.get_split_pair_from_exchange(pair)[0]
+
+    def get_max_open_orders_count(self, symbol: str, order_type: enums.TraderOrderType, **kwargs: dict) -> int:
+        if order_type is enums.TraderOrderType.STOP_LOSS:
+            return constants.DEFAULT_MAX_STOP_ORDERS_COUNT
+        return constants.DEFAULT_MAX_DEFAULT_ORDERS_COUNT
 
     @staticmethod
     def get_real_available_data(exchange_importers):

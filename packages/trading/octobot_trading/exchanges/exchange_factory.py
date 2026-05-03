@@ -21,6 +21,8 @@ import trading_backend
 import octobot_commons.authentication as authentication
 import octobot_trading.errors as errors
 import octobot_trading.exchanges as exchanges
+import octobot_trading.enums as trading_enums
+import octobot_trading.exchanges.connectors.ccxt.ccxt_client_util as ccxt_client_util
 
 
 async def create_exchanges(exchange_manager, exchange_config_by_exchange: typing.Optional[dict[str, dict]]):
@@ -64,7 +66,10 @@ async def create_real_exchange(exchange_manager, exchange_config_by_exchange: ty
     except errors.AuthenticationError as err:
         if (
             exchange_manager.without_auth or exchange_manager.exchange.requires_authentication(
-                exchange_manager.exchange.tentacle_config, None, None
+                exchange_manager.exchange.tentacle_config,
+                None,
+                exchange_config_by_exchange,
+                exchange_manager,
             )
             or exchange_manager.disable_unauth_retry
         ):
@@ -108,7 +113,7 @@ async def _initialize_exchange_backend(exchange_manager):
         exchange_manager.logger.debug(await exchange_manager.exchange_backend.initialize())
         initial_is_broker_enabled = exchange_manager.is_broker_enabled
         try:
-            exchange_manager.is_broker_enabled, _ = await exchange_manager.exchange_backend.is_valid_account()
+            exchange_manager.is_broker_enabled = exchange_manager.exchange.get_option_value(trading_enums.ExchangeClientOptions.HAS_BROKER)
             exchange_manager.logger.debug(f"Broker rebate enabled: {exchange_manager.is_broker_enabled}")
         except Exception as err:
             exchange_manager.is_broker_enabled = initial_is_broker_enabled

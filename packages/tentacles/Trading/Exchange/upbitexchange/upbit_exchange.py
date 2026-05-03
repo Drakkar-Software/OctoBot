@@ -17,9 +17,6 @@ import octobot_trading.exchanges as exchanges
 
 
 class UpbitExchange(exchanges.RestExchange):
-    DESCRIPTION = ""
-
-    FIX_MARKET_STATUS = True
 
     @classmethod
     def get_name(cls):

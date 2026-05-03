@@ -343,69 +343,29 @@ class hollaexConnector(exchanges.CCXTConnector):
 
 
 class hollaex(exchanges.RestExchange):
-    DESCRIPTION = ""
     DEFAULT_CONNECTOR_CLASS = hollaexConnector
-
-    FIX_MARKET_STATUS = True
 
     BASE_REST_API = "api.hollaex.com"
     REST_KEY = "rest"
     FEE_TIERS_KEY = "fee_tiers"
     HAS_WEBSOCKETS_KEY = "has_websockets"
-    REQUIRE_ORDER_FEES_FROM_TRADES = True  # set True when get_order is not giving fees on closed orders and fees
-    SUPPORT_FETCHING_CANCELLED_ORDERS = False
 
-    IS_SKIPPING_EMPTY_CANDLES_IN_OHLCV_FETCH = True
-
-    # STOP_PRICE is used in ccxt/hollaex instead of default STOP_LOSS_PRICE
-    STOP_LOSS_CREATE_PRICE_PARAM = ccxt_enums.ExchangeOrderCCXTUnifiedParams.STOP_PRICE.value
-    STOP_LOSS_EDIT_PRICE_PARAM = STOP_LOSS_CREATE_PRICE_PARAM
-
-    # should be overridden locally to match exchange support
-    SUPPORTED_ELEMENTS = {
-        trading_enums.ExchangeTypes.FUTURE.value: {
-            # order that should be self-managed by OctoBot
-            trading_enums.ExchangeSupportedElements.UNSUPPORTED_ORDERS.value: [
-                trading_enums.TraderOrderType.STOP_LOSS,
-                trading_enums.TraderOrderType.STOP_LOSS_LIMIT,
-                trading_enums.TraderOrderType.TAKE_PROFIT,
-                trading_enums.TraderOrderType.TAKE_PROFIT_LIMIT,
-                trading_enums.TraderOrderType.TRAILING_STOP,
-                trading_enums.TraderOrderType.TRAILING_STOP_LIMIT
-            ],
-            # order that can be bundled together to create them all in one request
-            # not supported or need custom mechanics with batch orders
-            trading_enums.ExchangeSupportedElements.SUPPORTED_BUNDLED_ORDERS.value: {},
-        },
-        trading_enums.ExchangeTypes.SPOT.value: {
-            # order that should be self-managed by OctoBot
-            trading_enums.ExchangeSupportedElements.UNSUPPORTED_ORDERS.value: [
-                trading_enums.TraderOrderType.STOP_LOSS,    # still broken ccxt 4.5.8: stop param is ignored by exchange because it's sent as a string instead of float. Converting it to flaat fails the signature
-                trading_enums.TraderOrderType.STOP_LOSS_LIMIT,
-                trading_enums.TraderOrderType.TAKE_PROFIT,
-                trading_enums.TraderOrderType.TAKE_PROFIT_LIMIT,
-                trading_enums.TraderOrderType.TRAILING_STOP,
-                trading_enums.TraderOrderType.TRAILING_STOP_LIMIT
-            ],
-            # order that can be bundled together to create them all in one request
-            trading_enums.ExchangeSupportedElements.SUPPORTED_BUNDLED_ORDERS.value: {},
-        }
-    }
-
-    DEFAULT_MAX_LIMIT = 500
-    EXCHANGE_PERMISSION_ERRORS: typing.List[typing.Iterable[str]] = [
+    """
+    Deprecated constants kept as comments for reference.
+    # EXCHANGE_PERMISSION_ERRORS: typing.List[typing.Iterable[str]] = [
         # '"message":"Access denied: Unauthorized Access. This key does not have the right permissions to access this endpoint"'
         ("permissions to access",),
     ]
-    EXCHANGE_IP_WHITELIST_ERRORS: typing.List[typing.Iterable[str]] = [
+    # EXCHANGE_IP_WHITELIST_ERRORS: typing.List[typing.Iterable[str]] = [
         # {"message":"Access denied: Unauthorized Access.
         # The IP address you are reaching this endpoint through is not allowed to access this endpoint"}
         ("the ip address", "is not allowed"),
     ]
-    EXCHANGE_MAX_ORDERS_FOR_MARKET_REACHED_ERRORS: typing.List[typing.Iterable[str]] = [
+    # EXCHANGE_MAX_ORDERS_FOR_MARKET_REACHED_ERRORS: typing.List[typing.Iterable[str]] = [
         # "hollaex {"message":"You are only allowed to have maximum 50 active orders per market"}"
         ("maximum", "active orders", "per market"),
     ]
+    """
 
     def __init__(
         self, config, exchange_manager, exchange_config_by_exchange: typing.Optional[dict[str, dict]],
@@ -416,9 +376,6 @@ class hollaex(exchanges.RestExchange):
             or not self.tentacle_config.get(
                 self.HAS_WEBSOCKETS_KEY, not self.exchange_manager.rest_only
             )
-
-    def get_adapter_class(self):
-        return HollaexCCXTAdapter
 
     @classmethod
     def init_user_inputs_from_class(cls, inputs: dict) -> None:
@@ -442,9 +399,6 @@ class hollaex(exchanges.RestExchange):
     def get_additional_connector_config(self):
         return {
             ccxt_enums.ExchangeColumns.URLS.value: self.get_patched_urls(self.get_api_url()),
-            ccxt_constants.CCXT_OPTIONS: {
-                "api-expires": int(trading_constants.DEFAULT_REQUEST_TIMEOUT / 1000)
-            },
         }
 
     def get_api_url(self):
@@ -485,63 +439,3 @@ class hollaex(exchanges.RestExchange):
     @classmethod
     def is_configurable(cls):
         return True
-
-    def is_authenticated_request(self, url: str, method: str, headers: dict, body) -> bool:
-        signature_identifier = "api-signature"
-        return bool(
-            headers
-            and signature_identifier in headers
-        )
-
-    def get_max_orders_count(self, symbol: str, order_type: trading_enums.TraderOrderType) -> int:
-        #  (30/06/2025: Error 1010 - You are only allowed to have maximum 50 active orders per market)
-        return 50
-
-    async def get_account_id(self, **kwargs: dict) -> str:
-        with self.connector.error_describer(True):
-            user_info = await self.connector.client.private_get_user()
-            return user_info["id"]
-
-    async def get_closed_orders(self, symbol: str = None, since: int = None,
-                                limit: int = None, **kwargs: dict) -> list:
-        # get_closed_orders sometimes does not return orders use _get_closed_orders_from_my_recent_trades in this case
-        return (
-            await super().get_closed_orders(symbol=symbol, since=since, limit=limit, **kwargs) or
-            await self._get_closed_orders_from_my_recent_trades(
-                symbol=symbol, since=since, limit=limit, **kwargs
-            )
-        )
-
-
-class HollaexCCXTAdapter(exchanges.CCXTAdapter):
-
-    def fix_order(self, raw, symbol=None, **kwargs):
-        raw_order_info = raw[ccxt_enums.ExchangePositionCCXTColumns.INFO.value]
-        # average is not supported by ccxt
-        fixed = super().fix_order(raw, symbol=symbol, **kwargs)
-        if not fixed[trading_enums.ExchangeConstantsOrderColumns.PRICE.value] and "average" in raw_order_info:
-            fixed[trading_enums.ExchangeConstantsOrderColumns.PRICE.value] = raw_order_info.get("average", 0)
-
-        if fixed[ccxt_enums.ExchangeOrderCCXTColumns.TRIGGER_PRICE.value]:
-            order_type = trading_enums.TradeOrderType.STOP_LOSS.value
-            # todo uncomment when stop loss limit are supported
-            # if fixed[ccxt_enums.ExchangeOrderCCXTColumns.PRICE.value] is None:
-            #     order_type = trading_enums.TradeOrderType.STOP_LOSS.value
-            fixed[trading_enums.ExchangeConstantsOrderColumns.TYPE.value] = order_type
-
-        # fees are usually not in order, but if they are, fix them as ccxt is not parsing them
-        self._fix_fees(raw_order_info, fixed)
-        return fixed
-
-    def _fix_fees(self, info, fixed):
-        if (fee_coin := info.get("fee_coin")) and fixed.get(ccxt_enums.ExchangeOrderCCXTColumns.FEE.value):
-            # fee_coin is wrongly overwritten by ccxt as quote currency, used fetched value
-            fixed[trading_enums.ExchangeConstantsOrderColumns.FEE.value][
-                trading_enums.FeePropertyColumns.CURRENCY.value
-            ] = fee_coin.upper()
-
-    def fix_ticker(self, raw, **kwargs):
-        fixed = super().fix_ticker(raw, **kwargs)
-        fixed[trading_enums.ExchangeConstantsTickersColumns.TIMESTAMP.value] = \
-            fixed.get(trading_enums.ExchangeConstantsTickersColumns.TIMESTAMP.value) or self.connector.client.seconds()
-        return fixed

@@ -393,7 +393,11 @@ def get_auto_filled_exchange_names(tentacles_setup_config) -> list:
 
 
 def supports_custom_limit_order_book_fetch(exchange_manager) -> bool:
-    return exchange_manager.exchange.SUPPORTS_CUSTOM_LIMIT_ORDER_BOOK_FETCH
+    return bool(
+        exchange_manager.exchange.get_option_value(
+            octobot_trading.enums.ExchangeClientOptions.SUPPORTS_CUSTOM_LIMIT_ORDER_BOOK_FETCH
+        )
+    )
 
 
 async def get_exchange_details(

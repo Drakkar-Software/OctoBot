@@ -70,7 +70,9 @@ class PendingCreationOrderState(order_state.OrderState):
                     message = f"Failed to receive an order update ({iteration} attempts). " \
                       f"Retrying in {self.PENDING_REFRESH_INTERVAL} seconds."
                     self.ensure_not_cleared(self.order)
-                    if self.order.exchange_manager.exchange.EXPECT_POSSIBLE_ORDER_NOT_FOUND_DURING_ORDER_CREATION:
+                    if self.order.exchange_manager.exchange.get_option_value(
+                        enums.ExchangeClientOptions.EXPECT_POSSIBLE_NOT_FOUND_ORDER_DURING_ORDER_CREATION
+                    ):
                         self.get_logger().debug(message)
                     else:
                         self.get_logger().error(

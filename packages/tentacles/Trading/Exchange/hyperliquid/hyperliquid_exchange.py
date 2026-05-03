@@ -16,8 +16,6 @@
 import typing
 
 import octobot_trading.exchanges as exchanges
-import octobot_trading.enums as trading_enums
-import octobot_trading.exchanges.connectors.ccxt.constants as ccxt_constants
 
 
 class HyperliquidConnector(exchanges.CCXTConnector):
@@ -38,50 +36,8 @@ class HyperliquidConnector(exchanges.CCXTConnector):
 
 
 class Hyperliquid(exchanges.RestExchange):
-    DESCRIPTION = ""
     DEFAULT_CONNECTOR_CLASS = HyperliquidConnector
-
-    FIX_MARKET_STATUS = True
-    REQUIRE_ORDER_FEES_FROM_TRADES = True  # set True when get_order is not giving fees on closed orders and fees
-    # should be fetched using recent trades.
-    EXPECT_POSSIBLE_ORDER_NOT_FOUND_DURING_ORDER_CREATION = True  # set True when get_order() can return None
-    # (order not found) when orders are instantly filled on exchange and are not fully processed on the exchange side.
 
     @classmethod
     def get_name(cls):
         return 'hyperliquid'
-
-    def get_adapter_class(self):
-        return HyperLiquidCCXTAdapter
-
-    def get_additional_connector_config(self):
-        return {
-            ccxt_constants.CCXT_OPTIONS: {
-                "fetchMarkets": {
-                    "types": ["spot"],  # only hyperliquid spot markets are supported
-                }
-            }
-        }
-
-
-class HyperLiquidCCXTAdapter(exchanges.CCXTAdapter):
-
-    def fix_ticker(self, raw, **kwargs):
-        fixed = super().fix_ticker(raw, **kwargs)
-        fixed[trading_enums.ExchangeConstantsTickersColumns.TIMESTAMP.value] = \
-            fixed.get(trading_enums.ExchangeConstantsTickersColumns.TIMESTAMP.value) or self.connector.client.seconds()
-        return fixed
-
-    def fix_market_status(self, raw, remove_price_limits=False, **kwargs):
-        fixed = super().fix_market_status(raw, remove_price_limits=remove_price_limits, **kwargs)
-        if not fixed:
-            return fixed
-        # hyperliquid min cost should be increased by 10% (a few cents above min cost is refused)
-        limits = fixed[trading_enums.ExchangeConstantsMarketStatusColumns.LIMITS.value]
-        limits[trading_enums.ExchangeConstantsMarketStatusColumns.LIMITS_COST.value][
-            trading_enums.ExchangeConstantsMarketStatusColumns.LIMITS_COST_MIN.value
-        ] = limits[trading_enums.ExchangeConstantsMarketStatusColumns.LIMITS_COST.value][
-            trading_enums.ExchangeConstantsMarketStatusColumns.LIMITS_COST_MIN.value
-        ] * 1.1
-
-        return fixed

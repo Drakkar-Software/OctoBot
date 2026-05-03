@@ -13,13 +13,15 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import contextlib
+
 import pytest
 import mock
 
-import trading_backend.exchanges
 import octobot_commons.constants as commons_constants
 import octobot_commons.configuration as commons_configuration
 import octobot_trading.enums as enums
+import octobot_trading.errors as trading_errors
 import octobot_trading.exchanges as exchanges
 import octobot_trading.exchanges.util.exchange_util as exchange_util
 
@@ -53,32 +55,45 @@ def supported_exchanges():
 
 @pytest.mark.asyncio
 async def test_is_compatible_account_with_checked_exchange(exchange_config, tentacles_setup_config):
-    with mock.patch.object(trading_backend.exchanges.Huobi, "is_valid_account",
-                           mock.AsyncMock(return_value=(True, None))) as is_valid_account_mock:
+    local_exchange_manager = mock.Mock()
+    local_exchange_manager.exchange = mock.Mock()
+    local_exchange_manager.exchange.connector = mock.Mock()
+    local_exchange_manager.exchange.connector.request_exchange_to_ensure_authentication = mock.AsyncMock(return_value=None)
+
+    @contextlib.asynccontextmanager
+    async def mocked_local_exchange_manager(*args, **kwargs):
+        yield local_exchange_manager
+
+    with mock.patch.object(exchange_util, "get_local_exchange_manager", mocked_local_exchange_manager):
         compatible, auth, error = await exchanges.is_compatible_account("huobi", exchange_config,
                                                                         tentacles_setup_config, False)
         assert compatible is True
         assert auth is True
         assert error is None
-        is_valid_account_mock.assert_called_once()
-    with mock.patch.object(trading_backend.exchanges.Huobi, "is_valid_account",
-                           mock.AsyncMock(return_value=(False, "plop"))) as is_valid_account_mock:
-        compatible, auth, error = await exchanges.is_compatible_account("huobi", exchange_config,
-                                                                        tentacles_setup_config, False)
-        # still True as on spot trading
-        assert compatible is True
-        assert auth is True
-        assert error is None
-        is_valid_account_mock.assert_called_once()
-    exchange_config[commons_constants.CONFIG_EXCHANGE_TYPE] = commons_constants.CONFIG_EXCHANGE_FUTURE
-    with mock.patch.object(trading_backend.exchanges.Huobi, "is_valid_account",
-                           mock.AsyncMock(return_value=(False, "plop"))) as is_valid_account_mock:
+        local_exchange_manager.exchange.connector.request_exchange_to_ensure_authentication.assert_called_once()
+
+    local_exchange_manager.exchange.connector.request_exchange_to_ensure_authentication = mock.AsyncMock(
+        side_effect=trading_errors.AuthenticationError("invalid keys")
+    )
+    with mock.patch.object(exchange_util, "get_local_exchange_manager", mocked_local_exchange_manager):
         compatible, auth, error = await exchanges.is_compatible_account("huobi", exchange_config,
                                                                         tentacles_setup_config, False)
         assert compatible is False
-        assert auth is True
-        assert "plop" in error and len(error) > len("plop")
-        is_valid_account_mock.assert_called_once()
+        assert auth is False
+        assert "Invalid Huobi authentication details" in error
+        local_exchange_manager.exchange.connector.request_exchange_to_ensure_authentication.assert_called_once()
+
+    exchange_config[commons_constants.CONFIG_EXCHANGE_TYPE] = commons_constants.CONFIG_EXCHANGE_FUTURE
+    local_exchange_manager.exchange.connector.request_exchange_to_ensure_authentication = mock.AsyncMock(
+        side_effect=Exception("plop")
+    )
+    with mock.patch.object(exchange_util, "get_local_exchange_manager", mocked_local_exchange_manager):
+        compatible, auth, error = await exchanges.is_compatible_account("huobi", exchange_config,
+                                                                        tentacles_setup_config, False)
+        assert compatible is True
+        assert auth is False
+        assert "Error when loading exchange account: plop" == error
+        local_exchange_manager.exchange.connector.request_exchange_to_ensure_authentication.assert_called_once()
 
 
 def test_get_partners_explanation_message():
@@ -97,28 +112,45 @@ def test_log_time_sync_error():
 
 @pytest.mark.asyncio
 async def test_is_compatible_account_with_unchecked_exchange(exchange_config, tentacles_setup_config):
-    compatible, auth, error = await exchanges.is_compatible_account("hitbtc", exchange_config, tentacles_setup_config,
-                                                                    False)
+    local_exchange_manager = mock.Mock()
+    local_exchange_manager.exchange = mock.Mock()
+    local_exchange_manager.exchange.connector = mock.Mock()
+    local_exchange_manager.exchange.connector.request_exchange_to_ensure_authentication = mock.AsyncMock(
+        side_effect=trading_errors.FailedRequest("network")
+    )
+
+    @contextlib.asynccontextmanager
+    async def mocked_local_exchange_manager(*args, **kwargs):
+        yield local_exchange_manager
+
+    with mock.patch.object(exchange_util, "get_local_exchange_manager", mocked_local_exchange_manager):
+        compatible, auth, error = await exchanges.is_compatible_account("hitbtc", exchange_config, tentacles_setup_config,
+                                                                        False)
     assert compatible is False
     assert auth is False
-    assert isinstance(error, str)
+    assert error == "network"
+    local_exchange_manager.exchange.connector.request_exchange_to_ensure_authentication.assert_called_once()
+
     exchange_config[commons_constants.CONFIG_EXCHANGE_TYPE] = commons_constants.CONFIG_EXCHANGE_FUTURE
-    with mock.patch.object(trading_backend.exchanges.Exchange, "is_valid_account",
-                           mock.AsyncMock(return_value=(True, "plop"))) as is_valid_account_mock:
+    local_exchange_manager.exchange.connector.request_exchange_to_ensure_authentication = mock.AsyncMock(return_value=None)
+    with mock.patch.object(exchange_util, "get_local_exchange_manager", mocked_local_exchange_manager):
         compatible, auth, error = await exchanges.is_compatible_account("hitbtc", exchange_config,
                                                                         tentacles_setup_config, False)
         assert compatible is True
         assert auth is True
-        assert "plop" in error and len(error) > len("plop")
-        is_valid_account_mock.assert_called_once()
-    with mock.patch.object(trading_backend.exchanges.Exchange, "is_valid_account",
-                           mock.AsyncMock(side_effect=trading_backend.ExchangeAuthError)) as is_valid_account_mock:
+        assert error is None
+        local_exchange_manager.exchange.connector.request_exchange_to_ensure_authentication.assert_called_once()
+
+    local_exchange_manager.exchange.connector.request_exchange_to_ensure_authentication = mock.AsyncMock(
+        side_effect=trading_errors.AuthenticationError("bad key")
+    )
+    with mock.patch.object(exchange_util, "get_local_exchange_manager", mocked_local_exchange_manager):
         compatible, auth, error = await exchanges.is_compatible_account("hitbtc", exchange_config,
                                                                         tentacles_setup_config, False)
         assert compatible is False
         assert auth is False
-        assert "authentication" in error and len(error) > len("authentication")
-        is_valid_account_mock.assert_called_once()
+        assert "Invalid Hitbtc authentication details" in error
+        local_exchange_manager.exchange.connector.request_exchange_to_ensure_authentication.assert_called_once()
 
 
 def test_get_auto_filled_exchange_names(tentacles_setup_config, supported_exchanges):
@@ -222,7 +254,7 @@ async def test_get_exchange_details(tentacles_setup_config, supported_exchanges)
         details = await exchanges.get_exchange_details(
             "binance", False, tentacles_setup_config, None
         )
-        assert details.id == "binance"
+        assert details.id == "ob_binance"
         assert details.name == "Binance"
         assert details.url == "https://www.binance.com"
         assert len(details.api) > 1

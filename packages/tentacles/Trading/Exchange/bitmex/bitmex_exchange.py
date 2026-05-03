@@ -18,15 +18,6 @@ import octobot_trading.enums as trading_enums
 
 
 class Bitmex(exchanges.RestExchange):
-    DESCRIPTION = ""
-    FIX_MARKET_STATUS = False    # todo fix precision price but not amount ? todo check
-
-    BUY_STR = "Buy"
-    SELL_STR = "Sell"
-
-    MARK_PRICE_IN_TICKER = True
-    FUNDING_IN_TICKER = True
-
     @classmethod
     def get_name(cls):
         return 'bitmex'
