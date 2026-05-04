@@ -18,12 +18,10 @@ from octobot_sync.chain.evm import (
     Wallet,
     create_evm_wallet,
     address_from_evm_key,
-    verify_evm,
 )
 
 __all__ = [
     "Wallet",
     "create_evm_wallet",
     "address_from_evm_key",
-    "verify_evm",
 ]

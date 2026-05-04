@@ -16,7 +16,7 @@
 
 from dataclasses import dataclass
 
-from web3 import Web3
+import web3
 
 
 @dataclass
@@ -25,28 +25,10 @@ class Wallet:
     address: str
 
 
-def _eip191_hash(text: str) -> bytes:
-    msg_bytes = text.encode("utf-8")
-    prefix = f"\x19Ethereum Signed Message:\n{len(msg_bytes)}".encode("utf-8")
-    return Web3.keccak(prefix + msg_bytes)
-
-
 def create_evm_wallet() -> Wallet:
-    account = Web3().eth.account.create()
-    return Wallet(
-        private_key=account.key.hex(),
-        address=account.address,
-    )
+    account = web3.Account.create()  # pylint: disable=no-value-for-parameter
+    return Wallet(private_key=account.key.hex(), address=account.address)
 
 
 def address_from_evm_key(private_key: str) -> str:
-    return Web3().eth.account.from_key(private_key).address
-
-
-def verify_evm(canonical: str, signature: str, address: str) -> bool:
-    try:
-        msg_hash = _eip191_hash(canonical)
-        recovered = Web3().eth.account._recover_hash(msg_hash, signature=signature)
-        return recovered.lower() == address.lower()
-    except Exception:
-        return False
+    return web3.Account.from_key(private_key).address  # pylint: disable=no-value-for-parameter

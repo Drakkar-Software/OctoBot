@@ -34,20 +34,36 @@ DEFAULT_SYNC_CONFIG = SyncConfig(
             collections=[
                 CollectionConfig(
                     name="user-data",
-                    storagePath="users/{identity}",
+                    storagePath="users/{identity}/data",
                     readRoles=["self"],
                     writeRoles=["self"],
                     encryption="identity",
                     maxBodyBytes=constants.MAX_BODY_SIZE_PRIVATE,
                 ),
                 CollectionConfig(
-                    name="errors",
-                    storagePath="users/{identity}/errors/{errorId}",
+                    name="user-accounts",
+                    storagePath="users/{identity}/accounts",
                     readRoles=["self"],
                     writeRoles=["self"],
-                    encryption="delegated",
-                    maxBodyBytes=500_000,
+                    encryption="identity",
+                    maxBodyBytes=constants.MAX_BODY_SIZE_PRIVATE,
                 ),
+                CollectionConfig(
+                    name="user-settings",
+                    storagePath="users/{identity}/settings",
+                    readRoles=["self"],
+                    writeRoles=["self"],
+                    encryption="identity",
+                    maxBodyBytes=constants.MAX_BODY_SIZE_PRIVATE,
+                ),
+                CollectionConfig(
+                    name="user-strategies",
+                    storagePath="users/{identity}/strategies",
+                    readRoles=["self"],
+                    writeRoles=["self"],
+                    encryption="identity",
+                    maxBodyBytes=constants.MAX_BODY_SIZE_PRIVATE,
+                )
             ]
         )
     },

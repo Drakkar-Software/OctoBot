@@ -17,6 +17,7 @@
 from octobot_sync.auth import canonical
 from octobot_sync.auth.canonical import (
     build_canonical,
+    eip191_message,
     hash_body,
 )
 
@@ -38,6 +39,7 @@ from octobot_sync.auth.provider import (
 
 __all__ = [
     "build_canonical",
+    "eip191_message",
     "hash_body",
     "NonceStore",
     "AbstractStorageAdapter",

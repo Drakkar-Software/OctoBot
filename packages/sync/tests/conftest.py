@@ -82,8 +82,8 @@ def make_auth_headers(
 ) -> dict[str, str]:
     """Build auth headers with a deterministic fake signature.
 
-    Callers must patch octobot_sync.chain.verify_evm to return True for the
-    canonical string produced by these headers.
+    Callers must patch web3.Account.recover_message
+    to return the expected pubkey for the canonical string produced by these headers.
     """
     ts = str(int(time.time() * 1000))
     nonce = f"test-nonce-{time.time()}"

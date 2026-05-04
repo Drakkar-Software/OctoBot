@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import os
 from contextlib import asynccontextmanager
 
 import uvicorn
@@ -23,10 +24,12 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.cors import CORSMiddleware
 
 import octobot.community.authentication as community_auth
+import octobot_commons.user_root_folder_provider as user_root_folder_provider
 import octobot_services.interfaces as services_interfaces
 import octobot_node.config as node_config
 import octobot_node.scheduler as scheduler # noqa: F401
 import octobot_sync.server as sync_server
+from starfish_server.storage.filesystem import FilesystemObjectStore, FilesystemStorageOptions
 
 
 # Service_bases is only needed at runtime, not for build
@@ -134,16 +137,23 @@ class NodeApiInterface(services_interfaces.AbstractInterface):
 
         app.include_router(build_api_router(), prefix="/api/v1")
 
-        def _is_community_wallet(address: str) -> bool:
-            return any(
-                w.address.lower() == address
-                for w in community_auth.CommunityAuthentication.instance().list_wallets()
-            )
+        _sync_data_dir = os.path.join(user_root_folder_provider.get_user_root_folder(), "sync", "data")
+        _fs_store = FilesystemObjectStore(FilesystemStorageOptions(base_dir=_sync_data_dir))
 
+        async def _get_data(key: str) -> str | None:
+            return await _fs_store.get_string(key)
+
+        async def _put_data(key: str, body: str) -> None:
+            await _fs_store.put(key, body, content_type="application/json")
+
+        sync_server.set_data_callbacks(_get_data, _put_data)
         app.mount(
             "/sync",
             sync_server.build_default_sync_app(
-                is_allowed=_is_community_wallet,
+                is_allowed=lambda address: any(
+                    w.address.lower() == address
+                    for w in community_auth.CommunityAuthentication.instance().list_wallets()
+                ),
                 encryption_secret=sync_encryption_secret,
             ),
         )

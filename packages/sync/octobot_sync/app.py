@@ -20,7 +20,7 @@ from collections.abc import Callable
 from fastapi import FastAPI
 from starfish_server.storage.base import AbstractObjectStore
 from starfish_server.router.route_builder import create_sync_router, SyncRouterOptions
-from starfish_server.config.schema import ConfigEndpointOptions
+from starfish_server.config.schema import ConfigEndpointOptions, SyncConfig
 
 import octobot_sync.auth as auth
 import octobot_sync.constants as constants
@@ -66,11 +66,13 @@ def create_app(
     collections_path: str | None = None,
     is_allowed: Callable[[str], bool] | None = None,
     encryption_secret: str | None = None,
+    sync_config: SyncConfig | None = None,
 ):
     if encryption_secret is None:
         encryption_secret = os.environ.get("ENCRYPTION_SECRET")
 
-    sync_config = sync.load_sync_config(collections_path)
+    if sync_config is None:
+        sync_config = sync.load_sync_config(collections_path)
 
     app = FastAPI(title="OctoBot Sync — Signal Sync Server")
 

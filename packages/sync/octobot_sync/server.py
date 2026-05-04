@@ -16,8 +16,10 @@
 
 import os
 import secrets
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 
+from starfish_server.config.schema import SyncConfig
+from starfish_server.storage.base import AbstractObjectStore
 from starfish_server.storage.s3 import S3ObjectStore, S3StorageOptions
 from starfish_server.storage.filesystem import FilesystemObjectStore, FilesystemStorageOptions
 
@@ -26,6 +28,35 @@ import octobot_commons.constants as commons_constants
 import octobot_commons.logging as logging
 import octobot_sync.app as sync_app
 import octobot_sync.auth as auth
+
+# TODO: temporary — replace with proper dependency injection
+_get_data: Callable[[str], Awaitable[str | None]] | None = None
+_put_data: Callable[[str, str], Awaitable[None]] | None = None
+
+
+def set_data_callbacks(
+    get_data: Callable[[str], Awaitable[str | None]],
+    put_data: Callable[[str, str], Awaitable[None]],
+) -> None:
+    global _get_data, _put_data
+    _get_data, _put_data = get_data, put_data
+
+
+class _CallbackObjectStore(AbstractObjectStore):
+    async def get_string(self, key: str) -> str | None:
+        return await _get_data(key)  # type: ignore[misc]
+
+    async def put(self, key: str, body: str, *, content_type: str | None = None, cache_control: str | None = None) -> None:
+        await _put_data(key, body)  # type: ignore[misc]
+
+    async def list_keys(self, prefix: str, *, start_after: str | None = None, limit: int | None = None) -> list[str]:
+        return []
+
+    async def delete(self, key: str) -> None:
+        raise NotImplementedError
+
+    async def delete_many(self, keys: list[str]) -> None:
+        raise NotImplementedError
 
 
 def _get_logger():
@@ -39,7 +70,9 @@ def _require_env(key: str) -> str:
     return value
 
 
-def build_object_store():
+def build_object_store() -> AbstractObjectStore:
+    if _get_data is not None and _put_data is not None:
+        return _CallbackObjectStore()
     if os.environ.get("S3_ENDPOINT"):
         return S3ObjectStore(
             S3StorageOptions(
@@ -76,6 +109,7 @@ def get_or_generate_encryption_secret(config: commons_configuration.Configuratio
 def build_default_sync_app(
     is_allowed: Callable[[str], bool] | None = None,
     encryption_secret: str | None = None,
+    sync_config: SyncConfig | None = None,
 ):
     nonce = auth.NonceStore(auth.MemoryStorageAdapter())
     return sync_app.create_app(
@@ -83,4 +117,5 @@ def build_default_sync_app(
         build_object_store(),
         is_allowed=is_allowed,
         encryption_secret=encryption_secret,
+        sync_config=sync_config,
     )

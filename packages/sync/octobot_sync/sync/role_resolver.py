@@ -18,11 +18,11 @@ import re
 import time
 from collections.abc import Callable
 
+import web3
 from fastapi import Request
 from starfish_server.router.route_builder import AuthResult
 
 import octobot_sync.auth as auth
-import octobot_sync.chain as chain
 import octobot_sync.constants as constants
 
 
@@ -63,7 +63,13 @@ def create_role_resolver(
             path = path[len(root_path):] or "/"
         canonical = auth.build_canonical(request.method, path, timestamp, nonce_header, body_hash)
 
-        if not chain.verify_evm(canonical, signature, pubkey):
+        try:
+            recovered = web3.Account.recover_message(  # pylint: disable=no-value-for-parameter
+                auth.eip191_message(canonical), signature=signature
+            )
+        except Exception as exc:
+            raise ValueError("Invalid signature") from exc
+        if recovered.lower() != pubkey.lower():
             raise ValueError("Invalid signature")
 
         fresh = await nonce.nonce_insert(nonce_header, pubkey)
@@ -73,6 +79,7 @@ def create_role_resolver(
         if is_allowed is not None and not is_allowed(pubkey.lower()):
             return AuthResult(identity=pubkey, roles=[])
 
+        # pubkey (client-supplied) not recovered (checksummed) — storage paths key on identity.
         return AuthResult(identity=pubkey, roles=["user"])
 
     return role_resolver

@@ -44,7 +44,7 @@ pytestmark = pytest.mark.skipif(
 
 
 def _make_auth_provider(pubkey: str):
-    """Auth provider that builds fake-signed headers; requires verify_evm to be patched."""
+    """Auth provider that builds fake-signed headers; requires Account.recover_message to be patched."""
     async def auth_provider(
         *, method: str, path: str, body: str | None
     ) -> dict[str, str]:
@@ -81,7 +81,7 @@ async def sync_client(s3_store):
         auth=_make_auth_provider(USER_PUBKEY),
         client=http_client,
     )
-    with patch("octobot_sync.chain.verify_evm", return_value=True):
+    with patch("web3.Account.recover_message", return_value=USER_PUBKEY):
         yield client
     await client.close()
 

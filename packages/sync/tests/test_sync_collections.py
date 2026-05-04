@@ -87,11 +87,14 @@ def test_fallback_to_default_config():
     assert config.version == 1
     assert config.namespaces is not None
     ns_collections = config.namespaces["octobot"].collections
-    assert len(ns_collections) == 2
-    names = {c.name for c in ns_collections}
-    assert names == {"user-data", "errors"}
-    errors = next(c for c in ns_collections if c.name == "errors")
-    assert errors.read_roles == ["self"]
-    assert errors.write_roles == ["self"]
-    assert errors.max_body_bytes == 500_000
-    assert errors.encryption == "delegated"
+    assert len(ns_collections) == 4
+    by_name = {c.name: c for c in ns_collections}
+    assert set(by_name) == {"user-data", "user-accounts", "user-settings", "user-strategies"}
+    assert by_name["user-data"].storage_path == "users/{identity}/data"
+    assert by_name["user-accounts"].storage_path == "users/{identity}/accounts"
+    assert by_name["user-settings"].storage_path == "users/{identity}/settings"
+    assert by_name["user-strategies"].storage_path == "users/{identity}/strategies"
+    for col in ns_collections:
+        assert col.read_roles == ["self"]
+        assert col.write_roles == ["self"]
+        assert col.encryption == "identity"

@@ -15,6 +15,22 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
 import hashlib
+import typing
+
+
+class _SignableMessage(typing.NamedTuple):
+    version: bytes
+    header: bytes
+    body: bytes
+
+
+def eip191_message(text: str) -> _SignableMessage:
+    msg = text.encode("utf-8")
+    return _SignableMessage(
+        version=b"\x19",
+        header=b"Ethereum Signed Message:\n" + str(len(msg)).encode("utf-8"),
+        body=msg,
+    )
 
 
 def build_canonical(

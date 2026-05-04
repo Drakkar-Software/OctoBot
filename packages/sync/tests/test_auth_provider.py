@@ -19,6 +19,7 @@
 import time
 
 import pytest
+import web3
 
 import octobot_sync.auth as auth
 import octobot_sync.chain.evm as evm
@@ -60,7 +61,11 @@ async def test_signature_is_verifiable(wallet, provider):
         headers[constants.HEADER_NONCE],
         body_hash,
     )
-    assert evm.verify_evm(canonical, headers[constants.HEADER_SIGNATURE], wallet.address) is True
+    recovered = web3.Account.recover_message(
+        auth.eip191_message(canonical),
+        signature=headers[constants.HEADER_SIGNATURE],
+    )
+    assert recovered.lower() == wallet.address.lower()
 
 
 async def test_nonce_unique_per_call(provider):

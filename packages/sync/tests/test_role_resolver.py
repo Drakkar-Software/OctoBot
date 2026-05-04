@@ -59,7 +59,7 @@ async def test_role_resolver_success(nonce):
     body_hash = auth.hash_body("")
     canonical = auth.build_canonical("GET", "/v1/test", ts, nonce_val, body_hash)
 
-    with patch("octobot_sync.chain.verify_evm", return_value=True):
+    with patch("web3.Account.recover_message", return_value=PUBKEY):
         resolver = sync.create_role_resolver(nonce)
         req = _make_request("GET", "/v1/test", "", _make_headers(PUBKEY, canonical, "sig", ts, nonce_val))
         result = await resolver(req)
@@ -69,7 +69,7 @@ async def test_role_resolver_success(nonce):
 
 
 async def test_role_resolver_missing_headers(nonce):
-    with patch("octobot_sync.chain.verify_evm", return_value=True):
+    with patch("web3.Account.recover_message", return_value=PUBKEY):
         resolver = sync.create_role_resolver(nonce)
         req = _make_request("GET", "/", "", {})
         with pytest.raises(ValueError, match="Missing authentication headers"):
@@ -82,7 +82,7 @@ async def test_role_resolver_invalid_signature(nonce):
     body_hash = auth.hash_body("")
     canonical = auth.build_canonical("GET", "/v1/test", ts, nonce_val, body_hash)
 
-    with patch("octobot_sync.chain.verify_evm", return_value=False):
+    with patch("web3.Account.recover_message", return_value="0xDifferentAddress"):
         resolver = sync.create_role_resolver(nonce)
         req = _make_request("GET", "/v1/test", "", _make_headers(PUBKEY, canonical, "bad-sig", ts, nonce_val))
         with pytest.raises(ValueError, match="Invalid signature"):
@@ -96,7 +96,7 @@ async def test_role_resolver_replay_rejected(nonce):
     canonical = auth.build_canonical("GET", "/v1/test", ts, nonce_val, body_hash)
     headers = _make_headers(PUBKEY, canonical, "sig", ts, nonce_val)
 
-    with patch("octobot_sync.chain.verify_evm", return_value=True):
+    with patch("web3.Account.recover_message", return_value=PUBKEY):
         resolver = sync.create_role_resolver(nonce)
         req1 = _make_request("GET", "/v1/test", "", headers)
         await resolver(req1)
@@ -113,7 +113,7 @@ async def test_role_resolver_expired_timestamp(nonce):
     canonical = auth.build_canonical("GET", "/v1/test", ts, nonce_val, body_hash)
     headers = _make_headers(PUBKEY, canonical, "sig", ts, nonce_val)
 
-    with patch("octobot_sync.chain.verify_evm", return_value=True):
+    with patch("web3.Account.recover_message", return_value=PUBKEY):
         resolver = sync.create_role_resolver(nonce)
         req = _make_request("GET", "/v1/test", "", headers)
         with pytest.raises(ValueError, match="Timestamp out of window"):
@@ -126,7 +126,7 @@ async def test_role_resolver_allowlist_permits_listed_wallet(nonce):
     body_hash = auth.hash_body("")
     canonical = auth.build_canonical("GET", "/v1/test", ts, nonce_val, body_hash)
 
-    with patch("octobot_sync.chain.verify_evm", return_value=True):
+    with patch("web3.Account.recover_message", return_value=PUBKEY):
         resolver = sync.create_role_resolver(nonce, is_allowed=lambda addr: addr == PUBKEY.lower())
         req = _make_request("GET", "/v1/test", "", _make_headers(PUBKEY, canonical, "sig", ts, nonce_val))
         result = await resolver(req)
@@ -141,7 +141,7 @@ async def test_role_resolver_allowlist_denies_unlisted_wallet(nonce):
     body_hash = auth.hash_body("")
     canonical = auth.build_canonical("GET", "/v1/test", ts, nonce_val, body_hash)
 
-    with patch("octobot_sync.chain.verify_evm", return_value=True):
+    with patch("web3.Account.recover_message", return_value=PUBKEY):
         resolver = sync.create_role_resolver(nonce, is_allowed=lambda addr: False)
         req = _make_request("GET", "/v1/test", "", _make_headers(PUBKEY, canonical, "sig", ts, nonce_val))
         result = await resolver(req)
@@ -156,7 +156,7 @@ async def test_role_resolver_allowlist_none_allows_all(nonce):
     body_hash = auth.hash_body("")
     canonical = auth.build_canonical("GET", "/v1/test", ts, nonce_val, body_hash)
 
-    with patch("octobot_sync.chain.verify_evm", return_value=True):
+    with patch("web3.Account.recover_message", return_value=PUBKEY):
         resolver = sync.create_role_resolver(nonce, is_allowed=None)
         req = _make_request("GET", "/v1/test", "", _make_headers(PUBKEY, canonical, "sig", ts, nonce_val))
         result = await resolver(req)
@@ -177,7 +177,7 @@ async def test_role_resolver_allowlist_address_normalized_lowercase(nonce):
         seen.append(addr)
         return True
 
-    with patch("octobot_sync.chain.verify_evm", return_value=True):
+    with patch("web3.Account.recover_message", return_value=mixed_case_pubkey):
         resolver = sync.create_role_resolver(nonce, is_allowed=capture_address)
         req = _make_request(
             "GET", "/v1/test", "", _make_headers(mixed_case_pubkey, canonical, "sig", ts, nonce_val)
@@ -195,12 +195,28 @@ async def test_role_resolver_allowlist_not_called_on_bad_signature(nonce):
 
     called = []
 
-    with patch("octobot_sync.chain.verify_evm", return_value=False):
+    with patch("web3.Account.recover_message", return_value="0xDifferentAddress"):
         resolver = sync.create_role_resolver(nonce, is_allowed=lambda addr: called.append(addr) or True)
         req = _make_request("GET", "/v1/test", "", _make_headers(PUBKEY, canonical, "bad-sig", ts, nonce_val))
         with pytest.raises(ValueError, match="Invalid signature"):
             await resolver(req)
 
     assert called == []
+
+
+async def test_role_resolver_malformed_signature_raises(nonce):
+    ts = str(int(time.time() * 1000))
+    nonce_val = "malformed-sig-nonce"
+    body_hash = auth.hash_body("")
+    canonical = auth.build_canonical("GET", "/v1/test", ts, nonce_val, body_hash)
+
+    with patch(
+        "web3.Account.recover_message",
+        side_effect=Exception("bad sig bytes"),
+    ):
+        resolver = sync.create_role_resolver(nonce)
+        req = _make_request("GET", "/v1/test", "", _make_headers(PUBKEY, canonical, "bad-sig", ts, nonce_val))
+        with pytest.raises(ValueError, match="Invalid signature"):
+            await resolver(req)
 
 
