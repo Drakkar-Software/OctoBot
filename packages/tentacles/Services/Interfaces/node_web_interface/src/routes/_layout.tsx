@@ -16,7 +16,7 @@ export const Route = createFileRoute("/_layout")({
 
 function Layout() {
   return (
-    <div className="min-h-screen text-foreground">
+    <div className="min-h-screen bg-halo text-foreground">
       <AppHeader />
       <main className="px-6 py-8">
         <div className="mx-auto max-w-7xl">

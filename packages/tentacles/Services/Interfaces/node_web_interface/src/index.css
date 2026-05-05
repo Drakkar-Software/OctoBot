@@ -181,7 +181,8 @@
   body {
     font-family: var(--font-sans);
     color-scheme: dark;
-    @apply bg-background text-foreground;
+    background-color: var(--deep-blue);
+    @apply text-foreground;
   }
   button,
   [role="button"] {
