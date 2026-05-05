@@ -77,7 +77,7 @@ def create_role_resolver(
             raise ValueError("Replay")
 
         if is_allowed is not None and not is_allowed(pubkey.lower()):
-            return AuthResult(identity=pubkey, roles=[])
+            raise ValueError("Unauthorized wallet")
 
         # pubkey (client-supplied) not recovered (checksummed) — storage paths key on identity.
         return AuthResult(identity=pubkey, roles=["user"])

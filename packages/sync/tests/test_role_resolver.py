@@ -144,10 +144,8 @@ async def test_role_resolver_allowlist_denies_unlisted_wallet(nonce):
     with patch("web3.Account.recover_message", return_value=PUBKEY):
         resolver = sync.create_role_resolver(nonce, is_allowed=lambda addr: False)
         req = _make_request("GET", "/v1/test", "", _make_headers(PUBKEY, canonical, "sig", ts, nonce_val))
-        result = await resolver(req)
-
-    assert result.identity == PUBKEY
-    assert result.roles == []
+        with pytest.raises(ValueError, match="Unauthorized wallet"):
+            await resolver(req)
 
 
 async def test_role_resolver_allowlist_none_allows_all(nonce):
