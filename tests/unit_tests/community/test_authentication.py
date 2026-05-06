@@ -506,3 +506,13 @@ async def test_stop(auth):
     await auth.stop()
     auth.supabase_client.aclose.assert_awaited_once()
     auth._fetch_account_task.cancel.assert_called_once()
+
+
+def test_is_node_wallet_configured(auth):
+    auth._wallet_backend = mock.Mock()
+    auth._wallet_backend.list_wallets.return_value = []
+    assert auth.is_node_wallet_configured() is False
+
+    auth._wallet_backend.list_wallets.return_value = [mock.Mock()]
+    assert auth.is_node_wallet_configured() is True
+

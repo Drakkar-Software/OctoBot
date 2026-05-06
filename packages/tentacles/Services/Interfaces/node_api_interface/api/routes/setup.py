@@ -55,7 +55,7 @@ class WalletExport(pydantic.BaseModel):
 @router.get("/setup/status", response_model=SetupStatus)
 def get_setup_status() -> SetupStatus:
     auth = community_auth.CommunityAuthentication.instance()
-    configured = auth is not None and bool(auth.list_wallets())
+    configured = auth is not None and auth.is_node_wallet_configured()
     return SetupStatus(configured=configured)
 
 

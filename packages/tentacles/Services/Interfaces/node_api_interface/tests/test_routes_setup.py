@@ -29,7 +29,7 @@ _INIT_BODY = {
 
 def test_setup_status_not_configured(client):
     auth = mock.MagicMock()
-    auth.list_wallets.return_value = []
+    auth.is_node_wallet_configured.return_value = False
     with mock.patch(
         "octobot.community.authentication.CommunityAuthentication.instance",
         return_value=auth,
@@ -41,7 +41,7 @@ def test_setup_status_not_configured(client):
 
 def test_setup_status_configured(client):
     auth = mock.MagicMock()
-    auth.list_wallets.return_value = [{"address": ADMIN_ADDRESS, "is_admin": True}]
+    auth.is_node_wallet_configured.return_value = True
     with mock.patch(
         "octobot.community.authentication.CommunityAuthentication.instance",
         return_value=auth,

@@ -641,6 +641,9 @@ class CommunityAuthentication(authentication.Authenticator):
     def list_wallets(self) -> list:
         return self._wallet_backend.list_wallets()
 
+    def is_node_wallet_configured(self) -> bool:
+        return bool(self._wallet_backend.list_wallets())
+
     def create_wallet(self, name: typing.Optional[str], passphrase: str, is_admin: bool = False):
         return self._wallet_backend.create_wallet(name, passphrase, is_admin)
 
