@@ -19,6 +19,7 @@ import uuid
 from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import BaseModel
 
+import octobot_commons.logging as logging
 import octobot_node.config
 import octobot_node.models
 import octobot_node.scheduler
@@ -31,6 +32,9 @@ except ImportError:
     from api.deps import CurrentUser  # type: ignore[no-redef]
 
 router = APIRouter(tags=["tasks"])
+logger = logging.get_logger(__name__)
+
+_MAX_PAGE_LIMIT = 500
 
 
 @router.post("/", response_model=tuple[int, int])
@@ -53,7 +57,7 @@ async def create_tasks(
 
 
 @router.get("/server-public-keys")
-def get_server_public_keys() -> dict:
+def get_server_public_keys(current_user: CurrentUser) -> dict:
     if not octobot_node.config.settings.is_node_side_encryption_enabled:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Server encryption keys not configured")
     from cryptography.hazmat.primitives.serialization import load_pem_private_key, Encoding, PublicFormat
@@ -77,6 +81,7 @@ async def get_tasks(
     page: int = 1,
     limit: int = 100,
 ) -> typing.Any:
+    limit = max(1, min(limit, _MAX_PAGE_LIMIT))
     wallet_filter = None if current_user.is_superuser else current_user.email
     tasks_data = await octobot_node.scheduler.api.get_all_tasks(wallet_address=wallet_filter)
 
@@ -123,4 +128,5 @@ async def delete_tasks(
     try:
         return await octobot_node.scheduler.api.delete_tasks(requested_ids)
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+        logger.exception(e, True, "delete_tasks failed")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
