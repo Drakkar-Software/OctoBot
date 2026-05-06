@@ -48,7 +48,7 @@ export const BotAvatar = memo(function BotAvatar({
           </svg>
         </>
       )}
-      <div className="flex size-10 items-center justify-center rounded-xl bg-surface-mid">
+      <div className="flex size-10 items-center justify-center rounded-full bg-surface-mid">
         <Bot className="size-5 text-frost" />
       </div>
     </div>

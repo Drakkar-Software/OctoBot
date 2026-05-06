@@ -74,11 +74,6 @@ function BotCardBody({
       return (
         <CardContent className="flex flex-col gap-2 pt-0">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-            {activeExec?.type && (
-              <span className="rounded bg-surface-mid px-2 py-0.5 text-xs font-medium text-muted-foreground">
-                {activeExec.type}
-              </span>
-            )}
             {runCount > 0 && (
               <span className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Layers className="size-3.5" />
@@ -104,11 +99,6 @@ function BotCardBody({
     return (
       <CardContent className="flex flex-col gap-2 pt-0">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          {activeExec?.type && (
-            <span className="rounded bg-surface-mid px-2 py-0.5 text-xs font-medium text-muted-foreground">
-              {activeExec.type}
-            </span>
-          )}
           {actionCount != null && (
             <span className="rounded bg-surface-mid px-2 py-0.5 text-xs font-medium text-muted-foreground">
               {actionCount} action{actionCount !== 1 ? "s" : ""} queued
@@ -141,11 +131,6 @@ function BotCardBody({
   return (
     <CardContent className="flex flex-col gap-2 pt-0">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        {activeExec?.type && (
-          <span className="rounded bg-surface-mid px-2 py-0.5 text-xs font-medium text-muted-foreground">
-            {activeExec.type}
-          </span>
-        )}
         {runCount > 0 && (
           <span className="flex items-center gap-1 text-xs text-muted-foreground">
             <Layers className="size-3.5" />
