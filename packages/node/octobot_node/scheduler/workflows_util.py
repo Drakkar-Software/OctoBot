@@ -23,7 +23,7 @@ import octobot_node.scheduler.workflows.params as params
 
 
 try:
-    import octobot_flow
+    import octobot_flow.entities
     import octobot_flow.parsers
 except ImportError:
     octobot_commons.logging.get_logger("octobot_node.scheduler.workflows_util").warning(
@@ -59,7 +59,7 @@ def get_automation_state_reader(workflow_status: dbos_lib.WorkflowStatus) -> typ
     """Get the automation state from the workflow status"""
     if state_dict := get_automation_state_dict(workflow_status):
         return octobot_flow.parsers.AutomationStateReader(
-            octobot_flow.AutomationState.from_dict(state_dict)
+            octobot_flow.entities.AutomationState.from_dict(state_dict)
         )
     return None
 

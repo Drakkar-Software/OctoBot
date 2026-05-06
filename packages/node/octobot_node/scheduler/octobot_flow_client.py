@@ -23,10 +23,10 @@ import octobot_commons.dataclasses
 import octobot_node.scheduler.workflows_util as workflows_util
 
 try:
-    import octobot_flow
     import octobot_flow.environment
     import octobot_flow.parsers
     import octobot_flow.entities
+    import octobot_flow.jobs
     # Requires octobot_flow import and importable tentacles folder
 
     # ensure environment is initialized
@@ -59,8 +59,8 @@ class OctoBotActionsJobDescription(octobot_commons.dataclasses.MinimizableDatacl
             raise ValueError("No automation id found in params")
         self._include_actions_in_automation_state(automation_id, to_add_actions_dag)
 
-    def _include_actions_in_automation_state(self, automation_id: str, actions: "octobot_flow.ActionsDAG"):
-        automation_state = octobot_flow.AutomationState.from_dict(self.state)
+    def _include_actions_in_automation_state(self, automation_id: str, actions: "octobot_flow.entities.ActionsDAG"):
+        automation_state = octobot_flow.entities.AutomationState.from_dict(self.state)
         if not automation_state.automation.metadata.automation_id:
             automation_state.automation = octobot_flow.entities.AutomationDetails(
                 metadata=octobot_flow.entities.AutomationMetadata(
@@ -78,12 +78,12 @@ class OctoBotActionsJobDescription(octobot_commons.dataclasses.MinimizableDatacl
 
 @dataclasses.dataclass
 class OctoBotActionsJobResult:
-    processed_actions: list["octobot_flow.AbstractActionDetails"] = dataclasses.field(default_factory=list)
+    processed_actions: list["octobot_flow.entities.AbstractActionDetails"] = dataclasses.field(default_factory=list)
     next_actions_description: typing.Optional[OctoBotActionsJobDescription] = None
     maybe_encrypted_next_actions_description: typing.Optional[str] = None
     next_actions_description_encryption_metadata: typing.Optional[str] = None
     has_next_actions: bool = False
-    actions_dag: typing.Optional["octobot_flow.ActionsDAG"] = None
+    actions_dag: typing.Optional["octobot_flow.entities.ActionsDAG"] = None
     should_stop: bool = False
 
 
@@ -102,8 +102,8 @@ class OctoBotActionsJob:
         )
         if wallet_address is not None:
             self.description.auth_details["wallet_address"] = wallet_address
-        self.priority_user_actions: list[octobot_flow.AbstractActionDetails] = [
-            octobot_flow.parse_action_details(
+        self.priority_user_actions: list[octobot_flow.entities.AbstractActionDetails] = [
+            octobot_flow.entities.parse_action_details(
                 user_action
             ) for user_action in user_actions
         ]
@@ -129,7 +129,7 @@ class OctoBotActionsJob:
         return parsed_description
 
     async def run(self) -> None:
-        async with octobot_flow.AutomationJob(
+        async with octobot_flow.jobs.AutomationJob(
             self.description.state,
             self.priority_user_actions,
             self.updated_trading_signals,
@@ -168,6 +168,6 @@ class OctoBotActionsJob:
         return next_actions_description, has_next_actions
 
     def __repr__(self) -> str:
-        parsed_state = octobot_flow.AutomationState.from_dict(self.description.state)
+        parsed_state = octobot_flow.entities.AutomationState.from_dict(self.description.state)
         automation_repr = str(parsed_state.automation) if parsed_state.automation else "No automation"
         return f"OctoBotActionsJob with automation:\n- {automation_repr}"

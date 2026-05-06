@@ -16,7 +16,7 @@ import octobot_node.constants as octobot_node_constants
 import octobot_trading.enums as trading_enums
 import pytest
 
-import octobot_flow
+import octobot_flow.jobs
 import tests.functionnal_tests as functionnal_tests
 import tests.functionnal_tests.octobot_process_actions.octobot_process_functional_shared as octobot_process_functional_shared
 
@@ -133,11 +133,11 @@ async def test_run_octobot_process_grid_refresh_four_to_six_orders(
             state = functionnal_tests.automation_state_dict(
                 functionnal_tests.resolved_actions([init_action])
             )
-            async with octobot_flow.AutomationJob(state, [], [], {}) as init_job:
+            async with octobot_flow.jobs.AutomationJob(state, [], [], {}) as init_job:
                 await init_job.run()
             state = init_job.dump()
 
-            async with octobot_flow.AutomationJob(state, [], [], {}) as job:
+            async with octobot_flow.jobs.AutomationJob(state, [], [], {}) as job:
                 job.automation_state.upsert_automation_actions(
                     functionnal_tests.resolved_actions([run_action])
                 )
@@ -146,7 +146,7 @@ async def test_run_octobot_process_grid_refresh_four_to_six_orders(
             deadline = time.monotonic() + octobot_process_functional_shared.GLOBAL_START_TIMEOUT_SEC
             inner: typing.Optional[dict] = None
             # 2) First automation pass, then poll until the child reports init_state_ok (ready to query).
-            async with octobot_flow.AutomationJob(state, [], [], {}) as first_poll:
+            async with octobot_flow.jobs.AutomationJob(state, [], [], {}) as first_poll:
                 await first_poll.run()
             octobot_process_functional_shared._assert_run_octobot_process_recall_scheduled_to_in_dump(
                 first_poll.dump()
@@ -160,7 +160,7 @@ async def test_run_octobot_process_grid_refresh_four_to_six_orders(
             if not (inner and inner.get("init_state_ok") is True):
                 while time.monotonic() < deadline:
                     await asyncio.sleep(octobot_process_functional_shared.SLEEP_BETWEEN_JOB_POLLS_SEC)
-                    async with octobot_flow.AutomationJob(state, [], [], {}) as poll_job:
+                    async with octobot_flow.jobs.AutomationJob(state, [], [], {}) as poll_job:
                         await poll_job.run()
                     octobot_process_functional_shared._assert_run_octobot_process_recall_scheduled_to_in_dump(
                         poll_job.dump()
@@ -192,7 +192,7 @@ async def test_run_octobot_process_grid_refresh_four_to_six_orders(
             ] = None
             last_open_order_count = 0
             while time.monotonic() < orders_deadline:
-                async with octobot_flow.AutomationJob(state, [], [], {}) as grid_poll_job:
+                async with octobot_flow.jobs.AutomationJob(state, [], [], {}) as grid_poll_job:
                     await grid_poll_job.run()
                     job_dump_payload = grid_poll_job.dump()
                 octobot_process_functional_shared._assert_run_octobot_process_recall_scheduled_to_in_dump(
@@ -241,7 +241,7 @@ async def test_run_octobot_process_grid_refresh_four_to_six_orders(
 
             spawn_before_refresh = popen_calls["count"]
             priority_actions = functionnal_tests.resolved_actions([update_config_priority_action])
-            async with octobot_flow.AutomationJob(state, priority_actions, [], {}) as refresh_phase:
+            async with octobot_flow.jobs.AutomationJob(state, priority_actions, [], {}) as refresh_phase:
                 await refresh_phase.run()
             octobot_process_functional_shared._assert_run_octobot_process_recall_scheduled_to_in_dump(
                 refresh_phase.dump()
@@ -259,7 +259,7 @@ async def test_run_octobot_process_grid_refresh_four_to_six_orders(
             last_six_count = 0
             inner_after: typing.Optional[dict] = None
             while time.monotonic() < six_orders_deadline:
-                async with octobot_flow.AutomationJob(state, [], [], {}) as six_poll:
+                async with octobot_flow.jobs.AutomationJob(state, [], [], {}) as six_poll:
                     await six_poll.run()
                     dump_payload = six_poll.dump()
                 octobot_process_functional_shared._assert_run_octobot_process_recall_scheduled_to_in_dump(
@@ -304,7 +304,7 @@ async def test_run_octobot_process_grid_refresh_four_to_six_orders(
 
             # 7) stop_automation (execution stop on run_octobot), then wait until the child PID is gone.
             priority_stop = functionnal_tests.resolved_actions([stop_automation_action])
-            async with octobot_flow.AutomationJob(state, priority_stop, [], {}) as stop_phase:
+            async with octobot_flow.jobs.AutomationJob(state, priority_stop, [], {}) as stop_phase:
                 await stop_phase.run()
             octobot_process_functional_shared._assert_run_octobot_process_recall_scheduled_to_in_dump(
                 stop_phase.dump(),

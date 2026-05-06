@@ -12,7 +12,7 @@ import octobot_commons.constants as common_constants
 import octobot_trading.dsl as trading_dsl
 import octobot_trading.exchanges.exchange_channels as exchange_channels
 import octobot_copy.rebalancing as rebalancing
-import octobot_flow
+import octobot_flow.jobs
 import octobot_flow.entities
 import octobot_flow.enums
 import octobot_copy.constants as copy_constants
@@ -198,7 +198,7 @@ async def test_simulator_index_init_from_empty_state(init_action: dict, emit_sig
 
     with trading_signal_emission_patches(emit_signals) as insert_trading_signal_mock:
         # 1. run init action
-        async with octobot_flow.AutomationJob(automation_state, [], [], {}) as automation_job:
+        async with octobot_flow.jobs.AutomationJob(automation_state, [], [], {}) as automation_job:
             await automation_job.run()
         after_init_execution_dump = automation_job.dump()
 
@@ -216,7 +216,7 @@ async def test_simulator_index_init_from_empty_state(init_action: dict, emit_sig
                 assert action.previous_execution_result is None
 
         # 2. run index trading mode action
-        async with octobot_flow.AutomationJob(after_init_execution_dump, [], [], {}) as automation_job:
+        async with octobot_flow.jobs.AutomationJob(after_init_execution_dump, [], [], {}) as automation_job:
             await automation_job.run()
         after_initial_rebalance_execution_dump = automation_job.dump()
         assert len(automation_job.automation_state.automation.actions_dag.actions) == len(all_actions)
@@ -260,7 +260,7 @@ async def test_simulator_index_init_from_empty_state(init_action: dict, emit_sig
         assert 0.001 < after_initial_rebalance_reference_account_portfolio_content["BTC"]["available"] < 0.01
 
         # 3. trigger again: nothing to do
-        async with octobot_flow.AutomationJob(after_initial_rebalance_execution_dump, [], [], {}) as automation_job:
+        async with octobot_flow.jobs.AutomationJob(after_initial_rebalance_execution_dump, [], [], {}) as automation_job:
             await automation_job.run()
         after_second_call_execution_dump = automation_job.dump()
         assert len(automation_job.automation_state.automation.actions_dag.actions) == len(all_actions)
@@ -312,7 +312,7 @@ async def test_simulator_index_rebalance_after_index_content_switch_btc_eth_to_b
 
     with trading_signal_emission_patches(emit_signals) as insert_trading_signal_mock:
         # 1. run init action
-        async with octobot_flow.AutomationJob(automation_state, [], [], {}) as automation_job:
+        async with octobot_flow.jobs.AutomationJob(automation_state, [], [], {}) as automation_job:
             await automation_job.run()
         after_init_execution_dump = automation_job.dump()
 
@@ -329,7 +329,7 @@ async def test_simulator_index_rebalance_after_index_content_switch_btc_eth_to_b
                 assert action.previous_execution_result is None
 
         # 2. first index run: BTC + ETH (base index_content)
-        async with octobot_flow.AutomationJob(after_init_execution_dump, [], [], {}) as automation_job:
+        async with octobot_flow.jobs.AutomationJob(after_init_execution_dump, [], [], {}) as automation_job:
             await automation_job.run()
         after_btc_eth_execution_dump = automation_job.dump()
 
@@ -365,7 +365,7 @@ async def test_simulator_index_rebalance_after_index_content_switch_btc_eth_to_b
         # 3. switch index definition to BTC + SOL and rebalance
         dump_after_index_switch = copy.deepcopy(after_btc_eth_execution_dump)
         _replace_index_trading_mode_dsl_in_dump(dump_after_index_switch, index_content_btc_sol)
-        async with octobot_flow.AutomationJob(dump_after_index_switch, [], [], {}) as automation_job:
+        async with octobot_flow.jobs.AutomationJob(dump_after_index_switch, [], [], {}) as automation_job:
             await automation_job.run()
         after_btc_sol_execution_dump = automation_job.dump()
 
@@ -403,7 +403,7 @@ async def test_simulator_index_rebalance_after_index_content_switch_btc_eth_to_b
         assert one_hour - allowed_execution_time < schedule_delay < one_hour + allowed_execution_time
 
         # 4. trigger again: portfolio already matches BTC + SOL index
-        async with octobot_flow.AutomationJob(after_btc_sol_execution_dump, [], [], {}) as automation_job:
+        async with octobot_flow.jobs.AutomationJob(after_btc_sol_execution_dump, [], [], {}) as automation_job:
             await automation_job.run()
         after_second_call_execution_dump = automation_job.dump()
 
@@ -448,7 +448,7 @@ async def test_simulator_index_with_added_traded_pairs(init_action: dict, emit_s
 
     with trading_signal_emission_patches(emit_signals) as insert_trading_signal_mock:
         # 1. run init action
-        async with octobot_flow.AutomationJob(automation_state, [], [], {}) as automation_job:
+        async with octobot_flow.jobs.AutomationJob(automation_state, [], [], {}) as automation_job:
             await automation_job.run()
         after_init_execution_dump = automation_job.dump()
 
@@ -485,7 +485,7 @@ async def test_simulator_index_with_added_traded_pairs(init_action: dict, emit_s
                 mock.AsyncMock(wraps=exchange_channels.create_minimal_dynamic_symbols_env_producers_if_needed)
             ) as mock_create_minimal_dynamic_symbols_env_producers_if_needed,
         ):
-            async with octobot_flow.AutomationJob(after_init_execution_dump, [], [], {}) as automation_job:
+            async with octobot_flow.jobs.AutomationJob(after_init_execution_dump, [], [], {}) as automation_job:
                 await automation_job.run()
             assert mock_get_dsl_dependencies.call_count > 1
             # ensure the ETH/USDC pairs is really added as a dynamic symbol
@@ -550,7 +550,7 @@ async def test_simulator_copy_index(
 
     with trading_signal_emission_patches(emit_signals) as insert_trading_signal_mock:
         # 1. run init action
-        async with octobot_flow.AutomationJob(automation_state, [], [], {}) as automation_job:
+        async with octobot_flow.jobs.AutomationJob(automation_state, [], [], {}) as automation_job:
             await automation_job.run()
         after_init_execution_dump = automation_job.dump()
 
@@ -568,7 +568,7 @@ async def test_simulator_copy_index(
                 assert action.previous_execution_result is None
 
         # 2. run copy exchange account action
-        async with octobot_flow.AutomationJob(after_init_execution_dump, [], [], {}) as automation_job:
+        async with octobot_flow.jobs.AutomationJob(after_init_execution_dump, [], [], {}) as automation_job:
             await automation_job.run()
         after_initial_rebalance_execution_dump = automation_job.dump()
         assert len(automation_job.automation_state.automation.actions_dag.actions) == len(all_actions)
@@ -611,7 +611,7 @@ async def test_simulator_copy_index(
         assert 0.001 < after_initial_rebalance_reference_account_portfolio_content["BTC"]["available"] < 0.01
 
         # 3. trigger again: nothing to do
-        async with octobot_flow.AutomationJob(after_initial_rebalance_execution_dump, [], [], {}) as automation_job:
+        async with octobot_flow.jobs.AutomationJob(after_initial_rebalance_execution_dump, [], [], {}) as automation_job:
             await automation_job.run()
         after_second_call_execution_dump = automation_job.dump()
         assert len(automation_job.automation_state.automation.actions_dag.actions) == len(all_actions)

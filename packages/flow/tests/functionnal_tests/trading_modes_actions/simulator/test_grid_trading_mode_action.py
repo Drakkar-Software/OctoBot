@@ -15,7 +15,7 @@ import octobot_copy.entities as copy_entities
 import octobot_trading.constants as trading_constants
 import octobot_trading.enums as trading_enums
 import octobot_trading.exchanges.util.exchange_data as exchange_data
-import octobot_flow
+import octobot_flow.jobs
 import octobot_flow.entities
 import octobot_flow.enums
 import octobot_flow.repositories.community
@@ -423,7 +423,7 @@ async def test_simulator_grid_init_from_empty_state(init_action: dict, emit_sign
             set_emit_signals_metadata(automation_state, emit_signals)
 
             # 1. run init action
-            async with octobot_flow.AutomationJob(automation_state, [], [], {}) as automation_job:
+            async with octobot_flow.jobs.AutomationJob(automation_state, [], [], {}) as automation_job:
                 await automation_job.run()
             after_init_execution_dump = automation_job.dump()
 
@@ -441,7 +441,7 @@ async def test_simulator_grid_init_from_empty_state(init_action: dict, emit_sign
                     assert action.previous_execution_result is None
 
             # 2. run grid trading mode action
-            async with octobot_flow.AutomationJob(after_init_execution_dump, [], [], {}) as automation_job:
+            async with octobot_flow.jobs.AutomationJob(after_init_execution_dump, [], [], {}) as automation_job:
                 await automation_job.run()
             after_grid_execution_dump = automation_job.dump()
             assert len(automation_job.automation_state.automation.actions_dag.actions) == len(all_actions)
@@ -520,7 +520,7 @@ async def test_simulator_grid_init_from_empty_state(init_action: dict, emit_sign
                 assert d_order_price(sell_orders[1][price_col]) == lowest_buy_price + D_INCREMENT + D_SPREAD + D_INCREMENT
 
             # 3. trigger again: nothing to do
-            async with octobot_flow.AutomationJob(after_grid_execution_dump, [], [], {}) as automation_job:
+            async with octobot_flow.jobs.AutomationJob(after_grid_execution_dump, [], [], {}) as automation_job:
                 await automation_job.run()
             after_second_call_execution_dump = automation_job.dump()
             assert len(automation_job.automation_state.automation.actions_dag.actions) == len(all_actions)
@@ -596,11 +596,11 @@ async def test_simulator_grid_init_and_fill_sell_order(init_action: dict, emit_s
             automation_state = automation_state_dict(resolved_actions(all_actions))
             set_emit_signals_metadata(automation_state, emit_signals)
 
-            async with octobot_flow.AutomationJob(automation_state, [], [], {}) as automation_job:
+            async with octobot_flow.jobs.AutomationJob(automation_state, [], [], {}) as automation_job:
                 await automation_job.run()
             after_init_execution_dump = automation_job.dump()
 
-            async with octobot_flow.AutomationJob(after_init_execution_dump, [], [], {}) as automation_job:
+            async with octobot_flow.jobs.AutomationJob(after_init_execution_dump, [], [], {}) as automation_job:
                 await automation_job.run()
             after_grid_execution_dump = automation_job.dump()
 
@@ -640,7 +640,7 @@ async def test_simulator_grid_init_and_fill_sell_order(init_action: dict, emit_s
             # Between first and second sell so the lowest sell limit fills but price stays inside the grid upper bound.
             simulated_close["value"] = float(first_sell_price + D_INCREMENT / decimal.Decimal("2"))
 
-            async with octobot_flow.AutomationJob(after_grid_execution_dump, [], [], {}) as automation_job:
+            async with octobot_flow.jobs.AutomationJob(after_grid_execution_dump, [], [], {}) as automation_job:
                 await automation_job.run()
                 final_dump = automation_job.dump()
                 for action in automation_job.automation_state.automation.actions_dag.actions:
@@ -784,7 +784,7 @@ async def test_simulator_copy_grid(
         set_emit_signals_metadata(automation_state, emit_signals)
 
         # 1. run init action
-        async with octobot_flow.AutomationJob(
+        async with octobot_flow.jobs.AutomationJob(
             automation_state, [], [], community_auth_details
         ) as automation_job:
             await automation_job.run()
@@ -804,7 +804,7 @@ async def test_simulator_copy_grid(
                 assert action.previous_execution_result is None
 
         # 2. run copy exchange account action (rebalance + mirror reference grid orders)
-        async with octobot_flow.AutomationJob(
+        async with octobot_flow.jobs.AutomationJob(
             after_init_execution_dump, [], [], community_auth_details
         ) as automation_job:
             await automation_job.run()
@@ -900,7 +900,7 @@ async def test_simulator_copy_grid(
         assert d_order_price(sell_orders[1][price_col]) == lowest_buy_price + D_INCREMENT + D_SPREAD + D_INCREMENT
 
         # 3. trigger again: portfolio and mirrored grid should be unchanged
-        async with octobot_flow.AutomationJob(
+        async with octobot_flow.jobs.AutomationJob(
             after_initial_copy_execution_dump, [], [], community_auth_details
         ) as automation_job:
             await automation_job.run()

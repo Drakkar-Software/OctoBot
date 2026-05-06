@@ -6,7 +6,7 @@ import octobot_commons.constants as common_constants
 import octobot_trading.enums as trading_enums
 
 
-import octobot_flow
+import octobot_flow.jobs
 import octobot_flow.entities
 import octobot_flow.enums
 
@@ -62,7 +62,7 @@ async def test_execute_actions_with_limit_orders_and_empty_state(
         functionnal_tests.mocked_community_repository() as insert_bot_logs_mock,
     ):
         automation_state = automation_state_dict(resolved_actions(all_actions))
-        async with octobot_flow.AutomationJob(automation_state, [], [], {}) as automations_job:
+        async with octobot_flow.jobs.AutomationJob(automation_state, [], [], {}) as automations_job:
             await automations_job.run()
 
         # check bot actions execution
@@ -102,7 +102,7 @@ async def test_execute_actions_with_limit_orders_and_empty_state(
         state = after_execution_dump
         other_actions = resolved_actions(actions_to_execute)
         automation_id = after_execution_dump["automation"]["metadata"]["automation_id"]
-        async with octobot_flow.AutomationJob(state, [], [], {}) as automations_job:
+        async with octobot_flow.jobs.AutomationJob(state, [], [], {}) as automations_job:
             automations_job.automation_state.upsert_automation_actions(other_actions)
             await automations_job.run()
 

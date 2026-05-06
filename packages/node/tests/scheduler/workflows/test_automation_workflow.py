@@ -1028,6 +1028,56 @@ class TestExecuteAutomationIntegration:
 
     @pytest.mark.asyncio
     @required_imports
+    async def test_cancel_workflow_async_cancels_running_automation_workflow(
+        self,
+        import_automation_workflow,
+        temp_dbos_scheduler,
+    ):
+        task = octobot_node.models.Task(
+            name="cancel_running_workflow_test",
+            content="{}",
+            type=octobot_node.models.TaskType.EXECUTE_ACTIONS.value,
+        )
+        inputs = params.AutomationWorkflowInputs(task=task, execution_time=0).to_dict(
+            include_default_values=False
+        )
+        inputs["task"] = task.model_dump(exclude_defaults=True)
+        entered_iteration_event = asyncio.Event()
+
+        async def wait_forever_in_iteration(*args, **kwargs):
+            entered_iteration_event.set()
+            await asyncio.Future()
+
+        with mock.patch.object(
+            octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow,
+            "execute_iteration",
+            mock.AsyncMock(side_effect=wait_forever_in_iteration),
+        ):
+            await temp_dbos_scheduler.INSTANCE.start_workflow_async(
+                octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow.execute_automation,
+                inputs=inputs,
+            )
+            await asyncio.wait_for(entered_iteration_event.wait(), timeout=5)
+            active_workflows = await temp_dbos_scheduler.INSTANCE.list_workflows_async(
+                status=[dbos.WorkflowStatusString.ENQUEUED.value, dbos.WorkflowStatusString.PENDING.value]
+            )
+            assert len(active_workflows) == 1
+            automation_workflow_id = active_workflows[0].workflow_id
+            await temp_dbos_scheduler.INSTANCE.cancel_workflow_async(automation_workflow_id)
+
+            cancelled_status = None
+            for _attempt_index in range(10):
+                workflow_handle = await temp_dbos_scheduler.INSTANCE.retrieve_workflow_async(automation_workflow_id)
+                cancelled_status = await workflow_handle.get_status()
+                if cancelled_status.status == dbos.WorkflowStatusString.CANCELLED.value:
+                    break
+                await asyncio.sleep(0.1)
+
+            assert cancelled_status is not None
+            assert cancelled_status.status == dbos.WorkflowStatusString.CANCELLED.value
+
+    @pytest.mark.asyncio
+    @required_imports
     async def test_execute_automation_execute_iteration_retries_octobot_actions_job_then_succeeds_and_returns_action_error(
         self,
         import_automation_workflow,

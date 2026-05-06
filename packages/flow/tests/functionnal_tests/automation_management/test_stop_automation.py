@@ -2,7 +2,7 @@ import pytest
 import mock
 import time
 
-import octobot_flow
+import octobot_flow.jobs
 import octobot_flow.enums
 
 import tests.functionnal_tests as functionnal_tests
@@ -60,14 +60,14 @@ async def test_stop_automation_action_sets_post_actions_stop_flag(
     ):
         # 1. Initialize with configuration (only init action is executed)
         automation_state = automation_state_dict(resolved_actions(all_actions))
-        async with octobot_flow.AutomationJob(automation_state, [], [], {}) as init_automation_job:
+        async with octobot_flow.jobs.AutomationJob(automation_state, [], [], {}) as init_automation_job:
             await init_automation_job.run()
         assert init_automation_job.automation_state.automation.post_actions.stop_automation is False
 
         # 2. Run again to execute the stop_automation action
         after_config_execution_dump = init_automation_job.dump()
         state = after_config_execution_dump
-        async with octobot_flow.AutomationJob(state, [], [], {}) as automation_job:
+        async with octobot_flow.jobs.AutomationJob(state, [], [], {}) as automation_job:
             await automation_job.run()
 
         # 3. Verify stop_automation action was executed and post_actions.stop_automation is set
@@ -95,7 +95,7 @@ async def test_stop_automation_action_via_priority_actions_sets_post_actions_sto
     ):
         # 1. Initialize with configuration (only init action is executed)
         automation_state = automation_state_dict(resolved_actions(all_actions))
-        async with octobot_flow.AutomationJob(automation_state, [], [], {}) as init_automation_job:
+        async with octobot_flow.jobs.AutomationJob(automation_state, [], [], {}) as init_automation_job:
             await init_automation_job.run()
         assert init_automation_job.automation_state.automation.post_actions.stop_automation is False
         # check random action is not executed
@@ -106,7 +106,7 @@ async def test_stop_automation_action_via_priority_actions_sets_post_actions_sto
         after_config_execution_dump = init_automation_job.dump()
         state = after_config_execution_dump
         priority_actions = resolved_actions([stop_automation_action])
-        async with octobot_flow.AutomationJob(state, priority_actions, [], {}) as automation_job:
+        async with octobot_flow.jobs.AutomationJob(state, priority_actions, [], {}) as automation_job:
             await automation_job.run()
         # check random action is not executed
         assert init_automation_job.automation_state.automation.actions_dag.actions[1].result is None

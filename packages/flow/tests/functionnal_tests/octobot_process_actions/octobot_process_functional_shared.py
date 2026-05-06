@@ -10,7 +10,7 @@ import octobot_trading.constants as trading_constants
 import octobot_trading.enums as trading_enums
 import pytest
 
-import octobot_flow
+import octobot_flow.jobs
 import octobot_flow.entities
 import octobot_flow.enums
 import tentacles.Trading.Mode.grid_trading_mode.grid_trading as grid_trading
@@ -212,7 +212,7 @@ def _assert_run_octobot_process_recall_scheduled_to_in_dump(
 
 
 def _get_action_by_id(
-    job: octobot_flow.AutomationJob, action_id: str
+    job: octobot_flow.jobs.AutomationJob, action_id: str
 ) -> typing.Optional[octobot_flow.entities.AbstractActionDetails]:
     for action in job.automation_state.automation.actions_dag.actions:
         if action.id == action_id:

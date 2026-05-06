@@ -177,6 +177,10 @@ async def delete_tasks(task_ids: list[str]) -> list[str]:
     return task_ids
 
 
+async def cancel_tasks(task_ids: list[str]) -> list[str]:
+    return await octobot_node.scheduler.SCHEDULER.cancel_workflows(task_ids)
+
+
 async def get_task_result(task_id: str):
     try:
         handle = await octobot_node.scheduler.SCHEDULER.INSTANCE.retrieve_workflow_async(task_id)

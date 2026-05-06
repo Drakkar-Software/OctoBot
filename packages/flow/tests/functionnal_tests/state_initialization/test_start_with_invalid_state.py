@@ -1,6 +1,6 @@
 import pytest
 
-import octobot_flow
+import octobot_flow.jobs
 import octobot_flow.entities
 import octobot_flow.errors
 
@@ -18,11 +18,11 @@ async def test_multi_bots_job_start_with_invalid_empty_state(auth_details: octob
         # AutomationJob requires at least 1 automation
         automation_state_empty = {}
         with pytest.raises(octobot_flow.errors.NoAutomationError):
-            async with octobot_flow.AutomationJob(automation_state_empty, [], [], {}) as automation_job:
+            async with octobot_flow.jobs.AutomationJob(automation_state_empty, [], [], {}) as automation_job:
                 await automation_job.run()
 
         with pytest.raises(octobot_flow.errors.NoAutomationError):
-            async with octobot_flow.AutomationJob(automation_state_empty, [], [], auth_details) as automation_job:
+            async with octobot_flow.jobs.AutomationJob(automation_state_empty, [], [], auth_details) as automation_job:
                 await automation_job.run()
 
     # communit auth is not used in (raising before)

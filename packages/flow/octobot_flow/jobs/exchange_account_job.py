@@ -12,15 +12,15 @@ import octobot_trading.enums
 import octobot_trading.errors
 import octobot_trading.personal_data as personal_data
 import octobot_trading.exchanges
-import octobot_trading.exchange_data
 import octobot_trading.exchanges.util.exchange_data as exchange_data_import
-import tentacles.Meta.Keywords.scripting_library as scripting_library
 import octobot_flow.repositories.exchange
 import octobot_flow.entities
 import octobot_flow.errors
 
 import octobot_flow.logic.exchange
 import octobot_flow.logic.dsl
+
+import tentacles.Meta.Keywords.scripting_library as scripting_library
 
 
 class ExchangeAccountJob(octobot_flow.repositories.exchange.ExchangeContextMixin):

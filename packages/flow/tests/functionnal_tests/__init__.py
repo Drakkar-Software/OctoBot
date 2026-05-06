@@ -18,9 +18,8 @@ import octobot.community as community
 import octobot_copy.constants as copy_constants
 import octobot_copy.entities as copy_entities
 
-import octobot_flow
 import octobot_flow.entities
-
+import octobot_flow.jobs
 import octobot_flow.environment
 import octobot_flow.repositories.community
 import octobot_flow.logic.actions.actions_factory as actions_factory
@@ -60,7 +59,7 @@ def trading_signal_emission_patches(emit_signals: bool, *, mock_authenticator: b
 
             stack.enter_context(
                 mock.patch.object(
-                    octobot_flow.AutomationJob,
+                    octobot_flow.jobs.AutomationJob,
                     "_maybe_authenticator",
                     _fake_maybe_authenticator,
                 )

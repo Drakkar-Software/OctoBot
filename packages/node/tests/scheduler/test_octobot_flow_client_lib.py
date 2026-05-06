@@ -370,7 +370,7 @@ class TestOctoBotActionsJob:
         # step 2: run the trade action
         next_actions_description = result.next_actions_description
         assert next_actions_description is not None
-        parsed_state = octobot_flow.AutomationState.from_dict(next_actions_description.state)
+        parsed_state = octobot_flow.entities.AutomationState.from_dict(next_actions_description.state)
         next_actions = parsed_state.automation.actions_dag.get_executable_actions()
         assert len(next_actions) == 1
         assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
@@ -425,7 +425,7 @@ class TestOctoBotActionsJob:
         # step 2: run the trade action
         next_actions_description = result.next_actions_description
         assert next_actions_description is not None
-        parsed_state = octobot_flow.AutomationState.from_dict(next_actions_description.state)
+        parsed_state = octobot_flow.entities.AutomationState.from_dict(next_actions_description.state)
         next_actions = parsed_state.automation.actions_dag.get_executable_actions()
         assert len(next_actions) == 1
         assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
@@ -476,7 +476,7 @@ class TestOctoBotActionsJob:
         ) as _ensure_supported_order_type:
             next_actions_description = result.next_actions_description
             assert next_actions_description is not None
-            parsed_state = octobot_flow.AutomationState.from_dict(next_actions_description.state)
+            parsed_state = octobot_flow.entities.AutomationState.from_dict(next_actions_description.state)
             next_actions = parsed_state.automation.actions_dag.get_executable_actions()
             assert len(next_actions) == 1
             assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
@@ -524,7 +524,7 @@ class TestOctoBotActionsJob:
         # step 2: run the trade action
         next_actions_description = result.next_actions_description
         assert next_actions_description is not None
-        parsed_state = octobot_flow.AutomationState.from_dict(next_actions_description.state)
+        parsed_state = octobot_flow.entities.AutomationState.from_dict(next_actions_description.state)
         next_actions = parsed_state.automation.actions_dag.get_executable_actions()
         assert len(next_actions) == 1
         assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
@@ -552,7 +552,7 @@ class TestOctoBotActionsJob:
         # step 3: run the wait action
         next_actions_description = result.next_actions_description
         assert next_actions_description is not None
-        parsed_state = octobot_flow.AutomationState.from_dict(next_actions_description.state)
+        parsed_state = octobot_flow.entities.AutomationState.from_dict(next_actions_description.state)
         next_actions = parsed_state.automation.actions_dag.get_executable_actions()
         assert len(next_actions) == 1
         assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
@@ -574,7 +574,7 @@ class TestOctoBotActionsJob:
         # step 4: run the cancel action
         next_actions_description = result.next_actions_description
         assert next_actions_description is not None
-        parsed_state = octobot_flow.AutomationState.from_dict(next_actions_description.state)
+        parsed_state = octobot_flow.entities.AutomationState.from_dict(next_actions_description.state)
         next_actions = parsed_state.automation.actions_dag.get_executable_actions()
         assert len(next_actions) == 1
         assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
@@ -617,7 +617,7 @@ class TestOctoBotActionsJob:
         # step 2: run the trade action
         next_actions_description = result.next_actions_description
         assert next_actions_description is not None
-        parsed_state = octobot_flow.AutomationState.from_dict(next_actions_description.state)
+        parsed_state = octobot_flow.entities.AutomationState.from_dict(next_actions_description.state)
         next_actions = parsed_state.automation.actions_dag.get_executable_actions()
         assert len(next_actions) == 1
         assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
@@ -658,7 +658,7 @@ class TestOctoBotActionsJob:
         # step 2: run the transfer action
         next_actions_description = result.next_actions_description
         assert next_actions_description is not None
-        parsed_state = octobot_flow.AutomationState.from_dict(next_actions_description.state)
+        parsed_state = octobot_flow.entities.AutomationState.from_dict(next_actions_description.state)
         next_actions = parsed_state.automation.actions_dag.get_executable_actions()
         assert len(next_actions) == 1
         assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
@@ -713,7 +713,7 @@ class TestOctoBotActionsJob:
         # step 2: run the deposit action
         next_actions_description = result.next_actions_description
         assert next_actions_description is not None
-        parsed_state = octobot_flow.AutomationState.from_dict(next_actions_description.state)
+        parsed_state = octobot_flow.entities.AutomationState.from_dict(next_actions_description.state)
         next_actions = parsed_state.automation.actions_dag.get_executable_actions()
         assert len(next_actions) == 1
         assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
@@ -760,7 +760,7 @@ class TestOctoBotActionsJob:
         # step 2: run the withdraw action
         next_actions_description = result.next_actions_description
         assert next_actions_description is not None
-        parsed_state = octobot_flow.AutomationState.from_dict(next_actions_description.state)
+        parsed_state = octobot_flow.entities.AutomationState.from_dict(next_actions_description.state)
         next_actions = parsed_state.automation.actions_dag.get_executable_actions()
         assert len(next_actions) == 1
         assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
@@ -805,7 +805,7 @@ class TestOctoBotActionsJob:
         # step 2: run the deposit action
         next_actions_description = result.next_actions_description
         assert next_actions_description is not None
-        parsed_state = octobot_flow.AutomationState.from_dict(next_actions_description.state)
+        parsed_state = octobot_flow.entities.AutomationState.from_dict(next_actions_description.state)
         next_actions = parsed_state.automation.actions_dag.get_executable_actions()
         assert len(next_actions) == 1 # only the deposit action should be executable as the trade action depends on it
         assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
@@ -834,7 +834,7 @@ class TestOctoBotActionsJob:
         # step 3: run the trade action
         next_actions_description = result.next_actions_description
         assert next_actions_description is not None
-        parsed_state = octobot_flow.AutomationState.from_dict(next_actions_description.state)
+        parsed_state = octobot_flow.entities.AutomationState.from_dict(next_actions_description.state)
         next_actions = parsed_state.automation.actions_dag.get_executable_actions()
         assert len(next_actions) == 1 # only the trade action should be executable now: all others have been executed already
         assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
@@ -891,7 +891,7 @@ class TestOctoBotActionsJob:
         # into loop_until_order_closed via dependency::action_trade_1::created_orders::0::...
         next_actions_description = result.next_actions_description
         assert next_actions_description is not None
-        parsed_state = octobot_flow.AutomationState.from_dict(next_actions_description.state)
+        parsed_state = octobot_flow.entities.AutomationState.from_dict(next_actions_description.state)
         next_actions = parsed_state.automation.actions_dag.get_executable_actions()
         assert len(next_actions) == 1
         assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
@@ -919,7 +919,7 @@ class TestOctoBotActionsJob:
         # Sanity-check the generated script before running it.
         next_actions_description = result.next_actions_description
         assert next_actions_description is not None
-        parsed_state = octobot_flow.AutomationState.from_dict(next_actions_description.state)
+        parsed_state = octobot_flow.entities.AutomationState.from_dict(next_actions_description.state)
         next_actions = parsed_state.automation.actions_dag.get_executable_actions()
         assert len(next_actions) == 1
         assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
@@ -975,7 +975,7 @@ class TestOctoBotActionsJob:
         assert result.next_actions_description is not None
         assert result.has_next_actions is True
         # Same loop_until node stays executable; previous_execution_result carries waiting_time for the scheduler.
-        parsed_state = octobot_flow.AutomationState.from_dict(result.next_actions_description.state)
+        parsed_state = octobot_flow.entities.AutomationState.from_dict(result.next_actions_description.state)
         next_actions_after_first_attempt = parsed_state.automation.actions_dag.get_executable_actions()
         assert len(next_actions_after_first_attempt) == 1
         assert isinstance(next_actions_after_first_attempt[0], octobot_flow.entities.DSLScriptActionDetails)
@@ -1038,7 +1038,7 @@ class TestOctoBotActionsJob:
         # step 2: run the market trade action (first executable after init)
         next_actions_description = result.next_actions_description
         assert next_actions_description is not None
-        parsed_state = octobot_flow.AutomationState.from_dict(next_actions_description.state)
+        parsed_state = octobot_flow.entities.AutomationState.from_dict(next_actions_description.state)
         next_actions = parsed_state.automation.actions_dag.get_executable_actions()
         assert len(next_actions) == 1
         assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
@@ -1085,7 +1085,7 @@ class TestOctoBotActionsJob:
         # step 3: transfer uses dependency::action_trade_1::created_orders::0::esov::address_from
         next_actions_description = result.next_actions_description
         assert next_actions_description is not None
-        parsed_state = octobot_flow.AutomationState.from_dict(next_actions_description.state)
+        parsed_state = octobot_flow.entities.AutomationState.from_dict(next_actions_description.state)
         next_actions = parsed_state.automation.actions_dag.get_executable_actions()
         assert len(next_actions) == 1
         assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
@@ -1113,7 +1113,7 @@ class TestOctoBotActionsJob:
         # step 4.A: wait_for_blockchain_balance — mocked balance 0 triggers wait (re-call); automation not finished
         next_actions_description = result.next_actions_description
         assert next_actions_description is not None
-        parsed_state = octobot_flow.AutomationState.from_dict(next_actions_description.state)
+        parsed_state = octobot_flow.entities.AutomationState.from_dict(next_actions_description.state)
         next_actions = parsed_state.automation.actions_dag.get_executable_actions()
         assert len(next_actions) == 1
         assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
@@ -1154,7 +1154,7 @@ class TestOctoBotActionsJob:
             processed_actions[0].previous_execution_result
         )
         assert result.next_actions_description is not None
-        parsed_state = octobot_flow.AutomationState.from_dict(result.next_actions_description.state)
+        parsed_state = octobot_flow.entities.AutomationState.from_dict(result.next_actions_description.state)
         next_actions = parsed_state.automation.actions_dag.get_executable_actions()
         assert len(next_actions) == 1
         assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
@@ -1219,7 +1219,7 @@ class TestOctoBotActionsJob:
         # step 2: run the deposit action
         next_actions_description = result.next_actions_description
         assert next_actions_description is not None
-        parsed_state = octobot_flow.AutomationState.from_dict(next_actions_description.state)
+        parsed_state = octobot_flow.entities.AutomationState.from_dict(next_actions_description.state)
         next_actions = parsed_state.automation.actions_dag.get_executable_actions()
         assert len(next_actions) == 1
         assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
@@ -1244,7 +1244,7 @@ class TestOctoBotActionsJob:
         assert transaction[trading_enums.ExchangeConstantsTransactionColumns.NETWORK.value] == BLOCKCHAIN
         assert transaction[trading_enums.ExchangeConstantsTransactionColumns.ADDRESS_TO.value] == "0x123_simulated_deposit_address_BTC"
         assert next_actions_description is not None
-        parsed_state = octobot_flow.AutomationState.from_dict(next_actions_description.state)
+        parsed_state = octobot_flow.entities.AutomationState.from_dict(next_actions_description.state)
         next_actions = parsed_state.automation.actions_dag.get_executable_actions()
         assert len(next_actions) == 1
         assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
@@ -1264,7 +1264,7 @@ class TestOctoBotActionsJob:
         assert isinstance(processed_actions[0], octobot_flow.entities.DSLScriptActionDetails)
         assert processed_actions[0].dsl_script.startswith("wait(")
         # next action is wait again: waiting time has not been reached yet
-        parsed_state = octobot_flow.AutomationState.from_dict(next_actions_description.state)
+        parsed_state = octobot_flow.entities.AutomationState.from_dict(next_actions_description.state)
         next_actions = parsed_state.automation.actions_dag.get_executable_actions()
         assert len(next_actions) == 1
         assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
@@ -1291,7 +1291,7 @@ class TestOctoBotActionsJob:
         assert processed_actions[0].executed_at is not None and processed_actions[0].executed_at > 0 
 
         next_actions_description = result.next_actions_description
-        parsed_state = octobot_flow.AutomationState.from_dict(next_actions_description.state)
+        parsed_state = octobot_flow.entities.AutomationState.from_dict(next_actions_description.state)
         next_actions = parsed_state.automation.actions_dag.get_executable_actions()
         assert len(next_actions) == 1
         assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
@@ -1305,7 +1305,7 @@ class TestOctoBotActionsJob:
         # step 4: run the trade action
         next_actions_description = result.next_actions_description
         assert next_actions_description is not None
-        parsed_state = octobot_flow.AutomationState.from_dict(next_actions_description.state)
+        parsed_state = octobot_flow.entities.AutomationState.from_dict(next_actions_description.state)
         next_actions = parsed_state.automation.actions_dag.get_executable_actions()
         assert len(next_actions) == 1
         assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
@@ -1366,7 +1366,7 @@ class TestOctoBotActionsJob:
         # step 6: run the withdraw action
         next_actions_description = result.next_actions_description
         assert next_actions_description is not None
-        parsed_state = octobot_flow.AutomationState.from_dict(next_actions_description.state)
+        parsed_state = octobot_flow.entities.AutomationState.from_dict(next_actions_description.state)
         next_actions = parsed_state.automation.actions_dag.get_executable_actions()
         assert len(next_actions) == 1
         assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)

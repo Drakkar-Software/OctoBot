@@ -5,7 +5,7 @@ import octobot_trading.blockchain_wallets as blockchain_wallets
 import octobot_trading.constants as trading_constants
 import octobot_trading.enums as trading_enums
 
-import octobot_flow
+import octobot_flow.jobs
 import octobot_flow.entities
 import octobot_flow.enums
 
@@ -97,7 +97,7 @@ async def test_execute_actions_with_blockchain_deposit_and_withdrawal(
         functionnal_tests.mocked_community_repository() as insert_bot_logs_mock,
         mock.patch.object(trading_constants, 'ALLOW_FUNDS_TRANSFER', True),
     ):
-        async with octobot_flow.AutomationJob(global_state, [], [], auth_details) as automations_job:
+        async with octobot_flow.jobs.AutomationJob(global_state, [], [], auth_details) as automations_job:
             automations_job.automation_state.upsert_automation_actions(
                 resolved_actions(actions_with_blockchain_deposit_and_withdrawal_with_holding_checks),
             )
@@ -162,7 +162,7 @@ async def test_execute_actions_with_blockchain_deposit_and_withdrawal_with_holdi
         functionnal_tests.mocked_community_repository() as insert_bot_logs_mock,
         mock.patch.object(trading_constants, 'ALLOW_FUNDS_TRANSFER', True),
     ):
-        async with octobot_flow.AutomationJob(global_state, [], [], auth_details) as automations_job:
+        async with octobot_flow.jobs.AutomationJob(global_state, [], [], auth_details) as automations_job:
             automations_job.automation_state.upsert_automation_actions(
                 resolved_actions(actions_with_blockchain_deposit_and_withdrawal_with_holding_checks),
             )

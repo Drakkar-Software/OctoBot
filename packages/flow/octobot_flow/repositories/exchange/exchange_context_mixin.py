@@ -8,12 +8,13 @@ import octobot_trading.api
 import octobot_trading.exchanges
 import octobot_trading.exchanges.util.exchange_data as exchange_data_import
 import octobot_tentacles_manager.api
-import tentacles.Meta.Keywords.scripting_library as scripting_library
 import octobot_flow.errors
 import octobot_flow.entities
 import octobot_flow.repositories.exchange.exchange_repository_factory as exchange_repository_factory
 import octobot_flow.repositories.exchange.tickers_repository as tickers_repository
 import octobot_flow.logic.configuration
+
+import tentacles.Meta.Keywords.scripting_library as scripting_library
 
 class ExchangeContextMixin:
     USE_PREDICTIVE_ORDERS_SYNC: bool = False

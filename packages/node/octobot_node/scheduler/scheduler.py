@@ -168,6 +168,16 @@ class Scheduler:
             self.logger.warning(f"Failed to list pending workflows: {e}")
         return executions
 
+    async def cancel_workflows(self, workflow_ids: list[str]) -> list[str]:
+        try:
+            self.logger.info(f"Cancelling {len(workflow_ids)} workflows {workflow_ids}")
+            await self.INSTANCE.cancel_workflows_async(workflow_ids)
+            self.logger.info(f"{len(workflow_ids)} workflows {workflow_ids} cancelled")
+            return workflow_ids
+        except Exception as e:
+            self.logger.exception(e, True, f"Failed to cancel workflows {workflow_ids}: {e}")
+            return []
+
     async def delete_workflows(self, to_delete_workflow_ids: list[str]):
         self.logger.info(f"Deleting {len(to_delete_workflow_ids)} workflows")
         all_completed_workflows = await self.INSTANCE.list_workflows_async(status=[

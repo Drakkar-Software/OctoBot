@@ -29,7 +29,7 @@ import octobot_trading.enums as trading_enums
 
 import octobot_copy.constants as copy_constants
 import octobot_copy.entities as copy_entities
-import octobot_flow
+import octobot_flow.jobs
 import octobot_flow.entities as flow_entities
 import octobot_flow.enums
 import octobot_flow.logic.actions as flow_actions
@@ -482,11 +482,11 @@ async def test_grid_copy_trigger_grace_period_for_unfilled_client_order(init_act
             side_effect=patched_fetch_ohlcv,
         ),
     ):
-        async with octobot_flow.AutomationJob(automation_state_template, [], [], {}) as job:
+        async with octobot_flow.jobs.AutomationJob(automation_state_template, [], [], {}) as job:
             await job.run()
         after_init = job.dump()
 
-        async with octobot_flow.AutomationJob(after_init, [], [], {}) as job:
+        async with octobot_flow.jobs.AutomationJob(after_init, [], [], {}) as job:
             await job.run()
         after_copy_r1 = job.dump()
 
@@ -505,7 +505,7 @@ async def test_grid_copy_trigger_grace_period_for_unfilled_client_order(init_act
             side_effect=patched_fetch_ohlcv,
         ),
     ):
-        async with octobot_flow.AutomationJob(after_copy_r1, [], [], {}) as job:
+        async with octobot_flow.jobs.AutomationJob(after_copy_r1, [], [], {}) as job:
             await job.run()
         after_grace_trigger = job.dump()
 
@@ -546,11 +546,11 @@ async def test_grid_copy_missed_signals_abort_cancels_orphan_immediately(init_ac
             side_effect=patched_fetch_ohlcv,
         ),
     ):
-        async with octobot_flow.AutomationJob(automation_state_template, [], [], {}) as job:
+        async with octobot_flow.jobs.AutomationJob(automation_state_template, [], [], {}) as job:
             await job.run()
         after_init = job.dump()
 
-        async with octobot_flow.AutomationJob(after_init, [], [], {}) as job:
+        async with octobot_flow.jobs.AutomationJob(after_init, [], [], {}) as job:
             await job.run()
         after_copy_r1 = job.dump()
 
@@ -586,7 +586,7 @@ async def test_grid_copy_missed_signals_abort_cancels_orphan_immediately(init_ac
             side_effect=patched_fetch_ohlcv,
         ),
     ):
-        async with octobot_flow.AutomationJob(after_copy_r1, [], [], {}) as job:
+        async with octobot_flow.jobs.AutomationJob(after_copy_r1, [], [], {}) as job:
             await job.run()
         after_missed_abort = job.dump()
 
@@ -625,11 +625,11 @@ async def test_grid_copy_trigger_grace_period_for_early_filled_client_order(init
             side_effect=patched_fetch_ohlcv,
         ),
     ):
-        async with octobot_flow.AutomationJob(automation_state_template, [], [], {}) as job:
+        async with octobot_flow.jobs.AutomationJob(automation_state_template, [], [], {}) as job:
             await job.run()
         after_init = job.dump()
 
-        async with octobot_flow.AutomationJob(after_init, [], [], {}) as job:
+        async with octobot_flow.jobs.AutomationJob(after_init, [], [], {}) as job:
             await job.run()
         after_copy_r1 = job.dump()
 
@@ -648,7 +648,7 @@ async def test_grid_copy_trigger_grace_period_for_early_filled_client_order(init
             side_effect=patched_fetch_ohlcv,
         ),
     ):
-        async with octobot_flow.AutomationJob(after_copy_r1, [], [], {}) as job:
+        async with octobot_flow.jobs.AutomationJob(after_copy_r1, [], [], {}) as job:
             await job.run()
         after_grace_trigger = job.dump()
 
@@ -688,11 +688,11 @@ async def test_grid_copy_grace_elapses_then_orphan_cancelled_and_sell_mirrored(i
             side_effect=patched_fetch_ohlcv,
         ),
     ):
-        async with octobot_flow.AutomationJob(automation_state_template, [], [], {}) as job:
+        async with octobot_flow.jobs.AutomationJob(automation_state_template, [], [], {}) as job:
             await job.run()
         after_init = job.dump()
 
-        async with octobot_flow.AutomationJob(after_init, [], [], {}) as job:
+        async with octobot_flow.jobs.AutomationJob(after_init, [], [], {}) as job:
             await job.run()
         after_copy_r1 = job.dump()
 
@@ -724,7 +724,7 @@ async def test_grid_copy_grace_elapses_then_orphan_cancelled_and_sell_mirrored(i
             side_effect=patched_fetch_ohlcv,
         ),
     ):
-        async with octobot_flow.AutomationJob(after_copy_r1, [], [], {}) as job:
+        async with octobot_flow.jobs.AutomationJob(after_copy_r1, [], [], {}) as job:
             await job.run()
         after_orphan_grace_started = job.dump()
 
@@ -756,7 +756,7 @@ async def test_grid_copy_grace_elapses_then_orphan_cancelled_and_sell_mirrored(i
             side_effect=patched_fetch_ohlcv,
         ),
     ):
-        async with octobot_flow.AutomationJob(after_orphan_grace_started, [], [], {}) as job:
+        async with octobot_flow.jobs.AutomationJob(after_orphan_grace_started, [], [], {}) as job:
             await job.run()
         after_grace_elapsed = job.dump()
 
@@ -803,10 +803,10 @@ async def test_grid_copy_grace_aborted_when_second_orphan_exceeds_threshold(init
             side_effect=patched_fetch_ohlcv,
         ),
     ):
-        async with octobot_flow.AutomationJob(automation_state_template, [], [], {}) as job:
+        async with octobot_flow.jobs.AutomationJob(automation_state_template, [], [], {}) as job:
             await job.run()
         after_init = job.dump()
-        async with octobot_flow.AutomationJob(after_init, [], [], {}) as job:
+        async with octobot_flow.jobs.AutomationJob(after_init, [], [], {}) as job:
             await job.run()
         after_copy_r1 = job.dump()
 
@@ -832,7 +832,7 @@ async def test_grid_copy_grace_aborted_when_second_orphan_exceeds_threshold(init
             side_effect=patched_fetch_ohlcv,
         ),
     ):
-        async with octobot_flow.AutomationJob(after_copy_r1, [], [], {}) as job:
+        async with octobot_flow.jobs.AutomationJob(after_copy_r1, [], [], {}) as job:
             await job.run()
         after_threshold = job.dump()
 
@@ -888,10 +888,10 @@ async def test_grid_copy_orphan_resolved_by_client_fill_without_rebalance_orders
             side_effect=patched_fetch_ohlcv,
         ),
     ):
-        async with octobot_flow.AutomationJob(automation_state_template, [], [], {}) as job:
+        async with octobot_flow.jobs.AutomationJob(automation_state_template, [], [], {}) as job:
             await job.run()
         after_init = job.dump()
-        async with octobot_flow.AutomationJob(after_init, [], [], {}) as job:
+        async with octobot_flow.jobs.AutomationJob(after_init, [], [], {}) as job:
             await job.run()
         after_copy_r1 = job.dump()
 
@@ -910,7 +910,7 @@ async def test_grid_copy_orphan_resolved_by_client_fill_without_rebalance_orders
             side_effect=patched_fetch_ohlcv,
         ),
     ):
-        async with octobot_flow.AutomationJob(after_copy_r1, [], [], {}) as job:
+        async with octobot_flow.jobs.AutomationJob(after_copy_r1, [], [], {}) as job:
             await job.run()
         after_grace_started = job.dump()
 
@@ -936,7 +936,7 @@ async def test_grid_copy_orphan_resolved_by_client_fill_without_rebalance_orders
             side_effect=patched_fetch_ohlcv,
         ),
     ):
-        async with octobot_flow.AutomationJob(after_grace_started, [], [], {}) as job:
+        async with octobot_flow.jobs.AutomationJob(after_grace_started, [], [], {}) as job:
             await job.run()
         after_fill_sync = job.dump()
 
@@ -1001,10 +1001,10 @@ async def test_grid_copy_early_filled_client_order_grace_period_resolved_by_refe
             side_effect=patched_fetch_ohlcv,
         ),
     ):
-        async with octobot_flow.AutomationJob(automation_state_template, [], [], {}) as job:
+        async with octobot_flow.jobs.AutomationJob(automation_state_template, [], [], {}) as job:
             await job.run()
         after_init = job.dump()
-        async with octobot_flow.AutomationJob(after_init, [], [], {}) as job:
+        async with octobot_flow.jobs.AutomationJob(after_init, [], [], {}) as job:
             await job.run()
         after_copy_r1 = job.dump()
 
@@ -1025,7 +1025,7 @@ async def test_grid_copy_early_filled_client_order_grace_period_resolved_by_refe
             side_effect=patched_fetch_ohlcv,
         ),
     ):
-        async with octobot_flow.AutomationJob(after_copy_r1, [], [], {}) as job:
+        async with octobot_flow.jobs.AutomationJob(after_copy_r1, [], [], {}) as job:
             await job.run()
         after_grace_n = job.dump()
 
@@ -1052,7 +1052,7 @@ async def test_grid_copy_early_filled_client_order_grace_period_resolved_by_refe
             side_effect=patched_fetch_ohlcv,
         ),
     ):
-        async with octobot_flow.AutomationJob(after_grace_n, [], [], {}) as job:
+        async with octobot_flow.jobs.AutomationJob(after_grace_n, [], [], {}) as job:
             await job.run()
         after_grace_n1 = job.dump()
 
@@ -1081,7 +1081,7 @@ async def test_grid_copy_early_filled_client_order_grace_period_resolved_by_refe
             side_effect=patched_fetch_ohlcv,
         ),
     ):
-        async with octobot_flow.AutomationJob(after_grace_n1, [], [], {}) as job:
+        async with octobot_flow.jobs.AutomationJob(after_grace_n1, [], [], {}) as job:
             await job.run()
         after_resolved = job.dump()
 

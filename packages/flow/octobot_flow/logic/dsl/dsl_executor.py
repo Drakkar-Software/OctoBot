@@ -10,9 +10,6 @@ import octobot_trading.exchanges
 import octobot_trading.dsl
 import octobot_trading.modes as trading_modes
 
-import tentacles.Meta.DSL_operators as dsl_operators
-import tentacles.Meta.DSL_operators.octobot_process_operators.octobot_process_ops as octobot_process_ops
-
 import octobot_flow.entities
 import octobot_flow.errors
 import octobot_flow.enums
@@ -20,6 +17,9 @@ import octobot_flow.enums
 # avoid circular import
 from octobot_flow.logic.dsl.dsl_action_execution_context import dsl_action_execution
 from octobot_flow.logic.actions.abstract_action_executor import AbstractActionExecutor
+
+import tentacles.Meta.DSL_operators as dsl_operators
+import tentacles.Meta.DSL_operators.octobot_process_operators.octobot_process_ops as octobot_process_ops
 
 
 
