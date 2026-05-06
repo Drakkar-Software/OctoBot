@@ -51,7 +51,7 @@ _PARAM_DEPENDENCY_RESOLUTION_DEFERRED = object()
 
 
 @dataclasses.dataclass
-class ActionsDAGParserParams(octobot_commons.dataclasses.FlexibleDataclass):
+class ActionsDAGParserParams(octobot_commons.dataclasses.MinimizableDataclass):
     ACTIONS: list[str] = dataclasses.field(default_factory=list)
     AUTOMATION_ID: str = dataclasses.field(default_factory=lambda: str(uuid.uuid4()))
     EXCHANGE_TO: typing.Optional[str] = None
@@ -358,6 +358,7 @@ class ActionsDAGParser:
             self.params.API_KEY,
             self.params.API_SECRET,
             self.params.SIMULATED_PORTFOLIO,
+            self.params.to_dict(include_default_values=False),
         )
         actions_dag = octobot_flow.entities.ActionsDAG([init_action])
         self._parse_generic_actions(actions_dag)
@@ -605,6 +606,7 @@ class ActionsDAGParser:
         api_key: typing.Optional[str],
         api_secret: typing.Optional[str],
         simulated_portfolio: typing.Optional[dict[str, float]],
+        result: dict,
     ) -> octobot_flow.entities.AbstractActionDetails:
         formatted_simulated_portfolio = {
             asset: {
@@ -641,6 +643,7 @@ class ActionsDAGParser:
             "action_init",
             octobot_flow.enums.ActionType.APPLY_CONFIGURATION,
             automation_state.to_dict(include_default_values=False),
+            result=result,
         )
 
     def _collect_dependency_refs_from_details(
@@ -723,12 +726,16 @@ class ActionsDAGParser:
         return action
 
     def create_configured_action_details(
-        self, action_id: str, action: octobot_flow.enums.ActionType, config: dict
+        self, action_id: str,
+        action: octobot_flow.enums.ActionType,
+        config: dict,
+        result: typing.Optional[dict] = None
     ) -> octobot_flow.entities.ConfiguredActionDetails:
         return octobot_flow.entities.ConfiguredActionDetails(
             id=action_id,
             action=action.value,
             config=config,
+            result=result,
         )
 
 

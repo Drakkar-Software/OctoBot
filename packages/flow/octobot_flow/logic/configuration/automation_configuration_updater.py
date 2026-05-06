@@ -50,7 +50,7 @@ class AutomationConfigurationUpdater:
         self._apply_automation_state_configuration_update(automation_state_update)
         self._register_execution_time(start_time)
         self._complete_execution_and_register_next_schedule_time()
-        self.action.complete()
+        self.action.complete(result=self.action.result)
 
     def _apply_automation_state_configuration_update(
         self, automation_state_update: octobot_flow.entities.AutomationState

@@ -49,6 +49,8 @@ def init_action():
 
 @pytest.mark.asyncio
 async def test_start_with_empty_state_and_reschedule_no_community_auth(init_action: dict):
+    expected_config_action_result = {"config_applied": True, "source": "initialization"}
+    init_action["result"] = expected_config_action_result
     all_actions = [init_action]
     with (
         functionnal_tests.mocked_community_authentication() as login_mock,
@@ -64,7 +66,7 @@ async def test_start_with_empty_state_and_reschedule_no_community_auth(init_acti
             assert isinstance(action, octobot_flow.entities.AbstractActionDetails)
             assert action.error_status == octobot_flow.enums.ActionErrorStatus.NO_ERROR.value
             assert action.executed_at and action.executed_at >= current_time
-            assert action.result is None
+            assert action.result == expected_config_action_result
 
         after_execution_dump = automation_job.dump()
         exchange_account_details = after_execution_dump["exchange_account_details"]

@@ -140,6 +140,8 @@ class ConfiguredActionDetails(AbstractActionDetails):
     action: str = dataclasses.field(default=octobot_flow.enums.ActionType.UNKNOWN.value, repr=True)
     # configuration of the action. A dict specific to the action type
     config: typing.Optional[dict] = dataclasses.field(default=None, repr=False)
+    # returned result of the condig action. Set after the action is executed
+    result: typing.Optional[dict] = dataclasses.field(default=None, repr=False)
 
     def get_summary(self, minimal: bool = False) -> str:
         return self.action
@@ -151,6 +153,7 @@ class ConfiguredActionDetails(AbstractActionDetails):
             )
         self.action = action.action
         self.config = dict(action.config) if action.config is not None else None
+        self.result = action.result
 
 
 def parse_action_details(action_details: dict) -> AbstractActionDetails:
