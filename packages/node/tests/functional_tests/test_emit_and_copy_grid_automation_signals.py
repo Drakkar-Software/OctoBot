@@ -49,6 +49,7 @@ if grid_sim_util.IMPORTED_OCTOBOT_FLOW_GRID_DEPS:
         import octobot_sync.constants as octobot_sync_constants_module
         import octobot_sync.server as octobot_sync_server_module
         import octobot_sync.sync.collections as sync_collections_module
+        import starlette.routing as starlette_routing_module
         import uvicorn
         IMPORTED_OCTOBOT_FLOW_GRID_DEPS = True
     except ImportError:
@@ -63,6 +64,7 @@ if grid_sim_util.IMPORTED_OCTOBOT_FLOW_GRID_DEPS:
         octobot_sync_constants_module = None  # type: ignore
         octobot_sync_server_module = None  # type: ignore
         sync_collections_module = None  # type: ignore
+        starlette_routing_module = None  # type: ignore
         uvicorn = None  # type: ignore
 
 
@@ -470,11 +472,14 @@ class TestEmitAndCopyGridAutomationSignals:
                         is_allowed=lambda _address: True,
                         encryption_secret=_FUNCTIONAL_TEST_SYNC_ENCRYPTION_SECRET,
                     )
-                    # StarfishClient (v2) builds URLs as ``{base}/v1/{namespace}/...``.
-                    # Serve sync_asgi_app directly so its ``/v1/octobot/...`` routes are reachable.
+                    # StarfishClient builds URLs as ``{base}/sync/v1/{namespace}/...``.
+                    # Mount sync_asgi_app under /sync to match the SYNC_MOUNT_PATH prefix.
+                    mounted_app = starlette_routing_module.Router(
+                        routes=[starlette_routing_module.Mount("/sync", app=sync_asgi_app)]
+                    )
                     uvicorn_server = uvicorn.Server(
                         uvicorn.Config(
-                            sync_asgi_app,
+                            mounted_app,
                             host="127.0.0.1",
                             port=listen_port,
                             log_level="warning",

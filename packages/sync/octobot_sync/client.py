@@ -31,13 +31,14 @@ def create_sync_client(
 ) -> tuple[StarfishClient, str, str]:
     auth_provider = auth.StarfishAuthProvider(private_key)
 
+    base_url = f"{sync_url.rstrip('/')}/{constants.SYNC_MOUNT_PATH}" if sync_url else sync_url
     client = StarfishClient(
-        base_url=sync_url,
+        base_url=base_url,
         auth=auth_provider,
         namespace=constants.SYNC_NAMESPACE,
     )
     logging.get_logger("SyncClient").info(
-        f"Sync client initialized (sync server: {sync_url}, address: {auth_provider.address})"
+        f"Sync client initialized (sync server: {base_url}, address: {auth_provider.address})"
     )
     return client, auth_provider.address, auth_provider.sign_payload
 
