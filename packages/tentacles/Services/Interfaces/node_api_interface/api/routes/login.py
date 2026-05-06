@@ -19,14 +19,14 @@ import typing
 from fastapi import APIRouter
 
 try:
-    from api.deps import CurrentUser
+    from api.deps import OptionalCurrentUser
 except ImportError:
-    from tentacles.Services.Interfaces.node_api_interface.api.deps import CurrentUser
+    from tentacles.Services.Interfaces.node_api_interface.api.deps import OptionalCurrentUser  # type: ignore[no-redef]
 import octobot_node.models
 
 router = APIRouter(tags=["login"])
 
 
-@router.get("/login/test", response_model=octobot_node.models.User)
-def test_auth(current_user: CurrentUser) -> typing.Any:
+@router.get("/login/test", response_model=typing.Optional[octobot_node.models.User])
+def test_auth(current_user: OptionalCurrentUser) -> typing.Any:
     return current_user

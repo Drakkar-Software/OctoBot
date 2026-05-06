@@ -130,7 +130,7 @@ function Login() {
                 key={wallet.address}
                 type="button"
                 onClick={() => setSelectedWallet(wallet)}
-                className="flex items-center gap-3 rounded-lg border p-4 text-left transition-colors hover:bg-accent hover:text-accent-foreground"
+                className="flex items-center gap-3 rounded-lg border p-4 text-left transition-colors hover:bg-muted"
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">

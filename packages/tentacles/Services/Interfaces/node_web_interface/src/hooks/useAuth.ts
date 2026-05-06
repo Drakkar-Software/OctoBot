@@ -38,6 +38,7 @@ const useAuth = () => {
     await savePassword(data.password)
     try {
       const loggedInUser = await LoginService.testAuth()
+      if (!loggedInUser) throw new Error("Authentication failed")
       // Store the real node address returned by the server
       localStorage.setItem("auth_username", loggedInUser.email)
       // Store wallet display name for header/menu

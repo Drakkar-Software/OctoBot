@@ -84,6 +84,20 @@ def get_current_user(
 CurrentUser = typing.Annotated[octobot_node.models.User, Depends(get_current_user)]
 
 
+def get_optional_current_user(
+    credentials: typing.Annotated[typing.Optional[HTTPBasicCredentials], Depends(security_basic)],
+) -> typing.Optional[octobot_node.models.User]:
+    if credentials is None or not credentials.username or not credentials.password:
+        return None
+    try:
+        return get_current_user(credentials)
+    except HTTPException:
+        return None
+
+
+OptionalCurrentUser = typing.Annotated[typing.Optional[octobot_node.models.User], Depends(get_optional_current_user)]
+
+
 def get_current_active_superuser(current_user: CurrentUser) -> octobot_node.models.User:
     if not current_user.is_superuser:
         raise HTTPException(
