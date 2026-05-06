@@ -15,6 +15,7 @@
 #  License along with this library.
 
 import asyncio
+import contextlib
 import json
 import functools
 import mock
@@ -724,9 +725,16 @@ class TestScheduleNextIteration:
     @pytest.mark.asyncio
     async def test_schedule_next_iteration_enqueues_workflow(self, import_automation_workflow, parsed_inputs, iteration_result):
         mock_enqueue = mock.AsyncMock()
+        set_workflow_id_context = contextlib.nullcontext()
+        mock_set_workflow_id = mock.Mock(return_value=set_workflow_id_context)
         next_desc = iteration_result.next_iteration_description
+        parent_workflow_id = "12345678-1234-1234-1234-123456789012"
 
-        with mock.patch.object(
+        with mock.patch.object(dbos.DBOS, "workflow_id", parent_workflow_id), mock.patch.object(
+            octobot_node.scheduler.workflows.automation_workflow.SCHEDULER,
+            "SetWorkflowID",
+            mock_set_workflow_id,
+        ), mock.patch.object(
             octobot_node.scheduler.workflows.automation_workflow.SCHEDULER.AUTOMATION_WORKFLOW_QUEUE,
             "enqueue_async",
             mock_enqueue,
@@ -735,9 +743,36 @@ class TestScheduleNextIteration:
                 parsed_inputs, next_desc, iteration_result.progress_status
             )
         mock_enqueue.assert_called_once()
+        mock_set_workflow_id.assert_called_once_with(f"{parent_workflow_id}_1")
         call_args = mock_enqueue.call_args
         assert call_args[0][0] == octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow.execute_automation
         assert "inputs" in call_args[1]
+
+    @pytest.mark.asyncio
+    async def test_schedule_next_iteration_increments_existing_child_workflow_id(
+        self, import_automation_workflow, parsed_inputs, iteration_result
+    ):
+        mock_enqueue = mock.AsyncMock()
+        set_workflow_id_context = contextlib.nullcontext()
+        mock_set_workflow_id = mock.Mock(return_value=set_workflow_id_context)
+        next_desc = iteration_result.next_iteration_description
+        current_workflow_id = "12345678-1234-1234-1234-123456789012_2"
+
+        with mock.patch.object(dbos.DBOS, "workflow_id", current_workflow_id), mock.patch.object(
+            octobot_node.scheduler.workflows.automation_workflow.SCHEDULER,
+            "SetWorkflowID",
+            mock_set_workflow_id,
+        ), mock.patch.object(
+            octobot_node.scheduler.workflows.automation_workflow.SCHEDULER.AUTOMATION_WORKFLOW_QUEUE,
+            "enqueue_async",
+            mock_enqueue,
+        ):
+            await octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow._schedule_next_iteration(
+                parsed_inputs, next_desc, iteration_result.progress_status
+            )
+
+        mock_set_workflow_id.assert_called_once_with("12345678-1234-1234-1234-123456789012_3")
+        mock_enqueue.assert_called_once()
 
 
 class TestCreateNextIterationInputs:
@@ -915,6 +950,20 @@ class TestExecuteAutomationIntegration:
 
         assert len(workflows) >= 3, f"Expected at least 3 workflows, got {len(workflows)}"
         assert not pending, f"Expected no pending workflows, got {pending}"
+        all_workflow_ids = [workflow_status.workflow_id for workflow_status in workflows]
+        assert len(all_workflow_ids) == len(workflows) == 3
+        print(f'all_workflow_ids: {all_workflow_ids}')
+        parent_workflow_id = all_workflow_ids[0][:octobot_node.constants.PARENT_WORKFLOW_ID_LENGTH]
+        child_suffixes: list[int] = []
+        for workflow_id in all_workflow_ids:
+            assert workflow_id.startswith(parent_workflow_id)
+            suffix = workflow_id[octobot_node.constants.PARENT_WORKFLOW_ID_LENGTH:]
+            if not suffix:
+                continue
+            assert suffix.startswith("_"), f"Invalid child suffix format: {workflow_id}"
+            child_suffixes.append(int(suffix[1:]))
+        assert child_suffixes
+        assert sorted(child_suffixes) == list(range(1, len(child_suffixes) + 1))
 
         
         completed = [w for w in workflows if w.status == dbos.WorkflowStatusString.SUCCESS.value]

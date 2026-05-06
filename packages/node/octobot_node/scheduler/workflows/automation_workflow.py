@@ -277,10 +277,35 @@ class AutomationWorkflow:
             f"Enqueuing next iteration: next step: {progress_status.next_step}, "
             f"remaining steps: {progress_status.remaining_steps}{delay_str}."
         )
-        await SCHEDULER.AUTOMATION_WORKFLOW_QUEUE.enqueue_async(
-            AutomationWorkflow.execute_automation,
-            inputs=next_iteration_inputs
-        )
+        next_workflow_id = AutomationWorkflow._get_next_child_workflow_id()
+        with SCHEDULER.SetWorkflowID(next_workflow_id):
+            await SCHEDULER.AUTOMATION_WORKFLOW_QUEUE.enqueue_async(
+                AutomationWorkflow.execute_automation,
+                inputs=next_iteration_inputs
+            )
+
+    @staticmethod
+    def _get_next_child_workflow_id() -> str:
+        workflow_id = dbos.DBOS.workflow_id
+        if workflow_id is None:
+            raise errors.WorkflowInputError("Missing current workflow ID while scheduling next iteration.")
+        parent_workflow_id = workflow_id[:constants.PARENT_WORKFLOW_ID_LENGTH]
+        suffix = workflow_id[constants.PARENT_WORKFLOW_ID_LENGTH:]
+        if not suffix:
+            current_child_id = 0
+        else:
+            if not suffix.startswith("_"):
+                raise errors.WorkflowInputError(
+                    f"Invalid child workflow suffix format in workflow ID: '{workflow_id}'."
+                )
+            try:
+                current_child_id = int(suffix[1:])
+            except ValueError as error:
+                raise errors.WorkflowInputError(
+                    f"Invalid non-numeric child workflow suffix in workflow ID: '{workflow_id}'."
+                ) from error
+        next_child_id = current_child_id + 1
+        return f"{parent_workflow_id}_{next_child_id}"
 
     @staticmethod
     def _create_next_iteration_inputs(
