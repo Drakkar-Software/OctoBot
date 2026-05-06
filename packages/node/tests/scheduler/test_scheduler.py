@@ -557,3 +557,59 @@ class TestGetWorkflowsExportResults:
         call_kwargs = mock_encrypt.call_args
         assert call_kwargs[1]["rsa_public_key"] == user_key_pem.encode("utf-8")
 
+
+class TestSchedulerGetPendingTasks:
+
+    def _make_pending_ws(self, task: octobot_node.models.Task, workflow_name: str = "execute_automation") -> mock.Mock:
+        inputs = params.AutomationWorkflowInputs(task=task, execution_time=0)
+        ws = mock.Mock(spec=dbos.WorkflowStatus)
+        ws.workflow_id = task.id
+        ws.name = workflow_name
+        ws.status = dbos.WorkflowStatusString.ENQUEUED.value
+        ws.output = None
+        ws.error = None
+        ws.input = {"args": [inputs.to_dict()], "kwargs": {}}
+        ws.created_at = None
+        ws.updated_at = None
+        return ws
+
+    @pytest.mark.asyncio
+    async def test_get_pending_tasks_uses_task_name_not_workflow_name(self):
+        """Pending execution.name must come from task input, not DBOS workflow_status.name."""
+        task = octobot_node.models.Task(
+            id="11111111-1111-1111-1111-111111111111",
+            name="Real trade 1",
+            content=None,
+            type="execute_actions",
+        )
+        ws = self._make_pending_ws(task, workflow_name="execute_automation")
+
+        sched, mock_instance = _make_scheduler_with_mock_instance()
+        mock_instance.list_workflows_async = mock.AsyncMock(return_value=[ws])
+
+        with mock.patch("octobot_node.scheduler.workflows_util.get_automation_state_reader", return_value=None):
+            executions = await sched.get_pending_tasks()
+
+        assert len(executions) == 1
+        assert executions[0].name == "Real trade 1"
+
+    @pytest.mark.asyncio
+    async def test_get_pending_tasks_preserves_none_name_when_task_has_no_name(self):
+        """When task.name is None, execution.name stays None (task input wins; DBOS name is never substituted)."""
+        task = octobot_node.models.Task(
+            id="22222222-2222-2222-2222-222222222222",
+            name=None,
+            content=None,
+            type="execute_actions",
+        )
+        ws = self._make_pending_ws(task, workflow_name="execute_automation")
+
+        sched, mock_instance = _make_scheduler_with_mock_instance()
+        mock_instance.list_workflows_async = mock.AsyncMock(return_value=[ws])
+
+        with mock.patch("octobot_node.scheduler.workflows_util.get_automation_state_reader", return_value=None):
+            executions = await sched.get_pending_tasks()
+
+        assert len(executions) == 1
+        assert executions[0].name is None
+

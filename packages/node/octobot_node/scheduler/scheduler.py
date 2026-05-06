@@ -358,7 +358,6 @@ class Scheduler:
     ) -> octobot_node.models.Execution:
         """Map DBOS WorkflowStatus to octobot_node.models.Execution."""
         task_id = str(workflow_status.workflow_id)
-        task_name = workflow_status.name
         task_type = None
         task_actions = None
         task = None
@@ -367,6 +366,7 @@ class Scheduler:
                 task_type = task.type
                 task_actions = task.content #todo confi
 
+        task_name = task.name if task else workflow_status.name
         task_wallet_address = task.wallet_address if task else None
         return octobot_node.models.Execution(
             id=task_id,
