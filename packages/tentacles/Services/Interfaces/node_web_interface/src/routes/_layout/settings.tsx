@@ -92,12 +92,14 @@ function LoggingCard() {
   const [enabled, setEnabled] = useState<boolean | null>(null)
 
   useEffect(() => {
-    fetch("/api/v1/nodes/config", { credentials: "include" })
-      .then((r) => r.json())
-      .then((data) =>
-        setEnabled(data.use_dedicated_log_file_per_automation ?? true),
-      )
-      .catch(() => setEnabled(true))
+    void (async () => {
+      try {
+        const data = await fetchNodeConfig()
+        setEnabled(data.use_dedicated_log_file_per_automation ?? true)
+      } catch {
+        setEnabled(true)
+      }
+    })()
   }, [])
 
   return (
@@ -134,6 +136,13 @@ async function buildAuthHeader() {
   const username = localStorage.getItem("auth_username") || "node"
   const password = (await loadPassword()) ?? ""
   return `Basic ${btoa(`${username}:${password}`)}`
+}
+
+async function fetchNodeConfig() {
+  const res = await fetch("/api/v1/nodes/config", {
+    headers: { Authorization: await buildAuthHeader() },
+  })
+  return res.json()
 }
 
 function ExportWalletDialog() {
@@ -321,10 +330,14 @@ function NodeTypeCard() {
   const [nodeType, setNodeType] = useState<NodeType | null>(null)
 
   useEffect(() => {
-    fetch("/api/v1/nodes/config", { credentials: "include" })
-      .then((r) => r.json())
-      .then((data) => setNodeType(data.node_type ?? "standalone"))
-      .catch(() => setNodeType("standalone"))
+    void (async () => {
+      try {
+        const data = await fetchNodeConfig()
+        setNodeType(data.node_type ?? "standalone")
+      } catch {
+        setNodeType("standalone")
+      }
+    })()
   }, [])
 
   return (
@@ -379,13 +392,15 @@ function ClientEncryptionKeysCard() {
   const [serverEnvVars, setServerEnvVars] = useState<string[]>([])
 
   useEffect(() => {
-    fetch("/api/v1/nodes/config", { credentials: "include" })
-      .then((r) => r.json())
-      .then((data) => {
+    void (async () => {
+      try {
+        const data = await fetchNodeConfig()
         setServerEnabled(data.tasks_encryption_enabled ?? false)
         setServerEnvVars(data.server_encryption_env_vars ?? [])
-      })
-      .catch(() => setServerEnabled(false))
+      } catch {
+        setServerEnabled(false)
+      }
+    })()
   }, [])
 
   useEffect(() => {

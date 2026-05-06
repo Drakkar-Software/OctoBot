@@ -19,7 +19,6 @@ import {
   formatDate,
   formatElapsed,
   formatIsoTooltip,
-  formatRelativeFuture,
   parseActionCount,
 } from "@/utils/task-format"
 import {
@@ -110,7 +109,7 @@ function BotCardBody({
             <TooltipTrigger asChild>
               <span className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-default">
                 <Clock className="size-3.5 shrink-0" />
-                Next run: {formatRelativeFuture(activeExec.scheduled_at)}
+                Next run: {formatDate(activeExec.scheduled_at)}
               </span>
             </TooltipTrigger>
             <TooltipContent side="bottom">
