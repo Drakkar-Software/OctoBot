@@ -130,3 +130,28 @@ async def delete_tasks(
     except ValueError as e:
         logger.exception(e, True, "delete_tasks failed")
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
+
+
+class CancelTasksBody(BaseModel):
+    task_ids: list[str]
+
+
+@router.post("/cancel", response_model=list[str])
+async def cancel_tasks(
+    body: CancelTasksBody,
+    current_user: CurrentUser,
+) -> list[str]:
+    if not current_user.is_superuser:
+        owned_tasks = await octobot_node.scheduler.api.get_all_tasks(wallet_address=current_user.email)
+        owned_ids = {t.id for t in owned_tasks if t.id is not None}
+        unauthorized = [tid for tid in body.task_ids if tid not in owned_ids]
+        if unauthorized:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Not authorized to cancel tasks: {unauthorized}",
+            )
+    try:
+        return await octobot_node.scheduler.api.cancel_tasks(body.task_ids)
+    except ValueError as e:
+        logger.exception(e, True, "cancel_tasks failed")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")

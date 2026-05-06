@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useNavigate } from "@tanstack/react-router"
-import { Trash2 } from "lucide-react"
+import { Ban, Trash2 } from "lucide-react"
 import { useMemo, useState } from "react"
 
 import type { Task_Output as Task } from "@/client"
@@ -47,12 +47,22 @@ export function SelectionToolbar({
   const queryClient = useQueryClient()
   const { showSuccessToast, showErrorToast } = useCustomToast()
 
+  const activeTasks = useMemo(
+    () => allTasks.filter((t) => t.id && selectedIds.has(t.id) && getTaskFilterGroup(t) === "active"),
+    [allTasks, selectedIds],
+  )
+
+  const inactiveTasks = useMemo(
+    () => allTasks.filter((t) => t.id && selectedIds.has(t.id) && getTaskFilterGroup(t) !== "active"),
+    [allTasks, selectedIds],
+  )
+
   const deleteMutation = useMutation({
     mutationFn: () =>
-      TasksService.deleteTasks({ taskIds: Array.from(selectedIds) }),
+      TasksService.deleteTasks({ taskIds: inactiveTasks.map((t) => t.id as string) }),
     onSuccess: () => {
       showSuccessToast(
-        `Deleted ${selectedIds.size} OctoBot${selectedIds.size !== 1 ? "s" : ""}`,
+        `Deleted ${inactiveTasks.length} OctoBot${inactiveTasks.length !== 1 ? "s" : ""}`,
       )
       setDeleteOpen(false)
       onDeleted()
@@ -63,14 +73,21 @@ export function SelectionToolbar({
     },
   })
 
-  const exportableTasks = useMemo(
-    () =>
-      allTasks.filter(
-        (t) =>
-          t.id && selectedIds.has(t.id) && getTaskFilterGroup(t) !== "active",
-      ),
-    [allTasks, selectedIds],
-  )
+  const cancelMutation = useMutation({
+    mutationFn: () =>
+      TasksService.cancelTasks({ requestBody: { task_ids: activeTasks.map((t) => t.id as string) } }),
+    onSuccess: () => {
+      showSuccessToast(
+        `Cancelled ${activeTasks.length} OctoBot${activeTasks.length !== 1 ? "s" : ""}`,
+      )
+      queryClient.invalidateQueries({ queryKey: ["tasks"] })
+    },
+    onError: () => {
+      showErrorToast("Some cancellations failed")
+    },
+  })
+
+  const exportableTasks = inactiveTasks
 
   const handleExportResults = () => {
     if (exportableTasks.length === 0) {
@@ -147,14 +164,27 @@ export function SelectionToolbar({
           >
             Share logs
           </LoadingButton>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => setDeleteOpen(true)}
-          >
-            <Trash2 className="size-3.5" />
-            Delete
-          </Button>
+          {activeTasks.length > 0 && (
+            <LoadingButton
+              variant="outline"
+              size="sm"
+              loading={cancelMutation.isPending}
+              onClick={() => cancelMutation.mutate()}
+            >
+              <Ban className="size-3.5" />
+              Cancel
+            </LoadingButton>
+          )}
+          {inactiveTasks.length > 0 && (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setDeleteOpen(true)}
+            >
+              <Trash2 className="size-3.5" />
+              Delete
+            </Button>
+          )}
         </div>
       </div>
 
@@ -162,8 +192,8 @@ export function SelectionToolbar({
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>
-              Delete {selectedIds.size} OctoBot
-              {selectedIds.size !== 1 ? "s" : ""}
+              Delete {inactiveTasks.length} OctoBot
+              {inactiveTasks.length !== 1 ? "s" : ""}
             </DialogTitle>
             <DialogDescription>
               This will permanently delete the selected OctoBots. This action
