@@ -65,6 +65,10 @@ class Scheduler:
     def __init__(self):
         self.logger = logging.getLogger(self.__class__.__name__)
 
+    @staticmethod
+    def SetWorkflowID(workflow_id: str) -> dbos.SetWorkflowID:
+        return dbos.SetWorkflowID(workflow_id)
+
     def create(self):
         if octobot_node.config.settings.SCHEDULER_POSTGRES_URL:
             self.logger.info(
@@ -168,30 +172,39 @@ class Scheduler:
             self.logger.warning(f"Failed to list pending workflows: {e}")
         return executions
 
+    async def _get_parent_and_children_workflow_ids(
+        self, workflow_ids: list[str], statuses: list[dbos.WorkflowStatusString]
+    ) -> list[str]:
+        all_workflows = await self.INSTANCE.list_workflows_async(status=statuses)
+        parent_workflow_ids = set(
+            workflow_id[:octobot_node.constants.PARENT_WORKFLOW_ID_LENGTH]
+            for workflow_id in workflow_ids
+        )
+        return [
+            workflow.workflow_id
+            for workflow in all_workflows
+            if workflow.workflow_id[:octobot_node.constants.PARENT_WORKFLOW_ID_LENGTH] in parent_workflow_ids
+        ]
+
     async def cancel_workflows(self, workflow_ids: list[str]) -> list[str]:
         try:
-            self.logger.info(f"Cancelling {len(workflow_ids)} workflows {workflow_ids}")
-            await self.INSTANCE.cancel_workflows_async(workflow_ids)
-            self.logger.info(f"{len(workflow_ids)} workflows {workflow_ids} cancelled")
-            return workflow_ids
+            to_cancel = await self._get_parent_and_children_workflow_ids(workflow_ids, [
+                dbos.WorkflowStatusString.ENQUEUED.value, dbos.WorkflowStatusString.PENDING.value
+            ])
+            self.logger.info(f"Cancelling {len(to_cancel)} workflows {to_cancel}")
+            await self.INSTANCE.cancel_workflows_async(to_cancel)
+            self.logger.info(f"{len(to_cancel)} workflows {to_cancel} cancelled")
+            return to_cancel
         except Exception as e:
             self.logger.exception(e, True, f"Failed to cancel workflows {workflow_ids}: {e}")
             return []
 
     async def delete_workflows(self, to_delete_workflow_ids: list[str]):
         self.logger.info(f"Deleting {len(to_delete_workflow_ids)} workflows")
-        all_completed_workflows = await self.INSTANCE.list_workflows_async(status=[
+        merged_to_delete_workflow_ids = await self._get_parent_and_children_workflow_ids(to_delete_workflow_ids, [
             dbos.WorkflowStatusString.SUCCESS.value, dbos.WorkflowStatusString.ERROR.value,
             dbos.WorkflowStatusString.CANCELLED.value, dbos.WorkflowStatusString.MAX_RECOVERY_ATTEMPTS_EXCEEDED.value
         ])
-        to_delete_parent_workflow_ids = [
-            workflow_id[:octobot_node.constants.PARENT_WORKFLOW_ID_LENGTH] for workflow_id in to_delete_workflow_ids
-        ]
-        children_workflow_ids = [
-            workflow.workflow_id for workflow in all_completed_workflows
-            if any(workflow.workflow_id.startswith(parent_workflow_id) for parent_workflow_id in to_delete_parent_workflow_ids)
-        ]
-        merged_to_delete_workflow_ids = list(set(to_delete_workflow_ids + children_workflow_ids))
         self.logger.info(
             f"Including {len(merged_to_delete_workflow_ids) - len(to_delete_workflow_ids)} associated children workflows to delete"
         )
