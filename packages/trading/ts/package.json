@@ -1,0 +1,24 @@
+{
+  "name": "@octobot/trading-ts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check --write --unsafe --no-errors-on-unmatched --files-ignore-unknown=true ./",
+    "test": "vitest run tests/unit",
+    "test:exchanges": "vitest run tests/exchanges",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "ccxt": "^4.4.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.3.10",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.9.3",
+    "vitest": "^3.0.0",
+    "@vitest/coverage-v8": "^3.0.0"
+  }
+}
