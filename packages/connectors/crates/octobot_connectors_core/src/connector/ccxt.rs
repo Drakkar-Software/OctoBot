@@ -855,10 +855,12 @@ impl Exchange for CcxtConnector {
 
         let params_val = CcxtValue::Json(serde_json::Value::Object(extra.into_iter().collect()));
 
+        let tag_val = tag.map(|t| CcxtValue::Json(json!(t))).unwrap_or(CcxtValue::Undefined);
         let raw = guard.withdraw(
             CcxtValue::Json(json!(currency)),
             CcxtValue::Json(json!(amount.to_string())),
             CcxtValue::Json(json!(address)),
+            tag_val,
             params_val,
         ).await;
 
