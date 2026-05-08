@@ -1,0 +1,5 @@
+[env]
+MACOSX_DEPLOYMENT_TARGET = "26.0"
+
+[target.aarch64-apple-darwin]
+rustflags = ["-C", "link-arg=-undefined", "-C", "link-arg=dynamic_lookup"]

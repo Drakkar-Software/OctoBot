@@ -98,6 +98,15 @@ fn make_ccxt_client(name: &str, config: &ExchangeConfig) -> Option<Box<dyn CcxtE
         "mexc"             => make!(mexc, MexcImpl),
         "bitget"           => make!(bitget, BitgetImpl),
         "poloniex"         => make!(poloniex, PoloniexImpl),
+        "ascendex"         => make!(ascendex, AscendexImpl),
+        "bingx"            => make!(bingx, BingxImpl),
+        "bitmart"          => make!(bitmart, BitmartImpl),
+        "coinex"           => make!(coinex, CoinexImpl),
+        "cryptocom"        => make!(cryptocom, CryptocomImpl),
+        "hollaex"          => make!(hollaex, HollaexImpl),
+        "hyperliquid"      => make!(hyperliquid, HyperliquidImpl),
+        "lbank"            => make!(lbank, LbankImpl),
+        "phemex"           => make!(phemex, PhemexImpl),
         _                  => None,
     }
 }

@@ -456,10 +456,9 @@ impl PyCcxtConnector {
                 .block_on(self.inner.get_balance(HashMap::new()))
                 .map_err(to_py_err)
         })?;
-        // Convert Balance to Python dict
-        let dict = pyo3::types::PyDict::new(py);
+        let dict = pyo3::types::PyDict::new_bound(py);
         for (currency, balance) in result {
-            let bal = PyCurrencyBalance(balance).into_pyobject(py)?.into_any().unbind();
+            let bal = Py::new(py, PyCurrencyBalance(balance))?.into_bound(py).into_any().unbind();
             dict.set_item(currency, bal)?;
         }
         Ok(dict.into_any())
@@ -472,7 +471,7 @@ impl PyCcxtConnector {
                 .block_on(self.inner.get_price_ticker(&symbol))
                 .map_err(to_py_err)
         })?;
-        PyTicker(result).into_pyobject(py).map(|b| b.into_any())
+        Py::new(py, PyTicker(result)).map(|p| p.into_bound(py).into_any())
     }
 
     fn get_symbol_prices<'py>(
@@ -491,10 +490,11 @@ impl PyCcxtConnector {
                 .block_on(self.inner.get_symbol_prices(&symbol, tf, limit, since, HashMap::new()))
                 .map_err(to_py_err)
         })?;
-        let list = pyo3::types::PyList::new(
-            py,
-            result.into_iter().map(|c| PyCandle(c).into_pyobject(py).unwrap().into_any().unbind()),
-        )?;
+        let items: Vec<_> = result
+            .into_iter()
+            .map(|c| Py::new(py, PyCandle(c)).unwrap().into_bound(py).into_any().unbind())
+            .collect();
+        let list = pyo3::types::PyList::new_bound(py, items);
         Ok(list.into_any())
     }
 
@@ -510,7 +510,7 @@ impl PyCcxtConnector {
                 .block_on(self.inner.get_order_book(&symbol, limit))
                 .map_err(to_py_err)
         })?;
-        PyOrderBook(result).into_pyobject(py).map(|b| b.into_any())
+        Py::new(py, PyOrderBook(result)).map(|p| p.into_bound(py).into_any())
     }
 
     fn get_open_orders<'py>(
@@ -525,10 +525,11 @@ impl PyCcxtConnector {
                 .block_on(self.inner.get_open_orders(sym, None, None))
                 .map_err(to_py_err)
         })?;
-        let list = pyo3::types::PyList::new(
-            py,
-            result.into_iter().map(|o| PyOrder(o).into_pyobject(py).unwrap().into_any().unbind()),
-        )?;
+        let items: Vec<_> = result
+            .into_iter()
+            .map(|o| Py::new(py, PyOrder(o)).unwrap().into_bound(py).into_any().unbind())
+            .collect();
+        let list = pyo3::types::PyList::new_bound(py, items);
         Ok(list.into_any())
     }
 
@@ -546,7 +547,7 @@ impl PyCcxtConnector {
                 .block_on(self.inner.cancel_order(&order_id, &symbol, ot))
                 .map_err(to_py_err)
         })?;
-        PyOrderStatus(status).into_pyobject(py).map(|b| b.into_any())
+        Py::new(py, PyOrderStatus(status)).map(|p| p.into_bound(py).into_any())
     }
 
     fn get_positions<'py>(
@@ -560,10 +561,11 @@ impl PyCcxtConnector {
                 .block_on(self.inner.get_positions(symbols))
                 .map_err(to_py_err)
         })?;
-        let list = pyo3::types::PyList::new(
-            py,
-            result.into_iter().map(|p| PyPosition(p).into_pyobject(py).unwrap().into_any().unbind()),
-        )?;
+        let items: Vec<_> = result
+            .into_iter()
+            .map(|p| Py::new(py, PyPosition(p)).unwrap().into_bound(py).into_any().unbind())
+            .collect();
+        let list = pyo3::types::PyList::new_bound(py, items);
         Ok(list.into_any())
     }
 
