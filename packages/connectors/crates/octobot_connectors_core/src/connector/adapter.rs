@@ -444,6 +444,105 @@ impl CcxtAdapter {
             }
         }
     }
+
+    // ---- Parse helpers (mirrors CCXTAdapter.parse_* methods) ----
+
+    /// Mirrors CCXTAdapter.adapt_currency_id_to_currency: resolve a ccxt currency id
+    /// to its unified code via the loaded `currencies` map (or pass-through).
+    pub fn adapt_currency_id_to_currency(
+        currency_id: &str,
+        currencies: &std::collections::HashMap<String, serde_json::Value>,
+    ) -> String {
+        currencies
+            .get(currency_id)
+            .and_then(|c| c.get("code"))
+            .and_then(|v| v.as_str())
+            .unwrap_or(currency_id)
+            .to_string()
+    }
+
+    /// Mirrors CCXTAdapter.parse_funding: build a FundingRate either from a dedicated
+    /// funding-rate response or from a ticker that embeds funding data.
+    pub fn parse_funding(
+        &self,
+        raw: &serde_json::Value,
+        from_ticker: bool,
+    ) -> ExchangeResult<FundingRate> {
+        if from_ticker {
+            let info = raw.get("info").unwrap_or(raw);
+            return Ok(FundingRate {
+                symbol: raw["symbol"].as_str().unwrap_or("").to_string(),
+                funding_rate: info["fundingRate"].as_f64()
+                    .or_else(|| info["fundingRate"].as_str().and_then(|s| s.parse().ok())),
+                last_funding_time: info["lastFundingTime"].as_i64()
+                    .map(|ts| self.get_uniformized_timestamp(ts)),
+                next_funding_time: info["nextFundingTime"].as_i64()
+                    .or_else(|| info["nextFundingTimestamp"].as_i64())
+                    .map(|ts| self.get_uniformized_timestamp(ts)),
+                predicted_funding_rate: info["predictedFundingRate"].as_f64(),
+            });
+        }
+        self.adapt_funding_rate(raw)
+    }
+
+    /// Mirrors CCXTAdapter.parse_mark_price: extract the mark price either from a
+    /// dedicated mark-price response or from a ticker.
+    pub fn parse_mark_price(
+        &self,
+        raw: &serde_json::Value,
+        from_ticker: bool,
+    ) -> ExchangeResult<f64> {
+        if from_ticker {
+            let info = raw.get("info").unwrap_or(raw);
+            return raw["markPrice"].as_f64()
+                .or_else(|| info["markPrice"].as_f64())
+                .or_else(|| info["markPrice"].as_str().and_then(|s| s.parse().ok()))
+                .ok_or_else(|| OctoBotExchangeError::AdapterError("ticker has no mark price".into()));
+        }
+        raw["markPrice"].as_f64()
+            .or_else(|| raw["info"]["markPrice"].as_f64())
+            .or_else(|| raw["info"]["markPrice"].as_str().and_then(|s| s.parse().ok()))
+            .ok_or_else(|| OctoBotExchangeError::AdapterError("response has no mark price".into()))
+    }
+
+    /// Mirrors CCXTAdapter.parse_order_book_ticker: build a lightweight OrderBook
+    /// containing only the top-of-book bid/ask from a ticker response.
+    pub fn parse_order_book_ticker(&self, raw: &serde_json::Value) -> ExchangeResult<OrderBook> {
+        let ts_ms = raw["timestamp"].as_i64().unwrap_or(0);
+        let mut bids: Vec<[f64; 2]> = vec![];
+        let mut asks: Vec<[f64; 2]> = vec![];
+        if let Some(bid) = raw["bid"].as_f64() {
+            let qty = raw["bidVolume"].as_f64().unwrap_or(0.0);
+            bids.push([bid, qty]);
+        }
+        if let Some(ask) = raw["ask"].as_f64() {
+            let qty = raw["askVolume"].as_f64().unwrap_or(0.0);
+            asks.push([ask, qty]);
+        }
+        Ok(OrderBook {
+            symbol: raw["symbol"].as_str().unwrap_or("").to_string(),
+            timestamp: self.get_uniformized_timestamp(ts_ms),
+            bids,
+            asks,
+        })
+    }
+
+    /// Mirrors CCXTAdapter.parse_exchange_order_id: pull the exchange-native order id
+    /// out of an order payload, falling back to `info.orderId` if `id` is empty.
+    pub fn parse_exchange_order_id(&self, order: &serde_json::Value) -> Option<String> {
+        order["id"].as_str().map(|s| s.to_string())
+            .or_else(|| order["info"]["orderId"].as_str().map(|s| s.to_string()))
+            .or_else(|| order["info"]["order_id"].as_str().map(|s| s.to_string()))
+            .filter(|s| !s.is_empty())
+    }
+
+    /// Mirrors CCXTAdapter.parse_order_symbol: pull the unified symbol out of an order,
+    /// falling back to `info.symbol` if the top-level field is missing.
+    pub fn parse_order_symbol(&self, order: &serde_json::Value) -> Option<String> {
+        order["symbol"].as_str().map(|s| s.to_string())
+            .or_else(|| order["info"]["symbol"].as_str().map(|s| s.to_string()))
+            .filter(|s| !s.is_empty())
+    }
 }
 
 #[cfg(test)]

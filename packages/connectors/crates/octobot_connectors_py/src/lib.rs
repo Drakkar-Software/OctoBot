@@ -8,19 +8,34 @@ use pyo3::exceptions::{PyRuntimeError, PyValueError};
 use pyo3::prelude::*;
 use rust_decimal::prelude::ToPrimitive;
 use std::collections::HashMap;
+use std::sync::OnceLock;
 
 use octobot_connectors_core::{
     config::{ExchangeConfig, ExchangeCredentials, ProxyConfig},
     connector::{ccxt::CcxtConnector, Exchange},
     enums::{ExchangeTypes, MarginType, OrderStatus, PositionSide, TimeFrame, TradeOrderSide, TraderOrderType},
     error::OctoBotExchangeError,
-    types::{Balance, Candle, CurrencyBalance, Order, OrderBook, Position, Ticker},
+    types::{Candle, CurrencyBalance, Fee, FundingRate, LeverageInfo, MarketStatus, Order, OrderBook, Position, Ticker, Trade, Transaction},
 };
 
 // ---- Helper: convert OctoBotExchangeError → PyErr ----
 
 fn to_py_err(e: OctoBotExchangeError) -> PyErr {
     PyRuntimeError::new_err(e.to_string())
+}
+
+// ---- Shared tokio runtime (one per process, reused across all calls) ----
+// Replaces the per-call `Runtime::new().unwrap().block_on(...)` anti-pattern.
+
+static TOKIO_RUNTIME: OnceLock<tokio::runtime::Runtime> = OnceLock::new();
+
+fn runtime() -> &'static tokio::runtime::Runtime {
+    TOKIO_RUNTIME.get_or_init(|| {
+        tokio::runtime::Builder::new_multi_thread()
+            .enable_all()
+            .build()
+            .expect("failed to build tokio runtime")
+    })
 }
 
 // ============================================================
@@ -391,6 +406,135 @@ impl PyPosition {
     fn __repr__(&self) -> String { format!("Position({})", self.0.symbol) }
 }
 
+// ---- Fee ----
+
+#[pyclass(name = "Fee")]
+#[derive(Clone)]
+pub struct PyFee(pub Fee);
+
+#[pymethods]
+impl PyFee {
+    #[getter] fn cost(&self) -> f64 { self.0.cost.to_f64().unwrap_or(0.0) }
+    #[getter] fn currency(&self) -> Option<String> { self.0.currency.clone() }
+    #[getter] fn rate(&self) -> Option<f64> { self.0.rate }
+    #[getter] fn fee_type(&self) -> Option<String> { self.0.fee_type.clone() }
+    #[getter] fn is_from_exchange(&self) -> bool { self.0.is_from_exchange }
+    fn __repr__(&self) -> String {
+        format!("Fee(cost={}, currency={:?})", self.cost(), self.0.currency)
+    }
+}
+
+// ---- Trade ----
+
+#[pyclass(name = "Trade")]
+#[derive(Clone)]
+pub struct PyTrade(pub Trade);
+
+#[pymethods]
+impl PyTrade {
+    #[getter] fn id(&self) -> Option<String> { self.0.id.clone() }
+    #[getter] fn exchange_trade_id(&self) -> Option<String> { self.0.exchange_trade_id.clone() }
+    #[getter] fn order_id(&self) -> Option<String> { self.0.order_id.clone() }
+    #[getter] fn timestamp(&self) -> i64 { self.0.timestamp }
+    #[getter] fn symbol(&self) -> &str { &self.0.symbol }
+    #[getter] fn side(&self) -> &'static str { self.0.side.value() }
+    #[getter] fn price(&self) -> f64 { self.0.price }
+    #[getter] fn amount(&self) -> f64 { self.0.amount }
+    #[getter] fn cost(&self) -> Option<f64> { self.0.cost }
+    #[getter] fn fee(&self) -> Option<PyFee> { self.0.fee.clone().map(PyFee) }
+    #[getter] fn taker_or_maker(&self) -> Option<String> { self.0.taker_or_maker.clone() }
+    fn __repr__(&self) -> String {
+        format!("Trade(symbol={}, price={}, amount={})", self.0.symbol, self.0.price, self.0.amount)
+    }
+}
+
+// ---- FundingRate ----
+
+#[pyclass(name = "FundingRate")]
+#[derive(Clone)]
+pub struct PyFundingRate(pub FundingRate);
+
+#[pymethods]
+impl PyFundingRate {
+    #[getter] fn symbol(&self) -> &str { &self.0.symbol }
+    #[getter] fn funding_rate(&self) -> Option<f64> { self.0.funding_rate }
+    #[getter] fn last_funding_time(&self) -> Option<i64> { self.0.last_funding_time }
+    #[getter] fn next_funding_time(&self) -> Option<i64> { self.0.next_funding_time }
+    #[getter] fn predicted_funding_rate(&self) -> Option<f64> { self.0.predicted_funding_rate }
+    fn __repr__(&self) -> String {
+        format!("FundingRate(symbol={}, rate={:?})", self.0.symbol, self.0.funding_rate)
+    }
+}
+
+// ---- LeverageInfo ----
+
+#[pyclass(name = "LeverageInfo")]
+#[derive(Clone)]
+pub struct PyLeverageInfo(pub LeverageInfo);
+
+#[pymethods]
+impl PyLeverageInfo {
+    #[getter] fn symbol(&self) -> &str { &self.0.symbol }
+    #[getter] fn leverage(&self) -> Option<f64> { self.0.leverage }
+    #[getter] fn margin_mode(&self) -> Option<String> { self.0.margin_mode.clone() }
+    #[getter] fn long_leverage(&self) -> Option<f64> { self.0.long_leverage }
+    #[getter] fn short_leverage(&self) -> Option<f64> { self.0.short_leverage }
+    fn __repr__(&self) -> String {
+        format!("LeverageInfo(symbol={}, leverage={:?})", self.0.symbol, self.0.leverage)
+    }
+}
+
+// ---- Transaction ----
+
+#[pyclass(name = "Transaction")]
+#[derive(Clone)]
+pub struct PyTransaction(pub Transaction);
+
+#[pymethods]
+impl PyTransaction {
+    #[getter] fn id(&self) -> Option<String> { self.0.id.clone() }
+    #[getter] fn txid(&self) -> Option<String> { self.0.txid.clone() }
+    #[getter] fn timestamp(&self) -> Option<i64> { self.0.timestamp }
+    #[getter] fn address_to(&self) -> Option<String> { self.0.address_to.clone() }
+    #[getter] fn address_from(&self) -> Option<String> { self.0.address_from.clone() }
+    #[getter] fn tag(&self) -> Option<String> { self.0.tag.clone() }
+    #[getter] fn tx_type(&self) -> Option<String> { self.0.tx_type.clone() }
+    #[getter] fn amount(&self) -> Option<f64> { self.0.amount }
+    #[getter] fn currency(&self) -> Option<String> { self.0.currency.clone() }
+    #[getter] fn status(&self) -> Option<String> { self.0.status.clone() }
+    #[getter] fn fee(&self) -> Option<PyFee> { self.0.fee.clone().map(PyFee) }
+    #[getter] fn network(&self) -> Option<String> { self.0.network.clone() }
+}
+
+// ---- MarketStatus ----
+
+#[pyclass(name = "MarketStatus")]
+#[derive(Clone)]
+pub struct PyMarketStatus(pub MarketStatus);
+
+#[pymethods]
+impl PyMarketStatus {
+    #[getter] fn symbol(&self) -> &str { &self.0.symbol }
+    #[getter] fn id(&self) -> Option<String> { self.0.id.clone() }
+    #[getter] fn currency(&self) -> Option<String> { self.0.currency.clone() }
+    #[getter] fn market(&self) -> Option<String> { self.0.market.clone() }
+    #[getter] fn active(&self) -> bool { self.0.active }
+    #[getter] fn contract_size(&self) -> Option<f64> { self.0.contract_size }
+    #[getter] fn market_type(&self) -> Option<String> { self.0.market_type.clone() }
+    #[getter] fn taker_fee(&self) -> Option<f64> { self.0.taker_fee }
+    #[getter] fn maker_fee(&self) -> Option<f64> { self.0.maker_fee }
+    #[getter] fn price_precision(&self) -> Option<f64> { self.0.precision.price }
+    #[getter] fn amount_precision(&self) -> Option<f64> { self.0.precision.amount }
+    #[getter] fn cost_precision(&self) -> Option<f64> { self.0.precision.cost }
+    #[getter] fn amount_min(&self) -> Option<f64> { self.0.limits.amount_min }
+    #[getter] fn amount_max(&self) -> Option<f64> { self.0.limits.amount_max }
+    #[getter] fn price_min(&self) -> Option<f64> { self.0.limits.price_min }
+    #[getter] fn price_max(&self) -> Option<f64> { self.0.limits.price_max }
+    #[getter] fn cost_min(&self) -> Option<f64> { self.0.limits.cost_min }
+    #[getter] fn cost_max(&self) -> Option<f64> { self.0.limits.cost_max }
+    fn __repr__(&self) -> String { format!("MarketStatus({})", self.0.symbol) }
+}
+
 // ============================================================
 // CcxtConnector Python wrapper
 // ============================================================
@@ -439,8 +583,7 @@ impl PyCcxtConnector {
 
     fn initialize(&mut self, py: Python<'_>) -> PyResult<()> {
         py.allow_threads(|| {
-            tokio::runtime::Runtime::new()
-                .map_err(|e| PyRuntimeError::new_err(e.to_string()))?
+            runtime()
                 .block_on(self.inner.initialize())
                 .map_err(to_py_err)
         })
@@ -448,8 +591,7 @@ impl PyCcxtConnector {
 
     fn stop(&mut self, py: Python<'_>) -> PyResult<()> {
         py.allow_threads(|| {
-            tokio::runtime::Runtime::new()
-                .map_err(|e| PyRuntimeError::new_err(e.to_string()))?
+            runtime()
                 .block_on(self.inner.stop())
                 .map_err(to_py_err)
         })
@@ -457,8 +599,7 @@ impl PyCcxtConnector {
 
     fn get_balance<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
         let result = py.allow_threads(|| {
-            tokio::runtime::Runtime::new()
-                .unwrap()
+            runtime()
                 .block_on(self.inner.get_balance(HashMap::new()))
                 .map_err(to_py_err)
         })?;
@@ -472,14 +613,14 @@ impl PyCcxtConnector {
 
     fn get_price_ticker<'py>(&self, py: Python<'py>, symbol: String) -> PyResult<Bound<'py, PyAny>> {
         let result = py.allow_threads(|| {
-            tokio::runtime::Runtime::new()
-                .unwrap()
+            runtime()
                 .block_on(self.inner.get_price_ticker(&symbol))
                 .map_err(to_py_err)
         })?;
         Py::new(py, PyTicker(result)).map(|p| p.into_bound(py).into_any())
     }
 
+    #[pyo3(signature = (symbol, time_frame, limit=None, since=None))]
     fn get_symbol_prices<'py>(
         &self,
         py: Python<'py>,
@@ -491,8 +632,7 @@ impl PyCcxtConnector {
         let tf = TimeFrame::from_ccxt_value(&time_frame)
             .ok_or_else(|| PyValueError::new_err(format!("Unknown time frame: {time_frame}")))?;
         let result = py.allow_threads(|| {
-            tokio::runtime::Runtime::new()
-                .unwrap()
+            runtime()
                 .block_on(self.inner.get_symbol_prices(&symbol, tf, limit, since, HashMap::new()))
                 .map_err(to_py_err)
         })?;
@@ -511,14 +651,14 @@ impl PyCcxtConnector {
         limit: usize,
     ) -> PyResult<Bound<'py, PyAny>> {
         let result = py.allow_threads(|| {
-            tokio::runtime::Runtime::new()
-                .unwrap()
+            runtime()
                 .block_on(self.inner.get_order_book(&symbol, limit))
                 .map_err(to_py_err)
         })?;
         Py::new(py, PyOrderBook(result)).map(|p| p.into_bound(py).into_any())
     }
 
+    #[pyo3(signature = (symbol, limit=None))]
     fn get_recent_trades<'py>(
         &self,
         py: Python<'py>,
@@ -526,27 +666,19 @@ impl PyCcxtConnector {
         limit: Option<usize>,
     ) -> PyResult<Bound<'py, PyAny>> {
         let result = py.allow_threads(|| {
-            tokio::runtime::Runtime::new()
-                .unwrap()
+            runtime()
                 .block_on(self.inner.get_recent_trades(&symbol, limit))
                 .map_err(to_py_err)
         })?;
         let items: Vec<_> = result
             .into_iter()
-            .map(|t| {
-                let d = pyo3::types::PyDict::new_bound(py);
-                let _ = d.set_item("id", t.id);
-                let _ = d.set_item("timestamp", t.timestamp);
-                let _ = d.set_item("symbol", t.symbol);
-                let _ = d.set_item("price", t.price);
-                let _ = d.set_item("amount", t.amount);
-                d.into_any().unbind()
-            })
+            .map(|t| Py::new(py, PyTrade(t)).unwrap().into_bound(py).into_any().unbind())
             .collect();
         let list = pyo3::types::PyList::new_bound(py, items);
         Ok(list.into_any())
     }
 
+    #[pyo3(signature = (symbol=None))]
     fn get_open_orders<'py>(
         &self,
         py: Python<'py>,
@@ -554,8 +686,7 @@ impl PyCcxtConnector {
     ) -> PyResult<Bound<'py, PyAny>> {
         let sym = symbol.as_deref();
         let result = py.allow_threads(|| {
-            tokio::runtime::Runtime::new()
-                .unwrap()
+            runtime()
                 .block_on(self.inner.get_open_orders(sym, None, None))
                 .map_err(to_py_err)
         })?;
@@ -576,22 +707,21 @@ impl PyCcxtConnector {
     ) -> PyResult<Bound<'py, PyAny>> {
         let ot = PyTraderOrderType::new(&order_type)?.0;
         let status = py.allow_threads(|| {
-            tokio::runtime::Runtime::new()
-                .unwrap()
+            runtime()
                 .block_on(self.inner.cancel_order(&order_id, &symbol, ot))
                 .map_err(to_py_err)
         })?;
         Py::new(py, PyOrderStatus(status)).map(|p| p.into_bound(py).into_any())
     }
 
+    #[pyo3(signature = (symbols=None))]
     fn get_positions<'py>(
         &self,
         py: Python<'py>,
         symbols: Option<Vec<String>>,
     ) -> PyResult<Bound<'py, PyAny>> {
         let result = py.allow_threads(|| {
-            tokio::runtime::Runtime::new()
-                .unwrap()
+            runtime()
                 .block_on(self.inner.get_positions(symbols))
                 .map_err(to_py_err)
         })?;
@@ -601,6 +731,48 @@ impl PyCcxtConnector {
             .collect();
         let list = pyo3::types::PyList::new_bound(py, items);
         Ok(list.into_any())
+    }
+
+    #[pyo3(signature = (symbol, price_example=None, with_fixer=false))]
+    fn get_market_status<'py>(
+        &self,
+        py: Python<'py>,
+        symbol: String,
+        price_example: Option<f64>,
+        with_fixer: bool,
+    ) -> PyResult<Bound<'py, PyAny>> {
+        let result = py.allow_threads(|| {
+            runtime()
+                .block_on(self.inner.get_market_status(&symbol, price_example, with_fixer))
+                .map_err(to_py_err)
+        })?;
+        Py::new(py, PyMarketStatus(result)).map(|p| p.into_bound(py).into_any())
+    }
+
+    fn get_funding_rate<'py>(
+        &self,
+        py: Python<'py>,
+        symbol: String,
+    ) -> PyResult<Bound<'py, PyAny>> {
+        let result = py.allow_threads(|| {
+            runtime()
+                .block_on(self.inner.get_funding_rate(&symbol))
+                .map_err(to_py_err)
+        })?;
+        Py::new(py, PyFundingRate(result)).map(|p| p.into_bound(py).into_any())
+    }
+
+    fn get_symbol_leverage<'py>(
+        &self,
+        py: Python<'py>,
+        symbol: String,
+    ) -> PyResult<Bound<'py, PyAny>> {
+        let result = py.allow_threads(|| {
+            runtime()
+                .block_on(self.inner.get_symbol_leverage(&symbol))
+                .map_err(to_py_err)
+        })?;
+        Py::new(py, PyLeverageInfo(result)).map(|p| p.into_bound(py).into_any())
     }
 
     fn __repr__(&self) -> String {
@@ -635,6 +807,12 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyCurrencyBalance>()?;
     m.add_class::<PyOrder>()?;
     m.add_class::<PyPosition>()?;
+    m.add_class::<PyFee>()?;
+    m.add_class::<PyTrade>()?;
+    m.add_class::<PyFundingRate>()?;
+    m.add_class::<PyLeverageInfo>()?;
+    m.add_class::<PyTransaction>()?;
+    m.add_class::<PyMarketStatus>()?;
 
     // Connector
     m.add_class::<PyCcxtConnector>()?;

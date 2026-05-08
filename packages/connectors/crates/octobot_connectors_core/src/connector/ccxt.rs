@@ -159,6 +159,9 @@ pub struct CcxtConnector {
     all_currencies_price_ticker: HashMap<String, Ticker>,
     pub saved_data: HashMap<String, serde_json::Value>,
 
+    /// Loaded futures contract metadata, keyed by unified pair.
+    pub pair_contracts: HashMap<String, crate::contracts::FutureContract>,
+
     /// Live ccxt exchange client (None before initialize() is called)
     client: Option<CcxtClient>,
 }
@@ -200,8 +203,56 @@ impl CcxtConnector {
             markets: HashMap::new(),
             all_currencies_price_ticker: HashMap::new(),
             saved_data: HashMap::new(),
+            pair_contracts: HashMap::new(),
             client: None,
         }
+    }
+
+    // ---- Futures contract pair management ----
+    // Mirrors RestExchange.has_pair_contract / get_pair_contract / set_pair_contract / load_pair_contract
+
+    pub fn has_pair_contract(&self, pair: &str) -> bool {
+        self.pair_contracts.contains_key(pair)
+    }
+
+    pub fn get_pair_contract(&self, pair: &str) -> Option<&crate::contracts::FutureContract> {
+        self.pair_contracts.get(pair)
+    }
+
+    pub fn set_pair_contract(&mut self, contract: crate::contracts::FutureContract) {
+        self.pair_contracts.insert(contract.pair.clone(), contract);
+    }
+
+    /// Build (or rebuild) a FutureContract for the given pair from loaded market data.
+    /// Returns None when the pair is unknown or not a derivative contract.
+    pub fn load_pair_contract(&mut self, pair: &str) -> Option<&crate::contracts::FutureContract> {
+        use crate::enums::FutureContractType;
+        let market = self.markets.get(pair)?;
+        let contract_type = match self.get_contract_type(pair) {
+            Some(t) => t,
+            None => return None,
+        };
+        let contract_size = market.contract_size
+            .and_then(|s| Decimal::from_f64_retain(s))
+            .unwrap_or(Decimal::ONE);
+        let _ = contract_type; // ensure variant available
+        let mut c = crate::contracts::FutureContract::new(pair.to_string(), match self.get_contract_type(pair) {
+            Some(t) => t,
+            None => FutureContractType::LinearPerpetual,
+        });
+        c.contract_size = contract_size;
+        // Pull maintenance margin rate when present in raw market info
+        if let Some(rate) = market.raw.get("maintenanceMarginRate")
+            .and_then(|v| v.as_f64())
+            .and_then(|f| Decimal::from_f64_retain(f))
+        {
+            c.maintenance_margin_rate = Some(rate);
+        }
+        if let Some(tick) = market.precision.price.and_then(|f| Decimal::from_f64_retain(f)) {
+            c.minimum_tick_size = Some(tick);
+        }
+        self.pair_contracts.insert(pair.to_string(), c);
+        self.pair_contracts.get(pair)
     }
 
     fn ccxt_client(&self) -> ExchangeResult<&CcxtClient> {
