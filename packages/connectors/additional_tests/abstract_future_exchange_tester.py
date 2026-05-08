@@ -11,6 +11,8 @@ class AbstractFutureExchangeTester(AbstractExchangeTester):
     POSITION_SIDE: str = "long"
     DEFAULT_LEVERAGE: int = 1
     MARK_PRICE_IN_TICKER: bool = False
+    SUPPORTS_GET_FUNDING_RATE: bool = True
+    SUPPORTS_GET_MARK_PRICE: bool = True
 
     async def test_get_positions(self):
         connector = self.get_connector()

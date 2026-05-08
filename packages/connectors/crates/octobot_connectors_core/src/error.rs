@@ -81,12 +81,47 @@ pub enum OctoBotExchangeError {
 
     #[error("Permission error: {0}")]
     PermissionError(String),
+
+    #[error("Unsupported order type: {0}")]
+    UnsupportedOrderTypeError(String),
+
+    #[error("Untradable symbol: {0}")]
+    UntradableSymbolError(String),
+
+    #[error("Max open orders reached for market: {0}")]
+    MaxOpenOrderReachedForSymbolError(String),
+
+    #[error("Order edit error: {0}")]
+    OrderEditError(String),
+
+    #[error("Retriable exchange proxy error: {0}")]
+    RetriableExchangeProxyError(String),
+
+    #[error("Unavailable order type for market: {0}")]
+    UnavailableOrderTypeForMarketError(String),
+
+    #[error("Exchange account symbol permission error: {0}")]
+    ExchangeAccountSymbolPermissionError(String),
+
+    #[error("Exchange order would immediately trigger: {0}")]
+    ExchangeOrderInstantTriggerError(String),
+
+    #[error("Unexpected open order state: {0}")]
+    OpenOrderError(String),
+
+    #[error("Unexpected filled order state: {0}")]
+    FilledOrderError(String),
+
+    #[error("Unexpected cancelling order state: {0}")]
+    CancellingOrderError(String),
+
+    #[error("Unexpected closed order state: {0}")]
+    ClosedOrderError(String),
 }
 
 pub type ExchangeResult<T> = Result<T, OctoBotExchangeError>;
 
 impl OctoBotExchangeError {
-    /// Returns true if this error is likely transient and can be retried
     pub fn is_retriable(&self) -> bool {
         matches!(
             self,
@@ -95,14 +130,17 @@ impl OctoBotExchangeError {
                 | Self::RateLimitExceeded(_)
                 | Self::ExchangeInternalSyncError(_)
                 | Self::UnreachableExchange(_)
+                | Self::RetriableExchangeProxyError(_)
         )
     }
 
-    /// Returns true if this is an authentication failure
     pub fn is_auth_error(&self) -> bool {
         matches!(
             self,
-            Self::AuthenticationError(_) | Self::InvalidApiKeyIpWhitelistError(_) | Self::PermissionError(_)
+            Self::AuthenticationError(_)
+                | Self::InvalidApiKeyIpWhitelistError(_)
+                | Self::PermissionError(_)
+                | Self::ExchangeAccountSymbolPermissionError(_)
         )
     }
 }

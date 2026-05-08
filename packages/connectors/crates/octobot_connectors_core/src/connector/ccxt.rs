@@ -146,6 +146,14 @@ pub struct CcxtConnector {
     pub permission_errors: Vec<String>,
     pub missing_funds_errors: Vec<String>,
     pub compliancy_errors: Vec<String>,
+    pub internal_sync_errors: Vec<String>,
+    pub account_traded_symbol_permission_errors: Vec<String>,
+    pub authentication_errors: Vec<String>,
+    pub ip_whitelist_errors: Vec<String>,
+    pub closed_position_errors: Vec<String>,
+    pub order_immediately_trigger_errors: Vec<String>,
+    pub order_uncancellable_errors: Vec<String>,
+    pub max_orders_for_market_reached_errors: Vec<String>,
 
     markets: HashMap<String, MarketStatus>,
     all_currencies_price_ticker: HashMap<String, Ticker>,
@@ -181,6 +189,14 @@ impl CcxtConnector {
             permission_errors: vec![],
             missing_funds_errors: vec![],
             compliancy_errors: vec![],
+            internal_sync_errors: vec![],
+            account_traded_symbol_permission_errors: vec![],
+            authentication_errors: vec![],
+            ip_whitelist_errors: vec![],
+            closed_position_errors: vec![],
+            order_immediately_trigger_errors: vec![],
+            order_uncancellable_errors: vec![],
+            max_orders_for_market_reached_errors: vec![],
             markets: HashMap::new(),
             all_currencies_price_ticker: HashMap::new(),
             saved_data: HashMap::new(),
@@ -238,6 +254,120 @@ impl CcxtConnector {
 
     pub fn fetch_stop_order_in_different_request(&self, _symbol: Option<&str>) -> bool {
         false
+    }
+
+    pub fn is_exchange_closed_position_error(&self, error_str: &str) -> bool {
+        let lower = error_str.to_lowercase();
+        self.closed_position_errors.iter().any(|e| lower.contains(e.as_str()))
+    }
+
+    pub fn is_exchange_order_would_immediately_trigger_error(&self, error_str: &str) -> bool {
+        let lower = error_str.to_lowercase();
+        self.order_immediately_trigger_errors.iter().any(|e| lower.contains(e.as_str()))
+    }
+
+    pub fn is_exchange_order_uncancellable(&self, error_str: &str) -> bool {
+        let lower = error_str.to_lowercase();
+        self.order_uncancellable_errors.iter().any(|e| lower.contains(e.as_str()))
+    }
+
+    pub fn is_exchange_max_orders_for_market_reached_error(&self, error_str: &str) -> bool {
+        let lower = error_str.to_lowercase();
+        self.max_orders_for_market_reached_errors.iter().any(|e| lower.contains(e.as_str()))
+    }
+
+    pub fn is_exchange_internal_sync_error(&self, error_str: &str) -> bool {
+        let lower = error_str.to_lowercase();
+        self.internal_sync_errors.iter().any(|e| lower.contains(e.as_str()))
+    }
+
+    pub fn is_exchange_account_traded_symbol_permission_error(&self, error_str: &str) -> bool {
+        let lower = error_str.to_lowercase();
+        self.account_traded_symbol_permission_errors.iter().any(|e| lower.contains(e.as_str()))
+    }
+
+    pub fn is_ip_whitelist_error(&self, error_str: &str) -> bool {
+        let lower = error_str.to_lowercase();
+        self.ip_whitelist_errors.iter().any(|e| lower.contains(e.as_str()))
+    }
+
+    pub fn get_uniform_timestamp(&self, timestamp: i64) -> i64 {
+        self.adapter.get_uniformized_timestamp(timestamp)
+    }
+
+    pub fn get_split_pair_from_exchange(&self, pair: &str) -> (String, String) {
+        if let Some(ms) = self.markets.get(pair) {
+            let base = ms.currency.clone().unwrap_or_default();
+            let quote = ms.market.clone().unwrap_or_default();
+            return (base, quote);
+        }
+        let parts: Vec<&str> = pair.splitn(2, '/').collect();
+        if parts.len() == 2 {
+            (parts[0].to_string(), parts[1].to_string())
+        } else {
+            (pair.to_string(), String::new())
+        }
+    }
+
+    pub fn get_pair_cryptocurrency(&self, pair: &str) -> String {
+        self.get_split_pair_from_exchange(pair).0
+    }
+
+    pub fn get_all_tradable_symbols(&self) -> Vec<String> {
+        self.get_available_symbols(true)
+    }
+
+    pub fn get_supported_exchange_types(&self) -> Vec<crate::enums::ExchangeTypes> {
+        vec![self.get_exchange_type()]
+    }
+
+    pub fn supports_fetching_balance(&self) -> bool {
+        true
+    }
+
+    pub fn supports_native_edit_order(&self, _order_type: &crate::enums::TraderOrderType) -> bool {
+        true
+    }
+
+    pub fn supports_api_leverage_update(&self, _symbol: &str) -> bool {
+        true
+    }
+
+    pub fn uses_demo_trading_instead_of_sandbox(&self) -> bool {
+        false
+    }
+
+    pub fn is_linear_symbol(&self, symbol: &str) -> bool {
+        if let Some(ms) = self.markets.get(symbol) {
+            ms.market_type.as_deref() == Some("linear")
+        } else {
+            true
+        }
+    }
+
+    pub fn is_inverse_symbol(&self, symbol: &str) -> bool {
+        if let Some(ms) = self.markets.get(symbol) {
+            ms.market_type.as_deref() == Some("inverse")
+        } else {
+            false
+        }
+    }
+
+    pub fn is_expirable_symbol(&self, symbol: &str) -> bool {
+        if let Some(ms) = self.markets.get(symbol) {
+            let t = ms.market_type.as_deref().unwrap_or("");
+            t.contains("expir") || t.contains("future") || t.contains("option")
+        } else {
+            false
+        }
+    }
+
+    pub fn supports_trading_type(&self, _symbol: &str, _trading_type: &crate::enums::ContractTradingTypes) -> bool {
+        true
+    }
+
+    pub fn get_contract_size(&self, symbol: &str) -> Option<f64> {
+        self.markets.get(symbol).and_then(|ms| ms.contract_size)
     }
 
     fn current_timestamp() -> i64 {
@@ -985,6 +1115,159 @@ impl Exchange for CcxtConnector {
     fn is_missing_funds_error(&self, error_str: &str) -> bool {
         let lower = error_str.to_lowercase();
         self.missing_funds_errors.iter().any(|e| lower.contains(e.as_str()))
+    }
+
+    fn is_exchange_closed_position_error(&self, error_str: &str) -> bool {
+        CcxtConnector::is_exchange_closed_position_error(self, error_str)
+    }
+
+    fn is_exchange_order_would_immediately_trigger_error(&self, error_str: &str) -> bool {
+        CcxtConnector::is_exchange_order_would_immediately_trigger_error(self, error_str)
+    }
+
+    fn is_exchange_order_uncancellable(&self, error_str: &str) -> bool {
+        CcxtConnector::is_exchange_order_uncancellable(self, error_str)
+    }
+
+    fn is_exchange_max_orders_for_market_reached_error(&self, error_str: &str) -> bool {
+        CcxtConnector::is_exchange_max_orders_for_market_reached_error(self, error_str)
+    }
+
+    fn is_exchange_internal_sync_error(&self, error_str: &str) -> bool {
+        CcxtConnector::is_exchange_internal_sync_error(self, error_str)
+    }
+
+    fn is_exchange_account_traded_symbol_permission_error(&self, error_str: &str) -> bool {
+        CcxtConnector::is_exchange_account_traded_symbol_permission_error(self, error_str)
+    }
+
+    fn is_ip_whitelist_error(&self, error_str: &str) -> bool {
+        CcxtConnector::is_ip_whitelist_error(self, error_str)
+    }
+
+    fn get_uniform_timestamp(&self, timestamp: i64) -> i64 {
+        self.adapter.get_uniformized_timestamp(timestamp)
+    }
+
+    fn get_split_pair_from_exchange(&self, pair: &str) -> (String, String) {
+        CcxtConnector::get_split_pair_from_exchange(self, pair)
+    }
+
+    fn get_pair_cryptocurrency(&self, pair: &str) -> String {
+        self.get_split_pair_from_exchange(pair).0
+    }
+
+    fn get_supported_exchange_types(&self) -> Vec<crate::enums::ExchangeTypes> {
+        vec![self.get_exchange_type()]
+    }
+
+    fn supports_native_edit_order(&self, _order_type: &TraderOrderType) -> bool {
+        true
+    }
+
+    fn get_contract_type(&self, symbol: &str) -> Option<crate::enums::FutureContractType> {
+        if let Some(ms) = self.markets.get(symbol) {
+            match ms.market_type.as_deref() {
+                Some("linear") => Some(crate::enums::FutureContractType::LinearPerpetual),
+                Some("inverse") => Some(crate::enums::FutureContractType::InversePerpetual),
+                Some("future") => Some(crate::enums::FutureContractType::LinearExpirable),
+                _ => None,
+            }
+        } else {
+            None
+        }
+    }
+
+    fn get_contract_size(&self, symbol: &str) -> Option<f64> {
+        CcxtConnector::get_contract_size(self, symbol)
+    }
+
+    fn is_linear_symbol(&self, symbol: &str) -> bool {
+        CcxtConnector::is_linear_symbol(self, symbol)
+    }
+
+    fn is_inverse_symbol(&self, symbol: &str) -> bool {
+        CcxtConnector::is_inverse_symbol(self, symbol)
+    }
+
+    fn is_expirable_symbol(&self, symbol: &str) -> bool {
+        CcxtConnector::is_expirable_symbol(self, symbol)
+    }
+
+    async fn get_account_id(&self) -> ExchangeResult<String> {
+        Err(OctoBotExchangeError::NotSupported(
+            format!("{}: get_account_id not supported", self.rest_name)
+        ))
+    }
+
+    fn is_authenticated_request(&self, _url: &str, _method: &str, _headers: &HashMap<String, String>, _body: &str) -> bool {
+        false
+    }
+
+    async fn get_funding_rate_history(
+        &self,
+        symbol: &str,
+        limit: Option<usize>,
+    ) -> ExchangeResult<Vec<FundingRate>> {
+        let client = self.ccxt_client()?;
+        let mut guard = client.lock().await;
+        let limit_val = limit.map(|l| CcxtValue::Json(json!(l))).unwrap_or(CcxtValue::Undefined);
+        let raw = guard.fetch_funding_rate_history(
+            CcxtValue::Json(json!(symbol)),
+            CcxtValue::Undefined,
+            limit_val,
+            CcxtValue::Undefined,
+        ).await;
+        let json_val = ccxt_to_json_required(raw, "fetch_funding_rate_history")?;
+        if let serde_json::Value::Array(arr) = json_val {
+            let mut rates = Vec::new();
+            for item in arr {
+                match self.adapter.adapt_funding_rate(&item) {
+                    Ok(r) => rates.push(r),
+                    Err(e) => log::warn!("funding rate history parse error: {e}"),
+                }
+            }
+            Ok(rates)
+        } else {
+            Ok(vec![])
+        }
+    }
+
+    async fn get_margin_type(&self, symbol: &str) -> ExchangeResult<crate::enums::MarginType> {
+        let leverage = self.get_symbol_leverage(symbol).await?;
+        match leverage.margin_mode.as_deref() {
+            Some("isolated") => Ok(crate::enums::MarginType::Isolated),
+            _ => Ok(crate::enums::MarginType::Cross),
+        }
+    }
+
+    async fn get_position_mode(&self, _symbol: &str) -> ExchangeResult<crate::enums::PositionMode> {
+        Err(OctoBotExchangeError::NotSupported(
+            format!("{}: get_position_mode not supported", self.rest_name)
+        ))
+    }
+
+    async fn get_maintenance_margin_rate(&self, symbol: &str) -> ExchangeResult<Decimal> {
+        if let Some(ms) = self.markets.get(symbol) {
+            if let Some(raw) = ms.raw.get("maintenanceMarginRate")
+                .or_else(|| ms.raw.get("mmRate"))
+            {
+                if let Some(f) = raw.as_f64() {
+                    return Ok(Decimal::try_from(f).unwrap_or(Decimal::ZERO));
+                }
+            }
+        }
+        Err(OctoBotExchangeError::FailedRequest(format!("no maintenance margin rate for {symbol}")))
+    }
+
+    async fn get_leverage_tiers(&self, symbols: Option<Vec<String>>) -> ExchangeResult<serde_json::Value> {
+        let client = self.ccxt_client()?;
+        let mut guard = client.lock().await;
+        let symbols_val = symbols
+            .map(|s| CcxtValue::Json(json!(s)))
+            .unwrap_or(CcxtValue::Undefined);
+        let raw = guard.fetch_market_leverage_tiers(symbols_val, CcxtValue::Undefined).await;
+        Ok(ccxt_to_json(raw).unwrap_or(serde_json::Value::Null))
     }
 }
 

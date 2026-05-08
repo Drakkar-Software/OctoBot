@@ -16,7 +16,7 @@ use rust_decimal::Decimal;
 
 use crate::config::ExchangeConfig;
 use crate::connector::{Exchange, ccxt::CcxtConnector};
-use crate::enums::{ExchangeTypes, OrderStatus, TimeFrame, TradeOrderSide, TraderOrderType};
+use crate::enums::{ExchangeTypes, FutureContractType, MarginType, OrderStatus, PositionMode, TimeFrame, TradeOrderSide, TraderOrderType};
 use crate::error::{ExchangeResult, OctoBotExchangeError};
 use crate::types::{
     Balance, Candle, FundingRate, LeverageInfo, MarketStatus, Order, OrderBook,
@@ -83,11 +83,42 @@ pub struct RestExchangeConfig {
     // ---- Withdrawal ----
     pub withdraw_network_param_key: String,
 
+    // ---- Additional order flags ----
+    /// Fetch OHLCV from tickers when exchange can't return candles directly
+    pub create_ohlcv_from_tickers: bool,
+    /// Max quantity multiplier when increasing position
+    pub max_increased_position_quantity_multiplier: Decimal,
+    /// Exchange supports fetching cancelled orders
+    pub support_fetching_cancelled_orders: bool,
+    /// Open orders can appear with a delay after creation
+    pub can_have_delayed_open_orders: bool,
+    /// Cancelled orders can appear with a delay
+    pub can_have_delayed_cancelled_orders: bool,
+    /// Exchange supports custom limit on order book depth fetch
+    pub supports_custom_limit_order_book_fetch: bool,
+    /// Some symbols may be missing from get_all_currencies_price_ticker
+    pub can_miss_tickers_in_all_tickers: bool,
+    /// Minimum number of markets to fetch
+    pub fetch_min_exchange_markets: usize,
+    /// Required fields on an order (must be non-empty)
+    pub order_non_empty_fields: Vec<String>,
+    /// Required fields that must be present on an order
+    pub order_required_fields: Vec<String>,
+
     // ---- Error detection substrings (mirrors EXCHANGE_*_ERRORS lists) ----
     pub order_not_found_errors: Vec<String>,
     pub permission_errors: Vec<String>,
     pub missing_funds_errors: Vec<String>,
     pub compliancy_errors: Vec<String>,
+    pub internal_sync_errors: Vec<String>,
+    pub account_traded_symbol_permission_errors: Vec<String>,
+    pub authentication_errors: Vec<String>,
+    pub ip_whitelist_errors: Vec<String>,
+    pub closed_position_errors: Vec<String>,
+    pub order_immediately_trigger_errors: Vec<String>,
+    pub order_uncancellable_errors: Vec<String>,
+    pub max_orders_for_market_reached_errors: Vec<String>,
+    pub local_fees_currencies: Vec<String>,
 }
 
 impl Default for RestExchangeConfig {
@@ -119,10 +150,29 @@ impl Default for RestExchangeConfig {
             stop_loss_edit_price_param: "stopLossPrice".to_string(),
             stop_loss_create_price_param: "stopLossPrice".to_string(),
             withdraw_network_param_key: "network".to_string(),
+            create_ohlcv_from_tickers: false,
+            max_increased_position_quantity_multiplier: Decimal::ONE,
+            support_fetching_cancelled_orders: true,
+            can_have_delayed_open_orders: false,
+            can_have_delayed_cancelled_orders: false,
+            supports_custom_limit_order_book_fetch: false,
+            can_miss_tickers_in_all_tickers: true,
+            fetch_min_exchange_markets: 0,
+            order_non_empty_fields: vec![],
+            order_required_fields: vec![],
             order_not_found_errors: vec![],
             permission_errors: vec![],
             missing_funds_errors: vec![],
             compliancy_errors: vec![],
+            internal_sync_errors: vec![],
+            account_traded_symbol_permission_errors: vec![],
+            authentication_errors: vec![],
+            ip_whitelist_errors: vec![],
+            closed_position_errors: vec![],
+            order_immediately_trigger_errors: vec![],
+            order_uncancellable_errors: vec![],
+            max_orders_for_market_reached_errors: vec![],
+            local_fees_currencies: vec![],
         }
     }
 }
@@ -154,6 +204,14 @@ impl RestExchange {
         connector.permission_errors = rest_config.permission_errors.clone();
         connector.missing_funds_errors = rest_config.missing_funds_errors.clone();
         connector.compliancy_errors = rest_config.compliancy_errors.clone();
+        connector.internal_sync_errors = rest_config.internal_sync_errors.clone();
+        connector.account_traded_symbol_permission_errors = rest_config.account_traded_symbol_permission_errors.clone();
+        connector.authentication_errors = rest_config.authentication_errors.clone();
+        connector.ip_whitelist_errors = rest_config.ip_whitelist_errors.clone();
+        connector.closed_position_errors = rest_config.closed_position_errors.clone();
+        connector.order_immediately_trigger_errors = rest_config.order_immediately_trigger_errors.clone();
+        connector.order_uncancellable_errors = rest_config.order_uncancellable_errors.clone();
+        connector.max_orders_for_market_reached_errors = rest_config.max_orders_for_market_reached_errors.clone();
 
         Self { rest_config, connector }
     }
@@ -188,6 +246,34 @@ impl RestExchange {
 
     pub fn is_authentication_error(&self, error: &OctoBotExchangeError) -> bool {
         error.is_auth_error()
+    }
+
+    pub fn is_exchange_closed_position_error(&self, error: &OctoBotExchangeError) -> bool {
+        self.connector.is_exchange_closed_position_error(&error.to_string())
+    }
+
+    pub fn is_exchange_order_would_immediately_trigger_error(&self, error: &OctoBotExchangeError) -> bool {
+        self.connector.is_exchange_order_would_immediately_trigger_error(&error.to_string())
+    }
+
+    pub fn is_exchange_order_uncancellable(&self, error: &OctoBotExchangeError) -> bool {
+        self.connector.is_exchange_order_uncancellable(&error.to_string())
+    }
+
+    pub fn is_exchange_max_orders_for_market_reached_error(&self, error: &OctoBotExchangeError) -> bool {
+        self.connector.is_exchange_max_orders_for_market_reached_error(&error.to_string())
+    }
+
+    pub fn is_exchange_internal_sync_error(&self, error: &OctoBotExchangeError) -> bool {
+        self.connector.is_exchange_internal_sync_error(&error.to_string())
+    }
+
+    pub fn is_exchange_account_traded_symbol_permission_error(&self, error: &OctoBotExchangeError) -> bool {
+        self.connector.is_exchange_account_traded_symbol_permission_error(&error.to_string())
+    }
+
+    pub fn is_ip_whitelist_error(&self, error: &OctoBotExchangeError) -> bool {
+        self.connector.is_ip_whitelist_error(&error.to_string())
     }
 }
 
@@ -311,6 +397,100 @@ impl Exchange for RestExchange {
     fn is_authentication_error(&self, error_str: &str) -> bool {
         let lower = error_str.to_lowercase();
         lower.contains("auth") || lower.contains("apikey") || lower.contains("invalid key")
+    }
+
+    // ---- New trait methods delegated to connector ----
+
+    fn is_exchange_closed_position_error(&self, error_str: &str) -> bool {
+        self.connector.is_exchange_closed_position_error(error_str)
+    }
+    fn is_exchange_order_would_immediately_trigger_error(&self, error_str: &str) -> bool {
+        self.connector.is_exchange_order_would_immediately_trigger_error(error_str)
+    }
+    fn is_exchange_order_uncancellable(&self, error_str: &str) -> bool {
+        self.connector.is_exchange_order_uncancellable(error_str)
+    }
+    fn is_exchange_max_orders_for_market_reached_error(&self, error_str: &str) -> bool {
+        self.connector.is_exchange_max_orders_for_market_reached_error(error_str)
+    }
+    fn is_exchange_internal_sync_error(&self, error_str: &str) -> bool {
+        self.connector.is_exchange_internal_sync_error(error_str)
+    }
+    fn is_exchange_account_traded_symbol_permission_error(&self, error_str: &str) -> bool {
+        self.connector.is_exchange_account_traded_symbol_permission_error(error_str)
+    }
+    fn is_ip_whitelist_error(&self, error_str: &str) -> bool {
+        self.connector.is_ip_whitelist_error(error_str)
+    }
+
+    fn get_uniform_timestamp(&self, timestamp: i64) -> i64 {
+        self.connector.get_uniform_timestamp(timestamp)
+    }
+    fn get_split_pair_from_exchange(&self, pair: &str) -> (String, String) {
+        self.connector.get_split_pair_from_exchange(pair)
+    }
+    fn get_pair_cryptocurrency(&self, pair: &str) -> String {
+        self.connector.get_pair_cryptocurrency(pair)
+    }
+    fn get_supported_exchange_types(&self) -> Vec<ExchangeTypes> {
+        self.connector.get_supported_exchange_types()
+    }
+    fn supports_native_edit_order(&self, order_type: &TraderOrderType) -> bool {
+        self.connector.supports_native_edit_order(order_type)
+    }
+    fn supports_fetching_balance(&self) -> bool {
+        self.connector.supports_fetching_balance()
+    }
+    fn supports_api_leverage_update(&self, symbol: &str) -> bool {
+        self.connector.supports_api_leverage_update(symbol)
+    }
+    fn supports_trading_type(&self, symbol: &str) -> bool {
+        Exchange::supports_trading_type(&self.connector, symbol)
+    }
+
+    fn get_contract_type(&self, symbol: &str) -> Option<FutureContractType> {
+        self.connector.get_contract_type(symbol)
+    }
+    fn get_contract_size(&self, symbol: &str) -> Option<f64> {
+        self.connector.get_contract_size(symbol)
+    }
+    fn is_linear_symbol(&self, symbol: &str) -> bool {
+        self.connector.is_linear_symbol(symbol)
+    }
+    fn is_inverse_symbol(&self, symbol: &str) -> bool {
+        self.connector.is_inverse_symbol(symbol)
+    }
+    fn is_expirable_symbol(&self, symbol: &str) -> bool {
+        self.connector.is_expirable_symbol(symbol)
+    }
+
+    async fn get_account_id(&self) -> ExchangeResult<String> {
+        self.connector.get_account_id().await
+    }
+    fn is_authenticated_request(&self, url: &str, method: &str, headers: &HashMap<String, String>, body: &str) -> bool {
+        self.connector.is_authenticated_request(url, method, headers, body)
+    }
+    fn is_successfully_authenticated(&self) -> bool {
+        self.connector.is_successfully_authenticated()
+    }
+    fn get_max_orders_count(&self, symbol: &str, order_type: &TraderOrderType) -> usize {
+        self.connector.get_max_orders_count(symbol, order_type)
+    }
+
+    async fn get_funding_rate_history(&self, symbol: &str, limit: Option<usize>) -> ExchangeResult<Vec<FundingRate>> {
+        self.connector.get_funding_rate_history(symbol, limit).await
+    }
+    async fn get_margin_type(&self, symbol: &str) -> ExchangeResult<MarginType> {
+        self.connector.get_margin_type(symbol).await
+    }
+    async fn get_position_mode(&self, symbol: &str) -> ExchangeResult<PositionMode> {
+        self.connector.get_position_mode(symbol).await
+    }
+    async fn get_maintenance_margin_rate(&self, symbol: &str) -> ExchangeResult<Decimal> {
+        self.connector.get_maintenance_margin_rate(symbol).await
+    }
+    async fn get_leverage_tiers(&self, symbols: Option<Vec<String>>) -> ExchangeResult<serde_json::Value> {
+        self.connector.get_leverage_tiers(symbols).await
     }
 }
 

@@ -14,8 +14,7 @@ pub(crate) mod markets;
 use async_trait::async_trait;
 use std::collections::HashMap;
 
-use crate::config::ExchangeConfig;
-use crate::enums::{ExchangeTypes, OrderStatus, TimeFrame, TradeOrderSide, TraderOrderType};
+use crate::enums::{ExchangeTypes, FutureContractType, MarginType, OrderStatus, PositionMode, TimeFrame, TradeOrderSide, TraderOrderType};
 use crate::error::ExchangeResult;
 use crate::types::{Balance, Candle, FundingRate, LeverageInfo, MarketStatus, Order, OrderBook, Position, Ticker, Trade, Transaction};
 use rust_decimal::Decimal;
@@ -207,11 +206,49 @@ pub trait Exchange: Send + Sync {
 
     fn get_fees(&self, symbol: &str) -> ExchangeResult<HashMap<String, f64>>;
     fn get_exchange_current_time(&self) -> i64;
+    fn get_uniform_timestamp(&self, timestamp: i64) -> i64 { timestamp }
     fn get_pair_from_exchange(&self, pair: &str) -> Option<String>;
     fn get_exchange_pair(&self, pair: &str) -> ExchangeResult<String>;
+    fn get_split_pair_from_exchange(&self, pair: &str) -> (String, String);
+    fn get_pair_cryptocurrency(&self, pair: &str) -> String;
     fn get_available_symbols(&self, active_only: bool) -> Vec<String>;
+    fn get_all_tradable_symbols(&self) -> Vec<String> { self.get_available_symbols(true) }
+    fn get_alias_symbols(&self) -> Vec<String> { vec![] }
     fn get_available_time_frames(&self) -> Vec<String>;
     fn get_rate_limit(&self) -> f64;
+    fn get_default_balance(&self) -> Balance { Balance::new() }
+    fn get_supported_exchange_types(&self) -> Vec<ExchangeTypes>;
+    fn uses_demo_trading_instead_of_sandbox(&self) -> bool { false }
+    fn supports_fetching_balance(&self) -> bool { true }
+    fn supports_native_edit_order(&self, order_type: &TraderOrderType) -> bool;
+    fn supports_api_leverage_update(&self, _symbol: &str) -> bool { true }
+
+    // ---- Futures contract helpers ----
+
+    async fn get_funding_rate_history(
+        &self,
+        symbol: &str,
+        limit: Option<usize>,
+    ) -> ExchangeResult<Vec<FundingRate>>;
+
+    async fn get_margin_type(&self, symbol: &str) -> ExchangeResult<MarginType>;
+    async fn get_position_mode(&self, symbol: &str) -> ExchangeResult<PositionMode>;
+    async fn get_maintenance_margin_rate(&self, symbol: &str) -> ExchangeResult<Decimal>;
+    async fn get_leverage_tiers(&self, symbols: Option<Vec<String>>) -> ExchangeResult<serde_json::Value>;
+
+    fn get_contract_type(&self, symbol: &str) -> Option<FutureContractType>;
+    fn get_contract_size(&self, symbol: &str) -> Option<f64>;
+    fn is_linear_symbol(&self, symbol: &str) -> bool;
+    fn is_inverse_symbol(&self, symbol: &str) -> bool;
+    fn is_expirable_symbol(&self, symbol: &str) -> bool;
+    fn supports_trading_type(&self, _symbol: &str) -> bool { true }
+
+    // ---- Authentication helpers ----
+
+    async fn get_account_id(&self) -> ExchangeResult<String>;
+    fn is_authenticated_request(&self, url: &str, method: &str, headers: &HashMap<String, String>, body: &str) -> bool;
+    fn is_successfully_authenticated(&self) -> bool { self.is_authenticated() }
+    fn get_max_orders_count(&self, _symbol: &str, _order_type: &TraderOrderType) -> usize { 0 }
 
     // ---- Error classification ----
 
@@ -220,4 +257,11 @@ pub trait Exchange: Send + Sync {
     fn is_exchange_rules_compliancy_error(&self, _error_str: &str) -> bool { false }
     fn is_missing_funds_error(&self, _error_str: &str) -> bool { false }
     fn is_authentication_error(&self, _error_str: &str) -> bool { false }
+    fn is_exchange_closed_position_error(&self, _error_str: &str) -> bool { false }
+    fn is_exchange_order_would_immediately_trigger_error(&self, _error_str: &str) -> bool { false }
+    fn is_exchange_order_uncancellable(&self, _error_str: &str) -> bool { false }
+    fn is_exchange_max_orders_for_market_reached_error(&self, _error_str: &str) -> bool { false }
+    fn is_exchange_internal_sync_error(&self, _error_str: &str) -> bool { false }
+    fn is_exchange_account_traded_symbol_permission_error(&self, _error_str: &str) -> bool { false }
+    fn is_ip_whitelist_error(&self, _error_str: &str) -> bool { false }
 }

@@ -443,6 +443,194 @@ impl ExchangeSupportedElements {
     }
 }
 
+/// Transaction types (mirrors TransactionType in enums.py)
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum TransactionType {
+    BlockchainDeposit,
+    BlockchainWithdrawal,
+    FundingFee,
+    TradingFee,
+    RealisedPnl,
+    CloseRealisedPnl,
+    Transfer,
+}
+
+impl TransactionType {
+    pub fn value(&self) -> &'static str {
+        match self {
+            Self::BlockchainDeposit => "blockchain_deposit",
+            Self::BlockchainWithdrawal => "blockchain_withdrawal",
+            Self::FundingFee => "funding_fee",
+            Self::TradingFee => "trading_fee",
+            Self::RealisedPnl => "realised_pnl",
+            Self::CloseRealisedPnl => "close_realised_pnl",
+            Self::Transfer => "transfer",
+        }
+    }
+}
+
+/// Which currency side fees are taken from (mirrors FeesCurrencySide)
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum FeesCurrencySide {
+    Currency,
+    Market,
+    Undefined,
+}
+
+impl FeesCurrencySide {
+    pub fn value(&self) -> &'static str {
+        match self {
+            Self::Currency => "currency",
+            Self::Market => "market",
+            Self::Undefined => "undefined",
+        }
+    }
+}
+
+/// Mark price source (mirrors MarkPriceSources)
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum MarkPriceSources {
+    ExchangeMarkPrice,
+    RecentTradeAverage,
+    TickerClosePrice,
+    CandleClosePrice,
+}
+
+impl MarkPriceSources {
+    pub fn value(&self) -> &'static str {
+        match self {
+            Self::ExchangeMarkPrice => "exchange_mark_price",
+            Self::RecentTradeAverage => "recent_trade_average",
+            Self::TickerClosePrice => "ticker_close_price",
+            Self::CandleClosePrice => "candle_close_price",
+        }
+    }
+}
+
+/// Option contract type (mirrors OptionContractType)
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum OptionContractType {
+    InverseExpirable,
+    LinearExpirable,
+}
+
+impl OptionContractType {
+    pub fn value(&self) -> &'static str {
+        match self {
+            Self::InverseExpirable => "inverse_expirable",
+            Self::LinearExpirable => "linear_expirable",
+        }
+    }
+}
+
+/// Order update types (mirrors OrderUpdateType)
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum OrderUpdateType {
+    New,
+    Closed,
+    Edit,
+    StateChange,
+}
+
+impl OrderUpdateType {
+    pub fn value(&self) -> &'static str {
+        match self {
+            Self::New => "new",
+            Self::Closed => "closed",
+            Self::Edit => "edit",
+            Self::StateChange => "state_transition",
+        }
+    }
+}
+
+/// Blockchain transaction status (mirrors BlockchainTransactionStatus)
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum BlockchainTransactionStatus {
+    Created,
+    Confirming,
+    Replaced,
+    Fail,
+    Success,
+}
+
+impl BlockchainTransactionStatus {
+    pub fn value(&self) -> &'static str {
+        match self {
+            Self::Created => "created",
+            Self::Confirming => "confirming",
+            Self::Replaced => "replaced",
+            Self::Fail => "fail",
+            Self::Success => "success",
+        }
+    }
+}
+
+/// WebSocket feed types (mirrors WebsocketFeeds)
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum WebsocketFeeds {
+    L1Book,
+    L2Book,
+    L3Book,
+    BookTicker,
+    BookDelta,
+    Trades,
+    Liquidations,
+    MiniTicker,
+    Ticker,
+    Candle,
+    Kline,
+    Funding,
+    MarkPrice,
+    LastPrice,
+    Orders,
+    Markets,
+    Ledger,
+    CreateOrder,
+    CancelOrder,
+    FuturesIndex,
+    OpenInterest,
+    Portfolio,
+    Position,
+    Trade,
+    Transactions,
+    Volume,
+    Unsupported,
+}
+
+impl WebsocketFeeds {
+    pub fn value(&self) -> &'static str {
+        match self {
+            Self::L1Book => "l1_book",
+            Self::L2Book => "l2_book",
+            Self::L3Book => "l3_book",
+            Self::BookTicker => "book_ticker",
+            Self::BookDelta => "book_delta",
+            Self::Trades => "trades",
+            Self::Liquidations => "liquidations",
+            Self::MiniTicker => "mini_ticker",
+            Self::Ticker => "ticker",
+            Self::Candle => "candle",
+            Self::Kline => "kline",
+            Self::Funding => "funding",
+            Self::MarkPrice => "mark_price",
+            Self::LastPrice => "last_price",
+            Self::Orders => "orders",
+            Self::Markets => "markets",
+            Self::Ledger => "ledger",
+            Self::CreateOrder => "create_order",
+            Self::CancelOrder => "cancel_order",
+            Self::FuturesIndex => "futures_index",
+            Self::OpenInterest => "open_interest",
+            Self::Portfolio => "portfolio",
+            Self::Position => "position",
+            Self::Trade => "trade",
+            Self::Transactions => "transactions",
+            Self::Volume => "volume",
+            Self::Unsupported => "unsupported",
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

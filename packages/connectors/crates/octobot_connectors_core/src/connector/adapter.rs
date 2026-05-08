@@ -3,14 +3,13 @@
 //   packages/trading/octobot_trading/exchanges/adapters/abstract_adapter.py
 //   packages/trading/octobot_trading/exchanges/connectors/ccxt/ccxt_adapter.py
 
-use std::collections::HashMap;
 use rust_decimal::prelude::*;
 
 use crate::enums::{MarginType, OrderStatus, PositionSide, PositionStatus, TradeOrderSide, TraderOrderType};
 use crate::error::{ExchangeResult, OctoBotExchangeError};
 use crate::types::{
     Balance, Candle, CurrencyBalance, Fee, FundingRate, LeverageInfo, MarketLimits,
-    MarketPrecision, MarketStatus, Order, OrderBook, Position, Ticker, Trade, Transaction,
+    MarketPrecision, MarketStatus, Order, OrderBook, Position, Ticker, Trade,
 };
 use crate::enums::TimeFrame;
 use crate::util::timestamp_util::uniformize_timestamp;

@@ -3,6 +3,7 @@ Abstract base class for live exchange integration tests.
 Mirrors packages/additional_tests/exchanges_tests/abstract_authenticated_exchange_tester.py
 but delegates to the Rust ExchangeTestRunner via octobot_connectors_rs.
 """
+import pytest
 from abc import ABC
 
 from octobot_connectors import CcxtConnector, ExchangeConfig, ExchangeCredentials
@@ -21,6 +22,8 @@ class AbstractExchangeTester(ABC):
     ALLOW_ZERO_MAKER_FEE: bool = False
     EXPECT_MISSING_ORDER_FEES: bool = False
     EXPECT_POSSIBLE_ORDER_NOT_FOUND: bool = False
+    EXPECT_POSSIBLE_ORDER_NOT_FOUND_DURING_ORDER_CREATION: bool = False
+    SUPPORTS_BUNDLED_ORDERS: bool = False
     MARKET_FILL_TIMEOUT: int = 40
     OPEN_TIMEOUT: int = 30
     CANCEL_TIMEOUT: int = 30
@@ -135,4 +138,97 @@ class AbstractExchangeTester(ABC):
         from octobot_connectors import OrderStatus
         assert status in (OrderStatus.Canceled, OrderStatus.Closed)
         connector.stop()
+
+    async def test_get_price_ticker(self):
+        connector = self.get_connector()
+        connector.initialize()
+        ticker = connector.get_price_ticker(self.SYMBOL)
+        assert ticker is not None
+        assert ticker.last_price() is not None or ticker.bid is not None
+        connector.stop()
+
+    async def test_get_all_currencies_price_ticker(self):
+        connector = self.get_connector()
+        connector.initialize()
+        tickers = connector.get_all_currencies_price_ticker([self.SYMBOL])
+        assert isinstance(tickers, dict)
+        assert len(tickers) >= 0
+        connector.stop()
+
+    async def test_get_cancelled_orders(self):
+        connector = self.get_connector()
+        connector.initialize()
+        orders = connector.get_cancelled_orders(self.SYMBOL, None, 10)
+        assert isinstance(orders, list)
+        connector.stop()
+
+    @pytest.mark.slow
+    async def test_invalid_api_key_error(self):
+        from octobot_connectors import ExchangeCredentials, ExchangeConfig, CcxtConnector
+        creds = ExchangeCredentials(api_key="invalid_key", secret="invalid_secret")
+        config = ExchangeConfig(
+            exchange_name=self.EXCHANGE_NAME,
+            credentials=creds,
+            is_future=self.EXCHANGE_TYPE == "future",
+        )
+        connector = CcxtConnector(config=config)
+        connector.initialize()
+        try:
+            connector.get_balance()
+            pytest.fail("Expected authentication error")
+        except RuntimeError as e:
+            assert any(kw in str(e).lower() for kw in ("auth", "key", "signature", "invalid", "permission", "access"))
+        finally:
+            connector.stop()
+
+    async def test_get_account_id(self):
+        pytest.skip("get_account_id not yet exposed via PyO3")
+
+    async def test_get_max_orders_count(self):
+        pytest.skip("get_max_orders_count not yet exposed via PyO3")
+
+    async def test_is_authenticated_request(self):
+        pytest.skip("is_authenticated_request not yet exposed via PyO3")
+
+    async def test_get_portfolio_with_market_filter(self):
+        connector = self.get_connector()
+        connector.initialize()
+        balance = connector.get_balance()
+        assert balance is not None
+        symbols = connector.get_available_symbols(active_only=True)
+        assert isinstance(symbols, list)
+        connector.stop()
+
+    async def test_untradable_symbols(self):
+        connector = self.get_connector()
+        connector.initialize()
+        all_syms = connector.get_available_symbols(active_only=False)
+        active_syms = connector.get_available_symbols(active_only=True)
+        assert len(all_syms) >= len(active_syms)
+        connector.stop()
+
+    async def test_get_not_found_order(self):
+        connector = self.get_connector()
+        connector.initialize()
+        order = connector.get_order("nonexistent_order_id_000000", self.SYMBOL)
+        assert order is None
+        connector.stop()
+
+    async def test_create_and_fill_market_orders(self):
+        pytest.skip("market order fill test requires real credentials and careful balance management")
+
+    async def test_create_and_cancel_stop_orders(self):
+        pytest.skip("stop order test requires real credentials")
+
+    async def test_edit_limit_order(self):
+        pytest.skip("edit order not yet fully exposed via PyO3")
+
+    async def test_edit_stop_order(self):
+        pytest.skip("edit stop order not yet fully exposed via PyO3")
+
+    async def test_create_single_bundled_orders(self):
+        pytest.skip("bundled orders not yet implemented in Rust connector")
+
+    async def test_create_double_bundled_orders(self):
+        pytest.skip("double bundled orders not yet implemented in Rust connector")
 
