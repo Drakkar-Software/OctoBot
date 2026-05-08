@@ -21,11 +21,14 @@ import uuid
 
 import dbos
 
+import octobot_protocol.models as protocol_models
+
 import octobot_node.config
 import octobot_node.constants
 import octobot_node.models
 import octobot_node.scheduler
 import octobot_node.scheduler.workflows_util as workflows_util
+import octobot_node.scheduler.protocol as protocol
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +62,13 @@ def get_node_status() -> dict[str, str | int | None | uuid.UUID]:
         "sqlite_file": octobot_node.config.settings.SCHEDULER_SQLITE_FILE if not octobot_node.config.settings.SCHEDULER_POSTGRES_URL else None,
     }
 
+
+async def get_automations_state(wallet_address: typing.Optional[str]) -> protocol_models.AutomationsState:
+    return await octobot_node.scheduler.SCHEDULER.get_automations_state(wallet_address)
+
+
+async def get_accounts_state() -> protocol_models.AccountsState:
+    return await octobot_node.scheduler.SCHEDULER.get_accounts_state()
 
 
 async def get_task_metrics(

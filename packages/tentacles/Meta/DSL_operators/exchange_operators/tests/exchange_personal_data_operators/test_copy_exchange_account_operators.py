@@ -39,7 +39,13 @@ from tentacles.Meta.DSL_operators.exchange_operators.tests import (
 STRATEGY_ID = "test-copy-strategy-id"
 REFERENCE_MARKET = "USDT"
 REFERENCE_ACCOUNT_JSON = json.dumps(
-    {"content": {"BTC": {"available": "0.01", "total": "0.01"}}},
+    {
+        "version": "1.0.0",
+        "updated_at": 1710000000.0,
+        "copied_assets": [
+            {"name": "BTC", "total": 0.01, "available": 0.01, "ratio": 1.0},
+        ],
+    },
     separators=(",", ":"),
 )
 

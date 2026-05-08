@@ -28,6 +28,7 @@ root_patterns = [
     "/packages/node",
     "/packages/flow",
     "/packages/copy",
+    "/packages/protocol",
     "/packages/services",
     "/packages/sync",
     "/packages/tentacles_manager",

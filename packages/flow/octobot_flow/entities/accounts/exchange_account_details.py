@@ -15,7 +15,14 @@ class ExchangeAccountPortfolio(octobot_commons.dataclasses.MinimizableDataclass,
 
 
 @dataclasses.dataclass
+class ExchangeAccountMetadata(octobot_commons.dataclasses.MinimizableDataclass):
+    id: str = ""
+    name: str = ""
+
+
+@dataclasses.dataclass
 class ExchangeAccountDetails(octobot_commons.dataclasses.MinimizableDataclass):
+    metadata: ExchangeAccountMetadata = dataclasses.field(default_factory=ExchangeAccountMetadata, repr=True)
     exchange_details: profile_data_import.ExchangeData = dataclasses.field(
         default_factory=profile_data_import.ExchangeData, repr=True
     )

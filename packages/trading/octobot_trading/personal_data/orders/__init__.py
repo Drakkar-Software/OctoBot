@@ -148,6 +148,11 @@ from octobot_trading.personal_data.orders.order_util import (
     get_enriched_orders_by_exchange_id,
     get_symbol_count,
 )
+from octobot_trading.personal_data.orders import protocol
+from octobot_trading.personal_data.orders.protocol import (
+    exchange_columns_dict_from_protocol_order,
+    to_protocol_order,
+)
 from octobot_trading.personal_data.orders import orders_storage_operations
 from octobot_trading.personal_data.orders.orders_storage_operations import (
     apply_order_storage_details_if_any,
@@ -314,4 +319,6 @@ __all__ = [
     "TrailingStopLimitOrder",
     "get_enriched_orders_by_exchange_id",
     "get_symbol_count",
+    "to_protocol_order",
+    "exchange_columns_dict_from_protocol_order",
 ]

@@ -46,6 +46,22 @@ class OctoBotActionsJobDescription(octobot_commons.dataclasses.MinimizableDatacl
         if self.params:
             self._parse_actions_plan(self.params)
 
+    @staticmethod
+    def parse_task_description(description: typing.Union[str, dict]) -> dict:
+        try:
+            parsed_description = workflows_util.get_automation_dict(description)
+        except ValueError:
+            if isinstance(description, dict):
+                parsed_description = description
+            else:
+                # description is a JSON string with key/value parameters: store it in params
+                dict_description = json.loads(description)
+                parsed_description = {
+                    "params": dict_description
+                }
+        return parsed_description
+
+
     def _parse_actions_plan(self, params: dict) -> None:
         to_add_actions_dag = octobot_flow.parsers.ActionsDAGParser(params).parse()
         if not to_add_actions_dag:
@@ -96,7 +112,7 @@ class OctoBotActionsJob:
         result: OctoBotActionsJobResult,
         wallet_address: typing.Optional[str] = None,
     ):
-        parsed_description = self._parse_description(description)
+        parsed_description = OctoBotActionsJobDescription.parse_task_description(description)
         self.description: OctoBotActionsJobDescription = OctoBotActionsJobDescription.from_dict(
             parsed_description
         )
@@ -113,20 +129,6 @@ class OctoBotActionsJob:
         ]
         self.after_execution_state = None
         self.result: OctoBotActionsJobResult = result
-
-    def _parse_description(self, description: typing.Union[str, dict]) -> dict:
-        try:
-            parsed_description = workflows_util.get_automation_dict(description)
-        except ValueError:
-            if isinstance(description, dict):
-                parsed_description = description
-            else:
-                # description is a JSON string with key/value parameters: store it in params
-                dict_description = json.loads(description)
-                parsed_description = {
-                    "params": dict_description
-                }
-        return parsed_description
 
     async def run(self) -> None:
         async with octobot_flow.jobs.AutomationJob(

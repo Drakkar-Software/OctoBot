@@ -29,6 +29,8 @@ import octobot_trading.dsl as trading_dsl
 import octobot_trading.exchanges
 import octobot_trading.modes
 
+import octobot_protocol.models as protocol_models
+
 import octobot_copy.copiers
 import octobot_copy.entities
 import octobot_copy.constants
@@ -48,13 +50,14 @@ def create_copy_exchange_account_operators(
         DESCRIPTION = (
             "Rebalances the copier exchange toward the reference account allocation. "
             "strategy_id identifies the copied community strategy (first parameter; used for copy-trading dependencies). "
-            "reference_account is JSON for octobot_copy.entities.Account (portfolio content, orders, positions). "
+            "reference_account is JSON for octobot_protocol.models.CopiedAccount "
+            "(version, updated_at, copied_assets; optional orders, positions, historical_snapshots). "
             "account_copy_settings is optional JSON for AccountCopySettings; "
             "reference market comes from the copier portfolio."
         )
         EXAMPLE = (
             r"""copy_exchange_account(strategy_id='community-strategy-1', reference_market='USDT', """
-            r"""reference_account='{"content":{"BTC":{"available":"0.01","total":"0.01"}}}', """
+            r"""reference_account='{"version":"1.0.0","updated_at":1710000000,"copied_assets":[{"name":"BTC","total":1,"available":1,"ratio":1}]}', """
             r"""account_copy_settings='{"reference_market_ratio":"1","allow_skip_asset":false}')"""
         )
 
@@ -86,8 +89,8 @@ def create_copy_exchange_account_operators(
                 dsl_interpreter.OperatorParameter(
                     name="reference_account",
                     description=(
-                        "JSON string for Account: fields content (asset -> available/total amounts), "
-                        "optional orders and positions lists."
+                        "JSON string for CopiedAccount: required version, updated_at, copied_assets "
+                        "(list of {name, total, available, ratio}); optional orders, positions, historical_snapshots."
                     ),
                     required=True,
                     type=str,
@@ -106,7 +109,7 @@ def create_copy_exchange_account_operators(
                 ),
             ] + super().get_re_callable_parameters()
 
-        def _parse_reference_account(self, raw: typing.Any) -> octobot_copy.entities.Account:
+        def _parse_reference_account(self, raw: typing.Any) -> protocol_models.CopiedAccount:
             if raw is None:
                 raise commons_errors.InvalidParameterFormatError("reference_account is required")
             if isinstance(raw, dict):
@@ -126,7 +129,9 @@ def create_copy_exchange_account_operators(
                 raise commons_errors.InvalidParameterFormatError(
                     "reference_account JSON must deserialize to an object"
                 )
-            return octobot_copy.entities.Account.from_dict(payload)
+            copied = protocol_models.CopiedAccount.model_validate(payload)
+            octobot_copy.entities.sort_historical_snapshots(copied)
+            return copied
 
         def get_dependencies(self) -> list[dsl_interpreter.InterpreterDependency]:
             dependencies = super().get_dependencies()
@@ -146,7 +151,8 @@ def create_copy_exchange_account_operators(
             # there are account details: add symbol dependencies
             ref_market = params.get("reference_market")
             seen: set[str] = set()
-            for asset in reference_account.content:
+            for copied_asset in reference_account.copied_assets or []:
+                asset = copied_asset.name
                 if asset == ref_market:
                     continue
                 symbol = symbol_util.merge_currencies(asset, ref_market)

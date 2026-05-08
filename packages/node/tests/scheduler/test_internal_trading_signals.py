@@ -1,4 +1,5 @@
 import asyncio
+import time
 
 import mock
 import pytest
@@ -11,7 +12,8 @@ import octobot_flow.entities as flow_entities
 import octobot_flow.repositories.community.trading_signals_channel as trading_signals_channel
 import octobot_flow.repositories.community.trading_signals_repository as trading_signals_repository
 import octobot_node.scheduler.internal_trading_signals as internal_trading_signals
-import octobot_copy.entities as copy_entities
+import octobot_copy.constants as copy_constants
+import octobot_protocol.models as protocol_models
 
 
 def _channel_name() -> str:
@@ -62,7 +64,14 @@ async def test_insert_trading_signal_completes_without_error_after_subscribe():
         ) as upload_trading_signal_mock,
     ):
         await internal_trading_signals.subscribe_internal_trading_signal_consumer()
-        signal = flow_entities.TradingSignal(account=copy_entities.Account(), strategy_id="test-strategy-id")
+        signal = flow_entities.TradingSignal(
+            account=protocol_models.CopiedAccount(
+                version=copy_constants.COPIED_ACCOUNT_VERSION,
+                updated_at=time.time(),
+                copied_assets=[],
+            ),
+            strategy_id="test-strategy-id",
+        )
         repository = trading_signals_repository.TradingSignalsRepository(object())  # type: ignore[arg-type]
         await repository.insert_trading_signal(signal)
         upload_trading_signal_mock.assert_called_once_with(signal)

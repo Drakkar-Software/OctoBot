@@ -16,10 +16,10 @@
 import decimal
 import importlib.util
 import pathlib
+import time
 
 import pytest
 
-import octobot_commons.constants as commons_constants
 import octobot_trading.api as trading_api
 import octobot_trading.constants as trading_constants
 import octobot_trading.enums as trading_enums
@@ -28,6 +28,7 @@ import octobot_copy.constants as copy_constants
 import octobot_copy.copiers.account_copier_factory as account_copier_factory
 import octobot_copy.entities as copy_entities
 import octobot_copy.enums as copy_enums
+import octobot_protocol.models as protocol_models
 
 
 def _load_copy_tests_python_helpers():
@@ -45,6 +46,21 @@ pytestmark = pytest.mark.asyncio
 _BTC_USDT = "BTC/USDT"
 _ETH_USDT = "ETH/USDT"
 _ADA_USDT = "ADA/USDT"
+
+
+def _copied_reference_account(
+    *assets: tuple[str, float, float],
+) -> protocol_models.CopiedAccount:
+    """Build a CopiedAccount from (name, spot_amount, ratio) rows; spot_amount is both total and available."""
+    return protocol_models.CopiedAccount(
+        version=copy_constants.COPIED_ACCOUNT_VERSION,
+        updated_at=time.time(),
+        copied_assets=[
+            protocol_models.CopiedAsset(name=name, total=value, available=value, ratio=ratio)
+            for name, value, ratio in assets
+        ],
+        orders=[],
+    )
 
 
 @pytest.mark.parametrize("backtesting_config", ["USDT"], indirect=True)
@@ -71,18 +87,9 @@ async def test_rebalance_plan_and_execution_70_30_to_50_50_btc_usdt_optimized_pa
     portfolio_manager.portfolio_value_holder.value_converter.missing_currency_data_in_exchange.discard("USDT")
     portfolio_manager.handle_mark_price_update(_BTC_USDT, btc_usdt_price)
 
-    reference_account = copy_entities.Account(
-        content={
-            "BTC": {
-                commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("1"),
-                copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.5"),
-            },
-            "USDT": {
-                commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("1"),
-                copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.5"),
-            },
-        },
-        orders=[],
+    reference_account = _copied_reference_account(
+        ("BTC", 1.0, 0.5),
+        ("USDT", 1.0, 0.5),
     )
     copy_settings = copy_entities.AccountCopySettings()
     copier = account_copier_factory.create_account_copier(
@@ -149,18 +156,9 @@ async def test_rebalance_plan_and_execution_20_80_to_50_50_btc_usdt_optimized_pa
     portfolio_manager.portfolio_value_holder.value_converter.missing_currency_data_in_exchange.discard("USDT")
     portfolio_manager.handle_mark_price_update(_BTC_USDT, btc_usdt_price)
 
-    reference_account = copy_entities.Account(
-        content={
-            "BTC": {
-                commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("1"),
-                copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.5"),
-            },
-            "USDT": {
-                commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("1"),
-                copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.5"),
-            },
-        },
-        orders=[],
+    reference_account = _copied_reference_account(
+        ("BTC", 1.0, 0.5),
+        ("USDT", 1.0, 0.5),
     )
     copy_settings = copy_entities.AccountCopySettings()
     copier = account_copier_factory.create_account_copier(
@@ -228,18 +226,9 @@ async def test_rebalance_plan_and_execution_two_asset_dust_falls_back_to_full_se
     portfolio_manager.portfolio_value_holder.value_converter.missing_currency_data_in_exchange.discard("USDT")
     portfolio_manager.handle_mark_price_update(_BTC_USDT, btc_usdt_price)
 
-    reference_account = copy_entities.Account(
-        content={
-            "BTC": {
-                commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("1"),
-                copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.5"),
-            },
-            "USDT": {
-                commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("1"),
-                copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.5"),
-            },
-        },
-        orders=[],
+    reference_account = _copied_reference_account(
+        ("BTC", 1.0, 0.5),
+        ("USDT", 1.0, 0.5),
     )
     copy_settings = copy_entities.AccountCopySettings(
         rebalance_trigger_min_ratio=decimal.Decimal("0"),
@@ -296,18 +285,9 @@ async def test_rebalance_plan_and_execution_80_btc_20_eth_to_50_btc_50_ada(backt
     portfolio_manager.handle_mark_price_update(_ETH_USDT, eth_usdt_price)
     portfolio_manager.handle_mark_price_update(_ADA_USDT, ada_usdt_price)
 
-    reference_account = copy_entities.Account(
-        content={
-            "BTC": {
-                commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("1"),
-                copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.5"),
-            },
-            "ADA": {
-                commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("1"),
-                copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.5"),
-            },
-        },
-        orders=[],
+    reference_account = _copied_reference_account(
+        ("ADA", 1.0, 0.5),
+        ("BTC", 1.0, 0.5),
     )
     copy_settings = copy_entities.AccountCopySettings()
     copier = account_copier_factory.create_account_copier(
@@ -372,18 +352,9 @@ async def test_rebalance_plan_and_execution_100_usdt_to_50_btc_50_eth(backtestin
     portfolio_manager.handle_mark_price_update(_BTC_USDT, btc_usdt_price)
     portfolio_manager.handle_mark_price_update(_ETH_USDT, eth_usdt_price)
 
-    reference_account = copy_entities.Account(
-        content={
-            "BTC": {
-                commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("1"),
-                copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.5"),
-            },
-            "ETH": {
-                commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("1"),
-                copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.5"),
-            },
-        },
-        orders=[],
+    reference_account = _copied_reference_account(
+        ("BTC", 1.0, 0.5),
+        ("ETH", 1.0, 0.5),
     )
     copy_settings = copy_entities.AccountCopySettings()
     copier = account_copier_factory.create_account_copier(

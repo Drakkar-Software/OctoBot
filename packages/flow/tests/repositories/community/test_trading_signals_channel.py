@@ -4,11 +4,13 @@ import json
 import mock
 import pytest
 import pytest_asyncio
+import time
 
 import async_channel.channels as async_channel_channels
 
 import octobot_commons.json_util as json_util_module
-import octobot_copy.entities as copy_entities
+import octobot_copy.constants as copy_constants
+import octobot_protocol.models as protocol_models
 
 import octobot_flow.entities
 import octobot_flow.repositories.community.trading_signals_channel as trading_signals_channel
@@ -46,7 +48,11 @@ async def test_insert_trading_signal_delivers_to_subscriber(internal_channel_nam
     channel = await trading_signals_channel.get_or_create_internal_trading_signal_channel()
     await channel.new_consumer(capture_callback)
 
-    account = copy_entities.Account()
+    account = protocol_models.CopiedAccount(
+        version=copy_constants.COPIED_ACCOUNT_VERSION,
+        updated_at=time.time(),
+        copied_assets=[],
+    )
     signal = octobot_flow.entities.TradingSignal(account=account, strategy_id="test-strategy-id")
     repository = trading_signals_repository.TradingSignalsRepository(mock.MagicMock())
     with mock.patch.object(
@@ -84,7 +90,11 @@ async def test_shutdown_internal_trading_signal_channel_allows_recreate(internal
 def _trading_signal(strategy_id: str, updated_at: float) -> octobot_flow.entities.TradingSignal:
     return octobot_flow.entities.TradingSignal(
         strategy_id=strategy_id,
-        account=copy_entities.Account(updated_at=updated_at),
+        account=protocol_models.CopiedAccount(
+            version=copy_constants.COPIED_ACCOUNT_VERSION,
+            updated_at=updated_at,
+            copied_assets=[],
+        ),
     )
 
 
@@ -181,12 +191,18 @@ class TestMergeTradingSignalDocuments:
         json.dumps(merged)
 
     def test_merge_with_portfolio_decimals_is_sanitized(self):
-        """Mirrors sync JSON: portfolio totals are Decimals in-domain but must become floats after merge."""
-        account_with_decimals = copy_entities.Account(
+        """Mirrors sync JSON: copied_asset totals may be Decimals in-domain but must become floats after merge."""
+        account_with_decimals = protocol_models.CopiedAccount(
+            version=copy_constants.COPIED_ACCOUNT_VERSION,
             updated_at=1.0,
-            content={
-                "USDC": {"total": decimal.Decimal("1000.5"), "available": decimal.Decimal("1000.5")},
-            },
+            copied_assets=[
+                protocol_models.CopiedAsset(
+                    name="USDC",
+                    total=float(decimal.Decimal("1000.5")),
+                    available=float(decimal.Decimal("1000.5")),
+                    ratio=1.0,
+                ),
+            ],
         )
         signal = octobot_flow.entities.TradingSignal(strategy_id="s", account=account_with_decimals)
         merged = trading_signals_repository._merge_trading_signal_documents(
@@ -195,4 +211,7 @@ class TestMergeTradingSignalDocuments:
         )
         _assert_no_decimal_leaves(merged)
         json.dumps(merged)
-        assert merged["signals"][0]["account"]["content"]["USDC"]["total"] == 1000.5
+        usdc_row = merged["signals"][0]["account"]["copied_assets"][0]
+        assert usdc_row["name"] == "USDC"
+        assert usdc_row["total"] == 1000.5
+        assert usdc_row["available"] == 1000.5

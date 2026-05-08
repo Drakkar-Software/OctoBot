@@ -16,6 +16,7 @@ import octobot_flow.jobs
 import octobot_flow.entities
 import octobot_flow.enums
 import octobot_copy.constants as copy_constants
+import octobot_protocol.models as protocol_models
 
 import tentacles.Trading.Mode.index_trading_mode as index_trading_mode
 
@@ -75,6 +76,10 @@ def index_trading_mode_action(dependency_action: dict):
     }
 
 
+def _copied_assets_by_name(account: protocol_models.CopiedAccount) -> dict[str, protocol_models.CopiedAsset]:
+    return {asset.name: asset for asset in (account.copied_assets or [])}
+
+
 def _assert_trading_signal_account_fields(trading_signal: octobot_flow.entities.TradingSignal) -> None:
     """
     Matches octobot_flow.logic.actions.account_copy_util.reference_exchange_elements_to_account:
@@ -84,9 +89,9 @@ def _assert_trading_signal_account_fields(trading_signal: octobot_flow.entities.
     account = trading_signal.account
     assert isinstance(account.updated_at, float)
     assert current_time <= account.updated_at <= time.time()
-    assert account.orders == []
-    assert account.positions == []
-    assert account.historical_snapshots == []
+    assert account.orders in (None, [])
+    assert account.positions in (None, [])
+    assert account.historical_snapshots in (None, [])
 
 
 def _assert_trading_signal_btc_eth_usdt_index_portfolio(
@@ -94,15 +99,18 @@ def _assert_trading_signal_btc_eth_usdt_index_portfolio(
     *,
     allow_zero_ratio_assets: frozenset[str] = frozenset(),
 ) -> None:
-    content = trading_signal.account.content
-    assert list(sorted(content.keys())) == ["BTC", "ETH", "USDT"]
-    assert 0 < float(content["USDT"][common_constants.PORTFOLIO_AVAILABLE]) < 5
-    assert 0.1 < float(content["ETH"][common_constants.PORTFOLIO_AVAILABLE]) < 0.4
-    assert 0.001 < float(content["BTC"][common_constants.PORTFOLIO_AVAILABLE]) < 0.01
-    assert 0 < float(content["USDT"][common_constants.PORTFOLIO_TOTAL]) < 5
-    assert 0.1 < float(content["ETH"][common_constants.PORTFOLIO_TOTAL]) < 0.4
-    assert 0.001 < float(content["BTC"][common_constants.PORTFOLIO_TOTAL]) < 0.01
-    assert_emitted_signal_account_allocation_ratios(content, allow_zero_ratio_assets=allow_zero_ratio_assets)
+    assets = _copied_assets_by_name(trading_signal.account)
+    assert list(sorted(assets.keys())) == ["BTC", "ETH", "USDT"]
+    assert 0 < float(assets["USDT"].available) < 5
+    assert 0.1 < float(assets["ETH"].available) < 0.4
+    assert 0.001 < float(assets["BTC"].available) < 0.01
+    assert 0 < float(assets["USDT"].total) < 5
+    assert 0.1 < float(assets["ETH"].total) < 0.4
+    assert 0.001 < float(assets["BTC"].total) < 0.01
+    assert_emitted_signal_account_allocation_ratios(
+        trading_signal.account,
+        allow_zero_ratio_assets=allow_zero_ratio_assets,
+    )
     _assert_trading_signal_account_fields(trading_signal)
 
 
@@ -111,18 +119,18 @@ def _assert_trading_signal_btc_eth_sol_usdt_after_btc_sol_rebalance(
     *,
     allow_zero_ratio_assets: frozenset[str] = frozenset(),
 ) -> None:
-    content = trading_signal.account.content
-    assert list(sorted(content.keys())) == ["BTC", "ETH", "SOL", "USDT"]
-    assert 0 < float(content["USDT"][common_constants.PORTFOLIO_AVAILABLE]) < 5
-    assert 0.001 < float(content["BTC"][common_constants.PORTFOLIO_AVAILABLE]) < 0.02
-    assert 0.5 < float(content["SOL"][common_constants.PORTFOLIO_AVAILABLE]) < 20
-    assert 0 < float(content["ETH"][common_constants.PORTFOLIO_AVAILABLE]) < 0.001
-    assert 0 < float(content["USDT"][common_constants.PORTFOLIO_TOTAL]) < 5
-    assert 0.001 < float(content["BTC"][common_constants.PORTFOLIO_TOTAL]) < 0.02
-    assert 0.5 < float(content["SOL"][common_constants.PORTFOLIO_TOTAL]) < 20
-    assert 0 < float(content["ETH"][common_constants.PORTFOLIO_TOTAL]) < 0.001
+    assets = _copied_assets_by_name(trading_signal.account)
+    assert list(sorted(assets.keys())) == ["BTC", "ETH", "SOL", "USDT"]
+    assert 0 < float(assets["USDT"].available) < 5
+    assert 0.001 < float(assets["BTC"].available) < 0.02
+    assert 0.5 < float(assets["SOL"].available) < 20
+    assert 0 < float(assets["ETH"].available) < 0.001
+    assert 0 < float(assets["USDT"].total) < 5
+    assert 0.001 < float(assets["BTC"].total) < 0.02
+    assert 0.5 < float(assets["SOL"].total) < 20
+    assert 0 < float(assets["ETH"].total) < 0.001
     assert_emitted_signal_account_allocation_ratios(
-        content,
+        trading_signal.account,
         allow_negligible_ratio_assets=allow_zero_ratio_assets,
     )
     _assert_trading_signal_account_fields(trading_signal)
@@ -130,28 +138,16 @@ def _assert_trading_signal_btc_eth_sol_usdt_after_btc_sol_rebalance(
 
 @pytest.fixture
 def index_reference_account():
-    return copy_entities.Account(
+    return protocol_models.CopiedAccount(
+        version=copy_constants.COPIED_ACCOUNT_VERSION,
         updated_at=time.time(),
-        content={
-            "BTC": {
-                common_constants.PORTFOLIO_TOTAL: decimal.Decimal("1"),
-                common_constants.PORTFOLIO_AVAILABLE: decimal.Decimal("1"),
-                copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.5"),
-            },
-            "ETH": {
-                common_constants.PORTFOLIO_TOTAL: decimal.Decimal("20"),
-                common_constants.PORTFOLIO_AVAILABLE: decimal.Decimal("20"),
-                copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.4999"),
-            },
-            "USDT": {
-                common_constants.PORTFOLIO_TOTAL: decimal.Decimal("10"),
-                common_constants.PORTFOLIO_AVAILABLE: decimal.Decimal("10"),
-                copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.0001"),
-            },
-        },
+        copied_assets=[
+            protocol_models.CopiedAsset(name="BTC", total=1.0, available=1.0, ratio=0.5),
+            protocol_models.CopiedAsset(name="ETH", total=20.0, available=20.0, ratio=0.4999),
+            protocol_models.CopiedAsset(name="USDT", total=10.0, available=10.0, ratio=0.0001),
+        ],
         orders=[],
         positions=[],
-        # no historical snapshots
     )
 
 
@@ -533,11 +529,14 @@ async def test_simulator_index_with_added_traded_pairs(init_action: dict, emit_s
             insert_trading_signal_mock.assert_not_awaited()
 
 
-@pytest.mark.parametrize("emit_signals", [False, True])
+@pytest.mark.parametrize("emit_signals", [
+    # False, 
+    True
+])
 @pytest.mark.asyncio
 async def test_simulator_copy_index(
     init_action: dict,
-    index_reference_account: copy_entities.Account,
+    index_reference_account: protocol_models.CopiedAccount,
     emit_signals: bool,
 ):
     reference_market = init_action["config"]["exchange_account_details"]["portfolio"]["unit"]

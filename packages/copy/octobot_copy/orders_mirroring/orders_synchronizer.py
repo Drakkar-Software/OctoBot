@@ -5,6 +5,7 @@ import typing
 import octobot_commons.constants as commons_constants
 import octobot_commons.logging as logging
 import octobot_commons.symbols.symbol_util as symbol_util
+import octobot_protocol.models as protocol_models
 import octobot_trading.constants as trading_constants
 import octobot_trading.errors as trading_errors
 import octobot_trading.enums as trading_enums
@@ -20,7 +21,7 @@ class OrdersSynchronizer:
 
     def __init__(
         self,
-        reference_account: copy_entities.Account,
+        reference_account: protocol_models.CopiedAccount,
         exchange_interface: copy_exchange.ExchangeInterface,
         copy_settings: copy_entities.AccountCopySettings,
     ) -> None:
@@ -32,48 +33,33 @@ class OrdersSynchronizer:
 
     def _get_replicable_reference_orders_from(
         self,
-        reference_account: copy_entities.Account,
-    ) -> list[dict[str, typing.Any]]:
-        replicable: list[dict[str, typing.Any]] = []
-        for order in reference_account.orders:
-            if trading_constants.STORAGE_ORIGIN_VALUE not in order:
+        reference_account: protocol_models.CopiedAccount,
+    ) -> list[protocol_models.Order]:
+        replicable: list[protocol_models.Order] = []
+        for order in reference_account.orders or []:
+            if order.status != protocol_models.OrderStatus.OPEN:
                 continue
-            origin = order[trading_constants.STORAGE_ORIGIN_VALUE]
-            if (
-                origin.get(trading_enums.ExchangeConstantsOrderColumns.STATUS.value)
-                != trading_enums.OrderStatus.OPEN.value
-            ):
+            if not order.is_active:
                 continue
-            if origin.get(trading_enums.ExchangeConstantsOrderColumns.SELF_MANAGED.value, False):
-                continue
-            if origin.get(trading_enums.ExchangeConstantsOrderColumns.IS_ACTIVE.value, True) is False:
-                continue
-            _, trader_order_type = trading_personal_data.parse_order_type(origin)
+            raw = trading_personal_data.exchange_columns_dict_from_protocol_order(order)
+            _side, trader_order_type = trading_personal_data.parse_order_type(raw)
             if trader_order_type in (
                 trading_enums.TraderOrderType.BUY_MARKET,
                 trading_enums.TraderOrderType.SELL_MARKET,
             ):
-                # ignore market orders: they can't be replicated
                 continue
             replicable.append(order)
         return replicable
 
-    def _get_replicable_reference_orders(self) -> list[dict[str, typing.Any]]:
+    def _get_replicable_reference_orders(self) -> list[protocol_models.Order]:
         return self._get_replicable_reference_orders_from(self._reference_account)
 
-    def _active_reference_order_ids(self, replicable: list[dict[str, typing.Any]]) -> set:
-        return {
-            str(
-                order[trading_constants.STORAGE_ORIGIN_VALUE][
-                    trading_enums.ExchangeConstantsOrderColumns.ID.value
-                ]
-            )
-            for order in replicable
-        }
+    def _active_reference_order_ids(self, replicable: list[protocol_models.Order]) -> set:
+        return {str(order.id) for order in replicable}
 
     async def cancel_orders_pending_synchronization(
         self,
-        replicable_orders: typing.Optional[list[dict[str, typing.Any]]],
+        replicable_orders: typing.Optional[list[protocol_models.Order]],
     ) -> int:
         """
         Cancel mirrored copier open orders that no longer match a replicable reference open order
@@ -118,7 +104,7 @@ class OrdersSynchronizer:
 
     def _reference_state_complies_with_copier_for_grace(
         self,
-        reference_state: copy_entities.Account,
+        reference_state: protocol_models.CopiedAccount,
     ) -> bool:
         replicable = self._get_replicable_reference_orders_from(reference_state)
         active_reference_ids = self._active_reference_order_ids(replicable)
@@ -182,7 +168,7 @@ class OrdersSynchronizer:
     def _reference_pair_leg_share(
         self,
         symbol: str,
-        reference_state: typing.Optional[copy_entities.Account] = None,
+        reference_state: typing.Optional[protocol_models.CopiedAccount] = None,
     ) -> typing.Optional[decimal.Decimal]:
         reference_account = reference_state or self._reference_account
         parsed = symbol_util.parse_symbol(symbol)
@@ -190,15 +176,13 @@ class OrdersSynchronizer:
         quote_currency = parsed.quote
         if not base_currency or not quote_currency:
             return None
-        reference_content = reference_account.content
-        if base_currency not in reference_content:
+        ratios = copy_entities.copied_asset_ratio_by_name(reference_account)
+        if base_currency not in ratios:
             return trading_constants.ZERO
-        if quote_currency not in reference_content:
+        if quote_currency not in ratios:
             return trading_constants.ONE
-        base_holdings = reference_content[base_currency] or {}
-        quote_holdings = reference_content[quote_currency] or {}
-        allocation_base = base_holdings.get(copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO, trading_constants.ZERO)
-        allocation_quote = quote_holdings.get(copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO, trading_constants.ZERO)
+        allocation_base = ratios[base_currency]
+        allocation_quote = ratios[quote_currency]
         pair_denom = allocation_base + allocation_quote
         if pair_denom <= trading_constants.ZERO:
             return None
@@ -228,14 +212,16 @@ class OrdersSynchronizer:
             return None
         return market_price
 
-    def _reference_order_execution_price_from_origin(self, origin: dict) -> typing.Optional[decimal.Decimal]:
-        symbol = origin[trading_enums.ExchangeConstantsOrderColumns.SYMBOL.value]
-        price_val = origin[trading_enums.ExchangeConstantsOrderColumns.PRICE.value]
+    def _reference_order_execution_price_from_protocol(
+        self,
+        order: protocol_models.Order,
+    ) -> typing.Optional[decimal.Decimal]:
+        price_val = order.price
         if price_val not in (None, ""):
             parsed_price = decimal.Decimal(str(price_val))
             if parsed_price > trading_constants.ZERO:
                 return parsed_price
-        market_price, _ = self._exchange_interface.market.get_potentially_outdated_price(symbol)
+        market_price, _ = self._exchange_interface.market.get_potentially_outdated_price(order.symbol)
         if market_price <= trading_constants.ZERO:
             return None
         return market_price
@@ -302,31 +288,29 @@ class OrdersSynchronizer:
 
     def _simulated_reference_pair_leg_share_after_order_fill(
         self,
-        origin: dict,
-        reference_state: typing.Optional[copy_entities.Account] = None,
+        order: protocol_models.Order,
+        reference_state: typing.Optional[protocol_models.CopiedAccount] = None,
     ) -> typing.Optional[decimal.Decimal]:
         reference_account = reference_state or self._reference_account
-        symbol = origin[trading_enums.ExchangeConstantsOrderColumns.SYMBOL.value]
+        symbol = order.symbol
         parsed = symbol_util.parse_symbol(symbol)
         base_currency = parsed.base
         quote_currency = parsed.quote
         if not base_currency or not quote_currency:
             return None
-        side, _trader_order_type = trading_personal_data.parse_order_type(origin)
+        raw = trading_personal_data.exchange_columns_dict_from_protocol_order(order)
+        side, _trader_order_type = trading_personal_data.parse_order_type(raw)
         if side is None:
             return None
-        execution_price = self._reference_order_execution_price_from_origin(origin)
+        execution_price = self._reference_order_execution_price_from_protocol(order)
         if execution_price is None:
             return None
-        amount_raw = origin[trading_enums.ExchangeConstantsOrderColumns.AMOUNT.value]
-        order_quantity = decimal.Decimal(str(amount_raw))
+        order_quantity = decimal.Decimal(str(order.quantity))
         if order_quantity <= trading_constants.ZERO:
             return None
-        reference_content = reference_account.content
-        base_holdings = reference_content.get(base_currency, {}) or {}
-        quote_holdings = reference_content.get(quote_currency, {}) or {}
-        base_total = base_holdings.get(commons_constants.PORTFOLIO_TOTAL, trading_constants.ZERO)
-        quote_total = quote_holdings.get(commons_constants.PORTFOLIO_TOTAL, trading_constants.ZERO)
+        values = copy_entities.copied_asset_total_by_name(reference_account)
+        base_total = values.get(base_currency, trading_constants.ZERO)
+        quote_total = values.get(quote_currency, trading_constants.ZERO)
         if side is trading_enums.TradeOrderSide.BUY:
             base_adjusted = base_total + order_quantity
             quote_adjusted = quote_total - order_quantity * execution_price
@@ -339,15 +323,14 @@ class OrdersSynchronizer:
 
     def _passes_late_reference_fill_heuristic(
         self,
-        order: dict,
-        reference_state: typing.Optional[copy_entities.Account] = None,
+        order: protocol_models.Order,
+        reference_state: typing.Optional[protocol_models.CopiedAccount] = None,
     ) -> bool:
-        origin = order[trading_constants.STORAGE_ORIGIN_VALUE]
-        symbol = origin[trading_enums.ExchangeConstantsOrderColumns.SYMBOL.value]
+        symbol = order.symbol
         max_delta = self._copy_settings.mirrored_orphan_grace_pair_ratio_max_delta
         copier_share = self._copier_pair_leg_share(symbol)
         simulated_reference_share = self._simulated_reference_pair_leg_share_after_order_fill(
-            origin,
+            order,
             reference_state,
         )
         if copier_share is None or simulated_reference_share is None:
@@ -356,51 +339,44 @@ class OrdersSynchronizer:
 
     def _is_late_reference_fill_for_order(
         self,
-        order: dict,
+        order: protocol_models.Order,
         orphan_orders: list[trading_personal_data.Order],
-        reference_state: typing.Optional[copy_entities.Account] = None,
+        reference_state: typing.Optional[protocol_models.CopiedAccount] = None,
     ) -> bool:
-        origin = order[trading_constants.STORAGE_ORIGIN_VALUE]
-        reference_order_id = str(origin[trading_enums.ExchangeConstantsOrderColumns.ID.value])
+        reference_order_id = str(order.id)
         if self._find_open_order_by_bot_order_id(reference_order_id) is not None:
             return False
-        reference_side, _trader_order_type = trading_personal_data.parse_order_type(origin)
+        raw = trading_personal_data.exchange_columns_dict_from_protocol_order(order)
+        reference_side, _trader_order_type = trading_personal_data.parse_order_type(raw)
         if reference_side is None:
             return False
-        reference_symbol = origin[trading_enums.ExchangeConstantsOrderColumns.SYMBOL.value]
-        timestamp_raw = origin.get(trading_enums.ExchangeConstantsOrderColumns.TIMESTAMP.value)
-        reference_timestamp: typing.Optional[float] = None
-        if timestamp_raw not in (None, ""):
+        reference_symbol = order.symbol
+        reference_timestamp = order.created_at.timestamp()
+        for orphan_order in orphan_orders:
+            if orphan_order.symbol != reference_symbol:
+                continue
+            if orphan_order.side == reference_side:
+                continue
+            orphan_timestamp = orphan_order.creation_time or orphan_order.timestamp
+            if orphan_timestamp is None:
+                continue
             try:
-                reference_timestamp = float(timestamp_raw)
+                orphan_timestamp_float = float(orphan_timestamp)
             except (TypeError, ValueError):
-                reference_timestamp = None
-        if reference_timestamp is not None:
-            for orphan_order in orphan_orders:
-                if orphan_order.symbol != reference_symbol:
-                    continue
-                if orphan_order.side == reference_side:
-                    continue
-                orphan_timestamp = orphan_order.creation_time or orphan_order.timestamp
-                if orphan_timestamp is None:
-                    continue
-                try:
-                    orphan_timestamp_float = float(orphan_timestamp)
-                except (TypeError, ValueError):
-                    continue
-                if reference_timestamp > orphan_timestamp_float:
-                    # reference account order was created after the orphan order, 
-                    # on the same symbol and a different side => it likely is the 
-                    # "other side" equivalent of the orphan order: it's not a late reference fill.
-                    return False
+                continue
+            if reference_timestamp > orphan_timestamp_float:
+                # reference account order was created after the orphan order,
+                # on the same symbol and a different side => it likely is the
+                # "other side" equivalent of the orphan order: it's not a late reference fill.
+                return False
         return self._passes_late_reference_fill_heuristic(order, reference_state)
 
     def _late_reference_fill_candidate_orders(
         self,
-        replicable: list[dict[str, typing.Any]],
+        replicable: list[protocol_models.Order],
         orphan_orders: list[trading_personal_data.Order],
-        reference_state: typing.Optional[copy_entities.Account],
-    ) -> list[dict[str, typing.Any]]:
+        reference_state: typing.Optional[protocol_models.CopiedAccount],
+    ) -> list[protocol_models.Order]:
         return [
             order
             for order in replicable
@@ -410,7 +386,7 @@ class OrdersSynchronizer:
     def _mirrored_orphan_batch_eligible_for_grace(
         self,
         orphan_orders: list[trading_personal_data.Order],
-        reference_state: typing.Optional[copy_entities.Account] = None,
+        reference_state: typing.Optional[protocol_models.CopiedAccount] = None,
     ) -> bool:
         max_delta = self._copy_settings.mirrored_orphan_grace_pair_ratio_max_delta
         for orphan_order in orphan_orders:
@@ -425,7 +401,7 @@ class OrdersSynchronizer:
     def _is_grace_blocking_rebalance(
         self,
         active_reference_ids: set,
-        replicable: list[dict[str, typing.Any]],
+        replicable: list[protocol_models.Order],
     ) -> bool:
         settings = self._copy_settings
         grace_seconds = settings.mirrored_orphan_cancel_grace_seconds
@@ -462,7 +438,7 @@ class OrdersSynchronizer:
 
     def _reference_symbols_skipped_while_grace_orphans_uncancelled(
         self,
-        replicable: list[dict[str, typing.Any]],
+        replicable: list[protocol_models.Order],
     ) -> set[str]:
         """
         Symbols whose mirrored orphan open orders are still on the copier because cancel is deferred
@@ -498,8 +474,7 @@ class OrdersSynchronizer:
             return set()
         symbols = {order.symbol for order in orphan_orders}
         for late_order in late_fill_orders:
-            late_origin = late_order[trading_constants.STORAGE_ORIGIN_VALUE]
-            symbols.add(late_origin[trading_enums.ExchangeConstantsOrderColumns.SYMBOL.value])
+            symbols.add(late_order.symbol)
         return symbols
 
     async def synchronize(self) -> list:
@@ -512,13 +487,12 @@ class OrdersSynchronizer:
         already_synchronized_count = 0
         skipped_grace_upserts: list[tuple[str, typing.Any]] = []
         for order in replicable:
-            origin = order[trading_constants.STORAGE_ORIGIN_VALUE]
-            order_symbol = origin[trading_enums.ExchangeConstantsOrderColumns.SYMBOL.value]
+            order_symbol = order.symbol
             if order_symbol in skip_symbols_for_upsert:
                 skipped_grace_upserts.append(
                     (
                         order_symbol,
-                        origin.get(trading_enums.ExchangeConstantsOrderColumns.ID.value),
+                        order.id,
                     )
                 )
                 continue
@@ -559,7 +533,7 @@ class OrdersSynchronizer:
     async def _cancel_mirrored_orphan_orders(
         self,
         active_reference_ids: set,
-        replicable: list[dict[str, typing.Any]],
+        replicable: list[protocol_models.Order],
     ) -> int:
         orphan_orders = self._mirrored_orphan_open_orders(active_reference_ids)
         return await self._apply_grace_policy_and_cancel_mirrored_orphans(orphan_orders, replicable)
@@ -567,7 +541,7 @@ class OrdersSynchronizer:
     async def _apply_grace_policy_and_cancel_mirrored_orphans(
         self,
         orphan_orders: list[trading_personal_data.Order],
-        replicable: list[dict[str, typing.Any]],
+        replicable: list[protocol_models.Order],
     ) -> int:
         """
         When mirrored orphans exist and/or late-reference-fill candidates exist (or neither, to clear
@@ -709,7 +683,7 @@ class OrdersSynchronizer:
 
     def _scale_mirrored_order_quantity(
         self,
-        origin: dict,
+        order: protocol_models.Order,
         symbol: str,
         side: trading_enums.TradeOrderSide,
     ) -> typing.Optional[decimal.Decimal]:
@@ -717,14 +691,12 @@ class OrdersSynchronizer:
         # holdings ratio. This will need to be adapted for futures (margin/position sizing, not spot wallets).
         parsed = symbol_util.parse_symbol(symbol)
         scale_currency = parsed.quote if side is trading_enums.TradeOrderSide.BUY else parsed.base
-        reference_holdings = self._reference_account.content.get(scale_currency, {})  # type: ignore
-        reference_total = reference_holdings.get(
-            commons_constants.PORTFOLIO_TOTAL, trading_constants.ZERO
-        )
+        values = copy_entities.copied_asset_total_by_name(self._reference_account)
+        reference_total = values.get(scale_currency, trading_constants.ZERO)
         if reference_total <= trading_constants.ZERO:
             return None
         copier_total = self._exchange_interface.portfolio.get_currency_portfolio_total(scale_currency)
-        amount = decimal.Decimal(str(origin[trading_enums.ExchangeConstantsOrderColumns.AMOUNT.value]))
+        amount = decimal.Decimal(str(order.quantity))
         if amount <= trading_constants.ZERO:
             return None
         scale = copier_total / reference_total
@@ -773,16 +745,16 @@ class OrdersSynchronizer:
             )
         return None
 
-    async def _upsert_mirrored_reference_order(self, order: dict) -> tuple[list, int, int]:
-        origin = order[trading_constants.STORAGE_ORIGIN_VALUE]
-        symbol = origin[trading_enums.ExchangeConstantsOrderColumns.SYMBOL.value]
-        side, trader_order_type = trading_personal_data.parse_order_type(origin)
+    async def _upsert_mirrored_reference_order(self, order: protocol_models.Order) -> tuple[list, int, int]:
+        raw = trading_personal_data.exchange_columns_dict_from_protocol_order(order)
+        symbol = order.symbol
+        side, trader_order_type = trading_personal_data.parse_order_type(raw)
         if side is None or trader_order_type is None:
             self._get_logger().info(
                 f"Skipping reference order mirror: unsupported type for {symbol} ({trader_order_type})"
             )
             return [], 0, 0
-        reference_order_id = str(origin[trading_enums.ExchangeConstantsOrderColumns.ID.value])
+        reference_order_id = str(order.id)
         existing = self._find_open_order_by_bot_order_id(reference_order_id)
         replicable_orders = self._get_replicable_reference_orders()
         active_reference_ids = self._active_reference_order_ids(replicable_orders)
@@ -793,10 +765,10 @@ class OrdersSynchronizer:
                 f"reference_order_id={reference_order_id}"
             )
             return [], 0, 0
-        scaled_quantity = self._scale_mirrored_order_quantity(origin, symbol, side)
+        scaled_quantity = self._scale_mirrored_order_quantity(order, symbol, side)
         if scaled_quantity is None or scaled_quantity <= trading_constants.ZERO:
             return [], 0, 0
-        current_price_val = origin[trading_enums.ExchangeConstantsOrderColumns.PRICE.value]
+        current_price_val = order.price
         order_target_price = (
             decimal.Decimal(str(current_price_val))
             if current_price_val not in (None, "")
@@ -819,7 +791,7 @@ class OrdersSynchronizer:
             self._get_logger().error(
                 f"Skipping mirrored order: target quantity is zero: symbol={symbol} "
                 f"order_id={reference_order_id} side={side} type={trader_order_type} "
-                f"origin_order: {origin}"
+                f"protocol_order: {raw}"
             )
             return [], 0, 0
         replace_reason: typing.Optional[str] = None

@@ -16,6 +16,7 @@
 
 import os
 import secrets
+import json
 from collections.abc import Awaitable, Callable
 
 from starfish_server.config.schema import SyncConfig
@@ -29,10 +30,31 @@ import octobot_commons.logging as logging
 import octobot_sync.app as sync_app
 import octobot_sync.auth as auth
 
-# TODO: temporary — replace with proper dependency injection
+
 _get_data: Callable[[str], Awaitable[str | None]] | None = None
 _put_data: Callable[[str, str], Awaitable[None]] | None = None
 
+AUTOMATIONS_STATE_KEY = "automations_state"
+ACCOUNTS_STATE_KEY = "accounts_state"
+
+async def get_data(key: str) -> str | None:
+    import octobot_node.scheduler.api as scheduler_api
+    if key == AUTOMATIONS_STATE_KEY:
+        automations_state = await scheduler_api.get_automations_state(None)
+        return json.dumps(
+            automations_state.model_dump(mode="json")
+        )
+    elif key == ACCOUNTS_STATE_KEY:
+        accounts_state = await scheduler_api.get_accounts_state()
+        return json.dumps(
+            accounts_state.model_dump(mode="json")
+        )
+    return None
+
+async def put_data(key: str, body: str) -> None:
+    _get_logger().error(
+        f"_put_data was called with ({key}, {body}). This is unexpected and should not happen."
+    )
 
 def set_data_callbacks(
     get_data: Callable[[str], Awaitable[str | None]],

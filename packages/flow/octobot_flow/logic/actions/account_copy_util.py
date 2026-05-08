@@ -7,6 +7,9 @@ import octobot_commons.profiles as commons_profiles
 import octobot_commons.symbols as symbol_util
 import octobot_commons.logging as logging
 
+
+import octobot_protocol.models as protocol_models
+
 import octobot_copy.constants as copy_constants
 import octobot_copy.entities as copy_entities
 
@@ -15,6 +18,7 @@ import octobot_flow.entities
 import octobot_flow.errors
 import octobot_flow.logic.actions.actions_factory as actions_factory
 import octobot_flow.logic.dsl as dsl_logic
+import octobot_trading.personal_data as trading_personal_data
 
 import tentacles.Meta.DSL_operators.exchange_operators as exchange_operators
 
@@ -89,7 +93,7 @@ def reference_exchange_elements_to_account(
     elements: octobot_flow.entities.ExchangeAccountElements,
     fetched_exchange_data: octobot_flow.entities.FetchedExchangeData,
     reference_market: str,
-) -> copy_entities.Account:
+) -> protocol_models.CopiedAccount:
     content: dict[str, dict[str, decimal.Decimal]] = {}
     value_by_asset = {}
     zero_value = decimal.Decimal("0")
@@ -118,15 +122,26 @@ def reference_exchange_elements_to_account(
                 )
             value_by_asset[asset] = asset_value
     total_value = sum(value_by_asset.values())
+    copied_assets = []
     for asset, values in elements.portfolio.content.items():
         if total_value == zero_value:
-            content[asset][copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO] = zero_value
+            ratio = zero_value
         else:
-            content[asset][copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO] = value_by_asset[asset] / total_value
-    return copy_entities.Account(
+            ratio = value_by_asset[asset] / total_value
+        copied_assets.append(protocol_models.CopiedAsset(
+            name=asset,
+            total=float(values[common_constants.PORTFOLIO_TOTAL]),
+            available=float(values[common_constants.PORTFOLIO_AVAILABLE]),
+            ratio=float(ratio),
+        ))
+    return protocol_models.CopiedAccount(
+        version=copy_constants.COPIED_ACCOUNT_VERSION,
         updated_at=time.time(),
-        content=content,
-        orders=elements.orders.open_orders
+        copied_assets=copied_assets,
+        orders=[
+            trading_personal_data.to_protocol_order(order)
+            for order in elements.orders.open_orders
+        ],
     )
 
 

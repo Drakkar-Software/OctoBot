@@ -1,5 +1,7 @@
 import typing
 
+import octobot_protocol.models as protocol_models
+
 import octobot_copy.copiers.account_copier as account_copier
 import octobot_copy.copiers.futures_account_copier as futures_account_copier
 import octobot_copy.copiers.option_account_copier as option_account_copier
@@ -13,7 +15,7 @@ if typing.TYPE_CHECKING:
 
 
 def create_account_copier(
-    reference_account: copy_entities.Account,
+    reference_account: protocol_models.CopiedAccount,
     copy_settings: copy_entities.AccountCopySettings,
     copier_exchange_manager: "octobot_trading.exchanges.ExchangeManager",
     copier_trading_mode: typing.Optional["octobot_trading.modes.AbstractTradingMode"] = None,

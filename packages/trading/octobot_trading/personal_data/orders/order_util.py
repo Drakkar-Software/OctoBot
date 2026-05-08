@@ -940,3 +940,4 @@ def get_symbol_count(raw_trades_or_raw_orders: list[dict]) -> dict[str, int]:
             for element in raw_trades_or_raw_orders
         )
     )
+

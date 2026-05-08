@@ -2,6 +2,7 @@ import time
 import typing
 
 import octobot_commons.logging as logging
+import octobot_protocol.models as protocol_models
 import octobot_trading.constants as trading_constants
 import octobot_trading.errors as trading_errors
 import octobot_trading.personal_data as trading_personal_data
@@ -29,11 +30,11 @@ class AccountCopier:
 
     def __init__(
         self,
-        reference_account: copy_entities.Account,
+        reference_account: protocol_models.CopiedAccount,
         exchange_interface: copy_exchange.ExchangeInterface,
         copy_settings: copy_entities.AccountCopySettings,
     ) -> None:
-        self._reference_account: copy_entities.Account = reference_account
+        self._reference_account: protocol_models.CopiedAccount = reference_account
         self._copier_exchange_interface: copy_exchange.ExchangeInterface = exchange_interface
         self._copy_settings: copy_entities.AccountCopySettings = copy_settings
         self._orders_synchronizer: orders_synchronizer_module.OrdersSynchronizer = (
@@ -165,7 +166,9 @@ class AccountCopier:
 
     def _get_synthetic_config(self) -> dict:
         return {
-            copy_constants.CONFIG_INDEX_CONTENT: self._reference_account.create_assets_distribution(),
+            copy_constants.CONFIG_INDEX_CONTENT: copy_entities.create_assets_distribution(
+                self._reference_account
+            ),
             copy_constants.CONFIG_REBALANCE_TRIGGER_MIN_PERCENT: float(
                 self._copy_settings.rebalance_trigger_min_ratio * trading_constants.ONE_HUNDRED
             ),

@@ -1,0 +1,804 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "OctoBot protocol types",
+    "description": "",
+    "version": "1.0.0"
+  },
+  "paths": {},
+  "components": {
+    "schemas": {
+      "TaskStatus": {
+        "description": "TaskStatus",
+        "type": "string",
+        "enum": [
+          "pending",
+          "scheduled",
+          "periodic",
+          "running",
+          "completed",
+          "failed"
+        ]
+      },
+      "Side": {
+        "description": "Order execution side.",
+        "type": "string",
+        "enum": [
+          "buy",
+          "sell"
+        ]
+      },
+      "OrderType": {
+        "description": "Exchange order type.",
+        "type": "string",
+        "enum": [
+          "limit",
+          "market",
+          "stop_loss",
+          "stop_loss_limit",
+          "take_profit",
+          "take_profit_limit"
+        ]
+      },
+      "OrderStatus": {
+        "description": "Lifecycle state of an order.",
+        "type": "string",
+        "enum": [
+          "pending_creation",
+          "open",
+          "partially_filled",
+          "filled",
+          "canceled",
+          "canceling",
+          "closed",
+          "expired",
+          "rejected",
+          "unknown"
+        ]
+      },
+      "TrailingProfileType": {
+        "description": "Trailing profile discriminator (mirrors octobot_trading TrailingProfileTypes values).",
+        "type": "string",
+        "enum": [
+          "filled_take_profit"
+        ]
+      },
+      "CancelPolicyType": {
+        "description": "Cancel policy class name (mirrors octobot_trading cancel_policy_factory).",
+        "type": "string",
+        "enum": [
+          "ExpirationTimeOrderCancelPolicy",
+          "ChainedOrderFillingPriceOrderCancelPolicy"
+        ]
+      },
+      "ActiveOrderSwapStrategyType": {
+        "description": "Active order swap strategy class name (mirrors octobot_trading active_order_swap_strategy_factory).",
+        "type": "string",
+        "enum": [
+          "StopFirstActiveOrderSwapStrategy",
+          "TakeProfitFirstActiveOrderSwapStrategy"
+        ]
+      },
+      "OrderGroupType": {
+        "description": "Order group class name (mirrors persisted OrderGroup.__name__ in octobot_trading).",
+        "type": "string",
+        "enum": [
+          "BalancedTakeProfitAndStopOrderGroup",
+          "TrailingOnFilledTPBalancedOrderGroup",
+          "OneCancelsTheOtherOrderGroup"
+        ]
+      },
+      "TrailingProfile": {
+        "description": "TrailingProfile",
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/TrailingProfileType"
+          },
+          "details": {
+            "type": "object"
+          }
+        }
+      },
+      "CancelPolicy": {
+        "description": "CancelPolicy",
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/CancelPolicyType"
+          },
+          "details": {
+            "type": "object"
+          }
+        }
+      },
+      "ActiveOrderSwapStrategy": {
+        "description": "ActiveOrderSwapStrategy",
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/ActiveOrderSwapStrategyType"
+          },
+          "trigger_price_configuration": {
+            "type": "object"
+          },
+          "timeout": {
+            "type": "number"
+          }
+        }
+      },
+      "OrderGroup": {
+        "description": "OrderGroup",
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/OrderGroupType"
+          },
+          "active_order_swap_strategy": {
+            "$ref": "#/components/schemas/ActiveOrderSwapStrategy"
+          }
+        }
+      },
+      "OrderSummary": {
+        "description": "OrderSummary",
+        "type": "object",
+        "required": [
+          "id",
+          "symbol"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "symbol": {
+            "type": "string"
+          }
+        }
+      },
+      "PositionStatus": {
+        "description": "PositionStatus",
+        "type": "string",
+        "enum": [
+          "open",
+          "liquidated",
+          "liquidating",
+          "auto_deleveraging"
+        ]
+      },
+      "Order": {
+        "description": "Order",
+        "type": "object",
+        "required": [
+          "id",
+          "symbol",
+          "price",
+          "quantity",
+          "filled",
+          "exchange_id",
+          "side",
+          "type",
+          "trigger_above",
+          "reduce_only",
+          "is_active",
+          "status",
+          "created_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "symbol": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "filled": {
+            "type": "number"
+          },
+          "exchange_id": {
+            "type": "string"
+          },
+          "side": {
+            "$ref": "#/components/schemas/Side"
+          },
+          "type": {
+            "$ref": "#/components/schemas/OrderType"
+          },
+          "trigger_above": {
+            "type": "boolean"
+          },
+          "reduce_only": {
+            "type": "boolean"
+          },
+          "is_active": {
+            "type": "boolean"
+          },
+          "status": {
+            "$ref": "#/components/schemas/OrderStatus"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "update_with_triggering_order_fees": {
+            "type": "boolean"
+          },
+          "order_group": {
+            "$ref": "#/components/schemas/OrderGroup"
+          },
+          "trailing_profile": {
+            "$ref": "#/components/schemas/TrailingProfile"
+          },
+          "cancel_policy": {
+            "$ref": "#/components/schemas/CancelPolicy"
+          },
+          "chained_orders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Order"
+            }
+          }
+        }
+      },
+      "TradeSummary": {
+        "description": "TradeSummary",
+        "type": "object",
+        "required": [
+          "id",
+          "symbol"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "symbol": {
+            "type": "string"
+          }
+        }
+      },
+      "Trade": {
+        "description": "Trade",
+        "type": "object",
+        "required": [
+          "id",
+          "trade_id",
+          "type",
+          "symbol",
+          "side",
+          "quantity",
+          "price",
+          "status",
+          "executed_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "trade_id": {
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/OrderType"
+          },
+          "symbol": {
+            "type": "string"
+          },
+          "side": {
+            "$ref": "#/components/schemas/Side"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "price": {
+            "type": "number"
+          },
+          "status": {
+            "$ref": "#/components/schemas/OrderStatus"
+          },
+          "executed_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Position": {
+        "description": "Position",
+        "type": "object",
+        "required": [
+          "id",
+          "symbol",
+          "side",
+          "quantity",
+          "entry_price",
+          "mark_price",
+          "liquidation_price",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "symbol": {
+            "type": "string"
+          },
+          "side": {
+            "$ref": "#/components/schemas/Side"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "entry_price": {
+            "type": "number"
+          },
+          "mark_price": {
+            "type": "number"
+          },
+          "liquidation_price": {
+            "type": "number"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PositionStatus"
+          }
+        }
+      },
+      "PositionSummary": {
+        "description": "PositionSummary",
+        "type": "object",
+        "required": [
+          "id",
+          "symbol"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "symbol": {
+            "type": "string"
+          }
+        }
+      },
+      "Action": {
+        "description": "Action",
+        "type": "object",
+        "required": [
+          "id",
+          "action_type",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "action_type": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/TaskStatus"
+          },
+          "dsl": {
+            "type": "string"
+          },
+          "configuration": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "result": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string"
+          },
+          "completed_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Asset": {
+        "description": "Asset",
+        "type": "object",
+        "required": [
+          "symbol",
+          "total",
+          "available"
+        ],
+        "properties": {
+          "symbol": {
+            "type": "string"
+          },
+          "total": {
+            "type": "number"
+          },
+          "available": {
+            "type": "number"
+          },
+          "value": {
+            "type": "number"
+          },
+          "unit": {
+            "type": "string"
+          }
+        }
+      },
+      "CopiedAsset": {
+        "description": "CopiedAsset",
+        "type": "object",
+        "required": [
+          "name",
+          "total",
+          "available",
+          "ratio"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "total": {
+            "type": "number"
+          },
+          "available": {
+            "type": "number"
+          },
+          "ratio": {
+            "type": "number"
+          }
+        }
+      },
+      "AutomationMetadata": {
+        "description": "AutomationMetadata",
+        "type": "object",
+        "required": [
+          "name",
+          "description"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AutomationState": {
+        "description": "AutomationState",
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "metadata"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/TaskStatus"
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/AutomationMetadata"
+          },
+          "actions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Action"
+            }
+          },
+          "priority_actions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Action"
+            }
+          },
+          "exchanges": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "exchange_account_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "assets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Asset"
+            }
+          },
+          "orders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderSummary"
+            }
+          },
+          "trades": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TradeSummary"
+            }
+          },
+          "positions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PositionSummary"
+            }
+          }
+        }
+      },
+      "ExchangeAccount": {
+        "description": "ExchangeAccount",
+        "type": "object",
+        "required": [
+          "exchange",
+          "remote_account_id",
+          "api_key",
+          "api_secret"
+        ],
+        "properties": {
+          "exchange": {
+            "type": "string"
+          },
+          "remote_account_id": {
+            "type": "string"
+          },
+          "api_key": {
+            "type": "string"
+          },
+          "api_secret": {
+            "type": "string"
+          },
+          "api_passphrase": {
+            "type": "string"
+          },
+          "assets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Asset"
+            }
+          },
+          "orders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Order"
+            }
+          },
+          "trades": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Trade"
+            }
+          },
+          "positions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Position"
+            }
+          }
+        }
+      },
+      "BlockchainAccount": {
+        "description": "BlockchainAccount",
+        "type": "object",
+        "required": [
+          "blockchain"
+        ],
+        "properties": {
+          "blockchain": {
+            "type": "string"
+          },
+          "network": {
+            "type": "string"
+          },
+          "public_key": {
+            "type": "string"
+          },
+          "private_key": {
+            "type": "string"
+          },
+          "passphrase": {
+            "type": "string"
+          }
+        }
+      },
+      "GenericAccount": {
+        "description": "GenericAccount",
+        "type": "object",
+        "properties": {
+          "assets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Asset"
+            }
+          }
+        }
+      },
+      "AccountType": {
+        "description": "Account category discriminator.",
+        "type": "string",
+        "enum": [
+          "GENERIC",
+          "EXCHANGE",
+          "BLOCKCHAIN"
+        ]
+      },
+      "Account": {
+        "description": "Account",
+        "type": "object",
+        "required": [
+          "id",
+          "account_type",
+          "name",
+          "is_simulated"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "account_type": {
+            "$ref": "#/components/schemas/AccountType"
+          },
+          "name": {
+            "type": "string"
+          },
+          "is_simulated": {
+            "type": "boolean"
+          },
+          "description": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "exchange_account": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ExchangeAccount"
+              }
+            ]
+          },
+          "blockchain_account": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BlockchainAccount"
+              }
+            ]
+          },
+          "generic_account": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/GenericAccount"
+              }
+            ]
+          }
+        }
+      },
+      "AutomationsState": {
+        "description": "AutomationsState",
+        "type": "object",
+        "required": [
+          "version"
+        ],
+        "properties": {
+          "version": {
+            "type": "string"
+          },
+          "automations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AutomationState"
+            }
+          }
+        }
+      },
+      "AccountsState": {
+        "description": "AccountsState",
+        "type": "object",
+        "required": [
+          "version"
+        ],
+        "properties": {
+          "version": {
+            "type": "string"
+          },
+          "accounts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Account"
+            }
+          }
+        }
+      },
+      "CopiedAccount": {
+        "description": "CopiedAccount",
+        "type": "object",
+        "required": [
+          "version",
+          "updated_at",
+          "copied_assets"
+        ],
+        "properties": {
+          "version": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "number"
+          },
+          "copied_assets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CopiedAsset"
+            }
+          },
+          "orders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Order"
+            }
+          },
+          "positions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Position"
+            }
+          },
+          "historical_snapshots": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CopiedAccount"
+            }
+          }
+        }
+      }
+    }
+  }
+}

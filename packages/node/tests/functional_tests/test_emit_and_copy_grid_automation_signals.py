@@ -178,28 +178,45 @@ if IMPORTED_OCTOBOT_FLOW_GRID_DEPS:
             open_orders = orders_container.get("open_orders", [])
         open_orders = open_orders or []
 
+        storage_origin = grid_sim_util.trading_constants_module.STORAGE_ORIGIN_VALUE
+
+        def _open_order_payload(order_row: typing.Any) -> typing.Any:
+            """Exchange rows may nest ccxt fields under ``STORAGE_ORIGIN_VALUE``; protocol orders are flat."""
+            if isinstance(order_row, dict):
+                nested = order_row.get(storage_origin)
+                if isinstance(nested, dict):
+                    return nested
+                return order_row
+            nested = getattr(order_row, storage_origin, None)
+            if nested is not None:
+                return nested
+            return order_row
+
         side_key = trading_enums_module.ExchangeConstantsOrderColumns.SIDE.value
         price_col = trading_enums_module.ExchangeConstantsOrderColumns.PRICE.value
-        storage_key = grid_sim_util.trading_constants_module.STORAGE_ORIGIN_VALUE
+        type_col = trading_enums_module.ExchangeConstantsOrderColumns.TYPE.value
         want_side = trade_order_side.value
+        limit_type = trading_enums_module.TradeOrderType.LIMIT.value
         prices: list[decimal.Decimal] = []
         for order in open_orders:
-            if isinstance(order, dict):
-                inner = order.get(storage_key, {})
+            payload = _open_order_payload(order)
+            if isinstance(payload, dict):
+                side = payload.get(side_key)
+                price_raw = payload.get(price_col)
+                order_type = payload.get(type_col)
             else:
-                inner = getattr(order, storage_key, {})
-            side = inner.get(side_key) if isinstance(inner, dict) else getattr(inner, side_key, None)
+                side = getattr(payload, side_key, None)
+                price_raw = getattr(payload, price_col, None)
+                order_type = getattr(payload, type_col, None)
+            if hasattr(side, "value"):
+                side = side.value
             if side != want_side:
                 continue
-            price_raw = inner.get(price_col) if isinstance(inner, dict) else getattr(inner, price_col, None)
             if price_raw is None:
                 continue
-            type_col = trading_enums_module.ExchangeConstantsOrderColumns.TYPE.value
-            if isinstance(inner, dict):
-                order_type = inner.get(type_col)
-            else:
-                order_type = getattr(inner, type_col, None)
-            if order_type is not None and order_type != trading_enums_module.TradeOrderType.LIMIT.value:
+            if hasattr(order_type, "value"):
+                order_type = order_type.value
+            if order_type is not None and order_type != limit_type:
                 continue
             prices.append(_d_order_price(price_raw))
         prices.sort()
@@ -298,7 +315,7 @@ if IMPORTED_OCTOBOT_FLOW_GRID_DEPS:
         *,
         trade_order_side,
     ) -> list[decimal.Decimal]:
-        wrapper = {"orders": {"open_orders": trading_signal.account.orders}}
+        wrapper = {"orders": {"open_orders": list(trading_signal.account.orders or [])}}
         return _sorted_limit_prices_from_elements(wrapper, trade_order_side=trade_order_side)
 
     async def _fetch_strategy_signals_from_sync(wallet_address: str) -> list[typing.Any]:
@@ -548,8 +565,12 @@ class TestEmitAndCopyGridAutomationSignals:
                             bootstrap_signal = _first_fetched_trading_signal(bootstrap_fetched)
                             assert bootstrap_signal.strategy_id == _SHARED_STRATEGY_ID
                             bootstrap_account = bootstrap_signal.account
-                            assert bootstrap_account.content, "bootstrap signal should snapshot portfolio content"
-                            assert {"BTC", "USDC"} == set(bootstrap_account.content.keys())
+                            assert bootstrap_account.copied_assets, (
+                                "bootstrap signal should snapshot portfolio copied_assets"
+                            )
+                            assert {"BTC", "USDC"} == {
+                                copied_asset.name for copied_asset in bootstrap_account.copied_assets
+                            }
                             assert bootstrap_account.orders, "bootstrap signal should include open ladder orders"
                             assert len(bootstrap_account.orders) == 4
 

@@ -121,6 +121,9 @@ from octobot_trading.personal_data.portfolios.update_events import (
     TransactionUpdateEvent,
     PortfolioUpdateEvent,
 )
+from octobot_trading.personal_data.portfolios.protocol import (
+    to_protocol_assets,
+)
     
 __all__ = [
     "BalanceUpdaterSimulator",
@@ -178,4 +181,5 @@ __all__ = [
     "FilledOrderUpdateEvent",
     "TransactionUpdateEvent",
     "PortfolioUpdateEvent",
+    "to_protocol_assets",
 ]

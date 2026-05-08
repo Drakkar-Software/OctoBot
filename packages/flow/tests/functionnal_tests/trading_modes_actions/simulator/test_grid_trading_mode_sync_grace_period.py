@@ -14,7 +14,6 @@
 #  You should have received a copy of the GNU General Public License along with
 #  OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import copy as copy_module
-import dataclasses
 import decimal
 import time
 import typing
@@ -29,6 +28,7 @@ import octobot_trading.enums as trading_enums
 
 import octobot_copy.constants as copy_constants
 import octobot_copy.entities as copy_entities
+import octobot_protocol.models as protocol_models
 import octobot_flow.jobs
 import octobot_flow.entities as flow_entities
 import octobot_flow.enums
@@ -49,6 +49,56 @@ from tests.functionnal_tests import (
 ORDER_AMOUNT = 0.004
 COPY_ACTION_ID = "action_copy_exchange_account"
 GRACE_SECONDS = 5.0
+
+
+def _copied_account_from_grid_parts(
+    *,
+    content: dict,
+    orders_storage: list,
+    updated_at: typing.Optional[float] = None,
+    historical_snapshots: typing.Optional[list[protocol_models.CopiedAccount]] = None,
+    positions: typing.Optional[list] = None,
+) -> protocol_models.CopiedAccount:
+    return grid_test.copied_account_from_content_and_storage_orders(
+        updated_at=updated_at if updated_at is not None else time.time(),
+        content=content,
+        orders_storage=orders_storage,
+        historical_snapshots=historical_snapshots,
+        positions=positions,
+    )
+
+
+def _grid_reference_four_order_parts() -> tuple[dict, list]:
+    lowest_buy = grid_test.GRID_REFERENCE_LOWEST_BUY
+    inc = float(grid_test.increment)
+    spr = float(grid_test.spread)
+    content = {
+        "BTC": {
+            common_constants.PORTFOLIO_TOTAL: decimal.Decimal("0.01"),
+            common_constants.PORTFOLIO_AVAILABLE: decimal.Decimal("0.002"),
+            copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.5"),
+        },
+        "USDC": {
+            common_constants.PORTFOLIO_TOTAL: decimal.Decimal("1000"),
+            common_constants.PORTFOLIO_AVAILABLE: decimal.Decimal("200"),
+            copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.5"),
+        },
+    }
+    orders_storage = [
+        grid_test._grid_reference_storage_order(
+            "grid_ref_b0", trading_enums.TradeOrderSide.BUY.value, lowest_buy, ORDER_AMOUNT
+        ),
+        grid_test._grid_reference_storage_order(
+            "grid_ref_b1", trading_enums.TradeOrderSide.BUY.value, lowest_buy + inc, ORDER_AMOUNT
+        ),
+        grid_test._grid_reference_storage_order(
+            "grid_ref_s0", trading_enums.TradeOrderSide.SELL.value, lowest_buy + inc + spr, ORDER_AMOUNT
+        ),
+        grid_test._grid_reference_storage_order(
+            "grid_ref_s1", trading_enums.TradeOrderSide.SELL.value, lowest_buy + inc + spr + inc, ORDER_AMOUNT
+        ),
+    ]
+    return content, orders_storage
 
 
 @pytest.fixture
@@ -98,45 +148,15 @@ def _grace_account_copy_settings(
     return copy_entities.AccountCopySettings(**kwargs)
 
 
-def grid_reference_four_order_account() -> copy_entities.Account:
-    lowest_buy = grid_test.GRID_REFERENCE_LOWEST_BUY
-    inc = float(grid_test.increment)
-    spr = float(grid_test.spread)
-    return copy_entities.Account(
-        updated_at=time.time(),
-        content={
-            "BTC": {
-                common_constants.PORTFOLIO_TOTAL: decimal.Decimal("0.01"),
-                common_constants.PORTFOLIO_AVAILABLE: decimal.Decimal("0.002"),
-                copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.5"),
-            },
-            "USDC": {
-                common_constants.PORTFOLIO_TOTAL: decimal.Decimal("1000"),
-                common_constants.PORTFOLIO_AVAILABLE: decimal.Decimal("200"),
-                copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.5"),
-            },
-        },
-        orders=[
-            grid_test._grid_reference_storage_order(
-                "grid_ref_b0", trading_enums.TradeOrderSide.BUY.value, lowest_buy, ORDER_AMOUNT
-            ),
-            grid_test._grid_reference_storage_order(
-                "grid_ref_b1", trading_enums.TradeOrderSide.BUY.value, lowest_buy + inc, ORDER_AMOUNT
-            ),
-            grid_test._grid_reference_storage_order(
-                "grid_ref_s0", trading_enums.TradeOrderSide.SELL.value, lowest_buy + inc + spr, ORDER_AMOUNT
-            ),
-            grid_test._grid_reference_storage_order(
-                "grid_ref_s1", trading_enums.TradeOrderSide.SELL.value, lowest_buy + inc + spr + inc, ORDER_AMOUNT
-            ),
-        ],
-        positions=[],
-    )
+def grid_reference_four_order_account() -> protocol_models.CopiedAccount:
+    content, orders_storage = _grid_reference_four_order_parts()
+    return _copied_account_from_grid_parts(content=content, orders_storage=orders_storage)
 
 
 def reference_replace_highest_buy_with_sell(
-    reference_before: copy_entities.Account,
-) -> copy_entities.Account:
+    reference_content: dict,
+    reference_orders_storage: list,
+) -> protocol_models.CopiedAccount:
     """
     Remove the highest limit buy (grid_ref_b1), which is closest to the market and fills first,
     and add the grid-equivalent sell one spread above that buy price.
@@ -146,8 +166,12 @@ def reference_replace_highest_buy_with_sell(
     spr = float(grid_test.spread)
     highest_buy_price = lowest_buy + inc
     new_sell_price = highest_buy_price + spr
+    snapshot_before = _copied_account_from_grid_parts(
+        content=copy_module.deepcopy(reference_content),
+        orders_storage=copy_module.deepcopy(reference_orders_storage),
+    )
     new_orders: list = []
-    for order_doc in reference_before.orders:
+    for order_doc in reference_orders_storage:
         origin = order_doc[trading_constants.STORAGE_ORIGIN_VALUE]
         if origin[trading_enums.ExchangeConstantsOrderColumns.ID.value] == "grid_ref_b1":
             continue
@@ -160,7 +184,7 @@ def reference_replace_highest_buy_with_sell(
             ORDER_AMOUNT,
         )
     )
-    content_after_fill = copy_module.deepcopy(reference_before.content)
+    content_after_fill = copy_module.deepcopy(reference_content)
     fill_quantity = decimal.Decimal(str(ORDER_AMOUNT))
     fill_price = decimal.Decimal(str(highest_buy_price))
     quote_spent = fill_quantity * fill_price
@@ -188,52 +212,56 @@ def reference_replace_highest_buy_with_sell(
         usdc_holdings[copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO] = (
             value_quote / value_total
         )
-    return copy_entities.Account(
-        updated_at=time.time(),
+    return _copied_account_from_grid_parts(
         content=content_after_fill,
-        orders=new_orders,
-        positions=[],
-        historical_snapshots=[reference_before],
+        orders_storage=new_orders,
+        historical_snapshots=[snapshot_before],
     )
 
 
 def reference_replace_highest_buy_with_sell_missed_signals_history(
-    reference_before: copy_entities.Account,
-) -> copy_entities.Account:
+    reference_content: dict,
+    reference_orders_storage: list,
+) -> protocol_models.CopiedAccount:
     """
     Like ``reference_replace_highest_buy_with_sell`` but prepend two empty-order snapshots (newest
     first) so the first compliant historical snapshot is at index 2 for missed-signals grace abort.
     """
-    base = reference_replace_highest_buy_with_sell(reference_before)
-    content_snapshot = copy_module.deepcopy(reference_before.content)
-    empty_newest = copy_entities.Account(
+    base = reference_replace_highest_buy_with_sell(reference_content, reference_orders_storage)
+    content_snapshot = copy_module.deepcopy(reference_content)
+    empty_newest = _copied_account_from_grid_parts(
+        content=content_snapshot,
+        orders_storage=[],
         updated_at=time.time(),
-        content=content_snapshot,
-        orders=[],
-        positions=[],
     )
-    empty_mid = copy_entities.Account(
+    empty_mid = _copied_account_from_grid_parts(
+        content=content_snapshot,
+        orders_storage=[],
         updated_at=time.time() - 1.0,
-        content=content_snapshot,
-        orders=[],
-        positions=[],
     )
-    compliant = copy_module.deepcopy(reference_before)
-    compliant = dataclasses.replace(compliant, updated_at=time.time() - 5.0)
-    return dataclasses.replace(
-        base,
-        historical_snapshots=[empty_newest, empty_mid, compliant],
+    compliant = _copied_account_from_grid_parts(
+        content=copy_module.deepcopy(reference_content),
+        orders_storage=copy_module.deepcopy(reference_orders_storage),
+        updated_at=time.time() - 5.0,
+    )
+    return base.model_copy(
+        update={"historical_snapshots": [empty_newest, empty_mid, compliant]},
     )
 
 
 def reference_replace_both_buys_with_sells(
-    reference_before: copy_entities.Account,
-) -> copy_entities.Account:
+    reference_content: dict,
+    reference_orders_storage: list,
+) -> protocol_models.CopiedAccount:
     lowest_buy = grid_test.GRID_REFERENCE_LOWEST_BUY
     inc = float(grid_test.increment)
     spr = float(grid_test.spread)
+    snapshot_before = _copied_account_from_grid_parts(
+        content=copy_module.deepcopy(reference_content),
+        orders_storage=copy_module.deepcopy(reference_orders_storage),
+    )
     new_orders: list = []
-    for order_doc in reference_before.orders:
+    for order_doc in reference_orders_storage:
         origin = order_doc[trading_constants.STORAGE_ORIGIN_VALUE]
         oid = origin[trading_enums.ExchangeConstantsOrderColumns.ID.value]
         if oid in ("grid_ref_b0", "grid_ref_b1"):
@@ -255,7 +283,7 @@ def reference_replace_both_buys_with_sells(
             ORDER_AMOUNT,
         )
     )
-    content_after_fill = copy_module.deepcopy(reference_before.content)
+    content_after_fill = copy_module.deepcopy(reference_content)
     fill_quantity = decimal.Decimal(str(ORDER_AMOUNT))
     lowest_buy_price = decimal.Decimal(str(lowest_buy))
     inc_decimal = decimal.Decimal(str(inc))
@@ -285,19 +313,17 @@ def reference_replace_both_buys_with_sells(
         usdc_holdings[copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO] = (
             value_quote / pair_value_total
         )
-    return copy_entities.Account(
-        updated_at=time.time(),
+    return _copied_account_from_grid_parts(
         content=content_after_fill,
-        orders=new_orders,
-        positions=[],
-        historical_snapshots=[reference_before],
+        orders_storage=new_orders,
+        historical_snapshots=[snapshot_before],
     )
 
 
 def update_state_reference_account_details(
     dump: dict[str, typing.Any],
     reference_market: str,
-    reference_account: copy_entities.Account,
+    reference_account: protocol_models.CopiedAccount,
     account_copy_settings: copy_entities.AccountCopySettings,
 ) -> None:
     dsl_details = flow_actions.create_copy_exchange_account_action(
@@ -319,7 +345,7 @@ def update_state_reference_account_details(
 def age_grace_started_at_in_dump(
     dump: dict[str, typing.Any],
     reference_market: str,
-    reference_account: copy_entities.Account,
+    reference_account: protocol_models.CopiedAccount,
     account_copy_settings: copy_entities.AccountCopySettings,
     grace_seconds: float,
     margin_seconds: float = 15.0,
@@ -329,7 +355,7 @@ def age_grace_started_at_in_dump(
     action DSL (grace start is derived from reference history + updated_at).
     """
     aged_updated_at = time.time() - grace_seconds - margin_seconds
-    aged_account = dataclasses.replace(reference_account, updated_at=aged_updated_at)
+    aged_account = reference_account.model_copy(update={"updated_at": aged_updated_at})
     update_state_reference_account_details(
         dump, reference_market, aged_account, account_copy_settings
     )
@@ -394,7 +420,7 @@ def _orders_by_side_with_id(origins: list[dict], side: str) -> list[tuple[str, f
 
 def mutate_client_dump_simulate_early_fill_of_grid_ref_b1(
     dump: dict[str, typing.Any],
-    _reference_r1: copy_entities.Account,
+    _reference_r1: protocol_models.CopiedAccount,
 ) -> None:
     """
     Simulate the client having already filled the mirrored ``grid_ref_b1`` buy while the embedded
@@ -463,7 +489,8 @@ async def test_grid_copy_trigger_grace_period_for_unfilled_client_order(init_act
     patched_fetch_ohlcv = grid_test.fetch_ohlcv_side_effect_for_close_price(
         lambda: grid_test._FIXED_BTC_USDC_CLOSE
     )
-    reference_r1 = grid_reference_four_order_account()
+    r1_content, r1_orders = _grid_reference_four_order_parts()
+    reference_r1 = _copied_account_from_grid_parts(content=r1_content, orders_storage=r1_orders)
     settings = _grace_account_copy_settings()
     all_actions = [
         init_action,
@@ -490,7 +517,7 @@ async def test_grid_copy_trigger_grace_period_for_unfilled_client_order(init_act
             await job.run()
         after_copy_r1 = job.dump()
 
-    reference_r2 = reference_replace_highest_buy_with_sell(reference_r1)
+    reference_r2 = reference_replace_highest_buy_with_sell(r1_content, r1_orders)
     update_state_reference_account_details(after_copy_r1, reference_market, reference_r2, settings)
 
     with (
@@ -527,7 +554,8 @@ async def test_grid_copy_missed_signals_abort_cancels_orphan_immediately(init_ac
     patched_fetch_ohlcv = grid_test.fetch_ohlcv_side_effect_for_close_price(
         lambda: grid_test._FIXED_BTC_USDC_CLOSE
     )
-    reference_r1 = grid_reference_four_order_account()
+    r1_content, r1_orders = _grid_reference_four_order_parts()
+    reference_r1 = _copied_account_from_grid_parts(content=r1_content, orders_storage=r1_orders)
     settings = _grace_account_copy_settings(missed_signals_grace_abort_threshold=2)
     all_actions = [
         init_action,
@@ -571,7 +599,7 @@ async def test_grid_copy_missed_signals_abort_cancels_orphan_immediately(init_ac
     assert "grid_ref_s0" in sell_ids_r1
     assert "grid_ref_s1" in sell_ids_r1
 
-    reference_r2 = reference_replace_highest_buy_with_sell_missed_signals_history(reference_r1)
+    reference_r2 = reference_replace_highest_buy_with_sell_missed_signals_history(r1_content, r1_orders)
     update_state_reference_account_details(after_copy_r1, reference_market, reference_r2, settings)
 
     with (
@@ -669,7 +697,8 @@ async def test_grid_copy_grace_elapses_then_orphan_cancelled_and_sell_mirrored(i
     patched_fetch_ohlcv = grid_test.fetch_ohlcv_side_effect_for_close_price(
         lambda: grid_test._FIXED_BTC_USDC_CLOSE
     )
-    reference_r1 = grid_reference_four_order_account()
+    r1_content, r1_orders = _grid_reference_four_order_parts()
+    reference_r1 = _copied_account_from_grid_parts(content=r1_content, orders_storage=r1_orders)
     settings = _grace_account_copy_settings()
     all_actions = [
         init_action,
@@ -709,7 +738,7 @@ async def test_grid_copy_grace_elapses_then_orphan_cancelled_and_sell_mirrored(i
     assert "grid_ref_b0" in buy_ids_r1
     assert "grid_ref_b1" in buy_ids_r1
 
-    reference_r2 = reference_replace_highest_buy_with_sell(reference_r1)
+    reference_r2 = reference_replace_highest_buy_with_sell(r1_content, r1_orders)
     update_state_reference_account_details(after_copy_r1, reference_market, reference_r2, settings)
 
     with (
@@ -783,8 +812,9 @@ async def test_grid_copy_grace_aborted_when_second_orphan_exceeds_threshold(init
     patched_fetch_ohlcv = grid_test.fetch_ohlcv_side_effect_for_close_price(
         lambda: grid_test._FIXED_BTC_USDC_CLOSE
     )
-    reference_r1 = grid_reference_four_order_account()
-    reference_r2 = reference_replace_both_buys_with_sells(reference_r1)
+    r1_content, r1_orders = _grid_reference_four_order_parts()
+    reference_r1 = _copied_account_from_grid_parts(content=r1_content, orders_storage=r1_orders)
+    reference_r2 = reference_replace_both_buys_with_sells(r1_content, r1_orders)
     settings = _grace_account_copy_settings()
     all_actions = [
         init_action,
@@ -869,7 +899,8 @@ async def test_grid_copy_orphan_resolved_by_client_fill_without_rebalance_orders
     patched_fetch_ohlcv = grid_test.fetch_ohlcv_side_effect_for_close_price(
         lambda: simulated_close["value"]
     )
-    reference_r1 = grid_reference_four_order_account()
+    r1_content, r1_orders = _grid_reference_four_order_parts()
+    reference_r1 = _copied_account_from_grid_parts(content=r1_content, orders_storage=r1_orders)
     settings = _grace_account_copy_settings()
     all_actions = [
         init_action,
@@ -895,7 +926,7 @@ async def test_grid_copy_orphan_resolved_by_client_fill_without_rebalance_orders
             await job.run()
         after_copy_r1 = job.dump()
 
-    reference_r2 = reference_replace_highest_buy_with_sell(reference_r1)
+    reference_r2 = reference_replace_highest_buy_with_sell(r1_content, r1_orders)
     update_state_reference_account_details(after_copy_r1, reference_market, reference_r2, settings)
 
     with (
@@ -978,11 +1009,12 @@ async def test_grid_copy_early_filled_client_order_grace_period_resolved_by_refe
     reference_market = "USDC"
     patched_fetch_tickers = grid_test.tickers_repository_fetch_tickers_btc_usdc_close_override(
         lambda: grid_test._FIXED_BTC_USDC_CLOSE
-    )
+    )    
     patched_fetch_ohlcv = grid_test.fetch_ohlcv_side_effect_for_close_price(
         lambda: grid_test._FIXED_BTC_USDC_CLOSE
     )
-    reference_r1 = grid_reference_four_order_account()
+    r1_content, r1_orders = _grid_reference_four_order_parts()
+    reference_r1 = _copied_account_from_grid_parts(content=r1_content, orders_storage=r1_orders)
     settings = _grace_account_copy_settings()
     all_actions = [
         init_action,
@@ -1066,7 +1098,7 @@ async def test_grid_copy_early_filled_client_order_grace_period_resolved_by_refe
     assert "grid_ref_b1" not in after_grace_n1_open_ids
 
     # --- Iteration n+2: reference advances to R2 (fill reflected as sell); sync can complete ---
-    reference_r2 = reference_replace_highest_buy_with_sell(reference_r1)
+    reference_r2 = reference_replace_highest_buy_with_sell(r1_content, r1_orders)
     update_state_reference_account_details(after_grace_n1, reference_market, reference_r2, settings)
 
     with (

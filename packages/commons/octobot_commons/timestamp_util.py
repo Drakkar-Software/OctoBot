@@ -35,6 +35,17 @@ def convert_timestamp_to_datetime(
     ).strftime(time_format)
 
 
+def utc_datetime_from_timestamp(timestamp: float) -> datetime:
+    """
+    Convert a timestamp to a UTC datetime
+    :param timestamp: the timestamp to convert
+    :return: the converted UTC datetime
+    """
+    return datetime.fromtimestamp(
+        timestamp, tz=timezone.utc
+    )
+
+
 def convert_timestamps_to_datetime(
     timestamps: list[float],
     time_format: str = "%d/%m/%y %H:%M",

@@ -12,7 +12,7 @@ import octobot_commons.dsl_interpreter as dsl_interpreter
 import octobot_trading.constants as trading_constants
 import octobot_trading.enums as trading_enums
 import octobot_copy.constants as copy_constants
-import octobot_copy.entities as copy_entities
+import octobot_protocol.models as protocol_models
 import octobot_flow.jobs
 import octobot_flow.entities
 import octobot_flow.enums
@@ -32,6 +32,8 @@ from tests.functionnal_tests import (
 )
 
 import tentacles.Trading.Mode.grid_trading_mode.grid_trading as grid_trading
+
+import tests.functionnal_tests.trading_modes_actions.simulator.test_grid_trading_mode_action as grid_simulator_tests
 
 increment = 5000
 spread = 10000
@@ -63,6 +65,29 @@ def grid_trading_mode_action(dependency_action: dict):
         ),
         "dependencies": [{"action_id": dependency_action["id"]}],
     }
+
+
+def _signal_copied_assets_by_name(
+    account: protocol_models.CopiedAccount,
+) -> dict[str, protocol_models.CopiedAsset]:
+    return {a.name: a for a in (account.copied_assets or [])}
+
+
+def _assert_grid_ladder_prices_protocol(
+    buy_orders: list[protocol_models.Order],
+    sell_orders: list[protocol_models.Order],
+) -> None:
+    lowest_buy_price = d_order_price(buy_orders[0].price)
+    assert len(buy_orders) == len(sell_orders) == 2
+    assert abs(d_order_price(buy_orders[1].price) - (lowest_buy_price + D_INCREMENT)) <= _GRID_PRICE_TOLERANCE
+    assert (
+        abs(d_order_price(sell_orders[0].price) - (lowest_buy_price + D_INCREMENT + D_SPREAD))
+        <= _GRID_PRICE_TOLERANCE
+    )
+    assert (
+        abs(d_order_price(sell_orders[1].price) - (lowest_buy_price + D_INCREMENT + D_SPREAD + D_INCREMENT))
+        <= _GRID_PRICE_TOLERANCE
+    )
 
 
 def _btc_usdc_limit_open_order_values(open_orders_origin_values: list[dict]) -> list[dict]:
@@ -117,8 +142,8 @@ def _assert_trading_signal_authenticated_grid_account_metadata(
     account = trading_signal.account
     assert isinstance(account.updated_at, float)
     assert current_time <= account.updated_at <= time.time()
-    assert account.positions == []
-    assert account.historical_snapshots == []
+    assert account.positions in (None, [])
+    assert account.historical_snapshots in (None, [])
 
 
 def _assert_trading_signal_authenticated_grid_initial_placement(
@@ -128,45 +153,43 @@ def _assert_trading_signal_authenticated_grid_initial_placement(
     Same structure as simulator grid signal checks: BTC/USDC content, allocation ratios,
     four BTC/USDC limit orders in a 2×2 ladder (live price — use tolerance on prices).
     """
-    content = trading_signal.account.content
+    content = _signal_copied_assets_by_name(trading_signal.account)
     expected_assets = ["BTC", "USDC"]
     if is_sub_portfolio:
         assert list(sorted(content.keys())) == expected_assets
     else:
         assert all(asset in content for asset in expected_assets)
-    assert float(content["USDC"][common_constants.PORTFOLIO_TOTAL]) > 0
-    assert float(content["BTC"][common_constants.PORTFOLIO_TOTAL]) > 0
+    assert float(content["USDC"].total) > 0
+    assert float(content["BTC"].total) > 0
     if is_sub_portfolio:
-        assert_emitted_signal_account_allocation_ratios(content)
+        assert_emitted_signal_account_allocation_ratios(trading_signal.account)
     else:
         for asset in expected_assets:
             assert asset in content
-            assert float(content[asset][copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO]) > 0
-    open_orders_origin_values = [
-        order[trading_constants.STORAGE_ORIGIN_VALUE] for order in trading_signal.account.orders
+            assert float(content[asset].ratio) > 0
+    ladder_orders = [
+        order
+        for order in (trading_signal.account.orders or [])
+        if order.symbol == "BTC/USDC" and order.type == protocol_models.OrderType.LIMIT
     ]
-    ladder_orders = _btc_usdc_limit_open_order_values(open_orders_origin_values)
     assert len(ladder_orders) == 4
-    price_col = trading_enums.ExchangeConstantsOrderColumns.PRICE.value
     buy_orders = sorted(
         [
             order
             for order in ladder_orders
-            if order[trading_enums.ExchangeConstantsOrderColumns.SIDE.value]
-            == trading_enums.TradeOrderSide.BUY.value
+            if order.side == protocol_models.Side.BUY
         ],
-        key=lambda order: order[trading_enums.ExchangeConstantsOrderColumns.PRICE.value],
+        key=lambda order: order.price,
     )
     sell_orders = sorted(
         [
             order
             for order in ladder_orders
-            if order[trading_enums.ExchangeConstantsOrderColumns.SIDE.value]
-            == trading_enums.TradeOrderSide.SELL.value
+            if order.side == protocol_models.Side.SELL
         ],
-        key=lambda order: order[trading_enums.ExchangeConstantsOrderColumns.PRICE.value],
+        key=lambda order: order.price,
     )
-    _assert_grid_ladder_prices(buy_orders, sell_orders, price_col)
+    _assert_grid_ladder_prices_protocol(buy_orders, sell_orders)
     _assert_trading_signal_authenticated_grid_account_metadata(trading_signal)
 
 
@@ -203,68 +226,52 @@ async def _cancel_all_btc_usdc_orders_for_test(automation_dump: dict) -> None:
     assert _btc_usdc_open_order_count(after_cancel_dump, "exchange_account_elements") == 0
 
 
-def _grid_reference_storage_order(order_id: str, side: str, price: float, amount: float) -> dict:
-    return {
-        trading_constants.STORAGE_ORIGIN_VALUE: {
-            trading_enums.ExchangeConstantsOrderColumns.ID.value: order_id,
-            trading_enums.ExchangeConstantsOrderColumns.SYMBOL.value: "BTC/USDC",
-            trading_enums.ExchangeConstantsOrderColumns.SIDE.value: side,
-            trading_enums.ExchangeConstantsOrderColumns.TYPE.value: trading_enums.TradeOrderType.LIMIT.value,
-            trading_enums.ExchangeConstantsOrderColumns.PRICE.value: price,
-            trading_enums.ExchangeConstantsOrderColumns.AMOUNT.value: amount,
-            trading_enums.ExchangeConstantsOrderColumns.STATUS.value: trading_enums.OrderStatus.OPEN.value,
-            trading_enums.ExchangeConstantsOrderColumns.FILLED.value: 0.0,
-            trading_enums.ExchangeConstantsOrderColumns.REMAINING.value: amount,
-            trading_enums.ExchangeConstantsOrderColumns.TIMESTAMP.value: time.time(),
-            trading_enums.ExchangeConstantsOrderColumns.SELF_MANAGED.value: False,
-        }
-    }
-
-
-def _live_grid_reference_account(btc_usdc_close: float) -> copy_entities.Account:
+def _live_grid_reference_account(btc_usdc_close: float) -> protocol_models.CopiedAccount:
     """
     Same shape as the simulator grid_reference_account fixture: 2×2 BTC/USDC limits and half/half
     portfolio ratios, with ladder prices anchored to the current market close.
     """
     lowest_buy = btc_usdc_close - (spread / 2) - increment * 2 + 12.12
     order_amount = 0.004
-    return copy_entities.Account(
-        updated_at=time.time(),
-        content={
-            "BTC": {
-                common_constants.PORTFOLIO_TOTAL: decimal.Decimal("0.01"),
-                common_constants.PORTFOLIO_AVAILABLE: decimal.Decimal("0.002"),
-                copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.5"),
-            },
-            "USDC": {
-                common_constants.PORTFOLIO_TOTAL: decimal.Decimal("1000"),
-                common_constants.PORTFOLIO_AVAILABLE: decimal.Decimal("200"),
-                copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.5"),
-            },
+    content = {
+        "BTC": {
+            common_constants.PORTFOLIO_TOTAL: decimal.Decimal("0.01"),
+            common_constants.PORTFOLIO_AVAILABLE: decimal.Decimal("0.002"),
+            copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.5"),
         },
-        orders=[
-            _grid_reference_storage_order(
-                "grid_ref_b0", trading_enums.TradeOrderSide.BUY.value, lowest_buy, order_amount
-            ),
-            _grid_reference_storage_order(
-                "grid_ref_b1",
-                trading_enums.TradeOrderSide.BUY.value,
-                lowest_buy + increment,
-                order_amount,
-            ),
-            _grid_reference_storage_order(
-                "grid_ref_s0",
-                trading_enums.TradeOrderSide.SELL.value,
-                lowest_buy + increment + spread,
-                order_amount,
-            ),
-            _grid_reference_storage_order(
-                "grid_ref_s1",
-                trading_enums.TradeOrderSide.SELL.value,
-                lowest_buy + increment + spread + increment,
-                order_amount,
-            ),
-        ],
+        "USDC": {
+            common_constants.PORTFOLIO_TOTAL: decimal.Decimal("1000"),
+            common_constants.PORTFOLIO_AVAILABLE: decimal.Decimal("200"),
+            copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.5"),
+        },
+    }
+    orders_storage = [
+        grid_simulator_tests._grid_reference_storage_order(
+            "grid_ref_b0", trading_enums.TradeOrderSide.BUY.value, lowest_buy, order_amount
+        ),
+        grid_simulator_tests._grid_reference_storage_order(
+            "grid_ref_b1",
+            trading_enums.TradeOrderSide.BUY.value,
+            lowest_buy + increment,
+            order_amount,
+        ),
+        grid_simulator_tests._grid_reference_storage_order(
+            "grid_ref_s0",
+            trading_enums.TradeOrderSide.SELL.value,
+            lowest_buy + increment + spread,
+            order_amount,
+        ),
+        grid_simulator_tests._grid_reference_storage_order(
+            "grid_ref_s1",
+            trading_enums.TradeOrderSide.SELL.value,
+            lowest_buy + increment + spread + increment,
+            order_amount,
+        ),
+    ]
+    return grid_simulator_tests.copied_account_from_content_and_storage_orders(
+        updated_at=time.time(),
+        content=content,
+        orders_storage=orders_storage,
         positions=[],
     )
 

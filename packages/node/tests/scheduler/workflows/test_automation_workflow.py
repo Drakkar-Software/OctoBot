@@ -28,7 +28,8 @@ import dbos
 import octobot_trading.constants
 import octobot_commons.cryptography
 
-import octobot_copy.entities
+import octobot_copy.constants as copy_constants
+import octobot_protocol.models as protocol_models
 import octobot_node.config
 import octobot_node.constants
 import octobot_node.enums
@@ -513,7 +514,11 @@ class TestExecuteIteration:
         inputs = params.AutomationWorkflowInputs(task=task, execution_time=0).to_dict(include_default_values=False)
 
         signal = octobot_flow.entities.TradingSignal(
-            account=octobot_copy.entities.Account(),
+            account=protocol_models.CopiedAccount(
+                version=copy_constants.COPIED_ACCOUNT_VERSION,
+                updated_at=time.time(),
+                copied_assets=[],
+            ),
             strategy_id="test-strategy-id",
         )
         signal_dict = signal.to_dict(include_default_values=False)

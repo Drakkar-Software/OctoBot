@@ -43,6 +43,7 @@ DEFAULT_MISSED_SIGNALS_GRACE_ABORT_THRESHOLD = 10
 
 # Account keys
 PORTFOLIO_ASSET_ALLOCATION_RATIO = "allocation_ratio"
+COPIED_ACCOUNT_VERSION = "1.0.0"
 
 # Account copy settings
 DEFAULT_COPY_WAITING_TIME = octobot_commons.constants.HOURS_TO_SECONDS * 4 # wake up every 4 hours by default

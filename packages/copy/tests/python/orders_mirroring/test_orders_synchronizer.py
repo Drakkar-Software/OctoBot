@@ -17,10 +17,12 @@ import asyncio
 import decimal
 import logging
 import time
+import typing
 
 import mock
 
-import octobot_commons.constants as commons_constants
+import octobot_commons.timestamp_util as timestamp_util
+import octobot_protocol.models as protocol_models
 import octobot_trading.constants as trading_constants
 import octobot_trading.enums as trading_enums
 import octobot_trading.personal_data.orders.order_util as order_util
@@ -30,23 +32,46 @@ import octobot_copy.entities as copy_entities
 import octobot_copy.orders_mirroring.orders_synchronizer as orders_synchronizer_module
 
 
+def _copied_account(
+    *,
+    updated_at: typing.Optional[float] = None,
+    copied_assets: typing.Optional[list[protocol_models.CopiedAsset]] = None,
+    orders: typing.Optional[list[protocol_models.Order]] = None,
+    historical_snapshots: typing.Optional[list[protocol_models.CopiedAccount]] = None,
+) -> protocol_models.CopiedAccount:
+    return protocol_models.CopiedAccount(
+        version=copy_constants.COPIED_ACCOUNT_VERSION,
+        updated_at=updated_at if updated_at is not None else time.time(),
+        copied_assets=copied_assets or [],
+        orders=orders,
+        historical_snapshots=historical_snapshots,
+    )
+
+
 def _reference_account_with_allocations(
     base_ratio: decimal.Decimal,
     quote_ratio: decimal.Decimal,
-) -> copy_entities.Account:
-    return copy_entities.Account(
-        content={
-            "ETH": {
-                commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("1"),
-                copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: base_ratio,
-            },
-            "USDT": {
-                commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("10000"),
-                copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: quote_ratio,
-            },
-        },
+) -> protocol_models.CopiedAccount:
+    return _copied_account(
+        copied_assets=[
+            protocol_models.CopiedAsset(name="ETH", total=1.0, available=1.0, ratio=float(base_ratio)),
+            protocol_models.CopiedAsset(name="USDT", total=10000.0, available=10000.0, ratio=float(quote_ratio)),
+        ],
         orders=[],
     )
+
+
+def _eth_usdt_pair_assets(
+    *,
+    eth_ratio: float = 0.25,
+    usdt_ratio: float = 0.5,
+    eth_value: float = 1.0,
+    usdt_value: float = 10000.0,
+) -> list[protocol_models.CopiedAsset]:
+    return [
+        protocol_models.CopiedAsset(name="ETH", total=eth_value, available=eth_value, ratio=eth_ratio),
+        protocol_models.CopiedAsset(name="USDT", total=usdt_value, available=usdt_value, ratio=usdt_ratio),
+    ]
 
 
 def _exchange_interface_stub(*, currency_totals: dict[str, decimal.Decimal], market_price: decimal.Decimal):
@@ -87,13 +112,10 @@ class TestOrdersSynchronizerOrphanGraceHeuristic:
         assert synchronizer._reference_pair_leg_share("ETH/USDT") == expected
 
     def test_reference_pair_leg_share_missing_quote_returns_one(self):
-        reference = copy_entities.Account(
-            content={
-                "ETH": {
-                    commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("1"),
-                    copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.5"),
-                },
-            },
+        reference = _copied_account(
+            copied_assets=[
+                protocol_models.CopiedAsset(name="ETH", total=1.0, available=1.0, ratio=0.5),
+            ],
             orders=[],
         )
         synchronizer = orders_synchronizer_module.OrdersSynchronizer(
@@ -187,7 +209,8 @@ class TestOrdersSynchronizerOrphanGraceHeuristic:
         simulated_share = synchronizer._simulated_copier_pair_leg_share_after_orphan_fill(sell_order)
         assert reference_share is not None
         assert simulated_share is not None
-        assert simulated_share == reference_share
+        # Reference leg share uses CopiedAsset.ratio (float round-trip); simulated share is exact Decimal math.
+        assert abs(simulated_share - reference_share) <= decimal.Decimal("1e-15")
 
 
 def _replicable_buy_limit_order(
@@ -195,18 +218,24 @@ def _replicable_buy_limit_order(
     order_id: str = "ref-late-1",
     amount: decimal.Decimal = decimal.Decimal("1"),
     price: decimal.Decimal = decimal.Decimal("2000"),
-) -> dict:
-    return {
-        trading_constants.STORAGE_ORIGIN_VALUE: {
-            trading_enums.ExchangeConstantsOrderColumns.ID.value: order_id,
-            trading_enums.ExchangeConstantsOrderColumns.SYMBOL.value: "ETH/USDT",
-            trading_enums.ExchangeConstantsOrderColumns.SIDE.value: trading_enums.TradeOrderSide.BUY.value,
-            trading_enums.ExchangeConstantsOrderColumns.TYPE.value: trading_enums.TradeOrderType.LIMIT.value,
-            trading_enums.ExchangeConstantsOrderColumns.AMOUNT.value: amount,
-            trading_enums.ExchangeConstantsOrderColumns.PRICE.value: price,
-            trading_enums.ExchangeConstantsOrderColumns.STATUS.value: trading_enums.OrderStatus.OPEN.value,
-        }
-    }
+    created_ts: float | None = None,
+) -> protocol_models.Order:
+    created_ts = created_ts if created_ts is not None else time.time()
+    return protocol_models.Order(
+        id=order_id,
+        symbol="ETH/USDT",
+        price=float(price),
+        quantity=float(amount),
+        filled=0.0,
+        exchange_id="ex",
+        side=protocol_models.Side.BUY,
+        type=protocol_models.OrderType.LIMIT,
+        trigger_above=False,
+        reduce_only=False,
+        is_active=True,
+        status=protocol_models.OrderStatus.OPEN,
+        created_at=timestamp_util.utc_datetime_from_timestamp(created_ts),
+    )
 
 
 def _replicable_buy_market_order(
@@ -214,26 +243,29 @@ def _replicable_buy_market_order(
     order_id: str = "ref-market-1",
     amount: decimal.Decimal = decimal.Decimal("1"),
     price: decimal.Decimal = decimal.Decimal("2000"),
-) -> dict:
-    return {
-        trading_constants.STORAGE_ORIGIN_VALUE: {
-            trading_enums.ExchangeConstantsOrderColumns.ID.value: order_id,
-            trading_enums.ExchangeConstantsOrderColumns.SYMBOL.value: "ETH/USDT",
-            trading_enums.ExchangeConstantsOrderColumns.SIDE.value: trading_enums.TradeOrderSide.BUY.value,
-            trading_enums.ExchangeConstantsOrderColumns.TYPE.value: trading_enums.TradeOrderType.MARKET.value,
-            trading_enums.ExchangeConstantsOrderColumns.AMOUNT.value: amount,
-            trading_enums.ExchangeConstantsOrderColumns.PRICE.value: price,
-            trading_enums.ExchangeConstantsOrderColumns.STATUS.value: trading_enums.OrderStatus.OPEN.value,
-        }
-    }
+) -> protocol_models.Order:
+    return protocol_models.Order(
+        id=order_id,
+        symbol="ETH/USDT",
+        price=float(price),
+        quantity=float(amount),
+        filled=0.0,
+        exchange_id="ex",
+        side=protocol_models.Side.BUY,
+        type=protocol_models.OrderType.MARKET,
+        trigger_above=False,
+        reduce_only=False,
+        is_active=True,
+        status=protocol_models.OrderStatus.OPEN,
+        created_at=timestamp_util.utc_datetime_from_timestamp(time.time()),
+    )
 
 
 class TestMarketOrderExclusion:
     def test_replicable_reference_orders_omit_market_include_limit(self):
         limit_order = _replicable_buy_limit_order(order_id="limit-1")
         market_order = _replicable_buy_market_order(order_id="market-1")
-        reference = copy_entities.Account(
-            content={},
+        reference = _copied_account(
             orders=[market_order, limit_order],
         )
         exchange_if = mock.MagicMock()
@@ -246,7 +278,7 @@ class TestMarketOrderExclusion:
         assert replicable == [limit_order]
 
     def test_mirrored_orphan_open_orders_excludes_copier_market_orders(self):
-        reference = copy_entities.Account(content={}, orders=[])
+        reference = _copied_account()
         exchange_if = mock.MagicMock()
         synchronizer = orders_synchronizer_module.OrdersSynchronizer(
             reference,
@@ -268,17 +300,8 @@ class TestMarketOrderExclusion:
 
 class TestLateReferenceFillHeuristic:
     def test_late_fill_true_when_copier_matches_simulated_reference_fill(self):
-        reference = copy_entities.Account(
-            content={
-                "ETH": {
-                    commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("1"),
-                    copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.25"),
-                },
-                "USDT": {
-                    commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("10000"),
-                    copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.5"),
-                },
-            },
+        reference = _copied_account(
+            copied_assets=_eth_usdt_pair_assets(),
             orders=[],
         )
         currency_totals = {
@@ -300,17 +323,8 @@ class TestLateReferenceFillHeuristic:
         assert synchronizer._is_late_reference_fill_for_order(order, []) is True
 
     def test_late_fill_false_when_new_reference_order_copier_not_yet_filled(self):
-        reference = copy_entities.Account(
-            content={
-                "ETH": {
-                    commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("1"),
-                    copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.25"),
-                },
-                "USDT": {
-                    commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("10000"),
-                    copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.5"),
-                },
-            },
+        reference = _copied_account(
+            copied_assets=_eth_usdt_pair_assets(),
             orders=[],
         )
         currency_totals = {
@@ -332,32 +346,15 @@ class TestLateReferenceFillHeuristic:
         assert synchronizer._is_late_reference_fill_for_order(order, []) is False
 
     def test_grace_started_when_late_fill_only_no_orphans(self):
-        compliant_snapshot = copy_entities.Account(
+        assets = _eth_usdt_pair_assets()
+        compliant_snapshot = _copied_account(
             updated_at=time.time() - 1.0,
-            content={
-                "ETH": {
-                    commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("1"),
-                    copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.25"),
-                },
-                "USDT": {
-                    commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("10000"),
-                    copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.5"),
-                },
-            },
+            copied_assets=assets,
             orders=[],
         )
-        reference = copy_entities.Account(
+        reference = _copied_account(
             updated_at=time.time(),
-            content={
-                "ETH": {
-                    commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("1"),
-                    copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.25"),
-                },
-                "USDT": {
-                    commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("10000"),
-                    copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.5"),
-                },
-            },
+            copied_assets=assets,
             orders=[],
             historical_snapshots=[compliant_snapshot],
         )
@@ -395,32 +392,15 @@ class TestApplyGraceGraceEpisodeClearedLogging:
     _GRACE_ELAPSED_SNIPPET = "Mirrored orphan grace elapsed after"
 
     def _sync_late_fill_only_defer_setup(self, *, frozen_reference_time: float):
-        compliant_snapshot = copy_entities.Account(
+        assets = _eth_usdt_pair_assets()
+        compliant_snapshot = _copied_account(
             updated_at=frozen_reference_time - 1.0,
-            content={
-                "ETH": {
-                    commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("1"),
-                    copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.25"),
-                },
-                "USDT": {
-                    commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("10000"),
-                    copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.5"),
-                },
-            },
+            copied_assets=assets,
             orders=[],
         )
-        reference = copy_entities.Account(
+        reference = _copied_account(
             updated_at=frozen_reference_time,
-            content={
-                "ETH": {
-                    commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("1"),
-                    copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.25"),
-                },
-                "USDT": {
-                    commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("10000"),
-                    copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.5"),
-                },
-            },
+            copied_assets=assets,
             orders=[],
             historical_snapshots=[compliant_snapshot],
         )
@@ -446,7 +426,7 @@ class TestApplyGraceGraceEpisodeClearedLogging:
 
     def test_idle_no_episode_cleared_log_when_never_deferred(self, caplog):
         synchronizer = orders_synchronizer_module.OrdersSynchronizer(
-            copy_entities.Account(content={}, orders=[]),
+            _copied_account(),
             mock.MagicMock(),
             copy_entities.AccountCopySettings(),
         )
@@ -512,7 +492,7 @@ class TestApplyGraceGraceEpisodeClearedLogging:
         assert self._EPISODE_CLEARED_SNIPPET not in caplog.text
 
 
-def _replicable_buy_limit_order_id(order_id: str) -> dict:
+def _replicable_buy_limit_order_id(order_id: str) -> protocol_models.Order:
     return _replicable_buy_limit_order(order_id=order_id)
 
 
@@ -531,34 +511,25 @@ class TestMissedHistoricalSignalsGraceAbort:
     def test_is_aborted_when_first_compliant_snapshot_index_at_threshold(self):
         order_m1 = _replicable_buy_limit_order_id("m1")
         order_m2 = _replicable_buy_limit_order_id("m2")
-        portfolio = {
-            "ETH": {
-                commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("1"),
-                copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.25"),
-            },
-            "USDT": {
-                commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("10000"),
-                copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.5"),
-            },
-        }
-        empty_snapshot = copy_entities.Account(
+        assets = _eth_usdt_pair_assets()
+        empty_snapshot = _copied_account(
             updated_at=time.time(),
-            content=portfolio,
+            copied_assets=assets,
             orders=[],
         )
-        empty_snapshot_mid = copy_entities.Account(
+        empty_snapshot_mid = _copied_account(
             updated_at=time.time() - 1.0,
-            content=portfolio,
+            copied_assets=assets,
             orders=[],
         )
-        compliant_snapshot = copy_entities.Account(
+        compliant_snapshot = _copied_account(
             updated_at=time.time() - 5.0,
-            content=portfolio,
+            copied_assets=assets,
             orders=[order_m1, order_m2],
         )
-        live_reference = copy_entities.Account(
+        live_reference = _copied_account(
             updated_at=time.time(),
-            content=portfolio,
+            copied_assets=assets,
             orders=[order_m1],
             historical_snapshots=[empty_snapshot, empty_snapshot_mid, compliant_snapshot],
         )
@@ -588,34 +559,25 @@ class TestMissedHistoricalSignalsGraceAbort:
     def test_apply_grace_cancels_immediately_when_missed_signals_abort(self):
         order_m1 = _replicable_buy_limit_order_id("m1")
         order_m2 = _replicable_buy_limit_order_id("m2")
-        portfolio = {
-            "ETH": {
-                commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("1"),
-                copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.25"),
-            },
-            "USDT": {
-                commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("10000"),
-                copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("0.5"),
-            },
-        }
-        empty_snapshot = copy_entities.Account(
+        assets = _eth_usdt_pair_assets()
+        empty_snapshot = _copied_account(
             updated_at=time.time(),
-            content=portfolio,
+            copied_assets=assets,
             orders=[],
         )
-        empty_snapshot_mid = copy_entities.Account(
+        empty_snapshot_mid = _copied_account(
             updated_at=time.time() - 1.0,
-            content=portfolio,
+            copied_assets=assets,
             orders=[],
         )
-        compliant_snapshot = copy_entities.Account(
+        compliant_snapshot = _copied_account(
             updated_at=time.time() - 5.0,
-            content=portfolio,
+            copied_assets=assets,
             orders=[order_m1, order_m2],
         )
-        live_reference = copy_entities.Account(
+        live_reference = _copied_account(
             updated_at=time.time(),
-            content=portfolio,
+            copied_assets=assets,
             orders=[order_m1],
             historical_snapshots=[empty_snapshot, empty_snapshot_mid, compliant_snapshot],
         )
@@ -712,7 +674,7 @@ class TestMirroredOrderSelfLockCreditCompute:
             mark_price=mark_price,
         )
         synchronizer = orders_synchronizer_module.OrdersSynchronizer(
-            copy_entities.Account(content={}, orders=[]),
+            _copied_account(),
             exchange_if,
             copy_entities.AccountCopySettings(),
         )
@@ -748,7 +710,7 @@ class TestMirroredOrderSelfLockCreditCompute:
             mark_price=mark_price,
         )
         synchronizer = orders_synchronizer_module.OrdersSynchronizer(
-            copy_entities.Account(content={}, orders=[]),
+            _copied_account(),
             exchange_if,
             copy_entities.AccountCopySettings(),
         )

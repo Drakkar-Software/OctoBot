@@ -15,6 +15,8 @@ import ccxt.async_support as ccxt_async
 import octobot_trading.exchanges.connectors.ccxt.ccxt_clients_cache as ccxt_clients_cache
 import octobot.community as community
 
+import octobot_protocol.models as protocol_models
+
 import octobot_copy.constants as copy_constants
 import octobot_copy.entities as copy_entities
 
@@ -68,26 +70,24 @@ def trading_signal_emission_patches(emit_signals: bool, *, mock_authenticator: b
 
 
 def assert_emitted_signal_account_allocation_ratios(
-    content: dict,
+    copied_account: protocol_models.CopiedAccount,
     *,
     allow_zero_ratio_assets: frozenset[str] = frozenset(),
     allow_negligible_ratio_assets: frozenset[str] = frozenset(),
 ) -> None:
-    """Allocation checks for `TradingSignal.account.content` from `insert_trading_signal` only."""
-    ratio_key = copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO
+    """Allocation checks for ``TradingSignal.account.copied_assets`` from ``insert_trading_signal`` only."""
     total_value = decimal.Decimal(0)
-    for asset, balances in content.items():
-        assert ratio_key in balances, f"missing {ratio_key} for {asset}"
-        ratio = balances[ratio_key]
-        assert isinstance(ratio, decimal.Decimal)
+    for asset in copied_account.copied_assets or []:
+        ratio = decimal.Decimal(str(asset.ratio))
         total_value += ratio
         ratio_float = float(ratio)
-        if asset in allow_zero_ratio_assets:
+        name = asset.name
+        if name in allow_zero_ratio_assets:
             assert ratio_float == pytest.approx(0.0, abs=1e-18)
-        elif asset in allow_negligible_ratio_assets:
-            assert ratio_float < 0.05, f"{asset} expected negligible allocation_ratio, got {ratio_float}"
+        elif name in allow_negligible_ratio_assets:
+            assert ratio_float < 0.05, f"{name} expected negligible ratio, got {ratio_float}"
         else:
-            assert ratio_float > 0, f"{asset} allocation_ratio should be > 0, got {ratio_float}"
+            assert ratio_float > 0, f"{name} ratio should be > 0, got {ratio_float}"
     assert float(total_value) == pytest.approx(1.0, abs=1e-3)
 
 
@@ -329,7 +329,7 @@ def actions_with_cancel_limit_orders():
 
 def copy_exchange_account_action(
     reference_market: str,
-    reference_account: copy_entities.Account,
+    reference_account: protocol_models.CopiedAccount,
     account_copy_settings: typing.Optional[copy_entities.AccountCopySettings] = None,
     strategy_id: str = FUNCTIONAL_TEST_COPY_STRATEGY_ID,
 ) -> dict:

@@ -7,7 +7,8 @@ import pytest
 import octobot_commons.constants as commons_constants
 import octobot_commons.errors as commons_errors
 import octobot_copy.constants as copy_constants
-import octobot_copy.entities as copy_entities
+import octobot_copy.constants as copy_constants
+import octobot_protocol.models as protocol_models
 import octobot_flow.entities
 import octobot_flow.errors
 import octobot_flow.logic.actions.account_copy_util as account_copy_util
@@ -17,17 +18,14 @@ STRATEGY_ID = "test-copy-strategy"
 REFERENCE_MARKET = "USDT"
 
 
-def _minimal_account(*, btc_total: str = "0.01") -> copy_entities.Account:
-    total = decimal.Decimal(btc_total)
-    return copy_entities.Account(
+def _minimal_account(*, btc_total: str = "0.01") -> protocol_models.CopiedAccount:
+    total = float(decimal.Decimal(btc_total))
+    return protocol_models.CopiedAccount(
+        version=copy_constants.COPIED_ACCOUNT_VERSION,
         updated_at=time.time(),
-        content={
-            "BTC": {
-                copy_constants.PORTFOLIO_ASSET_ALLOCATION_RATIO: decimal.Decimal("1"),
-                commons_constants.PORTFOLIO_TOTAL: total,
-                commons_constants.PORTFOLIO_AVAILABLE: total,
-            },
-        },
+        copied_assets=[
+            protocol_models.CopiedAsset(name="BTC", total=total, available=total, ratio=1.0),
+        ],
     )
 
 

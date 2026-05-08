@@ -83,6 +83,7 @@ jobs:
           - packages/node
           - packages/flow
           - packages/copy
+          - packages/protocol
           - packages/services
           - packages/sync
           - packages/tentacles_manager
@@ -174,7 +175,11 @@ jobs:
             if [ "${{ matrix.package }}" = "packages/tentacles_manager" ]; then
               pytest tests
             else
-              pytest tests -n auto --dist loadfile
+              if [ "${{ matrix.package }}" = "packages/protocol" ]; then
+                pytest test
+              else
+                pytest tests -n auto --dist loadfile
+              fi
             fi
           fi
         fi

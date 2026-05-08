@@ -38,7 +38,7 @@ import octobot_commons.logging as commons_logging
 import octobot_commons.symbols as symbol_util
 import octobot_commons.list_util as list_util
 
-import numpy as numpy
+import numpy
 
 
 def parse_decimal_portfolio(portfolio, as_decimal=True):
@@ -95,7 +95,6 @@ def portfolio_to_float(portfolio, use_wallet_balance_on_futures=False):
                 commons_constants.PORTFOLIO_TOTAL: float(symbol_balance.total)
             }
     return float_portfolio
-
 
 def from_raw_to_formatted_portfolio(
     raw_portfolio_content: dict[str, dict[str, typing.Union[float, decimal.Decimal]]], as_float=True
