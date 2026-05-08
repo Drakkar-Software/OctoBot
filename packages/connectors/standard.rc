@@ -1,0 +1,4 @@
+[MASTER]
+extension-pkg-whitelist=octobot_connectors_rs
+fail-under=10.0
+ignore=CVS,tests,additional_tests

@@ -1,0 +1,3 @@
+# Runtime Python dependencies
+# The ccxt Rust crate handles exchange connectivity directly.
+# No additional Python runtime dependencies are needed.

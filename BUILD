@@ -35,6 +35,7 @@ PACKAGE_SOURCES = [
     "packages/async_channel:async_channel",
     "packages/backtesting:octobot_backtesting",
     "packages/commons:octobot_commons",
+    "packages/connectors:octobot_connectors",
     "packages/evaluators:octobot_evaluators",
     "packages/node:octobot_node",
     "packages/flow:octobot_flow",
