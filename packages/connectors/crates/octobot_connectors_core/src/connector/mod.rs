@@ -9,6 +9,7 @@
 
 pub mod adapter;
 pub mod ccxt;
+pub(crate) mod markets;
 
 use async_trait::async_trait;
 use std::collections::HashMap;

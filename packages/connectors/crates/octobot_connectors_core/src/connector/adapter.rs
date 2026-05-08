@@ -94,12 +94,15 @@ impl CcxtAdapter {
                 .map(|d| d.as_millis() as i64)
                 .unwrap_or(0)
         });
+        let coerce_f64 = |v: &serde_json::Value| -> Option<f64> {
+            v.as_f64().or_else(|| v.as_str().and_then(|s| s.parse().ok()))
+        };
         let parse_side = |key: &str| -> Vec<[f64; 2]> {
             raw[key].as_array().map(|arr| {
                 arr.iter().filter_map(|entry| {
                     let row = entry.as_array()?;
-                    let price = row.get(0)?.as_f64()?;
-                    let qty = row.get(1)?.as_f64()?;
+                    let price = coerce_f64(row.get(0)?)?;
+                    let qty = coerce_f64(row.get(1)?)?;
                     Some([price, qty])
                 }).collect()
             }).unwrap_or_default()

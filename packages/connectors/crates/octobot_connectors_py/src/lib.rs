@@ -437,16 +437,22 @@ impl PyCcxtConnector {
     // The pattern here uses tokio's block_in_place for simplicity; production code
     // should use `pyo3_asyncio_0_21::tokio::future_into_py` for true async.
 
-    fn initialize<'py>(&mut self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
-        // Synchronous init using tokio::runtime::Handle
-        // A full async bridge would use: pyo3_asyncio_0_21::tokio::future_into_py(py, async { ... })
+    fn initialize(&mut self, py: Python<'_>) -> PyResult<()> {
         py.allow_threads(|| {
             tokio::runtime::Runtime::new()
                 .map_err(|e| PyRuntimeError::new_err(e.to_string()))?
                 .block_on(self.inner.initialize())
                 .map_err(to_py_err)
-        })?;
-        Ok(py.None().into_bound(py))
+        })
+    }
+
+    fn stop(&mut self, py: Python<'_>) -> PyResult<()> {
+        py.allow_threads(|| {
+            tokio::runtime::Runtime::new()
+                .map_err(|e| PyRuntimeError::new_err(e.to_string()))?
+                .block_on(self.inner.stop())
+                .map_err(to_py_err)
+        })
     }
 
     fn get_balance<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
@@ -511,6 +517,34 @@ impl PyCcxtConnector {
                 .map_err(to_py_err)
         })?;
         Py::new(py, PyOrderBook(result)).map(|p| p.into_bound(py).into_any())
+    }
+
+    fn get_recent_trades<'py>(
+        &self,
+        py: Python<'py>,
+        symbol: String,
+        limit: Option<usize>,
+    ) -> PyResult<Bound<'py, PyAny>> {
+        let result = py.allow_threads(|| {
+            tokio::runtime::Runtime::new()
+                .unwrap()
+                .block_on(self.inner.get_recent_trades(&symbol, limit))
+                .map_err(to_py_err)
+        })?;
+        let items: Vec<_> = result
+            .into_iter()
+            .map(|t| {
+                let d = pyo3::types::PyDict::new_bound(py);
+                let _ = d.set_item("id", t.id);
+                let _ = d.set_item("timestamp", t.timestamp);
+                let _ = d.set_item("symbol", t.symbol);
+                let _ = d.set_item("price", t.price);
+                let _ = d.set_item("amount", t.amount);
+                d.into_any().unbind()
+            })
+            .collect();
+        let list = pyo3::types::PyList::new_bound(py, items);
+        Ok(list.into_any())
     }
 
     fn get_open_orders<'py>(

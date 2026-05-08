@@ -13,7 +13,7 @@ use tokio::sync::Mutex;
 use ccxt::exchange::{Exchange as CcxtExchange, Value as CcxtValue};
 
 use crate::config::ExchangeConfig;
-use crate::connector::{adapter::CcxtAdapter, Exchange};
+use crate::connector::{adapter::CcxtAdapter, markets, Exchange};
 use crate::enums::{ExchangeTypes, OrderStatus, TimeFrame, TradeOrderSide, TraderOrderType};
 use crate::error::{ExchangeResult, OctoBotExchangeError};
 use crate::types::{
@@ -62,6 +62,16 @@ fn build_ccxt_config(config: &ExchangeConfig) -> serde_json::Value {
         obj[k] = v.clone();
     }
     obj
+}
+
+/// Fetch markets via direct API calls, bypassing ccxt-rust's load_markets stub.
+/// Returns (unified_symbol, raw_market_json) pairs suitable for adapt_market_status.
+async fn fetch_markets_direct(
+    exchange: &mut (dyn CcxtExchange + Send),
+    name: &str,
+    is_future: bool,
+) -> Vec<(String, serde_json::Value)> {
+    markets::fetch_markets(exchange, name, is_future).await
 }
 
 /// Create a boxed ccxt exchange instance for the given exchange name.
@@ -200,11 +210,28 @@ impl CcxtConnector {
         if self.compliancy_errors.iter().any(|e| lower.contains(e.as_str())) {
             return OctoBotExchangeError::ExchangeCompliancyError(error.to_string());
         }
-        if lower.contains("auth") || lower.contains("apikey") || lower.contains("invalid key") {
+        if lower.contains("auth") || lower.contains("apikey") || lower.contains("api key")
+            || lower.contains("invalid key") || lower.contains("signature")
+            || lower.contains("access denied") || lower.contains("forbidden")
+        {
             return OctoBotExchangeError::AuthenticationError(error.to_string());
         }
-        if lower.contains("rate limit") || lower.contains("ddos") {
+        if lower.contains("rate limit") || lower.contains("ddos") || lower.contains("too many requests") {
             return OctoBotExchangeError::RateLimitExceeded(error.to_string());
+        }
+        if lower.contains("order not found") || lower.contains("order does not exist")
+            || lower.contains("unknown order")
+        {
+            return OctoBotExchangeError::OrderNotFound(error.to_string());
+        }
+        if lower.contains("insufficient") || lower.contains("not enough") || lower.contains("balance") {
+            return OctoBotExchangeError::MissingFunds(error.to_string());
+        }
+        if lower.contains("permission") || lower.contains("not allowed") {
+            return OctoBotExchangeError::PermissionError(error.to_string());
+        }
+        if lower.contains("compliance") || lower.contains("sanctioned") || lower.contains("restricted") {
+            return OctoBotExchangeError::ExchangeCompliancyError(error.to_string());
         }
         OctoBotExchangeError::FailedRequest(error.to_string())
     }
@@ -235,14 +262,15 @@ impl Exchange for CcxtConnector {
         let client: CcxtClient = Arc::new(Mutex::new(ccxt_client));
 
         {
+            let rest_name = self.rest_name.clone();
+            let is_future = self.config.is_future;
             let mut guard = client.lock().await;
-            let raw = guard.load_markets(CcxtValue::Undefined, CcxtValue::Undefined).await;
-            if let Some(serde_json::Value::Object(map)) = ccxt_to_json(raw) {
-                for (symbol, market_raw) in map {
-                    match self.adapter.adapt_market_status(&market_raw) {
-                        Ok(ms) => { self.markets.insert(symbol, ms); }
-                        Err(e) => { log::warn!("market status parse error for {symbol}: {e}"); }
-                    }
+            let markets_raw = fetch_markets_direct(&mut **guard, &rest_name, is_future).await;
+            drop(guard);
+            for (symbol, market_raw) in markets_raw {
+                match self.adapter.adapt_market_status(&market_raw) {
+                    Ok(ms) => { self.markets.insert(symbol, ms); }
+                    Err(e) => { log::warn!("market status parse error for {symbol}: {e}"); }
                 }
             }
         }
@@ -275,7 +303,7 @@ impl Exchange for CcxtConnector {
     }
 
     fn is_supporting_sandbox(&self) -> bool {
-        false
+        self.config.is_sandboxed
     }
 
     // ---- Market data ----
@@ -286,16 +314,15 @@ impl Exchange for CcxtConnector {
         }
         let client_opt = self.client.clone();
         if let Some(client) = client_opt {
-            let reload_val = CcxtValue::Json(json!(reload));
+            let name = self.rest_name.clone();
+            let is_future = self.config.is_future;
             let mut guard = client.lock().await;
-            let raw = guard.load_markets(reload_val, CcxtValue::Undefined).await;
+            let markets_raw = fetch_markets_direct(&mut **guard, &name, is_future).await;
             drop(guard);
-            if let Some(serde_json::Value::Object(map)) = ccxt_to_json(raw) {
-                for (symbol, market_raw) in map {
-                    match self.adapter.adapt_market_status(&market_raw) {
-                        Ok(ms) => { self.markets.insert(symbol, ms); }
-                        Err(e) => { log::warn!("market status parse error for {symbol}: {e}"); }
-                    }
+            for (symbol, market_raw) in markets_raw {
+                match self.adapter.adapt_market_status(&market_raw) {
+                    Ok(ms) => { self.markets.insert(symbol, ms); }
+                    Err(e) => { log::warn!("market status parse error for {symbol}: {e}"); }
                 }
             }
         }
@@ -339,8 +366,12 @@ impl Exchange for CcxtConnector {
             CcxtValue::Json(serde_json::Value::Object(params.into_iter().collect()))
         };
 
+        let market_id = self.markets.get(symbol)
+            .and_then(|ms| ms.id.as_deref())
+            .unwrap_or(symbol);
+
         let raw = guard.fetch_ohlcv(
-            CcxtValue::Json(json!(symbol)),
+            CcxtValue::Json(json!(market_id)),
             CcxtValue::Json(json!(time_frame.to_ccxt_value())),
             since_val,
             limit_val,
@@ -370,8 +401,9 @@ impl Exchange for CcxtConnector {
         let client = self.ccxt_client()?;
         let mut guard = client.lock().await;
 
+        let market_id = self.markets.get(symbol).and_then(|ms| ms.id.as_deref()).unwrap_or(symbol);
         let raw = guard.fetch_order_book(
-            CcxtValue::Json(json!(symbol)),
+            CcxtValue::Json(json!(market_id)),
             CcxtValue::Json(json!(limit)),
             CcxtValue::Undefined,
         ).await;
@@ -388,9 +420,10 @@ impl Exchange for CcxtConnector {
         let client = self.ccxt_client()?;
         let mut guard = client.lock().await;
 
+        let market_id = self.markets.get(symbol).and_then(|ms| ms.id.as_deref()).unwrap_or(symbol);
         let limit_val = limit.map(|l| CcxtValue::Json(json!(l))).unwrap_or(CcxtValue::Undefined);
         let raw = guard.fetch_trades(
-            CcxtValue::Json(json!(symbol)),
+            CcxtValue::Json(json!(market_id)),
             CcxtValue::Undefined,
             limit_val,
             CcxtValue::Undefined,
@@ -407,8 +440,9 @@ impl Exchange for CcxtConnector {
         let client = self.ccxt_client()?;
         let mut guard = client.lock().await;
 
+        let market_id = self.markets.get(symbol).and_then(|ms| ms.id.as_deref()).unwrap_or(symbol);
         let raw = guard.fetch_ticker(
-            CcxtValue::Json(json!(symbol)),
+            CcxtValue::Json(json!(market_id)),
             CcxtValue::Undefined,
         ).await;
 
@@ -901,11 +935,10 @@ impl Exchange for CcxtConnector {
     }
 
     fn get_pair_from_exchange(&self, pair: &str) -> Option<String> {
-        if self.markets.contains_key(pair) {
-            Some(pair.to_string())
-        } else {
-            None
-        }
+        // pair is an exchange-native id; find the matching unified symbol
+        self.markets.values()
+            .find(|m| m.id.as_deref() == Some(pair))
+            .map(|m| m.symbol.clone())
     }
 
     fn get_exchange_pair(&self, pair: &str) -> ExchangeResult<String> {

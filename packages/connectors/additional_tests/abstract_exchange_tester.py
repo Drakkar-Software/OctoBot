@@ -3,8 +3,7 @@ Abstract base class for live exchange integration tests.
 Mirrors packages/additional_tests/exchanges_tests/abstract_authenticated_exchange_tester.py
 but delegates to the Rust ExchangeTestRunner via octobot_connectors_rs.
 """
-import asyncio
-from abc import ABC, abstractmethod
+from abc import ABC
 
 from octobot_connectors import CcxtConnector, ExchangeConfig, ExchangeCredentials
 
@@ -55,73 +54,71 @@ class AbstractExchangeTester(ABC):
         password = os.environ.get(f"{self.EXCHANGE_NAME.upper()}_API_PASSWORD")
         return ExchangeCredentials(api_key=key, secret=secret, password=password)
 
-    # ---- Test entrypoints (async) ----
+    # ---- Test entrypoints (async wrappers; PyO3 methods are synchronous) ----
 
     async def test_get_portfolio(self):
         connector = self.get_connector()
-        await connector.initialize()
-        balance = await connector.get_balance({})
+        connector.initialize()
+        balance = connector.get_balance()
         assert balance is not None
-        await connector.stop()
+        connector.stop()
 
     async def test_get_symbol_prices(self):
         connector = self.get_connector()
-        await connector.initialize()
-        from octobot_connectors import TimeFrame
-        tf = getattr(TimeFrame, self._time_frame_variant(), TimeFrame.OneHour)
-        candles = await connector.get_symbol_prices(self.SYMBOL, tf, 50, None, {})
+        connector.initialize()
+        candles = connector.get_symbol_prices(self.SYMBOL, self.TIME_FRAME, 50, None)
         assert len(candles) > 0
-        await connector.stop()
+        connector.stop()
 
     async def test_get_order_book(self):
         connector = self.get_connector()
-        await connector.initialize()
-        ob = await connector.get_order_book(self.SYMBOL, 10)
+        connector.initialize()
+        ob = connector.get_order_book(self.SYMBOL, 10)
         assert ob is not None
         assert len(ob.bids) > 0
         assert len(ob.asks) > 0
-        await connector.stop()
+        connector.stop()
 
     async def test_get_recent_trades(self):
         connector = self.get_connector()
-        await connector.initialize()
-        trades = await connector.get_recent_trades(self.SYMBOL, 10)
+        connector.initialize()
+        trades = connector.get_recent_trades(self.SYMBOL, 10)
         assert isinstance(trades, list)
-        await connector.stop()
+        connector.stop()
 
     async def test_get_open_orders(self):
         connector = self.get_connector()
-        await connector.initialize()
-        orders = await connector.get_open_orders(self.SYMBOL, None, None)
+        connector.initialize()
+        orders = connector.get_open_orders(self.SYMBOL)
         assert isinstance(orders, list)
-        await connector.stop()
+        connector.stop()
 
     async def test_get_closed_orders(self):
         connector = self.get_connector()
-        await connector.initialize()
-        orders = await connector.get_closed_orders(self.SYMBOL, None, 10)
+        connector.initialize()
+        orders = connector.get_closed_orders(self.SYMBOL, None, 10)
         assert isinstance(orders, list)
-        await connector.stop()
+        connector.stop()
 
     async def test_get_my_recent_trades(self):
         connector = self.get_connector()
-        await connector.initialize()
-        trades = await connector.get_my_recent_trades(self.SYMBOL, None, 10)
+        connector.initialize()
+        trades = connector.get_my_recent_trades(self.SYMBOL, None, 10)
         assert isinstance(trades, list)
-        await connector.stop()
+        connector.stop()
 
     async def test_create_and_cancel_limit_order(self):
         connector = self.get_connector()
-        await connector.initialize()
+        connector.initialize()
         from octobot_connectors import TraderOrderType, TradeOrderSide
         import decimal
 
         # place far-from-market limit buy so it won't fill
-        ticker = await connector.get_price_ticker(self.SYMBOL)
+        ticker = connector.get_price_ticker(self.SYMBOL)
         current_price = ticker.last or ticker.close or ticker.bid
         order_price = current_price * (1 - self.ORDER_PRICE_DIFF / 100)
 
-        order = await connector.create_order(
+        order = connector.create_order(
             TraderOrderType.BuyLimit,
             self.SYMBOL,
             decimal.Decimal("0.001"),
@@ -134,17 +131,8 @@ class AbstractExchangeTester(ABC):
         )
         assert order is not None
 
-        status = await connector.cancel_order(order.id, self.SYMBOL, TraderOrderType.BuyLimit)
+        status = connector.cancel_order(order.id, self.SYMBOL, TraderOrderType.BuyLimit)
         from octobot_connectors import OrderStatus
         assert status in (OrderStatus.Canceled, OrderStatus.Closed)
-        await connector.stop()
+        connector.stop()
 
-    def _time_frame_variant(self) -> str:
-        mapping = {
-            "1m": "OneMinute", "3m": "ThreeMinutes", "5m": "FiveMinutes",
-            "15m": "FifteenMinutes", "30m": "ThirtyMinutes",
-            "1h": "OneHour", "2h": "TwoHours", "4h": "FourHours",
-            "6h": "SixHours", "8h": "EightHours", "12h": "TwelveHours",
-            "1d": "OneDay", "3d": "ThreeDays", "1w": "OneWeek", "1M": "OneMonth",
-        }
-        return mapping.get(self.TIME_FRAME, "OneHour")
