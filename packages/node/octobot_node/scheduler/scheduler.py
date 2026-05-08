@@ -467,6 +467,7 @@ class Scheduler:
             else:
                 task = workflows_util.get_input_task(workflow)
             if task:
+                task.id = workflow.workflow_id[:octobot_node.constants.PARENT_WORKFLOW_ID_LENGTH]
                 tasks.append(task)
         return [t for t in tasks if t is not None]
 

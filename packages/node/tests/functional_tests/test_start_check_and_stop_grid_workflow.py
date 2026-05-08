@@ -19,10 +19,12 @@ import mock
 import time
 import typing
 
+import dbos
 import pytest
 
 import octobot_node.models
 import octobot_node.scheduler.tasks
+import octobot_protocol.models as octobot_protocol_models
 
 from . import grid_workflow_simulator_test_util as grid_sim_util
 from tests.scheduler import temp_dbos_scheduler
@@ -91,6 +93,7 @@ class TestTriggerTaskGridDbosIntegration:
             # Step 1 — wait until the simulator grid exposes the ladder (2 buys, 2 sells) and one optimisation trade.
             grid_deadline = time.monotonic() + _T_GRID_SECONDS
             automation_reader_matching: typing.Any = None
+            workflow_row_matching: typing.Any = None
             while time.monotonic() < grid_deadline:
                 workflow_rows = await temp_dbos_scheduler.INSTANCE.list_workflows_async()
                 grid_predicate_met = False
@@ -111,6 +114,7 @@ class TestTriggerTaskGridDbosIntegration:
                         trade_bucket,
                     ):
                         automation_reader_matching = state_reader
+                        workflow_row_matching = workflow_row
                         grid_predicate_met = True
                         break
                 if grid_predicate_met:
@@ -137,6 +141,17 @@ class TestTriggerTaskGridDbosIntegration:
             )
             assert grid_sim_util.is_simulator_grid_baseline_exactly_one_trade(buys_grid, sells_grid, trades_grid)
 
+            assert workflow_row_matching is not None
+            protocol_state_after_step1 = await grid_sim_util.load_protocol_automation_state_for_workflow(
+                grid_sim_util.SIMULATOR_GRID_TEST_COMMUNITY_WALLET_ADDRESS,
+                workflow_row_matching,
+            )
+            grid_sim_util.assert_protocol_automation_matches_exchange_account_elements(
+                protocol_state_after_step1,
+                elems_after_grid,
+                expected_automation_task_status=octobot_protocol_models.TaskStatus.RUNNING,
+            )
+
             stop_priority_action = {
                 "id": "action_stop_priority",
                 "dsl_script": "stop_automation()",
@@ -150,6 +165,32 @@ class TestTriggerTaskGridDbosIntegration:
                 )
             except TimeoutError as exc:
                 raise AssertionError("send_actions_to_automation timed out") from exc
+
+            workflow_row_after_stop_send: typing.Any = None
+            elements_after_stop_send: typing.Any = None
+            for workflow_row in sorted(
+                await temp_dbos_scheduler.INSTANCE.list_workflows_async(),
+                key=lambda workflow_status: workflow_status.updated_at or 0,
+                reverse=True,
+            ):
+                if grid_sim_util.workflows_util_module.get_automation_id(workflow_row) != _AUTOMATION_ID:
+                    continue
+                reader_after_send = grid_sim_util.workflows_util_module.get_automation_state_reader(workflow_row)
+                if reader_after_send is None:
+                    continue
+                workflow_row_after_stop_send = workflow_row
+                elements_after_stop_send = reader_after_send.state.automation.exchange_account_elements
+                break
+            assert workflow_row_after_stop_send is not None
+            protocol_state_after_stop_send = await grid_sim_util.load_protocol_automation_state_for_workflow(
+                grid_sim_util.SIMULATOR_GRID_TEST_COMMUNITY_WALLET_ADDRESS,
+                workflow_row_after_stop_send,
+            )
+            grid_sim_util.assert_protocol_automation_matches_exchange_account_elements(
+                protocol_state_after_stop_send,
+                elements_after_stop_send,
+                expected_automation_task_status=octobot_protocol_models.TaskStatus.RUNNING,
+            )
 
             # Step 2 — wait for terminate output with priority stop; expect preserved ladder and trade counts.
             final_output_text = await grid_sim_util.wait_for_stop_success_output(
@@ -179,4 +220,22 @@ class TestTriggerTaskGridDbosIntegration:
                 final_buys,
                 final_sells,
                 final_trades,
+            )
+
+            success_rows = [
+                workflow_row
+                for workflow_row in await temp_dbos_scheduler.INSTANCE.list_workflows_async()
+                if workflow_row.status == dbos.WorkflowStatusString.SUCCESS.value
+                and grid_sim_util.workflows_util_module.get_automation_id(workflow_row) == _AUTOMATION_ID
+            ]
+            assert success_rows, "expected at least one SUCCESS workflow for automation after stop"
+            final_workflow_row = max(success_rows, key=lambda workflow_status: workflow_status.updated_at or 0)
+            protocol_state_final = await grid_sim_util.load_protocol_automation_state_for_workflow(
+                grid_sim_util.SIMULATOR_GRID_TEST_COMMUNITY_WALLET_ADDRESS,
+                final_workflow_row,
+            )
+            grid_sim_util.assert_protocol_automation_matches_exchange_account_elements(
+                protocol_state_final,
+                final_elements,
+                expected_automation_task_status=octobot_protocol_models.TaskStatus.COMPLETED,
             )

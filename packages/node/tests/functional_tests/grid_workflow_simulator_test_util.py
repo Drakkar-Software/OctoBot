@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import math
 import time
 import typing
 
@@ -29,22 +30,23 @@ try:
     import octobot_commons.dsl_interpreter as dsl_interpreter_module
     import octobot_commons.enums as common_enums_module
     import octobot_flow.enums as octobot_flow_enums
-    import octobot_flow.repositories.exchange as octobot_flow_repositories_exchange_module
     import octobot_trading.constants as trading_constants_module
     import octobot_trading.enums as trading_enums_module
     import octobot_trading.exchanges.util.exchange_data as exchange_data_module
     import octobot_trading.util.test_tools.exchanges_test_tools as exchanges_test_tools_module
     import tentacles.Trading.Mode.grid_trading_mode.grid_trading as grid_trading_module
 
+    import octobot_node.constants as node_constants_module
+    import octobot_node.scheduler.api as scheduler_api_module
     import octobot_node.scheduler.workflows.params as workflow_params_module
     import octobot_node.scheduler.workflows_util as workflows_util_module
+    import octobot_protocol.models as protocol_models_module
 
     IMPORTED_OCTOBOT_FLOW_GRID_DEPS = True
 except ImportError:
     dsl_interpreter_module = None  # type: ignore
     common_enums_module = None  # type: ignore
     octobot_flow_enums = None  # type: ignore
-    octobot_flow_repositories_exchange_module = None  # type: ignore
     trading_constants_module = None  # type: ignore
     trading_enums_module = None  # type: ignore
     exchange_data_module = None  # type: ignore
@@ -52,6 +54,9 @@ except ImportError:
     grid_trading_module = None  # type: ignore
     workflow_params_module = None  # type: ignore
     workflows_util_module = None  # type: ignore
+    node_constants_module = None  # type: ignore
+    scheduler_api_module = None  # type: ignore
+    protocol_models_module = None  # type: ignore
 
 
 # Passphrase for grid functional tests (WalletBackend requires length >= 8).
@@ -274,6 +279,121 @@ if IMPORTED_OCTOBOT_FLOW_GRID_DEPS:
 
     def is_simulator_grid_baseline_at_least_one_trade(buy_count: int, sell_count: int, trade_count: int) -> bool:
         return buy_count == 2 and sell_count == 2 and trade_count >= 1
+
+    def find_protocol_automation_state(
+        automations_state: protocol_models_module.AutomationsState,
+        parent_workflow_id: str,
+    ) -> typing.Optional[protocol_models_module.AutomationState]:
+        normalized_id = parent_workflow_id[: node_constants_module.PARENT_WORKFLOW_ID_LENGTH]
+        for automation in automations_state.automations or []:
+            if automation.id == normalized_id:
+                return automation
+        return None
+
+    async def load_protocol_automation_state_for_workflow(
+        wallet_address: typing.Optional[str],
+        workflow_row: dbos.WorkflowStatus,
+    ) -> protocol_models_module.AutomationState:
+        parent_id = workflow_row.workflow_id[: node_constants_module.PARENT_WORKFLOW_ID_LENGTH]
+        automations_state = await scheduler_api_module.get_automations_state(wallet_address)
+        assert automations_state.version == node_constants_module.AUTOMATIONS_STATE_VERSION, (
+            f"unexpected AutomationsState.version {automations_state.version!r}, "
+            f"expected {node_constants_module.AUTOMATIONS_STATE_VERSION!r}"
+        )
+        protocol_automation = find_protocol_automation_state(automations_state, parent_id)
+        if protocol_automation is None:
+            seen_ids = [automation.id for automation in (automations_state.automations or [])]
+            raise AssertionError(
+                f"No AutomationsState entry for parent_workflow_id={parent_id!r}; "
+                f"returned automation ids: {seen_ids!r}"
+            )
+        return protocol_automation
+
+    def _portfolio_content_from_exchange_elements(exchange_account_elements: typing.Any) -> dict[str, typing.Any]:
+        portfolio = getattr(exchange_account_elements, "portfolio", None)
+        if portfolio is None and isinstance(exchange_account_elements, dict):
+            portfolio = exchange_account_elements.get("portfolio")
+        if portfolio is None:
+            return {}
+        content = getattr(portfolio, "content", None)
+        if content is None and isinstance(portfolio, dict):
+            content = portfolio.get("content")
+        return content if isinstance(content, dict) else {}
+
+    def _portfolio_row_scalar(row: typing.Any, field_name: str) -> float:
+        if isinstance(row, dict):
+            raw_value = row.get(field_name)
+        else:
+            raw_value = getattr(row, field_name, None)
+        if raw_value is None and field_name == "available":
+            return _portfolio_row_scalar(row, "total")
+        if raw_value is None:
+            raise AssertionError(f"portfolio row missing field {field_name!r}: {row!r}")
+        return float(raw_value)
+
+    def assert_protocol_automation_matches_exchange_account_elements(
+        protocol_automation: protocol_models_module.AutomationState,
+        exchange_account_elements: typing.Any,
+        *,
+        expected_automation_task_status: protocol_models_module.TaskStatus,
+        expected_order_symbol: str = "BTC/USDC",
+    ) -> None:
+        assert protocol_automation.status == expected_automation_task_status, (
+            f"AutomationState.status is {protocol_automation.status.value!r}; "
+            f"expected {expected_automation_task_status.value!r}"
+        )
+        buy_orders, sell_orders, flow_trade_count = buy_sell_trade_counts_from_exchange_elements(
+            exchange_account_elements,
+        )
+        expected_open_count = buy_orders + sell_orders
+        protocol_orders = protocol_automation.orders or []
+        protocol_trades = protocol_automation.trades or []
+        assert len(protocol_orders) == expected_open_count, (
+            f"protocol open order count {len(protocol_orders)} != flow open orders {expected_open_count} "
+            f"(buy={buy_orders}, sell={sell_orders})"
+        )
+        assert len(protocol_trades) == flow_trade_count, (
+            f"protocol trade count {len(protocol_trades)} != flow trade count {flow_trade_count}"
+        )
+        for order_summary in protocol_orders:
+            assert order_summary.symbol == expected_order_symbol, (
+                f"unexpected OrderSummary.symbol {order_summary.symbol!r}; expected {expected_order_symbol!r}"
+            )
+        content = _portfolio_content_from_exchange_elements(exchange_account_elements)
+        assets = protocol_automation.assets or []
+        assets_by_symbol = {asset.symbol: asset for asset in assets}
+        for symbol, row in content.items():
+            matching_asset = assets_by_symbol.get(symbol)
+            assert matching_asset is not None, (
+                f"missing protocol Asset for portfolio symbol {symbol!r}; "
+                f"protocol asset symbols: {sorted(assets_by_symbol)!r}"
+            )
+            expected_total = _portfolio_row_scalar(row, "total")
+            expected_available = _portfolio_row_scalar(row, "available")
+            if not math.isclose(float(matching_asset.total), expected_total, rel_tol=1e-9, abs_tol=1e-6):
+                raise AssertionError(
+                    f"Asset.total mismatch for {symbol!r}: protocol={matching_asset.total!r} "
+                    f"flow={expected_total!r}"
+                )
+            if not math.isclose(float(matching_asset.available), expected_available, rel_tol=1e-9, abs_tol=1e-6):
+                raise AssertionError(
+                    f"Asset.available mismatch for {symbol!r}: protocol={matching_asset.available!r} "
+                    f"flow={expected_available!r}"
+                )
+
+    def is_simulator_grid_baseline_protocol_exactly_one_trade(
+        protocol_automation: protocol_models_module.AutomationState,
+    ) -> bool:
+        order_count = len(protocol_automation.orders or [])
+        trade_count = len(protocol_automation.trades or [])
+        return order_count == 4 and trade_count == 1
+
+    def is_simulator_grid_baseline_protocol_at_least_one_trade(
+        protocol_automation: protocol_models_module.AutomationState,
+    ) -> bool:
+        order_count = len(protocol_automation.orders or [])
+        trade_count = len(protocol_automation.trades or [])
+        return order_count == 4 and trade_count >= 1
 
     async def wait_for_stop_success_output(
         scheduler,

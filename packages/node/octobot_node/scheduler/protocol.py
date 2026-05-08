@@ -24,6 +24,7 @@ import octobot_node.constants as node_constants
 import octobot_node.models as node_models
 import octobot_node.scheduler.octobot_flow_client as octobot_flow_client
 import octobot_protocol.models as protocol_models
+import octobot_trading.constants as octobot_trading_constants
 import octobot_trading.enums as octobot_trading_enums
 import octobot_trading.personal_data.portfolios.protocol as octobot_trading_portfolios_protocol
 import octobot_trading.exchanges.util.exchange_data as exchange_data_import
@@ -77,7 +78,7 @@ def _parse_automation_state(task: node_models.Task) -> flow_entities.AutomationS
     automation_state: octobot_flow_client.OctoBotActionsJobDescription = octobot_flow_client.OctoBotActionsJobDescription.from_dict(
         parsed_description
     )
-    return flow_entities.AutomationState.from_dict(automation_state)
+    return flow_entities.AutomationState.from_dict(automation_state.state)
 
 
 def _flow_action_reports_error(flow_action: flow_entities.AbstractActionDetails) -> bool:
@@ -111,11 +112,12 @@ def _flow_result_to_protocol_str(result: typing.Any) -> typing.Optional[str]:
 def _automation_task_status(flow_automation_state: flow_entities.AutomationState) -> protocol_models.TaskStatus:
     execution = flow_automation_state.automation.execution
     actions_dag = flow_automation_state.automation.actions_dag
+    post_actions = flow_automation_state.automation.post_actions
     if execution.execution_error:
         return protocol_models.TaskStatus.FAILED
     if any(_flow_action_reports_error(action) for action in actions_dag.actions):
         return protocol_models.TaskStatus.FAILED
-    if actions_dag.completed_all_actions():
+    if actions_dag.completed_all_actions() or post_actions.stop_automation:
         return protocol_models.TaskStatus.COMPLETED
     if execution.current_execution.triggered_at > 0 or any(action.is_completed() for action in actions_dag.actions):
         return protocol_models.TaskStatus.RUNNING
@@ -190,8 +192,11 @@ def _order_summaries_from_open_orders(open_orders: list[dict]) -> list[protocol_
     order_columns = octobot_trading_enums.ExchangeConstantsOrderColumns
     summaries: list[protocol_models.OrderSummary] = []
     for order in open_orders:
-        order_id = order.get(order_columns.EXCHANGE_ID.value) or order.get(order_columns.ID.value)
-        symbol = order.get(order_columns.SYMBOL.value)
+        inner = order.get(octobot_trading_constants.STORAGE_ORIGIN_VALUE, order)
+        if not isinstance(inner, dict):
+            inner = order
+        order_id = inner.get(order_columns.EXCHANGE_ID.value) or inner.get(order_columns.ID.value)
+        symbol = inner.get(order_columns.SYMBOL.value)
         if order_id is None or symbol is None:
             continue
         summaries.append(protocol_models.OrderSummary(id=str(order_id), symbol=str(symbol)))
