@@ -13,7 +13,7 @@ use tokio::sync::Mutex;
 use ccxt::exchange::{Exchange as CcxtExchange, Value as CcxtValue};
 
 use crate::config::ExchangeConfig;
-use crate::connector::{adapter::CcxtAdapter, markets, Exchange};
+use crate::connector::{adapter::CcxtAdapter, Exchange};
 use crate::enums::{ExchangeTypes, OrderStatus, TimeFrame, TradeOrderSide, TraderOrderType};
 use crate::error::{ExchangeResult, OctoBotExchangeError};
 use crate::types::{
@@ -62,16 +62,6 @@ fn build_ccxt_config(config: &ExchangeConfig) -> serde_json::Value {
         obj[k] = v.clone();
     }
     obj
-}
-
-/// Fetch markets via direct API calls, bypassing ccxt-rust's load_markets stub.
-/// Returns (unified_symbol, raw_market_json) pairs suitable for adapt_market_status.
-async fn fetch_markets_direct(
-    exchange: &mut (dyn CcxtExchange + Send),
-    name: &str,
-    is_future: bool,
-) -> Vec<(String, serde_json::Value)> {
-    markets::fetch_markets(exchange, name, is_future).await
 }
 
 /// Create a boxed ccxt exchange instance for the given exchange name.
@@ -421,6 +411,17 @@ impl CcxtConnector {
         self.markets.get(symbol).and_then(|ms| ms.contract_size)
     }
 
+    fn populate_markets(&mut self, markets_val: CcxtValue) {
+        if let CcxtValue::Json(serde_json::Value::Object(map)) = markets_val {
+            for (symbol, market_raw) in map {
+                match self.adapter.adapt_market_status(&market_raw) {
+                    Ok(ms) => { self.markets.insert(symbol, ms); }
+                    Err(e) => { log::warn!("market status parse error for {symbol}: {e}"); }
+                }
+            }
+        }
+    }
+
     fn current_timestamp() -> i64 {
         SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -443,17 +444,12 @@ impl Exchange for CcxtConnector {
         let client: CcxtClient = Arc::new(Mutex::new(ccxt_client));
 
         {
-            let rest_name = self.rest_name.clone();
             let is_future = self.config.is_future;
             let mut guard = client.lock().await;
-            let markets_raw = fetch_markets_direct(&mut **guard, &rest_name, is_future).await;
+            let params = CcxtValue::Json(serde_json::json!({"isFuture": is_future}));
+            let markets_val = guard.load_markets(CcxtValue::Json(serde_json::Value::Bool(true)), params).await;
             drop(guard);
-            for (symbol, market_raw) in markets_raw {
-                match self.adapter.adapt_market_status(&market_raw) {
-                    Ok(ms) => { self.markets.insert(symbol, ms); }
-                    Err(e) => { log::warn!("market status parse error for {symbol}: {e}"); }
-                }
-            }
+            self.populate_markets(markets_val);
         }
 
         self.client = Some(client);
@@ -493,19 +489,14 @@ impl Exchange for CcxtConnector {
         if !reload && !self.markets.is_empty() {
             return Ok(self.markets.clone());
         }
-        let client_opt = self.client.clone();
-        if let Some(client) = client_opt {
-            let name = self.rest_name.clone();
+        if let Some(client) = self.client.clone() {
             let is_future = self.config.is_future;
             let mut guard = client.lock().await;
-            let markets_raw = fetch_markets_direct(&mut **guard, &name, is_future).await;
+            let params = CcxtValue::Json(serde_json::json!({"isFuture": is_future}));
+            let reload_val = CcxtValue::Json(serde_json::Value::Bool(reload));
+            let markets_val = guard.load_markets(reload_val, params).await;
             drop(guard);
-            for (symbol, market_raw) in markets_raw {
-                match self.adapter.adapt_market_status(&market_raw) {
-                    Ok(ms) => { self.markets.insert(symbol, ms); }
-                    Err(e) => { log::warn!("market status parse error for {symbol}: {e}"); }
-                }
-            }
+            self.populate_markets(markets_val);
         }
         Ok(self.markets.clone())
     }
