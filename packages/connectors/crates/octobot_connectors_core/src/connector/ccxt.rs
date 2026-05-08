@@ -275,10 +275,12 @@ impl Exchange for CcxtConnector {
         if !reload && !self.markets.is_empty() {
             return Ok(self.markets.clone());
         }
-        if let Some(client) = &self.client {
+        let client_opt = self.client.clone();
+        if let Some(client) = client_opt {
             let reload_val = CcxtValue::Json(json!(reload));
             let mut guard = client.lock().await;
             let raw = guard.load_markets(reload_val, CcxtValue::Undefined).await;
+            drop(guard);
             if let Some(serde_json::Value::Object(map)) = ccxt_to_json(raw) {
                 for (symbol, market_raw) in map {
                     match self.adapter.adapt_market_status(&market_raw) {
