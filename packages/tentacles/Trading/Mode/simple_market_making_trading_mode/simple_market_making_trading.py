@@ -1201,5 +1201,7 @@ class SimpleMarketMakingTradingModeProducer(market_making_trading.MarketMakingTr
         for order in self.get_market_making_orders():
             try:
                 await self.trading_mode.cancel_order(order, wait_for_cancelling=False)
+            except trading_errors.OrderNotFoundOnCancelError as err:
+                self.logger.error(f"Order not found on cancel: {order} ({err})")
             except Exception as err:
                 self.logger.exception(err, True, f"Error when cancelling order: {err}, order: {order}")
