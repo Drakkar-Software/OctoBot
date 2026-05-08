@@ -10,7 +10,6 @@ crate-type = ["cdylib"]
 [dependencies]
 octobot-connectors-core = { path = "../octobot_connectors_core" }
 pyo3 = { version = "0.22", features = ["extension-module", "abi3-py312"] }
-pyo3-asyncio-0_21 = { version = "0.22", features = ["tokio-runtime"] }
 tokio = { version = "1", features = ["full"] }
 serde_json = "1"
 rust_decimal = "1"

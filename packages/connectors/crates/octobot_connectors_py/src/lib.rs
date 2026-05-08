@@ -6,17 +6,15 @@
 
 use pyo3::exceptions::{PyRuntimeError, PyValueError};
 use pyo3::prelude::*;
+use rust_decimal::prelude::ToPrimitive;
 use std::collections::HashMap;
 
 use octobot_connectors_core::{
     config::{ExchangeConfig, ExchangeCredentials, ProxyConfig},
     connector::{ccxt::CcxtConnector, Exchange},
-    enums::{
-        AccountTypes, ContractTradingTypes, ExchangeTypes, FutureContractType, MarginType,
-        OrderStatus, PositionSide, TimeFrame, TradeOrderSide, TraderOrderType,
-    },
+    enums::{ExchangeTypes, MarginType, OrderStatus, PositionSide, TimeFrame, TradeOrderSide, TraderOrderType},
     error::OctoBotExchangeError,
-    types::{Balance, Candle, CurrencyBalance, Order, OrderBook, Position, Ticker, Trade},
+    types::{Balance, Candle, CurrencyBalance, Order, OrderBook, Position, Ticker},
 };
 
 // ---- Helper: convert OctoBotExchangeError → PyErr ----
@@ -218,6 +216,8 @@ impl PyExchangeCredentials {
         })
     }
 
+    #[getter] fn api_key(&self) -> Option<String> { self.0.api_key.clone() }
+    #[getter] fn secret(&self) -> Option<String> { self.0.secret.clone() }
     fn has_credentials(&self) -> bool { self.0.has_credentials() }
     fn __repr__(&self) -> String {
         format!("ExchangeCredentials(key={})", self.0.sanitized_api_key().unwrap_or("None".into()))
@@ -411,6 +411,11 @@ impl PyCcxtConnector {
         self.inner.get_name()
     }
 
+    #[getter]
+    fn exchange_name(&self) -> &str {
+        self.inner.get_name()
+    }
+
     fn is_authenticated(&self) -> bool {
         self.inner.is_authenticated()
     }
@@ -541,10 +546,7 @@ impl PyCcxtConnector {
                 .block_on(self.inner.cancel_order(&order_id, &symbol, ot))
                 .map_err(to_py_err)
         })?;
-        Ok(py.eval(
-            &format!("'{}'", status.value()),
-            None, None,
-        )?)
+        PyOrderStatus(status).into_pyobject(py).map(|b| b.into_any())
     }
 
     fn get_positions<'py>(

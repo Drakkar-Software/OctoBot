@@ -53,7 +53,7 @@ class AbstractExchangeTester(ABC):
         key = os.environ.get(f"{self.EXCHANGE_NAME.upper()}_API_KEY", "")
         secret = os.environ.get(f"{self.EXCHANGE_NAME.upper()}_API_SECRET", "")
         password = os.environ.get(f"{self.EXCHANGE_NAME.upper()}_API_PASSWORD")
-        return ExchangeCredentials(api_key=key, api_secret=secret, api_password=password)
+        return ExchangeCredentials(api_key=key, secret=secret, password=password)
 
     # ---- Test entrypoints (async) ----
 
