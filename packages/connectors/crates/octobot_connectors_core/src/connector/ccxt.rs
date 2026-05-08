@@ -42,19 +42,18 @@ fn ccxt_to_json_required(v: CcxtValue, context: &str) -> ExchangeResult<serde_js
 /// Build the initial config Value passed to a ccxt exchange constructor.
 fn build_ccxt_config(config: &ExchangeConfig) -> serde_json::Value {
     let mut obj = json!({});
-    if let Some(creds) = &config.credentials {
-        if let Some(k) = &creds.api_key {
-            obj["apiKey"] = json!(k);
-        }
-        if let Some(s) = &creds.api_secret {
-            obj["secret"] = json!(s);
-        }
-        if let Some(p) = &creds.api_password {
-            obj["password"] = json!(p);
-        }
-        if let Some(uid) = &creds.uid {
-            obj["uid"] = json!(uid);
-        }
+    let creds = &config.credentials;
+    if let Some(k) = &creds.api_key {
+        obj["apiKey"] = json!(k);
+    }
+    if let Some(s) = &creds.secret {
+        obj["secret"] = json!(s);
+    }
+    if let Some(p) = &creds.password {
+        obj["password"] = json!(p);
+    }
+    if let Some(uid) = &creds.uid {
+        obj["uid"] = json!(uid);
     }
     if config.is_sandboxed {
         obj["options"] = json!({ "sandboxMode": true });
