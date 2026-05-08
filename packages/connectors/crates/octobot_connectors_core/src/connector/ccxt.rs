@@ -862,13 +862,18 @@ impl Exchange for CcxtConnector {
 
         let json_val = ccxt_to_json_required(raw, "withdraw")?;
         Ok(Transaction {
-            id: json_val.get("id").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-            timestamp: json_val.get("timestamp").and_then(|v| v.as_i64()).unwrap_or(0),
-            currency: currency.to_string(),
-            amount,
-            address: address.to_string(),
+            id: json_val.get("id").and_then(|v| v.as_str()).map(|s| s.to_string()),
+            txid: json_val.get("txid").and_then(|v| v.as_str()).map(|s| s.to_string()),
+            timestamp: json_val.get("timestamp").and_then(|v| v.as_i64()),
+            address_to: Some(address.to_string()),
+            address_from: None,
             tag: tag.map(|t| t.to_string()),
-            status: json_val.get("status").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+            tx_type: Some("withdrawal".to_string()),
+            amount: json_val.get("amount").and_then(|v| v.as_f64()),
+            currency: Some(currency.to_string()),
+            status: json_val.get("status").and_then(|v| v.as_str()).map(|s| s.to_string()),
+            fee: None,
+            network: network.map(|n| n.to_string()),
         })
     }
 
