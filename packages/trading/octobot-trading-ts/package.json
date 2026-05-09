@@ -1,0 +1,71 @@
+{
+  "name": "@drakkarsoftware/octobot-trading-exchanges",
+  "version": "0.1.0",
+  "description": "Browser-first TypeScript wrapper around CCXT providing OctoBot's uniformized exchange interface",
+  "type": "module",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/index.js",
+  "browser": "./dist/octobot-trading.browser.min.js",
+  "types": "./dist/index.d.ts",
+  "unpkg": "dist/octobot-trading.browser.min.js",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/cjs/index.d.ts",
+        "default": "./dist/cjs/index.js"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "tsBuild": "tsc",
+    "bundle-cjs": "rollup -c rollup.config.js",
+    "bundle-browser": "webpack build -c webpack.config.cjs && webpack build -c webpack.config.cjs --env minimize=true",
+    "bundle": "npm run bundle-cjs && npm run bundle-browser",
+    "build": "npm run tsBuild && npm run bundle",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:real": "VITEST_REAL_EXCHANGES=1 vitest run tests/realExchanges",
+    "lint": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@drakkarsoftware/octobot-commons": "workspace:*",
+    "async-mutex": "^0.5.0",
+    "ccxt": "^4.5.0",
+    "decimal.js": "^10.4.3"
+  },
+  "devDependencies": {
+    "@rollup/plugin-typescript": "^11.1.6",
+    "@types/node": "^20.11.0",
+    "rollup": "^4.12.0",
+    "ts-loader": "^9.5.1",
+    "tslib": "^2.6.2",
+    "typescript": "^5.4.0",
+    "vitest": "^1.4.0",
+    "webpack": "^5.90.0",
+    "webpack-cli": "^5.1.4"
+  },
+  "keywords": [
+    "ccxt",
+    "trading",
+    "exchange",
+    "octobot",
+    "browser",
+    "crypto"
+  ],
+  "license": "LGPL-3.0",
+  "publishConfig": {
+    "registry": "https://registry.npmjs.com"
+  }
+}

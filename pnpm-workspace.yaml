@@ -1,0 +1,3 @@
+packages:
+  - "packages/commons/octobot-commons-ts"
+  - "packages/trading/octobot-trading-ts"

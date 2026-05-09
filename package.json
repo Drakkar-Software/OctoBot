@@ -1,0 +1,17 @@
+{
+  "name": "octobot-ts-workspace",
+  "private": true,
+  "version": "0.0.0",
+  "description": "pnpm workspace for the TypeScript packages that live alongside the Python pants resolve. Run `pnpm install` from this directory to wire @drakkarsoftware/octobot-commons into @drakkarsoftware/octobot-trading-exchanges via the workspace:* protocol.",
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8"
+  },
+  "scripts": {
+    "build": "pnpm -r --filter \"@drakkarsoftware/*\" run build",
+    "test": "pnpm -r --filter \"@drakkarsoftware/*\" run test",
+    "lint": "pnpm -r --filter \"@drakkarsoftware/*\" run lint",
+    "clean": "pnpm -r --filter \"@drakkarsoftware/*\" run clean"
+  },
+  "packageManager": "pnpm@9.0.0"
+}

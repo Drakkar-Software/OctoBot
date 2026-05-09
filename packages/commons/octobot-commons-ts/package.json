@@ -1,0 +1,42 @@
+{
+  "name": "@drakkarsoftware/octobot-commons",
+  "version": "0.1.0",
+  "description": "Browser-friendly TypeScript port of octobot_commons utilities (logger, async tools, event bus, symbol parsing, decimal helpers, common enums and errors)",
+  "type": "module",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/cjs/index.d.ts",
+        "default": "./dist/cjs/index.js"
+      }
+    }
+  },
+  "files": ["dist", "src"],
+  "engines": { "node": ">=18.0.0" },
+  "scripts": {
+    "tsBuild": "tsc",
+    "bundle-cjs": "rollup -c rollup.config.js",
+    "build": "npm run tsBuild && npm run bundle-cjs",
+    "test": "vitest run",
+    "lint": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "decimal.js": "^10.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "rollup": "^4.12.0",
+    "typescript": "^5.4.0",
+    "vitest": "^1.4.0"
+  },
+  "license": "LGPL-3.0",
+  "publishConfig": { "registry": "https://registry.npmjs.com" }
+}

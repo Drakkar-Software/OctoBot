@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>octobot-trading-ts browser smoke test</title>
+</head>
+<body>
+  <h1>octobot-trading-ts browser smoke test</h1>
+  <p>Open the browser console — the page fetches a normalized ticker for <code>BTC/USDT</code> on Kraken via the unified API.</p>
+
+  <!-- CCXT is loaded externally; the trading-exchanges bundle marks it as a peer global -->
+  <script src="https://cdn.jsdelivr.net/npm/ccxt/dist/ccxt.browser.min.js"></script>
+  <script src="../dist/octobot-trading.browser.min.js"></script>
+
+  <script>
+    (async () => {
+      const { createExchangeBuilderInstance, EventBus } = window.octobotTrading;
+      const manager = createExchangeBuilderInstance("kraken").asSpot().build();
+      try {
+        await manager.initialize();
+        const ticker = await manager.exchange.getPriceTicker("BTC/USDT");
+        console.log("normalized BTC/USDT ticker:", ticker);
+        const ob = await manager.exchange.getOrderBook("BTC/USDT", 5);
+        console.log("normalized order book (top 5):", ob);
+      } catch (err) {
+        console.error("smoke test failed:", err);
+      } finally {
+        await manager.stop();
+      }
+    })();
+  </script>
+</body>
+</html>
