@@ -7,5 +7,4 @@ pub mod exchange;
 pub mod types;
 pub mod util;
 
-#[cfg(test)]
 pub mod tests;
