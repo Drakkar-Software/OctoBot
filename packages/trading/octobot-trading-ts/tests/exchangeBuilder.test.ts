@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { ExchangeBuilder, createExchangeBuilderInstance } from "../src/exchangeBuilder.js";
-import { ExchangeManager } from "../src/exchangeManager.js";
-import { DefaultRestExchange } from "../src/implementations/defaultRestExchange.js";
+import { ExchangeBuilder, createExchangeBuilderInstance } from "../src/exchanges/exchangeBuilder.js";
+import { ExchangeManager } from "../src/exchanges/exchangeManager.js";
+import { DefaultRestExchange } from "../src/exchanges/implementations/defaultRestExchange.js";
 
 describe("ExchangeBuilder", () => {
   it("returns an ExchangeManager wrapping a default REST exchange", () => {

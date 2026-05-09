@@ -1,39 +1,39 @@
 // Public API surface — mirrors octobot_trading/exchanges/__init__.py with the
 // scope reduced to REST + WebSocket + adapters.
 
-export * from "./enums.js";
-export * from "./errors.js";
-export * from "./exchanges.js";
-export * from "./exchangeManager.js";
-export * from "./exchangeBuilder.js";
-export * from "./exchangeDetails.js";
-export * from "./abstractExchange.js";
-export * from "./abstractWebsocketExchange.js";
+export * from "./exchanges/enums.js";
+export * from "./exchanges/errors.js";
+export * from "./exchanges/exchanges.js";
+export * from "./exchanges/exchangeManager.js";
+export * from "./exchanges/exchangeBuilder.js";
+export * from "./exchanges/exchangeDetails.js";
+export * from "./exchanges/abstractExchange.js";
+export * from "./exchanges/abstractWebsocketExchange.js";
 
-export * from "./types/restExchange.js";
-export * from "./types/websocketExchange.js";
+export * from "./exchanges/types/restExchange.js";
+export * from "./exchanges/types/websocketExchange.js";
 
-export * from "./implementations/defaultRestExchange.js";
-export * from "./implementations/defaultWebsocketExchange.js";
+export * from "./exchanges/implementations/defaultRestExchange.js";
+export * from "./exchanges/implementations/defaultWebsocketExchange.js";
 
-export * from "./adapters/abstractAdapter.js";
-export * from "./adapters/ccxtAdapter.js";
+export * from "./exchanges/adapters/abstractAdapter.js";
+export * from "./exchanges/adapters/ccxtAdapter.js";
 
-export * from "./connectors/ccxt/ccxtConnector.js";
-export * from "./connectors/ccxt/ccxtWebsocketConnector.js";
-export * from "./connectors/ccxt/ccxtClientUtil.js";
-export * from "./connectors/ccxt/ccxtConstants.js";
-export * from "./connectors/ccxt/ccxtEnums.js";
-export * from "./connectors/util.js";
+export * from "./exchanges/connectors/ccxt/ccxtConnector.js";
+export * from "./exchanges/connectors/ccxt/ccxtWebsocketConnector.js";
+export * from "./exchanges/connectors/ccxt/ccxtClientUtil.js";
+export * from "./exchanges/connectors/ccxt/ccxtConstants.js";
+export * from "./exchanges/connectors/ccxt/ccxtEnums.js";
+export * from "./exchanges/connectors/util.js";
 
-export * from "./config/exchangeConfigData.js";
-export * from "./config/exchangeProxyConfig.js";
-export * from "./config/exchangeCredentialsData.js";
-export * from "./config/channelSpecs.js";
+export * from "./exchanges/config/exchangeConfigData.js";
+export * from "./exchanges/config/exchangeProxyConfig.js";
+export * from "./exchanges/config/exchangeCredentialsData.js";
+export * from "./exchanges/config/channelSpecs.js";
 
-export * from "./util/exchangeData.js";
-export * from "./util/exchangeDataUtil.js";
-export * from "./util/exchangeMarketStatusFixer.js";
+export * from "./exchanges/util/exchangeData.js";
+export * from "./exchanges/util/exchangeDataUtil.js";
+export * from "./exchanges/util/exchangeMarketStatusFixer.js";
 export {
   exchangeErrorTranslator,
   getOrderSide,
@@ -47,11 +47,11 @@ export {
   getSupportedExchangeTypes,
   getCommonTradedQuote,
   getAssociatedSymbol,
-} from "./util/exchangeUtil.js";
-export * from "./util/symbolDetails.js";
-export * from "./util/websocketsUtil.js";
+} from "./exchanges/util/exchangeUtil.js";
+export * from "./exchanges/util/symbolDetails.js";
+export * from "./exchanges/util/websocketsUtil.js";
 
-export * from "./marketFilters/marketFilterFactory.js";
+export * from "./exchanges/marketFilters/marketFilterFactory.js";
 
 // Re-export commons-ts logger and event bus for callers who want to wire a
 // custom backend without depending directly on @drakkarsoftware/octobot-commons.
@@ -66,5 +66,5 @@ export {
 } from "@drakkarsoftware/octobot-commons";
 
 // Default export is the builder factory — most browser callers start with it.
-import { createExchangeBuilderInstance } from "./exchangeBuilder.js";
+import { createExchangeBuilderInstance } from "./exchanges/exchangeBuilder.js";
 export default { createExchangeBuilderInstance };

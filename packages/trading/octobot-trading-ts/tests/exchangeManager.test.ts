@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { ExchangeManager } from "../src/exchangeManager.js";
-import { Exchanges } from "../src/exchanges.js";
+import { ExchangeManager } from "../src/exchanges/exchangeManager.js";
+import { Exchanges } from "../src/exchanges/exchanges.js";
 
 describe("ExchangeManager", () => {
   it("classifies as spot by default", () => {

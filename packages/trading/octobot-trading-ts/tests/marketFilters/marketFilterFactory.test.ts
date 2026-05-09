@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { createMarketFilter } from "../../src/marketFilters/marketFilterFactory.js";
-import { ExchangeConstantsMarketStatusColumns as Ecmsc, ExchangeTypes } from "../../src/enums.js";
+import { createMarketFilter } from "../../src/exchanges/marketFilters/marketFilterFactory.js";
+import { ExchangeConstantsMarketStatusColumns as Ecmsc, ExchangeTypes } from "../../src/exchanges/enums.js";
 
 function market(symbol: string, base: string, quote: string, type = ExchangeTypes.SPOT) {
   return {

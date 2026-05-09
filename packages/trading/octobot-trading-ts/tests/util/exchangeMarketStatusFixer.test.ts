@@ -5,10 +5,10 @@ import {
   checkMarketStatusValues,
   calculateAmounts,
   calculateCosts,
-} from "../../src/util/exchangeMarketStatusFixer.js";
+} from "../../src/exchanges/util/exchangeMarketStatusFixer.js";
 import {
   ExchangeConstantsMarketStatusColumns as Ecmsc,
-} from "../../src/enums.js";
+} from "../../src/exchanges/enums.js";
 
 describe("isMsValid", () => {
   it("rejects null/undefined/empty/0", () => {

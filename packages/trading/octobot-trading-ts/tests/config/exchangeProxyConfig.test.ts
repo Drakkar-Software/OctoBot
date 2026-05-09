@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { ExchangeProxyConfig } from "../../src/config/exchangeProxyConfig.js";
+import { ExchangeProxyConfig } from "../../src/exchanges/config/exchangeProxyConfig.js";
 
 describe("ExchangeProxyConfig", () => {
   it("reports presence of REST/WebSocket proxies", () => {

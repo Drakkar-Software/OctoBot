@@ -5,9 +5,9 @@ import {
   getCommonTradedQuote,
   getAssociatedSymbol,
   exchangeErrorTranslator,
-} from "../../src/util/exchangeUtil.js";
-import { ExchangeConstantsOrderColumns as EOC, TradeOrderSide } from "../../src/enums.js";
-import { OctoBotTradingError, AuthenticationError } from "../../src/errors.js";
+} from "../../src/exchanges/util/exchangeUtil.js";
+import { ExchangeConstantsOrderColumns as EOC, TradeOrderSide } from "../../src/exchanges/enums.js";
+import { OctoBotTradingError, AuthenticationError } from "../../src/exchanges/errors.js";
 
 describe("exchangeUtil", () => {
   it("extracts order side from a parsed order", () => {

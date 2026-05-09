@@ -5,9 +5,9 @@
 // calls aren't made by accident in CI.
 
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { ExchangeBuilder } from "../../src/exchangeBuilder.js";
-import type { ExchangeManager } from "../../src/exchangeManager.js";
-import { ExchangeConstantsMarketStatusColumns as EMSC } from "../../src/enums.js";
+import { ExchangeBuilder } from "../../src/exchanges/exchangeBuilder.js";
+import type { ExchangeManager } from "../../src/exchanges/exchangeManager.js";
+import { ExchangeConstantsMarketStatusColumns as EMSC } from "../../src/exchanges/enums.js";
 
 export interface RealExchangeSpec {
   exchangeName: string;

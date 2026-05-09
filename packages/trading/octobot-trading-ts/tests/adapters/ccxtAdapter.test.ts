@@ -1,10 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { CCXTAdapter } from "../../src/adapters/ccxtAdapter.js";
+import { CCXTAdapter } from "../../src/exchanges/adapters/ccxtAdapter.js";
 import {
   ExchangeConstantsOrderColumns as EOC,
   ExchangeConstantsTickersColumns as ETC,
   ExchangeConstantsMarketStatusColumns as EMSC,
-} from "../../src/enums.js";
+} from "../../src/exchanges/enums.js";
 
 class StubConnector {
   exchangeManager = { isFuture: false };
