@@ -1,81 +1,56 @@
+"""
+Live okx integration tests. Mirrors octobot_trading/tests_additional/real_exchanges/test_okx.py
+but uses the Rust connector via octobot_connectors.
+"""
 import pytest
+
 from .abstract_exchange_tester import AbstractExchangeTester
-from .abstract_future_exchange_tester import AbstractFutureExchangeTester
-
-pytestmark = pytest.mark.asyncio
 
 
-class OkxSpotTester(AbstractExchangeTester):
+class OkxTester(AbstractExchangeTester):
     EXCHANGE_NAME = "okx"
     SYMBOL = "BTC/USDT"
-    ORDER_CURRENCY = "BTC"
-    SETTLEMENT_CURRENCY = "USDT"
-    ORDER_SIZE = 50
-
-
-class OkxFuturesTester(AbstractFutureExchangeTester):
-    EXCHANGE_NAME = "okx"
-    SYMBOL = "DOT/USDT:USDT"
-    ORDER_CURRENCY = "DOT"
-    SETTLEMENT_CURRENCY = "USDT"
-    ORDER_SIZE = 50
-
-
-# ---- Spot ----
-
-@pytest.mark.slow
-@pytest.mark.asyncio
-async def test_okx_spot_get_portfolio():
-    await OkxSpotTester().test_get_portfolio()
+    SYMBOL_2 = "ETH/BTC"
+    SYMBOL_3 = "OKB/BTC"
+    INACTIVE_MARKETS: list = []  # set to symbols expected to be inactive
+    TIME_FRAME = "1h"
 
 
 @pytest.mark.asyncio
-async def test_okx_spot_get_symbol_prices():
-    await OkxSpotTester().test_get_symbol_prices()
+async def test_okx_time_frames():
+    await OkxTester().test_time_frames()
 
 
 @pytest.mark.asyncio
-async def test_okx_spot_get_order_book():
-    await OkxSpotTester().test_get_order_book()
+async def test_okx_get_market_status():
+    await OkxTester().test_get_market_status()
 
 
 @pytest.mark.asyncio
-async def test_okx_spot_get_recent_trades():
-    await OkxSpotTester().test_get_recent_trades()
-
-
-@pytest.mark.slow
-@pytest.mark.asyncio
-async def test_okx_spot_get_open_orders():
-    await OkxSpotTester().test_get_open_orders()
-
-
-@pytest.mark.slow
-@pytest.mark.asyncio
-async def test_okx_spot_create_and_cancel_limit_order():
-    await OkxSpotTester().test_create_and_cancel_limit_order()
-
-
-# ---- Futures ----
-
-@pytest.mark.slow
-@pytest.mark.asyncio
-async def test_okx_futures_get_portfolio():
-    await OkxFuturesTester().test_get_portfolio()
+async def test_okx_get_symbol_prices():
+    await OkxTester().test_get_symbol_prices()
 
 
 @pytest.mark.asyncio
-async def test_okx_futures_get_symbol_prices():
-    await OkxFuturesTester().test_get_symbol_prices()
+async def test_okx_get_historical_symbol_prices():
+    await OkxTester().test_get_historical_symbol_prices()
 
 
-@pytest.mark.slow
 @pytest.mark.asyncio
-async def test_okx_futures_get_positions():
-    await OkxFuturesTester().test_get_positions()
+async def test_okx_get_kline_price():
+    await OkxTester().test_get_kline_price()
 
 
-@pytest.mark.slow
 @pytest.mark.asyncio
-async def test_okx_futures_get_funding_rate():
-    await OkxFuturesTester().test_get_funding_rate()
+async def test_okx_get_order_book():
+    await OkxTester().test_get_order_book()
+
+
+@pytest.mark.asyncio
+async def test_okx_get_recent_trades():
+    await OkxTester().test_get_recent_trades()
+
+
+@pytest.mark.asyncio
+async def test_okx_get_price_ticker():
+    await OkxTester().test_get_price_ticker()

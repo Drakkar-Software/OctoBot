@@ -123,19 +123,16 @@ impl FuturesExchangeTestRunner for SimpleExchangeTester {}
 macro_rules! gen_spot_tests {
     () => {
         #[tokio::test]
-        #[ignore = "requires live network"]
         async fn test_get_symbol_prices() {
             tester().run_test_get_symbol_prices().await;
         }
 
         #[tokio::test]
-        #[ignore = "requires live network"]
         async fn test_get_order_book() {
             tester().run_test_get_order_book().await;
         }
 
         #[tokio::test]
-        #[ignore = "requires live network"]
         async fn test_get_recent_trades() {
             tester().run_test_get_recent_trades().await;
         }

@@ -20,7 +20,6 @@ mod futures_basic {
     }
 
     #[tokio::test]
-    #[ignore = "requires live network"]
     async fn test_get_symbol_prices() {
         tester().run_test_get_symbol_prices().await;
     }

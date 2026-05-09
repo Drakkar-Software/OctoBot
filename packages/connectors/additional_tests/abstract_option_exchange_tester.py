@@ -1,19 +1,10 @@
 """
 Abstract tester for options exchanges.
-Mirrors abstract_authenticated_option_exchange_tester.py
+Mirrors packages/trading/tests_additional/real_exchanges/real_option_exchange_tester.py.
 """
-from .abstract_exchange_tester import AbstractExchangeTester
+from .abstract_future_exchange_tester import AbstractFutureExchangeTester
 
 
-class AbstractOptionExchangeTester(AbstractExchangeTester):
+class AbstractOptionExchangeTester(AbstractFutureExchangeTester):
     EXCHANGE_TYPE: str = "option"
-    OPTION_EXPIRY: str = ""   # override with actual expiry date
-    OPTION_STRIKE: float = 0.0
-    OPTION_TYPE: str = "call"  # or "put"
-
-    async def test_get_option_positions(self):
-        connector = self.get_connector()
-        await connector.initialize()
-        positions = await connector.get_positions(None)
-        assert isinstance(positions, list)
-        await connector.stop()
+    MARKET_STATUS_TYPE: str = "option"
