@@ -29,6 +29,8 @@ from octobot_protocol.models.cancel_policy_type import CancelPolicyType
 from octobot_protocol.models.copied_account import CopiedAccount
 from octobot_protocol.models.copied_asset import CopiedAsset
 from octobot_protocol.models.exchange_account import ExchangeAccount
+from octobot_protocol.models.execution import Execution
+from octobot_protocol.models.execution_error import ExecutionError
 from octobot_protocol.models.generic_account import GenericAccount
 from octobot_protocol.models.order import Order
 from octobot_protocol.models.order_group import OrderGroup

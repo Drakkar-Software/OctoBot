@@ -17,11 +17,12 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, StrictStr
+from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from octobot_protocol.models.action import Action
 from octobot_protocol.models.asset import Asset
 from octobot_protocol.models.automation_metadata import AutomationMetadata
+from octobot_protocol.models.execution import Execution
 from octobot_protocol.models.order_summary import OrderSummary
 from octobot_protocol.models.position_summary import PositionSummary
 from octobot_protocol.models.task_status import TaskStatus
@@ -45,7 +46,9 @@ class AutomationState(BaseModel):
     orders: Optional[List[OrderSummary]] = None
     trades: Optional[List[TradeSummary]] = None
     positions: Optional[List[PositionSummary]] = None
-    __properties: ClassVar[List[str]] = ["id", "status", "metadata", "actions", "priority_actions", "exchanges", "exchange_account_ids", "assets", "orders", "trades", "positions"]
+    executions: Optional[List[Execution]] = Field(default=None, description="Execution history for this automation, oldest first.")
+    last_execution: Optional[Execution] = None
+    __properties: ClassVar[List[str]] = ["id", "status", "metadata", "actions", "priority_actions", "exchanges", "exchange_account_ids", "assets", "orders", "trades", "positions", "executions", "last_execution"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -131,6 +134,16 @@ class AutomationState(BaseModel):
                 if _item_positions:
                     _items.append(_item_positions.to_dict())
             _dict['positions'] = _items
+        # override the default output from pydantic by calling `to_dict()` of each item in executions (list)
+        _items = []
+        if self.executions:
+            for _item_executions in self.executions:
+                if _item_executions:
+                    _items.append(_item_executions.to_dict())
+            _dict['executions'] = _items
+        # override the default output from pydantic by calling `to_dict()` of last_execution
+        if self.last_execution:
+            _dict['last_execution'] = self.last_execution.to_dict()
         return _dict
 
     @classmethod
@@ -153,7 +166,9 @@ class AutomationState(BaseModel):
             "assets": [Asset.from_dict(_item) for _item in obj["assets"]] if obj.get("assets") is not None else None,
             "orders": [OrderSummary.from_dict(_item) for _item in obj["orders"]] if obj.get("orders") is not None else None,
             "trades": [TradeSummary.from_dict(_item) for _item in obj["trades"]] if obj.get("trades") is not None else None,
-            "positions": [PositionSummary.from_dict(_item) for _item in obj["positions"]] if obj.get("positions") is not None else None
+            "positions": [PositionSummary.from_dict(_item) for _item in obj["positions"]] if obj.get("positions") is not None else None,
+            "executions": [Execution.from_dict(_item) for _item in obj["executions"]] if obj.get("executions") is not None else None,
+            "last_execution": Execution.from_dict(obj["last_execution"]) if obj.get("last_execution") is not None else None
         })
         return _obj
 

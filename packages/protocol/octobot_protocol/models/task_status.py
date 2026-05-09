@@ -32,6 +32,7 @@ class TaskStatus(str, Enum):
     RUNNING = 'running'
     COMPLETED = 'completed'
     FAILED = 'failed'
+    CANCELLED = 'cancelled'
 
     @classmethod
     def from_json(cls, json_str: str) -> Self:

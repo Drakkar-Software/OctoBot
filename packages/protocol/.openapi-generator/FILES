@@ -14,6 +14,8 @@ docs/CancelPolicyType.md
 docs/CopiedAccount.md
 docs/CopiedAsset.md
 docs/ExchangeAccount.md
+docs/Execution.md
+docs/ExecutionError.md
 docs/GenericAccount.md
 docs/Order.md
 docs/OrderGroup.md
@@ -49,6 +51,8 @@ octobot_protocol/models/cancel_policy_type.py
 octobot_protocol/models/copied_account.py
 octobot_protocol/models/copied_asset.py
 octobot_protocol/models/exchange_account.py
+octobot_protocol/models/execution.py
+octobot_protocol/models/execution_error.py
 octobot_protocol/models/generic_account.py
 octobot_protocol/models/order.py
 octobot_protocol/models/order_group.py
@@ -82,6 +86,8 @@ test/test_cancel_policy_type.py
 test/test_copied_account.py
 test/test_copied_asset.py
 test/test_exchange_account.py
+test/test_execution.py
+test/test_execution_error.py
 test/test_generic_account.py
 test/test_order.py
 test/test_order_group.py

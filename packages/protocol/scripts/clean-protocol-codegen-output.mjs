@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Removes generated artifacts under octobot_protocol / octobot_protocol_ts /
+ * Removes generated artifacts under octobot_protocol / octobot-protocol-ts/src /
  * octobot_protocol_rs / test (Python model tests)
  * before openapi-generator runs so stale files do not linger.
  */
@@ -17,8 +17,9 @@ const targets = {
     keep: new Set(),
   },
   typescript: {
-    dir: path.join(protocolDir, "octobot_protocol_ts"),
-    keep: new Set(["README.md"]),
+    dir: path.join(protocolDir, "octobot-protocol-ts"),
+    // Workspace-package metadata is hand-written and must survive regen.
+    keep: new Set(["package.json", "tsconfig.json", "README.md", ".gitignore"]),
   },
   rust: {
     dir: path.join(protocolDir, "octobot_protocol_rs"),

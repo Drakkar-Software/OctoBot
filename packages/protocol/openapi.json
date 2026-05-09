@@ -17,8 +17,76 @@
           "periodic",
           "running",
           "completed",
-          "failed"
+          "failed",
+          "cancelled"
         ]
+      },
+      "ExecutionError": {
+        "description": "Serialized error captured for a failed Execution.",
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "stack": {
+            "type": "string"
+          }
+        }
+      },
+      "Execution": {
+        "description": "One run of an automation. Append-only; the full history of an automation lives on AutomationState.executions.",
+        "type": "object",
+        "required": [
+          "id",
+          "automation_id",
+          "reason",
+          "started_at",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "automation_id": {
+            "type": "string"
+          },
+          "reason": {
+            "description": "Free-form why this run was triggered (e.g. 'user pulled to refresh', 'tick 9am', 'price-alert:BTC').",
+            "type": "string"
+          },
+          "started_at": {
+            "description": "Epoch milliseconds when the run started.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "completed_at": {
+            "description": "Epoch milliseconds when the run reached a terminal status.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "status": {
+            "$ref": "#/components/schemas/TaskStatus"
+          },
+          "input": {
+            "description": "JSON snapshot of the state passed into the run.",
+            "type": "object",
+            "additionalProperties": true
+          },
+          "result": {
+            "description": "JSON snapshot of what the automation returned on success.",
+            "type": "object",
+            "additionalProperties": true
+          },
+          "error": {
+            "$ref": "#/components/schemas/ExecutionError"
+          }
+        }
       },
       "Side": {
         "description": "Order execution side.",
@@ -558,6 +626,16 @@
             "items": {
               "$ref": "#/components/schemas/PositionSummary"
             }
+          },
+          "executions": {
+            "description": "Execution history for this automation, oldest first.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Execution"
+            }
+          },
+          "last_execution": {
+            "$ref": "#/components/schemas/Execution"
           }
         }
       },

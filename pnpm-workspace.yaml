@@ -1,3 +1,6 @@
 packages:
   - "packages/commons/octobot-commons-ts"
+  - "packages/protocol"
+  - "packages/protocol/octobot-protocol-ts"
   - "packages/trading/octobot-trading-ts"
+  - "packages/node/octobot-node-ts"

@@ -92,7 +92,35 @@ class TestAutomationState(unittest.TestCase):
                     octobot_protocol.models.position_summary.PositionSummary(
                         id = '', 
                         symbol = '', )
-                    ]
+                    ],
+                executions = [
+                    octobot_protocol.models.execution.Execution(
+                        id = '', 
+                        automation_id = '', 
+                        reason = '', 
+                        started_at = 56, 
+                        completed_at = 56, 
+                        status = 'pending', 
+                        input = { }, 
+                        result = { }, 
+                        error = octobot_protocol.models.execution_error.ExecutionError(
+                            name = '', 
+                            message = '', 
+                            stack = '', ), )
+                    ],
+                last_execution = octobot_protocol.models.execution.Execution(
+                    id = '', 
+                    automation_id = '', 
+                    reason = '', 
+                    started_at = 56, 
+                    completed_at = 56, 
+                    status = 'pending', 
+                    input = { }, 
+                    result = { }, 
+                    error = octobot_protocol.models.execution_error.ExecutionError(
+                        name = '', 
+                        message = '', 
+                        stack = '', ), )
             )
         else:
             return AutomationState(

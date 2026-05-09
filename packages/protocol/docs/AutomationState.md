@@ -17,6 +17,8 @@ Name | Type | Description | Notes
 **orders** | [**List[OrderSummary]**](OrderSummary.md) |  | [optional] 
 **trades** | [**List[TradeSummary]**](TradeSummary.md) |  | [optional] 
 **positions** | [**List[PositionSummary]**](PositionSummary.md) |  | [optional] 
+**executions** | [**List[Execution]**](Execution.md) | Execution history for this automation, oldest first. | [optional] 
+**last_execution** | [**Execution**](Execution.md) |  | [optional] 
 
 ## Example
 
