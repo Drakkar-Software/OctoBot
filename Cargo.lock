@@ -176,7 +176,7 @@ dependencies = [
 [[package]]
 name = "ccxt"
 version = "0.1.0"
-source = "git+https://github.com/Drakkar-Software/ccxt?branch=feature%2Fadd-rust#acf8dc1bcff8d07fc77a3a8d1176827bab46b2a3"
+source = "git+https://github.com/Drakkar-Software/ccxt?branch=feature%2Fadd-rust#5c84fda87a31cb78ca1229caaeb1216268215202"
 dependencies = [
  "anyhow",
  "async-trait",

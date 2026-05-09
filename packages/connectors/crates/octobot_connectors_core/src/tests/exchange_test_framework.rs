@@ -107,7 +107,7 @@ impl Default for ExchangeTestConfig {
 ///   1. Implement ExchangeTestRunner for a test struct
 ///   2. Call `run_*` methods from #[tokio::test] functions
 ///   3. Override config() to set exchange-specific expectations
-#[async_trait]
+#[async_trait(?Send)]
 pub trait ExchangeTestRunner: Send + Sync {
     fn config(&self) -> &ExchangeTestConfig;
     async fn create_exchange(&self) -> Box<dyn Exchange>;
@@ -324,7 +324,7 @@ pub trait ExchangeTestRunner: Send + Sync {
 // ---- Futures test framework (extends ExchangeTestRunner) ----
 
 /// Mirrors AbstractAuthenticatedFutureExchangeTester
-#[async_trait]
+#[async_trait(?Send)]
 pub trait FuturesExchangeTestRunner: ExchangeTestRunner {
     fn inverse_symbol(&self) -> Option<&str> { None }
     fn supports_get_leverage(&self) -> bool { true }
@@ -410,7 +410,7 @@ pub trait FuturesExchangeTestRunner: ExchangeTestRunner {
 // ---- Options test framework ----
 
 /// Mirrors AbstractAuthenticatedOptionExchangeTester
-#[async_trait]
+#[async_trait(?Send)]
 pub trait OptionsExchangeTestRunner: FuturesExchangeTestRunner {
     async fn run_test_get_option_positions(&self) {
         let exchange = self.create_exchange().await;
@@ -448,7 +448,7 @@ mod example_tests {
         }
     }
 
-    #[async_trait]
+    #[async_trait(?Send)]
     impl ExchangeTestRunner for BinanceSpotTester {
         fn config(&self) -> &ExchangeTestConfig {
             &self.config

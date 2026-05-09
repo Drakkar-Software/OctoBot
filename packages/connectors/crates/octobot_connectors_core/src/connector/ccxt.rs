@@ -67,48 +67,7 @@ fn build_ccxt_config(config: &ExchangeConfig) -> serde_json::Value {
 /// Create a boxed ccxt exchange instance for the given exchange name.
 fn make_ccxt_client(name: &str, config: &ExchangeConfig) -> Option<Box<dyn CcxtExchange + Send>> {
     let params = build_ccxt_config(config);
-    let v = CcxtValue::Json(params);
-
-    macro_rules! make {
-        ($mod:ident, $impl:ident) => {
-            Some(Box::new(ccxt::exchanges::$mod::$impl::new(v)) as Box<dyn CcxtExchange + Send>)
-        };
-    }
-
-    match name.to_lowercase().as_str() {
-        "binance"          => make!(binance, BinanceImpl),
-        "binanceusdm"      => make!(binanceusdm, BinanceusdmImpl),
-        "binancecoinm"     => make!(binancecoinm, BinancecoinmImpl),
-        "binanceus"        => make!(binanceus, BinanceusImpl),
-        "bybit"            => make!(bybit, BybitImpl),
-        "coinbase"         => make!(coinbase, CoinbaseImpl),
-        "coinbaseadvanced" => make!(coinbaseadvanced, CoinbaseadvancedImpl),
-        "gate" | "gateio"  => make!(gate, GateImpl),
-        "huobi"            => make!(huobi, HuobiImpl),
-        "htx"              => make!(htx, HtxImpl),
-        "kucoin"           => make!(kucoin, KucoinImpl),
-        "kucoinfutures"    => make!(kucoinfutures, KucoinfuturesImpl),
-        "kraken"           => make!(kraken, KrakenImpl),
-        "krakenfutures"    => make!(krakenfutures, KrakenfuturesImpl),
-        "okx"              => make!(okx, OkxImpl),
-        "okxus"            => make!(okxus, OkxusImpl),
-        "bitfinex"         => make!(bitfinex, BitfinexImpl),
-        "bitmex"           => make!(bitmex, BitmexImpl),
-        "deribit"          => make!(deribit, DeribitImpl),
-        "mexc"             => make!(mexc, MexcImpl),
-        "bitget"           => make!(bitget, BitgetImpl),
-        "poloniex"         => make!(poloniex, PoloniexImpl),
-        "ascendex"         => make!(ascendex, AscendexImpl),
-        "bingx"            => make!(bingx, BingxImpl),
-        "bitmart"          => make!(bitmart, BitmartImpl),
-        "coinex"           => make!(coinex, CoinexImpl),
-        "cryptocom"        => make!(cryptocom, CryptocomImpl),
-        "hollaex"          => make!(hollaex, HollaexImpl),
-        "hyperliquid"      => make!(hyperliquid, HyperliquidImpl),
-        "lbank"            => make!(lbank, LbankImpl),
-        "phemex"           => make!(phemex, PhemexImpl),
-        _                  => None,
-    }
+    ccxt::exchanges::create_exchange(name, CcxtValue::Json(params))
 }
 
 /// CcxtConnector wraps the ccxt Rust crate and normalises its data via CcxtAdapter.
@@ -430,7 +389,7 @@ impl CcxtConnector {
     }
 }
 
-#[async_trait]
+#[async_trait(?Send)]
 impl Exchange for CcxtConnector {
     async fn initialize(&mut self) -> ExchangeResult<()> {
         let ccxt_client = make_ccxt_client(&self.rest_name, &self.config)

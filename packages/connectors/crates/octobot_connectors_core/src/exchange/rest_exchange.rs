@@ -278,7 +278,7 @@ impl RestExchange {
 }
 
 /// Delegate all Exchange trait methods to the inner CcxtConnector.
-#[async_trait]
+#[async_trait(?Send)]
 impl Exchange for RestExchange {
     async fn initialize(&mut self) -> ExchangeResult<()> {
         self.connector.initialize().await

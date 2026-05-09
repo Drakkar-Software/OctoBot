@@ -22,7 +22,7 @@ use rust_decimal::Decimal;
 /// Mirrors Python AbstractExchange and RestExchange combined into one trait.
 /// Concrete implementations are CcxtConnector for live trading and a
 /// simulator connector for backtesting.
-#[async_trait]
+#[async_trait(?Send)]
 pub trait Exchange: Send + Sync {
     // ---- Lifecycle ----
 
