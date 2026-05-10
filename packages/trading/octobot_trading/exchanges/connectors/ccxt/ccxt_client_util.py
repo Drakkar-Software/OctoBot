@@ -14,8 +14,8 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import asyncio
-import decimal
 import contextlib
+import cachetools
 try:
     from aiohttp_socks import ProxyConnectionError
 except ImportError:
@@ -545,6 +545,7 @@ def _is_retriable_proxy_error(proxy_error: Exception) -> bool:
     return False
 
 
+@cachetools.cached(cachetools.LRUCache(maxsize=512))
 def get_option_value_from_new_ccxt_client(
     exchange: str, option_key: enums.ExchangeClientOptions
 ) -> typing.Union[bool, float, int, str, None]:
@@ -580,7 +581,7 @@ def supports_bundled_orders(
             enums.ExchangeSupportedElements.BUNDLED_ORDERS.value
         ):
             raise NotImplementedError(f"Bundled orders are not supported yet")
-            return order_type in supported_orders
+            return order_type in supported_orders  # pylint: disable=unreachable
     return False
 
 

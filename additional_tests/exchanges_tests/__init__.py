@@ -20,7 +20,6 @@ import mock
 import time
 import asyncio
 
-import trading_backend
 import octobot_commons.constants as commons_constants
 import octobot_commons.asyncio_tools as asyncio_tools
 import octobot_commons.os_util as os_util
@@ -118,9 +117,6 @@ async def get_authenticated_exchange_manager(
     # create trader afterwards to init exchange personal data
     exchange_manager_instance.trader.is_enabled = True
     await exchange_manager_instance.register_trader(exchange_manager_instance.trader)
-    exchange_manager_instance.exchange_backend = trading_backend.exchange_factory.create_exchange_backend(
-        exchange_manager_instance.exchange
-    )
     exchange_manager_instance.exchange.__class__.PRINT_DEBUG_LOGS = True
     set_mocked_required_channels(exchange_manager_instance)
     t0 = time.time()

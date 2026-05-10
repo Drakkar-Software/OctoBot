@@ -37,42 +37,6 @@ class AbstractExchange(octobot_trading.accounts.AbstractAccount):
     USER_INPUT_TENTACLE_TYPE = common_enums.UserInputTentacleTypes.EXCHANGE
     BUY_STR = enums.TradeOrderSide.BUY.value
     SELL_STR = enums.TradeOrderSide.SELL.value
-
-    # should be overridden locally to match exchange support
-    # _SUPPORTED_ELEMENTS = {
-    #     enums.ExchangeTypes.FUTURE.value: {
-    #         # order that should be self-managed by OctoBot
-    #         enums.ExchangeFeatureKeys.UNSUPPORTED_ORDERS.value: [
-    #             enums.TraderOrderType.STOP_LOSS,
-    #             enums.TraderOrderType.STOP_LOSS_LIMIT,
-    #             enums.TraderOrderType.TAKE_PROFIT,
-    #             enums.TraderOrderType.TAKE_PROFIT_LIMIT,
-    #             enums.TraderOrderType.TRAILING_STOP,
-    #             enums.TraderOrderType.TRAILING_STOP_LIMIT
-    #         ],
-    #         # order that can be bundled together to create them all in one request
-    #         # format: dict of bundled types by base order type
-    #         # ex: SUPPORTED_BUNDLED_ORDERS[enums.TraderOrderType.BUY_MARKET] = \
-    #         # [enums.TraderOrderType.STOP_LOSS, enums.TraderOrderType.TAKE_PROFIT]
-    #         enums.ExchangeFeatureKeys.SUPPORTED_BUNDLED_ORDERS.value: {},
-    #     },
-    #     enums.ExchangeTypes.SPOT.value: {
-    #         # order that should be self-managed by OctoBot
-    #         enums.ExchangeFeatureKeys.UNSUPPORTED_ORDERS.value: [
-    #             enums.TraderOrderType.STOP_LOSS,
-    #             enums.TraderOrderType.STOP_LOSS_LIMIT,
-    #             enums.TraderOrderType.TAKE_PROFIT,
-    #             enums.TraderOrderType.TAKE_PROFIT_LIMIT,
-    #             enums.TraderOrderType.TRAILING_STOP,
-    #             enums.TraderOrderType.TRAILING_STOP_LIMIT
-    #         ],
-    #         # order that can be bundled together to create them all in one request
-    #         # format: dict of bundled types by base order type
-    #         # ex: SUPPORTED_BUNDLED_ORDERS[enums.TraderOrderType.BUY_MARKET] = \
-    #         # [enums.TraderOrderType.STOP_LOSS, enums.TraderOrderType.TAKE_PROFIT]
-    #         enums.ExchangeFeatureKeys.SUPPORTED_BUNDLED_ORDERS.value: {},
-    #     }
-    # }
     ACCOUNTS = {}
 
     def __init__(self, config, exchange_manager, exchange_config_by_exchange: typing.Optional[dict[str, dict]]):
@@ -181,14 +145,6 @@ class AbstractExchange(octobot_trading.accounts.AbstractAccount):
         :return: the uniformized timestamp
         """
         raise NotImplementedError("get_uniform_timestamp not implemented")
-
-    def get_supported_elements(self, element_key: enums.ExchangeFeatureKeys):
-        """
-        :return: the supported elements such as order type and bundle orders for the current exchange and trading type
-        """
-        exchange_type_key = enums.ExchangeTypes.FUTURE if self.exchange_manager.is_future \
-            else enums.ExchangeTypes.SPOT
-        return self.__class__.SUPPORTED_ELEMENTS[exchange_type_key.value][element_key.value]
 
     def get_market_status(self, symbol, price_example=None, with_fixer=True):
         """

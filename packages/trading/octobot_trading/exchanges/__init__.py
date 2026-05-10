@@ -97,6 +97,7 @@ from octobot_trading.exchanges.util import (
     supports_websocket,
     force_set_mark_price,
     get_traded_assets,
+    is_broker_enabled_on_exchange,
 )
 from octobot_trading.exchanges import market_filters
 from octobot_trading.exchanges.market_filters.market_filter_factory import (
@@ -235,4 +236,5 @@ __all__ = [
     "retried_failed_network_request",
     "ExchangeDetails",
     "create_market_filter",
+    "is_broker_enabled_on_exchange",
 ]

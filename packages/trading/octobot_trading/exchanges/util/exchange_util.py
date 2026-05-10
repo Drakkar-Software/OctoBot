@@ -203,6 +203,14 @@ def get_partners_explanation_message():
     return f"More info on partner exchanges on {_get_exchanges_docs_url()}#partner-exchanges---support-octobot"
 
 
+def is_broker_enabled_on_exchange(exchange_name: str) -> bool:
+    return bool(
+        ccxt_client_util.get_option_value_from_new_ccxt_client(
+            exchange_name, enums.ExchangeClientOptions.HAS_BROKER
+        )
+    )
+
+
 def _get_minimal_exchange_config(exchange_name, exchange_config):
     return {
         common_constants.CONFIG_EXCHANGES: {
@@ -380,7 +388,8 @@ async def is_compatible_account(exchange_name: str, exchange_config: dict, tenta
         disable_unauth_retry=True,
     ) as local_exchange_manager:
         try:
-            await local_exchange_manager.exchange.connector.request_exchange_to_ensure_authentication()
+            await local_exchange_manager.exchange.request_exchange_to_ensure_authentication()
+            await local_exchange_manager.exchange.ensure_api_key_permissions()
             return True, True, None
         except errors.FailedRequest as err:
             return False, False, str(err)
@@ -388,6 +397,8 @@ async def is_compatible_account(exchange_name: str, exchange_config: dict, tenta
             return False, False, f"Please update your API Key permissions: {err}"
         except errors.InvalidAPIKeyIPWhitelistError as err:
             return False, False, f"Please update your API Key IP whitelist: {err}"
+        except errors.InvalidAPIKeyPermissionsError as err:
+            return False, False, f"Please update your API Key permissions: {err}"
         except errors.AuthenticationError as err:
             message = f"Invalid {exchange_name.capitalize()} authentication details"
             if is_sandboxed:

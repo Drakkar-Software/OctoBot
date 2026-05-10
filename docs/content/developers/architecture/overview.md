@@ -15,7 +15,7 @@ The stack has six layers. Each package depends only on packages in the layers be
 
 **commons** and **async_channel** are the foundation — neither has any internal dependency. Commons provides configuration, databases, DSL interpreter, and shared utilities. Async_channel is the typed message bus: channels connect producers to consumers through async queues. Synchronized mode removes async tasks and drives execution deterministically, which is what makes backtesting possible.
 
-**tentacles_manager**, **backtesting**, and **trading_backend** form the next layer. Tentacles_manager handles plugin discovery, installation, and configuration. Backtesting provides the time-driven simulation engine. Trading_backend handles exchange-specific broker ID injection and API key permission validation.
+**tentacles_manager** and **backtesting** form the next layer. Tentacles_manager handles plugin discovery, installation, and configuration. Backtesting provides the time-driven simulation engine. Trading_backend handles exchange-specific broker ID injection and API key permission validation.
 
 **trading** and **evaluators** are the core framework. Trading owns exchange managers, order lifecycle, portfolio accounting, and the trading mode abstraction. Evaluators own the Matrix (the in-memory signal tree) and the factory that instantiates evaluator classes across symbol/time-frame combinations.
 

@@ -31,7 +31,6 @@ import octobot_trading.util as util
 import octobot_trading.errors as errors
 import octobot_trading.storage as storage
 import octobot_trading.exchanges.config.exchange_credentials_data as exchange_credentials_data
-import trading_backend.exchanges
 
 
 if typing.TYPE_CHECKING:
@@ -77,7 +76,6 @@ class ExchangeManager(util.Initializable):
 
         self.trader: exchanges.Trader = None # type: ignore
         self.exchange: exchanges.RestExchange = None # type: ignore
-        self.exchange_backend: trading_backend.exchanges.Exchange = None # type: ignore
         self.is_broker_enabled: bool = False
         self.trading_modes: list = []
 
@@ -185,11 +183,6 @@ class ExchangeManager(util.Initializable):
         self.exchange_config = None # type: ignore
         self.exchange_personal_data = None # type: ignore
         self.exchange_symbols_data = None # type: ignore
-        if self.exchange_backend is not None:
-            try:
-                self.exchange_backend.stop()
-            except Exception as err:
-                self.logger.exception(err, True, f"Error when stopping exchange_backend: {err}")
         if enable_logs:
             self.logger.debug("Stopping trader ...")
         if self.trader is not None:

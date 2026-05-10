@@ -1368,7 +1368,11 @@ def are_compatible_accounts(exchange_details: dict) -> dict:
             to_check_config[commons_constants.CONFIG_EXCHANGE_PASSWORD] = configuration.encrypt(api_pass).decode()
         to_check_config[commons_constants.CONFIG_EXCHANGE_SANDBOXED] = sandboxed
         is_compatible = auth_success = is_configured = False
-        is_sponsoring = trading_api.is_sponsoring(exchange_name)
+        try:
+            is_sponsoring = trading_api.is_sponsoring(exchange_name)
+        except Exception as e:
+            bot_logging.get_logger("ConfigurationWebInterfaceModel").warning(f"Error when checking if {exchange_name} is sponsoring: {e}")
+            is_sponsoring = False
         is_supporter = authentication.Authenticator.instance().user_account.supports.is_supporting()
         error = None
         if _is_possible_exchange_config(to_check_config):

@@ -156,6 +156,9 @@ class RestExchange(abstract_exchange.AbstractExchange):
             and not always_requires_authentication
         )
 
+    async def request_exchange_to_ensure_authentication(self):
+        await self.connector.request_exchange_to_ensure_authentication()
+
     async def initialize_impl(self):
         await self.connector.initialize()
         self.symbols = self.connector.symbols
@@ -247,7 +250,6 @@ class RestExchange(abstract_exchange.AbstractExchange):
             float_current_price = None if current_price is None else float(current_price)
             side = None if side is None else side.value
             params = {} if params is None else params
-            params.update(self.exchange_manager.exchange_backend.get_orders_parameters(None))
             edited_order = await self._edit_order(exchange_order_id, order_type, symbol, quantity=float_quantity,
                                                   price=float_price, stop_price=float_stop_price, side=side,
                                                   current_price=float_current_price, params=params)
@@ -459,7 +461,6 @@ class RestExchange(abstract_exchange.AbstractExchange):
         float_current_price = current_price if current_price is None else float(current_price)
         side = None if side is None else side.value
         params = {} if params is None else params
-        params.update(self.exchange_manager.exchange_backend.get_orders_parameters(None))
         if order_type == enums.TraderOrderType.BUY_MARKET:
             created_order = await self._create_market_buy_order(symbol, float_quantity, price=float_price,
                                                                 reduce_only=reduce_only, params=params)
@@ -636,6 +637,24 @@ class RestExchange(abstract_exchange.AbstractExchange):
     
     async def get_permissions(self, **kwargs: dict) -> list[enums.APIKeyRights]:
         return await self.connector.get_permissions(**kwargs)
+
+    async def ensure_api_key_permissions(self, **kwargs: dict) -> None:
+        try:
+            permissions = await self.get_permissions(**kwargs)
+        except errors.NotSupported:
+            return # not supported, skip permission check
+        if not permissions:
+            raise errors.InvalidAPIKeyPermissionsError("No permissions found")
+        if enums.APIKeyRights.READING not in permissions:
+            raise errors.InvalidAPIKeyPermissionsError("READING permission is required")
+        if enums.APIKeyRights.SPOT_TRADING not in permissions and self.exchange_manager.is_spot_only:
+            raise errors.InvalidAPIKeyPermissionsError("SPOT_TRADING permission is required")
+        if enums.APIKeyRights.FUTURES_TRADING not in permissions and self.exchange_manager.is_future:
+            raise errors.InvalidAPIKeyPermissionsError("FUTURES_TRADING permission is required")
+        if enums.APIKeyRights.WITHDRAWALS in permissions and not constants.ALLOW_FUNDS_TRANSFER:
+            raise errors.InvalidAPIKeyPermissionsError(
+                "WITHDRAWALS permission found, but funds transfer is disabled. Please remove the permission or enable funds transfer."
+            )
 
     def get_orders_broker_parameters(self, **kwargs: dict) -> dict:
         return self.connector.get_orders_broker_parameters(**kwargs)
