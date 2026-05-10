@@ -32,8 +32,7 @@
   },
   "dependencies": {
     "@drakkarsoftware/octobot-commons": "workspace:*",
-    "@drakkarsoftware/octobot-protocol": "workspace:*",
-    "@drakkarsoftware/octobot-flow": "workspace:*"
+    "@drakkarsoftware/octobot-protocol": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",

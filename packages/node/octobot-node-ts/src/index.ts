@@ -10,8 +10,7 @@ export * from "./actions.js";
 export * from "./accounts.js";
 export * from "./workflow.js";
 export * from "./node.js";
-
-export * from "./dsl/index.js";
+export * from "./actions/handlers/index.js";
 
 export { newId } from "./util/id.js";
 export { now, setNowForTesting, resetNow } from "./util/time.js";
@@ -27,6 +26,11 @@ export type {
   BlockchainAccount,
   Asset,
   Action,
+  ActionBase,
+  AddExchangeAccountAction,
+  RemoveExchangeAccountAction,
+  AddAutomationAction,
+  RemoveAutomationAction,
   Execution,
   ExecutionError,
   TaskStatus,

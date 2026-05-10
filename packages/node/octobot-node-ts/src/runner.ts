@@ -1,5 +1,5 @@
 import { getLogger } from "@drakkarsoftware/octobot-commons";
-import type { Account, AccountsState, AutomationMetadata, AutomationsState, Execution } from "@drakkarsoftware/octobot-protocol";
+import type { Account, AccountsState, AutomationMetadata, AutomationState, AutomationsState, Execution } from "@drakkarsoftware/octobot-protocol";
 import type { Logger } from "@drakkarsoftware/octobot-commons";
 import {
   newExecution,
@@ -18,6 +18,12 @@ export interface AutomationContext {
   accounts?: AccountsState;
   /** Stage an updated account — visible to subsequent actions/automations in the same workflow pass. */
   replaceAccount?: (account: Account) => void;
+  /** Stage an account removal — visible to subsequent actions in the same workflow pass. */
+  removeAccount?: (accountId: string) => void;
+  /** Stage an automation upsert — visible to subsequent actions in the same workflow pass. */
+  replaceAutomation?: (row: AutomationState) => void;
+  /** Stage an automation removal — visible to subsequent actions in the same workflow pass. */
+  removeAutomation?: (automationId: string) => void;
   /** Trading signals forwarded from a TRADING_SIGNAL envelope. */
   tradingSignals?: unknown[];
   /** True when this run was triggered by a FORCED_TRIGGER envelope, bypassing shouldRun. */
@@ -38,6 +44,9 @@ export interface RunOptions {
   signal?: AbortSignal;
   accounts?: AccountsState;
   replaceAccount?: (account: Account) => void;
+  removeAccount?: (accountId: string) => void;
+  replaceAutomation?: (row: AutomationState) => void;
+  removeAutomation?: (automationId: string) => void;
   tradingSignals?: unknown[];
   forced?: boolean;
 }
@@ -62,6 +71,9 @@ export async function runAutomation<TState, TOutput>(
     logger: getLogger(`Automation[${automation.id}]`),
     accounts: opts.accounts,
     replaceAccount: opts.replaceAccount,
+    removeAccount: opts.removeAccount,
+    replaceAutomation: opts.replaceAutomation,
+    removeAutomation: opts.removeAutomation,
     tradingSignals: opts.tradingSignals,
     forced: opts.forced,
   };

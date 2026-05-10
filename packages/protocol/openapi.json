@@ -450,8 +450,8 @@
           }
         }
       },
-      "Action": {
-        "description": "Action",
+      "ActionBase": {
+        "description": "Common fields shared by all Action subtypes",
         "type": "object",
         "required": [
           "id",
@@ -471,10 +471,6 @@
           "dsl": {
             "type": "string"
           },
-          "configuration": {
-            "type": "object",
-            "additionalProperties": true
-          },
           "result": {
             "type": "string"
           },
@@ -484,6 +480,100 @@
           "completed_at": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "AddExchangeAccountAction": {
+        "description": "Action to add or update an account",
+        "allOf": [
+          { "$ref": "#/components/schemas/ActionBase" },
+          {
+            "type": "object",
+            "required": ["action_type", "account"],
+            "properties": {
+              "action_type": {
+                "type": "string",
+                "enum": ["add_exchange_account"]
+              },
+              "account": {
+                "$ref": "#/components/schemas/Account"
+              }
+            }
+          }
+        ]
+      },
+      "RemoveExchangeAccountAction": {
+        "description": "Action to remove an exchange account by id",
+        "allOf": [
+          { "$ref": "#/components/schemas/ActionBase" },
+          {
+            "type": "object",
+            "required": ["action_type", "account_id"],
+            "properties": {
+              "action_type": {
+                "type": "string",
+                "enum": ["remove_exchange_account"]
+              },
+              "account_id": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      },
+      "AddAutomationAction": {
+        "description": "Action to add or update an automation",
+        "allOf": [
+          { "$ref": "#/components/schemas/ActionBase" },
+          {
+            "type": "object",
+            "required": ["action_type", "automation"],
+            "properties": {
+              "action_type": {
+                "type": "string",
+                "enum": ["add_automation"]
+              },
+              "automation": {
+                "$ref": "#/components/schemas/AutomationState"
+              }
+            }
+          }
+        ]
+      },
+      "RemoveAutomationAction": {
+        "description": "Action to remove an automation by id",
+        "allOf": [
+          { "$ref": "#/components/schemas/ActionBase" },
+          {
+            "type": "object",
+            "required": ["action_type", "automation_id"],
+            "properties": {
+              "action_type": {
+                "type": "string",
+                "enum": ["remove_automation"]
+              },
+              "automation_id": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      },
+      "Action": {
+        "description": "Action — discriminated union keyed on action_type",
+        "oneOf": [
+          { "$ref": "#/components/schemas/AddExchangeAccountAction" },
+          { "$ref": "#/components/schemas/RemoveExchangeAccountAction" },
+          { "$ref": "#/components/schemas/AddAutomationAction" },
+          { "$ref": "#/components/schemas/RemoveAutomationAction" }
+        ],
+        "discriminator": {
+          "propertyName": "action_type",
+          "mapping": {
+            "add_exchange_account":    "#/components/schemas/AddExchangeAccountAction",
+            "remove_exchange_account": "#/components/schemas/RemoveExchangeAccountAction",
+            "add_automation":          "#/components/schemas/AddAutomationAction",
+            "remove_automation":       "#/components/schemas/RemoveAutomationAction"
           }
         }
       },

@@ -18,3 +18,8 @@ export function replaceAccount(state: AccountsState, account: Account): Accounts
   next[idx] = account;
   return { ...state, accounts: next };
 }
+
+export function removeAccount(state: AccountsState, accountId: string): AccountsState {
+  const accounts = state.accounts ?? [];
+  return { ...state, accounts: accounts.filter((a) => a.id !== accountId) };
+}

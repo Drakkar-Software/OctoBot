@@ -95,6 +95,26 @@ export function latestForAutomation(
   return history && history.length > 0 ? history[history.length - 1] : null;
 }
 
+export function replaceAutomationRow(
+  state: AutomationsState,
+  row: AutomationState,
+): AutomationsState {
+  const automations = state.automations ?? [];
+  const idx = automations.findIndex((a) => a.id === row.id);
+  if (idx < 0) return { ...state, automations: [...automations, row] };
+  const next = automations.slice();
+  next[idx] = row;
+  return { ...state, automations: next };
+}
+
+export function removeAutomationRow(
+  state: AutomationsState,
+  automationId: string,
+): AutomationsState {
+  const automations = state.automations ?? [];
+  return { ...state, automations: automations.filter((a) => a.id !== automationId) };
+}
+
 export function latestOverall(state: AutomationsState): Execution | null {
   let best: Execution | null = null;
   for (const a of state.automations ?? []) {

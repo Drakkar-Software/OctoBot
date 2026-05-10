@@ -27,36 +27,11 @@ importers:
         specifier: ^1.4.0
         version: 1.6.1(@types/node@20.19.40)(terser@5.47.1)
 
-  packages/flow/octobot-flow-ts:
-    dependencies:
-      '@drakkarsoftware/octobot-trading-exchanges':
-        specifier: workspace:*
-        version: link:../../trading/octobot-trading-ts
-      decimal.js:
-        specifier: ^10.4.3
-        version: 10.6.0
-    devDependencies:
-      '@types/node':
-        specifier: ^20.11.0
-        version: 20.19.40
-      rollup:
-        specifier: ^4.12.0
-        version: 4.60.3
-      typescript:
-        specifier: ^5.4.0
-        version: 5.9.3
-      vitest:
-        specifier: ^1.4.0
-        version: 1.6.1(@types/node@20.19.40)(terser@5.47.1)
-
   packages/node/octobot-node-ts:
     dependencies:
       '@drakkarsoftware/octobot-commons':
         specifier: workspace:*
         version: link:../../commons/octobot-commons-ts
-      '@drakkarsoftware/octobot-flow':
-        specifier: workspace:*
-        version: link:../../flow/octobot-flow-ts
       '@drakkarsoftware/octobot-protocol':
         specifier: workspace:*
         version: link:../../protocol/octobot-protocol-ts

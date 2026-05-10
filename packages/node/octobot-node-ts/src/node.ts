@@ -1,6 +1,6 @@
-import type { Action, AccountsState, AutomationsState, Execution } from "@drakkarsoftware/octobot-protocol";
+import type { Action, AccountsState, AutomationState, AutomationsState, Execution } from "@drakkarsoftware/octobot-protocol";
 import type { ActionHandler } from "./actions.js";
-import { emptyAccountsState, replaceAccount } from "./accounts.js";
+import { emptyAccountsState, removeAccount, replaceAccount } from "./accounts.js";
 import { AutomationNotFoundError } from "./errors.js";
 import type { AutomationWorkflowActionUpdate } from "./envelope.js";
 import type { Automation } from "./runner.js";
@@ -11,6 +11,8 @@ import {
   emptyState,
   latestForAutomation,
   latestOverall,
+  removeAutomationRow,
+  replaceAutomationRow,
 } from "./state.js";
 
 export interface RunRequest<TState extends AutomationsState = AutomationsState> {
@@ -49,6 +51,25 @@ function mergeAccountsState(
   for (const out of outputs) {
     for (const account of out.accountsState.accounts ?? []) {
       merged = replaceAccount(merged, account);
+    }
+    for (const id of out.accountMutations.removed) {
+      merged = removeAccount(merged, id);
+    }
+  }
+  return merged;
+}
+
+function mergeAutomationsState<TState extends AutomationsState>(
+  base: TState,
+  outputs: AutomationWorkflowOutput[],
+): TState {
+  let merged = base;
+  for (const out of outputs) {
+    for (const row of out.automationMutations.replaced) {
+      merged = replaceAutomationRow(merged, row) as TState;
+    }
+    for (const id of out.automationMutations.removed) {
+      merged = removeAutomationRow(merged, id) as TState;
     }
   }
   return merged;
@@ -168,7 +189,8 @@ export class OctobotNode<TState extends AutomationsState = AutomationsState> {
 
       const executions = outputs.flatMap((o) => [...o.actionExecutions, o.execution]);
       const resolvedActions = outputs.flatMap((o) => o.resolvedActions);
-      const nextState = foldExecutionsIntoState(req.state, outputs);
+      const withExecs = foldExecutionsIntoState(req.state, outputs);
+      const nextState = mergeAutomationsState(withExecs, outputs);
       const nextAccountsState = mergeAccountsState(inputAccountsState, outputs);
       return { executions, nextState, nextAccountsState, resolvedActions };
     }

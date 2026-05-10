@@ -1,14 +1,14 @@
-import type { Account, AccountsState, Action, AutomationsState, Execution } from "@drakkarsoftware/octobot-protocol";
+import type { Account, AccountsState, Action, AutomationState, AutomationsState, Execution } from "@drakkarsoftware/octobot-protocol";
 import { getLogger } from "@drakkarsoftware/octobot-commons";
 import type { ActionHandler } from "./actions.js";
 import { actionToAutomation, applyExecutionToAction, assertHandlerExists } from "./actions.js";
-import { emptyAccountsState, replaceAccount } from "./accounts.js";
+import { emptyAccountsState, removeAccount, replaceAccount } from "./accounts.js";
 import { ActionHandlerNotFoundError } from "./errors.js";
 import { AutomationWorkflowActionType } from "./enums.js";
 import type { AutomationWorkflowActionUpdate } from "./envelope.js";
 import type { Automation } from "./runner.js";
 import { runAutomation } from "./runner.js";
-import { appendExecution } from "./state.js";
+import { appendExecution, removeAutomationRow, replaceAutomationRow } from "./state.js";
 
 export interface AutomationWorkflowInput<TState extends AutomationsState = AutomationsState> {
   automation: Automation<TState>;
@@ -26,6 +26,8 @@ export interface AutomationWorkflowOutput<TState extends AutomationsState = Auto
   execution: Execution;
   actionExecutions: Execution[];
   resolvedActions: Action[];
+  accountMutations: { removed: string[] };
+  automationMutations: { replaced: AutomationState[]; removed: string[] };
 }
 
 interface ParsedEnvelopes {
@@ -73,12 +75,18 @@ export class AutomationWorkflow<TState extends AutomationsState = AutomationsSta
     let nextAccountsState: AccountsState = input.accountsState ?? emptyAccountsState();
     const actionExecutions: Execution[] = [];
     const resolvedActions: Action[] = [];
+    const allAccountRemovals: string[] = [];
+    const allAutomationReplacements: AutomationState[] = [];
+    const allAutomationRemovals: string[] = [];
 
     // Priority user-actions pass.
     for (const action of priorityUserActions) {
       if (signal?.aborted) break;
 
       const stagedReplacements: Account[] = [];
+      const stagedAccountRemovals: string[] = [];
+      const stagedAutomationReplacements: AutomationState[] = [];
+      const stagedAutomationRemovals: string[] = [];
       const handler = actionHandlers![action.actionType];
       const adapter = actionToAutomation(action, handler);
 
@@ -88,10 +96,25 @@ export class AutomationWorkflow<TState extends AutomationsState = AutomationsSta
         signal,
         accounts: nextAccountsState,
         replaceAccount: (a: Account) => stagedReplacements.push(a),
+        removeAccount: (id: string) => stagedAccountRemovals.push(id),
+        replaceAutomation: (row: AutomationState) => stagedAutomationReplacements.push(row),
+        removeAutomation: (id: string) => stagedAutomationRemovals.push(id),
       });
 
       for (const account of stagedReplacements) {
         nextAccountsState = replaceAccount(nextAccountsState, account);
+      }
+      for (const id of stagedAccountRemovals) {
+        nextAccountsState = removeAccount(nextAccountsState, id);
+        allAccountRemovals.push(id);
+      }
+      for (const row of stagedAutomationReplacements) {
+        nextState = replaceAutomationRow(nextState, row) as TState;
+        allAutomationReplacements.push(row);
+      }
+      for (const id of stagedAutomationRemovals) {
+        nextState = removeAutomationRow(nextState, id) as TState;
+        allAutomationRemovals.push(id);
       }
 
       actionExecutions.push(exec);
@@ -129,6 +152,8 @@ export class AutomationWorkflow<TState extends AutomationsState = AutomationsSta
       execution: mainExec,
       actionExecutions,
       resolvedActions,
+      accountMutations: { removed: allAccountRemovals },
+      automationMutations: { replaced: allAutomationReplacements, removed: allAutomationRemovals },
     };
   }
 }

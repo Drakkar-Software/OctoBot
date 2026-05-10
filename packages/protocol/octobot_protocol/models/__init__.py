@@ -16,7 +16,12 @@
 from octobot_protocol.models.account import Account
 from octobot_protocol.models.account_type import AccountType
 from octobot_protocol.models.accounts_state import AccountsState
-from octobot_protocol.models.action import Action
+from octobot_protocol.models.action_base import ActionBase
+from octobot_protocol.models.action import Action, ActionUnion
+from octobot_protocol.models.add_exchange_account_action import AddExchangeAccountAction
+from octobot_protocol.models.remove_exchange_account_action import RemoveExchangeAccountAction
+from octobot_protocol.models.add_automation_action import AddAutomationAction
+from octobot_protocol.models.remove_automation_action import RemoveAutomationAction
 from octobot_protocol.models.active_order_swap_strategy import ActiveOrderSwapStrategy
 from octobot_protocol.models.active_order_swap_strategy_type import ActiveOrderSwapStrategyType
 from octobot_protocol.models.asset import Asset
