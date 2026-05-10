@@ -1,10 +1,7 @@
-// Runs a single automation. Owns the status transitions on the Execution
-// record (pending → running → terminal) and never throws to the caller — the
-// outcome is encoded in the returned Execution.
-
 import { getLogger } from "@drakkarsoftware/octobot-commons";
+import type { AutomationMetadata, AutomationsState } from "@drakkarsoftware/octobot-protocol";
 import type { Execution } from "@drakkarsoftware/octobot-protocol";
-import type { Automation, AutomationContext } from "./automation.js";
+import type { Logger } from "@drakkarsoftware/octobot-commons";
 import {
   newExecution,
   markRunning,
@@ -12,6 +9,21 @@ import {
   markFailed,
   markCancelled,
 } from "./execution.js";
+
+export interface AutomationContext {
+  executionId: string;
+  reason: string;
+  signal: AbortSignal;
+  logger: Logger;
+}
+
+export interface Automation<TState = AutomationsState, TOutput = unknown> {
+  id: string;
+  metadata: AutomationMetadata;
+  /** Optional gate — skipped when `automationIds` is explicit. */
+  shouldRun?: (state: TState) => boolean;
+  run: (ctx: AutomationContext, state: TState) => Promise<TOutput>;
+}
 
 export interface RunOptions {
   reason: string;

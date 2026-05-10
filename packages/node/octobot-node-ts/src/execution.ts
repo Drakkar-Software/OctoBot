@@ -3,9 +3,6 @@ import { TaskStatus as TaskStatusValues } from "@drakkarsoftware/octobot-protoco
 import { newId } from "./util/id.js";
 import { now } from "./util/time.js";
 
-export const ExecutionStatus = TaskStatusValues;
-export type ExecutionStatus = TaskStatus;
-
 export function newExecution(args: {
   automationId: string;
   reason: string;

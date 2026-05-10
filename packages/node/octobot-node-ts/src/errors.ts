@@ -1,6 +1,3 @@
-// Typed error hierarchy for the octobot-node lib. Mirrors the conventions used
-// by @drakkarsoftware/octobot-commons and octobot-trading.
-
 export class NodeError extends Error {
   constructor(message?: string) {
     super(message);
@@ -12,12 +9,6 @@ export class NodeError extends Error {
 export class AutomationNotFoundError extends NodeError {
   constructor(public readonly automationId: string) {
     super(`Automation not found: ${automationId}`);
-  }
-}
-
-export class DuplicateAutomationError extends NodeError {
-  constructor(public readonly automationId: string) {
-    super(`Automation already registered with id: ${automationId}`);
   }
 }
 

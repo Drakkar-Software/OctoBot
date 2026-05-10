@@ -1,6 +1,5 @@
 // Public API.
 export * from "./errors.js";
-export * from "./automation.js";
 export * from "./execution.js";
 export * from "./state.js";
 export * from "./runner.js";

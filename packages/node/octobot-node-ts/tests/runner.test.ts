@@ -1,11 +1,13 @@
 import { describe, it, expect } from "vitest";
 import { runAutomation } from "../src/runner.js";
 import { TaskStatus } from "@drakkarsoftware/octobot-protocol";
-import type { Automation } from "../src/automation.js";
+import type { Automation } from "../src/runner.js";
+
+const meta = (name: string) => ({ name, description: "" });
 
 const okAutomation = (id: string): Automation => ({
   id,
-  name: id,
+  metadata: meta(id),
   run: async () => ({ ok: true }),
 });
 
@@ -23,7 +25,7 @@ describe("runAutomation", () => {
   it("captures thrown errors with serialized stack", async () => {
     const failing: Automation = {
       id: "b",
-      name: "b",
+      metadata: meta("b"),
       run: async () => {
         throw new Error("boom");
       },
@@ -40,11 +42,9 @@ describe("runAutomation", () => {
     const ctrl = new AbortController();
     const slow: Automation = {
       id: "c",
-      name: "c",
+      metadata: meta("c"),
       run: async (ctx) => {
         ctrl.abort();
-        // Cooperative cancel: an automation can opt to throw on its own,
-        // but the runner also covers the case of resolving normally after abort.
         if (ctx.signal.aborted) throw new Error("aborted");
         return {};
       },

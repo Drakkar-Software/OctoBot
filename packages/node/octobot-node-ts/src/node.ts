@@ -1,9 +1,6 @@
-// OctobotNode façade — registry + the single `run` entrypoint that turns an
-// input AutomationsState into a nextState (with Execution rows appended).
-// Pure: the lib never persists anything; the caller owns storage.
-
 import type { AutomationsState, Execution } from "@drakkarsoftware/octobot-protocol";
-import { Automation, AutomationRegistry, DefaultState } from "./automation.js";
+import type { Automation } from "./runner.js";
+import { AutomationNotFoundError } from "./errors.js";
 import { runAutomation } from "./runner.js";
 import {
   appendExecution,
@@ -13,50 +10,29 @@ import {
 } from "./state.js";
 
 export interface RunRequest<TState extends AutomationsState = AutomationsState> {
+  automations: Automation<TState, unknown>[];
   state: TState;
   reason: string;
   /** When set, runs only this subset and bypasses each automation's `shouldRun`. */
   automationIds?: string[];
-  /** Cooperative cancel for the whole tick. */
   signal?: AbortSignal;
 }
 
 export interface RunResult<TState extends AutomationsState = AutomationsState> {
-  /** Records produced by automations that actually fired this tick. */
   executions: Execution[];
-  /** Original state with the new executions folded in. */
   nextState: TState;
 }
 
 export class OctobotNode<TState extends AutomationsState = AutomationsState> {
-  private readonly registry = new AutomationRegistry<TState>();
-
-  registerAutomation<TOutput>(automation: Automation<TState, TOutput>): void {
-    this.registry.register(automation);
-  }
-
-  unregisterAutomation(id: string): boolean {
-    return this.registry.unregister(id);
-  }
-
-  hasAutomation(id: string): boolean {
-    return this.registry.has(id);
-  }
-
-  listAutomations(): Automation<TState, unknown>[] {
-    return this.registry.list();
-  }
-
-  /**
-   * Trigger automations against `state`. Returns the executions produced and
-   * the merged nextState. Automations run sequentially in registration order
-   * so each can read the previous's effects via state helpers if needed.
-   */
   async run(req: RunRequest<TState>): Promise<RunResult<TState>> {
     const explicit = req.automationIds !== undefined;
     const candidates = explicit
-      ? req.automationIds!.map((id) => this.registry.get(id))
-      : this.registry.list();
+      ? req.automationIds!.map((id) => {
+          const a = req.automations.find((x) => x.id === id);
+          if (!a) throw new AutomationNotFoundError(id);
+          return a;
+        })
+      : req.automations;
 
     const executions: Execution[] = [];
     let nextState = req.state;
@@ -74,13 +50,15 @@ export class OctobotNode<TState extends AutomationsState = AutomationsState> {
         signal: req.signal,
       });
       executions.push(exec);
-      nextState = appendExecution(nextState, exec) as TState;
+      nextState = appendExecution(nextState, exec, () => ({
+        id: automation.id,
+        status: exec.status,
+        metadata: automation.metadata,
+      })) as TState;
     }
 
     return { executions, nextState };
   }
-
-  // ---- pure state queries (forward to ./state helpers) ----
 
   latestForAutomation(state: TState, automationId: string): Execution | null {
     return latestForAutomation(state, automationId);
@@ -92,7 +70,7 @@ export class OctobotNode<TState extends AutomationsState = AutomationsState> {
 }
 
 export function createOctobotNode<
-  TState extends AutomationsState = DefaultState,
+  TState extends AutomationsState = AutomationsState,
 >(): OctobotNode<TState> {
   return new OctobotNode<TState>();
 }
