@@ -17,7 +17,7 @@ Before running any commands, export ROOT and PYTHONPATH once (do NOT use `$()` o
 
 ```bash
 ROOT=$PWD
-export PYTHONPATH="$ROOT:$ROOT/packages/agents:$ROOT/packages/async_channel:$ROOT/packages/backtesting:$ROOT/packages/binary:$ROOT/packages/commons:$ROOT/packages/evaluators:$ROOT/packages/flow:$ROOT/packages/node:$ROOT/packages/services:$ROOT/packages/sync:$ROOT/packages/tentacles:$ROOT/packages/tentacles_manager:$ROOT/packages/trading:$ROOT/packages/trading_backend"
+export PYTHONPATH="$ROOT:$ROOT/packages/agents:$ROOT/packages/async_channel:$ROOT/packages/backtesting:$ROOT/packages/binary:$ROOT/packages/commons:$ROOT/packages/evaluators:$ROOT/packages/flow:$ROOT/packages/node:$ROOT/packages/services:$ROOT/packages/sync:$ROOT/packages/tentacles:$ROOT/packages/tentacles_manager:$ROOT/packages/trading:"
 ```
 
 Python: `venv/bin/python`
@@ -26,7 +26,7 @@ Python: `venv/bin/python`
 
 - **Root tests**: `tests/` — OctoBot-level unit and functional tests (has a `conftest.py` that sets up paths and tentacles)
 - **Package tests**: `packages/<name>/tests/` — per-package test suites
-- Packages with tests: `async_channel`, `backtesting`, `commons`, `evaluators`, `flow`, `node`, `services`, `sync`, `tentacles_manager`, `trading`, `trading_backend`
+- Packages with tests: `async_channel`, `backtesting`, `commons`, `evaluators`, `flow`, `node`, `services`, `sync`, `tentacles_manager`, `trading`
 - Some packages have nested test directories (e.g., `packages/commons/tests/databases/`)
 - Some packages load `.env` via conftest (e.g., `flow`, `sync`)
 

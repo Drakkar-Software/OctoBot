@@ -44,7 +44,6 @@ PACKAGE_SOURCES = [
     "packages/sync:octobot_sync",
     "packages/tentacles_manager:octobot_tentacles_manager",
     "packages/trading:octobot_trading",
-    "packages/trading_backend:trading_backend",
 ]
 
 PACKAGE_REQS = [
@@ -56,7 +55,6 @@ PACKAGE_REQS = [
     "packages/protocol:reqs",
     "packages/tentacles_manager:reqs",
     "packages/trading:reqs",
-    "packages/trading_backend:reqs",
 ]
 
 PACKAGE_FULL_REQS = [

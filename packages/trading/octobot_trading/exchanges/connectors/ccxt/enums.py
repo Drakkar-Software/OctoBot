@@ -15,7 +15,6 @@
 #  License along with this library.
 import enum
 
-import octobot_trading.exchanges.connectors.ccxt.constants as ccxt_constants
 
 class ExchangeConstantsCCXTColumns(enum.Enum):
     TIMESTAMP = "timestamp"

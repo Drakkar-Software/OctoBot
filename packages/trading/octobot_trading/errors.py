@@ -269,6 +269,12 @@ class InvalidAPIKeyIPWhitelistError(AuthenticationError):
     """
 
 
+class InvalidAPIKeyPermissionsError(AuthenticationError):
+    """
+    Raised when an exchange failed to authenticate due to invalid API key permissions
+    """
+
+
 class ExchangeAccountSymbolPermissionError(AuthenticationError):
     """
     Raised when an exchange failed to execute the given request because of allowed traded symbols

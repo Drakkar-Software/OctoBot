@@ -88,7 +88,6 @@ jobs:
           - packages/sync
           - packages/tentacles_manager
           - packages/trading
-          - packages/trading_backend
 
     env:
       USES_TENTACLES: ${{ matrix.package == 'octobot' || matrix.package == 'packages/node' || matrix.package == 'packages/flow' || matrix.package == 'packages/copy' }}

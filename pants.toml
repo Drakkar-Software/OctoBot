@@ -33,7 +33,6 @@ root_patterns = [
     "/packages/sync",
     "/packages/tentacles_manager",
     "/packages/trading",
-    "/packages/trading_backend",
     "pants-plugins",
     "/",
 ]

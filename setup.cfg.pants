@@ -6,7 +6,6 @@ where = .
 include = 
     octobot*
     async_channel*
-    trading_backend*
 exclude =
     tests*
     packages*

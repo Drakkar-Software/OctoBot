@@ -18,7 +18,6 @@ import typing
 import cachetools
 import ccxt.async_support as async_ccxt
 
-import octobot_commons.constants as common_constants
 import octobot_trading.exchanges.connectors.ccxt.ccxt_client_util as ccxt_client_util
 import octobot_trading.enums as enums
 
@@ -37,14 +36,14 @@ def get_contract_size(market_status: dict) -> decimal.Decimal:
     return decimal.Decimal(str(ccxt_client_util.get_market_status_contract_size(market_status)))
 
 
-@cachetools.cached(cachetools.TTLCache(maxsize=256, ttl=common_constants.HOURS_TO_SECONDS))
+@cachetools.cached(cachetools.LRUCache(maxsize=256))
 def get_option_value(
     exchange_name: str, option_key: enums.ExchangeClientOptions
 ) -> typing.Union[bool, float, int, str, None]:
     return ccxt_client_util.get_option_value(_temp_client(exchange_name), option_key)
 
 
-@cachetools.cached(cachetools.TTLCache(maxsize=256, ttl=common_constants.HOURS_TO_SECONDS))
+@cachetools.cached(cachetools.LRUCache(maxsize=256))
 def supports_bundled_orders(exchange_name: str, exchange_type: enums.ExchangeTypes, order_type: enums.TradeOrderType) -> bool:
     return ccxt_client_util.supports_bundled_orders(
         _temp_client(exchange_name), exchange_type, order_type

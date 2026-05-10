@@ -131,7 +131,7 @@ class CCXTAdapter(adapters.AbstractAdapter):
         if "time_frame" in kwargs:
             candles_s = common_enums.TimeFramesMinutes[common_enums.TimeFrames(kwargs["time_frame"])] * \
                         common_constants.MINUTE_TO_SECONDS
-        for index, ohlcv in enumerate(fixed):
+        for _, ohlcv in enumerate(fixed):
             try:
                 int_val = int(self.get_uniformized_timestamp(ohlcv[common_enums.PriceIndexes.IND_PRICE_TIME.value]))
                 ohlcv[common_enums.PriceIndexes.IND_PRICE_TIME.value] = int_val - (int_val % candles_s)
@@ -146,7 +146,7 @@ class CCXTAdapter(adapters.AbstractAdapter):
 
     def fix_kline(self, raw: dict, **kwargs) -> dict:
         fixed = super().fix_kline(raw, **kwargs)
-        for index, kline in enumerate(fixed):
+        for _, kline in enumerate(fixed):
             try:
                 kline[common_enums.PriceIndexes.IND_PRICE_TIME.value] = \
                     int(self.get_uniformized_timestamp(kline[common_enums.PriceIndexes.IND_PRICE_TIME.value]))
