@@ -11,6 +11,7 @@ export interface TradingKeywords {
   limit(side: "buy" | "sell", symbol: string, qty: number | string | Decimal, price: number | string | Decimal): Promise<unknown>;
   cancel_order(symbol: string): Promise<string[]>;
   fetch_order(id: string, symbol: string): Promise<unknown>;
+  fetch_trades(symbol?: string, limit?: number): Promise<Record<string, unknown>[]>;
   total(asset: string): Promise<Decimal>;
   available(asset: string): Promise<Decimal>;
 }
@@ -38,6 +39,10 @@ export function createTradingKeywords(exchange: AbstractExchange): TradingKeywor
 
     async fetch_order(id, symbol) {
       return exchange.getOrder(id, symbol);
+    },
+
+    async fetch_trades(symbol, limit) {
+      return exchange.getMyRecentTrades(symbol, undefined, limit);
     },
 
     async total(asset) {

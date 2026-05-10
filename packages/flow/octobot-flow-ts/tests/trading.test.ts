@@ -11,6 +11,7 @@ function makeExchange(overrides: Partial<Record<string, unknown>> = {}): Abstrac
     getOpenOrders: vi.fn().mockResolvedValue([]),
     getOrder: vi.fn().mockResolvedValue({ id: "ord1" }),
     getBalance: vi.fn().mockResolvedValue({}),
+    getMyRecentTrades: vi.fn().mockResolvedValue([]),
     ...overrides,
   } as unknown as AbstractExchange;
 }
@@ -100,6 +101,31 @@ describe("createTradingKeywords", () => {
       const order = await kw.fetch_order("x", "ETH/USDT");
       expect(exchange.getOrder).toHaveBeenCalledWith("x", "ETH/USDT");
       expect(order).toEqual({ id: "x", status: "open" });
+    });
+  });
+
+  describe("fetch_trades", () => {
+    it("returns personal trade history for a symbol", async () => {
+      const trades = [{ id: "t1", amount: 0.5 }];
+      const exchange = makeExchange({ getMyRecentTrades: vi.fn().mockResolvedValue(trades) });
+      const kw = createTradingKeywords(exchange);
+      const result = await kw.fetch_trades("BTC/USDT");
+      expect(exchange.getMyRecentTrades).toHaveBeenCalledWith("BTC/USDT", undefined, undefined);
+      expect(result).toEqual(trades);
+    });
+
+    it("passes limit to getMyRecentTrades", async () => {
+      const exchange = makeExchange({ getMyRecentTrades: vi.fn().mockResolvedValue([]) });
+      const kw = createTradingKeywords(exchange);
+      await kw.fetch_trades("BTC/USDT", 10);
+      expect(exchange.getMyRecentTrades).toHaveBeenCalledWith("BTC/USDT", undefined, 10);
+    });
+
+    it("fetches without symbol when omitted", async () => {
+      const exchange = makeExchange({ getMyRecentTrades: vi.fn().mockResolvedValue([]) });
+      const kw = createTradingKeywords(exchange);
+      await kw.fetch_trades();
+      expect(exchange.getMyRecentTrades).toHaveBeenCalledWith(undefined, undefined, undefined);
     });
   });
 

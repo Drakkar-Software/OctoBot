@@ -16,6 +16,11 @@ function decimalField(ticker: Record<string, unknown> | null | undefined, field:
   return new Decimal((ticker?.[field] as number | string | undefined) ?? 0);
 }
 
+function obLevel(book: Record<string, unknown> | null | undefined, side: "bids" | "asks", idx: number): Decimal {
+  const levels = book?.[side] as number[][] | undefined;
+  return new Decimal(levels?.[0]?.[idx] ?? 0);
+}
+
 export interface MarketDataKeywords {
   close(symbol: string, timeFrame: string): Promise<Decimal>;
   open(symbol: string, timeFrame: string): Promise<Decimal>;
@@ -29,6 +34,10 @@ export interface MarketDataKeywords {
   ticker_high(symbol: string): Promise<Decimal>;
   ticker_low(symbol: string): Promise<Decimal>;
   ticker_volume(symbol: string): Promise<Decimal>;
+  bid(symbol: string): Promise<Decimal>;
+  ask(symbol: string): Promise<Decimal>;
+  bid_volume(symbol: string): Promise<Decimal>;
+  ask_volume(symbol: string): Promise<Decimal>;
 }
 
 export function createMarketDataKeywords(exchange: AbstractExchange): MarketDataKeywords {
@@ -68,6 +77,18 @@ export function createMarketDataKeywords(exchange: AbstractExchange): MarketData
     },
     async ticker_volume(symbol) {
       return decimalField(await exchange.getPriceTicker(symbol), "baseVolume");
+    },
+    async bid(symbol) {
+      return obLevel(await exchange.getOrderBook(symbol, 1), "bids", 0);
+    },
+    async ask(symbol) {
+      return obLevel(await exchange.getOrderBook(symbol, 1), "asks", 0);
+    },
+    async bid_volume(symbol) {
+      return obLevel(await exchange.getOrderBook(symbol, 1), "bids", 1);
+    },
+    async ask_volume(symbol) {
+      return obLevel(await exchange.getOrderBook(symbol, 1), "asks", 1);
     },
   };
 }

@@ -15,10 +15,16 @@ const TICKER = {
   baseVolume: 200,
 };
 
+const ORDER_BOOK = {
+  bids: [[59900, 0.5], [59800, 1.2]],
+  asks: [[60100, 0.3], [60200, 0.8]],
+};
+
 function makeExchange(overrides: Partial<Record<string, unknown>> = {}): AbstractExchange {
   return {
     getKlinePrice: vi.fn().mockResolvedValue(KLINE),
     getPriceTicker: vi.fn().mockResolvedValue(TICKER),
+    getOrderBook: vi.fn().mockResolvedValue(ORDER_BOOK),
     ...overrides,
   } as unknown as AbstractExchange;
 }
@@ -103,6 +109,40 @@ describe("createMarketDataKeywords", () => {
         makeExchange({ getPriceTicker: vi.fn().mockResolvedValue(null) }),
       );
       expect((await kw.ticker_last("BTC/USDT")).toNumber()).toBe(0);
+    });
+  });
+
+  describe("order book keywords", () => {
+    it("bid returns best bid price", async () => {
+      const exchange = makeExchange();
+      const kw = createMarketDataKeywords(exchange);
+      const v = await kw.bid("BTC/USDT");
+      expect(exchange.getOrderBook).toHaveBeenCalledWith("BTC/USDT", 1);
+      expect(v).toBeInstanceOf(Decimal);
+      expect(v.toNumber()).toBe(59900);
+    });
+
+    it("ask returns best ask price", async () => {
+      const kw = createMarketDataKeywords(makeExchange());
+      expect((await kw.ask("BTC/USDT")).toNumber()).toBe(60100);
+    });
+
+    it("bid_volume returns best bid amount", async () => {
+      const kw = createMarketDataKeywords(makeExchange());
+      expect((await kw.bid_volume("BTC/USDT")).toNumber()).toBe(0.5);
+    });
+
+    it("ask_volume returns best ask amount", async () => {
+      const kw = createMarketDataKeywords(makeExchange());
+      expect((await kw.ask_volume("BTC/USDT")).toNumber()).toBe(0.3);
+    });
+
+    it("returns Decimal(0) when order book is null", async () => {
+      const kw = createMarketDataKeywords(
+        makeExchange({ getOrderBook: vi.fn().mockResolvedValue(null) }),
+      );
+      expect((await kw.bid("BTC/USDT")).toNumber()).toBe(0);
+      expect((await kw.ask("BTC/USDT")).toNumber()).toBe(0);
     });
   });
 });
