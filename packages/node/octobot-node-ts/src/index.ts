@@ -11,6 +11,8 @@ export * from "./accounts.js";
 export * from "./workflow.js";
 export * from "./node.js";
 
+export * from "./dsl/index.js";
+
 export { newId } from "./util/id.js";
 export { now, setNowForTesting, resetNow } from "./util/time.js";
 

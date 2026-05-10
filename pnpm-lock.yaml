@@ -54,6 +54,9 @@ importers:
       '@drakkarsoftware/octobot-commons':
         specifier: workspace:*
         version: link:../../commons/octobot-commons-ts
+      '@drakkarsoftware/octobot-flow':
+        specifier: workspace:*
+        version: link:../../flow/octobot-flow-ts
       '@drakkarsoftware/octobot-protocol':
         specifier: workspace:*
         version: link:../../protocol/octobot-protocol-ts

@@ -32,3 +32,15 @@ export class ExecutionCancelledError extends NodeError {
     super(`Automation ${automationId} was cancelled before completion`);
   }
 }
+
+export class DslParseError extends NodeError {
+  constructor(public readonly source: string, reason: string) {
+    super(`DSL parse error in "${source}": ${reason}`);
+  }
+}
+
+export class DslKeywordMismatchError extends NodeError {
+  constructor(public readonly actionType: string, public readonly parsedKeyword: string) {
+    super(`Action.actionType "${actionType}" does not match DSL keyword "${parsedKeyword}"`);
+  }
+}
