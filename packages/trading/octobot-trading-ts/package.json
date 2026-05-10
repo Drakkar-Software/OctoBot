@@ -1,5 +1,5 @@
 {
-  "name": "@drakkarsoftware/octobot-trading-exchanges",
+  "name": "@drakkarsoftware/octobot-trading",
   "version": "0.1.0",
   "description": "Browser-first TypeScript wrapper around CCXT providing OctoBot's uniformized exchange interface",
   "type": "module",

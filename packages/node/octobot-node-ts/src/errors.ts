@@ -32,3 +32,9 @@ export class ExecutionCancelledError extends NodeError {
     super(`Automation ${automationId} was cancelled before completion`);
   }
 }
+
+export class InvalidAccountError extends NodeError {
+  constructor(message: string) {
+    super(message);
+  }
+}

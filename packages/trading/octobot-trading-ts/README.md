@@ -1,4 +1,4 @@
-# @drakkarsoftware/octobot-trading-exchanges
+# @drakkarsoftware/octobot-trading
 
 Browser-first TypeScript wrapper around [CCXT](https://github.com/ccxt/ccxt) that exposes the same uniformized exchange interface OctoBot's Python `octobot_trading.exchanges` module gives the rest of the bot. Use it from a frontend to talk to any CCXT-supported exchange via one normalized REST + WebSocket API instead of dealing with each venue's quirks.
 
@@ -11,7 +11,7 @@ Out of scope (server-side concepts): trader/order-execution lifecycle, backtesti
 ## Quick start
 
 ```ts
-import { ExchangeBuilder } from "@drakkarsoftware/octobot-trading-exchanges";
+import { ExchangeBuilder } from "@drakkarsoftware/octobot-trading";
 
 const manager = new ExchangeBuilder("kraken").asSpot().build();
 await manager.initialize();

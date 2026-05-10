@@ -35,6 +35,9 @@ importers:
       '@drakkarsoftware/octobot-protocol':
         specifier: workspace:*
         version: link:../../protocol/octobot-protocol-ts
+      '@drakkarsoftware/octobot-trading':
+        specifier: workspace:*
+        version: link:../../trading/octobot-trading-ts
     devDependencies:
       '@types/node':
         specifier: ^20.11.0
