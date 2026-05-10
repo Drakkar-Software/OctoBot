@@ -19,6 +19,14 @@
     "profile": {
       "type": "string"
     },
+    "sync": {
+      "type": "object",
+      "properties": {
+        "encryption_secret": {
+          "type": "string"
+        }
+      }
+    },
     "community": {
       "type": "object",
       "properties": {
