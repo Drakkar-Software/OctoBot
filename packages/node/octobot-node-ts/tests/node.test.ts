@@ -130,6 +130,89 @@ describe("OctobotNode.run", () => {
     expect(observed?.result).toEqual({ value: 1 });
   });
 
+  describe("parallel: true", () => {
+    it("all automations run concurrently against the same input state", async () => {
+      const node = createOctobotNode();
+      const startTimes: number[] = [];
+      const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+      const slow = async () => { startTimes.push(Date.now()); await delay(30); return { id: "slow" }; };
+      const fast = async () => { startTimes.push(Date.now()); await delay(5);  return { id: "fast" }; };
+
+      const t0 = Date.now();
+      const { executions, nextState } = await node.run({
+        automations: [
+          { id: "slow", metadata: meta("slow"), run: slow },
+          { id: "fast", metadata: meta("fast"), run: fast },
+        ],
+        state: emptyState(),
+        reason: "parallel",
+        parallel: true,
+      });
+
+      const elapsed = Date.now() - t0;
+      // Both started within ~10ms of each other (not 30ms+ apart as in sequential)
+      expect(Math.abs(startTimes[0] - startTimes[1])).toBeLessThan(15);
+      // Total wall time should be ~30ms not ~35ms (not additive)
+      expect(elapsed).toBeLessThan(55);
+      expect(executions).toHaveLength(2);
+      expect(nextState.automations?.length).toBe(2);
+    });
+
+    it("parallel: each automation sees the original input state, not the others' outputs", async () => {
+      const node = createOctobotNode();
+      const observedStates: AutomationsState[] = [];
+
+      await node.run({
+        automations: [
+          { id: "a", metadata: meta("a"), run: async (_ctx, s) => { observedStates.push(s); return {}; } },
+          { id: "b", metadata: meta("b"), run: async (_ctx, s) => { observedStates.push(s); return {}; } },
+        ],
+        state: emptyState(),
+        reason: "test",
+        parallel: true,
+      });
+
+      // Both see the empty input state — no cross-contamination
+      expect(observedStates[0].automations).toHaveLength(0);
+      expect(observedStates[1].automations).toHaveLength(0);
+    });
+
+    it("parallel: shouldRun evaluated against input state, eligible automations run", async () => {
+      const node = createOctobotNode();
+      const ran: string[] = [];
+
+      await node.run({
+        automations: [
+          { id: "a", metadata: meta("a"), shouldRun: () => true,  run: async () => { ran.push("a"); return {}; } },
+          { id: "b", metadata: meta("b"), shouldRun: () => false, run: async () => { ran.push("b"); return {}; } },
+          { id: "c", metadata: meta("c"), run: async () => { ran.push("c"); return {}; } },
+        ],
+        state: emptyState(),
+        reason: "test",
+        parallel: true,
+      });
+
+      expect(ran.sort()).toEqual(["a", "c"]);
+    });
+
+    it("parallel: all executions folded into nextState", async () => {
+      const node = createOctobotNode();
+
+      const { nextState } = await node.run({
+        automations: [
+          { id: "a", metadata: meta("a"), run: async () => ({}) },
+          { id: "b", metadata: meta("b"), run: async () => ({}) },
+        ],
+        state: emptyState(),
+        reason: "test",
+        parallel: true,
+      });
+
+      expect(nextState.automations?.map((x) => x.id).sort()).toEqual(["a", "b"]);
+    });
+  });
+
   it("aborting the signal stops not-yet-started automations", async () => {
     const node = createOctobotNode();
     const ctrl = new AbortController();

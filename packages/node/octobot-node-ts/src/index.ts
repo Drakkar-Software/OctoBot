@@ -1,19 +1,33 @@
 // Public API.
 export * from "./errors.js";
+export * from "./enums.js";
+export * from "./envelope.js";
+export * from "./dispatch.js";
 export * from "./execution.js";
 export * from "./state.js";
 export * from "./runner.js";
+export * from "./actions.js";
+export * from "./accounts.js";
+export * from "./workflow.js";
 export * from "./node.js";
 
 export { newId } from "./util/id.js";
 export { now, setNowForTesting, resetNow } from "./util/time.js";
 
-// Re-export the protocol types most consumers will reach for.
+// Re-export protocol types consumers will reach for.
 export type {
   AutomationsState,
   AutomationState,
   AutomationMetadata,
+  AccountsState,
+  Account,
+  ExchangeAccount,
+  BlockchainAccount,
+  Asset,
+  Action,
   Execution,
   ExecutionError,
   TaskStatus,
 } from "@drakkarsoftware/octobot-protocol";
+
+export { TaskStatus as TaskStatusValues } from "@drakkarsoftware/octobot-protocol";

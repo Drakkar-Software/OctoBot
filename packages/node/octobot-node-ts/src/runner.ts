@@ -1,6 +1,5 @@
 import { getLogger } from "@drakkarsoftware/octobot-commons";
-import type { AutomationMetadata, AutomationsState } from "@drakkarsoftware/octobot-protocol";
-import type { Execution } from "@drakkarsoftware/octobot-protocol";
+import type { Account, AccountsState, AutomationMetadata, AutomationsState, Execution } from "@drakkarsoftware/octobot-protocol";
 import type { Logger } from "@drakkarsoftware/octobot-commons";
 import {
   newExecution,
@@ -15,12 +14,20 @@ export interface AutomationContext {
   reason: string;
   signal: AbortSignal;
   logger: Logger;
+  /** Snapshot of account state at the start of this automation's run. */
+  accounts?: AccountsState;
+  /** Stage an updated account — visible to subsequent actions/automations in the same workflow pass. */
+  replaceAccount?: (account: Account) => void;
+  /** Trading signals forwarded from a TRADING_SIGNAL envelope. */
+  tradingSignals?: unknown[];
+  /** True when this run was triggered by a FORCED_TRIGGER envelope, bypassing shouldRun. */
+  forced?: boolean;
 }
 
 export interface Automation<TState = AutomationsState, TOutput = unknown> {
   id: string;
   metadata: AutomationMetadata;
-  /** Optional gate — skipped when `automationIds` is explicit. */
+  /** Optional gate — skipped when `automationIds` is explicit or `ctx.forced` is true. */
   shouldRun?: (state: TState) => boolean;
   run: (ctx: AutomationContext, state: TState) => Promise<TOutput>;
 }
@@ -29,6 +36,10 @@ export interface RunOptions {
   reason: string;
   state: unknown;
   signal?: AbortSignal;
+  accounts?: AccountsState;
+  replaceAccount?: (account: Account) => void;
+  tradingSignals?: unknown[];
+  forced?: boolean;
 }
 
 export async function runAutomation<TState, TOutput>(
@@ -49,6 +60,10 @@ export async function runAutomation<TState, TOutput>(
     reason: opts.reason,
     signal,
     logger: getLogger(`Automation[${automation.id}]`),
+    accounts: opts.accounts,
+    replaceAccount: opts.replaceAccount,
+    tradingSignals: opts.tradingSignals,
+    forced: opts.forced,
   };
   const running = markRunning(initial);
 

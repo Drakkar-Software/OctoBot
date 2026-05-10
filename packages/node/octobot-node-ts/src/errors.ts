@@ -12,6 +12,12 @@ export class AutomationNotFoundError extends NodeError {
   }
 }
 
+export class ActionHandlerNotFoundError extends NodeError {
+  constructor(public readonly actionType: string) {
+    super(`No handler registered for action type: ${actionType}`);
+  }
+}
+
 export class ExecutionFailedError extends NodeError {
   constructor(
     public readonly automationId: string,
