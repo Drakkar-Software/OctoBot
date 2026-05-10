@@ -4,3 +4,4 @@ packages:
   - "packages/protocol/octobot-protocol-ts"
   - "packages/trading/octobot-trading-ts"
   - "packages/node/octobot-node-ts"
+  - "packages/flow/octobot-flow-ts"

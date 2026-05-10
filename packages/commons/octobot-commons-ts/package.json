@@ -1,6 +1,6 @@
 {
   "name": "@drakkarsoftware/octobot-commons",
-  "version": "0.1.0",
+  "version": "0.1.0-alpha.0",
   "description": "Browser-friendly TypeScript port of octobot_commons utilities (logger, async tools, event bus, symbol parsing, decimal helpers, common enums and errors)",
   "type": "module",
   "main": "./dist/cjs/index.js",
@@ -26,7 +26,8 @@
     "build": "npm run tsBuild && npm run bundle-cjs",
     "test": "vitest run",
     "lint": "tsc --noEmit",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "publish:alpha": "pnpm publish --tag alpha --no-git-checks"
   },
   "dependencies": {
     "decimal.js": "^10.4.3"
@@ -38,5 +39,5 @@
     "vitest": "^1.4.0"
   },
   "license": "LGPL-3.0",
-  "publishConfig": { "registry": "https://registry.npmjs.com" }
+  "publishConfig": { "registry": "https://registry.npmjs.com", "access": "public" }
 }

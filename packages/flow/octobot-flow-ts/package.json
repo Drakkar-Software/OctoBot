@@ -1,7 +1,7 @@
 {
-  "name": "@drakkarsoftware/octobot-protocol",
+  "name": "@drakkarsoftware/octobot-flow",
   "version": "0.1.0-alpha.0",
-  "description": "TypeScript types for OctoBot protocol — generated from packages/protocol/openapi.json",
+  "description": "Trading-keyword bindings — typed async functions backed by octobot-trading-exchanges, mirroring the Python octobot_flow vocabulary",
   "type": "module",
   "main": "./dist/cjs/index.js",
   "module": "./dist/index.js",
@@ -21,19 +21,26 @@
   "files": ["dist", "src"],
   "engines": { "node": ">=18.0.0" },
   "scripts": {
-    "generate": "cd .. && npm run generate:typescript",
     "tsBuild": "tsc",
     "bundle-cjs": "rollup -c rollup.config.js",
     "build": "npm run tsBuild && npm run bundle-cjs",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "lint": "tsc --noEmit",
     "clean": "rm -rf dist",
     "publish:alpha": "pnpm publish --tag alpha --no-git-checks"
   },
+  "dependencies": {
+    "decimal.js": "^10.4.3",
+    "@drakkarsoftware/octobot-trading-exchanges": "workspace:*"
+  },
   "devDependencies": {
     "@types/node": "^20.11.0",
     "rollup": "^4.12.0",
-    "typescript": "^5.4.0"
+    "typescript": "^5.4.0",
+    "vitest": "^1.4.0"
   },
+  "keywords": ["octobot", "flow", "trading", "dsl"],
   "license": "LGPL-3.0",
   "publishConfig": { "registry": "https://registry.npmjs.com", "access": "public" }
 }

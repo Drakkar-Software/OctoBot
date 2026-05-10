@@ -1,6 +1,6 @@
 {
   "name": "@drakkarsoftware/octobot-node",
-  "version": "0.1.0",
+  "version": "0.1.0-alpha.0",
   "description": "Stateless automation runner — registers automations, runs them against a protocol-defined state bag, and tracks every execution",
   "type": "module",
   "main": "./dist/cjs/index.js",
@@ -27,7 +27,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "tsc --noEmit",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "publish:alpha": "pnpm publish --tag alpha --no-git-checks"
   },
   "dependencies": {
     "@drakkarsoftware/octobot-commons": "workspace:*",
@@ -41,5 +42,5 @@
   },
   "keywords": ["octobot", "automation", "workflow"],
   "license": "LGPL-3.0",
-  "publishConfig": { "registry": "https://registry.npmjs.com" }
+  "publishConfig": { "registry": "https://registry.npmjs.com", "access": "public" }
 }
