@@ -125,9 +125,6 @@ class TestOrder(unittest.TestCase):
                 exchange_id = '',
                 side = 'buy',
                 type = 'limit',
-                trigger_above = True,
-                reduce_only = True,
-                is_active = True,
                 status = 'pending_creation',
                 created_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'),
         )

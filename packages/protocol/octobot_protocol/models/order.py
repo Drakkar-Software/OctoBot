@@ -42,9 +42,9 @@ class Order(BaseModel):
     exchange_id: StrictStr
     side: Side
     type: OrderType
-    trigger_above: StrictBool
-    reduce_only: StrictBool
-    is_active: StrictBool
+    trigger_above: Optional[StrictBool] = None
+    reduce_only: Optional[StrictBool] = None
+    is_active: Optional[StrictBool] = None
     status: OrderStatus
     created_at: datetime
     entries: Optional[List[StrictStr]] = None

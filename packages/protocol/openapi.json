@@ -192,9 +192,6 @@
           "exchange_id",
           "side",
           "type",
-          "trigger_above",
-          "reduce_only",
-          "is_active",
           "status",
           "created_at"
         ],

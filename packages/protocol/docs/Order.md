@@ -14,9 +14,9 @@ Name | Type | Description | Notes
 **exchange_id** | **str** |  | 
 **side** | [**Side**](Side.md) |  | 
 **type** | [**OrderType**](OrderType.md) |  | 
-**trigger_above** | **bool** |  | 
-**reduce_only** | **bool** |  | 
-**is_active** | **bool** |  | 
+**trigger_above** | **bool** |  | [optional] 
+**reduce_only** | **bool** |  | [optional] 
+**is_active** | **bool** |  | [optional] 
 **status** | [**OrderStatus**](OrderStatus.md) |  | 
 **created_at** | **datetime** |  | 
 **entries** | **List[str]** |  | [optional] 
