@@ -44,7 +44,7 @@ except ImportError as err:
     import traceback
     traceback.print_exc()
     print(f"Error importing octobot_flow: {err}")
-    # tests will be skipped if octobot_trading or octobot_wrapper are not installed
+    # tests will be skipped if tentacles are not installed
     RUN_TESTS = False
     BLOCKCHAIN = "unavailable"
 
@@ -1385,8 +1385,9 @@ class TestOctoBotActionsJob:
         assert processed_actions[0].result is not None
         assert len(processed_actions[0].result[DSL_operators.CREATED_WITHDRAWALS_KEY]) == len(get_deposit_and_withdrawal_details(processed_actions)) == 1
         transaction = processed_actions[0].result[DSL_operators.CREATED_WITHDRAWALS_KEY][0]
+        print(f"transaction: {transaction}")
         assert transaction[trading_enums.ExchangeConstantsTransactionColumns.CURRENCY.value] == "ETH"
-        assert 0.990 < transaction[trading_enums.ExchangeConstantsTransactionColumns.AMOUNT.value] <= 0.999
+        assert 0.990 < float(transaction[trading_enums.ExchangeConstantsTransactionColumns.AMOUNT.value]) <= 0.999
         assert transaction[trading_enums.ExchangeConstantsTransactionColumns.NETWORK.value] == "ethereum"
         assert transaction[trading_enums.ExchangeConstantsTransactionColumns.ADDRESS_TO.value] == "0x1234567890123456789012345678901234567890"
         post_withdraw_portfolio = job8.after_execution_state.automation.exchange_account_elements.portfolio.content

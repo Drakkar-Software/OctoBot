@@ -90,6 +90,21 @@ class EvaluatorConfigurationConfiguration(BaseModel):
         error_messages = []
         match = 0
 
+        # use oneOf discriminator to lookup the data type
+        _data_type = json.loads(json_str).get("configuration_type")
+        if not _data_type:
+            raise ValueError("Failed to lookup data type from the field `configuration_type` in the input.")
+
+        # check if data type is `EMAMomentumEvaluatorConfiguration`
+        if _data_type == "EMAMomentumEvaluator":
+            instance.actual_instance = EMAMomentumEvaluatorConfiguration.from_json(json_str)
+            return instance
+
+        # check if data type is `RSIMomentumEvaluatorConfiguration`
+        if _data_type == "RSIMomentumEvaluator":
+            instance.actual_instance = RSIMomentumEvaluatorConfiguration.from_json(json_str)
+            return instance
+
         # deserialize data into RSIMomentumEvaluatorConfiguration
         try:
             instance.actual_instance = RSIMomentumEvaluatorConfiguration.from_json(json_str)

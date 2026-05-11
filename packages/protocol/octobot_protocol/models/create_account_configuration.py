@@ -17,10 +17,10 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Any, ClassVar, Dict, List
 from octobot_protocol.models.account import Account
-from octobot_protocol.models.action_type import ActionType
+from octobot_protocol.models.user_action_type import UserActionType
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -29,7 +29,7 @@ class CreateAccountConfiguration(BaseModel):
     """
     CreateAccountConfiguration
     """ # noqa: E501
-    action_type: ActionType
+    action_type: UserActionType = Field(description="account_create")
     configuration: Account
     __properties: ClassVar[List[str]] = ["action_type", "configuration"]
 

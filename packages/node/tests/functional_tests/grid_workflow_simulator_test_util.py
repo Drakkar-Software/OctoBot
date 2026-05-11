@@ -21,20 +21,18 @@ import json
 import math
 import time
 import typing
+import uuid
 
 import dbos
 import pytest
 
 IMPORTED_OCTOBOT_FLOW_GRID_DEPS = False
 try:
-    import octobot_commons.dsl_interpreter as dsl_interpreter_module
     import octobot_commons.enums as common_enums_module
-    import octobot_flow.enums as octobot_flow_enums
     import octobot_trading.constants as trading_constants_module
     import octobot_trading.enums as trading_enums_module
     import octobot_trading.exchanges.util.exchange_data as exchange_data_module
     import octobot_trading.util.test_tools.exchanges_test_tools as exchanges_test_tools_module
-    import tentacles.Trading.Mode.grid_trading_mode.grid_trading as grid_trading_module
 
     import octobot_node.constants as node_constants_module
     import octobot_node.scheduler.api as scheduler_api_module
@@ -44,14 +42,11 @@ try:
 
     IMPORTED_OCTOBOT_FLOW_GRID_DEPS = True
 except ImportError:
-    dsl_interpreter_module = None  # type: ignore
     common_enums_module = None  # type: ignore
-    octobot_flow_enums = None  # type: ignore
     trading_constants_module = None  # type: ignore
     trading_enums_module = None  # type: ignore
     exchange_data_module = None  # type: ignore
     exchanges_test_tools_module = None  # type: ignore
-    grid_trading_module = None  # type: ignore
     workflow_params_module = None  # type: ignore
     workflows_util_module = None  # type: ignore
     node_constants_module = None  # type: ignore
@@ -90,69 +85,121 @@ def exchange_internal_name() -> str:
 
 
 if IMPORTED_OCTOBOT_FLOW_GRID_DEPS:
-    GRID_PAIR_SETTINGS = [
-        grid_trading_module.GridTradingMode.get_default_pair_config(
-            "BTC/USDC",
-            GRID_SPREAD,
-            GRID_INCREMENT,
-            2,
-            2,
-            False,
-            False,
-            False,
+    def _wrap_user_action_configuration(payload) -> protocol_models_module.UserActionConfiguration:
+        return protocol_models_module.UserActionConfiguration.from_json(payload.to_json())
+
+    def protocol_exchange_account_for_grid_functional(*, usdc_total: float) -> protocol_models_module.ExchangeAccount:
+        return protocol_models_module.ExchangeAccount(
+            account_type=protocol_models_module.AccountType.EXCHANGE,
+            exchange=exchange_internal_name(),
+            remote_account_id="functional-test-account",
+            api_key="functional-key",
+            api_secret="functional-secret",
+            assets=[
+                protocol_models_module.Asset(
+                    symbol="USDC",
+                    total=usdc_total,
+                    available=usdc_total,
+                    unit="USDC",
+                )
+            ],
         )
-    ]
 
-    def grid_trading_mode_action_dict(dependency_action: dict[str, typing.Any]) -> dict[str, typing.Any]:
-        return {
-            "id": "action_1",
-            "dsl_script": (
-                f"grid_trading_mode(pair_settings={dsl_interpreter_module.format_parameter_value(GRID_PAIR_SETTINGS)})"
+    def protocol_account_for_functional(
+        *,
+        account_id: str,
+        usdc_total: float,
+        account_name: str = "Functional test account",
+    ) -> protocol_models_module.Account:
+        return protocol_models_module.Account(
+            id=account_id,
+            name=account_name,
+            is_simulated=True,
+            details=protocol_models_module.AccountDetails(
+                actual_instance=protocol_exchange_account_for_grid_functional(usdc_total=usdc_total),
             ),
-            "dependencies": [{"action_id": dependency_action["id"]}],
-        }
+        )
 
-    def simulator_grid_init_action_dict(automation_id: str, usdc_total: float) -> dict[str, typing.Any]:
-        return {
-            "id": "action_init",
-            "action": octobot_flow_enums.ActionType.APPLY_CONFIGURATION.value,
-            "config": {
-                "automation": {
-                    "metadata": {
-                        "automation_id": automation_id,
-                    },
-                    "exchange_account_elements": {
-                        "portfolio": {
-                            "content": {
-                                "USDC": {
-                                    "available": usdc_total,
-                                    "total": usdc_total,
-                                }
-                            },
-                        },
-                    },
-                },
-                "exchange_account_details": {
-                    "exchange_details": {
-                        "internal_name": exchange_internal_name(),
-                    },
-                    "auth_details": {},
-                    "portfolio": {
-                        "unit": "USDC",
-                    },
-                },
-            },
-        }
+    def grid_configuration_matching_simulator_constants() -> protocol_models_module.GridConfiguration:
+        return protocol_models_module.GridConfiguration(
+            configuration_type=protocol_models_module.ActionConfigurationType.GRID,
+            symbol="BTC/USDC",
+            spread=GRID_SPREAD,
+            increment=GRID_INCREMENT,
+            buy_count=2,
+            sell_count=2,
+            enable_trailing_up=False,
+            enable_trailing_down=False,
+            order_by_order_trailing=False,
+        )
 
-    def build_simple_grid_simulator_state_dict(automation_id: str, usdc_initial: float) -> dict[str, typing.Any]:
-        init_action = simulator_grid_init_action_dict(automation_id, usdc_initial)
-        all_actions = [init_action, grid_trading_mode_action_dict(init_action)]
-        return {
-            "automation": {
-                "metadata": {"automation_id": automation_id},
-                "actions_dag": {"actions": all_actions},
-            }
-        }
+    def build_create_grid_user_action(
+        *,
+        account_id: str,
+        name: str,
+        strategy_id: str | None = None,
+        emit_signals: bool | None = None,
+    ) -> protocol_models_module.UserAction:
+        strategy = None
+        if strategy_id is not None:
+            strategy = protocol_models_module.StrategyConfiguration(
+                id=strategy_id,
+                emit_signals=bool(emit_signals),
+            )
+        payload = protocol_models_module.CreateAutomationConfiguration(
+            action_type=protocol_models_module.UserActionType.AUTOMATION_CREATE,
+            configuration=protocol_models_module.AutomationConfiguration(
+                name=name,
+                account_ids=[account_id],
+                strategy=strategy,
+                configuration=protocol_models_module.AutomationConfigurationConfiguration(
+                    grid_configuration_matching_simulator_constants()
+                ),
+            ),
+        )
+        return protocol_models_module.UserAction(
+            id=f"ua-grid-{uuid.uuid4()}",
+            configuration=_wrap_user_action_configuration(payload),
+        )
+
+    def build_create_copy_follower_user_action(
+        *,
+        automation_id: str,
+        account_id: str,
+        name: str,
+        strategy_id: str,
+    ) -> protocol_models_module.UserAction:
+        payload = protocol_models_module.CreateAutomationConfiguration(
+            action_type=protocol_models_module.UserActionType.AUTOMATION_CREATE,
+            configuration=protocol_models_module.AutomationConfiguration(
+                name=name,
+                account_ids=[account_id],
+                configuration=protocol_models_module.AutomationConfigurationConfiguration(
+                    protocol_models_module.CopyConfiguration(
+                        configuration_type=protocol_models_module.ActionConfigurationType.COPY,
+                        strategy_id=strategy_id,
+                    )
+                ),
+            ),
+        )
+        return protocol_models_module.UserAction(
+            id=automation_id,
+            configuration=_wrap_user_action_configuration(payload),
+        )
+
+    def build_stop_user_action(
+        *,
+        automation_id: str,
+        user_action_id: str,
+    ) -> protocol_models_module.UserAction:
+        payload = protocol_models_module.StopAutomationConfiguration(
+            action_type=protocol_models_module.UserActionType.AUTOMATION_STOP,
+            id=automation_id,
+        )
+        return protocol_models_module.UserAction(
+            id=user_action_id,
+            configuration=_wrap_user_action_configuration(payload),
+        )
 
     def fetch_ohlcv_side_effect_for_close_price(
         get_close_price: typing.Callable[[], typing.Union[int, float]],
@@ -281,11 +328,11 @@ if IMPORTED_OCTOBOT_FLOW_GRID_DEPS:
         return buy_count == 2 and sell_count == 2 and trade_count >= 1
 
     def find_protocol_automation_state(
-        automations_state: protocol_models_module.AutomationsState,
+        automation_states: list[protocol_models_module.AutomationState],
         parent_workflow_id: str,
     ) -> typing.Optional[protocol_models_module.AutomationState]:
         normalized_id = parent_workflow_id[: node_constants_module.PARENT_WORKFLOW_ID_LENGTH]
-        for automation in automations_state.automations or []:
+        for automation in automation_states:
             if automation.id == normalized_id:
                 return automation
         return None
@@ -295,19 +342,15 @@ if IMPORTED_OCTOBOT_FLOW_GRID_DEPS:
         workflow_row: dbos.WorkflowStatus,
     ) -> protocol_models_module.AutomationState:
         parent_id = workflow_row.workflow_id[: node_constants_module.PARENT_WORKFLOW_ID_LENGTH]
-        automations_state = await scheduler_api_module.get_automations_state(wallet_address)
-        assert automations_state.version == node_constants_module.AUTOMATIONS_STATE_VERSION, (
-            f"unexpected AutomationsState.version {automations_state.version!r}, "
-            f"expected {node_constants_module.AUTOMATIONS_STATE_VERSION!r}"
-        )
-        protocol_automation = find_protocol_automation_state(automations_state, parent_id)
-        if protocol_automation is None:
-            seen_ids = [automation.id for automation in (automations_state.automations or [])]
+        automation_states = await scheduler_api_module.get_automation_states(wallet_address)
+        automation_state = find_protocol_automation_state(automation_states, parent_id)
+        if automation_state is None:
+            seen_ids = [automation.id for automation in automation_states]
             raise AssertionError(
-                f"No AutomationsState entry for parent_workflow_id={parent_id!r}; "
+                f"No AutomationState entry for parent_workflow_id={parent_id!r}; "
                 f"returned automation ids: {seen_ids!r}"
             )
-        return protocol_automation
+        return automation_state
 
     def _portfolio_content_from_exchange_elements(exchange_account_elements: typing.Any) -> dict[str, typing.Any]:
         portfolio = getattr(exchange_account_elements, "portfolio", None)
@@ -380,20 +423,6 @@ if IMPORTED_OCTOBOT_FLOW_GRID_DEPS:
                     f"Asset.available mismatch for {symbol!r}: protocol={matching_asset.available!r} "
                     f"flow={expected_available!r}"
                 )
-
-    def is_simulator_grid_baseline_protocol_exactly_one_trade(
-        protocol_automation: protocol_models_module.AutomationState,
-    ) -> bool:
-        order_count = len(protocol_automation.orders or [])
-        trade_count = len(protocol_automation.trades or [])
-        return order_count == 4 and trade_count == 1
-
-    def is_simulator_grid_baseline_protocol_at_least_one_trade(
-        protocol_automation: protocol_models_module.AutomationState,
-    ) -> bool:
-        order_count = len(protocol_automation.orders or [])
-        trade_count = len(protocol_automation.trades or [])
-        return order_count == 4 and trade_count >= 1
 
     async def wait_for_stop_success_output(
         scheduler,

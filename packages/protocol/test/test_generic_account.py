@@ -35,6 +35,7 @@ class TestGenericAccount(unittest.TestCase):
         model = GenericAccount()
         if include_optional:
             return GenericAccount(
+                account_type = 'generic',
                 assets = [
                     octobot_protocol.models.asset.Asset(
                         symbol = '', 
@@ -46,6 +47,7 @@ class TestGenericAccount(unittest.TestCase):
             )
         else:
             return GenericAccount(
+                account_type = 'generic',
         )
         """
 

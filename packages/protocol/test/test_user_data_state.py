@@ -14,10 +14,10 @@
 
 import unittest
 
-from octobot_protocol.models.automations_state import AutomationsState
+from octobot_protocol.models.user_data_state import UserDataState
 
-class TestAutomationsState(unittest.TestCase):
-    """AutomationsState unit test stubs"""
+class TestUserDataState(unittest.TestCase):
+    """UserDataState unit test stubs"""
 
     def setUp(self):
         pass
@@ -25,16 +25,16 @@ class TestAutomationsState(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional) -> AutomationsState:
-        """Test AutomationsState
+    def make_instance(self, include_optional) -> UserDataState:
+        """Test UserDataState
             include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
-        # uncomment below to create an instance of `AutomationsState`
+        # uncomment below to create an instance of `UserDataState`
         """
-        model = AutomationsState()
+        model = UserDataState()
         if include_optional:
-            return AutomationsState(
+            return UserDataState(
                 version = '',
                 automations = [
                     octobot_protocol.models.automation_state.AutomationState(
@@ -95,16 +95,25 @@ class TestAutomationsState(unittest.TestCase):
                                 id = '', 
                                 symbol = '', )
                             ], )
+                    ],
+                user_actions = [
+                    octobot_protocol.models.user_action.UserAction(
+                        id = '', 
+                        status = 'pending', 
+                        created_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
+                        updated_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
+                        configuration = null, 
+                        result = null, )
                     ]
             )
         else:
-            return AutomationsState(
+            return UserDataState(
                 version = '',
         )
         """
 
-    def testAutomationsState(self):
-        """Test AutomationsState"""
+    def testUserDataState(self):
+        """Test UserDataState"""
         # inst_req_only = self.make_instance(include_optional=False)
         # inst_req_and_optional = self.make_instance(include_optional=True)
 

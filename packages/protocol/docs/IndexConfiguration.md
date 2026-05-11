@@ -6,7 +6,7 @@ IndexConfiguration
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**configuration_type** | [**ActionConfigurationType**](ActionConfigurationType.md) |  | 
+**configuration_type** | [**ActionConfigurationType**](ActionConfigurationType.md) | index | 
 **coins** | [**List[IndexCoin]**](IndexCoin.md) |  | 
 **rebalance_trigger_min_percent** | **float** |  | 
 

@@ -17,7 +17,7 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Any, ClassVar, Dict, List
 from octobot_protocol.models.action_configuration_type import ActionConfigurationType
 from typing import Optional, Set
@@ -28,7 +28,7 @@ class GenericProcessConfiguration(BaseModel):
     """
     GenericProcessConfiguration
     """ # noqa: E501
-    configuration_type: ActionConfigurationType
+    configuration_type: ActionConfigurationType = Field(description="generic_process")
     profile_data: Dict[str, Any]
     __properties: ClassVar[List[str]] = ["configuration_type", "profile_data"]
 

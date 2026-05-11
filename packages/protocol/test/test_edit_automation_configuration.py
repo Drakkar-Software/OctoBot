@@ -42,6 +42,9 @@ class TestEditAutomationConfiguration(unittest.TestCase):
                     account_ids = [
                         ''
                         ], 
+                    strategy = octobot_protocol.models.strategy_configuration.StrategyConfiguration(
+                        id = '', 
+                        emit_signals = True, ), 
                     configuration = null, )
             )
         else:
@@ -53,6 +56,9 @@ class TestEditAutomationConfiguration(unittest.TestCase):
                     account_ids = [
                         ''
                         ], 
+                    strategy = octobot_protocol.models.strategy_configuration.StrategyConfiguration(
+                        id = '', 
+                        emit_signals = True, ), 
                     configuration = null, ),
         )
         """

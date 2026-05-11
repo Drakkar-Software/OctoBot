@@ -23,8 +23,9 @@ from starfish_server.config.loader import load_config_file
 from starfish_server.config.schema import SyncConfig, CollectionConfig, NamespaceConfig
 
 import octobot_sync.constants as constants
+import octobot_sync.enums as enums
 
-logger = logging.get_logger("SyncCollections")
+logger = logging.get_logger("Collections")
 
 DEFAULT_SYNC_CONFIG = SyncConfig(
     version=1,
@@ -33,7 +34,7 @@ DEFAULT_SYNC_CONFIG = SyncConfig(
         constants.SYNC_NAMESPACE: NamespaceConfig(
             collections=[
                 CollectionConfig(
-                    name="user-data",
+                    name=enums.Collections.USER_DATA.value,
                     storagePath="users/{identity}/data",
                     readRoles=["self"],
                     writeRoles=["self"],
@@ -41,7 +42,7 @@ DEFAULT_SYNC_CONFIG = SyncConfig(
                     maxBodyBytes=constants.MAX_BODY_SIZE_PRIVATE,
                 ),
                 CollectionConfig(
-                    name="user-accounts",
+                    name=enums.Collections.USER_ACCOUNTS.value,
                     storagePath="users/{identity}/accounts",
                     readRoles=["self"],
                     writeRoles=["self"],
@@ -49,7 +50,7 @@ DEFAULT_SYNC_CONFIG = SyncConfig(
                     maxBodyBytes=constants.MAX_BODY_SIZE_PRIVATE,
                 ),
                 CollectionConfig(
-                    name="user-settings",
+                    name=enums.Collections.USER_SETTINGS.value,
                     storagePath="users/{identity}/settings",
                     readRoles=["self"],
                     writeRoles=["self"],
@@ -57,7 +58,7 @@ DEFAULT_SYNC_CONFIG = SyncConfig(
                     maxBodyBytes=constants.MAX_BODY_SIZE_PRIVATE,
                 ),
                 CollectionConfig(
-                    name="user-strategies",
+                    name=enums.Collections.USER_STRATEGIES.value,
                     storagePath="users/{identity}/strategies",
                     readRoles=["self"],
                     writeRoles=["self"],
@@ -65,7 +66,7 @@ DEFAULT_SYNC_CONFIG = SyncConfig(
                     maxBodyBytes=constants.MAX_BODY_SIZE_PRIVATE,
                 ),
                 CollectionConfig(
-                    name="user-actions",
+                    name=enums.Collections.USER_ACTIONS.value,
                     storagePath="users/{identity}/actions",
                     readRoles=["self"],
                     writeRoles=["self"],

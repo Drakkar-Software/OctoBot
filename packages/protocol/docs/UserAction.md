@@ -7,7 +7,11 @@ UserAction
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **id** | **str** |  | 
+**status** | [**UserActionStatus**](UserActionStatus.md) |  | [optional] 
+**created_at** | **datetime** |  | [optional] 
+**updated_at** | **datetime** |  | [optional] 
 **configuration** | [**UserActionConfiguration**](UserActionConfiguration.md) |  | [optional] 
+**result** | [**UserActionResult**](UserActionResult.md) |  | [optional] 
 
 ## Example
 

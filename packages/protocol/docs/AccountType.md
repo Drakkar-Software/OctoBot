@@ -4,11 +4,11 @@ Account category discriminator.
 
 ## Enum
 
-* `GENERIC` (value: `'GENERIC'`)
+* `GENERIC` (value: `'generic'`)
 
-* `EXCHANGE` (value: `'EXCHANGE'`)
+* `EXCHANGE` (value: `'exchange'`)
 
-* `BLOCKCHAIN` (value: `'BLOCKCHAIN'`)
+* `BLOCKCHAIN` (value: `'blockchain'`)
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

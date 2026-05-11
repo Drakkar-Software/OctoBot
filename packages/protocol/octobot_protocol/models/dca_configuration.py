@@ -31,7 +31,7 @@ class DCAConfiguration(BaseModel):
     """
     DCAConfiguration
     """ # noqa: E501
-    configuration_type: ActionConfigurationType
+    configuration_type: ActionConfigurationType = Field(description="dca")
     symbols: List[StrictStr]
     buy_orders_count: Union[Annotated[float, Field(strict=True, ge=1)], Annotated[int, Field(strict=True, ge=1)]]
     percent_amount_per_buy_order: Union[Annotated[float, Field(le=100, strict=True, ge=0)], Annotated[int, Field(le=100, strict=True, ge=0)]]

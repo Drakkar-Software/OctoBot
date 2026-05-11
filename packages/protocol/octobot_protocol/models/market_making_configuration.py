@@ -17,7 +17,7 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Any, ClassVar, Dict, List
 from octobot_protocol.models.action_configuration_type import ActionConfigurationType
 from octobot_protocol.models.market_making_symbol_configuration import MarketMakingSymbolConfiguration
@@ -29,7 +29,7 @@ class MarketMakingConfiguration(BaseModel):
     """
     Per-symbol market making parameters.
     """ # noqa: E501
-    configuration_type: ActionConfigurationType
+    configuration_type: ActionConfigurationType = Field(description="market_making")
     symbol_configurations: List[MarketMakingSymbolConfiguration]
     __properties: ClassVar[List[str]] = ["configuration_type", "symbol_configurations"]
 

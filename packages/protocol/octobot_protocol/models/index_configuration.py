@@ -30,7 +30,7 @@ class IndexConfiguration(BaseModel):
     """
     IndexConfiguration
     """ # noqa: E501
-    configuration_type: ActionConfigurationType
+    configuration_type: ActionConfigurationType = Field(description="index")
     coins: List[IndexCoin]
     rebalance_trigger_min_percent: Union[Annotated[float, Field(le=100, strict=True, ge=0)], Annotated[int, Field(le=100, strict=True, ge=0)]]
     __properties: ClassVar[List[str]] = ["configuration_type", "coins", "rebalance_trigger_min_percent"]

@@ -17,8 +17,9 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, StrictStr
+from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
+from octobot_protocol.models.account_type import AccountType
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -27,12 +28,13 @@ class BlockchainAccount(BaseModel):
     """
     BlockchainAccount
     """ # noqa: E501
+    account_type: AccountType = Field(description="blockchain")
     blockchain: StrictStr
     network: Optional[StrictStr] = None
     public_key: Optional[StrictStr] = None
     private_key: Optional[StrictStr] = None
     passphrase: Optional[StrictStr] = None
-    __properties: ClassVar[List[str]] = ["blockchain", "network", "public_key", "private_key", "passphrase"]
+    __properties: ClassVar[List[str]] = ["account_type", "blockchain", "network", "public_key", "private_key", "passphrase"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -85,6 +87,7 @@ class BlockchainAccount(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
+            "account_type": obj.get("account_type"),
             "blockchain": obj.get("blockchain"),
             "network": obj.get("network"),
             "public_key": obj.get("public_key"),

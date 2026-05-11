@@ -17,8 +17,9 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, StrictStr
+from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
+from octobot_protocol.models.account_type import AccountType
 from octobot_protocol.models.asset import Asset
 from octobot_protocol.models.order import Order
 from octobot_protocol.models.position import Position
@@ -31,6 +32,7 @@ class ExchangeAccount(BaseModel):
     """
     ExchangeAccount
     """ # noqa: E501
+    account_type: AccountType = Field(description="exchange")
     exchange: StrictStr
     remote_account_id: StrictStr
     api_key: StrictStr
@@ -40,7 +42,7 @@ class ExchangeAccount(BaseModel):
     orders: Optional[List[Order]] = None
     trades: Optional[List[Trade]] = None
     positions: Optional[List[Position]] = None
-    __properties: ClassVar[List[str]] = ["exchange", "remote_account_id", "api_key", "api_secret", "api_passphrase", "assets", "orders", "trades", "positions"]
+    __properties: ClassVar[List[str]] = ["account_type", "exchange", "remote_account_id", "api_key", "api_secret", "api_passphrase", "assets", "orders", "trades", "positions"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -121,6 +123,7 @@ class ExchangeAccount(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
+            "account_type": obj.get("account_type"),
             "exchange": obj.get("exchange"),
             "remote_account_id": obj.get("remote_account_id"),
             "api_key": obj.get("api_key"),

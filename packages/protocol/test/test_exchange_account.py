@@ -35,6 +35,7 @@ class TestExchangeAccount(unittest.TestCase):
         model = ExchangeAccount()
         if include_optional:
             return ExchangeAccount(
+                account_type = 'generic',
                 exchange = '',
                 remote_account_id = '',
                 api_key = '',
@@ -123,6 +124,7 @@ class TestExchangeAccount(unittest.TestCase):
             )
         else:
             return ExchangeAccount(
+                account_type = 'generic',
                 exchange = '',
                 remote_account_id = '',
                 api_key = '',

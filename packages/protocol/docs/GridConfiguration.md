@@ -6,12 +6,12 @@ GridConfiguration
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**configuration_type** | [**ActionConfigurationType**](ActionConfigurationType.md) |  | 
+**configuration_type** | [**ActionConfigurationType**](ActionConfigurationType.md) | grid | 
 **symbol** | **str** |  | 
-**spread** | **float** |  | 
-**increment** | **float** |  | 
-**buy_count** | **float** |  | 
-**sell_count** | **float** |  | 
+**spread** | **float** | Price difference between the closest buy and sell orders. Denominated in the quote currency (600 for a 600 USDT spread on BTC/USDT). | 
+**increment** | **float** | Price difference between two orders of the same side. Denominated in the quote currency (200 for a 200 USDT spread on BTC/USDT). | 
+**buy_count** | **float** | Number of initial buy orders to create. Make sure to have enough funds to create that many orders. | 
+**sell_count** | **float** | Number of initial sell orders to create. Make sure to have enough funds to create that many orders. | 
 **enable_trailing_up** | **bool** |  | [default to True]
 **enable_trailing_down** | **bool** |  | [default to False]
 **order_by_order_trailing** | **bool** |  | [default to True]

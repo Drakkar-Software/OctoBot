@@ -6,6 +6,7 @@ BlockchainAccount
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**account_type** | [**AccountType**](AccountType.md) | blockchain | 
 **blockchain** | **str** |  | 
 **network** | **str** |  | [optional] 
 **public_key** | **str** |  | [optional] 

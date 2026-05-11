@@ -39,10 +39,15 @@ class TestAutomationConfiguration(unittest.TestCase):
                 account_ids = [
                     ''
                     ],
+                strategy = octobot_protocol.models.strategy_configuration.StrategyConfiguration(
+                    id = '', 
+                    emit_signals = True, ),
                 configuration = None
             )
         else:
             return AutomationConfiguration(
+                name = '',
+                configuration = None,
         )
         """
 

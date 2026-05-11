@@ -28,3 +28,47 @@ class WorkflowActionExecutionError(WorkflowError):
 
 class WorkflowPriorityActionExecutionError(WorkflowActionExecutionError):
     """Raised when a workflow priority action execution fails"""
+
+
+class UserActionError(Exception):
+    """Raised when a user action fails"""
+
+
+class InvalidUserActionPayloadError(UserActionError):
+    """Raised when a user action payload is missing required fields or has an unexpected shape."""
+
+
+class UnsupportedUserActionConfigurationTypeError(UserActionError):
+    """Raised when a user action configuration type is not supported by the node."""
+
+
+class UnsupportedAutomationConfigurationTypeError(UserActionError):
+    """Raised when an automation configuration type is not supported by the node."""
+
+
+class AccountContextMissingError(UserActionError):
+    """Raised when required account context identifiers are missing (public key, wallet key, account id)."""
+
+
+class AccountNotFoundError(UserActionError):
+    """Raised when fetching an account via AccountProvider fails."""
+
+
+class InvalidAutomationConfigurationError(UserActionError):
+    """Raised when the automation configuration is invalid or cannot be translated to actions."""
+
+
+class ActiveAutomationWorkflowNotFoundError(UserActionError):
+    """Raised when no pending/enqueued automation workflow matches the stop request (parent id / wallet filter)."""
+
+
+class AmbiguousActiveAutomationWorkflowError(UserActionError):
+    """Raised when more than one active automation workflow matches the stop request (parent id / wallet filter)."""
+
+
+class UserActionNotFoundError(UserActionError):
+    """Raised when a user action id is not present in UserActionsProvider."""
+
+
+class DuplicateUserActionError(UserActionError):
+    """Raised when creating a user action whose id already exists in UserActionsProvider."""

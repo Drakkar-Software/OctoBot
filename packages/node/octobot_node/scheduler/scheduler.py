@@ -34,7 +34,9 @@ import octobot_node.scheduler.workflows_util as workflows_util
 import octobot_node.scheduler.workflows.params as workflow_params
 import octobot_node.scheduler.encryption as encryption
 import octobot_node.scheduler.task_context as task_context
-import octobot_node.scheduler.protocol as protocol
+import octobot_node.protocol.automations as automations_protocol
+import octobot_node.protocol.accounts as accounts_protocol
+
 try:
     from octobot import VERSION
 except ImportError:
@@ -211,6 +213,28 @@ class Scheduler:
             for workflow in all_workflows
             if workflow.workflow_id[:octobot_node.constants.PARENT_WORKFLOW_ID_LENGTH] in parent_workflow_ids
         ]
+
+    async def resolve_active_automation_workflow_ids_for_parent_id(
+        self,
+        wallet_address: typing.Optional[str],
+        parent_id: str,
+    ) -> list[str]:
+        """
+        Return DBOS workflow ids for pending/enqueued automations whose parent id prefix matches ``parent_id``.
+
+        Delegates to :meth:`_get_parent_and_children_workflow_ids` with a single seed. For stop-automation user
+        actions, ``parent_id`` is :attr:`octobot_protocol.models.StopAutomationConfiguration.id` (a workflow / parent
+        id seed compatible with :const:`octobot_node.constants.PARENT_WORKFLOW_ID_LENGTH`).
+        """
+        return await self._get_parent_and_children_workflow_ids(
+            wallet_address,
+            [parent_id],
+            [
+                dbos.WorkflowStatusString.ENQUEUED,
+                dbos.WorkflowStatusString.PENDING,
+            ],
+            load_output=False,
+        )
 
     async def _get_latest_workflow_for_each_automation(
         self,
@@ -471,7 +495,7 @@ class Scheduler:
                 tasks.append(task)
         return [t for t in tasks if t is not None]
 
-    async def get_automations_state(self, wallet_address: typing.Optional[str]) -> protocol_models.AutomationsState:
+    async def get_automation_states(self, wallet_address: typing.Optional[str]) -> list[protocol_models.AutomationState]:
         tasks = await self.get_latest_task_for_each_automation(
             wallet_address, None, load_output=True
         )
@@ -479,8 +503,4 @@ class Scheduler:
             for task in tasks:
                 exit_stack.enter_context(task_context.encrypted_task(task))
             # tasks are now decrypted during to_protocol_automations_state call
-            return protocol.to_protocol_automations_state(tasks)
-
-    async def get_accounts_state(self) -> protocol_models.AccountsState:
-        automation_states = [] # todo implement
-        return protocol.to_protocol_accounts_state(automation_states)
+            return automations_protocol.to_protocol_automations_state(tasks)

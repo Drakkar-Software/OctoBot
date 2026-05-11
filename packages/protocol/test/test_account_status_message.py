@@ -14,10 +14,10 @@
 
 import unittest
 
-from octobot_protocol.models.action_type import ActionType
+from octobot_protocol.models.account_status_message import AccountStatusMessage
 
-class TestActionType(unittest.TestCase):
-    """ActionType unit test stubs"""
+class TestAccountStatusMessage(unittest.TestCase):
+    """AccountStatusMessage unit test stubs"""
 
     def setUp(self):
         pass
@@ -25,9 +25,9 @@ class TestActionType(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def testActionType(self):
-        """Test ActionType"""
-        # inst = ActionType()
+    def testAccountStatusMessage(self):
+        """Test AccountStatusMessage"""
+        # inst = AccountStatusMessage()
 
 if __name__ == '__main__':
     unittest.main()

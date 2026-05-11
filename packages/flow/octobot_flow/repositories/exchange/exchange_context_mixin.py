@@ -14,7 +14,6 @@ import octobot_flow.repositories.exchange.exchange_repository_factory as exchang
 import octobot_flow.repositories.exchange.tickers_repository as tickers_repository
 import octobot_flow.logic.configuration
 
-import tentacles.Meta.Keywords.scripting_library as scripting_library
 
 class ExchangeContextMixin:
     USE_PREDICTIVE_ORDERS_SYNC: bool = False
@@ -78,7 +77,6 @@ class ExchangeContextMixin:
                 # make all markets available to the strategy, it will use the required ones
                 self.init_predictive_orders_exchange_data(exchange_data)
             tentacles_setup_config = octobot_tentacles_manager.api.get_full_tentacles_setup_config()
-            octobot_tentacles_manager.api.set_tentacle_config_proxy(scripting_library.empty_config_proxy)
             async with octobot_trading.exchanges.exchange_manager_from_exchange_data(
                 exchange_data,
                 profile_data,

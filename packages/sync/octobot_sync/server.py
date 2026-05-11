@@ -20,7 +20,7 @@ import json
 from collections.abc import Awaitable, Callable
 
 from starfish_server.config.schema import SyncConfig
-from starfish_server.storage.base import AbstractObjectStore
+from starfish_server.storage.base import AbstractObjectStore, StoreContext
 from starfish_server.storage.s3 import S3ObjectStore, S3StorageOptions
 from starfish_server.storage.filesystem import FilesystemObjectStore, FilesystemStorageOptions
 
@@ -29,57 +29,90 @@ import octobot_commons.constants as commons_constants
 import octobot_commons.logging as logging
 import octobot_sync.app as sync_app
 import octobot_sync.auth as auth
+import octobot_sync.enums as enums
+import octobot_sync.errors as errors
+
+import octobot_protocol.models as protocol_models
+
+import octobot_node.protocol.user_actions as user_actions_protocol
+import octobot_node.protocol.user_data as user_data_protocol
+import octobot_node.protocol.accounts as accounts_protocol
 
 
-_get_data: Callable[[str], Awaitable[str | None]] | None = None
-_put_data: Callable[[str, str], Awaitable[None]] | None = None
+_get_data: Callable[[str, StoreContext | None], Awaitable[str | None]] | None = None
+_put_data: Callable[[str, str, StoreContext | None], Awaitable[None]] | None = None
 
-AUTOMATIONS_STATE_KEY = "automations_state"
-ACCOUNTS_STATE_KEY = "user-actions"
 
-async def get_data(key: str) -> str | None:
+def _get_address(context: StoreContext | None) -> str:
+    if context and context.identity:
+        return context.identity
+    raise errors.OctobotSyncIdentityMissingError("Identity is missing from the context")
+
+
+async def get_data(key: str, context: StoreContext | None = None) -> str | None:
     # called when client pulls
-    import octobot_node.scheduler.api as scheduler_api
-    if key == AUTOMATIONS_STATE_KEY:
-        automations_state = await scheduler_api.get_automations_state(None)
-        return json.dumps(
-            automations_state.model_dump(mode="json")
-        )
-    elif key == ACCOUNTS_STATE_KEY:
-        accounts_state = await scheduler_api.get_accounts_state()
-        return json.dumps(
-            accounts_state.model_dump(mode="json")
-        )
-    return None
+    match key:
+        case enums.Collections.USER_DATA.value:
+            user_data_state = await user_data_protocol.get_user_data_state(
+                _get_address(context)
+            )
+            return json.dumps(
+                user_data_state.model_dump(mode="json")
+            )
+        case enums.Collections.USER_ACCOUNTS.value:
+            accounts_state = accounts_protocol.get_accounts_state(
+                _get_address(context)
+            )
+            return json.dumps(
+                accounts_state.model_dump(mode="json")
+            )
+        case _:
+            _get_logger().error(
+                f"get_data was called with ({key}). This collection is not supported."
+            )
+            return None
 
-async def put_data(key: str, body: str) -> None:
-    # called when client pushes
-    _get_logger().error(
-        f"_put_data was called with ({key}, {body}). This is unexpected and should not happen."
-    )
+async def put_data(key: str, body: str, context: StoreContext | None = None) -> None:
+    match key:
+        case enums.Collections.USER_ACTIONS.value:
+            user_actions_state = protocol_models.UserActionsState.model_validate_json(body)
+            if user_actions_state.user_actions:
+                for action in user_actions_state.user_actions:
+                    try:
+                        await user_actions_protocol.execute_user_action(
+                            action, _get_address(context)
+                        )
+                    except Exception as exc:
+                        _get_logger().exception(
+                            exc, True, f"Unexpected error executing user action: {action.id}: {exc}"
+                        )
+        case _:
+            _get_logger().error(
+                f"put_data was called with ({key}, {body}). This is unexpected and should not happen."
+            )
 
 def set_data_callbacks(
-    get_data: Callable[[str], Awaitable[str | None]],
-    put_data: Callable[[str, str], Awaitable[None]],
+    get_data: Callable[[str, StoreContext | None], Awaitable[str | None]],
+    put_data: Callable[[str, str, StoreContext | None], Awaitable[None]],
 ) -> None:
     global _get_data, _put_data
     _get_data, _put_data = get_data, put_data
 
 
 class _CallbackObjectStore(AbstractObjectStore):
-    async def get_string(self, key: str) -> str | None:
-        return await _get_data(key)  # type: ignore[misc]
+    async def get_string(self, key: str, *, context: StoreContext | None = None) -> str | None:
+        return await _get_data(key, context)  # type: ignore[misc]
 
-    async def put(self, key: str, body: str, *, content_type: str | None = None, cache_control: str | None = None) -> None:
-        await _put_data(key, body)  # type: ignore[misc]
+    async def put(self, key: str, body: str, *, content_type: str | None = None, cache_control: str | None = None, context: StoreContext | None = None) -> None:
+        await _put_data(key, body, context)  # type: ignore[misc]
 
-    async def list_keys(self, prefix: str, *, start_after: str | None = None, limit: int | None = None) -> list[str]:
+    async def list_keys(self, prefix: str, *, start_after: str | None = None, limit: int | None = None, context: StoreContext | None = None) -> list[str]:
         return []
 
-    async def delete(self, key: str) -> None:
+    async def delete(self, key: str, *, context: StoreContext | None = None) -> None:
         raise NotImplementedError
 
-    async def delete_many(self, keys: list[str]) -> None:
+    async def delete_many(self, keys: list[str], *, context: StoreContext | None = None) -> None:
         raise NotImplementedError
 
 

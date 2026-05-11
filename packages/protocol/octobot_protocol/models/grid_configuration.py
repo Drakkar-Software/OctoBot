@@ -29,12 +29,12 @@ class GridConfiguration(BaseModel):
     """
     GridConfiguration
     """ # noqa: E501
-    configuration_type: ActionConfigurationType
+    configuration_type: ActionConfigurationType = Field(description="grid")
     symbol: StrictStr
-    spread: Union[Annotated[float, Field(le=100, strict=True, ge=0)], Annotated[int, Field(le=100, strict=True, ge=0)]]
-    increment: Union[Annotated[float, Field(le=100, strict=True, ge=0)], Annotated[int, Field(le=100, strict=True, ge=0)]]
-    buy_count: Union[Annotated[float, Field(strict=True, ge=1)], Annotated[int, Field(strict=True, ge=1)]]
-    sell_count: Union[Annotated[float, Field(strict=True, ge=1)], Annotated[int, Field(strict=True, ge=1)]]
+    spread: Union[Annotated[float, Field(strict=True, ge=0)], Annotated[int, Field(strict=True, ge=0)]] = Field(description="Price difference between the closest buy and sell orders. Denominated in the quote currency (600 for a 600 USDT spread on BTC/USDT).")
+    increment: Union[Annotated[float, Field(strict=True, ge=0)], Annotated[int, Field(strict=True, ge=0)]] = Field(description="Price difference between two orders of the same side. Denominated in the quote currency (200 for a 200 USDT spread on BTC/USDT).")
+    buy_count: Union[Annotated[float, Field(strict=True, ge=1)], Annotated[int, Field(strict=True, ge=1)]] = Field(description="Number of initial buy orders to create. Make sure to have enough funds to create that many orders.")
+    sell_count: Union[Annotated[float, Field(strict=True, ge=1)], Annotated[int, Field(strict=True, ge=1)]] = Field(description="Number of initial sell orders to create. Make sure to have enough funds to create that many orders.")
     enable_trailing_up: StrictBool
     enable_trailing_down: StrictBool
     order_by_order_trailing: StrictBool

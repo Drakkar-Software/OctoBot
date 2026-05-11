@@ -17,9 +17,12 @@ import pprint
 import re  # noqa: F401
 import json
 
+from datetime import datetime
 from pydantic import BaseModel, ConfigDict, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from octobot_protocol.models.user_action_configuration import UserActionConfiguration
+from octobot_protocol.models.user_action_result import UserActionResult
+from octobot_protocol.models.user_action_status import UserActionStatus
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -29,8 +32,12 @@ class UserAction(BaseModel):
     UserAction
     """ # noqa: E501
     id: StrictStr
+    status: Optional[UserActionStatus] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
     configuration: Optional[UserActionConfiguration] = None
-    __properties: ClassVar[List[str]] = ["id", "configuration"]
+    result: Optional[UserActionResult] = None
+    __properties: ClassVar[List[str]] = ["id", "status", "created_at", "updated_at", "configuration", "result"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -74,6 +81,9 @@ class UserAction(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of configuration
         if self.configuration:
             _dict['configuration'] = self.configuration.to_dict()
+        # override the default output from pydantic by calling `to_dict()` of result
+        if self.result:
+            _dict['result'] = self.result.to_dict()
         return _dict
 
     @classmethod
@@ -87,7 +97,11 @@ class UserAction(BaseModel):
 
         _obj = cls.model_validate({
             "id": obj.get("id"),
-            "configuration": UserActionConfiguration.from_dict(obj["configuration"]) if obj.get("configuration") is not None else None
+            "status": obj.get("status"),
+            "created_at": obj.get("created_at"),
+            "updated_at": obj.get("updated_at"),
+            "configuration": UserActionConfiguration.from_dict(obj["configuration"]) if obj.get("configuration") is not None else None,
+            "result": UserActionResult.from_dict(obj["result"]) if obj.get("result") is not None else None
         })
         return _obj
 

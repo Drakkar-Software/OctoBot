@@ -20,7 +20,6 @@ import typing
 
 import octobot_commons.timestamp_util as octobot_commons_timestamp_util
 import octobot_flow.entities as flow_entities
-import octobot_node.constants as node_constants
 import octobot_node.models as node_models
 import octobot_node.scheduler.octobot_flow_client as octobot_flow_client
 import octobot_protocol.models as protocol_models
@@ -29,36 +28,10 @@ import octobot_trading.enums as octobot_trading_enums
 import octobot_trading.personal_data.portfolios.protocol as octobot_trading_portfolios_protocol
 import octobot_trading.exchanges.util.exchange_data as exchange_data_import
 
-def to_protocol_accounts_state(automation_states: list[flow_entities.AutomationState]) -> protocol_models.AccountsState:
-    return protocol_models.AccountsState(
-        version=node_constants.EXCHANGE_ACCOUNTS_STATE_VERSION,
-        accounts=_to_protocol_accounts_from_automation_states(automation_states)
-    )
 
+def to_protocol_automations_state(tasks: list[node_models.Task]) -> list[protocol_models.AutomationState]:
+    return [_to_protocol_automation_state(task) for task in tasks]
 
-def to_protocol_automations_state(tasks: list[node_models.Task]) -> protocol_models.AutomationsState:
-    return protocol_models.AutomationsState(
-        version=node_constants.AUTOMATIONS_STATE_VERSION,
-        automations=[_to_protocol_automation_state(task) for task in tasks]
-    )
-
-
-def _to_protocol_accounts_from_automation_states(automation_states: list[flow_entities.AutomationState]) -> list[protocol_models.Account]:
-    accounts = []
-    for automation_state in automation_states:
-        if account := _to_protocol_account_from_automation_state(automation_state):
-            accounts.append(account)
-    return accounts
-
-def _to_protocol_account_from_automation_state(automation_state: flow_entities.AutomationState) -> typing.Optional[protocol_models.Account]:
-    if not automation_state.exchange_account_details:
-        return None
-    return protocol_models.Account(
-        id=automation_state.exchange_account_details.metadata.id,
-        account_type=protocol_models.AccountType.EXCHANGE,
-        name=automation_state.exchange_account_details.metadata.name,
-        is_simulated=automation_state.exchange_account_details.is_simulated(),
-    )
 
 def _to_protocol_automation_state(task: node_models.Task) -> protocol_models.AutomationState:
     flow_automation_state = _parse_automation_state(task)
@@ -138,7 +111,9 @@ def _protocol_action_from_flow(
         action_status = protocol_models.TaskStatus.RUNNING
     else:
         if executable_ids is None:
-            raise ValueError("executable_ids is required when priority_lane is False")
+            raise ValueError(
+                "executable_ids is required when priority_lane is False."
+            )
         action_status = (
             protocol_models.TaskStatus.RUNNING
             if flow_action.id in executable_ids

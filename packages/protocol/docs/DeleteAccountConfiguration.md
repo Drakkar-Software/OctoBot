@@ -6,7 +6,7 @@ DeleteAccountConfiguration
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**action_type** | [**ActionType**](ActionType.md) |  | 
+**action_type** | [**UserActionType**](UserActionType.md) | account_delete | 
 **id** | **str** |  | 
 
 ## Example

@@ -36,118 +36,19 @@ class TestAccount(unittest.TestCase):
         if include_optional:
             return Account(
                 id = '',
-                account_type = 'GENERIC',
                 name = '',
                 is_simulated = True,
                 description = '',
+                state = octobot_protocol.models.account_state.AccountState(
+                    status = 'valid', 
+                    message = 'pending_validation', ),
                 created_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'),
                 updated_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'),
-                exchange_account = octobot_protocol.models.exchange_account.ExchangeAccount(
-                    exchange = '', 
-                    remote_account_id = '', 
-                    api_key = '', 
-                    api_secret = '', 
-                    api_passphrase = '', 
-                    assets = [
-                        octobot_protocol.models.asset.Asset(
-                            symbol = '', 
-                            total = 1.337, 
-                            available = 1.337, 
-                            value = 1.337, 
-                            unit = '', )
-                        ], 
-                    orders = [
-                        octobot_protocol.models.order.Order(
-                            id = '', 
-                            symbol = '', 
-                            price = 1.337, 
-                            quantity = 1.337, 
-                            filled = 1.337, 
-                            exchange_id = '', 
-                            side = 'buy', 
-                            type = 'limit', 
-                            trigger_above = True, 
-                            reduce_only = True, 
-                            is_active = True, 
-                            status = 'pending_creation', 
-                            created_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
-                            entries = [
-                                ''
-                                ], 
-                            update_with_triggering_order_fees = True, 
-                            order_group = octobot_protocol.models.order_group.OrderGroup(
-                                id = '', 
-                                active_order_swap_strategy = octobot_protocol.models.active_order_swap_strategy.ActiveOrderSwapStrategy(
-                                    type = 'StopFirstActiveOrderSwapStrategy', 
-                                    trigger_price_configuration = octobot_protocol.models.trigger_price_configuration.trigger_price_configuration(), 
-                                    timeout = 1.337, ), ), 
-                            trailing_profile = octobot_protocol.models.trailing_profile.TrailingProfile(
-                                type = 'filled_take_profit', 
-                                details = octobot_protocol.models.trigger_price_configuration.trigger_price_configuration(), ), 
-                            cancel_policy = octobot_protocol.models.cancel_policy.CancelPolicy(
-                                type = 'ExpirationTimeOrderCancelPolicy', 
-                                details = octobot_protocol.models.trigger_price_configuration.trigger_price_configuration(), ), 
-                            chained_orders = [
-                                octobot_protocol.models.order.Order(
-                                    id = '', 
-                                    symbol = '', 
-                                    price = 1.337, 
-                                    quantity = 1.337, 
-                                    filled = 1.337, 
-                                    exchange_id = '', 
-                                    side = 'buy', 
-                                    type = 'limit', 
-                                    trigger_above = True, 
-                                    reduce_only = True, 
-                                    is_active = True, 
-                                    status = 'pending_creation', 
-                                    created_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
-                                    update_with_triggering_order_fees = True, )
-                                ], )
-                        ], 
-                    trades = [
-                        octobot_protocol.models.trade.Trade(
-                            id = '', 
-                            trade_id = '', 
-                            type = , 
-                            symbol = '', 
-                            side = , 
-                            quantity = 1.337, 
-                            price = 1.337, 
-                            status = , 
-                            executed_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), )
-                        ], 
-                    positions = [
-                        octobot_protocol.models.position.Position(
-                            id = '', 
-                            symbol = '', 
-                            side = , 
-                            quantity = 1.337, 
-                            entry_price = 1.337, 
-                            mark_price = 1.337, 
-                            liquidation_price = 1.337, 
-                            status = 'open', )
-                        ], ),
-                blockchain_account = octobot_protocol.models.blockchain_account.BlockchainAccount(
-                    blockchain = '', 
-                    network = '', 
-                    public_key = '', 
-                    private_key = '', 
-                    passphrase = '', ),
-                generic_account = octobot_protocol.models.generic_account.GenericAccount(
-                    assets = [
-                        octobot_protocol.models.asset.Asset(
-                            symbol = '', 
-                            total = 1.337, 
-                            available = 1.337, 
-                            value = 1.337, 
-                            unit = '', )
-                        ], )
+                details = None
             )
         else:
             return Account(
                 id = '',
-                account_type = 'GENERIC',
                 name = '',
                 is_simulated = True,
         )

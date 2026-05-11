@@ -46,6 +46,7 @@ import octobot_commons.configuration as commons_configuration
 import octobot_commons.profiles as commons_profiles
 import octobot_trading.enums as trading_enums
 import octobot_sync.client as sync_client
+import octobot_sync.chain as sync_chain
 
 
 def expired_session_retrier(func):
@@ -682,6 +683,9 @@ class CommunityAuthentication(authentication.Authenticator):
             raise wallet_backend.WalletNotFoundError("Wallet with address {address} not found")
         return self._sync_client
 
+    def get_wallet(self, address: str) -> sync_chain.Wallet:
+        return self._wallet_backend.get_wallet_for_bot(address)
+
     def init_sync_client_for_wallet(self, address: str) -> None:
         """Initialize the sync client for the given wallet address without passphrase."""
         if self._sync_client is not None:
@@ -694,7 +698,7 @@ class CommunityAuthentication(authentication.Authenticator):
                 if not sync_url:
                     self.logger.debug("No sync server URL configured, skipping sync client init")
                     return
-                wallet = self._wallet_backend.get_wallet_for_bot(address)
+                wallet = self.get_wallet(address)
                 self._sync_client, self._sync_address, self._sync_data_signer = sync_client.create_sync_client(
                     private_key=wallet.private_key,
                     sync_url=sync_url,
@@ -718,7 +722,7 @@ class CommunityAuthentication(authentication.Authenticator):
             if not wallets:
                 return False
             admin = next((w for w in wallets if w.is_admin), wallets[0])
-            wallet = self._wallet_backend.get_wallet_for_bot(admin.address)
+            wallet = self.get_wallet(admin.address)
             with self._sync_client_lock:
                 if self._sync_client is not None:
                     return True

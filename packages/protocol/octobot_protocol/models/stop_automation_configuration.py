@@ -17,9 +17,9 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, StrictStr
+from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List
-from octobot_protocol.models.action_type import ActionType
+from octobot_protocol.models.user_action_type import UserActionType
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -29,7 +29,7 @@ class StopAutomationConfiguration(BaseModel):
     StopAutomationConfiguration
     """ # noqa: E501
     id: StrictStr
-    action_type: ActionType
+    action_type: UserActionType = Field(description="automation_stop")
     __properties: ClassVar[List[str]] = ["id", "action_type"]
 
     model_config = ConfigDict(

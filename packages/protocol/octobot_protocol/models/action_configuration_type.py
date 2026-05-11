@@ -30,6 +30,7 @@ class ActionConfigurationType(str, Enum):
     DCA = 'dca'
     INDEX = 'index'
     GRID = 'grid'
+    COPY = 'copy'
     GENERIC_PROCESS = 'generic_process'
     GENERIC_WORKFLOW = 'generic_workflow'
 

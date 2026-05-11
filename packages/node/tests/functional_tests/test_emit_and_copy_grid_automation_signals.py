@@ -27,8 +27,10 @@ import typing
 import pytest
 
 import octobot_flow.repositories.community.trading_signals_channel as trading_signals_channel_module
-import octobot_node.models
+import octobot_node.protocol.user_actions as user_actions_module
 import octobot_node.scheduler.internal_trading_signals as internal_trading_signals_module
+import octobot_node.user_actions.user_actions_provider as user_actions_provider_module
+import octobot_protocol.models as octobot_protocol_models
 import octobot_node.scheduler.tasks
 
 from . import grid_workflow_simulator_test_util as grid_sim_util
@@ -68,7 +70,6 @@ if grid_sim_util.IMPORTED_OCTOBOT_FLOW_GRID_DEPS:
         uvicorn = None  # type: ignore
 
 
-_MASTER_AUTOMATION_ID = "master_emit_grid"
 _COPY_AUTOMATION_ID = "copy_grid_follower"
 _SHARED_STRATEGY_ID = "functional_test_copy_strategy"
 
@@ -94,6 +95,8 @@ if IMPORTED_OCTOBOT_FLOW_GRID_DEPS:
         """Package default sync config plus a collection for ``TradingSignalsRepository`` HTTP paths."""
         base_config = sync_collections_module.DEFAULT_SYNC_CONFIG
         sync_namespace_key = sync_collections_module.constants.SYNC_NAMESPACE
+        assert base_config.namespaces is not None
+        assert sync_namespace_key in base_config.namespaces
         octobot_namespace = base_config.namespaces[sync_namespace_key]
         trading_signals_collection = sync_collections_module.CollectionConfig(
             name="trading-signals",
@@ -111,50 +114,29 @@ if IMPORTED_OCTOBOT_FLOW_GRID_DEPS:
         return base_config.model_copy(
             update={
                 "namespaces": {
-                    **base_config.namespaces,
+                    **dict(base_config.namespaces),
                     sync_namespace_key: extended_octobot,
                 }
             }
         )
 
-    def _empty_copy_exchange_account_action_dict() -> dict[str, typing.Any]:
-        return {
-            "id": "action_copy_exchange_account",
-            "dsl_script": (
-                f"copy_exchange_account(strategy_id={json.dumps(_SHARED_STRATEGY_ID)}, "
-                "reference_market='', reference_account='')"
-            ),
-        }
-
-    def _build_master_grid_state_dict() -> dict[str, typing.Any]:
-        init_action = grid_sim_util.simulator_grid_init_action_dict(_MASTER_AUTOMATION_ID, _MASTER_INIT_USDC)
-        all_actions = [init_action, grid_sim_util.grid_trading_mode_action_dict(init_action)]
-        return {
-            "automation": {
-                "metadata": {
-                    "automation_id": _MASTER_AUTOMATION_ID,
-                    "emit_signals": True,
-                    "strategy_id": _SHARED_STRATEGY_ID,
-                },
-                "actions_dag": {"actions": all_actions},
-            }
-        }
-
-    def _build_copy_state_dict() -> dict[str, typing.Any]:
-        init_action = grid_sim_util.simulator_grid_init_action_dict(_COPY_AUTOMATION_ID, _COPY_INIT_USDC)
-        all_actions = [init_action, _empty_copy_exchange_account_action_dict()]
-        return {
-            "automation": {
-                "metadata": {
-                    "automation_id": _COPY_AUTOMATION_ID,
-                },
-                "actions_dag": {"actions": all_actions},
-            }
-        }
-
     def _post_fill_open_order_shape(buy_count: int, sell_count: int) -> bool:
-        """Three open buys + one sell after smallest sell fills and grid mirrors."""
+        """Accept expected post-shock ladder shapes after forced trigger and mirroring."""
         return buy_count == 3 and sell_count == 1
+
+    def _account_for_id(
+        *,
+        account_id: str,
+        master_account_id: str,
+        master_account: typing.Any,
+        copy_account_id: str,
+        copy_account: typing.Any,
+    ) -> typing.Any:
+        if account_id == master_account_id:
+            return master_account
+        if account_id == copy_account_id:
+            return copy_account
+        raise AssertionError(f"Unexpected account_id lookup: {account_id!r}")
 
     def _d_order_price(raw: typing.Union[int, float, str, decimal.Decimal]) -> decimal.Decimal:
         if isinstance(raw, decimal.Decimal):
@@ -425,6 +407,67 @@ if IMPORTED_OCTOBOT_FLOW_GRID_DEPS:
                     f"unexpected OrdersSynchronizer log ({forbidden!r}): {message_text!r}"
                 )
 
+    def _workflow_row_id_matches_provider_created_automation_id(
+        *,
+        workflow_row_id: str,
+        provider_created_automation_id: str | None,
+    ) -> None:
+        assert provider_created_automation_id
+        assert (
+            workflow_row_id == provider_created_automation_id
+            or workflow_row_id.startswith(f"{provider_created_automation_id}_")
+        ), (
+            f"workflow row id {workflow_row_id!r} should equal or extend provider created_automation_id "
+            f"{provider_created_automation_id!r}"
+        )
+
+    def _assert_provider_completed_automation_create(
+        *,
+        wallet_address: str,
+        user_action_id: str,
+        expected_workflow_id: str | None,
+    ) -> None:
+        by_id = {
+            user_action.id: user_action
+            for user_action in user_actions_provider_module.UserActionsProvider.instance().list_user_actions(
+                wallet_address,
+            )
+        }
+        assert user_action_id in by_id, f"expected {user_action_id!r} in provider, got {sorted(by_id)!r}"
+        stored = by_id[user_action_id]
+        assert stored.status == octobot_protocol_models.UserActionStatus.COMPLETED
+        assert stored.result is not None
+        inner = stored.result.actual_instance
+        assert isinstance(inner, octobot_protocol_models.AutomationActionResult)
+        assert inner.result_type == octobot_protocol_models.UserActionResultType.AUTOMATION
+        assert inner.error_details is None
+        assert inner.error_message is None
+        if expected_workflow_id is not None:
+            _workflow_row_id_matches_provider_created_automation_id(
+                workflow_row_id=expected_workflow_id,
+                provider_created_automation_id=inner.created_automation_id,
+            )
+        else:
+            assert inner.created_automation_id
+            assert len(inner.created_automation_id) > 0
+
+    def _assert_provider_completed_automation_stop(*, wallet_address: str, user_action_id: str) -> None:
+        by_id = {
+            user_action.id: user_action
+            for user_action in user_actions_provider_module.UserActionsProvider.instance().list_user_actions(
+                wallet_address,
+            )
+        }
+        assert user_action_id in by_id, f"expected {user_action_id!r} in provider, got {sorted(by_id)!r}"
+        stored = by_id[user_action_id]
+        assert stored.status == octobot_protocol_models.UserActionStatus.COMPLETED
+        assert stored.result is not None
+        inner = stored.result.actual_instance
+        assert isinstance(inner, octobot_protocol_models.AutomationActionResult)
+        assert inner.result_type == octobot_protocol_models.UserActionResultType.AUTOMATION
+        assert inner.error_details is None
+        assert inner.error_message is None
+
 
 @pytest.mark.skipif(not IMPORTED_OCTOBOT_FLOW_GRID_DEPS, reason="octobot_flow / grid tentacle deps not available")
 class TestEmitAndCopyGridAutomationSignals:
@@ -448,17 +491,19 @@ class TestEmitAndCopyGridAutomationSignals:
         )
 
         wallet_address = grid_sim_util.SIMULATOR_GRID_TEST_COMMUNITY_WALLET_ADDRESS
-        master_task = octobot_node.models.Task(
+        master_account_id = "functional_master_emit_account"
+        copy_account_id = "functional_copy_emit_account"
+        master_user_action = grid_sim_util.build_create_grid_user_action(
+            account_id=master_account_id,
             name="test_master_emit_grid",
-            content=json.dumps({"state": _build_master_grid_state_dict()}),
-            type=octobot_node.models.TaskType.EXECUTE_ACTIONS.value,
-            wallet_address=wallet_address,
+            strategy_id=_SHARED_STRATEGY_ID,
+            emit_signals=True,
         )
-        copy_task = octobot_node.models.Task(
+        copy_user_action = grid_sim_util.build_create_copy_follower_user_action(
+            automation_id=_COPY_AUTOMATION_ID,
+            account_id=copy_account_id,
             name="test_copy_grid_follower",
-            content=json.dumps({"state": _build_copy_state_dict()}),
-            type=octobot_node.models.TaskType.EXECUTE_ACTIONS.value,
-            wallet_address=wallet_address,
+            strategy_id=_SHARED_STRATEGY_ID,
         )
 
         await internal_trading_signals_module.subscribe_internal_trading_signal_consumer()
@@ -518,6 +563,16 @@ class TestEmitAndCopyGridAutomationSignals:
                                 None,
                                 True,
                             )
+                        master_account = grid_sim_util.protocol_account_for_functional(
+                            account_id=master_account_id,
+                            usdc_total=_MASTER_INIT_USDC,
+                            account_name="Master emit functional account",
+                        )
+                        copy_account = grid_sim_util.protocol_account_for_functional(
+                            account_id=copy_account_id,
+                            usdc_total=_COPY_INIT_USDC,
+                            account_name="Copy emit functional account",
+                        )
 
                         with (
                             mock.patch.object(
@@ -530,21 +585,41 @@ class TestEmitAndCopyGridAutomationSignals:
                                 "fetch_ohlcv",
                                 side_effect=patched_fetch_ohlcv,
                             ),
+                            mock.patch(
+                                "octobot.community.account_backend.AccountProvider.instance",
+                                return_value=mock.Mock(
+                                    get_account=mock.Mock(
+                                        side_effect=lambda _wallet, account_id: _account_for_id(
+                                            account_id=account_id,
+                                            master_account_id=master_account_id,
+                                            master_account=master_account,
+                                            copy_account_id=copy_account_id,
+                                            copy_account=copy_account,
+                                        )
+                                    )
+                                ),
+                            ),
                         ):
                             caplog.set_level(logging.INFO)
 
                             # Step 1 — enqueue master emitting grid signals (pushes to local sync server).
                             try:
                                 await asyncio.wait_for(
-                                    octobot_node.scheduler.tasks.trigger_task(master_task),
+                                    user_actions_module.execute_user_action(master_user_action, wallet_address),
                                     timeout=_T_ENQUEUE_SECONDS,
                                 )
                             except TimeoutError as exc:
-                                raise AssertionError("trigger_task timed out enqueueing master workflow") from exc
+                                raise AssertionError("execute_user_action timed out enqueueing master workflow") from exc
+
+                            _assert_provider_completed_automation_create(
+                                wallet_address=wallet_address,
+                                user_action_id=master_user_action.id,
+                                expected_workflow_id=None,
+                            )
 
                             baseline_master_reader = await _poll_state_reader_until(
                                 temp_dbos_scheduler,
-                                _MASTER_AUTOMATION_ID,
+                                master_user_action.id,
                                 lambda reader: grid_sim_util.is_simulator_grid_baseline_at_least_one_trade(
                                     *grid_sim_util.buy_sell_trade_counts_from_exchange_elements(
                                         reader.state.automation.exchange_account_elements
@@ -559,6 +634,27 @@ class TestEmitAndCopyGridAutomationSignals:
                             )
                             assert grid_sim_util.is_simulator_grid_baseline_at_least_one_trade(
                                 buy_b, sell_b, trade_b
+                            )
+                            master_metadata = baseline_master_reader.state.automation.metadata
+                            master_automation_id = master_metadata.automation_id
+                            assert master_metadata.strategy_id == _SHARED_STRATEGY_ID
+                            assert master_metadata.emit_signals is True
+
+                            master_workflow_rows_for_provider = [
+                                workflow_row
+                                for workflow_row in await temp_dbos_scheduler.INSTANCE.list_workflows_async()
+                                if grid_sim_util.workflows_util_module.get_automation_id(workflow_row)
+                                == master_user_action.id
+                            ]
+                            assert master_workflow_rows_for_provider
+                            master_workflow_row_for_provider = max(
+                                master_workflow_rows_for_provider,
+                                key=lambda workflow_status: workflow_status.updated_at or 0,
+                            )
+                            _assert_provider_completed_automation_create(
+                                wallet_address=wallet_address,
+                                user_action_id=master_user_action.id,
+                                expected_workflow_id=master_workflow_row_for_provider.workflow_id,
                             )
 
                             bootstrap_fetched = await _fetch_strategy_signals_from_sync(wallet_address)
@@ -577,11 +673,44 @@ class TestEmitAndCopyGridAutomationSignals:
                             # Step 2 — enqueue copy (pulls bootstrap snapshot from server).
                             try:
                                 await asyncio.wait_for(
-                                    octobot_node.scheduler.tasks.trigger_task(copy_task),
+                                    user_actions_module.execute_user_action(copy_user_action, wallet_address),
                                     timeout=_T_ENQUEUE_SECONDS,
                                 )
                             except TimeoutError as exc:
-                                raise AssertionError("trigger_task timed out enqueueing copy workflow") from exc
+                                raise AssertionError("execute_user_action timed out enqueueing copy workflow") from exc
+
+                            by_id_after_copy = {
+                                user_action.id: user_action
+                                for user_action in user_actions_provider_module.UserActionsProvider.instance().list_user_actions(
+                                    wallet_address,
+                                )
+                            }
+                            assert master_user_action.id in by_id_after_copy
+                            assert copy_user_action.id in by_id_after_copy
+                            master_after_copy = by_id_after_copy[master_user_action.id]
+                            copy_row = by_id_after_copy[copy_user_action.id]
+                            assert master_after_copy.status == octobot_protocol_models.UserActionStatus.COMPLETED
+                            assert copy_row.status == octobot_protocol_models.UserActionStatus.COMPLETED
+                            master_inner_after_copy = master_after_copy.result.actual_instance
+                            copy_inner = copy_row.result.actual_instance
+                            assert isinstance(
+                                master_inner_after_copy,
+                                octobot_protocol_models.AutomationActionResult,
+                            )
+                            assert isinstance(copy_inner, octobot_protocol_models.AutomationActionResult)
+                            assert (
+                                master_inner_after_copy.result_type
+                                == octobot_protocol_models.UserActionResultType.AUTOMATION
+                            )
+                            assert copy_inner.result_type == octobot_protocol_models.UserActionResultType.AUTOMATION
+                            _workflow_row_id_matches_provider_created_automation_id(
+                                workflow_row_id=master_workflow_row_for_provider.workflow_id,
+                                provider_created_automation_id=master_inner_after_copy.created_automation_id,
+                            )
+                            assert copy_inner.created_automation_id
+                            assert len(copy_inner.created_automation_id) > 0
+                            assert copy_inner.error_details is None
+                            assert copy_inner.error_message is None
 
                             copy_reader = await _poll_state_reader_until(
                                 temp_dbos_scheduler,
@@ -604,6 +733,23 @@ class TestEmitAndCopyGridAutomationSignals:
                                 btc_usdc_close=decimal.Decimal(str(simulated_close["value"])),
                             )
 
+                            copy_workflow_rows_for_provider = [
+                                workflow_row
+                                for workflow_row in await temp_dbos_scheduler.INSTANCE.list_workflows_async()
+                                if grid_sim_util.workflows_util_module.get_automation_id(workflow_row)
+                                == _COPY_AUTOMATION_ID
+                            ]
+                            assert copy_workflow_rows_for_provider
+                            copy_workflow_row_for_provider = max(
+                                copy_workflow_rows_for_provider,
+                                key=lambda workflow_status: workflow_status.updated_at or 0,
+                            )
+                            _assert_provider_completed_automation_create(
+                                wallet_address=wallet_address,
+                                user_action_id=copy_user_action.id,
+                                expected_workflow_id=copy_workflow_row_for_provider.workflow_id,
+                            )
+
                             caplog.clear()
 
                             # Step 3 — raise mock spot between first sell and neighbour; force-trigger master DAG.
@@ -615,7 +761,7 @@ class TestEmitAndCopyGridAutomationSignals:
                             try:
                                 await asyncio.wait_for(
                                     octobot_node.scheduler.tasks.send_forced_trigger_to_automation(
-                                        _MASTER_AUTOMATION_ID
+                                        master_automation_id
                                     ),
                                     timeout=_T_STOP_SEND_SECONDS,
                                 )
@@ -627,7 +773,7 @@ class TestEmitAndCopyGridAutomationSignals:
                             # Step 4 — ladder refresh + emit; copy follows internal trading-signal notifications.
                             master_reader = await _poll_state_reader_until(
                                 temp_dbos_scheduler,
-                                _MASTER_AUTOMATION_ID,
+                                master_automation_id,
                                 lambda reader: _post_fill_open_order_shape(
                                     *grid_sim_util.buy_sell_trade_counts_from_exchange_elements(
                                         reader.state.automation.exchange_account_elements
@@ -670,24 +816,45 @@ class TestEmitAndCopyGridAutomationSignals:
                             _assert_orders_synchronizer_no_mirror_cancel_or_grace_logs(caplog)
 
                             # Step 5 — priority-stop both workflows.
-                            stop_priority_action = {
-                                "id": "action_stop_priority",
-                                "dsl_script": "stop_automation()",
-                            }
-                            for automation_id in (_MASTER_AUTOMATION_ID, _COPY_AUTOMATION_ID):
+                            for automation_id in (master_automation_id, _COPY_AUTOMATION_ID):
+                                matching_parent_id = None
+                                workflow_rows_for_stop = await temp_dbos_scheduler.INSTANCE.list_workflows_async()
+                                for workflow_row in sorted(
+                                    workflow_rows_for_stop,
+                                    key=lambda workflow_status: workflow_status.updated_at or 0,
+                                    reverse=True,
+                                ):
+                                    if grid_sim_util.workflows_util_module.get_automation_id(workflow_row) != automation_id:
+                                        continue
+                                    matching_parent_id = workflow_row.workflow_id[
+                                        : grid_sim_util.node_constants_module.PARENT_WORKFLOW_ID_LENGTH
+                                    ]
+                                    break
+                                assert matching_parent_id is not None
+                                stop_user_action = grid_sim_util.build_stop_user_action(
+                                    automation_id=matching_parent_id,
+                                    user_action_id=f"ua-stop-{automation_id}",
+                                )
                                 try:
                                     await asyncio.wait_for(
-                                        octobot_node.scheduler.tasks.send_actions_to_automation(
-                                            [stop_priority_action], automation_id
-                                        ),
+                                        user_actions_module.execute_user_action(stop_user_action, wallet_address),
                                         timeout=_T_STOP_SEND_SECONDS,
                                     )
                                 except TimeoutError as exc:
                                     raise AssertionError(
-                                        f"send_actions_to_automation timed out for {automation_id}"
+                                        f"execute_user_action stop timed out for {automation_id}"
                                     ) from exc
 
-                            for automation_id in (_MASTER_AUTOMATION_ID, _COPY_AUTOMATION_ID):
+                            _assert_provider_completed_automation_stop(
+                                wallet_address=wallet_address,
+                                user_action_id=f"ua-stop-{master_automation_id}",
+                            )
+                            _assert_provider_completed_automation_stop(
+                                wallet_address=wallet_address,
+                                user_action_id=f"ua-stop-{_COPY_AUTOMATION_ID}",
+                            )
+
+                            for automation_id in (master_automation_id, _COPY_AUTOMATION_ID):
                                 final_text = await grid_sim_util.wait_for_stop_success_output(
                                     temp_dbos_scheduler,
                                     automation_id,

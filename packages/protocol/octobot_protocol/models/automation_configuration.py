@@ -20,6 +20,7 @@ import json
 from pydantic import BaseModel, ConfigDict, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from octobot_protocol.models.automation_configuration_configuration import AutomationConfigurationConfiguration
+from octobot_protocol.models.strategy_configuration import StrategyConfiguration
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -28,10 +29,11 @@ class AutomationConfiguration(BaseModel):
     """
     AutomationConfiguration
     """ # noqa: E501
-    name: Optional[StrictStr] = None
+    name: StrictStr
     account_ids: Optional[List[StrictStr]] = None
-    configuration: Optional[AutomationConfigurationConfiguration] = None
-    __properties: ClassVar[List[str]] = ["name", "account_ids", "configuration"]
+    strategy: Optional[StrategyConfiguration] = None
+    configuration: AutomationConfigurationConfiguration
+    __properties: ClassVar[List[str]] = ["name", "account_ids", "strategy", "configuration"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -72,6 +74,9 @@ class AutomationConfiguration(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # override the default output from pydantic by calling `to_dict()` of strategy
+        if self.strategy:
+            _dict['strategy'] = self.strategy.to_dict()
         # override the default output from pydantic by calling `to_dict()` of configuration
         if self.configuration:
             _dict['configuration'] = self.configuration.to_dict()
@@ -89,6 +94,7 @@ class AutomationConfiguration(BaseModel):
         _obj = cls.model_validate({
             "name": obj.get("name"),
             "account_ids": obj.get("account_ids"),
+            "strategy": StrategyConfiguration.from_dict(obj["strategy"]) if obj.get("strategy") is not None else None,
             "configuration": AutomationConfigurationConfiguration.from_dict(obj["configuration"]) if obj.get("configuration") is not None else None
         })
         return _obj

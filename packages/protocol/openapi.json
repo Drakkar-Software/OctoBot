@@ -558,16 +558,30 @@
           }
         }
       },
+      "AccountType": {
+        "description": "Account category discriminator.",
+        "type": "string",
+        "enum": [
+          "generic",
+          "exchange",
+          "blockchain"
+        ]
+      },
       "ExchangeAccount": {
         "description": "ExchangeAccount",
         "type": "object",
         "required": [
+          "account_type",
           "exchange",
           "remote_account_id",
           "api_key",
           "api_secret"
         ],
         "properties": {
+          "account_type": {
+            "$ref": "#/components/schemas/AccountType",
+            "description": "exchange"
+          },
           "exchange": {
             "type": "string"
           },
@@ -613,9 +627,14 @@
         "description": "BlockchainAccount",
         "type": "object",
         "required": [
+          "account_type",
           "blockchain"
         ],
         "properties": {
+          "account_type": {
+            "$ref": "#/components/schemas/AccountType",
+            "description": "blockchain"
+          },
           "blockchain": {
             "type": "string"
           },
@@ -636,7 +655,14 @@
       "GenericAccount": {
         "description": "GenericAccount",
         "type": "object",
+        "required": [
+          "account_type"
+        ],
         "properties": {
+          "account_type": {
+            "$ref": "#/components/schemas/AccountType",
+            "description": "generic"
+          },
           "assets": {
             "type": "array",
             "items": {
@@ -645,30 +671,56 @@
           }
         }
       },
-      "AccountType": {
-        "description": "Account category discriminator.",
+      "AccountStatus": {
+        "description": "AccountStatus",
         "type": "string",
         "enum": [
-          "GENERIC",
-          "EXCHANGE",
-          "BLOCKCHAIN"
+          "valid",
+          "invalid",
+          "unknown"
         ]
+      },
+      "AccountStatusMessage": {
+        "description": "AccountStatusMessage",
+        "type": "string",
+        "enum": [
+          "pending_validation",
+          "valid",
+          "invalid_api_keys",
+          "missing_api_trading_rights",
+          "revoke_api_withdrawal_rights",
+          "invalid_api_ip_whitelist",
+          "internal_server_error",
+          "account_too_old",
+          "incompatible_account_referral"
+        ]
+      },
+      "AccountState": {
+        "description": "AccountState",
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/AccountStatus"
+          },
+          "message": {
+            "$ref": "#/components/schemas/AccountStatusMessage"
+          }
+        }
       },
       "Account": {
         "description": "Account",
         "type": "object",
         "required": [
           "id",
-          "account_type",
           "name",
           "is_simulated"
         ],
         "properties": {
           "id": {
             "type": "string"
-          },
-          "account_type": {
-            "$ref": "#/components/schemas/AccountType"
           },
           "name": {
             "type": "string"
@@ -679,6 +731,9 @@
           "description": {
             "type": "string"
           },
+          "state": {
+            "$ref": "#/components/schemas/AccountState"
+          },
           "created_at": {
             "type": "string",
             "format": "date-time"
@@ -687,40 +742,31 @@
             "type": "string",
             "format": "date-time"
           },
-          "exchange_account": {
+          "details": {
             "oneOf": [
-              {
-                "type": "null"
-              },
               {
                 "$ref": "#/components/schemas/ExchangeAccount"
-              }
-            ]
-          },
-          "blockchain_account": {
-            "oneOf": [
-              {
-                "type": "null"
               },
               {
                 "$ref": "#/components/schemas/BlockchainAccount"
-              }
-            ]
-          },
-          "generic_account": {
-            "oneOf": [
-              {
-                "type": "null"
               },
               {
                 "$ref": "#/components/schemas/GenericAccount"
               }
-            ]
+            ],
+            "discriminator": {
+              "propertyName": "account_type",
+              "mapping": {
+                "exchange": "#/components/schemas/ExchangeAccount",
+                "blockchain": "#/components/schemas/BlockchainAccount",
+                "generic": "#/components/schemas/GenericAccount"
+              }
+            }
           }
         }
       },
-      "AutomationsState": {
-        "description": "AutomationsState",
+      "UserDataState": {
+        "description": "UserDataState",
         "type": "object",
         "required": [
           "version"
@@ -733,6 +779,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/AutomationState"
+            }
+          },
+          "user_actions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserAction"
             }
           }
         }
@@ -751,6 +803,24 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/Account"
+            }
+          }
+        }
+      },
+      "UserActionsState": {
+        "description": "UserActionsState",
+        "type": "object",
+        "required": [
+          "version"
+        ],
+        "properties": {
+          "version": {
+            "type": "string"
+          },
+          "user_actions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserAction"
             }
           }
         }
@@ -822,6 +892,7 @@
           "dca",
           "index",
           "grid",
+          "copy",
           "generic_process",
           "generic_workflow"
         ]
@@ -1083,7 +1154,8 @@
         ],
         "properties": {
           "configuration_type": {
-            "$ref": "#/components/schemas/ActionConfigurationType"
+            "$ref": "#/components/schemas/ActionConfigurationType",
+            "description": "market_making"
           },
           "symbol_configurations": {
             "type": "array",
@@ -1112,7 +1184,8 @@
         ],
         "properties": {
           "configuration_type": {
-            "$ref": "#/components/schemas/EvaluatorType"
+            "$ref": "#/components/schemas/EvaluatorType",
+            "description": "RSIMomentumEvaluator"
           },
           "period_length": {
             "type": "number",
@@ -1141,7 +1214,8 @@
         ],
         "properties": {
           "configuration_type": {
-            "$ref": "#/components/schemas/EvaluatorType"
+            "$ref": "#/components/schemas/EvaluatorType",
+            "description": "EMAMomentumEvaluator"
           },
           "period_length": {
             "type": "number",
@@ -1162,7 +1236,6 @@
         "description": "EvaluatorConfiguration",
         "type": "object",
         "required": [
-          "configuration_type",
           "configuration"
         ],
         "properties": {
@@ -1176,7 +1249,11 @@
               }
             ],
             "discriminator": {
-              "propertyName": "configuration_type"
+              "propertyName": "configuration_type",
+              "mapping": {
+                "RSIMomentumEvaluator": "#/components/schemas/RSIMomentumEvaluatorConfiguration",
+                "EMAMomentumEvaluator": "#/components/schemas/EMAMomentumEvaluatorConfiguration"
+              }
             }
           }
         }
@@ -1200,7 +1277,8 @@
         ],
         "properties": {
           "configuration_type": {
-            "$ref": "#/components/schemas/ActionConfigurationType"
+            "$ref": "#/components/schemas/ActionConfigurationType",
+            "description": "dca"
           },
           "symbols": {
             "type": "array",
@@ -1278,6 +1356,23 @@
           }
         }
       },
+      "CopyConfiguration": {
+        "description": "CopyConfiguration",
+        "type": "object",
+        "required": [
+          "configuration_type",
+          "strategy_id"
+        ],
+        "properties": {
+          "configuration_type": {
+            "$ref": "#/components/schemas/ActionConfigurationType",
+            "description": "copy"
+          },
+          "strategy_id": {
+            "type": "string"
+          }
+        }
+      },
       "IndexConfiguration": {
         "description": "IndexConfiguration",
         "type": "object",
@@ -1288,7 +1383,8 @@
         ],
         "properties": {
           "configuration_type": {
-            "$ref": "#/components/schemas/ActionConfigurationType"
+            "$ref": "#/components/schemas/ActionConfigurationType",
+            "description": "index"
           },
           "coins": {
             "type": "array",
@@ -1319,27 +1415,30 @@
         ],
         "properties": {
           "configuration_type": {
-            "$ref": "#/components/schemas/ActionConfigurationType"
+            "$ref": "#/components/schemas/ActionConfigurationType",
+            "description": "grid"
           },
           "symbol": {
             "type": "string"
           },
           "spread": {
             "type": "number",
-            "minimum": 0,
-            "maximum": 100
+            "description": "Price difference between the closest buy and sell orders. Denominated in the quote currency (600 for a 600 USDT spread on BTC/USDT).",
+            "minimum": 0
           },
           "increment": {
             "type": "number",
-            "minimum": 0,
-            "maximum": 100
+            "description": "Price difference between two orders of the same side. Denominated in the quote currency (200 for a 200 USDT spread on BTC/USDT).",
+            "minimum": 0
           },
           "buy_count": {
             "type": "number",
+            "description": "Number of initial buy orders to create. Make sure to have enough funds to create that many orders.",
             "minimum": 1
           },
           "sell_count": {
             "type": "number",
+            "description": "Number of initial sell orders to create. Make sure to have enough funds to create that many orders.",
             "minimum": 1
           },
           "enable_trailing_up": {
@@ -1365,7 +1464,8 @@
         ],
         "properties": {
           "configuration_type": {
-            "$ref": "#/components/schemas/ActionConfigurationType"
+            "$ref": "#/components/schemas/ActionConfigurationType",
+            "description": "generic_process"
           },
           "profile_data": {
             "type": "object"
@@ -1381,7 +1481,8 @@
         ],
         "properties": {
           "configuration_type": {
-            "$ref": "#/components/schemas/ActionConfigurationType"
+            "$ref": "#/components/schemas/ActionConfigurationType",
+            "description": "generic_workflow"
           },
           "actions": {
             "type": "array",
@@ -1391,9 +1492,29 @@
           }
         }
       },
+      "StrategyConfiguration": {
+        "description": "StrategyConfiguration",
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "emit_signals": {
+            "type": "boolean",
+            "default": false
+          }
+        }
+      },
       "AutomationConfiguration": {
         "description": "AutomationConfiguration",
         "type": "object",
+        "required": [
+          "name",
+          "configuration"
+        ],
         "properties": {
           "name": {
             "type": "string"
@@ -1403,6 +1524,9 @@
             "items": {
               "type": "string"
             }
+          },
+          "strategy": {
+            "$ref": "#/components/schemas/StrategyConfiguration"
           },
           "configuration": {
             "oneOf": [
@@ -1419,6 +1543,9 @@
                 "$ref": "#/components/schemas/GridConfiguration"
               },
               {
+                "$ref": "#/components/schemas/CopyConfiguration"
+              },
+              {
                 "$ref": "#/components/schemas/GenericProcessConfiguration"
               },
               {
@@ -1426,7 +1553,16 @@
               }
             ],
             "discriminator": {
-              "propertyName": "configuration_type"
+              "propertyName": "configuration_type",
+              "mapping": {
+                "MarketMakingConfiguration": "#/components/schemas/MarketMakingConfiguration",
+                "DCAConfiguration": "#/components/schemas/DCAConfiguration",
+                "IndexConfiguration": "#/components/schemas/IndexConfiguration",
+                "GridConfiguration": "#/components/schemas/GridConfiguration",
+                "CopyConfiguration": "#/components/schemas/CopyConfiguration",
+                "GenericProcessConfiguration": "#/components/schemas/GenericProcessConfiguration",
+                "GenericWorkflowConfiguration": "#/components/schemas/GenericWorkflowConfiguration"
+              }
             }
           }
         }
@@ -1435,12 +1571,13 @@
         "description": "CreateAutomationConfiguration",
         "type": "object",
         "required": [
-          "action_type",
-          "configuration"
+          "configuration",
+          "action_type"
         ],
         "properties": {
           "action_type": {
-            "$ref": "#/components/schemas/ActionType"
+            "$ref": "#/components/schemas/UserActionType",
+            "description": "automation_create"
           },
           "configuration": {
             "$ref": "#/components/schemas/AutomationConfiguration"
@@ -1460,7 +1597,8 @@
             "type": "string"
           },
           "action_type": {
-            "$ref": "#/components/schemas/ActionType"
+            "$ref": "#/components/schemas/UserActionType",
+            "description": "automation_edit"
           },
           "configuration": {
             "$ref": "#/components/schemas/AutomationConfiguration"
@@ -1479,7 +1617,8 @@
             "type": "string"
           },
           "action_type": {
-            "$ref": "#/components/schemas/ActionType"
+            "$ref": "#/components/schemas/UserActionType",
+            "description": "automation_stop"
           }
         }
       },
@@ -1492,7 +1631,8 @@
         ],
         "properties": {
           "action_type": {
-            "$ref": "#/components/schemas/ActionType"
+            "$ref": "#/components/schemas/UserActionType",
+            "description": "account_create" 
           },
           "configuration": {
             "$ref": "#/components/schemas/Account"
@@ -1508,7 +1648,8 @@
         ],
         "properties": {
           "action_type": {
-            "$ref": "#/components/schemas/ActionType"
+            "$ref": "#/components/schemas/UserActionType",
+            "description": "account_edit"
           },
           "id": {
             "type": "string"
@@ -1527,7 +1668,8 @@
         ],
         "properties": {
           "action_type": {
-            "$ref": "#/components/schemas/ActionType"
+            "$ref": "#/components/schemas/UserActionType",
+            "description": "account_delete"
           },
           "id": {
             "type": "string"
@@ -1542,7 +1684,8 @@
         ],
         "properties": {
           "action_type": {
-            "$ref": "#/components/schemas/ActionType"
+            "$ref": "#/components/schemas/UserActionType",
+            "description": "accounts_refresh"
           },
           "account_ids": {
             "type": "array",
@@ -1552,8 +1695,8 @@
           }
         }
       },
-      "ActionType": {
-        "description": "ActionType",
+      "UserActionType": {
+        "description": "UserActionType",
         "type": "string",
         "enum": [
           "automation_create",
@@ -1565,6 +1708,92 @@
           "accounts_refresh"
         ]
       },
+      "UserActionStatus": {
+        "description": "UserActionStatus",
+        "type": "string",
+        "enum": [
+          "pending",
+          "running",
+          "completed",
+          "failed"
+        ]
+      },
+      "UserActionResultType": {
+        "description": "UserActionResultType",
+        "type": "string",
+        "enum": [
+          "automation",
+          "account"
+        ]
+      },
+      "AutomationActionResultErrorMessage": {
+        "description": "AutomationActionResultErrorMessage",
+        "type": "string",
+        "enum": [
+          "automation_not_found",
+          "invalid_configuration",
+          "account_not_found",
+          "internal_error"
+        ]
+      },
+      "AutomationActionResult": {
+        "description": "AutomationActionResult",
+        "type": "object",
+        "required": [
+          "updated_at",
+          "result_type"
+        ],
+        "properties": {
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "error_message": {
+            "$ref": "#/components/schemas/AutomationActionResultErrorMessage"
+          },
+          "error_details": {
+            "type": "string"
+          },
+          "created_automation_id": {
+            "type": "string"
+          },
+          "result_type": {
+            "$ref": "#/components/schemas/UserActionResultType"
+          }
+        }
+      },
+      "AccountActionResultErrorMessage": {
+        "description": "AccountActionResultErrorMessage",
+        "type": "string",
+        "enum": [
+          "account_not_found",
+          "invalid_configuration",
+          "internal_error"
+        ]
+      },
+      "AccountActionResult": {
+        "description": "AccountActionResult",
+        "type": "object",
+        "required": [
+          "updated_at",
+          "result_type"
+        ],
+        "properties": {
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "error_message": {
+            "$ref": "#/components/schemas/AccountActionResultErrorMessage"
+          },
+          "error_details": {
+            "type": "string"
+          },
+          "result_type": {
+            "$ref": "#/components/schemas/UserActionResultType"
+          }
+        }
+      },
       "UserAction": {
         "description": "UserAction",
         "type": "object",
@@ -1574,6 +1803,17 @@
         "properties": {
           "id": {
             "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/UserActionStatus"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
           },
           "configuration": {
             "oneOf": [
@@ -1600,7 +1840,33 @@
               }
             ],
             "discriminator": {
-              "propertyName": "action_type"
+              "propertyName": "action_type",
+              "mapping": {
+                "automation_create": "#/components/schemas/CreateAutomationConfiguration",
+                "automation_edit": "#/components/schemas/EditAutomationConfiguration",
+                "automation_stop": "#/components/schemas/StopAutomationConfiguration",
+                "account_create": "#/components/schemas/CreateAccountConfiguration",
+                "account_edit": "#/components/schemas/EditAccountConfiguration",
+                "account_delete": "#/components/schemas/DeleteAccountConfiguration",
+                "accounts_refresh": "#/components/schemas/RefreshAccountsConfiguration"
+              }
+            }
+          },
+          "result": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AutomationActionResult"
+              },
+              {
+                "$ref": "#/components/schemas/AccountActionResult"
+              }
+            ],
+            "discriminator": {
+              "propertyName": "result_type",
+              "mapping": {
+                "automation": "#/components/schemas/AutomationActionResult",
+                "account": "#/components/schemas/AccountActionResult"
+              }
             }
           }
         }

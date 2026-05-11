@@ -1,0 +1,281 @@
+"""Tests for octobot_sync.server (excluding helpers already covered by test_server_helpers.py)."""
+
+import json
+import os
+
+import mock
+import pytest
+
+import octobot_sync.server as server
+import octobot_sync.enums as enums
+import octobot_sync.errors as errors
+
+from starfish_server.storage.base import StoreContext
+from starfish_server.storage.s3 import S3ObjectStore
+from starfish_server.storage.filesystem import FilesystemObjectStore
+
+
+def _make_context(identity: str | None = "0xabc", action: str = "pull") -> StoreContext:
+    return StoreContext(
+        collection="test",
+        params={},
+        identity=identity,
+        roles=(),
+        action=action,
+    )
+
+
+class TestGetAddress:
+    def test_returns_identity_when_present(self):
+        context = _make_context(identity="0xabc")
+        assert server._get_address(context) == "0xabc"
+
+    def test_raises_when_context_is_none(self):
+        with pytest.raises(errors.OctobotSyncIdentityMissingError):
+            server._get_address(None)
+
+    def test_raises_when_identity_is_none(self):
+        context = _make_context(identity=None)
+        with pytest.raises(errors.OctobotSyncIdentityMissingError):
+            server._get_address(context)
+
+
+class TestGetData:
+    @pytest.mark.asyncio
+    async def test_user_data_collection(self):
+        stub_state = mock.MagicMock()
+        stub_state.model_dump.return_value = {"version": "1", "automations": [], "user_actions": []}
+        context = _make_context(identity="0xwallet")
+        with mock.patch("octobot_sync.server.user_data_protocol") as mock_proto:
+            mock_proto.get_user_data_state = mock.AsyncMock(return_value=stub_state)
+            result = await server.get_data(enums.Collections.USER_DATA.value, context)
+        mock_proto.get_user_data_state.assert_awaited_once_with("0xwallet")
+        assert result == json.dumps({"version": "1", "automations": [], "user_actions": []})
+
+    @pytest.mark.asyncio
+    async def test_user_accounts_collection(self):
+        stub_state = mock.MagicMock()
+        stub_state.model_dump.return_value = {"version": "1", "accounts": []}
+        context = _make_context(identity="0xwallet")
+        with mock.patch("octobot_sync.server.accounts_protocol") as mock_proto:
+            mock_proto.get_accounts_state = mock.Mock(return_value=stub_state)
+            result = await server.get_data(enums.Collections.USER_ACCOUNTS.value, context)
+        mock_proto.get_accounts_state.assert_called_once_with("0xwallet")
+        assert result == json.dumps({"version": "1", "accounts": []})
+
+    @pytest.mark.asyncio
+    async def test_unsupported_collection_returns_none(self):
+        context = _make_context()
+        result = await server.get_data("unknown-collection", context)
+        assert result is None
+
+
+class TestPutData:
+    @pytest.mark.asyncio
+    async def test_user_actions_executes_each_action(self):
+        body = json.dumps({
+            "version": "1",
+            "user_actions": [
+                {"id": "act-1"},
+                {"id": "act-2"},
+            ],
+        })
+        context = _make_context(identity="0xwallet")
+        with mock.patch("octobot_sync.server.user_actions_protocol") as mock_proto:
+            mock_proto.execute_user_action = mock.AsyncMock()
+            await server.put_data(enums.Collections.USER_ACTIONS.value, body, context)
+        assert mock_proto.execute_user_action.await_count == 2
+        calls = mock_proto.execute_user_action.await_args_list
+        assert calls[0].args[0].id == "act-1"
+        assert calls[0].args[1] == "0xwallet"
+        assert calls[1].args[0].id == "act-2"
+        assert calls[1].args[1] == "0xwallet"
+
+    @pytest.mark.asyncio
+    async def test_user_actions_logs_exception_on_failure(self):
+        body = json.dumps({
+            "version": "1",
+            "user_actions": [{"id": "fail-action"}],
+        })
+        context = _make_context(identity="0xwallet")
+        mock_logger = mock.MagicMock()
+        with (
+            mock.patch("octobot_sync.server.user_actions_protocol") as mock_proto,
+            mock.patch("octobot_sync.server._get_logger", return_value=mock_logger),
+        ):
+            mock_proto.execute_user_action = mock.AsyncMock(side_effect=RuntimeError("boom"))
+            await server.put_data(enums.Collections.USER_ACTIONS.value, body, context)
+        mock_logger.exception.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_unsupported_collection_logs_error(self):
+        mock_logger = mock.MagicMock()
+        context = _make_context()
+        with mock.patch("octobot_sync.server._get_logger", return_value=mock_logger):
+            await server.put_data("bad-collection", "{}", context)
+        mock_logger.error.assert_called_once()
+
+
+class TestSetDataCallbacks:
+    def test_sets_module_globals(self):
+        original_get = server._get_data
+        original_put = server._put_data
+        try:
+            sentinel_get = mock.AsyncMock()
+            sentinel_put = mock.AsyncMock()
+            server.set_data_callbacks(sentinel_get, sentinel_put)
+            assert server._get_data is sentinel_get
+            assert server._put_data is sentinel_put
+        finally:
+            server._get_data = original_get
+            server._put_data = original_put
+
+
+class TestCallbackObjectStore:
+    @pytest.mark.asyncio
+    async def test_get_string_forwards_context(self):
+        original_get = server._get_data
+        original_put = server._put_data
+        try:
+            callback = mock.AsyncMock(return_value="payload")
+            server._get_data = callback
+            server._put_data = mock.AsyncMock()
+            store = server._CallbackObjectStore()
+            context = _make_context()
+            result = await store.get_string("my-key", context=context)
+            assert result == "payload"
+            callback.assert_awaited_once_with("my-key", context)
+        finally:
+            server._get_data = original_get
+            server._put_data = original_put
+
+    @pytest.mark.asyncio
+    async def test_put_forwards_context(self):
+        original_get = server._get_data
+        original_put = server._put_data
+        try:
+            callback = mock.AsyncMock()
+            server._get_data = mock.AsyncMock()
+            server._put_data = callback
+            store = server._CallbackObjectStore()
+            context = _make_context()
+            await store.put("my-key", "body-text", context=context)
+            callback.assert_awaited_once_with("my-key", "body-text", context)
+        finally:
+            server._get_data = original_get
+            server._put_data = original_put
+
+    @pytest.mark.asyncio
+    async def test_list_keys_returns_empty(self):
+        original_get = server._get_data
+        original_put = server._put_data
+        try:
+            server._get_data = mock.AsyncMock()
+            server._put_data = mock.AsyncMock()
+            store = server._CallbackObjectStore()
+            assert await store.list_keys("prefix") == []
+        finally:
+            server._get_data = original_get
+            server._put_data = original_put
+
+    @pytest.mark.asyncio
+    async def test_delete_raises(self):
+        original_get = server._get_data
+        original_put = server._put_data
+        try:
+            server._get_data = mock.AsyncMock()
+            server._put_data = mock.AsyncMock()
+            store = server._CallbackObjectStore()
+            with pytest.raises(NotImplementedError):
+                await store.delete("key")
+        finally:
+            server._get_data = original_get
+            server._put_data = original_put
+
+    @pytest.mark.asyncio
+    async def test_delete_many_raises(self):
+        original_get = server._get_data
+        original_put = server._put_data
+        try:
+            server._get_data = mock.AsyncMock()
+            server._put_data = mock.AsyncMock()
+            store = server._CallbackObjectStore()
+            with pytest.raises(NotImplementedError):
+                await store.delete_many(["k1", "k2"])
+        finally:
+            server._get_data = original_get
+            server._put_data = original_put
+
+
+class TestBuildObjectStore:
+    def test_returns_callback_store_when_callbacks_set(self):
+        original_get = server._get_data
+        original_put = server._put_data
+        try:
+            server._get_data = mock.AsyncMock()
+            server._put_data = mock.AsyncMock()
+            store = server.build_object_store()
+            assert isinstance(store, server._CallbackObjectStore)
+        finally:
+            server._get_data = original_get
+            server._put_data = original_put
+
+    def test_returns_s3_store_when_env_set(self):
+        original_get = server._get_data
+        original_put = server._put_data
+        try:
+            server._get_data = None
+            server._put_data = None
+            env = {
+                "S3_ENDPOINT": "https://s3.example.com",
+                "S3_ACCESS_KEY": "key",
+                "S3_SECRET_KEY": "secret",
+                "S3_BUCKET": "bucket",
+                "S3_REGION": "us-east-1",
+            }
+            with mock.patch.dict(os.environ, env, clear=False):
+                store = server.build_object_store()
+            assert isinstance(store, S3ObjectStore)
+        finally:
+            server._get_data = original_get
+            server._put_data = original_put
+
+    def test_returns_filesystem_store_by_default(self):
+        original_get = server._get_data
+        original_put = server._put_data
+        try:
+            server._get_data = None
+            server._put_data = None
+            env_clear = {k: "" for k in ("S3_ENDPOINT",)}
+            with mock.patch.dict(os.environ, env_clear, clear=False):
+                os.environ.pop("S3_ENDPOINT", None)
+                store = server.build_object_store()
+            assert isinstance(store, FilesystemObjectStore)
+        finally:
+            server._get_data = original_get
+            server._put_data = original_put
+
+
+class TestBuildDefaultSyncApp:
+    def test_returns_app(self):
+        sentinel_app = mock.MagicMock()
+        with (
+            mock.patch("octobot_sync.server.build_object_store", return_value=mock.MagicMock()) as mock_build,
+            mock.patch("octobot_sync.server.sync_app") as mock_sync_app,
+            mock.patch("octobot_sync.server.auth") as mock_auth,
+        ):
+            mock_sync_app.create_app.return_value = sentinel_app
+            mock_auth.NonceStore.return_value = mock.MagicMock()
+            mock_auth.MemoryStorageAdapter.return_value = mock.MagicMock()
+            result = server.build_default_sync_app(
+                is_allowed=None,
+                encryption_secret="secret",
+                sync_config=None,
+            )
+        assert result is sentinel_app
+        mock_build.assert_called_once()
+        mock_sync_app.create_app.assert_called_once()
+        call_kwargs = mock_sync_app.create_app.call_args
+        assert call_kwargs.kwargs["encryption_secret"] == "secret"
+        assert call_kwargs.kwargs["is_allowed"] is None
+        assert call_kwargs.kwargs["sync_config"] is None

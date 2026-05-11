@@ -18,25 +18,22 @@ from enum import Enum
 from typing_extensions import Self
 
 
-class ActionType(str, Enum):
+class AutomationActionResultErrorMessage(str, Enum):
     """
-    ActionType
+    AutomationActionResultErrorMessage
     """
 
     """
     allowed enum values
     """
-    AUTOMATION_CREATE = 'automation_create'
-    AUTOMATION_EDIT = 'automation_edit'
-    AUTOMATION_STOP = 'automation_stop'
-    ACCOUNT_CREATE = 'account_create'
-    ACCOUNT_EDIT = 'account_edit'
-    ACCOUNT_DELETE = 'account_delete'
-    ACCOUNTS_REFRESH = 'accounts_refresh'
+    AUTOMATION_NOT_FOUND = 'automation_not_found'
+    INVALID_CONFIGURATION = 'invalid_configuration'
+    ACCOUNT_NOT_FOUND = 'account_not_found'
+    INTERNAL_ERROR = 'internal_error'
 
     @classmethod
     def from_json(cls, json_str: str) -> Self:
-        """Create an instance of ActionType from a JSON string"""
+        """Create an instance of AutomationActionResultErrorMessage from a JSON string"""
         return cls(json.loads(json_str))
 
 

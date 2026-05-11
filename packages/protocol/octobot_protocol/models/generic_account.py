@@ -17,8 +17,9 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Any, ClassVar, Dict, List, Optional
+from octobot_protocol.models.account_type import AccountType
 from octobot_protocol.models.asset import Asset
 from typing import Optional, Set
 from typing_extensions import Self
@@ -28,8 +29,9 @@ class GenericAccount(BaseModel):
     """
     GenericAccount
     """ # noqa: E501
+    account_type: AccountType = Field(description="generic")
     assets: Optional[List[Asset]] = None
-    __properties: ClassVar[List[str]] = ["assets"]
+    __properties: ClassVar[List[str]] = ["account_type", "assets"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -89,6 +91,7 @@ class GenericAccount(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
+            "account_type": obj.get("account_type"),
             "assets": [Asset.from_dict(_item) for _item in obj["assets"]] if obj.get("assets") is not None else None
         })
         return _obj

@@ -3,6 +3,7 @@ from octobot_flow.entities.accounts import (
     ExchangeAccountElements,
     ExchangeAccountDetails,
     ExchangeAccountPortfolio,
+    ExchangeAccountMetadata,
     AccountElements,
 )
 from octobot_flow.entities.actions import (
@@ -40,6 +41,7 @@ __all__ = [
     "PortfolioAssetHolding",
     "ExchangeAccountDetails",
     "ExchangeAccountPortfolio",
+    "ExchangeAccountMetadata",
     "ActionDependency",
     "AbstractActionDetails",
     "DSLScriptActionDetails",

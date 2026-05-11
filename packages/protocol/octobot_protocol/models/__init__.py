@@ -14,24 +14,31 @@
 
 # import models into model package
 from octobot_protocol.models.account import Account
+from octobot_protocol.models.account_action_result import AccountActionResult
+from octobot_protocol.models.account_action_result_error_message import AccountActionResultErrorMessage
+from octobot_protocol.models.account_details import AccountDetails
+from octobot_protocol.models.account_state import AccountState
+from octobot_protocol.models.account_status import AccountStatus
+from octobot_protocol.models.account_status_message import AccountStatusMessage
 from octobot_protocol.models.account_type import AccountType
 from octobot_protocol.models.accounts_state import AccountsState
 from octobot_protocol.models.action import Action
 from octobot_protocol.models.action_configuration_type import ActionConfigurationType
-from octobot_protocol.models.action_type import ActionType
 from octobot_protocol.models.active_order_swap_strategy import ActiveOrderSwapStrategy
 from octobot_protocol.models.active_order_swap_strategy_type import ActiveOrderSwapStrategyType
 from octobot_protocol.models.asset import Asset
+from octobot_protocol.models.automation_action_result import AutomationActionResult
+from octobot_protocol.models.automation_action_result_error_message import AutomationActionResultErrorMessage
 from octobot_protocol.models.automation_configuration import AutomationConfiguration
 from octobot_protocol.models.automation_configuration_configuration import AutomationConfigurationConfiguration
 from octobot_protocol.models.automation_metadata import AutomationMetadata
 from octobot_protocol.models.automation_state import AutomationState
-from octobot_protocol.models.automations_state import AutomationsState
 from octobot_protocol.models.blockchain_account import BlockchainAccount
 from octobot_protocol.models.cancel_policy import CancelPolicy
 from octobot_protocol.models.cancel_policy_type import CancelPolicyType
 from octobot_protocol.models.copied_account import CopiedAccount
 from octobot_protocol.models.copied_asset import CopiedAsset
+from octobot_protocol.models.copy_configuration import CopyConfiguration
 from octobot_protocol.models.create_account_configuration import CreateAccountConfiguration
 from octobot_protocol.models.create_automation_configuration import CreateAutomationConfiguration
 from octobot_protocol.models.dca_configuration import DCAConfiguration
@@ -71,6 +78,7 @@ from octobot_protocol.models.rsi_momentum_evaluator_configuration import RSIMome
 from octobot_protocol.models.refresh_accounts_configuration import RefreshAccountsConfiguration
 from octobot_protocol.models.side import Side
 from octobot_protocol.models.stop_automation_configuration import StopAutomationConfiguration
+from octobot_protocol.models.strategy_configuration import StrategyConfiguration
 from octobot_protocol.models.task_status import TaskStatus
 from octobot_protocol.models.time_frame import TimeFrame
 from octobot_protocol.models.trade import Trade
@@ -79,4 +87,10 @@ from octobot_protocol.models.trailing_profile import TrailingProfile
 from octobot_protocol.models.trailing_profile_type import TrailingProfileType
 from octobot_protocol.models.user_action import UserAction
 from octobot_protocol.models.user_action_configuration import UserActionConfiguration
+from octobot_protocol.models.user_action_result import UserActionResult
+from octobot_protocol.models.user_action_result_type import UserActionResultType
+from octobot_protocol.models.user_action_status import UserActionStatus
+from octobot_protocol.models.user_action_type import UserActionType
+from octobot_protocol.models.user_actions_state import UserActionsState
+from octobot_protocol.models.user_data_state import UserDataState
 

@@ -12,6 +12,8 @@ ActionConfigurationType
 
 * `GRID` (value: `'grid'`)
 
+* `COPY` (value: `'copy'`)
+
 * `GENERIC_PROCESS` (value: `'generic_process'`)
 
 * `GENERIC_WORKFLOW` (value: `'generic_workflow'`)

@@ -130,6 +130,46 @@ class UserActionConfiguration(BaseModel):
         error_messages = []
         match = 0
 
+        # use oneOf discriminator to lookup the data type
+        _data_type = json.loads(json_str).get("action_type")
+        if not _data_type:
+            raise ValueError("Failed to lookup data type from the field `action_type` in the input.")
+
+        # check if data type is `CreateAccountConfiguration`
+        if _data_type == "account_create":
+            instance.actual_instance = CreateAccountConfiguration.from_json(json_str)
+            return instance
+
+        # check if data type is `DeleteAccountConfiguration`
+        if _data_type == "account_delete":
+            instance.actual_instance = DeleteAccountConfiguration.from_json(json_str)
+            return instance
+
+        # check if data type is `EditAccountConfiguration`
+        if _data_type == "account_edit":
+            instance.actual_instance = EditAccountConfiguration.from_json(json_str)
+            return instance
+
+        # check if data type is `RefreshAccountsConfiguration`
+        if _data_type == "accounts_refresh":
+            instance.actual_instance = RefreshAccountsConfiguration.from_json(json_str)
+            return instance
+
+        # check if data type is `CreateAutomationConfiguration`
+        if _data_type == "automation_create":
+            instance.actual_instance = CreateAutomationConfiguration.from_json(json_str)
+            return instance
+
+        # check if data type is `EditAutomationConfiguration`
+        if _data_type == "automation_edit":
+            instance.actual_instance = EditAutomationConfiguration.from_json(json_str)
+            return instance
+
+        # check if data type is `StopAutomationConfiguration`
+        if _data_type == "automation_stop":
+            instance.actual_instance = StopAutomationConfiguration.from_json(json_str)
+            return instance
+
         # deserialize data into CreateAutomationConfiguration
         try:
             instance.actual_instance = CreateAutomationConfiguration.from_json(json_str)

@@ -6,6 +6,7 @@ ExchangeAccount
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**account_type** | [**AccountType**](AccountType.md) | exchange | 
 **exchange** | **str** |  | 
 **remote_account_id** | **str** |  | 
 **api_key** | **str** |  | 

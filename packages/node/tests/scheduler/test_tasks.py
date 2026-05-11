@@ -55,13 +55,17 @@ class TestTriggerTask:
     @pytest.mark.asyncio
     async def test_trigger_all_task_types(self, schedule_task, temp_dbos_scheduler):
         """Test trigger_task for START_OCTOBOT type."""
+        expected_workflow_id = "workflow-id-from-test-mock"
         for task_type in octobot_node.models.TaskType:
             schedule_task.type = task_type.value
             with mock.patch.object(
                 temp_dbos_scheduler.AUTOMATION_WORKFLOW_QUEUE, "enqueue_async", mock.AsyncMock()
             ) as mock_enqueue_async:
+                mock_handle = mock.Mock()
+                mock_handle.workflow_id = expected_workflow_id
+                mock_enqueue_async.return_value = mock_handle
                 result = await octobot_node.scheduler.tasks.trigger_task(schedule_task)
-                assert result is True
+                assert result == expected_workflow_id
                 mock_enqueue_async.assert_called_once()
                 call_kwargs = mock_enqueue_async.call_args[1]
                 assert "inputs" in call_kwargs

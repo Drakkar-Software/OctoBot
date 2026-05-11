@@ -6,7 +6,7 @@ RSIMomentumEvaluatorConfiguration
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**configuration_type** | [**EvaluatorType**](EvaluatorType.md) |  | 
+**configuration_type** | [**EvaluatorType**](EvaluatorType.md) | RSIMomentumEvaluator | 
 **period_length** | **float** |  | 
 **short_threshold** | **float** |  | 
 **long_threshold** | **float** |  | 

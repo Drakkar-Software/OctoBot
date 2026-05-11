@@ -38,30 +38,30 @@ class TestCreateAccountConfiguration(unittest.TestCase):
                 action_type = 'automation_create',
                 configuration = octobot_protocol.models.account.Account(
                     id = '', 
-                    account_type = 'GENERIC', 
                     name = '', 
                     is_simulated = True, 
                     description = '', 
+                    state = octobot_protocol.models.account_state.AccountState(
+                        status = 'valid', 
+                        message = 'pending_validation', ), 
                     created_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
                     updated_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
-                    exchange_account = null, 
-                    blockchain_account = null, 
-                    generic_account = null, )
+                    details = null, )
             )
         else:
             return CreateAccountConfiguration(
                 action_type = 'automation_create',
                 configuration = octobot_protocol.models.account.Account(
                     id = '', 
-                    account_type = 'GENERIC', 
                     name = '', 
                     is_simulated = True, 
                     description = '', 
+                    state = octobot_protocol.models.account_state.AccountState(
+                        status = 'valid', 
+                        message = 'pending_validation', ), 
                     created_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
                     updated_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
-                    exchange_account = null, 
-                    blockchain_account = null, 
-                    generic_account = null, ),
+                    details = null, ),
         )
         """
 

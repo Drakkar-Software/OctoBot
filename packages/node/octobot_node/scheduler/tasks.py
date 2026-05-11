@@ -20,7 +20,7 @@ import octobot_node.scheduler.workflows_util as workflows_util
 import octobot_node.scheduler.workflows.params as params
 
 
-async def trigger_task(task: octobot_node.models.Task) -> bool:
+async def trigger_task(task: octobot_node.models.Task) -> str:
     import octobot_node.scheduler  # avoid circular import
     if not octobot_node.scheduler.is_initialized():
         raise RuntimeError("Scheduler is not initialized")
@@ -34,7 +34,7 @@ async def trigger_task(task: octobot_node.models.Task) -> bool:
         )
     else:
         raise ValueError(f"Unsupported task type: {task.type}")
-    return handle is not None
+    return handle.workflow_id
 
 
 async def send_actions_to_automation(actions: list[dict], automation_id: str):

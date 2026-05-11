@@ -29,7 +29,7 @@ class RSIMomentumEvaluatorConfiguration(BaseModel):
     """
     RSIMomentumEvaluatorConfiguration
     """ # noqa: E501
-    configuration_type: EvaluatorType
+    configuration_type: EvaluatorType = Field(description="RSIMomentumEvaluator")
     period_length: Union[Annotated[float, Field(strict=True, ge=1)], Annotated[int, Field(strict=True, ge=1)]]
     short_threshold: Union[Annotated[float, Field(le=100, strict=True, ge=0)], Annotated[int, Field(le=100, strict=True, ge=0)]]
     long_threshold: Union[Annotated[float, Field(le=100, strict=True, ge=0)], Annotated[int, Field(le=100, strict=True, ge=0)]]

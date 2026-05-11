@@ -7,15 +7,13 @@ Account
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **id** | **str** |  | 
-**account_type** | [**AccountType**](AccountType.md) |  | 
 **name** | **str** |  | 
 **is_simulated** | **bool** |  | 
 **description** | **str** |  | [optional] 
+**state** | [**AccountState**](AccountState.md) |  | [optional] 
 **created_at** | **datetime** |  | [optional] 
 **updated_at** | **datetime** |  | [optional] 
-**exchange_account** | [**ExchangeAccount**](ExchangeAccount.md) |  | [optional] 
-**blockchain_account** | [**BlockchainAccount**](BlockchainAccount.md) |  | [optional] 
-**generic_account** | [**GenericAccount**](GenericAccount.md) |  | [optional] 
+**details** | [**AccountDetails**](AccountDetails.md) |  | [optional] 
 
 ## Example
 

@@ -23,7 +23,7 @@ import octobot_protocol.models as protocol_models
 import octobot_trading.enums as octobot_trading_enums
 import octobot_trading.exchanges.util.exchange_data as octobot_trading_exchange_data
 
-import octobot_node.scheduler.protocol as scheduler_protocol
+import octobot_node.protocol.automations as automations_protocol
 
 
 def _minimal_protocol_base() -> protocol_models.AutomationState:
@@ -54,7 +54,7 @@ class TestFillProtocolAutomationStateReturnAndMetadata:
     def test_returns_new_instance_and_preserves_metadata(self):
         flow_state = flow_entities.AutomationState(automation=_minimal_automation_details())
         base = _minimal_protocol_base()
-        filled = scheduler_protocol._fill_protocol_automation_state(base, flow_state)
+        filled = automations_protocol._fill_protocol_automation_state(base, flow_state)
         assert filled is not base
         assert filled.metadata is base.metadata
         assert filled.metadata.name == "task-name"
@@ -69,7 +69,7 @@ class TestFillProtocolAutomationStateAutomationStatus:
         flow_state = flow_entities.AutomationState(
             automation=_minimal_automation_details(execution=execution),
         )
-        filled = scheduler_protocol._fill_protocol_automation_state(_minimal_protocol_base(), flow_state)
+        filled = automations_protocol._fill_protocol_automation_state(_minimal_protocol_base(), flow_state)
         assert filled.status == protocol_models.TaskStatus.FAILED
 
     def test_failed_when_dag_action_error_status(self):
@@ -84,7 +84,7 @@ class TestFillProtocolAutomationStateAutomationStatus:
                 actions_dag=flow_entities.ActionsDAG(actions=[action]),
             ),
         )
-        filled = scheduler_protocol._fill_protocol_automation_state(_minimal_protocol_base(), flow_state)
+        filled = automations_protocol._fill_protocol_automation_state(_minimal_protocol_base(), flow_state)
         assert filled.status == protocol_models.TaskStatus.FAILED
 
     def test_completed_when_all_actions_completed(self):
@@ -99,7 +99,7 @@ class TestFillProtocolAutomationStateAutomationStatus:
                 actions_dag=flow_entities.ActionsDAG(actions=[action]),
             ),
         )
-        filled = scheduler_protocol._fill_protocol_automation_state(_minimal_protocol_base(), flow_state)
+        filled = automations_protocol._fill_protocol_automation_state(_minimal_protocol_base(), flow_state)
         assert filled.status == protocol_models.TaskStatus.COMPLETED
 
     def test_running_when_triggered(self):
@@ -113,7 +113,7 @@ class TestFillProtocolAutomationStateAutomationStatus:
                 execution=execution,
             ),
         )
-        filled = scheduler_protocol._fill_protocol_automation_state(_minimal_protocol_base(), flow_state)
+        filled = automations_protocol._fill_protocol_automation_state(_minimal_protocol_base(), flow_state)
         assert filled.status == protocol_models.TaskStatus.RUNNING
 
     def test_pending_when_not_started(self):
@@ -126,7 +126,7 @@ class TestFillProtocolAutomationStateAutomationStatus:
                 },
             ),
         )
-        filled = scheduler_protocol._fill_protocol_automation_state(_minimal_protocol_base(), flow_state)
+        filled = automations_protocol._fill_protocol_automation_state(_minimal_protocol_base(), flow_state)
         assert filled.status == protocol_models.TaskStatus.PENDING
 
 
@@ -145,7 +145,7 @@ class TestFillProtocolAutomationStateDagActions:
                 actions_dag=flow_entities.ActionsDAG(actions=[ready, blocked]),
             ),
         )
-        filled = scheduler_protocol._fill_protocol_automation_state(_minimal_protocol_base(), flow_state)
+        filled = automations_protocol._fill_protocol_automation_state(_minimal_protocol_base(), flow_state)
         assert filled.actions is not None
         assert len(filled.actions) == 2
         by_id = {action.id: action for action in filled.actions}
@@ -165,7 +165,7 @@ class TestFillProtocolAutomationStateDagActions:
                 actions_dag=flow_entities.ActionsDAG(actions=[dsl_action, cfg_action]),
             ),
         )
-        filled = scheduler_protocol._fill_protocol_automation_state(_minimal_protocol_base(), flow_state)
+        filled = automations_protocol._fill_protocol_automation_state(_minimal_protocol_base(), flow_state)
         assert filled.actions is not None
         by_id = {action.id: action for action in filled.actions}
         assert by_id["d1"].action_type == "dsl_script"
@@ -185,7 +185,7 @@ class TestFillProtocolAutomationStatePriorityActions:
             ),
             priority_actions=[priority_action],
         )
-        filled = scheduler_protocol._fill_protocol_automation_state(_minimal_protocol_base(), flow_state)
+        filled = automations_protocol._fill_protocol_automation_state(_minimal_protocol_base(), flow_state)
         assert filled.actions is not None
         assert len(filled.actions) == 1
         assert filled.actions[0].id == "dag_action"
@@ -205,7 +205,7 @@ class TestFillProtocolAutomationStateExchanges:
             automation=_minimal_automation_details(),
             exchange_account_details=exchange_details,
         )
-        filled = scheduler_protocol._fill_protocol_automation_state(_minimal_protocol_base(), flow_state)
+        filled = automations_protocol._fill_protocol_automation_state(_minimal_protocol_base(), flow_state)
         assert filled.exchanges == ["binance"]
         assert filled.exchange_account_ids == ["acc-1"]
 
@@ -257,7 +257,7 @@ class TestFillProtocolAutomationStateAssetsOrdersPositionsTrades:
             automation=automation,
             exchange_account_details=exchange_details,
         )
-        filled = scheduler_protocol._fill_protocol_automation_state(_minimal_protocol_base(), flow_state)
+        filled = automations_protocol._fill_protocol_automation_state(_minimal_protocol_base(), flow_state)
         assert filled.assets is not None
         bitcoin_asset = filled.assets[0]
         assert bitcoin_asset.symbol == "BTC"
@@ -283,7 +283,7 @@ class TestFillProtocolAutomationStateAssetsOrdersPositionsTrades:
         automation = _minimal_automation_details()
         automation.exchange_account_elements = elements
         flow_state = flow_entities.AutomationState(automation=automation)
-        filled = scheduler_protocol._fill_protocol_automation_state(_minimal_protocol_base(), flow_state)
+        filled = automations_protocol._fill_protocol_automation_state(_minimal_protocol_base(), flow_state)
         assert filled.assets is not None
         assert filled.assets[0].unit is None
 
@@ -291,7 +291,7 @@ class TestFillProtocolAutomationStateAssetsOrdersPositionsTrades:
 class TestFillProtocolAutomationStateEmpties:
     def test_no_exchange_elements_yields_empty_protocol_lists(self):
         flow_state = flow_entities.AutomationState(automation=_minimal_automation_details())
-        filled = scheduler_protocol._fill_protocol_automation_state(_minimal_protocol_base(), flow_state)
+        filled = automations_protocol._fill_protocol_automation_state(_minimal_protocol_base(), flow_state)
         assert filled.assets is None
         assert filled.orders is None
         assert filled.positions is None

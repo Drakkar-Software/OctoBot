@@ -6,9 +6,10 @@ AutomationConfiguration
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**name** | **str** |  | [optional] 
+**name** | **str** |  | 
 **account_ids** | **List[str]** |  | [optional] 
-**configuration** | [**AutomationConfigurationConfiguration**](AutomationConfigurationConfiguration.md) |  | [optional] 
+**strategy** | [**StrategyConfiguration**](StrategyConfiguration.md) |  | [optional] 
+**configuration** | [**AutomationConfigurationConfiguration**](AutomationConfigurationConfiguration.md) |  | 
 
 ## Example
 

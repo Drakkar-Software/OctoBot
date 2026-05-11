@@ -17,7 +17,7 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Any, ClassVar, Dict, List
 from octobot_protocol.models.action import Action
 from octobot_protocol.models.action_configuration_type import ActionConfigurationType
@@ -29,7 +29,7 @@ class GenericWorkflowConfiguration(BaseModel):
     """
     GenericWorkflowConfiguration
     """ # noqa: E501
-    configuration_type: ActionConfigurationType
+    configuration_type: ActionConfigurationType = Field(description="generic_workflow")
     actions: List[Action]
     __properties: ClassVar[List[str]] = ["configuration_type", "actions"]
 
