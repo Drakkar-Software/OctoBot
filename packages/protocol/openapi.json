@@ -688,7 +688,7 @@
             "format": "date-time"
           },
           "exchange_account": {
-            "anyOf": [
+            "oneOf": [
               {
                 "type": "null"
               },
@@ -698,7 +698,7 @@
             ]
           },
           "blockchain_account": {
-            "anyOf": [
+            "oneOf": [
               {
                 "type": "null"
               },
@@ -708,7 +708,7 @@
             ]
           },
           "generic_account": {
-            "anyOf": [
+            "oneOf": [
               {
                 "type": "null"
               },
@@ -792,6 +792,815 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/CopiedAccount"
+            }
+          }
+        }
+      },
+      "TimeFrame": {
+        "description": "TimeFrame",
+        "type": "string",
+        "enum": [
+          "1m",
+          "5m",
+          "15m",
+          "30m",
+          "1h",
+          "4h",
+          "6h",
+          "8h",
+          "12h",
+          "1d",
+          "3d",
+          "1w"
+        ]
+      },
+      "ActionConfigurationType": {
+        "description": "ActionConfigurationType",
+        "type": "string",
+        "enum": [
+          "market_making",
+          "dca",
+          "index",
+          "grid",
+          "generic_process",
+          "generic_workflow"
+        ]
+      },
+      "MarketMakingReferencePair": {
+        "description": "Reference price source for market making (exchange pair, weighting, and optional formula).",
+        "type": "object",
+        "required": [
+          "exchange",
+          "pair"
+        ],
+        "properties": {
+          "exchange": {
+            "type": "string",
+            "description": "Exchange id, or a sentinel such as local exchange price when supported by the trading mode."
+          },
+          "pair": {
+            "type": "string"
+          },
+          "weight": {
+            "type": "number"
+          },
+          "formula": {
+            "type": "string",
+            "description": "Optional formula overriding the default latest price for this source."
+          },
+          "time_frame": {
+            "$ref": "#/components/schemas/TimeFrame"
+          }
+        }
+      },
+      "MarketMakingOrderBookDepth": {
+        "description": "Order book depth parameters (cumulated volume and daily volume fraction).",
+        "type": "object",
+        "required": [
+          "cumulated_volume_percent",
+          "percent_daily_trading_volume"
+        ],
+        "properties": {
+          "cumulated_volume_percent": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "percent_daily_trading_volume": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          }
+        }
+      },
+      "MarketMakingScheduledVolume": {
+        "description": "Scheduled volume order sizing and timing in quote currency.",
+        "type": "object",
+        "required": [
+          "min_amount",
+          "max_amount",
+          "min_interval_seconds",
+          "max_interval_seconds"
+        ],
+        "properties": {
+          "min_amount": {
+            "type": "number",
+            "minimum": 0,
+            "default": 0
+          },
+          "max_amount": {
+            "type": "number",
+            "minimum": 0,
+            "default": 0
+          },
+          "min_interval_seconds": {
+            "type": "number",
+            "minimum": 0,
+            "default": 0
+          },
+          "max_interval_seconds": {
+            "type": "number",
+            "minimum": 0,
+            "default": 0
+          }
+        }
+      },
+      "MarketMakingStopConditions": {
+        "description": "Optional holdings and volatility thresholds used for automations / stop behavior.",
+        "type": "object",
+        "properties": {
+          "min_base_holding": {
+            "type": "number",
+            "minimum": 0,
+            "default": 0
+          },
+          "min_quote_holding": {
+            "type": "number",
+            "minimum": 0,
+            "default": 0
+          },
+          "max_positive_percent_price_change": {
+            "type": "number",
+            "minimum": 0,
+            "default": 0
+          },
+          "max_negative_percent_price_change": {
+            "type": "number",
+            "minimum": 0,
+            "default": 0
+          },
+          "average_price_counted_minutes": {
+            "type": "number",
+            "minimum": 1,
+            "default": 60,
+            "description": "Minutes window for average price when evaluating volatility stops."
+          }
+        }
+      },
+      "MarketMakingHedgingEngine": {
+        "description": "Optional cross-exchange hedging configuration.",
+        "type": "object",
+        "properties": {
+          "average_price_counted_minutes": {
+            "type": "number",
+            "minimum": 1,
+            "default": 60
+          },
+          "hedging_engine_type": {
+            "type": "string",
+            "enum": [
+              "spot",
+              "perpetual_futures"
+            ]
+          },
+          "hedging_exchange": {
+            "type": "string"
+          },
+          "hedging_max_loss_threshold": {
+            "type": "number",
+            "minimum": 0,
+            "default": 0
+          },
+          "hedging_profit_threshold": {
+            "type": "number",
+            "minimum": 0,
+            "default": 0
+          },
+          "max_negative_percent_price_change": {
+            "type": "number",
+            "minimum": 0,
+            "default": 0
+          },
+          "max_positive_percent_price_change": {
+            "type": "number",
+            "minimum": 0,
+            "default": 0
+          }
+        }
+      },
+      "MarketMakingOrdersDistribution": {
+        "description": "How order prices are spaced across the book.",
+        "type": "string",
+        "enum": [
+          "linear"
+        ]
+      },
+      "MarketMakingFundsDistribution": {
+        "description": "How allocated funds are spread across ladder levels.",
+        "type": "string",
+        "enum": [
+          "flat",
+          "valley",
+          "random"
+        ]
+      },
+      "MarketMakingSymbolConfiguration": {
+        "description": "MarketMakingSymbolConfiguration",
+        "type": "object",
+        "required": [
+          "symbol",
+          "reference_price",
+          "min_spread",
+          "max_spread",
+          "bids_count",
+          "asks_count",
+          "orders_distribution",
+          "funds_distribution"
+        ],
+        "properties": {
+          "symbol": {
+            "type": "string"
+          },
+          "reference_price": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MarketMakingReferencePair"
+            },
+            "minItems": 1
+          },
+          "min_spread": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "description": "Minimum spread as a percentage (e.g. 0.5 for 0.5%)."
+          },
+          "max_spread": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "description": "Maximum spread as a percentage."
+          },
+          "order_book_depth": {
+            "$ref": "#/components/schemas/MarketMakingOrderBookDepth"
+          },
+          "scheduled_volume": {
+            "$ref": "#/components/schemas/MarketMakingScheduledVolume"
+          },
+          "stop_conditions": {
+            "$ref": "#/components/schemas/MarketMakingStopConditions"
+          },
+          "bids_count": {
+            "type": "number",
+            "minimum": 1
+          },
+          "asks_count": {
+            "type": "number",
+            "minimum": 1
+          },
+          "orders_distribution": {
+            "$ref": "#/components/schemas/MarketMakingOrdersDistribution"
+          },
+          "funds_distribution": {
+            "$ref": "#/components/schemas/MarketMakingFundsDistribution"
+          },
+          "max_base_budget": {
+            "type": "number",
+            "minimum": 0,
+            "description": "0 means unlimited when supported."
+          },
+          "max_quote_budget": {
+            "type": "number",
+            "minimum": 0,
+            "description": "0 means unlimited when supported."
+          },
+          "min_base_budget": {
+            "type": "number",
+            "minimum": 0
+          },
+          "min_quote_budget": {
+            "type": "number",
+            "minimum": 0
+          },
+          "hedging_engine": {
+            "$ref": "#/components/schemas/MarketMakingHedgingEngine"
+          }
+        }
+      },
+      "MarketMakingConfiguration": {
+        "description": "Per-symbol market making parameters.",
+        "type": "object",
+        "required": [
+          "configuration_type",
+          "symbol_configurations"
+        ],
+        "properties": {
+          "configuration_type": {
+            "$ref": "#/components/schemas/ActionConfigurationType"
+          },
+          "symbol_configurations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MarketMakingSymbolConfiguration"
+            }
+          }
+        }
+      },
+      "EvaluatorType": {
+        "description": "EvaluatorType",
+        "type": "string",
+        "enum": [
+          "RSIMomentumEvaluator",
+          "EMAMomentumEvaluator"
+        ]
+      },
+      "RSIMomentumEvaluatorConfiguration": {
+        "description": "RSIMomentumEvaluatorConfiguration",
+        "type": "object",
+        "required": [
+          "configuration_type",
+          "period_length",
+          "short_threshold",
+          "long_threshold"
+        ],
+        "properties": {
+          "configuration_type": {
+            "$ref": "#/components/schemas/EvaluatorType"
+          },
+          "period_length": {
+            "type": "number",
+            "minimum": 1
+          },
+          "short_threshold": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "long_threshold": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          }
+        }
+      },
+      "EMAMomentumEvaluatorConfiguration": {
+        "description": "EMAMomentumEvaluatorConfiguration",
+        "type": "object",
+        "required": [
+          "configuration_type",
+          "period_length",
+          "price_threshold_percent",
+          "reverse_signal"
+        ],
+        "properties": {
+          "configuration_type": {
+            "$ref": "#/components/schemas/EvaluatorType"
+          },
+          "period_length": {
+            "type": "number",
+            "minimum": 1
+          },
+          "price_threshold_percent": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "reverse_signal": {
+            "type": "boolean",
+            "default": false
+          }
+        }
+      },
+      "EvaluatorConfiguration": {
+        "description": "EvaluatorConfiguration",
+        "type": "object",
+        "required": [
+          "configuration_type",
+          "configuration"
+        ],
+        "properties": {
+          "configuration": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/RSIMomentumEvaluatorConfiguration"
+              },
+              {
+                "$ref": "#/components/schemas/EMAMomentumEvaluatorConfiguration"
+              }
+            ],
+            "discriminator": {
+              "propertyName": "configuration_type"
+            }
+          }
+        }
+      },
+      "DCAConfiguration": {
+        "description": "DCAConfiguration",
+        "type": "object",
+        "required": [
+          "configuration_type",
+          "symbols",
+          "buy_orders_count",
+          "percent_amount_per_buy_order",
+          "profit_target_percent",
+          "buy_order_price_discount_percent",
+          "enable_stop_loss",
+          "stop_loss_price_discount_percent",
+          "trigger_mode",
+          "use_init_entry_orders",
+          "time_frames",
+          "evaluators"
+        ],
+        "properties": {
+          "configuration_type": {
+            "$ref": "#/components/schemas/ActionConfigurationType"
+          },
+          "symbols": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "buy_orders_count": {
+            "type": "number",
+            "minimum": 1
+          },
+          "percent_amount_per_buy_order": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "profit_target_percent": {
+            "type": "number",
+            "minimum": 0
+          },
+          "buy_order_price_discount_percent": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "enable_stop_loss": {
+            "type": "boolean",
+            "default": false
+          },
+          "stop_loss_price_discount_percent": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "trigger_mode": {
+            "type": "string",
+            "enum": [
+              "Maximum evaluators signals based",
+              "Time based"
+            ]
+          },
+          "use_init_entry_orders": {
+            "type": "boolean",
+            "default": true
+          },
+          "time_frames": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimeFrame"
+            }
+          },
+          "evaluators": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EvaluatorConfiguration"
+            }
+          }
+        }
+      },
+      "IndexCoin": {
+        "description": "IndexCoin",
+        "type": "object",
+        "required": [
+          "name",
+          "ratio"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "ratio": {
+            "type": "number",
+            "minimum": 0,
+            "default": 1
+          }
+        }
+      },
+      "IndexConfiguration": {
+        "description": "IndexConfiguration",
+        "type": "object",
+        "required": [
+          "configuration_type",
+          "coins",
+          "rebalance_trigger_min_percent"
+        ],
+        "properties": {
+          "configuration_type": {
+            "$ref": "#/components/schemas/ActionConfigurationType"
+          },
+          "coins": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IndexCoin"
+            }
+          },
+          "rebalance_trigger_min_percent": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          }
+        }
+      },
+      "GridConfiguration": {
+        "description": "GridConfiguration",
+        "type": "object",
+        "required": [
+          "configuration_type",
+          "symbol",
+          "spread",
+          "increment",
+          "buy_count",
+          "sell_count",
+          "enable_trailing_up",
+          "enable_trailing_down",
+          "order_by_order_trailing"
+        ],
+        "properties": {
+          "configuration_type": {
+            "$ref": "#/components/schemas/ActionConfigurationType"
+          },
+          "symbol": {
+            "type": "string"
+          },
+          "spread": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "increment": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "buy_count": {
+            "type": "number",
+            "minimum": 1
+          },
+          "sell_count": {
+            "type": "number",
+            "minimum": 1
+          },
+          "enable_trailing_up": {
+            "type": "boolean",
+            "default": true
+          },
+          "enable_trailing_down": {
+            "type": "boolean",
+            "default": false
+          },
+          "order_by_order_trailing": {
+            "type": "boolean",
+            "default": true
+          }
+        }
+      },
+      "GenericProcessConfiguration": {
+        "description": "GenericProcessConfiguration",
+        "type": "object",
+        "required": [
+          "configuration_type",
+          "profile_data"
+        ],
+        "properties": {
+          "configuration_type": {
+            "$ref": "#/components/schemas/ActionConfigurationType"
+          },
+          "profile_data": {
+            "type": "object"
+          }
+        }
+      },
+      "GenericWorkflowConfiguration": {
+        "description": "GenericWorkflowConfiguration",
+        "type": "object",
+        "required": [
+          "configuration_type",
+          "actions"
+        ],
+        "properties": {
+          "configuration_type": {
+            "$ref": "#/components/schemas/ActionConfigurationType"
+          },
+          "actions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Action"
+            }
+          }
+        }
+      },
+      "AutomationConfiguration": {
+        "description": "AutomationConfiguration",
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "account_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "configuration": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MarketMakingConfiguration"
+              },
+              {
+                "$ref": "#/components/schemas/DCAConfiguration"
+              },
+              {
+                "$ref": "#/components/schemas/IndexConfiguration"
+              },
+              {
+                "$ref": "#/components/schemas/GridConfiguration"
+              },
+              {
+                "$ref": "#/components/schemas/GenericProcessConfiguration"
+              },
+              {
+                "$ref": "#/components/schemas/GenericWorkflowConfiguration"
+              }
+            ],
+            "discriminator": {
+              "propertyName": "configuration_type"
+            }
+          }
+        }
+      },
+      "CreateAutomationConfiguration": {
+        "description": "CreateAutomationConfiguration",
+        "type": "object",
+        "required": [
+          "action_type",
+          "configuration"
+        ],
+        "properties": {
+          "action_type": {
+            "$ref": "#/components/schemas/ActionType"
+          },
+          "configuration": {
+            "$ref": "#/components/schemas/AutomationConfiguration"
+          }
+        }
+      },
+      "EditAutomationConfiguration": {
+        "description": "EditAutomationConfiguration",
+        "type": "object",
+        "required": [
+          "id",
+          "action_type",
+          "configuration"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "action_type": {
+            "$ref": "#/components/schemas/ActionType"
+          },
+          "configuration": {
+            "$ref": "#/components/schemas/AutomationConfiguration"
+          }
+        }
+      },
+      "StopAutomationConfiguration": {
+        "description": "StopAutomationConfiguration",
+        "type": "object",
+        "required": [
+          "id",
+          "action_type"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "action_type": {
+            "$ref": "#/components/schemas/ActionType"
+          }
+        }
+      },
+      "CreateAccountConfiguration": {
+        "description": "CreateAccountConfiguration",
+        "type": "object",
+        "required": [
+          "action_type",
+          "configuration"
+        ],
+        "properties": {
+          "action_type": {
+            "$ref": "#/components/schemas/ActionType"
+          },
+          "configuration": {
+            "$ref": "#/components/schemas/Account"
+          }
+        }
+      },
+      "EditAccountConfiguration": {
+        "description": "EditAccountConfiguration",
+        "type": "object",
+        "required": [
+          "action_type",
+          "id"
+        ],
+        "properties": {
+          "action_type": {
+            "$ref": "#/components/schemas/ActionType"
+          },
+          "id": {
+            "type": "string"
+          },
+          "configuration": {
+            "$ref": "#/components/schemas/Account"
+          }
+        }
+      },
+      "DeleteAccountConfiguration": {
+        "description": "DeleteAccountConfiguration",
+        "type": "object",
+        "required": [
+          "action_type",
+          "id"
+        ],
+        "properties": {
+          "action_type": {
+            "$ref": "#/components/schemas/ActionType"
+          },
+          "id": {
+            "type": "string"
+          }
+        }
+      },
+      "RefreshAccountsConfiguration": {
+        "description": "RefreshAccountsConfiguration",
+        "type": "object",
+        "required": [
+          "action_type"
+        ],
+        "properties": {
+          "action_type": {
+            "$ref": "#/components/schemas/ActionType"
+          },
+          "account_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ActionType": {
+        "description": "ActionType",
+        "type": "string",
+        "enum": [
+          "automation_create",
+          "automation_edit",
+          "automation_stop",
+          "account_create",
+          "account_edit",
+          "account_delete",
+          "accounts_refresh"
+        ]
+      },
+      "UserAction": {
+        "description": "UserAction",
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "configuration": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CreateAutomationConfiguration"
+              },
+              {
+                "$ref": "#/components/schemas/EditAutomationConfiguration"
+              },
+              {
+                "$ref": "#/components/schemas/StopAutomationConfiguration"
+              },
+              {
+                "$ref": "#/components/schemas/CreateAccountConfiguration"
+              },
+              {
+                "$ref": "#/components/schemas/EditAccountConfiguration"
+              },
+              {
+                "$ref": "#/components/schemas/DeleteAccountConfiguration"
+              },
+              {
+                "$ref": "#/components/schemas/RefreshAccountsConfiguration"
+              }
+            ],
+            "discriminator": {
+              "propertyName": "action_type"
             }
           }
         }

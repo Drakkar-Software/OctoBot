@@ -63,6 +63,14 @@ DEFAULT_SYNC_CONFIG = SyncConfig(
                     writeRoles=["self"],
                     encryption="identity",
                     maxBodyBytes=constants.MAX_BODY_SIZE_PRIVATE,
+                ),
+                CollectionConfig(
+                    name="user-actions",
+                    storagePath="users/{identity}/actions",
+                    readRoles=["self"],
+                    writeRoles=["self"],
+                    encryption="identity",
+                    maxBodyBytes=constants.MAX_BODY_SIZE_PRIVATE,
                 )
             ]
         )

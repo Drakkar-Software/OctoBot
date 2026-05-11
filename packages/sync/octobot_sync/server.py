@@ -35,9 +35,10 @@ _get_data: Callable[[str], Awaitable[str | None]] | None = None
 _put_data: Callable[[str, str], Awaitable[None]] | None = None
 
 AUTOMATIONS_STATE_KEY = "automations_state"
-ACCOUNTS_STATE_KEY = "accounts_state"
+ACCOUNTS_STATE_KEY = "user-actions"
 
 async def get_data(key: str) -> str | None:
+    # called when client pulls
     import octobot_node.scheduler.api as scheduler_api
     if key == AUTOMATIONS_STATE_KEY:
         automations_state = await scheduler_api.get_automations_state(None)
@@ -52,6 +53,7 @@ async def get_data(key: str) -> str | None:
     return None
 
 async def put_data(key: str, body: str) -> None:
+    # called when client pushes
     _get_logger().error(
         f"_put_data was called with ({key}, {body}). This is unexpected and should not happen."
     )
