@@ -2,6 +2,7 @@ import octobot_commons.configuration.fields_utils as fields_utils
 import octobot_commons.profiles.profile_data as commons_profile_data
 import octobot_protocol.models as protocol_models
 import octobot_tentacles_manager.api as tentacles_manager_api
+import octobot_trading.enums as trading_enums
 import octobot_trading.errors as trading_errors
 import octobot_trading.exchanges as trading_exchanges
 import octobot_trading.exchanges.util.exchange_data as exchange_data_module
@@ -9,7 +10,18 @@ import octobot_trading.exchanges.util.exchange_data as exchange_data_module
 import octobot_node.errors as node_errors
 
 
-_DEFAULT_EXCHANGE_TYPE = "spot"
+_TRADING_TYPE_TO_EXCHANGE_TYPE: dict[protocol_models.TradingType, trading_enums.ExchangeTypes] = {
+    protocol_models.TradingType.SPOT: trading_enums.ExchangeTypes.SPOT,
+    protocol_models.TradingType.FUTURES: trading_enums.ExchangeTypes.FUTURE,
+    protocol_models.TradingType.OPTIONS: trading_enums.ExchangeTypes.OPTION,
+    protocol_models.TradingType.MARGIN: trading_enums.ExchangeTypes.MARGIN,
+}
+
+
+def _exchange_type_from_trading_type(
+    trading_type: protocol_models.TradingType,
+) -> str:
+    return _TRADING_TYPE_TO_EXCHANGE_TYPE[trading_type].value
 
 
 async def _request_exchange_to_ensure_authentication(exchange_manager) -> None:
@@ -52,7 +64,7 @@ def _encrypted_exchange_auth_details(
         api_key=fields_utils.encrypt(exchange_account.api_key).decode(),
         api_secret=fields_utils.encrypt(exchange_account.api_secret).decode(),
         api_password=api_password,
-        exchange_type=_DEFAULT_EXCHANGE_TYPE,
+        exchange_type=_exchange_type_from_trading_type(exchange_account.trading_type),
         sandboxed=False,
         exchange_account_id=exchange_account.remote_account_id,
     )
@@ -65,7 +77,7 @@ async def _check_exchange_account_state(
         exchanges=[
             commons_profile_data.ExchangeData(
                 internal_name=exchange_account.exchange,
-                exchange_type=_DEFAULT_EXCHANGE_TYPE,
+                exchange_type=_exchange_type_from_trading_type(exchange_account.trading_type),
                 exchange_account_id=exchange_account.remote_account_id,
                 sandboxed=False,
             )
@@ -74,7 +86,7 @@ async def _check_exchange_account_state(
     profile_data.trader.enabled = True
     exchange_data = exchange_data_module.exchange_data_factory(
         exchange_internal_name=exchange_account.exchange,
-        exchange_type=_DEFAULT_EXCHANGE_TYPE,
+        exchange_type=_exchange_type_from_trading_type(exchange_account.trading_type),
         sandboxed=False,
         auth_details=_encrypted_exchange_auth_details(exchange_account),
     )

@@ -83,6 +83,7 @@ from octobot_protocol.models.task_status import TaskStatus
 from octobot_protocol.models.time_frame import TimeFrame
 from octobot_protocol.models.trade import Trade
 from octobot_protocol.models.trade_summary import TradeSummary
+from octobot_protocol.models.trading_type import TradingType
 from octobot_protocol.models.trailing_profile import TrailingProfile
 from octobot_protocol.models.trailing_profile_type import TrailingProfileType
 from octobot_protocol.models.user_action import UserAction

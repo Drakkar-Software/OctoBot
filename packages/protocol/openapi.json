@@ -567,11 +567,22 @@
           "blockchain"
         ]
       },
+      "TradingType": {
+        "description": "TradingType",
+        "type": "string",
+        "enum": [
+          "spot",
+          "futures",
+          "options",
+          "margin"
+        ]
+      },
       "ExchangeAccount": {
         "description": "ExchangeAccount",
         "type": "object",
         "required": [
           "account_type",
+          "trading_type",
           "exchange",
           "remote_account_id",
           "api_key",
@@ -581,6 +592,9 @@
           "account_type": {
             "$ref": "#/components/schemas/AccountType",
             "description": "exchange"
+          },
+          "trading_type": {
+            "$ref": "#/components/schemas/TradingType"
           },
           "exchange": {
             "type": "string"

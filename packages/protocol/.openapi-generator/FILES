@@ -68,6 +68,7 @@ docs/TaskStatus.md
 docs/TimeFrame.md
 docs/Trade.md
 docs/TradeSummary.md
+docs/TradingType.md
 docs/TrailingProfile.md
 docs/TrailingProfileType.md
 docs/UserAction.md
@@ -151,6 +152,7 @@ octobot_protocol/models/task_status.py
 octobot_protocol/models/time_frame.py
 octobot_protocol/models/trade.py
 octobot_protocol/models/trade_summary.py
+octobot_protocol/models/trading_type.py
 octobot_protocol/models/trailing_profile.py
 octobot_protocol/models/trailing_profile_type.py
 octobot_protocol/models/user_action.py
@@ -232,6 +234,7 @@ test/test_task_status.py
 test/test_time_frame.py
 test/test_trade.py
 test/test_trade_summary.py
+test/test_trading_type.py
 test/test_trailing_profile.py
 test/test_trailing_profile_type.py
 test/test_user_action.py

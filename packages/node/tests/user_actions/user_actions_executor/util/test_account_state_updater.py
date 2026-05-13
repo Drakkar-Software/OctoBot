@@ -4,6 +4,7 @@ import pytest
 import types
 
 import octobot_protocol.models as protocol_models
+import octobot_trading.enums as trading_enums
 import octobot_trading.errors as trading_errors
 
 import octobot_node.user_actions.user_actions_executor.util.account_state_updater as account_state_updater_module
@@ -14,6 +15,7 @@ class TestAccountStateUpdaterCheckExchangeAccountState:
     async def test_encrypts_clear_credentials_before_exchange_manager_context(self):
         exchange_account = protocol_models.ExchangeAccount(
             account_type=protocol_models.AccountType.EXCHANGE,
+            trading_type=protocol_models.TradingType.SPOT,
             exchange="binanceus",
             remote_account_id="remote-1",
             api_key="plain-key",
@@ -72,6 +74,7 @@ class TestAccountStateUpdaterCheckExchangeAccountState:
     async def test_encrypts_passphrase_when_present(self):
         exchange_account = protocol_models.ExchangeAccount(
             account_type=protocol_models.AccountType.EXCHANGE,
+            trading_type=protocol_models.TradingType.SPOT,
             exchange="binanceus",
             remote_account_id="remote-1",
             api_key="plain-key",
@@ -124,6 +127,67 @@ class TestAccountStateUpdaterCheckExchangeAccountState:
         encrypt_mock.assert_any_call("plain-secret")
         encrypt_mock.assert_any_call("plain-pass")
         assert encrypt_mock.call_count == 3
+
+    @pytest.mark.asyncio
+    async def test_passes_futures_trading_type_as_future_exchange_type(self):
+        exchange_account = protocol_models.ExchangeAccount(
+            account_type=protocol_models.AccountType.EXCHANGE,
+            trading_type=protocol_models.TradingType.FUTURES,
+            exchange="binanceus",
+            remote_account_id="remote-1",
+            api_key="plain-key",
+            api_secret="plain-secret",
+        )
+        encrypt_mock = mock.Mock(
+            side_effect=lambda plain_text: ("enc:" + plain_text).encode(),
+        )
+        dummy_exchange_manager = types.SimpleNamespace(exchange=types.SimpleNamespace())
+        captured_exchange_data_args = {}
+
+        @contextlib.asynccontextmanager
+        async def fake_exchange_manager_from_exchange_data(*args, **kwargs):
+            captured_exchange_data_args["exchange_data"] = args[0]
+            captured_exchange_data_args["profile_data"] = args[1]
+            yield dummy_exchange_manager
+
+        with (
+            mock.patch.object(
+                account_state_updater_module.fields_utils,
+                "encrypt",
+                encrypt_mock,
+            ),
+            mock.patch.object(
+                account_state_updater_module.trading_exchanges,
+                "exchange_manager_from_exchange_data",
+                fake_exchange_manager_from_exchange_data,
+            ),
+            mock.patch.object(
+                account_state_updater_module.tentacles_manager_api,
+                "get_full_tentacles_setup_config",
+                return_value=mock.Mock(),
+            ),
+            mock.patch.object(
+                account_state_updater_module.tentacles_manager_api,
+                "set_tentacle_config_proxy",
+                new=mock.Mock(),
+            ),
+            mock.patch.object(
+                account_state_updater_module,
+                "_check_exchange_manager_state",
+                new=mock.AsyncMock(
+                    return_value=protocol_models.AccountState(
+                        status=protocol_models.AccountStatus.VALID,
+                        message=protocol_models.AccountStatusMessage.VALID,
+                    )
+                ),
+            ),
+        ):
+            await account_state_updater_module._check_exchange_account_state(exchange_account)
+        expected_exchange_type = trading_enums.ExchangeTypes.FUTURE.value
+        exchange_data = captured_exchange_data_args["exchange_data"]
+        assert exchange_data.auth_details.exchange_type == expected_exchange_type
+        profile_data = captured_exchange_data_args["profile_data"]
+        assert profile_data.exchanges[0].exchange_type == expected_exchange_type
 
 
 class TestAccountStateUpdaterCheckExchangeManagerState:

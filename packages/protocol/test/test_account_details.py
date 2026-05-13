@@ -36,6 +36,7 @@ class TestAccountDetails(unittest.TestCase):
         if include_optional:
             return AccountDetails(
                 account_type = 'generic',
+                trading_type = 'spot',
                 exchange = '',
                 remote_account_id = '',
                 api_key = '',
@@ -130,6 +131,7 @@ class TestAccountDetails(unittest.TestCase):
         else:
             return AccountDetails(
                 account_type = 'generic',
+                trading_type = 'spot',
                 exchange = '',
                 remote_account_id = '',
                 api_key = '',
