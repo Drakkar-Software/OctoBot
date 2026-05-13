@@ -22,15 +22,18 @@ import octobot_commons.authentication as authentication
 import octobot_commons.asyncio_tools as asyncio_tools
 import octobot_commons.json_util as json_util
 import octobot_flow.entities.community.user_authentication as community_user_authentication
+import octobot_protocol.models.market_making_configuration as market_making_configuration_model
 
 import tentacles.Trading.Mode.simple_market_making_trading_mode.api.models as models
 import tentacles.Trading.Mode.simple_market_making_trading_mode.api.core as core
+import tentacles.Trading.Mode.simple_market_making_trading_mode.errors as market_making_errors
 import tentacles.Services.Interfaces.node_api_interface.core.exchanges as exchanges_core
 
 
 @json_util.sanitized
 async def compute_market_making_volume(
-    exchange_configs: list[exchanges_core.ExchangeConfig], market_making_config: dict,
+    exchange_configs: list[exchanges_core.ExchangeConfig],
+    market_making_config: typing.Optional[market_making_configuration_model.MarketMakingConfiguration],
     auth: typing.Optional[community_user_authentication.UserAuthentication]
 ) -> dict:
     logger = logging.getLogger("compute_market_making_volume")
@@ -43,7 +46,8 @@ async def compute_market_making_volume(
 
 @json_util.sanitized
 async def get_price_and_predicted_order_book(
-    exchange_configs: list[exchanges_core.ExchangeConfig], market_making_config: dict,
+    exchange_configs: list[exchanges_core.ExchangeConfig],
+    market_making_config: typing.Optional[market_making_configuration_model.MarketMakingConfiguration],
     auth: typing.Optional[community_user_authentication.UserAuthentication]
 ) -> dict:
     logger = logging.getLogger("get_price_and_predicted_order_book")
@@ -97,13 +101,15 @@ async def dispatch_market_making_request(
                 for exchange in _exchanges
             ]
         if request_type == "market_making_volume":
+            market_making_configuration = _parse_market_making_configuration(data.get("config", {}).get("config"))
             json_resp = await compute_market_making_volume(
-                exchanges, data.get("config"), parsed_auth
+                exchanges, market_making_configuration, parsed_auth
             )
             status_code = 200
         if request_type == "predicted_order_book":
+            market_making_configuration = _parse_market_making_configuration(data.get("config", {}).get("config"))
             json_resp = await get_price_and_predicted_order_book(
-                exchanges, data.get("config"), parsed_auth
+                exchanges, market_making_configuration, parsed_auth
             )
             status_code = 200
         if request_type == "update_liquidity_score":
@@ -118,6 +124,10 @@ async def dispatch_market_making_request(
         json_resp = {"error": str(err)}
         logger.exception(err)
         status_code = 404
+    except market_making_errors.InvalidMarketMakingConfigurationError as err:
+        json_resp = {"error": str(err)}
+        logger.exception(err)
+        status_code = 400
     except authentication.AuthenticationError as err:
         json_resp = {"error": str(err)}
         logger.exception(err)
@@ -127,3 +137,18 @@ async def dispatch_market_making_request(
         logger.warning(f"Invalid exchange credentials: {err}")  # don't alert on this error, it can happen
         status_code = 401
     return json_resp, status_code
+
+
+def _parse_market_making_configuration(
+    market_making_configuration_payload: typing.Any
+) -> typing.Optional[market_making_configuration_model.MarketMakingConfiguration]:
+    if market_making_configuration_payload is None:
+        return None
+    try:
+        return market_making_configuration_model.MarketMakingConfiguration.model_validate(
+            market_making_configuration_payload
+        )
+    except ValueError as validation_error:
+        raise market_making_errors.InvalidMarketMakingConfigurationError(
+            f"Invalid market making config: {validation_error}"
+        ) from validation_error

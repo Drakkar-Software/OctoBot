@@ -240,10 +240,10 @@ def market_making_profile_data_factory(
             f"Market making requires an exchange account; got {type(details_instance).__name__}"
         )
 
-    symbols = [entry.symbol for entry in (market_making_configuration.symbol_configurations or [])]
+    symbols = [entry.trading_pair for entry in (market_making_configuration.pair_settings or [])]
     if not symbols:
         raise node_errors.InvalidAutomationConfigurationError(
-            "MarketMakingConfiguration.symbol_configurations must not be empty."
+            "MarketMakingConfiguration.pair_settings must not be empty."
         )
 
     reference_market = _infer_reference_unit(details_instance.assets or [])

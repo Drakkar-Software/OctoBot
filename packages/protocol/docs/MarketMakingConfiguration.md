@@ -7,7 +7,7 @@ Per-symbol market making parameters.
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **configuration_type** | [**ActionConfigurationType**](ActionConfigurationType.md) | market_making | 
-**symbol_configurations** | [**List[MarketMakingSymbolConfiguration]**](MarketMakingSymbolConfiguration.md) |  | 
+**pair_settings** | [**List[MarketMakingSymbolConfiguration]**](MarketMakingSymbolConfiguration.md) |  | 
 
 ## Example
 

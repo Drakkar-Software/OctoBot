@@ -368,9 +368,10 @@ class TestCreateAutomationExecutor:
                 configuration=protocol_models.AutomationConfigurationConfiguration(
                     protocol_models.MarketMakingConfiguration(
                         configuration_type=protocol_models.ActionConfigurationType.MARKET_MAKING,
-                        symbol_configurations=[
+                        pair_settings=[
                             protocol_models.MarketMakingSymbolConfiguration(
-                                symbol="BTC/USDT",
+                                trading_pair="BTC/USDT",
+                                exchange="binanceus",
                                 reference_price=[
                                     protocol_models.MarketMakingReferencePair(
                                         exchange="binanceus",
@@ -423,9 +424,9 @@ class TestCreateAutomationExecutor:
         assert main_action.dependencies[0].action_id == "action_init"
         assert main_action.dsl_script == expected_dsl
         assert expected_profile_dict["crypto_currencies"][0]["trading_pairs"] == ["BTC/USDT"]
-        assert expected_profile_dict["tentacles"][0]["config"]["symbol_configurations"][0]["symbol"] == "BTC/USDT"
-        assert expected_profile_dict["tentacles"][0]["config"]["symbol_configurations"][0]["min_spread"] == 0.5
-        assert expected_profile_dict["tentacles"][0]["config"]["symbol_configurations"][0]["max_spread"] == 1.0
+        assert expected_profile_dict["tentacles"][0]["config"]["pair_settings"][0]["trading_pair"] == "BTC/USDT"
+        assert expected_profile_dict["tentacles"][0]["config"]["pair_settings"][0]["min_spread"] == 0.5
+        assert expected_profile_dict["tentacles"][0]["config"]["pair_settings"][0]["max_spread"] == 1.0
 
     def test_unsupported_types_raise_dedicated_errors(self):
         create_payload = protocol_models.CreateAutomationConfiguration(

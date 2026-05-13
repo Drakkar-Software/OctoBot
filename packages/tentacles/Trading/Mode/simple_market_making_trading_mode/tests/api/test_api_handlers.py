@@ -13,11 +13,11 @@ import pytest
 
 import octobot_commons.symbols.symbol_util as commons_symbols
 import octobot_commons.asyncio_tools
+import octobot_protocol.models.market_making_configuration as market_making_configuration_model
 
 import tentacles.Trading.Mode.simple_market_making_trading_mode.api.api_handlers as api_handlers
 import tentacles.Trading.Mode.simple_market_making_trading_mode.api.constants as api_constants
 import tentacles.Trading.Mode.simple_market_making_trading_mode.api.models as models
-import tentacles.Trading.Mode.simple_market_making_trading_mode.simple_market_making_trading as simple_market_making_trading
 import tentacles.Services.Interfaces.node_api_interface.core.exchanges as exchanges_core
 
 
@@ -50,46 +50,40 @@ def _normalized_exchange_configs() -> list:
     ]
 
 
-def _minimal_market_making_tentacles_dict() -> dict:
-    symbol = LIQUID_TEST_SYMBOL
-    exchange = EXCHANGE_INTERNAL_NAME
-    return {
-        "name": simple_market_making_trading.SimpleMarketMakingTradingMode.get_name(),
-        "config": {
+def _minimal_market_making_configuration() -> market_making_configuration_model.MarketMakingConfiguration:
+    return market_making_configuration_model.MarketMakingConfiguration.model_validate(
+        {
+            "configuration_type": "market_making",
             "pair_settings": [
                 {
-                    "asks_count": 5,
-                    "auto_adapt_config": True,
+                    "trading_pair": LIQUID_TEST_SYMBOL,
+                    "exchange": EXCHANGE_INTERNAL_NAME,
+                    "reference_price": [
+                        {
+                            "exchange": EXCHANGE_INTERNAL_NAME,
+                            "formula": "",
+                            "pair": LIQUID_TEST_SYMBOL,
+                            "weight": 1,
+                        }
+                    ],
+                    "min_spread": 5,
+                    "max_spread": 20,
+                    "order_book_depth": {
+                        "cumulated_volume_percent": 6,
+                        "percent_daily_trading_volume": 1,
+                    },
                     "bids_count": 5,
-                    "exchange": exchange,
+                    "asks_count": 5,
+                    "orders_distribution": "linear",
                     "funds_distribution": "flat",
                     "max_base_budget": 0,
                     "max_quote_budget": 0,
-                    "max_spread": 20,
                     "min_base_budget": 100000,
                     "min_quote_budget": 1000,
-                    "min_spread": 5,
-                    "order_book_depth": {
-                        "cumulated_volume_percent": 6,
-                        "percent_daily_trading_volume": 1
-                    },
-                    "orders_distribution": "linear",
-                    "reference_price": [
-                        {
-                            "exchange": exchange,
-                            "formula": "",
-                            "pair": symbol,
-                            "weight": 1
-                        }
-                    ],
-                    "refresh_period": 0,
-                    "tolerated_above_depth_ratio": 1.5,
-                    "tolerated_bellow_depth_ratio": 0.8,
-                    "trading_pair": symbol
                 }
-            ]
+            ],
         }
-    }
+    )
 
 
 def _run_background_fingerprint_inline_for_test(
@@ -133,7 +127,7 @@ class TestComputeMarketMakingVolume:
     async def test_volume_by_symbol_structure(self):
         result = await api_handlers.compute_market_making_volume(
             _normalized_exchange_configs(),
-            _minimal_market_making_tentacles_dict(),
+            _minimal_market_making_configuration(),
             None,
         )
         assert EXCHANGE_INTERNAL_NAME in result
@@ -158,14 +152,14 @@ class TestComputeMarketMakingVolume:
                 _normalized_exchange_configs(), None, None
             )
 
-    async def test_dispatch_market_making_volume_empty_config_returns_404(self):
+    async def test_dispatch_market_making_volume_empty_config_returns_400(self):
         data = {
             "type": "market_making_volume",
             "exchanges": [_raw_exchange_for_dispatch()],
-            "config": {},
+            "config": {"config": {}},
         }
         body, status = await api_handlers.dispatch_market_making_request(data)
-        assert status == 404
+        assert status == 400
         assert body["error"]
 
 
@@ -173,7 +167,7 @@ class TestGetPriceAndPredictedOrderBook:
     async def test_predicted_order_book_has_price_bids_asks(self):
         result = await api_handlers.get_price_and_predicted_order_book(
             _normalized_exchange_configs(),
-            _minimal_market_making_tentacles_dict(),
+            _minimal_market_making_configuration(),
             None,
         )
         assert EXCHANGE_INTERNAL_NAME in result
@@ -197,14 +191,14 @@ class TestGetPriceAndPredictedOrderBook:
                 _normalized_exchange_configs(), None, None
             )
 
-    async def test_dispatch_predicted_order_book_empty_config_returns_404(self):
+    async def test_dispatch_predicted_order_book_empty_config_returns_400(self):
         data = {
             "type": "predicted_order_book",
             "exchanges": [_raw_exchange_for_dispatch()],
-            "config": {},
+            "config": {"config": {}},
         }
         body, status = await api_handlers.dispatch_market_making_request(data)
-        assert status == 404
+        assert status == 400
         assert body["error"]
 
 
@@ -275,3 +269,32 @@ class TestDispatchMarketMakingRequest:
         body, status = await api_handlers.dispatch_market_making_request(data)
         assert status == 400
         assert body == "unknown request_type: None"
+
+    async def test_market_making_volume_invalid_config_returns_400(self):
+        invalid_market_making_payload = {
+            "configuration_type": "market_making",
+            "pair_settings": [
+                {
+                    "trading_pair": LIQUID_TEST_SYMBOL,
+                    "exchange": EXCHANGE_INTERNAL_NAME,
+                    # required "reference_price" key intentionally missing
+                    "min_spread": 0.5,
+                    "max_spread": 1.0,
+                    "bids_count": 5,
+                    "asks_count": 5,
+                    "orders_distribution": "linear",
+                    "funds_distribution": "flat",
+                }
+            ],
+        }
+        response_body, response_status = await api_handlers.dispatch_market_making_request(
+            {
+                "type": "market_making_volume",
+                "exchanges": [_raw_exchange_for_dispatch()],
+                "config": {"config": invalid_market_making_payload},
+            }
+        )
+        assert response_status == 400
+        assert isinstance(response_body, dict)
+        assert "error" in response_body
+        assert "Invalid market making config" in response_body["error"]

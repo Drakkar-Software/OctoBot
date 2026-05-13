@@ -19,6 +19,7 @@ import typing
 import octobot_commons.authentication as authentication
 import octobot_commons.asyncio_tools as asyncio_tools
 import octobot_flow.entities.community.user_authentication as community_user_authentication
+import octobot_protocol.models.market_making_configuration as market_making_configuration_model
 
 import tentacles.Services.Interfaces.node_api_interface.core.exchanges as exchanges_core
 import tentacles.Trading.Mode.simple_market_making_trading_mode.api.core as market_making_core
@@ -39,12 +40,43 @@ def _expected_profile_exchange_args(exchange_dicts: list[dict]) -> list[exchange
 _MARKET_MAKING_ROOT = "/api/v1/tentacles/market-making/"
 
 
+def _minimal_market_making_config_payload() -> dict:
+    return {
+        "configuration_type": "market_making",
+        "pair_settings": [
+            {
+                "trading_pair": "BTC/USDT",
+                "exchange": "binance",
+                "reference_price": [
+                    {
+                        "exchange": "binance",
+                        "pair": "BTC/USDT",
+                        "weight": 1,
+                        "formula": "",
+                    }
+                ],
+                "min_spread": 0.5,
+                "max_spread": 1.0,
+                "bids_count": 5,
+                "asks_count": 5,
+                "orders_distribution": "linear",
+                "funds_distribution": "flat",
+            }
+        ],
+    }
+
+
 @pytest.mark.parametrize("error,status_code", [
     (ValueError("test"), 404),
     (authentication.AuthenticationError("test"), 401),
 ])
 def test_market_making_api_root(client, error: Exception, status_code: int):
-    market_making_config = {"spread": 0.01, "volume": 1000}
+    market_making_config = _minimal_market_making_config_payload()
+    expected_market_making_configuration = (
+        market_making_configuration_model.MarketMakingConfiguration.model_validate(
+            market_making_config
+        )
+    )
     with mocked_common_methods() as get_market_making_profile_data_mock:
         with mock.patch.object(
             market_making_core, "get_market_making_volume", mock.AsyncMock(side_effect=error)
@@ -54,14 +86,14 @@ def test_market_making_api_root(client, error: Exception, status_code: int):
                 json={
                     "type": "market_making_volume",
                     "exchanges": [{"name": "binance", "exchange_type": "spot", "exchange_account_id": "1234567890"}],
-                    "config": market_making_config,
+                    "config": {"config": market_making_config},
                 },
             )
             get_market_making_volume_mock.assert_awaited_once()
             get_market_making_profile_data_mock.assert_called_once()
             get_market_making_profile_data_mock.assert_called_with(
                 mock.ANY,
-                market_making_config,
+                expected_market_making_configuration,
                 user_auth=None,
             )
             assert response.status_code == status_code
@@ -76,14 +108,14 @@ def test_market_making_api_root(client, error: Exception, status_code: int):
                 json={
                     "type": "market_making_volume",
                     "exchanges": [{"name": "binance_futures", "exchange_account_id": "1234567890"}],
-                    "config": market_making_config,
+                    "config": {"config": market_making_config},
                 },
             )
             get_market_making_volume_mock.assert_awaited_once()
             get_market_making_profile_data_mock.assert_called_once()
             get_market_making_profile_data_mock.assert_called_with(
                 mock.ANY,
-                market_making_config,
+                expected_market_making_configuration,
                 user_auth=None,
             )
             assert response.status_code == status_code
@@ -131,9 +163,14 @@ def test_compute_market_making_volume(
             mock.AsyncMock(return_value={"BTC/USDT": 1000.5, "ETH/USDC": 500.25}),
         ) as get_market_making_volume_mock:
             exchange_configs = [{"name": "binance", "exchange_type": "spot", "sandboxed": False, "url": None}]
-            market_making_config = {"spread": 0.01, "volume": 1000}
+            market_making_config = _minimal_market_making_config_payload()
+            expected_market_making_configuration = (
+                market_making_configuration_model.MarketMakingConfiguration.model_validate(
+                    market_making_config
+                )
+            )
             data = {
-                "type": "market_making_volume", "exchanges": exchange_configs, "config": market_making_config
+                "type": "market_making_volume", "exchanges": exchange_configs, "config": {"config": market_making_config}
             }
             if auth_body:
                 data["auth"] = auth_body
@@ -143,7 +180,7 @@ def test_compute_market_making_volume(
             )
             get_market_making_profile_data_mock.assert_called_once_with(
                 _expected_profile_exchange_args(exchange_configs),
-                market_making_config,
+                expected_market_making_configuration,
                 user_auth=user_auth
             )
             get_market_making_volume_mock.assert_awaited_once()
@@ -182,17 +219,22 @@ def test_get_price_and_predicted_order_book(
             mock.AsyncMock(return_value=expected_result),
         ) as get_price_and_predicted_order_book_mock:
             exchange_configs = [{"name": "binance", "exchange_credential_id": "123-creds", "exchange_type": "spot", "sandboxed": False, "url": None}]
-            market_making_config = {"spread": 0.01, "depth": 5}
+            market_making_config = _minimal_market_making_config_payload()
+            expected_market_making_configuration = (
+                market_making_configuration_model.MarketMakingConfiguration.model_validate(
+                    market_making_config
+                )
+            )
             response = client.post(
                 _MARKET_MAKING_ROOT,
                 json={
-                    "type": "predicted_order_book", "exchanges": exchange_configs, "config": market_making_config,
+                    "type": "predicted_order_book", "exchanges": exchange_configs, "config": {"config": market_making_config},
                     "auth": auth_body
                 },
             )
             get_market_making_profile_data_mock.assert_called_once_with(
                 _expected_profile_exchange_args(exchange_configs),
-                market_making_config,
+                expected_market_making_configuration,
                 user_auth=user_auth
             )
             get_price_and_predicted_order_book_mock.assert_awaited_once()

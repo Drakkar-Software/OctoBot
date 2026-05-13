@@ -6,7 +6,7 @@ MarketMakingSymbolConfiguration
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**symbol** | **str** |  | 
+**trading_pair** | **str** |  | 
 **reference_price** | [**List[MarketMakingReferencePair]**](MarketMakingReferencePair.md) |  | 
 **min_spread** | **float** | Minimum spread as a percentage (e.g. 0.5 for 0.5%). | 
 **max_spread** | **float** | Maximum spread as a percentage. | 
@@ -17,6 +17,7 @@ Name | Type | Description | Notes
 **asks_count** | **float** |  | 
 **orders_distribution** | [**MarketMakingOrdersDistribution**](MarketMakingOrdersDistribution.md) |  | 
 **funds_distribution** | [**MarketMakingFundsDistribution**](MarketMakingFundsDistribution.md) |  | 
+**exchange** | **str** |  | 
 **max_base_budget** | **float** | 0 means unlimited when supported. | [optional] 
 **max_quote_budget** | **float** | 0 means unlimited when supported. | [optional] 
 **min_base_budget** | **float** |  | [optional] 

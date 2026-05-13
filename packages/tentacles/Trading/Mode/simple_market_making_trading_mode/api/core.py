@@ -22,6 +22,7 @@ import octobot_flow.entities
 import octobot.community.supabase_backend.enums as community_enums
 
 import octobot_tentacles_manager.api
+import octobot_protocol.models.market_making_configuration as market_making_configuration_model
 
 import tentacles.Services.Interfaces.node_api_interface.core.exchanges as exchanges_core
 import tentacles.Trading.Mode.simple_market_making_trading_mode.simple_market_making_trading as \
@@ -37,7 +38,7 @@ import tentacles.Trading.Mode.simple_market_making_trading_mode.api.constants as
 
 async def get_market_making_profile_data(
     exchange_configs: list[exchanges_core.ExchangeConfig], 
-    market_making_config: typing.Optional[dict], 
+    market_making_config: typing.Optional[market_making_configuration_model.MarketMakingConfiguration],
     user_auth: typing.Optional[octobot_flow.entities.UserAuthentication]
 ) -> octobot_commons.profiles.ProfileData:
     if market_making_config:
@@ -362,7 +363,9 @@ async def get_market_making_exchange_only_profile_data(
 
 
 async def _get_market_making_profile_data(
-    exchange_configs: list[exchanges_core.ExchangeConfig], market_making_config: dict, auth: typing.Optional[octobot_flow.entities.UserAuthentication]
+    exchange_configs: list[exchanges_core.ExchangeConfig],
+    market_making_config: market_making_configuration_model.MarketMakingConfiguration,
+    auth: typing.Optional[octobot_flow.entities.UserAuthentication]
 ) -> octobot_commons.profiles.ProfileData:
     if not market_making_config:
         raise ValueError(f"{market_making_config} is empty")
@@ -371,11 +374,35 @@ async def _get_market_making_profile_data(
         [],
         octobot_commons.profiles.profile_data.TradingData("")
     )
-    tentacles_data = octobot_commons.profiles.profile_data.TentaclesData.from_dict(market_making_config)
+    translated_market_making_config = _to_simple_market_making_tentacle_config(
+        market_making_config
+    )
+    tentacles_data = octobot_commons.profiles.profile_data.TentaclesData.from_dict(
+        {
+            "name": simple_market_making_trading.SimpleMarketMakingTradingMode.get_name(),
+            "config": translated_market_making_config,
+        }
+    )
     await _apply_market_making_translator(
         profile_data, tentacles_data, exchange_configs, auth
     )
     return profile_data
+
+
+def _to_simple_market_making_tentacle_config(
+    market_making_configuration: market_making_configuration_model.MarketMakingConfiguration,
+) -> dict:
+    # Protocol config uses symbol_configurations/symbol, while the existing
+    # SimpleMarketMakingProfileDataAdapter expects pair_settings/trading_pair.
+    return {
+        simple_market_making_trading.SimpleMarketMakingTradingMode.CONFIG_PAIR_SETTINGS: [
+            symbol_configuration.model_dump(
+                by_alias=True,
+                exclude_none=True,
+                mode="json",
+            ) for symbol_configuration in market_making_configuration.pair_settings
+        ]
+    }
 
 
 async def _apply_market_making_translator(

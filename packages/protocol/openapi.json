@@ -1069,17 +1069,18 @@
         "description": "MarketMakingSymbolConfiguration",
         "type": "object",
         "required": [
-          "symbol",
+          "trading_pair",
           "reference_price",
           "min_spread",
           "max_spread",
           "bids_count",
           "asks_count",
           "orders_distribution",
-          "funds_distribution"
+          "funds_distribution",
+          "exchange"
         ],
         "properties": {
-          "symbol": {
+          "trading_pair": {
             "type": "string"
           },
           "reference_price": {
@@ -1122,6 +1123,9 @@
           "funds_distribution": {
             "$ref": "#/components/schemas/MarketMakingFundsDistribution"
           },
+          "exchange": {
+            "type": "string"
+          },
           "max_base_budget": {
             "type": "number",
             "minimum": 0,
@@ -1150,14 +1154,14 @@
         "type": "object",
         "required": [
           "configuration_type",
-          "symbol_configurations"
+          "pair_settings"
         ],
         "properties": {
           "configuration_type": {
             "$ref": "#/components/schemas/ActionConfigurationType",
             "description": "market_making"
           },
-          "symbol_configurations": {
+          "pair_settings": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/MarketMakingSymbolConfiguration"

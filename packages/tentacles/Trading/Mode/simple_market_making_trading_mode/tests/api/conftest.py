@@ -29,6 +29,7 @@ from fastapi.testclient import TestClient
 from starlette.middleware.cors import CORSMiddleware
 
 import octobot_commons.profiles.profile_data as profile_data_import
+import octobot_protocol.models.market_making_configuration as market_making_configuration_model
 
 import tentacles.Services.Interfaces.node_api_interface as node_api_interface_module
 import tentacles.Trading.Mode.simple_market_making_trading_mode.api.core as market_making_core
@@ -68,7 +69,7 @@ def get_all_routes(fastapi_app: FastAPI) -> list[str]:
 def mocked_common_methods():
     async def _profile_data_factory(
         exchange_configs: list,
-        market_making_config: typing.Optional[dict],
+        market_making_config: typing.Optional[market_making_configuration_model.MarketMakingConfiguration],
         user_auth=None,
         **_kwargs,
     ):

@@ -35,7 +35,7 @@ class TestMarketMakingSymbolConfiguration(unittest.TestCase):
         model = MarketMakingSymbolConfiguration()
         if include_optional:
             return MarketMakingSymbolConfiguration(
-                symbol = '',
+                trading_pair = '',
                 reference_price = [
                     octobot_protocol.models.market_making_reference_pair.MarketMakingReferencePair(
                         exchange = '', 
@@ -64,6 +64,7 @@ class TestMarketMakingSymbolConfiguration(unittest.TestCase):
                 asks_count = 1,
                 orders_distribution = 'linear',
                 funds_distribution = 'flat',
+                exchange = '',
                 max_base_budget = 0,
                 max_quote_budget = 0,
                 min_base_budget = 0,
@@ -79,7 +80,7 @@ class TestMarketMakingSymbolConfiguration(unittest.TestCase):
             )
         else:
             return MarketMakingSymbolConfiguration(
-                symbol = '',
+                trading_pair = '',
                 reference_price = [
                     octobot_protocol.models.market_making_reference_pair.MarketMakingReferencePair(
                         exchange = '', 
@@ -94,6 +95,7 @@ class TestMarketMakingSymbolConfiguration(unittest.TestCase):
                 asks_count = 1,
                 orders_distribution = 'linear',
                 funds_distribution = 'flat',
+                exchange = '',
         )
         """
 

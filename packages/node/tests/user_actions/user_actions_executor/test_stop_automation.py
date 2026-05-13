@@ -209,6 +209,6 @@ class TestStopAutomationActionExecutor:
             expected_status=protocol_models.UserActionStatus.FAILED,
             result_channel="automation",
             expect_error_details=True,
-            expected_error_message=protocol_models.AutomationActionResultErrorMessage.INVALID_CONFIGURATION,
+            expected_error_message=protocol_models.AutomationActionResultErrorMessage.AUTOMATION_NOT_FOUND,
             wallet_address=_TEST_WALLET_ADDRESS,
         )

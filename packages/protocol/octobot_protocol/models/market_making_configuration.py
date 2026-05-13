@@ -30,8 +30,8 @@ class MarketMakingConfiguration(BaseModel):
     Per-symbol market making parameters.
     """ # noqa: E501
     configuration_type: ActionConfigurationType = Field(description="market_making")
-    symbol_configurations: List[MarketMakingSymbolConfiguration]
-    __properties: ClassVar[List[str]] = ["configuration_type", "symbol_configurations"]
+    pair_settings: List[MarketMakingSymbolConfiguration]
+    __properties: ClassVar[List[str]] = ["configuration_type", "pair_settings"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -72,13 +72,13 @@ class MarketMakingConfiguration(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # override the default output from pydantic by calling `to_dict()` of each item in symbol_configurations (list)
+        # override the default output from pydantic by calling `to_dict()` of each item in pair_settings (list)
         _items = []
-        if self.symbol_configurations:
-            for _item_symbol_configurations in self.symbol_configurations:
-                if _item_symbol_configurations:
-                    _items.append(_item_symbol_configurations.to_dict())
-            _dict['symbol_configurations'] = _items
+        if self.pair_settings:
+            for _item_pair_settings in self.pair_settings:
+                if _item_pair_settings:
+                    _items.append(_item_pair_settings.to_dict())
+            _dict['pair_settings'] = _items
         return _dict
 
     @classmethod
@@ -92,7 +92,7 @@ class MarketMakingConfiguration(BaseModel):
 
         _obj = cls.model_validate({
             "configuration_type": obj.get("configuration_type"),
-            "symbol_configurations": [MarketMakingSymbolConfiguration.from_dict(_item) for _item in obj["symbol_configurations"]] if obj.get("symbol_configurations") is not None else None
+            "pair_settings": [MarketMakingSymbolConfiguration.from_dict(_item) for _item in obj["pair_settings"]] if obj.get("pair_settings") is not None else None
         })
         return _obj
 

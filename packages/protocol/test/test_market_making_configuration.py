@@ -36,9 +36,9 @@ class TestMarketMakingConfiguration(unittest.TestCase):
         if include_optional:
             return MarketMakingConfiguration(
                 configuration_type = 'market_making',
-                symbol_configurations = [
+                pair_settings = [
                     octobot_protocol.models.market_making_symbol_configuration.MarketMakingSymbolConfiguration(
-                        symbol = '', 
+                        trading_pair = '', 
                         reference_price = [
                             octobot_protocol.models.market_making_reference_pair.MarketMakingReferencePair(
                                 exchange = '', 
@@ -67,6 +67,7 @@ class TestMarketMakingConfiguration(unittest.TestCase):
                         asks_count = 1, 
                         orders_distribution = 'linear', 
                         funds_distribution = 'flat', 
+                        exchange = '', 
                         max_base_budget = 0, 
                         max_quote_budget = 0, 
                         min_base_budget = 0, 
@@ -84,9 +85,9 @@ class TestMarketMakingConfiguration(unittest.TestCase):
         else:
             return MarketMakingConfiguration(
                 configuration_type = 'market_making',
-                symbol_configurations = [
+                pair_settings = [
                     octobot_protocol.models.market_making_symbol_configuration.MarketMakingSymbolConfiguration(
-                        symbol = '', 
+                        trading_pair = '', 
                         reference_price = [
                             octobot_protocol.models.market_making_reference_pair.MarketMakingReferencePair(
                                 exchange = '', 
@@ -115,6 +116,7 @@ class TestMarketMakingConfiguration(unittest.TestCase):
                         asks_count = 1, 
                         orders_distribution = 'linear', 
                         funds_distribution = 'flat', 
+                        exchange = '', 
                         max_base_budget = 0, 
                         max_quote_budget = 0, 
                         min_base_budget = 0, 

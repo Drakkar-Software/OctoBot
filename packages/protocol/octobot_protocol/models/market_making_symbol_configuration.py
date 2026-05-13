@@ -35,7 +35,7 @@ class MarketMakingSymbolConfiguration(BaseModel):
     """
     MarketMakingSymbolConfiguration
     """ # noqa: E501
-    symbol: StrictStr
+    trading_pair: StrictStr
     reference_price: Annotated[List[MarketMakingReferencePair], Field(min_length=1)]
     min_spread: Union[Annotated[float, Field(strict=True, gt=0)], Annotated[int, Field(strict=True, gt=0)]] = Field(description="Minimum spread as a percentage (e.g. 0.5 for 0.5%).")
     max_spread: Union[Annotated[float, Field(strict=True, gt=0)], Annotated[int, Field(strict=True, gt=0)]] = Field(description="Maximum spread as a percentage.")
@@ -46,12 +46,13 @@ class MarketMakingSymbolConfiguration(BaseModel):
     asks_count: Union[Annotated[float, Field(strict=True, ge=1)], Annotated[int, Field(strict=True, ge=1)]]
     orders_distribution: MarketMakingOrdersDistribution
     funds_distribution: MarketMakingFundsDistribution
+    exchange: StrictStr
     max_base_budget: Optional[Union[Annotated[float, Field(strict=True, ge=0)], Annotated[int, Field(strict=True, ge=0)]]] = Field(default=None, description="0 means unlimited when supported.")
     max_quote_budget: Optional[Union[Annotated[float, Field(strict=True, ge=0)], Annotated[int, Field(strict=True, ge=0)]]] = Field(default=None, description="0 means unlimited when supported.")
     min_base_budget: Optional[Union[Annotated[float, Field(strict=True, ge=0)], Annotated[int, Field(strict=True, ge=0)]]] = None
     min_quote_budget: Optional[Union[Annotated[float, Field(strict=True, ge=0)], Annotated[int, Field(strict=True, ge=0)]]] = None
     hedging_engine: Optional[MarketMakingHedgingEngine] = None
-    __properties: ClassVar[List[str]] = ["symbol", "reference_price", "min_spread", "max_spread", "order_book_depth", "scheduled_volume", "stop_conditions", "bids_count", "asks_count", "orders_distribution", "funds_distribution", "max_base_budget", "max_quote_budget", "min_base_budget", "min_quote_budget", "hedging_engine"]
+    __properties: ClassVar[List[str]] = ["trading_pair", "reference_price", "min_spread", "max_spread", "order_book_depth", "scheduled_volume", "stop_conditions", "bids_count", "asks_count", "orders_distribution", "funds_distribution", "exchange", "max_base_budget", "max_quote_budget", "min_base_budget", "min_quote_budget", "hedging_engine"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -123,7 +124,7 @@ class MarketMakingSymbolConfiguration(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "symbol": obj.get("symbol"),
+            "trading_pair": obj.get("trading_pair"),
             "reference_price": [MarketMakingReferencePair.from_dict(_item) for _item in obj["reference_price"]] if obj.get("reference_price") is not None else None,
             "min_spread": obj.get("min_spread"),
             "max_spread": obj.get("max_spread"),
@@ -134,6 +135,7 @@ class MarketMakingSymbolConfiguration(BaseModel):
             "asks_count": obj.get("asks_count"),
             "orders_distribution": obj.get("orders_distribution"),
             "funds_distribution": obj.get("funds_distribution"),
+            "exchange": obj.get("exchange"),
             "max_base_budget": obj.get("max_base_budget"),
             "max_quote_budget": obj.get("max_quote_budget"),
             "min_base_budget": obj.get("min_base_budget"),
