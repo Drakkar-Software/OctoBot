@@ -586,9 +586,9 @@ class TestEmitAndCopyGridAutomationSignals:
                                 side_effect=patched_fetch_ohlcv,
                             ),
                             mock.patch(
-                                "octobot.community.account_backend.AccountProvider.instance",
+                                "octobot.community.collection_providers.AccountProvider.instance",
                                 return_value=mock.Mock(
-                                    get_account=mock.Mock(
+                                    get_item=mock.Mock(
                                         side_effect=lambda _wallet, account_id: _account_for_id(
                                             account_id=account_id,
                                             master_account_id=master_account_id,

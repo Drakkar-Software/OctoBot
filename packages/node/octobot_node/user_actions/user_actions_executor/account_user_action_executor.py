@@ -16,7 +16,7 @@
 
 import datetime
 
-import octobot.community.account_backend.errors as account_backend_errors
+import octobot.community.collection_backend.errors as collection_errors
 import octobot_protocol.models as protocol_models
 
 import octobot_node.errors as node_errors
@@ -48,7 +48,7 @@ class AccountUserActionExecutor(user_actions_executor_base.UserActionExecutor):
         )
 
     def _get_error_message(self, exc: BaseException) -> protocol_models.AccountActionResultErrorMessage:
-        if isinstance(exc, (node_errors.AccountNotFoundError, account_backend_errors.AccountNotFoundError)):
+        if isinstance(exc, (node_errors.AccountNotFoundError, collection_errors.ItemNotFoundError)):
             return protocol_models.AccountActionResultErrorMessage.ACCOUNT_NOT_FOUND
         if isinstance(
             exc,
@@ -56,7 +56,7 @@ class AccountUserActionExecutor(user_actions_executor_base.UserActionExecutor):
                 node_errors.InvalidUserActionPayloadError,
                 node_errors.AccountContextMissingError,
                 node_errors.UnsupportedUserActionConfigurationTypeError,
-                account_backend_errors.DuplicateAccountError,
+                collection_errors.DuplicateItemError,
             ),
         ):
             return protocol_models.AccountActionResultErrorMessage.INVALID_CONFIGURATION

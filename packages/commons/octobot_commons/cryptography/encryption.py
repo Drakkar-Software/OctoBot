@@ -21,6 +21,7 @@ from typing import Optional, Tuple
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.backends import default_backend
 
@@ -246,6 +247,31 @@ def aes_gcm_encrypt(
     ciphertext_with_tag = aesgcm.encrypt(iv, plaintext, associated_data)
 
     return ciphertext_with_tag
+
+
+def hkdf_derive_key(
+    ikm: bytes, salt: bytes, info: bytes, key_size: int = 32
+) -> bytes:
+    """Derive a cryptographic key using HKDF (HMAC-based Key Derivation Function).
+
+    :param ikm: Input key material.
+    :type ikm: bytes
+    :param salt: Salt for domain separation.
+    :type salt: bytes
+    :param info: Context/application-specific info string.
+    :type info: bytes
+    :param key_size: Size of the derived key in bytes. Defaults to 32 (256 bits for AES-256).
+    :type key_size: int
+    :return: The derived key as bytes.
+    :rtype: bytes
+    """
+    hkdf = HKDF(
+        algorithm=hashes.SHA256(),
+        length=key_size,
+        salt=salt,
+        info=info,
+    )
+    return hkdf.derive(ikm)
 
 
 def pbkdf2_derive_key_from_pin(

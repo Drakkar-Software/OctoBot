@@ -53,11 +53,11 @@ class TestRefreshAccountsActionExecutorExecute:
         )
         user_action = protocol_models.UserAction(id="ua-refresh-all", configuration=account_executor_test_utils.wrap_configuration(refresh_inner))
         provider_mock = mock.Mock()
-        provider_mock.list_accounts.return_value = [first_account, second_account]
-        provider_mock.get_account.side_effect = [first_account, second_account]
+        provider_mock.list_items.return_value = [first_account, second_account]
+        provider_mock.get_item.side_effect = [first_account, second_account]
         with (
             mock.patch(
-                "octobot.community.account_backend.AccountProvider.instance",
+                "octobot.community.collection_providers.AccountProvider.instance",
                 return_value=provider_mock,
             ),
             mock.patch.object(
@@ -68,9 +68,9 @@ class TestRefreshAccountsActionExecutorExecute:
         ):
             executor = refresh_accounts_executor.RefreshAccountsActionExecutor(account_executor_test_utils.WALLET_ADDRESS)
             await executor.execute(user_action)
-        provider_mock.list_accounts.assert_called_once_with(account_executor_test_utils.WALLET_ADDRESS)
-        assert provider_mock.get_account.call_count == 2
-        provider_mock.update_account.assert_has_calls(
+        provider_mock.list_items.assert_called_once_with(account_executor_test_utils.WALLET_ADDRESS)
+        assert provider_mock.get_item.call_count == 2
+        provider_mock.update_item.assert_has_calls(
             [
                 mock.call(account_executor_test_utils.WALLET_ADDRESS, checked_first_account),
                 mock.call(account_executor_test_utils.WALLET_ADDRESS, checked_second_account),
@@ -101,10 +101,10 @@ class TestRefreshAccountsActionExecutorExecute:
         )
         user_action = protocol_models.UserAction(id="ua-refresh-one", configuration=account_executor_test_utils.wrap_configuration(refresh_inner))
         provider_mock = mock.Mock()
-        provider_mock.get_account.return_value = account_model
+        provider_mock.get_item.return_value = account_model
         with (
             mock.patch(
-                "octobot.community.account_backend.AccountProvider.instance",
+                "octobot.community.collection_providers.AccountProvider.instance",
                 return_value=provider_mock,
             ),
             mock.patch.object(
@@ -115,9 +115,9 @@ class TestRefreshAccountsActionExecutorExecute:
         ):
             executor = refresh_accounts_executor.RefreshAccountsActionExecutor(account_executor_test_utils.WALLET_ADDRESS)
             await executor.execute(user_action)
-        provider_mock.list_accounts.assert_not_called()
-        provider_mock.get_account.assert_called_once_with(account_executor_test_utils.WALLET_ADDRESS, "acc-1")
-        provider_mock.update_account.assert_called_once_with(account_executor_test_utils.WALLET_ADDRESS, checked_account)
+        provider_mock.list_items.assert_not_called()
+        provider_mock.get_item.assert_called_once_with(account_executor_test_utils.WALLET_ADDRESS, "acc-1")
+        provider_mock.update_item.assert_called_once_with(account_executor_test_utils.WALLET_ADDRESS, checked_account)
         provider_assertions.assert_provider_user_action_terminal_state(
             user_action_id="ua-refresh-one",
             expected_status=protocol_models.UserActionStatus.COMPLETED,
@@ -152,9 +152,9 @@ class TestRefreshAccountsActionExecutorExecute:
         )
         user_action = protocol_models.UserAction(id="ua-refresh-blockchain", configuration=account_executor_test_utils.wrap_configuration(refresh_inner))
         provider_mock = mock.Mock()
-        provider_mock.get_account.return_value = blockchain_account
+        provider_mock.get_item.return_value = blockchain_account
         with mock.patch(
-            "octobot.community.account_backend.AccountProvider.instance",
+            "octobot.community.collection_providers.AccountProvider.instance",
             return_value=provider_mock,
         ):
             executor = refresh_accounts_executor.RefreshAccountsActionExecutor(account_executor_test_utils.WALLET_ADDRESS)

@@ -15,26 +15,21 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
 
-from octobot.community.account_backend.account_provider import (
-    AccountProvider,
-)
-from octobot.community.account_backend.account_storage import (
-    AccountStorage,
-)
-from octobot.community.account_backend.errors import (
-    AccountStorageError,
-    AccountDecryptionError,
-    AccountFileFormatError,
-    AccountNotFoundError,
-    DuplicateAccountError,
-)
+class CollectionStorageError(Exception):
+    pass
 
-__all__ = [
-    "AccountProvider",
-    "AccountStorage",
-    "AccountStorageError",
-    "AccountDecryptionError",
-    "AccountFileFormatError",
-    "AccountNotFoundError",
-    "DuplicateAccountError",
-]
+
+class CollectionDecryptionError(CollectionStorageError):
+    pass
+
+
+class CollectionFileFormatError(CollectionStorageError):
+    pass
+
+
+class ItemNotFoundError(CollectionStorageError):
+    pass
+
+
+class DuplicateItemError(CollectionStorageError):
+    pass

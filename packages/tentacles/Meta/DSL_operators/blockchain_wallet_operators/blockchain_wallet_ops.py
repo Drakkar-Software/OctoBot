@@ -47,6 +47,7 @@ class TransferFundsParams(octobot_commons.dataclasses.FlexibleDataclass):
 BLOCKCHAIN_WALLET_LIBRARY = "blockchain_wallet"
 
 CREATED_TRANSACTIONS_KEY = "created_transactions"
+WALLET_DETAILS_KEY = "wallet_details"
 
 
 class BlockchainWalletOperator(dsl_interpreter.PreComputingCallOperator):
@@ -147,4 +148,27 @@ def create_blockchain_wallet_operators(
                 )
                 self.value = {CREATED_TRANSACTIONS_KEY: [created_transaction]}
 
-    return [_BlockchainWalletBalanceOperator, _BlockchainWalletTransferOperator]
+    class _BlockchainWalletInitOperator(BlockchainWalletOperator):
+        DESCRIPTION = "Initializes a blockchain wallet and returns its open wallet details"
+        EXAMPLE = "blockchain_wallet_init({blockchain_descriptor}, {wallet_descriptor})"
+
+        @staticmethod
+        def get_name() -> str:
+            return "blockchain_wallet_init"
+
+        @classmethod
+        def get_parameters(cls) -> list[dsl_interpreter.OperatorParameter]:
+            return cls.get_blockchain_wallet_parameters()
+
+        async def pre_compute(self) -> None:
+            param_by_name = self.get_computed_value_by_parameter()
+            async with octobot_trading.api.blockchain_wallet_context(
+                blockchain_wallets.BlockchainWalletParameters(
+                    blockchain_descriptor=param_by_name["blockchain_descriptor"],
+                    wallet_descriptor=param_by_name["wallet_descriptor"],
+                ),
+                exchange_manager.trader if exchange_manager else None
+            ) as wallet:
+                self.value = {WALLET_DETAILS_KEY: wallet.get_open_wallet_details()}
+
+    return [_BlockchainWalletBalanceOperator, _BlockchainWalletTransferOperator, _BlockchainWalletInitOperator]

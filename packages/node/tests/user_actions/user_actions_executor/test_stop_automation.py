@@ -153,6 +153,7 @@ class TestStopAutomationActionExecutor:
                 details=protocol_models.AccountDetails(
                     actual_instance=protocol_models.ExchangeAccount(
                         account_type=protocol_models.AccountType.EXCHANGE,
+                        trading_type=protocol_models.TradingType.SPOT,
                         exchange="binanceus",
                         remote_account_id="r",
                         api_key="k",

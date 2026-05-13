@@ -78,6 +78,8 @@ from octobot_protocol.models.rsi_momentum_evaluator_configuration import RSIMome
 from octobot_protocol.models.refresh_accounts_configuration import RefreshAccountsConfiguration
 from octobot_protocol.models.side import Side
 from octobot_protocol.models.stop_automation_configuration import StopAutomationConfiguration
+from octobot_protocol.models.strategies_state import StrategiesState
+from octobot_protocol.models.strategy import Strategy
 from octobot_protocol.models.strategy_configuration import StrategyConfiguration
 from octobot_protocol.models.task_status import TaskStatus
 from octobot_protocol.models.time_frame import TimeFrame

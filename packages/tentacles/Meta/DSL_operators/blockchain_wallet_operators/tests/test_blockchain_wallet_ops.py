@@ -13,12 +13,15 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import contextlib
 import decimal
+import mock
 import pytest
 import pytest_asyncio
 
 import octobot_commons.errors
 import octobot_commons.dsl_interpreter as dsl_interpreter
+import octobot_trading.api
 import octobot_trading.constants
 import octobot_trading.enums
 import octobot_trading.errors
@@ -210,3 +213,58 @@ class TestBlockchainWalletTransferOperator:
         )
         assert result and isinstance(result, dict)
         assert "created_transactions" in result
+
+
+MOCK_WALLET_DETAILS = {"filename": "test_wallet", "password": "test_pass"}
+
+
+@contextlib.asynccontextmanager
+async def _mock_blockchain_wallet_context(parameters, trader):
+    wallet = mock.MagicMock()
+    wallet.get_open_wallet_details.return_value = MOCK_WALLET_DETAILS
+    yield wallet
+
+
+class TestBlockchainWalletInitOperator:
+    @pytest.mark.asyncio
+    async def test_pre_compute(self, blockchain_wallet_operators):
+        *_, init_op_class = blockchain_wallet_operators
+
+        with mock.patch.object(
+            octobot_trading.api,
+            "blockchain_wallet_context",
+            _mock_blockchain_wallet_context,
+        ):
+            operator = init_op_class(
+                BLOCKCHAIN_DESCRIPTOR,
+                WALLET_DESCRIPTOR,
+            )
+            await operator.pre_compute()
+        assert operator.value == {
+            blockchain_wallet_ops.WALLET_DETAILS_KEY: MOCK_WALLET_DETAILS,
+        }
+
+    def test_compute_without_pre_compute(self, blockchain_wallet_operators):
+        *_, init_op_class = blockchain_wallet_operators
+        operator = init_op_class(BLOCKCHAIN_DESCRIPTOR, WALLET_DESCRIPTOR)
+        with pytest.raises(
+            octobot_commons.errors.DSLInterpreterError,
+            match="has not been pre_computed",
+        ):
+            operator.compute()
+
+    @pytest.mark.asyncio
+    async def test_blockchain_wallet_init_call_as_dsl(self, interpreter):
+        blockchain_descriptor = BLOCKCHAIN_DESCRIPTOR
+        wallet_descriptor = WALLET_DESCRIPTOR
+        with mock.patch.object(
+            octobot_trading.api,
+            "blockchain_wallet_context",
+            _mock_blockchain_wallet_context,
+        ):
+            result = await interpreter.interprete(
+                f"blockchain_wallet_init({blockchain_descriptor}, {wallet_descriptor})"
+            )
+        assert isinstance(result, dict)
+        assert blockchain_wallet_ops.WALLET_DETAILS_KEY in result
+        assert result[blockchain_wallet_ops.WALLET_DETAILS_KEY] == MOCK_WALLET_DETAILS

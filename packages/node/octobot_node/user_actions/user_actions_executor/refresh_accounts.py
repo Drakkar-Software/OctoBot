@@ -14,7 +14,7 @@
 #  You should have received a copy of the GNU General Public License along
 #  with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
-import octobot.community.account_backend as account_backend
+import octobot.community.collection_providers as collection_providers
 import octobot_protocol.models as protocol_models
 
 import octobot_node.errors as node_errors
@@ -44,12 +44,12 @@ class RefreshAccountsActionExecutor(account_user_action_executor.AccountUserActi
         user_action: protocol_models.UserAction,
     ) -> None:
         refresh_payload = _get_refresh_accounts_payload(user_action)
-        account_provider = account_backend.AccountProvider.instance()
+        account_provider = collection_providers.AccountProvider.instance()
         account_ids_to_refresh = refresh_payload.account_ids or [
-            account.id for account in account_provider.list_accounts(self._wallet_address)
+            account.id for account in account_provider.list_items(self._wallet_address)
         ]
         for account_id in account_ids_to_refresh:
-            account = account_provider.get_account(self._wallet_address, account_id)
+            account = account_provider.get_item(self._wallet_address, account_id)
             checked_account = await account_state_updater.update_account_state(account)
-            account_provider.update_account(self._wallet_address, checked_account)
+            account_provider.update_item(self._wallet_address, checked_account)
         self._mark_user_action_completed(user_action)

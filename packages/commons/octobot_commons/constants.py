@@ -17,13 +17,21 @@ import os
 import octobot_commons.enums as enums
 
 
+def parse_boolean_str(value: str) -> bool:
+    """
+    :param value: the value to parse
+    :return: True when the value is "True" or "true" else false
+    """
+    return bool(value.lower() == "true")
+
+
 def parse_boolean_environment_var(env_key: str, default_value: str) -> bool:
     """
     :param env_key: the environment var key
     :param default_value: the default value
     :return: True when the var value is "True" or "true" else false
     """
-    return bool(os.getenv(env_key, default_value).lower() == "true")
+    return parse_boolean_str(os.getenv(env_key, default_value))
 
 
 # time

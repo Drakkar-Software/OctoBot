@@ -163,6 +163,7 @@ def transfer_blockchain_action():
             "BLOCKCHAIN_FROM_AMOUNT": 1,
             "BLOCKCHAIN_FROM_ADDRESS": "0x123_simulated_transfer_from_address_BTC",
             "BLOCKCHAIN_FROM": BLOCKCHAIN,
+            "BLOCKCHAIN_FROM_CLOSE_WALLET_ON_EXIT": "True",
             "BLOCKCHAIN_TO": BLOCKCHAIN,
             "BLOCKCHAIN_TO_ASSET": "BTC",
             "BLOCKCHAIN_TO_ADDRESS": "0x123_simulated_transfer_to_address_BTC",
@@ -228,6 +229,9 @@ def trade_transfer_and_check_balance_actions_bundle_no_wait(market_order_action,
             **market_order_action["params"],
             **transfer_blockchain_action["params"],
             **{
+                "BLOCKCHAIN_FROM_FILENAME": "dependency::action_blockchain_wallet_init_2::wallet_details::filename",
+                "BLOCKCHAIN_FROM_PASSWORD": "dependency::action_blockchain_wallet_init_2::wallet_details::password",
+                "BLOCKCHAIN_FROM_PORT": "dependency::action_blockchain_wallet_init_2::wallet_details::port",
                 "ORDER_EXTRA_PARAMS": {"address_to": check_address},
                 "BLOCKCHAIN_TO_ADDRESS": (
                     "dependency::action_trade_1::created_orders::0::esov::address_from"
@@ -245,7 +249,7 @@ def trade_transfer_and_check_balance_actions_bundle_no_wait(market_order_action,
     all["params"]["SIMULATED_PORTFOLIO"] = {
         "BTC": 1,
     }
-    all["params"]["ACTIONS"] = "trade,transfer,loop_until_blockchain_balance"
+    all["params"]["ACTIONS"] = "trade,blockchain_wallet_init,transfer,loop_until_blockchain_balance"
     return all
 
 
@@ -1017,9 +1021,25 @@ class TestOctoBotActionsJob:
         assert result.has_next_actions is False
 
     async def test_run_trade_transfer_and_check_balance_actions_bundle_no_wait(self, trade_transfer_and_check_balance_actions_bundle_no_wait):
-        # step 1: configure the job (ACTIONS: trade, transfer, wait_for_blockchain_balance)
-        job = octobot_flow_client.OctoBotActionsJob(trade_transfer_and_check_balance_actions_bundle_no_wait, [], [], octobot_flow_client.OctoBotActionsJobResult())
-        await job.run()
+        # step 1: configure the job (ACTIONS: trade, blockchain_wallet_init, transfer, loop_until_blockchain_balance)
+        origin_create_wallet_descriptor_specific_config = blockchain_wallet_simulator.BlockchainWalletSimulator.create_wallet_descriptor_specific_config
+        def local_create_wallet_descriptor_specific_config(**kwargs):
+            base_config = origin_create_wallet_descriptor_specific_config(**kwargs)
+            update = {
+                key: kwargs[key] for key in ["filename", "password", "port"] if kwargs.get(key)
+            }
+            if len(update) == 3:
+                # only consider update if all 3 keys are present
+                base_config.update(update)
+            return base_config
+        with mock.patch.object(
+            blockchain_wallet_simulator.BlockchainWalletSimulator,
+            "create_wallet_descriptor_specific_config",
+            mock.Mock(side_effect=local_create_wallet_descriptor_specific_config),
+        ) as get_open_wallet_details_mock:
+            job = octobot_flow_client.OctoBotActionsJob(trade_transfer_and_check_balance_actions_bundle_no_wait, [], [], octobot_flow_client.OctoBotActionsJobResult())
+            await job.run()
+            assert get_open_wallet_details_mock.call_count == 3
         result = job.result
         assert len(result.processed_actions) == 1
         processed_actions = result.processed_actions
@@ -1034,6 +1054,20 @@ class TestOctoBotActionsJob:
             common_constants.PORTFOLIO_AVAILABLE: 1,
             common_constants.PORTFOLIO_TOTAL: 1,
         }
+        # verify transfer action has unresolved dependency refs for wallet details
+        actions_by_id = job.after_execution_state.automation.actions_dag.get_actions_by_id()
+        transfer_action = actions_by_id["action_transfer_3"]
+        wallet_init_deps = [
+            dep for dep in transfer_action.dependencies
+            if dep.action_id == "action_blockchain_wallet_init_2"
+        ]
+        wallet_detail_result_paths = {tuple(dep.result_path) for dep in wallet_init_deps if dep.result_path}
+        assert ("wallet_details", "filename") in wallet_detail_result_paths
+        assert ("wallet_details", "password") in wallet_detail_result_paths
+        assert ("wallet_details", "port") in wallet_detail_result_paths
+        for dep in wallet_init_deps:
+            if dep.parameter:
+                assert f"'{dep.parameter}': {common_constants.UNRESOLVED_PARAMETER_PLACEHOLDER}" in transfer_action.dsl_script
 
         # step 2: run the market trade action (first executable after init)
         next_actions_description = result.next_actions_description
@@ -1082,7 +1116,35 @@ class TestOctoBotActionsJob:
         assert order["type"] == "market"
         assert order["side"] == "buy"
 
-        # step 3: transfer uses dependency::action_trade_1::created_orders::0::esov::address_from
+        # step 3: blockchain_wallet_init — initializes wallet, returns wallet details
+        next_actions_description = result.next_actions_description
+        assert next_actions_description is not None
+        parsed_state = octobot_flow.entities.AutomationState.from_dict(next_actions_description.state)
+        next_actions = parsed_state.automation.actions_dag.get_executable_actions()
+        assert len(next_actions) == 1
+        assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
+        assert next_actions[0].dsl_script is not None and "blockchain_wallet_init" in next_actions[0].dsl_script
+        job3 = octobot_flow_client.OctoBotActionsJob(
+            next_actions_description.to_dict(include_default_values=False), [], [],
+            octobot_flow_client.OctoBotActionsJobResult(),
+        )
+        mock_wallet_details = {"filename": "test_wallet_filename", "password": "test_wallet_password", "port": 18088}
+        with mock.patch.object(
+            blockchain_wallet_simulator.BlockchainWalletSimulator,
+            "get_open_wallet_details",
+            mock.Mock(return_value=mock_wallet_details),
+        ):
+            await job3.run()
+        result = job3.result
+        assert len(result.processed_actions) == 1
+        processed_actions = result.processed_actions
+        assert len(processed_actions) == 1
+        assert isinstance(processed_actions[0], octobot_flow.entities.DSLScriptActionDetails)
+        assert processed_actions[0].dsl_script is not None and "blockchain_wallet_init" in processed_actions[0].dsl_script
+        assert DSL_operators.WALLET_DETAILS_KEY in processed_actions[0].result
+        assert processed_actions[0].result[DSL_operators.WALLET_DETAILS_KEY] == mock_wallet_details
+
+        # step 4: transfer uses dependency::action_trade_1::created_orders::0::esov::address_from
         next_actions_description = result.next_actions_description
         assert next_actions_description is not None
         parsed_state = octobot_flow.entities.AutomationState.from_dict(next_actions_description.state)
@@ -1090,12 +1152,12 @@ class TestOctoBotActionsJob:
         assert len(next_actions) == 1
         assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
         assert next_actions[0].dsl_script is not None and "blockchain_wallet_transfer" in next_actions[0].dsl_script
-        job3 = octobot_flow_client.OctoBotActionsJob(
+        job4 = octobot_flow_client.OctoBotActionsJob(
             next_actions_description.to_dict(include_default_values=False), [], [],
             octobot_flow_client.OctoBotActionsJobResult(),
         )
-        await job3.run()
-        result = job3.result
+        await job4.run()
+        result = job4.result
         assert len(result.processed_actions) == 1
         processed_actions = result.processed_actions
         assert len(processed_actions) == 1
@@ -1110,7 +1172,7 @@ class TestOctoBotActionsJob:
         assert transaction[trading_enums.ExchangeConstantsTransactionColumns.NETWORK.value] == BLOCKCHAIN
         assert transaction[trading_enums.ExchangeConstantsTransactionColumns.ADDRESS_TO.value] == "123_address_from"
 
-        # step 4.A: wait_for_blockchain_balance — mocked balance 0 triggers wait (re-call); automation not finished
+        # step 5.A: wait_for_blockchain_balance — mocked balance 0 triggers wait (re-call); automation not finished
         next_actions_description = result.next_actions_description
         assert next_actions_description is not None
         parsed_state = octobot_flow.entities.AutomationState.from_dict(next_actions_description.state)
@@ -1122,7 +1184,7 @@ class TestOctoBotActionsJob:
         assert "blockchain_wallet_balance" in next_actions[0].dsl_script
         assert "123_balance_address" in next_actions[0].dsl_script
         assert "3, timeout=10, max_attempts=4, return_remaining_time=True)" in next_actions[0].dsl_script
-        job4 = octobot_flow_client.OctoBotActionsJob(
+        job5 = octobot_flow_client.OctoBotActionsJob(
             next_actions_description.to_dict(include_default_values=False), [], [],
             octobot_flow_client.OctoBotActionsJobResult(),
         )
@@ -1138,8 +1200,8 @@ class TestOctoBotActionsJob:
             "get_balance",
             mock.AsyncMock(return_value=zero_btc_portfolio),
         ):
-            await job4.run()
-        result = job4.result
+            await job5.run()
+        result = job5.result
         assert len(result.processed_actions) == 1
         processed_actions = result.processed_actions
         assert isinstance(processed_actions[0], octobot_flow.entities.DSLScriptActionDetails)
@@ -1168,15 +1230,15 @@ class TestOctoBotActionsJob:
             dsl_interpreter.ReCallingOperatorResultKeys.WAITING_TIME.value
         ] > 0
 
-        # step 4.B: real balance satisfies wait condition — action completes
+        # step 5.B: real balance satisfies wait condition — action completes
         next_actions_description = result.next_actions_description
         assert result.has_next_actions is True
-        job4b = octobot_flow_client.OctoBotActionsJob(
+        job5b = octobot_flow_client.OctoBotActionsJob(
             next_actions_description.to_dict(include_default_values=False), [], [],
             octobot_flow_client.OctoBotActionsJobResult(),
         )
-        await job4b.run()
-        result = job4b.result
+        await job5b.run()
+        result = job5b.result
         assert len(result.processed_actions) == 1
         processed_actions = result.processed_actions
         assert isinstance(processed_actions[0], octobot_flow.entities.DSLScriptActionDetails)

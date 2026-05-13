@@ -91,6 +91,7 @@ async def _check_exchange_account_state(
         auth_details=_encrypted_exchange_auth_details(exchange_account),
     )
     tentacles_setup_config = tentacles_manager_api.get_full_tentacles_setup_config()
+    # todo change exchange_manager_from_exchange_data can raise
     async with trading_exchanges.exchange_manager_from_exchange_data(
         exchange_data,
         profile_data,

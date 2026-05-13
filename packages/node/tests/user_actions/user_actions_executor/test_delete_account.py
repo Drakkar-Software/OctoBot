@@ -17,7 +17,7 @@
 import mock
 import pytest
 
-import octobot.community.account_backend.errors as account_backend_errors
+import octobot.community.collection_backend.errors as collection_errors
 import octobot_protocol.models as protocol_models
 
 import octobot_node.errors as node_errors
@@ -37,12 +37,12 @@ class TestDeleteAccountActionExecutorExecute:
         user_action = protocol_models.UserAction(id="ua-del", configuration=account_executor_test_utils.wrap_configuration(inner))
         provider_mock = mock.Mock()
         with mock.patch(
-            "octobot.community.account_backend.AccountProvider.instance",
+            "octobot.community.collection_providers.AccountProvider.instance",
             return_value=provider_mock,
         ):
             executor = delete_account_executor.DeleteAccountActionExecutor(account_executor_test_utils.WALLET_ADDRESS)
             await executor.execute(user_action)
-        provider_mock.delete_account.assert_called_once_with(account_executor_test_utils.WALLET_ADDRESS, "del-1")
+        provider_mock.delete_item.assert_called_once_with(account_executor_test_utils.WALLET_ADDRESS, "del-1")
         provider_assertions.assert_provider_user_action_terminal_state(
             user_action_id="ua-del",
             expected_status=protocol_models.UserActionStatus.COMPLETED,
@@ -76,13 +76,13 @@ class TestDeleteAccountActionExecutorExecute:
         )
         user_action = protocol_models.UserAction(id="ua-missing", configuration=account_executor_test_utils.wrap_configuration(inner))
         provider_mock = mock.Mock()
-        provider_mock.delete_account.side_effect = account_backend_errors.AccountNotFoundError("missing")
+        provider_mock.delete_item.side_effect = collection_errors.ItemNotFoundError("missing")
         with mock.patch(
-            "octobot.community.account_backend.AccountProvider.instance",
+            "octobot.community.collection_providers.AccountProvider.instance",
             return_value=provider_mock,
         ):
             executor = delete_account_executor.DeleteAccountActionExecutor(account_executor_test_utils.WALLET_ADDRESS)
-            with pytest.raises(account_backend_errors.AccountNotFoundError):
+            with pytest.raises(collection_errors.ItemNotFoundError):
                 await executor.execute(user_action)
         provider_assertions.assert_provider_user_action_terminal_state(
             user_action_id="ua-missing",

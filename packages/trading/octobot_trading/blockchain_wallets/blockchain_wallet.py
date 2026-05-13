@@ -108,6 +108,9 @@ class BlockchainWallet(octobot_trading.accounts.AbstractAccount):
         # override if necessary
         return {}
 
+    def get_open_wallet_details(self) -> dict:
+        raise NotImplementedError("get_open_wallet_details is not implemented")
+
     async def get_native_coin_balance(self) -> blockchain_wallet_adapter.Balance:
         raise NotImplementedError("get_native_coin_balance is not implemented")
 

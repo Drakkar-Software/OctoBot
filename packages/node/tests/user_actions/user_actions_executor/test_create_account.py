@@ -17,7 +17,7 @@
 import mock
 import pytest
 
-import octobot.community.account_backend.errors as account_backend_errors
+import octobot.community.collection_backend.errors as collection_errors
 import octobot_protocol.models as protocol_models
 
 import octobot_node.errors as node_errors
@@ -40,7 +40,7 @@ class TestCreateAccountActionExecutorExecute:
         provider_mock = mock.Mock()
         with (
             mock.patch(
-                "octobot.community.account_backend.AccountProvider.instance",
+                "octobot.community.collection_providers.AccountProvider.instance",
                 return_value=provider_mock,
             ),
             mock.patch.object(
@@ -51,7 +51,7 @@ class TestCreateAccountActionExecutorExecute:
         ):
             executor = create_account_executor.CreateAccountActionExecutor(account_executor_test_utils.WALLET_ADDRESS)
             await executor.execute(user_action)
-        provider_mock.create_account.assert_called_once_with(account_executor_test_utils.WALLET_ADDRESS, account_model)
+        provider_mock.create_item.assert_called_once_with(account_executor_test_utils.WALLET_ADDRESS, account_model)
         provider_assertions.assert_provider_user_action_terminal_state(
             user_action_id="ua-create",
             expected_status=protocol_models.UserActionStatus.COMPLETED,
@@ -100,10 +100,10 @@ class TestCreateAccountActionExecutorExecute:
         )
         user_action = protocol_models.UserAction(id="ua-dup", configuration=account_executor_test_utils.wrap_configuration(inner))
         provider_mock = mock.Mock()
-        provider_mock.create_account.side_effect = account_backend_errors.DuplicateAccountError("dup")
+        provider_mock.create_item.side_effect = collection_errors.DuplicateItemError("dup")
         with (
             mock.patch(
-                "octobot.community.account_backend.AccountProvider.instance",
+                "octobot.community.collection_providers.AccountProvider.instance",
                 return_value=provider_mock,
             ),
             mock.patch.object(
@@ -113,7 +113,7 @@ class TestCreateAccountActionExecutorExecute:
             ),
         ):
             executor = create_account_executor.CreateAccountActionExecutor(account_executor_test_utils.WALLET_ADDRESS)
-            with pytest.raises(account_backend_errors.DuplicateAccountError):
+            with pytest.raises(collection_errors.DuplicateItemError):
                 await executor.execute(user_action)
         provider_assertions.assert_provider_user_action_terminal_state(
             user_action_id="ua-dup",

@@ -119,18 +119,14 @@ def apply_resolved_parameter_value(script: str, parameter: str, value: typing.An
     """
     Apply a resolved parameter value to a DSL script.
     """
-    to_replace = f"{parameter}={octobot_commons.constants.UNRESOLVED_PARAMETER_PLACEHOLDER}"
-    if to_replace in script:
-        return script.replace(
-            to_replace,
-            f"{parameter}={format_parameter_value(value)}"
-        )
-    to_replace_in_dict = f"{parameter!r}: {octobot_commons.constants.UNRESOLVED_PARAMETER_PLACEHOLDER!r}"
-    if to_replace_in_dict in script:
-        return script.replace(
-            to_replace_in_dict,
-            f"{parameter!r}: {format_parameter_value(value)}"
-        )
+    possible_to_replace = [
+        (f"{parameter}={octobot_commons.constants.UNRESOLVED_PARAMETER_PLACEHOLDER}", f"{parameter}={format_parameter_value(value)}"),
+        (f"{parameter!r}: {octobot_commons.constants.UNRESOLVED_PARAMETER_PLACEHOLDER!r}", f"{parameter!r}: {format_parameter_value(value)}"),
+        (f"{parameter!r}: {octobot_commons.constants.UNRESOLVED_PARAMETER_PLACEHOLDER}", f"{parameter!r}: {format_parameter_value(value)}"),
+    ]
+    for to_replace, replacement in possible_to_replace:
+        if to_replace in script:
+            return script.replace(to_replace, replacement)
     raise octobot_commons.errors.ResolvedParameterNotFoundError(
         f"Parameter {parameter} not found in script: {script}"
     )

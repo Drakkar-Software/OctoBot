@@ -16,10 +16,10 @@
 
 import octobot_protocol.models as protocol_models
 import octobot_node.constants as node_constants
-import octobot.community.account_backend.account_provider as account_provider
+import octobot.community.collection_providers.user_account_provider as account_provider
 
 def get_accounts_state(address: str) -> protocol_models.AccountsState:
     return protocol_models.AccountsState(
         version=node_constants.EXCHANGE_ACCOUNTS_STATE_VERSION,
-        accounts=account_provider.AccountProvider.instance().list_accounts(address)
+        accounts=account_provider.AccountProvider.instance().list_items(address)
     )

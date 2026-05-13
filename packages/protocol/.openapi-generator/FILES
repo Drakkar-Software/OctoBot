@@ -63,6 +63,8 @@ docs/RSIMomentumEvaluatorConfiguration.md
 docs/RefreshAccountsConfiguration.md
 docs/Side.md
 docs/StopAutomationConfiguration.md
+docs/StrategiesState.md
+docs/Strategy.md
 docs/StrategyConfiguration.md
 docs/TaskStatus.md
 docs/TimeFrame.md
@@ -147,6 +149,8 @@ octobot_protocol/models/refresh_accounts_configuration.py
 octobot_protocol/models/rsi_momentum_evaluator_configuration.py
 octobot_protocol/models/side.py
 octobot_protocol/models/stop_automation_configuration.py
+octobot_protocol/models/strategies_state.py
+octobot_protocol/models/strategy.py
 octobot_protocol/models/strategy_configuration.py
 octobot_protocol/models/task_status.py
 octobot_protocol/models/time_frame.py
@@ -229,6 +233,8 @@ test/test_refresh_accounts_configuration.py
 test/test_rsi_momentum_evaluator_configuration.py
 test/test_side.py
 test/test_stop_automation_configuration.py
+test/test_strategies_state.py
+test/test_strategy.py
 test/test_strategy_configuration.py
 test/test_task_status.py
 test/test_time_frame.py

@@ -27,6 +27,7 @@ from starfish_server.storage.filesystem import FilesystemObjectStore, Filesystem
 import octobot_commons.configuration as commons_configuration
 import octobot_commons.constants as commons_constants
 import octobot_commons.logging as logging
+import octobot_node.constants as node_constants
 import octobot_sync.app as sync_app
 import octobot_sync.auth as auth
 import octobot_sync.enums as enums
@@ -52,6 +53,7 @@ def _get_address(context: StoreContext | None) -> str:
 async def get_data(key: str, context: StoreContext | None = None) -> str | None:
     # called when client pulls
     match key:
+        # todo chiffrer en sortie
         case enums.Collections.USER_DATA.value:
             user_data_state = await user_data_protocol.get_user_data_state(
                 _get_address(context)
@@ -66,6 +68,15 @@ async def get_data(key: str, context: StoreContext | None = None) -> str | None:
             return json.dumps(
                 accounts_state.model_dump(mode="json")
             )
+        case enums.Collections.USER_ACTIONS.value:
+            # reading user actions should always return an empty list
+            actions_state = protocol_models.UserActionsState(
+                version=node_constants.USER_ACTIONS_STATE_VERSION,
+                user_actions=[]
+            )
+            return json.dumps(
+                actions_state.model_dump(mode="json")
+            )
         case _:
             _get_logger().error(
                 f"get_data was called with ({key}). This collection is not supported."
@@ -75,6 +86,8 @@ async def get_data(key: str, context: StoreContext | None = None) -> str | None:
 async def put_data(key: str, body: str, context: StoreContext | None = None) -> None:
     match key:
         case enums.Collections.USER_ACTIONS.value:
+            # todo déchiffrer avant 
+            # todo in task
             user_actions_state = protocol_models.UserActionsState.model_validate_json(body)
             if user_actions_state.user_actions:
                 for action in user_actions_state.user_actions:

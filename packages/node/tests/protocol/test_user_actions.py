@@ -30,6 +30,7 @@ _WALLET_ADDRESS = "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"
 def _exchange_account_payload() -> protocol_models.ExchangeAccount:
     return protocol_models.ExchangeAccount(
         account_type=protocol_models.AccountType.EXCHANGE,
+        trading_type=protocol_models.TradingType.SPOT,
         exchange="binanceus",
         remote_account_id="remote-1",
         api_key="k",

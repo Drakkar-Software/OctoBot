@@ -305,6 +305,8 @@ class Scheduler:
             for completed_workflow_status in completed_workflow_statuses:
                 try:
                     task = workflows_util.get_input_task(completed_workflow_status)
+                    if '6855c2cc' in completed_workflow_status.workflow_id:
+                        print(f"**** found, {task.content=}")
                     if completed_workflow_status.status == dbos.WorkflowStatusString.SUCCESS.value:
                         output_error = None
                         if completed_workflow_status.output:

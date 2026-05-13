@@ -3,9 +3,8 @@ import pathlib
 import mock
 import pytest
 
-import octobot.community.account_backend.account_provider as account_provider_module
-import octobot.community.account_backend.account_storage as account_storage_module
-import octobot.community.account_backend.errors as account_backend_errors
+import octobot.community.collection_backend.errors as collection_errors
+import octobot.community.collection_providers.user_account_provider as account_provider_module
 import octobot.community.authentication as community_authentication_module
 import octobot.community.local_authenticator as local_authenticator_module
 import octobot_commons.user_root_folder_provider as user_root_folder_provider_module
@@ -40,6 +39,7 @@ def _wrap_user_action_configuration(
 def _build_exchange_account() -> protocol_models.ExchangeAccount:
     return protocol_models.ExchangeAccount(
         account_type=protocol_models.AccountType.EXCHANGE,
+        trading_type=protocol_models.TradingType.SPOT,
         exchange="binanceus",
         remote_account_id="functional-test-remote-account",
         api_key="functional-test-api-key",
@@ -140,8 +140,7 @@ class TestExecuteUserActionAccountCrud:
             )
             wallet_address = sync_evm_module.address_from_evm_key(_TEST_PRIVATE_KEY).lower()
 
-            account_storage = account_storage_module.AccountStorage(base_folder=str(test_user_root))
-            account_provider = account_provider_module.AccountProvider(storage=account_storage)
+            account_provider = account_provider_module.AccountProvider(base_folder=str(test_user_root))
 
             with (
                 # Step 2: keep the flow end-to-end but locally scoped to test instances.
@@ -178,7 +177,7 @@ class TestExecuteUserActionAccountCrud:
                 ),
             ):
                 # Step 3: sanity-check starting state.
-                assert account_provider.list_accounts(wallet_address) == []
+                assert account_provider.list_items(wallet_address) == []
 
                 # Step 4: create an account through protocol user action and verify persisted state.
                 created_account = _build_account(account_id="functional-account-1", account_name="Functional account")
@@ -189,12 +188,12 @@ class TestExecuteUserActionAccountCrud:
                     ),
                     wallet_address,
                 )
-                persisted_created_account = account_provider.get_account(wallet_address, "functional-account-1")
+                persisted_created_account = account_provider.get_item(wallet_address, "functional-account-1")
                 assert persisted_created_account.name == "Functional account"
                 assert persisted_created_account.state is not None
                 assert persisted_created_account.state.status == protocol_models.AccountStatus.VALID
                 assert persisted_created_account.state.message == protocol_models.AccountStatusMessage.VALID
-                assert len(account_provider.list_accounts(wallet_address)) == 1
+                assert len(account_provider.list_items(wallet_address)) == 1
 
                 # Step 5: edit the account and verify invalid-state mapping when IP whitelist fails.
                 edited_account = _build_account(
@@ -209,7 +208,7 @@ class TestExecuteUserActionAccountCrud:
                     ),
                     wallet_address,
                 )
-                persisted_edited_account = account_provider.get_account(wallet_address, "functional-account-1")
+                persisted_edited_account = account_provider.get_item(wallet_address, "functional-account-1")
                 assert persisted_edited_account.name == "Functional account renamed"
                 assert persisted_edited_account.state is not None
                 assert persisted_edited_account.state.status == protocol_models.AccountStatus.INVALID
@@ -217,14 +216,14 @@ class TestExecuteUserActionAccountCrud:
                     persisted_edited_account.state.message
                     == protocol_models.AccountStatusMessage.INVALID_API_IP_WHITELIST
                 )
-                assert len(account_provider.list_accounts(wallet_address)) == 1
+                assert len(account_provider.list_items(wallet_address)) == 1
 
                 # Step 6: refresh account state and confirm it is updated back to valid.
                 await user_actions_module.execute_user_action(
                     _build_refresh_accounts_user_action(user_action_id="ua-account-refresh"),
                     wallet_address,
                 )
-                persisted_refreshed_account = account_provider.get_account(wallet_address, "functional-account-1")
+                persisted_refreshed_account = account_provider.get_item(wallet_address, "functional-account-1")
                 assert persisted_refreshed_account.state is not None
                 assert persisted_refreshed_account.state.status == protocol_models.AccountStatus.VALID
                 assert persisted_refreshed_account.state.message == protocol_models.AccountStatusMessage.VALID
@@ -237,9 +236,9 @@ class TestExecuteUserActionAccountCrud:
                     ),
                     wallet_address,
                 )
-                with pytest.raises(account_backend_errors.AccountNotFoundError):
-                    account_provider.get_account(wallet_address, "functional-account-1")
-                assert account_provider.list_accounts(wallet_address) == []
+                with pytest.raises(collection_errors.ItemNotFoundError):
+                    account_provider.get_item(wallet_address, "functional-account-1")
+                assert account_provider.list_items(wallet_address) == []
         finally:
             # Step 8: cleanup authenticator resources and restore global user-root setting.
             if authentication_instance is not None:

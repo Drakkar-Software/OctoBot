@@ -1888,6 +1888,89 @@
             }
           }
         }
+      },
+      "Strategy": {
+        "description": "Strategy",
+        "type": "object",
+        "required": [
+          "id",
+          "configuration"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "configuration": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MarketMakingConfiguration"
+              },
+              {
+                "$ref": "#/components/schemas/DCAConfiguration"
+              },
+              {
+                "$ref": "#/components/schemas/IndexConfiguration"
+              },
+              {
+                "$ref": "#/components/schemas/GridConfiguration"
+              },
+              {
+                "$ref": "#/components/schemas/CopyConfiguration"
+              },
+              {
+                "$ref": "#/components/schemas/GenericProcessConfiguration"
+              },
+              {
+                "$ref": "#/components/schemas/GenericWorkflowConfiguration"
+              }
+            ],
+            "discriminator": {
+              "propertyName": "configuration_type",
+              "mapping": {
+                "MarketMakingConfiguration": "#/components/schemas/MarketMakingConfiguration",
+                "DCAConfiguration": "#/components/schemas/DCAConfiguration",
+                "IndexConfiguration": "#/components/schemas/IndexConfiguration",
+                "GridConfiguration": "#/components/schemas/GridConfiguration",
+                "CopyConfiguration": "#/components/schemas/CopyConfiguration",
+                "GenericProcessConfiguration": "#/components/schemas/GenericProcessConfiguration",
+                "GenericWorkflowConfiguration": "#/components/schemas/GenericWorkflowConfiguration"
+              }
+            }
+          }
+        }
+      },
+      "StrategiesState": {
+        "description": "StrategiesState",
+        "type": "object",
+        "required": [
+          "version",
+          "strategies"
+        ],
+        "properties": {
+          "version": {
+            "type": "string"
+          },
+          "strategies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Strategy"
+            }
+          }
+        }
       }
     }
   }

@@ -14,7 +14,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-import octobot.community.account_backend.errors as account_backend_errors
+import octobot.community.collection_backend.errors as collection_errors
 import octobot_protocol.models as protocol_models
 
 import octobot_node.errors as node_errors
@@ -61,7 +61,7 @@ class TestAutomationUserActionExecutorGetErrorMessage:
 class TestAccountUserActionExecutorGetErrorMessage:
     def test_account_not_found_from_backend(self):
         executor = create_account_executor.CreateAccountActionExecutor(_WALLET)
-        resolved = executor._get_error_message(account_backend_errors.AccountNotFoundError("missing"))
+        resolved = executor._get_error_message(collection_errors.ItemNotFoundError("missing"))
         assert resolved == protocol_models.AccountActionResultErrorMessage.ACCOUNT_NOT_FOUND
 
     def test_account_not_found(self):
@@ -76,7 +76,7 @@ class TestAccountUserActionExecutorGetErrorMessage:
 
     def test_duplicate_account(self):
         executor = create_account_executor.CreateAccountActionExecutor(_WALLET)
-        resolved = executor._get_error_message(account_backend_errors.DuplicateAccountError("dup"))
+        resolved = executor._get_error_message(collection_errors.DuplicateItemError("dup"))
         assert resolved == protocol_models.AccountActionResultErrorMessage.INVALID_CONFIGURATION
 
     def test_unknown_exception_falls_back_to_internal_error(self):

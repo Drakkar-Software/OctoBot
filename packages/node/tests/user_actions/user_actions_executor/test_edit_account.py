@@ -40,7 +40,7 @@ class TestEditAccountActionExecutorExecute:
         provider_mock = mock.Mock()
         with (
             mock.patch(
-                "octobot.community.account_backend.AccountProvider.instance",
+                "octobot.community.collection_providers.AccountProvider.instance",
                 return_value=provider_mock,
             ),
             mock.patch.object(
@@ -51,7 +51,7 @@ class TestEditAccountActionExecutorExecute:
         ):
             executor = edit_account_executor.EditAccountActionExecutor(account_executor_test_utils.WALLET_ADDRESS)
             await executor.execute(user_action)
-        provider_mock.update_account.assert_called_once_with(account_executor_test_utils.WALLET_ADDRESS, account_model)
+        provider_mock.update_item.assert_called_once_with(account_executor_test_utils.WALLET_ADDRESS, account_model)
         provider_assertions.assert_provider_user_action_terminal_state(
             user_action_id="ua-edit",
             expected_status=protocol_models.UserActionStatus.COMPLETED,

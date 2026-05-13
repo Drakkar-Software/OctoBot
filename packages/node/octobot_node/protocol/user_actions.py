@@ -40,7 +40,7 @@ async def execute_user_action(
 
 def _get_user_action_executor(
     configuration: protocol_models.UserActionConfiguration,
-) -> typing.Type[user_actions_executor_package.UserActionExecutor]:
+) -> typing.Type["user_actions_executor_package.UserActionExecutor"]:
     actual = configuration.actual_instance
     if actual is None:
         raise node_errors.InvalidUserActionPayloadError("UserActionConfiguration.actual_instance is required.")

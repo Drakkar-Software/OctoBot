@@ -14,7 +14,7 @@
 #  You should have received a copy of the GNU General Public License along
 #  with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
-import octobot.community.account_backend as account_backend
+import octobot.community.collection_providers as collection_providers
 import octobot_protocol.models as protocol_models
 
 import octobot_node.errors as node_errors
@@ -45,7 +45,7 @@ class CreateAccountActionExecutor(account_user_action_executor.AccountUserAction
     ) -> None:
         create_payload = _get_create_account_payload(user_action)
         checked_account = await account_state_updater.update_account_state(create_payload.configuration)
-        account_backend.AccountProvider.instance().create_account(
+        collection_providers.AccountProvider.instance().create_item(
             self._wallet_address,
             checked_account,
         )

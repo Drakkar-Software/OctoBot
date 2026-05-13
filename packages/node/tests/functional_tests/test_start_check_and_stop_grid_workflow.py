@@ -150,8 +150,8 @@ class TestTriggerTaskGridDbosIntegration:
                 side_effect=patched_fetch_ohlcv,
             ),
             mock.patch(
-                "octobot.community.account_backend.AccountProvider.instance",
-                return_value=mock.Mock(get_account=mock.Mock(return_value=protocol_account)),
+                "octobot.community.collection_providers.AccountProvider.instance",
+                return_value=mock.Mock(get_item=mock.Mock(return_value=protocol_account)),
             ),
         ):
             try:

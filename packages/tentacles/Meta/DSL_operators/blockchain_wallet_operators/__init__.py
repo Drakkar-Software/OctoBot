@@ -19,8 +19,10 @@ import tentacles.Meta.DSL_operators.blockchain_wallet_operators.blockchain_walle
 from tentacles.Meta.DSL_operators.blockchain_wallet_operators.blockchain_wallet_ops import (
     create_blockchain_wallet_operators,
     CREATED_TRANSACTIONS_KEY,
+    WALLET_DETAILS_KEY,
 )
 __all__ = [
     "create_blockchain_wallet_operators",
     "CREATED_TRANSACTIONS_KEY",
+    "WALLET_DETAILS_KEY",
 ]

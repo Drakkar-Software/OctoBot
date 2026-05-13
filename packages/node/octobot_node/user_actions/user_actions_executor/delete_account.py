@@ -14,7 +14,7 @@
 #  You should have received a copy of the GNU General Public License along
 #  with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
-import octobot.community.account_backend as account_backend
+import octobot.community.collection_providers as collection_providers
 import octobot_protocol.models as protocol_models
 
 import octobot_node.errors as node_errors
@@ -43,7 +43,7 @@ class DeleteAccountActionExecutor(account_user_action_executor.AccountUserAction
         user_action: protocol_models.UserAction,
     ) -> None:
         delete_payload = _get_delete_account_payload(user_action)
-        account_backend.AccountProvider.instance().delete_account(
+        collection_providers.AccountProvider.instance().delete_item(
             self._wallet_address,
             delete_payload.id,
         )

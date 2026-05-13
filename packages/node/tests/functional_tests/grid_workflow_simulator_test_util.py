@@ -91,6 +91,7 @@ if IMPORTED_OCTOBOT_FLOW_GRID_DEPS:
     def protocol_exchange_account_for_grid_functional(*, usdc_total: float) -> protocol_models_module.ExchangeAccount:
         return protocol_models_module.ExchangeAccount(
             account_type=protocol_models_module.AccountType.EXCHANGE,
+            trading_type=protocol_models_module.TradingType.SPOT,
             exchange=exchange_internal_name(),
             remote_account_id="functional-test-account",
             api_key="functional-key",

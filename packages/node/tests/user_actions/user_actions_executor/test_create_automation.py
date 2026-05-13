@@ -19,7 +19,7 @@ import octobot_node.user_actions.user_actions_executor.util.action_details_facto
 from . import provider_assertions
 
 _ACCOUNT_PROVIDER_INSTANCE_PATCH = (
-    "octobot.community.account_backend.AccountProvider.instance"
+    "octobot.community.collection_providers.AccountProvider.instance"
 )
 _TEST_WALLET_ADDRESS = "0xaaabbbcccddd"
 _TRIGGER_TASK_PATCH = (
@@ -39,6 +39,7 @@ def _minimal_exchange_account(*, account_id: str) -> protocol_models.Account:
         details=protocol_models.AccountDetails(
             actual_instance=protocol_models.ExchangeAccount(
                 account_type=protocol_models.AccountType.EXCHANGE,
+                trading_type=protocol_models.TradingType.SPOT,
                 exchange="binanceus",
                 remote_account_id="remote-1",
                 api_key="k",
@@ -176,7 +177,7 @@ class TestCreateAutomationExecutor:
 
         executor = create_automation_executor.CreateAutomationActionExecutor(_TEST_WALLET_ADDRESS)
         with mock.patch(_ACCOUNT_PROVIDER_INSTANCE_PATCH) as provider_instance_mock:
-            provider_instance_mock.return_value.get_account.return_value = _minimal_exchange_account(account_id="acc-1")
+            provider_instance_mock.return_value.get_item.return_value = _minimal_exchange_account(account_id="acc-1")
             actions = executor._create_automation_actions(user_action)
 
         _assert_init_action_matches_minimal_account(
@@ -206,7 +207,7 @@ class TestCreateAutomationExecutor:
 
         executor = create_automation_executor.CreateAutomationActionExecutor(_TEST_WALLET_ADDRESS)
         with mock.patch(_ACCOUNT_PROVIDER_INSTANCE_PATCH) as provider_instance_mock:
-            provider_instance_mock.return_value.get_account.return_value = _minimal_exchange_account(account_id="acc-1")
+            provider_instance_mock.return_value.get_item.return_value = _minimal_exchange_account(account_id="acc-1")
             actions = executor._create_automation_actions(user_action)
 
         assert len(actions) == 2
@@ -247,7 +248,7 @@ class TestCreateAutomationExecutor:
 
         executor = create_automation_executor.CreateAutomationActionExecutor(_TEST_WALLET_ADDRESS)
         with mock.patch(_ACCOUNT_PROVIDER_INSTANCE_PATCH) as provider_instance_mock:
-            provider_instance_mock.return_value.get_account.return_value = _minimal_exchange_account(account_id="acc-1")
+            provider_instance_mock.return_value.get_item.return_value = _minimal_exchange_account(account_id="acc-1")
             actions = executor._create_automation_actions(user_action)
 
         assert len(actions) == 2
@@ -288,7 +289,7 @@ class TestCreateAutomationExecutor:
 
         executor = create_automation_executor.CreateAutomationActionExecutor(_TEST_WALLET_ADDRESS)
         with mock.patch(_ACCOUNT_PROVIDER_INSTANCE_PATCH) as provider_instance_mock:
-            provider_instance_mock.return_value.get_account.return_value = _minimal_exchange_account(account_id="acc-1")
+            provider_instance_mock.return_value.get_item.return_value = _minimal_exchange_account(account_id="acc-1")
             actions = executor._create_automation_actions(user_action)
 
         assert len(actions) == 2
@@ -339,7 +340,7 @@ class TestCreateAutomationExecutor:
 
         executor = create_automation_executor.CreateAutomationActionExecutor(_TEST_WALLET_ADDRESS)
         with mock.patch(_ACCOUNT_PROVIDER_INSTANCE_PATCH) as provider_instance_mock:
-            provider_instance_mock.return_value.get_account.return_value = _minimal_exchange_account(account_id="acc-1")
+            provider_instance_mock.return_value.get_item.return_value = _minimal_exchange_account(account_id="acc-1")
             actions = executor._create_automation_actions(user_action)
 
         assert [action.id for action in actions] == ["action_init", "w1", "w2"]
@@ -394,7 +395,7 @@ class TestCreateAutomationExecutor:
 
         executor = create_automation_executor.CreateAutomationActionExecutor(_TEST_WALLET_ADDRESS)
         with mock.patch(_ACCOUNT_PROVIDER_INSTANCE_PATCH) as provider_instance_mock:
-            provider_instance_mock.return_value.get_account.return_value = _minimal_exchange_account(account_id="acc-1")
+            provider_instance_mock.return_value.get_item.return_value = _minimal_exchange_account(account_id="acc-1")
             actions = executor._create_automation_actions(user_action)
 
         assert len(actions) == 2
@@ -456,7 +457,7 @@ class TestCreateAutomationExecutor:
         executor = create_automation_executor.CreateAutomationActionExecutor(_TEST_WALLET_ADDRESS)
 
         with mock.patch(_ACCOUNT_PROVIDER_INSTANCE_PATCH) as provider_instance_mock:
-            provider_instance_mock.return_value.get_account.return_value = _minimal_exchange_account(account_id="acc-1")
+            provider_instance_mock.return_value.get_item.return_value = _minimal_exchange_account(account_id="acc-1")
             with pytest.raises(node_errors.UnsupportedAutomationConfigurationTypeError):
                 executor._create_automation_actions(user_action)
 
@@ -479,7 +480,7 @@ class TestCreateAutomationExecutor:
         user_action = _user_action_with_context(action_id="ua-task", payload=create_payload)
         executor = create_automation_executor.CreateAutomationActionExecutor(_TEST_WALLET_ADDRESS)
         with mock.patch(_ACCOUNT_PROVIDER_INSTANCE_PATCH) as provider_instance_mock:
-            provider_instance_mock.return_value.get_account.return_value = _minimal_exchange_account(account_id="acc-1")
+            provider_instance_mock.return_value.get_item.return_value = _minimal_exchange_account(account_id="acc-1")
             actions = executor._create_automation_actions(user_action)
 
         task = asyncio.run(executor._create_automation_task(user_action, actions))
@@ -520,7 +521,7 @@ class TestCreateAutomationExecutor:
             mock.patch(_TRIGGER_TASK_PATCH, new_callable=mock.AsyncMock) as trigger_task_mock,
         ):
             trigger_task_mock.return_value = expected_workflow_id
-            provider_instance_mock.return_value.get_account.return_value = _minimal_exchange_account(account_id="acc-1")
+            provider_instance_mock.return_value.get_item.return_value = _minimal_exchange_account(account_id="acc-1")
             await executor.execute(user_action)
 
         trigger_task_mock.assert_awaited_once()
@@ -574,7 +575,7 @@ class TestCreateAutomationExecutor:
         user_action = _user_action_with_context(action_id="ua-dca-exec", payload=create_payload)
         executor = create_automation_executor.CreateAutomationActionExecutor(_TEST_WALLET_ADDRESS)
         with mock.patch(_ACCOUNT_PROVIDER_INSTANCE_PATCH) as provider_instance_mock:
-            provider_instance_mock.return_value.get_account.return_value = _minimal_exchange_account(account_id="acc-1")
+            provider_instance_mock.return_value.get_item.return_value = _minimal_exchange_account(account_id="acc-1")
             with pytest.raises(node_errors.UnsupportedAutomationConfigurationTypeError):
                 await executor.execute(user_action)
         provider_assertions.assert_provider_user_action_terminal_state(

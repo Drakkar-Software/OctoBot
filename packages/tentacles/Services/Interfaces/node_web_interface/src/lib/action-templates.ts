@@ -406,6 +406,52 @@ export const TRANSFER_TEMPLATE: ActionTemplate = {
       "to_address",
       "blockchain_to_address",
     ]),
+    {
+      key: "BLOCKCHAIN_FROM_FILENAME",
+      label: "Transfer From Filename",
+      required: false,
+      type: "text",
+      aliasFuzzy: [],
+    },
+    {
+      key: "BLOCKCHAIN_FROM_PASSWORD",
+      label: "Transfer From Password",
+      required: false,
+      type: "password",
+      aliasFuzzy: [],
+    },
+    {
+      key: "BLOCKCHAIN_FROM_PORT",
+      label: "Transfer From Port",
+      required: false,
+      type: "number",
+      aliasFuzzy: [],
+    },
+  ],
+}
+
+export const BLOCKCHAIN_WALLET_INIT_TEMPLATE: ActionTemplate = {
+  id: "blockchain_wallet_init",
+  label: "Blockchain Wallet Init",
+  description: "Initialize a blockchain wallet",
+  actionTypes: ["blockchain_wallet_init"],
+  params: [
+    blockchainParam("BLOCKCHAIN_FROM", "Transfer Network", true),
+    privateKeyParam("BLOCKCHAIN_FROM_PRIVATE_KEY", "Transfer Src Private Key"),
+    mnemonicParam("BLOCKCHAIN_FROM_MNEMONIC_SEED", "Transfer Src Mnemonic"),
+    blockHeightParam(
+      "BLOCKCHAIN_FROM_BLOCK_HEIGHT",
+      "Transfer Src Block Height",
+      false,
+    ),
+    {
+      key: "BLOCKCHAIN_INIT_CLOSE_WALLET_ON_EXIT",
+      label: "Close Wallet On Exit",
+      required: true,
+      type: "select",
+      options: ["true", "false"],
+      aliasFuzzy: ["close_on_exit"],
+    },
   ],
 }
 
@@ -473,6 +519,7 @@ export const LOOP_UNTIL_BLOCKCHAIN_BALANCE_TEMPLATE: ActionTemplate = {
 
 export const BASE_ACTION_TEMPLATES: ActionTemplate[] = [
   TRANSFER_TEMPLATE,
+  BLOCKCHAIN_WALLET_INIT_TEMPLATE,
   TRADE_TEMPLATE,
   WITHDRAW_TEMPLATE,
   DEPOSIT_TEMPLATE,

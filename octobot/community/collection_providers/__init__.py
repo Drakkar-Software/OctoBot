@@ -15,23 +15,14 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
 
+from octobot.community.collection_providers.user_account_provider import (
+    AccountProvider,
+)
+from octobot.community.collection_providers.user_strategy_provider import (
+    StrategyProvider,
+)
 
-class AccountStorageError(Exception):
-    pass
-
-
-class AccountDecryptionError(AccountStorageError):
-    pass
-
-
-class AccountFileFormatError(AccountStorageError):
-    pass
-
-
-class AccountNotFoundError(AccountStorageError):
-    pass
-
-
-class DuplicateAccountError(AccountStorageError):
-    pass
-
+__all__ = [
+    "AccountProvider",
+    "StrategyProvider",
+]

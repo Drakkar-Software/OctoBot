@@ -23,7 +23,7 @@ import octobot_protocol.models as protocol_models
 import octobot_node.errors as node_errors
 import octobot_node.user_actions.user_actions_executor.automation_user_action_executor as automation_user_action_executor
 import octobot_node.user_actions.user_actions_executor.util.action_details_factory as action_details_factory
-import octobot.community.account_backend as account_backend
+import octobot.community.collection_providers as collection_providers
 
 import octobot_node.models as models
 import octobot_node.scheduler.tasks
@@ -78,7 +78,7 @@ class CreateAutomationActionExecutor(automation_user_action_executor.AutomationU
         account_id = _get_single_account_id(automation_configuration)
 
         try:
-            protocol_account = account_backend.AccountProvider.instance().get_account(
+            protocol_account = collection_providers.AccountProvider.instance().get_item(
                 self._wallet_address,
                 account_id,
             )
