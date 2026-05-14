@@ -1,0 +1,100 @@
+.hero {
+  width: 100%;
+  padding: 5.5rem 0 4rem;
+}
+
+.inner {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+.copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  align-items: center;
+  text-align: center;
+  max-width: 42rem;
+  margin: 0 auto;
+}
+
+.title {
+  font-size: 3.4rem;
+  font-weight: 700;
+  letter-spacing: -1.4px;
+  line-height: 1.06;
+  color: var(--ng-ink);
+  margin: 0;
+}
+
+.subtitle {
+  font-size: 1.2rem;
+  color: var(--ng-ink-muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.note {
+  font-size: 0.85rem;
+  color: var(--ng-ink-subtle);
+  margin: 0.4rem 0 0;
+}
+
+/* Split layout — copy left, visual right (wide screens only). */
+.split .inner {
+  display: flex;
+  align-items: center;
+  gap: 3.5rem;
+}
+
+.split .copy {
+  align-items: flex-start;
+  text-align: left;
+  margin: 0;
+  flex: 1;
+}
+
+.split .actions {
+  justify-content: flex-start;
+}
+
+.visual {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (max-width: 960px) {
+  .split .inner {
+    flex-direction: column;
+    gap: 2.5rem;
+  }
+  .split .copy {
+    align-items: center;
+    text-align: center;
+  }
+  .split .actions {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 640px) {
+  .hero {
+    padding: 3.5rem 0 2.5rem;
+  }
+  .title {
+    font-size: 2.3rem;
+    letter-spacing: -0.8px;
+  }
+  .subtitle {
+    font-size: 1.05rem;
+  }
+}

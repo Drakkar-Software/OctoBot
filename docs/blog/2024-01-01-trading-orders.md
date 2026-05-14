@@ -21,9 +21,7 @@ author: guillaume
 
 # The basics of trading - The orders
 
-<div style={{textAlign: "center"}}>
 ![cover](/images/blog/trading-orders/cover.png)
-</div>
 
 Trading cryptocurrencies can be exciting, but also take a lot of time if you don’t know how to do it. There are many different types of orders you can make to buy or sell on your exchange according to what you want. Read our introductory article and get a basic understanding of the orders available.
 

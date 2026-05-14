@@ -8,17 +8,11 @@ tags: ["Crypto", "Trading", "Educational", "TradingView"]
 image: "/images/blog/how-to-automate-trading-in-tradingview/automate-your-tradingview-trades-to-trade-on-any-indicator-or-strategy.png"
 ---
 
-
-
 # Comment automatiser ses trades avec TradingView
 
-<div style={{textAlign: "center"}}>
-  <div>
-    ![automatisez vos trades tradingview pour trader avec tout type d'indicateur
-    ou de
-    stratégie](/images/blog/how-to-automate-trading-in-tradingview/automate-your-tradingview-trades-to-trade-on-any-indicator-or-strategy.png)
-  </div>
-</div>
+![automatisez vos trades tradingview pour trader avec tout type d'indicateur
+ou de
+stratégie](/images/blog/how-to-automate-trading-in-tradingview/automate-your-tradingview-trades-to-trade-on-any-indicator-or-strategy.png)
 
 ## Est-ce possible d'automatiser ses trades avec TradingView?
 
@@ -30,24 +24,17 @@ Ces alertes peuvent être envoyées gratuitement par e-mail, ou en utilisant des
 
 TradingView permet la création d'alertes qui se déclencheront dès qu'une condition spécifique est remplie.
 
-<div style={{textAlign: "center"}}>
-  <div>
-    ![créer une alerte depuis
-    tradingview](/images/blog/how-to-automate-trading-in-tradingview/creating-an-alert-from-tradingview.png)
-  </div>
-</div>
+![créer une alerte depuis
+tradingview](/images/blog/how-to-automate-trading-in-tradingview/creating-an-alert-from-tradingview.png)
 
 Les alertes sont déclenchées dès que leur `Condition` est remplie. Les conditions peuvent être :
 
 - Des **événements de prix** tels que le prix du [Bitcoin](https://www.octobot.cloud/what-is-bitcoin) atteignant une certaine valeur
 - Des seuils d'**indicateurs** tels que la valeur du RSI entrant dans une plage spécifique
 - Des **stratégies Pine Script** créant des ordres d'achat ou de vente
-  <div style={{textAlign: "center"}}>
-    <div>
-      ![formulaire d'alerte
-      tradingview](/images/blog/how-to-automate-trading-in-tradingview/tradingview-alert-form.png)
-    </div>
-  </div>
+
+![formulaire d'alerte
+tradingview](/images/blog/how-to-automate-trading-in-tradingview/tradingview-alert-form.png)
 
 De manière générale, les alertes sont très flexibles et constituent un outil idéal pour connecter TradingView à d'autres plateformes afin d'automatiser des trades. Cette connexion peut se faire par e-mail ou par webhooks.
 
@@ -55,12 +42,8 @@ De manière générale, les alertes sont très flexibles et constituent un outil
 
 En cochant l'option de notification `Envoyer du texte but` dans l'onglet `Notifications` de l'alerte, TradingView enverra automatiquement un e-mail à l'adresse e-mail de votre alerte chaque fois que l'alerte est déclenchée.
 
-<div style={{textAlign: "center"}}>
-  <div>
-    ![formulaire de notification d'alerte
-    tradingview](/images/blog/how-to-automate-trading-in-tradingview/tradingview-alerte-email-form.png)
-  </div>
-</div>
+![formulaire de notification d'alerte
+tradingview](/images/blog/how-to-automate-trading-in-tradingview/tradingview-alerte-email-form.png)
 
 Automatiser les transactions via e-mail est possible, mais peut être compliqué. Pour ce faire, des plateformes spécialisées telles qu'[OctoBot](/investing/tradingview-automated-trading) sont nécessaires pour pouvoir automatiser vos trades TradingView tout en restant sur l'abonnement gratuit de TradingView.
 
@@ -88,30 +71,18 @@ Vous avez une stratégie TradingView que vous aimeriez automatiser ? Consultez n
 
 TradingView est une excellente plateforme pour trouver des stratégies de trading. En utilisant l'explorateur de stratégies, vous pouvez tester des centaines de stratégies.
 
-<div style={{textAlign: "center"}}>
-  <div>
-    ![explorer de stratégies
-    tradingview](/images/blog/how-to-automate-trading-in-tradingview/tradingview-strategy-explorer.png)
-  </div>
-</div>
+![explorer de stratégies
+tradingview](/images/blog/how-to-automate-trading-in-tradingview/tradingview-strategy-explorer.png)
 
 Une stratégie TradingView est écrite en <a href="https://www.tradingview.com/pine-script-docs/welcome/" rel="nofollow">Pine Script</a>, un langage spécialement conçu pour créer et visualiser des stratégies de trading
 
-<div style={{textAlign: "center"}}>
-  <div>
-    ![exemple de stratégie
-    tradingview](/images/blog/how-to-automate-trading-in-tradingview/tradingview-strategy-example.png)
-  </div>
-</div>
+![exemple de stratégie
+tradingview](/images/blog/how-to-automate-trading-in-tradingview/tradingview-strategy-example.png)
 
 Lorsque vous sélectionnez une stratégie, TradingView affichera ses signaux sur votre graphique et vous pourrez afficher et modifier son code Pine Script directement depuis le site web.
 
-<div style={{textAlign: "center"}}>
-  <div>
-    ![stratégie rsi simple avec
-    tradingview](/images/blog/how-to-automate-trading-in-tradingview/tradingview-simple-rsi-strategy.png)
-  </div>
-</div>
+![stratégie rsi simple avec
+tradingview](/images/blog/how-to-automate-trading-in-tradingview/tradingview-simple-rsi-strategy.png)
 
 Il existe de nombreuses autres façons de trouver des stratégies TradingView, telles que :
 
@@ -124,12 +95,8 @@ Lorsque vous utilisez une stratégie TradingView, vous pouvez toujours visualise
 
 Le backtesting d'une stratégie est particulièrement utile lors de l'optimisation des paramètres de votre stratégie pour générer le plus de profits sur les marchés que vous tradez.
 
-<div style={{textAlign: "center"}}>
-  <div>
-    ![testeur de stratégie
-    tradingview](/images/blog/how-to-automate-trading-in-tradingview/tradingview-strategy-tester.png)
-  </div>
-</div>
+![testeur de stratégie
+tradingview](/images/blog/how-to-automate-trading-in-tradingview/tradingview-strategy-tester.png)
 
 Pour tester une stratégie TradingView, il vous suffit de vous rendre dans l'onglet `Testeur de stratégie` et de consulter les performances historiques de votre stratégie de trading.
 

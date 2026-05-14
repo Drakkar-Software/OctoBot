@@ -4,15 +4,11 @@ description: "Profitez facilement des marchés stables en maintenant un ensemble
 sidebar_position: 7
 ---
 
-
-
 # Grid Trading Mode
 
 Le Grid Trading Mode (ou GridTradingMode) est conçu pour tirer profit des marchés stables en maintenant un ensemble d'ordres d'achat et de vente semblable à une grille. Réalisez des bénéfices réguliers sur chaque petite variation du marché avec des risques minimisés grâce au trading par grille. 
 
-<div style={{textAlign: "center"}}>
-    ![grid trading illustrated by a man stepping up on green stairs grabbing coins](/images/guides/grid-trading-illustrated-by-a-man-stepping-up-on-green-stairs-grabbing-coins.png)
-</div>
+![grid trading illustrated by a man stepping up on green stairs grabbing coins](/images/guides/grid-trading-illustrated-by-a-man-stepping-up-on-green-stairs-grabbing-coins.png)
 
 Le Grid Trading Mode est une version simplifiée du [Staggered Orders Trading Mode](staggered-orders-trading-mode).
 

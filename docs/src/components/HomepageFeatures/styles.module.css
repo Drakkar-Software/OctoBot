@@ -1,36 +1,86 @@
 .features {
-  display: flex;
-  align-items: center;
-  padding: 2rem 0 4rem;
+  padding: 3rem 0 5rem;
   width: 100%;
 }
 
 .sectionHeader {
-  margin-bottom: 2rem;
-}
-
-.featureCard {
-  padding: 2rem 1.5rem;
-  border-radius: 8px;
-  border: 1px solid var(--ifm-color-emphasis-200);
-  margin: 1rem 0;
-  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  text-align: center;
+  margin-bottom: 2.5rem;
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 0.4rem;
+}
+
+.sectionTitle {
+  font-size: 2rem;
+  letter-spacing: -0.5px;
+  margin: 0;
+  color: var(--ng-ink);
+}
+
+.sectionLead {
+  max-width: 38rem;
+  margin: 0;
+  color: var(--ng-ink-faint);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+}
+
+@media (max-width: 996px) {
+  .grid {
+    grid-template-columns: 1fr;
+    max-width: 28rem;
+    margin: 0 auto;
+  }
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
   height: 100%;
+  padding: 1.6rem 1.5rem;
 }
 
-.featureCard:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-  transform: translateY(-2px);
+.icon {
+  font-size: 1.4rem;
+  margin-bottom: 0.4rem;
 }
 
-[data-theme='dark'] .featureCard:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+.cardTitle {
+  font-size: 1.15rem;
+  margin: 0;
+  color: var(--ng-ink);
 }
 
-.featureIcon {
-  font-size: 3rem;
-  margin-bottom: 1rem;
+.cardBody {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--ng-ink-faint);
+  flex: 1;
+}
+
+.cardLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--ng-frost);
+}
+
+.arrow {
+  transition: transform 160ms ease;
+}
+
+.card:hover .arrow {
+  transform: translateX(4px);
 }

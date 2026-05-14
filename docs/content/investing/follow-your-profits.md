@@ -4,8 +4,6 @@ description: "Learn how to quickly and easily follow profits and activity of you
 sidebar_position: 11
 ---
 
-
-
 # Follow your profits
 
 ## Your exchange accounts
@@ -32,12 +30,8 @@ The OctoBot cloud website, on <a href="https://www.octobot.cloud/bots" rel="nofo
 
 The OctoBot mobile app is available on <a href="https://play.google.com/store/apps/details?id=com.drakkarsoftware.octobotapp&utm_source=www.octobot.cloud&utm_media=investing&utm_content=follow-your-profit" rel="nofollow">Google play</a> and on <a href="https://apps.apple.com/us/app/octobot-crypto-investment/id6502774175" rel="nofollow">App Store</a>.
 
-<div style="text-align: center">
-  <div style="text-align: center">
-    <a href="https://apps.apple.com/us/app/octobot-crypto-investment/id6502774175" rel="nofollow"><AppleStoreButton /></a>
-    <a href="https://play.google.com/store/apps/details?id=com.drakkarsoftware.octobotapp&utm_source=www.octobot.cloud&utm_media=investing&utm_content=follow-your-profit" rel="nofollow"><GoogleStoreButton /></a>
-  </div>
-</div>
+[Get the OctoBot app on the App Store](https://apps.apple.com/us/app/octobot-crypto-investment/id6502774175)
+[Get the OctoBot app on Google Play](https://play.google.com/store/apps/details?id=com.drakkarsoftware.octobotapp&utm_source=www.octobot.cloud&utm_media=investing&utm_content=follow-your-profit)
 
 ### Fom OctoBot web app
 

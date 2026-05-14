@@ -10,26 +10,21 @@ import styles from './index.module.css';
 function HomepageHeader() {
   const {siteConfig} = useDocusaurusContext();
   return (
-    <header className={`hero hero--primary ${styles.heroBanner}`}>
-      <div className="container">
-        <Heading as="h1" className="hero__title">
+    <header className={`bg-halo-subtle ${styles.heroBanner}`}>
+      <div className={`container ${styles.heroInner}`}>
+        <span className="ng-eyebrow">Open-source crypto trading</span>
+        <Heading as="h1" className={styles.heroTitle}>
           {siteConfig.title}
         </Heading>
-        <p className="hero__subtitle">{siteConfig.tagline}</p>
+        <p className={styles.heroSubtitle}>{siteConfig.tagline}</p>
         <div className={styles.buttons}>
-          <Link
-            className="button button--secondary button--lg"
-            to="/guides/octobot">
+          <Link className="ng-btn ng-btn--primary" to="/guides/octobot">
             I want to use OctoBot
           </Link>
-          <Link
-            className="button button--outline button--secondary button--lg"
-            to="/investing/introduction">
+          <Link className="ng-btn ng-btn--ghost" to="/investing/introduction">
             I want to use OctoBot Cloud
           </Link>
-          <Link
-            className="button button--outline button--secondary button--lg"
-            to="/developers/getting-started">
+          <Link className="ng-btn ng-btn--surface" to="/developers/getting-started">
             I want to contribute
           </Link>
         </div>

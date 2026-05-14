@@ -8,8 +8,6 @@ tags: ["Tradingview", "Chatgpt", "Release", "Backtesting", "Strategy designer", 
 image: "/images/blog/octobot-2-0-0-whats-new/octobot-2.0.0-annoucement-with-new-design-preview.png"
 ---
 
-
-
 # OctoBot 2.0.0 - Les nouveautés
 
 ![annonce d'octobot 2.0.0 avec preview du nouveau design](/images/blog/octobot-2-0-0-whats-new/octobot-2.0.0-annoucement-with-new-design-preview.png)
@@ -22,10 +20,8 @@ Nous sommes très heureux d'annoncer la sortie d'OctoBot 2.0.0 ! Cette version r
 2. Introduit l'extension premium d'OctoBot
 3. Comprend de nombreuses corrections et améliorations.
 
-<div style={{textAlign: "center"}}>
-  ![octobot premium nouveau tentacles
-  disponible](/images/blog/octobot-2-0-0-whats-new/octobot-premium-new-tentacles-available.png)
-</div>
+![octobot premium nouveau tentacles
+disponible](/images/blog/octobot-2-0-0-whats-new/octobot-premium-new-tentacles-available.png)
 
 ## Refonte de l'interface utilisateur
 
@@ -33,17 +29,13 @@ Dans OctoBot 2.0.0, l'interface utilisateur est profondément améliorée et mod
 
 L'ensemble de l'interface utilisateur est désormais beaucoup plus moderne et utilise la nouvelle identité visuelle d'OctoBot.
 
-<div style={{textAlign: "center"}}>
-  ![octobot 2.0.0 preview
-  dark](/images/blog/octobot-2-0-0-whats-new/octobot-2.0.0-preview-dark.png)
-</div>
+![octobot 2.0.0 preview
+dark](/images/blog/octobot-2-0-0-whats-new/octobot-2.0.0-preview-dark.png)
 
 L'interface utilisateur propose désormais des modes sombre et clair, et offre un meilleur rendu sur différentes tailles d'écran.
 
-<div style={{textAlign: "center"}}>
-  ![octobot 2.0.0 pnl
-  light](/images/blog/octobot-2-0-0-whats-new/octobot-2.0.0-pnl-light.png)
-</div>
+![octobot 2.0.0 pnl
+light](/images/blog/octobot-2-0-0-whats-new/octobot-2.0.0-pnl-light.png)
 
 Nous espérons que vous apprécierez le nouveau design d'OctoBot !
 
@@ -51,10 +43,8 @@ Nous espérons que vous apprécierez le nouveau design d'OctoBot !
 
 La deuxième grande nouveauté de cette version est l'introduction de [l'extension premium d'OctoBot](/guides/octobot-configuration/premium-octobot-extension).
 
-<div style={{textAlign: "center"}}>
-  ![preview de l'extension premium
-  octobot](/images/blog/octobot-2-0-0-whats-new/octobot-premium-extension-preview.png)
-</div>
+![preview de l'extension premium
+octobot](/images/blog/octobot-2-0-0-whats-new/octobot-premium-extension-preview.png)
 
 L'extension Premium OctoBot est une extension payante facultative visant à améliorer de manière permanente votre OctoBot open source. Elle ajoute :
 
@@ -62,10 +52,8 @@ L'extension Premium OctoBot est une extension payante facultative visant à amé
 - Les [webhooks sécurisés d'OctoBot cloud](/guides/octobot-interfaces/tradingview/using-a-webhook) pour vos stratégies TradingView
 - [Les paniers de crypto d'OctoBot cloud](https://www.octobot.cloud/features/crypto-basket) directement dans votre Octobot open source
 
-<div style={{textAlign: "center"}}>
-  ![octobot open source utilisant les paniers de crypto avec extension premium
-  octobot](/images/guides/trading-modes/octobot-open-source-using-crypto-baskets-from-premium-extension.png)
-</div>
+![octobot open source utilisant les paniers de crypto avec extension premium
+octobot](/images/guides/trading-modes/octobot-open-source-using-crypto-baskets-from-premium-extension.png)
 
 Nous avons créé l'extension Premium OctoBot afin de:
 

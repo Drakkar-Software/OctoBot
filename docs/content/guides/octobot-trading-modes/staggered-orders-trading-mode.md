@@ -8,11 +8,7 @@ sidebar_position: 8
 
 The Staggered Orders Trading Mode (or StaggeredOrdersTradingMode) is designed to profit from sideway markets by maintaining a grid-like set of buy and sell orders. Make small yet regular profits on each small market change with minimized risks grid order.
 
-<div style="text-align: center">
-
 ![grid trading illustrated by a man stepping up on green stairs grabbing coins](/images/guides/grid-trading-illustrated-by-a-man-stepping-up-on-green-stairs-grabbing-coins.png)
-
-</div>
 
 The Staggered Orders is a more complex and flexible version of the [Grid Trading Mode](grid-trading-mode). In most situations, the [Grid Trading Mode](grid-trading-mode) is a better choice.
 

@@ -8,8 +8,6 @@ tags: ["Crypto", "Ecosystem", "Finance", "Educational"]
 image: "/images/blog/fomo-meaning/cover.png"
 ---
 
-
-
 # Comprendre la bulle des cryptomonnaies
 
 Découvrez le monde passionnant des cryptomonnaies ! Apprenez à identifier les bulles et à protéger vos investissements.
@@ -38,14 +36,10 @@ Cependant, tout comme un ballon ne peut contenir qu'une certaine quantité d'air
    autres. Si tout le monde achète des cryptos, cela peut sembler une bonne idée
    de faire de même, même si les prix sont très élevés.
 
-<div style={{textAlign: "center"}}>
-  <div>
-    ![Une personne avec une expression excitée regarde un graphique du marché
-    des cryptos en hausse sur son ordinateur, symbolisant le FOMO dans la
-    cryptomonnaie.](/images/blog/fomo-meaning/cover.png) *Une illustration du
-    sentiment de FOMO.*
-  </div>
-</div>
+![Une personne avec une expression excitée regarde un graphique du marché
+des cryptos en hausse sur son ordinateur, symbolisant le FOMO dans la
+cryptomonnaie.](/images/blog/fomo-meaning/cover.png) *Une illustration du
+sentiment de FOMO.*
 
 ## Bulles historiques des cryptomonnaies
 
@@ -75,12 +69,10 @@ Par exemple, en 2017, le prix du Bitcoin a grimpé jusqu'à près de 20 000 $, s
   tenez-vous-y, quel que soit ce que font les autres. Évitez de prendre des
   décisions basées sur des changements de prix soudains ou la pression sociale.
 
-<div style={{textAlign: "center"}}>
-  ![paniers de crypto investissement aidant les investisseurs à diversifier leur
-  portefeuille de
-  cryptos](/images/blog/invest-with-crypto-baskets/crypto-basket.png) *Un
-  portefeuille de cryptos diversifié*
-</div>
+![paniers de crypto investissement aidant les investisseurs à diversifier leur
+portefeuille de
+cryptos](/images/blog/invest-with-crypto-baskets/crypto-basket.png) *Un
+portefeuille de cryptos diversifié*
 
 ## Préparation pour le post éclatement de la bulle
 

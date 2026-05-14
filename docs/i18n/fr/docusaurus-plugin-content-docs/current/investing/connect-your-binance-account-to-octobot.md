@@ -4,8 +4,6 @@ description: "|"
 sidebar_position: 22
 ---
 
-
-
 # Connecter votre compte Binance à OctoBot cloud
 
 Pour automatiser les stratégies d'investissement de votre choix sur votre propre compte Binance, il est nécessaire d'autoriser OctoBot à accéder à une partie de votre compte.
@@ -87,15 +85,11 @@ Remarque : Quand vous ajoutez une API Key sur OctoBot cloud, vous avez la possib
 
 ![ajouter api key a octobot cloud depuis start de strategie](/images/guides/binance/ajouter-api-key-a-octobot-cloud-depuis-start-de-strategie.png)
 
-<div style="text-align: center">
-  <em>Ajouter une API Key au lancement d'une stratégie</em>
-</div>
+<em>Ajouter une API Key au lancement d'une stratégie</em>
 
 ![ajouter api key a octobot cloud depuis profil](/images/guides/binance/ajouter-api-key-a-octobot-cloud-depuis-profil.png)
 
-<div style="text-align: center">
-  <em>Ajouter une API Key depuis <a href="https://www.octobot.cloud/fr/account" rel="nofollow">votre profil</a></em>
-</div>
+<em>Ajouter une API Key depuis <a href="https://www.octobot.cloud/fr/account" rel="nofollow">votre profil</a></em>
 
 Votre compte Binance peut maintenant être utilsié sur OctoBot cloud !
 

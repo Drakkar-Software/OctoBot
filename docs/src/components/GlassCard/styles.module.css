@@ -1,0 +1,14 @@
+.padded {
+  padding: 18px;
+}
+
+.linkCard {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.linkCard:hover {
+  color: inherit;
+  text-decoration: none;
+}

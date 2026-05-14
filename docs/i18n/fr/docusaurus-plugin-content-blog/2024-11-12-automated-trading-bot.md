@@ -8,8 +8,6 @@ tags: ["Cryptocurrency", "Trading", "Bot"]
 image: "/images/blog/automated-trading-bot/cover.png"
 ---
 
-
-
 # Robot de Trading Automatisé
 
 Fatigué de passer des heures à analyser les tendances du marché pour finalement prendre des décisions de trading basées sur vos émotions ?
@@ -28,13 +26,9 @@ De nombreux robots de trading sont conçus pour être utilisés dans le trading 
 Ils peuvent analyser les données du marché et effectuer des transactions sans biais émotionnel, donnant au trader plus de temps pour l'analyse et le développement de stratégies.
 Tout comme une voiture autonome, les robots de trading automatisés nécessitent des contrôles et des mises à jour réguliers pour s'assurer qu'ils continuent de fonctionner correctement et efficacement.
 
-<div style={{textAlign: "center"}}>
-  <div>
-    ![Un homme se détendant sur son canapé pendant qu'OctoBot gagne de l'argent
-    en automatisant des stratégies de
-    crypto-monnaies](/a-man-relaxing-in-his-couch-while-octobot-is-making-money-by-automating-cryptocurrency-strategies-light.png)
-  </div>
-</div>
+![Un homme se détendant sur son canapé pendant qu'OctoBot gagne de l'argent
+en automatisant des stratégies de
+crypto-monnaies](/a-man-relaxing-in-his-couch-while-octobot-is-making-money-by-automating-cryptocurrency-strategies-light.png)
 
 ## Comment Fonctionnent les Robots de Trading Automatisés ?
 
@@ -60,12 +54,8 @@ Avec tant d'options de logiciels de trading automatisé disponibles, il est diff
 
 Nous avons également fait un classement des [meilleurs robots de trading crypto](best-crypto-trading-bots).
 
-<div style={{textAlign: "center"}}>
-  <div>
-    ![Un podium des meilleurs robots de
-    trading](/images/blog/best-crypto-trading-bots/cover.png)
-  </div>
-</div>
+![Un podium des meilleurs robots de
+trading](/images/blog/best-crypto-trading-bots/cover.png)
 
 ## Meilleures Stratégies de Trading Automatisé
 

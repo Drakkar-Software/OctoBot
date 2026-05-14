@@ -2,6 +2,13 @@ import {themes as prismThemes} from 'prism-react-renderer';
 import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 
+// Neo Glass Dark — DM Sans / DM Mono. Loaded via <link> (non render-blocking)
+// instead of an @import in CSS. Preconnect tags are injected through headTags.
+const NEO_GLASS_FONTS =
+  'https://fonts.googleapis.com/css2?' +
+  'family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&' +
+  'family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap';
+
 const config: Config = {
   title: 'OctoBot Documentation',
   tagline: 'Open-source cryptocurrency trading bot',
@@ -30,7 +37,21 @@ const config: Config = {
     },
   },
 
+  stylesheets: [NEO_GLASS_FONTS],
+
   headTags: [
+    {
+      tagName: 'link',
+      attributes: {rel: 'preconnect', href: 'https://fonts.googleapis.com'},
+    },
+    {
+      tagName: 'link',
+      attributes: {
+        rel: 'preconnect',
+        href: 'https://fonts.gstatic.com',
+        crossorigin: 'anonymous',
+      },
+    },
     {
       tagName: 'script',
       attributes: {type: 'application/ld+json'},
@@ -129,7 +150,12 @@ const config: Config = {
           },
         },
         theme: {
-          customCss: './src/css/custom.css',
+          // theme-tokens.css holds the Neo Glass Dark design tokens + utility
+          // classes; custom.css maps them onto Infima + Docusaurus surfaces.
+          customCss: [
+            './src/css/theme-tokens.css',
+            './src/css/custom.css',
+          ],
         },
         sitemap: {
           priority: 0.5,
@@ -148,9 +174,12 @@ const config: Config = {
       {property: 'og:site_name', content: 'OctoBot Documentation'},
       {name: 'keywords', content: 'octobot, crypto, trading bot, open source, automated trading'},
     ],
+    // Neo Glass Dark is a strict dark-mode-only theme — no light palette,
+    // so the toggle is disabled and dark is forced.
     colorMode: {
-      defaultMode: 'light',
-      respectPrefersColorScheme: true,
+      defaultMode: 'dark',
+      disableSwitch: true,
+      respectPrefersColorScheme: false,
     },
     navbar: {
       title: 'OctoBot',
@@ -264,8 +293,8 @@ const config: Config = {
       maxHeadingLevel: 3,
     },
     prism: {
-      theme: prismThemes.github,
-      darkTheme: prismThemes.dracula,
+      theme: prismThemes.oneDark,
+      darkTheme: prismThemes.oneDark,
       additionalLanguages: ['python', 'bash', 'json', 'yaml', 'toml'],
     },
   } satisfies Preset.ThemeConfig,

@@ -4,14 +4,10 @@ description: "Learn how to configure your OctoBot to trade using Reddit and watc
 sidebar_position: 5
 ---
 
-
-
 # Trading based on Reddit posts
 
-<div style="text-align: center">
-  ![reddit trading automation illustrated by reddit
-  logo](/images/guides/interfaces/reddit-connection-to-octobot-illustrated-by-reddit-logo.png)
-</div>
+![reddit trading automation illustrated by reddit
+logo](/images/guides/interfaces/reddit-connection-to-octobot-illustrated-by-reddit-logo.png)
 
 OctoBot can connect to <a href="https://www.reddit.com" rel="nofollow">Reddit</a> to monitor Reddit posts from subreddits.
 
@@ -29,31 +25,26 @@ Configure the **RedditForumEvaluator** to specify the subreddits to follow for e
 
 To connect to Reddit, OctoBot needs a Reddit script app, which you can create from your Reddit account, or a new account dedicated to OctoBot.
 
-<div style="text-align: center">
-   ![reddit octobot config](/images/guides/interfaces/reddit-octobot-config.png)
-</div>
+![reddit octobot config](/images/guides/interfaces/reddit-octobot-config.png)
 
 1. Login on your Reddit account if you already have one
 2. Go to your account's <a href="https://www.reddit.com/prefs/apps/" rel="nofollow">Applications preferences</a>.
 3. Create a new `script` app
-   <div style="text-align: center">
-      ![reddit create app](/images/guides/interfaces/reddit-create-app.png)
-   </div>
+
+![reddit create app](/images/guides/interfaces/reddit-create-app.png)
+
    - `Name` and `description` can be set as you wish
    - Leave `About URL` empty
    - `Redirect URI` won't be used, enter `https://www.reddit.com/` (or any other valid url)
    - Create your app 
 3. **Client-Id** is the list of characters under your App name, next to its icon
 4. **Client-Secret** is the **secret** identifier of the App
-<div style="text-align: center">
-   ![reddit created app](/images/guides/interfaces/reddit-created-app.png)
-</div>
+
+![reddit created app](/images/guides/interfaces/reddit-created-app.png)
 
 Copy and paste your new Reddit app details into your OctoBot configuration.
-<div style="text-align: center">
-   ![reddit octobot config](/images/guides/interfaces/reddit-octobot-config.png)
-</div>
 
+![reddit octobot config](/images/guides/interfaces/reddit-octobot-config.png)
 
 ### Configuration from user/config.json
 

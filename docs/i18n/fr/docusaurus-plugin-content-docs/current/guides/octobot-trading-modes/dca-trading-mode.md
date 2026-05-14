@@ -4,15 +4,11 @@ description: "Optimisez votre stratégie d'investissement en utilisant le tradin
 sidebar_position: 2
 ---
 
-
-
 # Trading mode DCA
 
 Le trading mode DCA (ou DCATradingMode) est conçu pour acheter et vendre selon une stratégie de [Smart Dollar cost averaging](/blog/smart-dca-making-of). 
 
-<div style={{textAlign: "center"}}>
-    ![dca trading illustrated by a man watering a plant growing money](/images/guides/dca-trading-illustrated-by-a-man-watering-a-plant-growing-money.png)
-</div>
+![dca trading illustrated by a man watering a plant growing money](/images/guides/dca-trading-illustrated-by-a-man-watering-a-plant-growing-money.png)
 
 Il vous permet d'optimiser vos prix d'entrée et de sortie en fonction de votre configuration.
 

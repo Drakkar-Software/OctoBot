@@ -8,26 +8,10 @@ tags: ["Trading", "Exchange", "Self custody", "Crypto"]
 image: "/images/blog/how-to-use-a-self-custody-crypto-trading-bot/not-your-keys-not-your-coins-writen-on-paper-with-keys-and-a-bitcoin-logo.png"
 ---
 
-
-
-  BarChart,
-  CheckCircle,
-  CircleDollarSign,
-  Globe,
-  Shield,
-  TrendingUp,
-  Zap,
-} from 'lucide-react'
-
 # How to use a self custody crypto trading bot
 
-
-<div style={{textAlign: "center"}}>
-  <div>
-    ![chatgpt-logo](/images/blog/how-to-use-a-self-custody-crypto-trading-bot/not-your-keys-not-your-coins-writen-on-paper-with-keys-and-a-bitcoin-logo.png)
-    _"Not your keys, not your coins"_
-  </div>
-</div>
+![chatgpt-logo](/images/blog/how-to-use-a-self-custody-crypto-trading-bot/not-your-keys-not-your-coins-writen-on-paper-with-keys-and-a-bitcoin-logo.png)
+_"Not your keys, not your coins"_
 
 <!--truncate-->
 
@@ -44,17 +28,10 @@ A non custodial crypto trading bot is a trading bot that is fully controlled by 
 1. It is not controlled by a central authority such as a crypto exchange or a trading bot platform that holds your API (or wallet) keys. 
 2. It's a trading robot that lets you have custody of your exchange API keys or crypto wallet.
 
-
 While self custody is a core principle of crypto, it is not always easy to implement.  
 To achieve it, you need to configure your own wallet, which can be quickly done on a browser wallet such as <a href="https://metamask.io/" rel="nofollow">MetaMask</a>. This wallet can then be used to store your crypto and exchange them on decentralized exchanges.
 
-
-<div style={{textAlign: "center"}}>
-  <div>
-    ![metamask-logo](/images/blog/how-to-use-a-self-custody-crypto-trading-bot/metamask-logo.png)
-  </div>
-</div>
-
+![metamask-logo](/images/blog/how-to-use-a-self-custody-crypto-trading-bot/metamask-logo.png)
 
 From this point, a trading bot connected to this wallet will be able to apply your investment strategy by trading your crypto on decentralized exchanges using your own wallet.
 
@@ -62,9 +39,7 @@ This implies that the bot will access your crypto wallet directly, which means t
 
 Here is where a self custody crypto trading bot comes in. It is a trading bot that is only controlled by you, it never shares your crypto wallet's keys with any platform or anyone.  
 
-
 A self custody crypto trading bot can connect to both centralized and decentralized exchanges, and in both cases, it greatly increases the security of your crypto assets.
-
 
 ### Self custody crypto trading bot for centralized exchanges
 
@@ -95,65 +70,23 @@ Overall, automating an investment strategy on a DEX is still very challenging, t
 
 ### Pros and cons of self custody crypto trading bots
 
-
 The only way use a self custody crypto trading bot is to run it on your own computer or server. Its usually means a desktop application that you install on your system and a lot of headaches to setup and run properly.
 
 **Advantages of self custody crypto trading bots**
 
-<div>
-  {[
-    {
-      icon: <CheckCircle className="text-primary" />,
-      name: 'Your keys, your coins',
-      description: 'You are the only one who has access to your crypto wallet',
-    },
-    {
-      icon: <Shield className="text-primary" />,
-      name: 'Best security',
-      description: 'There is no third party to compromise your crypto or API keys',
-    },
-    {
-      icon: <CircleDollarSign className="text-primary" />,
-      name: 'Highest flexibility',
-      description: 'Use decentralized and centralized exchanges from the same platform',
-    },
-  ].map((element, i) => (
-    <HighlightElement key={i} element={element} />
-  ))}
-</div>
+- **Your keys, your coins** — you are the only one who has access to your crypto wallet.
+- **Best security** — there is no third party to compromise your crypto or API keys.
+- **Highest flexibility** — use decentralized and centralized exchanges from the same platform.
 
 **Drawbacks of self custody crypto trading bots**
 
-<div>
-  {[
-    {
-      icon: <CircleDollarSign className="text-rating-color-2" />,
-      name: 'Responsibility',
-      description: 'You are responsible of your crypto wallet and API keys security, there is no recovery service if you lose your keys.',
-    },
-    {
-      icon: <Globe className="text-rating-color-2" />,
-      name: 'Running the software',
-      description:
-        'The software needs to continuously be executed on your own computer or server.',
-    },
-    {
-      icon: <Globe className="text-rating-color-2" />,
-      name: 'Complex setup',
-      description:
-        'A self custody crypto trading bot usually requires technical knowledge and a secure setup.',
-    },
-  ].map((element, i) => (
-    <HighlightElement key={i} element={element} />
-  ))}
-</div>
+- **Responsibility** — you are responsible for your crypto wallet and API keys security, there is no recovery service if you lose your keys.
+- **Running the software** — the software needs to continuously be executed on your own computer or server.
+- **Complex setup** — a self custody crypto trading bot usually requires technical knowledge and a secure setup.
 
 At OctoBot, we are working on a self custody crypto trading bot that solves both the **Running the software** and **Complex setup** drawbacks using a secure self-custody trading bot from your mobile phone.
 
-<div style={{textAlign: "center"}}>
-  **[Register to the early access](https://www.octobot.cloud/features/self-custody-trading-bot)**
-</div>
-
+**[Register to the early access](https://www.octobot.cloud/features/self-custody-trading-bot)**
 
 ## How to use a self custody crypto trading bot
 
@@ -174,7 +107,6 @@ Your self custody crypto trading bot is now automating your strategy. Next steps
 
 This can be a real challenge, especially if you are not a person with a strong technical background. This is why until today, the vast majority of self custody crypto trading bots were only available as desktop applications (or even command line tools) designed for highly technical users.
 
-
 ## A self custody crypto trading bot mobile app
 
 At OctoBot, we have been working on trading bots since 2018, the year we coded the first version of the <a href="https://github.com/Drakkar-Software/OctoBot" rel="nofollow">open source OctoBot on GitHub</a>. Time has passed since then and the crypto world has changed a lot.  
@@ -187,6 +119,5 @@ This is why we have been working on a **self custody crypto trading bot mobile a
 
 We will be launching the app very soon. Register to the early access to be the first to use it.
 
-<div style={{textAlign: "center"}}>
-  **[Register to the early access](https://www.octobot.cloud/features/self-custody-trading-bot)**
-</div>
+**[Register to the early access](https://www.octobot.cloud/features/self-custody-trading-bot)**
+

@@ -8,8 +8,6 @@ tags: ["Crypto", "Trading", "Backtesting"]
 image: "/images/blog/how-does-trading-bot-work/cover.png"
 ---
 
-
-
 # Comment fonctionnent les bots de trading
 
 Explorez les bots de trading crypto, comment ils fonctionnent, leurs avantages et inconvénients, et apprenez à sélectionner le bot de trading qui correspond à vos besoins.
@@ -18,11 +16,7 @@ Explorez les bots de trading crypto, comment ils fonctionnent, leurs avantages e
 Les bots de trading crypto sont des logiciels conçus pour gérer le trading de cryptomonnaies pour le compte de leurs utilisateurs.
 En utilisant divers algorithmes, ces bots peuvent exécuter des trades basés sur un ensemble de paramètres et stratégies prédéfinis, ce qui en fait un excellent moyen d'investir ou de trader des cryptomonnaies.
 
-<div style={{textAlign: "center"}}>
-  <div>
-    ![un bot de trading crypto assis derrière un bureau](/images/blog/how-does-trading-bot-work/cover.png)
-  </div>
-</div>
+![un bot de trading crypto assis derrière un bureau](/images/blog/how-does-trading-bot-work/cover.png)
 
 ## Comment fonctionnent les bots de trading crypto ?
 

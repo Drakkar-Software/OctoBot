@@ -8,8 +8,6 @@ tags: ["Cryptocurrency", "Trading", "Educational"]
 image: "/images/blog/what-is-spot-trading/cover.png"
 ---
 
-
-
 # What is Spot Trading?
 
 > Curious about cryptocurrency, but really have no idea where to start?
@@ -22,12 +20,8 @@ Spot trading means buying or selling a cryptocurrency at the prevailing current 
 
 Many traders love to spot trade since the market provides ample opportunities to make quick money by speculating on its ups and downs. It does, however, have its risks and challenges, too, which will be discussed later in this article.
 
-<div style={{textAlign: "center"}}>
-  <div>
-    ![traders with a laptop bying and selling
-    crypto](/images/blog/what-is-spot-trading/cover.png)
-  </div>
-</div>
+![traders with a laptop bying and selling
+crypto](/images/blog/what-is-spot-trading/cover.png)
 
 ## How to Get Started with Spot Trading
 
@@ -47,12 +41,8 @@ Let's discuss a few widely used one's below:
 - [Scalping](https://www.octobot.cloud/tools/scalping-signals): Earn money by buying and selling a cryptocurrency in as little time as possible.
 - Swing trading: Simply hold onto the cryptocurrency for an extended period of time, while it waits for a huge movement in the market.
 
-<div style={{textAlign: "center"}}>
-  <div>
-    ![cryptocurrency trading desk abstract concept
-    illustration](/images/blog/what-is-spot-trading/cryptocurrency-desk.png)
-  </div>
-</div>
+![cryptocurrency trading desk abstract concept
+illustration](/images/blog/what-is-spot-trading/cryptocurrency-desk.png)
 
 ## Spot Trading vs Other Types of Trading
 

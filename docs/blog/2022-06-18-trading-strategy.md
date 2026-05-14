@@ -8,13 +8,9 @@ tags: ["Crypto", "Trading", "Strategy", "Automation", "Educational"]
 image: "/images/blog/trading-strategy-automation/cover.png"
 ---
 
-
-
 # Trading Strategies
 
-<div style={{textAlign: "center"}}>
-  ![cover](/images/blog/trading-strategy-automation/cover.png)
-</div>
+![cover](/images/blog/trading-strategy-automation/cover.png)
 
 A trading strategy is a set of rules or guidelines that traders use to determine when to buy and sell assets in the financial markets. While there are many different strategies that traders can employ, some common elements include the use of technical analysis, risk management, and market psychology. In this article, we will take a look at some of the most popular trading strategies and how they can be used to improve your own trading.
 

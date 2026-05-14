@@ -8,8 +8,6 @@ tags: ["Crypto", "Ecosystem", "Finance", "Educational"]
 image: "/images/blog/fomo-meaning/cover.png"
 ---
 
-
-
 # Understanding the Crypto Bubble
 
 Discover the exciting world of cryptocurrencies! Learn how to identify bubbles and keep your investments safe.
@@ -38,14 +36,10 @@ However, just like a balloon can only take so much air before it pops, a crypto 
    everyone is buying crypto, it might seem like a good idea to do the same,
    even if the prices are very high.
 
-<div style={{textAlign: "center"}}>
-  <div>
-    ![A person with an excited expression watches a rising crypto market graph
-    on their computer, symbolizing FOMO in
-    cryptocurrency.](/images/blog/fomo-meaning/cover.png) *An illustration of
-    the FOMO sentiment.*
-  </div>
-</div>
+![A person with an excited expression watches a rising crypto market graph
+on their computer, symbolizing FOMO in
+cryptocurrency.](/images/blog/fomo-meaning/cover.png) *An illustration of
+the FOMO sentiment.*
 
 ## Historical Crypto Bubbles
 
@@ -72,11 +66,9 @@ For example, in 2017, Bitcoin's price skyrocketed to nearly $20 000, followed by
   it, no matter what others are doing. Don't make decisions just because prices
   suddenly change or because of what other people say.
 
-<div style={{textAlign: "center"}}>
-  ![crypto baskets investment helping investors to diversify their crypto
-  portfolio](/images/blog/invest-with-crypto-baskets/crypto-basket.png) *A
-  diversified crypto portfolio*
-</div>
+![crypto baskets investment helping investors to diversify their crypto
+portfolio](/images/blog/invest-with-crypto-baskets/crypto-basket.png) *A
+diversified crypto portfolio*
 
 ## Preparing for After the Bubble Bursts
 

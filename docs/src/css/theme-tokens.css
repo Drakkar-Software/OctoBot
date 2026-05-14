@@ -1,0 +1,281 @@
+/* ============================================================================
+ * Neo Glass Dark — design tokens + reusable utility classes
+ * ----------------------------------------------------------------------------
+ * This file is the single source of truth for the theme. It exposes:
+ *   1. CSS custom properties (--ng-*)            — colors, radii, shadows, fonts
+ *   2. Halo background utilities (.bg-halo*)     — atmospheric page gradients
+ *   3. Glass surface utilities (.ng-card*)       — translucent card surfaces
+ *   4. Component primitives (.ng-badge, .ng-chip, .ng-eyebrow, .ng-btn*)
+ *
+ * New components should consume these tokens / classes rather than hardcoding
+ * colors. custom.css maps these tokens onto Infima + Docusaurus surfaces.
+ * Fonts (DM Sans / DM Mono) are loaded via `stylesheets` in docusaurus.config.
+ * ==========================================================================*/
+
+:root {
+  /* -- backgrounds ------------------------------------------------------- */
+  --ng-bg:                #0a0d2c;
+  --ng-bg-deep:           #070a22;
+  --ng-deep-blue:         #0f1237;
+
+  /* -- text ------------------------------------------------------------- */
+  --ng-ink:               #f3f6f8;
+  --ng-ink-muted:         rgba(243, 246, 248, 0.78);
+  --ng-ink-mid:           rgba(243, 246, 248, 0.60);
+  --ng-ink-half:          rgba(243, 246, 248, 0.50);
+  --ng-ink-faint:         rgba(243, 246, 248, 0.45);
+  --ng-ink-dim:           rgba(243, 246, 248, 0.40);
+  --ng-ink-subtle:        rgba(243, 246, 248, 0.35);
+  --ng-muted:             #a3aed0;
+
+  /* -- accent / brand --------------------------------------------------- */
+  --ng-turquoise:         #65e7cf;
+  --ng-turquoise-bg-light:rgba(101, 231, 207, 0.10);
+  --ng-turquoise-bg:      rgba(101, 231, 207, 0.12);
+  --ng-turquoise-bg-mid:  rgba(101, 231, 207, 0.15);
+  --ng-turquoise-25:      rgba(101, 231, 207, 0.25);
+  --ng-turquoise-border:  rgba(101, 231, 207, 0.30);
+  --ng-turquoise-border-40: rgba(101, 231, 207, 0.40);
+
+  --ng-frost:             #85d6d7;
+  --ng-frost-bg-subtle:   rgba(133, 214, 215, 0.06);
+  --ng-frost-bg:          rgba(133, 214, 215, 0.10);
+  --ng-frost-bg-mid:      rgba(133, 214, 215, 0.12);
+  --ng-frost-bg-strong:   rgba(133, 214, 215, 0.15);
+  --ng-frost-soft:        rgba(133, 214, 215, 0.25);
+  --ng-frost-border:      rgba(133, 214, 215, 0.35);
+  --ng-frost-border-50:   rgba(133, 214, 215, 0.50);
+  --ng-frost-bright:      rgba(133, 214, 215, 0.80);
+
+  /* -- semantic --------------------------------------------------------- */
+  --ng-pos:               #6cb596;
+  --ng-pos-bg-light:      rgba(108, 181, 150, 0.12);
+  --ng-pos-bg:            rgba(108, 181, 150, 0.15);
+  --ng-pos-border:        rgba(108, 181, 150, 0.30);
+  --ng-neg:               #e56b6f;
+  --ng-neg-bg-light:      rgba(229, 107, 111, 0.12);
+  --ng-neg-bg:            rgba(229, 107, 111, 0.15);
+  --ng-neg-border:        rgba(229, 107, 111, 0.30);
+  --ng-warn:              #f0c53b;
+  --ng-warn-bg:           rgba(240, 197, 59, 0.15);
+  --ng-warn-bg-light:     rgba(240, 197, 59, 0.10);
+  --ng-warn-border:       rgba(240, 197, 59, 0.30);
+
+  /* -- glass surfaces --------------------------------------------------- */
+  --ng-surface-faint:     rgba(255, 255, 255, 0.03);
+  --ng-surface:           rgba(255, 255, 255, 0.05);
+  --ng-surface-strong:    rgba(255, 255, 255, 0.09);
+  --ng-surface-hero:      rgba(255, 255, 255, 0.12);
+
+  /* -- dividers --------------------------------------------------------- */
+  --ng-rule:              rgba(255, 255, 255, 0.10);
+  --ng-rule-glass:        rgba(255, 255, 255, 0.08);
+  --ng-rule-soft:         rgba(255, 255, 255, 0.06);
+  --ng-rule-strong:       rgba(255, 255, 255, 0.25);
+
+  /* -- radii ------------------------------------------------------------ */
+  --ng-radius-tag:        6px;
+  --ng-radius-sm:         8px;
+  --ng-radius-md:         12px;
+  --ng-radius-inner:      16px;
+  --ng-radius-card:       20px;
+  --ng-radius-sheet:      28px;
+  --ng-radius-pill:       999px;
+
+  /* -- shadows ---------------------------------------------------------- */
+  --ng-shadow-glow:       0 12px 32px -8px rgba(101, 231, 207, 0.5);
+  --ng-shadow-glass:      0 24px 60px -28px rgba(0, 0, 0, 0.65);
+
+  /* -- fonts ------------------------------------------------------------ */
+  --ng-font-sans: 'DM Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --ng-font-mono: 'DM Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* ============================================================================
+ * Halo backgrounds — atmospheric radial glows over the deep-navy base.
+ * Apply .bg-halo to a full-page wrapper, .bg-halo-subtle to secondary pages.
+ * ==========================================================================*/
+.bg-halo {
+  background-color: var(--ng-bg);
+  background-image:
+    radial-gradient(ellipse 760px 520px at 50% 12%,  rgba(101, 231, 207, 0.28) 0%, transparent 62%),
+    radial-gradient(ellipse 560px 430px at 100% 100%, rgba(85, 183, 245, 0.22) 0%, transparent 62%),
+    radial-gradient(ellipse 640px 420px at 0% 84%,   rgba(72, 147, 241, 0.20) 0%, transparent 64%);
+  background-attachment: fixed;
+}
+
+.bg-halo-subtle {
+  background-color: var(--ng-bg);
+  background-image:
+    radial-gradient(ellipse 620px 420px at 50% 0%,   rgba(101, 231, 207, 0.16) 0%, transparent 62%),
+    radial-gradient(ellipse 420px 360px at 100% 100%, rgba(85, 183, 245, 0.14) 0%, transparent 62%);
+  background-attachment: fixed;
+}
+
+/* ============================================================================
+ * Glass surfaces — translucent card primitives.
+ * ==========================================================================*/
+.ng-card {
+  background: var(--ng-surface);
+  border: 1px solid var(--ng-rule-glass);
+  border-radius: var(--ng-radius-card);
+}
+
+.ng-card-strong {
+  background: var(--ng-surface-strong);
+  border: 1px solid var(--ng-surface-hero);
+  border-radius: var(--ng-radius-card);
+}
+
+.ng-card-hero {
+  background: var(--ng-surface-hero);
+  border: 1px solid rgba(133, 214, 215, 0.24);
+  border-radius: 24px;
+  box-shadow: var(--ng-shadow-glass);
+}
+
+.ng-card-footer {
+  background: var(--ng-deep-blue);
+  border: 1px solid var(--ng-rule);
+  border-radius: var(--ng-radius-card);
+}
+
+/* Interactive lift — opt-in hover for clickable cards. */
+.ng-card-interactive {
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+}
+.ng-card-interactive:hover {
+  transform: translateY(-3px);
+  border-color: var(--ng-frost-soft);
+  box-shadow: var(--ng-shadow-glass);
+}
+
+/* ============================================================================
+ * Component primitives.
+ * ==========================================================================*/
+
+/* Eyebrow — small uppercase label above headings. */
+.ng-eyebrow {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ng-muted);
+}
+
+/* Badge — pill status / tag label. Tone via modifier class. */
+.ng-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: var(--ng-radius-pill);
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.4;
+  background: var(--ng-surface-strong);
+  color: var(--ng-muted);
+  border: 1px solid var(--ng-rule);
+}
+.ng-badge--frost { background: rgba(133, 214, 215, 0.20); color: var(--ng-frost); border-color: var(--ng-frost-soft); }
+.ng-badge--pos   { background: rgba(108, 181, 150, 0.20); color: var(--ng-pos);   border-color: var(--ng-pos-border); }
+.ng-badge--neg   { background: rgba(229, 107, 111, 0.20); color: var(--ng-neg);   border-color: var(--ng-neg-border); }
+.ng-badge--warn  { background: rgba(240, 197, 59, 0.20);  color: var(--ng-warn);  border-color: var(--ng-warn-border); }
+.ng-badge__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--ng-radius-pill);
+  background: currentColor;
+}
+
+/* Chip — filter / tab selector. */
+.ng-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 10px 16px;
+  border-radius: var(--ng-radius-pill);
+  font-size: 0.875rem;
+  font-weight: 500;
+  background: var(--ng-rule-soft);
+  border: 1px solid var(--ng-rule);
+  color: var(--ng-muted);
+  transition: opacity 80ms, transform 80ms;
+  cursor: pointer;
+}
+.ng-chip:active { opacity: 0.86; transform: scale(0.98); }
+.ng-chip--selected {
+  background: var(--ng-frost-bg-strong);
+  border-color: var(--ng-frost);
+  color: var(--ng-frost);
+}
+
+/* Button primitives — pill controls, 52px min-height. */
+.ng-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: 0 22px;
+  border-radius: var(--ng-radius-pill);
+  font-family: var(--ng-font-sans);
+  font-weight: 600;
+  font-size: 0.95rem;
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-decoration: none;
+  transition: transform 80ms ease, opacity 80ms ease, background-color 120ms ease;
+}
+.ng-btn:active { transform: scale(0.98); opacity: 0.9; }
+.ng-btn:hover { text-decoration: none; }
+
+.ng-btn--primary {
+  background: var(--ng-turquoise);
+  color: var(--ng-bg);
+  box-shadow: var(--ng-shadow-glow);
+}
+.ng-btn--primary:hover { color: var(--ng-bg); }
+
+.ng-btn--ghost {
+  background: var(--ng-frost-bg-subtle);
+  border-color: var(--ng-frost-soft);
+  color: var(--ng-frost);
+}
+.ng-btn--ghost:hover { color: var(--ng-frost); background: var(--ng-frost-bg); }
+
+.ng-btn--surface {
+  background: var(--ng-surface-strong);
+  border-color: var(--ng-rule);
+  color: var(--ng-ink);
+}
+.ng-btn--surface:hover { color: var(--ng-ink); background: var(--ng-surface-hero); }
+
+.ng-btn--destructive {
+  background: var(--ng-neg-bg-light);
+  border-color: rgba(229, 107, 111, 0.45);
+  color: var(--ng-neg);
+}
+
+/* Icon circle — 40px tinted circle used in list rows / feature cards. */
+.ng-icon-circle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--ng-radius-pill);
+  background: var(--ng-frost-bg);
+}
+.ng-icon-circle--lg {
+  width: 64px;
+  height: 64px;
+  background: var(--ng-turquoise-bg);
+  border: 1px solid rgba(101, 231, 207, 0.28);
+}
+
+/* Focus ring — shared accessible focus treatment. */
+.ng-focusable:focus-visible {
+  outline: 2px solid var(--ng-frost);
+  outline-offset: 2px;
+}

@@ -8,13 +8,9 @@ tags: ["Cryptocurrency", "Trading", "Plans"]
 image: "/images/blog/making-octobot-more-accessible/octobot-plans-improvements.png"
 ---
 
-
-
 # Making OctoBot more accessible
 
-<div style={{textAlign: "center"}}>
-  ![octobot plans improvements](/images/blog/making-octobot-more-accessible/octobot-plans-improvements.png)
-</div>
+![octobot plans improvements](/images/blog/making-octobot-more-accessible/octobot-plans-improvements.png)
 
 At OctoBot, our mission is to make crypto investment simpler.
 Therefore, we spend a lot of time trying to understand what is the most complicated when investing in Crypto.
@@ -32,21 +28,15 @@ The crypto world is already complicated to get into, if investors also need to p
 The free Investor plan now unlocks a set of both crypto basket and algorithmic strategies.
 This will enable crypto investors using any size of portfolio to directly profit from OctoBot investment strategies.
 
-<div style={{textAlign: "center"}}>
-  ![OctoBot strategy explorer with crypto baskets and dca strategies](/images/blog/making-octobot-more-accessible/octobot-strategy-explorer-with-crypto-baskets-and-dca-strategies.png)
-</div>
+![OctoBot strategy explorer with crypto baskets and dca strategies](/images/blog/making-octobot-more-accessible/octobot-strategy-explorer-with-crypto-baskets-and-dca-strategies.png)
 
 Additionally to the existing strategies, we also added new moderated-risk strategies, all available with the Investor plan and specifically created for investors who want to profit from a reasonable risk level.
 
-<div style={{textAlign: "center"}}>
-  ![OctoBot moderated risk crypto baskets strategies](/images/blog/making-octobot-more-accessible/octobot-low-risk-crypto-baskets-strategies.png)
-</div>
+![OctoBot moderated risk crypto baskets strategies](/images/blog/making-octobot-more-accessible/octobot-low-risk-crypto-baskets-strategies.png)
 
 We also made the multi account historical dashboard available from the Investor plan, to make it easier for everyone to follow their accounts.
 
-<div style={{textAlign: "center"}}>
-  ![OctoBot multi exchange dashboard](/images/blog/making-octobot-more-accessible/octobot-multi-exchange-dashboard.png)
-</div>
+![OctoBot multi exchange dashboard](/images/blog/making-octobot-more-accessible/octobot-multi-exchange-dashboard.png)
 
 ## Affordable advanced investment strategies
 
@@ -72,7 +62,6 @@ The [Pro plan](introducing-the-pro-plan) unlocks all the investor plus features 
 We also adapted the Pro plan price to be less impactful on your portfolio: the Pro plan is now $25/m.
 
 **[Switch to the Pro plan](https://www.octobot.cloud/pricing)**
-
 
 ## Final words
 

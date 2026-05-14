@@ -4,8 +4,6 @@ description: "Learn how to run multiple trading strategies to optimize your gain
 sidebar_position: 7
 ---
 
-
-
 # Having multiple OctoBots
 
 When using OctoBot cloud, you can have as many strategies or crypto baskets as you wish.
@@ -49,11 +47,7 @@ You could for example run a high-risk, high-reward IA-based strategy on Binance 
 
 You can also run multiple strategies on the same Binance exchange account by using subaccounts. With subaccounts, you can quickly and easily split your funds between multiple portfolios within the same exchange, enabling you to use many strategies or crypto baskets on the same Binance account.
 
-<div style="text-align: center">
-
 ![binance subaccounts](/images/guides/binance/binance-subaccounts.png)
-
-</div>
 
 For example, Binance allows you to have up to 10 subaccounts. You can then run up to 11 simultaneous strategies or baskets on your Binance account: one on your main account and 10 on your subaccounts.
 
@@ -65,16 +59,9 @@ Wondering how to create a Binance subaccount ? Binance subaccounts are now open 
 
 To run multiple strategies on the same Coinbase account, just use different wallets: each of them can be bound to an OctoBot.
 
-<div style="text-align: center">
-
 ![coinbase multi portfolio](/images/guides/coinbase/coinbase-multi-portfolio.png)
-
-</div>
 
 Create as many wallets as you need from the <a href="https://www.coinbase.com/advanced-portfolio" rel="nofollow">Coinbase portfolio interface</a> and create API keys bound to those wallets to make your OctoBot trade on it.
 
-<div style="text-align: center">
-
 ![coinbase api key select multi portfolio](/images/guides/coinbase/coinbase-api-key-select-multi-portfolio.png)
 
-</div>

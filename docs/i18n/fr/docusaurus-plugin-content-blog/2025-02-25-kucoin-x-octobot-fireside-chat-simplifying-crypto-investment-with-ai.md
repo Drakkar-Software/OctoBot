@@ -8,27 +8,18 @@ tags: ["Partnership", "Trading", "Exchange", "AI"]
 image: "/images/blog/kucoin-x-octobot-fireside-chat-simplifying-crypto-investment-with-ai/kucoin-x-octobot-fireside-chat-simplifying-crypto-investment-with-ai-announcement-banner.png"
 ---
 
-
-
 # Kucoin x OctoBot Fireside chat - Simplifier l'investissement en crypto avec l'IA 
 
 > **Comment l'IA peut-elle vraiment vous aider dans vos investissements en crypto ?**
 
 Dans  <a href="https://x.com/i/spaces/1ynJOlgWzaExR" rel="nofollow">ce Fireside chat</a> avec <a href="https://x.com/swingy369" rel="nofollow">Serena</a> de <a href="https://www.kucoin.com/ucenter/signup?rcode=rJ2Q2T3" rel="nofollow">Kucoin</a>, Paul et Guillaume, co-fondateurs d'[OctoBot](/), nous discutons de la manière dont l'IA change la donne dans l'investissement crypto.
 
-<div style={{textAlign: "center"}}>
-  <div>
-    <a href="https://x.com/i/spaces/1ynJOlgWzaExR" rel="nofollow">![kucoin x octobot fireside chat simplifying crypto investment with ai
-      announcement banner](/images/blog/kucoin-x-octobot-fireside-chat-simplifying-crypto-investment-with-ai/kucoin-x-octobot-fireside-chat-simplifying-crypto-investment-with-ai-announcement.jpeg)</a>
-  </div>
-</div>
+<a href="https://x.com/i/spaces/1ynJOlgWzaExR" rel="nofollow">![kucoin x octobot fireside chat simplifying crypto investment with ai
+  announcement banner](/images/blog/kucoin-x-octobot-fireside-chat-simplifying-crypto-investment-with-ai/kucoin-x-octobot-fireside-chat-simplifying-crypto-investment-with-ai-announcement.jpeg)</a>
 
-<div style={{textAlign: "center"}}>
-  **[Écoutez le Fireside chat](https://x.com/i/spaces/1ynJOlgWzaExR)**
-</div>
+**[Écoutez le Fireside chat](https://x.com/i/spaces/1ynJOlgWzaExR)**
 
 Voici un résumé des principaux sujets abordés lors de ce Fireside chat.
-
 
 ## OctoBot est conçu pour la simplicité
 Chez OctoBot, nous croyons que les stratégies d'investissement en crypto devraient être accessibles à tous ceux qui les recherchent. Cependant, la sélection et la mise en place d'une stratégie d'investissement peuvent être très complexes et risquées.
@@ -63,9 +54,7 @@ L'IA décrit les informations clés de votre grille de manière simple. Ici, cet
 
 Lorsque vous utilisez TradingView pour investir, Pine Script permet d'automatiser une stratégie. Cependant, il peut être difficile de créer une nouvelle stratégie TradingView. OctoBot AI rend cette étape beaucoup plus facile. Décrivez simplement votre idée de stratégie TradingView et l'IA créera votre script Pine en un instant.
 
-<div style={{textAlign: "center"}}>
-  **[Créer votre propre stratégie avec l'IA](https://www.octobot.cloud/creator)**
-</div>
+**[Créer votre propre stratégie avec l'IA](https://www.octobot.cloud/creator)**
 
 ## Investir en utilisant des paniers de crypto pendant le bull market
 
@@ -75,9 +64,7 @@ Pendant le bull market, les paniers de crypto performent extrêmement bien. Nous
 
 Bien sûr, chez OctoBot, nous utilisons OctoBot pour nos investissements et voici une capture d'écran de l'un de nos bots personnels de paniers de crypto. Nous pensons que les paniers de crypto sont une excellente stratégie d'investissement simple, surtout pour un marché haussier.
 
-<div style={{textAlign: "center"}}>
-  **[Voir les paniers de crypto](https://www.octobot.cloud/explore?category=indexes)**
-</div>
+**[Voir les paniers de crypto](https://www.octobot.cloud/explore?category=indexes)**
 
 ## La transparence est au cœur d'OctoBot
 

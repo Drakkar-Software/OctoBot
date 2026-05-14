@@ -4,17 +4,11 @@ description: "Investissez dans plusieurs cryptomonnaies en même temps et créez
 sidebar_position: 3
 ---
 
-
-
 # Index Trading Mode
 
 Le Trading Mode Index (ou IndexTradingMode) est conçu pour maintenir votre portefeuille en utilisant une configuration prédéfinie de cryptomonnaies.
 
-<div style={{textAlign: "center"}}>
-  <div>
-    ![index trading illustraté par un panier de crypto](/images/guides/crypto-basket.png)
-  </div>
-</div>
+![index trading illustraté par un panier de crypto](/images/guides/crypto-basket.png)
 
 Tout comme les [paniers de cryptos d'OctoBot cloud](https://www.octobot.cloud/features/crypto-basket), Le Trading Mode Index vous permet d'investir facilement dans des ensembles de cryptomonnaies.
 
@@ -33,15 +27,10 @@ Lorsque vous démarrez un OctoBot avec le trading mode Index, celui-ci va :
 2. Si une crypto des paires échangées est absente ou présente avec un ratio incorrect, un rééquilibrage est déclenché.
 3. Si un rééquilibrage est déclenché, alors vos fonds sont convertis sur le marché de référence puis répartis entre les crypto configurées.
 
-
 ## Utiliser les paniers de crypto OctoBot cloud
 En utilisant l'[extension premium d'OctoBot](/guides/octobot-configuration/premium-octobot-extension), vous pouvez utiliser chaque panier de cryptos disponible sur OctoBot cloud directement depuis votre OctoBot open source.
 
-<div style={{textAlign: "center"}}>
-  <div>
-    ![index trading illustraté par un panier de crypto](/images/guides/trading-modes/octobot-open-source-using-crypto-baskets-from-premium-extension.png)
-  </div>
-</div>
+![index trading illustraté par un panier de crypto](/images/guides/trading-modes/octobot-open-source-using-crypto-baskets-from-premium-extension.png)
 
 De cette manière, lorsque un panier de cryptos OctoBot cloud est mis à jour, par exemple si le top 20 du marché crypto change ou si une nouvelle crypto rejoint le panier de crypto d'intelligence artificielle, alors votre OctoBot open source se mettra également à jour automatiquement.
 
@@ -49,14 +38,12 @@ De cette manière, lorsque un panier de cryptos OctoBot cloud est mis à jour, p
 ### Période de rééquilibrage
 Votre OctoBot peut vérifier le contenu de votre portefeuille régulièrement pour s'assurer qu'il reste représentatif de l'indice configuré.
 
-
 La `Trigger period` est le nombre de jours pendant lesquels votre OctoBot attend avant de revérifier le contenu de votre portefeuille par rapport au contenu idéal de l'indice.
 
 ### Seuil de rééquilibrage
 Lors de la vérification du contenu de votre portefeuille, le contenu idéal de l'indice ne sera jamais rigoureusement conforme. Étant donné que les prix des cryptomonnaies changent constamment, il y aura toujours des petites différences entre vos fonds et la répartition théorique de votre indice.
 
 Le `Rebalance cap` définit une valeur en `%` à partir de laquelle considérer qu'un ratio de fonds est désynchronisé du le ratio cible d'un indice.
-
 
 **Exemple avec un indice composé de 4 cryptomonnaies : BTC, ETH, SOL et AVAX:**
 

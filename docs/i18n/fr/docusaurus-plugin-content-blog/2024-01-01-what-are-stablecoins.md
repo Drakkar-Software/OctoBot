@@ -17,16 +17,13 @@ reading_time: 10
 author: guillaume
 --- 
 
-
 # Que sont les stablecoins ?
 
 :::info
   La traduction française de cette page est en cours.
 :::
 
-<div style={{textAlign: "center"}}>
 ![cover](/images/blog/what-are-stablecoins/cover.png)
-</div>
 
 Stablecoins are a type of cryptocurrency designed to minimize price volatility. While traditional cryptocurrencies like [Bitcoin](https://www.octobot.cloud/bitcoin-prediction) and [Ethereum](https://www.octobot.cloud/ethereum-prediction) experience wild price swings, stablecoins aim to maintain a consistent value over time. 
 
@@ -46,10 +43,8 @@ There are three main types of stablecoins: fiat-collateralized, crypto-collatera
 
 These are stablecoins that are directly backed by fiat currencies like the US Dollar or Euro. For every stablecoin issued, there is a corresponding unit of real-world currency stored in a bank or other regulated financial institution. This physical backing provides a 1:1 value ratio, maintaining the stablecoin's price stability.
 
-<div style={{textAlign: "center"}}>
 ![usdt-price](/images/blog/what-are-stablecoins/usdt.png)
 *USDT price history*
-</div>
 
 #### Stablecoins associés à des cryptomonnaies 
 
@@ -68,10 +63,8 @@ Stablecoins maintain their value by holding reserves of a stable asset, using sm
 Stablecoins were introduced to tackle the problem of high volatility in the crypto market. The first stablecoin, Tether (USDT), was launched in 2014.
 Since the launch of Tether, the stablecoin market has seen significant growth and evolution, with many new stablecoins being introduced, each with unique features and mechanisms.
 
-<div style={{textAlign: "center"}}>
 ![usdt-logo](/images/blog/what-are-stablecoins/usdt-logo.png)
 *USDT (Tether) logo*
-</div>
 
 ## Bénéfices des Stablecoins
 
@@ -92,9 +85,7 @@ Stablecoins could have a significant impact on global finance by enabling faster
 
 There's a lot of potential for stablecoins in the future, particularly as blockchain technology continues to evolve and mature. However, the path forward will depend on a range of factors, including regulatory developments, technological advancements, and market dynamics.
 
-<div style={{textAlign: "center"}}>
 ![future](/images/blog/what-are-stablecoins/future.png)
-</div>
 
 ## Conlusion
 

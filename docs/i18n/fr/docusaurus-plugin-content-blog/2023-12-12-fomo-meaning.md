@@ -8,8 +8,6 @@ tags: ["Crypto", "Trading", "Educational"]
 image: "/images/blog/fomo-meaning/cover.png"
 ---
 
-
-
 # Comprendre la signification du FOMO
 
 Le FOMO, abréviation de "fear of missing out" (peur de manquer quelque chose), survient lorsque les traders s'inquiètent de rater une chance de gagner de l'argent, surtout sur le marché crypto en rapide évolution.
@@ -22,14 +20,10 @@ Dans le monde de la crypto-monnaie, le FOMO est particulièrement intense. Le FO
 
 Le FOMO se produit lorsque les gens ont peur de manquer une occasion de gagner de l'argent, surtout lorsque les prix du marché augmentent. Cette peur peut rendre les gens anxieux, trop concentrés sur les nouvelles du marché et rapides à prendre des décisions en fonction des fluctuations des prix.
 
-<div style={{textAlign: "center"}}>
-  <div>
-    ![Une personne avec une expression excitée regarde un graphique de marché
-    crypto en hausse sur leur ordinateur, symbolisant le FOMO dans la
-    cryptomonnaie.](/images/blog/fomo-meaning/cover.png) *Une illustration du
-    sentiment de FOMO.*
-  </div>
-</div>
+![Une personne avec une expression excitée regarde un graphique de marché
+crypto en hausse sur leur ordinateur, symbolisant le FOMO dans la
+cryptomonnaie.](/images/blog/fomo-meaning/cover.png) *Une illustration du
+sentiment de FOMO.*
 
 ## Conséquences négatives du FOMO
 

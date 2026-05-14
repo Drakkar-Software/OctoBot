@@ -1,0 +1,16 @@
+.html {
+  background-color: var(--ng-bg);
+}
+
+.root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  color: var(--ng-ink-muted);
+  font-family: var(--ng-font-sans);
+}
+
+.main {
+  flex: 1;
+  width: 100%;
+}

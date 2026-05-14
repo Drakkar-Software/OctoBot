@@ -8,8 +8,6 @@ tags: ["Tradingview", "Hosting", "Release"]
 image: "/images/blog/one-click-cloud-deployment-with-octobot-1-0-9/octobot-1.0.9-ditigtalocean-1-click-deployment-custom-crypto-baskets.png"
 ---
 
-
-
 # One Click Cloud Deployment with OctoBot 1.0.9
 
 ![octobot 1.0.9 ditigtalocean 1 click deployment custom crypto baskets](/images/blog/one-click-cloud-deployment-with-octobot-1-0-9/octobot-1.0.9-ditigtalocean-1-click-deployment-custom-crypto-baskets.png)
@@ -20,17 +18,14 @@ Running your OctoBot trading robot on the cloud has never been **easier and chea
 
 <!--truncate-->
 
-<div style={{textAlign: "center"}}>
-  ![octobot on the digitalocean
-  marketplace](/images/blog/one-click-cloud-deployment-with-octobot-1-0-9/octobot-on-the-digitalocean-marketplace.png)
-</div>
+![octobot on the digitalocean
+marketplace](/images/blog/one-click-cloud-deployment-with-octobot-1-0-9/octobot-on-the-digitalocean-marketplace.png)
+
 Using DigitalOcean, you can now run simply your own OctoBot trading bot on the
 cloud and have it available and automating your trading strategies 100% of the
 time.
 
-<div style={{textAlign: "center"}}>
-  **[Deploy your OctoBot](/guides/octobot-installation/cloud-install-octobot-on-digitalocean)**
-</div>
+**[Deploy your OctoBot](/guides/octobot-installation/cloud-install-octobot-on-digitalocean)**
 
 Having your OctoBot up and running on DigitalOcean only takes **1 click** and starting from as cheap as **$6 per month** when using the minimal setup.
 
@@ -42,12 +37,8 @@ We're glad to announce the release of OctoBot 1.0.9. This version notably adds s
 
 Similarly to [OctoBot cloud crypto baskets](https://www.octobot.cloud/features/crypto-basket), you can now create your own crypto baskets using OctoBot and the new [Index Trading Mode](/guides/octobot-trading-modes/index-trading-mode).
 
-<div style={{textAlign: "center"}}>
-  <div>
-    ![crypto
-    basket](/images/blog/one-click-cloud-deployment-with-octobot-1-0-9/crypto-basket.png)
-  </div>
-</div>
+![crypto
+basket](/images/blog/one-click-cloud-deployment-with-octobot-1-0-9/crypto-basket.png)
 
 When using the Index Trading Mode, your OctoBot will split your reference market holdings into the different coins of your traded pairs. You can also define a rebalance interval and threshold to customize the way your OctoBot should behave when coins held in your basket change in value.
 
@@ -63,12 +54,8 @@ The [DCA Trading Mode](/guides/octobot-trading-modes/dca-trading-mode) now suppo
 
 **TradingView Trading Mode**
 
-<div style={{textAlign: "center"}}>
-  <div>
-    ![tradingview logo showing octobot tradingview trading
-    mode](/images/blog/one-click-cloud-deployment-with-octobot-1-0-9/tradingview-logo-showing-octobot-tradingview-trading-mode.png)
-  </div>
-</div>
+![tradingview logo showing octobot tradingview trading
+mode](/images/blog/one-click-cloud-deployment-with-octobot-1-0-9/tradingview-logo-showing-octobot-tradingview-trading-mode.png)
 
 Limit and stop orders created by the [TradingView Trading Mode](/guides/octobot-trading-modes/tradingview-trading-mode) are now much more flexible.
 
@@ -84,9 +71,7 @@ The TradingView Trading Mode now supports [relative pricing](/guides/octobot-tra
 - **MEXC**: Trading on MEXC is now much more stable
 - **All exchanges**: The order flow inside OctoBot as been improved. This fixes many issues related to order synchronization as well as errors on order creation.
 
-<div style={{textAlign: "center"}}>
-  **[Update your OctoBot](/guides/octobot-installation/install-octobot-on-your-computer)**
-</div>
+**[Update your OctoBot](/guides/octobot-installation/install-octobot-on-your-computer)**
 
 ### Full changelog
 

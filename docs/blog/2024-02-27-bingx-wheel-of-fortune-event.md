@@ -8,8 +8,6 @@ tags: ["Crypto", "Trading", "Exchange", "Partnership", "BingX", "Event"]
 image: "/images/blog/bingx-wheel-of-fortune-event/bingx-and-octobot-wheel-of-fortune-event-with-usdt-to-earn.png"
 ---
 
-
-
 # BingX Wheel of Fortune Event
 
 ![bingx and octobot wheel of fortune event with 1000 usdt to earn](/images/blog/bingx-wheel-of-fortune-event/bingx-and-octobot-wheel-of-fortune-event-with-usdt-to-earn.png)
@@ -28,9 +26,7 @@ After <a href="https://bingx.com/invite/Z4UUVX/" rel="nofollow">creating your Bi
 - The new [TradingView OctoBots](/investing/tradingview-automated-trading) from [OctoBot cloud](https://www.octobot.cloud/) to simply automate trades using price events, indicators or Pine Script strategies directly from TradingView.
 - Your own OctoBot strategy using [cloud or self hosted OctoBot trading bots](https://www.octobot.cloud/trading-bot).
 
-<div style={{textAlign: "center"}}>
-  **[Join the event](https://bingx.com/en-us/act/turntable/8628992176)**
-</div>
+**[Join the event](https://bingx.com/en-us/act/turntable/8628992176)**
 
 Note: paper trading bots using simulated money are not counted in generating draws, trades must happen on your BingX account.
 

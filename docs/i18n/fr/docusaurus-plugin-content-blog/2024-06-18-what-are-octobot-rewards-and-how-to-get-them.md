@@ -8,15 +8,11 @@ tags: ["Rewards", "OctoBot cloud", "Release"]
 image: "/images/blog/what-are-octobot-rewards-and-how-to-get-them/octobot-rewards-get-rewarded-for-using-octobot-and-use-advanced-strategies.png"
 ---
 
-
-
 # Que sont les récompenses OctoBot et comment les obtenir ?
 
-<div style={{textAlign: "center"}}>
-  ![Les récompenses OctoBot sont attribuées pour l'utilisation d'OctoBot et
-  débloquent l'utilisation de stratégies
-  avancées](/images/blog/what-are-octobot-rewards-and-how-to-get-them/octobot-rewards-get-rewarded-for-using-octobot-and-use-advanced-strategies.png)
-</div>
+![Les récompenses OctoBot sont attribuées pour l'utilisation d'OctoBot et
+débloquent l'utilisation de stratégies
+avancées](/images/blog/what-are-octobot-rewards-and-how-to-get-them/octobot-rewards-get-rewarded-for-using-octobot-and-use-advanced-strategies.png)
 
 Nous sommes ravis d'annoncer le lancement du système de récompenses OctoBot. Les récompenses offrent une alternative pour que les comptes utilisant l'abonnement gratuit d'Investisseur puissent profiter des stratégies d'investissement payantes ainsi que d'autres avantages sans avoir à dépenser un centime.
 
@@ -29,10 +25,8 @@ Lors de la création d'un compte OctoBot, vous pouvez choisir d'utiliser l'offre
 
 Les récompenses sont le moyen alternatif de débloquer les stratégies IA, DCA, paniers crypto et grille qui sont normalement disponibles à partir de l'offre Investisseur Plus.
 
-<div style={{textAlign: "center"}}>
-  ![Tableau de bord des récompenses OctoBot montrant les récompenses de crypto
-  apprenti](/images/blog/what-are-octobot-rewards-and-how-to-get-them/octobot-rewards-dashboard-showing-crypto-apprentice-rewards.png)
-</div>
+![Tableau de bord des récompenses OctoBot montrant les récompenses de crypto
+apprenti](/images/blog/what-are-octobot-rewards-and-how-to-get-them/octobot-rewards-dashboard-showing-crypto-apprentice-rewards.png)
 
 Alors que les offres payantes vous accordent un accès instantané à toutes les stratégies, il est désormais également possible de débloquer progressivement l'accès à ces stratégies en étant un utilisateur actif d'OctoBot.
 
@@ -46,11 +40,9 @@ Les récompenses sont particulièrement utiles pour débloquer l'accès à:
 - Chaque stratégie de grille
 - Un nombre accru d'OctoBots que vous pouvez utiliser à la fois
 
-<div style={{textAlign: "center"}}>
-  ![Tableau de bord des récompenses montrant les récompenses du niveau grand
-  maître
-  crypto](/images/blog/what-are-octobot-rewards-and-how-to-get-them/octobot-rewards-dashboard-showing-grandmaster-of-crypto-rewards.png)
-</div>
+![Tableau de bord des récompenses montrant les récompenses du niveau grand
+maître
+crypto](/images/blog/what-are-octobot-rewards-and-how-to-get-them/octobot-rewards-dashboard-showing-grandmaster-of-crypto-rewards.png)
 
 Grand maître crypto est le niveau de récompense maximum. Un certain temps est nécessaire pour l'acquérir, mais une fois atteint, il débloque de manière permanente toutes les fonctionnalités de l'offre Investisseur Plus.
 
@@ -58,10 +50,8 @@ Grand maître crypto est le niveau de récompense maximum. Un certain temps est 
 
 Les récompenses sont gagnées en complétant des missions dans la section "Missions" de votre <a href="https://www.octobot.cloud/rewards" rel="nofollow">tableau de bord des récompenses</a>.
 
-<div style={{textAlign: "center"}}>
-  ![Liste des récompenses OctoBot avec missions complétées et non
-  complétées](/images/blog/what-are-octobot-rewards-and-how-to-get-them/octobot-rewards-list-with-completed-and-uncompleted-missions.png)
-</div>
+![Liste des récompenses OctoBot avec missions complétées et non
+complétées](/images/blog/what-are-octobot-rewards-and-how-to-get-them/octobot-rewards-list-with-completed-and-uncompleted-missions.png)
 
 Il existe de nombreux types de missions, telles que démarrer plusieurs OctoBots, suivre des cours de crypto ou simplement avoir un OctoBot en cours d'exécution.
 

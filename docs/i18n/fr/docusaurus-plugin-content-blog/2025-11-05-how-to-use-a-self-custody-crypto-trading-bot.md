@@ -8,26 +8,10 @@ tags: ["Trading", "Exchange", "Self custody", "Crypto"]
 image: "/images/blog/how-to-use-a-self-custody-crypto-trading-bot/not-your-keys-not-your-coins-writen-on-paper-with-keys-and-a-bitcoin-logo.png"
 ---
 
-
-
-  BarChart,
-  CheckCircle,
-  CircleDollarSign,
-  Globe,
-  Shield,
-  TrendingUp,
-  Zap,
-} from 'lucide-react'
-
 # Comment utiliser un robot de trading crypto self-custody
 
-
-<div style={{textAlign: "center"}}>
-  <div>
-    ![chatgpt-logo](/images/blog/how-to-use-a-self-custody-crypto-trading-bot/not-your-keys-not-your-coins-writen-on-paper-with-keys-and-a-bitcoin-logo.png)
-    _"Pas vos clés, pas vos cryptos"_
-  </div>
-</div>
+![chatgpt-logo](/images/blog/how-to-use-a-self-custody-crypto-trading-bot/not-your-keys-not-your-coins-writen-on-paper-with-keys-and-a-bitcoin-logo.png)
+_"Pas vos clés, pas vos cryptos"_
 
 C'est l'un des principes fondamentaux de la crypto : la self-custody de vos cryptomonnaies garantit la sécurité et l'indépendance offertes par la technologie blockchain. 
 
@@ -42,17 +26,10 @@ Un robot de trading crypto non-custodial est un robot de trading entièrement co
 1. Il n'est pas contrôlé par une autorité centrale telle qu'un exchange crypto ou une plateforme de robot de trading qui détient vos clés API (ou de portefeuille). 
 2. C'est un robot de trading qui vous permet de toujours être seul maître de vos clés API d'exchange ou de votre portefeuille crypto.
 
-
 Bien que la self-custody soit un principe fondamental de la crypto, elle n'est pas toujours facile à mettre en œuvre.  
 Pour y parvenir, vous devez configurer votre propre portefeuille, ce qui peut être fait rapidement avec un portefeuille par navigateur tel que <a href="https://metamask.io/" rel="nofollow">MetaMask</a>. Ce portefeuille peut ensuite être utilisé pour stocker vos cryptos et les échanger sur des exchanges décentralisés.
 
-
-<div style={{textAlign: "center"}}>
-  <div>
-    ![metamask-logo](/images/blog/how-to-use-a-self-custody-crypto-trading-bot/metamask-logo.png)
-  </div>
-</div>
-
+![metamask-logo](/images/blog/how-to-use-a-self-custody-crypto-trading-bot/metamask-logo.png)
 
 À partir là, un robot de trading connecté à ce portefeuille sera capable d'appliquer votre stratégie d'investissement en tradant vos cryptos sur les exchanges décentralisés en utilisant votre propre portefeuille.
 
@@ -60,9 +37,7 @@ Cela implique que le robot accède directement à votre portefeuille crypto, ce 
 
 C'est là qu'interviennent les robots de trading crypto self-custody. Ce sont des robots de trading qui ne sont contrôlés que par vous, ils ne partagent jamais les clés de votre portefeuille crypto avec une plateforme ou quiconque.  
 
-
 Un robot de trading crypto self-custody peut se connecter à la fois aux exchanges centralisés et décentralisés, et dans les deux cas, il augmente considérablement la sécurité de vos cryptos.
-
 
 ### Robot de trading crypto self-custody pour les exchanges centralisés
 
@@ -93,65 +68,23 @@ Dans l'ensemble, automatiser une stratégie d'investissement sur un DEX reste tr
 
 ### Avantages et inconvénients des robots de trading crypto self-custody
 
-
 La seule façon d'utiliser un robot de trading crypto self-custody est de l'exécuter sur votre propre ordinateur ou serveur. Cela signifie généralement une application de bureau que vous installez sur votre propre système et un casse-tête pour la configurer et l'exécuter correctement.
 
 **Les avantages des robots de trading crypto self-custody**
 
-<div>
-  {[
-    {
-      icon: <CheckCircle className="text-primary" />,
-      name: 'Vos clés, vos cryptos',
-      description: 'Vous êtes le seul à avoir accès à votre portefeuille crypto',
-    },
-    {
-      icon: <Shield className="text-primary" />,
-      name: 'Meilleure sécurité',
-      description: "Il n'y a pas de tiers pour compromettre vos cryptos ou clés API",
-    },
-    {
-      icon: <CircleDollarSign className="text-primary" />,
-      name: 'Flexibilité maximale',
-      description: 'Utilisez les exchanges décentralisés et centralisés depuis la même plateforme',
-    },
-  ].map((element, i) => (
-    <HighlightElement key={i} element={element} />
-  ))}
-</div>
+- **Vos clés, vos cryptos** — vous êtes le seul à avoir accès à votre portefeuille crypto.
+- **Meilleure sécurité** — il n'y a pas de tiers pour compromettre vos cryptos ou clés API.
+- **Flexibilité maximale** — utilisez les exchanges décentralisés et centralisés depuis la même plateforme.
 
 **Les inconvénients des robots de trading crypto self-custody**
 
-<div>
-  {[
-    {
-      icon: <CircleDollarSign className="text-rating-color-2" />,
-      name: 'Responsabilité',
-      description: "Vous êtes responsable de la sécurité de votre portefeuille crypto et de vos clés API, il n'y a pas de service de récupération si vous perdez vos clés.",
-    },
-    {
-      icon: <Globe className="text-rating-color-2" />,
-      name: 'Exécution du logiciel',
-      description:
-        'Le logiciel doit être exécuté en continu sur votre propre ordinateur ou serveur.',
-    },
-    {
-      icon: <Globe className="text-rating-color-2" />,
-      name: 'Configuration complexe',
-      description:
-        'Un robot de trading crypto self-custody nécessite en général des connaissances techniques et une configuration sécurisée.',
-    },
-  ].map((element, i) => (
-    <HighlightElement key={i} element={element} />
-  ))}
-</div>
+- **Responsabilité** — vous êtes responsable de la sécurité de votre portefeuille crypto et de vos clés API, il n'y a pas de service de récupération si vous perdez vos clés.
+- **Exécution du logiciel** — le logiciel doit être exécuté en continu sur votre propre ordinateur ou serveur.
+- **Configuration complexe** — un robot de trading crypto self-custody nécessite en général des connaissances techniques et une configuration sécurisée.
 
 Chez OctoBot, nous travaillons sur un robot de trading crypto self-custody qui résout à la fois les inconvénients **Exécution du logiciel** et **Configuration complexe** en utilisant un robot de trading self-custody sécurisé depuis votre téléphone portable.
 
-<div style={{textAlign: "center"}}>
-  **[S'inscrire à l'accès anticipé](https://www.octobot.cloud/features/self-custody-trading-bot)**
-</div>
-
+**[S'inscrire à l'accès anticipé](https://www.octobot.cloud/features/self-custody-trading-bot)**
 
 ## Comment utiliser un robot de trading crypto self-custody
 
@@ -172,7 +105,6 @@ Votre robot de trading crypto self-custody automatise maintenant votre stratégi
 
 Tout cela peut représenter un véritable défi, surtout si vous n'avez pas de solides connaissances techniques. C'est pourquoi jusqu'à aujourd'hui, la grande majorité des robots de trading crypto self-custody n'étaient disponibles que sous forme d'applications de bureau (ou même d'outils en ligne de commande) conçus pour des utilisateurs très techniques.
 
-
 ## Une application mobile de robot de trading crypto self-custody
 
 Chez OctoBot, nous travaillons sur les robots de trading depuis 2018, l'année où nous avons codé la première version d'<a href="https://github.com/Drakkar-Software/OctoBot" rel="nofollow">OctoBot open source sur GitHub</a>. Le temps a passé depuis et le monde des crypto a beaucoup changé.  
@@ -185,6 +117,5 @@ C'est pourquoi nous avons travaillé sur une **application mobile de robot de tr
 
 Nous lancerons l'application très bientôt. Inscrivez-vous à l'accès anticipé pour être parmi les premiers à l'utiliser.
 
-<div style={{textAlign: "center"}}>
-  **[S'inscrire à l'accès anticipé](https://www.octobot.cloud/features/self-custody-trading-bot)**
-</div>
+**[S'inscrire à l'accès anticipé](https://www.octobot.cloud/features/self-custody-trading-bot)**
+

@@ -4,8 +4,6 @@ description: "Step-by-step guide on paying for your OctoBot Cloud subscription w
 sidebar_position: 30
 ---
 
-
-
 # Pay your subscription with cryptocurrencies
 
 :::info
@@ -24,11 +22,7 @@ To access additional features available in the [Investor Plus](/blog/introducing
 1. Open the <a href="https://www.octobot.cloud/plan" rel="nofollow">OctoBot cloud plans page</a>.
 2. Select the desired plan and click on "Pay with crypto".
 
-<div style="text-align: center">
-
 ![choose pay with crypto](/images/investing/pay-with-crypto/pay-with-crypto-en.png)
-
-</div>
 
 3. Connect your <a href="https://metamask.io/" rel="nofollow">Metamask</a>, Binance, Brave, Coinbase wallet, <a href="https://walletconnect.com/" rel="nofollow">Wallet Connect</a>, etc... Most wallets are supported.
 

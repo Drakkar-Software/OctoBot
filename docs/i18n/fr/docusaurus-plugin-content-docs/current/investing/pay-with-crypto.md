@@ -4,8 +4,6 @@ description: "Guide étape par étape sur le paiement en crypto de l'abonnement 
 sidebar_position: 30
 ---
 
-
-
 # Payer votre abonnement avec des cryptomonnaies
 
 :::info
@@ -24,10 +22,8 @@ Pour accéder à des fonctionnalités supplémentaires disponibles dans les plan
 1. Ouvrir la page des <a href="https://www.octobot.cloud/fr/plan" rel="nofollow">plans OctoBot cloud</a>.
 2. Sélectionnez le plan souhaité et cliquez sur "Payer en crypto".
 
-<div style={{textAlign: "center"}}>
-  ![choisir payer en
-  crypto](/images/investing/pay-with-crypto/pay-with-crypto-fr.png)
-</div>
+![choisir payer en
+crypto](/images/investing/pay-with-crypto/pay-with-crypto-fr.png)
 
 3. Connectez votre wallet <a href="https://metamask.io/" rel="nofollow">Metamask</a>, Binance, Brave, Coinbase, <a href="https://walletconnect.com/" rel="nofollow">Wallet Connect</a>, etc... La plupart des wallet sont supportés.
 

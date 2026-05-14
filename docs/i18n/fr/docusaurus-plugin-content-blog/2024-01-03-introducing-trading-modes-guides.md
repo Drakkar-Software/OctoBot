@@ -8,20 +8,13 @@ tags: ["Trading", "Educational"]
 image: "/images/blog/introducing-trading-modes-guides/person-looking-at-his-screens-using-many-trading-strategies.jpg"
 ---
 
-
-
 # Introduction aux guides des trading modes
 
 Lorsque vous tradez avec OctoBot, vous utilisez un trading mode. Les [Trading modes](/guides/octobot-trading-modes/trading-modes) sont responsables de la création, du maintien et de l'annulation des ordres.
 
 Les modes de trading sont un élément clé de toute stratégie commerciale et sont compatibles avec chaque [plateforme d'échange prise en charge](/guides/exchanges).
 
-
-<div style={{textAlign: "center"}}>
-  <div>
-    ![Une personne regardant ses écrans en utilisant plusieurs stratégies de trading](/images/blog/introducing-trading-modes-guides/person-looking-at-his-screens-using-many-trading-strategies.jpg) *Un trader utilisant plusieurs stratégies de trading.*
-  </div>
-</div>
+![Une personne regardant ses écrans en utilisant plusieurs stratégies de trading](/images/blog/introducing-trading-modes-guides/person-looking-at-his-screens-using-many-trading-strategies.jpg) *Un trader utilisant plusieurs stratégies de trading.*
 
 Sur la base de vos commentaires, nous avons créé des [guides pour chaque trading mode](/guides/octobot-trading-modes/trading-modes) afin d'expliquer clairement à quoi ils servent et comment les utiliser. Nous sommes impatients d'avoir vos commentaires sur ces guides.
 
@@ -33,7 +26,6 @@ Une stratégie OctoBot est généralement divisée en 2 parties :
 2. Les évaluators : ils envoient des signaux au trading mode pour l'activer lorsque cela est nécessaire. On pourrait dire qu'ils "réveillent" le trading mode lorsqu'il se passe quelque chose.
 
 Remarque : Certains trading modes, tels que ceux basés sur une grille ou les automatisations TradingView n'utilisent aucun évaluateur ; ils se "réveillent" automatiquement soit lorsqu'un ordre est exécuté soit lorsqu'ils reçoivent une notification depuis TradingView.
-
 
 ## Types de trading modes
 

@@ -4,8 +4,6 @@ description: "Configurez votre OctoBot pour trader avec les alertes email gratui
 sidebar_position: 4
 ---
 
-
-
 # Automatiser des stratégies TradingView par email
 
 :::info
@@ -14,12 +12,8 @@ sidebar_position: 4
 
 Lors de la création d'une alerte TradingView, vous pouvez choisir d'être notifié par email. Ce service est disponible avec un **compte TradingView gratuit** et peut être utilisé pour automatiser des trades en utilisant OctoBot.
 
-<div style={{textAlign: "center"}}>
-  <div>
-    ![formulaire d'alerte par email tradingview
-    complété](/images/guides/trading-view/tradingview-alert-email-form-completed.png)
-  </div>
-</div>
+![formulaire d'alerte par email tradingview
+complété](/images/guides/trading-view/tradingview-alert-email-form-completed.png)
 
 :::info
   L'[extension premium
@@ -34,19 +28,13 @@ Pour automatiser vos trades basés sur les alertes TradingView envoyées par ema
 
 Si vous n'êtes pas encore authentifié sur votre compte OctoBot, n'avez pas encore configuré votre adresse email (ou n'avez pas encore acheté l'extension Premium d'OctoBot), cliquez sur `GENERATE EMAIL` pour vous connecter à votre compte et configurer votre adresse email d'alerte sur TradingView.
 
-<div style={{textAlign: "center"}}>
-  ![octobot open source bouton de configuration de l'adresse email d'alertes
-  tradingview](/images/guides/trading-view/octobot-open-source-configuring-tradingview-alert-email-address.png)
-</div>
+![octobot open source bouton de configuration de l'adresse email d'alertes
+tradingview](/images/guides/trading-view/octobot-open-source-configuring-tradingview-alert-email-address.png)
 
 La prochaine étape consiste à configurer votre compte TradingView pour envoyer des alertes à cette adresse email.
 
-<div style={{textAlign: "center"}}>
-  <div>
-    ![octobot open source début de la configuration du mail
-    tradingview](/images/guides/trading-view/open-source-octobot-start-tradingview-email-config.png)
-  </div>
-</div>
+![octobot open source début de la configuration du mail
+tradingview](/images/guides/trading-view/open-source-octobot-start-tradingview-email-config.png)
 
 ## Enregistrer votre adresse email d'alerte sur TradingView
 
@@ -55,26 +43,19 @@ Maintenant que vous avez reçu votre adresse email personnelle d'alerte TradingV
 L'aide de configuration vous guidera à travers les étapes suivantes :
 
 1. Ajouter votre adresse email à vos alertes TradingView
-   <div style={{textAlign: "center"}}>
-     <div>
-       ![octobot open source ajout d'une alerte
-       tradingview](/images/guides/trading-view/octobot-open-source-add-tradingview-alert-illustration.png)
-     </div>
-   </div>
+
+![octobot open source ajout d'une alerte
+tradingview](/images/guides/trading-view/octobot-open-source-add-tradingview-alert-illustration.png)
+
 2. Réception de votre code de confirmation
-   <div style={{textAlign: "center"}}>
-     <div>
-       ![octobot open source attente du code de vérification
-       tradingview](/images/guides/trading-view/octobot-open-source-waiting-tradingview-verification-code.png)
-     </div>
-   </div>
+
+![octobot open source attente du code de vérification
+tradingview](/images/guides/trading-view/octobot-open-source-waiting-tradingview-verification-code.png)
+
 3. Démarrage de votre OctoBot pour suivre vos alertes TradingView
-   <div style={{textAlign: "center"}}>
-     <div>
-       ![octobot open source dernière étape de configuration des mails d'alerte
-       tradingview](/images/guides/trading-view/octobot-open-source-tradingview-email-configuration-last-step.png)
-     </div>
-   </div>
+
+![octobot open source dernière étape de configuration des mails d'alerte
+tradingview](/images/guides/trading-view/octobot-open-source-tradingview-email-configuration-last-step.png)
 
 ## Commencer à trader avec votre stratégie TradingView
 
@@ -82,7 +63,6 @@ Votre OctoBot est maintenant prêt à trader avec les alertes TradingView. You p
 
 Une fois configurée, votre adresse email personnelle d'alerte TradingView sera affichée à coté de votre configuration TradingView. Si vous avez besoin de retourner sur l'interface de configuration, par exemple pour revalider votre adresse email, vous pouvez simplement cliquer sur l’icône de configuration :
 
-<div style={{textAlign: "center"}}>
-  ![octobot open source bouton de configuration des alertes email
-  tradingview](/images/guides/trading-view/octobot-open-source-configure-button-tradingview-alert-email-address.png)
-</div>
+![octobot open source bouton de configuration des alertes email
+tradingview](/images/guides/trading-view/octobot-open-source-configure-button-tradingview-alert-email-address.png)
+

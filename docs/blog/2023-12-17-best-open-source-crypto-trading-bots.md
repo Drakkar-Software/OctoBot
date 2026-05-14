@@ -8,8 +8,6 @@ tags: ["Cryptocurrency", "Trading", "Plans"]
 image: "/images/blog/best-open-source-crypto-trading-bots/cover.png"
 ---
 
-
-
 # 5 Best Open source Crypto Trading Bots
 
 Finding the perfect crypto trading bot can be challenging with so many choices. This guide aims to simplify your search about open source options.
@@ -36,28 +34,9 @@ Its active community support make it an attractive choice for traders looking fo
 With its focus on transparency, users can backtest strategies and track performance.
 OctoBot supports most major crypto exchanges and offers professional features for advanced users, making it suitable for both beginners and experienced crypto investors.
 
-<Card className="mx-auto mt-5 py-5 border-0">
-  <div>
-    <Rating
-      title="Ease of use"
-      level={3}
-      h="14px"
-      tooltipText="A user-friendly web interface that makes it easy for beginners to navigate along with a cloud version for hassle-free hosting"
-    />
-    <Rating
-      title="Features"
-      level={3}
-      h="14px"
-      tooltipText="Offers a variety of trading strategies and features including AI trading and strategy optimization"
-    />
-    <Rating
-      title="Docs & Community"
-      level={3}
-      h="14px"
-      tooltipText="A very detailed documentation and an active telegram and discord community"
-    />
-  </div>
-</Card>
+- **Ease of use:** ★★★ — A user-friendly web interface that makes it easy for beginners to navigate along with a cloud version for hassle-free hosting
+- **Features:** ★★★ — Offers a variety of trading strategies and features including AI trading and strategy optimization
+- **Docs & Community:** ★★★ — A very detailed documentation and an active telegram and discord community
 
 ## 2. FreqTrade
 
@@ -67,28 +46,9 @@ allows for extensive strategy testing and simultaneous running of multiple bots,
 making it a flexible choice for varied trading styles. The bot's active
 development community constantly works on new features and improvements.
 
-<Card className="mx-auto mt-5 py-5 border-0">
-  <div>
-    <Rating
-      title="Ease of use"
-      level={3}
-      h="14px"
-      tooltipText="Known for its user-friendly telegram or web interface making it accessible for beginners"
-    />
-    <Rating
-      title="Features"
-      level={2}
-      h="14px"
-      tooltipText="Offers a solid range of features including strategy testing and multiple bot options"
-    />
-    <Rating
-      title="Docs & Community"
-      level={3}
-      h="14px"
-      tooltipText="A very detailed documentation and a very active and supportive community"
-    />
-  </div>
-</Card>
+- **Ease of use:** ★★★ — Known for its user-friendly telegram or web interface making it accessible for beginners
+- **Features:** ★★☆ — Offers a solid range of features including strategy testing and multiple bot options
+- **Docs & Community:** ★★★ — A very detailed documentation and a very active and supportive community
 
 ## 3. HummingBot
 
@@ -97,36 +57,13 @@ compatibility with both centralized and decentralized exchanges. Its
 market-making feature is ideal for spread trading enthusiasts. The platform also
 supports liquidity mining, offering additional earning opportunities.
 
-<Card className="mx-auto mt-5 py-5 border-0">
-  <div>
-    <Rating
-      title="Ease of use"
-      level={1}
-      h="14px"
-      tooltipText="While powerful, it might require some learning curve for new users"
-    />
-    <Rating
-      title="Features"
-      level={3}
-      h="14px"
-      tooltipText="Offers a wide range of features including market making, liquidity mining, and support for both centralized and decentralized exchanges"
-    />
-    <Rating
-      title="Docs & Community"
-      level={3}
-      h="14px"
-      tooltipText="Has comprehensive documentation and a robust community"
-    />
-  </div>
-</Card>
+- **Ease of use:** ★☆☆ — While powerful, it might require some learning curve for new users
+- **Features:** ★★★ — Offers a wide range of features including market making, liquidity mining, and support for both centralized and decentralized exchanges
+- **Docs & Community:** ★★★ — Has comprehensive documentation and a robust community
 
 ## 4. Jesse
 
-<div style={{textAlign: "center"}}>
-  <div>
-    ![jesse-logo](/images/blog/best-open-source-crypto-trading-bots/jesse.png)
-  </div>
-</div>
+![jesse-logo](/images/blog/best-open-source-crypto-trading-bots/jesse.png)
 
 <a href="https://jesse.trade/" rel="nofollow">Jesse</a> is a lesser-known but highly effective open-source
 trading bot, designed for simplicity and efficiency in strategy development. It
@@ -135,28 +72,9 @@ supports various cryptocurrencies and offers a streamlined
 particularly appreciated for its clean coding structure, making it easy for
 developers to customize and extend its capabilities.
 
-<Card className="mx-auto mt-5 py-5 border-0">
-  <div>
-    <Rating
-      title="Ease of use"
-      level={1}
-      h="14px"
-      tooltipText="Streamlined for strategy development, but might require some technical knowledge"
-    />
-    <Rating
-      title="Features"
-      level={2}
-      h="14px"
-      tooltipText="Good range of features for strategy development and backtesting"
-    />
-    <Rating
-      title="Docs & Community"
-      level={2}
-      h="14px"
-      tooltipText="Adequate documentation and a growing community"
-    />
-  </div>
-</Card>
+- **Ease of use:** ★☆☆ — Streamlined for strategy development, but might require some technical knowledge
+- **Features:** ★★☆ — Good range of features for strategy development and backtesting
+- **Docs & Community:** ★★☆ — Adequate documentation and a growing community
 
 ## 5. Superalgos
 
@@ -167,28 +85,9 @@ approach allows collaborative strategy development. The platform's integration
 of data mining and machine learning tools makes it a powerful option for
 advanced traders.
 
-<Card className="mx-auto mt-5 py-5 border-0">
-  <div>
-    <Rating
-      title="Ease of use"
-      level={1}
-      h="14px"
-      tooltipText="Offers a lot of functionality which can be overwhelming for beginners, but very powerful for experienced users"
-    />
-    <Rating
-      title="Features"
-      level={3}
-      h="14px"
-      tooltipText="Comprehensive suite of tools including visual strategy design, data analysis, and scalability for professional use"
-    />
-    <Rating
-      title="Docs & Community"
-      level={3}
-      h="14px"
-      tooltipText="Strong community and extensive documentation available"
-    />
-  </div>
-</Card>
+- **Ease of use:** ★☆☆ — Offers a lot of functionality which can be overwhelming for beginners, but very powerful for experienced users
+- **Features:** ★★★ — Comprehensive suite of tools including visual strategy design, data analysis, and scalability for professional use
+- **Docs & Community:** ★★★ — Strong community and extensive documentation available
 
 ## Conclusion
 

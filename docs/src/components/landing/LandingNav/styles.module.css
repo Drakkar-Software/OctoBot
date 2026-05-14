@@ -1,0 +1,79 @@
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(10, 13, 44, 0.55);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--ng-rule-soft);
+}
+
+.inner {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0.85rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+.brand:hover {
+  text-decoration: none;
+}
+
+.logo {
+  width: 32px;
+  height: 32px;
+}
+
+.brandName {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--ng-ink);
+  letter-spacing: -0.3px;
+}
+
+.links {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-left: auto;
+}
+
+.link {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--ng-ink-muted);
+  text-decoration: none;
+  transition: color 120ms ease;
+}
+.link:hover {
+  color: var(--ng-frost);
+  text-decoration: none;
+}
+
+.cta {
+  min-height: 42px;
+  padding: 0 16px;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+@media (max-width: 860px) {
+  .links {
+    display: none;
+  }
+  .inner {
+    gap: 1rem;
+  }
+  .cta {
+    margin-left: auto;
+  }
+}

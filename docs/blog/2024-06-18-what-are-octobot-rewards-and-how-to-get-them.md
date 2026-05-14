@@ -8,14 +8,11 @@ tags: ["Rewards", "OctoBot cloud", "Release"]
 image: "/images/blog/what-are-octobot-rewards-and-how-to-get-them/octobot-rewards-get-rewarded-for-using-octobot-and-use-advanced-strategies.png"
 ---
 
-
-
 # What are OctoBot rewards and how to get them?
 
-<div style={{textAlign: "center"}}>
-  ![OctoBot rewards get rewarded for using OctoBot and use advanced
-  strategies](/images/blog/what-are-octobot-rewards-and-how-to-get-them/octobot-rewards-get-rewarded-for-using-octobot-and-use-advanced-strategies.png)
-</div>
+![OctoBot rewards get rewarded for using OctoBot and use advanced
+strategies](/images/blog/what-are-octobot-rewards-and-how-to-get-them/octobot-rewards-get-rewarded-for-using-octobot-and-use-advanced-strategies.png)
+
 We are thrilled to announce the release of the OctoBot reward system. Rewards
 offer an alternative for free Investor accounts to profit from paid investment
 strategies as well as other benefits without having to spend a dollar.
@@ -31,10 +28,8 @@ When creating an OctoBot account, you can choose to use the free Investor plan o
 
 Rewards are the alternative way to unlock the AI, DCA, crypto baskets and grid strategies that are normally only available starting from the Investor Plus plan.
 
-<div style={{textAlign: "center"}}>
-  ![OctoBot rewards dashboard showing crypto apprentice
-  rewards](/images/blog/what-are-octobot-rewards-and-how-to-get-them/octobot-rewards-dashboard-showing-crypto-apprentice-rewards.png)
-</div>
+![OctoBot rewards dashboard showing crypto apprentice
+rewards](/images/blog/what-are-octobot-rewards-and-how-to-get-them/octobot-rewards-dashboard-showing-crypto-apprentice-rewards.png)
 
 While paid plans grant you instant access to every strategy, it is now also possible to gradually unlock access to those strategies by being a valuable OctoBot user.
 
@@ -48,10 +43,8 @@ Rewards are notably useful to unlock access to:
 - Each grid strategy
 - An increased number of simultaneous OctoBots you can use
 
-<div style={{textAlign: "center"}}>
-  ![OctoBot rewards dashboard showing grandmaster of crypto
-  rewards](/images/blog/what-are-octobot-rewards-and-how-to-get-them/octobot-rewards-dashboard-showing-grandmaster-of-crypto-rewards.png)
-</div>
+![OctoBot rewards dashboard showing grandmaster of crypto
+rewards](/images/blog/what-are-octobot-rewards-and-how-to-get-them/octobot-rewards-dashboard-showing-grandmaster-of-crypto-rewards.png)
 
 Grandmaster of Crypto is the maximum reward level. It takes time to acquire, but when reached, it permanently unlocks all the Investor Plus features.
 
@@ -59,10 +52,8 @@ Grandmaster of Crypto is the maximum reward level. It takes time to acquire, but
 
 Rewards are earned by completing missions from the "Missions" section of your <a href="https://www.octobot.cloud/rewards" rel="nofollow">rewards dashboard</a>.
 
-<div style={{textAlign: "center"}}>
-  ![OctoBot rewards list with completed and uncompleted
-  missions](/images/blog/what-are-octobot-rewards-and-how-to-get-them/octobot-rewards-list-with-completed-and-uncompleted-missions.png)
-</div>
+![OctoBot rewards list with completed and uncompleted
+missions](/images/blog/what-are-octobot-rewards-and-how-to-get-them/octobot-rewards-list-with-completed-and-uncompleted-missions.png)
 
 There are many kinds of missions such as starting multiple OctoBots, completing crypto courses or just having a running OctoBot.
 

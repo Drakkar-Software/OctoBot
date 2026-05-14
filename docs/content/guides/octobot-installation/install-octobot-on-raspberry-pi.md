@@ -4,8 +4,6 @@ description: "Learn how to easily install and start your OctoBot on Raspberry Pi
 sidebar_position: 5
 ---
 
-
-
 # Install OctoBot on Raspberry Pi
 
 ## 1. Preparing the Raspberry Pi
@@ -19,9 +17,7 @@ sidebar_position: 5
 1. On the Octobot latest release page, download the `OctoBot_linux_arm64`
    file: this is the Raspberry Pi x64 compatible version of OctoBot.
 
-<div style="text-align: center">
-  <a href="https://github.com/Drakkar-Software/OctoBot/releases/latest"><strong>Get the latest release</strong></a>
-</div>
+<a href="https://github.com/Drakkar-Software/OctoBot/releases/latest"><strong>Get the latest release</strong></a>
 
 2. Copy the file to the `/home/pi/` folder  
    Note: here `pi` it is the folder of the `pi` user (default user).

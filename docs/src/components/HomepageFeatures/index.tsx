@@ -1,6 +1,6 @@
 import type {ReactNode} from 'react';
-import Link from '@docusaurus/Link';
 import Heading from '@theme/Heading';
+import GlassCard from '@site/src/components/GlassCard';
 import styles from './styles.module.css';
 
 type AudienceItem = {
@@ -52,16 +52,21 @@ const AudienceList: AudienceItem[] = [
 
 function AudienceCard({title, icon, description, link, linkLabel}: AudienceItem) {
   return (
-    <div className="col col--4">
-      <div className={`text--center padding-horiz--md ${styles.featureCard}`}>
-        <div className={styles.featureIcon} aria-hidden="true">{icon}</div>
-        <Heading as="h3">{title}</Heading>
-        <p>{description}</p>
-        <Link className="button button--primary button--md" to={link}>
-          {linkLabel}
-        </Link>
+    <GlassCard variant="strong" to={link} className={styles.card}>
+      <div className={`ng-icon-circle ${styles.icon}`} aria-hidden="true">
+        {icon}
       </div>
-    </div>
+      <Heading as="h3" className={styles.cardTitle}>
+        {title}
+      </Heading>
+      <p className={styles.cardBody}>{description}</p>
+      <span className={styles.cardLink}>
+        {linkLabel}
+        <span aria-hidden="true" className={styles.arrow}>
+          →
+        </span>
+      </span>
+    </GlassCard>
   );
 }
 
@@ -69,11 +74,17 @@ export default function HomepageFeatures(): ReactNode {
   return (
     <section className={styles.features}>
       <div className="container">
-        <div className={`text--center ${styles.sectionHeader}`}>
-          <Heading as="h2">Choose your path</Heading>
-          <p>OctoBot documentation is organized by audience. Pick the guide that fits your needs.</p>
+        <div className={styles.sectionHeader}>
+          <span className="ng-eyebrow">Documentation</span>
+          <Heading as="h2" className={styles.sectionTitle}>
+            Choose your path
+          </Heading>
+          <p className={styles.sectionLead}>
+            OctoBot documentation is organized by audience. Pick the guide that
+            fits your needs.
+          </p>
         </div>
-        <div className="row">
+        <div className={styles.grid}>
           {AudienceList.map((props) => (
             <AudienceCard key={props.title} {...props} />
           ))}

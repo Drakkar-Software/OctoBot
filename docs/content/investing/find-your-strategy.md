@@ -4,8 +4,6 @@ description: "Learn how to explore, compare and find or create the best trading 
 sidebar_position: 4
 ---
 
-
-
 # Find the best investment for you
 
 Many investments are available on [octobot.cloud](https://www.octobot.cloud/). Some of them are
@@ -24,11 +22,7 @@ Finding your ideal investment can be hard. That's why the try to make it as simp
 
 ## Crypto basket theme
 
-<div style="text-align: center">
-
 ![OctoBot cloud crypto basket example](/images/guides/using-a-crypto-basket.png)
-
-</div>
 
 [Many crypto baskets](https://www.octobot.cloud/features/crypto-basket) are offered on OctoBot cloud. A crypto basket is a collection of different cryptocurrencies that share a common theme. These baskets allow you to invest in the cryptocurrencies that interest you or simply in the cryptocurrencies with the highest market capitalization ('the top crypto').
 
@@ -50,11 +44,7 @@ that displayed performance are always up to date with the current market.
 
 You might prefer to create your own trading strategy rather than using OctoBot cloud ready-to-go strategies.
 
-<div style="text-align: center">
-
 ![TradingView automation illustrated by TradingView logo](/images/blog/introducing-the-investor-plus-plan/tradingview-automation-illustrated-by-tradingview-logo.png)
-
-</div>
 
 For this purpose, OctoBot connects to TradingView to enable you to create your strategy on TradingView is a way that is:
 

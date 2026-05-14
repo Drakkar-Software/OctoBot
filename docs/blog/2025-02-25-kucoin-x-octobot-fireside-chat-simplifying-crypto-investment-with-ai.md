@@ -8,8 +8,6 @@ tags: ["Partnership", "Trading", "Exchange", "AI"]
 image: "/images/blog/kucoin-x-octobot-fireside-chat-simplifying-crypto-investment-with-ai/kucoin-x-octobot-fireside-chat-simplifying-crypto-investment-with-ai-announcement-banner.png"
 ---
 
-
-
 # Kucoin x OctoBot Fireside chat - Simplifying crypto investment with AI 
 
 > **How can AI really help you with your crypto investment?**
@@ -18,16 +16,10 @@ image: "/images/blog/kucoin-x-octobot-fireside-chat-simplifying-crypto-investmen
 
 In <a href="https://x.com/i/spaces/1ynJOlgWzaExR" rel="nofollow">this Fireside chat</a> with <a href="https://x.com/swingy369" rel="nofollow">Serena</a> from <a href="https://www.kucoin.com/ucenter/signup?rcode=rJ2Q2T3" rel="nofollow">Kucoin</a>, Paul and Guillaume, co-founders of [OctoBot](/) we discuss how AI is changing the game in crypto investment.
 
-<div style={{textAlign: "center"}}>
-  <div>
-    <a href="https://x.com/i/spaces/1ynJOlgWzaExR" rel="nofollow">![kucoin x octobot fireside chat simplifying crypto investment with ai
-      announcement banner](/images/blog/kucoin-x-octobot-fireside-chat-simplifying-crypto-investment-with-ai/kucoin-x-octobot-fireside-chat-simplifying-crypto-investment-with-ai-announcement.jpeg)</a>
-  </div>
-</div>
+<a href="https://x.com/i/spaces/1ynJOlgWzaExR" rel="nofollow">![kucoin x octobot fireside chat simplifying crypto investment with ai
+  announcement banner](/images/blog/kucoin-x-octobot-fireside-chat-simplifying-crypto-investment-with-ai/kucoin-x-octobot-fireside-chat-simplifying-crypto-investment-with-ai-announcement.jpeg)</a>
 
-<div style={{textAlign: "center"}}>
-  **[Listen to the Fireside chat](https://x.com/i/spaces/1ynJOlgWzaExR)**
-</div>
+**[Listen to the Fireside chat](https://x.com/i/spaces/1ynJOlgWzaExR)**
 
 Here is a summary of the main topics covered over the fireside chat.
 
@@ -64,9 +56,7 @@ The AI describes the key information of your grid in a simple way. Here, this 10
 
 When using TradingView to invest, Pine Script is the way to automate a strategy. However, it can be hard to get started with a new TradingView strategy. OctoBot AI makes it much easier. Simply describe your TradingView strategy idea and the AI will create your strategy Pine Script in a second. 
 
-<div style={{textAlign: "center"}}>
-  **[Create your own strategy with AI](https://www.octobot.cloud/creator)**
-</div>
+**[Create your own strategy with AI](https://www.octobot.cloud/creator)**
 
 ## Investing using crypto basket in the bull market
 
@@ -76,9 +66,7 @@ During the bull market, Crypto Baskets are performing extremely well. Ourselves,
 
 Of course, at OctoBot, we use OctoBot for our investments and here is a screenshot of one of our personal crypto baskets bot. We believe crypto baskets to be a simple great investment strategy, especially during the bull market.
 
-<div style={{textAlign: "center"}}>
-  **[View crypto baskets](https://www.octobot.cloud/explore?category=indexes)**
-</div>
+**[View crypto baskets](https://www.octobot.cloud/explore?category=indexes)**
 
 ## Transparency is at the core of OctoBot
 

@@ -16,11 +16,7 @@ When trading with OctoBot, you use a trading mode. [Trading modes](/guides/octob
 
 Trading modes are a key component of any trading strategy and are compatible with each [supported exchange](/guides/exchanges).
 
-<div style={{textAlign: "center"}}>
-  <div>
-    ![Person looking at his screens using many trading strategies](/images/blog/introducing-trading-modes-guides/person-looking-at-his-screens-using-many-trading-strategies.jpg) *A trader using many trading strategies.*
-  </div>
-</div>
+![Person looking at his screens using many trading strategies](/images/blog/introducing-trading-modes-guides/person-looking-at-his-screens-using-many-trading-strategies.jpg) *A trader using many trading strategies.*
 
 Based on your feedback, we created [guides for each trading modes](/guides/octobot-trading-modes/trading-modes) to make clear what they are made for and how to use them. We are looking forward to getting your feedback on those guides.
 

@@ -7,8 +7,6 @@ tags: ["Crypto", "Trading", "Educational"]
 image: "/images/blog/safu-meaning/cover.png"
 ---
 
-
-
 # Understanding the SAFU meaning
 
 In the world of cryptocurrency, where security and trust are really important, the concept of the Secure Asset Fund for Users (SAFU) stands as a major innovation. This article describes the origins, purpose, and cultural impact of SAFU, particularly in its role in safeguarding user funds.
@@ -27,11 +25,7 @@ By January 29, 2022, the Secure Asset Fund for Users was valued at one billion d
 
 The term "SAFU" gained popularity from a humorous play on the word "safe," originating from a <a href="https://www.youtube.com/watch?v=DelF6zEHXpE" rel="nofollow">YouTube video</a> by the content creator Bizonacci in 2018. This video, titled "Funds are Safu," was a response to a <a href="https://twitter.com/cz_binance/status/1326458569974181891" rel="nofollow">tweet by Changpeng Zhao</a>, the CEO of Binance at that time, who assured users that their "funds are safe" during a period of unscheduled maintenance.
 
-<div style={{textAlign: "center"}}>
-  <div>
-    ![Changpeng Zhao "SAFU" tweet](/images/blog/safu-meaning/safu-tweet.png)
-  </div>
-</div>
+![Changpeng Zhao "SAFU" tweet](/images/blog/safu-meaning/safu-tweet.png)
 
 ## The birth of the SAFU meme
 

@@ -4,8 +4,6 @@ description: "Learn to automate a Bitcoin Death and Golden Cross Strategy using 
 sidebar_position: 2
 ---
 
-
-
 # Automating a TradingView Death and Golden Cross Strategy
 
 With this tutorial, you will learn how to trade with Death and Golden Crosses using two <a href="https://www.investopedia.com/terms/e/ema.asp" rel="nofollow">Exponential Moving Averages</a> (or EMA).  
@@ -20,11 +18,7 @@ The concept is to:
 
 First, we want to visually see our Death and Golden Crosses. Let's go to <a href="https://www.tradingview.com/?aff_id=27595" rel="nofollow">TradingView</a> and select the trading pair, exchange and time frame we want to trade.
 
-<div style="text-align: center">
-
 ![tradingview select btcusdt market](/images/guides/trading-view/tradingview-select-btcusdt-market.png)
-
-</div>
 
 For this tutorial, we will trade BTC/USDT on Binance using the 5 minutes time frame. Of course, any other value would also work.  
 Note: Trading on Death and Golden Crosses is usually more profitable on longer time frames. In this tutorial the 5 minutes time frame is only meant as an example.
@@ -36,21 +30,13 @@ Then we will add the Exponential Moving Average indicator twice:
 1. Once for the long term EMA
 2. Once for the short term EMA
 
-<div style="text-align: center">
-
 ![tradingview adding ema indicator](/images/guides/trading-view/tradingview-adding-ema-indicator.png)
-
-</div>
 
 ### 1.3 Configure the EMA indicators
 
 Click on the `Settings` of both of your EMA indicators and set the `Length` value according to how you wish to configure your Death and Golden Crosses.
 
-<div style="text-align: center">
-
 ![tradingview configuring ema indicator](/images/guides/trading-view/tradingview-configuring-ema-indicator.png)
-
-</div>
 
 In this example, we will use the following values:
 
@@ -63,11 +49,7 @@ Note: you can also configure the `Style` of those EMA to make them easier to vis
 
 Death and Golden crosses happen when the long and short term EMA are crossing. We can now easily see what it would look like.
 
-<div style="text-align: center">
-
 ![tradingview ema indicator visualization with golden and death crosses](/images/guides/trading-view/tradingview-ema-indicator-visualization-with-golden-and-death-crosses.png)
-
-</div>
 
 Our strategy is ready, the only remaining step is to create an OctoBot to trade when those crosses happen.
 
@@ -77,11 +59,7 @@ Our strategy is ready, the only remaining step is to create an OctoBot to trade 
 
 Let's open a new tab and go to <a href="https://www.octobot.cloud/dashboard" rel="nofollow">OctoBot cloud</a> to start a new TradingView OctoBot
 
-<div style="text-align: center">
-
 ![start new tradingview octobot from explorer](/images/guides/trading-view/start-new-tradingview-octobot-from-explorer.png)
-
-</div>
 
 **[Start a bot](https://www.octobot.cloud)**
 
@@ -91,21 +69,13 @@ For this tutorial, we will start a bot on Binance. If you are unsure about how t
 
 When a Golden Cross happens, we want our OctoBot to buy. For this tutorial, we will buy using 50% of our portfolio's USDT holdings.
 
-<div style="text-align: center">
-
 ![octobot automation create buy btc](/images/guides/trading-view/octobot-automation-create-buy-btc.png)
-
-</div>
 
 ### 2.3 Create your SELL automation
 
 When a Death Cross occurs, we want our OctoBot to sell. For this tutorial, we will sell all of our portfolio's BTC holdings.
 
-<div style="text-align: center">
-
 ![octobot automation create sell btc](/images/guides/trading-view/octobot-automation-create-sell-btc.png)
-
-</div>
 
 Note: in this tutorial, we are keeping things simple by using market orders, selling everything at once and having only one type of BUY and SELL automation.  
 Since there is no limit the the automations you can create, you customize this strategy as much as you want by creating other BUY and SELL automations.
@@ -118,31 +88,15 @@ Note: the following steps are assuming that you already configured your TradingV
 
 Open the connection panel of your BUY automation and copy its automation identifier.
 
-<div style="text-align: center">
-
 ![octobot open automation connection panel](/images/guides/trading-view/octobot-open-automation-connection-panel.png)
-
-</div>
-
-<div style="text-align: center">
 
 ![octobot automation identifier](/images/guides/trading-view/octobot-automation-identifier.png)
 
-</div>
-
 Going back to your TradingView tab, create a new alert
-
-<div style="text-align: center">
 
 ![creating an alert from tradingview](/images/guides/trading-view/creating-an-alert-from-tradingview.png)
 
-</div>
-
-<div style="text-align: center">
-
 ![tradingview create golden cross alert](/images/guides/trading-view/tradingview-create-golden-cross-alert.png)
-
-</div>
 
 In this alert, pay attention to:
 
@@ -160,11 +114,7 @@ Similarly to the Golden Cross configuration:
 1. On your OctoBot tab, open your SELL automation connection panel.
 2. On the TradingView tab, create a seconds alert to identify Death Crosses and configure it to trigger your SELL automation.
 
-<div style="text-align: center">
-
 ![tradingview create death cross alert](/images/guides/trading-view/tradingview-create-death-cross-alert.png)
-
-</div>
 
 In this alert, remember to:
 

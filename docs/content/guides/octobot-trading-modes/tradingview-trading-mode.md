@@ -4,17 +4,11 @@ description: "Easily automate your TradingView strategies and indicators trades 
 sidebar_position: 9
 ---
 
-
-
 # TradingView Trading Mode
 
 The TradingView Trading Mode (or TradingViewTradingMode) is designed to automate orders creation on exchanges based on <a href="https://www.tradingview.com/?aff_id=27595" rel="nofollow">TradingView</a> signals.
 
-<div style="text-align: center">
-
 ![tradingview automation illustrated by tradingview logo](/images/guides/interfaces/tradingview-automation-illustrated-by-tradingview-logo.png)
-
-</div>
 
 Simply emit alerts from your TradingView indicators or strategies to trade on any exchange. Learn more on how to configure your OctoBot to trade using TradingView and the [alert on syntax](/guides/octobot-interfaces/tradingview/alert-format) on the [Automating trading from TradingView guide](/guides/octobot-interfaces/tradingview).
 

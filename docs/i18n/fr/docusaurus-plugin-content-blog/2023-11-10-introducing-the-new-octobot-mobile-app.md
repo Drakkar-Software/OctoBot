@@ -8,13 +8,9 @@ tags: ["Android", "Mobile", "OctoBot cloud"]
 image: "/images/blog/introducing-the-new-octobot-mobile-app/cover.png"
 ---
 
-
-
 # Présentation de la nouvelle application mobile OctoBot
 
-<div style={{textAlign: "center"}}>
-  ![octobot-android-app](/images/blog/introducing-the-new-octobot-mobile-app/cover.png)
-</div>
+![octobot-android-app](/images/blog/introducing-the-new-octobot-mobile-app/cover.png)
 
 Nous sommes ravis de vous présenter l'application OctoBot pour Android. Cette nouvelle application offre la possibilité de suivre votre OctoBot, qu'il soit auto-hébergé ou dans le cloud, directement depuis votre mobile.
 
@@ -26,16 +22,10 @@ L'<a href="https://play.google.com/store/apps/details?id=com.drakkarsoftware.oct
 
 Pour l'instant, l'application Android OctoBot vous permet de suivre les profits du bot, les actifs et le solde.
 
-<div>
-  <div>
-    ![vue de
-    connexion](/images/blog/introducing-the-new-octobot-mobile-app/app-signin.webp)
-  </div>
-  <div>
-    ![vue des
-    bots](/images/blog/introducing-the-new-octobot-mobile-app/app-bots.webp)
-  </div>
-</div>
+![vue de
+connexion](/images/blog/introducing-the-new-octobot-mobile-app/app-signin.webp)
+![vue des
+bots](/images/blog/introducing-the-new-octobot-mobile-app/app-bots.webp)
 
 ## Notre engagement sur les retours utilisateur
 

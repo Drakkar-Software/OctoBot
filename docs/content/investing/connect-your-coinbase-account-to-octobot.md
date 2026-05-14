@@ -4,8 +4,6 @@ description: "Step by step guide on how to securely use your Coinbase account wi
 sidebar_position: 24
 ---
 
-
-
 # Connecting your Coinbase account to OctoBot cloud
 
 To automate the investment strategies of your choice on your Coinbase account, it is necessary to allow OctoBot to access a part of your account.
@@ -56,11 +54,7 @@ Proceed with the security verification to create the API Key.
 
 Your API Key is now created. Do not close this window as long as you are not done entering it on OctoBot cloud.
 
-<div style="text-align: center">
-
 ![coinbase api key created](/images/guides/coinbase/coinbase-api-key-created.png)
-
-</div>
 
 Note: Coinbase will ask you to download a file containing the API Key details. Downloading it is not necessary, do not download the file or remove it from your computer if you did.
 
@@ -72,23 +66,15 @@ All you need to do is to copy and paste the values of `API key name` and `Secret
 
 Note: When adding an API Key on OctoBot cloud, you can associate a name to it. As for the naming on Coinbase side, this is a free field where you can enter any name to quickly identify this API Key in the future.
 
-<div style="text-align: center">
-
 ![api creation completed selected values](/images/guides/coinbase/api-creation-completed-selected-values.png)
-
-</div>
 
 ![add API Key to octobot cloud from strategy start](/images/guides/coinbase/add-api-key-to-octobot-cloud-from-strategy-start.png)
 
-<div style="text-align: center">
-  <em>Adding an API Key when starting a strategy</em>
-</div>
+<em>Adding an API Key when starting a strategy</em>
 
 ![add API Key to octobot cloud from profile](/images/guides/coinbase/add-api-key-to-octobot-cloud-from-profile.png)
 
-<div style="text-align: center">
-  <em>Adding an API Key directly from <a href="https://www.octobot.cloud/account" rel="nofollow">your profile</a></em>
-</div>
+<em>Adding an API Key directly from <a href="https://www.octobot.cloud/account" rel="nofollow">your profile</a></em>
 
 Your Coinbase account can now be used on OctoBot cloud !
 

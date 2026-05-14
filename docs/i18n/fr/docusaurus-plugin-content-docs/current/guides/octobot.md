@@ -4,8 +4,6 @@ description: "Vous avez des questions sur OctoBot, le robot de trading open sour
 sidebar_position: 1
 ---
 
-
-
 # Lancer votre OctoBot
 
 :::info
@@ -27,9 +25,7 @@ Dans ce cas, [www.octobot.cloud](https://www.octobot.cloud/fr) est fait pour vou
 
 ### Utiliser le robot de trading open source
 
-<div style="text-align: center; margin: 1.5rem 0">
-  <iframe width="100%" height="400" style="max-width: 640px; border-radius: 8px" src="https://www.youtube.com/embed/TJUU62e1jR8" title="OctoBot - Robot de trading crypto open source" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-</div>
+<iframe width="100%" height="400" style="max-width: 640px; border-radius: 8px" src="https://www.youtube.com/embed/TJUU62e1jR8" title="OctoBot - Robot de trading crypto open source" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
 Avec [le robot de trading OctoBot](https://www.octobot.cloud/trading-bot) vous pouvez créer, tester et configurer votre propre stratégie d'investissement, que ce soit avec les stratégies d'OctoBot cloud ou les votre. Il est possible installer votre robot de trading [sur votre ordinateur](octobot-installation/install-octobot-on-your-computer) ou sur un [serveur dans le cloud](octobot-installation/cloud-install-octobot-on-digitalocean).
 
@@ -38,9 +34,7 @@ La **section Robot de trading** des guides est dédiée à OctoBot en tant que
 <a href="https://github.com/Drakkar-Software/OctoBot" rel="nofollow">robot de trading open source disponible sur GitHub</a>
 .
 
-<div style="text-align: center">
-  <a href="octobot-installation/install-octobot-on-your-computer"><strong>Installer OctoBot</strong></a>
-</div>
+<a href="octobot-installation/install-octobot-on-your-computer"><strong>Installer OctoBot</strong></a>
 
 ## Configuration et trading modes
 
@@ -53,10 +47,7 @@ OctoBot propose de nombreuses stratégies de trading : les [trading modes](octob
 - Trader sur des signaux de plateformes telles que [TradingView](octobot-trading-modes/tradingview-trading-mode).
 - Appliquer les meilleures [stratégies d'OctoBot cloud](/fr).
 
-
-<div style="text-align: center; margin: 1.5rem 0">
-  <iframe width="100%" height="400" style="max-width: 640px; border-radius: 8px" src="https://www.youtube.com/embed/Exdl94cmMDQ" title="Configuration de Trading dans OctoBot" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-</div>
+<iframe width="100%" height="400" style="max-width: 640px; border-radius: 8px" src="https://www.youtube.com/embed/Exdl94cmMDQ" title="Configuration de Trading dans OctoBot" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
 Faites quelque chose de totalement différent basé sur vos idées :
 
@@ -67,11 +58,7 @@ Faites quelque chose de totalement différent basé sur vos idées :
 
 Vous pouvez commander à distance votre OctoBot en le connectant à [Telegram](octobot-interfaces/telegram). Vous pouvez suivre ce que fait votre robot, regarder son portefeuille, ses profits, déclencher une vente d'urgence... Accédez à votre OctoBot où que vous soyez, quand vous le voulez, grâce à son interface Telegram.
 
-<div style="text-align: center">
-
 ![telegram connection to octobot illustrated by telegram logo](/images/guides/interfaces/telegram-connection-to-octobot-illustrated-by-telegram-logo.png)
-
-</div>
 
 Voir [la configuration de l'interface Telegram](octobot-interfaces/telegram) pour plus de détails sur l'interface Telegram d'OctoBot.
 

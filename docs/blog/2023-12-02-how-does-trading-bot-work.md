@@ -19,12 +19,8 @@ Explore crypto trading bots, how they work, their benefits and drawbacks, and le
 Crypto trading bots are automated software designed to handle cryptocurrency trading on behalf of users.
 By using various algorithms, these bots can execute trades based on a set of predefined settings and strategies, making them a great way to invest or trade cryptocurrencies.
 
-<div style={{textAlign: "center"}}>
-  <div>
-    ![a crypto trading bot sitting behind a
-    desk](/images/blog/how-does-trading-bot-work/cover.png)
-  </div>
-</div>
+![a crypto trading bot sitting behind a
+desk](/images/blog/how-does-trading-bot-work/cover.png)
 
 ## How do crypto trading bots work?
 

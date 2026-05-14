@@ -4,8 +4,6 @@ description: "|"
 sidebar_position: 24
 ---
 
-
-
 # Connecter votre compte Coinbase à OctoBot cloud
 
 Pour automatiser les stratégies d'investisements de votre choix sur votre propre compte Coinbase, il est nécessaire d'autoriser OctoBot à accéder à une partie de votre compte.
@@ -56,11 +54,7 @@ Complétez la vérification de sécurité pour créer l'API Key.
 
 Votre clé d'API est créée. Ne pas fermer cette fenêtre tant que vous n'avez pas reporté ces informations sur OctoBot cloud.
 
-<div style="text-align: center">
-
 ![api key coinbase créée](/images/guides/coinbase/coinbase-api-key-created.png)
-
-</div>
 
 Note: Coinbase va vous demander de télécharger un fichier contenant les détails de la clé d'API. Ce téléchargement n'est pas nécessaire, ne téléchargez pas ce fichier ou supprimez le de votre ordinateur si vous l'avez téléchargé.
 
@@ -72,23 +66,15 @@ Tout ce qu'il vous reste à faire est de copier/coller les valeurs de `API Key`,
 
 Remarque : Quand vous ajoutez une API Key sur OctoBot cloud, vous avez la possibilité de la nommer. Cette étape, semblable à celle sur Coinbase, permet de choisir un nom facilement identifiable pour votre configuration Coinbase.
 
-<div style="text-align: center">
-
 ![api cree key selectionnees](/images/guides/coinbase/api-creation-completed-selected-values.png)
-
-</div>
 
 ![ajouter api key a octobot cloud depuis start de strategie](/images/guides/coinbase/add-api-key-to-octobot-cloud-from-strategy-start.png)
 
-<div style="text-align: center">
-  <em>Ajouter une API Key au lancement d'une stratégie</em>
-</div>
+<em>Ajouter une API Key au lancement d'une stratégie</em>
 
 ![ajouter api key a octobot cloud depuis profil](/images/guides/coinbase/add-api-key-to-octobot-cloud-from-profile.png)
 
-<div style="text-align: center">
-  <em>Ajouter une API Key depuis <a href="https://www.octobot.cloud/fr/account" rel="nofollow">votre profil</a></em>
-</div>
+<em>Ajouter une API Key depuis <a href="https://www.octobot.cloud/fr/account" rel="nofollow">votre profil</a></em>
 
 Votre compte Coinbase peut maintenant être utilsié sur OctoBot cloud !
 

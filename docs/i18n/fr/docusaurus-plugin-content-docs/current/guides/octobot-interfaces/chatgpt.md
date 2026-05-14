@@ -4,8 +4,6 @@ description: "Apprenez comment configurer votre OctoBot pour trader en utilisant
 sidebar_position: 3
 ---
 
-
-
 # Trader avec ChatGPT
 
 :::info
@@ -14,10 +12,8 @@ sidebar_position: 3
 
 Seamlessly [Integrate ChatGPT within your trading strategies](/guides/octobot-trading-modes/chatgpt-trading) and profit from the power of AI trading.
 
-<div style={{textAlign: "center"}}>
-  ![octobot collaborating with chatgpt
-  light](/images/guides/interfaces/octobot-collaborating-with-chatgpt-light.png)
-</div>
+![octobot collaborating with chatgpt
+light](/images/guides/interfaces/octobot-collaborating-with-chatgpt-light.png)
 
 Checkout the [ChatGPT trading guide](/guides/octobot-trading-modes/chatgpt-trading) to learn more about how to trade with ChatGPT using OctoBot
 

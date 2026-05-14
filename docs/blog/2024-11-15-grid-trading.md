@@ -8,8 +8,6 @@ tags: ["Trading", "Strategy", "OctoBot cloud"]
 image: "/images/guides/grid-trading-illustrated-by-a-man-stepping-up-on-green-stairs-grabbing-coins.png"
 ---
 
-
-
 # Grid Trading
 
 Grid trading can be one of the strongest methods of trading that helps in making good profits out of the volatility in the markets.
@@ -24,10 +22,8 @@ Grid trading is a technique of trading that involves placing a number of buy and
 
 > Grid trading is an attempt to make a profit from the difference between buying and selling, but not through forecasting the trend.
 
-<div style={{textAlign: "center"}}>
-  ![grid trading illustrated by a man stepping up on green stairs grabbing
-  coins](/images/guides/grid-trading-illustrated-by-a-man-stepping-up-on-green-stairs-grabbing-coins.png)
-</div>
+![grid trading illustrated by a man stepping up on green stairs grabbing
+coins](/images/guides/grid-trading-illustrated-by-a-man-stepping-up-on-green-stairs-grabbing-coins.png)
 
 ## How does Grid Trading work?
 
@@ -60,10 +56,8 @@ However, it also has some disadvantages.
 
 ## Grid trading bots
 
-<div style={{textAlign: "center"}}>
-  ![grid trading strategies available on
-  octobot.cloud](/images/blog/grid-trading/grid-strategies.png)
-</div>
+![grid trading strategies available on
+octobot.cloud](/images/blog/grid-trading/grid-strategies.png)
 
 Grid trading bots, like [OctoBot](/), are an automated program that automatically closes buy and sell orders based on pre-set parameters. It does this by creating a series of price levels or "grids" within which it will automatically execute trades in response to market fluctuations.
 It automatically performs partial sales when the price reaches a certain level within the set sell order and buys more in the event the price drops to a buy order level.
@@ -71,9 +65,7 @@ It automatically performs partial sales when the price reaches a certain level w
 In this way, a trader can continuously make a profit from small price fluctuations without his or her constant monitoring of the market.
 Automation given by these bots has also helped them save traders from emotional stress while implementing effective strategies in both volatile and sideways markets.
 
-<div style={{textAlign: "center"}}>
-  **[Start a grid trading bot](https://www.octobot.cloud/explore?category=strategies)**
-</div>
+**[Start a grid trading bot](https://www.octobot.cloud/explore?category=strategies)**
 
 ## Conclusion
 

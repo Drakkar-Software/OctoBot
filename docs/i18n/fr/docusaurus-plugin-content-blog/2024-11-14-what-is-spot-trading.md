@@ -8,8 +8,6 @@ tags: ["Cryptomonnaie", "Trading", "Éducatif"]
 image: "/images/blog/what-is-spot-trading/cover.png"
 ---
 
-
-
 # Qu'est-ce que le Spot Trading ?
 
 > Vous vous intéressez aux cryptomonnaies, mais vous ne savez vraiment pas par où commencer ?
@@ -20,12 +18,8 @@ Le spot trading consiste à acheter ou vendre une cryptomonnaie au prix actuel d
 
 De nombreux traders apprécient le spot trading car le marché offre de nombreuses opportunités de gagner rapidement de l'argent en spéculant sur ses hausses et ses baisses. Cependant, il comporte aussi ses risques et ses défis, qui seront abordés plus loin dans cet article.
 
-<div style={{textAlign: "center"}}>
-  <div>
-    ![traders avec un ordinateur portable achetant et vendant des
-    crypto](/images/blog/what-is-spot-trading/cover.png)
-  </div>
-</div>
+![traders avec un ordinateur portable achetant et vendant des
+crypto](/images/blog/what-is-spot-trading/cover.png)
 
 ## Comment Débuter dans le Spot Trading
 
@@ -45,12 +39,8 @@ Examinons quelques-unes des plus utilisées ci-dessous :
 - [Scalping](https://www.octobot.cloud/tools/scalping-signals) : Gagnez de l'argent en achetant et en vendant une cryptomonnaie dans un laps de temps aussi court que possible.
 - Swing trading : Gardez simplement la cryptomonnaie pendant une période prolongée, en attendant un mouvement important du marché.
 
-<div style={{textAlign: "center"}}>
-  <div>
-    ![illustration du concept abstrait du bureau de trading de
-    cryptomonnaies](/images/blog/what-is-spot-trading/cryptocurrency-desk.png)
-  </div>
-</div>
+![illustration du concept abstrait du bureau de trading de
+cryptomonnaies](/images/blog/what-is-spot-trading/cryptocurrency-desk.png)
 
 ## Le Spot Trading vs Les Autres Types de Trading
 

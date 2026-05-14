@@ -8,8 +8,6 @@ tags: ["Cryptocurrency", "Trading", "Bot"]
 image: "/images/blog/automated-trading-bot/cover.png"
 ---
 
-
-
 # Automated Trading Bot
 
 Tired of spending several hours analyzing the market trends and then making emotional trading decisions?
@@ -30,13 +28,9 @@ Many trading bots are designed for use in trading stocks, forex, and crypto, and
 They can analyze market data and make trades without emotional bias, granting the trader more time for analysis and strategy development.
 Just like a self-driving car, automated trading bots need regular checkups and updates to make sure they keep running correctly and efficiently.
 
-<div style={{textAlign: "center"}}>
-  <div>
-    ![A man relaxing in his couch while OctoBot is making money by automating
-    cryptocurrency
-    strategies](/a-man-relaxing-in-his-couch-while-octobot-is-making-money-by-automating-cryptocurrency-strategies-light.png)
-  </div>
-</div>
+![A man relaxing in his couch while OctoBot is making money by automating
+cryptocurrency
+strategies](/a-man-relaxing-in-his-couch-while-octobot-is-making-money-by-automating-cryptocurrency-strategies-light.png)
 
 ## How Do Automated Trading Bots Work?
 
@@ -62,12 +56,8 @@ With so many automated trading software options out there, it's hard to know whi
 
 We've also made a top of the [best crypto trading bots](best-crypto-trading-bots).
 
-<div style={{textAlign: "center"}}>
-  <div>
-    ![A podium of the best trading
-    robots](/images/blog/best-crypto-trading-bots/cover.png)
-  </div>
-</div>
+![A podium of the best trading
+robots](/images/blog/best-crypto-trading-bots/cover.png)
 
 ## Top Automated Trading Strategies
 

@@ -4,8 +4,6 @@ description: "Apprenez comment explorer, comparer et trouver ou créer la meille
 sidebar_position: 4
 ---
 
-
-
 # Trouvez le meilleur investissement pour vous
 
 De nombreuses offres d'investissement sont disponibles sur [octobot.cloud](https://www.octobot.cloud/). Certains sont créés par l'équipe OctoBot, d'autres sont réalisés par la communauté.
@@ -23,10 +21,8 @@ Trouver votre investissement idéal peut être difficile. C'est pourquoi nous es
 
 ## Le thème d'un panier de crypto
 
-<div style={{textAlign: "center"}}>
-  ![exemple d'un panier de crypto OctoBot
-  cloud](/images/guides/utiliser-un-panier-de-crypto.png)
-</div>
+![exemple d'un panier de crypto OctoBot
+cloud](/images/guides/utiliser-un-panier-de-crypto.png)
 
 [Une grande variété de paniers de crypto](https://www.octobot.cloud/features/crypto-basket) est proposée sur OctoBot cloud. Un panier de crypto est une collection de différentes cryptomonnaies qui partagent un même thème.
 Ces paniers vous permettent d'investir dans les crypto qui vous intéressent ou tout simplement dans les crypto avec la plus grande capitalisation ("le top des crypto").
@@ -47,10 +43,8 @@ Pour une transparence totale, les performances de chaque stratégie sont rééva
 
 Vous préférerez peut-être créer votre propre stratégie de trading plutôt que d'utiliser les stratégies prêtes à l'emploi d'OctoBot cloud.
 
-<div style={{textAlign: "center"}}>
-  ![automatisation TradingView illustrée par le logo
-  TradingView](/images/blog/introducing-the-investor-plus-plan/tradingview-automation-illustrated-by-tradingview-logo.png)
-</div>
+![automatisation TradingView illustrée par le logo
+TradingView](/images/blog/introducing-the-investor-plus-plan/tradingview-automation-illustrated-by-tradingview-logo.png)
 
 À cette fin, OctoBot se connecte à TradingView pour vous permettre de créer votre stratégie sur TradingView de manière:
 

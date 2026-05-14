@@ -8,8 +8,6 @@ tags: ["Crypto", "Trading", "Exchange", "Partnership", "BingX", "Event"]
 image: "/images/blog/bingx-wheel-of-fortune-event/bingx-and-octobot-wheel-of-fortune-event-with-usdt-to-earn.png"
 ---
 
-
-
 # Roue de la fortune BingX
 
 ![evenement Roue de la fortune bingx et octobot avec 1000 usdt à gagner](/images/blog/bingx-wheel-of-fortune-event/bingx-and-octobot-wheel-of-fortune-event-with-usdt-to-earn.png)
@@ -26,9 +24,7 @@ Après avoir <a href="https://bingx.com/invite/Z4UUVX/" rel="nofollow">créé vo
 - Les nouveaux [OctoBots TradingView](/investing/tradingview-automated-trading) d' [OctoBot cloud](https://www.octobot.cloud/fr) pour automatiser simplement vos trades en utilisant des événements de prix, indicateurs ou stratégies Pine Script directement depuis TradingView.
 - Votre propre stratégie OctoBot en utilisant des [robots de trading OctoBot](https://www.octobot.cloud/trading-bot).
 
-<div style={{textAlign: "center"}}>
-  **[Rejoindre l'évènement](https://bingx.com/fr-fr/act/turntable/8628992176)**
-</div>
+**[Rejoindre l'évènement](https://bingx.com/fr-fr/act/turntable/8628992176)**
 
 Remarque : les robots de trading utilisant de l'argent simulé ne sont pas pris en compte pour générer des tickets de Roue de la fortune. Les trades doivent s'exécuter sur votre compte BingX.
 

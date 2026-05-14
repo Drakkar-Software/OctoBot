@@ -7,13 +7,9 @@ tags: ["Trading", "Strategy", "OctoBot cloud"]
 image: "/images/blog/paper-trading-with-octobot/cover.jpg"
 ---
 
-
-
 # Paper trading with OctoBot
 
-<div style={{textAlign: "center"}}>
-  ![cover](/images/blog/paper-trading-with-octobot/cover.jpg)
-</div>
+![cover](/images/blog/paper-trading-with-octobot/cover.jpg)
 
 ## Introducing paper trading
 

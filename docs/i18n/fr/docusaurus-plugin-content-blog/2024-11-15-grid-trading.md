@@ -8,8 +8,6 @@ tags: ["Trading", "Stratégie", "OctoBot cloud"]
 image: "/images/guides/grid-trading-illustrated-by-a-man-stepping-up-on-green-stairs-grabbing-coins.png"
 ---
 
-
-
 # Trading en grille
 
 Le trading en grille peut être l'une des méthodes les plus puissantes de trading qui aide à réaliser de bons profits grâce à la volatilité des marchés. Construire un système de trading en grille vous donne la capacité de tirer parti des fluctuations de prix à la hausse pour augmenter vos profits.
@@ -22,11 +20,9 @@ Cela crée alors une "grille" d'ordres qui peuvent être activés lorsque le pri
 
 > L'idée derrière le trading en grille est d'essayer de réaliser un profit à partir de la différence entre l'achat et la vente, mais sans prévoir la tendance.
 
-<div style={{textAlign: "center"}}>
-  ![trading en grille illustré par un homme montant sur des escaliers verts en
-  attrapant des
-  pièces](/images/guides/grid-trading-illustrated-by-a-man-stepping-up-on-green-stairs-grabbing-coins.png)
-</div>
+![trading en grille illustré par un homme montant sur des escaliers verts en
+attrapant des
+pièces](/images/guides/grid-trading-illustrated-by-a-man-stepping-up-on-green-stairs-grabbing-coins.png)
 
 ## Comment fonctionne le trading en grille ?
 
@@ -64,18 +60,14 @@ Cependant, il présente également certains inconvénients.
 
 ## Bots de trading en grille
 
-<div style={{textAlign: "center"}}>
-  ![stratégies de trading en grille disponibles sur
-  octobot.cloud](/images/blog/grid-trading/grid-strategies.png)
-</div>
+![stratégies de trading en grille disponibles sur
+octobot.cloud](/images/blog/grid-trading/grid-strategies.png)
 
 Les bots de trading en grille, comme [OctoBot](/fr), sont des programmes automatisés qui placent automatiquement des ordres d'achat et de vente selon des paramètres prédéfinis par le trader. Il crée ainsi une série de niveaux ou "grilles" dans lesquels il exécutera automatiquement des transactions en réponse aux fluctuations du marché. Il effectue automatiquement des ventes partielles lorsque le prix atteint le niveau d'un ordre de vente et achète davantage si le prix descend au niveau d'un ordre d'achat.
 
 De cette manière, un trader peut continuellement réaliser un profit grâce aux petites fluctuations du prix sans avoir besoin d'une surveillance constante du marché. L'automatisation fournie par ces bots réduit la charge de travail des traders tout en mettant en œuvre des stratégies efficaces tant sur les marchés volatils que latéraux.
 
-<div style={{textAlign: "center"}}>
-  **[Démarrer un bot de trading en grille](https://www.octobot.cloud/fr/explore?category=strategies)**
-</div>
+**[Démarrer un bot de trading en grille](https://www.octobot.cloud/fr/explore?category=strategies)**
 
 ## Conclusion
 

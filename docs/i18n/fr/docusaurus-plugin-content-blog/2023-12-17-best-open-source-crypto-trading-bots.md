@@ -8,8 +8,6 @@ tags: ["Cryptocurrency", "Trading", "Plans"]
 image: "/images/blog/best-open-source-crypto-trading-bots/cover.png"
 ---
 
-
-
 # Les 5 meilleurs robots de trading crypto open source
 
 Trouver le robot de trading crypto parfait peut être difficile avec autant de choix disponibles.
@@ -36,28 +34,9 @@ Son support communautaire actif en fait un choix attrayant pour les traders rech
 Grâce à son accent sur la transparence, les utilisateurs peuvent tester leurs stratégies et suivre les performances.
 OctoBot prend en charge la plupart des principales plateformes d'échange de cryptomonnaies et propose des fonctionnalités professionnelles pour les utilisateurs avancés, ce qui en fait un outil adapté aussi bien aux débutants qu'aux investisseurs crypto expérimentés.
 
-<Card className="mx-auto mt-5 py-5 border-0">
-  <div>
-    <Rating
-      title="Facilité d'utilisation"
-      level={3}
-      h="14px"
-      tooltipText="Une interface web conviviale qui facilite la navigation pour les débutants, ainsi qu'une version cloud pour un hébergement simplifié"
-    />
-    <Rating
-      title="Fonctionnalités"
-      level={3}
-      h="14px"
-      tooltipText="Propose une variété de stratégies de trading et de fonctionnalités, y compris le trading basé sur l'IA et l'optimisation de la stratégie"
-    />
-    <Rating
-      title="Docs et communauté"
-      level={3}
-      h="14px"
-      tooltipText="Une documentation très détaillée et une communauté active sur Telegram et Discord"
-    />
-  </div>
-</Card>
+- **Facilité d'utilisation:** ★★★ — Une interface web conviviale qui facilite la navigation pour les débutants, ainsi qu'une version cloud pour un hébergement simplifié
+- **Fonctionnalités:** ★★★ — Propose une variété de stratégies de trading et de fonctionnalités, y compris le trading basé sur l'IA et l'optimisation de la stratégie
+- **Docs et communauté:** ★★★ — Une documentation très détaillée et une communauté active sur Telegram et Discord
 
 ## 2. FreqTrade
 
@@ -68,28 +47,9 @@ d'exécuter simultanément plusieurs robots, ce qui en fait un choix flexible po
 différents styles de trading. La communauté de développement active du robot
 travaille constamment sur de nouvelles fonctionnalités et améliorations.
 
-<Card className="mx-auto mt-5 py-5 border-0">
-  <div>
-    <Rating
-      title="Facilité d'utilisation"
-      level={3}
-      h="14px"
-      tooltipText="Connue pour son interface conviviale sur Telegram ou sur le web, ce qui la rend accessible aux débutants"
-    />
-    <Rating
-      title="Fonctionnalités"
-      level={2}
-      h="14px"
-      tooltipText="Offre une gamme solide de fonctionnalités, notamment les tests de stratégies et l'exploitation de plusieurs robots"
-    />
-    <Rating
-      title="Docs et communauté"
-      level={3}
-      h="14px"
-      tooltipText="Une documentation très détaillée et une communauté très active et solidaire"
-    />
-  </div>
-</Card>
+- **Facilité d'utilisation:** ★★★ — Connue pour son interface conviviale sur Telegram ou sur le web, ce qui la rend accessible aux débutants
+- **Fonctionnalités:** ★★☆ — Offre une gamme solide de fonctionnalités, notamment les tests de stratégies et l'exploitation de plusieurs robots
+- **Docs et communauté:** ★★★ — Une documentation très détaillée et une communauté très active et solidaire
 
 ## 3. HummingBot
 
@@ -99,36 +59,13 @@ décentralisées. Sa fonction de market making est idéale pour les passionnés 
 trading de spreads. La plateforme prend également en charge le liquidity mining,
 offrant ainsi des opportunités de gains supplémentaires.
 
-<Card className="mx-auto mt-5 py-5 border-0">
-  <div>
-    <Rating
-      title="Facilité d'utilisation"
-      level={1}
-      h="14px"
-      tooltipText="Bien que puissant, il peut nécessiter une courbe d'apprentissage pour les nouveaux utilisateurs"
-    />
-    <Rating
-      title="Fonctionnalités"
-      level={3}
-      h="14px"
-      tooltipText="Propose une large gamme de fonctionnalités, dont le market making, le liquidity mining et le support des plateformes d'échange centralisées et décentralisées"
-    />
-    <Rating
-      title="Docs et communauté"
-      level={3}
-      h="14px"
-      tooltipText="Dispose d'une documentation complète et d'une communauté solide"
-    />
-  </div>
-</Card>
+- **Facilité d'utilisation:** ★☆☆ — Bien que puissant, il peut nécessiter une courbe d'apprentissage pour les nouveaux utilisateurs
+- **Fonctionnalités:** ★★★ — Propose une large gamme de fonctionnalités, dont le market making, le liquidity mining et le support des plateformes d'échange centralisées et décentralisées
+- **Docs et communauté:** ★★★ — Dispose d'une documentation complète et d'une communauté solide
 
 ## 4. Jesse
 
-<div style={{textAlign: "center"}}>
-  <div>
-    ![jesse-logo](/images/blog/best-open-source-crypto-trading-bots/jesse.png)
-  </div>
-</div>
+![jesse-logo](/images/blog/best-open-source-crypto-trading-bots/jesse.png)
 
 <a href="https://jesse.trade/" rel="nofollow">Jesse</a> est un robot de trading open source moins connu, mais
 très efficace, conçu pour la simplicité et l'efficacité dans le développement de
@@ -138,28 +75,9 @@ Jesse est particulièrement apprécié pour sa structure de code propre, ce qui
 facilite la personnalisation et l'extension de ses capacités pour les
 développeurs.
 
-<Card className="mx-auto mt-5 py-5 border-0">
-  <div>
-    <Rating
-      title="Facilité d'utilisation"
-      level={1}
-      h="14px"
-      tooltipText="Optimisé pour le développement de stratégies, mais peut nécessiter des connaissances techniques"
-    />
-    <Rating
-      title="Fonctionnalités"
-      level={2}
-      h="14px"
-      tooltipText="Bonne gamme de fonctionnalités pour le développement et le backtesting de stratégies"
-    />
-    <Rating
-      title="Docs et communauté"
-      level={2}
-      h="14px"
-      tooltipText="Une documentation adéquate et une communauté en croissance"
-    />
-  </div>
-</Card>
+- **Facilité d'utilisation:** ★☆☆ — Optimisé pour le développement de stratégies, mais peut nécessiter des connaissances techniques
+- **Fonctionnalités:** ★★☆ — Bonne gamme de fonctionnalités pour le développement et le backtesting de stratégies
+- **Docs et communauté:** ★★☆ — Une documentation adéquate et une communauté en croissance
 
 ## 5. Superalgos
 
@@ -171,28 +89,9 @@ de stratégies. L'intégration de l'exploration de données et des outils
 d'apprentissage automatique en fait une option puissante pour les traders
 expérimentés.
 
-<Card className="mx-auto mt-5 py-5 border-0">
-  <div>
-    <Rating
-      title="Facilité d'utilisation"
-      level={1}
-      h="14px"
-      tooltipText="Offre de nombreuses fonctionnalités qui peuvent être déconcertantes pour les débutants, mais très puissantes pour les utilisateurs expérimentés"
-    />
-    <Rating
-      title="Fonctionnalités"
-      level={3}
-      h="14px"
-      tooltipText="Suite complète d'outils, y compris la conception de stratégie visuelle, l'analyse de données et la scalabilité pour une utilisation professionnelle"
-    />
-    <Rating
-      title="Docs et communauté"
-      level={3}
-      h="14px"
-      tooltipText="Communauté solide et documentation étendue disponible"
-    />
-  </div>
-</Card>
+- **Facilité d'utilisation:** ★☆☆ — Offre de nombreuses fonctionnalités qui peuvent être déconcertantes pour les débutants, mais très puissantes pour les utilisateurs expérimentés
+- **Fonctionnalités:** ★★★ — Suite complète d'outils, y compris la conception de stratégie visuelle, l'analyse de données et la scalabilité pour une utilisation professionnelle
+- **Docs et communauté:** ★★★ — Communauté solide et documentation étendue disponible
 
 ## Conclusion
 

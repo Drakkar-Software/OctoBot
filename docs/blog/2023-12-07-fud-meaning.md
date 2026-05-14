@@ -8,8 +8,6 @@ tags: ["Crypto", "Trading", "Educational"]
 image: "/images/blog/fud-meaning/cover.png"
 ---
 
-
-
 # Understanding FUD meaning: fear, uncertainty, and doubt in investing
 
 FUD, short for "fear, uncertainty, and doubt" is a term that resonates deeply in the world of finance and cryptocurrency. It represents a state of mind that can heavily influence investment decisions, often leading to irrational market behavior.
@@ -28,13 +26,9 @@ FUD can be seen as the opposite of [FOMO](fomo-meaning). While FOMO drives inves
 
 FUD's history dates back to the 1920s, becoming more widely recognized as an acronym in the 1970s. Initially a marketing and sales tactic, FUD evolved into a key concept in investing, particularly with the advent of highly volatile markets like cryptocurrency.
 
-<div style={{textAlign: "center"}}>
-  <div>
-    ![A person looks anxiously at a computer with a falling crypto market graph,
-    illustrating FUD in cryptocurrency.](/images/blog/fud-meaning/cover.png) *An
-    illustration of the FUD sentiment.*
-  </div>
-</div>
+![A person looks anxiously at a computer with a falling crypto market graph,
+illustrating FUD in cryptocurrency.](/images/blog/fud-meaning/cover.png) *An
+illustration of the FUD sentiment.*
 
 ## FUD in cryptocurrency
 

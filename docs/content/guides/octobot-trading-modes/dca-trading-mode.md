@@ -4,16 +4,11 @@ description: "Optimize your Dollar cost Averaging strategy (DCA) using the OctoB
 sidebar_position: 2
 ---
 
-
 # DCA Trading Mode
 
 The DCA Trading Mode (or DCATradingMode) is designed to buy and sell according to a [Smart Dollar cost averaging strategy](/blog/smart-dca-making-of). 
 
-<div style="text-align: center">
-
 ![dca trading illustrated by a man watering a plant growing money](/images/guides/dca-trading-illustrated-by-a-man-watering-a-plant-growing-money.png)
-
-</div>
 
 It allows you to optimize your entry and exit prices according to your configuration.
 

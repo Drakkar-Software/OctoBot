@@ -4,8 +4,6 @@ description: "Apprenez à exécuter gratuitement plusieurs stratégies de tradin
 sidebar_position: 7
 ---
 
-
-
 # Avoir plusieurs OctoBots
 
 Lorsque vous utilisez le cloud OctoBot, vous pouvez avoir autant de stratégies ou de panier que vous le souhaitez.
@@ -49,11 +47,7 @@ Par exemple, vous pouvez exécuter une stratégie risquée mais à haut poentiel
 
 Vous pouvez également exécuter plusieurs OctoBot sur le même compte Binance en utilisant des sous-comptes. Avec des sous-comptes, vous pouvez rapidement et facilement répartir vos fonds entre plusieurs portefeuilles au sein du même échange, ce qui vous permet d'utiliser plusieurs stratégies ou paniers sur le même compte Binance.
 
-<div style="text-align: center">
-
 ![sous comptes binance](/images/guides/binance/binance-subaccounts.png)
-
-</div>
 
 Par exemple, Binance vous permet d'avoir jusqu'à 10 sous-comptes, Vous pouvez donc exécuter jusqu'à 11 stratégies ou paniers de crypto en simultanés sur votre compte Binance : une sur votre compte principal et 10 sur vos sous-comptes.
 
@@ -65,16 +59,9 @@ Vous vous demandez comment créer un sous-compte Binance ? Les sous-comptes Bina
 
 Pour exécuter plusieurs startégies sur le même compte Coinbase, vous pouvez utiliser différents portefeuilles: chaque portefeuille peut être lié à un OctoBot.
 
-<div style="text-align: center">
-
 ![multi portefeuille coinbase](/images/guides/coinbase/coinbase-multi-portfolio.png)
-
-</div>
 
 Créez autant de portefeuilles que nécessaire depuis l' <a href="https://www.coinbase.com/advanced-portfolio" rel="nofollow">interface de portefeuille Coinbase</a> et créez des clés d'API associées à ces portefeuilles pour que votre OctoBot investisse avec.
 
-<div style="text-align: center">
-
 ![selection de portefeuille pour clé d'api coinbase](/images/guides/coinbase/coinbase-api-key-select-multi-portfolio.png)
 
-</div>

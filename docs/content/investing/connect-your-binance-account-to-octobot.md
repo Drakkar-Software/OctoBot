@@ -4,8 +4,6 @@ description: "Step by step guide on how to securely use your Binance account wit
 sidebar_position: 22
 ---
 
-
-
 # Connecting your Binance account to OctoBot cloud
 
 To automate the investment strategies of your choice on your Binance account, it is necessary to allow OctoBot to access a part of your account.
@@ -86,22 +84,17 @@ Note: When adding an API Key on OctoBot cloud, you can associate a name to it. A
 
 ![add API Key to octobot cloud from strategy start](/images/guides/binance/add-api-key-to-octobot-cloud-from-strategy-start.png)
 
-<div style="text-align: center">
-  <em>Adding an API Key when starting a strategy</em>
-</div>
+<em>Adding an API Key when starting a strategy</em>
 
 ![add API Key to octobot cloud from profile](/images/guides/binance/add-api-key-to-octobot-cloud-from-profile.png)
 
-<div style="text-align: center">
-  <em>Adding an API Key directly from <a href="https://www.octobot.cloud/account" rel="nofollow">your profile</a></em>
-</div>
+<em>Adding an API Key directly from <a href="https://www.octobot.cloud/account" rel="nofollow">your profile</a></em>
 
 Your Binance account can now be used on OctoBot cloud !
 
 :::info
   Please note that when starting a bot, some of the funds available in your API key related portfolio might be sold. This include any stablecoin and fiat related funds as well as cryptocurrencies that are traded by the strategy you selected. This is is part of the [portfolio optimization](invest-with-your-strategy#1-portfolio-optimization).
 :::
-
 
 ## Troubleshooting
 

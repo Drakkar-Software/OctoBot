@@ -8,8 +8,6 @@ tags: ["Tradingview", "Pine Script", "Webhook", "Strategy", "OctoBot cloud", "Ed
 image: "/images/blog/trading-using-tradingview/cover.png"
 ---
 
-
-
 # Trading using TradingView
 
 ![cover](/images/blog/trading-using-tradingview/cover.png)
@@ -30,9 +28,7 @@ This means that you can use all the OctoBot features according to your TradingVi
 
 When following a TradingView strategy, your OctoBot will listen for TradingView signals and when signals are received, it will react instantly by creating the associated alert and order(s), which can be simulated or real, on any supported exchange.
 
-<div style={{textAlign: "center"}}>
-  ![plan-display](/images/blog/trading-using-tradingview/telegram.png)
-</div>
+![plan-display](/images/blog/trading-using-tradingview/telegram.png)
 
 You can send details on the order to create directly from the TradingView signal such as the type of order, the take profit and stop loss prices and much more. View the full details of orders signals on [the TradingView signals guide](/guides/octobot-interfaces/tradingview/#alert-format).
 

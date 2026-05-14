@@ -4,8 +4,6 @@ description: "Installez votre OctoBot dans le cloud avec DigitalOcean en quelque
 sidebar_position: 2
 ---
 
-
-
 # Installer OctoBot dans le cloud avec DigitalOcean
 
 ## Créer un compte DigitalOcean
@@ -53,10 +51,8 @@ sidebar_position: 2
 - Copiez cette adresse.
 - Dans votre navigateur, ouvrez un nouvel onglet et tapez http://$DROPLET_IP. Dans cet exemple il faudrait taper `http://143.198.96.188`.
 
-<div style={{textAlign: "center"}}>
-  ![ouvrir l'interface web d'OctoBot avec l'IP du
-  droplet](/images/guides/installation/digitalocean/open-octobot-with-droplet-ip.png)
-</div>
+![ouvrir l'interface web d'OctoBot avec l'IP du
+droplet](/images/guides/installation/digitalocean/open-octobot-with-droplet-ip.png)
 
 - Si votre navigateur indique que la connexion n'est pas sécurisée (ce qui est normal car elle n'est pas en HTTPS), acceptez en cliquant sur "continuer vers le site".
 

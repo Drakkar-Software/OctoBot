@@ -4,8 +4,6 @@ description: "|"
 sidebar_position: 23
 ---
 
-
-
 # Connecter votre compte Kucoin à OctoBot cloud
 
 Pour automatiser les stratégies d'investisements de votre choix sur votre propre compte Kucoin, il est nécessaire d'autoriser OctoBot à accéder à une partie de votre compte.
@@ -51,19 +49,11 @@ Maintenant que votre clé d'API est nommée, a une passphrase et la permission d
 
 Complétez la vérification de sécurité pour créer l'API Key.
 
-<div style="text-align: center">
-
 ![creer api verification securite](/images/guides/kucoin/create-api-security-verification.png)
-
-</div>
 
 Votre clé d'API est créée. Ne pas fermer cette fenêtre tant que vous n'avez pas reporté ces informations sur OctoBot cloud.
 
-<div style="text-align: center">
-
 ![api key kucoin créée](/images/guides/kucoin/kucoin-api-key-created.png)
-
-</div>
 
 ### 5. Ajouter votre API Key à votre compte OctoBot cloud
 
@@ -73,23 +63,15 @@ Tout ce qu'il vous reste à faire est de copier/coller les valeurs de `API Key`,
 
 Remarque : Quand vous ajoutez une API Key sur OctoBot cloud, vous avez la possibilité de la nommer. Cette étape, semblable à celle sur Kucoin, permet de choisir un nom facilement identifiable pour votre configuration Kucoin.
 
-<div style="text-align: center">
-
 ![api cree key selectionnees](/images/guides/kucoin/api-creation-completed-selected-values.png)
-
-</div>
 
 ![ajouter api key a octobot cloud depuis start de strategie](/images/guides/kucoin/add-api-key-to-octobot-cloud-from-strategy-start.png)
 
-<div style="text-align: center">
-  <em>Ajouter une API Key au lancement d'une stratégie</em>
-</div>
+<em>Ajouter une API Key au lancement d'une stratégie</em>
 
 ![ajouter api key a octobot cloud depuis profil](/images/guides/kucoin/add-api-key-to-octobot-cloud-from-profile.png)
 
-<div style="text-align: center">
-  <em>Ajouter une API Key depuis <a href="https://www.octobot.cloud/fr/account" rel="nofollow">votre profil</a></em>
-</div>
+<em>Ajouter une API Key depuis <a href="https://www.octobot.cloud/fr/account" rel="nofollow">votre profil</a></em>
 
 Votre compte Kucoin peut maintenant être utilsié sur OctoBot cloud !
 

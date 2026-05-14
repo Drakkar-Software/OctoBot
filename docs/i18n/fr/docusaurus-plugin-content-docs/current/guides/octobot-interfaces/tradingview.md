@@ -4,15 +4,9 @@ description: "Apprenez comment automatiser vos stratégies TradingView avec Octo
 sidebar_position: 4
 ---
 
-
-
 # Automatiser le trading depuis TradingView
 
-<div style="text-align: center">
-
 ![automatisation de trading tradingview illustrée par le logo tradingview](/images/guides/interfaces/tradingview-automation-illustrated-by-tradingview-logo.png)
-
-</div>
 
 Avec OctoBot, vous pouvez écouter les alertes <a href="https://www.tradingview.com/?aff_id=27595" rel="nofollow">TradingView</a> et automatiser vos trades en vous basant sur vos indicateurs ou stratégies TradingView.
 
@@ -48,18 +42,9 @@ Tout d'abord, créez un compte <a href="https://www.tradingview.com/?aff_id=2759
 
 Ensuite, pour pouvoir automatiser votre stratégie TradingView, vous aurez besoin d'utiliser des [webhooks](tradingview/using-a-webhook), ce qui nécessite un compte TradingView pro. Si vous n'en avez pas, vous pouvez utiliser l'essai gratuit de 30 jours.
 
-<div style="text-align: center">
-
 <a href="https://www.tradingview.com/?aff_id=27595" rel="nofollow">![bouton plan pro tradingview](https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/tradingview-go-pro-trial-button.png)</a>
 
-</div>
-
-<div style="text-align: center">
-
 ![tradingview démarrer essai gratuit](https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/tradingview-start-trial-button.png)
-
-</div>
-
 
 Votre compte est maintenant prêt à être utilisé avec OctoBot !
 

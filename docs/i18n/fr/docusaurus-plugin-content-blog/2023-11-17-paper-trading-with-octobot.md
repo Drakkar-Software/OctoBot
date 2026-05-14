@@ -8,17 +8,13 @@ tags: ["Trading", "Strategy", "OctoBot cloud"]
 image: "/images/blog/paper-trading-with-octobot/cover.jpg"
 ---
 
-
-
 # Trading virtuel avec OctoBot
 
 :::info
   La traduction française de cette page est en cours.
 :::
 
-<div style={{textAlign: "center"}}>
-  ![cover](/images/blog/paper-trading-with-octobot/cover.jpg)
-</div>
+![cover](/images/blog/paper-trading-with-octobot/cover.jpg)
 
 ## Introduction au trading virtuel
 

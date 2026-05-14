@@ -8,11 +8,7 @@ sidebar_position: 7
 
 The Grid Trading Mode (or GridTradingMode) is designed to profit from sideway markets by maintaining a grid-like set of buy and sell orders. Make small yet regular profits on each small market change with minimized risks using grid trading.
 
-<div style="text-align: center">
-
 ![grid trading illustrated by a man stepping up on green stairs grabbing coins](/images/guides/grid-trading-illustrated-by-a-man-stepping-up-on-green-stairs-grabbing-coins.png)
-
-</div>
 
 The Grid Trading Mode is a simplified version of the [Staggered Orders Trading Mode](staggered-orders-trading-mode).
 

@@ -8,16 +8,12 @@ tags: ["Mobile", "App", "OctoBot cloud", "Release"]
 image: "/images/blog/mobile-app-revamp/thumb.png"
 ---
 
-
-
 # Nouveau design de l'application mobile OctoBot
 
 Merci à tous ceux qui ont téléchargé notre application mobile en version expérimentale. Vos retours nous ont beaucoup aidés.
 C'est pourquoi nous avons entièrement revu le design de l'application pour mieux répondre à vos besoins.
 
-<div style={{textAlign: "center"}}>
-  **[Télécharger la dernière version](https://www.octobot.cloud)**
-</div>
+**[Télécharger la dernière version](https://www.octobot.cloud)**
 
 ## Une nouvelle vue détaillée pour chaque OctoBot
 
@@ -26,24 +22,16 @@ Vous aurez accès à l'historique des performances de vos bots, la répartition 
 
 Cette nouvelle vue est disponible que vous utilisiez un OctoBot depuis OctoBot cloud ou que vous l'ayez installé vous-même.
 
-<div style={{textAlign: "center"}}>
-  <div>
-    ![nouvelle vue détaillée des
-    OctoBot](/images/blog/mobile-app-revamp/bot-view-pf-fr.png)
-  </div>
-</div>
+![nouvelle vue détaillée des
+OctoBot](/images/blog/mobile-app-revamp/bot-view-pf-fr.png)
 
 ## Un nouveau dashboard
 
 Dès que vous vous connecterez à la nouvelle version, vous découvrirez un nouveau tableau de bord. Ce dashboard vous montre l'historique de votre portefeuille réel, regroupant tous vos comptes d'échanges.
 Vous aurez aussi un aperçu de comment votre portefeuille est réparti actuellement.
 
-<div style={{textAlign: "center"}}>
-  <div>
-    ![nouveau dashboard de l'application
-    mobile](/images/blog/mobile-app-revamp/mobile-dashboard-fr.png)
-  </div>
-</div>
+![nouveau dashboard de l'application
+mobile](/images/blog/mobile-app-revamp/mobile-dashboard-fr.png)
 
 Ce nouveau dashboard est conçu pour que vous puissiez surveiller les performances de vos portefeuilles crypto facilement depuis votre smartphone.
 
@@ -67,6 +55,5 @@ Nous en sommes juste au début. D'autres améliorations et nouvelles fonctionnal
 
 Nous espérons que vous apprécierez cette nouvelle version. Si c'est le cas, n'oubliez pas de nous laisser une évaluation !
 
-<div style={{textAlign: "center"}}>
-  <a href="https://play.google.com/store/apps/details?id=com.drakkarsoftware.octobotapp&utm_source=www.octobot.cloud&utm_media=blog&utm_content=mobile-app-revamp" rel="nofollow"><GoogleStoreButton /></a>
-</div>
+[Get the OctoBot app on Google Play](https://play.google.com/store/apps/details?id=com.drakkarsoftware.octobotapp&utm_source=www.octobot.cloud&utm_media=blog&utm_content=mobile-app-revamp)
+

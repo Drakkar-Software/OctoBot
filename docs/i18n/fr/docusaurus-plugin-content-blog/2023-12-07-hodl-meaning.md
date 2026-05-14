@@ -8,8 +8,6 @@ tags: ["Crypto", "Trading", "Educational"]
 image: "/images/blog/hodl-meaning/cover.png"
 ---
 
-
-
 # Comprendre la signification de HODL en crypto : bien plus qu'une faute de frappe
 
 HODL est un mot célèbre dans le monde de la crypto. Il est l'abréviation de “hold on for dear life” (s'y accrocher pour la vie), et signifie garder sa crypto même lorsque les prix fluctuent beaucoup.
@@ -26,12 +24,8 @@ Dans les forums crypto en ligne, vous trouverez HODL et d'autres mots comme [SAF
 
 L'histoire de HODL a commencé avec une faute d'orthographe. Le 18 décembre 2013, lorsque le prix du [Bitcoin](https://www.octobot.cloud/bitcoin-prediction) a beaucoup chuté, un trader nommé GameKyuubi a écrit <a href="https://bitcointalk.org/index.php?topic=375643.0" rel="nofollow">"I AM HODLING"</a> dans un forum en ligne. Il voulait dire que, même s'il n'était pas bon en trading, il garderait son Bitcoin.
 
-<div style={{textAlign: "center"}}>
-  <div>
-    ![Une personne zen qui HODL sa crypto](/images/blog/hodl-meaning/cover.png)
-    *Une personne qui "HODL" sa crypto*
-  </div>
-</div>
+![Une personne zen qui HODL sa crypto](/images/blog/hodl-meaning/cover.png)
+*Une personne qui "HODL" sa crypto*
 
 ## Comprendre la stratégie HODL
 
