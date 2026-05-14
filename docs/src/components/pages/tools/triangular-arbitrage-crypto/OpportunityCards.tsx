@@ -1,4 +1,5 @@
 import type {ReactNode} from 'react';
+import Translate from '@docusaurus/Translate';
 import GlassCard from '@site/src/components/GlassCard';
 import styles from './OpportunityCards.module.css';
 
@@ -41,9 +42,22 @@ export default function OpportunityCards(): ReactNode {
         <GlassCard key={opportunity.path} variant="strong">
           <div className={styles.arbCard}>
             <div className={styles.arbPath}>{opportunity.path}</div>
-            <div className={styles.arbExchange}>On {opportunity.exchange}</div>
+            <div className={styles.arbExchange}>
+              <Translate
+                id="tools.triangularArbitrage.card.onExchange"
+                description="Triangular arbitrage card exchange label"
+                values={{exchange: opportunity.exchange}}>
+                {'On {exchange}'}
+              </Translate>
+            </div>
             <div>
-              <div className={styles.arbSpreadLabel}>Estimated spread</div>
+              <div className={styles.arbSpreadLabel}>
+                <Translate
+                  id="tools.triangularArbitrage.card.estimatedSpread"
+                  description="Triangular arbitrage card label: estimated spread">
+                  Estimated spread
+                </Translate>
+              </div>
               <div className={styles.arbSpread}>{opportunity.spread}</div>
             </div>
           </div>

@@ -1,0 +1,114 @@
+{
+  "version.label": {
+    "message": "Prochaine",
+    "description": "The label for version current"
+  },
+  "sidebar.guides.category.Installation": {
+    "message": "Installation",
+    "description": "The label for category 'Installation' in sidebar 'guides'"
+  },
+  "sidebar.guides.category.Configuration": {
+    "message": "Configuration",
+    "description": "The label for category 'Configuration' in sidebar 'guides'"
+  },
+  "sidebar.guides.category.Exchanges": {
+    "message": "Exchanges",
+    "description": "The label for category 'Exchanges' in sidebar 'guides'"
+  },
+  "sidebar.guides.category.Exchanges.link.generated-index.description": {
+    "message": "Exchanges disponibles dans OctoBot.",
+    "description": "The generated-index page description for category 'Exchanges' in sidebar 'guides'"
+  },
+  "sidebar.guides.category.Trading Modes Guides": {
+    "message": "Guides des modes de trading",
+    "description": "The label for category 'Trading Modes Guides' in sidebar 'guides'"
+  },
+  "sidebar.guides.category.Usage": {
+    "message": "Utilisation",
+    "description": "The label for category 'Usage' in sidebar 'guides'"
+  },
+  "sidebar.guides.category.Interfaces": {
+    "message": "Interfaces",
+    "description": "The label for category 'Interfaces' in sidebar 'guides'"
+  },
+  "sidebar.guides.category.telegram": {
+    "message": "telegram",
+    "description": "The label for category 'telegram' in sidebar 'guides'"
+  },
+  "sidebar.guides.category.tradingview": {
+    "message": "tradingview",
+    "description": "The label for category 'tradingview' in sidebar 'guides'"
+  },
+  "sidebar.guides.category.Advanced Usage": {
+    "message": "Utilisation avancée",
+    "description": "The label for category 'Advanced Usage' in sidebar 'guides'"
+  },
+  "sidebar.guides.category.strategies": {
+    "message": "stratégies",
+    "description": "The label for category 'strategies' in sidebar 'guides'"
+  },
+  "sidebar.guides.category.Trading Modes": {
+    "message": "Modes de trading",
+    "description": "The label for category 'Trading Modes' in sidebar 'guides'"
+  },
+  "sidebar.guides.category.Trading Modes.link.generated-index.description": {
+    "message": "Modes de trading disponibles dans OctoBot.",
+    "description": "The generated-index page description for category 'Trading Modes' in sidebar 'guides'"
+  },
+  "sidebar.guides.category.evaluators": {
+    "message": "évaluateurs",
+    "description": "The label for category 'evaluators' in sidebar 'guides'"
+  },
+  "sidebar.guides.category.Technical Analysis": {
+    "message": "Analyse technique",
+    "description": "The label for category 'Technical Analysis' in sidebar 'guides'"
+  },
+  "sidebar.guides.category.Technical Analysis.link.generated-index.description": {
+    "message": "Analyse technique disponible dans OctoBot.",
+    "description": "The generated-index page description for category 'Technical Analysis' in sidebar 'guides'"
+  },
+  "sidebar.guides.category.Social Evaluators": {
+    "message": "Évaluateurs sociaux",
+    "description": "The label for category 'Social Evaluators' in sidebar 'guides'"
+  },
+  "sidebar.guides.category.Social Evaluators.link.generated-index.description": {
+    "message": "Évaluateurs sociaux disponibles dans OctoBot.",
+    "description": "The generated-index page description for category 'Social Evaluators' in sidebar 'guides'"
+  },
+  "sidebar.guides.category.Real-Time Evaluators": {
+    "message": "Évaluateurs en temps réel",
+    "description": "The label for category 'Real-Time Evaluators' in sidebar 'guides'"
+  },
+  "sidebar.guides.category.Real-Time Evaluators.link.generated-index.description": {
+    "message": "Évaluateurs en temps réel disponibles dans OctoBot.",
+    "description": "The generated-index page description for category 'Real-Time Evaluators' in sidebar 'guides'"
+  },
+  "sidebar.guides.category.Strategy Evaluators": {
+    "message": "Évaluateurs de stratégie",
+    "description": "The label for category 'Strategy Evaluators' in sidebar 'guides'"
+  },
+  "sidebar.guides.category.Strategy Evaluators.link.generated-index.description": {
+    "message": "Évaluateurs de stratégie disponibles dans OctoBot.",
+    "description": "The generated-index page description for category 'Strategy Evaluators' in sidebar 'guides'"
+  },
+  "sidebar.investing.category.TradingView Strategy Examples": {
+    "message": "Exemples de stratégies TradingView",
+    "description": "The label for category 'TradingView Strategy Examples' in sidebar 'investing'"
+  },
+  "sidebar.developers.category.Architecture": {
+    "message": "Architecture",
+    "description": "The label for category 'Architecture' in sidebar 'developers'"
+  },
+  "sidebar.developers.category.Developer Environment": {
+    "message": "Environnement de développement",
+    "description": "The label for category 'Developer Environment' in sidebar 'developers'"
+  },
+  "sidebar.developers.category.Tentacles Development": {
+    "message": "Développement de tentacles",
+    "description": "The label for category 'Tentacles Development' in sidebar 'developers'"
+  },
+  "sidebar.developers.category.Packages": {
+    "message": "Packages",
+    "description": "The label for category 'Packages' in sidebar 'developers'"
+  }
+}

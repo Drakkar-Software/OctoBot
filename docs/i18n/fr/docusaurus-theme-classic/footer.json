@@ -1,0 +1,58 @@
+{
+  "link.title.Documentation": {
+    "message": "Documentation",
+    "description": "The title of the footer links column with title=Documentation in the footer"
+  },
+  "link.title.Community": {
+    "message": "Communauté",
+    "description": "The title of the footer links column with title=Community in the footer"
+  },
+  "link.title.More": {
+    "message": "Plus",
+    "description": "The title of the footer links column with title=More in the footer"
+  },
+  "link.item.label.Guides": {
+    "message": "Guides",
+    "description": "The label of footer link with label=Guides linking to /guides/octobot"
+  },
+  "link.item.label.OctoBot Cloud": {
+    "message": "OctoBot Cloud",
+    "description": "The label of footer link with label=OctoBot Cloud linking to https://www.octobot.cloud"
+  },
+  "link.item.label.Blog": {
+    "message": "Blog",
+    "description": "The label of footer link with label=Blog linking to /blog"
+  },
+  "link.item.label.Developers": {
+    "message": "Développeurs",
+    "description": "The label of footer link with label=Developers linking to /developers/getting-started"
+  },
+  "link.item.label.Discord": {
+    "message": "Discord",
+    "description": "The label of footer link with label=Discord linking to https://discord.gg/vHkcb8W"
+  },
+  "link.item.label.Telegram": {
+    "message": "Telegram",
+    "description": "The label of footer link with label=Telegram linking to https://t.me/OctoBot_Project"
+  },
+  "link.item.label.X / Twitter": {
+    "message": "X / Twitter",
+    "description": "The label of footer link with label=X / Twitter linking to https://x.com/OctoBotTrading"
+  },
+  "link.item.label.GitHub": {
+    "message": "GitHub",
+    "description": "The label of footer link with label=GitHub linking to https://github.com/Drakkar-Software/OctoBot"
+  },
+  "link.item.label.Terms of Use": {
+    "message": "Conditions d’utilisation",
+    "description": "The label of footer link with label=Terms of Use linking to /terms"
+  },
+  "link.item.label.Privacy Policy": {
+    "message": "Politique de confidentialité",
+    "description": "The label of footer link with label=Privacy Policy linking to /terms/privacy"
+  },
+  "copyright": {
+    "message": "Copyright © 2026 Drakkar-Software. Conçu avec Docusaurus.",
+    "description": "The footer copyright"
+  }
+}

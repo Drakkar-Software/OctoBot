@@ -1,4 +1,5 @@
 import React, {type ReactNode} from 'react';
+import Translate, {translate} from '@docusaurus/Translate';
 import PhoneMockup from './PhoneMockup';
 import styles from './HeroStage.module.css';
 
@@ -8,9 +9,48 @@ import styles from './HeroStage.module.css';
  */
 
 const RUNNING = [
-  {code: 'DC', name: 'BTC weekly DCA', venue: 'Binance · spot', pct: '+18.4%'},
-  {code: 'GR', name: 'ETH range grid', venue: 'Kraken · spot', pct: '+9.1%'},
-  {code: 'SG', name: 'TV signals · perps', venue: 'Bybit · futures', pct: '+24.6%'},
+  {
+    code: 'DC',
+    name: translate({
+      id: 'pages.index.heroStage.running.dca.name',
+      message: 'BTC weekly DCA',
+      description: 'Hero stage running strategy name',
+    }),
+    venue: translate({
+      id: 'pages.index.heroStage.running.dca.venue',
+      message: 'Binance · spot',
+      description: 'Hero stage running strategy venue',
+    }),
+    pct: '+18.4%',
+  },
+  {
+    code: 'GR',
+    name: translate({
+      id: 'pages.index.heroStage.running.grid.name',
+      message: 'ETH range grid',
+      description: 'Hero stage running strategy name',
+    }),
+    venue: translate({
+      id: 'pages.index.heroStage.running.grid.venue',
+      message: 'Kraken · spot',
+      description: 'Hero stage running strategy venue',
+    }),
+    pct: '+9.1%',
+  },
+  {
+    code: 'SG',
+    name: translate({
+      id: 'pages.index.heroStage.running.signals.name',
+      message: 'TV signals · perps',
+      description: 'Hero stage running strategy name',
+    }),
+    venue: translate({
+      id: 'pages.index.heroStage.running.signals.venue',
+      message: 'Bybit · futures',
+      description: 'Hero stage running strategy venue',
+    }),
+    pct: '+24.6%',
+  },
 ];
 
 export default function HeroStage(): ReactNode {
@@ -21,12 +61,24 @@ export default function HeroStage(): ReactNode {
         {/* left float cards */}
         <div className={styles.side}>
           <div className={`ng-card-strong ${styles.card}`}>
-            <div className={styles.lab}>Net worth · 30d</div>
+            <div className={styles.lab}>
+              <Translate
+                id="pages.index.heroStage.netWorth.label"
+                description="Hero stage card label">
+                Net worth · 30d
+              </Translate>
+            </div>
             <div className={styles.value}>€184,920</div>
             <div className={styles.valueSub}>+€12,420 · +7.2%</div>
           </div>
           <div className={`ng-card-strong ${styles.card}`}>
-            <div className={styles.lab}>Diversification</div>
+            <div className={styles.lab}>
+              <Translate
+                id="pages.index.heroStage.diversification.label"
+                description="Hero stage card label">
+                Diversification
+              </Translate>
+            </div>
             <div className={styles.allocBar}>
               <span style={{flex: 4, background: '#f7931a'}} />
               <span style={{flex: 3, background: '#8aa1f0'}} />
@@ -56,7 +108,13 @@ export default function HeroStage(): ReactNode {
         {/* right float cards */}
         <div className={`${styles.side} ${styles.sideRight}`}>
           <div className={`ng-card-strong ${styles.card} ${styles.cardWide}`}>
-            <div className={styles.lab}>Running on device</div>
+            <div className={styles.lab}>
+              <Translate
+                id="pages.index.heroStage.running.label"
+                description="Hero stage card label">
+                Running on device
+              </Translate>
+            </div>
             {RUNNING.map((s) => (
               <div key={s.code} className={styles.stratRow}>
                 <div className={styles.stratIc}>{s.code}</div>
@@ -69,15 +127,33 @@ export default function HeroStage(): ReactNode {
             ))}
           </div>
           <div className={`ng-card-strong ${styles.card}`}>
-            <div className={styles.lab}>Goal · House down payment</div>
+            <div className={styles.lab}>
+              <Translate
+                id="pages.index.heroStage.goal.label"
+                description="Hero stage card label">
+                Goal · House down payment
+              </Translate>
+            </div>
             <div className={styles.goalFigures}>
               <span className={styles.goalPct}>68%</span>
-              <span className={styles.goalOf}>€68k of €100k</span>
+              <span className={styles.goalOf}>
+                <Translate
+                  id="pages.index.heroStage.goal.of"
+                  description="Hero stage goal progress amount">
+                  €68k of €100k
+                </Translate>
+              </span>
             </div>
             <div className={styles.goalBar}>
               <div className={styles.goalBarFill} style={{width: '68%'}} />
             </div>
-            <div className={styles.valueSubNeutral}>On track · est. June 2027</div>
+            <div className={styles.valueSubNeutral}>
+              <Translate
+                id="pages.index.heroStage.goal.status"
+                description="Hero stage goal status">
+                On track · est. June 2027
+              </Translate>
+            </div>
           </div>
         </div>
       </div>

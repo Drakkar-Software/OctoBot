@@ -1,4 +1,5 @@
 import type {ReactNode} from 'react';
+import Translate, {translate} from '@docusaurus/Translate';
 import {
   LandingLayout,
   Hero,
@@ -33,52 +34,130 @@ const EXCHANGE_LOGOS: ReactNode[] = [
   'HTX',
   'MEXC',
   'HOLLAEX',
-  '+ MORE',
+  translate({
+    id: 'pages.supportedExchanges.logos.more',
+    message: '+ MORE',
+    description: 'Logo ribbon "and more" entry',
+  }),
 ];
 
 export default function SupportedExchanges(): ReactNode {
   return (
     <LandingLayout
-      title="Market Making exchanges"
-      description="OctoBot Market Making supports most centralized exchanges. Discover the exchanges OctoBot Market Making can help you increase your crypto liquidity on.">
+      title={translate({
+        id: 'pages.supportedExchanges.meta.title',
+        message: 'Market Making exchanges',
+        description: 'Supported exchanges page metadata title',
+      })}
+      description={translate({
+        id: 'pages.supportedExchanges.meta.description',
+        message:
+          'OctoBot Market Making supports most centralized exchanges. Discover the exchanges OctoBot Market Making can help you increase your crypto liquidity on.',
+        description: 'Supported exchanges page metadata description',
+      })}>
       <div className={styles.gridVeil} aria-hidden="true" />
 
       <Hero
-        eyebrow="Market Making"
+        eyebrow={translate({
+          id: 'pages.supportedExchanges.hero.eyebrow',
+          message: 'Market Making',
+          description: 'Supported exchanges hero eyebrow',
+        })}
         title={
           <>
             <span className="ng-text-gradient">
-              OctoBot Market Making exchanges.
+              <Translate
+                id="pages.supportedExchanges.hero.title"
+                description="Supported exchanges hero title">
+                OctoBot Market Making exchanges.
+              </Translate>
             </span>
           </>
         }
-        subtitle="OctoBot Market Making supports most centralized exchanges. Here are the exchanges OctoBot Market Making can help you increase your crypto liquidity on."
+        subtitle={translate({
+          id: 'pages.supportedExchanges.hero.subtitle',
+          message:
+            'OctoBot Market Making supports most centralized exchanges. Here are the exchanges OctoBot Market Making can help you increase your crypto liquidity on.',
+          description: 'Supported exchanges hero subtitle',
+        })}
         actions={[
-          {label: 'Book a free call', to: BOOK_A_CALL},
           {
-            label: 'Market Making overview',
+            label: translate({
+              id: 'pages.supportedExchanges.hero.action.call',
+              message: 'Book a free call',
+              description: 'Supported exchanges hero action label',
+            }),
+            to: BOOK_A_CALL,
+          },
+          {
+            label: translate({
+              id: 'pages.supportedExchanges.hero.action.overview',
+              message: 'Market Making overview',
+              description: 'Supported exchanges hero action label',
+            }),
             to: MARKET_MAKING,
             variant: 'ghost',
           },
         ]}
       />
 
-      <Section eyebrow="Coverage" title="Supported exchanges">
+      <Section
+        eyebrow={translate({
+          id: 'pages.supportedExchanges.coverage.eyebrow',
+          message: 'Coverage',
+          description: 'Supported exchanges section eyebrow',
+        })}
+        title={translate({
+          id: 'pages.supportedExchanges.coverage.title',
+          message: 'Supported exchanges',
+          description: 'Supported exchanges section title',
+        })}>
         <ExchangeTable />
       </Section>
 
       <Section
-        eyebrow="At a glance"
-        title="Plug in, trade in 60 seconds">
+        eyebrow={translate({
+          id: 'pages.supportedExchanges.glance.eyebrow',
+          message: 'At a glance',
+          description: 'Supported exchanges section eyebrow',
+        })}
+        title={translate({
+          id: 'pages.supportedExchanges.glance.title',
+          message: 'Plug in, trade in 60 seconds',
+          description: 'Supported exchanges section title',
+        })}>
         <LogoRibbon items={EXCHANGE_LOGOS} minCellWidth={150} />
       </Section>
 
       <CTABand
-        title="Your exchange is missing?"
-        description="Talk to our team — we add new exchanges on request."
+        title={translate({
+          id: 'pages.supportedExchanges.cta.title',
+          message: 'Your exchange is missing?',
+          description: 'Supported exchanges CTA title',
+        })}
+        description={translate({
+          id: 'pages.supportedExchanges.cta.description',
+          message: 'Talk to our team — we add new exchanges on request.',
+          description: 'Supported exchanges CTA description',
+        })}
         actions={[
-          {label: 'Book a free call', to: BOOK_A_CALL},
-          {label: 'Email us', to: EMAIL, variant: 'ghost'},
+          {
+            label: translate({
+              id: 'pages.supportedExchanges.cta.action.call',
+              message: 'Book a free call',
+              description: 'Supported exchanges CTA action label',
+            }),
+            to: BOOK_A_CALL,
+          },
+          {
+            label: translate({
+              id: 'pages.supportedExchanges.cta.action.email',
+              message: 'Email us',
+              description: 'Supported exchanges CTA action label',
+            }),
+            to: EMAIL,
+            variant: 'ghost',
+          },
         ]}
       />
     </LandingLayout>

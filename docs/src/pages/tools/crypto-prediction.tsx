@@ -1,5 +1,6 @@
 import type {ReactNode} from 'react';
 import Link from '@docusaurus/Link';
+import Translate, {translate} from '@docusaurus/Translate';
 import {
   LandingLayout,
   Hero,
@@ -24,61 +25,164 @@ const AI_GUIDE = '/guides/octobot-trading-modes/chatgpt-trading';
 export default function CryptoPredictionTool(): ReactNode {
   return (
     <LandingLayout
-      title="ChatGPT crypto predictions"
-      description="OctoBot ChatGPT trading is an AI-powered strategy that uses OpenAI ChatGPT to analyze crypto market trends and generate trading signals.">
+      title={translate({
+        id: 'tools.cryptoPrediction.layout.title',
+        message: 'ChatGPT crypto predictions',
+        description: 'Crypto prediction page meta title',
+      })}
+      description={translate({
+        id: 'tools.cryptoPrediction.layout.description',
+        message:
+          'OctoBot ChatGPT trading is an AI-powered strategy that uses OpenAI ChatGPT to analyze crypto market trends and generate trading signals.',
+        description: 'Crypto prediction page meta description',
+      })}>
       <div className={styles.gridVeil} aria-hidden="true" />
 
       <Hero
-        eyebrow="ChatGPT predictions"
+        eyebrow={translate({
+          id: 'tools.cryptoPrediction.hero.eyebrow',
+          message: 'ChatGPT predictions',
+          description: 'Crypto prediction hero eyebrow',
+        })}
         title={
-          <>
-            <span className="ng-text-gradient">
+          <span className="ng-text-gradient">
+            <Translate
+              id="tools.cryptoPrediction.hero.title"
+              description="Crypto prediction hero title">
               ChatGPT crypto predictions.
-            </span>
-          </>
+            </Translate>
+          </span>
         }
-        subtitle="OctoBot ChatGPT trading is an AI-powered strategy that uses OpenAI ChatGPT to analyze crypto market trends and generate trading signals."
+        subtitle={translate({
+          id: 'tools.cryptoPrediction.hero.subtitle',
+          message:
+            'OctoBot ChatGPT trading is an AI-powered strategy that uses OpenAI ChatGPT to analyze crypto market trends and generate trading signals.',
+          description: 'Crypto prediction hero subtitle',
+        })}
         actions={[
-          {label: 'Invest for free', to: CLOUD},
-          {label: 'Read the AI guide', to: AI_GUIDE, variant: 'ghost'},
+          {
+            label: translate({
+              id: 'tools.cryptoPrediction.hero.action.invest',
+              message: 'Invest for free',
+              description: 'Crypto prediction hero invest action label',
+            }),
+            to: CLOUD,
+          },
+          {
+            label: translate({
+              id: 'tools.cryptoPrediction.hero.action.guide',
+              message: 'Read the AI guide',
+              description: 'Crypto prediction hero AI guide action label',
+            }),
+            to: AI_GUIDE,
+            variant: 'ghost',
+          },
         ]}
         meta={[
-          {label: 'Powered by ChatGPT', dot: true},
-          {label: 'Free AI strategy'},
-          {label: 'Paper trading included'},
+          {
+            label: translate({
+              id: 'tools.cryptoPrediction.hero.meta.poweredBy',
+              message: 'Powered by ChatGPT',
+              description: 'Crypto prediction hero meta: powered by ChatGPT',
+            }),
+            dot: true,
+          },
+          {
+            label: translate({
+              id: 'tools.cryptoPrediction.hero.meta.freeStrategy',
+              message: 'Free AI strategy',
+              description: 'Crypto prediction hero meta: free AI strategy',
+            }),
+          },
+          {
+            label: translate({
+              id: 'tools.cryptoPrediction.hero.meta.paperTrading',
+              message: 'Paper trading included',
+              description: 'Crypto prediction hero meta: paper trading',
+            }),
+          },
         ]}
       />
 
       <Section
-        eyebrow="Latest predictions"
-        title="Fresh signals from ChatGPT"
-        lead="A snapshot of the kind of trading signals ChatGPT generates as it reads the crypto market. Live predictions run on OctoBot Cloud.">
+        eyebrow={translate({
+          id: 'tools.cryptoPrediction.signals.eyebrow',
+          message: 'Latest predictions',
+          description: 'Crypto prediction signals section eyebrow',
+        })}
+        title={translate({
+          id: 'tools.cryptoPrediction.signals.title',
+          message: 'Fresh signals from ChatGPT',
+          description: 'Crypto prediction signals section title',
+        })}
+        lead={translate({
+          id: 'tools.cryptoPrediction.signals.lead',
+          message:
+            'A snapshot of the kind of trading signals ChatGPT generates as it reads the crypto market. Live predictions run on OctoBot Cloud.',
+          description: 'Crypto prediction signals section lead',
+        })}>
         <SignalCards />
       </Section>
 
       <Section>
         <GlassCard variant="hero" padded={false} className={styles.panel}>
           <h2 className={styles.panelTitle}>
-            Do you want to trade crypto using ChatGPT?
+            <Translate
+              id="tools.cryptoPrediction.panel.title"
+              description="Crypto prediction early access panel title">
+              Do you want to trade crypto using ChatGPT?
+            </Translate>
           </h2>
           <p className={styles.panelText}>
-            Be one of the first to experience our new strategy. It allows you
-            to automatically trade crypto from ChatGPT predictions.
+            <Translate
+              id="tools.cryptoPrediction.panel.text"
+              description="Crypto prediction early access panel text">
+              Be one of the first to experience our new strategy. It allows you
+              to automatically trade crypto from ChatGPT predictions.
+            </Translate>
           </p>
           <Link
             className={`ng-btn ng-btn--primary ${styles.panelCta}`}
             to={CLOUD}>
-            Join the early access
+            <Translate
+              id="tools.cryptoPrediction.panel.cta"
+              description="Crypto prediction early access panel CTA">
+              Join the early access
+            </Translate>
           </Link>
         </GlassCard>
       </Section>
 
       <CTABand
-        title="Put ChatGPT to work on your portfolio"
-        description="Create your ChatGPT trading bot for free on OctoBot Cloud, or read the guide first."
+        title={translate({
+          id: 'tools.cryptoPrediction.cta.title',
+          message: 'Put ChatGPT to work on your portfolio',
+          description: 'Crypto prediction CTA band title',
+        })}
+        description={translate({
+          id: 'tools.cryptoPrediction.cta.description',
+          message:
+            'Create your ChatGPT trading bot for free on OctoBot Cloud, or read the guide first.',
+          description: 'Crypto prediction CTA band description',
+        })}
         actions={[
-          {label: 'Invest for free', to: CLOUD},
-          {label: 'Read the AI guide', to: AI_GUIDE, variant: 'ghost'},
+          {
+            label: translate({
+              id: 'tools.cryptoPrediction.cta.action.invest',
+              message: 'Invest for free',
+              description: 'Crypto prediction CTA invest action label',
+            }),
+            to: CLOUD,
+          },
+          {
+            label: translate({
+              id: 'tools.cryptoPrediction.cta.action.guide',
+              message: 'Read the AI guide',
+              description: 'Crypto prediction CTA AI guide action label',
+            }),
+            to: AI_GUIDE,
+            variant: 'ghost',
+          },
         ]}
       />
     </LandingLayout>

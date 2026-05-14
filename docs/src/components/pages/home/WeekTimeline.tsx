@@ -1,4 +1,5 @@
 import React, {useEffect, useRef, type ReactNode} from 'react';
+import Translate, {translate} from '@docusaurus/Translate';
 import GlassCard from '@site/src/components/GlassCard';
 import styles from './WeekTimeline.module.css';
 
@@ -10,9 +11,48 @@ import styles from './WeekTimeline.module.css';
  */
 
 const STATS = [
-  {label: 'Bot actions', value: '412', accent: false, sub: 'this week'},
-  {label: 'You opened the app', value: '2×', accent: true, sub: 'Mon · Sun'},
-  {label: 'Your time spent', value: '90s', accent: true, sub: 'vs. 4–6 hrs manual'},
+  {
+    label: translate({
+      id: 'pages.index.weekTimeline.stats.actions.label',
+      message: 'Bot actions',
+      description: 'Week timeline stat label',
+    }),
+    value: '412',
+    accent: false,
+    sub: translate({
+      id: 'pages.index.weekTimeline.stats.actions.sub',
+      message: 'this week',
+      description: 'Week timeline stat sub',
+    }),
+  },
+  {
+    label: translate({
+      id: 'pages.index.weekTimeline.stats.opened.label',
+      message: 'You opened the app',
+      description: 'Week timeline stat label',
+    }),
+    value: '2×',
+    accent: true,
+    sub: translate({
+      id: 'pages.index.weekTimeline.stats.opened.sub',
+      message: 'Mon · Sun',
+      description: 'Week timeline stat sub',
+    }),
+  },
+  {
+    label: translate({
+      id: 'pages.index.weekTimeline.stats.time.label',
+      message: 'Your time spent',
+      description: 'Week timeline stat label',
+    }),
+    value: '90s',
+    accent: true,
+    sub: translate({
+      id: 'pages.index.weekTimeline.stats.time.sub',
+      message: 'vs. 4–6 hrs manual',
+      description: 'Week timeline stat sub',
+    }),
+  },
 ];
 
 const DAYS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
@@ -32,15 +72,27 @@ const EVENTS: {
     left: 7,
     icon: '€',
     when: 'Mon · 08:14',
-    title: 'Payday DCA fires.',
-    tag: '€200 deployed',
+    title: translate({
+      id: 'pages.index.weekTimeline.events.dca.title',
+      message: 'Payday DCA fires.',
+      description: 'Week timeline event title',
+    }),
+    tag: translate({
+      id: 'pages.index.weekTimeline.events.dca.tag',
+      message: '€200 deployed',
+      description: 'Week timeline event tag',
+    }),
   },
   {
     color: 'pos',
     left: 36,
     icon: '↘',
     when: 'Wed · 14:22',
-    title: 'Grid catches SOL dip.',
+    title: translate({
+      id: 'pages.index.weekTimeline.events.grid.title',
+      message: 'Grid catches SOL dip.',
+      description: 'Week timeline event title',
+    }),
     tag: '+€42.18',
   },
   {
@@ -48,16 +100,32 @@ const EVENTS: {
     left: 64,
     icon: '⏸',
     when: 'Fri · 19:48',
-    title: 'Risk rule auto-pauses.',
-    tag: 'protected',
+    title: translate({
+      id: 'pages.index.weekTimeline.events.risk.title',
+      message: 'Risk rule auto-pauses.',
+      description: 'Week timeline event title',
+    }),
+    tag: translate({
+      id: 'pages.index.weekTimeline.events.risk.tag',
+      message: 'protected',
+      description: 'Week timeline event tag',
+    }),
   },
   {
     color: 'frost',
     left: 93,
     icon: '✓',
     when: 'Sun · 11:02',
-    title: 'You glance, 90s.',
-    tag: '+€186.40 / wk',
+    title: translate({
+      id: 'pages.index.weekTimeline.events.glance.title',
+      message: 'You glance, 90s.',
+      description: 'Week timeline event title',
+    }),
+    tag: translate({
+      id: 'pages.index.weekTimeline.events.glance.tag',
+      message: '+€186.40 / wk',
+      description: 'Week timeline event tag',
+    }),
   },
 ];
 
@@ -163,10 +231,18 @@ export default function WeekTimeline(): ReactNode {
           />
         ))}
         <span className={styles.you} style={{left: '7%'}}>
-          you
+          <Translate
+            id="pages.index.weekTimeline.you"
+            description="Week timeline 'you' marker">
+            you
+          </Translate>
         </span>
         <span className={styles.you} style={{left: '93%'}}>
-          you
+          <Translate
+            id="pages.index.weekTimeline.you"
+            description="Week timeline 'you' marker">
+            you
+          </Translate>
         </span>
         <span className={styles.play} ref={playRef} style={{left: '0%'}} />
       </div>

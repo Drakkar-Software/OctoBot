@@ -1,4 +1,5 @@
 import React, {type ReactNode} from 'react';
+import Translate, {translate} from '@docusaurus/Translate';
 import {
   LandingLayout,
   Hero,
@@ -39,67 +40,211 @@ export default function WhatIsCrypto({
 
   return (
     <LandingLayout
-      title={`What is ${crypto.name}?`}
-      description={`What is the ${crypto.name} (${crypto.symbol}) cryptocurrency: purpose, technology, fundamentals and price history.`}>
+      title={translate(
+        {
+          id: 'programmatic.whatIsCrypto.layout.title',
+          message: 'What is {name}?',
+          description: 'Page title; {name} is the cryptocurrency name',
+        },
+        {name: crypto.name},
+      )}
+      description={translate(
+        {
+          id: 'programmatic.whatIsCrypto.layout.description',
+          message:
+            'What is the {name} ({symbol}) cryptocurrency: purpose, technology, fundamentals and price history.',
+          description:
+            'Page meta description; {name} is the cryptocurrency name, {symbol} its ticker',
+        },
+        {name: crypto.name, symbol: crypto.symbol},
+      )}>
       <div className={shared.gridVeil} aria-hidden="true" />
 
       <Hero
-        eyebrow="Cryptocurrency"
+        eyebrow={translate({
+          id: 'programmatic.whatIsCrypto.hero.eyebrow',
+          message: 'Cryptocurrency',
+          description: 'Hero eyebrow',
+        })}
         title={
-          <>
-            What is{' '}
-            <span className="ng-text-gradient">{crypto.name}?</span>
-          </>
+          <Translate
+            id="programmatic.whatIsCrypto.hero.title"
+            description="Hero title; {name} is a styled span holding the cryptocurrency name"
+            values={{
+              name: (
+                <span className="ng-text-gradient">{crypto.name}</span>
+              ),
+            }}>
+            {'What is {name}?'}
+          </Translate>
         }
-        subtitle={`Understand what makes ${crypto.name} (${crypto.symbol}) unique — its purpose, technology and key metrics.`}
-        actions={[
-          {label: `Invest in ${crypto.symbol}`, to: CLOUD},
+        subtitle={translate(
           {
-            label: 'Price converter',
+            id: 'programmatic.whatIsCrypto.hero.subtitle',
+            message:
+              'Understand what makes {name} ({symbol}) unique — its purpose, technology and key metrics.',
+            description:
+              'Hero subtitle; {name} is the cryptocurrency name, {symbol} its ticker',
+          },
+          {name: crypto.name, symbol: crypto.symbol},
+        )}
+        actions={[
+          {
+            label: translate(
+              {
+                id: 'programmatic.whatIsCrypto.hero.action.invest',
+                message: 'Invest in {symbol}',
+                description: 'Hero CTA label; {symbol} is the ticker',
+              },
+              {symbol: crypto.symbol},
+            ),
+            to: CLOUD,
+          },
+          {
+            label: translate({
+              id: 'programmatic.whatIsCrypto.hero.action.converter',
+              message: 'Price converter',
+              description: 'Hero secondary CTA label',
+            }),
             to: `/tools/converter/${crypto.symbol.toLowerCase()}/usd`,
             variant: 'ghost',
           },
         ]}
         meta={[
           {label: crypto.symbol, dot: true},
-          {label: 'Fundamentals'},
-          {label: 'Live price chart'},
+          {
+            label: translate({
+              id: 'programmatic.whatIsCrypto.hero.meta.fundamentals',
+              message: 'Fundamentals',
+              description: 'Hero meta label',
+            }),
+          },
+          {
+            label: translate({
+              id: 'programmatic.whatIsCrypto.hero.meta.chart',
+              message: 'Live price chart',
+              description: 'Hero meta label',
+            }),
+          },
         ]}
       />
 
-      <Section eyebrow="Overview" title={`What is ${crypto.name}?`}>
+      <Section
+        eyebrow={translate({
+          id: 'programmatic.whatIsCrypto.overview.eyebrow',
+          message: 'Overview',
+          description: 'Section eyebrow',
+        })}
+        title={translate(
+          {
+            id: 'programmatic.whatIsCrypto.overview.title',
+            message: 'What is {name}?',
+            description:
+              'Section title; {name} is the cryptocurrency name',
+          },
+          {name: crypto.name},
+        )}>
         <GlassCard variant="strong" padded className={shared.panel}>
           <p className={shared.prose}>{crypto.whatIs}</p>
         </GlassCard>
       </Section>
 
       <Section
-        eyebrow="Price"
-        title={`${crypto.name} price history`}
-        lead={`The live ${crypto.symbol}/USDT market, charted.`}>
+        eyebrow={translate({
+          id: 'programmatic.whatIsCrypto.price.eyebrow',
+          message: 'Price',
+          description: 'Section eyebrow',
+        })}
+        title={translate(
+          {
+            id: 'programmatic.whatIsCrypto.price.title',
+            message: '{name} price history',
+            description:
+              'Section title; {name} is the cryptocurrency name',
+          },
+          {name: crypto.name},
+        )}
+        lead={translate(
+          {
+            id: 'programmatic.whatIsCrypto.price.lead',
+            message: 'The live {symbol}/USDT market, charted.',
+            description: 'Section lead; {symbol} is the ticker',
+          },
+          {symbol: crypto.symbol},
+        )}>
         <div className={shared.chart}>
           <TradingViewWidget symbol={`BINANCE:${crypto.symbol}USDT`} />
         </div>
       </Section>
 
       {faqItems.length > 0 && (
-        <Section eyebrow="FAQ" title={`${crypto.name} FAQ`}>
+        <Section
+          eyebrow={translate({
+            id: 'programmatic.whatIsCrypto.faq.eyebrow',
+            message: 'FAQ',
+            description: 'Section eyebrow',
+          })}
+          title={translate(
+            {
+              id: 'programmatic.whatIsCrypto.faq.title',
+              message: '{name} FAQ',
+              description:
+                'Section title; {name} is the cryptocurrency name',
+            },
+            {name: crypto.name},
+          )}>
           <FAQ items={faqItems} />
         </Section>
       )}
 
       <CTABand
         title={
-          <>
-            Put your {crypto.symbol}{' '}
-            <span className="ng-text-frost">to work.</span>
-          </>
+          <Translate
+            id="programmatic.whatIsCrypto.cta.title"
+            description="CTA band title; {symbol} is the ticker, {work} is a styled span"
+            values={{
+              symbol: crypto.symbol,
+              work: (
+                <span className="ng-text-frost">
+                  <Translate
+                    id="programmatic.whatIsCrypto.cta.titleWork"
+                    description="CTA band title accent">
+                    to work.
+                  </Translate>
+                </span>
+              ),
+            }}>
+            {'Put your {symbol} {work}'}
+          </Translate>
         }
-        description={`Automate a ${crypto.name} strategy on OctoBot Cloud, or convert it first.`}
-        actions={[
-          {label: 'Start on OctoBot Cloud', to: CLOUD},
+        description={translate(
           {
-            label: `${crypto.symbol} converter`,
+            id: 'programmatic.whatIsCrypto.cta.description',
+            message:
+              'Automate a {name} strategy on OctoBot Cloud, or convert it first.',
+            description:
+              'CTA band description; {name} is the cryptocurrency name',
+          },
+          {name: crypto.name},
+        )}
+        actions={[
+          {
+            label: translate({
+              id: 'programmatic.whatIsCrypto.cta.action.start',
+              message: 'Start on OctoBot Cloud',
+              description: 'CTA band label',
+            }),
+            to: CLOUD,
+          },
+          {
+            label: translate(
+              {
+                id: 'programmatic.whatIsCrypto.cta.action.converter',
+                message: '{symbol} converter',
+                description: 'CTA band secondary label; {symbol} is the ticker',
+              },
+              {symbol: crypto.symbol},
+            ),
             to: `/tools/converter/${crypto.symbol.toLowerCase()}/usd`,
             variant: 'ghost',
           },

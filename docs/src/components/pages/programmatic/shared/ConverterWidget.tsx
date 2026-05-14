@@ -1,4 +1,5 @@
 import React, {useState, type ReactNode} from 'react';
+import Translate, {translate} from '@docusaurus/Translate';
 import type {Cryptocurrency} from '../types';
 import styles from './ConverterWidget.module.css';
 
@@ -43,7 +44,15 @@ export default function ConverterWidget({
             inputMode="decimal"
             value={amount}
             onChange={(event) => setAmount(event.target.value)}
-            aria-label={`Amount in ${base.symbol.toUpperCase()}`}
+            aria-label={translate(
+              {
+                id: 'programmatic.converterWidget.amountLabel',
+                message: 'Amount in {symbol}',
+                description:
+                  'Accessible label for the converter amount input; {symbol} is the base ticker',
+              },
+              {symbol: base.symbol.toUpperCase()},
+            )}
           />
         </label>
         <div className={styles.equals} aria-hidden="true">
@@ -57,8 +66,16 @@ export default function ConverterWidget({
         </div>
       </div>
       <p className={styles.rate}>
-        1 {base.symbol.toUpperCase()} = {format(rate)}{' '}
-        {quote.symbol.toUpperCase()} · build-time rate
+        <Translate
+          id="programmatic.converterWidget.rate"
+          description="Build-time conversion rate line; {base}/{quote} are tickers, {rate} the formatted rate value"
+          values={{
+            base: base.symbol.toUpperCase(),
+            quote: quote.symbol.toUpperCase(),
+            rate: format(rate),
+          }}>
+          {'1 {base} = {rate} {quote} · build-time rate'}
+        </Translate>
       </p>
     </div>
   );

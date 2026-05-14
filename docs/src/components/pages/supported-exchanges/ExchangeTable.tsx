@@ -1,4 +1,5 @@
 import type {ReactNode} from 'react';
+import Translate from '@docusaurus/Translate';
 import styles from './ExchangeTable.module.css';
 
 /*
@@ -36,9 +37,27 @@ export default function ExchangeTable(): ReactNode {
           <thead>
             <tr>
               <th className={styles.alignRight}>#</th>
-              <th>Name</th>
-              <th>Trust score</th>
-              <th className={styles.alignRight}>24h volume (USD)</th>
+              <th>
+                <Translate
+                  id="pages.supportedExchanges.table.name"
+                  description="Exchange table column header">
+                  Name
+                </Translate>
+              </th>
+              <th>
+                <Translate
+                  id="pages.supportedExchanges.table.trustScore"
+                  description="Exchange table column header">
+                  Trust score
+                </Translate>
+              </th>
+              <th className={styles.alignRight}>
+                <Translate
+                  id="pages.supportedExchanges.table.volume"
+                  description="Exchange table column header">
+                  24h volume (USD)
+                </Translate>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -58,8 +77,12 @@ export default function ExchangeTable(): ReactNode {
         </table>
       </div>
       <p className={styles.note}>
-        Trust scores and normalized trading volumes are provided by Coingecko.
-        Coingecko is not related to OctoBot.
+        <Translate
+          id="pages.supportedExchanges.table.note"
+          description="Exchange table data source note">
+          Trust scores and normalized trading volumes are provided by Coingecko.
+          Coingecko is not related to OctoBot.
+        </Translate>
       </p>
     </>
   );

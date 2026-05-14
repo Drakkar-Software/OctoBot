@@ -1,4 +1,5 @@
 import React, {useEffect, useState, type ReactNode} from 'react';
+import Translate, {translate} from '@docusaurus/Translate';
 import styles from './LiveProof.module.css';
 
 /*
@@ -49,16 +50,32 @@ const STATES: Record<
   {tag: string; foot: string; spread: string; depth: string; fill: string; rows: Row[]}
 > = {
   off: {
-    tag: 'Without market maker',
-    foot: 'Snapshot · pre-launch baseline',
+    tag: translate({
+      id: 'pages.marketMaking.liveProof.off.tag',
+      message: 'Without market maker',
+      description: 'Live proof state tag',
+    }),
+    foot: translate({
+      id: 'pages.marketMaking.liveProof.off.foot',
+      message: 'Snapshot · pre-launch baseline',
+      description: 'Live proof state footnote',
+    }),
     spread: '2.41%',
     depth: '€4.1k',
     fill: '6m 12s',
     rows: genRows(0.024, 0.05, true, false),
   },
   on: {
-    tag: 'Live · with OctoBot MM',
-    foot: 'Live · 340 quotes / sec · 99.97% uptime',
+    tag: translate({
+      id: 'pages.marketMaking.liveProof.on.tag',
+      message: 'Live · with OctoBot MM',
+      description: 'Live proof state tag',
+    }),
+    foot: translate({
+      id: 'pages.marketMaking.liveProof.on.foot',
+      message: 'Live · 340 quotes / sec · 99.97% uptime',
+      description: 'Live proof state footnote',
+    }),
     spread: '0.05%',
     depth: '€180k',
     fill: '0.4s',
@@ -94,9 +111,45 @@ export default function LiveProof(): ReactNode {
 
       <div className={styles.stats}>
         {[
-          {l: 'Spread', v: data.spread, d: '↓ 98% tighter'},
-          {l: 'Depth ±2%', v: data.depth, d: '↑ 44× deeper'},
-          {l: 'Time to fill 10k', v: data.fill, d: '↓ 900× faster'},
+          {
+            l: translate({
+              id: 'pages.marketMaking.liveProof.stat.spread.label',
+              message: 'Spread',
+              description: 'Live proof stat label',
+            }),
+            v: data.spread,
+            d: translate({
+              id: 'pages.marketMaking.liveProof.stat.spread.delta',
+              message: '↓ 98% tighter',
+              description: 'Live proof stat delta',
+            }),
+          },
+          {
+            l: translate({
+              id: 'pages.marketMaking.liveProof.stat.depth.label',
+              message: 'Depth ±2%',
+              description: 'Live proof stat label',
+            }),
+            v: data.depth,
+            d: translate({
+              id: 'pages.marketMaking.liveProof.stat.depth.delta',
+              message: '↑ 44× deeper',
+              description: 'Live proof stat delta',
+            }),
+          },
+          {
+            l: translate({
+              id: 'pages.marketMaking.liveProof.stat.fill.label',
+              message: 'Time to fill 10k',
+              description: 'Live proof stat label',
+            }),
+            v: data.fill,
+            d: translate({
+              id: 'pages.marketMaking.liveProof.stat.fill.delta',
+              message: '↓ 900× faster',
+              description: 'Live proof stat delta',
+            }),
+          },
         ].map((stat) => (
           <div key={stat.l} className={styles.stat}>
             <div className={styles.statLabel}>{stat.l}</div>
@@ -136,7 +189,11 @@ export default function LiveProof(): ReactNode {
           type="button"
           className={styles.toggle}
           onClick={() => setState('off')}>
-          Replay ↻
+          <Translate
+            id="pages.marketMaking.liveProof.replay"
+            description="Live proof replay button">
+            Replay ↻
+          </Translate>
         </button>
       </div>
     </div>

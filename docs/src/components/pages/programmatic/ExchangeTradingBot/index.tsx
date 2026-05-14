@@ -1,4 +1,5 @@
 import React, {type ReactNode} from 'react';
+import Translate, {translate} from '@docusaurus/Translate';
 import {
   LandingLayout,
   Hero,
@@ -27,33 +28,84 @@ const CLOUD = 'https://www.octobot.cloud';
 const STRATEGIES: Feature[] = [
   {
     icon: '🧠',
-    title: 'AI trading',
-    description: 'Let an AI strategy adapt your trades to market conditions.',
+    title: translate({
+      id: 'programmatic.exchangeTradingBot.strategy.ai.title',
+      message: 'AI trading',
+      description: 'Strategy card title',
+    }),
+    description: translate({
+      id: 'programmatic.exchangeTradingBot.strategy.ai.description',
+      message: 'Let an AI strategy adapt your trades to market conditions.',
+      description: 'Strategy card description',
+    }),
   },
   {
     icon: '📊',
-    title: 'DCA',
-    description: 'Dollar-cost average into your favourite assets on a schedule.',
+    title: translate({
+      id: 'programmatic.exchangeTradingBot.strategy.dca.title',
+      message: 'DCA',
+      description: 'Strategy card title',
+    }),
+    description: translate({
+      id: 'programmatic.exchangeTradingBot.strategy.dca.description',
+      message:
+        'Dollar-cost average into your favourite assets on a schedule.',
+      description: 'Strategy card description',
+    }),
   },
   {
     icon: '▦',
-    title: 'Grid trading',
-    description: 'Capture range-bound volatility with layered buy and sell orders.',
+    title: translate({
+      id: 'programmatic.exchangeTradingBot.strategy.grid.title',
+      message: 'Grid trading',
+      description: 'Strategy card title',
+    }),
+    description: translate({
+      id: 'programmatic.exchangeTradingBot.strategy.grid.description',
+      message:
+        'Capture range-bound volatility with layered buy and sell orders.',
+      description: 'Strategy card description',
+    }),
   },
   {
     icon: '🧺',
-    title: 'Crypto baskets',
-    description: 'Theme-based baskets diversify your investment in a few clicks.',
+    title: translate({
+      id: 'programmatic.exchangeTradingBot.strategy.baskets.title',
+      message: 'Crypto baskets',
+      description: 'Strategy card title',
+    }),
+    description: translate({
+      id: 'programmatic.exchangeTradingBot.strategy.baskets.description',
+      message:
+        'Theme-based baskets diversify your investment in a few clicks.',
+      description: 'Strategy card description',
+    }),
   },
   {
     icon: '📈',
-    title: 'TradingView',
-    description: 'Automate any TradingView strategy or indicator alert.',
+    title: translate({
+      id: 'programmatic.exchangeTradingBot.strategy.tradingview.title',
+      message: 'TradingView',
+      description: 'Strategy card title',
+    }),
+    description: translate({
+      id: 'programmatic.exchangeTradingBot.strategy.tradingview.description',
+      message: 'Automate any TradingView strategy or indicator alert.',
+      description: 'Strategy card description',
+    }),
   },
   {
     icon: '⚙️',
-    title: 'Custom strategies',
-    description: 'Build, backtest and optimize your own trading logic.',
+    title: translate({
+      id: 'programmatic.exchangeTradingBot.strategy.custom.title',
+      message: 'Custom strategies',
+      description: 'Strategy card title',
+    }),
+    description: translate({
+      id: 'programmatic.exchangeTradingBot.strategy.custom.description',
+      message: 'Build, backtest and optimize your own trading logic.',
+      description: 'Strategy card description',
+    }),
   },
 ];
 
@@ -71,101 +123,346 @@ export default function ExchangeTradingBot({
 
   const faqItems: FAQItem[] = [
     {
-      question: `How to use a trading bot on ${exchange.name}?`,
+      question: translate(
+        {
+          id: 'programmatic.exchangeTradingBot.faq.how.question',
+          message: 'How to use a trading bot on {name}?',
+          description: 'FAQ question; {name} is the exchange name',
+        },
+        {name: exchange.name},
+      ),
       answer: isCloud
-        ? `To use a trading bot on ${exchange.name}, create a free account and select a trading strategy or crypto basket that suits your preferences.`
-        : `To use a trading bot on ${exchange.name}, download OctoBot for free to start, customize or backtest a trading strategy.`,
+        ? translate(
+            {
+              id: 'programmatic.exchangeTradingBot.faq.how.answer.cloud',
+              message:
+                'To use a trading bot on {name}, create a free account and select a trading strategy or crypto basket that suits your preferences.',
+              description: 'FAQ answer; {name} is the exchange name',
+            },
+            {name: exchange.name},
+          )
+        : translate(
+            {
+              id: 'programmatic.exchangeTradingBot.faq.how.answer.selfHosted',
+              message:
+                'To use a trading bot on {name}, download OctoBot for free to start, customize or backtest a trading strategy.',
+              description: 'FAQ answer; {name} is the exchange name',
+            },
+            {name: exchange.name},
+          ),
     },
     {
-      question: `Is the ${exchange.name} trading bot free?`,
+      question: translate(
+        {
+          id: 'programmatic.exchangeTradingBot.faq.free.question',
+          message: 'Is the {name} trading bot free?',
+          description: 'FAQ question; {name} is the exchange name',
+        },
+        {name: exchange.name},
+      ),
       answer: isCloud
-        ? 'You can start an OctoBot for free with the strategies and crypto baskets available on the free plan. Some strategies and baskets require a paid plan.'
-        : 'OctoBot is free — you can download it and start automating your trading strategy at no cost.',
+        ? translate({
+            id: 'programmatic.exchangeTradingBot.faq.free.answer.cloud',
+            message:
+              'You can start an OctoBot for free with the strategies and crypto baskets available on the free plan. Some strategies and baskets require a paid plan.',
+            description: 'FAQ answer',
+          })
+        : translate({
+            id: 'programmatic.exchangeTradingBot.faq.free.answer.selfHosted',
+            message:
+              'OctoBot is free — you can download it and start automating your trading strategy at no cost.',
+            description: 'FAQ answer',
+          }),
     },
     {
-      question: `Why use a trading bot on ${exchange.name}?`,
-      answer: `Crypto trading bots on ${exchange.name} run around the clock, capturing opportunities anytime while you focus on other things. They also make advanced strategies accessible to beginners.`,
+      question: translate(
+        {
+          id: 'programmatic.exchangeTradingBot.faq.why.question',
+          message: 'Why use a trading bot on {name}?',
+          description: 'FAQ question; {name} is the exchange name',
+        },
+        {name: exchange.name},
+      ),
+      answer: translate(
+        {
+          id: 'programmatic.exchangeTradingBot.faq.why.answer',
+          message:
+            'Crypto trading bots on {name} run around the clock, capturing opportunities anytime while you focus on other things. They also make advanced strategies accessible to beginners.',
+          description: 'FAQ answer; {name} is the exchange name',
+        },
+        {name: exchange.name},
+      ),
     },
     {
-      question: `Is there any trading fees on ${exchange.name}?`,
-      answer: `Yes — using a trading bot on ${exchange.name} means you pay the regular ${exchange.name} trading fees on each order the bot places.`,
+      question: translate(
+        {
+          id: 'programmatic.exchangeTradingBot.faq.fees.question',
+          message: 'Is there any trading fees on {name}?',
+          description: 'FAQ question; {name} is the exchange name',
+        },
+        {name: exchange.name},
+      ),
+      answer: translate(
+        {
+          id: 'programmatic.exchangeTradingBot.faq.fees.answer',
+          message:
+            'Yes — using a trading bot on {name} means you pay the regular {name} trading fees on each order the bot places.',
+          description: 'FAQ answer; {name} is the exchange name',
+        },
+        {name: exchange.name},
+      ),
     },
   ];
 
   return (
     <LandingLayout
-      title={`${exchange.name} trading bot`}
-      description={`Automate your cryptocurrency investment on ${exchange.name} with trading strategies, crypto baskets or TradingView indicators.`}>
+      title={translate(
+        {
+          id: 'programmatic.exchangeTradingBot.layout.title',
+          message: '{name} trading bot',
+          description: 'Page title; {name} is the exchange name',
+        },
+        {name: exchange.name},
+      )}
+      description={translate(
+        {
+          id: 'programmatic.exchangeTradingBot.layout.description',
+          message:
+            'Automate your cryptocurrency investment on {name} with trading strategies, crypto baskets or TradingView indicators.',
+          description: 'Page meta description; {name} is the exchange name',
+        },
+        {name: exchange.name},
+      )}>
       <div className={shared.gridVeil} aria-hidden="true" />
 
       <Hero
-        eyebrow={`${exchange.name} trading bot`}
+        eyebrow={translate(
+          {
+            id: 'programmatic.exchangeTradingBot.hero.eyebrow',
+            message: '{name} trading bot',
+            description: 'Hero eyebrow; {name} is the exchange name',
+          },
+          {name: exchange.name},
+        )}
         title={
-          <>
-            Automate trading on{' '}
-            <span className="ng-text-gradient">{exchange.name}</span> with
-            OctoBot
-          </>
+          <Translate
+            id="programmatic.exchangeTradingBot.hero.title"
+            description="Hero title; {name} is a styled span with the exchange name"
+            values={{
+              name: (
+                <span className="ng-text-gradient">{exchange.name}</span>
+              ),
+            }}>
+            {'Automate trading on {name} with OctoBot'}
+          </Translate>
         }
         subtitle={
           isCloud
-            ? `Easily invest on ${exchange.name} with OctoBot — strategies and crypto baskets, no code required.`
-            : `Easily create, backtest and optimize algorithmic or TradingView strategies on ${exchange.name}.`
+            ? translate(
+                {
+                  id: 'programmatic.exchangeTradingBot.hero.subtitle.cloud',
+                  message:
+                    'Easily invest on {name} with OctoBot — strategies and crypto baskets, no code required.',
+                  description: 'Hero subtitle; {name} is the exchange name',
+                },
+                {name: exchange.name},
+              )
+            : translate(
+                {
+                  id: 'programmatic.exchangeTradingBot.hero.subtitle.selfHosted',
+                  message:
+                    'Easily create, backtest and optimize algorithmic or TradingView strategies on {name}.',
+                  description: 'Hero subtitle; {name} is the exchange name',
+                },
+                {name: exchange.name},
+              )
         }
         actions={[
-          {label: 'Get started', to: CLOUD},
-          {label: 'Read the guides', to: '/guides/octobot', variant: 'ghost'},
+          {
+            label: translate({
+              id: 'programmatic.exchangeTradingBot.hero.action.start',
+              message: 'Get started',
+              description: 'Hero CTA label',
+            }),
+            to: CLOUD,
+          },
+          {
+            label: translate({
+              id: 'programmatic.exchangeTradingBot.hero.action.guides',
+              message: 'Read the guides',
+              description: 'Hero secondary CTA label',
+            }),
+            to: '/guides/octobot',
+            variant: 'ghost',
+          },
         ]}
         meta={[
           {label: exchange.name, dot: true},
-          {label: isCloud ? 'OctoBot Cloud' : 'Open source'},
-          ...(exchange.tier1 ? [{label: 'Tier-1 exchange'}] : []),
+          {
+            label: isCloud
+              ? translate({
+                  id: 'programmatic.exchangeTradingBot.hero.meta.cloud',
+                  message: 'OctoBot Cloud',
+                  description: 'Hero meta label',
+                })
+              : translate({
+                  id: 'programmatic.exchangeTradingBot.hero.meta.openSource',
+                  message: 'Open source',
+                  description: 'Hero meta label',
+                }),
+          },
+          ...(exchange.tier1
+            ? [
+                {
+                  label: translate({
+                    id: 'programmatic.exchangeTradingBot.hero.meta.tier1',
+                    message: 'Tier-1 exchange',
+                    description: 'Hero meta label',
+                  }),
+                },
+              ]
+            : []),
         ]}
       />
 
       <Section
-        eyebrow="Strategies"
-        title={`${exchange.name} trading strategies`}
-        lead="Explore a variety of investment strategies — all running on your own exchange account.">
+        eyebrow={translate({
+          id: 'programmatic.exchangeTradingBot.strategies.eyebrow',
+          message: 'Strategies',
+          description: 'Section eyebrow',
+        })}
+        title={translate(
+          {
+            id: 'programmatic.exchangeTradingBot.strategies.title',
+            message: '{name} trading strategies',
+            description: 'Section title; {name} is the exchange name',
+          },
+          {name: exchange.name},
+        )}
+        lead={translate({
+          id: 'programmatic.exchangeTradingBot.strategies.lead',
+          message:
+            'Explore a variety of investment strategies — all running on your own exchange account.',
+          description: 'Section lead',
+        })}>
         <FeatureGrid features={STRATEGIES} columns={3} />
       </Section>
 
       <Section
         align="left"
-        eyebrow="TradingView"
+        eyebrow={translate({
+          id: 'programmatic.exchangeTradingBot.tradingview.eyebrow',
+          message: 'TradingView',
+          description: 'Section eyebrow',
+        })}
         title={
-          <>
-            TradingView automated trading on {exchange.name}{' '}
-            <Badge tone="frost">No code</Badge>
-          </>
+          <Translate
+            id="programmatic.exchangeTradingBot.tradingview.title"
+            description="Section title; {name} is the exchange name, {badge} is a 'No code' badge"
+            values={{
+              name: exchange.name,
+              badge: (
+                <Badge tone="frost">
+                  <Translate
+                    id="programmatic.exchangeTradingBot.tradingview.badge"
+                    description="Badge label inside the TradingView section title">
+                    No code
+                  </Translate>
+                </Badge>
+              ),
+            }}>
+            {'TradingView automated trading on {name} {badge}'}
+          </Translate>
         }
-        lead={`Automate your TradingView strategies or indicator signals on ${exchange.name} through a simple webhook integration.`}>
+        lead={translate(
+          {
+            id: 'programmatic.exchangeTradingBot.tradingview.lead',
+            message:
+              'Automate your TradingView strategies or indicator signals on {name} through a simple webhook integration.',
+            description: 'Section lead; {name} is the exchange name',
+          },
+          {name: exchange.name},
+        )}>
         <div className={shared.cta}>
           <a
             className="ng-btn ng-btn--primary"
             href={CLOUD}
             target="_blank"
             rel="noreferrer">
-            Automate {exchange.name}
+            <Translate
+              id="programmatic.exchangeTradingBot.tradingview.action"
+              description="TradingView section CTA; {name} is the exchange name"
+              values={{name: exchange.name}}>
+              {'Automate {name}'}
+            </Translate>
           </a>
         </div>
       </Section>
 
-      <Section eyebrow="FAQ" title={`${exchange.name} FAQ`}>
+      <Section
+        eyebrow={translate({
+          id: 'programmatic.exchangeTradingBot.faq.eyebrow',
+          message: 'FAQ',
+          description: 'Section eyebrow',
+        })}
+        title={translate(
+          {
+            id: 'programmatic.exchangeTradingBot.faq.title',
+            message: '{name} FAQ',
+            description: 'Section title; {name} is the exchange name',
+          },
+          {name: exchange.name},
+        )}>
         <FAQ items={faqItems} />
       </Section>
 
       <CTABand
         title={
-          <>
-            Your {exchange.name} account,{' '}
-            <span className="ng-text-frost">on autopilot.</span>
-          </>
+          <Translate
+            id="programmatic.exchangeTradingBot.cta.title"
+            description="CTA band title; {name} is the exchange name, {autopilot} is a styled span"
+            values={{
+              name: exchange.name,
+              autopilot: (
+                <span className="ng-text-frost">
+                  <Translate
+                    id="programmatic.exchangeTradingBot.cta.titleAutopilot"
+                    description="CTA band title accent">
+                    on autopilot.
+                  </Translate>
+                </span>
+              ),
+            }}>
+            {'Your {name} account, {autopilot}'}
+          </Translate>
         }
-        description={`Connect ${exchange.name} to OctoBot and start automating your strategy today.`}
+        description={translate(
+          {
+            id: 'programmatic.exchangeTradingBot.cta.description',
+            message:
+              'Connect {name} to OctoBot and start automating your strategy today.',
+            description: 'CTA band description; {name} is the exchange name',
+          },
+          {name: exchange.name},
+        )}
         actions={[
-          {label: 'Get started', to: CLOUD},
-          {label: 'Supported exchanges', to: '/supported-exchanges', variant: 'ghost'},
+          {
+            label: translate({
+              id: 'programmatic.exchangeTradingBot.cta.action.start',
+              message: 'Get started',
+              description: 'CTA band label',
+            }),
+            to: CLOUD,
+          },
+          {
+            label: translate({
+              id: 'programmatic.exchangeTradingBot.cta.action.exchanges',
+              message: 'Supported exchanges',
+              description: 'CTA band secondary label',
+            }),
+            to: '/supported-exchanges',
+            variant: 'ghost',
+          },
         ]}
       />
     </LandingLayout>

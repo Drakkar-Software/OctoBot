@@ -2,6 +2,7 @@ import React, {type ReactNode} from 'react';
 import Link from '@docusaurus/Link';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import useBaseUrl from '@docusaurus/useBaseUrl';
+import {translate} from '@docusaurus/Translate';
 import styles from './styles.module.css';
 
 export interface LandingNavLink {
@@ -17,12 +18,40 @@ interface LandingNavProps {
 
 const DEFAULT_LINKS: LandingNavLink[] = [
   {label: 'OctoBot App', to: '/'},
-  {label: 'Market Making', to: '/market-making'},
-  {label: 'Whitelabel', to: '/whitelabel'},
-  {label: 'Guides', to: '/guides/octobot'},
+  {
+    label: translate({
+      id: 'nav.menu.marketMaking',
+      message: 'Market Making',
+      description: 'Nav menu link label',
+    }),
+    to: '/market-making',
+  },
+  {
+    label: translate({
+      id: 'nav.menu.whitelabel',
+      message: 'Whitelabel',
+      description: 'Nav menu link label',
+    }),
+    to: '/whitelabel',
+  },
+  {
+    label: translate({
+      id: 'nav.menu.guides',
+      message: 'Guides',
+      description: 'Nav menu link label',
+    }),
+    to: '/guides/octobot',
+  },
 ];
 
-const DEFAULT_CTA = {label: 'Open OctoBot Cloud', to: 'https://www.octobot.cloud'};
+const DEFAULT_CTA = {
+  label: translate({
+    id: 'nav.cta.openOctobotCloud',
+    message: 'Open OctoBot Cloud',
+    description: 'Nav primary CTA label',
+  }),
+  to: 'https://www.octobot.cloud',
+};
 
 /**
  * Minimal frosted-glass nav for standalone landing pages — replaces the docs

@@ -1,4 +1,5 @@
 import type {ReactNode} from 'react';
+import Translate, {translate} from '@docusaurus/Translate';
 import {
   LandingLayout,
   Hero,
@@ -20,47 +21,129 @@ import GlassCard from '@site/src/components/GlassCard';
 const CAPABILITIES: Feature[] = [
   {
     icon: '🎛️',
-    title: 'Visual strategy building',
-    description:
-      'Compose evaluators and trading modes into a strategy without writing code.',
+    title: translate({
+      id: 'features.strategyDesigner.capabilities.visual.title',
+      message: 'Visual strategy building',
+      description: 'Capability title on strategy designer page',
+    }),
+    description: translate({
+      id: 'features.strategyDesigner.capabilities.visual.description',
+      message:
+        'Compose evaluators and trading modes into a strategy without writing code.',
+      description: 'Capability description on strategy designer page',
+    }),
   },
   {
     icon: '⏪',
-    title: 'Instant backtests',
-    description:
-      'Run a strategy against historical data and read the performance report in seconds.',
+    title: translate({
+      id: 'features.strategyDesigner.capabilities.backtests.title',
+      message: 'Instant backtests',
+      description: 'Capability title on strategy designer page',
+    }),
+    description: translate({
+      id: 'features.strategyDesigner.capabilities.backtests.description',
+      message:
+        'Run a strategy against historical data and read the performance report in seconds.',
+      description: 'Capability description on strategy designer page',
+    }),
   },
   {
     icon: '🔧',
-    title: 'Fine-tune every parameter',
-    description:
-      'Adjust risk, timeframes and indicator settings, then re-test until it fits.',
+    title: translate({
+      id: 'features.strategyDesigner.capabilities.tune.title',
+      message: 'Fine-tune every parameter',
+      description: 'Capability title on strategy designer page',
+    }),
+    description: translate({
+      id: 'features.strategyDesigner.capabilities.tune.description',
+      message:
+        'Adjust risk, timeframes and indicator settings, then re-test until it fits.',
+      description: 'Capability description on strategy designer page',
+    }),
   },
 ];
 
 export default function StrategyDesignerFeature(): ReactNode {
   return (
     <LandingLayout
-      title="Strategy Designer"
-      description="Design, backtest and fine-tune automated trading strategies visually with the OctoBot Strategy Designer.">
+      title={translate({
+        id: 'features.strategyDesigner.layout.title',
+        message: 'Strategy Designer',
+        description: 'Page meta title for strategy designer page',
+      })}
+      description={translate({
+        id: 'features.strategyDesigner.layout.description',
+        message:
+          'Design, backtest and fine-tune automated trading strategies visually with the OctoBot Strategy Designer.',
+        description: 'Page meta description for strategy designer page',
+      })}>
       <Hero
-        eyebrow="Feature"
-        title="Design strategies visually"
-        subtitle="The Strategy Designer turns trading ideas into running automation — build, backtest and refine, all in one place."
+        eyebrow={translate({
+          id: 'features.strategyDesigner.hero.eyebrow',
+          message: 'Feature',
+          description: 'Hero eyebrow on strategy designer page',
+        })}
+        title={translate({
+          id: 'features.strategyDesigner.hero.title',
+          message: 'Design strategies visually',
+          description: 'Hero title on strategy designer page',
+        })}
+        subtitle={translate({
+          id: 'features.strategyDesigner.hero.subtitle',
+          message:
+            'The Strategy Designer turns trading ideas into running automation — build, backtest and refine, all in one place.',
+          description: 'Hero subtitle on strategy designer page',
+        })}
         actions={[
-          {label: 'Open the guide', to: '/guides/octobot-usage/strategy-designer'},
-          {label: 'Back to overview', to: '/welcome', variant: 'ghost'},
+          {
+            label: translate({
+              id: 'features.strategyDesigner.hero.action.guide',
+              message: 'Open the guide',
+              description: 'Hero action label on strategy designer page',
+            }),
+            to: '/guides/octobot-usage/strategy-designer',
+          },
+          {
+            label: translate({
+              id: 'features.strategyDesigner.hero.action.overview',
+              message: 'Back to overview',
+              description: 'Hero action label on strategy designer page',
+            }),
+            to: '/welcome',
+            variant: 'ghost',
+          },
         ]}
         visual={
           <GlassCard variant="hero" padded>
             <div style={{display: 'flex', flexDirection: 'column', gap: '0.75rem'}}>
-              <span className="ng-eyebrow">Live preview</span>
+              <span className="ng-eyebrow">
+                <Translate
+                  id="features.strategyDesigner.visual.livePreview"
+                  description="Live preview eyebrow on strategy designer page">
+                  Live preview
+                </Translate>
+              </span>
               <div style={{fontFamily: 'var(--ng-font-mono)', fontSize: '0.85rem', color: 'var(--ng-ink-muted)', lineHeight: 1.7}}>
-                strategy: <span style={{color: 'var(--ng-frost)'}}>RSI + DCA</span>
+                <Translate
+                  id="features.strategyDesigner.visual.strategyLabel"
+                  description="Strategy label in strategy designer preview card">
+                  strategy:
+                </Translate>{' '}
+                <span style={{color: 'var(--ng-frost)'}}>RSI + DCA</span>
                 <br />
-                timeframe: <span style={{color: 'var(--ng-frost)'}}>4h</span>
+                <Translate
+                  id="features.strategyDesigner.visual.timeframeLabel"
+                  description="Timeframe label in strategy designer preview card">
+                  timeframe:
+                </Translate>{' '}
+                <span style={{color: 'var(--ng-frost)'}}>4h</span>
                 <br />
-                backtest pnl: <span style={{color: 'var(--ng-pos)'}}>+18.4%</span>
+                <Translate
+                  id="features.strategyDesigner.visual.backtestLabel"
+                  description="Backtest PnL label in strategy designer preview card">
+                  backtest pnl:
+                </Translate>{' '}
+                <span style={{color: 'var(--ng-pos)'}}>+18.4%</span>
               </div>
             </div>
           </GlassCard>
@@ -68,18 +151,55 @@ export default function StrategyDesignerFeature(): ReactNode {
       />
 
       <Section
-        eyebrow="What it does"
-        title="From idea to automation"
-        lead="Three steps: build the strategy, backtest it, fine-tune it — then let OctoBot run it.">
+        eyebrow={translate({
+          id: 'features.strategyDesigner.what.eyebrow',
+          message: 'What it does',
+          description: 'Section eyebrow on strategy designer page',
+        })}
+        title={translate({
+          id: 'features.strategyDesigner.what.title',
+          message: 'From idea to automation',
+          description: 'Section title on strategy designer page',
+        })}
+        lead={translate({
+          id: 'features.strategyDesigner.what.lead',
+          message:
+            'Three steps: build the strategy, backtest it, fine-tune it — then let OctoBot run it.',
+          description: 'Section lead on strategy designer page',
+        })}>
         <FeatureGrid features={CAPABILITIES} columns={3} />
       </Section>
 
       <CTABand
-        title="Build your first strategy"
-        description="The strategy designer guide walks through creating, testing and deploying a strategy end to end."
+        title={translate({
+          id: 'features.strategyDesigner.cta.title',
+          message: 'Build your first strategy',
+          description: 'CTA band title on strategy designer page',
+        })}
+        description={translate({
+          id: 'features.strategyDesigner.cta.description',
+          message:
+            'The strategy designer guide walks through creating, testing and deploying a strategy end to end.',
+          description: 'CTA band description on strategy designer page',
+        })}
         actions={[
-          {label: 'Read the guide', to: '/guides/octobot-usage/strategy-designer'},
-          {label: 'See all guides', to: '/guides/octobot', variant: 'ghost'},
+          {
+            label: translate({
+              id: 'features.strategyDesigner.cta.action.guide',
+              message: 'Read the guide',
+              description: 'CTA action label on strategy designer page',
+            }),
+            to: '/guides/octobot-usage/strategy-designer',
+          },
+          {
+            label: translate({
+              id: 'features.strategyDesigner.cta.action.allGuides',
+              message: 'See all guides',
+              description: 'CTA action label on strategy designer page',
+            }),
+            to: '/guides/octobot',
+            variant: 'ghost',
+          },
         ]}
       />
     </LandingLayout>

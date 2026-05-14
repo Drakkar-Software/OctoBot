@@ -1,5 +1,6 @@
 import React, {type ReactNode} from 'react';
 import Link from '@docusaurus/Link';
+import Translate, {translate} from '@docusaurus/Translate';
 import {
   LandingLayout,
   Hero,
@@ -59,38 +60,144 @@ export default function ConverterPair({
 
   const faqItems: FAQItem[] = [
     {
-      question: `What is the ${base.name} ticker?`,
-      answer: `The symbol for ${base.name} is ${baseSym}.`,
+      question: translate(
+        {
+          id: 'programmatic.converterPair.faq.ticker.question',
+          message: 'What is the {name} ticker?',
+          description: 'FAQ question; {name} is the base cryptocurrency name',
+        },
+        {name: base.name},
+      ),
+      answer: translate(
+        {
+          id: 'programmatic.converterPair.faq.ticker.answer',
+          message: 'The symbol for {name} is {symbol}.',
+          description:
+            'FAQ answer; {name} is the base cryptocurrency name, {symbol} its ticker',
+        },
+        {name: base.name, symbol: baseSym},
+      ),
     },
     {
-      question: `Is it possible to earn money with ${base.name} investments?`,
-      answer: `Yes, it is possible to earn money with ${base.name}, but it also carries significant risk. You should do your own research and use risk management tools like OctoBot.`,
+      question: translate(
+        {
+          id: 'programmatic.converterPair.faq.earn.question',
+          message:
+            'Is it possible to earn money with {name} investments?',
+          description: 'FAQ question; {name} is the base cryptocurrency name',
+        },
+        {name: base.name},
+      ),
+      answer: translate(
+        {
+          id: 'programmatic.converterPair.faq.earn.answer',
+          message:
+            'Yes, it is possible to earn money with {name}, but it also carries significant risk. You should do your own research and use risk management tools like OctoBot.',
+          description: 'FAQ answer; {name} is the base cryptocurrency name',
+        },
+        {name: base.name},
+      ),
     },
     {
-      question: `How can I check the live price of ${base.name}?`,
-      answer: `You can check the live ${base.name} price on charting platforms like TradingView, or directly through a cryptocurrency exchange.`,
+      question: translate(
+        {
+          id: 'programmatic.converterPair.faq.price.question',
+          message: 'How can I check the live price of {name}?',
+          description: 'FAQ question; {name} is the base cryptocurrency name',
+        },
+        {name: base.name},
+      ),
+      answer: translate(
+        {
+          id: 'programmatic.converterPair.faq.price.answer',
+          message:
+            'You can check the live {name} price on charting platforms like TradingView, or directly through a cryptocurrency exchange.',
+          description: 'FAQ answer; {name} is the base cryptocurrency name',
+        },
+        {name: base.name},
+      ),
     },
   ];
 
   return (
     <LandingLayout
-      title={`${baseSym} to ${quoteSym} Converter`}
-      description={`Convert ${baseSym} to ${quoteSym} with the OctoBot price converter and discover the latest ${baseSym} price predictions.`}>
+      title={translate(
+        {
+          id: 'programmatic.converterPair.layout.title',
+          message: '{base} to {quote} Converter',
+          description:
+            'Page title; {base} and {quote} are the pair tickers',
+        },
+        {base: baseSym, quote: quoteSym},
+      )}
+      description={translate(
+        {
+          id: 'programmatic.converterPair.layout.description',
+          message:
+            'Convert {base} to {quote} with the OctoBot price converter and discover the latest {base} price predictions.',
+          description:
+            'Page meta description; {base} and {quote} are the pair tickers',
+        },
+        {base: baseSym, quote: quoteSym},
+      )}>
       <div className={shared.gridVeil} aria-hidden="true" />
 
       <Hero
-        eyebrow="Crypto converter"
+        eyebrow={translate({
+          id: 'programmatic.converterPair.hero.eyebrow',
+          message: 'Crypto converter',
+          description: 'Hero eyebrow',
+        })}
         title={
-          <>
-            {baseSym} to{' '}
-            <span className="ng-text-gradient">{quoteSym}</span> converter
-          </>
+          <Translate
+            id="programmatic.converterPair.hero.title"
+            description="Hero title; {base} is the base ticker, {quote} is a styled span with the quote ticker"
+            values={{
+              base: baseSym,
+              quote: (
+                <span className="ng-text-gradient">{quoteSym}</span>
+              ),
+            }}>
+            {'{base} to {quote} converter'}
+          </Translate>
         }
-        subtitle={`${base.name} (${baseSym}) and ${quote.name} (${quoteSym}) price converter.`}
-        actions={[
-          {label: `Invest my ${baseSym}`, to: CLOUD},
+        subtitle={translate(
           {
-            label: `What is ${base.name}?`,
+            id: 'programmatic.converterPair.hero.subtitle',
+            message:
+              '{baseName} ({base}) and {quoteName} ({quote}) price converter.',
+            description:
+              'Hero subtitle; {baseName}/{quoteName} are coin names, {base}/{quote} their tickers',
+          },
+          {
+            baseName: base.name,
+            base: baseSym,
+            quoteName: quote.name,
+            quote: quoteSym,
+          },
+        )}
+        actions={[
+          {
+            label: translate(
+              {
+                id: 'programmatic.converterPair.hero.action.invest',
+                message: 'Invest my {base}',
+                description: 'Hero CTA label; {base} is the base ticker',
+              },
+              {base: baseSym},
+            ),
+            to: CLOUD,
+          },
+          {
+            label: translate(
+              {
+                id: 'programmatic.converterPair.hero.action.whatIs',
+                message: 'What is {name}?',
+                description:
+                  'Hero secondary CTA label; {name} is the base cryptocurrency name',
+              },
+              {name: base.name},
+            ),
             to: `/what-is-${base.slug}`,
             variant: 'ghost',
           },
@@ -98,53 +205,162 @@ export default function ConverterPair({
         visual={<ConverterWidget base={base} quote={quote} />}
       />
 
-      <Section eyebrow="About" title={`About ${base.name}`}>
+      <Section
+        eyebrow={translate({
+          id: 'programmatic.converterPair.about.eyebrow',
+          message: 'About',
+          description: 'Section eyebrow',
+        })}
+        title={translate(
+          {
+            id: 'programmatic.converterPair.about.title',
+            message: 'About {name}',
+            description:
+              'Section title; {name} is the base cryptocurrency name',
+          },
+          {name: base.name},
+        )}>
         <GlassCard variant="strong" padded className={shared.panel}>
           <p className={shared.prose}>
             {base.whatIs ??
-              `${base.name} (${baseSym}) is one of the cryptocurrencies you can automate with OctoBot.`}
+              translate(
+                {
+                  id: 'programmatic.converterPair.about.fallback',
+                  message:
+                    '{name} ({symbol}) is one of the cryptocurrencies you can automate with OctoBot.',
+                  description:
+                    'Fallback about text when no whatIs prose is available; {name} is the base name, {symbol} its ticker',
+                },
+                {name: base.name, symbol: baseSym},
+              )}
           </p>
           <Link
             className="ng-btn ng-btn--ghost"
             to={`/what-is-${base.slug}`}>
-            Learn more about {base.name}
+            <Translate
+              id="programmatic.converterPair.about.learnMore"
+              description="About section link; {name} is the base cryptocurrency name"
+              values={{name: base.name}}>
+              {'Learn more about {name}'}
+            </Translate>
           </Link>
         </GlassCard>
       </Section>
 
       <Section
-        eyebrow="Price"
-        title={`Real-time ${base.name} price chart`}
-        lead={`The live ${baseSym}/${
-          quote.symbol === 'USD' ? 'USDT' : quoteSym
-        } market.`}>
+        eyebrow={translate({
+          id: 'programmatic.converterPair.price.eyebrow',
+          message: 'Price',
+          description: 'Section eyebrow',
+        })}
+        title={translate(
+          {
+            id: 'programmatic.converterPair.price.title',
+            message: 'Real-time {name} price chart',
+            description:
+              'Section title; {name} is the base cryptocurrency name',
+          },
+          {name: base.name},
+        )}
+        lead={translate(
+          {
+            id: 'programmatic.converterPair.price.lead',
+            message: 'The live {base}/{quote} market.',
+            description:
+              'Section lead; {base} and {quote} are the pair tickers',
+          },
+          {
+            base: baseSym,
+            quote: quote.symbol === 'USD' ? 'USDT' : quoteSym,
+          },
+        )}>
         <div className={shared.chart}>
           <TradingViewWidget symbol={chartSymbol} />
         </div>
       </Section>
 
       {related.length > 0 && (
-        <Section eyebrow="More pairs" title="Popular conversion pairs">
+        <Section
+          eyebrow={translate({
+            id: 'programmatic.converterPair.related.eyebrow',
+            message: 'More pairs',
+            description: 'Section eyebrow',
+          })}
+          title={translate({
+            id: 'programmatic.converterPair.related.title',
+            message: 'Popular conversion pairs',
+            description: 'Section title',
+          })}>
           <FeatureGrid features={related} columns={3} />
         </Section>
       )}
 
-      <Section eyebrow="FAQ" title={`${base.name} FAQ`}>
+      <Section
+        eyebrow={translate({
+          id: 'programmatic.converterPair.faq.eyebrow',
+          message: 'FAQ',
+          description: 'Section eyebrow',
+        })}
+        title={translate(
+          {
+            id: 'programmatic.converterPair.faq.title',
+            message: '{name} FAQ',
+            description:
+              'Section title; {name} is the base cryptocurrency name',
+          },
+          {name: base.name},
+        )}>
         <FAQ items={faqItems} />
       </Section>
 
       <CTABand
         title={
-          <>
-            Convert it, then{' '}
-            <span className="ng-text-frost">automate it.</span>
-          </>
+          <Translate
+            id="programmatic.converterPair.cta.title"
+            description="CTA band title; {accent} is a styled span"
+            values={{
+              accent: (
+                <span className="ng-text-frost">
+                  <Translate
+                    id="programmatic.converterPair.cta.titleAccent"
+                    description="CTA band title accent">
+                    automate it.
+                  </Translate>
+                </span>
+              ),
+            }}>
+            {'Convert it, then {accent}'}
+          </Translate>
         }
-        description={`Put your ${baseSym} to work with an automated strategy on OctoBot Cloud.`}
-        actions={[
-          {label: 'Start on OctoBot Cloud', to: CLOUD},
+        description={translate(
           {
-            label: `${baseSym} prediction`,
+            id: 'programmatic.converterPair.cta.description',
+            message:
+              'Put your {base} to work with an automated strategy on OctoBot Cloud.',
+            description:
+              'CTA band description; {base} is the base ticker',
+          },
+          {base: baseSym},
+        )}
+        actions={[
+          {
+            label: translate({
+              id: 'programmatic.converterPair.cta.action.start',
+              message: 'Start on OctoBot Cloud',
+              description: 'CTA band label',
+            }),
+            to: CLOUD,
+          },
+          {
+            label: translate(
+              {
+                id: 'programmatic.converterPair.cta.action.prediction',
+                message: '{base} prediction',
+                description:
+                  'CTA band secondary label; {base} is the base ticker',
+              },
+              {base: baseSym},
+            ),
             to: `/${base.symbol.toLowerCase()}-prediction`,
             variant: 'ghost',
           },

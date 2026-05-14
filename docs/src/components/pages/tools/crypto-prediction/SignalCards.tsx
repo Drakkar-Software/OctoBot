@@ -1,4 +1,5 @@
 import type {ReactNode} from 'react';
+import Translate, {translate} from '@docusaurus/Translate';
 import GlassCard from '@site/src/components/GlassCard';
 import Badge from '@site/src/components/Badge';
 import styles from './SignalCards.module.css';
@@ -25,29 +26,45 @@ const SIGNALS: Signal[] = [
     side: 'BUY',
     pair: 'BTC/USDT',
     exchange: 'Binance',
-    rationale:
-      'Momentum and sentiment point to continued upside on Bitcoin.',
+    rationale: translate({
+      id: 'tools.cryptoPrediction.signal.btc.rationale',
+      message:
+        'Momentum and sentiment point to continued upside on Bitcoin.',
+      description: 'Crypto prediction sample signal rationale for BTC',
+    }),
   },
   {
     side: 'SELL',
     pair: 'ETH/USDT',
     exchange: 'Kraken',
-    rationale:
-      'Cooling momentum suggests taking profit on Ethereum here.',
+    rationale: translate({
+      id: 'tools.cryptoPrediction.signal.eth.rationale',
+      message:
+        'Cooling momentum suggests taking profit on Ethereum here.',
+      description: 'Crypto prediction sample signal rationale for ETH',
+    }),
   },
   {
     side: 'BUY',
     pair: 'SOL/USDT',
     exchange: 'Bybit',
-    rationale:
-      'Trend detection flags a fresh entry opportunity on Solana.',
+    rationale: translate({
+      id: 'tools.cryptoPrediction.signal.sol.rationale',
+      message:
+        'Trend detection flags a fresh entry opportunity on Solana.',
+      description: 'Crypto prediction sample signal rationale for SOL',
+    }),
   },
   {
     side: 'BUY',
     pair: 'BNB/USDT',
     exchange: 'Binance',
-    rationale:
-      'Market data reads constructive — ChatGPT favors a long on BNB.',
+    rationale: translate({
+      id: 'tools.cryptoPrediction.signal.bnb.rationale',
+      message:
+        'Market data reads constructive — ChatGPT favors a long on BNB.',
+      description: 'Crypto prediction sample signal rationale for BNB',
+    }),
   },
 ];
 
@@ -63,7 +80,14 @@ export default function SignalCards(): ReactNode {
                 {signal.side}
               </Badge>
             </div>
-            <div className={styles.signalExchange}>On {signal.exchange}</div>
+            <div className={styles.signalExchange}>
+              <Translate
+                id="tools.cryptoPrediction.signal.onExchange"
+                description="Crypto prediction signal exchange label"
+                values={{exchange: signal.exchange}}>
+                {'On {exchange}'}
+              </Translate>
+            </div>
             <p className={styles.signalRationale}>{signal.rationale}</p>
           </div>
         </GlassCard>

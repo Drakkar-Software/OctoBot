@@ -1,6 +1,7 @@
 import React, {type ReactNode} from 'react';
 import Link from '@docusaurus/Link';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
+import Translate, {translate} from '@docusaurus/Translate';
 import styles from './styles.module.css';
 
 interface FooterColumn {
@@ -10,23 +11,63 @@ interface FooterColumn {
 
 const COLUMNS: FooterColumn[] = [
   {
-    title: 'Product',
+    title: translate({
+      id: 'nav.footer.product.title',
+      message: 'Product',
+      description: 'Footer section title',
+    }),
     links: [
-      {label: 'Features', to: '/features/strategy-designer'},
+      {
+        label: translate({
+          id: 'nav.footer.product.features',
+          message: 'Features',
+          description: 'Footer link label',
+        }),
+        to: '/features/strategy-designer',
+      },
       {label: 'OctoBot Cloud', to: 'https://www.octobot.cloud'},
-      {label: 'Blog', to: '/blog'},
+      {
+        label: translate({
+          id: 'nav.footer.product.blog',
+          message: 'Blog',
+          description: 'Footer link label',
+        }),
+        to: '/blog',
+      },
     ],
   },
   {
-    title: 'Documentation',
+    title: translate({
+      id: 'nav.footer.documentation.title',
+      message: 'Documentation',
+      description: 'Footer section title',
+    }),
     links: [
-      {label: 'Guides', to: '/guides/octobot'},
-      {label: 'Developers', to: '/developers/getting-started'},
+      {
+        label: translate({
+          id: 'nav.footer.documentation.guides',
+          message: 'Guides',
+          description: 'Footer link label',
+        }),
+        to: '/guides/octobot',
+      },
+      {
+        label: translate({
+          id: 'nav.footer.documentation.developers',
+          message: 'Developers',
+          description: 'Footer link label',
+        }),
+        to: '/developers/getting-started',
+      },
       {label: 'OctoBot Script', to: '/octobot-script/getting-started'},
     ],
   },
   {
-    title: 'Community',
+    title: translate({
+      id: 'nav.footer.community.title',
+      message: 'Community',
+      description: 'Footer section title',
+    }),
     links: [
       {label: 'Discord', to: 'https://discord.gg/vHkcb8W'},
       {label: 'Telegram', to: 'https://t.me/OctoBot_Project'},
@@ -61,7 +102,12 @@ export default function LandingFooter(): ReactNode {
         </div>
       </div>
       <div className={styles.bottom}>
-        Copyright © {year} Drakkar-Software. Built with Docusaurus.
+        <Translate
+          id="nav.footer.copyright"
+          description="Footer copyright line"
+          values={{year}}>
+          {'Copyright © {year} Drakkar-Software. Built with Docusaurus.'}
+        </Translate>
       </div>
     </footer>
   );

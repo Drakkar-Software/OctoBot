@@ -1,4 +1,5 @@
 import type {ReactNode} from 'react';
+import Translate, {translate} from '@docusaurus/Translate';
 import GlassCard from '@site/src/components/GlassCard';
 import Badge from '@site/src/components/Badge';
 import styles from './ConverterCard.module.css';
@@ -17,9 +18,30 @@ interface ConverterRow {
 }
 
 const ROWS: ConverterRow[] = [
-  {label: 'Price', value: '1 BTC = 64,280.00 USD'},
-  {label: 'Quantity', value: '0.25 BTC'},
-  {label: 'Value', value: '16,070.00 USD'},
+  {
+    label: translate({
+      id: 'tools.converter.card.row.price',
+      message: 'Price',
+      description: 'Converter card row label: price',
+    }),
+    value: '1 BTC = 64,280.00 USD',
+  },
+  {
+    label: translate({
+      id: 'tools.converter.card.row.quantity',
+      message: 'Quantity',
+      description: 'Converter card row label: quantity',
+    }),
+    value: '0.25 BTC',
+  },
+  {
+    label: translate({
+      id: 'tools.converter.card.row.value',
+      message: 'Value',
+      description: 'Converter card row label: value',
+    }),
+    value: '16,070.00 USD',
+  },
 ];
 
 export default function ConverterCard(): ReactNode {
@@ -34,7 +56,11 @@ export default function ConverterCard(): ReactNode {
           <span className={styles.coin}>USD</span>
         </div>
         <Badge tone="frost" dot>
-          Live price
+          <Translate
+            id="tools.converter.card.badge.livePrice"
+            description="Converter card badge: live price">
+            Live price
+          </Translate>
         </Badge>
       </div>
 
@@ -47,7 +73,14 @@ export default function ConverterCard(): ReactNode {
         ))}
       </dl>
 
-      <p className={styles.asOf}>As of May 14, 2026 · 14:00 UTC</p>
+      <p className={styles.asOf}>
+        <Translate
+          id="tools.converter.card.asOf"
+          description="Converter card timestamp caption"
+          values={{timestamp: 'May 14, 2026 · 14:00 UTC'}}>
+          {'As of {timestamp}'}
+        </Translate>
+      </p>
     </GlassCard>
   );
 }

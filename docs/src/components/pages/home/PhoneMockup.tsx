@@ -1,4 +1,5 @@
 import React, {useState, type ReactNode} from 'react';
+import Translate, {translate} from '@docusaurus/Translate';
 import styles from './PhoneMockup.module.css';
 
 /*
@@ -12,30 +13,106 @@ import styles from './PhoneMockup.module.css';
 type Panel = 'track' | 'automate' | 'goals';
 
 const TABS: {id: Panel; label: string}[] = [
-  {id: 'track', label: 'Track'},
-  {id: 'automate', label: 'Automate'},
-  {id: 'goals', label: 'Goals'},
+  {
+    id: 'track',
+    label: translate({
+      id: 'pages.index.phone.tab.track',
+      message: 'Track',
+      description: 'Phone mockup tab label',
+    }),
+  },
+  {
+    id: 'automate',
+    label: translate({
+      id: 'pages.index.phone.tab.automate',
+      message: 'Automate',
+      description: 'Phone mockup tab label',
+    }),
+  },
+  {
+    id: 'goals',
+    label: translate({
+      id: 'pages.index.phone.tab.goals',
+      message: 'Goals',
+      description: 'Phone mockup tab label',
+    }),
+  },
 ];
 
 const STRATEGIES = [
-  {code: 'DC', name: 'BTC weekly DCA', venue: 'Binance · spot', pct: '+18.4%'},
-  {code: 'GR', name: 'ETH range grid', venue: 'Kraken · spot', pct: '+9.1%'},
-  {code: 'SG', name: 'TV signals · perps', venue: 'Bybit · futures', pct: '+24.6%'},
+  {
+    code: 'DC',
+    name: translate({
+      id: 'pages.index.phone.strategies.dca.name',
+      message: 'BTC weekly DCA',
+      description: 'Phone mockup strategy name',
+    }),
+    venue: translate({
+      id: 'pages.index.phone.strategies.dca.venue',
+      message: 'Binance · spot',
+      description: 'Phone mockup strategy venue',
+    }),
+    pct: '+18.4%',
+  },
+  {
+    code: 'GR',
+    name: translate({
+      id: 'pages.index.phone.strategies.grid.name',
+      message: 'ETH range grid',
+      description: 'Phone mockup strategy name',
+    }),
+    venue: translate({
+      id: 'pages.index.phone.strategies.grid.venue',
+      message: 'Kraken · spot',
+      description: 'Phone mockup strategy venue',
+    }),
+    pct: '+9.1%',
+  },
+  {
+    code: 'SG',
+    name: translate({
+      id: 'pages.index.phone.strategies.signals.name',
+      message: 'TV signals · perps',
+      description: 'Phone mockup strategy name',
+    }),
+    venue: translate({
+      id: 'pages.index.phone.strategies.signals.venue',
+      message: 'Bybit · futures',
+      description: 'Phone mockup strategy venue',
+    }),
+    pct: '+24.6%',
+  },
 ];
 
 const GOALS = [
   {
-    name: 'House down payment',
+    name: translate({
+      id: 'pages.index.phone.goals.house.name',
+      message: 'House down payment',
+      description: 'Phone mockup goal name',
+    }),
     pct: 68,
     accent: false,
-    detail: '€68k of €100k',
+    detail: translate({
+      id: 'pages.index.phone.goals.house.detail',
+      message: '€68k of €100k',
+      description: 'Phone mockup goal detail',
+    }),
     eta: 'JUN 2027',
   },
   {
-    name: 'Retirement runway',
+    name: translate({
+      id: 'pages.index.phone.goals.retirement.name',
+      message: 'Retirement runway',
+      description: 'Phone mockup goal name',
+    }),
     pct: 42,
     accent: true,
-    detail: '€210k of €500k',
+    detail: translate({
+      id: 'pages.index.phone.goals.retirement.detail',
+      message: '€210k of €500k',
+      description: 'Phone mockup goal detail',
+    }),
     eta: '2029',
   },
 ];
@@ -44,7 +121,13 @@ function TrackPanel(): ReactNode {
   return (
     <div className={styles.panel}>
       <div className={styles.devHead}>
-        <div className={styles.pn}>Total balance</div>
+        <div className={styles.pn}>
+          <Translate
+            id="pages.index.phone.track.balanceLabel"
+            description="Phone mockup track panel label">
+            Total balance
+          </Translate>
+        </div>
         <div className={styles.nw}>€184,920</div>
         <div className={styles.delta}>
           +€12,420 <span>· +7.2% · 30d</span>
@@ -74,7 +157,13 @@ function TrackPanel(): ReactNode {
       </div>
       <div className={styles.running}>
         <span className={styles.runDot} />
-        <div>3 strategies running</div>
+        <div>
+          <Translate
+            id="pages.index.phone.track.running"
+            description="Phone mockup track panel running strategies count">
+            3 strategies running
+          </Translate>
+        </div>
         <span className={styles.runPct}>+12.4%</span>
       </div>
     </div>
@@ -85,11 +174,23 @@ function AutomatePanel(): ReactNode {
   return (
     <div className={styles.panel}>
       <div className={styles.devHead}>
-        <div className={styles.pn}>Strategies</div>
+        <div className={styles.pn}>
+          <Translate
+            id="pages.index.phone.automate.label"
+            description="Phone mockup automate panel label">
+            Strategies
+          </Translate>
+        </div>
         <div className={styles.nwSm}>
           3 <span>+12.4%</span>
         </div>
-        <div className={styles.deltaFaint}>live · across 3 venues</div>
+        <div className={styles.deltaFaint}>
+          <Translate
+            id="pages.index.phone.automate.sub"
+            description="Phone mockup automate panel sub">
+            live · across 3 venues
+          </Translate>
+        </div>
       </div>
       <div className={styles.strats}>
         {STRATEGIES.map((s) => (
@@ -102,7 +203,13 @@ function AutomatePanel(): ReactNode {
             <span className={styles.stratPct}>{s.pct}</span>
           </div>
         ))}
-        <div className={styles.newStrat}>+ New strategy</div>
+        <div className={styles.newStrat}>
+          <Translate
+            id="pages.index.phone.automate.newStrategy"
+            description="Phone mockup new strategy button">
+            + New strategy
+          </Translate>
+        </div>
       </div>
     </div>
   );
@@ -112,11 +219,30 @@ function GoalsPanel(): ReactNode {
   return (
     <div className={styles.panel}>
       <div className={styles.devHead}>
-        <div className={styles.pn}>Goals</div>
-        <div className={styles.nwSm}>
-          2 <span className={styles.frostSpan}>on track</span>
+        <div className={styles.pn}>
+          <Translate
+            id="pages.index.phone.goals.label"
+            description="Phone mockup goals panel label">
+            Goals
+          </Translate>
         </div>
-        <div className={styles.deltaFaint}>est. completion · 2027 – 2029</div>
+        <div className={styles.nwSm}>
+          2{' '}
+          <span className={styles.frostSpan}>
+            <Translate
+              id="pages.index.phone.goals.onTrack"
+              description="Phone mockup goals on-track status">
+              on track
+            </Translate>
+          </span>
+        </div>
+        <div className={styles.deltaFaint}>
+          <Translate
+            id="pages.index.phone.goals.sub"
+            description="Phone mockup goals panel sub">
+            est. completion · 2027 – 2029
+          </Translate>
+        </div>
       </div>
       <div className={styles.goals}>
         {GOALS.map((g) => (
@@ -162,7 +288,11 @@ export default function PhoneMockup(): ReactNode {
       <div className={styles.screen}>
         <span
           className={styles.lock}
-          title="Keys encrypted on device"
+          title={translate({
+            id: 'pages.index.phone.lockTitle',
+            message: 'Keys encrypted on device',
+            description: 'Phone mockup lock icon tooltip',
+          })}
           aria-hidden="true">
           ⚿
         </span>

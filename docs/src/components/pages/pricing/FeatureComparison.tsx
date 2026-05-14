@@ -1,4 +1,5 @@
 import React, {type ReactNode} from 'react';
+import {translate} from '@docusaurus/Translate';
 import styles from './FeatureComparison.module.css';
 
 /*
@@ -20,64 +21,273 @@ interface ComparisonCategory {
   rows: ComparisonRow[];
 }
 
-const COLUMNS = ['Feature', 'Investor', 'Investor Plus', 'Pro'];
+const LIMITED = translate({
+  id: 'pages.pricing.comparison.value.limited',
+  message: 'Limited',
+  description: 'Feature comparison cell value',
+});
+const UNLIMITED = translate({
+  id: 'pages.pricing.comparison.value.unlimited',
+  message: 'Unlimited',
+  description: 'Feature comparison cell value',
+});
+
+const COLUMNS = [
+  translate({
+    id: 'pages.pricing.comparison.column.feature',
+    message: 'Feature',
+    description: 'Feature comparison column header',
+  }),
+  translate({
+    id: 'pages.pricing.comparison.column.investor',
+    message: 'Investor',
+    description: 'Feature comparison column header',
+  }),
+  translate({
+    id: 'pages.pricing.comparison.column.investorPlus',
+    message: 'Investor Plus',
+    description: 'Feature comparison column header',
+  }),
+  translate({
+    id: 'pages.pricing.comparison.column.pro',
+    message: 'Pro',
+    description: 'Feature comparison column header',
+  }),
+];
 
 const CATEGORIES: ComparisonCategory[] = [
   {
-    name: 'Strategies',
-    rows: [
-      {feature: 'Simple strategies', values: ['Limited', 'Unlimited', 'Unlimited']},
-      {feature: 'Advanced strategies', values: ['—', 'Unlimited', 'Unlimited']},
-      {feature: 'Strategy designer', values: ['—', '✓', '✓']},
-    ],
-  },
-  {
-    name: 'Bots',
+    name: translate({
+      id: 'pages.pricing.comparison.category.strategies',
+      message: 'Strategies',
+      description: 'Feature comparison category name',
+    }),
     rows: [
       {
-        feature: 'Maximum simultaneous OctoBots',
-        values: ['1 bot', '10 bots', '20 bots'],
+        feature: translate({
+          id: 'pages.pricing.comparison.feature.simpleStrategies',
+          message: 'Simple strategies',
+          description: 'Feature comparison feature name',
+        }),
+        values: [LIMITED, UNLIMITED, UNLIMITED],
       },
-      {feature: 'DCA / Grid / AI bots', values: ['✓', '✓', '✓']},
-      {feature: 'Copy trading bot', values: ['—', '✓', '✓']},
-    ],
-  },
-  {
-    name: 'Trading',
-    rows: [
-      {feature: 'Paper trading', values: ['✓', '✓', '✓']},
       {
-        feature: 'Paper trading duration',
-        values: ['14 days', '30 days', 'Unlimited'],
+        feature: translate({
+          id: 'pages.pricing.comparison.feature.advancedStrategies',
+          message: 'Advanced strategies',
+          description: 'Feature comparison feature name',
+        }),
+        values: ['—', UNLIMITED, UNLIMITED],
       },
-      {feature: 'Futures trading', values: ['—', '—', '✓']},
-    ],
-  },
-  {
-    name: 'Portfolio management',
-    rows: [
-      {feature: 'Portfolio overview', values: ['✓', '✓', '✓']},
-      {feature: 'Orders fine-tuning', values: ['—', '✓', '✓']},
-      {feature: 'Balance limit', values: ['$1000', 'Unlimited', 'Unlimited']},
-    ],
-  },
-  {
-    name: 'AI features',
-    rows: [
-      {feature: 'ChatGPT integration', values: ['—', '✓', '✓']},
-      {feature: 'Customize strategy with AI', values: ['—', '✓', '✓']},
       {
-        feature: 'Personalized arbitrage & AI signals',
+        feature: translate({
+          id: 'pages.pricing.comparison.feature.strategyDesigner',
+          message: 'Strategy designer',
+          description: 'Feature comparison feature name',
+        }),
+        values: ['—', '✓', '✓'],
+      },
+    ],
+  },
+  {
+    name: translate({
+      id: 'pages.pricing.comparison.category.bots',
+      message: 'Bots',
+      description: 'Feature comparison category name',
+    }),
+    rows: [
+      {
+        feature: translate({
+          id: 'pages.pricing.comparison.feature.maxBots',
+          message: 'Maximum simultaneous OctoBots',
+          description: 'Feature comparison feature name',
+        }),
+        values: [
+          translate({
+            id: 'pages.pricing.comparison.value.1bot',
+            message: '1 bot',
+            description: 'Feature comparison cell value',
+          }),
+          translate({
+            id: 'pages.pricing.comparison.value.10bots',
+            message: '10 bots',
+            description: 'Feature comparison cell value',
+          }),
+          translate({
+            id: 'pages.pricing.comparison.value.20bots',
+            message: '20 bots',
+            description: 'Feature comparison cell value',
+          }),
+        ],
+      },
+      {
+        feature: translate({
+          id: 'pages.pricing.comparison.feature.dcaGridAi',
+          message: 'DCA / Grid / AI bots',
+          description: 'Feature comparison feature name',
+        }),
+        values: ['✓', '✓', '✓'],
+      },
+      {
+        feature: translate({
+          id: 'pages.pricing.comparison.feature.copyTrading',
+          message: 'Copy trading bot',
+          description: 'Feature comparison feature name',
+        }),
+        values: ['—', '✓', '✓'],
+      },
+    ],
+  },
+  {
+    name: translate({
+      id: 'pages.pricing.comparison.category.trading',
+      message: 'Trading',
+      description: 'Feature comparison category name',
+    }),
+    rows: [
+      {
+        feature: translate({
+          id: 'pages.pricing.comparison.feature.paperTrading',
+          message: 'Paper trading',
+          description: 'Feature comparison feature name',
+        }),
+        values: ['✓', '✓', '✓'],
+      },
+      {
+        feature: translate({
+          id: 'pages.pricing.comparison.feature.paperTradingDuration',
+          message: 'Paper trading duration',
+          description: 'Feature comparison feature name',
+        }),
+        values: [
+          translate({
+            id: 'pages.pricing.comparison.value.14days',
+            message: '14 days',
+            description: 'Feature comparison cell value',
+          }),
+          translate({
+            id: 'pages.pricing.comparison.value.30days',
+            message: '30 days',
+            description: 'Feature comparison cell value',
+          }),
+          UNLIMITED,
+        ],
+      },
+      {
+        feature: translate({
+          id: 'pages.pricing.comparison.feature.futuresTrading',
+          message: 'Futures trading',
+          description: 'Feature comparison feature name',
+        }),
         values: ['—', '—', '✓'],
       },
     ],
   },
   {
-    name: 'Extra Features',
+    name: translate({
+      id: 'pages.pricing.comparison.category.portfolio',
+      message: 'Portfolio management',
+      description: 'Feature comparison category name',
+    }),
     rows: [
-      {feature: 'Mobile app', values: ['✓', '✓', '✓']},
-      {feature: 'Priority support', values: ['—', '—', '✓']},
-      {feature: 'Summarized crypto news', values: ['—', '✓', '✓']},
+      {
+        feature: translate({
+          id: 'pages.pricing.comparison.feature.portfolioOverview',
+          message: 'Portfolio overview',
+          description: 'Feature comparison feature name',
+        }),
+        values: ['✓', '✓', '✓'],
+      },
+      {
+        feature: translate({
+          id: 'pages.pricing.comparison.feature.ordersFineTuning',
+          message: 'Orders fine-tuning',
+          description: 'Feature comparison feature name',
+        }),
+        values: ['—', '✓', '✓'],
+      },
+      {
+        feature: translate({
+          id: 'pages.pricing.comparison.feature.balanceLimit',
+          message: 'Balance limit',
+          description: 'Feature comparison feature name',
+        }),
+        values: [
+          translate({
+            id: 'pages.pricing.comparison.value.1000',
+            message: '$1000',
+            description: 'Feature comparison cell value',
+          }),
+          UNLIMITED,
+          UNLIMITED,
+        ],
+      },
+    ],
+  },
+  {
+    name: translate({
+      id: 'pages.pricing.comparison.category.ai',
+      message: 'AI features',
+      description: 'Feature comparison category name',
+    }),
+    rows: [
+      {
+        feature: translate({
+          id: 'pages.pricing.comparison.feature.chatgpt',
+          message: 'ChatGPT integration',
+          description: 'Feature comparison feature name',
+        }),
+        values: ['—', '✓', '✓'],
+      },
+      {
+        feature: translate({
+          id: 'pages.pricing.comparison.feature.customizeAi',
+          message: 'Customize strategy with AI',
+          description: 'Feature comparison feature name',
+        }),
+        values: ['—', '✓', '✓'],
+      },
+      {
+        feature: translate({
+          id: 'pages.pricing.comparison.feature.arbitrage',
+          message: 'Personalized arbitrage & AI signals',
+          description: 'Feature comparison feature name',
+        }),
+        values: ['—', '—', '✓'],
+      },
+    ],
+  },
+  {
+    name: translate({
+      id: 'pages.pricing.comparison.category.extra',
+      message: 'Extra Features',
+      description: 'Feature comparison category name',
+    }),
+    rows: [
+      {
+        feature: translate({
+          id: 'pages.pricing.comparison.feature.mobileApp',
+          message: 'Mobile app',
+          description: 'Feature comparison feature name',
+        }),
+        values: ['✓', '✓', '✓'],
+      },
+      {
+        feature: translate({
+          id: 'pages.pricing.comparison.feature.prioritySupport',
+          message: 'Priority support',
+          description: 'Feature comparison feature name',
+        }),
+        values: ['—', '—', '✓'],
+      },
+      {
+        feature: translate({
+          id: 'pages.pricing.comparison.feature.cryptoNews',
+          message: 'Summarized crypto news',
+          description: 'Feature comparison feature name',
+        }),
+        values: ['—', '✓', '✓'],
+      },
     ],
   },
 ];

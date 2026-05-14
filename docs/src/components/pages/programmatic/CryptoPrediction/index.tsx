@@ -1,5 +1,6 @@
 import React, {type ReactNode} from 'react';
 import Link from '@docusaurus/Link';
+import Translate, {translate} from '@docusaurus/Translate';
 import {
   LandingLayout,
   Hero,
@@ -43,75 +44,248 @@ export default function CryptoPrediction({
 
   return (
     <LandingLayout
-      title={`${crypto.name} AI prediction`}
-      description={`Discover the latest ${crypto.name} (${crypto.symbol}) AI predictions from ChatGPT, with price history and key metrics.`}>
+      title={translate(
+        {
+          id: 'programmatic.cryptoPrediction.layout.title',
+          message: '{name} AI prediction',
+          description: 'Page title; {name} is the cryptocurrency name',
+        },
+        {name: crypto.name},
+      )}
+      description={translate(
+        {
+          id: 'programmatic.cryptoPrediction.layout.description',
+          message:
+            'Discover the latest {name} ({symbol}) AI predictions from ChatGPT, with price history and key metrics.',
+          description:
+            'Page meta description; {name} is the cryptocurrency name, {symbol} its ticker',
+        },
+        {name: crypto.name, symbol: crypto.symbol},
+      )}>
       <div className={shared.gridVeil} aria-hidden="true" />
 
       <Hero
-        eyebrow="AI prediction"
+        eyebrow={translate({
+          id: 'programmatic.cryptoPrediction.hero.eyebrow',
+          message: 'AI prediction',
+          description: 'Hero eyebrow',
+        })}
         title={
-          <>
-            {crypto.name}{' '}
-            <span className="ng-text-gradient">price prediction.</span>
-          </>
+          <Translate
+            id="programmatic.cryptoPrediction.hero.title"
+            description="Hero title; {name} is the cryptocurrency name, {accent} is a styled span"
+            values={{
+              name: crypto.name,
+              accent: (
+                <span className="ng-text-gradient">
+                  <Translate
+                    id="programmatic.cryptoPrediction.hero.titleAccent"
+                    description="Hero title accent">
+                    price prediction.
+                  </Translate>
+                </span>
+              ),
+            }}>
+            {'{name} {accent}'}
+          </Translate>
         }
-        subtitle={`AI-generated ${crypto.symbol} predictions from ChatGPT — refreshed continuously on OctoBot Cloud.`}
+        subtitle={translate(
+          {
+            id: 'programmatic.cryptoPrediction.hero.subtitle',
+            message:
+              'AI-generated {symbol} predictions from ChatGPT — refreshed continuously on OctoBot Cloud.',
+            description: 'Hero subtitle; {symbol} is the ticker',
+          },
+          {symbol: crypto.symbol},
+        )}
         actions={[
-          {label: 'See live predictions', to: PREDICTIONS_TOOL},
-          {label: `Trade ${crypto.symbol}`, to: CLOUD, variant: 'ghost'},
+          {
+            label: translate({
+              id: 'programmatic.cryptoPrediction.hero.action.live',
+              message: 'See live predictions',
+              description: 'Hero CTA label',
+            }),
+            to: PREDICTIONS_TOOL,
+          },
+          {
+            label: translate(
+              {
+                id: 'programmatic.cryptoPrediction.hero.action.trade',
+                message: 'Trade {symbol}',
+                description: 'Hero secondary CTA label; {symbol} is the ticker',
+              },
+              {symbol: crypto.symbol},
+            ),
+            to: CLOUD,
+            variant: 'ghost',
+          },
         ]}
         meta={[
           {label: crypto.symbol, dot: true},
-          {label: 'ChatGPT signal'},
-          {label: 'Updated continuously'},
+          {
+            label: translate({
+              id: 'programmatic.cryptoPrediction.hero.meta.signal',
+              message: 'ChatGPT signal',
+              description: 'Hero meta label',
+            }),
+          },
+          {
+            label: translate({
+              id: 'programmatic.cryptoPrediction.hero.meta.updated',
+              message: 'Updated continuously',
+              description: 'Hero meta label',
+            }),
+          },
         ]}
       />
 
-      <Section eyebrow="Latest signal" title={`${crypto.name} AI prediction`}>
+      <Section
+        eyebrow={translate({
+          id: 'programmatic.cryptoPrediction.signal.eyebrow',
+          message: 'Latest signal',
+          description: 'Section eyebrow',
+        })}
+        title={translate(
+          {
+            id: 'programmatic.cryptoPrediction.signal.title',
+            message: '{name} AI prediction',
+            description:
+              'Section title; {name} is the cryptocurrency name',
+          },
+          {name: crypto.name},
+        )}>
         <GlassCard variant="hero" padded className={shared.predictionCard}>
           <span className={shared.predictionLabel}>
-            Last AI prediction for {crypto.name}
+            <Translate
+              id="programmatic.cryptoPrediction.signal.label"
+              description="Prediction card label; {name} is the cryptocurrency name"
+              values={{name: crypto.name}}>
+              {'Last AI prediction for {name}'}
+            </Translate>
           </span>
           <Badge tone="frost" dot>
-            Live on OctoBot Cloud
+            <Translate
+              id="programmatic.cryptoPrediction.signal.badge"
+              description="Prediction card badge label">
+              Live on OctoBot Cloud
+            </Translate>
           </Badge>
           <p className={shared.prose}>
-            The newest {crypto.symbol} prediction is generated on the live
-            predictions tool — signals move with the market and are not frozen
-            into this page.
+            <Translate
+              id="programmatic.cryptoPrediction.signal.prose"
+              description="Prediction card body text; {symbol} is the ticker"
+              values={{symbol: crypto.symbol}}>
+              {
+                'The newest {symbol} prediction is generated on the live predictions tool — signals move with the market and are not frozen into this page.'
+              }
+            </Translate>
           </p>
           <Link className="ng-btn ng-btn--primary" to={PREDICTIONS_TOOL}>
-            View {crypto.symbol} prediction
+            <Translate
+              id="programmatic.cryptoPrediction.signal.action"
+              description="Prediction card CTA; {symbol} is the ticker"
+              values={{symbol: crypto.symbol}}>
+              {'View {symbol} prediction'}
+            </Translate>
           </Link>
         </GlassCard>
       </Section>
 
       <Section
-        eyebrow="Price"
-        title={`${crypto.name} price history`}
-        lead={`The live ${crypto.symbol}/USDT market, charted.`}>
+        eyebrow={translate({
+          id: 'programmatic.cryptoPrediction.price.eyebrow',
+          message: 'Price',
+          description: 'Section eyebrow',
+        })}
+        title={translate(
+          {
+            id: 'programmatic.cryptoPrediction.price.title',
+            message: '{name} price history',
+            description:
+              'Section title; {name} is the cryptocurrency name',
+          },
+          {name: crypto.name},
+        )}
+        lead={translate(
+          {
+            id: 'programmatic.cryptoPrediction.price.lead',
+            message: 'The live {symbol}/USDT market, charted.',
+            description: 'Section lead; {symbol} is the ticker',
+          },
+          {symbol: crypto.symbol},
+        )}>
         <div className={shared.chart}>
           <TradingViewWidget symbol={`BINANCE:${crypto.symbol}USDT`} />
         </div>
       </Section>
 
       {faqItems.length > 0 && (
-        <Section eyebrow="FAQ" title={`${crypto.name} FAQ`}>
+        <Section
+          eyebrow={translate({
+            id: 'programmatic.cryptoPrediction.faq.eyebrow',
+            message: 'FAQ',
+            description: 'Section eyebrow',
+          })}
+          title={translate(
+            {
+              id: 'programmatic.cryptoPrediction.faq.title',
+              message: '{name} FAQ',
+              description:
+                'Section title; {name} is the cryptocurrency name',
+            },
+            {name: crypto.name},
+          )}>
           <FAQ items={faqItems} />
         </Section>
       )}
 
       <CTABand
         title={
-          <>
-            Trade the prediction,{' '}
-            <span className="ng-text-frost">not the noise.</span>
-          </>
+          <Translate
+            id="programmatic.cryptoPrediction.cta.title"
+            description="CTA band title; {accent} is a styled span"
+            values={{
+              accent: (
+                <span className="ng-text-frost">
+                  <Translate
+                    id="programmatic.cryptoPrediction.cta.titleAccent"
+                    description="CTA band title accent">
+                    not the noise.
+                  </Translate>
+                </span>
+              ),
+            }}>
+            {'Trade the prediction, {accent}'}
+          </Translate>
         }
-        description={`Turn ${crypto.name} AI signals into automated trades on OctoBot Cloud.`}
+        description={translate(
+          {
+            id: 'programmatic.cryptoPrediction.cta.description',
+            message:
+              'Turn {name} AI signals into automated trades on OctoBot Cloud.',
+            description:
+              'CTA band description; {name} is the cryptocurrency name',
+          },
+          {name: crypto.name},
+        )}
         actions={[
-          {label: 'Start on OctoBot Cloud', to: CLOUD},
-          {label: 'All predictions', to: PREDICTIONS_TOOL, variant: 'ghost'},
+          {
+            label: translate({
+              id: 'programmatic.cryptoPrediction.cta.action.start',
+              message: 'Start on OctoBot Cloud',
+              description: 'CTA band label',
+            }),
+            to: CLOUD,
+          },
+          {
+            label: translate({
+              id: 'programmatic.cryptoPrediction.cta.action.all',
+              message: 'All predictions',
+              description: 'CTA band secondary label',
+            }),
+            to: PREDICTIONS_TOOL,
+            variant: 'ghost',
+          },
         ]}
       />
     </LandingLayout>

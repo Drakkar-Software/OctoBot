@@ -1,4 +1,5 @@
 import type {ReactNode} from 'react';
+import Translate, {translate} from '@docusaurus/Translate';
 import {
   LandingLayout,
   Hero,
@@ -28,60 +29,132 @@ const CONTACT_MAIL = 'mailto:contact@octobot.cloud';
 const STEPS: Step[] = [
   {
     icon: '🔍',
-    title: "Analyze your market's liquidity",
-    description:
-      'Find the markets that need a liquidity boost using the Liquidity Score.',
+    title: translate({
+      id: 'features.marketMaking.steps.analyze.title',
+      message: "Analyze your market's liquidity",
+      description: 'Step title on market making page',
+    }),
+    description: translate({
+      id: 'features.marketMaking.steps.analyze.description',
+      message:
+        'Find the markets that need a liquidity boost using the Liquidity Score.',
+      description: 'Step description on market making page',
+    }),
   },
   {
     icon: '🎯',
-    title: 'Configure your liquidity target',
-    description:
-      'Let the platform guide you to your target, or bring your own configuration.',
+    title: translate({
+      id: 'features.marketMaking.steps.configure.title',
+      message: 'Configure your liquidity target',
+      description: 'Step title on market making page',
+    }),
+    description: translate({
+      id: 'features.marketMaking.steps.configure.description',
+      message:
+        'Let the platform guide you to your target, or bring your own configuration.',
+      description: 'Step description on market making page',
+    }),
   },
   {
     icon: '📖',
-    title: 'Preview your market making strategy',
-    description:
-      'View and adapt the order book your bot will maintain before it goes live.',
+    title: translate({
+      id: 'features.marketMaking.steps.preview.title',
+      message: 'Preview your market making strategy',
+      description: 'Step title on market making page',
+    }),
+    description: translate({
+      id: 'features.marketMaking.steps.preview.description',
+      message:
+        'View and adapt the order book your bot will maintain before it goes live.',
+      description: 'Step description on market making page',
+    }),
   },
 ];
 
 const FEATURES: Feature[] = [
   {
     icon: '📊',
-    title: 'Advanced order book management',
-    description:
-      'Maintain optimal liquidity depth with intelligent order placement and rebalancing algorithms.',
+    title: translate({
+      id: 'features.marketMaking.features.orderBook.title',
+      message: 'Advanced order book management',
+      description: 'Feature title on market making page',
+    }),
+    description: translate({
+      id: 'features.marketMaking.features.orderBook.description',
+      message:
+        'Maintain optimal liquidity depth with intelligent order placement and rebalancing algorithms.',
+      description: 'Feature description on market making page',
+    }),
   },
   {
     icon: '🛡️',
-    title: 'Risk management system',
-    description:
-      'Set volatility limits and dedicated budgets to protect your capital.',
+    title: translate({
+      id: 'features.marketMaking.features.risk.title',
+      message: 'Risk management system',
+      description: 'Feature title on market making page',
+    }),
+    description: translate({
+      id: 'features.marketMaking.features.risk.description',
+      message:
+        'Set volatility limits and dedicated budgets to protect your capital.',
+      description: 'Feature description on market making page',
+    }),
   },
   {
     icon: '🧩',
-    title: 'Open-source engine',
-    description:
-      'Always be in control. OctoBot Market Making is open source — no black box.',
+    title: translate({
+      id: 'features.marketMaking.features.openSource.title',
+      message: 'Open-source engine',
+      description: 'Feature title on market making page',
+    }),
+    description: translate({
+      id: 'features.marketMaking.features.openSource.description',
+      message:
+        'Always be in control. OctoBot Market Making is open source — no black box.',
+      description: 'Feature description on market making page',
+    }),
   },
   {
     icon: '🔗',
-    title: 'Multi-exchange integration',
-    description:
-      'Connect to more than 15 major exchanges through a single platform.',
+    title: translate({
+      id: 'features.marketMaking.features.multiExchange.title',
+      message: 'Multi-exchange integration',
+      description: 'Feature title on market making page',
+    }),
+    description: translate({
+      id: 'features.marketMaking.features.multiExchange.description',
+      message:
+        'Connect to more than 15 major exchanges through a single platform.',
+      description: 'Feature description on market making page',
+    }),
   },
   {
     icon: '🔄',
-    title: 'Automated rebalancing',
-    description:
-      'Keep your inventory optimally positioned across markets and exchanges with smart rebalancing.',
+    title: translate({
+      id: 'features.marketMaking.features.rebalancing.title',
+      message: 'Automated rebalancing',
+      description: 'Feature title on market making page',
+    }),
+    description: translate({
+      id: 'features.marketMaking.features.rebalancing.description',
+      message:
+        'Keep your inventory optimally positioned across markets and exchanges with smart rebalancing.',
+      description: 'Feature description on market making page',
+    }),
   },
   {
     icon: '⚙️',
-    title: 'Customizable strategies',
-    description:
-      'Fine-tune the market making algorithm parameters to meet your goals.',
+    title: translate({
+      id: 'features.marketMaking.features.customizable.title',
+      message: 'Customizable strategies',
+      description: 'Feature title on market making page',
+    }),
+    description: translate({
+      id: 'features.marketMaking.features.customizable.description',
+      message:
+        'Fine-tune the market making algorithm parameters to meet your goals.',
+      description: 'Feature description on market making page',
+    }),
   },
 ];
 
@@ -102,59 +175,141 @@ const EXCHANGES = [
 
 const FAQ_ITEMS: FAQItem[] = [
   {
-    question: 'What is a market maker in crypto?',
-    answer:
-      'A market maker in crypto is a person or organization that provides liquidity to crypto markets by creating buy and sell orders simultaneously on the order books. It helps reduce spreads, increases trading volume, and improves market efficiency by ensuring there are always orders available for traders to buy from and sell to.',
+    question: translate({
+      id: 'features.marketMaking.faq.q1.question',
+      message: 'What is a market maker in crypto?',
+      description: 'FAQ question on market making page',
+    }),
+    answer: translate({
+      id: 'features.marketMaking.faq.q1.answer',
+      message:
+        'A market maker in crypto is a person or organization that provides liquidity to crypto markets by creating buy and sell orders simultaneously on the order books. It helps reduce spreads, increases trading volume, and improves market efficiency by ensuring there are always orders available for traders to buy from and sell to.',
+      description: 'FAQ answer on market making page',
+    }),
   },
   {
-    question: 'What exchanges are supported by OctoBot Market Making?',
-    answer:
-      'OctoBot Market Making supports most popular centralized exchanges including Binance, Kucoin, MEXC, CoinEx, Coinbase, Crypto.com, HTX, BitMart, Ascendex, Bitget, all HollaEx-powered exchanges and more.',
+    question: translate({
+      id: 'features.marketMaking.faq.q2.question',
+      message: 'What exchanges are supported by OctoBot Market Making?',
+      description: 'FAQ question on market making page',
+    }),
+    answer: translate({
+      id: 'features.marketMaking.faq.q2.answer',
+      message:
+        'OctoBot Market Making supports most popular centralized exchanges including Binance, Kucoin, MEXC, CoinEx, Coinbase, Crypto.com, HTX, BitMart, Ascendex, Bitget, all HollaEx-powered exchanges and more.',
+      description: 'FAQ answer on market making page',
+    }),
   },
   {
-    question: 'How much capital is required for effective market making?',
-    answer:
-      "Capital requirements depend on the asset's typical trading volume and desired market impact. In general, effective market making requires enough capital to contain at least 2% of the exchange's daily trading volume within the top of the order book. The OctoBot Market Making team can provide specific recommendations based on your token's trading profile.",
+    question: translate({
+      id: 'features.marketMaking.faq.q3.question',
+      message: 'How much capital is required for effective market making?',
+      description: 'FAQ question on market making page',
+    }),
+    answer: translate({
+      id: 'features.marketMaking.faq.q3.answer',
+      message:
+        "Capital requirements depend on the asset's typical trading volume and desired market impact. In general, effective market making requires enough capital to contain at least 2% of the exchange's daily trading volume within the top of the order book. The OctoBot Market Making team can provide specific recommendations based on your token's trading profile.",
+      description: 'FAQ answer on market making page',
+    }),
   },
   {
-    question: 'What is a market making strategy?',
-    answer:
-      'A market making strategy is the process of providing liquidity to trading markets by simultaneously placing limit buy and sell orders to populate the order book and facilitate the execution of trades on that market.',
+    question: translate({
+      id: 'features.marketMaking.faq.q4.question',
+      message: 'What is a market making strategy?',
+      description: 'FAQ question on market making page',
+    }),
+    answer: translate({
+      id: 'features.marketMaking.faq.q4.answer',
+      message:
+        'A market making strategy is the process of providing liquidity to trading markets by simultaneously placing limit buy and sell orders to populate the order book and facilitate the execution of trades on that market.',
+      description: 'FAQ answer on market making page',
+    }),
   },
   {
-    question: 'How to become a market maker in crypto?',
-    answer:
-      'To become a crypto market maker you need an automated market making strategy and initial capital to deploy with it. OctoBot Market Making is a platform to simply automate a market making strategy and can help you get started with minimum capital requirements.',
+    question: translate({
+      id: 'features.marketMaking.faq.q5.question',
+      message: 'How to become a market maker in crypto?',
+      description: 'FAQ question on market making page',
+    }),
+    answer: translate({
+      id: 'features.marketMaking.faq.q5.answer',
+      message:
+        'To become a crypto market maker you need an automated market making strategy and initial capital to deploy with it. OctoBot Market Making is a platform to simply automate a market making strategy and can help you get started with minimum capital requirements.',
+      description: 'FAQ answer on market making page',
+    }),
   },
   {
-    question: 'How do crypto market makers make money?',
-    answer:
-      'Crypto market makers make money by extracting profit from the trades they facilitate, similar to an advanced and large-scale grid trading strategy.',
+    question: translate({
+      id: 'features.marketMaking.faq.q6.question',
+      message: 'How do crypto market makers make money?',
+      description: 'FAQ question on market making page',
+    }),
+    answer: translate({
+      id: 'features.marketMaking.faq.q6.answer',
+      message:
+        'Crypto market makers make money by extracting profit from the trades they facilitate, similar to an advanced and large-scale grid trading strategy.',
+      description: 'FAQ answer on market making page',
+    }),
   },
   {
-    question: 'What are the risks of market making?',
-    answer:
-      'The main risk of a market maker is holding an asset that may decline in value. As a market facilitator, a market maker mostly buys when others are selling, and might therefore hold large amounts of an asset if its price declines dramatically.',
+    question: translate({
+      id: 'features.marketMaking.faq.q7.question',
+      message: 'What are the risks of market making?',
+      description: 'FAQ question on market making page',
+    }),
+    answer: translate({
+      id: 'features.marketMaking.faq.q7.answer',
+      message:
+        'The main risk of a market maker is holding an asset that may decline in value. As a market facilitator, a market maker mostly buys when others are selling, and might therefore hold large amounts of an asset if its price declines dramatically.',
+      description: 'FAQ answer on market making page',
+    }),
   },
   {
-    question: 'Can anyone be a market maker?',
-    answer:
-      'Yes — a market maker can be an individual or an organization, as long as they are legally allowed to be market participants of the market they want to make.',
+    question: translate({
+      id: 'features.marketMaking.faq.q8.question',
+      message: 'Can anyone be a market maker?',
+      description: 'FAQ question on market making page',
+    }),
+    answer: translate({
+      id: 'features.marketMaking.faq.q8.answer',
+      message:
+        'Yes — a market maker can be an individual or an organization, as long as they are legally allowed to be market participants of the market they want to make.',
+      description: 'FAQ answer on market making page',
+    }),
   },
   {
-    question: 'What does OctoBot Market Making do?',
-    answer:
-      'OctoBot Market Making makes automated market making strategies accessible by offering a self-service platform to create, configure, monitor and improve market making strategies on most centralized cryptocurrency exchanges.',
+    question: translate({
+      id: 'features.marketMaking.faq.q9.question',
+      message: 'What does OctoBot Market Making do?',
+      description: 'FAQ question on market making page',
+    }),
+    answer: translate({
+      id: 'features.marketMaking.faq.q9.answer',
+      message:
+        'OctoBot Market Making makes automated market making strategies accessible by offering a self-service platform to create, configure, monitor and improve market making strategies on most centralized cryptocurrency exchanges.',
+      description: 'FAQ answer on market making page',
+    }),
   },
   {
-    question: 'Is OctoBot open source?',
+    question: translate({
+      id: 'features.marketMaking.faq.q10.question',
+      message: 'Is OctoBot open source?',
+      description: 'FAQ question on market making page',
+    }),
     answer: (
-      <>
-        Yes — the code is on{' '}
-        <a href="https://github.com/Drakkar-Software/OctoBot">GitHub</a>. OctoBot
-        Market Making is based on the market making distribution of OctoBot to
-        execute its strategies.
-      </>
+      <Translate
+        id="features.marketMaking.faq.q10.answer"
+        description="FAQ answer on market making page"
+        values={{
+          githubLink: (
+            <a href="https://github.com/Drakkar-Software/OctoBot">GitHub</a>
+          ),
+        }}>
+        {
+          'Yes — the code is on {githubLink}. OctoBot Market Making is based on the market making distribution of OctoBot to execute its strategies.'
+        }
+      </Translate>
     ),
   },
 ];
@@ -162,78 +317,210 @@ const FAQ_ITEMS: FAQItem[] = [
 export default function MarketMakingFeature(): ReactNode {
   return (
     <LandingLayout
-      title="OctoBot Market Making — Liquidity as a service"
-      description="OctoBot Market Making is a professional, open-source market making as a service platform for crypto projects, exchanges and liquidity miners.">
+      title={translate({
+        id: 'features.marketMaking.layout.title',
+        message: 'OctoBot Market Making — Liquidity as a service',
+        description: 'Page meta title for market making page',
+      })}
+      description={translate({
+        id: 'features.marketMaking.layout.description',
+        message:
+          'OctoBot Market Making is a professional, open-source market making as a service platform for crypto projects, exchanges and liquidity miners.',
+        description: 'Page meta description for market making page',
+      })}>
       <Hero
-        eyebrow="Market Making"
+        eyebrow={translate({
+          id: 'features.marketMaking.hero.eyebrow',
+          message: 'Market Making',
+          description: 'Hero eyebrow on market making page',
+        })}
         title={
-          <>
-            Market making as a service for{' '}
-            <span className="ng-text-gradient">crypto projects.</span>
-          </>
+          <Translate
+            id="features.marketMaking.hero.title"
+            description="Hero title on market making page"
+            values={{
+              accent: (
+                <span className="ng-text-gradient">
+                  <Translate
+                    id="features.marketMaking.hero.accent"
+                    description="Accent text in hero title on market making page">
+                    crypto projects.
+                  </Translate>
+                </span>
+              ),
+            }}>
+            {'Market making as a service for {accent}'}
+          </Translate>
         }
-        subtitle="Boost your market's liquidity with OctoBot Market Making — a professional crypto market making as a service platform."
+        subtitle={translate({
+          id: 'features.marketMaking.hero.subtitle',
+          message:
+            "Boost your market's liquidity with OctoBot Market Making — a professional crypto market making as a service platform.",
+          description: 'Hero subtitle on market making page',
+        })}
         actions={[
-          {label: 'Boost my liquidity', to: CALL_URL},
-          {label: 'Book a free call', to: CALL_URL, variant: 'ghost'},
+          {
+            label: translate({
+              id: 'features.marketMaking.hero.action.boost',
+              message: 'Boost my liquidity',
+              description: 'Hero action label on market making page',
+            }),
+            to: CALL_URL,
+          },
+          {
+            label: translate({
+              id: 'features.marketMaking.hero.action.call',
+              message: 'Book a free call',
+              description: 'Hero action label on market making page',
+            }),
+            to: CALL_URL,
+            variant: 'ghost',
+          },
         ]}
         meta={[
-          {label: '15+ exchanges supported', dot: true},
-          {label: 'Open source engine'},
-          {label: 'Self-service platform'},
+          {
+            label: translate({
+              id: 'features.marketMaking.hero.meta.exchanges',
+              message: '15+ exchanges supported',
+              description: 'Hero meta label on market making page',
+            }),
+            dot: true,
+          },
+          {
+            label: translate({
+              id: 'features.marketMaking.hero.meta.openSource',
+              message: 'Open source engine',
+              description: 'Hero meta label on market making page',
+            }),
+          },
+          {
+            label: translate({
+              id: 'features.marketMaking.hero.meta.selfService',
+              message: 'Self-service platform',
+              description: 'Hero meta label on market making page',
+            }),
+          },
         ]}
       />
 
       <Section
-        eyebrow="How it works"
-        title="Improve your liquidity in 3 simple steps"
-        lead="From spotting a thin market to maintaining a healthy order book — guided the whole way.">
+        eyebrow={translate({
+          id: 'features.marketMaking.howItWorks.eyebrow',
+          message: 'How it works',
+          description: 'Section eyebrow on market making page',
+        })}
+        title={translate({
+          id: 'features.marketMaking.howItWorks.title',
+          message: 'Improve your liquidity in 3 simple steps',
+          description: 'Section title on market making page',
+        })}
+        lead={translate({
+          id: 'features.marketMaking.howItWorks.lead',
+          message:
+            'From spotting a thin market to maintaining a healthy order book — guided the whole way.',
+          description: 'Section lead on market making page',
+        })}>
         <StepList steps={STEPS} />
       </Section>
 
       <Section
-        eyebrow="The platform"
-        title="Institutional-grade market making"
-        lead="Professional crypto market making software, available as a self-service platform.">
+        eyebrow={translate({
+          id: 'features.marketMaking.platform.eyebrow',
+          message: 'The platform',
+          description: 'Section eyebrow on market making page',
+        })}
+        title={translate({
+          id: 'features.marketMaking.platform.title',
+          message: 'Institutional-grade market making',
+          description: 'Section title on market making page',
+        })}
+        lead={translate({
+          id: 'features.marketMaking.platform.lead',
+          message:
+            'Professional crypto market making software, available as a self-service platform.',
+          description: 'Section lead on market making page',
+        })}>
         <FeatureGrid features={FEATURES} columns={3} />
       </Section>
 
       <Section
         align="left"
-        eyebrow="Why it matters"
+        eyebrow={translate({
+          id: 'features.marketMaking.whyItMatters.eyebrow',
+          message: 'Why it matters',
+          description: 'Section eyebrow on market making page',
+        })}
         title={
-          <>
-            The cost of poor liquidity vs.{' '}
-            <span className="ng-text-frost">a market that works.</span>
-          </>
+          <Translate
+            id="features.marketMaking.whyItMatters.title"
+            description="Section title on market making page"
+            values={{
+              accent: (
+                <span className="ng-text-frost">
+                  <Translate
+                    id="features.marketMaking.whyItMatters.accent"
+                    description="Accent text in why-it-matters title on market making page">
+                    a market that works.
+                  </Translate>
+                </span>
+              ),
+            }}>
+            {'The cost of poor liquidity vs. {accent}'}
+          </Translate>
         }>
         <BeforeAfter
           before={{
-            label: 'Poor liquidity',
+            label: translate({
+              id: 'features.marketMaking.beforeAfter.before.label',
+              message: 'Poor liquidity',
+              description: 'BeforeAfter before label on market making page',
+            }),
             items: [
-              <>
-                <strong>Delisting risk</strong> on popular exchanges
-              </>,
-              <>
-                Thin order books, <strong>wide spreads</strong>
-              </>,
-              <>
-                An <strong>unattractive market</strong> for traders
-              </>,
+              <Translate
+                id="features.marketMaking.beforeAfter.before.item1"
+                description="BeforeAfter before item on market making page"
+                values={{strong: <strong>Delisting risk</strong>}}>
+                {'{strong} on popular exchanges'}
+              </Translate>,
+              <Translate
+                id="features.marketMaking.beforeAfter.before.item2"
+                description="BeforeAfter before item on market making page"
+                values={{strong: <strong>wide spreads</strong>}}>
+                {'Thin order books, {strong}'}
+              </Translate>,
+              <Translate
+                id="features.marketMaking.beforeAfter.before.item3"
+                description="BeforeAfter before item on market making page"
+                values={{strong: <strong>unattractive market</strong>}}>
+                {'An {strong} for traders'}
+              </Translate>,
             ],
           }}
           after={{
-            label: 'With OctoBot Market Making',
+            label: translate({
+              id: 'features.marketMaking.beforeAfter.after.label',
+              message: 'With OctoBot Market Making',
+              description: 'BeforeAfter after label on market making page',
+            }),
             items: [
-              <>
-                <strong>Deeper order books</strong> attract investors
-              </>,
-              <>
-                <strong>Tighter spreads</strong>, healthier markets
-              </>,
-              <>
-                Measure &amp; <strong>improve liquidity</strong> any time
-              </>,
+              <Translate
+                id="features.marketMaking.beforeAfter.after.item1"
+                description="BeforeAfter after item on market making page"
+                values={{strong: <strong>Deeper order books</strong>}}>
+                {'{strong} attract investors'}
+              </Translate>,
+              <Translate
+                id="features.marketMaking.beforeAfter.after.item2"
+                description="BeforeAfter after item on market making page"
+                values={{strong: <strong>Tighter spreads</strong>}}>
+                {'{strong}, healthier markets'}
+              </Translate>,
+              <Translate
+                id="features.marketMaking.beforeAfter.after.item3"
+                description="BeforeAfter after item on market making page"
+                values={{strong: <strong>improve liquidity</strong>}}>
+                {'Measure & {strong} any time'}
+              </Translate>,
             ],
           }}
         />
@@ -241,26 +528,76 @@ export default function MarketMakingFeature(): ReactNode {
 
       <Section
         align="right"
-        eyebrow="Distribution"
+        eyebrow={translate({
+          id: 'features.marketMaking.distribution.eyebrow',
+          message: 'Distribution',
+          description: 'Section eyebrow on market making page',
+        })}
         title={
-          <>
-            Supported on the{' '}
-            <span className="ng-text-frost">exchanges that matter.</span>
-          </>
+          <Translate
+            id="features.marketMaking.distribution.title"
+            description="Section title on market making page"
+            values={{
+              accent: (
+                <span className="ng-text-frost">
+                  <Translate
+                    id="features.marketMaking.distribution.accent"
+                    description="Accent text in distribution title on market making page">
+                    exchanges that matter.
+                  </Translate>
+                </span>
+              ),
+            }}>
+            {'Supported on the {accent}'}
+          </Translate>
         }>
         <LogoRibbon items={EXCHANGES} />
       </Section>
 
-      <Section eyebrow="FAQ" title="Frequently asked questions">
+      <Section
+        eyebrow={translate({
+          id: 'features.marketMaking.faq.eyebrow',
+          message: 'FAQ',
+          description: 'FAQ section eyebrow on market making page',
+        })}
+        title={translate({
+          id: 'features.marketMaking.faq.title',
+          message: 'Frequently asked questions',
+          description: 'FAQ section title on market making page',
+        })}>
         <FAQ items={FAQ_ITEMS} />
       </Section>
 
       <CTABand
-        title="Ready to optimize your market's liquidity?"
-        description="Schedule a call with our team to discuss your specific needs — or email us any question."
+        title={translate({
+          id: 'features.marketMaking.cta.title',
+          message: "Ready to optimize your market's liquidity?",
+          description: 'CTA band title on market making page',
+        })}
+        description={translate({
+          id: 'features.marketMaking.cta.description',
+          message:
+            'Schedule a call with our team to discuss your specific needs — or email us any question.',
+          description: 'CTA band description on market making page',
+        })}
         actions={[
-          {label: 'Book a free call', to: CALL_URL},
-          {label: 'Email us', to: CONTACT_MAIL, variant: 'ghost'},
+          {
+            label: translate({
+              id: 'features.marketMaking.cta.action.call',
+              message: 'Book a free call',
+              description: 'CTA action label on market making page',
+            }),
+            to: CALL_URL,
+          },
+          {
+            label: translate({
+              id: 'features.marketMaking.cta.action.email',
+              message: 'Email us',
+              description: 'CTA action label on market making page',
+            }),
+            to: CONTACT_MAIL,
+            variant: 'ghost',
+          },
         ]}
       />
     </LandingLayout>

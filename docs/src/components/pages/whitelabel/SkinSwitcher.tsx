@@ -1,4 +1,5 @@
 import React, {useState, type ReactNode} from 'react';
+import Translate from '@docusaurus/Translate';
 import GlassCard from '@site/src/components/GlassCard';
 import styles from './SkinSwitcher.module.css';
 
@@ -98,30 +99,66 @@ export default function SkinSwitcher(): ReactNode {
             <span className={styles.bkMark}>{theme.mark}</span>
             <span>{theme.name}</span>
           </div>
-          <span className={styles.bkPill}>Powered by Octo</span>
+          <span className={styles.bkPill}>
+            <Translate
+              id="pages.whitelabel.skinSwitcher.poweredBy"
+              description="Skin switcher powered-by pill">
+              Powered by Octo
+            </Translate>
+          </span>
         </div>
 
         <div className={styles.bkCard}>
-          <div className={styles.bkLabel}>Portfolio · DCA Strategy</div>
+          <div className={styles.bkLabel}>
+            <Translate
+              id="pages.whitelabel.skinSwitcher.portfolioLabel"
+              description="Skin switcher portfolio label">
+              Portfolio · DCA Strategy
+            </Translate>
+          </div>
           <div className={styles.bkValue}>€48,210.42</div>
           <div className={styles.bkRow}>
             <span className={styles.bkChip}>+14.6%</span>
-            <span>since launch · 8 months</span>
+            <span>
+              <Translate
+                id="pages.whitelabel.skinSwitcher.sinceLaunch"
+                description="Skin switcher since-launch caption">
+                since launch · 8 months
+              </Translate>
+            </span>
           </div>
         </div>
 
         <div className={styles.bkStrats}>
           <div className={styles.bkStrat}>
-            <div className={styles.bkStratName}>BTC · DCA Weekly</div>
+            <div className={styles.bkStratName}>
+              <Translate
+                id="pages.whitelabel.skinSwitcher.strat.btc"
+                description="Skin switcher strategy name">
+                BTC · DCA Weekly
+              </Translate>
+            </div>
             <div className={styles.bkStratPnl}>+12.4%</div>
           </div>
           <div className={styles.bkStrat}>
-            <div className={styles.bkStratName}>ETH · Grid Bot</div>
+            <div className={styles.bkStratName}>
+              <Translate
+                id="pages.whitelabel.skinSwitcher.strat.eth"
+                description="Skin switcher strategy name">
+                ETH · Grid Bot
+              </Translate>
+            </div>
             <div className={styles.bkStratPnl}>+8.2%</div>
           </div>
         </div>
 
-        <div className={styles.bkBtn}>Start a new strategy</div>
+        <div className={styles.bkBtn}>
+          <Translate
+            id="pages.whitelabel.skinSwitcher.startButton"
+            description="Skin switcher start strategy button">
+            Start a new strategy
+          </Translate>
+        </div>
       </div>
     </GlassCard>
   );

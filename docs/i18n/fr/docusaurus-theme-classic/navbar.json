@@ -1,0 +1,34 @@
+{
+  "title": {
+    "message": "OctoBot",
+    "description": "The title in the navbar"
+  },
+  "logo.alt": {
+    "message": "Logo OctoBot",
+    "description": "The alt text of navbar logo"
+  },
+  "item.label.Guides": {
+    "message": "Guides",
+    "description": "Navbar item with label Guides"
+  },
+  "item.label.OctoBot Cloud": {
+    "message": "OctoBot Cloud",
+    "description": "Navbar item with label OctoBot Cloud"
+  },
+  "item.label.OctoBot Script": {
+    "message": "OctoBot Script",
+    "description": "Navbar item with label OctoBot Script"
+  },
+  "item.label.Market Making": {
+    "message": "Market Making",
+    "description": "Navbar item with label Market Making"
+  },
+  "item.label.Developers": {
+    "message": "Développeurs",
+    "description": "Navbar item with label Developers"
+  },
+  "item.label.GitHub": {
+    "message": "GitHub",
+    "description": "Navbar item with label GitHub"
+  }
+}

@@ -1,4 +1,5 @@
 import React, {type ReactNode} from 'react';
+import Translate, {translate} from '@docusaurus/Translate';
 import GlassCard from '@site/src/components/GlassCard';
 import styles from './ReportingDashboard.module.css';
 
@@ -10,30 +11,62 @@ import styles from './ReportingDashboard.module.css';
 
 const KPIS = [
   {
-    label: 'Median spread',
+    label: translate({
+      id: 'pages.marketMaking.reporting.kpi.spread.label',
+      message: 'Median spread',
+      description: 'Reporting dashboard KPI label',
+    }),
     value: '0.06%',
-    delta: '↓ tighter',
+    delta: translate({
+      id: 'pages.marketMaking.reporting.kpi.spread.delta',
+      message: '↓ tighter',
+      description: 'Reporting dashboard KPI delta',
+    }),
     spark: '0,16 8,14 16,15 24,11 32,12 40,8 48,9 56,6',
     color: 'var(--ng-pos)',
   },
   {
-    label: 'Depth ±2%',
+    label: translate({
+      id: 'pages.marketMaking.reporting.kpi.depth.label',
+      message: 'Depth ±2%',
+      description: 'Reporting dashboard KPI label',
+    }),
     value: '$1.42M',
-    delta: '↑ deeper',
+    delta: translate({
+      id: 'pages.marketMaking.reporting.kpi.depth.delta',
+      message: '↑ deeper',
+      description: 'Reporting dashboard KPI delta',
+    }),
     spark: '0,18 8,16 16,12 24,13 32,9 40,10 48,5 56,4',
     color: 'var(--ng-frost)',
   },
   {
-    label: 'Volume share',
+    label: translate({
+      id: 'pages.marketMaking.reporting.kpi.volume.label',
+      message: 'Volume share',
+      description: 'Reporting dashboard KPI label',
+    }),
     value: '38%',
-    delta: '↑ higher',
+    delta: translate({
+      id: 'pages.marketMaking.reporting.kpi.volume.delta',
+      message: '↑ higher',
+      description: 'Reporting dashboard KPI delta',
+    }),
     spark: '0,14 8,15 16,12 24,13 32,10 40,11 48,7 56,8',
     color: 'var(--ng-turquoise)',
   },
   {
-    label: 'Uptime',
+    label: translate({
+      id: 'pages.marketMaking.reporting.kpi.uptime.label',
+      message: 'Uptime',
+      description: 'Reporting dashboard KPI label',
+    }),
     value: '99.97%',
-    delta: 'stable',
+    delta: translate({
+      id: 'pages.marketMaking.reporting.kpi.uptime.delta',
+      message: 'stable',
+      description: 'Reporting dashboard KPI delta',
+    }),
     spark: '0,4 8,4 16,4 24,4 32,5 40,4 48,4 56,4',
     color: 'var(--ng-pos)',
     stable: true,
@@ -52,7 +85,11 @@ export default function ReportingDashboard(): ReactNode {
             <h4 className={styles.idTitle}>YOURTOKEN / USDT</h4>
             <div className={styles.idSub}>
               <span className={styles.live} />
-              streaming · 4 venues
+              <Translate
+                id="pages.marketMaking.reporting.streaming"
+                description="Reporting dashboard streaming status">
+                streaming · 4 venues
+              </Translate>
             </div>
           </div>
         </div>
@@ -84,10 +121,20 @@ export default function ReportingDashboard(): ReactNode {
 
       <div className={styles.chart}>
         <div className={styles.chartHead}>
-          <span className={styles.chartTitle}>Depth ±2% · 7 days</span>
+          <span className={styles.chartTitle}>
+            <Translate
+              id="pages.marketMaking.reporting.chartTitle"
+              description="Reporting dashboard chart title">
+              Depth ±2% · 7 days
+            </Translate>
+          </span>
           <span className={styles.legend}>
             <i />
-            Depth
+            <Translate
+              id="pages.marketMaking.reporting.legend"
+              description="Reporting dashboard chart legend">
+              Depth
+            </Translate>
           </span>
         </div>
         <div className={styles.canvas}>
@@ -115,7 +162,11 @@ export default function ReportingDashboard(): ReactNode {
             <circle cx="270" cy="68" r="8" fill="none" stroke="#85d6d7" strokeOpacity="0.4" />
           </svg>
           <div className={styles.pin} style={{left: '67.5%', top: '28%'}}>
-            Thu · $1.78M peak
+            <Translate
+              id="pages.marketMaking.reporting.pin"
+              description="Reporting dashboard chart pin label">
+              Thu · $1.78M peak
+            </Translate>
           </div>
         </div>
         <div className={styles.xAxis}>

@@ -1,4 +1,5 @@
 import type {ReactNode} from 'react';
+import Translate from '@docusaurus/Translate';
 import GlassCard from '@site/src/components/GlassCard';
 import styles from './RankingTable.module.css';
 
@@ -42,10 +43,34 @@ export default function RankingTable(): ReactNode {
           <thead>
             <tr>
               <th className={styles.rankCol}>#</th>
-              <th>Name</th>
-              <th className={styles.numCol}>USD Price</th>
-              <th className={styles.numCol}>USD Market cap</th>
-              <th className={styles.numCol}>24h</th>
+              <th>
+                <Translate
+                  id="tools.cryptoRanking.table.header.name"
+                  description="Crypto ranking table header: name">
+                  Name
+                </Translate>
+              </th>
+              <th className={styles.numCol}>
+                <Translate
+                  id="tools.cryptoRanking.table.header.price"
+                  description="Crypto ranking table header: USD price">
+                  USD Price
+                </Translate>
+              </th>
+              <th className={styles.numCol}>
+                <Translate
+                  id="tools.cryptoRanking.table.header.marketCap"
+                  description="Crypto ranking table header: USD market cap">
+                  USD Market cap
+                </Translate>
+              </th>
+              <th className={styles.numCol}>
+                <Translate
+                  id="tools.cryptoRanking.table.header.change24h"
+                  description="Crypto ranking table header: 24h change">
+                  24h
+                </Translate>
+              </th>
             </tr>
           </thead>
           <tbody>

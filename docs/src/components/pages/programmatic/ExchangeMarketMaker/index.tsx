@@ -1,4 +1,5 @@
 import React, {type ReactNode} from 'react';
+import Translate, {translate} from '@docusaurus/Translate';
 import {
   LandingLayout,
   Hero,
@@ -37,72 +38,267 @@ export default function ExchangeMarketMaker({
   const why: Feature[] = [
     {
       icon: '📈',
-      title: 'Higher liquidity',
-      description: 'Deeper order books that attract more investors to your token.',
+      title: translate({
+        id: 'programmatic.exchangeMarketMaker.why.liquidity.title',
+        message: 'Higher liquidity',
+        description: 'Market maker benefit card title',
+      }),
+      description: translate({
+        id: 'programmatic.exchangeMarketMaker.why.liquidity.description',
+        message:
+          'Deeper order books that attract more investors to your token.',
+        description: 'Market maker benefit card description',
+      }),
     },
     {
       icon: '🎯',
-      title: 'Optimized markets',
-      description: `Adapt, measure and improve your ${exchange.name} liquidity at all times with the self-service platform.`,
+      title: translate({
+        id: 'programmatic.exchangeMarketMaker.why.optimized.title',
+        message: 'Optimized markets',
+        description: 'Market maker benefit card title',
+      }),
+      description: translate(
+        {
+          id: 'programmatic.exchangeMarketMaker.why.optimized.description',
+          message:
+            'Adapt, measure and improve your {name} liquidity at all times with the self-service platform.',
+          description:
+            'Market maker benefit card description; {name} is the exchange name',
+        },
+        {name: exchange.name},
+      ),
     },
     {
       icon: '⚠️',
-      title: 'Avoid delisting risk',
-      description: `Poor liquidity can lead to ${exchange.name} delisting and value loss.`,
+      title: translate({
+        id: 'programmatic.exchangeMarketMaker.why.delisting.title',
+        message: 'Avoid delisting risk',
+        description: 'Market maker benefit card title',
+      }),
+      description: translate(
+        {
+          id: 'programmatic.exchangeMarketMaker.why.delisting.description',
+          message:
+            'Poor liquidity can lead to {name} delisting and value loss.',
+          description:
+            'Market maker benefit card description; {name} is the exchange name',
+        },
+        {name: exchange.name},
+      ),
     },
     {
       icon: '🌊',
-      title: 'Lower volatility',
-      description: 'Thin order books and wide spreads make a token unattractive — tight books fix that.',
+      title: translate({
+        id: 'programmatic.exchangeMarketMaker.why.volatility.title',
+        message: 'Lower volatility',
+        description: 'Market maker benefit card title',
+      }),
+      description: translate({
+        id: 'programmatic.exchangeMarketMaker.why.volatility.description',
+        message:
+          'Thin order books and wide spreads make a token unattractive — tight books fix that.',
+        description: 'Market maker benefit card description',
+      }),
     },
   ];
 
   const faqItems: FAQItem[] = [
     {
-      question: `Can I use automated trading bots for market making on ${exchange.name}?`,
-      answer: `Yes — OctoBot Market Making runs professional-grade market making on ${exchange.name} using your own exchange account and API keys.`,
+      question: translate(
+        {
+          id: 'programmatic.exchangeMarketMaker.faq.bots.question',
+          message:
+            'Can I use automated trading bots for market making on {name}?',
+          description: 'FAQ question; {name} is the exchange name',
+        },
+        {name: exchange.name},
+      ),
+      answer: translate(
+        {
+          id: 'programmatic.exchangeMarketMaker.faq.bots.answer',
+          message:
+            'Yes — OctoBot Market Making runs professional-grade market making on {name} using your own exchange account and API keys.',
+          description: 'FAQ answer; {name} is the exchange name',
+        },
+        {name: exchange.name},
+      ),
     },
     {
-      question: 'Who are exchange market makers?',
-      answer: `Market makers continuously quote buy and sell orders to keep a market liquid. On ${exchange.name}, that keeps spreads tight and order books deep.`,
+      question: translate({
+        id: 'programmatic.exchangeMarketMaker.faq.who.question',
+        message: 'Who are exchange market makers?',
+        description: 'FAQ question',
+      }),
+      answer: translate(
+        {
+          id: 'programmatic.exchangeMarketMaker.faq.who.answer',
+          message:
+            'Market makers continuously quote buy and sell orders to keep a market liquid. On {name}, that keeps spreads tight and order books deep.',
+          description: 'FAQ answer; {name} is the exchange name',
+        },
+        {name: exchange.name},
+      ),
     },
     {
-      question: `How does the liquidity score affect market making on ${exchange.name}?`,
-      answer: `The liquidity score rates each trading pair using market depth, bid-ask spread tightness and resilience during volatility — it shows where your ${exchange.name} markets need attention.`,
+      question: translate(
+        {
+          id: 'programmatic.exchangeMarketMaker.faq.score.question',
+          message:
+            'How does the liquidity score affect market making on {name}?',
+          description: 'FAQ question; {name} is the exchange name',
+        },
+        {name: exchange.name},
+      ),
+      answer: translate(
+        {
+          id: 'programmatic.exchangeMarketMaker.faq.score.answer',
+          message:
+            'The liquidity score rates each trading pair using market depth, bid-ask spread tightness and resilience during volatility — it shows where your {name} markets need attention.',
+          description: 'FAQ answer; {name} is the exchange name',
+        },
+        {name: exchange.name},
+      ),
     },
     {
-      question: `What trading pairs are eligible for market making on ${exchange.name}?`,
-      answer: `Any spot pair your project is responsible for on ${exchange.name} can be market-made — typically your token against major quote assets.`,
+      question: translate(
+        {
+          id: 'programmatic.exchangeMarketMaker.faq.pairs.question',
+          message:
+            'What trading pairs are eligible for market making on {name}?',
+          description: 'FAQ question; {name} is the exchange name',
+        },
+        {name: exchange.name},
+      ),
+      answer: translate(
+        {
+          id: 'programmatic.exchangeMarketMaker.faq.pairs.answer',
+          message:
+            'Any spot pair your project is responsible for on {name} can be market-made — typically your token against major quote assets.',
+          description: 'FAQ answer; {name} is the exchange name',
+        },
+        {name: exchange.name},
+      ),
     },
   ];
 
   return (
     <LandingLayout
-      title={`${exchange.name} Market Maker`}
-      description={`Improve your ${exchange.name} markets liquidity with OctoBot Market Making — an open-source market making as a service platform.`}>
+      title={translate(
+        {
+          id: 'programmatic.exchangeMarketMaker.layout.title',
+          message: '{name} Market Maker',
+          description: 'Page title; {name} is the exchange name',
+        },
+        {name: exchange.name},
+      )}
+      description={translate(
+        {
+          id: 'programmatic.exchangeMarketMaker.layout.description',
+          message:
+            'Improve your {name} markets liquidity with OctoBot Market Making — an open-source market making as a service platform.',
+          description: 'Page meta description; {name} is the exchange name',
+        },
+        {name: exchange.name},
+      )}>
       <div className={shared.gridVeil} aria-hidden="true" />
 
       <Hero
-        eyebrow={`${exchange.name} Market Maker`}
+        eyebrow={translate(
+          {
+            id: 'programmatic.exchangeMarketMaker.hero.eyebrow',
+            message: '{name} Market Maker',
+            description: 'Hero eyebrow; {name} is the exchange name',
+          },
+          {name: exchange.name},
+        )}
         title={
-          <>
-            Improve your{' '}
-            <span className="ng-text-gradient">{exchange.name}</span> liquidity
-          </>
+          <Translate
+            id="programmatic.exchangeMarketMaker.hero.title"
+            description="Hero title; {name} is the exchange name span"
+            values={{
+              name: (
+                <span className="ng-text-gradient">{exchange.name}</span>
+              ),
+            }}>
+            {'Improve your {name} liquidity'}
+          </Translate>
         }
-        subtitle={`Boost your token's liquidity on ${exchange.name} with OctoBot's professional market making service.`}
+        subtitle={translate(
+          {
+            id: 'programmatic.exchangeMarketMaker.hero.subtitle',
+            message:
+              "Boost your token's liquidity on {name} with OctoBot's professional market making service.",
+            description: 'Hero subtitle; {name} is the exchange name',
+          },
+          {name: exchange.name},
+        )}
         actions={[
-          {label: 'Book a free call', to: CONTACT},
-          {label: 'See the engine', to: '/market-making', variant: 'ghost'},
+          {
+            label: translate({
+              id: 'programmatic.exchangeMarketMaker.hero.action.call',
+              message: 'Book a free call',
+              description: 'Hero CTA label',
+            }),
+            to: CONTACT,
+          },
+          {
+            label: translate({
+              id: 'programmatic.exchangeMarketMaker.hero.action.engine',
+              message: 'See the engine',
+              description: 'Hero secondary CTA label',
+            }),
+            to: '/market-making',
+            variant: 'ghost',
+          },
         ]}
         aside={
           <InlineStats
             stats={[
-              {value: '100%', label: 'On your own exchange account'},
-              {value: '0', label: 'Token cut — flat fee only'},
               {
-                value: exchange.tier1 ? 'Tier 1' : 'Supported',
-                label: `${exchange.name} market making`,
+                value: translate({
+                  id: 'programmatic.exchangeMarketMaker.hero.stat.account.value',
+                  message: '100%',
+                  description: 'Inline stat value',
+                }),
+                label: translate({
+                  id: 'programmatic.exchangeMarketMaker.hero.stat.account.label',
+                  message: 'On your own exchange account',
+                  description: 'Inline stat label',
+                }),
+              },
+              {
+                value: translate({
+                  id: 'programmatic.exchangeMarketMaker.hero.stat.cut.value',
+                  message: '0',
+                  description: 'Inline stat value',
+                }),
+                label: translate({
+                  id: 'programmatic.exchangeMarketMaker.hero.stat.cut.label',
+                  message: 'Token cut — flat fee only',
+                  description: 'Inline stat label',
+                }),
+              },
+              {
+                value: exchange.tier1
+                  ? translate({
+                      id: 'programmatic.exchangeMarketMaker.hero.stat.tier.value.tier1',
+                      message: 'Tier 1',
+                      description: 'Inline stat value for a tier-1 exchange',
+                    })
+                  : translate({
+                      id: 'programmatic.exchangeMarketMaker.hero.stat.tier.value.supported',
+                      message: 'Supported',
+                      description: 'Inline stat value for a supported exchange',
+                    }),
+                label: translate(
+                  {
+                    id: 'programmatic.exchangeMarketMaker.hero.stat.tier.label',
+                    message: '{name} market making',
+                    description:
+                      'Inline stat label; {name} is the exchange name',
+                  },
+                  {name: exchange.name},
+                ),
               },
             ]}
           />
@@ -111,40 +307,154 @@ export default function ExchangeMarketMaker({
 
       <Section
         align="left"
-        eyebrow="Why OctoBot"
-        title={`Why choose OctoBot Market Making for ${exchange.name}?`}
-        lead="Professional market making is no longer optional on a popular exchange.">
+        eyebrow={translate({
+          id: 'programmatic.exchangeMarketMaker.why.eyebrow',
+          message: 'Why OctoBot',
+          description: 'Section eyebrow',
+        })}
+        title={translate(
+          {
+            id: 'programmatic.exchangeMarketMaker.why.title',
+            message: 'Why choose OctoBot Market Making for {name}?',
+            description: 'Section title; {name} is the exchange name',
+          },
+          {name: exchange.name},
+        )}
+        lead={translate({
+          id: 'programmatic.exchangeMarketMaker.why.lead',
+          message:
+            'Professional market making is no longer optional on a popular exchange.',
+          description: 'Section lead',
+        })}>
         <FeatureGrid features={why} columns={2} />
       </Section>
 
       <Section
-        eyebrow="Your markets"
-        title={`Your liquidity on ${exchange.name}`}
-        lead={`Quickly find and monitor your coins on ${exchange.name} — each trading pair's liquidity is scored.`}>
+        eyebrow={translate({
+          id: 'programmatic.exchangeMarketMaker.markets.eyebrow',
+          message: 'Your markets',
+          description: 'Section eyebrow',
+        })}
+        title={translate(
+          {
+            id: 'programmatic.exchangeMarketMaker.markets.title',
+            message: 'Your liquidity on {name}',
+            description: 'Section title; {name} is the exchange name',
+          },
+          {name: exchange.name},
+        )}
+        lead={translate(
+          {
+            id: 'programmatic.exchangeMarketMaker.markets.lead',
+            message:
+              "Quickly find and monitor your coins on {name} — each trading pair's liquidity is scored.",
+            description: 'Section lead; {name} is the exchange name',
+          },
+          {name: exchange.name},
+        )}>
         <InlineStats
           stats={[
-            {value: 'Depth', label: 'Market depth vs trading volume'},
-            {value: 'Spread', label: 'Bid-ask tightness and consistency'},
-            {value: 'Resilience', label: 'Market behaviour during high volatility'},
+            {
+              value: translate({
+                id: 'programmatic.exchangeMarketMaker.markets.stat.depth.value',
+                message: 'Depth',
+                description: 'Inline stat value',
+              }),
+              label: translate({
+                id: 'programmatic.exchangeMarketMaker.markets.stat.depth.label',
+                message: 'Market depth vs trading volume',
+                description: 'Inline stat label',
+              }),
+            },
+            {
+              value: translate({
+                id: 'programmatic.exchangeMarketMaker.markets.stat.spread.value',
+                message: 'Spread',
+                description: 'Inline stat value',
+              }),
+              label: translate({
+                id: 'programmatic.exchangeMarketMaker.markets.stat.spread.label',
+                message: 'Bid-ask tightness and consistency',
+                description: 'Inline stat label',
+              }),
+            },
+            {
+              value: translate({
+                id: 'programmatic.exchangeMarketMaker.markets.stat.resilience.value',
+                message: 'Resilience',
+                description: 'Inline stat value',
+              }),
+              label: translate({
+                id: 'programmatic.exchangeMarketMaker.markets.stat.resilience.label',
+                message: 'Market behaviour during high volatility',
+                description: 'Inline stat label',
+              }),
+            },
           ]}
         />
       </Section>
 
-      <Section eyebrow="FAQ" title={`${exchange.name} market making FAQ`}>
+      <Section
+        eyebrow={translate({
+          id: 'programmatic.exchangeMarketMaker.faq.eyebrow',
+          message: 'FAQ',
+          description: 'Section eyebrow',
+        })}
+        title={translate(
+          {
+            id: 'programmatic.exchangeMarketMaker.faq.title',
+            message: '{name} market making FAQ',
+            description: 'Section title; {name} is the exchange name',
+          },
+          {name: exchange.name},
+        )}>
         <FAQ items={faqItems} />
       </Section>
 
       <CTABand
         title={
-          <>
-            Ready to boost your{' '}
-            <span className="ng-text-frost">{exchange.name} liquidity?</span>
-          </>
+          <Translate
+            id="programmatic.exchangeMarketMaker.cta.title"
+            description="CTA band title; {liquidity} is a styled span with the exchange name"
+            values={{
+              liquidity: (
+                <span className="ng-text-frost">
+                  <Translate
+                    id="programmatic.exchangeMarketMaker.cta.titleLiquidity"
+                    description="CTA band title accent; {name} is the exchange name"
+                    values={{name: exchange.name}}>
+                    {'{name} liquidity?'}
+                  </Translate>
+                </span>
+              ),
+            }}>
+            {'Ready to boost your {liquidity}'}
+          </Translate>
         }
-        description="A 30-minute call and we'll walk through your token, your markets and your liquidity targets."
+        description={translate({
+          id: 'programmatic.exchangeMarketMaker.cta.description',
+          message:
+            "A 30-minute call and we'll walk through your token, your markets and your liquidity targets.",
+          description: 'CTA band description',
+        })}
         actions={[
-          {label: 'Book a free call', to: CONTACT},
-          {label: 'Market making engine', to: '/market-making', variant: 'ghost'},
+          {
+            label: translate({
+              id: 'programmatic.exchangeMarketMaker.cta.action.call',
+              message: 'Book a free call',
+              description: 'CTA band label',
+            }),
+            to: CONTACT,
+          },
+          {
+            label: translate({
+              id: 'programmatic.exchangeMarketMaker.cta.action.engine',
+              message: 'Market making engine',
+              description: 'CTA band secondary label',
+            }),
+            to: '/market-making',
+            variant: 'ghost',
+          },
         ]}
       />
     </LandingLayout>

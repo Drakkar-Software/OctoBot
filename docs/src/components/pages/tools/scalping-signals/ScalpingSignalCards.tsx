@@ -1,4 +1,5 @@
 import type {ReactNode} from 'react';
+import Translate, {translate} from '@docusaurus/Translate';
 import GlassCard from '@site/src/components/GlassCard';
 import Badge from '@site/src/components/Badge';
 import styles from './ScalpingSignalCards.module.css';
@@ -63,10 +64,38 @@ const SIGNALS: ScalpingSignal[] = [
 ];
 
 const STAT_ROWS: {key: keyof ScalpingSignal; label: string}[] = [
-  {key: 'entry', label: 'Entry price'},
-  {key: 'takeProfit', label: 'Take profit'},
-  {key: 'stopLoss', label: 'Stop loss'},
-  {key: 'expectedProfit', label: 'Expected profit'},
+  {
+    key: 'entry',
+    label: translate({
+      id: 'tools.scalpingSignals.card.stat.entry',
+      message: 'Entry price',
+      description: 'Scalping signal card stat label: entry price',
+    }),
+  },
+  {
+    key: 'takeProfit',
+    label: translate({
+      id: 'tools.scalpingSignals.card.stat.takeProfit',
+      message: 'Take profit',
+      description: 'Scalping signal card stat label: take profit',
+    }),
+  },
+  {
+    key: 'stopLoss',
+    label: translate({
+      id: 'tools.scalpingSignals.card.stat.stopLoss',
+      message: 'Stop loss',
+      description: 'Scalping signal card stat label: stop loss',
+    }),
+  },
+  {
+    key: 'expectedProfit',
+    label: translate({
+      id: 'tools.scalpingSignals.card.stat.expectedProfit',
+      message: 'Expected profit',
+      description: 'Scalping signal card stat label: expected profit',
+    }),
+  },
 ];
 
 export default function ScalpingSignalCards(): ReactNode {
@@ -85,7 +114,14 @@ export default function ScalpingSignalCards(): ReactNode {
             <span className={styles.pair}>{signal.pair}</span>
           </div>
 
-          <p className={styles.exchange}>On {signal.exchange}</p>
+          <p className={styles.exchange}>
+            <Translate
+              id="tools.scalpingSignals.card.onExchange"
+              description="Scalping signal card exchange label"
+              values={{exchange: signal.exchange}}>
+              {'On {exchange}'}
+            </Translate>
+          </p>
 
           <dl className={styles.stats}>
             {STAT_ROWS.map((row) => (
