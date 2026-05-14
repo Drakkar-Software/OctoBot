@@ -1,0 +1,117 @@
+---
+title: "Utiliser des formules pour configurer votre prix de référence de market making"
+description: "Configurez votre prix de référence de market making en utilisant les prix d'autres exchanges, un prix statique ou des formules dynamiques selon vos besoins."
+sidebar_position: 5
+---
+
+import YouTube from '@site/src/components/YouTube';
+
+# Utiliser des formules pour configurer votre prix de référence de market making
+
+Lors de la configuration de votre stratégie de market making, le prix de référence définit la manière dont l'algorithme calculera le prix à jour qui doit servir de base à la création de son carnet d'ordres.
+
+<YouTube id="oeiyF9Cdad0" title="OctoBot Market Making - Dynamic Price Formulas" />
+
+OctoBot Market Making propose plusieurs façons de configurer le prix de référence de votre stratégie de market making, notamment :
+
+- Utiliser le prix de votre marché tradé sur votre exchange.
+- Utiliser le prix de votre marché tradé sur un ou plusieurs autres exchanges.
+- Imposer un prix à une valeur statique.
+- Utiliser une formule pour calculer dynamiquement le prix.
+
+Chacune de ces méthodes peut aussi être combinée pour créer une configuration de prix de référence plus complexe.
+
+## Choisir la meilleure source de prix de référence
+
+### Utiliser le prix de votre marché tradé sur votre exchange
+
+C'est la façon la plus simple de configurer votre prix de référence. Elle utilise le prix actuel de votre marché tradé sur l'exchange local.
+
+:::info
+Cette option est nécessaire lorsque votre cryptomonnaie n'est listée que sur l'exchange local.
+:::
+
+Sinon, il est généralement préférable d'utiliser le prix de votre cryptomonnaie basé sur l'exchange offrant la meilleure liquidité pour votre marché, afin de tirer parti de ce prix optimal pour votre stratégie de market making.
+
+### Utiliser un prix provenant d'un autre exchange
+
+![octobot market making bot select exchange](/images/guides/octobot-market-making-bot-select-exchange.png)
+
+Dans ce mode, la stratégie crée son carnet d'ordres en se basant sur le prix d'un autre exchange. C'est utile lorsqu'un autre exchange affiche généralement un prix plus à jour que votre exchange ciblé.
+
+:::info
+Lorsque vous fournissez de la liquidité sur un exchange pour une paire de trading ayant une paire équivalente sur un exchange plus liquide, ce mode est le meilleur choix.
+:::
+
+### Combiner les prix de plusieurs exchanges
+
+Dans certains cas, aucun exchange n'a une liquidité nettement supérieure aux autres et aucun choix évident ne s'impose. Dans ce cas, vous pouvez combiner les prix de plusieurs exchanges pour calculer le prix de référence.
+
+![octobot market making starting bot selected reference price as bitmart mexc and bitget btc usdt](/images/guides/octobot-market-making-starting-bot-selected-reference-price-as-bitmart-mexc-and-bitget-btc-usdt.png)
+
+Vous pouvez également attribuer un poids à chaque exchange pour donner plus d'importance au prix d'un exchange par rapport aux autres.
+
+Le prix de référence final sera la moyenne pondérée des prix de tous les prix de référence sélectionnés.
+
+## Configurer votre prix avec une formule
+
+### Imposer un prix statique
+
+Dans certains cas spécifiques, vous pouvez vouloir imposer un prix statique comme prix de référence. C'est utile si vous souhaitez verrouiller le prix de votre marché à une valeur préconfigurée.
+
+![octobot market making starting bot selected reference price at 90000](/images/guides/octobot-market-making-starting-bot-selected-reference-price-at-90000.png)
+
+Vous pouvez saisir la valeur du prix statique dans le champ `Formula`.
+
+### Calculer le prix dynamiquement
+
+Dans certains cas, vous pouvez vouloir utiliser une formule pour calculer dynamiquement votre prix de référence. C'est utile si vous souhaitez utiliser une valeur différente du prix brut d'un exchange.
+
+Par exemple, vous pourriez vouloir utiliser une formule pour calculer votre prix de référence de market making à partir de :
+
+- Une valeur moyenne du prix de clôture de ce marché sur les 12 dernières heures.
+- Un prix moyen pondéré par le volume de ce marché sur les 3 dernières heures.
+- Le prix moyen + 5 % afin de donner davantage de potentiel de hausse au marché.
+- Un mélange de tout ce qui précède.
+
+![octobot market making starting bot select reference price with formula of price plus 5 percent](/images/guides/octobot-market-making-starting-bot-select-reference-price-with-formula-of-price-plus-5-percent.png)
+
+_Exemple : moyenne mobile du prix sur 4 heures sur 4 périodes + 5 % : `(ma(close, 4)[-1] * 1.05)`_
+
+:::warning
+Le système de formules est encore en bêta. Veuillez signaler tout problème que vous rencontrez et n'hésitez pas à poser vos questions à l'équipe de support ou à demander de nouveaux mots-clés.
+:::
+
+### Mots-clés des formules
+
+Les mots-clés suivants sont disponibles pour être utilisés dans votre formule et peuvent être combinés pour créer n'importe quelle formule requise.
+
+| Mot-clé | Exemple | Détails |
+| :--- | :--- | :--- |
+| `close` | `close[-1]` | Le prix de clôture de la bougie 1h actuelle du marché. |
+| `open` | `open[-1]` | Le prix d'ouverture de la bougie 1h actuelle du marché. |
+| `high` | `high[-3]` | Le prix le plus haut de la bougie 1h n-2 du marché. |
+| `low` | `low[-1]` | Le prix le plus bas de la bougie 1h actuelle du marché. |
+| `volume` | `volume[-2]` | Le volume de la bougie 1h n-1 du marché. |
+| `time` | `time[-1]` | La valeur du timestamp de l'heure d'ouverture de la bougie 1h actuelle du marché. |
+| `ma` | `ma(close, 12)[-1]` | Moyenne mobile simple du prix de clôture sur les 12 dernières heures. |
+| `ema` | `ema(open, 24)[-1]` | Moyenne mobile exponentielle du prix d'ouverture sur les 24 dernières heures. |
+| `vwma` | `vwma(close, volume, 4)[-1]` | Moyenne mobile pondérée par le volume du prix de clôture sur les 4 dernières heures. |
+| `rsi` | `rsi(close, 14)[-1]` | Indice de force relative (RSI) du prix de clôture sur les 14 dernières heures. |
+| `max` | `max(close[-1], open[-1])` | La valeur maximale entre les prix de clôture et d'ouverture. |
+| `min` | `min(ma(close, 12)[-1], ema(open, 24)[-1])` | La valeur minimale entre la moyenne mobile 12h du prix de clôture et la moyenne mobile exponentielle 24h du prix d'ouverture. |
+| `mean` | `mean(close[-1], open[-1], high[-1], low[-1])` | La valeur moyenne entre les prix de clôture, d'ouverture, le plus haut et le plus bas. |
+| `round` | `round(ma(close, 12)[-1], 2)` | Arrondit le résultat de la moyenne mobile du prix de clôture sur les 12 dernières heures à 2 décimales. |
+| `floor` | `floor(close[-1])` | Arrondit le dernier prix de clôture à l'entier inférieur le plus proche. |
+| `ceil` | `ceil(close[-1])` | Arrondit le dernier prix de clôture à l'entier supérieur le plus proche. |
+| `abs` | `abs(close[-1] - open[-1])` | La valeur absolue de la différence entre le dernier prix de clôture et le dernier prix d'ouverture. |
+| `sin` | `sin(3.14)` | Le sinus de l'opérande numérique donné (en radians). |
+| `cos` | `cos(3*pi)` | Le cosinus de l'opérande numérique donné (en radians). |
+| `oscillate` | `oscillate(1000, 10, 60)` | Renvoie la valeur du paramètre 1 à laquelle est ajoutée une composante oscillante basée sur le temps. L'oscillation utilise une onde sinusoïdale avec le pourcentage maximal de la valeur de base (paramètre 2) et une période en minutes (paramètre 3). `oscillate(1000, 10, 60)` renvoie une valeur comprise entre 900 et 1100 sur une période de 60 minutes. |
+| `if` | `100 if close[-1] > open[-1] else (90 + 1)` | 100 si le dernier prix de clôture est supérieur au dernier prix d'ouverture, sinon 91. |
+
+La syntaxe des formules est basée sur la syntaxe Python. En plus des mots-clés ci-dessus, tous les opérateurs de base (tels que `+`, `-`, `*`, `/`, `[]`, `()`, `>`, `<`, `>=`, `<=`, `and`, `or`) sont pris en charge.
+
+:::info
+Important : l'algorithme attend toujours une **valeur numérique unique** comme résultat de la formule. C'est la raison pour laquelle de nombreux exemples utilisent l'opérateur `[-1]` afin de sélectionner la dernière valeur d'une série. Si la formule renvoie une valeur non numérique, le prix de référence ne sera pas calculé et votre bot n'exécutera pas sa stratégie de market making.
+:::

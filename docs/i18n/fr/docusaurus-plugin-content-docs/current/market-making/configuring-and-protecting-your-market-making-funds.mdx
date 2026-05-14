@@ -1,0 +1,96 @@
+---
+title: "Configurer et protéger vos fonds de market making"
+description: "Protégez automatiquement vos fonds de market making contre les manipulations de marché, la forte volatilité et les situations imprévues."
+sidebar_position: 4
+---
+
+import YouTube from '@site/src/components/YouTube';
+
+# Configurer et protéger vos fonds de market making
+
+Un aspect essentiel d'une stratégie de market making est la bonne allocation et la protection des fonds qui lui sont dédiés.
+
+<YouTube id="w332zsfBdKM" title="OctoBot Market Making - Stop Conditions to Protect your Funds" />
+
+Sur OctoBot Market Making, plusieurs mécanismes permettent d'automatiser l'allocation et la protection des fonds en fonction de chaque marché et des besoins propres à chaque utilisateur.
+
+## Stratégies d'allocation des fonds
+
+Lors de la configuration de votre bot de market making, vous pouvez sélectionner une répartition des fonds ainsi que des budgets détaillés dans l'actif de cotation et l'actif de base de la paire tradée.
+
+![octobot market making starting bot funds distribution and budget](/images/guides/octobot-market-making-starting-bot-funds-distribution-and-budget.png)
+
+### Répartition des fonds
+
+Une répartition des fonds définit la manière dont la taille de vos ordres de market making est calculée.
+
+![octobot market making starting bot funds distribution](/images/guides/octobot-market-making-starting-bot-funds-distribution.png)
+
+- Une répartition Plate (Flat) crée des ordres de quantité constante. Cette répartition est utile pour augmenter fortement la liquidité à proximité du prix actuel.
+- Une répartition en Vallée (Valley) crée des ordres dont la quantité augmente avec l'éloignement du prix actuel. Cette répartition est mieux adaptée aux marchés présentant une volatilité attendue plus élevée, car elle laisse davantage de marge aux mouvements de prix avant que l'essentiel du capital de market making ne soit engagé.
+- Une répartition Aléatoire (Random) crée des ordres de taille imprévisible, comprise entre 80 % et 120 % de la taille moyenne des ordres. Cette répartition est utile pour éviter de créer des ordres au même niveau de prix et pour rendre la stratégie de market making plus résiliente face à la manipulation des prix.
+
+### Budgets
+
+Un budget total de market making minimum et maximum peut être configuré pour les actifs de base et de cotation de chaque paire tradée. Cela permet une gestion précise des fonds, vous donnant la possibilité de :
+
+- Laisser le système calculer les fonds de market making idéaux, en fonction de votre configuration et de l'activité de trading récente de l'exchange, dans les limites minimales et maximales que vous avez définies.
+- Ou préconfigurer les montants exacts que vous souhaitez engager dans vos ordres de market making, indépendamment de l'activité de trading sur cet exchange.
+
+![octobot market making starting min max budget](/images/guides/octobot-market-making-starting-min-max-budget.png)
+
+Le **budget idéal basé sur le volume de trading** est automatiquement calculé par le système et sert à créer vos ordres de market making lorsqu'aucun budget minimum ou maximum n'est configuré. Ce montant est réévalué régulièrement et se base sur un pourcentage du volume de trading sur 24 heures de votre paire sur l'exchange ciblé, ainsi que sur votre configuration de market making, afin d'offrir une liquidité optimale pour votre marché. Cela signifie qu'une paire avec un faible volume de trading sur 24 h peut ne nécessiter qu'un budget de quelques milliers d'USDT pour offrir une expérience optimale. À l'inverse, une paire affichant des millions de volume de trading nécessiterait beaucoup plus de capital.
+
+Afin de garder le contrôle sur ce budget, un montant minimum et maximum de chaque actif de la paire tradée peut être configuré pour toujours créer un carnet d'ordres respectant votre budget cible.
+
+:::info
+**Astuce :** si vous souhaitez utiliser un budget constant dans vos ordres de market making, il suffit de définir la même valeur pour le minimum et le maximum. Exemple : définir une valeur USDT minimale et maximale de 150 dédiera toujours 150 USDT à vos ordres de market making (à quelques centimes près en raison des règles d'ordres de l'exchange).
+:::
+
+## Mécanismes de protection des fonds
+
+La protection de vos fonds dans une stratégie de market making est toujours une priorité, et OctoBot Market Making propose des mécanismes pour protéger automatiquement vos fonds contre la manipulation de marché et autres abus.
+
+![octobot market making starting bot stop conditions overview](/images/guides/octobot-market-making-starting-bot-stop-conditions-overview.png)
+
+Lors de la configuration de votre stratégie, vous pouvez ajouter des **conditions d'arrêt** pour chaque paire tradée. Une fois définies, ces conditions interrompent instantanément votre stratégie de market making (en annulant tous les ordres ouverts) et arrêtent le bot comme mesure d'urgence pour protéger votre capital dès qu'une condition est remplie.
+
+### Protection par avoirs minimums
+
+Un avoir total minimum des actifs tradés sur votre compte peut être configuré pour arrêter la stratégie de market making si votre compte vient à manquer d'une certaine cryptomonnaie.
+
+![octobot market making starting bot budget stop conditions](/images/guides/octobot-market-making-starting-bot-budget-stop-conditions.png)
+
+Les avoirs minimums vous permettent de préconfigurer un **budget dépensable maximum**. Par exemple, avec un compte d'exchange détenant 5000 USDT, définir un avoir USDT minimum de 3000 arrêtera automatiquement le bot afin de protéger les 3000 USDT restants sur le compte si trop d'ordres d'achat finissent par être exécutés et que le compte dépense plus d'USDT que prévu.
+
+:::warning
+Configurer un avoir minimum à une valeur inférieure ou égale à l'avoir actuel de votre compte déclenchera instantanément votre condition d'arrêt et votre bot ne pourra pas démarrer correctement.
+:::
+
+### Protection contre la volatilité
+
+Les marchés crypto peuvent parfois être manipulés ou faire l'objet d'abus. C'est particulièrement vrai pour les marchés à faible volume de trading et aux carnets d'ordres peu fournis.
+
+Les conditions d'arrêt liées à la volatilité sont conçues pour réduire autant que possible l'impact de ces événements.
+
+![octobot market making starting bot volatility stop conditions](/images/guides/octobot-market-making-starting-bot-volatility-stop-conditions.png)
+
+OctoBot Market Making permet d'arrêter une stratégie de market making lorsque le [prix de référence](starting-your-market-making-bot#d-configure-the-reference-price) de la stratégie atteint une volatilité préconfigurée.
+
+Lorsqu'elle est activée, le market making peut s'arrêter si son prix de référence s'écarte, à la hausse ou à la baisse, au-delà d'un seuil exprimé en % de sa valeur moyenne sur la période passée.
+
+Exemples :
+
+- **Protection contre les pump & dump** : définir une variation de prix positive maximale de 20 % sur les 60 dernières minutes garantit que la stratégie de market making ne créera pas de carnet d'ordres autour d'un prix supérieur de 20 % à la moyenne des prix de référence maximaux des 60 dernières minutes. En cas de manipulation de type pump & dump de plus de 20 % du prix, le bot la détectera et s'arrêtera de lui-même afin de ne pas être impacté négativement en créant des ordres d'achat au prix artificiellement gonflé.
+- **Protection contre les krachs de marché** : utiliser une variation de prix négative maximale de 15 % sur les 30 dernières minutes arrêtera automatiquement toute activité de market making si le prix de référence descend en dessous de 85 % de la moyenne des prix minimaux des 30 dernières minutes, ce qui empêche de recréer des ordres d'achat en cas de krach soudain du marché.
+
+### Lorsqu'une condition d'arrêt est déclenchée
+
+Dès qu'au moins une des conditions d'arrêt de votre stratégie est remplie, votre bot va :
+
+1. Cesser de créer de nouveaux ordres
+2. Annuler tous ses ordres ouverts
+3. S'arrêter de lui-même
+4. Vous envoyer une notification par e-mail détaillant la raison de l'arrêt et la condition remplie
+
+Une fois qu'un bot a été arrêté à cause d'une condition d'arrêt, il peut toujours être redémarré à votre convenance. Cela se fait généralement lorsque votre marché est revenu à un état normal et que le market making doit reprendre.
