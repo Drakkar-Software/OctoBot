@@ -16,7 +16,7 @@ interface LandingNavProps {
 }
 
 const DEFAULT_LINKS: LandingNavLink[] = [
-  {label: 'OctoBot App', to: '/app'},
+  {label: 'OctoBot App', to: '/'},
   {label: 'Market Making', to: '/market-making'},
   {label: 'Whitelabel', to: '/whitelabel'},
   {label: 'Guides', to: '/guides/octobot'},
