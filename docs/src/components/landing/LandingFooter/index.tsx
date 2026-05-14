@@ -25,6 +25,14 @@ const COLUMNS: FooterColumn[] = [
         }),
         to: '/features/strategy-designer',
       },
+      {
+        label: translate({
+          id: 'nav.footer.product.useCases',
+          message: 'Use cases',
+          description: 'Footer link label',
+        }),
+        to: '/features/ideas',
+      },
       {label: 'OctoBot Cloud', to: 'https://www.octobot.cloud'},
       {
         label: translate({

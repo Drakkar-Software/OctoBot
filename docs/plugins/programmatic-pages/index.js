@@ -79,7 +79,14 @@ module.exports = function programmaticPagesPlugin(context) {
         });
       };
 
-      // Per-coin: what-is-<slug> and <symbol>-prediction.
+      // Exchanges own the /<slug>-trading-bot pattern, so a per-coin
+      // trading-bot page must skip any coin whose slug collides with one.
+      const exchangeSlugs = new Set(exchanges.map((e) => e.slug));
+
+      // Per-coin: what-is-<slug>, <slug>-trading-bot, <slug>-dca-bot and
+      // <symbol>-prediction. The trading-bot / dca-bot pages are gated on
+      // `whatIs` (same as what-is-<slug>) so they only emit for documented
+      // coins and stay anchored on real per-coin content.
       for (const crypto of cryptocurrencies) {
         const sym = crypto.symbol.toLowerCase();
         if (crypto.whatIs) {
@@ -87,6 +94,20 @@ module.exports = function programmaticPagesPlugin(context) {
             `what-is-${crypto.slug}`,
             `what-is-${crypto.slug}`,
             TEMPLATE('WhatIsCrypto'),
+            {crypto},
+          );
+          if (!exchangeSlugs.has(crypto.slug)) {
+            await emit(
+              `${crypto.slug}-trading-bot`,
+              `trading-bot-coin-${crypto.slug}`,
+              TEMPLATE('CoinTradingBot'),
+              {crypto},
+            );
+          }
+          await emit(
+            `${crypto.slug}-dca-bot`,
+            `dca-bot-${crypto.slug}`,
+            TEMPLATE('CoinDcaBot'),
             {crypto},
           );
         }
