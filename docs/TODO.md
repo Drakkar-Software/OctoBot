@@ -104,6 +104,15 @@ For ~N coins and ~M exchanges, per locale (`en`, `fr`):
 Scope is controlled entirely server-side by what the endpoint returns — no docs-repo
 change is needed to grow or shrink the list.
 
+### Future programmatic family — per-exchange token listing
+
+`/features/token-listing` covers the listing keyword cluster generically. The
+per-exchange variants ("MEXC listing requirements", "how to list a token on
+Binance", "<exchange> token listing cost") are programmatic-shaped — one page
+per exchange, same data the plugin already fetches (`exchanges[]`). Worth adding
+as an `ExchangeTokenListing` template + route family once the endpoint ships;
+do not hand-write 20+ of these.
+
 ---
 
 ## How to finish
