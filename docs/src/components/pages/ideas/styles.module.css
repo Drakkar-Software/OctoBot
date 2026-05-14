@@ -1,0 +1,249 @@
+/* Styling for the SEO "ideas" landing pages and their hero visuals.
+ * Mirrors the Neo Glass Dark tokens used across the landing toolkit. */
+
+/* Faint background grid, same treatment as the product feature pages. */
+.gridVeil {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.35;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 80px 80px;
+  -webkit-mask-image: radial-gradient(ellipse at 50% 30%, black 0%, transparent 65%);
+  mask-image: radial-gradient(ellipse at 50% 30%, black 0%, transparent 65%);
+}
+
+/* --- shared visual scaffolding --- */
+.visual {
+  padding: 1.5rem;
+}
+.visualHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 1.1rem;
+}
+.visualLabel {
+  font-family: var(--ng-font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ng-frost);
+}
+.visualNote {
+  font-family: var(--ng-font-mono);
+  font-size: 0.72rem;
+  color: var(--ng-ink-faint);
+}
+
+/* --- LadderVisual: bid/ask order book --- */
+.ladder {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-family: var(--ng-font-mono);
+  font-size: 0.8rem;
+}
+.ladderRow {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  padding: 0.3rem 0.55rem;
+  border-radius: var(--ng-radius-sm);
+  overflow: hidden;
+}
+.ladderRow span {
+  position: relative;
+  z-index: 1;
+}
+.ladderRow::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: var(--depth, 30%);
+  opacity: 0.16;
+}
+.ladderBid {
+  color: var(--ng-pos);
+}
+.ladderBid::before {
+  background: var(--ng-pos);
+}
+.ladderAsk {
+  color: var(--ng-neg);
+}
+.ladderAsk::before {
+  background: var(--ng-neg);
+}
+.ladderMid {
+  display: flex;
+  justify-content: center;
+  padding: 0.35rem 0;
+  color: var(--ng-ink-faint);
+  letter-spacing: 0.1em;
+}
+
+/* --- BarsVisual: column chart --- */
+.bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 130px;
+}
+.bar {
+  flex: 1;
+  border-radius: 3px 3px 0 0;
+  background: linear-gradient(
+    to top,
+    var(--ng-frost-bg-strong),
+    var(--ng-frost)
+  );
+  min-height: 4px;
+}
+.barMuted {
+  background: var(--ng-frost-bg-mid);
+}
+.barsCaption {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.9rem;
+  font-family: var(--ng-font-mono);
+  font-size: 0.78rem;
+  color: var(--ng-ink-muted);
+}
+.barsPnl {
+  color: var(--ng-pos);
+}
+
+/* --- MetricVisual: a single big score plus breakdown --- */
+.metricValue {
+  font-size: 3.4rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: var(--ng-ink);
+}
+.metricValue em {
+  font-size: 1.4rem;
+  font-weight: 600;
+  font-style: normal;
+  color: var(--ng-ink-faint);
+}
+.metricCaption {
+  font-size: 0.9rem;
+  color: var(--ng-ink-muted);
+  margin: 0.4rem 0 1.25rem;
+}
+.metricRows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+.metricRow {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--ng-font-mono);
+  font-size: 0.8rem;
+  color: var(--ng-ink-muted);
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid var(--ng-rule-soft);
+}
+.metricRow:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+.metricRow b {
+  color: var(--ng-frost);
+  font-weight: 600;
+}
+
+/* --- ScheduleVisual: recurring-buy timeline --- */
+.schedule {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.scheduleRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: var(--ng-radius-sm);
+  background: var(--ng-frost-bg-subtle);
+  font-family: var(--ng-font-mono);
+  font-size: 0.8rem;
+}
+.scheduleDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ng-frost);
+  flex-shrink: 0;
+}
+.scheduleDate {
+  color: var(--ng-ink-faint);
+  min-width: 4.5rem;
+}
+.scheduleAmount {
+  color: var(--ng-ink);
+  margin-left: auto;
+}
+
+/* --- CodeVisual: mono snippet --- */
+.code {
+  margin: 0;
+  font-family: var(--ng-font-mono);
+  font-size: 0.78rem;
+  line-height: 1.75;
+  color: var(--ng-frost);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.codeComment {
+  color: var(--ng-ink-faint);
+}
+
+/* --- DeviceVisual: framed app/widget mock --- */
+.device {
+  border: 1px solid var(--ng-frost-border);
+  border-radius: var(--ng-radius-md);
+  padding: 1rem;
+  background: var(--ng-frost-bg-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.deviceBar {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 0.3rem;
+}
+.deviceBar span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ng-frost-bg-strong);
+}
+.deviceLine {
+  height: 10px;
+  border-radius: 3px;
+  background: var(--ng-frost-bg-mid);
+}
+.deviceLineAccent {
+  background: var(--ng-frost-bg-strong);
+}
+.deviceCta {
+  margin-top: 0.3rem;
+  padding: 0.5rem;
+  border-radius: var(--ng-radius-sm);
+  text-align: center;
+  background: var(--ng-frost);
+  color: var(--ng-bg-deep);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
