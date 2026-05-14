@@ -219,10 +219,24 @@
   font-family: var(--ng-font-mono);
   font-size: 20px;
   font-weight: 700;
-  background: currentColor;
   color: var(--ng-bg);
   margin-bottom: 10px;
-  box-shadow: 0 0 18px currentColor;
+}
+.card[data-color='turq'] .cardIcon {
+  background: var(--ng-turquoise);
+  box-shadow: 0 0 18px rgba(101, 231, 207, 0.5);
+}
+.card[data-color='pos'] .cardIcon {
+  background: var(--ng-pos);
+  box-shadow: 0 0 18px rgba(108, 181, 150, 0.45);
+}
+.card[data-color='warn'] .cardIcon {
+  background: var(--ng-warn);
+  box-shadow: 0 0 18px rgba(240, 197, 59, 0.45);
+}
+.card[data-color='frost'] .cardIcon {
+  background: var(--ng-frost);
+  box-shadow: 0 0 18px rgba(133, 214, 215, 0.4);
 }
 .cardWhen {
   font-family: var(--ng-font-mono);

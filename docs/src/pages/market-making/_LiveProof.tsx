@@ -1,5 +1,4 @@
 import React, {useEffect, useState, type ReactNode} from 'react';
-import GlassCard from '@site/src/components/GlassCard';
 import styles from './_LiveProof.module.css';
 
 /*
@@ -82,7 +81,7 @@ export default function LiveProof(): ReactNode {
   const data = STATES[state];
 
   return (
-    <GlassCard variant="hero" padded={false} className={styles.card} data-state={state}>
+    <div className={`ng-card-hero ${styles.card}`} data-state={state}>
       <div className={styles.head}>
         <span className={styles.tag}>
           <span className={styles.tagDot} />
@@ -140,6 +139,6 @@ export default function LiveProof(): ReactNode {
           Replay ↻
         </button>
       </div>
-    </GlassCard>
+    </div>
   );
 }
