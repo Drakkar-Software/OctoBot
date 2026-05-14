@@ -1,0 +1,29 @@
+.list {
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 2), 1fr);
+  gap: 1.25rem 2rem;
+}
+
+.item {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.icon {
+  flex-shrink: 0;
+  font-size: 1.15rem;
+}
+
+.text {
+  font-size: 0.97rem;
+  line-height: 1.55;
+  color: var(--ng-ink-muted);
+  padding-top: 0.4rem;
+}
+
+@media (max-width: 720px) {
+  .list {
+    grid-template-columns: 1fr;
+  }
+}

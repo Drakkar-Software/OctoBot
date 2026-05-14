@@ -28,3 +28,5 @@ export {default as StepList} from './StepList';
 export type {Step} from './StepList';
 export {default as InlineStats} from './InlineStats';
 export type {InlineStat} from './InlineStats';
+export {default as IconList} from './IconList';
+export type {IconListItem} from './IconList';

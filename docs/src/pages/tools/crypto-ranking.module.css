@@ -1,0 +1,100 @@
+/* Styling for /tools/crypto-ranking — page veil + the bespoke _RankingTable
+ * mock and the Coingecko attribution note. */
+
+.gridVeil {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.35;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 80px 80px;
+  -webkit-mask-image: radial-gradient(ellipse at 50% 30%, black 0%, transparent 65%);
+  mask-image: radial-gradient(ellipse at 50% 30%, black 0%, transparent 65%);
+}
+
+/* Ranking table card — clips the scroll container to the card radius. */
+.card {
+  overflow: hidden;
+}
+
+/* Let the table scroll horizontally on narrow screens. */
+.scroll {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  min-width: 38rem;
+  border-collapse: collapse;
+  margin: 0;
+}
+
+.table thead th {
+  text-align: left;
+  padding: 1rem 1.1rem;
+  font-family: var(--ng-font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ng-ink-faint);
+  border-bottom: 1px solid var(--ng-rule-soft);
+  white-space: nowrap;
+}
+
+.table tbody td {
+  padding: 0.85rem 1.1rem;
+  border-bottom: 1px solid var(--ng-rule-soft);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Numeric columns — right aligned, mono. */
+.numCol,
+.num {
+  text-align: right;
+}
+
+.num {
+  font-family: var(--ng-font-mono);
+  font-size: 0.9rem;
+  color: var(--ng-ink);
+}
+
+.rankCol,
+.rank {
+  width: 3rem;
+}
+
+.rank {
+  font-family: var(--ng-font-mono);
+  font-size: 0.85rem;
+  color: var(--ng-ink-faint);
+}
+
+.name {
+  font-weight: 600;
+  color: var(--ng-ink);
+}
+
+.ticker {
+  margin-left: 0.5rem;
+  font-family: var(--ng-font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  color: var(--ng-ink-faint);
+}
+
+/* Coingecko attribution note below the table. */
+.note {
+  margin: 1rem 0 0;
+  font-size: 0.78rem;
+  color: var(--ng-ink-faint);
+  text-align: center;
+}

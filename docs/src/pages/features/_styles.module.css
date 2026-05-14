@@ -1,0 +1,119 @@
+/* Shared styling for the product feature pages under src/pages/features/.
+ * Underscore prefix keeps Docusaurus from treating this as a route. */
+
+.gridVeil {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.35;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 80px 80px;
+  -webkit-mask-image: radial-gradient(ellipse at 50% 30%, black 0%, transparent 65%);
+  mask-image: radial-gradient(ellipse at 50% 30%, black 0%, transparent 65%);
+}
+
+/* Inline CTA row under a section. */
+.cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.75rem;
+  justify-content: center;
+}
+.ctaLeft {
+  justify-content: flex-start;
+}
+
+/* Early-access / waitlist panel. */
+.panel {
+  padding: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  text-align: center;
+}
+.panelTitle {
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--ng-ink);
+  margin: 0;
+}
+.panelText {
+  font-size: 0.95rem;
+  color: var(--ng-ink-muted);
+  line-height: 1.6;
+  margin: 0;
+  max-width: 40rem;
+}
+
+/* Crypto-basket allocation mix. */
+.mix {
+  padding: 1.75rem;
+}
+.mixLabel {
+  font-family: var(--ng-font-mono);
+  font-size: 0.66rem;
+  color: var(--ng-ink-faint);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 0.875rem;
+}
+.mixBar {
+  display: flex;
+  gap: 6px;
+  height: 12px;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.mixBar span {
+  display: block;
+}
+.mixLegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 0.875rem;
+  font-family: var(--ng-font-mono);
+  font-size: 0.78rem;
+  color: var(--ng-ink-muted);
+}
+
+/* TradingView Pine Script prompt → code demo. */
+.pineDemo {
+  padding: 0;
+  overflow: hidden;
+}
+.pineRow {
+  padding: 1.1rem 1.5rem;
+  border-bottom: 1px solid var(--ng-rule-soft);
+}
+.pineRow:last-child {
+  border-bottom: none;
+}
+.pineLabel {
+  font-family: var(--ng-font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ng-frost);
+  margin-bottom: 0.5rem;
+}
+.pinePrompt {
+  font-size: 0.92rem;
+  color: var(--ng-ink-muted);
+  line-height: 1.6;
+  margin: 0;
+}
+.pineCode {
+  margin: 0;
+  font-family: var(--ng-font-mono);
+  font-size: 0.8rem;
+  line-height: 1.7;
+  color: var(--ng-frost);
+  white-space: pre-wrap;
+}

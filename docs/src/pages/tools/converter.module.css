@@ -1,0 +1,92 @@
+/* Styling for /tools/converter — page veil + the bespoke _ConverterCard mock. */
+
+.gridVeil {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.35;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 80px 80px;
+  -webkit-mask-image: radial-gradient(ellipse at 50% 30%, black 0%, transparent 65%);
+  mask-image: radial-gradient(ellipse at 50% 30%, black 0%, transparent 65%);
+}
+
+/* Converter mock card — centered, constrained width. */
+.card {
+  max-width: 30rem;
+  margin: 0 auto;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 1.1rem;
+  border-bottom: 1px solid var(--ng-rule-soft);
+}
+
+.pair {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.coin {
+  font-family: var(--ng-font-mono);
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--ng-ink);
+}
+
+.arrow {
+  color: var(--ng-frost);
+  font-size: 1rem;
+}
+
+.rows {
+  margin: 0;
+  padding: 1.1rem 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--ng-rule-soft);
+}
+.row:last-child {
+  border-bottom: none;
+}
+
+.rowLabel {
+  margin: 0;
+  font-family: var(--ng-font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ng-ink-faint);
+}
+
+.rowValue {
+  margin: 0;
+  font-family: var(--ng-font-mono);
+  font-size: 0.92rem;
+  color: var(--ng-ink);
+}
+
+.asOf {
+  margin: 1.1rem 0 0;
+  font-size: 0.78rem;
+  color: var(--ng-ink-faint);
+  text-align: right;
+}
