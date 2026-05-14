@@ -74,6 +74,10 @@ class AbstractActionDetails(octobot_commons.dataclasses.FlexibleDataclass):
         parameter: typing.Optional[str] = None,
         result_path: typing.Optional[list[str]] = None,
     ):
+        if action_id == self.id:
+            raise octobot_flow.errors.ActionDependencyError(
+                f"Action {self.id} cannot depend on itself. Dependency parameter: {parameter}, result path: {result_path}"
+            )
         self.dependencies.append(ActionDependency(action_id, parameter, result_path))
 
     def get_summary(self, minimal: bool = False) -> str:

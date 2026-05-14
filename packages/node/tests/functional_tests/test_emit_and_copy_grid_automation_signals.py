@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import asyncio
+import datetime
 import decimal
 import json
 import logging
@@ -27,9 +28,8 @@ import typing
 import pytest
 
 import octobot_flow.repositories.community.trading_signals_channel as trading_signals_channel_module
-import octobot_node.protocol.user_actions as user_actions_module
+import octobot_node.scheduler
 import octobot_node.scheduler.internal_trading_signals as internal_trading_signals_module
-import octobot_node.user_actions.user_actions_provider as user_actions_provider_module
 import octobot_protocol.models as octobot_protocol_models
 import octobot_node.scheduler.tasks
 
@@ -407,33 +407,50 @@ if IMPORTED_OCTOBOT_FLOW_GRID_DEPS:
                     f"unexpected OrdersSynchronizer log ({forbidden!r}): {message_text!r}"
                 )
 
-    def _workflow_row_id_matches_provider_created_automation_id(
+    def _workflow_row_id_matches_user_action_selector_created_automation_id(
         *,
         workflow_row_id: str,
-        provider_created_automation_id: str | None,
+        user_action_selector_created_automation_id: str | None,
     ) -> None:
-        assert provider_created_automation_id
+        assert user_action_selector_created_automation_id
         assert (
-            workflow_row_id == provider_created_automation_id
-            or workflow_row_id.startswith(f"{provider_created_automation_id}_")
+            workflow_row_id == user_action_selector_created_automation_id
+            or workflow_row_id.startswith(f"{user_action_selector_created_automation_id}_")
         ), (
-            f"workflow row id {workflow_row_id!r} should equal or extend provider created_automation_id "
-            f"{provider_created_automation_id!r}"
+            f"workflow row id {workflow_row_id!r} should equal or extend user action selector created_automation_id "
+            f"{user_action_selector_created_automation_id!r}"
         )
 
-    def _assert_provider_completed_automation_create(
+    def _merge_user_actions_latest_per_id(
+        user_actions: list[octobot_protocol_models.UserAction],
+    ) -> dict[str, octobot_protocol_models.UserAction]:
+        grouped: dict[str, list[octobot_protocol_models.UserAction]] = {}
+        for user_action in user_actions:
+            grouped.setdefault(user_action.id, []).append(user_action)
+        min_utc = datetime.datetime.min.replace(tzinfo=datetime.UTC)
+
+        def activity_stamp(user_action: octobot_protocol_models.UserAction) -> datetime.datetime:
+            stamp = user_action.updated_at or user_action.created_at
+            if stamp is None:
+                return min_utc
+            if stamp.tzinfo is None:
+                return stamp.replace(tzinfo=datetime.UTC)
+            return stamp
+
+        return {
+            user_action_id: max(group, key=activity_stamp)
+            for user_action_id, group in grouped.items()
+        }
+
+    async def _assert_user_action_selector_completed_automation_create(
         *,
         wallet_address: str,
         user_action_id: str,
         expected_workflow_id: str | None,
     ) -> None:
-        by_id = {
-            user_action.id: user_action
-            for user_action in user_actions_provider_module.UserActionsProvider.instance().list_user_actions(
-                wallet_address,
-            )
-        }
-        assert user_action_id in by_id, f"expected {user_action_id!r} in provider, got {sorted(by_id)!r}"
+        listed = await octobot_node.scheduler.SCHEDULER.list_user_actions(wallet_address)
+        by_id = _merge_user_actions_latest_per_id(listed)
+        assert user_action_id in by_id, f"expected {user_action_id!r} in user action workflows, got {sorted(by_id)!r}"
         stored = by_id[user_action_id]
         assert stored.status == octobot_protocol_models.UserActionStatus.COMPLETED
         assert stored.result is not None
@@ -443,22 +460,18 @@ if IMPORTED_OCTOBOT_FLOW_GRID_DEPS:
         assert inner.error_details is None
         assert inner.error_message is None
         if expected_workflow_id is not None:
-            _workflow_row_id_matches_provider_created_automation_id(
+            _workflow_row_id_matches_user_action_selector_created_automation_id(
                 workflow_row_id=expected_workflow_id,
-                provider_created_automation_id=inner.created_automation_id,
+                user_action_selector_created_automation_id=inner.created_automation_id,
             )
         else:
             assert inner.created_automation_id
             assert len(inner.created_automation_id) > 0
 
-    def _assert_provider_completed_automation_stop(*, wallet_address: str, user_action_id: str) -> None:
-        by_id = {
-            user_action.id: user_action
-            for user_action in user_actions_provider_module.UserActionsProvider.instance().list_user_actions(
-                wallet_address,
-            )
-        }
-        assert user_action_id in by_id, f"expected {user_action_id!r} in provider, got {sorted(by_id)!r}"
+    async def _assert_user_action_selector_completed_automation_stop(*, wallet_address: str, user_action_id: str) -> None:
+        listed = await octobot_node.scheduler.SCHEDULER.list_user_actions(wallet_address)
+        by_id = _merge_user_actions_latest_per_id(listed)
+        assert user_action_id in by_id, f"expected {user_action_id!r} in user action workflows, got {sorted(by_id)!r}"
         stored = by_id[user_action_id]
         assert stored.status == octobot_protocol_models.UserActionStatus.COMPLETED
         assert stored.result is not None
@@ -605,13 +618,17 @@ class TestEmitAndCopyGridAutomationSignals:
                             # Step 1 — enqueue master emitting grid signals (pushes to local sync server).
                             try:
                                 await asyncio.wait_for(
-                                    user_actions_module.execute_user_action(master_user_action, wallet_address),
+                                    grid_sim_util.enqueue_user_action_workflow_and_await_terminal_result(
+                                        temp_dbos_scheduler,
+                                        master_user_action,
+                                        wallet_address,
+                                    ),
                                     timeout=_T_ENQUEUE_SECONDS,
                                 )
                             except TimeoutError as exc:
                                 raise AssertionError("execute_user_action timed out enqueueing master workflow") from exc
 
-                            _assert_provider_completed_automation_create(
+                            await _assert_user_action_selector_completed_automation_create(
                                 wallet_address=wallet_address,
                                 user_action_id=master_user_action.id,
                                 expected_workflow_id=None,
@@ -640,21 +657,21 @@ class TestEmitAndCopyGridAutomationSignals:
                             assert master_metadata.strategy_id == _SHARED_STRATEGY_ID
                             assert master_metadata.emit_signals is True
 
-                            master_workflow_rows_for_provider = [
+                            master_workflow_rows_for_user_action_selector = [
                                 workflow_row
                                 for workflow_row in await temp_dbos_scheduler.INSTANCE.list_workflows_async()
                                 if grid_sim_util.workflows_util_module.get_automation_id(workflow_row)
                                 == master_user_action.id
                             ]
-                            assert master_workflow_rows_for_provider
-                            master_workflow_row_for_provider = max(
-                                master_workflow_rows_for_provider,
+                            assert master_workflow_rows_for_user_action_selector
+                            master_workflow_row_for_user_action_selector = max(
+                                master_workflow_rows_for_user_action_selector,
                                 key=lambda workflow_status: workflow_status.updated_at or 0,
                             )
-                            _assert_provider_completed_automation_create(
+                            await _assert_user_action_selector_completed_automation_create(
                                 wallet_address=wallet_address,
                                 user_action_id=master_user_action.id,
-                                expected_workflow_id=master_workflow_row_for_provider.workflow_id,
+                                expected_workflow_id=master_workflow_row_for_user_action_selector.workflow_id,
                             )
 
                             bootstrap_fetched = await _fetch_strategy_signals_from_sync(wallet_address)
@@ -673,18 +690,18 @@ class TestEmitAndCopyGridAutomationSignals:
                             # Step 2 — enqueue copy (pulls bootstrap snapshot from server).
                             try:
                                 await asyncio.wait_for(
-                                    user_actions_module.execute_user_action(copy_user_action, wallet_address),
+                                    grid_sim_util.enqueue_user_action_workflow_and_await_terminal_result(
+                                        temp_dbos_scheduler,
+                                        copy_user_action,
+                                        wallet_address,
+                                    ),
                                     timeout=_T_ENQUEUE_SECONDS,
                                 )
                             except TimeoutError as exc:
                                 raise AssertionError("execute_user_action timed out enqueueing copy workflow") from exc
 
-                            by_id_after_copy = {
-                                user_action.id: user_action
-                                for user_action in user_actions_provider_module.UserActionsProvider.instance().list_user_actions(
-                                    wallet_address,
-                                )
-                            }
+                            listed_after_copy = await octobot_node.scheduler.SCHEDULER.list_user_actions(wallet_address)
+                            by_id_after_copy = _merge_user_actions_latest_per_id(listed_after_copy)
                             assert master_user_action.id in by_id_after_copy
                             assert copy_user_action.id in by_id_after_copy
                             master_after_copy = by_id_after_copy[master_user_action.id]
@@ -703,9 +720,9 @@ class TestEmitAndCopyGridAutomationSignals:
                                 == octobot_protocol_models.UserActionResultType.AUTOMATION
                             )
                             assert copy_inner.result_type == octobot_protocol_models.UserActionResultType.AUTOMATION
-                            _workflow_row_id_matches_provider_created_automation_id(
-                                workflow_row_id=master_workflow_row_for_provider.workflow_id,
-                                provider_created_automation_id=master_inner_after_copy.created_automation_id,
+                            _workflow_row_id_matches_user_action_selector_created_automation_id(
+                                workflow_row_id=master_workflow_row_for_user_action_selector.workflow_id,
+                                user_action_selector_created_automation_id=master_inner_after_copy.created_automation_id,
                             )
                             assert copy_inner.created_automation_id
                             assert len(copy_inner.created_automation_id) > 0
@@ -733,21 +750,21 @@ class TestEmitAndCopyGridAutomationSignals:
                                 btc_usdc_close=decimal.Decimal(str(simulated_close["value"])),
                             )
 
-                            copy_workflow_rows_for_provider = [
+                            copy_workflow_rows_for_user_action_selector = [
                                 workflow_row
                                 for workflow_row in await temp_dbos_scheduler.INSTANCE.list_workflows_async()
                                 if grid_sim_util.workflows_util_module.get_automation_id(workflow_row)
                                 == _COPY_AUTOMATION_ID
                             ]
-                            assert copy_workflow_rows_for_provider
-                            copy_workflow_row_for_provider = max(
-                                copy_workflow_rows_for_provider,
+                            assert copy_workflow_rows_for_user_action_selector
+                            copy_workflow_row_for_user_action_selector = max(
+                                copy_workflow_rows_for_user_action_selector,
                                 key=lambda workflow_status: workflow_status.updated_at or 0,
                             )
-                            _assert_provider_completed_automation_create(
+                            await _assert_user_action_selector_completed_automation_create(
                                 wallet_address=wallet_address,
                                 user_action_id=copy_user_action.id,
-                                expected_workflow_id=copy_workflow_row_for_provider.workflow_id,
+                                expected_workflow_id=copy_workflow_row_for_user_action_selector.workflow_id,
                             )
 
                             caplog.clear()
@@ -837,7 +854,11 @@ class TestEmitAndCopyGridAutomationSignals:
                                 )
                                 try:
                                     await asyncio.wait_for(
-                                        user_actions_module.execute_user_action(stop_user_action, wallet_address),
+                                        grid_sim_util.enqueue_user_action_workflow_and_await_terminal_result(
+                                            temp_dbos_scheduler,
+                                            stop_user_action,
+                                            wallet_address,
+                                        ),
                                         timeout=_T_STOP_SEND_SECONDS,
                                     )
                                 except TimeoutError as exc:
@@ -845,11 +866,11 @@ class TestEmitAndCopyGridAutomationSignals:
                                         f"execute_user_action stop timed out for {automation_id}"
                                     ) from exc
 
-                            _assert_provider_completed_automation_stop(
+                            await _assert_user_action_selector_completed_automation_stop(
                                 wallet_address=wallet_address,
                                 user_action_id=f"ua-stop-{master_automation_id}",
                             )
-                            _assert_provider_completed_automation_stop(
+                            await _assert_user_action_selector_completed_automation_stop(
                                 wallet_address=wallet_address,
                                 user_action_id=f"ua-stop-{_COPY_AUTOMATION_ID}",
                             )

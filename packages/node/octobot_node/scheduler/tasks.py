@@ -13,14 +13,36 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
+import typing
+
 import octobot_flow.entities
 import octobot_node.enums
 import octobot_node.models
 import octobot_node.scheduler.workflows_util as workflows_util
 import octobot_node.scheduler.workflows.params as params
+import octobot_protocol.models as protocol_models
 
 
-async def trigger_task(task: octobot_node.models.Task) -> str:
+async def trigger_user_action_workflow(
+    user_action: protocol_models.UserAction,
+    wallet_address: str,
+) -> str:
+    import octobot_node.scheduler  # avoid circular import
+    if not octobot_node.scheduler.is_initialized():
+        raise RuntimeError("Scheduler is not initialized")
+    import octobot_node.scheduler.workflows.user_action_workflow as user_action_workflow
+    # todo implement
+    handle = await octobot_node.scheduler.SCHEDULER.USER_ACTION_QUEUE.enqueue_async(
+        user_action_workflow.UserActionWorkflow.execute_user_action,
+        inputs=params.UserActionWorkflowInputs(
+            wallet_address=wallet_address, user_action=user_action,
+        ).to_dict(include_default_values=False)
+    )
+    return handle.workflow_id
+
+async def trigger_task(
+    task: octobot_node.models.Task, target_workflow_id: typing.Optional[str] = None
+) -> str:
     import octobot_node.scheduler  # avoid circular import
     if not octobot_node.scheduler.is_initialized():
         raise RuntimeError("Scheduler is not initialized")
@@ -28,10 +50,18 @@ async def trigger_task(task: octobot_node.models.Task) -> str:
     handle = None
     # enqueue workflow instead of starting it to dispatch them to multiple workers if possible
     if task.type == octobot_node.models.TaskType.EXECUTE_ACTIONS.value:
-        handle = await octobot_node.scheduler.SCHEDULER.AUTOMATION_WORKFLOW_QUEUE.enqueue_async(
-            automation_workflow.AutomationWorkflow.execute_automation,
-            inputs=params.AutomationWorkflowInputs(task=task).to_dict(include_default_values=False)
-        )
+        inputs = params.AutomationWorkflowInputs(task=task).to_dict(include_default_values=False)
+        if target_workflow_id:
+            with octobot_node.scheduler.SCHEDULER.SetWorkflowID(target_workflow_id):
+                handle = await octobot_node.scheduler.SCHEDULER.AUTOMATION_WORKFLOW_QUEUE.enqueue_async(
+                    automation_workflow.AutomationWorkflow.execute_automation,
+                    inputs=inputs
+                )
+        else:
+            handle = await octobot_node.scheduler.SCHEDULER.AUTOMATION_WORKFLOW_QUEUE.enqueue_async(
+                automation_workflow.AutomationWorkflow.execute_automation,
+                inputs=inputs
+            )
     else:
         raise ValueError(f"Unsupported task type: {task.type}")
     return handle.workflow_id

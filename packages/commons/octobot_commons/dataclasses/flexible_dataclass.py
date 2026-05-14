@@ -86,5 +86,9 @@ def _get_nested_class(value, target_type):
     if issubclass(resolved_type, FlexibleDataclass):
         return resolved_type.from_dict(value)
     if PydanticBaseModel is not None and issubclass(resolved_type, PydanticBaseModel):
+        if hasattr(resolved_type, "from_dict"):
+            # Prefer custom from_dict when models implement 
+            # discriminator or custom parsing.
+            return resolved_type.from_dict(value)
         return resolved_type.model_validate(value)
     return value

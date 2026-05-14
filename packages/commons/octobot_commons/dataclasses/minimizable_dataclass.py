@@ -60,6 +60,11 @@ def _convert_value_for_dict(val, include_default_values: bool):
     if isinstance(val, dict):
         return {k: _convert_value_for_dict(v, include_default_values) for k, v in val.items()}
     if isinstance(val, pydantic.BaseModel):
+        if hasattr(val, "to_json"):
+            # openapi oneOf wrappers: discriminator fields live on the concrete instance,
+            # not on the wrapper; serialize the nested model so FlexibleDataclass.from_dict
+            # can deserialize via .from_dict / JSON shape.
+            return json.loads(val.to_json())
         return json.loads(val.model_dump_json(indent=None, exclude_defaults=True))
     return val
 

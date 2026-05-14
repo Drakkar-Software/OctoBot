@@ -20,6 +20,7 @@ import logging
 
 import octobot_commons.dataclasses
 
+import octobot_node.errors as errors
 import octobot_node.scheduler.workflows_util as workflows_util
 
 try:
@@ -27,6 +28,7 @@ try:
     import octobot_flow.parsers
     import octobot_flow.entities
     import octobot_flow.jobs
+    import octobot_flow.errors
     # Requires octobot_flow import and importable tentacles folder
 
     # ensure environment is initialized
@@ -112,10 +114,13 @@ class OctoBotActionsJob:
         result: OctoBotActionsJobResult,
         wallet_address: typing.Optional[str] = None,
     ):
-        parsed_description = OctoBotActionsJobDescription.parse_task_description(description)
-        self.description: OctoBotActionsJobDescription = OctoBotActionsJobDescription.from_dict(
-            parsed_description
-        )
+        try:
+            parsed_description = OctoBotActionsJobDescription.parse_task_description(description)
+            self.description: OctoBotActionsJobDescription = OctoBotActionsJobDescription.from_dict(
+                parsed_description
+            )
+        except octobot_flow.errors.ActionDependencyError as err:
+            raise errors.WorkflowDAGDependenciesError(err) from err
         if wallet_address is not None:
             self.description.auth_details["wallet_address"] = wallet_address
         self.priority_user_actions: list[octobot_flow.entities.AbstractActionDetails] = [
@@ -162,7 +167,7 @@ class OctoBotActionsJob:
         )
         has_next_actions = bool(automation.actions_dag.get_executable_actions())
         if not has_next_actions and (pending_actions := automation.actions_dag.get_pending_actions()):
-            raise ValueError(
+            raise errors.WorkflowDAGDependenciesError(
                 f"Automation {automation.metadata.automation_id}: actions DAG dependencies issue: "
                 f"no executable actions while there are still "
                 f"{len(pending_actions)} pending actions: {pending_actions}"

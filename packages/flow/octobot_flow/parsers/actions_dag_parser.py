@@ -74,6 +74,7 @@ class ActionsDAGParserParams(octobot_commons.dataclasses.MinimizableDataclass):
     MAX_DELAY: typing.Optional[float] = None
     BLOCKCHAIN_INIT_FILENAME: typing.Optional[str] = None
     BLOCKCHAIN_INIT_PASSWORD: typing.Optional[str] = None
+    BLOCKCHAIN_INIT_PORT: typing.Optional[int] = None
     BLOCKCHAIN_INIT_CLOSE_WALLET_ON_EXIT: typing.Optional[bool] = None
     BLOCKCHAIN_FROM: typing.Optional[str] = None
     BLOCKCHAIN_FROM_AMOUNT: typing.Optional[float] = None
@@ -519,6 +520,7 @@ class ActionsDAGParser:
         descriptors_overrides = {
             "filename": self.params.BLOCKCHAIN_INIT_FILENAME,
             "password": self.params.BLOCKCHAIN_INIT_PASSWORD,
+            "port": self.params.BLOCKCHAIN_INIT_PORT,
             "close_wallet_on_exit": self.params.BLOCKCHAIN_INIT_CLOSE_WALLET_ON_EXIT,
         }
         blockchain_wallet_init_details = actions_params.BlockchainWalletInitParams(

@@ -31,6 +31,7 @@ from tests.scheduler import temp_dbos_scheduler
 
 def _make_wf_status(workflow_id: str, status: str, wallet_address: str = "0xaaa") -> mock.Mock:
     """Create a mock WorkflowStatus with wallet_address baked into the input field."""
+    import octobot_node.enums as octobot_node_enums
     import octobot_node.scheduler.workflows.params as params
     import octobot_node.models as models
     task = models.Task(
@@ -40,6 +41,7 @@ def _make_wf_status(workflow_id: str, status: str, wallet_address: str = "0xaaa"
     wf = mock.Mock()
     wf.workflow_id = workflow_id
     wf.status = status
+    wf.queue_name = octobot_node_enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE.value
     wf.input = {
         "args": [inputs.to_dict(include_default_values=False)],
         "kwargs": {},
@@ -223,12 +225,14 @@ class TestGetTaskMetrics:
         toward every wallet's metrics — never silently dropped (that hid all errored tasks).
         """
         import dbos
+        import octobot_node.enums as octobot_node_enums
 
         legacy_wf = _make_wf_status("dddddddd-dddd-dddd-dddd-ddddddddddd1",
                                      dbos.WorkflowStatusString.SUCCESS.value, wallet_address=None)
         unparseable_wf = mock.Mock()
         unparseable_wf.workflow_id = "dddddddd-dddd-dddd-dddd-ddddddddddd2"
         unparseable_wf.status = dbos.WorkflowStatusString.SUCCESS.value
+        unparseable_wf.queue_name = octobot_node_enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE.value
         unparseable_wf.input = {"args": [], "kwargs": {}}  # nothing parseable
         unparseable_wf.created_at = None
         unparseable_wf.updated_at = None

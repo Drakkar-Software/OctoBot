@@ -22,6 +22,11 @@ from .automation_workflow_params import (
     AutomationWorkflowIterationResult,
     AutomationWorkflowOutput,
 )
+from .user_action_workflow_params import (
+    UserActionWorkflowInputs,
+    UserActionWorkflowOutput,
+    UserActionExecutionResult,
+)
 
 __all__ = [
     "AutomationWorkflowActionUpdate",
@@ -29,4 +34,7 @@ __all__ = [
     "AutomationWorkflowIterationResult",
     "AutomationWorkflowOutput",
     "ProgressStatus",
+    "UserActionWorkflowInputs",
+    "UserActionExecutionResult",
+    "UserActionWorkflowOutput",
 ]

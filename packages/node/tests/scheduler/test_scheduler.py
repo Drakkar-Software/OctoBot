@@ -15,11 +15,13 @@
 #  License along with this library.
 
 import json
+import datetime
 import mock
 import pytest
 import dbos
 
 import octobot_commons.cryptography
+import octobot_protocol.models as protocol_models
 import octobot_node.config
 import octobot_node.models
 import octobot_node.scheduler.encryption as encryption
@@ -285,7 +287,7 @@ class TestSchedulerGetResults:
 
     @pytest.mark.asyncio
     async def test_get_results_wallet_filter_keeps_workflow_with_unparseable_input(self):
-        """Regression: a crashed workflow may have unparseable input → get_input_task returns None.
+        """Regression: a crashed workflow may have unparseable input → get_automation_input_task returns None.
         Must remain visible — silently dropping is what hid all errored tasks before.
         """
         ws = mock.Mock(spec=dbos.WorkflowStatus)
@@ -613,3 +615,102 @@ class TestSchedulerGetPendingTasks:
         assert len(executions) == 1
         assert executions[0].name is None
 
+
+class TestSchedulerListUserActions:
+    @pytest.mark.asyncio
+    async def test_returns_empty_when_instance_missing(self):
+        sched = scheduler_module.Scheduler()
+        sched.INSTANCE = None
+        assert await sched.list_user_actions("0xabc") == []
+
+    @pytest.mark.asyncio
+    async def test_merges_active_input_and_terminal_output_sorted_by_created_at(self):
+        wallet_segment = "0xw1"
+        ua_pending = protocol_models.UserAction(
+            id="ua-p",
+            configuration=None,
+            created_at=datetime.datetime(2024, 6, 1, tzinfo=datetime.UTC),
+        )
+        inputs_pending = params.UserActionWorkflowInputs(
+            wallet_address=wallet_segment,
+            user_action=ua_pending,
+        ).to_dict(include_default_values=False)
+        workflow_pending = mock.Mock(spec=dbos.WorkflowStatus)
+        workflow_pending.workflow_id = "wf-pending-1"
+        workflow_pending.input = {"args": [inputs_pending], "kwargs": {}}
+        workflow_pending.created_at = datetime.datetime(2024, 6, 2, tzinfo=datetime.UTC)
+
+        ua_done = protocol_models.UserAction(
+            id="ua-done",
+            status=protocol_models.UserActionStatus.COMPLETED,
+            configuration=None,
+            created_at=datetime.datetime(2024, 5, 1, tzinfo=datetime.UTC),
+        )
+        output_payload = params.UserActionWorkflowOutput(
+            wallet_address=wallet_segment,
+            updated_user_action=ua_done,
+        ).to_dict(include_default_values=False)
+        workflow_done = mock.Mock(spec=dbos.WorkflowStatus)
+        workflow_done.workflow_id = "wf-done-1"
+        workflow_done.input = {"args": [], "kwargs": {}}
+        workflow_done.output = output_payload
+        workflow_done.created_at = datetime.datetime(2024, 5, 2, tzinfo=datetime.UTC)
+
+        sched, mock_instance = _make_scheduler_with_mock_instance()
+        mock_instance.list_workflows_async = mock.AsyncMock(
+            side_effect=[[workflow_pending], [workflow_done]],
+        )
+        listed = await sched.list_user_actions(wallet_segment)
+        assert [user_action_row.id for user_action_row in listed] == ["ua-done", "ua-p"]
+
+    @pytest.mark.asyncio
+    async def test_wallet_filter_excludes_other_wallet_pending_rows(self):
+        wallet_a = "0xw_a"
+        wallet_b = "0xw_b"
+        ua_a = protocol_models.UserAction(id="ua-a", configuration=None)
+        ua_b = protocol_models.UserAction(id="ua-b", configuration=None)
+        inp_a = params.UserActionWorkflowInputs(wallet_address=wallet_a, user_action=ua_a).to_dict(
+            include_default_values=False,
+        )
+        inp_b = params.UserActionWorkflowInputs(wallet_address=wallet_b, user_action=ua_b).to_dict(
+            include_default_values=False,
+        )
+        workflow_a = mock.Mock(spec=dbos.WorkflowStatus)
+        workflow_a.workflow_id = "wfa"
+        workflow_a.input = {"args": [inp_a], "kwargs": {}}
+        workflow_a.created_at = None
+        workflow_b = mock.Mock(spec=dbos.WorkflowStatus)
+        workflow_b.workflow_id = "wfb"
+        workflow_b.input = {"args": [inp_b], "kwargs": {}}
+        workflow_b.created_at = None
+
+        sched, mock_instance = _make_scheduler_with_mock_instance()
+        mock_instance.list_workflows_async = mock.AsyncMock(side_effect=[[workflow_a, workflow_b], []])
+        listed = await sched.list_user_actions(wallet_a)
+        assert len(listed) == 1
+        assert listed[0].id == "ua-a"
+
+    @pytest.mark.asyncio
+    async def test_terminal_without_output_builds_failed_action_from_input(self):
+        wallet_segment = "0xw_fail"
+        ua_in = protocol_models.UserAction(id="ua-fail", configuration=None)
+        inp = params.UserActionWorkflowInputs(
+            wallet_address=wallet_segment,
+            user_action=ua_in,
+        ).to_dict(include_default_values=False)
+        workflow_error = mock.Mock(spec=dbos.WorkflowStatus)
+        workflow_error.workflow_id = "wf-err"
+        workflow_error.input = {"args": [inp], "kwargs": {}}
+        workflow_error.output = None
+        workflow_error.error = "dbos boom"
+        workflow_error.created_at = None
+
+        sched, mock_instance = _make_scheduler_with_mock_instance()
+        mock_instance.list_workflows_async = mock.AsyncMock(side_effect=[[], [workflow_error]])
+        listed = await sched.list_user_actions(wallet_segment)
+        assert len(listed) == 1
+        assert listed[0].status == protocol_models.UserActionStatus.FAILED
+        inner = listed[0].result.actual_instance
+        assert isinstance(inner, protocol_models.AccountActionResult)
+        assert inner.error_details is not None
+        assert "dbos boom" in inner.error_details

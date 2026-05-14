@@ -101,13 +101,20 @@ class AutomationWorkflow:
         return json.dumps(output.to_dict(include_default_values=False)) if output else None
 
     @staticmethod
+    def _should_retry(error: BaseException) -> bool:
+        return not isinstance(error, (
+            # workflow stopping errors
+            errors.WorkflowActionExecutionError,
+        ))
+
+    @staticmethod
     @SCHEDULER.INSTANCE.step(
         name="execute_iteration",
         retries_allowed=True,
         interval_seconds = constants.AUTOMATION_WORKFLOW_RETRY_INTERVAL_SECONDS,
         max_attempts=constants.AUTOMATION_WORKFLOW_MAX_ITERATION_RETRIES,
         backoff_rate=constants.AUTOMATION_WORKFLOW_BACKOFF_RATE,
-        # should_retry=XXX # todo add in dbos 2.20.0
+        should_retry=_should_retry,
     )
     async def execute_iteration(inputs: dict, actions_update: typing.Optional[dict]) -> dict:
         """
@@ -121,6 +128,7 @@ class AutomationWorkflow:
 
         Will retry up to 3 times in case of an unexpected error before failing step.
         """
+        # TODO stop exec if wf status is cancelled + test
         parsed_inputs: params.AutomationWorkflowInputs = params.AutomationWorkflowInputs.from_dict(inputs)
         executed_step: str = "no action executed"
         execution_error = next_step = next_step_at = None
@@ -293,17 +301,17 @@ class AutomationWorkflow:
         suffix = workflow_id[constants.PARENT_WORKFLOW_ID_LENGTH:]
         if not suffix:
             current_child_id = 0
-        else:
-            if not suffix.startswith("_"):
-                raise errors.WorkflowInputError(
-                    f"Invalid child workflow suffix format in workflow ID: '{workflow_id}'."
-                )
+        elif suffix[0] in "_-":
             try:
                 current_child_id = int(suffix[1:])
             except ValueError as error:
                 raise errors.WorkflowInputError(
                     f"Invalid non-numeric child workflow suffix in workflow ID: '{workflow_id}'."
                 ) from error
+        else:
+            raise errors.WorkflowInputError(
+                f"Invalid child workflow suffix format in workflow ID: '{workflow_id}'."
+            )
         next_child_id = current_child_id + 1
         return f"{parent_workflow_id}_{next_child_id}"
 
@@ -349,6 +357,8 @@ class AutomationWorkflow:
 
     @staticmethod
     def _get_failed_error_status(error: Exception) -> str:
+        if isinstance(error, errors.WorkflowActionExecutionError):
+            return error.ERROR_MESSAGE
         if isinstance(error, dbos.error.DBOSMaxStepRetriesExceeded):
             last_error = error.errors[-1]
             if isinstance(last_error, octobot_flow.errors.InvalidAutomationActionError):

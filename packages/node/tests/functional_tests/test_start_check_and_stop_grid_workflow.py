@@ -14,6 +14,7 @@
 #  OctoBot. If not, see https://www.gnu.org/licenses/.
 
 import asyncio
+import datetime
 import mock
 import time
 import typing
@@ -21,9 +22,9 @@ import typing
 import dbos
 import pytest
 
-import octobot_node.protocol.user_actions as user_actions_module
-import octobot_node.user_actions.user_actions_provider as user_actions_provider_module
 import octobot_protocol.models as octobot_protocol_models
+
+import octobot_node.scheduler
 
 from . import grid_workflow_simulator_test_util as grid_sim_util
 from tests.scheduler import temp_dbos_scheduler
@@ -47,34 +48,52 @@ _T_STOP_COMPLETE_SECONDS = 10.0
 _GRID_ACCOUNT_ID = "functional_grid_account"
 
 
-def _workflow_row_id_matches_provider_created_automation_id(
+def _workflow_row_id_matches_user_action_selector_created_automation_id(
     *,
     workflow_row_id: str,
-    provider_created_automation_id: str | None,
+    user_action_selector_created_automation_id: str | None,
 ) -> None:
-    assert provider_created_automation_id
+    assert user_action_selector_created_automation_id
     assert (
-        workflow_row_id == provider_created_automation_id
-        or workflow_row_id.startswith(f"{provider_created_automation_id}_")
+        workflow_row_id == user_action_selector_created_automation_id
+        or workflow_row_id.startswith(f"{user_action_selector_created_automation_id}_")
     ), (
-        f"workflow row id {workflow_row_id!r} should equal or extend provider created_automation_id "
-        f"{provider_created_automation_id!r}"
+        f"workflow row id {workflow_row_id!r} should equal or extend user action selector created_automation_id "
+        f"{user_action_selector_created_automation_id!r}"
     )
 
 
-def _assert_provider_completed_automation_create(
+def _merge_user_actions_latest_per_id(
+    user_actions: list[octobot_protocol_models.UserAction],
+) -> dict[str, octobot_protocol_models.UserAction]:
+    grouped: dict[str, list[octobot_protocol_models.UserAction]] = {}
+    for user_action in user_actions:
+        grouped.setdefault(user_action.id, []).append(user_action)
+    min_utc = datetime.datetime.min.replace(tzinfo=datetime.UTC)
+
+    def activity_stamp(user_action: octobot_protocol_models.UserAction) -> datetime.datetime:
+        stamp = user_action.updated_at or user_action.created_at
+        if stamp is None:
+            return min_utc
+        if stamp.tzinfo is None:
+            return stamp.replace(tzinfo=datetime.UTC)
+        return stamp
+
+    return {
+        user_action_id: max(group, key=activity_stamp)
+        for user_action_id, group in grouped.items()
+    }
+
+
+async def _assert_user_action_selector_completed_automation_create(
     *,
     user_action_id: str,
     expected_workflow_id: str | None,
     wallet_address: str = grid_sim_util.SIMULATOR_GRID_TEST_COMMUNITY_WALLET_ADDRESS,
 ) -> None:
-    by_id = {
-        user_action.id: user_action
-        for user_action in user_actions_provider_module.UserActionsProvider.instance().list_user_actions(
-            wallet_address,
-        )
-    }
-    assert user_action_id in by_id, f"expected {user_action_id!r} in provider, got {sorted(by_id)!r}"
+    listed = await octobot_node.scheduler.SCHEDULER.list_user_actions(wallet_address)
+    by_id = _merge_user_actions_latest_per_id(listed)
+    assert user_action_id in by_id, f"expected {user_action_id!r} in user action workflows, got {sorted(by_id)!r}"
     stored = by_id[user_action_id]
     assert stored.status == octobot_protocol_models.UserActionStatus.COMPLETED
     assert stored.result is not None
@@ -84,9 +103,9 @@ def _assert_provider_completed_automation_create(
     assert inner.error_details is None
     assert inner.error_message is None
     if expected_workflow_id is not None:
-        _workflow_row_id_matches_provider_created_automation_id(
+        _workflow_row_id_matches_user_action_selector_created_automation_id(
             workflow_row_id=expected_workflow_id,
-            provider_created_automation_id=inner.created_automation_id,
+            user_action_selector_created_automation_id=inner.created_automation_id,
         )
     else:
         # ensure created_automation_id is set
@@ -94,18 +113,14 @@ def _assert_provider_completed_automation_create(
         assert len(inner.created_automation_id) > 0
 
 
-def _assert_provider_completed_automation_stop(
+async def _assert_user_action_selector_completed_automation_stop(
     *,
     user_action_id: str,
     wallet_address: str = grid_sim_util.SIMULATOR_GRID_TEST_COMMUNITY_WALLET_ADDRESS,
 ) -> None:
-    by_id = {
-        user_action.id: user_action
-        for user_action in user_actions_provider_module.UserActionsProvider.instance().list_user_actions(
-            wallet_address,
-        )
-    }
-    assert user_action_id in by_id, f"expected {user_action_id!r} in provider, got {sorted(by_id)!r}"
+    listed = await octobot_node.scheduler.SCHEDULER.list_user_actions(wallet_address)
+    by_id = _merge_user_actions_latest_per_id(listed)
+    assert user_action_id in by_id, f"expected {user_action_id!r} in user action workflows, got {sorted(by_id)!r}"
     stored = by_id[user_action_id]
     assert stored.status == octobot_protocol_models.UserActionStatus.COMPLETED
     assert stored.result is not None
@@ -156,13 +171,17 @@ class TestTriggerTaskGridDbosIntegration:
         ):
             try:
                 await asyncio.wait_for(
-                    user_actions_module.execute_user_action(create_user_action, wallet_address),
+                    grid_sim_util.enqueue_user_action_workflow_and_await_terminal_result(
+                        temp_dbos_scheduler,
+                        create_user_action,
+                        wallet_address,
+                    ),
                     timeout=_T_ENQUEUE_SECONDS,
                 )
             except TimeoutError as exc:
                 raise AssertionError("execute_user_action timed out enqueueing automation workflow") from exc
 
-            _assert_provider_completed_automation_create(
+            await _assert_user_action_selector_completed_automation_create(
                 user_action_id=create_user_action.id,
                 expected_workflow_id=None,
             )
@@ -221,7 +240,7 @@ class TestTriggerTaskGridDbosIntegration:
             assert grid_sim_util.is_simulator_grid_baseline_exactly_one_trade(buys_grid, sells_grid, trades_grid)
 
             assert workflow_row_matching is not None
-            _assert_provider_completed_automation_create(
+            await _assert_user_action_selector_completed_automation_create(
                 user_action_id=create_user_action.id,
                 expected_workflow_id=workflow_row_matching.workflow_id,
             )
@@ -244,13 +263,17 @@ class TestTriggerTaskGridDbosIntegration:
             )
             try:
                 await asyncio.wait_for(
-                    user_actions_module.execute_user_action(stop_user_action, wallet_address),
+                    grid_sim_util.enqueue_user_action_workflow_and_await_terminal_result(
+                        temp_dbos_scheduler,
+                        stop_user_action,
+                        wallet_address,
+                    ),
                     timeout=_T_STOP_SEND_SECONDS,
                 )
             except TimeoutError as exc:
                 raise AssertionError("execute_user_action stop timed out") from exc
 
-            _assert_provider_completed_automation_stop(user_action_id=stop_user_action.id)
+            await _assert_user_action_selector_completed_automation_stop(user_action_id=stop_user_action.id)
 
             workflow_row_after_stop_send: typing.Any = None
             elements_after_stop_send: typing.Any = None

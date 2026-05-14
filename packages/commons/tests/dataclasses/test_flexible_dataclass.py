@@ -21,6 +21,9 @@ import typing
 
 import octobot_commons.dataclasses
 
+import tests.dataclasses.pydantic_test_models as pydantic_test_models
+import tests.dataclasses.test_minimizable_dataclass as minimizable_dc_tests
+
 
 class JobType(enum.Enum):
     FULL_TIME = "full-time"
@@ -56,6 +59,48 @@ class TestPersonGroupClass(octobot_commons.dataclasses.FlexibleDataclass):
             self.present_people = [TestPersonClass.from_dict(p) for p in self.present_people] if self.present_people else []
         if self.absent_people and isinstance(self.absent_people[0], dict):
             self.absent_people = [TestPersonClass.from_dict(p) for p in self.absent_people] if self.absent_people else []
+
+
+def test_from_dict_restores_polymorphic_user_action_results_scalar_fields():
+    # Commons must call UserActionResult.from_dict (discriminator via result_type), not bare model_validate.
+    reconstructed = minimizable_dc_tests.DualUserActionResultHolder.from_dict(
+        {
+            "account_outcome": minimizable_dc_tests.account_user_action_payload(),
+            "automation_outcome": minimizable_dc_tests.automation_user_action_payload(),
+        }
+    )
+    account_model = reconstructed.account_outcome.actual_instance
+    automation_model = reconstructed.automation_outcome.actual_instance
+    assert isinstance(account_model, pydantic_test_models.AccountActionResult)
+    assert isinstance(automation_model, pydantic_test_models.AutomationActionResult)
+    assert account_model.error_details == "acct err"
+    assert getattr(account_model, "created_automation_id", None) is None
+    assert automation_model.created_automation_id == "auto-new-42"
+
+
+def test_from_dict_restores_polymorphic_user_action_results_in_list():
+    reconstructed = minimizable_dc_tests.UserActionResultListHolder.from_dict(
+        {
+            "results": [
+                minimizable_dc_tests.account_user_action_payload(error_details="first"),
+                minimizable_dc_tests.automation_user_action_payload(created_automation_id="mid-auto"),
+                minimizable_dc_tests.account_user_action_payload(error_details="third"),
+            ],
+        }
+    )
+    outcomes = reconstructed.results
+    assert len(outcomes) == 3
+
+    account_first = outcomes[0].actual_instance
+    automation_mid = outcomes[1].actual_instance
+    account_last = outcomes[2].actual_instance
+
+    assert isinstance(account_first, pydantic_test_models.AccountActionResult)
+    assert account_first.error_details == "first"
+    assert isinstance(automation_mid, pydantic_test_models.AutomationActionResult)
+    assert automation_mid.created_automation_id == "mid-auto"
+    assert isinstance(account_last, pydantic_test_models.AccountActionResult)
+    assert account_last.error_details == "third"
 
 
 def test_from_dict():

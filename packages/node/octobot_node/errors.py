@@ -14,6 +14,8 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
+import octobot_flow.enums
+
 class WorkflowError(Exception):
     """Base class for all workflow errors"""
 
@@ -23,11 +25,17 @@ class WorkflowInputError(WorkflowError):
     
 
 class WorkflowActionExecutionError(WorkflowError):
+    ERROR_MESSAGE: str = octobot_flow.enums.ActionErrorStatus.INTERNAL_ERROR.value
     """Raised when a workflow action execution fails"""
     
 
 class WorkflowPriorityActionExecutionError(WorkflowActionExecutionError):
     """Raised when a workflow priority action execution fails"""
+    
+
+class WorkflowDAGDependenciesError(WorkflowActionExecutionError):
+    ERROR_MESSAGE: str = octobot_flow.enums.ActionErrorStatus.ACTION_DEPENDENCY_ERROR.value
+    """Raised when a workflow DAG dependencies issue is detected"""
 
 
 class UserActionError(Exception):
@@ -64,11 +72,3 @@ class ActiveAutomationWorkflowNotFoundError(UserActionError):
 
 class AmbiguousActiveAutomationWorkflowError(UserActionError):
     """Raised when more than one active automation workflow matches the stop request (parent id / wallet filter)."""
-
-
-class UserActionNotFoundError(UserActionError):
-    """Raised when a user action id is not present in UserActionsProvider."""
-
-
-class DuplicateUserActionError(UserActionError):
-    """Raised when creating a user action whose id already exists in UserActionsProvider."""

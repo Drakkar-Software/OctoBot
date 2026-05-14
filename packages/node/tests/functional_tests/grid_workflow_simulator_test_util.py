@@ -453,3 +453,19 @@ if IMPORTED_OCTOBOT_FLOW_GRID_DEPS:
                     return result_text
             await asyncio.sleep(poll_interval_seconds)
         pytest.fail(f"Timed out waiting for stop completion for {automation_id}")
+
+
+async def enqueue_user_action_workflow_and_await_terminal_result(
+    scheduler: typing.Any,
+    user_action_bundle: typing.Any,
+    wallet_address_segment: str,
+):
+    """``execute_user_action`` queues user actions; wait until the USER_ACTION_QUEUE workflow completes."""
+    import octobot_node.scheduler.tasks as scheduler_tasks_module
+
+    workflow_identifier_encoded = await scheduler_tasks_module.trigger_user_action_workflow(
+        user_action_bundle,
+        wallet_address_segment,
+    )
+    terminal_handle_encoded = await scheduler.INSTANCE.retrieve_workflow_async(workflow_identifier_encoded)
+    await terminal_handle_encoded.get_result()

@@ -13,14 +13,17 @@
 #
 #  You should have received a copy of the GNU General Public License along
 #  with OctoBot. If not, see <https://www.gnu.org/licenses/>.
+
 import octobot_protocol.models as protocol_models
-import octobot_node.scheduler.tasks as scheduler_tasks
+
+import octobot_node.scheduler.user_actions.user_actions_executor.automation_user_action_executor as automation_user_action_executor
 
 
-async def execute_user_action(
-    user_action: protocol_models.UserAction,
-    wallet_address: str,
-) -> None:
-    await scheduler_tasks.trigger_user_action_workflow(
-        user_action, wallet_address
-    )
+class EditAutomationActionExecutor(automation_user_action_executor.AutomationUserActionExecutor):
+    async def _do_execute(
+        self,
+        user_action: protocol_models.UserAction,
+    ) -> None:
+        raise ValueError(
+            "User action automation_edit is not supported yet by the node user-action translator."
+        )

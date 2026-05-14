@@ -9,7 +9,7 @@ import octobot.community.authentication as community_authentication_module
 import octobot.community.local_authenticator as local_authenticator_module
 import octobot_commons.user_root_folder_provider as user_root_folder_provider_module
 import octobot_node.protocol.user_actions as user_actions_module
-import octobot_node.user_actions.user_actions_executor.util.account_state_updater as account_state_updater_module
+import octobot_node.scheduler.user_actions.user_actions_executor.util.account_state_updater as account_state_updater_module
 import octobot_protocol.models as protocol_models
 import octobot_sync.chain.evm as sync_evm_module
 import octobot_trading.errors as trading_errors
@@ -17,6 +17,33 @@ import octobot_trading.exchanges.connectors.ccxt.ccxt_connector as ccxt_connecto
 
 _TEST_PRIVATE_KEY = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
 _TEST_WALLET_PASSPHRASE = "accountsCRUD1!"
+
+
+async def _enqueue_user_action_synchronously_via_executor_like_workflow(
+    user_action_instance: protocol_models.UserAction,
+    wallet_address_segment: str,
+) -> None:
+    """Run the executor path without initializing DBOS (mirrors ``UserActionWorkflow._execute_user_action``)."""
+    import octobot_node.scheduler.user_actions.user_actions_executor as ua_executor_package_integration
+    import octobot_node.scheduler.workflows.params as ua_workflow_params_integration
+
+    bundle_inputs_encoded = ua_workflow_params_integration.UserActionWorkflowInputs(
+        wallet_address=wallet_address_segment,
+        user_action=user_action_instance,
+    ).to_dict(include_default_values=False)
+    parsed_inputs_bundle_workspace = ua_workflow_params_integration.UserActionWorkflowInputs.from_dict(bundle_inputs_encoded)
+    reconstructed_user_action_workspace_payload = protocol_models.UserAction.from_dict(
+        parsed_inputs_bundle_workspace.user_action.to_dict(),
+    )
+    if reconstructed_user_action_workspace_payload is None:
+        raise AssertionError("functional user_action failed to reconstruct from workflow inputs envelope")
+    resolved_executor_constructor_workspace_payload = ua_executor_package_integration.user_action_executor_factory(
+        reconstructed_user_action_workspace_payload,
+    )
+    constructed_executor_workspace_shell = resolved_executor_constructor_workspace_payload(
+        parsed_inputs_bundle_workspace.wallet_address,
+    )
+    await constructed_executor_workspace_shell.execute(reconstructed_user_action_workspace_payload)
 
 
 async def _stub_load_symbol_markets_no_network(self, reload=False, market_filter=None):
@@ -174,6 +201,11 @@ class TestExecuteUserActionAccountCrud:
                     ccxt_connector_module.CCXTConnector,
                     "load_symbol_markets",
                     _stub_load_symbol_markets_no_network,
+                ),
+                mock.patch.object(
+                    user_actions_module.scheduler_tasks,
+                    "trigger_user_action_workflow",
+                    new=_enqueue_user_action_synchronously_via_executor_like_workflow,
                 ),
             ):
                 # Step 3: sanity-check starting state.

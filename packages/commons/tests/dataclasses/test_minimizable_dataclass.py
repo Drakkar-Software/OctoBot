@@ -21,6 +21,48 @@ import typing
 
 import octobot_commons.dataclasses
 
+import tests.dataclasses.pydantic_test_models as pydantic_test_models
+
+
+_SAMPLE_ACCOUNT_UPDATED_AT = "2026-01-02T14:30:00"
+_SAMPLE_AUTOMATION_UPDATED_AT = "2026-03-04T09:15:30"
+
+
+def account_user_action_payload(*, error_details: str | None = "acct err"):
+    """JSON-shape dict suitable for UserActionResult.from_dict (isoformat strings, enums as strings)."""
+    return {
+        "updated_at": _SAMPLE_ACCOUNT_UPDATED_AT,
+        "result_type": "account",
+        "error_details": error_details,
+    }
+
+
+def automation_user_action_payload(*, created_automation_id: str = "auto-new-42"):
+    return {
+        "updated_at": _SAMPLE_AUTOMATION_UPDATED_AT,
+        "result_type": "automation",
+        "created_automation_id": created_automation_id,
+    }
+
+
+@dataclasses.dataclass
+class DualUserActionResultHolder(octobot_commons.dataclasses.MinimizableDataclass):
+    account_outcome: pydantic_test_models.UserActionResult
+    automation_outcome: pydantic_test_models.UserActionResult
+
+
+@dataclasses.dataclass
+class UserActionResultListHolder(octobot_commons.dataclasses.MinimizableDataclass):
+    results: list[pydantic_test_models.UserActionResult] = dataclasses.field(default_factory=list)
+
+    def __post_init__(self):
+        if self.results and isinstance(self.results[0], dict):
+            self.results = (
+                [pydantic_test_models.UserActionResult.from_dict(entry) for entry in self.results]
+                if self.results
+                else []
+            )
+
 
 class JobType(enum.Enum):
     FULL_TIME = "full-time"
@@ -140,3 +182,40 @@ def test_to_dict_roundtrip():
     assert restored.name == person.name
     assert restored.age == person.age
     assert restored.likes == person.likes
+
+
+def test_minimizable_to_dict_from_dict_polymorphic_user_action_results_round_trip():
+    """MinimizableDataclass.to_dict + FlexibleDataclass.from_dict preserve oneOf discriminator payloads."""
+    scalar_original = DualUserActionResultHolder(
+        account_outcome=pydantic_test_models.UserActionResult.from_dict(account_user_action_payload()),
+        automation_outcome=pydantic_test_models.UserActionResult.from_dict(automation_user_action_payload()),
+    )
+    scalar_flat = scalar_original.to_dict(include_default_values=True)
+    scalar_restored = DualUserActionResultHolder.from_dict(scalar_flat)
+    assert scalar_restored.account_outcome.actual_instance.model_dump(mode="json") == (
+        scalar_original.account_outcome.actual_instance.model_dump(mode="json")
+    )
+    assert scalar_restored.automation_outcome.actual_instance.model_dump(mode="json") == (
+        scalar_original.automation_outcome.actual_instance.model_dump(mode="json")
+    )
+    assert isinstance(scalar_restored.account_outcome.actual_instance, pydantic_test_models.AccountActionResult)
+    assert isinstance(scalar_restored.automation_outcome.actual_instance, pydantic_test_models.AutomationActionResult)
+
+    list_original = UserActionResultListHolder(
+        results=[
+            pydantic_test_models.UserActionResult.from_dict(
+                account_user_action_payload(error_details="loop-a"),
+            ),
+            pydantic_test_models.UserActionResult.from_dict(
+                automation_user_action_payload(created_automation_id="loop-b"),
+            ),
+        ],
+    )
+    list_flat = list_original.to_dict(include_default_values=True)
+    list_restored = UserActionResultListHolder.from_dict(list_flat)
+    assert len(list_restored.results) == len(list_original.results)
+    for result_slot_index in range(len(list_original.results)):
+        assert (
+            list_restored.results[result_slot_index].actual_instance.model_dump(mode="json")
+            == list_original.results[result_slot_index].actual_instance.model_dump(mode="json")
+        )

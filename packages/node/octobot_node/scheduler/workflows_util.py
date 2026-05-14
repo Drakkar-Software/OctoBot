@@ -20,6 +20,7 @@ import dbos as dbos_lib
 import octobot_commons.logging
 import octobot_node.config
 import octobot_node.constants
+import octobot_node.enums as octobot_node_enums
 import octobot_node.models as models
 import octobot_node.scheduler.task_context as task_context
 import octobot_node.scheduler.workflows.params as params
@@ -42,16 +43,30 @@ STATE_KEY = "state"
 def filter_by_wallet(
     statuses: typing.Optional[list[dbos_lib.WorkflowStatus]],
     wallet_address: typing.Optional[str],
+    queue: octobot_node_enums.SchedulerQueues,
 ) -> list[dbos_lib.WorkflowStatus]:
-    """Return statuses whose task wallet_address matches, or has no wallet restriction."""
+    """Return statuses for ``wallet_address`` using automation task wallet or user-action input wallet."""
     if not statuses or wallet_address is None:
         return statuses or []
-    kept = []
-    for s in statuses:
-        task = get_input_task(s)
-        if task is None or not task.wallet_address or task.wallet_address == wallet_address:
-            kept.append(s)
-    return kept
+    if queue == octobot_node_enums.SchedulerQueues.USER_ACTION_QUEUE:
+        kept = []
+        for status_row in statuses:
+            ua_inputs = get_user_action_workflow_inputs(status_row)
+            if ua_inputs is None:
+                kept.append(status_row)
+                continue
+            if ua_inputs.wallet_address and ua_inputs.wallet_address != wallet_address:
+                continue
+            kept.append(status_row)
+        return kept
+    if queue == octobot_node_enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE:
+        kept = []
+        for status_row in statuses:
+            task = get_automation_input_task(status_row)
+            if task is None or not task.wallet_address or task.wallet_address == wallet_address:
+                kept.append(status_row)
+        return kept
+    raise ValueError(f"Unsupported scheduler queue for wallet filter: {queue!r}")
 
 
 def get_latest_workflow(
@@ -105,13 +120,15 @@ def get_automation_state_dict(workflow_status: dbos_lib.WorkflowStatus) -> typin
     return None
 
 
-def get_input_task(workflow_status: dbos_lib.WorkflowStatus) -> typing.Optional[models.Task]:
+def get_automation_input_task(workflow_status: dbos_lib.WorkflowStatus) -> typing.Optional[models.Task]:
     if inputs := get_automation_workflow_inputs(workflow_status):
         return inputs.task
     return None
 
 
 def get_automation_workflow_inputs(workflow_status: dbos_lib.WorkflowStatus) -> typing.Optional[params.AutomationWorkflowInputs]:
+    if not workflow_status.input:
+        return None
     for input in list(workflow_status.input.get("args", [])) + list(workflow_status.input.get("kwargs", {}).values()):
         if isinstance(input, dict):
             try:
@@ -119,6 +136,18 @@ def get_automation_workflow_inputs(workflow_status: dbos_lib.WorkflowStatus) -> 
                 return parsed_inputs
             except TypeError:
                 print(f"Failed to parse inputs: {input}")
+                pass
+    return None
+
+
+def get_user_action_workflow_inputs(workflow_status: dbos_lib.WorkflowStatus) -> typing.Optional[params.UserActionWorkflowInputs]:
+    if not workflow_status.input:
+        return None
+    for input in list(workflow_status.input.get("args", [])) + list(workflow_status.input.get("kwargs", {}).values()):
+        if isinstance(input, dict):
+            try:
+                return params.UserActionWorkflowInputs.from_dict(input)
+            except TypeError:
                 pass
     return None
 

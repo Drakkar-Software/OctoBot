@@ -66,6 +66,10 @@ async def get_automation_states(wallet_address: typing.Optional[str]) -> list[pr
     return await octobot_node.scheduler.SCHEDULER.get_automation_states(wallet_address)
 
 
+async def list_user_actions(wallet_address: typing.Optional[str]) -> list[protocol_models.UserAction]:
+    return await octobot_node.scheduler.SCHEDULER.list_user_actions(wallet_address)
+
+
 async def get_task_metrics(
     wallet_address: typing.Optional[str] = None,
 ) -> dict[str, int]:
@@ -84,8 +88,23 @@ async def get_task_metrics(
             ], load_output=False),
         )
         if wallet_address is not None:
-            pending_statuses = workflows_util.filter_by_wallet(pending_statuses, wallet_address)
-            result_statuses = workflows_util.filter_by_wallet(result_statuses, wallet_address)
+            automation_queue = octobot_node.enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE.value
+            pending_only_automation = [
+                row for row in (pending_statuses or []) if row.queue_name == automation_queue
+            ]
+            result_only_automation = [
+                row for row in (result_statuses or []) if row.queue_name == automation_queue
+            ]
+            pending_statuses = workflows_util.filter_by_wallet(
+                pending_only_automation,
+                wallet_address,
+                octobot_node.enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE,
+            )
+            result_statuses = workflows_util.filter_by_wallet(
+                result_only_automation,
+                wallet_address,
+                octobot_node.enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE,
+            )
         return {
             "pending": len(pending_statuses or []),
             "scheduled": 0,
