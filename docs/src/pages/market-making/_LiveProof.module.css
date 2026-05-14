@@ -1,0 +1,206 @@
+.card {
+  padding: 22px 24px 20px;
+  border-radius: 22px;
+  position: relative;
+  overflow: hidden;
+}
+
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.tag {
+  font-family: var(--ng-font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 5px 11px;
+  border-radius: var(--ng-radius-pill);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: color 400ms, background-color 400ms, border-color 400ms;
+}
+.tagDot {
+  width: 7px;
+  height: 7px;
+  border-radius: var(--ng-radius-pill);
+  transition: background-color 400ms, box-shadow 400ms;
+}
+.card[data-state='off'] .tag {
+  color: var(--ng-neg);
+  background: var(--ng-neg-bg);
+  border: 1px solid var(--ng-neg-border);
+}
+.card[data-state='off'] .tagDot {
+  background: var(--ng-neg);
+  box-shadow: 0 0 6px var(--ng-neg);
+}
+.card[data-state='on'] .tag {
+  color: var(--ng-turquoise);
+  background: var(--ng-turquoise-bg);
+  border: 1px solid var(--ng-turquoise-border);
+}
+.card[data-state='on'] .tagDot {
+  background: var(--ng-turquoise);
+  box-shadow: 0 0 8px var(--ng-turquoise);
+  animation: pulseDot 1.6s infinite;
+}
+@keyframes pulseDot {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.pair {
+  font-family: var(--ng-font-mono);
+  font-size: 11px;
+  color: var(--ng-ink-faint);
+  letter-spacing: 0.06em;
+}
+.pair b {
+  color: var(--ng-ink-muted);
+  font-weight: 600;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  padding: 16px 0 18px;
+  border-top: 1px solid var(--ng-rule-soft);
+  border-bottom: 1px solid var(--ng-rule-soft);
+  margin-bottom: 18px;
+}
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.statLabel {
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ng-muted);
+}
+.statValue {
+  font-family: var(--ng-font-mono);
+  font-size: 1.55rem;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-weight: 600;
+  transition: color 360ms;
+}
+.card[data-state='off'] .statValue {
+  color: var(--ng-neg);
+}
+.card[data-state='on'] .statValue {
+  color: var(--ng-pos);
+}
+.statDelta {
+  font-family: var(--ng-font-mono);
+  font-size: 11px;
+  color: var(--ng-frost);
+  letter-spacing: 0.04em;
+  min-height: 14px;
+  opacity: 0;
+  transition: opacity 400ms;
+}
+.card[data-state='on'] .statDelta {
+  opacity: 1;
+}
+
+.book {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  font-family: var(--ng-font-mono);
+}
+.bookCol {
+  display: grid;
+  gap: 4px;
+}
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  position: relative;
+  overflow: hidden;
+  font-size: 11.5px;
+}
+.row::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  right: auto;
+  width: var(--w, 0%);
+  background: var(--ng-pos-bg);
+  transition: width 600ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.row.ask::before {
+  background: var(--ng-neg-bg);
+}
+.bidPx,
+.askPx,
+.sz,
+.my {
+  z-index: 1;
+}
+.bidPx {
+  color: var(--ng-pos);
+}
+.askPx {
+  color: var(--ng-neg);
+}
+.sz {
+  color: var(--ng-ink-muted);
+  text-align: right;
+}
+.my {
+  color: var(--ng-frost);
+  text-align: right;
+}
+
+.footnote {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--ng-rule-soft);
+  font-family: var(--ng-font-mono);
+  font-size: 10.5px;
+  color: var(--ng-muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ng-frost);
+  background: var(--ng-frost-bg);
+  border: 1px solid var(--ng-frost-soft);
+  padding: 5px 11px;
+  border-radius: var(--ng-radius-pill);
+  cursor: pointer;
+  font-family: var(--ng-font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transition: background-color 200ms;
+}
+.toggle:hover {
+  background: var(--ng-frost-bg-mid);
+}

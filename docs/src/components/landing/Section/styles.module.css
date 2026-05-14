@@ -33,6 +33,12 @@
   margin-right: auto;
 }
 
+.alignRight {
+  align-items: flex-end;
+  text-align: right;
+  margin-left: auto;
+}
+
 .title {
   font-size: 2.2rem;
   font-weight: 700;

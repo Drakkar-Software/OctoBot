@@ -1,0 +1,55 @@
+.card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.head {
+  padding: 16px 22px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  border-bottom: 1px solid var(--ng-rule-soft);
+}
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: var(--ng-radius-pill);
+  background: var(--ng-rule);
+}
+.name {
+  font-family: var(--ng-font-mono);
+  font-size: 12px;
+  color: var(--ng-ink-faint);
+  margin-left: 12px;
+}
+.meta {
+  margin-left: auto;
+  font-family: var(--ng-font-mono);
+  font-size: 11px;
+  color: var(--ng-ink-faint);
+}
+
+.body {
+  margin: 0;
+  padding: 24px 28px;
+  font-family: var(--ng-font-mono);
+  font-size: 13px;
+  line-height: 1.75;
+  color: var(--ng-ink-muted);
+  white-space: pre;
+  overflow-x: auto;
+}
+
+.key {
+  color: var(--ng-frost);
+}
+.str {
+  color: var(--ng-turquoise);
+}
+.comment {
+  color: var(--ng-ink-faint);
+  font-style: italic;
+}
+.num {
+  color: var(--ng-warn);
+}

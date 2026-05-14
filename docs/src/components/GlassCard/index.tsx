@@ -17,6 +17,8 @@ interface GlassCardProps {
   /** Apply standard internal padding (18px). Default true. */
   padded?: boolean;
   className?: string;
+  /** Inline style passthrough — e.g. CSS custom properties for layout. */
+  style?: React.CSSProperties;
 }
 
 const VARIANT_CLASS: Record<GlassCardVariant, string> = {
@@ -38,6 +40,7 @@ export default function GlassCard({
   href,
   padded = true,
   className,
+  style,
 }: GlassCardProps): ReactNode {
   const isLink = Boolean(to || href);
   const classes = [
@@ -52,11 +55,15 @@ export default function GlassCard({
 
   if (isLink) {
     return (
-      <Link to={to} href={href} className={classes}>
+      <Link to={to} href={href} className={classes} style={style}>
         {children}
       </Link>
     );
   }
 
-  return <div className={classes}>{children}</div>;
+  return (
+    <div className={classes} style={style}>
+      {children}
+    </div>
+  );
 }

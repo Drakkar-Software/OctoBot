@@ -60,6 +60,8 @@
   --ng-warn-bg:           rgba(240, 197, 59, 0.15);
   --ng-warn-bg-light:     rgba(240, 197, 59, 0.10);
   --ng-warn-border:       rgba(240, 197, 59, 0.30);
+  --ng-amber:             #e8a44e;
+  --ng-violet:            #9b85d7;
 
   /* -- glass surfaces --------------------------------------------------- */
   --ng-surface-faint:     rgba(255, 255, 255, 0.03);
@@ -278,4 +280,49 @@
 .ng-focusable:focus-visible {
   outline: 2px solid var(--ng-frost);
   outline-offset: 2px;
+}
+
+/* ============================================================================
+ * Text accents — inline emphasis inside headings.
+ * ==========================================================================*/
+
+/* Solid frost emphasis — `<em>` highlight in section headings. */
+.ng-text-frost {
+  font-style: normal;
+  color: var(--ng-frost);
+}
+
+/* Gradient emphasis — hero headline highlight, large display figures. */
+.ng-text-gradient {
+  font-style: normal;
+  background: linear-gradient(135deg, #d6f7ee 0%, var(--ng-turquoise) 30%, var(--ng-frost) 60%, #55b7f5 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ============================================================================
+ * Static chip — non-interactive label pill (hero meta, trust lines).
+ * The interactive .ng-chip above is for filters/tabs; this one has no
+ * hover/active affordance.
+ * ==========================================================================*/
+.ng-chip-static {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: var(--ng-radius-pill);
+  background: var(--ng-surface);
+  border: 1px solid var(--ng-rule);
+  font-family: var(--ng-font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  color: var(--ng-ink-muted);
+}
+.ng-chip-static__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--ng-radius-pill);
+  background: var(--ng-turquoise);
+  box-shadow: 0 0 8px var(--ng-turquoise);
 }

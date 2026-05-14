@@ -1,0 +1,119 @@
+/* Faint grid veil over the halo — page atmosphere. */
+.gridVeil {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.35;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 80px 80px;
+  -webkit-mask-image: radial-gradient(ellipse at 50% 30%, black 0%, transparent 65%);
+  mask-image: radial-gradient(ellipse at 50% 30%, black 0%, transparent 65%);
+}
+
+/* Callout panel — tinted note used in "how it works". */
+.callout {
+  font-size: 0.9rem;
+  color: var(--ng-ink-muted);
+  line-height: 1.55;
+  margin-bottom: 1.5rem;
+}
+.callout strong {
+  color: var(--ng-frost);
+}
+
+/* Section 07 — engagement model cards. */
+.models {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+.model {
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.modelTag {
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ng-frost);
+}
+.modelTitle {
+  margin: 0.5rem 0 0.25rem;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--ng-ink);
+}
+.modelText {
+  margin: 0 0 0.75rem;
+  font-size: 0.875rem;
+  color: var(--ng-ink-muted);
+  line-height: 1.55;
+}
+.modelBullets {
+  display: grid;
+  gap: 10px;
+  font-size: 0.82rem;
+  color: var(--ng-ink-muted);
+  font-family: var(--ng-font-mono);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.modelBullets li {
+  display: flex;
+  gap: 10px;
+}
+.modelBullets li::before {
+  content: '—';
+  color: var(--ng-frost);
+}
+
+/* Centered testimonial panel. */
+.quoteCard {
+  padding: 3.5rem;
+  text-align: center;
+  max-width: 880px;
+  margin: 0 auto;
+}
+.quoteMark {
+  font-family: var(--ng-font-mono);
+  font-size: 4rem;
+  line-height: 1;
+  color: var(--ng-frost);
+  opacity: 0.3;
+}
+.quoteText {
+  font-size: clamp(1.4rem, 2.2vw, 1.85rem);
+  line-height: 1.35;
+  color: var(--ng-ink);
+  margin: 0.5rem auto 0;
+  max-width: 44ch;
+  letter-spacing: -0.015em;
+  font-weight: 500;
+}
+.quoteMeta {
+  margin-top: 1.75rem;
+  font-size: 0.8rem;
+  color: var(--ng-ink-muted);
+  font-family: var(--ng-font-mono);
+  letter-spacing: 0.04em;
+}
+.quoteMeta b {
+  color: var(--ng-ink);
+  font-weight: 600;
+}
+
+@media (max-width: 720px) {
+  .models {
+    grid-template-columns: 1fr;
+  }
+  .quoteCard {
+    padding: 2.5rem 1.5rem;
+  }
+}

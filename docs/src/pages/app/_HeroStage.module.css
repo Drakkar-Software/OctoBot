@@ -1,0 +1,209 @@
+.stage {
+  position: relative;
+  margin: 5rem auto 0;
+  max-width: 1180px;
+  padding: 0 2rem;
+}
+
+.halo {
+  position: absolute;
+  left: 50%;
+  top: 40%;
+  transform: translate(-50%, -50%);
+  width: 1100px;
+  height: 900px;
+  max-width: 100%;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse 50% 45% at 50% 40%, rgba(101, 231, 207, 0.4) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 40% at 30% 70%, rgba(85, 183, 245, 0.28) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 40% at 75% 65%, rgba(72, 147, 241, 0.25) 0%, transparent 60%);
+  filter: blur(8px);
+}
+
+.inner {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 1fr 320px 1fr;
+  gap: 1.75rem;
+  align-items: center;
+}
+
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: 1.125rem;
+}
+.sideRight {
+  align-items: flex-start;
+}
+
+.card {
+  padding: 18px 20px;
+  animation: floatCard 7s ease-in-out infinite;
+}
+.side .card:nth-child(2) {
+  animation-delay: -2s;
+}
+.sideRight .card {
+  animation-delay: -1s;
+}
+.sideRight .card:nth-child(2) {
+  animation-delay: -3s;
+}
+.cardWide {
+  width: 100%;
+}
+@keyframes floatCard {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.lab {
+  font-size: 10.5px;
+  color: var(--ng-muted);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.value {
+  font-family: var(--ng-font-mono);
+  font-size: 24px;
+  color: var(--ng-ink);
+  letter-spacing: -0.02em;
+  margin-top: 6px;
+}
+.valueSub {
+  font-size: 12px;
+  color: var(--ng-pos);
+  font-family: var(--ng-font-mono);
+  margin-top: 4px;
+}
+.valueSubNeutral {
+  font-size: 12px;
+  color: var(--ng-ink-faint);
+  margin-top: 10px;
+}
+
+/* diversification allocation */
+.allocBar {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.allocBar span {
+  display: block;
+}
+.allocLegend {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-top: 10px;
+  font-family: var(--ng-font-mono);
+  font-size: 10.5px;
+  color: var(--ng-ink-muted);
+}
+
+/* running-on-device strat rows */
+.stratRow {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 6px 0;
+}
+.stratIc {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--ng-frost-bg);
+  border: 1px solid var(--ng-frost-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--ng-font-mono);
+  font-size: 11px;
+  color: var(--ng-frost);
+}
+.stratName {
+  font-size: 12.5px;
+  color: var(--ng-ink);
+}
+.stratName span {
+  display: block;
+  font-size: 10.5px;
+  color: var(--ng-muted);
+  margin-top: 2px;
+}
+.stratPct {
+  font-family: var(--ng-font-mono);
+  font-size: 12px;
+  color: var(--ng-pos);
+}
+
+/* goal float card */
+.goalFigures {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 8px;
+}
+.goalPct {
+  font-family: var(--ng-font-mono);
+  font-size: 22px;
+  color: var(--ng-ink);
+}
+.goalOf {
+  font-size: 12px;
+  color: var(--ng-muted);
+}
+.goalBar {
+  height: 6px;
+  background: var(--ng-surface);
+  border-radius: var(--ng-radius-pill);
+  margin-top: 10px;
+  overflow: hidden;
+}
+.goalBarFill {
+  height: 100%;
+  background: var(--ng-frost);
+  border-radius: var(--ng-radius-pill);
+}
+
+@media (max-width: 980px) {
+  .inner {
+    grid-template-columns: 1fr;
+  }
+  .side {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .sideRight {
+    align-items: stretch;
+  }
+  .card {
+    flex: 1;
+    min-width: 240px;
+  }
+}
+
+@media (max-width: 560px) {
+  .stage {
+    padding: 0 1rem;
+  }
+  .card {
+    min-width: 100%;
+  }
+}

@@ -1,0 +1,27 @@
+.ribbon {
+  display: flex;
+  flex-wrap: wrap;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid var(--ng-rule-soft);
+  background: var(--ng-surface);
+}
+
+.cell {
+  flex: 1 0 16.66%;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ng-ink-muted);
+  font-family: var(--ng-font-mono);
+  font-size: 0.8rem;
+  letter-spacing: 0.06em;
+  border-right: 1px solid var(--ng-rule-soft);
+  border-bottom: 1px solid var(--ng-rule-soft);
+  transition: color 120ms ease, background-color 120ms ease;
+}
+.cell:hover {
+  color: var(--ng-frost);
+  background: var(--ng-surface-strong);
+}

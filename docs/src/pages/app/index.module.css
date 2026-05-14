@@ -1,0 +1,133 @@
+/* Faint grid veil over the halo — page atmosphere. */
+.gridVeil {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.35;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 80px 80px;
+  -webkit-mask-image: radial-gradient(ellipse at 50% 30%, black 0%, transparent 65%);
+  mask-image: radial-gradient(ellipse at 50% 30%, black 0%, transparent 65%);
+}
+
+/* ── Section 01 — "One app. Two jobs." split cards ── */
+.split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.splitCard {
+  padding: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  min-height: 460px;
+}
+.splitNum {
+  font-family: var(--ng-font-mono);
+  font-size: 0.75rem;
+  color: var(--ng-frost);
+  letter-spacing: 0.18em;
+}
+.splitTitle {
+  font-size: 1.85rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  margin: 0;
+  color: var(--ng-ink);
+}
+.splitText {
+  font-size: 0.97rem;
+  color: var(--ng-ink-muted);
+  margin: 0;
+  line-height: 1.55;
+  max-width: 42ch;
+}
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.tags span {
+  padding: 6px 12px;
+  border-radius: var(--ng-radius-pill);
+  background: var(--ng-surface);
+  border: 1px solid var(--ng-rule);
+  font-size: 0.72rem;
+  color: var(--ng-ink-muted);
+  font-family: var(--ng-font-mono);
+}
+
+.illu {
+  margin-top: auto;
+  padding: 1.25rem;
+  border-radius: 16px;
+  background: var(--ng-bg-deep);
+  border: 1px solid var(--ng-rule-soft);
+}
+.illuLabel {
+  font-family: var(--ng-font-mono);
+  font-size: 0.66rem;
+  color: var(--ng-ink-faint);
+  letter-spacing: 0.12em;
+  margin-bottom: 0.875rem;
+}
+
+/* bar-chart illustration */
+.bars {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  align-items: end;
+  height: 120px;
+}
+.bars span {
+  background: linear-gradient(180deg, var(--ng-turquoise), rgba(101, 231, 207, 0.2));
+  border-radius: 4px 4px 0 0;
+  opacity: 0.85;
+}
+
+/* flow illustration */
+.flow {
+  display: grid;
+  grid-template-columns: 1fr 24px 1fr 24px 1fr;
+  align-items: center;
+}
+.flowNode {
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--ng-surface);
+  border: 1px solid var(--ng-rule);
+  text-align: center;
+  font-family: var(--ng-font-mono);
+  font-size: 0.7rem;
+  color: var(--ng-ink-muted);
+}
+.flowNode b {
+  display: block;
+  font-size: 0.62rem;
+  color: var(--ng-frost);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+.flowArrow {
+  text-align: center;
+  color: var(--ng-frost);
+  font-family: var(--ng-font-mono);
+  font-size: 0.875rem;
+}
+
+@media (max-width: 880px) {
+  .split {
+    grid-template-columns: 1fr;
+  }
+  .splitCard {
+    min-height: 0;
+  }
+}

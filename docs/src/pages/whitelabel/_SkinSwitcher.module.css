@@ -1,0 +1,165 @@
+.card {
+  padding: 22px;
+  display: grid;
+  gap: 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+.tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.tab,
+.tabOn {
+  padding: 8px 14px;
+  border-radius: var(--ng-radius-pill);
+  font-family: var(--ng-font-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: background-color 140ms, border-color 140ms, color 140ms;
+}
+.tab {
+  background: var(--ng-surface);
+  border: 1px solid var(--ng-rule-soft);
+  color: var(--ng-muted);
+}
+.tab:hover {
+  background: var(--ng-surface-strong);
+}
+.tabOn {
+  background: var(--ng-frost-bg-strong);
+  border: 1px solid var(--ng-frost-soft);
+  color: var(--ng-frost);
+}
+
+.stage {
+  border-radius: 16px;
+  padding: 24px;
+  min-height: 360px;
+  position: relative;
+  overflow: hidden;
+  background: var(--bk-bg);
+  border: 1px solid var(--bk-rule);
+  transition: background-color 320ms, border-color 320ms;
+}
+.stage::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 360px 240px at 50% 0%,
+    var(--bk-glow),
+    transparent 70%
+  );
+  pointer-events: none;
+}
+
+.bkHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.bkLogo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  letter-spacing: -0.005em;
+  color: var(--bk-ink);
+}
+.bkMark {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: var(--bk-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: #0a0d2c;
+  font-weight: 700;
+}
+.bkPill {
+  font-size: 11px;
+  font-family: var(--ng-font-mono);
+  color: var(--bk-muted);
+  padding: 4px 10px;
+  border-radius: var(--ng-radius-pill);
+  border: 1px solid var(--bk-rule);
+}
+
+.bkCard {
+  margin-top: 18px;
+  padding: 22px;
+  border-radius: 14px;
+  background: var(--bk-card);
+  border: 1px solid var(--bk-rule);
+}
+.bkLabel {
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  color: var(--bk-muted);
+  text-transform: uppercase;
+}
+.bkValue {
+  font-family: var(--ng-font-mono);
+  font-size: 1.85rem;
+  color: var(--bk-ink);
+  margin-top: 6px;
+  letter-spacing: -0.02em;
+}
+.bkRow {
+  margin-top: 14px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+  color: var(--bk-muted);
+}
+.bkChip {
+  padding: 4px 10px;
+  border-radius: var(--ng-radius-pill);
+  background: var(--bk-accent);
+  color: var(--bk-bg);
+  font-family: var(--ng-font-mono);
+  font-size: 11px;
+}
+
+.bkStrats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 14px;
+}
+.bkStrat {
+  padding: 14px;
+  border-radius: 12px;
+  background: var(--bk-card);
+  border: 1px solid var(--bk-rule);
+}
+.bkStratName {
+  font-size: 12.5px;
+  color: var(--bk-ink);
+  font-weight: 600;
+}
+.bkStratPnl {
+  font-family: var(--ng-font-mono);
+  font-size: 13px;
+  color: var(--bk-accent);
+  margin-top: 8px;
+}
+
+.bkBtn {
+  margin-top: 16px;
+  padding: 14px;
+  border-radius: 14px;
+  background: var(--bk-accent);
+  color: var(--bk-bg);
+  font-weight: 600;
+  font-size: 14px;
+  text-align: center;
+}

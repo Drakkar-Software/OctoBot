@@ -9,8 +9,8 @@ interface SectionProps {
   title?: ReactNode;
   /** Supporting line under the heading. */
   lead?: ReactNode;
-  /** Center the header block. Default true. */
-  centered?: boolean;
+  /** Header block alignment. Default 'center'. */
+  align?: 'left' | 'center' | 'right';
   /** Vertical rhythm. Default 'md'. */
   spacing?: 'sm' | 'md' | 'lg';
   id?: string;
@@ -23,6 +23,12 @@ const SPACING: Record<NonNullable<SectionProps['spacing']>, string> = {
   lg: styles.spacingLg,
 };
 
+const ALIGN: Record<NonNullable<SectionProps['align']>, string> = {
+  left: '',
+  center: styles.centered,
+  right: styles.alignRight,
+};
+
 /**
  * Generic landing-page section wrapper — constrained width, consistent
  * vertical rhythm, and an optional eyebrow / title / lead header block.
@@ -32,7 +38,7 @@ export default function Section({
   eyebrow,
   title,
   lead,
-  centered = true,
+  align = 'center',
   spacing = 'md',
   id,
   className,
@@ -46,8 +52,7 @@ export default function Section({
         .join(' ')}>
       <div className={styles.inner}>
         {hasHeader && (
-          <header
-            className={`${styles.header} ${centered ? styles.centered : ''}`}>
+          <header className={`${styles.header} ${ALIGN[align]}`}>
             {eyebrow && <span className="ng-eyebrow">{eyebrow}</span>}
             {title && <h2 className={styles.title}>{title}</h2>}
             {lead && <p className={styles.lead}>{lead}</p>}

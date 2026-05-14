@@ -1,0 +1,26 @@
+.row {
+  display: flex;
+  gap: 2.5rem;
+  flex-wrap: wrap;
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.value {
+  font-family: var(--ng-font-mono);
+  font-size: 1.75rem;
+  color: var(--ng-ink);
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.label {
+  font-size: 0.75rem;
+  color: var(--ng-muted);
+  letter-spacing: 0.04em;
+  max-width: 18ch;
+}

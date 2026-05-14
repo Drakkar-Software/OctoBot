@@ -1,0 +1,64 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 56rem;
+  margin: 0 auto;
+}
+
+.item {
+  background: var(--ng-surface);
+  border: 1px solid var(--ng-rule-glass);
+  border-radius: var(--ng-radius-md);
+  transition: border-color 160ms ease, background-color 160ms ease;
+}
+.itemOpen {
+  background: var(--ng-surface-strong);
+  border-color: var(--ng-frost-soft);
+}
+
+.trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  padding: 1.1rem 1.35rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--ng-font-sans);
+}
+
+.question {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ng-ink);
+  line-height: 1.4;
+}
+
+.icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--ng-radius-pill);
+  background: var(--ng-frost-bg);
+  color: var(--ng-frost);
+  font-family: var(--ng-font-mono);
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.answer {
+  padding: 0 1.35rem 1.2rem;
+  font-size: 0.92rem;
+  line-height: 1.65;
+  color: var(--ng-ink-muted);
+}
+.answer a {
+  color: var(--ng-frost);
+}

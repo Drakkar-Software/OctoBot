@@ -1,0 +1,71 @@
+.rows {
+  display: grid;
+  gap: 12px;
+}
+
+.row {
+  padding: 18px 22px;
+  border-radius: 16px;
+  display: grid;
+  grid-template-columns: 44px 1fr auto;
+  gap: 18px;
+  align-items: center;
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--ng-font-sans);
+  transition: background-color 200ms, border-color 200ms;
+}
+.row:hover {
+  border-color: var(--ng-frost-soft);
+  background: var(--ng-surface-strong);
+}
+
+.icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--ng-turquoise-bg);
+  border: 1px solid var(--ng-turquoise-border);
+  color: var(--ng-turquoise);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--ng-font-mono);
+  font-size: 22px;
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ng-ink);
+}
+.sub {
+  font-size: 0.78rem;
+  color: var(--ng-ink-faint);
+}
+
+.chev {
+  font-family: var(--ng-font-mono);
+  font-size: 20px;
+  color: var(--ng-ink-faint);
+  transition: transform 200ms, color 200ms;
+}
+.open .chev {
+  transform: rotate(90deg);
+  color: var(--ng-frost);
+}
+
+.body {
+  grid-column: 2 / -1;
+  font-size: 0.85rem;
+  color: var(--ng-ink-muted);
+  line-height: 1.55;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--ng-rule-soft);
+}

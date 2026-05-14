@@ -1,0 +1,88 @@
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 56px 1fr;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.col {
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.before {
+  opacity: 0.78;
+}
+
+.tag {
+  font-family: var(--ng-font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ng-ink-faint);
+}
+.tagOn {
+  color: var(--ng-frost);
+}
+
+.arrow {
+  align-self: center;
+  justify-self: center;
+  font-family: var(--ng-font-mono);
+  font-size: 1.75rem;
+  color: var(--ng-frost);
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1.25rem;
+}
+.list li {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 1rem;
+  align-items: center;
+  font-size: 1.1rem;
+  color: var(--ng-ink-muted);
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+}
+.list li strong {
+  color: var(--ng-ink);
+  font-weight: 600;
+}
+
+.mark {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--ng-radius-pill);
+  font-family: var(--ng-font-mono);
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.x {
+  background: var(--ng-neg-bg);
+  color: var(--ng-neg);
+}
+.check {
+  background: var(--ng-turquoise-bg);
+  border: 1px solid var(--ng-turquoise-border);
+  color: var(--ng-turquoise);
+}
+
+@media (max-width: 880px) {
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  .arrow {
+    transform: rotate(90deg);
+  }
+}

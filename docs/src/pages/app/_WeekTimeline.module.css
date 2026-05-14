@@ -1,0 +1,274 @@
+.wrap {
+  padding: 2.25rem 2rem 1.75rem;
+  border-radius: 24px;
+}
+
+/* ── stat row ───────────────────────────────────── */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.125rem;
+  margin-bottom: 1.6rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--ng-rule-soft);
+}
+.statLabel {
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ng-muted);
+  margin-bottom: 8px;
+}
+.statValue {
+  font-family: var(--ng-font-mono);
+  font-size: 28px;
+  color: var(--ng-ink);
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+.statAccent {
+  color: var(--ng-frost);
+}
+.statSub {
+  font-size: 11.5px;
+  color: var(--ng-ink-faint);
+  margin-top: 6px;
+}
+
+/* ── timeline ───────────────────────────────────── */
+.timeline {
+  position: relative;
+  height: 96px;
+  margin-bottom: 1.75rem;
+}
+.rail {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 38px;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(133, 214, 215, 0.45) 8%,
+    rgba(101, 231, 207, 0.55) 50%,
+    rgba(133, 214, 215, 0.45) 92%,
+    transparent 100%
+  );
+  border-radius: var(--ng-radius-pill);
+}
+.days {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+.dayCol {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 4px;
+}
+.dayLab {
+  font-family: var(--ng-font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  color: var(--ng-ink-dim);
+}
+.tick {
+  position: absolute;
+  top: 34px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1px;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.node {
+  position: absolute;
+  top: 39px;
+  transform: translate(-50%, -50%);
+  width: 14px;
+  height: 14px;
+  border-radius: var(--ng-radius-pill);
+  z-index: 2;
+}
+.node[data-color='turq'] {
+  background: var(--ng-turquoise);
+  box-shadow: 0 0 16px var(--ng-turquoise);
+}
+.node[data-color='pos'] {
+  background: var(--ng-pos);
+  box-shadow: 0 0 16px var(--ng-pos);
+}
+.node[data-color='warn'] {
+  background: var(--ng-warn);
+  box-shadow: 0 0 16px var(--ng-warn);
+}
+.node[data-color='frost'] {
+  background: var(--ng-frost);
+  box-shadow: 0 0 16px var(--ng-frost);
+}
+.nodeHot {
+  animation: nodeHot 1.2s ease-out;
+}
+@keyframes nodeHot {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  40% {
+    transform: translate(-50%, -50%) scale(1.7);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.you {
+  position: absolute;
+  top: 60px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: var(--ng-ink-faint);
+  font-family: var(--ng-font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.you::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: var(--ng-radius-pill);
+  background: var(--ng-frost);
+  box-shadow: 0 0 10px var(--ng-frost);
+}
+
+.play {
+  position: absolute;
+  top: -6px;
+  bottom: -6px;
+  width: 1.5px;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    var(--ng-frost) 18%,
+    var(--ng-frost) 82%,
+    transparent
+  );
+  z-index: 3;
+  pointer-events: none;
+  box-shadow: 0 0 10px rgba(133, 214, 215, 0.7);
+}
+
+/* ── event cards ────────────────────────────────── */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.875rem;
+}
+.card {
+  padding: 18px;
+  border-radius: 16px;
+  background: var(--ng-surface);
+  border: 1px solid var(--ng-rule-soft);
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.35s ease, border-color 0.35s ease, background 0.35s ease;
+}
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 2px;
+  background: currentColor;
+  opacity: 0.6;
+}
+.card[data-color='turq'] {
+  color: var(--ng-turquoise);
+}
+.card[data-color='pos'] {
+  color: var(--ng-pos);
+}
+.card[data-color='warn'] {
+  color: var(--ng-warn);
+}
+.card[data-color='frost'] {
+  color: var(--ng-frost);
+}
+.cardHot {
+  transform: translateY(-4px);
+  border-color: currentColor;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.cardIcon {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--ng-font-mono);
+  font-size: 20px;
+  font-weight: 700;
+  background: currentColor;
+  color: var(--ng-bg);
+  margin-bottom: 10px;
+  box-shadow: 0 0 18px currentColor;
+}
+.cardWhen {
+  font-family: var(--ng-font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: currentColor;
+  opacity: 0.9;
+}
+.cardTitle {
+  margin: 10px 0 14px;
+  font-size: 17px;
+  line-height: 1.3;
+  color: var(--ng-ink);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+.cardTag {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--ng-font-mono);
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: var(--ng-radius-pill);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--ng-rule-soft);
+  color: var(--ng-ink-muted);
+}
+.cardHot .cardTag {
+  color: currentColor;
+  border-color: currentColor;
+}
+
+@media (max-width: 880px) {
+  .cards {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 720px) {
+  .stats {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 560px) {
+  .cards {
+    grid-template-columns: 1fr;
+  }
+}

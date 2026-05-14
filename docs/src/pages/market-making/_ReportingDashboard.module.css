@@ -1,0 +1,188 @@
+.rpt {
+  padding: 26px 28px 24px;
+  display: grid;
+  gap: 22px;
+  position: relative;
+  overflow: hidden;
+}
+.rpt::before {
+  content: '';
+  position: absolute;
+  top: -200px;
+  right: -180px;
+  width: 480px;
+  height: 480px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(101, 231, 207, 0.1), transparent 60%);
+  pointer-events: none;
+}
+.rpt > * {
+  position: relative;
+  z-index: 1;
+}
+
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--ng-rule-soft);
+}
+.id {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.mark {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--ng-turquoise) 0%, var(--ng-frost) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0a0d2c;
+  font-weight: 700;
+  font-family: var(--ng-font-mono);
+  font-size: 14px;
+}
+.idTitle {
+  margin: 0;
+  font-size: 0.97rem;
+  color: var(--ng-ink);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.idSub {
+  font-size: 0.72rem;
+  color: var(--ng-muted);
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--ng-font-mono);
+}
+.live {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--ng-radius-pill);
+  background: var(--ng-pos);
+  box-shadow: 0 0 6px var(--ng-pos);
+}
+
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+.kpi {
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--ng-bg-deep);
+  border: 1px solid var(--ng-rule-soft);
+  position: relative;
+  overflow: hidden;
+}
+.kpiLabel {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ng-muted);
+}
+.kpiValue {
+  font-family: var(--ng-font-mono);
+  font-size: 1.35rem;
+  color: var(--ng-ink);
+  margin-top: 8px;
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+.kpiDelta {
+  font-family: var(--ng-font-mono);
+  font-size: 11px;
+  margin-top: 6px;
+  color: var(--ng-pos);
+}
+.spark {
+  position: absolute;
+  right: 14px;
+  top: 16px;
+  opacity: 0.85;
+}
+
+.chart {
+  padding: 18px;
+  border-radius: 16px;
+  background: var(--ng-bg-deep);
+  border: 1px solid var(--ng-rule-soft);
+  position: relative;
+}
+.chartHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+.chartTitle {
+  font-family: var(--ng-font-mono);
+  font-size: 10.5px;
+  color: var(--ng-ink-faint);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--ng-ink-muted);
+  font-family: var(--ng-font-mono);
+}
+.legend i {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--ng-frost);
+}
+.canvas {
+  position: relative;
+  height: 200px;
+}
+.canvas svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.pin {
+  position: absolute;
+  padding: 6px 9px;
+  border-radius: 8px;
+  background: var(--ng-surface-hero);
+  border: 1px solid var(--ng-frost-soft);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  font-family: var(--ng-font-mono);
+  font-size: 10.5px;
+  color: var(--ng-frost);
+  white-space: nowrap;
+  transform: translate(-50%, -100%);
+  pointer-events: none;
+}
+.xAxis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  font-family: var(--ng-font-mono);
+  font-size: 10px;
+  color: var(--ng-ink-dim);
+  letter-spacing: 0.06em;
+}
+
+@media (max-width: 720px) {
+  .kpis {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

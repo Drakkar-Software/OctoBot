@@ -16,10 +16,10 @@ interface LandingNavProps {
 }
 
 const DEFAULT_LINKS: LandingNavLink[] = [
-  {label: 'Features', to: '/features/strategy-designer'},
+  {label: 'OctoBot App', to: '/app'},
+  {label: 'Market Making', to: '/market-making'},
+  {label: 'Whitelabel', to: '/whitelabel'},
   {label: 'Guides', to: '/guides/octobot'},
-  {label: 'Blog', to: '/blog'},
-  {label: 'Developers', to: '/developers/getting-started'},
 ];
 
 const DEFAULT_CTA = {label: 'Open OctoBot Cloud', to: 'https://www.octobot.cloud'};

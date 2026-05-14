@@ -49,6 +49,22 @@
   margin: 0.4rem 0 0;
 }
 
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  justify-content: center;
+  margin-top: 0.85rem;
+}
+.split .meta {
+  justify-content: flex-start;
+}
+
+.aside {
+  margin-top: 2.5rem;
+  width: 100%;
+}
+
 /* Split layout — copy left, visual right (wide screens only). */
 .split .inner {
   display: flex;
@@ -82,6 +98,9 @@
     text-align: center;
   }
   .split .actions {
+    justify-content: center;
+  }
+  .split .meta {
     justify-content: center;
   }
 }

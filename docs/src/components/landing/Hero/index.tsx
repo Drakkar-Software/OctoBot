@@ -8,6 +8,12 @@ interface HeroAction {
   variant?: 'primary' | 'ghost' | 'surface';
 }
 
+interface HeroMetaItem {
+  label: string;
+  /** Show a leading turquoise status dot. */
+  dot?: boolean;
+}
+
 interface HeroProps {
   eyebrow?: string;
   title: ReactNode;
@@ -17,6 +23,10 @@ interface HeroProps {
   visual?: ReactNode;
   /** Small trust line under the actions (e.g. "Open source · MIT licensed"). */
   note?: ReactNode;
+  /** Trust / stat chips rendered as a pill row under the actions. */
+  meta?: HeroMetaItem[];
+  /** Free-form block rendered at the bottom of the copy column (e.g. stats). */
+  aside?: ReactNode;
 }
 
 /**
@@ -30,6 +40,8 @@ export default function Hero({
   actions = [],
   visual,
   note,
+  meta = [],
+  aside,
 }: HeroProps): ReactNode {
   return (
     <section className={`${styles.hero} ${visual ? styles.split : ''}`}>
@@ -50,7 +62,20 @@ export default function Hero({
               ))}
             </div>
           )}
+          {meta.length > 0 && (
+            <div className={styles.meta}>
+              {meta.map((item) => (
+                <span key={item.label} className="ng-chip-static">
+                  {item.dot && (
+                    <span className="ng-chip-static__dot" aria-hidden="true" />
+                  )}
+                  {item.label}
+                </span>
+              ))}
+            </div>
+          )}
           {note && <p className={styles.note}>{note}</p>}
+          {aside && <div className={styles.aside}>{aside}</div>}
         </div>
         {visual && <div className={styles.visual}>{visual}</div>}
       </div>

@@ -1,0 +1,140 @@
+.modes {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 16px;
+  align-items: stretch;
+}
+
+.tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tab,
+.tabOn {
+  padding: 16px 18px;
+  border-radius: 14px;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: background-color 160ms, border-color 160ms;
+}
+.tab {
+  background: var(--ng-surface);
+  border: 1px solid var(--ng-rule-soft);
+  color: var(--ng-ink-muted);
+}
+.tab:hover {
+  background: var(--ng-surface-strong);
+}
+.tabOn {
+  background: var(--ng-frost-bg);
+  border: 1px solid var(--ng-frost-soft);
+  color: var(--ng-ink);
+}
+
+.tabNum {
+  font-family: var(--ng-font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  color: var(--ng-ink-faint);
+  text-transform: uppercase;
+}
+.tabOn .tabNum {
+  color: var(--ng-frost);
+}
+.tabLabel {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ng-ink);
+  letter-spacing: -0.005em;
+}
+
+.panel {
+  padding: 32px;
+  min-height: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  animation: panelIn 220ms ease-out;
+}
+@keyframes panelIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.panelTitle {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: var(--ng-ink);
+}
+.panelSub {
+  font-size: 0.95rem;
+  color: var(--ng-ink-muted);
+  line-height: 1.55;
+  margin: 0;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  margin-top: 8px;
+}
+.fact {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--ng-bg-deep);
+  border: 1px solid var(--ng-rule-soft);
+}
+.factLabel {
+  font-family: var(--ng-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--ng-ink-faint);
+  text-transform: uppercase;
+}
+.factValue {
+  font-size: 14px;
+  color: var(--ng-ink);
+  font-weight: 500;
+}
+.factValueTag {
+  font-size: 14px;
+  color: var(--ng-frost);
+  font-family: var(--ng-font-mono);
+}
+
+@media (max-width: 880px) {
+  .modes {
+    grid-template-columns: 1fr;
+  }
+  .tabs {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .tab,
+  .tabOn {
+    flex: 1;
+    min-width: 140px;
+  }
+}
+@media (max-width: 600px) {
+  .facts {
+    grid-template-columns: 1fr;
+  }
+}
