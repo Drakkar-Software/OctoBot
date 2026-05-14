@@ -1,0 +1,7 @@
+.container {
+  width: 100%;
+  border-radius: var(--ng-radius-lg, 18px);
+  overflow: hidden;
+  background: var(--ng-surface, rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--ng-hairline, rgba(255, 255, 255, 0.08));
+}

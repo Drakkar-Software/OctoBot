@@ -30,3 +30,4 @@ export {default as InlineStats} from './InlineStats';
 export type {InlineStat} from './InlineStats';
 export {default as IconList} from './IconList';
 export type {IconListItem} from './IconList';
+export {default as TradingViewWidget} from './TradingViewWidget';

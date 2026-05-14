@@ -82,6 +82,10 @@ const config: Config = {
     [require.resolve('docusaurus-lunr-search'), {
       languages: ['en', 'fr'],
     }],
+    // Programmatic SEO pages (per-coin / per-exchange / converter matrix).
+    // Fetches its slug list live from the OctoBot Cloud endpoint at build
+    // time — no committed fallback, the build fails if it is unreachable.
+    require.resolve('./plugins/programmatic-pages'),
     [
       '@docusaurus/plugin-client-redirects',
       {
@@ -206,6 +210,12 @@ const config: Config = {
           sidebarId: 'octobot-script',
           position: 'left',
           label: 'OctoBot Script',
+        },
+        {
+          type: 'docSidebar',
+          sidebarId: 'market-making',
+          position: 'left',
+          label: 'Market Making',
         },
         {
           type: 'docSidebar',

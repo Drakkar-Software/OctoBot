@@ -1,0 +1,65 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px;
+}
+
+.row {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1 1 180px;
+}
+
+.label {
+  font-family: var(--ng-font-mono, monospace);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ng-text-dim, rgba(255, 255, 255, 0.6));
+}
+
+.input {
+  font-size: 1.4rem;
+  font-weight: 600;
+  padding: 12px 14px;
+  border-radius: var(--ng-radius, 12px);
+  border: 1px solid var(--ng-hairline, rgba(255, 255, 255, 0.1));
+  background: var(--ng-bg, #0b0d17);
+  color: var(--ng-text, #fff);
+  width: 100%;
+}
+
+.input:focus-visible {
+  outline: 2px solid var(--ng-turquoise, #4fd1c5);
+  outline-offset: 1px;
+}
+
+.output {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.equals {
+  font-size: 1.6rem;
+  color: var(--ng-text-dim, rgba(255, 255, 255, 0.6));
+  padding-bottom: 10px;
+}
+
+.rate {
+  margin: 0;
+  font-family: var(--ng-font-mono, monospace);
+  font-size: 0.8rem;
+  color: var(--ng-text-dim, rgba(255, 255, 255, 0.6));
+}

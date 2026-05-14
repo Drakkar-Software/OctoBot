@@ -1,0 +1,61 @@
+/* Shared layout primitives for the programmatic page templates. */
+
+.gridVeil {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(var(--ng-hairline, rgba(255, 255, 255, 0.04)) 1px, transparent 1px),
+    linear-gradient(90deg, var(--ng-hairline, rgba(255, 255, 255, 0.04)) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(ellipse at 50% 0%, #000 0%, transparent 70%);
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 28px;
+}
+
+.panelTitle {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+.prose {
+  margin: 0;
+  color: var(--ng-text-dim, rgba(255, 255, 255, 0.72));
+  line-height: 1.7;
+  white-space: pre-line;
+}
+
+.cta {
+  display: flex;
+  justify-content: center;
+  margin-top: 28px;
+}
+
+.chart {
+  max-width: 880px;
+  margin: 0 auto;
+}
+
+.predictionCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 32px;
+  text-align: center;
+}
+
+.predictionLabel {
+  font-family: var(--ng-font-mono, monospace);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ng-text-dim, rgba(255, 255, 255, 0.6));
+}
