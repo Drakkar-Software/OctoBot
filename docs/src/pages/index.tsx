@@ -16,8 +16,8 @@ import {
   type Stat,
 } from '@site/src/components/landing';
 import GlassCard from '@site/src/components/GlassCard';
-import HeroStage from './_HeroStage';
-import WeekTimeline from './_WeekTimeline';
+import HeroStage from '@site/src/components/pages/home/HeroStage';
+import WeekTimeline from '@site/src/components/pages/home/WeekTimeline';
 import styles from './index.module.css';
 
 /*

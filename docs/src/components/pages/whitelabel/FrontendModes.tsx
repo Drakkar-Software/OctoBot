@@ -1,6 +1,6 @@
 import React, {useState, type ReactNode} from 'react';
 import GlassCard from '@site/src/components/GlassCard';
-import styles from './_FrontendModes.module.css';
+import styles from './FrontendModes.module.css';
 
 /*
  * Page-local frontend-mode picker — vertical tabs that swap a detail panel

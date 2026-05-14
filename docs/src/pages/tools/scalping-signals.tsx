@@ -1,6 +1,6 @@
 import type {ReactNode} from 'react';
 import {LandingLayout, Hero, Section, CTABand} from '@site/src/components/landing';
-import ScalpingSignalCards from './_ScalpingSignalCards';
+import ScalpingSignalCards from '@site/src/components/pages/tools/scalping-signals/ScalpingSignalCards';
 import styles from './scalping-signals.module.css';
 
 /*

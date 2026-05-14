@@ -9,7 +9,7 @@ import {
   type Feature,
   type FAQItem,
 } from '@site/src/components/landing';
-import ConverterCard from './_ConverterCard';
+import ConverterCard from '@site/src/components/pages/tools/converter/ConverterCard';
 import styles from './converter.module.css';
 
 /*

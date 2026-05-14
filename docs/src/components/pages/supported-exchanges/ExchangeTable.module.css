@@ -1,0 +1,69 @@
+/* Styling for the page-local ExchangeTable component
+ * (used by the /supported-exchanges page). */
+
+.wrap {
+  overflow-x: auto;
+  padding: 0;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--ng-font-sans);
+  min-width: 520px;
+  margin: 0;
+}
+
+.table thead th {
+  font-family: var(--ng-font-sans);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-variant-caps: small-caps;
+  color: var(--ng-muted);
+  text-align: left;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--ng-rule-soft);
+  white-space: nowrap;
+}
+
+.table tbody td {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--ng-rule-soft);
+  font-size: 0.9rem;
+  color: var(--ng-ink-muted);
+  white-space: nowrap;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.table tbody tr {
+  transition: background-color 160ms ease;
+}
+.table tbody tr:hover {
+  background: var(--ng-surface-faint);
+}
+
+.num {
+  font-family: var(--ng-font-mono);
+  color: var(--ng-ink);
+}
+
+.name {
+  font-weight: 600;
+  color: var(--ng-ink);
+}
+
+.alignRight {
+  text-align: right;
+}
+
+.note {
+  margin: 0.875rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.55;
+  color: var(--ng-ink-faint);
+}

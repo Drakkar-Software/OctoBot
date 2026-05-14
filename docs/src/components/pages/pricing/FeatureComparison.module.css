@@ -1,0 +1,87 @@
+/* Styling for the page-local plan comparison table on /pricing. */
+
+.scroll {
+  overflow-x: auto;
+  border: 1px solid var(--ng-rule-glass);
+  border-radius: var(--ng-radius-card);
+  background: var(--ng-surface);
+  -webkit-overflow-scrolling: touch;
+}
+
+.table {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.headRow {
+  background: var(--ng-surface-strong);
+}
+.headFeature,
+.headPlan {
+  padding: 1rem 1.25rem;
+  text-align: left;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ng-muted);
+  border-bottom: 1px solid var(--ng-rule);
+}
+.headPlan {
+  text-align: center;
+  color: var(--ng-ink);
+}
+
+.categoryRow {
+  background: var(--ng-frost-bg-subtle);
+}
+.categoryCell {
+  padding: 0.7rem 1.25rem;
+  text-align: left;
+  font-family: var(--ng-font-mono);
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ng-frost);
+  border-bottom: 1px solid var(--ng-rule-soft);
+  border-top: 1px solid var(--ng-rule-soft);
+}
+
+.row {
+  transition: background-color 120ms ease;
+}
+.row:hover {
+  background: var(--ng-surface-faint);
+}
+
+.featureCell {
+  padding: 0.85rem 1.25rem;
+  color: var(--ng-ink-muted);
+  border-bottom: 1px solid var(--ng-rule-soft);
+}
+
+.valueCell {
+  padding: 0.85rem 1.25rem;
+  text-align: center;
+  border-bottom: 1px solid var(--ng-rule-soft);
+}
+
+.yes,
+.no,
+.text {
+  font-family: var(--ng-font-mono);
+  font-size: 0.85rem;
+}
+.yes {
+  color: var(--ng-frost);
+  font-weight: 600;
+}
+.no {
+  color: var(--ng-ink-subtle);
+}
+.text {
+  color: var(--ng-ink);
+}

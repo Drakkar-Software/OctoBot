@@ -1,6 +1,6 @@
 import React, {type ReactNode} from 'react';
-import PhoneMockup from './_PhoneMockup';
-import styles from './_HeroStage.module.css';
+import PhoneMockup from './PhoneMockup';
+import styles from './HeroStage.module.css';
 
 /*
  * Page-local hero stage — the phone mockup flanked by floating glass stat

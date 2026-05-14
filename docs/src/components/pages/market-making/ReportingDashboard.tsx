@@ -1,6 +1,6 @@
 import React, {type ReactNode} from 'react';
 import GlassCard from '@site/src/components/GlassCard';
-import styles from './_ReportingDashboard.module.css';
+import styles from './ReportingDashboard.module.css';
 
 /*
  * Page-local reporting console — a static ops dashboard mockup (identity row,

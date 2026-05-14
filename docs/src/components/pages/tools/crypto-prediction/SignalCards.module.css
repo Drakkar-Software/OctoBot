@@ -1,0 +1,42 @@
+/* Styling for the bespoke SignalCards mock grid on /tools/crypto-prediction. */
+
+/* Responsive card grid — prediction signals. */
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+/* Prediction signal card. */
+.signalCard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  min-height: 100%;
+}
+.signalHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.signalPair {
+  font-family: var(--ng-font-mono);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--ng-ink);
+  letter-spacing: 0.01em;
+}
+.signalExchange {
+  font-family: var(--ng-font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ng-ink-faint);
+}
+.signalRationale {
+  font-size: 0.9rem;
+  color: var(--ng-ink-muted);
+  line-height: 1.55;
+  margin: 0;
+}

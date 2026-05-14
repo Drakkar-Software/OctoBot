@@ -1,6 +1,6 @@
 import type {ReactNode} from 'react';
 import GlassCard from '@site/src/components/GlassCard';
-import styles from './crypto-ranking.module.css';
+import styles from './RankingTable.module.css';
 
 /*
  * Page-local market-cap ranking mock for /tools/crypto-ranking.

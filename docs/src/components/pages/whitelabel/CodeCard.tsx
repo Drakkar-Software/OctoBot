@@ -1,6 +1,6 @@
 import React, {type ReactNode} from 'react';
 import GlassCard from '@site/src/components/GlassCard';
-import styles from './_CodeCard.module.css';
+import styles from './CodeCard.module.css';
 
 /*
  * Page-local deployment snippet — a static, syntax-highlighted values.yaml in

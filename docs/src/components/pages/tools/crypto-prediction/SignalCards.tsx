@@ -1,7 +1,7 @@
 import type {ReactNode} from 'react';
 import GlassCard from '@site/src/components/GlassCard';
 import Badge from '@site/src/components/Badge';
-import styles from './_styles.module.css';
+import styles from './SignalCards.module.css';
 
 /*
  * Page-local sample-data grid for /tools/crypto-prediction.

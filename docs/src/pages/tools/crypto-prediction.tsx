@@ -8,7 +8,7 @@ import {
 } from '@site/src/components/landing';
 import GlassCard from '@site/src/components/GlassCard';
 import styles from './_styles.module.css';
-import SignalCards from './_SignalCards';
+import SignalCards from '@site/src/components/pages/tools/crypto-prediction/SignalCards';
 
 /*
  * ChatGPT crypto predictions tool page — route: /tools/crypto-prediction.

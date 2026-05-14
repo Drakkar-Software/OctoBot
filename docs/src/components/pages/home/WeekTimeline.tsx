@@ -1,6 +1,6 @@
 import React, {useEffect, useRef, type ReactNode} from 'react';
 import GlassCard from '@site/src/components/GlassCard';
-import styles from './_WeekTimeline.module.css';
+import styles from './WeekTimeline.module.css';
 
 /*
  * Page-local "a week with OctoBot" visual — a stat row plus an animated

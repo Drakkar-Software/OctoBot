@@ -1,5 +1,5 @@
 import React, {useEffect, useState, type ReactNode} from 'react';
-import styles from './_LiveProof.module.css';
+import styles from './LiveProof.module.css';
 
 /*
  * Page-local hero visual — a compact order book that toggles between a

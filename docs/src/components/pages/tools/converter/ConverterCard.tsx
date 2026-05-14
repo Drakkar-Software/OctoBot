@@ -1,7 +1,7 @@
 import type {ReactNode} from 'react';
 import GlassCard from '@site/src/components/GlassCard';
 import Badge from '@site/src/components/Badge';
-import styles from './converter.module.css';
+import styles from './ConverterCard.module.css';
 
 /*
  * Page-local converter mock for /tools/converter.

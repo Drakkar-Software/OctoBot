@@ -11,9 +11,9 @@ import {
   type Step,
 } from '@site/src/components/landing';
 import GlassCard from '@site/src/components/GlassCard';
-import SkinSwitcher from './_SkinSwitcher';
-import CodeCard from './_CodeCard';
-import FrontendModes from './_FrontendModes';
+import SkinSwitcher from '@site/src/components/pages/whitelabel/SkinSwitcher';
+import CodeCard from '@site/src/components/pages/whitelabel/CodeCard';
+import FrontendModes from '@site/src/components/pages/whitelabel/FrontendModes';
 import styles from './index.module.css';
 
 /*

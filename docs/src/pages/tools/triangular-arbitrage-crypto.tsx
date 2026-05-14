@@ -8,7 +8,7 @@ import {
 } from '@site/src/components/landing';
 import GlassCard from '@site/src/components/GlassCard';
 import styles from './_styles.module.css';
-import OpportunityCards from './_OpportunityCards';
+import OpportunityCards from '@site/src/components/pages/tools/triangular-arbitrage-crypto/OpportunityCards';
 
 /*
  * Crypto triangular arbitrage tool page —

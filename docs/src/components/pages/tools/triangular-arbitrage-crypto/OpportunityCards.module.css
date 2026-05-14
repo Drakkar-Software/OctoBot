@@ -1,0 +1,45 @@
+/* Styling for the bespoke OpportunityCards mock grid on
+ * /tools/triangular-arbitrage-crypto. */
+
+/* Responsive card grid — arbitrage opportunities. */
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+/* Triangular arbitrage opportunity card. */
+.arbCard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  min-height: 100%;
+}
+.arbPath {
+  font-family: var(--ng-font-mono);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ng-ink);
+  line-height: 1.5;
+}
+.arbExchange {
+  font-family: var(--ng-font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ng-ink-faint);
+}
+.arbSpread {
+  font-family: var(--ng-font-mono);
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--ng-pos);
+}
+.arbSpreadLabel {
+  font-family: var(--ng-font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ng-ink-faint);
+  margin-bottom: 0.125rem;
+}

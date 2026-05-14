@@ -1,0 +1,71 @@
+/* Styling for the bespoke ScalpingSignalCards mock grid on
+ * /tools/scalping-signals. */
+
+/* Responsive grid of sample signal cards. */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 1rem;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.pair {
+  font-family: var(--ng-font-mono);
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--ng-ink);
+}
+
+.exchange {
+  margin: 0.7rem 0 0;
+  font-size: 0.85rem;
+  color: var(--ng-ink-muted);
+}
+
+.stats {
+  margin: 1.1rem 0 0;
+  padding: 1.1rem 0 0;
+  border-top: 1px solid var(--ng-rule-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.stat {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--ng-rule-soft);
+}
+.stat:last-child {
+  border-bottom: none;
+}
+
+.statLabel {
+  margin: 0;
+  font-family: var(--ng-font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ng-ink-faint);
+}
+
+.statValue {
+  margin: 0;
+  font-family: var(--ng-font-mono);
+  font-size: 0.9rem;
+  color: var(--ng-ink);
+}

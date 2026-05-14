@@ -1,7 +1,7 @@
 import type {ReactNode} from 'react';
 import GlassCard from '@site/src/components/GlassCard';
 import Badge from '@site/src/components/Badge';
-import styles from './scalping-signals.module.css';
+import styles from './ScalpingSignalCards.module.css';
 
 /*
  * Page-local scalping-signal mock for /tools/scalping-signals.

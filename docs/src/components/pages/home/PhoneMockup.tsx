@@ -1,5 +1,5 @@
 import React, {useState, type ReactNode} from 'react';
-import styles from './_PhoneMockup.module.css';
+import styles from './PhoneMockup.module.css';
 
 /*
  * Page-local hero visual — a phone frame with three switchable panels

@@ -1,6 +1,6 @@
 import type {ReactNode} from 'react';
 import {LandingLayout, Hero, Section, CTABand} from '@site/src/components/landing';
-import RankingTable from './_RankingTable';
+import RankingTable from '@site/src/components/pages/tools/crypto-ranking/RankingTable';
 import styles from './crypto-ranking.module.css';
 
 /*

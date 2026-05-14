@@ -1,6 +1,6 @@
 import React, {useState, type ReactNode} from 'react';
 import GlassCard from '@site/src/components/GlassCard';
-import styles from './_SkinSwitcher.module.css';
+import styles from './SkinSwitcher.module.css';
 
 /*
  * Page-local hero visual — a tab picker that re-skins a mini trading UI to

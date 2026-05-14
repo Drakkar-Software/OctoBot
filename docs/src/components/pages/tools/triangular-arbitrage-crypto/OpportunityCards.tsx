@@ -1,6 +1,6 @@
 import type {ReactNode} from 'react';
 import GlassCard from '@site/src/components/GlassCard';
-import styles from './_styles.module.css';
+import styles from './OpportunityCards.module.css';
 
 /*
  * Page-local sample-data grid for /tools/triangular-arbitrage-crypto.

@@ -1,5 +1,5 @@
 import React, {useState, type ReactNode} from 'react';
-import styles from './_AdminRows.module.css';
+import styles from './AdminRows.module.css';
 
 /*
  * Page-local "you own the desk" disclosure list — icon rows that expand on

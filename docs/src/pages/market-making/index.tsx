@@ -14,9 +14,9 @@ import {
   type Stat,
 } from '@site/src/components/landing';
 import GlassCard from '@site/src/components/GlassCard';
-import LiveProof from './_LiveProof';
-import AdminRows from './_AdminRows';
-import ReportingDashboard from './_ReportingDashboard';
+import LiveProof from '@site/src/components/pages/market-making/LiveProof';
+import AdminRows from '@site/src/components/pages/market-making/AdminRows';
+import ReportingDashboard from '@site/src/components/pages/market-making/ReportingDashboard';
 import styles from './index.module.css';
 
 /*
