@@ -77,7 +77,7 @@ async def interpreter(blockchain_wallet_operators):
 class TestBlockchainWalletBalanceOperator:
     @pytest.mark.asyncio
     async def test_pre_compute(self, blockchain_wallet_operators):
-        balance_op_class, _ = blockchain_wallet_operators
+        balance_op_class, _, _ = blockchain_wallet_operators
 
         operator = balance_op_class(
             BLOCKCHAIN_DESCRIPTOR,
@@ -89,7 +89,7 @@ class TestBlockchainWalletBalanceOperator:
 
     @pytest.mark.asyncio
     async def test_pre_compute_asset_not_in_balance(self, blockchain_wallet_operators):
-        balance_op_class, _ = blockchain_wallet_operators
+        balance_op_class, _, _ = blockchain_wallet_operators
 
         operator = balance_op_class(
             BLOCKCHAIN_DESCRIPTOR,
@@ -100,7 +100,7 @@ class TestBlockchainWalletBalanceOperator:
         assert operator.value == float(octobot_trading.constants.ZERO)
 
     def test_compute_without_pre_compute(self, blockchain_wallet_operators):
-        balance_op_class, _ = blockchain_wallet_operators
+        balance_op_class, _, _ = blockchain_wallet_operators
         operator = balance_op_class(BLOCKCHAIN_DESCRIPTOR, WALLET_DESCRIPTOR, "BTC")
         with pytest.raises(
             octobot_commons.errors.DSLInterpreterError,
@@ -123,7 +123,7 @@ class TestBlockchainWalletBalanceOperator:
 class TestBlockchainWalletTransferOperator:
     @pytest.mark.asyncio
     async def test_pre_compute_with_address(self, blockchain_wallet_operators):
-        _, transfer_op_class = blockchain_wallet_operators
+        _, transfer_op_class, _ = blockchain_wallet_operators
 
         octobot_trading.constants.ALLOW_FUNDS_TRANSFER = True
         operator = transfer_op_class(
@@ -145,7 +145,7 @@ class TestBlockchainWalletTransferOperator:
 
     @pytest.mark.asyncio
     async def test_pre_compute_with_destination_exchange(self, blockchain_wallet_operators):
-        _, transfer_op_class = blockchain_wallet_operators
+        _, transfer_op_class, _ = blockchain_wallet_operators
 
         octobot_trading.constants.ALLOW_FUNDS_TRANSFER = True
         operator = transfer_op_class(
@@ -167,7 +167,7 @@ class TestBlockchainWalletTransferOperator:
 
     @pytest.mark.asyncio
     async def test_pre_compute_unsupported_destination_exchange(self, blockchain_wallet_operators):
-        _, transfer_op_class = blockchain_wallet_operators
+        _, transfer_op_class, _ = blockchain_wallet_operators
 
         operator = transfer_op_class(
             BLOCKCHAIN_DESCRIPTOR,

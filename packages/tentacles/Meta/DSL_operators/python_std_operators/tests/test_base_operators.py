@@ -26,6 +26,22 @@ import octobot_commons.constants as commons_constants
 import tentacles.Meta.DSL_operators.python_std_operators.base_call_operators as base_call_operators
 
 
+class RaisesInPreComputeTestOperator(dsl_interpreter.CallOperator):
+    """Fails in pre_compute only; used to assert if_error runs the on_error DSL."""
+
+    NAME = "raises_in_precompute_test_op"
+
+    @staticmethod
+    def get_name() -> str:
+        return "raises_in_precompute_test_op"
+
+    async def pre_compute(self) -> None:
+        raise ValueError("pre_compute failed for test")
+
+    def compute(self) -> dsl_interpreter.ComputedOperatorParameterType:
+        return "should_not_reach_compute"
+
+
 @pytest.fixture
 def interpreter():
     return dsl_interpreter.Interpreter(dsl_interpreter.get_all_operators())
@@ -246,6 +262,36 @@ async def test_error_operator(interpreter):
         await interpreter.interprete("error('123-error') if True else 'ok'")
 
     assert await interpreter.interprete("error('123-error') if False else 'ok'") == "ok"
+
+
+@pytest.mark.asyncio
+async def test_if_error_operator(interpreter):
+    assert "if_error" in interpreter.operators_by_name
+
+    assert await interpreter.interprete("if_error(42, \"error('must-not-run')\")") == 42
+
+    assert await interpreter.interprete("if_error(error('x'), \"'ok'\")") == "ok"
+    assert await interpreter.interprete("if_error(error('x'), \"1 + 2\")") == 3
+
+    assert await interpreter.interprete("if_error(7, \"'nope'\")") == 7
+
+    assert await interpreter.interprete("if_error(sqrt(-1), \"'fallback'\")") == "fallback"
+
+    with pytest.raises(octobot_commons.errors.InvalidParametersError):
+        await interpreter.interprete("if_error(1, 2)")
+
+    with pytest.raises(octobot_commons.errors.ErrorStatementEncountered, match="b"):
+        await interpreter.interprete("if_error(error('a'), \"error('b')\")")
+
+    assert await interpreter.interprete("if_error(value=7, on_error=\"'nope'\")") == 7
+
+
+@pytest.mark.asyncio
+async def test_if_error_operator_fallback_when_base_pre_compute_raises(interpreter):
+    interpreter.extend([RaisesInPreComputeTestOperator])
+    assert await interpreter.interprete(
+        "if_error(raises_in_precompute_test_op(), \"'recovered'\")",
+    ) == "recovered"
 
 
 @pytest.mark.asyncio

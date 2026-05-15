@@ -87,7 +87,7 @@ class BaseLocalCollectionProvider(typing.Generic[T, S], abc.ABC):
 
     def _items_to_state(self, items: list[T]) -> state_model.StateModel:
         """Construct a STATE_CLASS instance from items and serialize it."""
-        return self.STATE_CLASS(
+        return self.STATE_CLASS(    # pylint: disable=not-callable
             **{
                 "version": self.STATE_VERSION,
                 self.ITEMS_KEY: items
@@ -96,11 +96,12 @@ class BaseLocalCollectionProvider(typing.Generic[T, S], abc.ABC):
 
     def _refresh_cache(self, address: str) -> list[T]:
         wallet_private_key = self._get_wallet_private_key(address)
-        state = self._storage.load_state(address, wallet_private_key, self.STATE_CLASS)
-        if state is None:
+        try:
+            persisted_state = self._storage.load_state(address, wallet_private_key, self.STATE_CLASS)
+        except collection_errors.CollectionNoDataError:
             items: list[T] = []
         else:
-            items = self._items_from_state(state)
+            items = self._items_from_state(persisted_state)
         self._set_cached_items(address, items)
         return items
 
@@ -112,8 +113,11 @@ class BaseLocalCollectionProvider(typing.Generic[T, S], abc.ABC):
 
     # -- public CRUD --
 
-    def list_items_encrypted(self, address: str) -> dict[str, str] | None:
-        """Return the raw encrypted blob from disk, bypassing cache and decryption."""
+    def list_items_encrypted(self, address: str) -> dict[str, str]:
+        """Return the raw encrypted blob from disk, bypassing cache and decryption.
+
+        Raises ``CollectionNoDataError`` when no file exists for ``address``.
+        """
         return self._storage.load_items_encrypted(address)
 
     def list_items(self, address: str) -> list[T]:

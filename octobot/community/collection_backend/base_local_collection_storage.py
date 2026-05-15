@@ -15,7 +15,6 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
 
-import base64
 import datetime
 import json
 import os
@@ -23,15 +22,13 @@ import pathlib
 import threading
 import typing
 
-import octobot_commons.cryptography.encryption as commons_encryption
 import octobot_commons.user_root_folder_provider as user_root_folder_provider
+
+import octobot_sync.crypto as sync_crypto
+import octobot_sync.errors as sync_errors
 
 import octobot.community.collection_backend.errors as collection_errors
 import octobot.community.collection_backend.state_model as state_model
-
-
-_BLOB_IV_KEY = "iv"
-_BLOB_DATA_KEY = "data"
 
 
 class BaseLocalCollectionStorage:
@@ -46,7 +43,6 @@ class BaseLocalCollectionStorage:
         root = base_folder or user_root_folder_provider.get_user_root_folder()
         self.collection = collection
         self._root = pathlib.Path(root) / collection
-        self._aad = f"octobot-node-{collection}".encode()
         self._lock = threading.Lock()
 
     def _sanitize_address(self, address: str) -> str:
@@ -59,14 +55,6 @@ class BaseLocalCollectionStorage:
     def _file_path(self, address: str) -> pathlib.Path:
         filename = f"{self._sanitize_address(address)}.json"
         return self._root / filename
-
-    def _derive_aes_key(self, wallet_private_key: str) -> bytes:
-        # Derive a 32-byte AES key from the wallet private key using HKDF(SHA-256).
-        return commons_encryption.hkdf_derive_key(
-            ikm=wallet_private_key.encode("utf-8"),
-            salt=b"octobot-starfish-identity-v1",
-            info=f"octobot-sync-{self.collection}".encode("utf-8"),
-        )
 
     def _payload_to_json_bytes(self, payload: state_model.StateModel) -> bytes:
         """Serialize a state dict to JSON bytes (handles datetime values from protocol models)."""
@@ -87,58 +75,53 @@ class BaseLocalCollectionStorage:
         payload: state_model.StateModel,
         wallet_private_key: str,
     ) -> dict[str, str]:
-        aes_key = self._derive_aes_key(wallet_private_key)
-        iv = commons_encryption.generate_iv()
-        plaintext = self._payload_to_json_bytes(payload)
-        ciphertext = commons_encryption.aes_gcm_encrypt(plaintext, aes_key, iv, self._aad)
-        return {
-            _BLOB_IV_KEY: base64.b64encode(iv).decode("ascii"),
-            _BLOB_DATA_KEY: base64.b64encode(ciphertext).decode("ascii"),
-        }
+        return sync_crypto.encrypt_bytes_to_blob_dict(
+            self._payload_to_json_bytes(payload),
+            wallet_private_key,
+            self.collection,
+        )
 
     def _decrypt(
         self, blob: dict[str, typing.Any], wallet_private_key: str, state_model: type[state_model.StateModel],
-    ) -> state_model.StateModel | None:
-        # Extract and validate blob keys
+    ) -> state_model.StateModel:
         try:
-            aes_key = self._derive_aes_key(wallet_private_key)
-            iv_b64 = blob[_BLOB_IV_KEY]
-            data_b64 = blob[_BLOB_DATA_KEY]
-        except KeyError as err:
+            plaintext_bytes = sync_crypto.decrypt_blob_dict_to_bytes(
+                blob,
+                wallet_private_key,
+                self.collection,
+            )
+        except sync_errors.OctobotSyncCryptoFormatError as err:
             raise collection_errors.CollectionFileFormatError(
-                f"Missing key in {self.collection} blob: {err}"
+                f"{self.collection} blob: {err}"
             ) from err
-
-        # Decode base64 fields
-        try:
-            iv = base64.b64decode(iv_b64)
-            ciphertext = base64.b64decode(data_b64)
-        except Exception as err:
-            raise collection_errors.CollectionFileFormatError(
-                f"Invalid base64 in {self.collection} blob: {err}"
-            ) from err
-
-        # Decrypt ciphertext
-        try:
-            plaintext = commons_encryption.aes_gcm_decrypt(ciphertext, aes_key, iv, self._aad)
-        except Exception as err:
+        except sync_errors.OctobotSyncCryptoDecryptError as err:
             raise collection_errors.CollectionDecryptionError(
                 f"Failed to decrypt {self.collection} data"
             ) from err
 
-        # Parse decrypted JSON
         try:
-            return state_model.from_json(plaintext.decode("utf-8"))
+            decrypted_state = state_model.from_json(plaintext_bytes.decode("utf-8"))
         except Exception as err:
             raise collection_errors.CollectionFileFormatError(
                 f"Decrypted {self.collection} payload is not valid JSON: {err}"
             ) from err
 
-    def _read_blob(self, address: str) -> dict[str, typing.Any] | None:
-        """Read the raw encrypted blob from disk, or None when the file does not exist."""
+        if decrypted_state is None:
+            raise collection_errors.CollectionFileFormatError(
+                f"Decrypted {self.collection} payload did not produce a state model"
+            )
+        return decrypted_state
+
+    def _read_blob(self, address: str) -> dict[str, typing.Any]:
+        """Read the raw encrypted blob from disk.
+
+        Raises ``CollectionNoDataError`` when the backing file does not exist.
+        """
         path = self._file_path(address)
         if not path.exists():
-            return None
+            raise collection_errors.CollectionNoDataError(
+                f"{self.collection} file does not exist for address {address}"
+            )
         with self._lock:
             with open(path, "r", encoding="utf-8") as handle:
                 raw = json.load(handle)
@@ -150,25 +133,25 @@ class BaseLocalCollectionStorage:
 
     def load_state(
         self, address: str, wallet_private_key: str, state_model: type[state_model.StateModel],
-    ) -> state_model.StateModel | None:
+    ) -> state_model.StateModel:
         """
         Load and decrypt the state dict for a given wallet address.
 
-        Returns ``None`` when the file does not exist.
+        Raises ``CollectionNoDataError`` when the backing file does not exist.
         """
         blob = self._read_blob(address)
-        if blob is None:
-            return None
         return self._decrypt(blob, wallet_private_key, state_model)
 
-    def load_items_encrypted(self, address: str) -> dict[str, str] | None:
+    def load_items_encrypted(self, address: str) -> dict[str, str]:
         """
         Read the encrypted blob for *address* directly from disk.
 
-        Skips decryption entirely and returns the raw ``{"iv": ..., "data": ...}``
-        dict as persisted, or ``None`` when no file exists for the address.
+        Skips decryption entirely and returns the raw ``{"iv": ..., "data": ...}``-style
+        dict as persisted.
+
+        Raises ``CollectionNoDataError`` when no file exists for the address.
         """
-        return self._read_blob(address)
+        return typing.cast(dict[str, str], self._read_blob(address))
 
     def save_state(
         self,

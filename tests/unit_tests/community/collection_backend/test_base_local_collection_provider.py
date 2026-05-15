@@ -20,6 +20,7 @@ import mock
 import pydantic
 import pytest
 
+import octobot_sync.crypto as sync_crypto
 import octobot.community.authentication as community_authentication
 import octobot.community.collection_backend.base_local_collection_provider as base_provider_module
 import octobot.community.collection_backend.errors as collection_errors
@@ -179,9 +180,10 @@ class TestBaseLocalCollectionProviderDeleteItem:
 
 
 class TestBaseLocalCollectionProviderListItemsEncrypted:
-    def test_returns_none_when_no_items_exist(self, tmp_path):
+    def test_raises_no_data_when_no_file_exists(self, tmp_path):
         provider = _make_provider(tmp_path)
-        assert provider.list_items_encrypted(_TEST_ADDRESS) is None
+        with pytest.raises(collection_errors.CollectionNoDataError):
+            provider.list_items_encrypted(_TEST_ADDRESS)
 
     def test_returns_raw_encrypted_blob(self, tmp_path):
         provider = _make_provider(tmp_path)
@@ -189,9 +191,8 @@ class TestBaseLocalCollectionProviderListItemsEncrypted:
             provider.create_item(_TEST_ADDRESS, _item("item-1", label="secret"))
 
         blob = provider.list_items_encrypted(_TEST_ADDRESS)
-        assert blob is not None
-        assert set(blob.keys()) == {"iv", "data"}
-        assert "secret" not in blob["data"]
+        assert set(blob.keys()) == {sync_crypto.BLOB_IV_KEY, sync_crypto.BLOB_DATA_KEY}
+        assert "secret" not in blob[sync_crypto.BLOB_DATA_KEY]
 
     def test_bypasses_cache(self, tmp_path):
         """list_items_encrypted must read from disk, not the in-memory cache."""
@@ -202,8 +203,7 @@ class TestBaseLocalCollectionProviderListItemsEncrypted:
             provider.list_items(_TEST_ADDRESS)
 
         blob = provider.list_items_encrypted(_TEST_ADDRESS)
-        assert blob is not None
-        assert isinstance(blob["data"], str)
+        assert isinstance(blob[sync_crypto.BLOB_DATA_KEY], str)
 
     def test_does_not_need_wallet_authentication(self, tmp_path):
         """No private key is needed -- the blob is returned as-is from disk."""
@@ -213,7 +213,7 @@ class TestBaseLocalCollectionProviderListItemsEncrypted:
 
         # Call without wallet mock active -- no authentication needed
         blob = provider.list_items_encrypted(_TEST_ADDRESS)
-        assert blob is not None
+        assert set(blob.keys()) == {sync_crypto.BLOB_IV_KEY, sync_crypto.BLOB_DATA_KEY}
 
 
 class TestBaseLocalCollectionProviderStateFormat:
@@ -224,7 +224,6 @@ class TestBaseLocalCollectionProviderStateFormat:
             provider.create_item(_TEST_ADDRESS, _item("item-1", label="A"))
 
         state = provider._storage.load_state(_TEST_ADDRESS, _TEST_PRIVATE_KEY, _TestState)
-        assert state is not None
         assert state.version == "1.0.0"
         assert state.items is not None
         assert len(state.items) == 1

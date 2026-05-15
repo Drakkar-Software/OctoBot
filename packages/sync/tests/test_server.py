@@ -6,6 +6,7 @@ import os
 import mock
 import pytest
 
+import octobot_sync.crypto as sync_crypto
 import octobot_sync.server as server
 import octobot_sync.enums as enums
 import octobot_sync.errors as errors
@@ -13,6 +14,9 @@ import octobot_sync.errors as errors
 from starfish_server.storage.base import StoreContext
 from starfish_server.storage.s3 import S3ObjectStore
 from starfish_server.storage.filesystem import FilesystemObjectStore
+
+
+_TEST_WALLET_PRIVATE_KEY = "test-server-private-key"
 
 
 def _make_context(identity: str | None = "0xabc", action: str = "pull") -> StoreContext:
@@ -43,25 +47,48 @@ class TestGetAddress:
 class TestGetData:
     @pytest.mark.asyncio
     async def test_user_data_collection(self):
+        expected_plain = json.dumps({"version": "1", "automations": [], "user_actions": []})
         stub_state = mock.MagicMock()
-        stub_state.model_dump.return_value = {"version": "1", "automations": [], "user_actions": []}
+        stub_state.to_json.return_value = expected_plain
         context = _make_context(identity="0xwallet")
-        with mock.patch("octobot_sync.server.user_data_protocol") as mock_proto:
+        with (
+            mock.patch("octobot_sync.server.user_data_protocol") as mock_proto,
+            mock.patch(
+                "octobot_sync.server._get_wallet_private_key",
+                return_value=_TEST_WALLET_PRIVATE_KEY,
+            ),
+        ):
             mock_proto.get_user_data_state = mock.AsyncMock(return_value=stub_state)
             result = await server.get_data(enums.Collections.USER_DATA.value, context)
         mock_proto.get_user_data_state.assert_awaited_once_with("0xwallet")
-        assert result == json.dumps({"version": "1", "automations": [], "user_actions": []})
+        decrypted = sync_crypto.decrypt_wire_to_utf8_json(
+            result,
+            _TEST_WALLET_PRIVATE_KEY,
+            enums.Collections.USER_DATA.value,
+        )
+        assert decrypted == expected_plain
 
     @pytest.mark.asyncio
     async def test_user_accounts_collection(self):
-        stub_state = mock.MagicMock()
-        stub_state.model_dump.return_value = {"version": "1", "accounts": []}
+        """USER_ACCOUNTS returns JSON of the on-disk encrypted blob (no extra wire encrypt)."""
+        expected_plain = json.dumps({"version": "1", "accounts": []})
+        encrypted_blob = sync_crypto.encrypt_bytes_to_blob_dict(
+            expected_plain.encode("utf-8"),
+            _TEST_WALLET_PRIVATE_KEY,
+            enums.Collections.USER_ACCOUNTS.value,
+        )
         context = _make_context(identity="0xwallet")
         with mock.patch("octobot_sync.server.accounts_protocol") as mock_proto:
-            mock_proto.get_accounts_state = mock.Mock(return_value=stub_state)
+            mock_proto.get_accounts_state_encrypted = mock.Mock(return_value=encrypted_blob)
             result = await server.get_data(enums.Collections.USER_ACCOUNTS.value, context)
-        mock_proto.get_accounts_state.assert_called_once_with("0xwallet")
-        assert result == json.dumps({"version": "1", "accounts": []})
+        mock_proto.get_accounts_state_encrypted.assert_called_once_with("0xwallet")
+        assert result == json.dumps(encrypted_blob)
+        decrypted_plain = sync_crypto.decrypt_blob_dict_to_bytes(
+            json.loads(result),
+            _TEST_WALLET_PRIVATE_KEY,
+            enums.Collections.USER_ACCOUNTS.value,
+        ).decode("utf-8")
+        assert decrypted_plain == expected_plain
 
     @pytest.mark.asyncio
     async def test_unsupported_collection_returns_none(self):
@@ -73,15 +100,26 @@ class TestGetData:
 class TestPutData:
     @pytest.mark.asyncio
     async def test_user_actions_executes_each_action(self):
-        body = json.dumps({
+        plain_body = json.dumps({
             "version": "1",
             "user_actions": [
                 {"id": "act-1"},
                 {"id": "act-2"},
             ],
         })
+        body = sync_crypto.encrypt_utf8_json_to_wire(
+            plain_body,
+            _TEST_WALLET_PRIVATE_KEY,
+            enums.Collections.USER_ACTIONS.value,
+        )
         context = _make_context(identity="0xwallet")
-        with mock.patch("octobot_sync.server.user_actions_protocol") as mock_proto:
+        with (
+            mock.patch("octobot_sync.server.user_actions_protocol") as mock_proto,
+            mock.patch(
+                "octobot_sync.server._get_wallet_private_key",
+                return_value=_TEST_WALLET_PRIVATE_KEY,
+            ),
+        ):
             mock_proto.execute_user_action = mock.AsyncMock()
             await server.put_data(enums.Collections.USER_ACTIONS.value, body, context)
         assert mock_proto.execute_user_action.await_count == 2
@@ -93,15 +131,24 @@ class TestPutData:
 
     @pytest.mark.asyncio
     async def test_user_actions_logs_exception_on_failure(self):
-        body = json.dumps({
+        plain_body = json.dumps({
             "version": "1",
             "user_actions": [{"id": "fail-action"}],
         })
+        body = sync_crypto.encrypt_utf8_json_to_wire(
+            plain_body,
+            _TEST_WALLET_PRIVATE_KEY,
+            enums.Collections.USER_ACTIONS.value,
+        )
         context = _make_context(identity="0xwallet")
         mock_logger = mock.MagicMock()
         with (
             mock.patch("octobot_sync.server.user_actions_protocol") as mock_proto,
             mock.patch("octobot_sync.server._get_logger", return_value=mock_logger),
+            mock.patch(
+                "octobot_sync.server._get_wallet_private_key",
+                return_value=_TEST_WALLET_PRIVATE_KEY,
+            ),
         ):
             mock_proto.execute_user_action = mock.AsyncMock(side_effect=RuntimeError("boom"))
             await server.put_data(enums.Collections.USER_ACTIONS.value, body, context)

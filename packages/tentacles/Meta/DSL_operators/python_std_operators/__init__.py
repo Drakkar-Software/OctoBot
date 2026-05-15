@@ -65,6 +65,7 @@ from tentacles.Meta.DSL_operators.python_std_operators.base_call_operators impor
     CosOperator,
     OscillatorOperator,
     ValueIfOperator,
+    IfErrorOperator,
     ErrorOperator,
 )
 import tentacles.Meta.DSL_operators.python_std_operators.base_resetting_operators as dsl_interpreter_base_resetting_operators
@@ -131,6 +132,7 @@ __all__ = [
     "CosOperator",
     "OscillatorOperator",
     "ValueIfOperator",
+    "IfErrorOperator",
     "LoopUntilOperator",
     "WaitOperator",
     "PiOperator",

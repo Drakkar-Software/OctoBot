@@ -26,3 +26,21 @@ class OctobotSyncIdentityMissingError(OctobotSyncError):
     Raised when an identity is missing from the context
     """
     pass
+
+
+class OctobotSyncCryptoFormatError(OctobotSyncError):
+    """Raised when an encrypted blob or wire payload is malformed."""
+
+    pass
+
+
+class OctobotSyncCryptoDecryptError(OctobotSyncError):
+    """Raised when ciphertext cannot be decrypted (wrong key, tampering, etc.)."""
+
+    pass
+
+
+class OctobotSyncWalletNotFoundError(OctobotSyncError):
+    """Raised when no wallet exists for the requested address."""
+
+    pass

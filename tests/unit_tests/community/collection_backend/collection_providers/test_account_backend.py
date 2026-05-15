@@ -14,6 +14,8 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
+import datetime
+
 import octobot.community.collection_backend.base_local_collection_storage as base_storage_module
 import octobot.community.collection_providers.user_account_provider as account_provider_module
 import octobot_node.constants as node_constants
@@ -48,9 +50,12 @@ class TestAccountProviderStateFormat:
 class TestAccountProviderGetItemId:
     def test_returns_account_id(self, tmp_path):
         provider = account_provider_module.AccountProvider(base_folder=str(tmp_path))
+        fixture_time = datetime.datetime(2026, 1, 15, tzinfo=datetime.UTC)
         account = protocol_models.Account(
             id="acc-42",
             name="Test",
             is_simulated=False,
+            created_at=fixture_time,
+            updated_at=fixture_time,
         )
         assert provider._get_item_id(account) == "acc-42"

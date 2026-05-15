@@ -15,6 +15,7 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
 import os
+import typing
 import secrets
 import json
 from collections.abc import Awaitable, Callable
@@ -28,8 +29,12 @@ import octobot_commons.configuration as commons_configuration
 import octobot_commons.constants as commons_constants
 import octobot_commons.logging as logging
 import octobot_node.constants as node_constants
+import octobot.community.authentication as community_authentication
+import octobot.community.wallet_backend.errors as wallet_backend_errors
+
 import octobot_sync.app as sync_app
 import octobot_sync.auth as auth
+import octobot_sync.crypto as sync_crypto
 import octobot_sync.enums as enums
 import octobot_sync.errors as errors
 
@@ -50,45 +55,63 @@ def _get_address(context: StoreContext | None) -> str:
     raise errors.OctobotSyncIdentityMissingError("Identity is missing from the context")
 
 
+def _get_wallet_private_key(address: str) -> str:
+    try:
+        wallet = community_authentication.CommunityAuthentication.instance().get_wallet(address)
+    except wallet_backend_errors.WalletNotFoundError as err:
+        raise errors.OctobotSyncWalletNotFoundError(
+            f"Wallet not found for address: {address}"
+        ) from err
+    return wallet.private_key
+
+
+def _encrypt(data: str, address: str, collection: str) -> str:
+    wallet_private_key = _get_wallet_private_key(address)
+    return sync_crypto.encrypt_utf8_json_to_wire(data, wallet_private_key, collection)
+
+
+def _decrypt(data: str, address: str, collection: str) -> str:
+    wallet_private_key = _get_wallet_private_key(address)
+    return sync_crypto.decrypt_wire_to_utf8_json(data, wallet_private_key, collection)
+
+
 async def get_data(key: str, context: StoreContext | None = None) -> str | None:
     # called when client pulls
+    output = None
+    already_encrypted = False
     match key:
-        # todo chiffrer en sortie
         case enums.Collections.USER_DATA.value:
             user_data_state = await user_data_protocol.get_user_data_state(
                 _get_address(context)
             )
-            return json.dumps(
-                user_data_state.model_dump(mode="json")
-            )
+            output = user_data_state.to_json()
         case enums.Collections.USER_ACCOUNTS.value:
-            accounts_state = accounts_protocol.get_accounts_state(
+            encrypted_blob = accounts_protocol.get_accounts_state_encrypted(
                 _get_address(context)
             )
-            return json.dumps(
-                accounts_state.model_dump(mode="json")
-            )
+            output = json.dumps(encrypted_blob)
+            already_encrypted = True
         case enums.Collections.USER_ACTIONS.value:
             # reading user actions should always return an empty list
             actions_state = protocol_models.UserActionsState(
                 version=node_constants.USER_ACTIONS_STATE_VERSION,
                 user_actions=[]
             )
-            return json.dumps(
-                actions_state.model_dump(mode="json")
-            )
+            output = actions_state.to_json()
         case _:
             _get_logger().error(
                 f"get_data was called with ({key}). This collection is not supported."
             )
-            return None
+    if output and not already_encrypted:
+        output = _encrypt(output, _get_address(context), key)
+    return output
 
 async def put_data(key: str, body: str, context: StoreContext | None = None) -> None:
     match key:
         case enums.Collections.USER_ACTIONS.value:
-            # todo déchiffrer avant 
-            # todo in task
-            user_actions_state = protocol_models.UserActionsState.model_validate_json(body)
+            user_actions_state = protocol_models.UserActionsState.from_json(
+                _decrypt(body, _get_address(context), key)
+            )
             if user_actions_state.user_actions:
                 for action in user_actions_state.user_actions:
                     try:

@@ -119,10 +119,12 @@ def apply_resolved_parameter_value(script: str, parameter: str, value: typing.An
     """
     Apply a resolved parameter value to a DSL script.
     """
+    unresolved = octobot_commons.constants.UNRESOLVED_PARAMETER_PLACEHOLDER
+    formatted_value = format_parameter_value(value)
     possible_to_replace = [
-        (f"{parameter}={octobot_commons.constants.UNRESOLVED_PARAMETER_PLACEHOLDER}", f"{parameter}={format_parameter_value(value)}"),
-        (f"{parameter!r}: {octobot_commons.constants.UNRESOLVED_PARAMETER_PLACEHOLDER!r}", f"{parameter!r}: {format_parameter_value(value)}"),
-        (f"{parameter!r}: {octobot_commons.constants.UNRESOLVED_PARAMETER_PLACEHOLDER}", f"{parameter!r}: {format_parameter_value(value)}"),
+        (f"{parameter}={unresolved}", f"{parameter}={formatted_value}"),
+        (f"{parameter!r}: {unresolved!r}", f"{parameter!r}: {formatted_value}"),
+        (f"{parameter!r}: {unresolved}", f"{parameter!r}: {formatted_value}"),
     ]
     for to_replace, replacement in possible_to_replace:
         if to_replace in script:

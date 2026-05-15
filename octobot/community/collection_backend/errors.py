@@ -27,6 +27,10 @@ class CollectionFileFormatError(CollectionStorageError):
     pass
 
 
+class CollectionNoDataError(CollectionStorageError):
+    pass
+
+
 class ItemNotFoundError(CollectionStorageError):
     pass
 

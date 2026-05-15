@@ -229,6 +229,7 @@ def trade_transfer_and_check_balance_actions_bundle_no_wait(market_order_action,
             **market_order_action["params"],
             **transfer_blockchain_action["params"],
             **{
+                "BLOCKCHAIN_INIT_CLOSE_WALLET_ON_EXIT": "False",
                 "BLOCKCHAIN_FROM_FILENAME": "dependency::action_blockchain_wallet_init_2::wallet_details::filename",
                 "BLOCKCHAIN_FROM_PASSWORD": "dependency::action_blockchain_wallet_init_2::wallet_details::password",
                 "BLOCKCHAIN_FROM_PORT": "dependency::action_blockchain_wallet_init_2::wallet_details::port",
@@ -1039,7 +1040,7 @@ class TestOctoBotActionsJob:
         ) as get_open_wallet_details_mock:
             job = octobot_flow_client.OctoBotActionsJob(trade_transfer_and_check_balance_actions_bundle_no_wait, [], [], octobot_flow_client.OctoBotActionsJobResult())
             await job.run()
-            assert get_open_wallet_details_mock.call_count == 3
+            assert get_open_wallet_details_mock.call_count == 4
         result = job.result
         assert len(result.processed_actions) == 1
         processed_actions = result.processed_actions
@@ -1151,7 +1152,9 @@ class TestOctoBotActionsJob:
         next_actions = parsed_state.automation.actions_dag.get_executable_actions()
         assert len(next_actions) == 1
         assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
-        assert next_actions[0].dsl_script is not None and "blockchain_wallet_transfer" in next_actions[0].dsl_script
+        assert next_actions[0].dsl_script is not None 
+        assert next_actions[0].dsl_script.startswith("if_error(")
+        assert "blockchain_wallet_transfer" in next_actions[0].dsl_script
         job4 = octobot_flow_client.OctoBotActionsJob(
             next_actions_description.to_dict(include_default_values=False), [], [],
             octobot_flow_client.OctoBotActionsJobResult(),

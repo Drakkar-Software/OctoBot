@@ -1,7 +1,17 @@
+import json
+
 import pytest
 
+import octobot_flow.entities
 import octobot_flow.errors
 import octobot_flow.parsers.actions_dag_parser as actions_dag_parser
+import octobot_trading.constants as trading_constants
+
+
+def dsl_if_error_decode_on_error(dsl_script: str) -> str:
+    remainder = dsl_script[dsl_script.index("on_error=") + len("on_error=") :].lstrip()
+    recovery_source, _end = json.JSONDecoder().raw_decode(remainder)
+    return recovery_source
 
 
 class TestResolveParamDependencies:
@@ -103,3 +113,70 @@ class TestResolveParamDependencyStringValue:
                 "BLOCKCHAIN_TO_AMOUNT": f"{prefix}BLOCKCHAIN_FROM_AMOUNT",
             })
         assert "cycle" in str(raised.value).lower() or "unresolved" in str(raised.value).lower()
+
+
+class TestParseWalletCleanupIfError:
+    """`parse` / `_parse_generic_actions`: if_error wrapper after open wallet init."""
+
+    _wallet_address = "0x1234567890123456789012345678901234567890"
+    _wallet_private_key = (
+        "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"
+    )
+
+    def _simulated_blockchain_wallet_init_then_wait_params(self) -> dict:
+        return {
+            "ACTIONS": [
+                actions_dag_parser.ActionType.BLOCKCHAIN_WALLET_INIT.value,
+                actions_dag_parser.ActionType.WAIT.value,
+            ],
+            "BLOCKCHAIN_FROM": trading_constants.SIMULATED_BLOCKCHAIN_NETWORK,
+            "BLOCKCHAIN_FROM_ASSET": "ETH",
+            "BLOCKCHAIN_FROM_AMOUNT": 10.0,
+            "BLOCKCHAIN_FROM_ADDRESS": self._wallet_address,
+            "BLOCKCHAIN_FROM_PRIVATE_KEY": self._wallet_private_key,
+            "MIN_DELAY": 1.0,
+        }
+
+    def _extract_wait_action(
+        self,
+        actions_dag: octobot_flow.entities.ActionsDAG,
+    ) -> octobot_flow.entities.DSLScriptActionDetails:
+        wait_action = next(action for action in actions_dag.actions if action.id == "action_wait_2")
+        assert isinstance(wait_action, octobot_flow.entities.DSLScriptActionDetails)
+        return wait_action
+
+    def _wait_action_after_parse(self, params: dict) -> octobot_flow.entities.DSLScriptActionDetails:
+        return self._extract_wait_action(actions_dag_parser.ActionsDAGParser(params).parse())
+
+    def test_wraps_following_wait_when_close_wallet_on_exit_false(self):
+        params = {
+            **self._simulated_blockchain_wallet_init_then_wait_params(),
+            "BLOCKCHAIN_INIT_CLOSE_WALLET_ON_EXIT": False,
+        }
+        parser = actions_dag_parser.ActionsDAGParser(params)
+        wait_action = self._extract_wait_action(parser.parse())
+        assert wait_action.dsl_script.startswith("if_error(")
+        assert "on_error=" in wait_action.dsl_script
+        expected_recovery = parser._build_blockchain_wallet_init_dsl(
+            force_close_wallet_on_exit=True,
+        )
+        assert dsl_if_error_decode_on_error(wait_action.dsl_script) == expected_recovery
+
+    def test_wraps_following_wait_when_close_wallet_on_exit_omitted(self):
+        params = self._simulated_blockchain_wallet_init_then_wait_params()
+        parser = actions_dag_parser.ActionsDAGParser(params)
+        wait_action = self._extract_wait_action(parser.parse())
+        assert wait_action.dsl_script.startswith("if_error(")
+        expected_recovery = parser._build_blockchain_wallet_init_dsl(
+            force_close_wallet_on_exit=True,
+        )
+        assert dsl_if_error_decode_on_error(wait_action.dsl_script) == expected_recovery
+
+    def test_does_not_wrap_when_close_wallet_on_exit_true(self):
+        params = {
+            **self._simulated_blockchain_wallet_init_then_wait_params(),
+            "BLOCKCHAIN_INIT_CLOSE_WALLET_ON_EXIT": True,
+        }
+        wait_action = self._wait_action_after_parse(params)
+        assert wait_action.dsl_script.startswith("wait(")
+        assert "if_error(" not in wait_action.dsl_script

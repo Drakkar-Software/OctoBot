@@ -101,6 +101,7 @@ class TradingViewSignalsTradingMode(dsl_trading_mode.DSLTradingMode):
     ENSURE_BLOCKCHAIN_WALLET_BALANCE_SIGNAL = "ensure_blockchain_wallet_balance"
     WITHDRAW_FUNDS_SIGNAL = "withdraw_funds" # disabled by default unless ALLOW_FUNDS_TRANSFER is True
     TRANSFER_FUNDS_SIGNAL = "transfer_funds" # disabled by default unless ALLOW_FUNDS_TRANSFER is True
+    BLOCKCHAIN_WALLET_INIT_SIGNAL = "blockchain_wallet_init"
 
     TRADINGVIEW_TO_DSL_PARAM = {
         # translation of TradingView signal parameters to DSL keywords parameters
@@ -127,6 +128,7 @@ class TradingViewSignalsTradingMode(dsl_trading_mode.DSLTradingMode):
         ENSURE_BLOCKCHAIN_WALLET_BALANCE_SIGNAL,
         WITHDRAW_FUNDS_SIGNAL,
         TRANSFER_FUNDS_SIGNAL,
+        BLOCKCHAIN_WALLET_INIT_SIGNAL,
     }
     META_ACTION_ONLY_SIGNALS = set()
 

@@ -54,3 +54,10 @@ class TransferFundsParams(octobot_commons.dataclasses.FlexibleDataclass):
     blockchain_descriptor: blockchain_wallets.BlockchainDescriptor # details of the blockchain to transfer from
     wallet_descriptor: blockchain_wallets.WalletDescriptor # details of the wallet to transfer from
     destination_exchange: typing.Optional[str] = None # recipient address of the transfer on the exchange
+
+
+@dataclasses.dataclass
+class BlockchainWalletInitParams(octobot_commons.dataclasses.FlexibleDataclass):
+    # mapped to DSL "blockchain_wallet_init" parameters
+    blockchain_descriptor: blockchain_wallets.BlockchainDescriptor # details of the blockchain to init
+    wallet_descriptor: blockchain_wallets.WalletDescriptor # details of the wallet to init

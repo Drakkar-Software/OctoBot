@@ -21,6 +21,8 @@ import pydantic
 
 import pytest
 
+import octobot_sync.crypto as sync_crypto
+
 import octobot.community.collection_backend.base_local_collection_storage as base_storage_module
 import octobot.community.collection_backend.errors as collection_errors
 
@@ -69,9 +71,10 @@ def _make_storage(tmp_path, collection="test-items"):
 
 
 class TestBaseLocalCollectionStorageLoadState:
-    def test_returns_none_when_file_absent(self, tmp_path):
+    def test_raises_no_data_when_file_absent(self, tmp_path):
         storage = _make_storage(tmp_path)
-        assert storage.load_state(_TEST_ADDRESS, _TEST_PRIVATE_KEY, TestStateModel) is None
+        with pytest.raises(collection_errors.CollectionNoDataError):
+            storage.load_state(_TEST_ADDRESS, _TEST_PRIVATE_KEY, TestStateModel)
 
 
 def _read_raw_blob(tmp_path, collection="test-items", address=_TEST_ADDRESS) -> dict:
@@ -97,21 +100,20 @@ class TestBaseLocalCollectionStorageSaveState:
 
 
 class TestBaseLocalCollectionStorageEncryption:
-    def test_persisted_file_contains_only_iv_and_data_keys(self, tmp_path):
+    def test_persisted_file_contains_iv_and_data_keys_only(self, tmp_path):
         storage = _make_storage(tmp_path)
         storage.save_state(_TEST_ADDRESS, _TEST_PRIVATE_KEY, _SAMPLE_STATE)
 
         blob = _read_raw_blob(tmp_path)
-        assert set(blob.keys()) == {"iv", "data"}
+        assert set(blob.keys()) == {sync_crypto.BLOB_IV_KEY, sync_crypto.BLOB_DATA_KEY}
 
     def test_persisted_data_is_base64_encoded(self, tmp_path):
         storage = _make_storage(tmp_path)
         storage.save_state(_TEST_ADDRESS, _TEST_PRIVATE_KEY, _SAMPLE_STATE)
 
         blob = _read_raw_blob(tmp_path)
-        # Both fields must decode as valid base64 without error
-        base64.b64decode(blob["iv"])
-        base64.b64decode(blob["data"])
+        base64.b64decode(blob[sync_crypto.BLOB_IV_KEY])
+        base64.b64decode(blob[sync_crypto.BLOB_DATA_KEY])
 
     def test_plaintext_values_not_present_in_persisted_file(self, tmp_path):
         storage = _make_storage(tmp_path)
@@ -123,7 +125,7 @@ class TestBaseLocalCollectionStorageEncryption:
         assert secret_label not in raw_text
 
     def test_same_state_produces_different_ciphertext_on_each_save(self, tmp_path):
-        """Each save generates a fresh IV, so ciphertexts must differ."""
+        """Each save generates a fresh IV, so ciphertext values must differ."""
         storage = _make_storage(tmp_path)
 
         storage.save_state(_TEST_ADDRESS, _TEST_PRIVATE_KEY, _SAMPLE_STATE)
@@ -132,8 +134,8 @@ class TestBaseLocalCollectionStorageEncryption:
         storage.save_state(_TEST_ADDRESS, _TEST_PRIVATE_KEY, _SAMPLE_STATE)
         second_blob = _read_raw_blob(tmp_path)
 
-        assert first_blob["data"] != second_blob["data"], "ciphertext should differ due to fresh IV"
-        assert first_blob["iv"] != second_blob["iv"], "IV should be randomized per save"
+        assert first_blob[sync_crypto.BLOB_DATA_KEY] != second_blob[sync_crypto.BLOB_DATA_KEY]
+        assert first_blob[sync_crypto.BLOB_IV_KEY] != second_blob[sync_crypto.BLOB_IV_KEY]
 
     def test_different_keys_produce_different_ciphertext(self, tmp_path):
         state = TestStateModel(version="1.0.0", items=[TestItemModel(id="item-1")])
@@ -146,7 +148,7 @@ class TestBaseLocalCollectionStorageEncryption:
         storage_b.save_state(_TEST_ADDRESS, "key-beta", state)
         blob_b = _read_raw_blob(tmp_path, collection="col-b")
 
-        assert blob_a["data"] != blob_b["data"]
+        assert blob_a[sync_crypto.BLOB_DATA_KEY] != blob_b[sync_crypto.BLOB_DATA_KEY]
 
     def test_tampered_ciphertext_raises_decryption_error(self, tmp_path):
         storage = _make_storage(tmp_path)
@@ -154,9 +156,9 @@ class TestBaseLocalCollectionStorageEncryption:
 
         # Corrupt one byte of the ciphertext
         blob = _read_raw_blob(tmp_path)
-        raw_bytes = bytearray(base64.b64decode(blob["data"]))
+        raw_bytes = bytearray(base64.b64decode(blob[sync_crypto.BLOB_DATA_KEY]))
         raw_bytes[0] ^= 0xFF
-        blob["data"] = base64.b64encode(bytes(raw_bytes)).decode("ascii")
+        blob[sync_crypto.BLOB_DATA_KEY] = base64.b64encode(bytes(raw_bytes)).decode("ascii")
 
         path = tmp_path / "test-items" / f"{_TEST_ADDRESS}.json"
         with open(path, "w", encoding="utf-8") as handle:
@@ -187,17 +189,17 @@ class TestBaseLocalCollectionStorageDecrypt:
 
 
 class TestBaseLocalCollectionStorageLoadItemsEncrypted:
-    def test_returns_none_when_file_absent(self, tmp_path):
+    def test_raises_no_data_when_file_absent(self, tmp_path):
         storage = _make_storage(tmp_path)
-        assert storage.load_items_encrypted(_TEST_ADDRESS) is None
+        with pytest.raises(collection_errors.CollectionNoDataError):
+            storage.load_items_encrypted(_TEST_ADDRESS)
 
     def test_returns_raw_blob_with_iv_and_data(self, tmp_path):
         storage = _make_storage(tmp_path)
         storage.save_state(_TEST_ADDRESS, _TEST_PRIVATE_KEY, _SAMPLE_STATE)
 
         blob = storage.load_items_encrypted(_TEST_ADDRESS)
-        assert blob is not None
-        assert set(blob.keys()) == {"iv", "data"}
+        assert set(blob.keys()) == {sync_crypto.BLOB_IV_KEY, sync_crypto.BLOB_DATA_KEY}
 
     def test_returned_blob_matches_file_on_disk(self, tmp_path):
         storage = _make_storage(tmp_path)
@@ -223,9 +225,8 @@ class TestBaseLocalCollectionStorageLoadItemsEncrypted:
         storage.save_state(_TEST_ADDRESS, _TEST_PRIVATE_KEY, _SAMPLE_STATE)
 
         blob = storage.load_items_encrypted(_TEST_ADDRESS)
-        assert blob is not None
-        assert isinstance(blob["data"], str)
-        assert len(blob["data"]) > 0
+        assert isinstance(blob[sync_crypto.BLOB_DATA_KEY], str)
+        assert len(blob[sync_crypto.BLOB_DATA_KEY]) > 0
 
 
 class TestBaseLocalCollectionStorageInit:

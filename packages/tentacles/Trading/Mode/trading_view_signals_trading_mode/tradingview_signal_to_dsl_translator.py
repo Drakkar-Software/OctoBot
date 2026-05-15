@@ -74,6 +74,8 @@ class TradingViewSignalToDSLTranslator:
                     "Transfer funds signal is not allowed when ALLOW_FUNDS_TRANSFER is disabled"
                 )
             keyword = "blockchain_wallet_transfer"
+        elif signal == trading_view_signals_trading.TradingViewSignalsTradingMode.BLOCKCHAIN_WALLET_INIT_SIGNAL:
+            keyword = "blockchain_wallet_init"
         return keyword, params
 
     @classmethod

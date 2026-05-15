@@ -31,7 +31,6 @@ async def trigger_user_action_workflow(
     if not octobot_node.scheduler.is_initialized():
         raise RuntimeError("Scheduler is not initialized")
     import octobot_node.scheduler.workflows.user_action_workflow as user_action_workflow
-    # todo implement
     handle = await octobot_node.scheduler.SCHEDULER.USER_ACTION_QUEUE.enqueue_async(
         user_action_workflow.UserActionWorkflow.execute_user_action,
         inputs=params.UserActionWorkflowInputs(
