@@ -38,26 +38,34 @@ class TestCreateAutomationConfiguration(unittest.TestCase):
                 action_type = 'automation_create',
                 configuration = octobot_protocol.models.automation_configuration.AutomationConfiguration(
                     name = '', 
-                    account_ids = [
-                        ''
-                        ], 
-                    strategy = octobot_protocol.models.strategy_configuration.StrategyConfiguration(
+                    description = '', 
+                    created_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
+                    updated_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
+                    strategy = octobot_protocol.models.strategy_reference.StrategyReference(
                         id = '', 
+                        version = '', 
                         emit_signals = True, ), 
-                    configuration = null, )
+                    accounts = [
+                        octobot_protocol.models.account_reference.AccountReference(
+                            id = '', )
+                        ], )
             )
         else:
             return CreateAutomationConfiguration(
                 action_type = 'automation_create',
                 configuration = octobot_protocol.models.automation_configuration.AutomationConfiguration(
                     name = '', 
-                    account_ids = [
-                        ''
-                        ], 
-                    strategy = octobot_protocol.models.strategy_configuration.StrategyConfiguration(
+                    description = '', 
+                    created_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
+                    updated_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
+                    strategy = octobot_protocol.models.strategy_reference.StrategyReference(
                         id = '', 
+                        version = '', 
                         emit_signals = True, ), 
-                    configuration = null, ),
+                    accounts = [
+                        octobot_protocol.models.account_reference.AccountReference(
+                            id = '', )
+                        ], ),
         )
         """
 

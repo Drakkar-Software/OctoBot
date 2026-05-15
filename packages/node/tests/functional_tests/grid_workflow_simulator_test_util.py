@@ -17,6 +17,7 @@
 from __future__ import annotations
 
 import asyncio
+import datetime
 import json
 import math
 import time
@@ -78,6 +79,7 @@ FIXED_BTC_USDC_CLOSE = 100000.0
 
 DEFAULT_GRID_WORKFLOW_POLL_INTERVAL_SECONDS = 0.5
 
+_FUNCTIONAL_PROTOCOL_ACCOUNT_TS = datetime.datetime(2026, 4, 1, 12, 0, 0, tzinfo=datetime.UTC)
 
 def exchange_internal_name() -> str:
     # Match CI so local runs exercise the same precision/fees as GitHub Actions.
@@ -116,8 +118,51 @@ if IMPORTED_OCTOBOT_FLOW_GRID_DEPS:
             id=account_id,
             name=account_name,
             is_simulated=True,
+            created_at=_FUNCTIONAL_PROTOCOL_ACCOUNT_TS,
+            updated_at=_FUNCTIONAL_PROTOCOL_ACCOUNT_TS,
             details=protocol_models_module.AccountDetails(
                 actual_instance=protocol_exchange_account_for_grid_functional(usdc_total=usdc_total),
+            ),
+        )
+
+    SIMULATOR_GRID_DEFAULT_STRATEGY_ID = "simulator-grid-functional-default-strategy"
+    SIMULATOR_FUNCTIONAL_STRATEGY_VERSION = "1.0.0"
+    SIMULATOR_COPY_FOLLOWER_STORED_STRATEGY_ID = "simulator-functional-copy-stored-strategy"
+
+    def seeded_grid_strategy_for_functional_wallet(
+        *,
+        stored_strategy_id: str,
+    ) -> protocol_models_module.Strategy:
+        """
+        Persisted Strategy row keyed by ``stored_strategy_id`` (matches ``StrategyReference.id`` on the user action).
+        """
+        return protocol_models_module.Strategy(
+            id=stored_strategy_id,
+            version=SIMULATOR_FUNCTIONAL_STRATEGY_VERSION,
+            name="Simulator grid automation strategy",
+            configuration=protocol_models_module.StrategyConfiguration(
+                grid_configuration_matching_simulator_constants(),
+            ),
+        )
+
+    def seeded_copy_follower_strategy_for_functional_wallet(
+        *,
+        copy_master_strategy_id: str,
+    ) -> protocol_models_module.Strategy:
+        """
+        Copy follower strategy document: ``StrategyReference.id`` matches
+        ``SIMULATOR_COPY_FOLLOWER_STORED_STRATEGY_ID``; ``CopyConfiguration.strategy_id``
+        selects the master's signal strategy id on the broker.
+        """
+        return protocol_models_module.Strategy(
+            id=SIMULATOR_COPY_FOLLOWER_STORED_STRATEGY_ID,
+            version=SIMULATOR_FUNCTIONAL_STRATEGY_VERSION,
+            name="Simulator copy-follower automation strategy",
+            configuration=protocol_models_module.StrategyConfiguration(
+                protocol_models_module.CopyConfiguration(
+                    configuration_type=protocol_models_module.ActionConfigurationType.COPY,
+                    strategy_id=copy_master_strategy_id,
+                )
             ),
         )
 
@@ -141,22 +186,21 @@ if IMPORTED_OCTOBOT_FLOW_GRID_DEPS:
         strategy_id: str | None = None,
         emit_signals: bool | None = None,
     ) -> protocol_models_module.UserAction:
-        strategy = None
-        if strategy_id is not None:
-            strategy = protocol_models_module.StrategyConfiguration(
-                id=strategy_id,
-                emit_signals=bool(emit_signals),
-            )
+        reference_strategy_identifier = strategy_id or SIMULATOR_GRID_DEFAULT_STRATEGY_ID
+        strategy_reference = protocol_models_module.StrategyReference(
+            id=reference_strategy_identifier,
+            version=SIMULATOR_FUNCTIONAL_STRATEGY_VERSION,
+            emit_signals=emit_signals if emit_signals is not None else False,
+        )
+        automation_configuration = protocol_models_module.AutomationConfiguration(
+            name=name,
+            created_at=datetime.datetime(2026, 5, 10, 8, 0, 0, tzinfo=datetime.UTC),
+            strategy=strategy_reference,
+            accounts=[protocol_models_module.AccountReference(id=account_id)],
+        )
         payload = protocol_models_module.CreateAutomationConfiguration(
             action_type=protocol_models_module.UserActionType.AUTOMATION_CREATE,
-            configuration=protocol_models_module.AutomationConfiguration(
-                name=name,
-                account_ids=[account_id],
-                strategy=strategy,
-                configuration=protocol_models_module.AutomationConfigurationConfiguration(
-                    grid_configuration_matching_simulator_constants()
-                ),
-            ),
+            configuration=automation_configuration,
         )
         return protocol_models_module.UserAction(
             id=f"ua-grid-{uuid.uuid4()}",
@@ -170,18 +214,19 @@ if IMPORTED_OCTOBOT_FLOW_GRID_DEPS:
         name: str,
         strategy_id: str,
     ) -> protocol_models_module.UserAction:
+        strategy_reference = protocol_models_module.StrategyReference(
+            id=SIMULATOR_COPY_FOLLOWER_STORED_STRATEGY_ID,
+            version=SIMULATOR_FUNCTIONAL_STRATEGY_VERSION,
+        )
+        automation_configuration = protocol_models_module.AutomationConfiguration(
+            name=name,
+            created_at=datetime.datetime(2026, 5, 10, 8, 1, 0, tzinfo=datetime.UTC),
+            strategy=strategy_reference,
+            accounts=[protocol_models_module.AccountReference(id=account_id)],
+        )
         payload = protocol_models_module.CreateAutomationConfiguration(
             action_type=protocol_models_module.UserActionType.AUTOMATION_CREATE,
-            configuration=protocol_models_module.AutomationConfiguration(
-                name=name,
-                account_ids=[account_id],
-                configuration=protocol_models_module.AutomationConfigurationConfiguration(
-                    protocol_models_module.CopyConfiguration(
-                        configuration_type=protocol_models_module.ActionConfigurationType.COPY,
-                        strategy_id=strategy_id,
-                    )
-                ),
-            ),
+            configuration=automation_configuration,
         )
         return protocol_models_module.UserAction(
             id=automation_id,

@@ -7,9 +7,11 @@ AutomationConfiguration
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **name** | **str** |  | 
-**account_ids** | **List[str]** |  | [optional] 
-**strategy** | [**StrategyConfiguration**](StrategyConfiguration.md) |  | [optional] 
-**configuration** | [**AutomationConfigurationConfiguration**](AutomationConfigurationConfiguration.md) |  | 
+**description** | **str** |  | [optional] 
+**created_at** | **datetime** |  | 
+**updated_at** | **datetime** |  | [optional] 
+**strategy** | [**StrategyReference**](StrategyReference.md) |  | 
+**accounts** | [**List[AccountReference]**](AccountReference.md) |  | 
 
 ## Example
 

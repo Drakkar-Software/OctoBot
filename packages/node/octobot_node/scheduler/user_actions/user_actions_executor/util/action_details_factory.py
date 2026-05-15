@@ -1,3 +1,4 @@
+import datetime
 import json
 
 import octobot_commons.constants as commons_constants
@@ -17,11 +18,18 @@ _ACTION_ID_MAIN = "action_1"
 _ACTION_ID_COPY = "action_copy_exchange_account"
 
 
+def _protocol_account_updated_at_unix_seconds(protocol_account: protocol_models.Account) -> float:
+    moment = protocol_account.updated_at
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=datetime.UTC)
+    return moment.timestamp()
+
+
 def init_action_factory(
     *,
     automation_id: str,
     protocol_account: protocol_models.Account,
-    strategy: protocol_models.StrategyConfiguration | None,
+    strategy_reference: protocol_models.StrategyReference,
 ) -> flow_entities.AbstractActionDetails:
     """
     Build an init APPLY_CONFIGURATION action like flow functional tests, but sourced from AccountProvider.
@@ -47,10 +55,12 @@ def init_action_factory(
         portfolio_unit=reference_unit,
     )
 
-    automation_metadata = flow_entities.AutomationMetadata(automation_id=automation_id)
-    if strategy is not None:
-        automation_metadata.strategy_id = strategy.id
-        automation_metadata.emit_signals = bool(strategy.emit_signals)
+    automation_metadata = flow_entities.AutomationMetadata(
+        automation_id=automation_id,
+        strategy_id=strategy_reference.id,
+        emit_signals=bool(strategy_reference.emit_signals),
+        strategy_version=strategy_reference.version,
+    )
     automation_details = flow_entities.AutomationDetails(
         metadata=automation_metadata,
         exchange_account_elements=flow_entities.ExchangeAccountElements(
@@ -213,6 +223,7 @@ def exchange_protocol_account_to_apply_configuration_dict(
     exchange_account_details = flow_entities.ExchangeAccountDetails(
         metadata=flow_exchange_account_details.ExchangeAccountMetadata(
             id=account_identifier,
+            updated_at=_protocol_account_updated_at_unix_seconds(protocol_account),
             name=protocol_account.name,
         ),
         exchange_details=exchange_details,

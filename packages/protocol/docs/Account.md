@@ -11,8 +11,8 @@ Name | Type | Description | Notes
 **is_simulated** | **bool** |  | 
 **description** | **str** |  | [optional] 
 **state** | [**AccountState**](AccountState.md) |  | [optional] 
-**created_at** | **datetime** |  | [optional] 
-**updated_at** | **datetime** |  | [optional] 
+**created_at** | **datetime** |  | 
+**updated_at** | **datetime** |  | 
 **details** | [**AccountDetails**](AccountDetails.md) |  | [optional] 
 
 ## Example

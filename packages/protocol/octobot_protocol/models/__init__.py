@@ -17,6 +17,7 @@ from octobot_protocol.models.account import Account
 from octobot_protocol.models.account_action_result import AccountActionResult
 from octobot_protocol.models.account_action_result_error_message import AccountActionResultErrorMessage
 from octobot_protocol.models.account_details import AccountDetails
+from octobot_protocol.models.account_reference import AccountReference
 from octobot_protocol.models.account_state import AccountState
 from octobot_protocol.models.account_status import AccountStatus
 from octobot_protocol.models.account_status_message import AccountStatusMessage
@@ -30,7 +31,6 @@ from octobot_protocol.models.asset import Asset
 from octobot_protocol.models.automation_action_result import AutomationActionResult
 from octobot_protocol.models.automation_action_result_error_message import AutomationActionResultErrorMessage
 from octobot_protocol.models.automation_configuration import AutomationConfiguration
-from octobot_protocol.models.automation_configuration_configuration import AutomationConfigurationConfiguration
 from octobot_protocol.models.automation_metadata import AutomationMetadata
 from octobot_protocol.models.automation_state import AutomationState
 from octobot_protocol.models.blockchain_account import BlockchainAccount
@@ -81,6 +81,7 @@ from octobot_protocol.models.stop_automation_configuration import StopAutomation
 from octobot_protocol.models.strategies_state import StrategiesState
 from octobot_protocol.models.strategy import Strategy
 from octobot_protocol.models.strategy_configuration import StrategyConfiguration
+from octobot_protocol.models.strategy_reference import StrategyReference
 from octobot_protocol.models.task_status import TaskStatus
 from octobot_protocol.models.time_frame import TimeFrame
 from octobot_protocol.models.trade import Trade

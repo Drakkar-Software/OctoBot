@@ -5,6 +5,7 @@
 #  modify it under the terms of the GNU Lesser General Public
 #  License version 3.0 of the License, or (at your option) any later version.
 
+import datetime
 import importlib
 
 import pytest
@@ -39,6 +40,8 @@ class Test_user_action_executor_factory:
             id=account_identifier,
             name="Test account",
             is_simulated=True,
+            created_at=datetime.datetime(2026, 2, 2, 10, 0, 0, tzinfo=datetime.UTC),
+            updated_at=datetime.datetime(2026, 2, 3, 15, 30, 0, tzinfo=datetime.UTC),
             details=protocol_models.AccountDetails(
                 actual_instance=cls._exchange_account_payload(),
             ),
@@ -59,13 +62,12 @@ class Test_user_action_executor_factory:
             action_type=protocol_models.UserActionType.AUTOMATION_CREATE,
             configuration=protocol_models.AutomationConfiguration(
                 name="create-automation",
-                configuration=protocol_models.AutomationConfigurationConfiguration(
-                    protocol_models.IndexConfiguration(
-                        configuration_type=protocol_models.ActionConfigurationType.INDEX,
-                        coins=[protocol_models.IndexCoin(name="BTC", ratio=1.0)],
-                        rebalance_trigger_min_percent=0.0,
-                    )
+                created_at=datetime.datetime(2026, 2, 1, 12, 0, 0, tzinfo=datetime.UTC),
+                strategy=protocol_models.StrategyReference(
+                    id="factory-create-strategy",
+                    version="1.0.0",
                 ),
+                accounts=[protocol_models.AccountReference(id="acc-auto")],
             ),
         )
         user_action_model = self._user_action(action_identifier="ua-create-auto", configuration_inner=configuration_inner)
@@ -78,19 +80,12 @@ class Test_user_action_executor_factory:
             action_type=protocol_models.UserActionType.AUTOMATION_EDIT,
             configuration=protocol_models.AutomationConfiguration(
                 name="edit-automation",
-                configuration=protocol_models.AutomationConfigurationConfiguration(
-                    protocol_models.GridConfiguration(
-                        configuration_type=protocol_models.ActionConfigurationType.GRID,
-                        symbol="BTC/USDT",
-                        spread=6,
-                        increment=2,
-                        buy_count=2,
-                        sell_count=2,
-                        enable_trailing_up=False,
-                        enable_trailing_down=False,
-                        order_by_order_trailing=False,
-                    )
+                created_at=datetime.datetime(2026, 2, 1, 12, 0, 0, tzinfo=datetime.UTC),
+                strategy=protocol_models.StrategyReference(
+                    id="factory-edit-strategy",
+                    version="1.0.0",
                 ),
+                accounts=[protocol_models.AccountReference(id="acc-edit")],
             ),
         )
         user_action_model = self._user_action(action_identifier="ua-edit-auto", configuration_inner=configuration_inner)

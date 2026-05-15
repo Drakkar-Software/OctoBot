@@ -5,6 +5,8 @@
 #  modify it under the terms of the GNU Lesser General Public
 #  License version 3.0 of the License, or (at your option) any later version.
 
+import datetime
+
 import mock
 
 import octobot_protocol.models as protocol_models
@@ -19,8 +21,15 @@ class TestGetAccountsState:
     """Checks :func:`octobot_node.protocol.accounts.get_accounts_state`."""
 
     def test_passes_address_to_provider_and_returns_exchange_accounts_version(self):
+        sample_timestamp = datetime.datetime(2026, 1, 1, tzinfo=datetime.UTC)
         sample_accounts = [
-            protocol_models.Account(id="acc-a", name="Alpha", is_simulated=False),
+            protocol_models.Account(
+                id="acc-a",
+                name="Alpha",
+                is_simulated=False,
+                created_at=sample_timestamp,
+                updated_at=sample_timestamp,
+            ),
         ]
         provider_stub = mock.Mock()
         provider_stub.list_items = mock.Mock(return_value=sample_accounts)

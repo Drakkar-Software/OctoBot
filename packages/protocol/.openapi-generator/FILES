@@ -2,6 +2,7 @@ docs/Account.md
 docs/AccountActionResult.md
 docs/AccountActionResultErrorMessage.md
 docs/AccountDetails.md
+docs/AccountReference.md
 docs/AccountState.md
 docs/AccountStatus.md
 docs/AccountStatusMessage.md
@@ -15,7 +16,6 @@ docs/Asset.md
 docs/AutomationActionResult.md
 docs/AutomationActionResultErrorMessage.md
 docs/AutomationConfiguration.md
-docs/AutomationConfigurationConfiguration.md
 docs/AutomationMetadata.md
 docs/AutomationState.md
 docs/BlockchainAccount.md
@@ -66,6 +66,7 @@ docs/StopAutomationConfiguration.md
 docs/StrategiesState.md
 docs/Strategy.md
 docs/StrategyConfiguration.md
+docs/StrategyReference.md
 docs/TaskStatus.md
 docs/TimeFrame.md
 docs/Trade.md
@@ -88,6 +89,7 @@ octobot_protocol/models/account.py
 octobot_protocol/models/account_action_result.py
 octobot_protocol/models/account_action_result_error_message.py
 octobot_protocol/models/account_details.py
+octobot_protocol/models/account_reference.py
 octobot_protocol/models/account_state.py
 octobot_protocol/models/account_status.py
 octobot_protocol/models/account_status_message.py
@@ -101,7 +103,6 @@ octobot_protocol/models/asset.py
 octobot_protocol/models/automation_action_result.py
 octobot_protocol/models/automation_action_result_error_message.py
 octobot_protocol/models/automation_configuration.py
-octobot_protocol/models/automation_configuration_configuration.py
 octobot_protocol/models/automation_metadata.py
 octobot_protocol/models/automation_state.py
 octobot_protocol/models/blockchain_account.py
@@ -152,6 +153,7 @@ octobot_protocol/models/stop_automation_configuration.py
 octobot_protocol/models/strategies_state.py
 octobot_protocol/models/strategy.py
 octobot_protocol/models/strategy_configuration.py
+octobot_protocol/models/strategy_reference.py
 octobot_protocol/models/task_status.py
 octobot_protocol/models/time_frame.py
 octobot_protocol/models/trade.py
@@ -172,6 +174,7 @@ test/test_account.py
 test/test_account_action_result.py
 test/test_account_action_result_error_message.py
 test/test_account_details.py
+test/test_account_reference.py
 test/test_account_state.py
 test/test_account_status.py
 test/test_account_status_message.py
@@ -185,7 +188,6 @@ test/test_asset.py
 test/test_automation_action_result.py
 test/test_automation_action_result_error_message.py
 test/test_automation_configuration.py
-test/test_automation_configuration_configuration.py
 test/test_automation_metadata.py
 test/test_automation_state.py
 test/test_blockchain_account.py
@@ -236,6 +238,7 @@ test/test_stop_automation_configuration.py
 test/test_strategies_state.py
 test/test_strategy.py
 test/test_strategy_configuration.py
+test/test_strategy_reference.py
 test/test_task_status.py
 test/test_time_frame.py
 test/test_trade.py

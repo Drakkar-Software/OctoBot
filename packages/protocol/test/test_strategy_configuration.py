@@ -35,12 +35,191 @@ class TestStrategyConfiguration(unittest.TestCase):
         model = StrategyConfiguration()
         if include_optional:
             return StrategyConfiguration(
-                id = '',
-                emit_signals = True
+                configuration_type = 'market_making',
+                pair_settings = [
+                    octobot_protocol.models.market_making_symbol_configuration.MarketMakingSymbolConfiguration(
+                        trading_pair = '', 
+                        reference_price = [
+                            octobot_protocol.models.market_making_reference_pair.MarketMakingReferencePair(
+                                exchange = '', 
+                                pair = '', 
+                                weight = 1.337, 
+                                formula = '', 
+                                time_frame = '1m', )
+                            ], 
+                        min_spread = 0, 
+                        max_spread = 0, 
+                        order_book_depth = octobot_protocol.models.market_making_order_book_depth.MarketMakingOrderBookDepth(
+                            cumulated_volume_percent = 0, 
+                            percent_daily_trading_volume = 0, ), 
+                        scheduled_volume = octobot_protocol.models.market_making_scheduled_volume.MarketMakingScheduledVolume(
+                            min_amount = 0, 
+                            max_amount = 0, 
+                            min_interval_seconds = 0, 
+                            max_interval_seconds = 0, ), 
+                        stop_conditions = octobot_protocol.models.market_making_stop_conditions.MarketMakingStopConditions(
+                            min_base_holding = 0, 
+                            min_quote_holding = 0, 
+                            max_positive_percent_price_change = 0, 
+                            max_negative_percent_price_change = 0, 
+                            average_price_counted_minutes = 1, ), 
+                        bids_count = 1, 
+                        asks_count = 1, 
+                        orders_distribution = 'linear', 
+                        funds_distribution = 'flat', 
+                        exchange = '', 
+                        max_base_budget = 0, 
+                        max_quote_budget = 0, 
+                        min_base_budget = 0, 
+                        min_quote_budget = 0, 
+                        hedging_engine = octobot_protocol.models.market_making_hedging_engine.MarketMakingHedgingEngine(
+                            average_price_counted_minutes = 1, 
+                            hedging_engine_type = 'spot', 
+                            hedging_exchange = '', 
+                            hedging_max_loss_threshold = 0, 
+                            hedging_profit_threshold = 0, 
+                            max_negative_percent_price_change = 0, 
+                            max_positive_percent_price_change = 0, ), )
+                    ],
+                symbols = [
+                    ''
+                    ],
+                buy_orders_count = 1,
+                percent_amount_per_buy_order = 0,
+                profit_target_percent = 0,
+                buy_order_price_discount_percent = 0,
+                enable_stop_loss = True,
+                stop_loss_price_discount_percent = 0,
+                trigger_mode = 'Maximum evaluators signals based',
+                use_init_entry_orders = True,
+                time_frames = [
+                    '1m'
+                    ],
+                evaluators = [
+                    octobot_protocol.models.evaluator_configuration.EvaluatorConfiguration(
+                        configuration = null, )
+                    ],
+                coins = [
+                    octobot_protocol.models.index_coin.IndexCoin(
+                        name = '', 
+                        ratio = 0, )
+                    ],
+                rebalance_trigger_min_percent = 0,
+                symbol = '',
+                spread = 0,
+                increment = 0,
+                buy_count = 1,
+                sell_count = 1,
+                enable_trailing_up = True,
+                enable_trailing_down = True,
+                order_by_order_trailing = True,
+                strategy_id = '',
+                profile_data = octobot_protocol.models.trigger_price_configuration.trigger_price_configuration(),
+                actions = [
+                    octobot_protocol.models.action.Action(
+                        id = '', 
+                        action_type = '', 
+                        status = 'pending', 
+                        dsl = '', 
+                        configuration = { }, 
+                        result = '', 
+                        error = '', 
+                        completed_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), )
+                    ]
             )
         else:
             return StrategyConfiguration(
-                id = '',
+                configuration_type = 'market_making',
+                pair_settings = [
+                    octobot_protocol.models.market_making_symbol_configuration.MarketMakingSymbolConfiguration(
+                        trading_pair = '', 
+                        reference_price = [
+                            octobot_protocol.models.market_making_reference_pair.MarketMakingReferencePair(
+                                exchange = '', 
+                                pair = '', 
+                                weight = 1.337, 
+                                formula = '', 
+                                time_frame = '1m', )
+                            ], 
+                        min_spread = 0, 
+                        max_spread = 0, 
+                        order_book_depth = octobot_protocol.models.market_making_order_book_depth.MarketMakingOrderBookDepth(
+                            cumulated_volume_percent = 0, 
+                            percent_daily_trading_volume = 0, ), 
+                        scheduled_volume = octobot_protocol.models.market_making_scheduled_volume.MarketMakingScheduledVolume(
+                            min_amount = 0, 
+                            max_amount = 0, 
+                            min_interval_seconds = 0, 
+                            max_interval_seconds = 0, ), 
+                        stop_conditions = octobot_protocol.models.market_making_stop_conditions.MarketMakingStopConditions(
+                            min_base_holding = 0, 
+                            min_quote_holding = 0, 
+                            max_positive_percent_price_change = 0, 
+                            max_negative_percent_price_change = 0, 
+                            average_price_counted_minutes = 1, ), 
+                        bids_count = 1, 
+                        asks_count = 1, 
+                        orders_distribution = 'linear', 
+                        funds_distribution = 'flat', 
+                        exchange = '', 
+                        max_base_budget = 0, 
+                        max_quote_budget = 0, 
+                        min_base_budget = 0, 
+                        min_quote_budget = 0, 
+                        hedging_engine = octobot_protocol.models.market_making_hedging_engine.MarketMakingHedgingEngine(
+                            average_price_counted_minutes = 1, 
+                            hedging_engine_type = 'spot', 
+                            hedging_exchange = '', 
+                            hedging_max_loss_threshold = 0, 
+                            hedging_profit_threshold = 0, 
+                            max_negative_percent_price_change = 0, 
+                            max_positive_percent_price_change = 0, ), )
+                    ],
+                symbols = [
+                    ''
+                    ],
+                buy_orders_count = 1,
+                percent_amount_per_buy_order = 0,
+                profit_target_percent = 0,
+                buy_order_price_discount_percent = 0,
+                enable_stop_loss = True,
+                stop_loss_price_discount_percent = 0,
+                trigger_mode = 'Maximum evaluators signals based',
+                use_init_entry_orders = True,
+                time_frames = [
+                    '1m'
+                    ],
+                evaluators = [
+                    octobot_protocol.models.evaluator_configuration.EvaluatorConfiguration(
+                        configuration = null, )
+                    ],
+                coins = [
+                    octobot_protocol.models.index_coin.IndexCoin(
+                        name = '', 
+                        ratio = 0, )
+                    ],
+                rebalance_trigger_min_percent = 0,
+                symbol = '',
+                spread = 0,
+                increment = 0,
+                buy_count = 1,
+                sell_count = 1,
+                enable_trailing_up = True,
+                enable_trailing_down = True,
+                order_by_order_trailing = True,
+                strategy_id = '',
+                profile_data = octobot_protocol.models.trigger_price_configuration.trigger_price_configuration(),
+                actions = [
+                    octobot_protocol.models.action.Action(
+                        id = '', 
+                        action_type = '', 
+                        status = 'pending', 
+                        dsl = '', 
+                        configuration = { }, 
+                        result = '', 
+                        error = '', 
+                        completed_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), )
+                    ],
         )
         """
 

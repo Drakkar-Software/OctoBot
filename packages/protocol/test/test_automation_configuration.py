@@ -36,18 +36,30 @@ class TestAutomationConfiguration(unittest.TestCase):
         if include_optional:
             return AutomationConfiguration(
                 name = '',
-                account_ids = [
-                    ''
-                    ],
-                strategy = octobot_protocol.models.strategy_configuration.StrategyConfiguration(
+                description = '',
+                created_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'),
+                updated_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'),
+                strategy = octobot_protocol.models.strategy_reference.StrategyReference(
                     id = '', 
+                    version = '', 
                     emit_signals = True, ),
-                configuration = None
+                accounts = [
+                    octobot_protocol.models.account_reference.AccountReference(
+                        id = '', )
+                    ]
             )
         else:
             return AutomationConfiguration(
                 name = '',
-                configuration = None,
+                created_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'),
+                strategy = octobot_protocol.models.strategy_reference.StrategyReference(
+                    id = '', 
+                    version = '', 
+                    emit_signals = True, ),
+                accounts = [
+                    octobot_protocol.models.account_reference.AccountReference(
+                        id = '', )
+                    ],
         )
         """
 

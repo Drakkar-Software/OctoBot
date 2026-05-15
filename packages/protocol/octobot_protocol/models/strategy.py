@@ -20,7 +20,7 @@ import json
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
-from octobot_protocol.models.automation_configuration_configuration import AutomationConfigurationConfiguration
+from octobot_protocol.models.strategy_configuration import StrategyConfiguration
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -30,12 +30,13 @@ class Strategy(BaseModel):
     Strategy
     """ # noqa: E501
     id: StrictStr
+    version: StrictStr
     name: Optional[StrictStr] = None
     description: Optional[StrictStr] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
-    configuration: AutomationConfigurationConfiguration
-    __properties: ClassVar[List[str]] = ["id", "name", "description", "created_at", "updated_at", "configuration"]
+    configuration: StrategyConfiguration
+    __properties: ClassVar[List[str]] = ["id", "version", "name", "description", "created_at", "updated_at", "configuration"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -92,11 +93,12 @@ class Strategy(BaseModel):
 
         _obj = cls.model_validate({
             "id": obj.get("id"),
+            "version": obj.get("version"),
             "name": obj.get("name"),
             "description": obj.get("description"),
             "created_at": obj.get("created_at"),
             "updated_at": obj.get("updated_at"),
-            "configuration": AutomationConfigurationConfiguration.from_dict(obj["configuration"]) if obj.get("configuration") is not None else None
+            "configuration": StrategyConfiguration.from_dict(obj["configuration"]) if obj.get("configuration") is not None else None
         })
         return _obj
 

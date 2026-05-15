@@ -54,6 +54,10 @@ class AutomationUserActionExecutor(user_actions_executor_base.UserActionExecutor
             return protocol_models.AutomationActionResultErrorMessage.AUTOMATION_NOT_FOUND
         if isinstance(exc, node_errors.AccountNotFoundError):
             return protocol_models.AutomationActionResultErrorMessage.ACCOUNT_NOT_FOUND
+        if isinstance(exc, node_errors.AutomationStrategyNotFoundError):
+            return protocol_models.AutomationActionResultErrorMessage.STRATEGY_NOT_FOUND
+        if isinstance(exc, node_errors.AutomationStrategyVersionMismatchError):
+            return protocol_models.AutomationActionResultErrorMessage.STRATEGY_VERSION_NOT_FOUND
         if isinstance(
             exc,
             (

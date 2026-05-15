@@ -23,9 +23,10 @@ import octobot_protocol.models as protocol_models
 import octobot_node.errors as node_errors
 import octobot_node.scheduler.user_actions.user_actions_executor.automation_user_action_executor as automation_user_action_executor
 import octobot_node.scheduler.user_actions.user_actions_executor.util.action_details_factory as action_details_factory
+
+import octobot.community.collection_backend.errors as collection_errors
 import octobot.community.collection_providers as collection_providers
 
-import octobot_node.constants as node_constants
 import octobot_node.models as models
 import octobot_node.scheduler.tasks
 
@@ -46,6 +47,38 @@ def _execute_actions_task_content_json(
         ),
     )
     return json.dumps({"state": automation_state.to_dict(include_default_values=False)})
+
+
+def _load_strategy_for_automation(
+    wallet_address: str,
+    strategy_reference: protocol_models.StrategyReference,
+) -> protocol_models.Strategy:
+    try:
+        stored_strategy = collection_providers.StrategyProvider.instance().get_item(
+            wallet_address,
+            strategy_reference.id,
+        )
+    except collection_errors.ItemNotFoundError as err:
+        raise node_errors.AutomationStrategyNotFoundError(
+            f"Strategy {strategy_reference.id!r} not found for address {wallet_address!r}"
+        ) from err
+    if stored_strategy.version != strategy_reference.version:
+        raise node_errors.AutomationStrategyVersionMismatchError(
+            f"Strategy {strategy_reference.id!r} version mismatch: automation references "
+            f"{strategy_reference.version!r}, stored strategy has {stored_strategy.version!r}"
+        )
+    return stored_strategy
+
+
+def _get_strategy_configuration_instance(
+    stored_strategy: protocol_models.Strategy,
+) -> typing.Any:
+    wrapper = stored_strategy.configuration
+    if wrapper is None or wrapper.actual_instance is None:
+        raise node_errors.InvalidAutomationConfigurationError(
+            "Create automation requires Strategy.configuration.actual_instance to be set."
+        )
+    return wrapper.actual_instance
 
 
 class CreateAutomationActionExecutor(automation_user_action_executor.AutomationUserActionExecutor):
@@ -76,6 +109,13 @@ class CreateAutomationActionExecutor(automation_user_action_executor.AutomationU
 
     def _create_automation_actions(self, user_action: protocol_models.UserAction) -> list[flow_entities.AbstractActionDetails]:
         automation_configuration = self._get_automation_configuration(user_action)
+
+        stored_strategy = _load_strategy_for_automation(
+            self._wallet_address,
+            automation_configuration.strategy,
+        )
+        inner_configuration = _get_strategy_configuration_instance(stored_strategy)
+
         account_id = _get_single_account_id(automation_configuration)
 
         try:
@@ -83,7 +123,7 @@ class CreateAutomationActionExecutor(automation_user_action_executor.AutomationU
                 self._wallet_address,
                 account_id,
             )
-        except Exception as err:  # keep explicit: bubble as dedicated node error
+        except collection_errors.ItemNotFoundError as err:
             raise node_errors.AccountNotFoundError(
                 f"Failed to load account {account_id!r} for address {self._wallet_address!r}: {err}"
             ) from err
@@ -91,10 +131,9 @@ class CreateAutomationActionExecutor(automation_user_action_executor.AutomationU
         init_action = action_details_factory.init_action_factory(
             automation_id=user_action.id,
             protocol_account=protocol_account,
-            strategy=automation_configuration.strategy,
+            strategy_reference=automation_configuration.strategy,
         )
 
-        inner_configuration = _get_automation_configuration_instance(automation_configuration)
         match inner_configuration:
             case protocol_models.DCAConfiguration():
                 raise node_errors.UnsupportedAutomationConfigurationTypeError(
@@ -147,25 +186,14 @@ def _get_create_automation_payload(
     return payload
 
 
-def _get_automation_configuration_instance(
-    automation_configuration: protocol_models.AutomationConfiguration,
-) -> typing.Any:
-    wrapper = automation_configuration.configuration
-    if wrapper is None or wrapper.actual_instance is None:
-        raise node_errors.InvalidAutomationConfigurationError(
-            "Create automation requires AutomationConfiguration.configuration.actual_instance to be set."
-        )
-    return wrapper.actual_instance
-
-
 def _get_single_account_id(automation_configuration: protocol_models.AutomationConfiguration) -> str:
-    account_ids = list(automation_configuration.account_ids or [])
-    if not account_ids:
+    accounts_list = list(automation_configuration.accounts or [])
+    if not accounts_list:
         raise node_errors.InvalidAutomationConfigurationError(
-            "Create automation requires AutomationConfiguration.account_ids to contain exactly one account id."
+            "Create automation requires AutomationConfiguration.accounts to contain exactly one account reference."
         )
-    if len(account_ids) != 1:
+    if len(accounts_list) != 1:
         raise node_errors.InvalidAutomationConfigurationError(
-            f"Create automation currently supports exactly one account id, got {len(account_ids)}: {account_ids!r}"
+            f"Create automation currently supports exactly one account reference, got {len(accounts_list)}"
         )
-    return str(account_ids[0])
+    return accounts_list[0].id

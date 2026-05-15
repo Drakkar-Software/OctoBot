@@ -18,6 +18,7 @@ class AutomationMetadata(
     automation_id: str = dataclasses.field(default="", repr=True)
     emit_signals: bool = dataclasses.field(default=False, repr=True)
     strategy_id: str = dataclasses.field(default="", repr=True)
+    strategy_version: str = dataclasses.field(default="", repr=True)
 
 
 @dataclasses.dataclass

@@ -13,78 +13,238 @@
 
 
 from __future__ import annotations
-import pprint
-import re  # noqa: F401
 import json
+import pprint
+from pydantic import BaseModel, ConfigDict, Field, StrictStr, ValidationError, field_validator
+from typing import Any, List, Optional
+from octobot_protocol.models.copy_configuration import CopyConfiguration
+from octobot_protocol.models.dca_configuration import DCAConfiguration
+from octobot_protocol.models.generic_process_configuration import GenericProcessConfiguration
+from octobot_protocol.models.generic_workflow_configuration import GenericWorkflowConfiguration
+from octobot_protocol.models.grid_configuration import GridConfiguration
+from octobot_protocol.models.index_configuration import IndexConfiguration
+from octobot_protocol.models.market_making_configuration import MarketMakingConfiguration
+from pydantic import StrictStr, Field
+from typing import Union, List, Set, Optional, Dict
+from typing_extensions import Literal, Self
 
-from pydantic import BaseModel, ConfigDict, StrictBool, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional
-from typing import Optional, Set
-from typing_extensions import Self
-from pydantic_core import to_jsonable_python
+STRATEGYCONFIGURATION_ONE_OF_SCHEMAS = ["CopyConfiguration", "DCAConfiguration", "GenericProcessConfiguration", "GenericWorkflowConfiguration", "GridConfiguration", "IndexConfiguration", "MarketMakingConfiguration"]
 
 class StrategyConfiguration(BaseModel):
     """
     StrategyConfiguration
-    """ # noqa: E501
-    id: StrictStr
-    emit_signals: Optional[StrictBool] = False
-    __properties: ClassVar[List[str]] = ["id", "emit_signals"]
+    """
+    # data type: MarketMakingConfiguration
+    oneof_schema_1_validator: Optional[MarketMakingConfiguration] = None
+    # data type: DCAConfiguration
+    oneof_schema_2_validator: Optional[DCAConfiguration] = None
+    # data type: IndexConfiguration
+    oneof_schema_3_validator: Optional[IndexConfiguration] = None
+    # data type: GridConfiguration
+    oneof_schema_4_validator: Optional[GridConfiguration] = None
+    # data type: CopyConfiguration
+    oneof_schema_5_validator: Optional[CopyConfiguration] = None
+    # data type: GenericProcessConfiguration
+    oneof_schema_6_validator: Optional[GenericProcessConfiguration] = None
+    # data type: GenericWorkflowConfiguration
+    oneof_schema_7_validator: Optional[GenericWorkflowConfiguration] = None
+    actual_instance: Optional[Union[CopyConfiguration, DCAConfiguration, GenericProcessConfiguration, GenericWorkflowConfiguration, GridConfiguration, IndexConfiguration, MarketMakingConfiguration]] = None
+    one_of_schemas: Set[str] = { "CopyConfiguration", "DCAConfiguration", "GenericProcessConfiguration", "GenericWorkflowConfiguration", "GridConfiguration", "IndexConfiguration", "MarketMakingConfiguration" }
 
     model_config = ConfigDict(
-        validate_by_name=True,
-        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
 
 
-    def to_str(self) -> str:
-        """Returns the string representation of the model using alias"""
-        return pprint.pformat(self.model_dump(by_alias=True))
+    discriminator_value_class_map: Dict[str, str] = {
+    }
+
+    def __init__(self, *args, **kwargs) -> None:
+        if args:
+            if len(args) > 1:
+                raise ValueError("If a position argument is used, only 1 is allowed to set `actual_instance`")
+            if kwargs:
+                raise ValueError("If a position argument is used, keyword arguments cannot be used.")
+            super().__init__(actual_instance=args[0])
+        else:
+            super().__init__(**kwargs)
+
+    @field_validator('actual_instance')
+    def actual_instance_must_validate_oneof(cls, v):
+        instance = StrategyConfiguration.model_construct()
+        error_messages = []
+        match = 0
+        # validate data type: MarketMakingConfiguration
+        if not isinstance(v, MarketMakingConfiguration):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `MarketMakingConfiguration`")
+        else:
+            match += 1
+        # validate data type: DCAConfiguration
+        if not isinstance(v, DCAConfiguration):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `DCAConfiguration`")
+        else:
+            match += 1
+        # validate data type: IndexConfiguration
+        if not isinstance(v, IndexConfiguration):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `IndexConfiguration`")
+        else:
+            match += 1
+        # validate data type: GridConfiguration
+        if not isinstance(v, GridConfiguration):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `GridConfiguration`")
+        else:
+            match += 1
+        # validate data type: CopyConfiguration
+        if not isinstance(v, CopyConfiguration):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `CopyConfiguration`")
+        else:
+            match += 1
+        # validate data type: GenericProcessConfiguration
+        if not isinstance(v, GenericProcessConfiguration):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `GenericProcessConfiguration`")
+        else:
+            match += 1
+        # validate data type: GenericWorkflowConfiguration
+        if not isinstance(v, GenericWorkflowConfiguration):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `GenericWorkflowConfiguration`")
+        else:
+            match += 1
+        if match > 1:
+            # more than 1 match
+            raise ValueError("Multiple matches found when setting `actual_instance` in StrategyConfiguration with oneOf schemas: CopyConfiguration, DCAConfiguration, GenericProcessConfiguration, GenericWorkflowConfiguration, GridConfiguration, IndexConfiguration, MarketMakingConfiguration. Details: " + ", ".join(error_messages))
+        elif match == 0:
+            # no match
+            raise ValueError("No match found when setting `actual_instance` in StrategyConfiguration with oneOf schemas: CopyConfiguration, DCAConfiguration, GenericProcessConfiguration, GenericWorkflowConfiguration, GridConfiguration, IndexConfiguration, MarketMakingConfiguration. Details: " + ", ".join(error_messages))
+        else:
+            return v
+
+    @classmethod
+    def from_dict(cls, obj: Union[str, Dict[str, Any]]) -> Self:
+        return cls.from_json(json.dumps(obj))
+
+    @classmethod
+    def from_json(cls, json_str: str) -> Self:
+        """Returns the object represented by the json string"""
+        instance = cls.model_construct()
+        error_messages = []
+        match = 0
+
+        # use oneOf discriminator to lookup the data type
+        _data_type = json.loads(json_str).get("configuration_type")
+        if not _data_type:
+            raise ValueError("Failed to lookup data type from the field `configuration_type` in the input.")
+
+        # check if data type is `CopyConfiguration`
+        if _data_type == "CopyConfiguration":
+            instance.actual_instance = CopyConfiguration.from_json(json_str)
+            return instance
+
+        # check if data type is `DCAConfiguration`
+        if _data_type == "DCAConfiguration":
+            instance.actual_instance = DCAConfiguration.from_json(json_str)
+            return instance
+
+        # check if data type is `GenericProcessConfiguration`
+        if _data_type == "GenericProcessConfiguration":
+            instance.actual_instance = GenericProcessConfiguration.from_json(json_str)
+            return instance
+
+        # check if data type is `GenericWorkflowConfiguration`
+        if _data_type == "GenericWorkflowConfiguration":
+            instance.actual_instance = GenericWorkflowConfiguration.from_json(json_str)
+            return instance
+
+        # check if data type is `GridConfiguration`
+        if _data_type == "GridConfiguration":
+            instance.actual_instance = GridConfiguration.from_json(json_str)
+            return instance
+
+        # check if data type is `IndexConfiguration`
+        if _data_type == "IndexConfiguration":
+            instance.actual_instance = IndexConfiguration.from_json(json_str)
+            return instance
+
+        # check if data type is `MarketMakingConfiguration`
+        if _data_type == "MarketMakingConfiguration":
+            instance.actual_instance = MarketMakingConfiguration.from_json(json_str)
+            return instance
+
+        # deserialize data into MarketMakingConfiguration
+        try:
+            instance.actual_instance = MarketMakingConfiguration.from_json(json_str)
+            match += 1
+        except (ValidationError, ValueError) as e:
+            error_messages.append(str(e))
+        # deserialize data into DCAConfiguration
+        try:
+            instance.actual_instance = DCAConfiguration.from_json(json_str)
+            match += 1
+        except (ValidationError, ValueError) as e:
+            error_messages.append(str(e))
+        # deserialize data into IndexConfiguration
+        try:
+            instance.actual_instance = IndexConfiguration.from_json(json_str)
+            match += 1
+        except (ValidationError, ValueError) as e:
+            error_messages.append(str(e))
+        # deserialize data into GridConfiguration
+        try:
+            instance.actual_instance = GridConfiguration.from_json(json_str)
+            match += 1
+        except (ValidationError, ValueError) as e:
+            error_messages.append(str(e))
+        # deserialize data into CopyConfiguration
+        try:
+            instance.actual_instance = CopyConfiguration.from_json(json_str)
+            match += 1
+        except (ValidationError, ValueError) as e:
+            error_messages.append(str(e))
+        # deserialize data into GenericProcessConfiguration
+        try:
+            instance.actual_instance = GenericProcessConfiguration.from_json(json_str)
+            match += 1
+        except (ValidationError, ValueError) as e:
+            error_messages.append(str(e))
+        # deserialize data into GenericWorkflowConfiguration
+        try:
+            instance.actual_instance = GenericWorkflowConfiguration.from_json(json_str)
+            match += 1
+        except (ValidationError, ValueError) as e:
+            error_messages.append(str(e))
+
+        if match > 1:
+            # more than 1 match
+            raise ValueError("Multiple matches found when deserializing the JSON string into StrategyConfiguration with oneOf schemas: CopyConfiguration, DCAConfiguration, GenericProcessConfiguration, GenericWorkflowConfiguration, GridConfiguration, IndexConfiguration, MarketMakingConfiguration. Details: " + ", ".join(error_messages))
+        elif match == 0:
+            # no match
+            raise ValueError("No match found when deserializing the JSON string into StrategyConfiguration with oneOf schemas: CopyConfiguration, DCAConfiguration, GenericProcessConfiguration, GenericWorkflowConfiguration, GridConfiguration, IndexConfiguration, MarketMakingConfiguration. Details: " + ", ".join(error_messages))
+        else:
+            return instance
 
     def to_json(self) -> str:
-        """Returns the JSON representation of the model using alias"""
-        return json.dumps(to_jsonable_python(self.to_dict()))
+        """Returns the JSON representation of the actual instance"""
+        if self.actual_instance is None:
+            return "null"
 
-    @classmethod
-    def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of StrategyConfiguration from a JSON string"""
-        return cls.from_dict(json.loads(json_str))
+        if hasattr(self.actual_instance, "to_json") and callable(self.actual_instance.to_json):
+            return self.actual_instance.to_json()
+        else:
+            return json.dumps(self.actual_instance)
 
-    def to_dict(self) -> Dict[str, Any]:
-        """Return the dictionary representation of the model using alias.
-
-        This has the following differences from calling pydantic's
-        `self.model_dump(by_alias=True)`:
-
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
-        """
-        excluded_fields: Set[str] = set([
-        ])
-
-        _dict = self.model_dump(
-            by_alias=True,
-            exclude=excluded_fields,
-            exclude_none=True,
-        )
-        return _dict
-
-    @classmethod
-    def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of StrategyConfiguration from a dict"""
-        if obj is None:
+    def to_dict(self) -> Optional[Union[Dict[str, Any], CopyConfiguration, DCAConfiguration, GenericProcessConfiguration, GenericWorkflowConfiguration, GridConfiguration, IndexConfiguration, MarketMakingConfiguration]]:
+        """Returns the dict representation of the actual instance"""
+        if self.actual_instance is None:
             return None
 
-        if not isinstance(obj, dict):
-            return cls.model_validate(obj)
+        if hasattr(self.actual_instance, "to_dict") and callable(self.actual_instance.to_dict):
+            return self.actual_instance.to_dict()
+        else:
+            # primitive type
+            return self.actual_instance
 
-        _obj = cls.model_validate({
-            "id": obj.get("id"),
-            "emit_signals": obj.get("emit_signals") if obj.get("emit_signals") is not None else False
-        })
-        return _obj
+    def to_str(self) -> str:
+        """Returns the string representation of the actual instance"""
+        return pprint.pformat(self.model_dump())
 
 

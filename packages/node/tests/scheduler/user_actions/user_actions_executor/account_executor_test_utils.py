@@ -14,9 +14,14 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
+import datetime
+
 import octobot_protocol.models as protocol_models
 
 WALLET_ADDRESS = "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"
+
+_ACCOUNT_TS = datetime.datetime(2026, 1, 10, 12, 0, 0, tzinfo=datetime.UTC)
+_ACCOUNT_TS_OUT = datetime.datetime(2026, 1, 11, 14, 30, 0, tzinfo=datetime.UTC)
 
 
 def exchange_account_payload() -> protocol_models.ExchangeAccount:
@@ -35,6 +40,8 @@ def minimal_exchange_account(*, account_id: str) -> protocol_models.Account:
         id=account_id,
         name="Test account",
         is_simulated=True,
+        created_at=_ACCOUNT_TS,
+        updated_at=_ACCOUNT_TS,
         details=protocol_models.AccountDetails(
             actual_instance=exchange_account_payload(),
         ),
@@ -46,11 +53,13 @@ def minimal_blockchain_account(*, account_id: str) -> protocol_models.Account:
         id=account_id,
         name="Blockchain test account",
         is_simulated=False,
+        created_at=_ACCOUNT_TS,
+        updated_at=_ACCOUNT_TS_OUT,
         details=protocol_models.AccountDetails(
             actual_instance=protocol_models.BlockchainAccount(
                 account_type=protocol_models.AccountType.BLOCKCHAIN,
                 blockchain="ethereum",
-                wallet_address="0x1234567890123456789012345678901234567890",
+                public_key="0x1234567890123456789012345678901234567890",
             ),
         ),
     )

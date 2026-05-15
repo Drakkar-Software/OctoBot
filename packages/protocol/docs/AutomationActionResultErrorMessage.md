@@ -8,6 +8,10 @@ AutomationActionResultErrorMessage
 
 * `INVALID_CONFIGURATION` (value: `'invalid_configuration'`)
 
+* `STRATEGY_NOT_FOUND` (value: `'strategy_not_found'`)
+
+* `STRATEGY_VERSION_NOT_FOUND` (value: `'strategy_version_not_found'`)
+
 * `ACCOUNT_NOT_FOUND` (value: `'account_not_found'`)
 
 * `INTERNAL_ERROR` (value: `'internal_error'`)

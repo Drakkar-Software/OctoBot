@@ -1,3 +1,4 @@
+import datetime
 import pathlib
 
 import mock
@@ -32,8 +33,8 @@ async def _enqueue_user_action_synchronously_via_executor_like_workflow(
         user_action=user_action_instance,
     ).to_dict(include_default_values=False)
     parsed_inputs_bundle_workspace = ua_workflow_params_integration.UserActionWorkflowInputs.from_dict(bundle_inputs_encoded)
-    reconstructed_user_action_workspace_payload = protocol_models.UserAction.from_dict(
-        parsed_inputs_bundle_workspace.user_action.to_dict(),
+    reconstructed_user_action_workspace_payload = protocol_models.UserAction.from_json(
+        parsed_inputs_bundle_workspace.user_action.to_json(),
     )
     if reconstructed_user_action_workspace_payload is None:
         raise AssertionError("functional user_action failed to reconstruct from workflow inputs envelope")
@@ -75,10 +76,13 @@ def _build_exchange_account() -> protocol_models.ExchangeAccount:
 
 
 def _build_account(*, account_id: str, account_name: str) -> protocol_models.Account:
+    sample_timestamp = datetime.datetime(2026, 4, 1, 12, 0, 0, tzinfo=datetime.UTC)
     return protocol_models.Account(
         id=account_id,
         name=account_name,
         is_simulated=True,
+        created_at=sample_timestamp,
+        updated_at=sample_timestamp,
         details=protocol_models.AccountDetails(
             actual_instance=_build_exchange_account(),
         ),

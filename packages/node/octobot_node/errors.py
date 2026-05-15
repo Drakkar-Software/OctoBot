@@ -62,6 +62,14 @@ class AccountNotFoundError(UserActionError):
     """Raised when fetching an account via AccountProvider fails."""
 
 
+class AutomationStrategyNotFoundError(UserActionError):
+    """Raised when the referenced strategy does not exist in StrategyProvider."""
+
+
+class AutomationStrategyVersionMismatchError(UserActionError):
+    """Raised when the stored strategy version does not match the automation reference."""
+
+
 class InvalidAutomationConfigurationError(UserActionError):
     """Raised when the automation configuration is invalid or cannot be translated to actions."""
 

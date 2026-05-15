@@ -18,6 +18,7 @@ import octobot.community.collection_backend.errors as collection_errors
 import octobot_protocol.models as protocol_models
 
 import octobot_node.errors as node_errors
+import octobot_node.scheduler.user_actions.user_actions_executor.create_automation as create_automation_executor_module
 import octobot_node.scheduler.user_actions.user_actions_executor.create_account as create_account_executor
 import octobot_node.scheduler.user_actions.user_actions_executor.stop_automation as stop_automation_executor
 
@@ -51,6 +52,18 @@ class TestAutomationUserActionExecutorGetErrorMessage:
             node_errors.UnsupportedAutomationConfigurationTypeError("dca")
         )
         assert resolved == protocol_models.AutomationActionResultErrorMessage.INVALID_CONFIGURATION
+
+    def test_automation_strategy_not_found(self):
+        executor = create_automation_executor_module.CreateAutomationActionExecutor(_WALLET)
+        resolved = executor._get_error_message(node_errors.AutomationStrategyNotFoundError("missing"))
+        assert resolved == protocol_models.AutomationActionResultErrorMessage.STRATEGY_NOT_FOUND
+
+    def test_automation_strategy_version_mismatch(self):
+        executor = create_automation_executor_module.CreateAutomationActionExecutor(_WALLET)
+        resolved = executor._get_error_message(
+            node_errors.AutomationStrategyVersionMismatchError("mismatch"),
+        )
+        assert resolved == protocol_models.AutomationActionResultErrorMessage.STRATEGY_VERSION_NOT_FOUND
 
     def test_unknown_exception_falls_back_to_internal_error(self):
         executor = stop_automation_executor.StopAutomationActionExecutor(_WALLET)

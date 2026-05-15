@@ -1,6 +1,7 @@
 import mock
 import pytest
 import dbos
+import datetime
 
 import octobot_protocol.models as protocol_models
 
@@ -147,6 +148,8 @@ class TestStopAutomationActionExecutor:
                 id="a",
                 name="n",
                 is_simulated=True,
+                created_at=datetime.datetime(2026, 6, 1, 12, 0, 0, tzinfo=datetime.UTC),
+                updated_at=datetime.datetime(2026, 6, 1, 13, 0, 0, tzinfo=datetime.UTC),
                 details=protocol_models.AccountDetails(
                     actual_instance=protocol_models.ExchangeAccount(
                         account_type=protocol_models.AccountType.EXCHANGE,

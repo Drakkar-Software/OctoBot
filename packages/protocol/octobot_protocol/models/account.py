@@ -35,8 +35,8 @@ class Account(BaseModel):
     is_simulated: StrictBool
     description: Optional[StrictStr] = None
     state: Optional[AccountState] = None
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    created_at: datetime
+    updated_at: datetime
     details: Optional[AccountDetails] = None
     __properties: ClassVar[List[str]] = ["id", "name", "is_simulated", "description", "state", "created_at", "updated_at", "details"]
 

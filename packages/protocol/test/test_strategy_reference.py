@@ -14,10 +14,10 @@
 
 import unittest
 
-from octobot_protocol.models.strategy import Strategy
+from octobot_protocol.models.strategy_reference import StrategyReference
 
-class TestStrategy(unittest.TestCase):
-    """Strategy unit test stubs"""
+class TestStrategyReference(unittest.TestCase):
+    """StrategyReference unit test stubs"""
 
     def setUp(self):
         pass
@@ -25,34 +25,29 @@ class TestStrategy(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional) -> Strategy:
-        """Test Strategy
+    def make_instance(self, include_optional) -> StrategyReference:
+        """Test StrategyReference
             include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
-        # uncomment below to create an instance of `Strategy`
+        # uncomment below to create an instance of `StrategyReference`
         """
-        model = Strategy()
+        model = StrategyReference()
         if include_optional:
-            return Strategy(
+            return StrategyReference(
                 id = '',
                 version = '',
-                name = '',
-                description = '',
-                created_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'),
-                updated_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'),
-                configuration = None
+                emit_signals = True
             )
         else:
-            return Strategy(
+            return StrategyReference(
                 id = '',
                 version = '',
-                configuration = None,
         )
         """
 
-    def testStrategy(self):
-        """Test Strategy"""
+    def testStrategyReference(self):
+        """Test StrategyReference"""
         # inst_req_only = self.make_instance(include_optional=False)
         # inst_req_and_optional = self.make_instance(include_optional=True)
 

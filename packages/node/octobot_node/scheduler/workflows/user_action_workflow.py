@@ -67,8 +67,13 @@ class UserActionWorkflow:
     )
     async def _execute_user_action(inputs: dict) -> dict:
         parsed_inputs: params.UserActionWorkflowInputs = params.UserActionWorkflowInputs.from_dict(inputs)
+        # Rebuild via JSON, not UserAction.from_dict(inner.to_dict()): nested protocol types
+        # (e.g. Account.created_at / updated_at) stay as datetime in to_dict() output, while
+        # UserActionConfiguration.from_dict uses json.dumps internally and rejects datetimes.
         if parsed_inputs.user_action and (
-            parsed_user_action := protocol_models.UserAction.from_dict(parsed_inputs.user_action.to_dict())
+            parsed_user_action := protocol_models.UserAction.from_json(
+                parsed_inputs.user_action.to_json()
+            )
         ):
             executor_class = user_actions_executor.user_action_executor_factory(parsed_user_action)
             executor = executor_class(parsed_inputs.wallet_address)

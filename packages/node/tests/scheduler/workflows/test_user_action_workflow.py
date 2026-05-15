@@ -118,7 +118,7 @@ class Test_UserActionWorkflow_execute_user_action_step:
 
         with mock.patch.object(
             protocol_models.UserAction,
-            "from_dict",
+            "from_json",
             return_value=reparsed_placeholder,
         ), mock.patch.object(
             user_action_workflow_module_loaded.user_actions_executor,
@@ -142,7 +142,7 @@ class Test_UserActionWorkflow_execute_user_action_step:
 
         with mock.patch.object(
             protocol_models.UserAction,
-            "from_dict",
+            "from_json",
             return_value=None,
         ):
             with pytest.raises(node_errors.WorkflowInputError, match="No user action found in inputs"):

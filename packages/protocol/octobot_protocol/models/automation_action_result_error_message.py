@@ -28,6 +28,8 @@ class AutomationActionResultErrorMessage(str, Enum):
     """
     AUTOMATION_NOT_FOUND = 'automation_not_found'
     INVALID_CONFIGURATION = 'invalid_configuration'
+    STRATEGY_NOT_FOUND = 'strategy_not_found'
+    STRATEGY_VERSION_NOT_FOUND = 'strategy_version_not_found'
     ACCOUNT_NOT_FOUND = 'account_not_found'
     INTERNAL_ERROR = 'internal_error'
 

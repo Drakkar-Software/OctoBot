@@ -587,6 +587,19 @@ class TestEmitAndCopyGridAutomationSignals:
                             account_name="Copy emit functional account",
                         )
 
+                        def _functional_seed_strategy_for_emit_copy_test(_wallet_address, stored_item_id):
+                            if stored_item_id == _SHARED_STRATEGY_ID:
+                                return grid_sim_util.seeded_grid_strategy_for_functional_wallet(
+                                    stored_strategy_id=_SHARED_STRATEGY_ID,
+                                )
+                            if stored_item_id == grid_sim_util.SIMULATOR_COPY_FOLLOWER_STORED_STRATEGY_ID:
+                                return grid_sim_util.seeded_copy_follower_strategy_for_functional_wallet(
+                                    copy_master_strategy_id=_SHARED_STRATEGY_ID,
+                                )
+                            raise AssertionError(
+                                f"unexpected strategy id for functional seed: {stored_item_id!r}"
+                            )
+
                         with (
                             mock.patch.object(
                                 octobot_flow_repositories_exchange_module.TickersRepository,
@@ -597,6 +610,14 @@ class TestEmitAndCopyGridAutomationSignals:
                                 octobot_flow_repositories_exchange_module.OhlcvRepository,
                                 "fetch_ohlcv",
                                 side_effect=patched_fetch_ohlcv,
+                            ),
+                            mock.patch(
+                                "octobot.community.collection_providers.StrategyProvider.instance",
+                                return_value=mock.Mock(
+                                    get_item=mock.Mock(
+                                        side_effect=_functional_seed_strategy_for_emit_copy_test,
+                                    ),
+                                ),
                             ),
                             mock.patch(
                                 "octobot.community.collection_providers.AccountProvider.instance",

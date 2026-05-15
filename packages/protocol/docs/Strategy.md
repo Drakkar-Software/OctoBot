@@ -7,11 +7,12 @@ Strategy
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **id** | **str** |  | 
+**version** | **str** |  | 
 **name** | **str** |  | [optional] 
 **description** | **str** |  | [optional] 
 **created_at** | **datetime** |  | [optional] 
 **updated_at** | **datetime** |  | [optional] 
-**configuration** | [**AutomationConfigurationConfiguration**](AutomationConfigurationConfiguration.md) |  | 
+**configuration** | [**StrategyConfiguration**](StrategyConfiguration.md) |  | 
 
 ## Example
 
