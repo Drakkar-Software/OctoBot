@@ -105,3 +105,21 @@ class TestDecryptWireToUtf8Json:
     def test_json_array_raises_format_error(self):
         with pytest.raises(sync_errors.OctobotSyncCryptoFormatError):
             sync_crypto.decrypt_wire_to_utf8_json("[1,2]", _TEST_PRIVATE_KEY, _TEST_COLLECTION)
+
+
+class TestSha256Hex:
+    def test_known_vector(self):
+        # Standard SHA-256 of the empty string.
+        assert sync_crypto.sha256_hex("") == (
+            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        )
+
+    def test_deterministic(self):
+        assert sync_crypto.sha256_hex("payload") == sync_crypto.sha256_hex("payload")
+
+    def test_distinct_inputs_produce_distinct_hashes(self):
+        assert sync_crypto.sha256_hex("payload-a") != sync_crypto.sha256_hex("payload-b")
+
+    def test_unicode_payload(self):
+        # UTF-8 encoding must be used — non-ASCII must not raise.
+        assert sync_crypto.sha256_hex("héllo 🌍") == sync_crypto.sha256_hex("héllo 🌍")

@@ -81,44 +81,79 @@ def _decrypt(data: str, address: str, collection: str) -> str:
     return sync_crypto.decrypt_wire_to_utf8_json(data, wallet_private_key, collection)
 
 
+def _wrap_as_stored_document(encrypted_payload: str, plaintext_for_hash: str) -> str:
+    """Wrap a server-encrypted payload in the StoredDocument shape that
+    starfish_server.protocol.pull expects: ``{"v","data","timestamps","hash"}``.
+
+    Hash is computed on the plaintext so it stays stable across calls — AES-GCM
+    uses a random nonce, so hashing the ciphertext would change every pull and
+    break ETag caching.
+    """
+    return json.dumps({
+        "v": 1,
+        "data": encrypted_payload,
+        "timestamps": {},
+        "hash": sync_crypto.sha256_hex(plaintext_for_hash),
+    })
+
+
+def _unwrap_stored_document_data(body: str) -> str:
+    """Inverse of _wrap_as_stored_document for the push path: extract the
+    encrypted payload from the StoredDocument wrapper the client sends.
+    """
+    parsed = json.loads(body)
+    payload = parsed.get("data")
+    if not isinstance(payload, str):
+        raise errors.OctobotSyncError(
+            f"Push body missing string 'data' field; got {type(payload).__name__}"
+        )
+    return payload
+
+
 async def get_data(key: str, context: StoreContext | None = None) -> str | None:
     # called when client pulls
     collection = _get_collection(context)
-    output = None
-    already_encrypted = False
+    plaintext = None
+    already_encrypted_payload = None
     match collection:
         case enums.Collections.USER_DATA.value:
             user_data_state = await user_data_protocol.get_user_data_state(
                 _get_address(context)
             )
-            output = user_data_state.to_json()
+            plaintext = user_data_state.to_json()
         case enums.Collections.USER_ACCOUNTS.value:
             encrypted_blob = accounts_protocol.get_accounts_state_encrypted(
                 _get_address(context)
             )
-            output = json.dumps(encrypted_blob)
-            already_encrypted = True
+            already_encrypted_payload = json.dumps(encrypted_blob)
         case enums.Collections.USER_ACTIONS.value:
             # reading user actions should always return an empty list
             actions_state = protocol_models.UserActionsState(
                 version=node_constants.USER_ACTIONS_STATE_VERSION,
                 user_actions=[]
             )
-            output = actions_state.to_json()
+            plaintext = actions_state.to_json()
         case _:
             _get_logger().error(
                 f"get_data was called for collection ({collection}) with key ({key}). This collection is not supported."
             )
-    if output and not already_encrypted:
-        output = _encrypt(output, _get_address(context), collection)
-    return output
+            return None
+    if already_encrypted_payload is not None:
+        # Pre-encrypted payload (USER_ACCOUNTS): hash the encrypted JSON itself —
+        # it is deterministic (read from disk) so the hash stays stable.
+        return _wrap_as_stored_document(already_encrypted_payload, already_encrypted_payload)
+    if plaintext is None:
+        return None
+    encrypted = _encrypt(plaintext, _get_address(context), collection)
+    return _wrap_as_stored_document(encrypted, plaintext)
 
 async def put_data(key: str, body: str, context: StoreContext | None = None) -> None:
     collection = _get_collection(context)
     match collection:
         case enums.Collections.USER_ACTIONS.value:
+            encrypted_payload = _unwrap_stored_document_data(body)
             user_actions_state = protocol_models.UserActionsState.from_json(
-                _decrypt(body, _get_address(context), collection)
+                _decrypt(encrypted_payload, _get_address(context), collection)
             )
             if user_actions_state.user_actions:
                 for action in user_actions_state.user_actions:

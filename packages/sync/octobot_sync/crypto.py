@@ -22,6 +22,7 @@ Plaintext bytes are encrypted as-is — no intermediate JSON encode/decode of th
 
 import base64
 import binascii
+import hashlib
 import json
 import os
 import typing
@@ -33,6 +34,15 @@ from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
 import octobot_sync.errors as sync_errors
 import octobot_sync.constants as constants
+
+
+def sha256_hex(payload: str) -> str:
+    """Return the hex-encoded SHA-256 of *payload* (UTF-8 encoded).
+
+    Used to produce stable ``StoredDocument.hash`` values from plaintext, so the
+    hash does not change every pull just because AES-GCM picked a new nonce.
+    """
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
 def _derive_key(secret: str, salt: str, info: bytes) -> bytes:
