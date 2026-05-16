@@ -21,6 +21,7 @@ import json
 from collections.abc import Awaitable, Callable
 
 from starfish_server.config.schema import SyncConfig
+from starfish_server.protocol.types import DOCUMENT_VERSION
 from starfish_server.storage.base import AbstractObjectStore, StoreContext
 from starfish_server.storage.s3 import S3ObjectStore, S3StorageOptions
 from starfish_server.storage.filesystem import FilesystemObjectStore, FilesystemStorageOptions
@@ -28,6 +29,7 @@ from starfish_server.storage.filesystem import FilesystemObjectStore, Filesystem
 import octobot_commons.configuration as commons_configuration
 import octobot_commons.constants as commons_constants
 import octobot_commons.logging as logging
+import octobot_commons.user_root_folder_provider as user_root_folder_provider
 import octobot_node.constants as node_constants
 import octobot.community.authentication as community_authentication
 import octobot.community.wallet_backend.errors as wallet_backend_errors
@@ -90,7 +92,7 @@ def _wrap_as_stored_document(encrypted_payload: str, plaintext_for_hash: str) ->
     break ETag caching.
     """
     return json.dumps({
-        "v": 1,
+        "v": DOCUMENT_VERSION,
         "data": encrypted_payload,
         "timestamps": {},
         "hash": sync_crypto.sha256_hex(plaintext_for_hash),
@@ -108,6 +110,21 @@ def _unwrap_stored_document_data(body: str) -> str:
             f"Push body missing string 'data' field; got {type(payload).__name__}"
         )
     return payload
+
+
+_opaque_store: FilesystemObjectStore | None = None
+
+
+def _get_opaque_store() -> FilesystemObjectStore:
+    global _opaque_store
+    if _opaque_store is None:
+        data_dir = os.path.join(
+            user_root_folder_provider.get_user_root_folder(), "sync", "data"
+        )
+        _opaque_store = FilesystemObjectStore(
+            FilesystemStorageOptions(base_dir=data_dir)
+        )
+    return _opaque_store
 
 
 async def get_data(key: str, context: StoreContext | None = None) -> str | None:
@@ -134,10 +151,14 @@ async def get_data(key: str, context: StoreContext | None = None) -> str | None:
             )
             plaintext = actions_state.to_json()
         case _:
-            _get_logger().error(
-                f"get_data was called for collection ({collection}) with key ({key}). This collection is not supported."
-            )
-            return None
+            # Opaque storage: collections with no protocol bridge are persisted
+            # as client-encrypted ciphertext and the node never decrypts them.
+            ciphertext = await _get_opaque_store().get_string(key)
+            if ciphertext is None:
+                return None
+            # Stored bytes are already the client's ciphertext — hash them
+            # directly so it stays stable until the next push overwrites it.
+            return _wrap_as_stored_document(ciphertext, ciphertext)
     if already_encrypted_payload is not None:
         # Pre-encrypted payload (USER_ACCOUNTS): hash the encrypted JSON itself —
         # it is deterministic (read from disk) so the hash stays stable.
@@ -166,9 +187,11 @@ async def put_data(key: str, body: str, context: StoreContext | None = None) -> 
                             exc, True, f"Unexpected error executing user action: {action.id}: {exc}"
                         )
         case _:
-            _get_logger().error(
-                f"put_data was called for collection ({collection}) with key ({key}). This is unexpected and should not happen."
-            )
+            # Opaque storage: persist the client ciphertext as-is. The node
+            # never decrypts these collections — wallet-key decryption happens
+            # entirely on the client.
+            ciphertext = _unwrap_stored_document_data(body)
+            await _get_opaque_store().put(key, ciphertext, content_type="application/json")
 
 def set_data_callbacks(
     get_data: Callable[[str, StoreContext | None], Awaitable[str | None]],
