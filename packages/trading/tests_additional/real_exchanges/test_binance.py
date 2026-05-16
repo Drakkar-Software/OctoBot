@@ -52,8 +52,7 @@ class TestBinanceRealExchangeTester(real_exchange_tester.RealExchangeTester):
         await self.inner_test_active_symbols(200, 500)
 
     async def test_get_market_status(self):
-        await self.assert_get_market_status(
-        )
+        await self.assert_get_market_status()
 
     async def test_get_symbol_prices(self):
         await self.assert_get_symbol_prices(default_limit=500, tested_limit=200)

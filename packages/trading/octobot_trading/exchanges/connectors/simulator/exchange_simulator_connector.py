@@ -121,11 +121,8 @@ class ExchangeSimulatorConnector(abstract_exchange.AbstractExchange):
             )
         return {}
 
-    def should_adapt_market_statuses(self) -> bool:
-        return self.exchange_manager.use_cached_markets
-
     def get_contract_size(self, symbol: str):
-        market_status, _ = self.get_market_status(symbol, with_fixer=False)
+        market_status = self.get_market_status(symbol, with_fixer=False)
         return ccxt_client_simulation.get_contract_size(market_status)
 
     @classmethod
@@ -191,11 +188,7 @@ class ExchangeSimulatorConnector(abstract_exchange.AbstractExchange):
     def get_market_status(self, symbol, price_example=0, with_fixer=True):
         if self._forced_market_statuses:
             try:
-                if with_fixer:
-                    return util.ExchangeMarketStatusFixer(
-                        self._forced_market_statuses[symbol], price_example
-                    ).market_status
-                return self._forced_market_statuses[symbol], True
+                return self._forced_market_statuses[symbol]
             except KeyError:
                 self._missing_market_statuses.add(symbol)
                 if len(self._missing_market_statuses) >= len(self.symbols) - 1:
@@ -206,7 +199,7 @@ class ExchangeSimulatorConnector(abstract_exchange.AbstractExchange):
                     )
                 else:
                     self.logger.warning(f"Missing cached market status for {symbol}: using default market status")
-        return self._get_default_market_status(), False
+        return self._get_default_market_status()
 
     def _get_default_market_status(self):
         return {

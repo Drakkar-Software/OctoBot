@@ -307,13 +307,6 @@ class Coinbase(exchanges.RestExchange):
         """
         return ALIASED_SYMBOLS
 
-    async def _create_market_stop_loss_order(self, symbol, quantity, price, side, current_price, params=None) -> dict:
-        # warning coinbase only supports stop limit orders, stop markets are not available
-        stop_price = price
-        price = float(decimal.Decimal(str(price)) * self.STOP_LIMIT_ORDER_INSTANT_FILL_PRICE_RATIO)
-        # use limit stop loss with a "normally instantly" filled price
-        return await self._create_limit_stop_loss_order(symbol, quantity, price, stop_price, side, params=params)
-
     def is_market_open_for_order_type(self, symbol: str, order_type: trading_enums.TraderOrderType) -> bool:
         """
         Override if necessary

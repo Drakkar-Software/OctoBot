@@ -19,8 +19,6 @@ import decimal
 import typing
 import copy
 import asyncio
-# import traceback      # uncomment for debugging in tests
-# import sys        # uncomment for debugging in tests
 
 import ccxt.async_support as ccxt
 from octobot_commons import logging
@@ -28,7 +26,6 @@ import octobot_commons.enums as commons_enums
 import octobot_commons.tree as commons_tree
 import octobot_commons.constants as commons_constants
 import octobot_commons.html_util as html_util
-import octobot_commons.number_util as number_util
 
 import octobot_trading.enums as enums
 import octobot_trading.constants as constants
@@ -328,6 +325,8 @@ class RestExchange(abstract_exchange.AbstractExchange):
                     f"Exchange currently refuses to create orders of type {order_type} on {symbol}."
                 ) from e
             self.log_order_creation_error(e, order_type, symbol, quantity, price, stop_price)
+            # import traceback      # uncomment for debugging in tests
+            # import sys        # uncomment for debugging in tests
             # print(traceback.format_exc(), file=sys.stderr)    # uncomment for debugging in tests
             self.logger.exception(
                 e,
@@ -565,49 +564,11 @@ class RestExchange(abstract_exchange.AbstractExchange):
     def get_first_consecutive_authentication_error_at(self) -> typing.Optional[float]:
         return self.connector.first_consecutive_authentication_error_at
 
-    def _should_fix_market_status(self):
-        return bool(self.get_option_value(enums.ExchangeClientOptions.FIX_MARKET_STATUS))
-
-    def _should_remove_market_status_limits(self):
-        return bool(self.get_option_value(enums.ExchangeClientOptions.REMOVE_MARKET_STATUS_PRICE_LIMITS))
-
-    def _should_adapt_market_status_for_contract_size(self):
-        return bool(self.get_option_value(enums.ExchangeClientOptions.ADAPT_MARKET_STATUS_FOR_CONTRACT_SIZE))
-
     def get_market_status(self, symbol, price_example=None, with_fixer=True):
         """
         Override using get_fixed_market_status in exchange tentacle if the default market status is not as expected
         """
-        if self._should_fix_market_status():
-            return self.get_fixed_market_status(
-                symbol,
-                price_example=price_example,
-                with_fixer=with_fixer,
-                remove_price_limits=self._should_remove_market_status_limits(),
-                adapt_for_contract_size=self._should_adapt_market_status_for_contract_size()
-            )
         return self.connector.get_market_status(symbol, price_example=price_example, with_fixer=with_fixer)
-
-    def get_fixed_market_status(self, symbol, price_example=None, with_fixer=True, remove_price_limits=False,
-                                adapt_for_contract_size=False):
-        """
-        Use this method in local get_market_status overrides when market status has to be fixed by
-        calling _fix_market_status.
-        Changes PRECISION_AMOUNT and PRECISION_PRICE from decimals to integers
-        (use number of digits instead of price example) by default.
-        Override _fix_market_status to change other elements
-        """
-        market_status = self.connector.adapter.adapt_market_status(
-            copy.deepcopy(
-                self.connector.get_market_status(symbol, with_fixer=False)
-            ),
-            remove_price_limits=remove_price_limits
-        )
-        if adapt_for_contract_size and self.exchange_manager.is_future:
-            self._adapt_market_status_for_contract_size(market_status, self.get_contract_size(symbol))
-        if with_fixer:
-            return exchanges_util.ExchangeMarketStatusFixer(market_status, price_example).market_status
-        return market_status
 
     def uses_demo_trading_instead_of_sandbox(self, exchange_type: enums.ExchangeTypes) -> bool:
         return self.connector.uses_demo_trading_instead_of_sandbox(exchange_type)
@@ -616,21 +577,6 @@ class RestExchange(abstract_exchange.AbstractExchange):
         if value is None:
             return value
         return value * contract_size
-
-    def _adapt_market_status_for_contract_size(self, market_status, contract_size):
-        float_size = float(contract_size)
-        for limit_type in (enums.ExchangeConstantsMarketStatusColumns.LIMITS_AMOUNT.value, ):
-            for limit_val in (enums.ExchangeConstantsMarketStatusColumns.LIMITS_AMOUNT_MIN.value,
-                              enums.ExchangeConstantsMarketStatusColumns.LIMITS_AMOUNT_MAX.value):
-
-                market_status[enums.ExchangeConstantsMarketStatusColumns.LIMITS.value][limit_type][limit_val] = \
-                    self._apply_contract_size(
-                        market_status[enums.ExchangeConstantsMarketStatusColumns.LIMITS.value][limit_type][limit_val],
-                        float_size
-                    )
-        market_status[enums.ExchangeConstantsMarketStatusColumns.PRECISION.value][
-            enums.ExchangeConstantsMarketStatusColumns.PRECISION_AMOUNT.value] = \
-            number_util.get_digits_count(float_size)
 
     async def get_account_id(self, **kwargs: dict) -> str:
         return await self.connector.get_account_id(**kwargs)
