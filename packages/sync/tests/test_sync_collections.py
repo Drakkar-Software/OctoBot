@@ -104,4 +104,4 @@ def test_fallback_to_default_config():
     for col in ns_collections:
         assert col.read_roles == ["self"]
         assert col.write_roles == ["self"]
-        assert col.encryption == "identity"
+        assert col.encryption == "delegated"

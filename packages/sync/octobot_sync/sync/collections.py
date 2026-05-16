@@ -38,7 +38,7 @@ DEFAULT_SYNC_CONFIG = SyncConfig(
                     storagePath="users/{identity}/data",
                     readRoles=["self"],
                     writeRoles=["self"],
-                    encryption="identity",
+                    encryption="delegated",
                     maxBodyBytes=constants.MAX_BODY_SIZE_PRIVATE,
                 ),
                 CollectionConfig(
@@ -46,7 +46,7 @@ DEFAULT_SYNC_CONFIG = SyncConfig(
                     storagePath="users/{identity}/accounts",
                     readRoles=["self"],
                     writeRoles=["self"],
-                    encryption="identity",
+                    encryption="delegated",
                     maxBodyBytes=constants.MAX_BODY_SIZE_PRIVATE,
                 ),
                 CollectionConfig(
@@ -54,7 +54,7 @@ DEFAULT_SYNC_CONFIG = SyncConfig(
                     storagePath="users/{identity}/settings",
                     readRoles=["self"],
                     writeRoles=["self"],
-                    encryption="identity",
+                    encryption="delegated",
                     maxBodyBytes=constants.MAX_BODY_SIZE_PRIVATE,
                 ),
                 CollectionConfig(
@@ -62,7 +62,7 @@ DEFAULT_SYNC_CONFIG = SyncConfig(
                     storagePath="users/{identity}/strategies",
                     readRoles=["self"],
                     writeRoles=["self"],
-                    encryption="identity",
+                    encryption="delegated",
                     maxBodyBytes=constants.MAX_BODY_SIZE_PRIVATE,
                 ),
                 CollectionConfig(
@@ -70,7 +70,7 @@ DEFAULT_SYNC_CONFIG = SyncConfig(
                     storagePath="users/{identity}/actions",
                     readRoles=["self"],
                     writeRoles=["self"],
-                    encryption="identity",
+                    encryption="delegated",
                     maxBodyBytes=constants.MAX_BODY_SIZE_PRIVATE,
                 )
             ]
