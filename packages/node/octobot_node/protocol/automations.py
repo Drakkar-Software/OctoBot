@@ -30,8 +30,7 @@ import octobot_trading.personal_data.portfolios.protocol as octobot_trading_port
 import octobot_trading.exchanges.util.exchange_data as exchange_data_import
 
 
-def _get_logger():
-    return octobot_commons_logging.get_logger("AutomationsProtocol")
+logger = octobot_commons_logging.get_logger("AutomationsProtocol")
 
 
 def to_protocol_automations_state(tasks: list[node_models.Task]) -> list[protocol_models.AutomationState]:
@@ -41,7 +40,7 @@ def to_protocol_automations_state(tasks: list[node_models.Task]) -> list[protoco
             states.append(_to_protocol_automation_state(task))
         except Exception as exc:
             content_preview = (task.content or "")[:80] if isinstance(task.content, str) else repr(task.content)
-            _get_logger().warning(
+            logger.warning(
                 f"Skipping malformed automation task id={task.id!r}: {exc} "
                 f"(content_metadata={task.content_metadata!r}, content_preview={content_preview!r})"
             )

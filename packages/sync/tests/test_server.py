@@ -126,9 +126,27 @@ class TestGetData:
         assert decrypted_plain == expected_plain
 
     @pytest.mark.asyncio
-    async def test_unsupported_collection_returns_none(self):
-        context = _make_context(collection="unknown-collection")
-        result = await server.get_data("users/0xabc/unknown", context)
+    async def test_unmatched_collection_reads_opaque_store(self):
+        """Any collection without a protocol-bridge case falls through to
+        opaque filesystem storage and the node never touches the ciphertext."""
+        stored_ciphertext = "opaque-ciphertext-payload"
+        mock_store = mock.MagicMock()
+        mock_store.get_string = mock.AsyncMock(return_value=stored_ciphertext)
+        context = _make_context(identity="0xwallet", collection="user-settings")
+        with mock.patch("octobot_sync.server._get_opaque_store", return_value=mock_store):
+            result = await server.get_data("users/0xwallet/settings", context)
+        mock_store.get_string.assert_awaited_once_with("users/0xwallet/settings")
+        wrapper = json.loads(result)
+        assert wrapper["data"] == stored_ciphertext
+        assert wrapper["hash"] == sync_crypto.sha256_hex(stored_ciphertext)
+
+    @pytest.mark.asyncio
+    async def test_unmatched_collection_returns_none_when_no_stored_value(self):
+        mock_store = mock.MagicMock()
+        mock_store.get_string = mock.AsyncMock(return_value=None)
+        context = _make_context(identity="0xwallet", collection="user-strategies")
+        with mock.patch("octobot_sync.server._get_opaque_store", return_value=mock_store):
+            result = await server.get_data("users/0xwallet/strategies", context)
         assert result is None
 
 
@@ -192,13 +210,19 @@ class TestPutData:
         mock_logger.exception.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_unsupported_collection_logs_error(self):
-        mock_logger = mock.MagicMock()
-        context = _make_context(collection="bad-collection")
-        body = json.dumps({"v": 1, "data": "x", "timestamps": {}, "hash": "x"})
-        with mock.patch("octobot_sync.server._get_logger", return_value=mock_logger):
-            await server.put_data("users/0xabc/bad", body, context)
-        mock_logger.error.assert_called_once()
+    async def test_unmatched_collection_writes_to_opaque_store(self):
+        """Any collection without a protocol-bridge case persists the unwrapped
+        ciphertext as-is — server side never decrypts."""
+        ciphertext = "opaque-ciphertext-payload"
+        body = json.dumps({"v": 1, "data": ciphertext, "timestamps": {}, "hash": "x"})
+        mock_store = mock.MagicMock()
+        mock_store.put = mock.AsyncMock()
+        context = _make_context(identity="0xwallet", collection="user-settings")
+        with mock.patch("octobot_sync.server._get_opaque_store", return_value=mock_store):
+            await server.put_data("users/0xwallet/settings", body, context)
+        mock_store.put.assert_awaited_once_with(
+            "users/0xwallet/settings", ciphertext, content_type="application/json"
+        )
 
 
 class TestStoredDocumentHelpers:
