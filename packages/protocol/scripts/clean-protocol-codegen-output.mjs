@@ -18,7 +18,7 @@ const targets = {
   },
   typescript: {
     dir: path.join(protocolDir, "octobot_protocol_ts"),
-    keep: new Set(["README.md"]),
+    keep: new Set(["README.md", "package.json", "index.js", "index.d.ts"]),
   },
   rust: {
     dir: path.join(protocolDir, "octobot_protocol_rs"),
