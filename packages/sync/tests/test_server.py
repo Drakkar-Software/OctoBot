@@ -19,9 +19,13 @@ from starfish_server.storage.filesystem import FilesystemObjectStore
 _TEST_WALLET_PRIVATE_KEY = "test-server-private-key"
 
 
-def _make_context(identity: str | None = "0xabc", action: str = "pull") -> StoreContext:
+def _make_context(
+    identity: str | None = "0xabc",
+    action: str = "pull",
+    collection: str = "test",
+) -> StoreContext:
     return StoreContext(
-        collection="test",
+        collection=collection,
         params={},
         identity=identity,
         roles=(),
@@ -50,7 +54,7 @@ class TestGetData:
         expected_plain = json.dumps({"version": "1", "automations": [], "user_actions": []})
         stub_state = mock.MagicMock()
         stub_state.to_json.return_value = expected_plain
-        context = _make_context(identity="0xwallet")
+        context = _make_context(identity="0xwallet", collection=enums.Collections.USER_DATA.value)
         with (
             mock.patch("octobot_sync.server.user_data_protocol") as mock_proto,
             mock.patch(
@@ -59,7 +63,7 @@ class TestGetData:
             ),
         ):
             mock_proto.get_user_data_state = mock.AsyncMock(return_value=stub_state)
-            result = await server.get_data(enums.Collections.USER_DATA.value, context)
+            result = await server.get_data("users/0xwallet/data", context)
         mock_proto.get_user_data_state.assert_awaited_once_with("0xwallet")
         decrypted = sync_crypto.decrypt_wire_to_utf8_json(
             result,
@@ -77,10 +81,10 @@ class TestGetData:
             _TEST_WALLET_PRIVATE_KEY,
             enums.Collections.USER_ACCOUNTS.value,
         )
-        context = _make_context(identity="0xwallet")
+        context = _make_context(identity="0xwallet", collection=enums.Collections.USER_ACCOUNTS.value)
         with mock.patch("octobot_sync.server.accounts_protocol") as mock_proto:
             mock_proto.get_accounts_state_encrypted = mock.Mock(return_value=encrypted_blob)
-            result = await server.get_data(enums.Collections.USER_ACCOUNTS.value, context)
+            result = await server.get_data("users/0xwallet/accounts", context)
         mock_proto.get_accounts_state_encrypted.assert_called_once_with("0xwallet")
         assert result == json.dumps(encrypted_blob)
         decrypted_plain = sync_crypto.decrypt_blob_dict_to_bytes(
@@ -92,8 +96,8 @@ class TestGetData:
 
     @pytest.mark.asyncio
     async def test_unsupported_collection_returns_none(self):
-        context = _make_context()
-        result = await server.get_data("unknown-collection", context)
+        context = _make_context(collection="unknown-collection")
+        result = await server.get_data("users/0xabc/unknown", context)
         assert result is None
 
 
@@ -112,7 +116,7 @@ class TestPutData:
             _TEST_WALLET_PRIVATE_KEY,
             enums.Collections.USER_ACTIONS.value,
         )
-        context = _make_context(identity="0xwallet")
+        context = _make_context(identity="0xwallet", collection=enums.Collections.USER_ACTIONS.value)
         with (
             mock.patch("octobot_sync.server.user_actions_protocol") as mock_proto,
             mock.patch(
@@ -121,7 +125,7 @@ class TestPutData:
             ),
         ):
             mock_proto.execute_user_action = mock.AsyncMock()
-            await server.put_data(enums.Collections.USER_ACTIONS.value, body, context)
+            await server.put_data("users/0xwallet/actions", body, context)
         assert mock_proto.execute_user_action.await_count == 2
         calls = mock_proto.execute_user_action.await_args_list
         assert calls[0].args[0].id == "act-1"
@@ -140,7 +144,7 @@ class TestPutData:
             _TEST_WALLET_PRIVATE_KEY,
             enums.Collections.USER_ACTIONS.value,
         )
-        context = _make_context(identity="0xwallet")
+        context = _make_context(identity="0xwallet", collection=enums.Collections.USER_ACTIONS.value)
         mock_logger = mock.MagicMock()
         with (
             mock.patch("octobot_sync.server.user_actions_protocol") as mock_proto,
@@ -151,15 +155,15 @@ class TestPutData:
             ),
         ):
             mock_proto.execute_user_action = mock.AsyncMock(side_effect=RuntimeError("boom"))
-            await server.put_data(enums.Collections.USER_ACTIONS.value, body, context)
+            await server.put_data("users/0xwallet/actions", body, context)
         mock_logger.exception.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_unsupported_collection_logs_error(self):
         mock_logger = mock.MagicMock()
-        context = _make_context()
+        context = _make_context(collection="bad-collection")
         with mock.patch("octobot_sync.server._get_logger", return_value=mock_logger):
-            await server.put_data("bad-collection", "{}", context)
+            await server.put_data("users/0xabc/bad", "{}", context)
         mock_logger.error.assert_called_once()
 
 
