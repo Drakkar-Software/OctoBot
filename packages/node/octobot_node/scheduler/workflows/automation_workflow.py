@@ -104,14 +104,14 @@ class AutomationWorkflow:
     def _should_retry(error: BaseException) -> bool:
         return not isinstance(error, (
             # workflow stopping errors
-            errors.WorkflowActionExecutionError,
+            errors.WorkflowError,
         ))
 
     @staticmethod
     @SCHEDULER.INSTANCE.step(
         name="execute_iteration",
         retries_allowed=True,
-        interval_seconds = constants.AUTOMATION_WORKFLOW_RETRY_INTERVAL_SECONDS,
+        interval_seconds=constants.AUTOMATION_WORKFLOW_RETRY_INTERVAL_SECONDS,
         max_attempts=constants.AUTOMATION_WORKFLOW_MAX_ITERATION_RETRIES,
         backoff_rate=constants.AUTOMATION_WORKFLOW_BACKOFF_RATE,
         should_retry=_should_retry,

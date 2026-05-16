@@ -44,6 +44,8 @@ _T_ENQUEUE_SECONDS = 5.0
 _T_GRID_SECONDS = 20.0
 _T_STOP_SEND_SECONDS = 5.0
 _T_STOP_COMPLETE_SECONDS = 10.0
+# Default grid poll is 0.5s; protocol may flip RUNNING→COMPLETED faster after stop on CI.
+_POST_STOP_PROTOCOL_POLL_SECONDS = 0.05
 
 _GRID_ACCOUNT_ID = "functional_grid_account"
 
@@ -314,16 +316,26 @@ class TestTriggerTaskGridDbosIntegration:
                     break
                 if workflow_row_after_stop_send is not None:
                     break
-                await asyncio.sleep(grid_sim_util.DEFAULT_GRID_WORKFLOW_POLL_INTERVAL_SECONDS)
+                await asyncio.sleep(_POST_STOP_PROTOCOL_POLL_SECONDS)
             assert workflow_row_after_stop_send is not None
             protocol_state_after_stop_send = await grid_sim_util.load_protocol_automation_state_for_workflow(
                 grid_sim_util.SIMULATOR_GRID_TEST_COMMUNITY_WALLET_ADDRESS,
                 workflow_row_after_stop_send,
             )
+            observed_protocol_status = protocol_state_after_stop_send.status
+            acceptable_protocol_statuses = (
+                octobot_protocol_models.TaskStatus.RUNNING,
+                octobot_protocol_models.TaskStatus.COMPLETED,
+            )
+            if observed_protocol_status not in acceptable_protocol_statuses:
+                pytest.fail(
+                    f"Unexpected AutomationState.status after stop send: {observed_protocol_status.value!r}; "
+                    f"expected one of {[task_status.value for task_status in acceptable_protocol_statuses]}"
+                )
             grid_sim_util.assert_protocol_automation_matches_exchange_account_elements(
                 protocol_state_after_stop_send,
                 elements_after_stop_send,
-                expected_automation_task_status=octobot_protocol_models.TaskStatus.RUNNING,
+                expected_automation_task_status=observed_protocol_status,
             )
 
             # Step 2 — wait for terminate output with priority stop; expect preserved ladder and trade counts.

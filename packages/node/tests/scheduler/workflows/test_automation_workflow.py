@@ -1132,6 +1132,177 @@ class TestExecuteAutomationIntegration:
 
     @pytest.mark.asyncio
     @required_imports
+    async def test_cancel_workflow_async_during_iteration_retries_stops_further_job_attempts(
+        self,
+        import_automation_workflow,
+        temp_dbos_scheduler,
+    ):
+        """
+        DBOS retries the ``execute_iteration`` step when the iteration body raises a retriable error.
+        Here ``OctoBotActionsJob.run()`` raises ``RuntimeError`` on the first attempt (retriable per
+        ``AutomationWorkflow._should_retry``), so the step retries. After the first retry attempt has
+        started, cancelling the workflow must not schedule further runs (no third ``run()`` call despite
+        ``AUTOMATION_WORKFLOW_MAX_ITERATION_RETRIES``). Once the workflow is ``CANCELLED``, the blocked
+        retry ``run()`` must observe ``CancelledError`` when the pending wait is cancelled (DBOS may defer
+        asyncio teardown; cancelling the shared ``Future`` finishes the assertion). No further iteration
+        runs after cancellation: ``OctoBotActionsJob.run()`` stays at two awaits (initial failure plus one
+        retry); DBOS retries the ``execute_iteration`` step internally without extra workflow-level calls.
+        """
+        task = octobot_node.models.Task(
+            name="cancel_during_retry_test",
+            content="{}",
+            type=octobot_node.models.TaskType.EXECUTE_ACTIONS.value,
+        )
+        inputs = params.AutomationWorkflowInputs(task=task, execution_time=0).to_dict(
+            include_default_values=False
+        )
+        inputs["task"] = task.model_dump(exclude_defaults=True)
+        first_retry_entered = asyncio.Event()
+        retry_run_block_future: dict[str, asyncio.Future | None] = {"f": None}
+        blocked_retry_run_got_cancelled_error = [False]
+        attempt_number = [0]
+
+        async def fail_once_then_block_until_cancel(*args, **kwargs):
+            attempt_number[0] += 1
+            if attempt_number[0] == 1:
+                raise RuntimeError("simulated retriable iteration failure")
+            first_retry_entered.set()
+            loop = asyncio.get_running_loop()
+            retry_run_block_future["f"] = loop.create_future()
+            try:
+                await retry_run_block_future["f"]
+            except asyncio.CancelledError:
+                blocked_retry_run_got_cancelled_error[0] = True
+                raise
+
+        mock_octobot_actions_job_class, run_mock = _octobot_actions_job_mock_class(
+            run_side_effect=fail_once_then_block_until_cancel,
+        )
+        recv_path = "octobot_node.scheduler.workflows.automation_workflow.SCHEDULER.INSTANCE.recv_async"
+        with mock.patch(recv_path, mock.AsyncMock(return_value=[])), mock.patch.object(
+            octobot_flow_client,
+            "OctoBotActionsJob",
+            mock_octobot_actions_job_class,
+        ):
+            with mock.patch("asyncio.sleep", mock.AsyncMock()):
+                await temp_dbos_scheduler.INSTANCE.start_workflow_async(
+                    octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow.execute_automation,
+                    inputs=inputs,
+                )
+                await asyncio.wait_for(first_retry_entered.wait(), timeout=5)
+                active_workflows = await temp_dbos_scheduler.INSTANCE.list_workflows_async(
+                    status=[dbos.WorkflowStatusString.ENQUEUED.value, dbos.WorkflowStatusString.PENDING.value]
+                )
+                assert len(active_workflows) == 1
+                automation_workflow_id = active_workflows[0].workflow_id
+                await temp_dbos_scheduler.INSTANCE.cancel_workflow_async(automation_workflow_id)
+
+                cancelled_status = None
+                for _attempt_index in range(10):
+                    workflow_handle = await temp_dbos_scheduler.INSTANCE.retrieve_workflow_async(automation_workflow_id)
+                    cancelled_status = await workflow_handle.get_status()
+                    if cancelled_status.status == dbos.WorkflowStatusString.CANCELLED.value:
+                        break
+                    await asyncio.sleep(0.1)
+
+                assert cancelled_status is not None
+                assert cancelled_status.status == dbos.WorkflowStatusString.CANCELLED.value
+
+            blocked_future = retry_run_block_future["f"]
+            assert blocked_future is not None
+            await asyncio.sleep(1)
+            if not blocked_retry_run_got_cancelled_error[0] and not blocked_future.done():
+                blocked_future.cancel()
+            for _yield_index in range(1000):
+                if blocked_retry_run_got_cancelled_error[0]:
+                    break
+                await asyncio.sleep(0)
+            assert blocked_retry_run_got_cancelled_error[0], (
+                "blocked retry OctoBotActionsJob.run() must observe CancelledError when cancelled"
+            )
+            assert run_mock.await_count == 2
+
+        await asyncio.sleep(0.2)
+        assert run_mock.await_count == 2
+
+    @pytest.mark.asyncio
+    @required_imports
+    async def test_cancel_workflow_async_during_retry_backoff_sleep_skips_step_retry(
+        self,
+        import_automation_workflow,
+        temp_dbos_scheduler,
+    ):
+        """
+        After a retriable failure, DBOS waits ``interval_seconds * backoff**attempt`` before
+        re-invoking the step (via ``asyncio.sleep``). Patch
+        ``octobot_node.constants.AUTOMATION_WORKFLOW_RETRY_INTERVAL_SECONDS`` to a long interval,
+        cancel the workflow during that wait, and ensure ``OctoBotActionsJob.run()`` is not awaited
+        again (no retry execution after cancellation).
+        """
+        task = octobot_node.models.Task(
+            name="cancel_during_retry_backoff_test",
+            content="{}",
+            type=octobot_node.models.TaskType.EXECUTE_ACTIONS.value,
+        )
+        inputs = params.AutomationWorkflowInputs(task=task, execution_time=0).to_dict(
+            include_default_values=False
+        )
+        inputs["task"] = task.model_dump(exclude_defaults=True)
+        first_attempt_failed = asyncio.Event()
+        run_call_counter = [0]
+
+        async def fail_retriable_every_call(*args, **kwargs):
+            run_call_counter[0] += 1
+            if run_call_counter[0] == 1:
+                first_attempt_failed.set()
+            raise RuntimeError("simulated retriable iteration failure")
+
+        mock_octobot_actions_job_class, run_mock = _octobot_actions_job_mock_class(
+            run_side_effect=fail_retriable_every_call,
+        )
+        recv_path = "octobot_node.scheduler.workflows.automation_workflow.SCHEDULER.INSTANCE.recv_async"
+        long_retry_interval_seconds = 3.0
+        with mock.patch(recv_path, mock.AsyncMock(return_value=[])), mock.patch.object(
+            octobot_flow_client,
+            "OctoBotActionsJob",
+            mock_octobot_actions_job_class,
+        ), mock.patch.object(
+            octobot_node.constants,
+            "AUTOMATION_WORKFLOW_RETRY_INTERVAL_SECONDS",
+            long_retry_interval_seconds,
+        ):
+            await temp_dbos_scheduler.INSTANCE.start_workflow_async(
+                octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow.execute_automation,
+                inputs=inputs,
+            )
+            await asyncio.wait_for(first_attempt_failed.wait(), timeout=5)
+            await asyncio.sleep(0.5)
+            active_workflows = await temp_dbos_scheduler.INSTANCE.list_workflows_async(
+                status=[dbos.WorkflowStatusString.ENQUEUED.value, dbos.WorkflowStatusString.PENDING.value]
+            )
+            assert len(active_workflows) == 1
+            automation_workflow_id = active_workflows[0].workflow_id
+            await temp_dbos_scheduler.INSTANCE.cancel_workflow_async(automation_workflow_id)
+
+            cancelled_status = None
+            for _attempt_index in range(30):
+                workflow_handle = await temp_dbos_scheduler.INSTANCE.retrieve_workflow_async(automation_workflow_id)
+                cancelled_status = await workflow_handle.get_status()
+                if cancelled_status.status == dbos.WorkflowStatusString.CANCELLED.value:
+                    break
+                await asyncio.sleep(0.1)
+
+            assert cancelled_status is not None
+            assert cancelled_status.status == dbos.WorkflowStatusString.CANCELLED.value
+            assert run_mock.await_count == 1
+            assert run_call_counter[0] == 1
+
+        await asyncio.sleep(0.2)
+        assert run_mock.await_count == 1
+        assert run_call_counter[0] == 1
+
+    @pytest.mark.asyncio
+    @required_imports
     async def test_execute_automation_execute_iteration_retries_octobot_actions_job_then_succeeds_and_returns_action_error(
         self,
         import_automation_workflow,

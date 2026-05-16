@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 
 import {
   BASE_ACTION_TEMPLATES,
+  BLOCKCHAIN_WALLET_INIT_TEMPLATE,
   CANCEL_TEMPLATE,
   DEPOSIT_TEMPLATE,
   isParamValueValid,
@@ -44,7 +45,7 @@ function buildTaskContent(
 describe("action-templates", () => {
   describe("template registry", () => {
     it("contains all base templates", () => {
-      expect(BASE_ACTION_TEMPLATES).toHaveLength(8)
+      expect(BASE_ACTION_TEMPLATES).toHaveLength(9)
     })
 
     it("each template has a unique id", () => {
@@ -77,6 +78,9 @@ describe("action-templates", () => {
       expect(getTemplateById("withdraw")).toBe(WITHDRAW_TEMPLATE)
       expect(getTemplateById("deposit")).toBe(DEPOSIT_TEMPLATE)
       expect(getTemplateById("transfer")).toBe(TRANSFER_TEMPLATE)
+      expect(getTemplateById("blockchain_wallet_init")).toBe(
+        BLOCKCHAIN_WALLET_INIT_TEMPLATE,
+      )
       expect(getTemplateById("wait")).toBe(WAIT_TEMPLATE)
       expect(getTemplateById("loop_until_order_closed")).toBe(
         LOOP_UNTIL_ORDER_CLOSED_TEMPLATE,
@@ -100,6 +104,9 @@ describe("action-templates", () => {
       expect(WITHDRAW_TEMPLATE.actionTypes).toEqual(["withdraw"])
       expect(DEPOSIT_TEMPLATE.actionTypes).toEqual(["deposit"])
       expect(TRANSFER_TEMPLATE.actionTypes).toEqual(["transfer"])
+      expect(BLOCKCHAIN_WALLET_INIT_TEMPLATE.actionTypes).toEqual([
+        "blockchain_wallet_init",
+      ])
       expect(WAIT_TEMPLATE.actionTypes).toEqual(["wait"])
       expect(LOOP_UNTIL_ORDER_CLOSED_TEMPLATE.actionTypes).toEqual([
         "loop_until_order_closed",
@@ -116,6 +123,7 @@ describe("action-templates", () => {
         "withdraw",
         "deposit",
         "transfer",
+        "blockchain_wallet_init",
         "wait",
         "loop_until_order_closed",
         "loop_until_blockchain_balance",
