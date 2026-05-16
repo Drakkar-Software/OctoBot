@@ -36,12 +36,12 @@ class TestStopAutomationConfiguration(unittest.TestCase):
         if include_optional:
             return StopAutomationConfiguration(
                 id = '',
-                action_type = 'automation_create'
+                action_type = 'automation_stop'
             )
         else:
             return StopAutomationConfiguration(
                 id = '',
-                action_type = 'automation_create',
+                action_type = 'automation_stop',
         )
         """
 

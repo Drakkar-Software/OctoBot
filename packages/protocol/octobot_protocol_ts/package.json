@@ -1,0 +1,9 @@
+{
+  "name": "@drakkar.software/octobot-protocol",
+  "version": "0.2.0",
+  "description": "TypeScript types generated from OctoBot OpenAPI schema",
+  "types": "./models/index.ts",
+  "files": ["models"],
+  "license": "GPL-3.0",
+  "sideEffects": false
+}

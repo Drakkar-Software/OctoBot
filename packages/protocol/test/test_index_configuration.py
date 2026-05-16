@@ -35,7 +35,7 @@ class TestIndexConfiguration(unittest.TestCase):
         model = IndexConfiguration()
         if include_optional:
             return IndexConfiguration(
-                configuration_type = 'market_making',
+                configuration_type = 'IndexConfiguration',
                 coins = [
                     octobot_protocol.models.index_coin.IndexCoin(
                         name = '', 
@@ -45,7 +45,7 @@ class TestIndexConfiguration(unittest.TestCase):
             )
         else:
             return IndexConfiguration(
-                configuration_type = 'market_making',
+                configuration_type = 'IndexConfiguration',
                 coins = [
                     octobot_protocol.models.index_coin.IndexCoin(
                         name = '', 

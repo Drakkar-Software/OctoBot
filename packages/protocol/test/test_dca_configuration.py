@@ -35,7 +35,7 @@ class TestDCAConfiguration(unittest.TestCase):
         model = DCAConfiguration()
         if include_optional:
             return DCAConfiguration(
-                configuration_type = 'market_making',
+                configuration_type = 'DCAConfiguration',
                 symbols = [
                     ''
                     ],
@@ -57,7 +57,7 @@ class TestDCAConfiguration(unittest.TestCase):
             )
         else:
             return DCAConfiguration(
-                configuration_type = 'market_making',
+                configuration_type = 'DCAConfiguration',
                 symbols = [
                     ''
                     ],

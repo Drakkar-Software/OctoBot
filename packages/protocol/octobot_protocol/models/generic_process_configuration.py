@@ -17,9 +17,8 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List
-from octobot_protocol.models.action_configuration_type import ActionConfigurationType
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -28,9 +27,16 @@ class GenericProcessConfiguration(BaseModel):
     """
     GenericProcessConfiguration
     """ # noqa: E501
-    configuration_type: ActionConfigurationType = Field(description="generic_process")
+    configuration_type: StrictStr
     profile_data: Dict[str, Any]
     __properties: ClassVar[List[str]] = ["configuration_type", "profile_data"]
+
+    @field_validator('configuration_type')
+    def configuration_type_validate_enum(cls, value):
+        """Validates the enum"""
+        if value not in set(['GenericProcessConfiguration']):
+            raise ValueError("must be one of enum values ('GenericProcessConfiguration')")
+        return value
 
     model_config = ConfigDict(
         validate_by_name=True,

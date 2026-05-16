@@ -7,7 +7,7 @@ StopAutomationConfiguration
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **id** | **str** |  | 
-**action_type** | [**UserActionType**](UserActionType.md) | automation_stop | 
+**action_type** | **str** |  | 
 
 ## Example
 

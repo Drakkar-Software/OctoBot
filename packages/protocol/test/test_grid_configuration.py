@@ -35,7 +35,7 @@ class TestGridConfiguration(unittest.TestCase):
         model = GridConfiguration()
         if include_optional:
             return GridConfiguration(
-                configuration_type = 'market_making',
+                configuration_type = 'GridConfiguration',
                 symbol = '',
                 spread = 0,
                 increment = 0,
@@ -47,7 +47,7 @@ class TestGridConfiguration(unittest.TestCase):
             )
         else:
             return GridConfiguration(
-                configuration_type = 'market_making',
+                configuration_type = 'GridConfiguration',
                 symbol = '',
                 spread = 0,
                 increment = 0,

@@ -6,7 +6,7 @@ GenericWorkflowConfiguration
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**configuration_type** | [**ActionConfigurationType**](ActionConfigurationType.md) | generic_workflow | 
+**configuration_type** | **str** |  | 
 **actions** | [**List[Action]**](Action.md) |  | 
 
 ## Example

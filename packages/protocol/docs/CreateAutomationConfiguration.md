@@ -6,7 +6,7 @@ CreateAutomationConfiguration
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**action_type** | [**UserActionType**](UserActionType.md) | automation_create | 
+**action_type** | **str** |  | 
 **configuration** | [**AutomationConfiguration**](AutomationConfiguration.md) |  | 
 
 ## Example

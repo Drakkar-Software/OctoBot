@@ -7,7 +7,7 @@ EditAutomationConfiguration
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **id** | **str** |  | 
-**action_type** | [**UserActionType**](UserActionType.md) | automation_edit | 
+**action_type** | **str** |  | 
 **configuration** | [**AutomationConfiguration**](AutomationConfiguration.md) |  | 
 
 ## Example

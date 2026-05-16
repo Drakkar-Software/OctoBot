@@ -900,19 +900,6 @@
           "1w"
         ]
       },
-      "ActionConfigurationType": {
-        "description": "ActionConfigurationType",
-        "type": "string",
-        "enum": [
-          "market_making",
-          "dca",
-          "index",
-          "grid",
-          "copy",
-          "generic_process",
-          "generic_workflow"
-        ]
-      },
       "MarketMakingReferencePair": {
         "description": "Reference price source for market making (exchange pair, weighting, and optional formula).",
         "type": "object",
@@ -1174,8 +1161,8 @@
         ],
         "properties": {
           "configuration_type": {
-            "$ref": "#/components/schemas/ActionConfigurationType",
-            "description": "market_making"
+            "type": "string",
+            "enum": ["MarketMakingConfiguration"]
           },
           "pair_settings": {
             "type": "array",
@@ -1184,14 +1171,6 @@
             }
           }
         }
-      },
-      "EvaluatorType": {
-        "description": "EvaluatorType",
-        "type": "string",
-        "enum": [
-          "RSIMomentumEvaluator",
-          "EMAMomentumEvaluator"
-        ]
       },
       "RSIMomentumEvaluatorConfiguration": {
         "description": "RSIMomentumEvaluatorConfiguration",
@@ -1204,8 +1183,8 @@
         ],
         "properties": {
           "configuration_type": {
-            "$ref": "#/components/schemas/EvaluatorType",
-            "description": "RSIMomentumEvaluator"
+            "type": "string",
+            "enum": ["RSIMomentumEvaluator"]
           },
           "period_length": {
             "type": "number",
@@ -1234,8 +1213,8 @@
         ],
         "properties": {
           "configuration_type": {
-            "$ref": "#/components/schemas/EvaluatorType",
-            "description": "EMAMomentumEvaluator"
+            "type": "string",
+            "enum": ["EMAMomentumEvaluator"]
           },
           "period_length": {
             "type": "number",
@@ -1297,8 +1276,8 @@
         ],
         "properties": {
           "configuration_type": {
-            "$ref": "#/components/schemas/ActionConfigurationType",
-            "description": "dca"
+            "type": "string",
+            "enum": ["DCAConfiguration"]
           },
           "symbols": {
             "type": "array",
@@ -1385,8 +1364,8 @@
         ],
         "properties": {
           "configuration_type": {
-            "$ref": "#/components/schemas/ActionConfigurationType",
-            "description": "copy"
+            "type": "string",
+            "enum": ["CopyConfiguration"]
           },
           "strategy_id": {
             "type": "string"
@@ -1403,8 +1382,8 @@
         ],
         "properties": {
           "configuration_type": {
-            "$ref": "#/components/schemas/ActionConfigurationType",
-            "description": "index"
+            "type": "string",
+            "enum": ["IndexConfiguration"]
           },
           "coins": {
             "type": "array",
@@ -1435,8 +1414,8 @@
         ],
         "properties": {
           "configuration_type": {
-            "$ref": "#/components/schemas/ActionConfigurationType",
-            "description": "grid"
+            "type": "string",
+            "enum": ["GridConfiguration"]
           },
           "symbol": {
             "type": "string"
@@ -1484,8 +1463,8 @@
         ],
         "properties": {
           "configuration_type": {
-            "$ref": "#/components/schemas/ActionConfigurationType",
-            "description": "generic_process"
+            "type": "string",
+            "enum": ["GenericProcessConfiguration"]
           },
           "profile_data": {
             "type": "object"
@@ -1501,8 +1480,8 @@
         ],
         "properties": {
           "configuration_type": {
-            "$ref": "#/components/schemas/ActionConfigurationType",
-            "description": "generic_workflow"
+            "type": "string",
+            "enum": ["GenericWorkflowConfiguration"]
           },
           "actions": {
             "type": "array",
@@ -1588,8 +1567,8 @@
         ],
         "properties": {
           "action_type": {
-            "$ref": "#/components/schemas/UserActionType",
-            "description": "automation_create"
+            "type": "string",
+            "enum": ["automation_create"]
           },
           "configuration": {
             "$ref": "#/components/schemas/AutomationConfiguration"
@@ -1609,8 +1588,8 @@
             "type": "string"
           },
           "action_type": {
-            "$ref": "#/components/schemas/UserActionType",
-            "description": "automation_edit"
+            "type": "string",
+            "enum": ["automation_edit"]
           },
           "configuration": {
             "$ref": "#/components/schemas/AutomationConfiguration"
@@ -1629,8 +1608,8 @@
             "type": "string"
           },
           "action_type": {
-            "$ref": "#/components/schemas/UserActionType",
-            "description": "automation_stop"
+            "type": "string",
+            "enum": ["automation_stop"]
           }
         }
       },
@@ -1643,8 +1622,8 @@
         ],
         "properties": {
           "action_type": {
-            "$ref": "#/components/schemas/UserActionType",
-            "description": "account_create" 
+            "type": "string",
+            "enum": ["account_create"]
           },
           "configuration": {
             "$ref": "#/components/schemas/Account"
@@ -1660,8 +1639,8 @@
         ],
         "properties": {
           "action_type": {
-            "$ref": "#/components/schemas/UserActionType",
-            "description": "account_edit"
+            "type": "string",
+            "enum": ["account_edit"]
           },
           "id": {
             "type": "string"
@@ -1680,8 +1659,8 @@
         ],
         "properties": {
           "action_type": {
-            "$ref": "#/components/schemas/UserActionType",
-            "description": "account_delete"
+            "type": "string",
+            "enum": ["account_delete"]
           },
           "id": {
             "type": "string"
@@ -1696,8 +1675,8 @@
         ],
         "properties": {
           "action_type": {
-            "$ref": "#/components/schemas/UserActionType",
-            "description": "accounts_refresh"
+            "type": "string",
+            "enum": ["accounts_refresh"]
           },
           "account_ids": {
             "type": "array",
@@ -1706,19 +1685,6 @@
             }
           }
         }
-      },
-      "UserActionType": {
-        "description": "UserActionType",
-        "type": "string",
-        "enum": [
-          "automation_create",
-          "automation_edit",
-          "automation_stop",
-          "account_create",
-          "account_edit",
-          "account_delete",
-          "accounts_refresh"
-        ]
       },
       "UserActionStatus": {
         "description": "UserActionStatus",

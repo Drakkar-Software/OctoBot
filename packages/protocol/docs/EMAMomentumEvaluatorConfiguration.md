@@ -6,7 +6,7 @@ EMAMomentumEvaluatorConfiguration
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**configuration_type** | [**EvaluatorType**](EvaluatorType.md) | EMAMomentumEvaluator | 
+**configuration_type** | **str** |  | 
 **period_length** | **float** |  | 
 **price_threshold_percent** | **float** |  | 
 **reverse_signal** | **bool** |  | [default to False]

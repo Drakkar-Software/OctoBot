@@ -17,10 +17,9 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Union
 from typing_extensions import Annotated
-from octobot_protocol.models.action_configuration_type import ActionConfigurationType
 from octobot_protocol.models.index_coin import IndexCoin
 from typing import Optional, Set
 from typing_extensions import Self
@@ -30,10 +29,17 @@ class IndexConfiguration(BaseModel):
     """
     IndexConfiguration
     """ # noqa: E501
-    configuration_type: ActionConfigurationType = Field(description="index")
+    configuration_type: StrictStr
     coins: List[IndexCoin]
     rebalance_trigger_min_percent: Union[Annotated[float, Field(le=100, strict=True, ge=0)], Annotated[int, Field(le=100, strict=True, ge=0)]]
     __properties: ClassVar[List[str]] = ["configuration_type", "coins", "rebalance_trigger_min_percent"]
+
+    @field_validator('configuration_type')
+    def configuration_type_validate_enum(cls, value):
+        """Validates the enum"""
+        if value not in set(['IndexConfiguration']):
+            raise ValueError("must be one of enum values ('IndexConfiguration')")
+        return value
 
     model_config = ConfigDict(
         validate_by_name=True,

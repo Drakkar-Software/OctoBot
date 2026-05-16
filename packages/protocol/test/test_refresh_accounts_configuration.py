@@ -35,14 +35,14 @@ class TestRefreshAccountsConfiguration(unittest.TestCase):
         model = RefreshAccountsConfiguration()
         if include_optional:
             return RefreshAccountsConfiguration(
-                action_type = 'automation_create',
+                action_type = 'accounts_refresh',
                 account_ids = [
                     ''
                     ]
             )
         else:
             return RefreshAccountsConfiguration(
-                action_type = 'automation_create',
+                action_type = 'accounts_refresh',
         )
         """
 

@@ -6,7 +6,7 @@ EditAccountConfiguration
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**action_type** | [**UserActionType**](UserActionType.md) | account_edit | 
+**action_type** | **str** |  | 
 **id** | **str** |  | 
 **configuration** | [**Account**](Account.md) |  | [optional] 
 

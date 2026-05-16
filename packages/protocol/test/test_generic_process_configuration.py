@@ -35,12 +35,12 @@ class TestGenericProcessConfiguration(unittest.TestCase):
         model = GenericProcessConfiguration()
         if include_optional:
             return GenericProcessConfiguration(
-                configuration_type = 'market_making',
+                configuration_type = 'GenericProcessConfiguration',
                 profile_data = octobot_protocol.models.trigger_price_configuration.trigger_price_configuration()
             )
         else:
             return GenericProcessConfiguration(
-                configuration_type = 'market_making',
+                configuration_type = 'GenericProcessConfiguration',
                 profile_data = octobot_protocol.models.trigger_price_configuration.trigger_price_configuration(),
         )
         """

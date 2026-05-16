@@ -35,7 +35,7 @@ class TestStrategyConfiguration(unittest.TestCase):
         model = StrategyConfiguration()
         if include_optional:
             return StrategyConfiguration(
-                configuration_type = 'market_making',
+                configuration_type = 'GenericWorkflowConfiguration',
                 pair_settings = [
                     octobot_protocol.models.market_making_symbol_configuration.MarketMakingSymbolConfiguration(
                         trading_pair = '', 
@@ -129,7 +129,7 @@ class TestStrategyConfiguration(unittest.TestCase):
             )
         else:
             return StrategyConfiguration(
-                configuration_type = 'market_making',
+                configuration_type = 'GenericWorkflowConfiguration',
                 pair_settings = [
                     octobot_protocol.models.market_making_symbol_configuration.MarketMakingSymbolConfiguration(
                         trading_pair = '', 

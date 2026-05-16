@@ -35,7 +35,7 @@ class TestCreateAccountConfiguration(unittest.TestCase):
         model = CreateAccountConfiguration()
         if include_optional:
             return CreateAccountConfiguration(
-                action_type = 'automation_create',
+                action_type = 'account_create',
                 configuration = octobot_protocol.models.account.Account(
                     id = '', 
                     name = '', 
@@ -50,7 +50,7 @@ class TestCreateAccountConfiguration(unittest.TestCase):
             )
         else:
             return CreateAccountConfiguration(
-                action_type = 'automation_create',
+                action_type = 'account_create',
                 configuration = octobot_protocol.models.account.Account(
                     id = '', 
                     name = '', 

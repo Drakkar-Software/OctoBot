@@ -5,7 +5,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**action_type** | [**UserActionType**](UserActionType.md) | accounts_refresh | 
+**action_type** | **str** |  | 
 **configuration** | [**Account**](Account.md) |  | 
 **id** | **str** |  | 
 **account_ids** | **List[str]** |  | [optional] 

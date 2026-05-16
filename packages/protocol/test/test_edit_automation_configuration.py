@@ -36,7 +36,7 @@ class TestEditAutomationConfiguration(unittest.TestCase):
         if include_optional:
             return EditAutomationConfiguration(
                 id = '',
-                action_type = 'automation_create',
+                action_type = 'automation_edit',
                 configuration = octobot_protocol.models.automation_configuration.AutomationConfiguration(
                     name = '', 
                     description = '', 
@@ -54,7 +54,7 @@ class TestEditAutomationConfiguration(unittest.TestCase):
         else:
             return EditAutomationConfiguration(
                 id = '',
-                action_type = 'automation_create',
+                action_type = 'automation_edit',
                 configuration = octobot_protocol.models.automation_configuration.AutomationConfiguration(
                     name = '', 
                     description = '', 
