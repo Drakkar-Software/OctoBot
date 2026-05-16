@@ -7,11 +7,13 @@
     "test:models": "python -m unittest discover -s test",
     "generate:python": "node scripts/clean-protocol-codegen-output.mjs python && openapi-generator-cli generate -i openapi.json -g python -o . -t openapi_generator_templates/python --global-property models,modelTests=true,supportingFiles=__init__.py --additional-properties packageName=octobot_protocol,useOneOfDiscriminatorLookup=true && npm run test:models",
     "gen": "npm run generate:python",
-    "generate:typescript": "node scripts/clean-protocol-codegen-output.mjs typescript && openapi-generator-cli generate -i openapi.json -g typescript-fetch -o octobot_protocol_ts --global-property models --additional-properties supportsES6=true,typescriptThreePlus=true,npmName=@octobot/protocol-ts,npmVersion=0.0.0,useOneOfDiscriminatorLookup=true",
+    "generate:typescript": "openapi-typescript openapi.json -o octobot_protocol_ts/schema.d.ts",
+    "generate:typescript:java": "node scripts/clean-protocol-codegen-output.mjs typescript && openapi-generator-cli generate -i openapi.json -g typescript-fetch -o octobot_protocol_ts --global-property models --additional-properties supportsES6=true,typescriptThreePlus=true,npmName=@drakkar.software/octobot-protocol,npmVersion=0.1.0,useOneOfDiscriminatorLookup=true",
     "generate:rust": "node scripts/clean-protocol-codegen-output.mjs rust && openapi-generator-cli generate -i openapi.json -g rust -o octobot_protocol_rs --global-property models --additional-properties packageName=octobot_protocol_rs,useOneOfDiscriminatorLookup=true",
     "generate:all": "npm run generate:python && npm run generate:typescript && npm run generate:rust"
   },
   "devDependencies": {
-    "@openapitools/openapi-generator-cli": "2.32.0"
+    "@openapitools/openapi-generator-cli": "2.32.0",
+    "openapi-typescript": "^7.13.0"
   }
 }
