@@ -50,7 +50,7 @@ class UserActionWorkflow:
     def _should_retry(error: BaseException) -> bool:
         return not isinstance(error, (
             # workflow-step failures that should not be retried by DBOS
-            errors.WorkflowActionExecutionError,
+            errors.WorkflowError,
             errors.UserActionError,
             pydantic.ValidationError,
             trading_errors.AuthenticationError,  # includes credential / IP-whitelist subclasses

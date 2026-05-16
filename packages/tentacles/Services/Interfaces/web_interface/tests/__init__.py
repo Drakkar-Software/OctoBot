@@ -18,7 +18,7 @@ import asyncio
 import time
 import mock
 import contextlib
-import random
+import socket
 
 import octobot_commons.configuration as configuration
 import octobot_commons.singleton as singleton
@@ -51,7 +51,10 @@ NON_AUTH_ROUTES = ["/api/", "robots.txt"]
 
 
 def get_new_port() -> int:
-    return random.randint(5555, 65535)
+    # Bind port 0 so the OS assigns a free port (random picks collide under pytest-xdist).
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.bind(("127.0.0.1", 0))
+        return sock.getsockname()[1]
 
 
 async def _init_bot(distribution: octobot.enums.OctoBotDistribution):

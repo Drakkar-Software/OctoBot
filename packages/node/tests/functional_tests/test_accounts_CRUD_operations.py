@@ -1,50 +1,56 @@
+import asyncio
 import datetime
 import pathlib
+import tempfile
 
 import mock
 import pytest
 
-import octobot_sync.sync.collection_backend.errors as collection_errors
-import octobot_sync.sync.collection_providers.user_account_provider as account_provider_module
+import octobot_sync.chain.evm as sync_evm_module
+import octobot_sync.sync
 import octobot.community.authentication as community_authentication_module
 import octobot.community.local_authenticator as local_authenticator_module
 import octobot_commons.user_root_folder_provider as user_root_folder_provider_module
-import octobot_node.protocol.user_actions as user_actions_module
+import octobot_node.constants as octobot_node_constants
+import octobot_node.errors as node_errors_module
+import octobot_node.scheduler
+import octobot_node.scheduler.api as scheduler_api
+import octobot_node.scheduler.tasks as scheduler_tasks
 import octobot_node.scheduler.user_actions.user_actions_executor.util.account_state_updater as account_state_updater_module
 import octobot_protocol.models as protocol_models
-import octobot_sync.chain.evm as sync_evm_module
 import octobot_trading.errors as trading_errors
 import octobot_trading.exchanges.connectors.ccxt.ccxt_connector as ccxt_connector_module
 
+import tests.scheduler as scheduler_tests
+
 _TEST_PRIVATE_KEY = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
 _TEST_WALLET_PASSPHRASE = "accountsCRUD1!"
+_DOOMED_ACCOUNT_ID = "functional-account-doomed"
+_WORKFLOW_RESULT_TIMEOUT_SECONDS = 120.0
+_USER_ACTION_LIST_POLL_TIMEOUT_SECONDS = 15.0
+
+_REAL_UPDATE_ACCOUNT_STATE = account_state_updater_module.update_account_state
 
 
-async def _enqueue_user_action_synchronously_via_executor_like_workflow(
-    user_action_instance: protocol_models.UserAction,
-    wallet_address_segment: str,
-) -> None:
-    """Run the executor path without initializing DBOS (mirrors ``UserActionWorkflow._execute_user_action``)."""
-    import octobot_node.scheduler.user_actions.user_actions_executor as ua_executor_package_integration
-    import octobot_node.scheduler.workflows.params as ua_workflow_params_integration
+@pytest.fixture
+def patched_user_action_workflow_max_iteration_retries():
+    with mock.patch.object(octobot_node_constants, "USER_ACTION_WORKFLOW_MAX_ITERATION_RETRIES", 2):
+        yield
 
-    bundle_inputs_encoded = ua_workflow_params_integration.UserActionWorkflowInputs(
-        wallet_address=wallet_address_segment,
-        user_action=user_action_instance,
-    ).to_dict(include_default_values=False)
-    parsed_inputs_bundle_workspace = ua_workflow_params_integration.UserActionWorkflowInputs.from_dict(bundle_inputs_encoded)
-    reconstructed_user_action_workspace_payload = protocol_models.UserAction.from_json(
-        parsed_inputs_bundle_workspace.user_action.to_json(),
-    )
-    if reconstructed_user_action_workspace_payload is None:
-        raise AssertionError("functional user_action failed to reconstruct from workflow inputs envelope")
-    resolved_executor_constructor_workspace_payload = ua_executor_package_integration.user_action_executor_factory(
-        reconstructed_user_action_workspace_payload,
-    )
-    constructed_executor_workspace_shell = resolved_executor_constructor_workspace_payload(
-        parsed_inputs_bundle_workspace.wallet_address,
-    )
-    await constructed_executor_workspace_shell.execute(reconstructed_user_action_workspace_payload)
+
+@pytest.fixture
+def temp_dbos_scheduler_account_crud(
+    patched_user_action_workflow_max_iteration_retries,  # noqa: ARG001
+):
+    """Mirrors ``tests.scheduler.temp_dbos_scheduler``; requests the patch fixture so registration sees capped retries."""
+    with tempfile.NamedTemporaryFile() as temp_file:
+        dbos_runtime = scheduler_tests.init_scheduler(temp_file.name)
+        dbos_runtime.reset_system_database()
+        dbos_runtime.launch()
+        try:
+            yield octobot_node.scheduler.SCHEDULER
+        finally:
+            dbos_runtime.destroy()
 
 
 async def _stub_load_symbol_markets_no_network(self, reload=False, market_filter=None):
@@ -58,106 +64,134 @@ async def _stub_load_symbol_markets_no_network(self, reload=False, market_filter
     self.client.symbols = ["BTC/USDT"]
 
 
-def _wrap_user_action_configuration(
-    payload,
-) -> protocol_models.UserActionConfiguration:
-    return protocol_models.UserActionConfiguration.from_json(payload.to_json())
-
-
-def _build_exchange_account() -> protocol_models.ExchangeAccount:
-    return protocol_models.ExchangeAccount(
-        account_type=protocol_models.AccountType.EXCHANGE,
-        trading_type=protocol_models.TradingType.SPOT,
-        exchange="binanceus",
-        remote_account_id="functional-test-remote-account",
-        api_key="functional-test-api-key",
-        api_secret="functional-test-api-secret",
-    )
-
-
-def _build_account(*, account_id: str, account_name: str) -> protocol_models.Account:
-    sample_timestamp = datetime.datetime(2026, 4, 1, 12, 0, 0, tzinfo=datetime.UTC)
-    return protocol_models.Account(
-        id=account_id,
-        name=account_name,
-        is_simulated=True,
-        created_at=sample_timestamp,
-        updated_at=sample_timestamp,
-        details=protocol_models.AccountDetails(
-            actual_instance=_build_exchange_account(),
-        ),
-    )
-
-
-def _build_create_account_user_action(
+async def _run_user_action_to_completion(
+    wallet_address: str,
+    user_action: protocol_models.UserAction,
     *,
-    user_action_id: str,
-    account: protocol_models.Account,
-) -> protocol_models.UserAction:
-    payload = protocol_models.CreateAccountConfiguration(
-        action_type=protocol_models.UserActionType.ACCOUNT_CREATE,
-        configuration=account,
-    )
-    return protocol_models.UserAction(
-        id=user_action_id,
-        configuration=_wrap_user_action_configuration(payload),
-    )
+    expect_exceptions: tuple[type[BaseException], ...] = (),
+) -> str:
+    workflow_id = await scheduler_tasks.trigger_user_action_workflow(user_action, wallet_address)
+    workflow_handle = await octobot_node.scheduler.SCHEDULER.INSTANCE.retrieve_workflow_async(workflow_id)
+    try:
+        await asyncio.wait_for(workflow_handle.get_result(), timeout=_WORKFLOW_RESULT_TIMEOUT_SECONDS)
+    except BaseException as caught:
+        if expect_exceptions and isinstance(caught, expect_exceptions):
+            return workflow_id
+        raise
+    return workflow_id
 
 
-def _build_edit_account_user_action(
-    *,
-    user_action_id: str,
-    account_id: str,
-    account: protocol_models.Account,
-) -> protocol_models.UserAction:
-    payload = protocol_models.EditAccountConfiguration(
-        action_type=protocol_models.UserActionType.ACCOUNT_EDIT,
-        id=account_id,
-        configuration=account,
-    )
-    return protocol_models.UserAction(
-        id=user_action_id,
-        configuration=_wrap_user_action_configuration(payload),
-    )
+async def _update_account_state_fail_doomed_create(account: protocol_models.Account) -> protocol_models.Account:
+    if account.id == _DOOMED_ACCOUNT_ID:
+        raise node_errors_module.WorkflowInputError("forced doomed create failure")
+    return await _REAL_UPDATE_ACCOUNT_STATE(account)
 
 
-def _build_refresh_accounts_user_action(*, user_action_id: str) -> protocol_models.UserAction:
-    payload = protocol_models.RefreshAccountsConfiguration(
-        action_type=protocol_models.UserActionType.ACCOUNTS_REFRESH,
-    )
-    return protocol_models.UserAction(
-        id=user_action_id,
-        configuration=_wrap_user_action_configuration(payload),
-    )
-
-
-def _build_delete_account_user_action(
-    *,
-    user_action_id: str,
-    account_id: str,
-) -> protocol_models.UserAction:
-    payload = protocol_models.DeleteAccountConfiguration(
-        action_type=protocol_models.UserActionType.ACCOUNT_DELETE,
-        id=account_id,
-    )
-    return protocol_models.UserAction(
-        id=user_action_id,
-        configuration=_wrap_user_action_configuration(payload),
-    )
+def _assert_listed_user_actions_match_expected_id_status_pairs(
+    listed_user_actions: list[protocol_models.UserAction],
+    expected_id_status_pairs: list[tuple[str, protocol_models.UserActionStatus]],
+) -> None:
+    actual_sorted = sorted((row.id, row.status) for row in listed_user_actions)
+    expected_sorted = sorted(expected_id_status_pairs)
+    assert actual_sorted == expected_sorted
 
 
 @pytest.mark.asyncio
 class TestExecuteUserActionAccountCrud:
-    async def test_create_edit_refresh_delete_accounts_on_temp_filesystem(self, tmp_path: pathlib.Path):
-        # Step 0: isolate user-root storage for this test run.
+    async def test_create_edit_refresh_delete_accounts_on_temp_filesystem(
+        self,
+        tmp_path: pathlib.Path,
+        temp_dbos_scheduler_account_crud,
+    ):
+        # Step: Isolate sync collections under a temp user-root folder (restored in ``finally``).
         user_root_provider = user_root_folder_provider_module.instance()
         previous_user_root = user_root_provider.get_root()
         test_user_root = tmp_path / "functional_accounts_user_root"
         user_root_provider.set_root(str(test_user_root))
 
         authentication_instance: community_authentication_module.CommunityAuthentication | None = None
+        sample_timestamp = datetime.datetime(2026, 4, 1, 12, 0, 0, tzinfo=datetime.UTC)
+
+        # Step: Nested builders for protocol payloads; user actions start as PENDING so active-queue listings match enqueue snapshots.
+        def wrap_configuration(payload) -> protocol_models.UserActionConfiguration:
+            return protocol_models.UserActionConfiguration.from_json(payload.to_json())
+
+        def build_exchange_account() -> protocol_models.ExchangeAccount:
+            return protocol_models.ExchangeAccount(
+                account_type=protocol_models.AccountType.EXCHANGE,
+                trading_type=protocol_models.TradingType.SPOT,
+                exchange="binanceus",
+                remote_account_id="functional-test-remote-account",
+                api_key="functional-test-api-key",
+                api_secret="functional-test-api-secret",
+            )
+
+        def build_account(*, account_id: str, account_name: str) -> protocol_models.Account:
+            return protocol_models.Account(
+                id=account_id,
+                name=account_name,
+                is_simulated=True,
+                created_at=sample_timestamp,
+                updated_at=sample_timestamp,
+                details=protocol_models.AccountDetails(
+                    actual_instance=build_exchange_account(),
+                ),
+            )
+
+        def build_create_user_action(*, user_action_id: str, account: protocol_models.Account) -> protocol_models.UserAction:
+            payload = protocol_models.CreateAccountConfiguration(
+                action_type=protocol_models.UserActionType.ACCOUNT_CREATE,
+                configuration=account,
+            )
+            return protocol_models.UserAction(
+                id=user_action_id,
+                status=protocol_models.UserActionStatus.PENDING,
+                created_at=sample_timestamp,
+                updated_at=sample_timestamp,
+                configuration=wrap_configuration(payload),
+            )
+
+        def build_edit_user_action(*, user_action_id: str, account_id: str, account: protocol_models.Account) -> protocol_models.UserAction:
+            payload = protocol_models.EditAccountConfiguration(
+                action_type=protocol_models.UserActionType.ACCOUNT_EDIT,
+                id=account_id,
+                configuration=account,
+            )
+            return protocol_models.UserAction(
+                id=user_action_id,
+                status=protocol_models.UserActionStatus.PENDING,
+                created_at=sample_timestamp,
+                updated_at=sample_timestamp,
+                configuration=wrap_configuration(payload),
+            )
+
+        def build_refresh_user_action(*, user_action_id: str) -> protocol_models.UserAction:
+            payload = protocol_models.RefreshAccountsConfiguration(
+                action_type=protocol_models.UserActionType.ACCOUNTS_REFRESH,
+            )
+            return protocol_models.UserAction(
+                id=user_action_id,
+                status=protocol_models.UserActionStatus.PENDING,
+                created_at=sample_timestamp,
+                updated_at=sample_timestamp,
+                configuration=wrap_configuration(payload),
+            )
+
+        def build_delete_user_action(*, user_action_id: str, account_id: str) -> protocol_models.UserAction:
+            payload = protocol_models.DeleteAccountConfiguration(
+                action_type=protocol_models.UserActionType.ACCOUNT_DELETE,
+                id=account_id,
+            )
+            return protocol_models.UserAction(
+                id=user_action_id,
+                status=protocol_models.UserActionStatus.PENDING,
+                created_at=sample_timestamp,
+                updated_at=sample_timestamp,
+                configuration=wrap_configuration(payload),
+            )
+
         try:
-            # Step 1: initialize a real local community authenticator and import a deterministic wallet.
+            # Step: Import dev wallet; ``wallet_address`` ties AccountProvider paths and ``list_user_actions`` filtering together.
             authentication_configuration = local_authenticator_module.get_stateless_configuration()
             authentication_instance = community_authentication_module.CommunityAuthentication(
                 config=authentication_configuration,
@@ -171,17 +205,28 @@ class TestExecuteUserActionAccountCrud:
             )
             wallet_address = sync_evm_module.address_from_evm_key(_TEST_PRIVATE_KEY).lower()
 
-            account_provider = account_provider_module.AccountProvider(base_folder=str(test_user_root))
+            # Step: Filesystem-backed provider for this test root (also patched as ``AccountProvider.instance()``).
+            account_provider = octobot_sync.sync.AccountProvider(base_folder=str(test_user_root))
+
+            # Step: Permission mock sequence — happy create OK; edit hits RetriableFailedRequest then whitelist error; refresh OK.
+            # RetriableFailedRequest is re-raised from account_state_updater (unlike RuntimeError, which is swallowed).
+            ensure_permissions_mock = mock.AsyncMock(
+                side_effect=[
+                    None,
+                    trading_errors.RetriableFailedRequest("transient edit failure"),
+                    trading_errors.InvalidAPIKeyIPWhitelistError("invalid api key ip whitelist"),
+                    None,
+                ]
+            )
 
             with (
-                # Step 2: keep the flow end-to-end but locally scoped to test instances.
                 mock.patch.object(
                     community_authentication_module.CommunityAuthentication,
                     "instance",
                     return_value=authentication_instance,
                 ),
                 mock.patch.object(
-                    account_provider_module.AccountProvider,
+                    octobot_sync.sync.AccountProvider,
                     "instance",
                     return_value=account_provider,
                 ),
@@ -193,37 +238,85 @@ class TestExecuteUserActionAccountCrud:
                 mock.patch.object(
                     account_state_updater_module,
                     "_ensure_api_key_permissions",
-                    new=mock.AsyncMock(
-                        side_effect=[
-                            None,
-                            trading_errors.InvalidAPIKeyIPWhitelistError("invalid api key ip whitelist"),
-                            None,
-                        ]
-                    ),
+                    new=ensure_permissions_mock,
+                ),
+                mock.patch.object(
+                    account_state_updater_module,
+                    "update_account_state",
+                    side_effect=_update_account_state_fail_doomed_create,
                 ),
                 mock.patch.object(
                     ccxt_connector_module.CCXTConnector,
                     "load_symbol_markets",
                     _stub_load_symbol_markets_no_network,
                 ),
-                mock.patch.object(
-                    user_actions_module.scheduler_tasks,
-                    "trigger_user_action_workflow",
-                    new=_enqueue_user_action_synchronously_via_executor_like_workflow,
-                ),
             ):
-                # Step 3: sanity-check starting state.
+                # Step: Patches above strip network/CCXT and steer ``update_account_state`` / permissions for this scenario.
+
+                # Step: No persisted accounts before any workflow runs.
                 assert account_provider.list_items(wallet_address) == []
 
-                # Step 4: create an account through protocol user action and verify persisted state.
-                created_account = _build_account(account_id="functional-account-1", account_name="Functional account")
-                await user_actions_module.execute_user_action(
-                    _build_create_account_user_action(
-                        user_action_id="ua-account-create",
-                        account=created_account,
-                    ),
-                    wallet_address,
+                # Step 1 — Create (doomed): ``WorkflowInputError`` from the doomed-account branch; workflow fails; nothing persisted.
+                doomed_account = build_account(
+                    account_id=_DOOMED_ACCOUNT_ID,
+                    account_name="Doomed account",
                 )
+                doomed_create = build_create_user_action(
+                    user_action_id="ua-account-create-fail",
+                    account=doomed_account,
+                )
+                await _run_user_action_to_completion(
+                    wallet_address,
+                    doomed_create,
+                    expect_exceptions=(node_errors_module.WorkflowInputError,),
+                )
+
+                # Step 1 (continued) — Listing: only the doomed row, FAILED with executor-built ``AccountActionResult``.
+                listed_after_doomed = await scheduler_api.list_user_actions(wallet_address)
+                _assert_listed_user_actions_match_expected_id_status_pairs(
+                    listed_after_doomed,
+                    [(doomed_create.id, protocol_models.UserActionStatus.FAILED)],
+                )
+                doomed_latest = next(
+                    row for row in listed_after_doomed if row.id == doomed_create.id
+                )
+                assert doomed_latest.status == protocol_models.UserActionStatus.FAILED
+                assert doomed_latest.result is not None
+                doomed_inner = doomed_latest.result.actual_instance
+                assert isinstance(doomed_inner, protocol_models.AccountActionResult)
+                assert doomed_inner.result_type == protocol_models.UserActionResultType.ACCOUNT
+                assert doomed_inner.error_message == protocol_models.AccountActionResultErrorMessage.INTERNAL_ERROR
+                assert doomed_inner.error_details is not None
+                assert "forced doomed create failure" in doomed_inner.error_details
+
+                # Step 2 — Create (happy path): workflow completes; provider stores VALID account.
+                created_account = build_account(account_id="functional-account-1", account_name="Functional account")
+                happy_create = build_create_user_action(
+                    user_action_id="ua-account-create",
+                    account=created_account,
+                )
+                await _run_user_action_to_completion(wallet_address, happy_create)
+
+                # Step 2 (continued) — Listing: doomed FAILED + happy COMPLETED.
+                listed_after_create = await scheduler_api.list_user_actions(wallet_address)
+                _assert_listed_user_actions_match_expected_id_status_pairs(
+                    listed_after_create,
+                    [
+                        (doomed_create.id, protocol_models.UserActionStatus.FAILED),
+                        (happy_create.id, protocol_models.UserActionStatus.COMPLETED),
+                    ],
+                )
+                created_latest = next(
+                    row for row in listed_after_create if row.id == happy_create.id
+                )
+                assert created_latest.status == protocol_models.UserActionStatus.COMPLETED
+                assert created_latest.result is not None
+                created_inner = created_latest.result.actual_instance
+                assert isinstance(created_inner, protocol_models.AccountActionResult)
+                assert created_inner.result_type == protocol_models.UserActionResultType.ACCOUNT
+                assert created_inner.error_message is None
+                assert created_inner.error_details is None
+
                 persisted_created_account = account_provider.get_item(wallet_address, "functional-account-1")
                 assert persisted_created_account.name == "Functional account"
                 assert persisted_created_account.state is not None
@@ -231,19 +324,66 @@ class TestExecuteUserActionAccountCrud:
                 assert persisted_created_account.state.message == protocol_models.AccountStatusMessage.VALID
                 assert len(account_provider.list_items(wallet_address)) == 1
 
-                # Step 5: edit the account and verify invalid-state mapping when IP whitelist fails.
-                edited_account = _build_account(
+                # Step 3 — Edit: enqueue workflow only first; poll listings mid retry before awaiting terminal output.
+                edited_account = build_account(
                     account_id="functional-account-1",
                     account_name="Functional account renamed",
                 )
-                await user_actions_module.execute_user_action(
-                    _build_edit_account_user_action(
-                        user_action_id="ua-account-edit",
-                        account_id="functional-account-1",
-                        account=edited_account,
-                    ),
-                    wallet_address,
+                edit_action = build_edit_user_action(
+                    user_action_id="ua-account-edit",
+                    account_id="functional-account-1",
+                    account=edited_account,
                 )
+                edit_workflow_id = await scheduler_tasks.trigger_user_action_workflow(edit_action, wallet_address)
+
+                # Step 3 (mid retry) — While DBOS retries the step after RetriableFailedRequest, listing keeps edit as PENDING (input snapshot).
+                spin_deadline_seconds = asyncio.get_running_loop().time() + _USER_ACTION_LIST_POLL_TIMEOUT_SECONDS
+                saw_mid_retry_pending = False
+                while asyncio.get_running_loop().time() < spin_deadline_seconds:
+                    if ensure_permissions_mock.await_count >= 2:
+                        listed_mid = await scheduler_api.list_user_actions(wallet_address)
+                        _assert_listed_user_actions_match_expected_id_status_pairs(
+                            listed_mid,
+                            [
+                                (doomed_create.id, protocol_models.UserActionStatus.FAILED),
+                                (happy_create.id, protocol_models.UserActionStatus.COMPLETED),
+                                (edit_action.id, protocol_models.UserActionStatus.PENDING),
+                            ],
+                        )
+                        edit_latest_mid = next(row for row in listed_mid if row.id == edit_action.id)
+                        if edit_latest_mid.status == protocol_models.UserActionStatus.PENDING:
+                            saw_mid_retry_pending = True
+                            break
+                    await asyncio.sleep(0.05)
+
+                assert saw_mid_retry_pending, (
+                    "expected ua-account-edit listed as pending during DBOS retry backoff "
+                    f"(perm_mock.await_count={ensure_permissions_mock.await_count})"
+                )
+
+                # Step 3 (continued) — Finish edit: second permission outcome yields INVALID whitelist on persisted account.
+                edit_handle = await octobot_node.scheduler.SCHEDULER.INSTANCE.retrieve_workflow_async(edit_workflow_id)
+                await asyncio.wait_for(edit_handle.get_result(), timeout=_WORKFLOW_RESULT_TIMEOUT_SECONDS)
+
+                # Step 3 (listing) — Terminal edit row COMPLETED alongside prior workflows.
+                listed_after_edit = await scheduler_api.list_user_actions(wallet_address)
+                _assert_listed_user_actions_match_expected_id_status_pairs(
+                    listed_after_edit,
+                    [
+                        (doomed_create.id, protocol_models.UserActionStatus.FAILED),
+                        (happy_create.id, protocol_models.UserActionStatus.COMPLETED),
+                        (edit_action.id, protocol_models.UserActionStatus.COMPLETED),
+                    ],
+                )
+                edit_latest = next(row for row in listed_after_edit if row.id == edit_action.id)
+                assert edit_latest.status == protocol_models.UserActionStatus.COMPLETED
+                assert edit_latest.result is not None
+                edit_list_inner = edit_latest.result.actual_instance
+                assert isinstance(edit_list_inner, protocol_models.AccountActionResult)
+                assert edit_list_inner.result_type == protocol_models.UserActionResultType.ACCOUNT
+                assert edit_list_inner.error_message is None
+                assert edit_list_inner.error_details is None
+
                 persisted_edited_account = account_provider.get_item(wallet_address, "functional-account-1")
                 assert persisted_edited_account.name == "Functional account renamed"
                 assert persisted_edited_account.state is not None
@@ -254,29 +394,69 @@ class TestExecuteUserActionAccountCrud:
                 )
                 assert len(account_provider.list_items(wallet_address)) == 1
 
-                # Step 6: refresh account state and confirm it is updated back to valid.
-                await user_actions_module.execute_user_action(
-                    _build_refresh_accounts_user_action(user_action_id="ua-account-refresh"),
-                    wallet_address,
+                # Step 4 — Refresh: reruns checks with final permission mock returning OK; provider VALID again.
+                refresh_action = build_refresh_user_action(user_action_id="ua-account-refresh")
+                await _run_user_action_to_completion(wallet_address, refresh_action)
+
+                # Step 4 (continued) — Listing adds COMPLETED refresh row.
+                listed_after_refresh = await scheduler_api.list_user_actions(wallet_address)
+                _assert_listed_user_actions_match_expected_id_status_pairs(
+                    listed_after_refresh,
+                    [
+                        (doomed_create.id, protocol_models.UserActionStatus.FAILED),
+                        (happy_create.id, protocol_models.UserActionStatus.COMPLETED),
+                        (edit_action.id, protocol_models.UserActionStatus.COMPLETED),
+                        (refresh_action.id, protocol_models.UserActionStatus.COMPLETED),
+                    ],
                 )
+                refresh_latest = next(row for row in listed_after_refresh if row.id == refresh_action.id)
+                assert refresh_latest.status == protocol_models.UserActionStatus.COMPLETED
+                assert refresh_latest.result is not None
+                refresh_inner = refresh_latest.result.actual_instance
+                assert isinstance(refresh_inner, protocol_models.AccountActionResult)
+                assert refresh_inner.result_type == protocol_models.UserActionResultType.ACCOUNT
+                assert refresh_inner.error_message is None
+                assert refresh_inner.error_details is None
+
                 persisted_refreshed_account = account_provider.get_item(wallet_address, "functional-account-1")
                 assert persisted_refreshed_account.state is not None
                 assert persisted_refreshed_account.state.status == protocol_models.AccountStatus.VALID
                 assert persisted_refreshed_account.state.message == protocol_models.AccountStatusMessage.VALID
 
-                # Step 7: delete the account and verify final empty persistence state.
-                await user_actions_module.execute_user_action(
-                    _build_delete_account_user_action(
-                        user_action_id="ua-account-delete",
-                        account_id="functional-account-1",
-                    ),
-                    wallet_address,
+                # Step 5 — Delete: remove account from provider; listing gains COMPLETED delete row.
+                delete_action = build_delete_user_action(
+                    user_action_id="ua-account-delete",
+                    account_id="functional-account-1",
                 )
-                with pytest.raises(collection_errors.ItemNotFoundError):
+                await _run_user_action_to_completion(wallet_address, delete_action)
+
+                # Step 5 (continued) — Full listing is five terminal rows with expected id/status pairs.
+                listed_after_delete = await scheduler_api.list_user_actions(wallet_address)
+                _assert_listed_user_actions_match_expected_id_status_pairs(
+                    listed_after_delete,
+                    [
+                        (doomed_create.id, protocol_models.UserActionStatus.FAILED),
+                        (happy_create.id, protocol_models.UserActionStatus.COMPLETED),
+                        (edit_action.id, protocol_models.UserActionStatus.COMPLETED),
+                        (refresh_action.id, protocol_models.UserActionStatus.COMPLETED),
+                        (delete_action.id, protocol_models.UserActionStatus.COMPLETED),
+                    ],
+                )
+                delete_latest = next(row for row in listed_after_delete if row.id == delete_action.id)
+                assert delete_latest.status == protocol_models.UserActionStatus.COMPLETED
+                assert delete_latest.result is not None
+                delete_inner = delete_latest.result.actual_instance
+                assert isinstance(delete_inner, protocol_models.AccountActionResult)
+                assert delete_inner.result_type == protocol_models.UserActionResultType.ACCOUNT
+                assert delete_inner.error_message is None
+                assert delete_inner.error_details is None
+
+                # Step: Collection layer confirms delete (no item, empty list).
+                with pytest.raises(octobot_sync.sync.ItemNotFoundError):
                     account_provider.get_item(wallet_address, "functional-account-1")
                 assert account_provider.list_items(wallet_address) == []
         finally:
-            # Step 8: cleanup authenticator resources and restore global user-root setting.
+            # Step: Tear down wallet task and restore prior user-root path.
             if authentication_instance is not None:
                 await authentication_instance.stop()
             user_root_provider.set_root(previous_user_root)
