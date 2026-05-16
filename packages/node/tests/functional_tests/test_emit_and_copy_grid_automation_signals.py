@@ -612,7 +612,7 @@ class TestEmitAndCopyGridAutomationSignals:
                                 side_effect=patched_fetch_ohlcv,
                             ),
                             mock.patch(
-                                "octobot.community.collection_providers.StrategyProvider.instance",
+                                "octobot_sync.sync.collection_providers.StrategyProvider.instance",
                                 return_value=mock.Mock(
                                     get_item=mock.Mock(
                                         side_effect=_functional_seed_strategy_for_emit_copy_test,
@@ -620,7 +620,7 @@ class TestEmitAndCopyGridAutomationSignals:
                                 ),
                             ),
                             mock.patch(
-                                "octobot.community.collection_providers.AccountProvider.instance",
+                                "octobot_sync.sync.collection_providers.AccountProvider.instance",
                                 return_value=mock.Mock(
                                     get_item=mock.Mock(
                                         side_effect=lambda _wallet, account_id: _account_for_id(

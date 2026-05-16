@@ -19,6 +19,12 @@ MAX_BODY_SIZE_PERFORMANCE = 64 * 1024  # 64 KB — live performance snapshot
 MAX_BODY_SIZE_PRIVATE = 10 * 1024 * 1024  # 10 MB — private documents
 
 HKDF_INFO_USER_DATA = "octobot-sync-user-data"
+HKDF_SALT_STRING = "octobot-starfish-identity-v1"
+
+BLOB_IV_KEY = "iv"
+BLOB_DATA_KEY = "data"
+
+IV_BYTES = 12
 
 MAX_NONCE_LENGTH = 128
 MAX_PUBKEY_LENGTH = 256

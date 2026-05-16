@@ -40,7 +40,7 @@ class TestEditAccountActionExecutorExecute:
         provider_mock = mock.Mock()
         with (
             mock.patch(
-                "octobot.community.collection_providers.AccountProvider.instance",
+                "octobot_sync.sync.collection_providers.AccountProvider.instance",
                 return_value=provider_mock,
             ),
             mock.patch.object(

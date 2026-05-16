@@ -17,7 +17,7 @@
 import mock
 import pytest
 
-import octobot.community.collection_backend.errors as collection_errors
+import octobot_sync.sync.collection_backend.errors as collection_errors
 import octobot_protocol.models as protocol_models
 
 import octobot_node.errors as node_errors
@@ -40,7 +40,7 @@ class TestCreateAccountActionExecutorExecute:
         provider_mock = mock.Mock()
         with (
             mock.patch(
-                "octobot.community.collection_providers.AccountProvider.instance",
+                "octobot_sync.sync.collection_providers.AccountProvider.instance",
                 return_value=provider_mock,
             ),
             mock.patch.object(
@@ -103,7 +103,7 @@ class TestCreateAccountActionExecutorExecute:
         provider_mock.create_item.side_effect = collection_errors.DuplicateItemError("dup")
         with (
             mock.patch(
-                "octobot.community.collection_providers.AccountProvider.instance",
+                "octobot_sync.sync.collection_providers.AccountProvider.instance",
                 return_value=provider_mock,
             ),
             mock.patch.object(

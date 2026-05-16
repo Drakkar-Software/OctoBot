@@ -16,8 +16,8 @@
 
 import octobot_protocol.models as protocol_models
 import octobot_node.constants as node_constants
-import octobot.community.collection_providers.user_account_provider as account_provider
-import octobot.community.collection_backend.errors as collection_errors
+import octobot_sync.sync.collection_providers.user_account_provider as account_provider
+import octobot_sync.sync.collection_backend.errors as collection_errors
 
 
 def get_accounts_state_encrypted(address: str) -> dict[str, str] | None:

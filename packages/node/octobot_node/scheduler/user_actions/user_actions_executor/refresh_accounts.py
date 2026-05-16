@@ -14,7 +14,7 @@
 #  You should have received a copy of the GNU General Public License along
 #  with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
-import octobot.community.collection_providers as collection_providers
+import octobot_sync.sync.collection_providers as collection_providers
 import octobot_protocol.models as protocol_models
 
 import octobot_node.errors as node_errors

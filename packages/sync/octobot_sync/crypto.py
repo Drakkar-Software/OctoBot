@@ -32,14 +32,7 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
 import octobot_sync.errors as sync_errors
-
-
-BLOB_IV_KEY = "iv"
-BLOB_DATA_KEY = "data"
-
-HKDF_SALT_STRING = "octobot-starfish-identity-v1"
-
-IV_BYTES = 12
+import octobot_sync.constants as constants
 
 
 def _derive_key(secret: str, salt: str, info: bytes) -> bytes:
@@ -56,7 +49,7 @@ def _derive_key(secret: str, salt: str, info: bytes) -> bytes:
 def _collection_aes_key(wallet_private_key: str, collection: str) -> bytes:
     return _derive_key(
         wallet_private_key,
-        HKDF_SALT_STRING,
+        constants.HKDF_SALT_STRING,
         f"octobot-sync-{collection}".encode("utf-8"),
     )
 
@@ -76,11 +69,11 @@ def encrypt_bytes_to_blob_dict(
     """Encrypt arbitrary bytes with AES-256-GCM; return ``{iv, data}`` (base64 ASCII)."""
     _require_non_empty_secret(wallet_private_key)
     aes_key = _collection_aes_key(wallet_private_key, collection)
-    initialization_vector = os.urandom(IV_BYTES)
+    initialization_vector = os.urandom(constants.IV_BYTES)
     ciphertext = AESGCM(aes_key).encrypt(initialization_vector, plaintext, None)
     return {
-        BLOB_IV_KEY: base64.b64encode(initialization_vector).decode("ascii"),
-        BLOB_DATA_KEY: base64.b64encode(ciphertext).decode("ascii"),
+        constants.BLOB_IV_KEY: base64.b64encode(initialization_vector).decode("ascii"),
+        constants.BLOB_DATA_KEY: base64.b64encode(ciphertext).decode("ascii"),
     }
 
 
@@ -92,8 +85,8 @@ def decrypt_blob_dict_to_bytes(
     """Decrypt a ``{iv, data}`` blob to the original plaintext bytes."""
     _require_non_empty_secret(wallet_private_key)
     try:
-        iv_encoded = blob[BLOB_IV_KEY]
-        data_encoded = blob[BLOB_DATA_KEY]
+        iv_encoded = blob[constants.BLOB_IV_KEY]
+        data_encoded = blob[constants.BLOB_DATA_KEY]
     except KeyError as err:
         raise sync_errors.OctobotSyncCryptoFormatError(
             f"Missing key in encrypted blob: {err}"
@@ -107,9 +100,9 @@ def decrypt_blob_dict_to_bytes(
             f"Invalid base64 in encrypted blob: {err}"
         ) from err
 
-    if len(initialization_vector) != IV_BYTES:
+    if len(initialization_vector) != constants.IV_BYTES:
         raise sync_errors.OctobotSyncCryptoFormatError(
-            f"Invalid IV length: expected {IV_BYTES} bytes"
+            f"Invalid IV length: expected {constants.IV_BYTES} bytes"
         )
 
     aes_key = _collection_aes_key(wallet_private_key, collection)

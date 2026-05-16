@@ -4,8 +4,8 @@ import pathlib
 import mock
 import pytest
 
-import octobot.community.collection_backend.errors as collection_errors
-import octobot.community.collection_providers.user_account_provider as account_provider_module
+import octobot_sync.sync.collection_backend.errors as collection_errors
+import octobot_sync.sync.collection_providers.user_account_provider as account_provider_module
 import octobot.community.authentication as community_authentication_module
 import octobot.community.local_authenticator as local_authenticator_module
 import octobot_commons.user_root_folder_provider as user_root_folder_provider_module

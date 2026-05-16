@@ -1,18 +1,18 @@
-#  This file is part of OctoBot (https://github.com/Drakkar-Software/OctoBot)
-#  Copyright (c) 2025 Drakkar-Software, All rights reserved.
+#  Drakkar-Software OctoBot-Sync
+#  Copyright (c) Drakkar-Software, All rights reserved.
 #
-#  OctoBot is free software; you can redistribute it and/or
-#  modify it under the terms of the GNU General Public License
-#  as published by the Free Software Foundation; either
+#  This library is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU Lesser General Public
+#  License as published by the Free Software Foundation; either
 #  version 3.0 of the License, or (at your option) any later version.
 #
-#  OctoBot is distributed in the hope that it will be useful,
+#  This library is distributed in the hope that it will be useful,
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-#  General Public License for more details.
+#  Lesser General Public License for more details.
 #
-#  You should have received a copy of the GNU General Public
-#  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
+#  You should have received a copy of the GNU Lesser General Public
+#  License along with this library.
 
 import typing
 
@@ -20,10 +20,10 @@ import mock
 import pydantic
 import pytest
 
-import octobot_sync.crypto as sync_crypto
+import octobot_sync.constants as sync_constants
 import octobot.community.authentication as community_authentication
-import octobot.community.collection_backend.base_local_collection_provider as base_provider_module
-import octobot.community.collection_backend.errors as collection_errors
+import octobot_sync.sync.collection_backend.base_local_collection_provider as base_provider_module
+import octobot_sync.sync.collection_backend.errors as collection_errors
 
 _TEST_ADDRESS = "0xaaabbbcccddd"
 _TEST_ADDRESS_ALT = "0xaaabbbccc001"
@@ -191,8 +191,8 @@ class TestBaseLocalCollectionProviderListItemsEncrypted:
             provider.create_item(_TEST_ADDRESS, _item("item-1", label="secret"))
 
         blob = provider.list_items_encrypted(_TEST_ADDRESS)
-        assert set(blob.keys()) == {sync_crypto.BLOB_IV_KEY, sync_crypto.BLOB_DATA_KEY}
-        assert "secret" not in blob[sync_crypto.BLOB_DATA_KEY]
+        assert set(blob.keys()) == {sync_constants.BLOB_IV_KEY, sync_constants.BLOB_DATA_KEY}
+        assert "secret" not in blob[sync_constants.BLOB_DATA_KEY]
 
     def test_bypasses_cache(self, tmp_path):
         """list_items_encrypted must read from disk, not the in-memory cache."""
@@ -203,7 +203,7 @@ class TestBaseLocalCollectionProviderListItemsEncrypted:
             provider.list_items(_TEST_ADDRESS)
 
         blob = provider.list_items_encrypted(_TEST_ADDRESS)
-        assert isinstance(blob[sync_crypto.BLOB_DATA_KEY], str)
+        assert isinstance(blob[sync_constants.BLOB_DATA_KEY], str)
 
     def test_does_not_need_wallet_authentication(self, tmp_path):
         """No private key is needed -- the blob is returned as-is from disk."""
@@ -213,7 +213,7 @@ class TestBaseLocalCollectionProviderListItemsEncrypted:
 
         # Call without wallet mock active -- no authentication needed
         blob = provider.list_items_encrypted(_TEST_ADDRESS)
-        assert set(blob.keys()) == {sync_crypto.BLOB_IV_KEY, sync_crypto.BLOB_DATA_KEY}
+        assert set(blob.keys()) == {sync_constants.BLOB_IV_KEY, sync_constants.BLOB_DATA_KEY}
 
 
 class TestBaseLocalCollectionProviderStateFormat:

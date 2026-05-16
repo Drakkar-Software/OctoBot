@@ -1,23 +1,23 @@
-#  This file is part of OctoBot (https://github.com/Drakkar-Software/OctoBot)
-#  Copyright (c) 2025 Drakkar-Software, All rights reserved.
+#  Drakkar-Software OctoBot-Sync
+#  Copyright (c) Drakkar-Software, All rights reserved.
 #
-#  OctoBot is free software; you can redistribute it and/or
-#  modify it under the terms of the GNU General Public License
-#  as published by the Free Software Foundation; either
+#  This library is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU Lesser General Public
+#  License as published by the Free Software Foundation; either
 #  version 3.0 of the License, or (at your option) any later version.
 #
-#  OctoBot is distributed in the hope that it will be useful,
+#  This library is distributed in the hope that it will be useful,
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-#  General Public License for more details.
+#  Lesser General Public License for more details.
 #
-#  You should have received a copy of the GNU General Public
-#  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
+#  You should have received a copy of the GNU Lesser General Public
+#  License along with this library.
 
 import datetime
 
-import octobot.community.collection_backend.base_local_collection_storage as base_storage_module
-import octobot.community.collection_providers.user_account_provider as account_provider_module
+import octobot_sync.sync.collection_backend.base_local_collection_storage as base_storage_module
+import octobot_sync.sync.collection_providers.user_account_provider as account_provider_module
 import octobot_node.constants as node_constants
 import octobot_protocol.models as protocol_models
 import octobot_sync.enums as sync_enums

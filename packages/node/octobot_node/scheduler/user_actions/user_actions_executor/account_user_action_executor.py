@@ -16,7 +16,7 @@
 
 import datetime
 
-import octobot.community.collection_backend.errors as collection_errors
+import octobot_sync.sync.collection_backend.errors as collection_errors
 import octobot_protocol.models as protocol_models
 
 import octobot_node.errors as node_errors

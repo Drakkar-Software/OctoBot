@@ -1,18 +1,18 @@
-#  This file is part of OctoBot (https://github.com/Drakkar-Software/OctoBot)
+#  Drakkar-Software OctoBot-Sync
 #  Copyright (c) 2025 Drakkar-Software, All rights reserved.
 #
-#  OctoBot is free software; you can redistribute it and/or
-#  modify it under the terms of the GNU General Public License
-#  as published by the Free Software Foundation; either
+#  This library is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU Lesser General Public
+#  License as published by the Free Software Foundation; either
 #  version 3.0 of the License, or (at your option) any later version.
 #
-#  OctoBot is distributed in the hope that it will be useful,
+#  This library is distributed in the hope that it will be useful,
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-#  General Public License for more details.
+#  Lesser General Public License for more details.
 #
-#  You should have received a copy of the GNU General Public
-#  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
+#  You should have received a copy of the GNU Lesser General Public
+#  License along with this library.
 
 
 import abc
@@ -21,9 +21,9 @@ import typing
 import cachetools
 
 import octobot.community.authentication as community_authentication
-import octobot.community.collection_backend.base_local_collection_storage as base_storage
-import octobot.community.collection_backend.errors as collection_errors
-import octobot.community.collection_backend.state_model as state_model
+import octobot_sync.sync.collection_backend.base_local_collection_storage as base_storage
+import octobot_sync.sync.collection_backend.errors as collection_errors
+import octobot_sync.sync.collection_backend.state_model as state_model
 
 
 T = typing.TypeVar("T")
@@ -53,7 +53,7 @@ class BaseLocalCollectionProvider(typing.Generic[T, S], abc.ABC):
             maxsize=1024,
             ttl=12 * 60 * 60,
         )
-    
+
     @staticmethod
     def _create_storage(
         collection: str,

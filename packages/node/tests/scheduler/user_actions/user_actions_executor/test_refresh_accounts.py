@@ -57,7 +57,7 @@ class TestRefreshAccountsActionExecutorExecute:
         provider_mock.get_item.side_effect = [first_account, second_account]
         with (
             mock.patch(
-                "octobot.community.collection_providers.AccountProvider.instance",
+                "octobot_sync.sync.collection_providers.AccountProvider.instance",
                 return_value=provider_mock,
             ),
             mock.patch.object(
@@ -104,7 +104,7 @@ class TestRefreshAccountsActionExecutorExecute:
         provider_mock.get_item.return_value = account_model
         with (
             mock.patch(
-                "octobot.community.collection_providers.AccountProvider.instance",
+                "octobot_sync.sync.collection_providers.AccountProvider.instance",
                 return_value=provider_mock,
             ),
             mock.patch.object(
@@ -154,7 +154,7 @@ class TestRefreshAccountsActionExecutorExecute:
         provider_mock = mock.Mock()
         provider_mock.get_item.return_value = blockchain_account
         with mock.patch(
-            "octobot.community.collection_providers.AccountProvider.instance",
+            "octobot_sync.sync.collection_providers.AccountProvider.instance",
             return_value=provider_mock,
         ):
             executor = refresh_accounts_executor.RefreshAccountsActionExecutor(account_executor_test_utils.WALLET_ADDRESS)

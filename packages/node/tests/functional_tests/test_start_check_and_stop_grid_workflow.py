@@ -165,11 +165,11 @@ class TestTriggerTaskGridDbosIntegration:
                 side_effect=patched_fetch_ohlcv,
             ),
             mock.patch(
-                "octobot.community.collection_providers.AccountProvider.instance",
+                "octobot_sync.sync.collection_providers.AccountProvider.instance",
                 return_value=mock.Mock(get_item=mock.Mock(return_value=protocol_account)),
             ),
             mock.patch(
-                "octobot.community.collection_providers.StrategyProvider.instance",
+                "octobot_sync.sync.collection_providers.StrategyProvider.instance",
                 return_value=mock.Mock(
                     get_item=mock.Mock(
                         return_value=grid_sim_util.seeded_grid_strategy_for_functional_wallet(

@@ -6,7 +6,7 @@ import typing
 import mock
 import pytest
 
-import octobot.community.collection_backend.errors as collection_errors
+import octobot_sync.sync.collection_backend.errors as collection_errors
 import octobot_commons.dsl_interpreter as dsl_interpreter
 import octobot_copy.enums as copy_enums
 import octobot_flow.entities as flow_entities
@@ -21,10 +21,10 @@ import octobot_node.scheduler.user_actions.user_actions_executor.util.action_det
 from . import provider_assertions
 
 _ACCOUNT_PROVIDER_INSTANCE_PATCH = (
-    "octobot.community.collection_providers.AccountProvider.instance"
+    "octobot_sync.sync.collection_providers.AccountProvider.instance"
 )
 _STRATEGY_PROVIDER_INSTANCE_PATCH = (
-    "octobot.community.collection_providers.StrategyProvider.instance"
+    "octobot_sync.sync.collection_providers.StrategyProvider.instance"
 )
 _TEST_WALLET_ADDRESS = "0xaaabbbcccddd"
 

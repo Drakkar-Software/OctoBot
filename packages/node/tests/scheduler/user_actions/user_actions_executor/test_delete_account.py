@@ -17,7 +17,7 @@
 import mock
 import pytest
 
-import octobot.community.collection_backend.errors as collection_errors
+import octobot_sync.sync.collection_backend.errors as collection_errors
 import octobot_protocol.models as protocol_models
 
 import octobot_node.errors as node_errors
@@ -37,7 +37,7 @@ class TestDeleteAccountActionExecutorExecute:
         user_action = protocol_models.UserAction(id="ua-del", configuration=account_executor_test_utils.wrap_configuration(inner))
         provider_mock = mock.Mock()
         with mock.patch(
-            "octobot.community.collection_providers.AccountProvider.instance",
+            "octobot_sync.sync.collection_providers.AccountProvider.instance",
             return_value=provider_mock,
         ):
             executor = delete_account_executor.DeleteAccountActionExecutor(account_executor_test_utils.WALLET_ADDRESS)
@@ -78,7 +78,7 @@ class TestDeleteAccountActionExecutorExecute:
         provider_mock = mock.Mock()
         provider_mock.delete_item.side_effect = collection_errors.ItemNotFoundError("missing")
         with mock.patch(
-            "octobot.community.collection_providers.AccountProvider.instance",
+            "octobot_sync.sync.collection_providers.AccountProvider.instance",
             return_value=provider_mock,
         ):
             executor = delete_account_executor.DeleteAccountActionExecutor(account_executor_test_utils.WALLET_ADDRESS)

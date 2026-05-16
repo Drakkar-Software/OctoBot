@@ -24,8 +24,8 @@ import octobot_node.errors as node_errors
 import octobot_node.scheduler.user_actions.user_actions_executor.automation_user_action_executor as automation_user_action_executor
 import octobot_node.scheduler.user_actions.user_actions_executor.util.action_details_factory as action_details_factory
 
-import octobot.community.collection_backend.errors as collection_errors
-import octobot.community.collection_providers as collection_providers
+import octobot_sync.sync.collection_backend.errors as collection_errors
+import octobot_sync.sync.collection_providers as collection_providers
 
 import octobot_node.models as models
 import octobot_node.scheduler.tasks
