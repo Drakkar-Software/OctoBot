@@ -63,6 +63,7 @@ class MEXCConnector(exchanges.CCXTConnector):
             return ccxt_sign_result
         return lazy_sign
 
+    # TODO potentially later: replace by ob_mexc sign when ob_websocket are supported
     def _force_sign(self, path, api, method, params, headers, body):
         self = self.client  # to use the same code as ccxt.async_support.mexc.sign (same self)
         # same code as ccxt.async_support.mexc.sign but forced to sign

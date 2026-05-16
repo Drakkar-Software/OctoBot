@@ -461,12 +461,12 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
         )
 
     def get_market_status(self, symbol, price_example=None, with_fixer=True) -> typing.Union[
-        "exchanges.ExchangeMarketStatusFixer", CCXTMarket, dict
+        CCXTMarket, dict
     ]:
         try:
-            if with_fixer:
-                return exchanges.ExchangeMarketStatusFixer(self.client.market(symbol), price_example).market_status
-            return self.client.market(symbol)
+            return self.adapter.adapt_market_status(
+                self.client.ob_get_fixed_market_status(symbol)
+            )
         except ccxt.async_support.NotSupported:
             raise octobot_trading.errors.NotSupported
         except Exception as e:

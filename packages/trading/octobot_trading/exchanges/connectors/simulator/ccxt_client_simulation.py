@@ -25,7 +25,11 @@ import octobot_trading.enums as enums
 def parse_markets(exchange_name: str, additional_client_config: dict, market_filter) -> dict:
     client = _temp_client(exchange_name, additional_client_config=additional_client_config)
     ccxt_client_util.load_markets_from_cache(client, False, market_filter)
-    return client.markets
+    return {
+        key: client.ob_get_fixed_market_status(key) 
+        for key, market in client.markets.items()
+        if market_filter(market)
+    }
 
 
 def get_fees(market_status) -> dict:

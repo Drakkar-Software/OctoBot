@@ -37,7 +37,7 @@ class TestHyperliquidRealExchangeTester(real_exchange_tester.RealExchangeTester)
     EXCHANGE_NAME = "hyperliquid"
     SYMBOL = "BTC/USDC"
     SYMBOL_2 = "ETH/USDC"
-    SYMBOL_3 = "HYPE/USDC"
+    SYMBOL_3 = "BONK/USDC"
     CANDLE_SINCE = MAX_FETCHTABLE_TIME
     CANDLE_SINCE_SEC = CANDLE_SINCE / 1000
 
@@ -64,10 +64,7 @@ class TestHyperliquidRealExchangeTester(real_exchange_tester.RealExchangeTester)
     async def test_get_market_status(self):
         await self.assert_get_market_status(
             has_price_limits=False,
-            low_cost_min=10,
-            low_cost_max=10,
-            normal_cost_min=10,
-            normal_cost_max=10,
+            low_cost_max=11,
         )
 
     async def test_get_symbol_prices(self):

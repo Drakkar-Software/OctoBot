@@ -30,8 +30,3 @@ class ExchangeSimulatorAdapter(adapters.AbstractAdapter):
 
     def set_tentacles_adapter_proxy(self, adapter_class):
         self._tentacle_adapter_proxy = adapter_class(self.connector)
-
-    def adapt_market_status(self, raw, remove_price_limits=False, **kwargs):
-        return self._get_tentacle_adapter_proxy().adapt_market_status(
-            raw, remove_price_limits=remove_price_limits, **kwargs
-        )

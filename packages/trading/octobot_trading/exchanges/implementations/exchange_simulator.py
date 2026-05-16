@@ -14,7 +14,6 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import typing
-import copy
 
 import octobot_trading.constants as constants
 import octobot_trading.enums as trading_enums
@@ -53,8 +52,6 @@ class ExchangeSimulator(rest_exchange.RestExchange):
         )
         await super().initialize_impl()
         self.exchange_importers = self.connector.exchange_importers
-        if self.connector.should_adapt_market_statuses():
-            await self._init_exchange_tentacle()
         if self.exchange_tentacle_class:
             self.exchange_tentacle_class.DEFAULT_CONNECTOR_CLASS.register_simulator_connector_fee_methods(
                 self.exchange_manager.exchange_name, self.connector
@@ -101,21 +98,6 @@ class ExchangeSimulator(rest_exchange.RestExchange):
     async def create_backtesting_exchange_producers(self):
         return await self.connector.create_backtesting_exchange_producers()
 
-    def _should_fix_market_status(self):
-        return self.connector.get_option_value(
-            trading_enums.ExchangeClientOptions.FIX_MARKET_STATUS
-        )
-
-    def _should_remove_market_status_limits(self):
-        return self.connector.get_option_value(
-            trading_enums.ExchangeClientOptions.REMOVE_MARKET_STATUS_PRICE_LIMITS
-        )
-
-    def _should_adapt_market_status_for_contract_size(self):
-        return self.connector.get_option_value(
-            trading_enums.ExchangeClientOptions.ADAPT_MARKET_STATUS_FOR_CONTRACT_SIZE
-        )
-
     def get_available_time_frames(self):
         return self.connector.get_available_time_frames()
 
@@ -130,43 +112,6 @@ class ExchangeSimulator(rest_exchange.RestExchange):
 
     def get_backtesting_data_files(self):
         return self.connector.get_backtesting_data_files()
-
-    def get_market_status(self, symbol, price_example=None, with_fixer=True):
-        """
-        Override of the RESTExchange get_fixed_market_status to handle different get_market_status return values
-        """
-        if self._should_fix_market_status():
-            return self.get_fixed_market_status(
-                symbol,
-                price_example=price_example,
-                with_fixer=with_fixer,
-                remove_price_limits=self._should_remove_market_status_limits(),
-                adapt_for_contract_size=self._should_adapt_market_status_for_contract_size()
-            )
-        market_status, _ = self.connector.get_market_status(
-            symbol, price_example=price_example, with_fixer=with_fixer
-        )
-        return market_status
-
-    def get_fixed_market_status(self, symbol, price_example=None, with_fixer=True, remove_price_limits=False,
-                                adapt_for_contract_size=False):
-        """
-        Override of the RESTExchange get_fixed_market_status to call adapt_market_status only on fetch market statuses
-        (should not be call on default market status)
-        """
-        market_status, is_real = self.connector.get_market_status(symbol, with_fixer=False)
-        market_status = copy.deepcopy(market_status)
-        if is_real:
-            # only use adapter on real market status (not default simulator values)
-            market_status = self.connector.adapter.adapt_market_status(
-                market_status,
-                remove_price_limits=remove_price_limits
-            )
-            if adapt_for_contract_size and self.exchange_manager.is_future:
-                self._adapt_market_status_for_contract_size(market_status, self.get_contract_size(symbol))
-        if with_fixer:
-            return exchange_util.ExchangeMarketStatusFixer(market_status, price_example).market_status
-        return market_status
 
     async def load_pair_future_contract(self, pair: str):
         """

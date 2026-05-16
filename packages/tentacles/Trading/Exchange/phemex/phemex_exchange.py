@@ -41,29 +41,6 @@ class Phemex(exchanges.RestExchange):
             limit = self._get_adapted_limit(limit)
         return await super().get_symbol_prices(symbol, time_frame, limit=limit, **kwargs)
 
-    async def create_order(self, order_type: trading_enums.TraderOrderType, symbol: str, quantity: decimal.Decimal,
-                           price: decimal.Decimal = None, stop_price: decimal.Decimal = None,
-                           side: trading_enums.TradeOrderSide = None, current_price: decimal.Decimal = None,
-                           reduce_only: bool = False, params: dict = None) -> typing.Optional[dict]:
-        if order_type is trading_enums.TraderOrderType.BUY_MARKET \
-                or order_type is trading_enums.TraderOrderType.SELL_MARKET:
-            # remove price argument on market orders or ccxt will try to convert cost into amount and
-            # make rounding differences
-            price = None
-        return await super().create_order(order_type, symbol, quantity,
-                                          price=price, stop_price=stop_price,
-                                          side=side, current_price=current_price,
-                                          reduce_only=reduce_only, params=params)
-
-    async def cancel_order(
-            self, exchange_order_id: str, symbol: str, order_type: trading_enums.TraderOrderType, **kwargs: dict
-    ) -> trading_enums.OrderStatus:
-        order_status = await super().cancel_order(exchange_order_id, symbol, order_type, **kwargs)
-        if order_status == trading_enums.OrderStatus.PENDING_CANCEL:
-            # cancelled orders can't be fetched, consider as cancelled
-            order_status = trading_enums.OrderStatus.CANCELED
-        return order_status
-
     async def get_order(
         self,
         exchange_order_id: str,

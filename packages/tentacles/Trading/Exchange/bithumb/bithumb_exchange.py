@@ -20,10 +20,3 @@ class Bithumb(exchanges.RestExchange):
     @classmethod
     def get_name(cls):
         return 'bithumb'
-
-    async def get_symbol_prices(self, symbol, time_frame, limit: int = None, **kwargs: dict):
-        # ohlcv limit is not working as expected, limit is doing [:-limit] but we want [-limit:]
-        candles = await super().get_symbol_prices(symbol=symbol, time_frame=time_frame, limit=limit, **kwargs)
-        if limit:
-            return candles[-limit:]
-        return candles

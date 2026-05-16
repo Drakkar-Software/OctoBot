@@ -715,6 +715,8 @@ class ExchangeClientOptions(enum.StrEnum):
     ADJUST_FOR_TIME_DIFFERENCE = "adjustForTimeDifference"
     DEFAULT_QUOTE_CURRENCY = "defaultQuoteCurrency"
     HAS_BROKER = "hasBroker"
+    SUPPORTS_FORCED_SIGNING_ALL_REQUESTS = "supportsForcedSigningAllRequests"
+    ENABLE_FORCED_SIGNING_ALL_REQUESTS = "enableForcedSigningAllRequests"
     SUPPORTED_ELEMENTS = "supportedElements"
 
 
@@ -726,11 +728,11 @@ class ExchangeSupportedElements(enum.StrEnum):
 
 
 DEFAULT_EXCHANGE_OPTION_VALUES = {
-    # set True when get_fixed_market_status should be called when calling get_market_status
+    # set True when ccxt should fix the market status
     ExchangeClientOptions.FIX_MARKET_STATUS: False,
-    # set True when get_fixed_market_status should be remove price limits (when limits are invalid)
+    # set True when ccxt should remove price limits (when limits are invalid)
     ExchangeClientOptions.REMOVE_MARKET_STATUS_PRICE_LIMITS: False,
-    # set True when get_fixed_market_status should adapt amounts for contract size
+    # set True when ccxt should adapt amounts for contract size
     # (amounts are in not kept as contract size with OctoBot)
     ExchangeClientOptions.ADAPT_MARKET_STATUS_FOR_CONTRACT_SIZE: False,
     # set True when disabled symbols should still be considered
@@ -805,6 +807,10 @@ DEFAULT_EXCHANGE_OPTION_VALUES = {
     ExchangeClientOptions.DEFAULT_QUOTE_CURRENCY: None,
     # set True when the exchange supports broker
     ExchangeClientOptions.HAS_BROKER: False,
+    # set True when the exchange supports forced signing all requests (even public ones)
+    ExchangeClientOptions.SUPPORTS_FORCED_SIGNING_ALL_REQUESTS: False,
+    # set True when the exchange requires signing all requests (when supported)
+    ExchangeClientOptions.ENABLE_FORCED_SIGNING_ALL_REQUESTS: False,
     ExchangeClientOptions.SUPPORTED_ELEMENTS: {
         ExchangeSupportedElements.FUTURES: {
             ExchangeSupportedElements.ORDERS: [TradeOrderType.MARKET.value, TradeOrderType.LIMIT.value],

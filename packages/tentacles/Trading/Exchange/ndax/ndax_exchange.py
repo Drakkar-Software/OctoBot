@@ -18,7 +18,7 @@ import octobot_trading.enums as trading_enums
 
 
 class Ndax(exchanges.RestExchange):
-    DEFAULT_MAX_LIMIT = 500 # todo check if necessary
+    DEFAULT_MAX_LIMIT = 500
 
     @classmethod
     def get_name(cls):

@@ -55,7 +55,9 @@ class TestKucoinFuturesRealExchangeTester(RealFuturesExchangeTester):
         await self.inner_test_active_symbols(450, 450)
 
     async def test_get_market_status(self):
-        await self.assert_market_status()
+        await self.assert_get_market_status(
+            has_price_limits=False
+        )
         for market_status in await self.get_market_statuses():
             # ensure no "minFunds" in futures
             assert "minFunds" not in market_status[ccxt_constants.CCXT_INFO]
