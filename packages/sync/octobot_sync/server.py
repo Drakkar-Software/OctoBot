@@ -55,6 +55,12 @@ def _get_address(context: StoreContext | None) -> str:
     raise errors.OctobotSyncIdentityMissingError("Identity is missing from the context")
 
 
+def _get_collection(context: StoreContext | None) -> str:
+    if context and context.collection:
+        return context.collection
+    raise errors.OctobotSyncCollectionMissingError("Collection is missing from the context")
+
+
 def _get_wallet_private_key(address: str) -> str:
     try:
         wallet = community_authentication.CommunityAuthentication.instance().get_wallet(address)
@@ -77,9 +83,10 @@ def _decrypt(data: str, address: str, collection: str) -> str:
 
 async def get_data(key: str, context: StoreContext | None = None) -> str | None:
     # called when client pulls
+    collection = _get_collection(context)
     output = None
     already_encrypted = False
-    match key:
+    match collection:
         case enums.Collections.USER_DATA.value:
             user_data_state = await user_data_protocol.get_user_data_state(
                 _get_address(context)
@@ -100,17 +107,18 @@ async def get_data(key: str, context: StoreContext | None = None) -> str | None:
             output = actions_state.to_json()
         case _:
             _get_logger().error(
-                f"get_data was called with ({key}). This collection is not supported."
+                f"get_data was called for collection ({collection}) with key ({key}). This collection is not supported."
             )
     if output and not already_encrypted:
-        output = _encrypt(output, _get_address(context), key)
+        output = _encrypt(output, _get_address(context), collection)
     return output
 
 async def put_data(key: str, body: str, context: StoreContext | None = None) -> None:
-    match key:
+    collection = _get_collection(context)
+    match collection:
         case enums.Collections.USER_ACTIONS.value:
             user_actions_state = protocol_models.UserActionsState.from_json(
-                _decrypt(body, _get_address(context), key)
+                _decrypt(body, _get_address(context), collection)
             )
             if user_actions_state.user_actions:
                 for action in user_actions_state.user_actions:
@@ -124,7 +132,7 @@ async def put_data(key: str, body: str, context: StoreContext | None = None) -> 
                         )
         case _:
             _get_logger().error(
-                f"put_data was called with ({key}, {body}). This is unexpected and should not happen."
+                f"put_data was called for collection ({collection}) with key ({key}). This is unexpected and should not happen."
             )
 
 def set_data_callbacks(

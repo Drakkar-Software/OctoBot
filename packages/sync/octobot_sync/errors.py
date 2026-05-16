@@ -28,6 +28,13 @@ class OctobotSyncIdentityMissingError(OctobotSyncError):
     pass
 
 
+class OctobotSyncCollectionMissingError(OctobotSyncError):
+    """
+    Raised when a collection is missing from the context
+    """
+    pass
+
+
 class OctobotSyncCryptoFormatError(OctobotSyncError):
     """Raised when an encrypted blob or wire payload is malformed."""
 
