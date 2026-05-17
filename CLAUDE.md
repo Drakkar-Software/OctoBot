@@ -22,22 +22,18 @@ url_template = "file:///path/to/pex"
 
 ### Python virtualenv
 
-The project uses a pants-managed lockfile resolve. The lockfile is committed at `3rdparty/python/default.lock`. Create the virtualenv from it:
+Resolves are disabled (`enable_resolves = false` in `pants.toml`) — no lockfile is committed. Pants resolves requirements directly from `python_requirement` targets each run.
+
+Create a local virtualenv from the project requirements for IDE / debugging:
 
 ```bash
-pants export --resolve=python-default
-# venv lands at: dist/export/python/virtualenvs/python-default/<python-version>/
+python3.13 -m venv .venv
+.venv/bin/pip install -r requirements.txt -r full_requirements.txt
 ```
 
-Use `dist/export/python/virtualenvs/python-default/*/bin/python` as the interpreter for running and debugging.
+Use `.venv/bin/python` as the interpreter for running and debugging.
 
-To regenerate the lockfile after changing any `requirements.txt` or `full_requirements.txt`:
-
-```bash
-pants generate-lockfiles --resolve=python-default
-```
-
-> **Interpreter constraint**: `pants.toml` pins the resolve to `==3.13.*` (wildcard required — `==3.13` matches only 3.13.0 exactly and rejects 3.13.1+).
+> **Interpreter constraint**: `pants.toml` pins `interpreter_constraints = ["==3.13.*"]` (wildcard required — `==3.13` matches only 3.13.0 exactly and rejects 3.13.1+).
 
 ### PYTHONPATH
 
