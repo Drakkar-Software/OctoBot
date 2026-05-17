@@ -15,7 +15,6 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
 import base64
-import json
 
 import pytest
 
@@ -87,39 +86,3 @@ class TestDecryptBlobDictToBytes:
             sync_crypto.decrypt_blob_dict_to_bytes(blob, _TEST_PRIVATE_KEY, _TEST_COLLECTION)
 
 
-class TestEncryptUtf8JsonToWire:
-    def test_round_trip_with_decrypt_wire_to_utf8_json(self):
-        plain = '{"ok":true}'
-        wire = sync_crypto.encrypt_utf8_json_to_wire(plain, _TEST_PRIVATE_KEY, _TEST_COLLECTION)
-        envelope = json.loads(wire)
-        assert set(envelope.keys()) == {sync_constants.BLOB_IV_KEY, sync_constants.BLOB_DATA_KEY}
-        decrypted = sync_crypto.decrypt_wire_to_utf8_json(wire, _TEST_PRIVATE_KEY, _TEST_COLLECTION)
-        assert decrypted == plain
-
-
-class TestDecryptWireToUtf8Json:
-    def test_invalid_json_raises_format_error(self):
-        with pytest.raises(sync_errors.OctobotSyncCryptoFormatError):
-            sync_crypto.decrypt_wire_to_utf8_json("not json", _TEST_PRIVATE_KEY, _TEST_COLLECTION)
-
-    def test_json_array_raises_format_error(self):
-        with pytest.raises(sync_errors.OctobotSyncCryptoFormatError):
-            sync_crypto.decrypt_wire_to_utf8_json("[1,2]", _TEST_PRIVATE_KEY, _TEST_COLLECTION)
-
-
-class TestSha256Hex:
-    def test_known_vector(self):
-        # Standard SHA-256 of the empty string.
-        assert sync_crypto.sha256_hex("") == (
-            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-        )
-
-    def test_deterministic(self):
-        assert sync_crypto.sha256_hex("payload") == sync_crypto.sha256_hex("payload")
-
-    def test_distinct_inputs_produce_distinct_hashes(self):
-        assert sync_crypto.sha256_hex("payload-a") != sync_crypto.sha256_hex("payload-b")
-
-    def test_unicode_payload(self):
-        # UTF-8 encoding must be used — non-ASCII must not raise.
-        assert sync_crypto.sha256_hex("héllo 🌍") == sync_crypto.sha256_hex("héllo 🌍")

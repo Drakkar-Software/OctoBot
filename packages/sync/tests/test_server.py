@@ -11,6 +11,7 @@ import octobot_sync.server as server
 import octobot_sync.enums as enums
 import octobot_sync.errors as errors
 
+from starfish_protocol.hash import compute_hash
 from starfish_server.storage.base import StoreContext
 from starfish_server.storage.s3 import S3ObjectStore
 from starfish_server.storage.filesystem import FilesystemObjectStore
@@ -68,17 +69,21 @@ class TestGetData:
         wrapper = json.loads(result)
         assert wrapper["v"] == 1
         assert wrapper["timestamps"] == {}
-        assert wrapper["hash"] == sync_crypto.sha256_hex(expected_plain)
-        decrypted = sync_crypto.decrypt_wire_to_utf8_json(
+        assert isinstance(wrapper["data"], dict)
+        assert wrapper["hash"] == compute_hash(wrapper["data"])
+        decrypted = sync_crypto.decrypt_blob_dict_to_bytes(
             wrapper["data"],
             _TEST_WALLET_PRIVATE_KEY,
             enums.Collections.USER_DATA.value,
-        )
+        ).decode("utf-8")
         assert decrypted == expected_plain
 
     @pytest.mark.asyncio
-    async def test_user_data_hash_is_stable_across_pulls(self):
-        """Two pulls of identical state must produce identical hashes (stable ETag)."""
+    async def test_user_data_hash_changes_with_random_iv(self):
+        """Two pulls of identical state produce different hashes because AES-GCM
+        IV is fresh per call — the `data` dict differs each pull, so its hash
+        differs too. Stable ETag requires the same hash to be returned twice,
+        which only opaque (client-encrypted) collections currently guarantee."""
         expected_plain = json.dumps({"version": "1", "automations": [], "user_actions": []})
         stub_state = mock.MagicMock()
         stub_state.to_json.return_value = expected_plain
@@ -93,21 +98,13 @@ class TestGetData:
             mock_proto.get_user_data_state = mock.AsyncMock(return_value=stub_state)
             first = json.loads(await server.get_data("users/0xwallet/data", context))
             second = json.loads(await server.get_data("users/0xwallet/data", context))
-        assert first["hash"] == second["hash"]
-        # AES-GCM nonce is random, so the encrypted payload must differ to prove
-        # we are not just trivially returning the same ciphertext.
         assert first["data"] != second["data"]
+        assert first["hash"] != second["hash"]
 
     @pytest.mark.asyncio
     async def test_user_accounts_collection(self):
-        """USER_ACCOUNTS returns the on-disk encrypted blob wrapped in a StoredDocument."""
-        expected_plain = json.dumps({"version": "1", "accounts": []})
-        encrypted_blob = sync_crypto.encrypt_bytes_to_blob_dict(
-            expected_plain.encode("utf-8"),
-            _TEST_WALLET_PRIVATE_KEY,
-            enums.Collections.USER_ACCOUNTS.value,
-        )
-        encrypted_blob_json = json.dumps(encrypted_blob)
+        """USER_ACCOUNTS returns the on-disk encrypted blob dict directly."""
+        encrypted_blob = {"alice": "ciphertext-alice", "bob": "ciphertext-bob"}
         context = _make_context(identity="0xwallet", collection=enums.Collections.USER_ACCOUNTS.value)
         with mock.patch("octobot_sync.server.accounts_protocol") as mock_proto:
             mock_proto.get_accounts_state_encrypted = mock.Mock(return_value=encrypted_blob)
@@ -116,29 +113,31 @@ class TestGetData:
         wrapper = json.loads(result)
         assert wrapper["v"] == 1
         assert wrapper["timestamps"] == {}
-        assert wrapper["hash"] == sync_crypto.sha256_hex(encrypted_blob_json)
-        assert wrapper["data"] == encrypted_blob_json
-        decrypted_plain = sync_crypto.decrypt_blob_dict_to_bytes(
-            json.loads(wrapper["data"]),
-            _TEST_WALLET_PRIVATE_KEY,
-            enums.Collections.USER_ACCOUNTS.value,
-        ).decode("utf-8")
-        assert decrypted_plain == expected_plain
+        assert wrapper["data"] == encrypted_blob
+        assert wrapper["hash"] == compute_hash(encrypted_blob)
+
+    @pytest.mark.asyncio
+    async def test_user_accounts_returns_none_when_no_blob(self):
+        context = _make_context(identity="0xwallet", collection=enums.Collections.USER_ACCOUNTS.value)
+        with mock.patch("octobot_sync.server.accounts_protocol") as mock_proto:
+            mock_proto.get_accounts_state_encrypted = mock.Mock(return_value=None)
+            result = await server.get_data("users/0xwallet/accounts", context)
+        assert result is None
 
     @pytest.mark.asyncio
     async def test_unmatched_collection_reads_opaque_store(self):
         """Any collection without a protocol-bridge case falls through to
         opaque filesystem storage and the node never touches the ciphertext."""
-        stored_ciphertext = "opaque-ciphertext-payload"
+        stored_ciphertext = {"_encrypted": "opaque-base64-payload"}
         mock_store = mock.MagicMock()
-        mock_store.get_string = mock.AsyncMock(return_value=stored_ciphertext)
+        mock_store.get_string = mock.AsyncMock(return_value=json.dumps(stored_ciphertext))
         context = _make_context(identity="0xwallet", collection="user-settings")
         with mock.patch("octobot_sync.server._get_opaque_store", return_value=mock_store):
             result = await server.get_data("users/0xwallet/settings", context)
         mock_store.get_string.assert_awaited_once_with("users/0xwallet/settings")
         wrapper = json.loads(result)
         assert wrapper["data"] == stored_ciphertext
-        assert wrapper["hash"] == sync_crypto.sha256_hex(stored_ciphertext)
+        assert wrapper["hash"] == compute_hash(stored_ciphertext)
 
     @pytest.mark.asyncio
     async def test_unmatched_collection_returns_none_when_no_stored_value(self):
@@ -160,12 +159,12 @@ class TestPutData:
                 {"id": "act-2"},
             ],
         })
-        encrypted = sync_crypto.encrypt_utf8_json_to_wire(
-            plain_body,
+        encrypted_blob = sync_crypto.encrypt_bytes_to_blob_dict(
+            plain_body.encode("utf-8"),
             _TEST_WALLET_PRIVATE_KEY,
             enums.Collections.USER_ACTIONS.value,
         )
-        body = json.dumps({"v": 1, "data": encrypted, "timestamps": {}, "hash": "x"})
+        body = json.dumps({"v": 1, "data": encrypted_blob, "timestamps": {}, "hash": "x"})
         context = _make_context(identity="0xwallet", collection=enums.Collections.USER_ACTIONS.value)
         with (
             mock.patch("octobot_sync.server.user_actions_protocol") as mock_proto,
@@ -189,12 +188,12 @@ class TestPutData:
             "version": "1",
             "user_actions": [{"id": "fail-action"}],
         })
-        encrypted = sync_crypto.encrypt_utf8_json_to_wire(
-            plain_body,
+        encrypted_blob = sync_crypto.encrypt_bytes_to_blob_dict(
+            plain_body.encode("utf-8"),
             _TEST_WALLET_PRIVATE_KEY,
             enums.Collections.USER_ACTIONS.value,
         )
-        body = json.dumps({"v": 1, "data": encrypted, "timestamps": {}, "hash": "x"})
+        body = json.dumps({"v": 1, "data": encrypted_blob, "timestamps": {}, "hash": "x"})
         context = _make_context(identity="0xwallet", collection=enums.Collections.USER_ACTIONS.value)
         mock_logger = mock.MagicMock()
         with (
@@ -212,8 +211,8 @@ class TestPutData:
     @pytest.mark.asyncio
     async def test_unmatched_collection_writes_to_opaque_store(self):
         """Any collection without a protocol-bridge case persists the unwrapped
-        ciphertext as-is — server side never decrypts."""
-        ciphertext = "opaque-ciphertext-payload"
+        ciphertext dict as-is — server side never decrypts."""
+        ciphertext = {"_encrypted": "opaque-base64-payload"}
         body = json.dumps({"v": 1, "data": ciphertext, "timestamps": {}, "hash": "x"})
         mock_store = mock.MagicMock()
         mock_store.put = mock.AsyncMock()
@@ -221,41 +220,49 @@ class TestPutData:
         with mock.patch("octobot_sync.server._get_opaque_store", return_value=mock_store):
             await server.put_data("users/0xwallet/settings", body, context)
         mock_store.put.assert_awaited_once_with(
-            "users/0xwallet/settings", ciphertext, content_type="application/json"
+            "users/0xwallet/settings",
+            json.dumps(ciphertext, sort_keys=True),
+            content_type="application/json",
         )
 
 
 class TestStoredDocumentHelpers:
     def test_wrap_produces_stored_document_shape(self):
-        wrapped = server._wrap_as_stored_document("encrypted-payload", "plaintext")
+        payload = {"_encrypted": "base64-ciphertext"}
+        wrapped = server._wrap_as_stored_document(payload)
         parsed = json.loads(wrapped)
         assert parsed == {
             "v": 1,
-            "data": "encrypted-payload",
+            "data": payload,
             "timestamps": {},
-            "hash": sync_crypto.sha256_hex("plaintext"),
+            "hash": compute_hash(payload),
         }
 
-    def test_wrap_hash_is_plaintext_hash_not_ciphertext_hash(self):
-        """Hash must derive from plaintext so it stays stable across pulls."""
-        first = json.loads(server._wrap_as_stored_document("ciphertext-A", "plaintext"))
-        second = json.loads(server._wrap_as_stored_document("ciphertext-B", "plaintext"))
-        assert first["hash"] == second["hash"]
-        assert first["data"] != second["data"]
+    def test_wrap_hash_matches_compute_hash_of_data(self):
+        """Hash is compute_hash(data) — stable_stringify + sha256 over the dict."""
+        payload = {"iv": "iv-bytes", "data": "ciphertext"}
+        wrapped = json.loads(server._wrap_as_stored_document(payload))
+        assert wrapped["hash"] == compute_hash(payload)
 
     def test_unwrap_returns_data_field(self):
-        body = json.dumps({"v": 1, "data": "encrypted", "timestamps": {}, "hash": "abc"})
-        assert server._unwrap_stored_document_data(body) == "encrypted"
+        payload = {"_encrypted": "base64-ciphertext"}
+        body = json.dumps({"v": 1, "data": payload, "timestamps": {}, "hash": "abc"})
+        assert server._unwrap_stored_document_data(body) == payload
 
     def test_unwrap_raises_when_data_missing(self):
         body = json.dumps({"v": 1, "timestamps": {}, "hash": "abc"})
         with pytest.raises(errors.OctobotSyncError):
             server._unwrap_stored_document_data(body)
 
-    def test_unwrap_raises_when_data_not_string(self):
-        body = json.dumps({"v": 1, "data": {"nested": True}, "timestamps": {}, "hash": "abc"})
+    def test_unwrap_raises_when_data_not_dict(self):
+        body = json.dumps({"v": 1, "data": "plain-string", "timestamps": {}, "hash": "abc"})
         with pytest.raises(errors.OctobotSyncError):
             server._unwrap_stored_document_data(body)
+
+    def test_wrap_unwrap_round_trip(self):
+        payload = {"_encrypted": "abc==", "extra": {"nested": [1, 2, 3]}}
+        wrapped = server._wrap_as_stored_document(payload)
+        assert server._unwrap_stored_document_data(wrapped) == payload
 
 
 class TestSetDataCallbacks:

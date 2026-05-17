@@ -20,6 +20,7 @@ import secrets
 import json
 from collections.abc import Awaitable, Callable
 
+from starfish_protocol.hash import compute_hash
 from starfish_server.config.schema import SyncConfig
 from starfish_server.protocol.types import DOCUMENT_VERSION
 from starfish_server.storage.base import AbstractObjectStore, StoreContext
@@ -73,41 +74,44 @@ def _get_wallet_private_key(address: str) -> str:
     return wallet.private_key
 
 
-def _encrypt(data: str, address: str, collection: str) -> str:
+def _encrypt_dict(plaintext: str, address: str, collection: str) -> dict[str, str]:
     wallet_private_key = _get_wallet_private_key(address)
-    return sync_crypto.encrypt_utf8_json_to_wire(data, wallet_private_key, collection)
+    return sync_crypto.encrypt_bytes_to_blob_dict(
+        plaintext.encode("utf-8"), wallet_private_key, collection
+    )
 
 
-def _decrypt(data: str, address: str, collection: str) -> str:
+def _decrypt_dict(blob: dict[str, typing.Any], address: str, collection: str) -> str:
     wallet_private_key = _get_wallet_private_key(address)
-    return sync_crypto.decrypt_wire_to_utf8_json(data, wallet_private_key, collection)
+    return sync_crypto.decrypt_blob_dict_to_bytes(
+        blob, wallet_private_key, collection
+    ).decode("utf-8")
 
 
-def _wrap_as_stored_document(encrypted_payload: str, plaintext_for_hash: str) -> str:
-    """Wrap a server-encrypted payload in the StoredDocument shape that
+def _wrap_as_stored_document(data: dict[str, typing.Any]) -> str:
+    """Wrap a dict payload in the StoredDocument shape that
     starfish_server.protocol.pull expects: ``{"v","data","timestamps","hash"}``.
 
-    Hash is computed on the plaintext so it stays stable across calls — AES-GCM
-    uses a random nonce, so hashing the ciphertext would change every pull and
-    break ETag caching.
+    Hash uses starfish_protocol.compute_hash so it stays interoperable with the
+    protocol's stable_stringify convention.
     """
     return json.dumps({
         "v": DOCUMENT_VERSION,
-        "data": encrypted_payload,
+        "data": data,
         "timestamps": {},
-        "hash": sync_crypto.sha256_hex(plaintext_for_hash),
+        "hash": compute_hash(data),
     })
 
 
-def _unwrap_stored_document_data(body: str) -> str:
+def _unwrap_stored_document_data(body: str) -> dict[str, typing.Any]:
     """Inverse of _wrap_as_stored_document for the push path: extract the
-    encrypted payload from the StoredDocument wrapper the client sends.
+    dict payload from the StoredDocument wrapper the client sends.
     """
     parsed = json.loads(body)
     payload = parsed.get("data")
-    if not isinstance(payload, str):
+    if not isinstance(payload, dict):
         raise errors.OctobotSyncError(
-            f"Push body missing string 'data' field; got {type(payload).__name__}"
+            f"Push body 'data' field must be a dict; got {type(payload).__name__}"
         )
     return payload
 
@@ -127,71 +131,69 @@ def _get_opaque_store() -> FilesystemObjectStore:
     return _opaque_store
 
 
+async def _read_opaque_dict(key: str) -> dict[str, typing.Any] | None:
+    raw = await _get_opaque_store().get_string(key)
+    if raw is None:
+        return None
+    return json.loads(raw)
+
+
+async def _write_opaque_dict(key: str, payload: dict[str, typing.Any]) -> None:
+    # sort_keys=True keeps the on-disk form deterministic so compute_hash over
+    # the dict stays stable across any future read-rewrite round-trips.
+    await _get_opaque_store().put(
+        key, json.dumps(payload, sort_keys=True), content_type="application/json"
+    )
+
+
 async def get_data(key: str, context: StoreContext | None = None) -> str | None:
     # called when client pulls
     collection = _get_collection(context)
-    plaintext = None
-    already_encrypted_payload = None
+    address = _get_address(context)
+    data_dict: dict[str, typing.Any] | None
     match collection:
         case enums.Collections.USER_DATA.value:
-            user_data_state = await user_data_protocol.get_user_data_state(
-                _get_address(context)
-            )
-            plaintext = user_data_state.to_json()
+            user_data_state = await user_data_protocol.get_user_data_state(address)
+            data_dict = _encrypt_dict(user_data_state.to_json(), address, collection)
         case enums.Collections.USER_ACCOUNTS.value:
-            encrypted_blob = accounts_protocol.get_accounts_state_encrypted(
-                _get_address(context)
-            )
-            already_encrypted_payload = json.dumps(encrypted_blob)
+            data_dict = accounts_protocol.get_accounts_state_encrypted(address)
         case enums.Collections.USER_ACTIONS.value:
             # reading user actions should always return an empty list
             actions_state = protocol_models.UserActionsState(
                 version=node_constants.USER_ACTIONS_STATE_VERSION,
                 user_actions=[]
             )
-            plaintext = actions_state.to_json()
+            data_dict = _encrypt_dict(actions_state.to_json(), address, collection)
         case _:
             # Opaque storage: collections with no protocol bridge are persisted
             # as client-encrypted ciphertext and the node never decrypts them.
-            ciphertext = await _get_opaque_store().get_string(key)
-            if ciphertext is None:
-                return None
-            # Stored bytes are already the client's ciphertext — hash them
-            # directly so it stays stable until the next push overwrites it.
-            return _wrap_as_stored_document(ciphertext, ciphertext)
-    if already_encrypted_payload is not None:
-        # Pre-encrypted payload (USER_ACCOUNTS): hash the encrypted JSON itself —
-        # it is deterministic (read from disk) so the hash stays stable.
-        return _wrap_as_stored_document(already_encrypted_payload, already_encrypted_payload)
-    if plaintext is None:
+            data_dict = await _read_opaque_dict(key)
+    if data_dict is None:
         return None
-    encrypted = _encrypt(plaintext, _get_address(context), collection)
-    return _wrap_as_stored_document(encrypted, plaintext)
+    return _wrap_as_stored_document(data_dict)
 
 async def put_data(key: str, body: str, context: StoreContext | None = None) -> None:
     collection = _get_collection(context)
+    payload_dict = _unwrap_stored_document_data(body)
     match collection:
         case enums.Collections.USER_ACTIONS.value:
-            encrypted_payload = _unwrap_stored_document_data(body)
             user_actions_state = protocol_models.UserActionsState.from_json(
-                _decrypt(encrypted_payload, _get_address(context), collection)
+                _decrypt_dict(payload_dict, _get_address(context), collection)
             )
-            if user_actions_state.user_actions:
-                for action in user_actions_state.user_actions:
-                    try:
-                        await user_actions_protocol.execute_user_action(
-                            action, _get_address(context)
-                        )
-                    except Exception as exc:
-                        _get_logger().exception(
-                            exc, True, f"Unexpected error executing user action: {action.id}: {exc}"
-                        )
+            for action in user_actions_state.user_actions:
+                try:
+                    await user_actions_protocol.execute_user_action(
+                        action, _get_address(context)
+                    )
+                except Exception as exc:
+                    _get_logger().exception(
+                        exc, True, f"Unexpected error executing user action: {action.id}: {exc}"
+                    )
         case _:
-            # Opaque storage: persist the client ciphertext as-is. The node
+            # Opaque storage: persist the client ciphertext dict as-is. The node
             # never decrypts these collections — wallet-key decryption happens
             # entirely on the client.
-            ciphertext = _unwrap_stored_document_data(body)
-            await _get_opaque_store().put(key, ciphertext, content_type="application/json")
+            await _write_opaque_dict(key, payload_dict)
 
 def set_data_callbacks(
     get_data: Callable[[str, StoreContext | None], Awaitable[str | None]],

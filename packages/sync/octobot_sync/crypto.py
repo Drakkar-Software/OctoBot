@@ -22,8 +22,6 @@ Plaintext bytes are encrypted as-is — no intermediate JSON encode/decode of th
 
 import base64
 import binascii
-import hashlib
-import json
 import os
 import typing
 
@@ -34,15 +32,6 @@ from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
 import octobot_sync.errors as sync_errors
 import octobot_sync.constants as constants
-
-
-def sha256_hex(payload: str) -> str:
-    """Return the hex-encoded SHA-256 of *payload* (UTF-8 encoded).
-
-    Used to produce stable ``StoredDocument.hash`` values from plaintext, so the
-    hash does not change every pull just because AES-GCM picked a new nonce.
-    """
-    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
 def _derive_key(secret: str, salt: str, info: bytes) -> bytes:
@@ -121,45 +110,4 @@ def decrypt_blob_dict_to_bytes(
     except InvalidTag as err:
         raise sync_errors.OctobotSyncCryptoDecryptError(
             "Failed to decrypt collection payload"
-        ) from err
-
-
-def encrypt_utf8_json_to_wire(
-    plaintext_json: str,
-    wallet_private_key: str,
-    collection: str,
-) -> str:
-    """Encrypt a UTF-8 text payload (typically JSON) and return a JSON document ``{iv, data}``."""
-    blob_dict = encrypt_bytes_to_blob_dict(
-        plaintext_json.encode("utf-8"),
-        wallet_private_key,
-        collection,
-    )
-    return json.dumps(blob_dict)
-
-
-def decrypt_wire_to_utf8_json(
-    wire_json: str,
-    wallet_private_key: str,
-    collection: str,
-) -> str:
-    """Parse outer JSON and decrypt payload bytes back to the original UTF-8 string."""
-    try:
-        blob_object = json.loads(wire_json)
-    except json.JSONDecodeError as err:
-        raise sync_errors.OctobotSyncCryptoFormatError(
-            f"Encrypted payload is not valid JSON: {err}"
-        ) from err
-
-    if not isinstance(blob_object, dict):
-        raise sync_errors.OctobotSyncCryptoFormatError(
-            "Encrypted payload must be a JSON object"
-        )
-
-    plaintext_bytes = decrypt_blob_dict_to_bytes(blob_object, wallet_private_key, collection)
-    try:
-        return plaintext_bytes.decode("utf-8")
-    except UnicodeDecodeError as err:
-        raise sync_errors.OctobotSyncCryptoFormatError(
-            f"Decrypted payload is not valid UTF-8: {err}"
         ) from err
