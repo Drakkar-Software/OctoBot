@@ -102,29 +102,6 @@ class TestGetData:
         assert first["hash"] != second["hash"]
 
     @pytest.mark.asyncio
-    async def test_user_accounts_collection(self):
-        """USER_ACCOUNTS returns the on-disk encrypted blob dict directly."""
-        encrypted_blob = {"alice": "ciphertext-alice", "bob": "ciphertext-bob"}
-        context = _make_context(identity="0xwallet", collection=enums.Collections.USER_ACCOUNTS.value)
-        with mock.patch("octobot_sync.server.accounts_protocol") as mock_proto:
-            mock_proto.get_accounts_state_encrypted = mock.Mock(return_value=encrypted_blob)
-            result = await server.get_data("users/0xwallet/accounts", context)
-        mock_proto.get_accounts_state_encrypted.assert_called_once_with("0xwallet")
-        wrapper = json.loads(result)
-        assert wrapper["v"] == 1
-        assert wrapper["timestamps"] == {}
-        assert wrapper["data"] == encrypted_blob
-        assert wrapper["hash"] == compute_hash(encrypted_blob)
-
-    @pytest.mark.asyncio
-    async def test_user_accounts_returns_none_when_no_blob(self):
-        context = _make_context(identity="0xwallet", collection=enums.Collections.USER_ACCOUNTS.value)
-        with mock.patch("octobot_sync.server.accounts_protocol") as mock_proto:
-            mock_proto.get_accounts_state_encrypted = mock.Mock(return_value=None)
-            result = await server.get_data("users/0xwallet/accounts", context)
-        assert result is None
-
-    @pytest.mark.asyncio
     async def test_unmatched_collection_reads_opaque_store(self):
         """Any collection without a protocol-bridge case falls through to
         opaque filesystem storage and the node never touches the ciphertext."""
@@ -147,6 +124,20 @@ class TestGetData:
         with mock.patch("octobot_sync.server._get_opaque_store", return_value=mock_store):
             result = await server.get_data("users/0xwallet/strategies", context)
         assert result is None
+
+    @pytest.mark.asyncio
+    async def test_user_accounts_falls_through_to_opaque_store(self):
+        """USER_ACCOUNTS is client-encrypted opaque storage — the node never
+        decrypts it. Pull reads the same dict that push wrote."""
+        stored_ciphertext = {"_encrypted": "opaque-base64-payload"}
+        mock_store = mock.MagicMock()
+        mock_store.get_string = mock.AsyncMock(return_value=json.dumps(stored_ciphertext))
+        context = _make_context(identity="0xwallet", collection=enums.Collections.USER_ACCOUNTS.value)
+        with mock.patch("octobot_sync.server._get_opaque_store", return_value=mock_store):
+            result = await server.get_data("users/0xwallet/accounts", context)
+        wrapper = json.loads(result)
+        assert wrapper["data"] == stored_ciphertext
+        assert wrapper["hash"] == compute_hash(stored_ciphertext)
 
 
 class TestPutData:
@@ -221,6 +212,23 @@ class TestPutData:
             await server.put_data("users/0xwallet/settings", body, context)
         mock_store.put.assert_awaited_once_with(
             "users/0xwallet/settings",
+            json.dumps(ciphertext, sort_keys=True),
+            content_type="application/json",
+        )
+
+    @pytest.mark.asyncio
+    async def test_user_accounts_push_persists_to_opaque_store(self):
+        """USER_ACCOUNTS push goes through the same opaque path as the pull —
+        no special branch, no AccountProvider write, ciphertext stored verbatim."""
+        ciphertext = {"_encrypted": "opaque-accounts-payload"}
+        body = json.dumps({"v": 1, "data": ciphertext, "timestamps": {}, "hash": "x"})
+        mock_store = mock.MagicMock()
+        mock_store.put = mock.AsyncMock()
+        context = _make_context(identity="0xwallet", collection=enums.Collections.USER_ACCOUNTS.value)
+        with mock.patch("octobot_sync.server._get_opaque_store", return_value=mock_store):
+            await server.put_data("users/0xwallet/accounts", body, context)
+        mock_store.put.assert_awaited_once_with(
+            "users/0xwallet/accounts",
             json.dumps(ciphertext, sort_keys=True),
             content_type="application/json",
         )

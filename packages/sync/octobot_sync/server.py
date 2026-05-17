@@ -45,7 +45,6 @@ import octobot_protocol.models as protocol_models
 
 import octobot_node.protocol.user_actions as user_actions_protocol
 import octobot_node.protocol.user_data as user_data_protocol
-import octobot_node.protocol.accounts as accounts_protocol
 
 
 _get_data: Callable[[str, StoreContext | None], Awaitable[str | None]] | None = None
@@ -155,8 +154,6 @@ async def get_data(key: str, context: StoreContext | None = None) -> str | None:
         case enums.Collections.USER_DATA.value:
             user_data_state = await user_data_protocol.get_user_data_state(address)
             data_dict = _encrypt_dict(user_data_state.to_json(), address, collection)
-        case enums.Collections.USER_ACCOUNTS.value:
-            data_dict = accounts_protocol.get_accounts_state_encrypted(address)
         case enums.Collections.USER_ACTIONS.value:
             # reading user actions should always return an empty list
             actions_state = protocol_models.UserActionsState(
