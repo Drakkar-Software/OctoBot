@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import asyncio
+import copy
 import decimal
 import contextlib
 import mock
@@ -22,6 +23,7 @@ import pytest
 
 import async_channel.util as channel_util
 import octobot_commons.constants as commons_constants
+import octobot_commons.configuration.user_inputs as commons_user_inputs
 import octobot_commons.errors as commons_errors
 import octobot_commons.enums as commons_enums
 import octobot_commons.asyncio_tools as asyncio_tools
@@ -227,6 +229,58 @@ class TestGetHedgingEngineConfig:
         symbol_cfg = {cls.HEDGING_ENGINE: inner}
         cls.get_hedging_engine_config(symbol_cfg)
         assert cls.AVERAGE_PRICE_COUNTED_MINUTES not in inner
+
+
+@pytest.mark.parametrize(
+    "hedging_exchange_case",
+    (
+        "missing_exchange",
+        "empty_string",
+        "explicit_none",
+    ),
+)
+async def test_init_user_inputs_defaults_valid_hedging_off_without_exchange(hedging_exchange_case):
+    symbol = "BTC/USDT"
+    cls = simple_market_making_trading.SimpleMarketMakingTradingMode
+    real_find_parent = commons_user_inputs._find_parent_config_node
+
+    # Without array_indexes, pair_settings resolves to a list and user_input skips writes;
+    # treat the first row as the parent so init_user_inputs merges defaults into it.
+    def find_parent_pair_settings_row(tentacle_config, parent_input_name, array_indexes):
+        if parent_input_name == cls.CONFIG_PAIR_SETTINGS and not array_indexes:
+            pair_settings_value = tentacle_config.get(cls.CONFIG_PAIR_SETTINGS)
+            if isinstance(pair_settings_value, list) and pair_settings_value:
+                return pair_settings_value[0]
+        return real_find_parent(tentacle_config, parent_input_name, array_indexes)
+
+    async with _get_tools(symbol) as (producer, consumer, exchange_manager):
+        mode = producer.trading_mode
+        mode.trading_config = copy.deepcopy(_get_mm_config(symbol))
+        with mock.patch.object(
+            commons_user_inputs,
+            "_find_parent_config_node",
+            side_effect=find_parent_pair_settings_row,
+        ):
+            mode.init_user_inputs({})
+        pair_config = mode.trading_config[cls.CONFIG_PAIR_SETTINGS][0]
+        hedging_engine_cfg = pair_config[cls.HEDGING_ENGINE]
+        assert hedging_engine_cfg[cls.HEDGING_EXCHANGE] == "" # ensure default is set
+        hedging_engine_cfg[cls.HEDGING_MAX_LOSS_THRESHOLD] = 10
+        hedging_engine_cfg[cls.LEGACY_AVERAGE_PRIVE_COUNTED_MINUTES_KEY] = 60
+        if hedging_exchange_case == "missing_exchange":
+            hedging_engine_cfg.pop(cls.HEDGING_EXCHANGE, None)
+        elif hedging_exchange_case == "empty_string":
+            hedging_engine_cfg[cls.HEDGING_EXCHANGE] = ""
+        elif hedging_exchange_case == "explicit_none":
+            hedging_engine_cfg[cls.HEDGING_EXCHANGE] = None
+        assert producer._load_symbol_trading_config() is True
+        producer.read_config()
+        assert producer.order_book_distribution is not None
+        assert producer.reference_prices_by_exchange
+        with mock.patch.object(hedging, "get_or_create_hedging_engine", mock.Mock()) as get_or_create_mock:
+            await producer._initialize_hedging_engine()
+            get_or_create_mock.assert_not_called()
+        assert producer._hedging_engine is None
 
 
 async def test_handle_market_making_orders_from_no_orders():

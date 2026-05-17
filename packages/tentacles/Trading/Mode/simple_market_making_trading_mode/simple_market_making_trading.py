@@ -311,7 +311,7 @@ class SimpleMarketMakingTradingMode(market_making_trading.MarketMakingTradingMod
             ),
             self.HEDGING_EXCHANGE: self.UI.user_input(
                 self.HEDGING_EXCHANGE, commons_enums.UserInputTypes.TEXT,
-                "binance", inputs, parent_input_name=self.HEDGING_ENGINE,
+                "", inputs, parent_input_name=self.HEDGING_ENGINE,
                 title="Hedging exchange: exchange to hedge on. This exchange must be enabled in exchange configuration.",
             ),
         }
