@@ -35,7 +35,7 @@ class TestEvaluatorConfigurationConfiguration(unittest.TestCase):
         model = EvaluatorConfigurationConfiguration()
         if include_optional:
             return EvaluatorConfigurationConfiguration(
-                configuration_type = 'EMAMomentumEvaluator',
+                configuration_type = 'RSIMomentumEvaluator',
                 period_length = 1,
                 short_threshold = 0,
                 long_threshold = 0,
@@ -44,7 +44,7 @@ class TestEvaluatorConfigurationConfiguration(unittest.TestCase):
             )
         else:
             return EvaluatorConfigurationConfiguration(
-                configuration_type = 'EMAMomentumEvaluator',
+                configuration_type = 'RSIMomentumEvaluator',
                 period_length = 1,
                 short_threshold = 0,
                 long_threshold = 0,

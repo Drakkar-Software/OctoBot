@@ -6,7 +6,7 @@ CopyConfiguration
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**configuration_type** | **str** |  | 
+**configuration_type** | [**ActionConfigurationType**](ActionConfigurationType.md) | copy | 
 **strategy_id** | **str** |  | 
 
 ## Example

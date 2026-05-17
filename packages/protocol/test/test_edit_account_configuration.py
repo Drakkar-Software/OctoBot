@@ -35,7 +35,7 @@ class TestEditAccountConfiguration(unittest.TestCase):
         model = EditAccountConfiguration()
         if include_optional:
             return EditAccountConfiguration(
-                action_type = 'account_edit',
+                action_type = 'automation_create',
                 id = '',
                 configuration = octobot_protocol.models.account.Account(
                     id = '', 
@@ -51,7 +51,7 @@ class TestEditAccountConfiguration(unittest.TestCase):
             )
         else:
             return EditAccountConfiguration(
-                action_type = 'account_edit',
+                action_type = 'automation_create',
                 id = '',
         )
         """

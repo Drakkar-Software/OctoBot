@@ -5,7 +5,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**configuration_type** | **str** |  | 
+**configuration_type** | [**EvaluatorType**](EvaluatorType.md) | EMAMomentumEvaluator | 
 **period_length** | **float** |  | 
 **short_threshold** | **float** |  | 
 **long_threshold** | **float** |  | 

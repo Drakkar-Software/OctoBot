@@ -11,12 +11,16 @@
  */
 
 import { Action } from '../models/Action';
+import { ActionConfigurationType } from '../models/ActionConfigurationType';
 
 /**
 * GenericWorkflowConfiguration
 */
 export class GenericWorkflowConfiguration {
-    'configuration_type': GenericWorkflowConfigurationConfigurationTypeEnum;
+    /**
+    * generic_workflow
+    */
+    'configuration_type': 'generic_workflow';
     'actions': Array<Action>;
 
     static readonly discriminator: string | undefined = undefined;
@@ -27,7 +31,7 @@ export class GenericWorkflowConfiguration {
         {
             "name": "configuration_type",
             "baseName": "configuration_type",
-            "type": "GenericWorkflowConfigurationConfigurationTypeEnum",
+            "type": "ActionConfigurationType",
             "format": ""
         },
         {
@@ -45,5 +49,4 @@ export class GenericWorkflowConfiguration {
     }
 }
 
-export type GenericWorkflowConfigurationConfigurationTypeEnum = 'GenericWorkflowConfiguration'
 

@@ -6,7 +6,7 @@ DCAConfiguration
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**configuration_type** | **str** |  | 
+**configuration_type** | [**ActionConfigurationType**](ActionConfigurationType.md) | dca | 
 **symbols** | **List[str]** |  | 
 **buy_orders_count** | **float** |  | 
 **percent_amount_per_buy_order** | **float** |  | 

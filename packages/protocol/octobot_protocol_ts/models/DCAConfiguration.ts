@@ -10,6 +10,7 @@
  * Do not edit the class manually.
  */
 
+import { ActionConfigurationType } from '../models/ActionConfigurationType';
 import { EvaluatorConfiguration } from '../models/EvaluatorConfiguration';
 import { TimeFrame } from '../models/TimeFrame';
 
@@ -17,7 +18,10 @@ import { TimeFrame } from '../models/TimeFrame';
 * DCAConfiguration
 */
 export class DCAConfiguration {
-    'configuration_type': DCAConfigurationConfigurationTypeEnum;
+    /**
+    * dca
+    */
+    'configuration_type': 'dca';
     'symbols': Array<string>;
     'buy_orders_count': number;
     'percent_amount_per_buy_order': number;
@@ -38,7 +42,7 @@ export class DCAConfiguration {
         {
             "name": "configuration_type",
             "baseName": "configuration_type",
-            "type": "DCAConfigurationConfigurationTypeEnum",
+            "type": "ActionConfigurationType",
             "format": ""
         },
         {
@@ -116,6 +120,5 @@ export class DCAConfiguration {
     }
 }
 
-export type DCAConfigurationConfigurationTypeEnum = 'DCAConfiguration'
 export type DCAConfigurationTriggerModeEnum = 'Maximum evaluators signals based' | 'Time based'
 

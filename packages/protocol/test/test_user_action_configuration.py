@@ -35,7 +35,7 @@ class TestUserActionConfiguration(unittest.TestCase):
         model = UserActionConfiguration()
         if include_optional:
             return UserActionConfiguration(
-                action_type = 'accounts_refresh',
+                action_type = 'automation_create',
                 configuration = octobot_protocol.models.account.Account(
                     id = '', 
                     name = '', 
@@ -54,7 +54,7 @@ class TestUserActionConfiguration(unittest.TestCase):
             )
         else:
             return UserActionConfiguration(
-                action_type = 'accounts_refresh',
+                action_type = 'automation_create',
                 configuration = octobot_protocol.models.account.Account(
                     id = '', 
                     name = '', 

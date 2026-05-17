@@ -24,7 +24,7 @@ export class ExchangeAccount {
     /**
     * exchange
     */
-    'account_type': AccountType;
+    'account_type': 'exchange';
     'trading_type': TradingType;
     'exchange': string;
     'remote_account_id': string;

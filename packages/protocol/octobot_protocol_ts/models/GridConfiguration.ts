@@ -10,12 +10,16 @@
  * Do not edit the class manually.
  */
 
+import { ActionConfigurationType } from '../models/ActionConfigurationType';
 
 /**
 * GridConfiguration
 */
 export class GridConfiguration {
-    'configuration_type': GridConfigurationConfigurationTypeEnum;
+    /**
+    * grid
+    */
+    'configuration_type': 'grid';
     'symbol': string;
     /**
     * Price difference between the closest buy and sell orders. Denominated in the quote currency (600 for a 600 USDT spread on BTC/USDT).
@@ -45,7 +49,7 @@ export class GridConfiguration {
         {
             "name": "configuration_type",
             "baseName": "configuration_type",
-            "type": "GridConfigurationConfigurationTypeEnum",
+            "type": "ActionConfigurationType",
             "format": ""
         },
         {
@@ -105,5 +109,4 @@ export class GridConfiguration {
     }
 }
 
-export type GridConfigurationConfigurationTypeEnum = 'GridConfiguration'
 

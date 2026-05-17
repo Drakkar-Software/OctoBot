@@ -10,12 +10,16 @@
  * Do not edit the class manually.
  */
 
+import { EvaluatorType } from '../models/EvaluatorType';
 
 /**
 * RSIMomentumEvaluatorConfiguration
 */
 export class RSIMomentumEvaluatorConfiguration {
-    'configuration_type': RSIMomentumEvaluatorConfigurationConfigurationTypeEnum;
+    /**
+    * RSIMomentumEvaluator
+    */
+    'configuration_type': 'RSIMomentumEvaluator';
     'period_length': number;
     'short_threshold': number;
     'long_threshold': number;
@@ -28,7 +32,7 @@ export class RSIMomentumEvaluatorConfiguration {
         {
             "name": "configuration_type",
             "baseName": "configuration_type",
-            "type": "RSIMomentumEvaluatorConfigurationConfigurationTypeEnum",
+            "type": "EvaluatorType",
             "format": ""
         },
         {
@@ -58,5 +62,4 @@ export class RSIMomentumEvaluatorConfiguration {
     }
 }
 
-export type RSIMomentumEvaluatorConfigurationConfigurationTypeEnum = 'RSIMomentumEvaluator'
 

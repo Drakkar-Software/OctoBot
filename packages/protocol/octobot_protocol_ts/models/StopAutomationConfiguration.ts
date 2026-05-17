@@ -10,13 +10,17 @@
  * Do not edit the class manually.
  */
 
+import { UserActionType } from '../models/UserActionType';
 
 /**
 * StopAutomationConfiguration
 */
 export class StopAutomationConfiguration {
     'id': string;
-    'action_type': StopAutomationConfigurationActionTypeEnum;
+    /**
+    * automation_stop
+    */
+    'action_type': 'automation_stop';
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -32,7 +36,7 @@ export class StopAutomationConfiguration {
         {
             "name": "action_type",
             "baseName": "action_type",
-            "type": "StopAutomationConfigurationActionTypeEnum",
+            "type": "UserActionType",
             "format": ""
         }    ];
 
@@ -44,5 +48,4 @@ export class StopAutomationConfiguration {
     }
 }
 
-export type StopAutomationConfigurationActionTypeEnum = 'automation_stop'
 

@@ -6,7 +6,7 @@ RefreshAccountsConfiguration
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**action_type** | **str** |  | 
+**action_type** | [**UserActionType**](UserActionType.md) | accounts_refresh | 
 **account_ids** | **List[str]** |  | [optional] 
 
 ## Example

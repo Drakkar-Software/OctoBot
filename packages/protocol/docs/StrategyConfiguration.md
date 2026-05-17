@@ -5,7 +5,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**configuration_type** | **str** |  | 
+**configuration_type** | [**ActionConfigurationType**](ActionConfigurationType.md) | generic_workflow | 
 **pair_settings** | [**List[MarketMakingSymbolConfiguration]**](MarketMakingSymbolConfiguration.md) |  | 
 **symbols** | **List[str]** |  | 
 **buy_orders_count** | **float** |  | 

@@ -10,12 +10,16 @@
  * Do not edit the class manually.
  */
 
+import { UserActionType } from '../models/UserActionType';
 
 /**
 * RefreshAccountsConfiguration
 */
 export class RefreshAccountsConfiguration {
-    'action_type': RefreshAccountsConfigurationActionTypeEnum;
+    /**
+    * accounts_refresh
+    */
+    'action_type': 'accounts_refresh';
     'account_ids'?: Array<string>;
 
     static readonly discriminator: string | undefined = undefined;
@@ -26,7 +30,7 @@ export class RefreshAccountsConfiguration {
         {
             "name": "action_type",
             "baseName": "action_type",
-            "type": "RefreshAccountsConfigurationActionTypeEnum",
+            "type": "UserActionType",
             "format": ""
         },
         {
@@ -44,5 +48,4 @@ export class RefreshAccountsConfiguration {
     }
 }
 
-export type RefreshAccountsConfigurationActionTypeEnum = 'accounts_refresh'
 

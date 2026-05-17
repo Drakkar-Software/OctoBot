@@ -10,12 +10,16 @@
  * Do not edit the class manually.
  */
 
+import { ActionConfigurationType } from '../models/ActionConfigurationType';
 
 /**
 * CopyConfiguration
 */
 export class CopyConfiguration {
-    'configuration_type': CopyConfigurationConfigurationTypeEnum;
+    /**
+    * copy
+    */
+    'configuration_type': 'copy';
     'strategy_id': string;
 
     static readonly discriminator: string | undefined = undefined;
@@ -26,7 +30,7 @@ export class CopyConfiguration {
         {
             "name": "configuration_type",
             "baseName": "configuration_type",
-            "type": "CopyConfigurationConfigurationTypeEnum",
+            "type": "ActionConfigurationType",
             "format": ""
         },
         {
@@ -44,5 +48,4 @@ export class CopyConfiguration {
     }
 }
 
-export type CopyConfigurationConfigurationTypeEnum = 'CopyConfiguration'
 

@@ -10,13 +10,17 @@
  * Do not edit the class manually.
  */
 
+import { ActionConfigurationType } from '../models/ActionConfigurationType';
 import { MarketMakingSymbolConfiguration } from '../models/MarketMakingSymbolConfiguration';
 
 /**
 * Per-symbol market making parameters.
 */
 export class MarketMakingConfiguration {
-    'configuration_type': MarketMakingConfigurationConfigurationTypeEnum;
+    /**
+    * market_making
+    */
+    'configuration_type': 'market_making';
     'pair_settings': Array<MarketMakingSymbolConfiguration>;
 
     static readonly discriminator: string | undefined = undefined;
@@ -27,7 +31,7 @@ export class MarketMakingConfiguration {
         {
             "name": "configuration_type",
             "baseName": "configuration_type",
-            "type": "MarketMakingConfigurationConfigurationTypeEnum",
+            "type": "ActionConfigurationType",
             "format": ""
         },
         {
@@ -45,5 +49,4 @@ export class MarketMakingConfiguration {
     }
 }
 
-export type MarketMakingConfigurationConfigurationTypeEnum = 'MarketMakingConfiguration'
 

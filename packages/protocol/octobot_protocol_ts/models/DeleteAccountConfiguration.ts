@@ -10,12 +10,16 @@
  * Do not edit the class manually.
  */
 
+import { UserActionType } from '../models/UserActionType';
 
 /**
 * DeleteAccountConfiguration
 */
 export class DeleteAccountConfiguration {
-    'action_type': DeleteAccountConfigurationActionTypeEnum;
+    /**
+    * account_delete
+    */
+    'action_type': 'account_delete';
     'id': string;
 
     static readonly discriminator: string | undefined = undefined;
@@ -26,7 +30,7 @@ export class DeleteAccountConfiguration {
         {
             "name": "action_type",
             "baseName": "action_type",
-            "type": "DeleteAccountConfigurationActionTypeEnum",
+            "type": "UserActionType",
             "format": ""
         },
         {
@@ -44,5 +48,4 @@ export class DeleteAccountConfiguration {
     }
 }
 
-export type DeleteAccountConfigurationActionTypeEnum = 'account_delete'
 

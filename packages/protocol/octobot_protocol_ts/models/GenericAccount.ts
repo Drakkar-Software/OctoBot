@@ -20,7 +20,7 @@ export class GenericAccount {
     /**
     * generic
     */
-    'account_type': AccountType;
+    'account_type': 'generic';
     'assets'?: Array<Asset>;
 
     static readonly discriminator: string | undefined = undefined;

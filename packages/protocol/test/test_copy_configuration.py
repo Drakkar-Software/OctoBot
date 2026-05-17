@@ -35,12 +35,12 @@ class TestCopyConfiguration(unittest.TestCase):
         model = CopyConfiguration()
         if include_optional:
             return CopyConfiguration(
-                configuration_type = 'CopyConfiguration',
+                configuration_type = 'market_making',
                 strategy_id = ''
             )
         else:
             return CopyConfiguration(
-                configuration_type = 'CopyConfiguration',
+                configuration_type = 'market_making',
                 strategy_id = '',
         )
         """

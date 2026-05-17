@@ -17,8 +17,9 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, StrictStr, field_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
+from octobot_protocol.models.user_action_type import UserActionType
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -27,16 +28,9 @@ class RefreshAccountsConfiguration(BaseModel):
     """
     RefreshAccountsConfiguration
     """ # noqa: E501
-    action_type: StrictStr
+    action_type: UserActionType = Field(description="accounts_refresh")
     account_ids: Optional[List[StrictStr]] = None
     __properties: ClassVar[List[str]] = ["action_type", "account_ids"]
-
-    @field_validator('action_type')
-    def action_type_validate_enum(cls, value):
-        """Validates the enum"""
-        if value not in set(['accounts_refresh']):
-            raise ValueError("must be one of enum values ('accounts_refresh')")
-        return value
 
     model_config = ConfigDict(
         validate_by_name=True,

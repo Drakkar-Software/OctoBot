@@ -6,7 +6,7 @@ CreateAccountConfiguration
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**action_type** | **str** |  | 
+**action_type** | [**UserActionType**](UserActionType.md) | account_create | 
 **configuration** | [**Account**](Account.md) |  | 
 
 ## Example

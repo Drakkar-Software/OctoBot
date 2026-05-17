@@ -11,12 +11,16 @@
  */
 
 import { Account } from '../models/Account';
+import { UserActionType } from '../models/UserActionType';
 
 /**
 * EditAccountConfiguration
 */
 export class EditAccountConfiguration {
-    'action_type': EditAccountConfigurationActionTypeEnum;
+    /**
+    * account_edit
+    */
+    'action_type': 'account_edit';
     'id': string;
     'configuration'?: Account;
 
@@ -28,7 +32,7 @@ export class EditAccountConfiguration {
         {
             "name": "action_type",
             "baseName": "action_type",
-            "type": "EditAccountConfigurationActionTypeEnum",
+            "type": "UserActionType",
             "format": ""
         },
         {
@@ -52,5 +56,4 @@ export class EditAccountConfiguration {
     }
 }
 
-export type EditAccountConfigurationActionTypeEnum = 'account_edit'
 

@@ -10,12 +10,16 @@
  * Do not edit the class manually.
  */
 
+import { ActionConfigurationType } from '../models/ActionConfigurationType';
 
 /**
 * GenericProcessConfiguration
 */
 export class GenericProcessConfiguration {
-    'configuration_type': GenericProcessConfigurationConfigurationTypeEnum;
+    /**
+    * generic_process
+    */
+    'configuration_type': 'generic_process';
     'profile_data': any;
 
     static readonly discriminator: string | undefined = undefined;
@@ -26,7 +30,7 @@ export class GenericProcessConfiguration {
         {
             "name": "configuration_type",
             "baseName": "configuration_type",
-            "type": "GenericProcessConfigurationConfigurationTypeEnum",
+            "type": "ActionConfigurationType",
             "format": ""
         },
         {
@@ -44,5 +48,4 @@ export class GenericProcessConfiguration {
     }
 }
 
-export type GenericProcessConfigurationConfigurationTypeEnum = 'GenericProcessConfiguration'
 

@@ -27,6 +27,7 @@ const targets = {
   test: {
     dir: path.join(protocolDir, "test"),
     keep: new Set(),
+    keepPredicate: (name) => name.endsWith(".mjs"),
   },
 };
 
@@ -38,15 +39,14 @@ function cleanTarget(key) {
     );
     process.exit(1);
   }
-  const { dir, keep } = config;
+  const { dir, keep, keepPredicate } = config;
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
     return;
   }
   for (const entryName of fs.readdirSync(dir)) {
-    if (keep.has(entryName)) {
-      continue;
-    }
+    if (keep.has(entryName)) continue;
+    if (keepPredicate && keepPredicate(entryName)) continue;
     fs.rmSync(path.join(dir, entryName), { recursive: true, force: true });
   }
 }

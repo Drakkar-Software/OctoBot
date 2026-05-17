@@ -19,7 +19,7 @@ export class BlockchainAccount {
     /**
     * blockchain
     */
-    'account_type': AccountType;
+    'account_type': 'blockchain';
     'blockchain': string;
     'network'?: string;
     'public_key'?: string;

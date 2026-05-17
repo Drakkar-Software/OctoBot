@@ -2,34 +2,26 @@
 import fs from "node:fs";
 import path from "node:path";
 import url from "node:url";
+import { stripHttpImport, dateFieldsToString, enumBlockToUnion, narrowDiscriminatorField, collectVariantNarrowings } from "./postprocess-protocol-typescript.lib.mjs";
 
 const protocolDir = path.dirname(path.dirname(url.fileURLToPath(import.meta.url)));
 const modelsDir = path.join(protocolDir, "octobot_protocol_ts", "models");
+const openapiPath = path.join(protocolDir, "openapi.json");
 
-const HTTP_IMPORT = /^import \{ HttpFile \} from '\.\.\/http\/http';\n/m;
-const DATE_FIELD = /^(\s*'[^']+'?\??:\s*)Date\b/gm;
-const ENUM_BLOCK = /export enum (\w+) \{([^}]+)\}/g;
-
-function enumBodyToUnion(body) {
-  return body
-    .split(",")
-    .map((line) => {
-      const match = line.match(/=\s*'([^']*)'/);
-      return match ? `'${match[1]}'` : null;
-    })
-    .filter(Boolean)
-    .join(" | ");
-}
+const openapi = JSON.parse(fs.readFileSync(openapiPath, "utf8"));
+const narrowings = collectVariantNarrowings(openapi);
 
 const files = fs.readdirSync(modelsDir).filter((f) => f.endsWith(".ts") && f !== "index.ts");
 for (const file of files) {
   const full = path.join(modelsDir, file);
   const src = fs.readFileSync(full, "utf8");
-  let next = src.replace(HTTP_IMPORT, "").replace(DATE_FIELD, "$1string");
-  next = next.replace(ENUM_BLOCK, (whole, name, body) => {
-    const union = enumBodyToUnion(body);
-    return union ? `export type ${name} = ${union}` : whole;
-  });
+  const variant = path.basename(file, ".ts");
+  let next = stripHttpImport(src);
+  next = dateFieldsToString(next);
+  next = enumBlockToUnion(next);
+  for (const { field, literal } of narrowings.get(variant) ?? []) {
+    next = narrowDiscriminatorField(next, field, literal);
+  }
   if (next !== src) fs.writeFileSync(full, next);
 }
 

@@ -35,7 +35,7 @@ class TestGenericWorkflowConfiguration(unittest.TestCase):
         model = GenericWorkflowConfiguration()
         if include_optional:
             return GenericWorkflowConfiguration(
-                configuration_type = 'GenericWorkflowConfiguration',
+                configuration_type = 'market_making',
                 actions = [
                     octobot_protocol.models.action.Action(
                         id = '', 
@@ -50,7 +50,7 @@ class TestGenericWorkflowConfiguration(unittest.TestCase):
             )
         else:
             return GenericWorkflowConfiguration(
-                configuration_type = 'GenericWorkflowConfiguration',
+                configuration_type = 'market_making',
                 actions = [
                     octobot_protocol.models.action.Action(
                         id = '', 

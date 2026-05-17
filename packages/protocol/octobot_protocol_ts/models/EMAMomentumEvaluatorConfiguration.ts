@@ -10,12 +10,16 @@
  * Do not edit the class manually.
  */
 
+import { EvaluatorType } from '../models/EvaluatorType';
 
 /**
 * EMAMomentumEvaluatorConfiguration
 */
 export class EMAMomentumEvaluatorConfiguration {
-    'configuration_type': EMAMomentumEvaluatorConfigurationConfigurationTypeEnum;
+    /**
+    * EMAMomentumEvaluator
+    */
+    'configuration_type': 'EMAMomentumEvaluator';
     'period_length': number;
     'price_threshold_percent': number;
     'reverse_signal': boolean;
@@ -28,7 +32,7 @@ export class EMAMomentumEvaluatorConfiguration {
         {
             "name": "configuration_type",
             "baseName": "configuration_type",
-            "type": "EMAMomentumEvaluatorConfigurationConfigurationTypeEnum",
+            "type": "EvaluatorType",
             "format": ""
         },
         {
@@ -58,5 +62,4 @@ export class EMAMomentumEvaluatorConfiguration {
     }
 }
 
-export type EMAMomentumEvaluatorConfigurationConfigurationTypeEnum = 'EMAMomentumEvaluator'
 

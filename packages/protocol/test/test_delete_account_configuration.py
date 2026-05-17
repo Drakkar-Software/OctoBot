@@ -35,12 +35,12 @@ class TestDeleteAccountConfiguration(unittest.TestCase):
         model = DeleteAccountConfiguration()
         if include_optional:
             return DeleteAccountConfiguration(
-                action_type = 'account_delete',
+                action_type = 'automation_create',
                 id = ''
             )
         else:
             return DeleteAccountConfiguration(
-                action_type = 'account_delete',
+                action_type = 'automation_create',
                 id = '',
         )
         """

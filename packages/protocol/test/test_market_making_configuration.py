@@ -35,7 +35,7 @@ class TestMarketMakingConfiguration(unittest.TestCase):
         model = MarketMakingConfiguration()
         if include_optional:
             return MarketMakingConfiguration(
-                configuration_type = 'MarketMakingConfiguration',
+                configuration_type = 'market_making',
                 pair_settings = [
                     octobot_protocol.models.market_making_symbol_configuration.MarketMakingSymbolConfiguration(
                         trading_pair = '', 
@@ -84,7 +84,7 @@ class TestMarketMakingConfiguration(unittest.TestCase):
             )
         else:
             return MarketMakingConfiguration(
-                configuration_type = 'MarketMakingConfiguration',
+                configuration_type = 'market_making',
                 pair_settings = [
                     octobot_protocol.models.market_making_symbol_configuration.MarketMakingSymbolConfiguration(
                         trading_pair = '', 

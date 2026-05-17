@@ -9,6 +9,7 @@ docs/AccountStatusMessage.md
 docs/AccountType.md
 docs/AccountsState.md
 docs/Action.md
+docs/ActionConfigurationType.md
 docs/ActiveOrderSwapStrategy.md
 docs/ActiveOrderSwapStrategyType.md
 docs/Asset.md
@@ -32,6 +33,7 @@ docs/EditAccountConfiguration.md
 docs/EditAutomationConfiguration.md
 docs/EvaluatorConfiguration.md
 docs/EvaluatorConfigurationConfiguration.md
+docs/EvaluatorType.md
 docs/ExchangeAccount.md
 docs/GenericAccount.md
 docs/GenericProcessConfiguration.md
@@ -77,6 +79,7 @@ docs/UserActionConfiguration.md
 docs/UserActionResult.md
 docs/UserActionResultType.md
 docs/UserActionStatus.md
+docs/UserActionType.md
 docs/UserActionsState.md
 docs/UserDataState.md
 octobot_protocol/__init__.py
@@ -93,6 +96,7 @@ octobot_protocol/models/account_status_message.py
 octobot_protocol/models/account_type.py
 octobot_protocol/models/accounts_state.py
 octobot_protocol/models/action.py
+octobot_protocol/models/action_configuration_type.py
 octobot_protocol/models/active_order_swap_strategy.py
 octobot_protocol/models/active_order_swap_strategy_type.py
 octobot_protocol/models/asset.py
@@ -116,6 +120,7 @@ octobot_protocol/models/edit_automation_configuration.py
 octobot_protocol/models/ema_momentum_evaluator_configuration.py
 octobot_protocol/models/evaluator_configuration.py
 octobot_protocol/models/evaluator_configuration_configuration.py
+octobot_protocol/models/evaluator_type.py
 octobot_protocol/models/exchange_account.py
 octobot_protocol/models/generic_account.py
 octobot_protocol/models/generic_process_configuration.py
@@ -161,6 +166,7 @@ octobot_protocol/models/user_action_configuration.py
 octobot_protocol/models/user_action_result.py
 octobot_protocol/models/user_action_result_type.py
 octobot_protocol/models/user_action_status.py
+octobot_protocol/models/user_action_type.py
 octobot_protocol/models/user_actions_state.py
 octobot_protocol/models/user_data_state.py
 test/__init__.py
@@ -175,6 +181,7 @@ test/test_account_status_message.py
 test/test_account_type.py
 test/test_accounts_state.py
 test/test_action.py
+test/test_action_configuration_type.py
 test/test_active_order_swap_strategy.py
 test/test_active_order_swap_strategy_type.py
 test/test_asset.py
@@ -198,6 +205,7 @@ test/test_edit_automation_configuration.py
 test/test_ema_momentum_evaluator_configuration.py
 test/test_evaluator_configuration.py
 test/test_evaluator_configuration_configuration.py
+test/test_evaluator_type.py
 test/test_exchange_account.py
 test/test_generic_account.py
 test/test_generic_process_configuration.py
@@ -243,5 +251,6 @@ test/test_user_action_configuration.py
 test/test_user_action_result.py
 test/test_user_action_result_type.py
 test/test_user_action_status.py
+test/test_user_action_type.py
 test/test_user_actions_state.py
 test/test_user_data_state.py

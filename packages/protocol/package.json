@@ -5,6 +5,9 @@
   "description": "JSON Schema protocol types and codegen",
   "scripts": {
     "test:models": "python -m unittest discover -s test",
+    "test:postprocess": "node --test test/postprocess-typescript.test.mjs",
+    "test:postprocess:codegen": "node --test test/postprocess-typescript.codegen.test.mjs",
+    "test": "npm run test:postprocess && npm run test:postprocess:codegen && npm run test:models",
     "generate:python": "node scripts/clean-protocol-codegen-output.mjs python && openapi-generator-cli generate -i openapi.json -g python -o . -t openapi_generator_templates/python --global-property models,modelTests=true,supportingFiles=__init__.py --additional-properties packageName=octobot_protocol,useOneOfDiscriminatorLookup=true && npm run test:models",
     "gen": "npm run generate:python",
     "generate:typescript": "node scripts/clean-protocol-codegen-output.mjs typescript && openapi-generator-cli generate -i openapi.json -g typescript -o octobot_protocol_ts --global-property models --additional-properties modelPropertyNaming=original,stringEnums=true,supportsES6=true,useOneOfDiscriminatorLookup=true && node scripts/postprocess-protocol-typescript.mjs",

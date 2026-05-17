@@ -10,13 +10,17 @@
  * Do not edit the class manually.
  */
 
+import { ActionConfigurationType } from '../models/ActionConfigurationType';
 import { IndexCoin } from '../models/IndexCoin';
 
 /**
 * IndexConfiguration
 */
 export class IndexConfiguration {
-    'configuration_type': IndexConfigurationConfigurationTypeEnum;
+    /**
+    * index
+    */
+    'configuration_type': 'index';
     'coins': Array<IndexCoin>;
     'rebalance_trigger_min_percent': number;
 
@@ -28,7 +32,7 @@ export class IndexConfiguration {
         {
             "name": "configuration_type",
             "baseName": "configuration_type",
-            "type": "IndexConfigurationConfigurationTypeEnum",
+            "type": "ActionConfigurationType",
             "format": ""
         },
         {
@@ -52,5 +56,4 @@ export class IndexConfiguration {
     }
 }
 
-export type IndexConfigurationConfigurationTypeEnum = 'IndexConfiguration'
 

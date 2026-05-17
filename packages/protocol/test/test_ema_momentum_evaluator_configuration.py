@@ -35,14 +35,14 @@ class TestEMAMomentumEvaluatorConfiguration(unittest.TestCase):
         model = EMAMomentumEvaluatorConfiguration()
         if include_optional:
             return EMAMomentumEvaluatorConfiguration(
-                configuration_type = 'EMAMomentumEvaluator',
+                configuration_type = 'RSIMomentumEvaluator',
                 period_length = 1,
                 price_threshold_percent = 0,
                 reverse_signal = True
             )
         else:
             return EMAMomentumEvaluatorConfiguration(
-                configuration_type = 'EMAMomentumEvaluator',
+                configuration_type = 'RSIMomentumEvaluator',
                 period_length = 1,
                 price_threshold_percent = 0,
                 reverse_signal = True,

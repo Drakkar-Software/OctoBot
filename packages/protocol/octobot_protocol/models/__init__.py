@@ -24,6 +24,7 @@ from octobot_protocol.models.account_status_message import AccountStatusMessage
 from octobot_protocol.models.account_type import AccountType
 from octobot_protocol.models.accounts_state import AccountsState
 from octobot_protocol.models.action import Action
+from octobot_protocol.models.action_configuration_type import ActionConfigurationType
 from octobot_protocol.models.active_order_swap_strategy import ActiveOrderSwapStrategy
 from octobot_protocol.models.active_order_swap_strategy_type import ActiveOrderSwapStrategyType
 from octobot_protocol.models.asset import Asset
@@ -47,6 +48,7 @@ from octobot_protocol.models.edit_account_configuration import EditAccountConfig
 from octobot_protocol.models.edit_automation_configuration import EditAutomationConfiguration
 from octobot_protocol.models.evaluator_configuration import EvaluatorConfiguration
 from octobot_protocol.models.evaluator_configuration_configuration import EvaluatorConfigurationConfiguration
+from octobot_protocol.models.evaluator_type import EvaluatorType
 from octobot_protocol.models.exchange_account import ExchangeAccount
 from octobot_protocol.models.generic_account import GenericAccount
 from octobot_protocol.models.generic_process_configuration import GenericProcessConfiguration
@@ -92,6 +94,7 @@ from octobot_protocol.models.user_action_configuration import UserActionConfigur
 from octobot_protocol.models.user_action_result import UserActionResult
 from octobot_protocol.models.user_action_result_type import UserActionResultType
 from octobot_protocol.models.user_action_status import UserActionStatus
+from octobot_protocol.models.user_action_type import UserActionType
 from octobot_protocol.models.user_actions_state import UserActionsState
 from octobot_protocol.models.user_data_state import UserDataState
 

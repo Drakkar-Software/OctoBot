@@ -6,7 +6,7 @@ GridConfiguration
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**configuration_type** | **str** |  | 
+**configuration_type** | [**ActionConfigurationType**](ActionConfigurationType.md) | grid | 
 **symbol** | **str** |  | 
 **spread** | **float** | Price difference between the closest buy and sell orders. Denominated in the quote currency (600 for a 600 USDT spread on BTC/USDT). | 
 **increment** | **float** | Price difference between two orders of the same side. Denominated in the quote currency (200 for a 200 USDT spread on BTC/USDT). | 

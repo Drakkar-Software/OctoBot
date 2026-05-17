@@ -20,6 +20,7 @@ import json
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Union
 from typing_extensions import Annotated
+from octobot_protocol.models.action_configuration_type import ActionConfigurationType
 from octobot_protocol.models.evaluator_configuration import EvaluatorConfiguration
 from octobot_protocol.models.time_frame import TimeFrame
 from typing import Optional, Set
@@ -30,7 +31,7 @@ class DCAConfiguration(BaseModel):
     """
     DCAConfiguration
     """ # noqa: E501
-    configuration_type: StrictStr
+    configuration_type: ActionConfigurationType = Field(description="dca")
     symbols: List[StrictStr]
     buy_orders_count: Union[Annotated[float, Field(strict=True, ge=1)], Annotated[int, Field(strict=True, ge=1)]]
     percent_amount_per_buy_order: Union[Annotated[float, Field(le=100, strict=True, ge=0)], Annotated[int, Field(le=100, strict=True, ge=0)]]
@@ -43,13 +44,6 @@ class DCAConfiguration(BaseModel):
     time_frames: List[TimeFrame]
     evaluators: List[EvaluatorConfiguration]
     __properties: ClassVar[List[str]] = ["configuration_type", "symbols", "buy_orders_count", "percent_amount_per_buy_order", "profit_target_percent", "buy_order_price_discount_percent", "enable_stop_loss", "stop_loss_price_discount_percent", "trigger_mode", "use_init_entry_orders", "time_frames", "evaluators"]
-
-    @field_validator('configuration_type')
-    def configuration_type_validate_enum(cls, value):
-        """Validates the enum"""
-        if value not in set(['DCAConfiguration']):
-            raise ValueError("must be one of enum values ('DCAConfiguration')")
-        return value
 
     @field_validator('trigger_mode')
     def trigger_mode_validate_enum(cls, value):

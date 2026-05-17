@@ -11,12 +11,16 @@
  */
 
 import { Account } from '../models/Account';
+import { UserActionType } from '../models/UserActionType';
 
 /**
 * CreateAccountConfiguration
 */
 export class CreateAccountConfiguration {
-    'action_type': CreateAccountConfigurationActionTypeEnum;
+    /**
+    * account_create
+    */
+    'action_type': 'account_create';
     'configuration': Account;
 
     static readonly discriminator: string | undefined = undefined;
@@ -27,7 +31,7 @@ export class CreateAccountConfiguration {
         {
             "name": "action_type",
             "baseName": "action_type",
-            "type": "CreateAccountConfigurationActionTypeEnum",
+            "type": "UserActionType",
             "format": ""
         },
         {
@@ -45,5 +49,4 @@ export class CreateAccountConfiguration {
     }
 }
 
-export type CreateAccountConfigurationActionTypeEnum = 'account_create'
 

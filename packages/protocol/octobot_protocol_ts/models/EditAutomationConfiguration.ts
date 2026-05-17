@@ -11,13 +11,17 @@
  */
 
 import { AutomationConfiguration } from '../models/AutomationConfiguration';
+import { UserActionType } from '../models/UserActionType';
 
 /**
 * EditAutomationConfiguration
 */
 export class EditAutomationConfiguration {
     'id': string;
-    'action_type': EditAutomationConfigurationActionTypeEnum;
+    /**
+    * automation_edit
+    */
+    'action_type': 'automation_edit';
     'configuration': AutomationConfiguration;
 
     static readonly discriminator: string | undefined = undefined;
@@ -34,7 +38,7 @@ export class EditAutomationConfiguration {
         {
             "name": "action_type",
             "baseName": "action_type",
-            "type": "EditAutomationConfigurationActionTypeEnum",
+            "type": "UserActionType",
             "format": ""
         },
         {
@@ -52,5 +56,4 @@ export class EditAutomationConfiguration {
     }
 }
 
-export type EditAutomationConfigurationActionTypeEnum = 'automation_edit'
 
