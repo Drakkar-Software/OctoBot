@@ -9,6 +9,7 @@ import octobot_commons.logging
 import octobot_flow.enums
 import octobot_flow.errors
 
+
 @dataclasses.dataclass
 class ActionDependency(octobot_commons.dataclasses.FlexibleDataclass):
     # id of the action this dependency is on
@@ -80,7 +81,7 @@ class AbstractActionDetails(octobot_commons.dataclasses.FlexibleDataclass):
             )
         self.dependencies.append(ActionDependency(action_id, parameter, result_path))
 
-    def get_summary(self, minimal: bool = False) -> str:
+    def get_summary(self, minimal: bool = not octobot_commons.constants.ALLOW_PRIVATE_DATA_LOGS) -> str:
         raise NotImplementedError("get_summary is not implemented for this bot action type")
 
     def get_rescheduled_parameters(self) -> dict:
@@ -111,7 +112,7 @@ class DSLScriptActionDetails(AbstractActionDetails):
     # resolved DSL script. self.dsl_script where all the dependencies have been replaced by their actual values
     resolved_dsl_script: typing.Optional[str] = dataclasses.field(default=None, repr=False) # should be set to the resolved DSL script
 
-    def get_summary(self, minimal: bool = False) -> str:
+    def get_summary(self, minimal: bool = not octobot_commons.constants.ALLOW_PRIVATE_DATA_LOGS) -> str:
         if minimal:
             # only return the first operator name
             return str(self.dsl_script).split("(")[0]
@@ -147,7 +148,7 @@ class ConfiguredActionDetails(AbstractActionDetails):
     # returned result of the condig action. Set after the action is executed
     result: typing.Optional[dict] = dataclasses.field(default=None, repr=False)
 
-    def get_summary(self, minimal: bool = False) -> str:
+    def get_summary(self, minimal: bool = not octobot_commons.constants.ALLOW_PRIVATE_DATA_LOGS) -> str:
         return self.action
 
     def update_configuration(self, action: "AbstractActionDetails"):

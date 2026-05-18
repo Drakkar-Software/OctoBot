@@ -80,7 +80,7 @@ def dsl_action_execution(func):
             octobot_commons.logging.get_logger("action_execution").exception(
                 err,
                 True,
-                f"Failed to interpret DSL script '{action.get_summary(not octobot_commons.constants.ALLOW_PRIVATE_DATA_LOGS)}' "
+                f"Failed to interpret DSL script '{action.get_summary()}' "
                 f"for action: {action.id}: {err}"
             )
             return _dsl_action_error_call_result(
