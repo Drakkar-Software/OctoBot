@@ -150,14 +150,12 @@ class TestStopAutomationActionExecutor:
                 is_simulated=True,
                 created_at=datetime.datetime(2026, 6, 1, 12, 0, 0, tzinfo=datetime.UTC),
                 updated_at=datetime.datetime(2026, 6, 1, 13, 0, 0, tzinfo=datetime.UTC),
-                details=protocol_models.AccountDetails(
+                specifics=protocol_models.AccountSpecifics(
                     actual_instance=protocol_models.ExchangeAccount(
                         account_type=protocol_models.AccountType.EXCHANGE,
                         trading_type=protocol_models.TradingType.SPOT,
                         exchange="binanceus",
                         remote_account_id="r",
-                        api_key="k",
-                        api_secret="s",
                     )
                 ),
             ),

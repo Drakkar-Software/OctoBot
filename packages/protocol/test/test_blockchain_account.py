@@ -37,10 +37,7 @@ class TestBlockchainAccount(unittest.TestCase):
             return BlockchainAccount(
                 account_type = 'generic',
                 blockchain = '',
-                network = '',
-                public_key = '',
-                private_key = '',
-                passphrase = ''
+                network = ''
             )
         else:
             return BlockchainAccount(

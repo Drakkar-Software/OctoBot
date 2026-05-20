@@ -31,6 +31,7 @@ class AutomationActionResultErrorMessage(str, Enum):
     STRATEGY_NOT_FOUND = 'strategy_not_found'
     STRATEGY_VERSION_NOT_FOUND = 'strategy_version_not_found'
     ACCOUNT_NOT_FOUND = 'account_not_found'
+    ACCOUNT_AUTHENTICATION_DETAILS_NOT_FOUND = 'account_authentication_details_not_found'
     INTERNAL_ERROR = 'internal_error'
 
     @classmethod

@@ -35,8 +35,9 @@ class Strategy(BaseModel):
     description: Optional[StrictStr] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+    reference_market: StrictStr
     configuration: StrategyConfiguration
-    __properties: ClassVar[List[str]] = ["id", "version", "name", "description", "created_at", "updated_at", "configuration"]
+    __properties: ClassVar[List[str]] = ["id", "version", "name", "description", "created_at", "updated_at", "reference_market", "configuration"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -98,6 +99,7 @@ class Strategy(BaseModel):
             "description": obj.get("description"),
             "created_at": obj.get("created_at"),
             "updated_at": obj.get("updated_at"),
+            "reference_market": obj.get("reference_market"),
             "configuration": StrategyConfiguration.from_dict(obj["configuration"]) if obj.get("configuration") is not None else None
         })
         return _obj

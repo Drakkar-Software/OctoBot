@@ -47,7 +47,13 @@ class TestAccountsState(unittest.TestCase):
                             message = 'pending_validation', ), 
                         created_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
                         updated_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
-                        details = null, )
+                        assets = [
+                            octobot_protocol.models.detailed_asset.DetailedAsset(
+                                symbol = '', 
+                                total = 1.337, 
+                                available = 1.337, )
+                            ], 
+                        specifics = null, )
                     ]
             )
         else:

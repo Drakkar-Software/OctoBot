@@ -49,6 +49,8 @@ class AccountUserActionExecutor(user_actions_executor_base.UserActionExecutor):
     def _get_error_message(self, exc: BaseException) -> protocol_models.AccountActionResultErrorMessage:
         if isinstance(exc, (node_errors.AccountNotFoundError, collection_errors.ItemNotFoundError)):
             return protocol_models.AccountActionResultErrorMessage.ACCOUNT_NOT_FOUND
+        if isinstance(exc, node_errors.AccountAuthenticationNotFoundError):
+            return protocol_models.AccountActionResultErrorMessage.ACCOUNT_AUTHENTICATION_DETAILS_NOT_FOUND
         if isinstance(
             exc,
             (

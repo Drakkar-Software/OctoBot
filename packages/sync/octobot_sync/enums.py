@@ -20,6 +20,9 @@ import enum
 class Collections(enum.StrEnum):
     USER_DATA = "user-data"
     USER_ACCOUNTS = "user-accounts"
+    USER_ACCOUNTS_AUTH = "user-accounts-auth"
+    USER_ACCOUNTS_TRADING = "user-accounts-trading"
+    USER_ACCOUNTS_HISTORY = "user-accounts-history"
     USER_SETTINGS = "user-settings"
     USER_STRATEGIES = "user-strategies"
     USER_ACTIONS = "user-actions"

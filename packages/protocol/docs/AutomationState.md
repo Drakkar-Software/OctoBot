@@ -13,7 +13,7 @@ Name | Type | Description | Notes
 **priority_actions** | [**List[Action]**](Action.md) |  | [optional] 
 **exchanges** | **List[str]** |  | [optional] 
 **exchange_account_ids** | **List[str]** |  | [optional] 
-**assets** | [**List[Asset]**](Asset.md) |  | [optional] 
+**assets** | [**List[DetailedAsset]**](DetailedAsset.md) |  | [optional] 
 **orders** | [**List[OrderSummary]**](OrderSummary.md) |  | [optional] 
 **trades** | [**List[TradeSummary]**](TradeSummary.md) |  | [optional] 
 **positions** | [**List[PositionSummary]**](PositionSummary.md) |  | [optional] 

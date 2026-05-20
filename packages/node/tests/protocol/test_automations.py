@@ -241,7 +241,6 @@ class TestFillProtocolAutomationStateAssetsOrdersPositionsTrades:
         }
         elements = flow_entities.ExchangeAccountElements()
         elements.portfolio.content = portfolio_content
-        elements.portfolio.asset_values = {"BTC": 100.5}
         elements.orders.open_orders = [open_order]
         elements.orders.missing_orders = [missing_order]
         elements.positions = [position_details]
@@ -261,8 +260,8 @@ class TestFillProtocolAutomationStateAssetsOrdersPositionsTrades:
         assert filled.assets is not None
         bitcoin_asset = filled.assets[0]
         assert bitcoin_asset.symbol == "BTC"
-        assert bitcoin_asset.value == 100.5
-        assert bitcoin_asset.unit == "USDT"
+        assert bitcoin_asset.total == 2.0
+        assert bitcoin_asset.available == 1.0
         assert filled.orders is not None
         assert len(filled.orders) == 1
         assert filled.orders[0].id == "oid-1"
@@ -271,7 +270,7 @@ class TestFillProtocolAutomationStateAssetsOrdersPositionsTrades:
         assert filled.trades is not None
         assert filled.trades[0].id == "t1"
 
-    def test_unit_unset_without_exchange_account_details(self):
+    def test_assets_without_enrichment(self):
         portfolio_content = {
             "BTC": {
                 octobot_commons_constants.PORTFOLIO_AVAILABLE: 1.0,
@@ -285,7 +284,9 @@ class TestFillProtocolAutomationStateAssetsOrdersPositionsTrades:
         flow_state = flow_entities.AutomationState(automation=automation)
         filled = automations_protocol._fill_protocol_automation_state(_minimal_protocol_base(), flow_state)
         assert filled.assets is not None
-        assert filled.assets[0].unit is None
+        assert filled.assets[0].symbol == "BTC"
+        assert filled.assets[0].total == 2.0
+        assert filled.assets[0].available == 1.0
 
 
 class TestFillProtocolAutomationStateEmpties:

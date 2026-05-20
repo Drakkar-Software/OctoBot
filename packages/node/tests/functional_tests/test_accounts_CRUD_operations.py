@@ -11,6 +11,7 @@ import octobot_sync.sync
 import octobot.community.authentication as community_authentication_module
 import octobot.community.local_authenticator as local_authenticator_module
 import octobot_commons.user_root_folder_provider as user_root_folder_provider_module
+import octobot_commons.constants as commons_constants
 import octobot_node.constants as octobot_node_constants
 import octobot_node.errors as node_errors_module
 import octobot_node.scheduler
@@ -28,6 +29,11 @@ _TEST_WALLET_PASSPHRASE = "accountsCRUD1!"
 _DOOMED_ACCOUNT_ID = "functional-account-doomed"
 _WORKFLOW_RESULT_TIMEOUT_SECONDS = 120.0
 _USER_ACTION_LIST_POLL_TIMEOUT_SECONDS = 15.0
+
+_FUNCTIONAL_USDT_HOLDINGS = 1000.0
+_FUNCTIONAL_BTC_HOLDINGS = 0.5
+_FUNCTIONAL_ETH_HOLDINGS = 2.0
+_FUNCTIONAL_SOL_HOLDINGS = 10.0
 
 _REAL_UPDATE_ACCOUNT_STATE = account_state_updater_module.update_account_state
 
@@ -60,8 +66,30 @@ async def _stub_load_symbol_markets_no_network(self, reload=False, market_filter
     """
     self.client.markets = {
         "BTC/USDT": {"symbol": "BTC/USDT", "active": True, "spot": True},
+        "SOL/BTC": {"symbol": "SOL/BTC", "active": True, "spot": True},
     }
-    self.client.symbols = ["BTC/USDT"]
+    self.client.symbols = ["BTC/USDT", "SOL/BTC"]
+
+
+async def _stub_get_balance_no_network(self, **kwargs):
+    return {
+        "USDT": {
+            commons_constants.PORTFOLIO_TOTAL: _FUNCTIONAL_USDT_HOLDINGS,
+            commons_constants.PORTFOLIO_AVAILABLE: _FUNCTIONAL_USDT_HOLDINGS,
+        },
+        "BTC": {
+            commons_constants.PORTFOLIO_TOTAL: _FUNCTIONAL_BTC_HOLDINGS,
+            commons_constants.PORTFOLIO_AVAILABLE: _FUNCTIONAL_BTC_HOLDINGS,
+        },
+        "ETH": {
+            commons_constants.PORTFOLIO_TOTAL: _FUNCTIONAL_ETH_HOLDINGS,
+            commons_constants.PORTFOLIO_AVAILABLE: _FUNCTIONAL_ETH_HOLDINGS,
+        },
+        "SOL": {
+            commons_constants.PORTFOLIO_TOTAL: _FUNCTIONAL_SOL_HOLDINGS,
+            commons_constants.PORTFOLIO_AVAILABLE: _FUNCTIONAL_SOL_HOLDINGS,
+        },
+    }
 
 
 async def _run_user_action_to_completion(
@@ -81,10 +109,13 @@ async def _run_user_action_to_completion(
     return workflow_id
 
 
-async def _update_account_state_fail_doomed_create(account: protocol_models.Account) -> protocol_models.Account:
+async def _update_account_state_fail_doomed_create(
+    account: protocol_models.Account,
+    wallet_address: str,
+) -> protocol_models.Account:
     if account.id == _DOOMED_ACCOUNT_ID:
         raise node_errors_module.WorkflowInputError("forced doomed create failure")
-    return await _REAL_UPDATE_ACCOUNT_STATE(account)
+    return await _REAL_UPDATE_ACCOUNT_STATE(account, wallet_address)
 
 
 def _assert_listed_user_actions_match_expected_id_status_pairs(
@@ -94,6 +125,30 @@ def _assert_listed_user_actions_match_expected_id_status_pairs(
     actual_sorted = sorted((row.id, row.status) for row in listed_user_actions)
     expected_sorted = sorted(expected_id_status_pairs)
     assert actual_sorted == expected_sorted
+
+
+def _assert_functional_assets(
+    assets: list[protocol_models.DetailedAsset] | None,
+) -> None:
+    assert assets is not None
+    assets_by_symbol = {asset.symbol: asset for asset in assets}
+    assert set(assets_by_symbol) == {"USDT", "BTC", "ETH", "SOL"}
+
+    usdt_asset = assets_by_symbol["USDT"]
+    assert usdt_asset.total == pytest.approx(_FUNCTIONAL_USDT_HOLDINGS)
+    assert usdt_asset.available == pytest.approx(_FUNCTIONAL_USDT_HOLDINGS)
+
+    bitcoin_asset = assets_by_symbol["BTC"]
+    assert bitcoin_asset.total == pytest.approx(_FUNCTIONAL_BTC_HOLDINGS)
+    assert bitcoin_asset.available == pytest.approx(_FUNCTIONAL_BTC_HOLDINGS)
+
+    ethereum_asset = assets_by_symbol["ETH"]
+    assert ethereum_asset.total == pytest.approx(_FUNCTIONAL_ETH_HOLDINGS)
+    assert ethereum_asset.available == pytest.approx(_FUNCTIONAL_ETH_HOLDINGS)
+
+    sol_asset = assets_by_symbol["SOL"]
+    assert sol_asset.total == pytest.approx(_FUNCTIONAL_SOL_HOLDINGS)
+    assert sol_asset.available == pytest.approx(_FUNCTIONAL_SOL_HOLDINGS)
 
 
 @pytest.mark.asyncio
@@ -122,8 +177,6 @@ class TestExecuteUserActionAccountCrud:
                 trading_type=protocol_models.TradingType.SPOT,
                 exchange="binanceus",
                 remote_account_id="functional-test-remote-account",
-                api_key="functional-test-api-key",
-                api_secret="functional-test-api-secret",
             )
 
         def build_account(*, account_id: str, account_name: str) -> protocol_models.Account:
@@ -133,7 +186,7 @@ class TestExecuteUserActionAccountCrud:
                 is_simulated=True,
                 created_at=sample_timestamp,
                 updated_at=sample_timestamp,
-                details=protocol_models.AccountDetails(
+                specifics=protocol_models.AccountSpecifics(
                     actual_instance=build_exchange_account(),
                 ),
             )
@@ -232,11 +285,6 @@ class TestExecuteUserActionAccountCrud:
                 ),
                 mock.patch.object(
                     account_state_updater_module,
-                    "_request_exchange_to_ensure_authentication",
-                    new=mock.AsyncMock(return_value=None),
-                ),
-                mock.patch.object(
-                    account_state_updater_module,
                     "_ensure_api_key_permissions",
                     new=ensure_permissions_mock,
                 ),
@@ -249,6 +297,11 @@ class TestExecuteUserActionAccountCrud:
                     ccxt_connector_module.CCXTConnector,
                     "load_symbol_markets",
                     _stub_load_symbol_markets_no_network,
+                ),
+                mock.patch.object(
+                    ccxt_connector_module.CCXTConnector,
+                    "get_balance",
+                    _stub_get_balance_no_network,
                 ),
             ):
                 # Step: Patches above strip network/CCXT and steer ``update_account_state`` / permissions for this scenario.
@@ -323,6 +376,7 @@ class TestExecuteUserActionAccountCrud:
                 assert persisted_created_account.state.status == protocol_models.AccountStatus.VALID
                 assert persisted_created_account.state.message == protocol_models.AccountStatusMessage.VALID
                 assert len(account_provider.list_items(wallet_address)) == 1
+                _assert_functional_assets(persisted_created_account.assets)
 
                 # Step 3 — Edit: enqueue workflow only first; poll listings mid retry before awaiting terminal output.
                 edited_account = build_account(
@@ -422,6 +476,7 @@ class TestExecuteUserActionAccountCrud:
                 assert persisted_refreshed_account.state is not None
                 assert persisted_refreshed_account.state.status == protocol_models.AccountStatus.VALID
                 assert persisted_refreshed_account.state.message == protocol_models.AccountStatusMessage.VALID
+                _assert_functional_assets(persisted_refreshed_account.assets)
 
                 # Step 5 — Delete: remove account from provider; listing gains COMPLETED delete row.
                 delete_action = build_delete_user_action(

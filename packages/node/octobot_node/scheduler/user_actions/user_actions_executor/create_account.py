@@ -44,7 +44,10 @@ class CreateAccountActionExecutor(account_user_action_executor.AccountUserAction
         user_action: protocol_models.UserAction,
     ) -> None:
         create_payload = _get_create_account_payload(user_action)
-        checked_account = await account_state_updater.update_account_state(create_payload.configuration)
+        checked_account = await account_state_updater.update_account_state(
+            create_payload.configuration,
+            self._wallet_address,
+        )
         collection_providers.AccountProvider.instance().create_item(
             self._wallet_address,
             checked_account,

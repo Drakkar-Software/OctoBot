@@ -87,17 +87,23 @@ def test_fallback_to_default_config():
     assert config.version == 1
     assert config.namespaces is not None
     ns_collections = config.namespaces["octobot"].collections
-    assert len(ns_collections) == 5
+    assert len(ns_collections) == 8
     by_name = {c.name: c for c in ns_collections}
     assert set(by_name) == {
         "user-data",
         "user-accounts",
+        "user-accounts-auth",
+        "user-accounts-trading",
+        "user-accounts-history",
         "user-settings",
         "user-strategies",
         "user-actions",
     }
     assert by_name["user-data"].storage_path == "users/{identity}/data"
     assert by_name["user-accounts"].storage_path == "users/{identity}/accounts"
+    assert by_name["user-accounts-auth"].storage_path == "users/{identity}/accounts/auth"
+    assert by_name["user-accounts-trading"].storage_path == "users/{identity}/accounts/{account_id}/trading"
+    assert by_name["user-accounts-history"].storage_path == "users/{identity}/accounts/{account_id}/history"
     assert by_name["user-settings"].storage_path == "users/{identity}/settings"
     assert by_name["user-strategies"].storage_path == "users/{identity}/strategies"
     assert by_name["user-actions"].storage_path == "users/{identity}/actions"

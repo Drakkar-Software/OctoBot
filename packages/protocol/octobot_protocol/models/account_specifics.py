@@ -24,11 +24,11 @@ from pydantic import StrictStr, Field
 from typing import Union, List, Set, Optional, Dict
 from typing_extensions import Literal, Self
 
-ACCOUNTDETAILS_ONE_OF_SCHEMAS = ["BlockchainAccount", "ExchangeAccount", "GenericAccount"]
+ACCOUNTSPECIFICS_ONE_OF_SCHEMAS = ["BlockchainAccount", "ExchangeAccount", "GenericAccount"]
 
-class AccountDetails(BaseModel):
+class AccountSpecifics(BaseModel):
     """
-    AccountDetails
+    AccountSpecifics
     """
     # data type: ExchangeAccount
     oneof_schema_1_validator: Optional[ExchangeAccount] = None
@@ -60,7 +60,7 @@ class AccountDetails(BaseModel):
 
     @field_validator('actual_instance')
     def actual_instance_must_validate_oneof(cls, v):
-        instance = AccountDetails.model_construct()
+        instance = AccountSpecifics.model_construct()
         error_messages = []
         match = 0
         # validate data type: ExchangeAccount
@@ -80,10 +80,10 @@ class AccountDetails(BaseModel):
             match += 1
         if match > 1:
             # more than 1 match
-            raise ValueError("Multiple matches found when setting `actual_instance` in AccountDetails with oneOf schemas: BlockchainAccount, ExchangeAccount, GenericAccount. Details: " + ", ".join(error_messages))
+            raise ValueError("Multiple matches found when setting `actual_instance` in AccountSpecifics with oneOf schemas: BlockchainAccount, ExchangeAccount, GenericAccount. Details: " + ", ".join(error_messages))
         elif match == 0:
             # no match
-            raise ValueError("No match found when setting `actual_instance` in AccountDetails with oneOf schemas: BlockchainAccount, ExchangeAccount, GenericAccount. Details: " + ", ".join(error_messages))
+            raise ValueError("No match found when setting `actual_instance` in AccountSpecifics with oneOf schemas: BlockchainAccount, ExchangeAccount, GenericAccount. Details: " + ", ".join(error_messages))
         else:
             return v
 
@@ -139,10 +139,10 @@ class AccountDetails(BaseModel):
 
         if match > 1:
             # more than 1 match
-            raise ValueError("Multiple matches found when deserializing the JSON string into AccountDetails with oneOf schemas: BlockchainAccount, ExchangeAccount, GenericAccount. Details: " + ", ".join(error_messages))
+            raise ValueError("Multiple matches found when deserializing the JSON string into AccountSpecifics with oneOf schemas: BlockchainAccount, ExchangeAccount, GenericAccount. Details: " + ", ".join(error_messages))
         elif match == 0:
             # no match
-            raise ValueError("No match found when deserializing the JSON string into AccountDetails with oneOf schemas: BlockchainAccount, ExchangeAccount, GenericAccount. Details: " + ", ".join(error_messages))
+            raise ValueError("No match found when deserializing the JSON string into AccountSpecifics with oneOf schemas: BlockchainAccount, ExchangeAccount, GenericAccount. Details: " + ", ".join(error_messages))
         else:
             return instance
 

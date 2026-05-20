@@ -7,7 +7,7 @@ TrailingProfile
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **type** | [**TrailingProfileType**](TrailingProfileType.md) |  | 
-**details** | **object** |  | [optional] 
+**specifics** | **object** |  | [optional] 
 
 ## Example
 

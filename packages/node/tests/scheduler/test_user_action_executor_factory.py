@@ -30,8 +30,6 @@ class Test_user_action_executor_factory:
             trading_type=protocol_models.TradingType.SPOT,
             exchange="binanceus",
             remote_account_id="remote-1",
-            api_key="k",
-            api_secret="s",
         )
 
     @classmethod
@@ -42,7 +40,7 @@ class Test_user_action_executor_factory:
             is_simulated=True,
             created_at=datetime.datetime(2026, 2, 2, 10, 0, 0, tzinfo=datetime.UTC),
             updated_at=datetime.datetime(2026, 2, 3, 15, 30, 0, tzinfo=datetime.UTC),
-            details=protocol_models.AccountDetails(
+            specifics=protocol_models.AccountSpecifics(
                 actual_instance=cls._exchange_account_payload(),
             ),
         )

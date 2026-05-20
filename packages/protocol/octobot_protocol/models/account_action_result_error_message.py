@@ -28,6 +28,7 @@ class AccountActionResultErrorMessage(str, Enum):
     """
     ACCOUNT_NOT_FOUND = 'account_not_found'
     INVALID_CONFIGURATION = 'invalid_configuration'
+    ACCOUNT_AUTHENTICATION_DETAILS_NOT_FOUND = 'account_authentication_details_not_found'
     INTERNAL_ERROR = 'internal_error'
 
     @classmethod

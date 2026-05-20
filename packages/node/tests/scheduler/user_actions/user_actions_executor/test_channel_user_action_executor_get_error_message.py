@@ -46,6 +46,13 @@ class TestAutomationUserActionExecutorGetErrorMessage:
         resolved = executor._get_error_message(node_errors.AccountNotFoundError("missing"))
         assert resolved == protocol_models.AutomationActionResultErrorMessage.ACCOUNT_NOT_FOUND
 
+    def test_account_authentication_details_not_found(self):
+        executor = create_automation_executor_module.CreateAutomationActionExecutor(_WALLET)
+        resolved = executor._get_error_message(
+            node_errors.AccountAuthenticationNotFoundError("missing auth")
+        )
+        assert resolved == protocol_models.AutomationActionResultErrorMessage.ACCOUNT_AUTHENTICATION_DETAILS_NOT_FOUND
+
     def test_unsupported_automation_configuration_type(self):
         executor = stop_automation_executor.StopAutomationActionExecutor(_WALLET)
         resolved = executor._get_error_message(
@@ -81,6 +88,16 @@ class TestAccountUserActionExecutorGetErrorMessage:
         executor = create_account_executor.CreateAccountActionExecutor(_WALLET)
         resolved = executor._get_error_message(node_errors.AccountNotFoundError("lookup failed"))
         assert resolved == protocol_models.AccountActionResultErrorMessage.ACCOUNT_NOT_FOUND
+
+    def test_account_authentication_details_not_found(self):
+        executor = create_account_executor.CreateAccountActionExecutor(_WALLET)
+        resolved = executor._get_error_message(
+            node_errors.AccountAuthenticationNotFoundError("missing auth")
+        )
+        assert (
+            resolved
+            == protocol_models.AccountActionResultErrorMessage.ACCOUNT_AUTHENTICATION_DETAILS_NOT_FOUND
+        )
 
     def test_invalid_user_action_payload(self):
         executor = create_account_executor.CreateAccountActionExecutor(_WALLET)

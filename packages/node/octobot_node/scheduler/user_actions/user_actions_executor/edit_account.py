@@ -52,7 +52,10 @@ class EditAccountActionExecutor(account_user_action_executor.AccountUserActionEx
             raise node_errors.InvalidUserActionPayloadError(
                 "EditAccountConfiguration.id must match configuration.id."
             )
-        checked_account = await account_state_updater.update_account_state(edit_payload.configuration)
+        checked_account = await account_state_updater.update_account_state(
+            edit_payload.configuration,
+            self._wallet_address,
+        )
         collection_providers.AccountProvider.instance().update_item(
             self._wallet_address,
             checked_account,

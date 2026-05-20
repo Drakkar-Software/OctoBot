@@ -23,10 +23,11 @@ def _make_context(
     identity: str | None = "0xabc",
     action: str = "pull",
     collection: str = "test",
+    params: dict | None = None,
 ) -> StoreContext:
     return StoreContext(
         collection=collection,
-        params={},
+        params=params or {},
         identity=identity,
         roles=(),
         action=action,
@@ -124,6 +125,53 @@ class TestGetData:
             enums.Collections.USER_ACCOUNTS.value,
         ).decode("utf-8")
         assert decrypted_plain == expected_plain
+
+    @pytest.mark.asyncio
+    async def test_user_accounts_auth_collection(self):
+        expected_plain = json.dumps({"version": "1", "account_authentication": []})
+        encrypted_blob = sync_crypto.encrypt_bytes_to_blob_dict(
+            expected_plain.encode("utf-8"),
+            _TEST_WALLET_PRIVATE_KEY,
+            enums.Collections.USER_ACCOUNTS_AUTH.value,
+        )
+        encrypted_blob_json = json.dumps(encrypted_blob)
+        context = _make_context(
+            identity="0xwallet",
+            collection=enums.Collections.USER_ACCOUNTS_AUTH.value,
+        )
+        with mock.patch("octobot_sync.server.accounts_auth_protocol") as mock_proto:
+            mock_proto.get_accounts_authentication_state_encrypted = mock.Mock(
+                return_value=encrypted_blob
+            )
+            result = await server.get_data("users/0xwallet/accounts/auth", context)
+        mock_proto.get_accounts_authentication_state_encrypted.assert_called_once_with("0xwallet")
+        wrapper = json.loads(result)
+        assert wrapper["hash"] == sync_crypto.sha256_hex(encrypted_blob_json)
+        assert wrapper["data"] == encrypted_blob_json
+
+    @pytest.mark.asyncio
+    async def test_USER_ACCOUNTS_TRADING_collection(self):
+        expected_plain = json.dumps({"version": "1", "account_trading": []})
+        encrypted_blob = sync_crypto.encrypt_bytes_to_blob_dict(
+            expected_plain.encode("utf-8"),
+            _TEST_WALLET_PRIVATE_KEY,
+            enums.Collections.USER_ACCOUNTS_TRADING.value,
+        )
+        encrypted_blob_json = json.dumps(encrypted_blob)
+        context = _make_context(
+            identity="0xwallet",
+            collection=enums.Collections.USER_ACCOUNTS_TRADING.value,
+            params={"account_id": "acc-1"},
+        )
+        with mock.patch("octobot_sync.server.accounts_trading_protocol") as mock_proto:
+            mock_proto.get_account_trading_state_encrypted = mock.Mock(
+                return_value=encrypted_blob
+            )
+            result = await server.get_data("users/0xwallet/accounts/acc-1/trading", context)
+        mock_proto.get_account_trading_state_encrypted.assert_called_once_with("0xwallet", "acc-1")
+        wrapper = json.loads(result)
+        assert wrapper["hash"] == sync_crypto.sha256_hex(encrypted_blob_json)
+        assert wrapper["data"] == encrypted_blob_json
 
     @pytest.mark.asyncio
     async def test_unmatched_collection_reads_opaque_store(self):

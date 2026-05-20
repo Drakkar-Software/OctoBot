@@ -98,7 +98,7 @@
           "type": {
             "$ref": "#/components/schemas/TrailingProfileType"
           },
-          "details": {
+          "specifics": {
             "type": "object"
           }
         }
@@ -113,7 +113,7 @@
           "type": {
             "$ref": "#/components/schemas/CancelPolicyType"
           },
-          "details": {
+          "specifics": {
             "type": "object"
           }
         }
@@ -416,8 +416,8 @@
           }
         }
       },
-      "Asset": {
-        "description": "Asset",
+      "DetailedAsset": {
+        "description": "DetailedAsset",
         "type": "object",
         "required": [
           "symbol",
@@ -433,12 +433,6 @@
           },
           "available": {
             "type": "number"
-          },
-          "value": {
-            "type": "number"
-          },
-          "unit": {
-            "type": "string"
           }
         }
       },
@@ -535,7 +529,7 @@
           "assets": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/Asset"
+              "$ref": "#/components/schemas/DetailedAsset"
             }
           },
           "orders": {
@@ -577,45 +571,102 @@
           "margin"
         ]
       },
-      "ExchangeAccount": {
-        "description": "ExchangeAccount",
+      "HistoricalAssetValue": {
+        "description": "HistoricalAssetValue",
         "type": "object",
         "required": [
-          "account_type",
-          "trading_type",
-          "exchange",
-          "remote_account_id",
-          "api_key",
-          "api_secret"
+          "symbol",
+          "holdings",
+          "value"
         ],
         "properties": {
-          "account_type": {
-            "$ref": "#/components/schemas/AccountType",
-            "description": "exchange"
-          },
-          "trading_type": {
-            "$ref": "#/components/schemas/TradingType"
-          },
-          "exchange": {
+          "symbol": {
             "type": "string"
           },
-          "remote_account_id": {
-            "type": "string"
+          "holdings": {
+            "type": "number"
           },
-          "api_key": {
-            "type": "string"
+          "value": {
+            "type": "number"
+          }
+        }
+      },
+      "PortfolioHistoricalValue": {
+        "description": "PortfolioHistoricalValue",
+        "type": "object",
+        "required": [
+          "timestamp",
+          "total"
+        ],
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
           },
-          "api_secret": {
-            "type": "string"
-          },
-          "api_passphrase": {
-            "type": "string"
+          "total": {
+            "type": "number"
           },
           "assets": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/Asset"
+              "$ref": "#/components/schemas/HistoricalAssetValue"
             }
+          }
+        }
+      },
+      "PortfolioHistoricalValues": {
+        "description": "PortfolioHistoricalValues",
+        "type": "object",
+        "required": [
+          "values",
+          "unit"
+        ],
+        "properties": {
+          "unit": {
+            "type": "string"
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PortfolioHistoricalValue"
+            }
+          }
+        }
+      },
+      "AccountAuthentication": {
+        "description": "AccountAuthentication",
+        "type": "object",
+        "properties": {
+            "api_key": {
+              "type": "string"
+            },
+            "api_secret": {
+              "type": "string"
+            },
+            "api_passphrase": {
+              "type": "string"
+            },
+            "public_key": {
+              "type": "string"
+            },
+            "private_key": {
+              "type": "string"
+            },
+            "seed_phrase": {
+              "type": "string"
+            }
+          }
+      },
+      "AccountTrading": {
+        "description": "AccountTrading",
+        "type": "object",
+        "required": [
+          "updated_at"
+        ],
+        "properties": {
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
           },
           "orders": {
             "type": "array",
@@ -637,6 +688,31 @@
           }
         }
       },
+      "ExchangeAccount": {
+        "description": "ExchangeAccount",
+        "type": "object",
+        "required": [
+          "account_type",
+          "trading_type",
+          "exchange",
+          "remote_account_id"
+        ],
+        "properties": {
+          "account_type": {
+            "$ref": "#/components/schemas/AccountType",
+            "description": "exchange"
+          },
+          "trading_type": {
+            "$ref": "#/components/schemas/TradingType"
+          },
+          "exchange": {
+            "type": "string"
+          },
+          "remote_account_id": {
+            "type": "string"
+          }
+        }
+      },
       "BlockchainAccount": {
         "description": "BlockchainAccount",
         "type": "object",
@@ -654,15 +730,6 @@
           },
           "network": {
             "type": "string"
-          },
-          "public_key": {
-            "type": "string"
-          },
-          "private_key": {
-            "type": "string"
-          },
-          "passphrase": {
-            "type": "string"
           }
         }
       },
@@ -676,12 +743,6 @@
           "account_type": {
             "$ref": "#/components/schemas/AccountType",
             "description": "generic"
-          },
-          "assets": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Asset"
-            }
           }
         }
       },
@@ -758,7 +819,13 @@
             "type": "string",
             "format": "date-time"
           },
-          "details": {
+          "assets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DetailedAsset"
+            }
+          },
+          "specifics": {
             "oneOf": [
               {
                 "$ref": "#/components/schemas/ExchangeAccount"
@@ -1747,6 +1814,7 @@
           "strategy_not_found",
           "strategy_version_not_found",
           "account_not_found",
+          "account_authentication_details_not_found",
           "internal_error"
         ]
       },
@@ -1782,6 +1850,7 @@
         "enum": [
           "account_not_found",
           "invalid_configuration",
+          "account_authentication_details_not_found",
           "internal_error"
         ]
       },
@@ -1891,6 +1960,7 @@
         "required": [
           "id",
           "version",
+          "reference_market",
           "configuration"
         ],
         "properties": {
@@ -1913,6 +1983,9 @@
           "updated_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "reference_market": {
+            "type": "string"
           },
           "configuration": {
             "oneOf": [
@@ -1968,6 +2041,60 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/Strategy"
+            }
+          }
+        }
+      },
+      "AccountTradingState": {
+        "description": "AccountTradingState",
+        "type": "object",
+        "required": [
+          "version",
+          "account_trading"
+        ],
+        "properties": {
+          "version": {
+            "type": "string"
+          },
+          "account_trading": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccountTrading"
+            }
+          }
+        }
+      },
+      "PortfolioHistoricalValuesState": {
+        "description": "PortfolioHistoricalValuesState",
+        "type": "object",
+        "required": [
+          "version",
+          "values"
+        ],
+        "properties": {
+          "version": {  
+            "type": "string"
+          },
+          "history": {
+            "$ref": "#/components/schemas/PortfolioHistoricalValues"
+          }
+        }
+      },
+      "AccountsAuthenticationState": {
+        "description": "AccountsAuthenticationState",
+        "type": "object",
+        "required": [
+          "version",
+          "account_authentication"
+        ],
+        "properties": {
+          "version": {
+            "type": "string"
+          },
+          "account_authentication": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccountAuthentication"
             }
           }
         }

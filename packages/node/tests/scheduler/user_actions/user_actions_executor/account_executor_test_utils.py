@@ -30,19 +30,35 @@ def exchange_account_payload() -> protocol_models.ExchangeAccount:
         trading_type=protocol_models.TradingType.SPOT,
         exchange="binanceus",
         remote_account_id="remote-1",
+    )
+
+
+def assets_payload() -> list[protocol_models.DetailedAsset]:
+    return [
+        protocol_models.DetailedAsset(
+            symbol="USDT",
+            total=1000.0,
+            available=1000.0,
+        )
+    ]
+
+
+def authentication_payload() -> protocol_models.AccountAuthentication:
+    return protocol_models.AccountAuthentication(
         api_key="k",
         api_secret="s",
     )
 
 
-def minimal_exchange_account(*, account_id: str) -> protocol_models.Account:
+def minimal_exchange_account(*, account_id: str, is_simulated: bool = True) -> protocol_models.Account:
     return protocol_models.Account(
         id=account_id,
         name="Test account",
-        is_simulated=True,
+        is_simulated=is_simulated,
         created_at=_ACCOUNT_TS,
         updated_at=_ACCOUNT_TS,
-        details=protocol_models.AccountDetails(
+        assets=assets_payload(),
+        specifics=protocol_models.AccountSpecifics(
             actual_instance=exchange_account_payload(),
         ),
     )
@@ -55,7 +71,7 @@ def minimal_blockchain_account(*, account_id: str) -> protocol_models.Account:
         is_simulated=False,
         created_at=_ACCOUNT_TS,
         updated_at=_ACCOUNT_TS_OUT,
-        details=protocol_models.AccountDetails(
+        specifics=protocol_models.AccountSpecifics(
             actual_instance=protocol_models.BlockchainAccount(
                 account_type=protocol_models.AccountType.BLOCKCHAIN,
                 blockchain="ethereum",

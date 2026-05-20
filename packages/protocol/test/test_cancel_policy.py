@@ -36,7 +36,7 @@ class TestCancelPolicy(unittest.TestCase):
         if include_optional:
             return CancelPolicy(
                 type = 'ExpirationTimeOrderCancelPolicy',
-                details = None
+                specifics = None
             )
         else:
             return CancelPolicy(

@@ -167,3 +167,41 @@ class TestRefreshAccountsActionExecutorExecute:
             expect_error_details=True,
             expected_error_message=protocol_models.AccountActionResultErrorMessage.INVALID_CONFIGURATION,
         )
+
+    @pytest.mark.asyncio
+    async def test_fails_when_authentication_details_missing_for_live_account(self):
+        account_model = account_executor_test_utils.minimal_exchange_account(
+            account_id="live-acc",
+            is_simulated=False,
+        )
+        refresh_inner = protocol_models.RefreshAccountsConfiguration(
+            action_type=protocol_models.UserActionType.ACCOUNTS_REFRESH,
+            account_ids=["live-acc"],
+        )
+        user_action = protocol_models.UserAction(id="ua-refresh-no-auth", configuration=account_executor_test_utils.wrap_configuration(refresh_inner))
+        provider_mock = mock.Mock()
+        provider_mock.get_item.return_value = account_model
+        with (
+            mock.patch(
+                "octobot_sync.sync.collection_providers.AccountProvider.instance",
+                return_value=provider_mock,
+            ),
+            mock.patch.object(
+                account_state_updater_module,
+                "update_account_state",
+                new=mock.AsyncMock(
+                    side_effect=node_errors.AccountAuthenticationNotFoundError("missing auth"),
+                ),
+            ),
+        ):
+            executor = refresh_accounts_executor.RefreshAccountsActionExecutor(account_executor_test_utils.WALLET_ADDRESS)
+            with pytest.raises(node_errors.AccountAuthenticationNotFoundError):
+                await executor.execute(user_action)
+        provider_mock.update_item.assert_not_called()
+        provider_assertions.assert_user_action_terminal_state(
+            user_action=user_action,
+            expected_status=protocol_models.UserActionStatus.FAILED,
+            result_channel="account",
+            expect_error_details=True,
+            expected_error_message=protocol_models.AccountActionResultErrorMessage.ACCOUNT_AUTHENTICATION_DETAILS_NOT_FOUND,
+        )

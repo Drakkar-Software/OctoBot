@@ -71,12 +71,10 @@ class TestAutomationState(unittest.TestCase):
                     ''
                     ],
                 assets = [
-                    octobot_protocol.models.asset.Asset(
+                    octobot_protocol.models.detailed_asset.DetailedAsset(
                         symbol = '', 
                         total = 1.337, 
-                        available = 1.337, 
-                        value = 1.337, 
-                        unit = '', )
+                        available = 1.337, )
                     ],
                 orders = [
                     octobot_protocol.models.order_summary.OrderSummary(

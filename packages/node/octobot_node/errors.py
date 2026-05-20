@@ -62,6 +62,10 @@ class AccountNotFoundError(UserActionError):
     """Raised when fetching an account via AccountProvider fails."""
 
 
+class AccountAuthenticationNotFoundError(UserActionError):
+    """Raised when fetching account authentication via AccountAuthenticationProvider fails."""
+
+
 class AutomationStrategyNotFoundError(UserActionError):
     """Raised when the referenced strategy does not exist in StrategyProvider."""
 

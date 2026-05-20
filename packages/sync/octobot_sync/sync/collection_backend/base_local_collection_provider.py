@@ -20,7 +20,7 @@ import typing
 
 import cachetools
 
-import octobot.community.authentication as community_authentication
+import octobot_sync.sync.collection_backend.abstract_local_collection_provider as abstract_provider
 import octobot_sync.sync.collection_backend.base_local_collection_storage as base_storage
 import octobot_sync.sync.collection_backend.errors as collection_errors
 import octobot_sync.sync.collection_backend.state_model as state_model
@@ -30,7 +30,11 @@ T = typing.TypeVar("T")
 S = typing.TypeVar("S", bound=state_model.StateModel)
 
 
-class BaseLocalCollectionProvider(typing.Generic[T, S], abc.ABC):
+class BaseLocalCollectionProvider(
+    abstract_provider.AbstractLocalCollectionProvider[S],
+    typing.Generic[T, S],
+    abc.ABC,
+):
     """
     Generic provider exposing CRUD operations on typed pydantic model items ``T``.
 
@@ -39,20 +43,7 @@ class BaseLocalCollectionProvider(typing.Generic[T, S], abc.ABC):
     ``ITEMS_KEY``).  Subclasses must set the class variables and implement
     ``_get_item_id``.
     """
-    COLLECTION: str = None # type: ignore
-    STATE_VERSION: str = None  # type: ignore
-    STATE_CLASS: type[S] = None  # type: ignore
     ITEMS_KEY: str = None  # type: ignore
-
-    def __init__(
-        self,
-        base_folder: typing.Optional[str] = None,
-    ) -> None:
-        self._storage = self._create_storage(self.COLLECTION, base_folder)
-        self._cache: cachetools.TTLCache[str, list[T]] = cachetools.TTLCache(
-            maxsize=1024,
-            ttl=12 * 60 * 60,
-        )
 
     @staticmethod
     def _create_storage(
@@ -64,13 +55,15 @@ class BaseLocalCollectionProvider(typing.Generic[T, S], abc.ABC):
             base_folder=base_folder,
         )
 
+    def _setup_caches(self) -> None:
+        self._cache: cachetools.TTLCache[str, list[T]] = cachetools.TTLCache(
+            maxsize=self._CACHE_MAXSIZE,
+            ttl=self._CACHE_TTL_SECONDS,
+        )
+
     @abc.abstractmethod
     def _get_item_id(self, item: T) -> str:
         """Return the unique identifier of a model instance."""
-
-    def _get_wallet_private_key(self, address: str) -> str:
-        wallet = community_authentication.CommunityAuthentication.instance().get_wallet(address)
-        return wallet.private_key
 
     def _get_cached_items(self, address: str) -> list[T] | None:
         cached = self._cache.get(address)

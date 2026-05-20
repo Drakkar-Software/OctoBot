@@ -141,3 +141,40 @@ class TestCreateAccountActionExecutorExecute:
             expect_error_details=True,
             expected_error_message=protocol_models.AccountActionResultErrorMessage.INVALID_CONFIGURATION,
         )
+
+    @pytest.mark.asyncio
+    async def test_fails_when_authentication_details_missing_for_live_account(self):
+        account_model = account_executor_test_utils.minimal_exchange_account(
+            account_id="live-acc",
+            is_simulated=False,
+        )
+        inner = protocol_models.CreateAccountConfiguration(
+            action_type=protocol_models.UserActionType.ACCOUNT_CREATE,
+            configuration=account_model,
+        )
+        user_action = protocol_models.UserAction(id="ua-create-no-auth", configuration=account_executor_test_utils.wrap_configuration(inner))
+        provider_mock = mock.Mock()
+        with (
+            mock.patch(
+                "octobot_sync.sync.collection_providers.AccountProvider.instance",
+                return_value=provider_mock,
+            ),
+            mock.patch.object(
+                account_state_updater_module,
+                "update_account_state",
+                new=mock.AsyncMock(
+                    side_effect=node_errors.AccountAuthenticationNotFoundError("missing auth"),
+                ),
+            ),
+        ):
+            executor = create_account_executor.CreateAccountActionExecutor(account_executor_test_utils.WALLET_ADDRESS)
+            with pytest.raises(node_errors.AccountAuthenticationNotFoundError):
+                await executor.execute(user_action)
+        provider_mock.create_item.assert_not_called()
+        provider_assertions.assert_user_action_terminal_state(
+            user_action=user_action,
+            expected_status=protocol_models.UserActionStatus.FAILED,
+            result_channel="account",
+            expect_error_details=True,
+            expected_error_message=protocol_models.AccountActionResultErrorMessage.ACCOUNT_AUTHENTICATION_DETAILS_NOT_FOUND,
+        )

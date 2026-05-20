@@ -14,10 +14,10 @@
 
 import unittest
 
-from octobot_protocol.models.asset import Asset
+from octobot_protocol.models.historical_asset_value import HistoricalAssetValue
 
-class TestAsset(unittest.TestCase):
-    """Asset unit test stubs"""
+class TestHistoricalAssetValue(unittest.TestCase):
+    """HistoricalAssetValue unit test stubs"""
 
     def setUp(self):
         pass
@@ -25,32 +25,30 @@ class TestAsset(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional) -> Asset:
-        """Test Asset
+    def make_instance(self, include_optional) -> HistoricalAssetValue:
+        """Test HistoricalAssetValue
             include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
-        # uncomment below to create an instance of `Asset`
+        # uncomment below to create an instance of `HistoricalAssetValue`
         """
-        model = Asset()
+        model = HistoricalAssetValue()
         if include_optional:
-            return Asset(
+            return HistoricalAssetValue(
                 symbol = '',
-                total = 1.337,
-                available = 1.337,
-                value = 1.337,
-                unit = ''
+                holdings = 1.337,
+                value = 1.337
             )
         else:
-            return Asset(
+            return HistoricalAssetValue(
                 symbol = '',
-                total = 1.337,
-                available = 1.337,
+                holdings = 1.337,
+                value = 1.337,
         )
         """
 
-    def testAsset(self):
-        """Test Asset"""
+    def testHistoricalAssetValue(self):
+        """Test HistoricalAssetValue"""
         # inst_req_only = self.make_instance(include_optional=False)
         # inst_req_and_optional = self.make_instance(include_optional=True)
 

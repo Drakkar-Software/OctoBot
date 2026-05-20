@@ -73,6 +73,7 @@ def _stored_strategy_matching_reference(
         id=strategy_reference.id,
         version=strategy_reference.version,
         name="Seeded automation strategy",
+        reference_market="USDT",
         configuration=protocol_models.StrategyConfiguration(configuration_instance),
     )
 
@@ -88,22 +89,19 @@ def _minimal_exchange_account(*, account_id: str) -> protocol_models.Account:
         is_simulated=True,
         created_at=_TEST_ACCOUNT_TS,
         updated_at=_TEST_ACCOUNT_TS,
-        details=protocol_models.AccountDetails(
+        assets=[
+            protocol_models.DetailedAsset(
+                symbol="USDT",
+                total=1000.0,
+                available=1000.0,
+            )
+        ],
+        specifics=protocol_models.AccountSpecifics(
             actual_instance=protocol_models.ExchangeAccount(
                 account_type=protocol_models.AccountType.EXCHANGE,
                 trading_type=protocol_models.TradingType.SPOT,
                 exchange="binanceus",
                 remote_account_id="remote-1",
-                api_key="k",
-                api_secret="s",
-                assets=[
-                    protocol_models.Asset(
-                        symbol="USDT",
-                        total=1000.0,
-                        available=1000.0,
-                        unit="USDT",
-                    )
-                ],
             ),
         ),
     )
@@ -500,6 +498,7 @@ class TestCreateAutomationExecutor:
         expected_profile = action_details_factory.market_making_profile_data_factory(
             protocol_account=account,
             market_making_configuration=market_making_configuration,
+            reference_market=stored.reference_market,
         )
         expected_profile_dict = expected_profile.to_dict(include_default_values=False)
         expected_exchange_auth_segment = dsl_interpreter.format_parameter_value(None)
@@ -621,6 +620,7 @@ class TestCreateAutomationExecutor:
             id=strat_ref.id,
             version="different-version",
             name="Stale version",
+            reference_market="USDT",
             configuration=protocol_models.StrategyConfiguration(idx),
         )
 

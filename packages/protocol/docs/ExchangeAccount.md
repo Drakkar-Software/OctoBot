@@ -10,13 +10,6 @@ Name | Type | Description | Notes
 **trading_type** | [**TradingType**](TradingType.md) |  | 
 **exchange** | **str** |  | 
 **remote_account_id** | **str** |  | 
-**api_key** | **str** |  | 
-**api_secret** | **str** |  | 
-**api_passphrase** | **str** |  | [optional] 
-**assets** | [**List[Asset]**](Asset.md) |  | [optional] 
-**orders** | [**List[Order]**](Order.md) |  | [optional] 
-**trades** | [**List[Trade]**](Trade.md) |  | [optional] 
-**positions** | [**List[Position]**](Position.md) |  | [optional] 
 
 ## Example
 

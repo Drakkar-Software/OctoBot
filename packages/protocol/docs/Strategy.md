@@ -12,6 +12,7 @@ Name | Type | Description | Notes
 **description** | **str** |  | [optional] 
 **created_at** | **datetime** |  | [optional] 
 **updated_at** | **datetime** |  | [optional] 
+**reference_market** | **str** |  | 
 **configuration** | [**StrategyConfiguration**](StrategyConfiguration.md) |  | 
 
 ## Example

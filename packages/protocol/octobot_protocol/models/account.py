@@ -20,8 +20,9 @@ import json
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict, StrictBool, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
-from octobot_protocol.models.account_details import AccountDetails
+from octobot_protocol.models.account_specifics import AccountSpecifics
 from octobot_protocol.models.account_state import AccountState
+from octobot_protocol.models.detailed_asset import DetailedAsset
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -37,8 +38,9 @@ class Account(BaseModel):
     state: Optional[AccountState] = None
     created_at: datetime
     updated_at: datetime
-    details: Optional[AccountDetails] = None
-    __properties: ClassVar[List[str]] = ["id", "name", "is_simulated", "description", "state", "created_at", "updated_at", "details"]
+    assets: Optional[List[DetailedAsset]] = None
+    specifics: Optional[AccountSpecifics] = None
+    __properties: ClassVar[List[str]] = ["id", "name", "is_simulated", "description", "state", "created_at", "updated_at", "assets", "specifics"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -82,9 +84,16 @@ class Account(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of state
         if self.state:
             _dict['state'] = self.state.to_dict()
-        # override the default output from pydantic by calling `to_dict()` of details
-        if self.details:
-            _dict['details'] = self.details.to_dict()
+        # override the default output from pydantic by calling `to_dict()` of each item in assets (list)
+        _items = []
+        if self.assets:
+            for _item_assets in self.assets:
+                if _item_assets:
+                    _items.append(_item_assets.to_dict())
+            _dict['assets'] = _items
+        # override the default output from pydantic by calling `to_dict()` of specifics
+        if self.specifics:
+            _dict['specifics'] = self.specifics.to_dict()
         return _dict
 
     @classmethod
@@ -104,7 +113,8 @@ class Account(BaseModel):
             "state": AccountState.from_dict(obj["state"]) if obj.get("state") is not None else None,
             "created_at": obj.get("created_at"),
             "updated_at": obj.get("updated_at"),
-            "details": AccountDetails.from_dict(obj["details"]) if obj.get("details") is not None else None
+            "assets": [DetailedAsset.from_dict(_item) for _item in obj["assets"]] if obj.get("assets") is not None else None,
+            "specifics": AccountSpecifics.from_dict(obj["specifics"]) if obj.get("specifics") is not None else None
         })
         return _obj
 

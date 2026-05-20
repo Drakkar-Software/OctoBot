@@ -59,6 +59,7 @@ class TestStrategyProviderGetItemId:
             id="strat-42",
             version="1.0.0",
             name="Test strategy",
+            reference_market="USDT",
             created_at=fixture_time,
             updated_at=fixture_time,
             configuration=protocol_models.StrategyConfiguration(configuration),

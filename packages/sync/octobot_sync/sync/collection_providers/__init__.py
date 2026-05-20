@@ -15,13 +15,21 @@
 #  License along with this library.
 
 
+import octobot_sync.sync.collection_providers.user_account_authentication_provider as user_account_authentication_provider_module
 import octobot_sync.sync.collection_providers.user_account_provider as user_account_provider_module
+import octobot_sync.sync.collection_providers.user_account_trading_provider as user_account_trading_provider_module
 import octobot_sync.sync.collection_providers.user_strategy_provider as user_strategy_provider_module
 
 AccountProvider = user_account_provider_module.AccountProvider
+AccountAuthenticationProvider = (
+    user_account_authentication_provider_module.AccountAuthenticationProvider
+)
+AccountTradingProvider = user_account_trading_provider_module.AccountTradingProvider
 StrategyProvider = user_strategy_provider_module.StrategyProvider
 
 __all__ = [
     "AccountProvider",
+    "AccountAuthenticationProvider",
+    "AccountTradingProvider",
     "StrategyProvider",
 ]

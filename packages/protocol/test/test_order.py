@@ -61,10 +61,10 @@ class TestOrder(unittest.TestCase):
                         timeout = 1.337, ), ),
                 trailing_profile = octobot_protocol.models.trailing_profile.TrailingProfile(
                     type = 'filled_take_profit', 
-                    details = octobot_protocol.models.trigger_price_configuration.trigger_price_configuration(), ),
+                    specifics = octobot_protocol.models.trigger_price_configuration.trigger_price_configuration(), ),
                 cancel_policy = octobot_protocol.models.cancel_policy.CancelPolicy(
                     type = 'ExpirationTimeOrderCancelPolicy', 
-                    details = octobot_protocol.models.trigger_price_configuration.trigger_price_configuration(), ),
+                    specifics = octobot_protocol.models.trigger_price_configuration.trigger_price_configuration(), ),
                 chained_orders = [
                     octobot_protocol.models.order.Order(
                         id = '', 
@@ -92,10 +92,10 @@ class TestOrder(unittest.TestCase):
                                 timeout = 1.337, ), ), 
                         trailing_profile = octobot_protocol.models.trailing_profile.TrailingProfile(
                             type = 'filled_take_profit', 
-                            details = octobot_protocol.models.trigger_price_configuration.trigger_price_configuration(), ), 
+                            specifics = octobot_protocol.models.trigger_price_configuration.trigger_price_configuration(), ), 
                         cancel_policy = octobot_protocol.models.cancel_policy.CancelPolicy(
                             type = 'ExpirationTimeOrderCancelPolicy', 
-                            details = octobot_protocol.models.trigger_price_configuration.trigger_price_configuration(), ), 
+                            specifics = octobot_protocol.models.trigger_price_configuration.trigger_price_configuration(), ), 
                         chained_orders = [
                             octobot_protocol.models.order.Order(
                                 id = '', 

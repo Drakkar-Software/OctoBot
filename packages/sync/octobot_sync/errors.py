@@ -51,3 +51,9 @@ class OctobotSyncWalletNotFoundError(OctobotSyncError):
     """Raised when no wallet exists for the requested address."""
 
     pass
+
+
+class OctobotSyncAccountIdMissingError(OctobotSyncError):
+    """Raised when account_id is missing from the store context."""
+
+    pass

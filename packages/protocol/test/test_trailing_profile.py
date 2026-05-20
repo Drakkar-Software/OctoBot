@@ -36,7 +36,7 @@ class TestTrailingProfile(unittest.TestCase):
         if include_optional:
             return TrailingProfile(
                 type = 'filled_take_profit',
-                details = None
+                specifics = None
             )
         else:
             return TrailingProfile(

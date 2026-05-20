@@ -29,8 +29,8 @@ class CancelPolicy(BaseModel):
     CancelPolicy
     """ # noqa: E501
     type: CancelPolicyType
-    details: Optional[Dict[str, Any]] = None
-    __properties: ClassVar[List[str]] = ["type", "details"]
+    specifics: Optional[Dict[str, Any]] = None
+    __properties: ClassVar[List[str]] = ["type", "specifics"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -84,7 +84,7 @@ class CancelPolicy(BaseModel):
 
         _obj = cls.model_validate({
             "type": obj.get("type"),
-            "details": obj.get("details")
+            "specifics": obj.get("specifics")
         })
         return _obj
 

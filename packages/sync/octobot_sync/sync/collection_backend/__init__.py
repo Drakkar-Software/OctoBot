@@ -15,12 +15,18 @@
 #  License along with this library.
 
 
+import octobot_sync.sync.collection_backend.abstract_local_collection_provider as abstract_local_collection_provider_module
 import octobot_sync.sync.collection_backend.base_local_collection_storage as base_local_collection_storage_module
 import octobot_sync.sync.collection_backend.base_local_collection_provider as base_local_collection_provider_module
+import octobot_sync.sync.collection_backend.single_item_local_collection_storage as single_item_local_collection_storage_module
+import octobot_sync.sync.collection_backend.single_item_local_collection_provider as single_item_local_collection_provider_module
 import octobot_sync.sync.collection_backend.errors as errors_module
 
+AbstractLocalCollectionProvider = abstract_local_collection_provider_module.AbstractLocalCollectionProvider
 BaseLocalCollectionStorage = base_local_collection_storage_module.BaseLocalCollectionStorage
 BaseLocalCollectionProvider = base_local_collection_provider_module.BaseLocalCollectionProvider
+SingleItemLocalCollectionStorage = single_item_local_collection_storage_module.SingleItemLocalCollectionStorage
+SingleItemLocalCollectionProvider = single_item_local_collection_provider_module.SingleItemLocalCollectionProvider
 CollectionStorageError = errors_module.CollectionStorageError
 CollectionDecryptionError = errors_module.CollectionDecryptionError
 CollectionFileFormatError = errors_module.CollectionFileFormatError
@@ -28,8 +34,11 @@ ItemNotFoundError = errors_module.ItemNotFoundError
 DuplicateItemError = errors_module.DuplicateItemError
 
 __all__ = [
+    "AbstractLocalCollectionProvider",
     "BaseLocalCollectionStorage",
     "BaseLocalCollectionProvider",
+    "SingleItemLocalCollectionStorage",
+    "SingleItemLocalCollectionProvider",
     "CollectionStorageError",
     "CollectionDecryptionError",
     "CollectionFileFormatError",

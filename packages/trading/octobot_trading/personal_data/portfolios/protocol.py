@@ -22,9 +22,9 @@ import octobot_commons.constants as commons_constants
 
 def to_protocol_assets(
     portfolio: dict[str, dict[str, typing.Union[float, decimal.Decimal]]]
-) -> list[protocol_models.Asset]:
+) -> list[protocol_models.DetailedAsset]:
     return [
-        protocol_models.Asset(
+        protocol_models.DetailedAsset(
             symbol=symbol,
             available=float(symbol_balance[commons_constants.PORTFOLIO_AVAILABLE]),
             total=float(symbol_balance[commons_constants.PORTFOLIO_TOTAL]),

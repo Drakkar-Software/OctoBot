@@ -52,9 +52,14 @@ class BaseLocalCollectionStorage:
         sanitized = sanitized.replace("..", "_")
         return sanitized or "unknown"
 
-    def _file_path(self, address: str) -> pathlib.Path:
-        filename = f"{self._sanitize_address(address)}.json"
+    def _file_path(self, storage_key: str) -> pathlib.Path:
+        filename = f"{self._sanitize_address(storage_key)}.json"
         return self._root / filename
+
+    def _missing_data_error(self, storage_key: str) -> collection_errors.CollectionNoDataError:
+        return collection_errors.CollectionNoDataError(
+            f"{self.collection} file does not exist for address {storage_key}"
+        )
 
     def _payload_to_json_bytes(self, payload: state_model.StateModel) -> bytes:
         """Serialize a state dict to JSON bytes (handles datetime values from protocol models)."""
@@ -112,16 +117,14 @@ class BaseLocalCollectionStorage:
             )
         return decrypted_state
 
-    def _read_blob(self, address: str) -> dict[str, typing.Any]:
+    def _read_blob(self, storage_key: str) -> dict[str, typing.Any]:
         """Read the raw encrypted blob from disk.
 
         Raises ``CollectionNoDataError`` when the backing file does not exist.
         """
-        path = self._file_path(address)
+        path = self._file_path(storage_key)
         if not path.exists():
-            raise collection_errors.CollectionNoDataError(
-                f"{self.collection} file does not exist for address {address}"
-            )
+            raise self._missing_data_error(storage_key)
         with self._lock:
             with open(path, "r", encoding="utf-8") as handle:
                 raw = json.load(handle)
@@ -132,37 +135,37 @@ class BaseLocalCollectionStorage:
         return raw
 
     def load_state(
-        self, address: str, wallet_private_key: str, state_model: type[state_model.StateModel],
+        self, storage_key: str, wallet_private_key: str, state_model: type[state_model.StateModel],
     ) -> state_model.StateModel:
         """
-        Load and decrypt the state dict for a given wallet address.
+        Load and decrypt the state dict for a given storage key.
 
         Raises ``CollectionNoDataError`` when the backing file does not exist.
         """
-        blob = self._read_blob(address)
+        blob = self._read_blob(storage_key)
         return self._decrypt(blob, wallet_private_key, state_model)
 
-    def load_items_encrypted(self, address: str) -> dict[str, str]:
+    def load_items_encrypted(self, storage_key: str) -> dict[str, str]:
         """
-        Read the encrypted blob for *address* directly from disk.
+        Read the encrypted blob for *storage_key* directly from disk.
 
         Skips decryption entirely and returns the raw ``{"iv": ..., "data": ...}``-style
         dict as persisted.
 
-        Raises ``CollectionNoDataError`` when no file exists for the address.
+        Raises ``CollectionNoDataError`` when no file exists for the storage key.
         """
-        return typing.cast(dict[str, str], self._read_blob(address))
+        return typing.cast(dict[str, str], self._read_blob(storage_key))
 
     def save_state(
         self,
-        address: str,
+        storage_key: str,
         wallet_private_key: str,
         state: state_model.StateModel,
     ) -> None:
         """
-        Encrypt and atomically persist the state dict for a given wallet address.
+        Encrypt and atomically persist the state dict for a given storage key.
         """
-        path = self._file_path(address)
+        path = self._file_path(storage_key)
         path.parent.mkdir(parents=True, exist_ok=True)
         blob = self._encrypt(state, wallet_private_key)
         tmp_path = path.with_suffix(".tmp")

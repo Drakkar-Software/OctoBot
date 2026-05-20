@@ -14,10 +14,10 @@
 
 import unittest
 
-from octobot_protocol.models.account_details import AccountDetails
+from octobot_protocol.models.account_trading import AccountTrading
 
-class TestAccountDetails(unittest.TestCase):
-    """AccountDetails unit test stubs"""
+class TestAccountTrading(unittest.TestCase):
+    """AccountTrading unit test stubs"""
 
     def setUp(self):
         pass
@@ -25,31 +25,17 @@ class TestAccountDetails(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional) -> AccountDetails:
-        """Test AccountDetails
+    def make_instance(self, include_optional) -> AccountTrading:
+        """Test AccountTrading
             include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
-        # uncomment below to create an instance of `AccountDetails`
+        # uncomment below to create an instance of `AccountTrading`
         """
-        model = AccountDetails()
+        model = AccountTrading()
         if include_optional:
-            return AccountDetails(
-                account_type = 'generic',
-                trading_type = 'spot',
-                exchange = '',
-                remote_account_id = '',
-                api_key = '',
-                api_secret = '',
-                api_passphrase = '',
-                assets = [
-                    octobot_protocol.models.asset.Asset(
-                        symbol = '', 
-                        total = 1.337, 
-                        available = 1.337, 
-                        value = 1.337, 
-                        unit = '', )
-                    ],
+            return AccountTrading(
+                updated_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'),
                 orders = [
                     octobot_protocol.models.order.Order(
                         id = '', 
@@ -77,10 +63,10 @@ class TestAccountDetails(unittest.TestCase):
                                 timeout = 1.337, ), ), 
                         trailing_profile = octobot_protocol.models.trailing_profile.TrailingProfile(
                             type = 'filled_take_profit', 
-                            details = octobot_protocol.models.trigger_price_configuration.trigger_price_configuration(), ), 
+                            specifics = octobot_protocol.models.trigger_price_configuration.trigger_price_configuration(), ), 
                         cancel_policy = octobot_protocol.models.cancel_policy.CancelPolicy(
                             type = 'ExpirationTimeOrderCancelPolicy', 
-                            details = octobot_protocol.models.trigger_price_configuration.trigger_price_configuration(), ), 
+                            specifics = octobot_protocol.models.trigger_price_configuration.trigger_price_configuration(), ), 
                         chained_orders = [
                             octobot_protocol.models.order.Order(
                                 id = '', 
@@ -121,27 +107,16 @@ class TestAccountDetails(unittest.TestCase):
                         mark_price = 1.337, 
                         liquidation_price = 1.337, 
                         status = 'open', )
-                    ],
-                blockchain = '',
-                network = '',
-                public_key = '',
-                private_key = '',
-                passphrase = ''
+                    ]
             )
         else:
-            return AccountDetails(
-                account_type = 'generic',
-                trading_type = 'spot',
-                exchange = '',
-                remote_account_id = '',
-                api_key = '',
-                api_secret = '',
-                blockchain = '',
+            return AccountTrading(
+                updated_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'),
         )
         """
 
-    def testAccountDetails(self):
-        """Test AccountDetails"""
+    def testAccountTrading(self):
+        """Test AccountTrading"""
         # inst_req_only = self.make_instance(include_optional=False)
         # inst_req_and_optional = self.make_instance(include_optional=True)
 

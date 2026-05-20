@@ -96,16 +96,6 @@ if IMPORTED_OCTOBOT_FLOW_GRID_DEPS:
             trading_type=protocol_models_module.TradingType.SPOT,
             exchange=exchange_internal_name(),
             remote_account_id="functional-test-account",
-            api_key="functional-key",
-            api_secret="functional-secret",
-            assets=[
-                protocol_models_module.Asset(
-                    symbol="USDC",
-                    total=usdc_total,
-                    available=usdc_total,
-                    unit="USDC",
-                )
-            ],
         )
 
     def protocol_account_for_functional(
@@ -120,7 +110,14 @@ if IMPORTED_OCTOBOT_FLOW_GRID_DEPS:
             is_simulated=True,
             created_at=_FUNCTIONAL_PROTOCOL_ACCOUNT_TS,
             updated_at=_FUNCTIONAL_PROTOCOL_ACCOUNT_TS,
-            details=protocol_models_module.AccountDetails(
+            assets=[
+                protocol_models_module.DetailedAsset(
+                    symbol="USDC",
+                    total=usdc_total,
+                    available=usdc_total,
+                )
+            ],
+            specifics=protocol_models_module.AccountSpecifics(
                 actual_instance=protocol_exchange_account_for_grid_functional(usdc_total=usdc_total),
             ),
         )
@@ -140,6 +137,7 @@ if IMPORTED_OCTOBOT_FLOW_GRID_DEPS:
             id=stored_strategy_id,
             version=SIMULATOR_FUNCTIONAL_STRATEGY_VERSION,
             name="Simulator grid automation strategy",
+            reference_market="USDC",
             configuration=protocol_models_module.StrategyConfiguration(
                 grid_configuration_matching_simulator_constants(),
             ),
@@ -158,6 +156,7 @@ if IMPORTED_OCTOBOT_FLOW_GRID_DEPS:
             id=SIMULATOR_COPY_FOLLOWER_STORED_STRATEGY_ID,
             version=SIMULATOR_FUNCTIONAL_STRATEGY_VERSION,
             name="Simulator copy-follower automation strategy",
+            reference_market="USDC",
             configuration=protocol_models_module.StrategyConfiguration(
                 protocol_models_module.CopyConfiguration(
                     configuration_type=protocol_models_module.ActionConfigurationType.COPY,
@@ -449,8 +448,11 @@ if IMPORTED_OCTOBOT_FLOW_GRID_DEPS:
                 f"unexpected OrderSummary.symbol {order_summary.symbol!r}; expected {expected_order_symbol!r}"
             )
         content = _portfolio_content_from_exchange_elements(exchange_account_elements)
-        assets = protocol_automation.assets or []
-        assets_by_symbol = {asset.symbol: asset for asset in assets}
+        protocol_assets = protocol_automation.assets
+        assert protocol_assets is not None, (
+            "expected AutomationState.assets to be set"
+        )
+        assets_by_symbol = {asset.symbol: asset for asset in protocol_assets}
         for symbol, row in content.items():
             matching_asset = assets_by_symbol.get(symbol)
             assert matching_asset is not None, (

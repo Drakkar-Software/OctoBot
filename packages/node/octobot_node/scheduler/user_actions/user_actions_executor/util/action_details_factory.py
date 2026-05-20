@@ -12,6 +12,8 @@ import octobot_protocol.models as protocol_models
 import octobot_trading.exchanges.util.exchange_data as exchange_data_module
 
 import octobot_node.errors as node_errors
+import octobot_node.scheduler.user_actions.user_actions_executor.util.account_authentication_resolver as account_authentication_resolver
+
 
 _ACTION_ID_INIT = "action_init"
 _ACTION_ID_MAIN = "action_1"
@@ -30,29 +32,28 @@ def init_action_factory(
     automation_id: str,
     protocol_account: protocol_models.Account,
     strategy_reference: protocol_models.StrategyReference,
+    wallet_address: str,
+    reference_market: str,
 ) -> flow_entities.AbstractActionDetails:
     """
     Build an init APPLY_CONFIGURATION action like flow functional tests, but sourced from AccountProvider.
     """
-    if protocol_account.details is None or protocol_account.details.actual_instance is None:
+    if protocol_account.specifics is None or protocol_account.specifics.actual_instance is None:
         raise node_errors.InvalidAutomationConfigurationError(
-            "Account.details.actual_instance is required to build init configuration."
+            "Account.specifics.actual_instance is required to build init configuration."
         )
-    details_instance = protocol_account.details.actual_instance
-    if not isinstance(details_instance, protocol_models.ExchangeAccount):
+    specifics_instance = protocol_account.specifics.actual_instance
+    if not isinstance(specifics_instance, protocol_models.ExchangeAccount):
         raise node_errors.InvalidAutomationConfigurationError(
-            f"Only exchange accounts are supported for automations, got {type(details_instance).__name__}"
+            f"Only exchange accounts are supported for automations, got {type(specifics_instance).__name__}"
         )
 
-    portfolio_content = _portfolio_content_from_assets(details_instance.assets or [])
-    reference_unit = _infer_reference_unit(details_instance.assets or [])
-    if reference_unit is None:
-        raise node_errors.InvalidAutomationConfigurationError(
-            "Unable to infer portfolio unit/reference market from account assets (no Asset.unit set)."
-        )
+    portfolio_assets = _portfolio_assets_from_account(protocol_account)
+    portfolio_content = _portfolio_content_from_detailed_assets(portfolio_assets)
     base_exchange_config = exchange_protocol_account_to_apply_configuration_dict(
         protocol_account,
-        portfolio_unit=reference_unit,
+        wallet_address=wallet_address,
+        reference_market=reference_market,
     )
 
     automation_metadata = flow_entities.AutomationMetadata(
@@ -164,13 +165,19 @@ def market_making_action_factory(
     init_action: flow_entities.AbstractActionDetails,
     market_making_configuration: protocol_models.MarketMakingConfiguration,
     protocol_account: protocol_models.Account,
+    wallet_address: str,
+    reference_market: str,
 ) -> flow_entities.AbstractActionDetails:
     profile_data = market_making_profile_data_factory(
         protocol_account=protocol_account,
         market_making_configuration=market_making_configuration,
+        reference_market=reference_market,
     )
     profile_data_dict = profile_data.to_dict(include_default_values=False)
-    exchange_auth_data = _exchange_auth_data_list_from_protocol_account(protocol_account)
+    exchange_auth_data = _exchange_auth_data_list_from_protocol_account(
+        protocol_account,
+        wallet_address,
+    )
     exchange_auth_segment = dsl_interpreter.format_parameter_value(exchange_auth_data)
     run_dsl = (
         "run_octobot_process("
@@ -188,24 +195,25 @@ def market_making_action_factory(
 def exchange_protocol_account_to_apply_configuration_dict(
     protocol_account: protocol_models.Account,
     *,
+    wallet_address: str,
     account_id_override: str | None = None,
-    portfolio_unit: str | None = None,
+    reference_market: str | None = None,
 ) -> dict:
     """
     Build an AutomationState-shaped dict fragment for AutomationConfigurationUpdater:
     only ``exchange_account_details`` is populated from a protocol Account.
     """
-    if protocol_account.details is None or protocol_account.details.actual_instance is None:
+    if protocol_account.specifics is None or protocol_account.specifics.actual_instance is None:
         raise node_errors.InvalidUserActionPayloadError(
-            "Account.details.actual_instance is required for exchange account user actions."
+            "Account.specifics.actual_instance is required for exchange account user actions."
         )
-    details_instance = protocol_account.details.actual_instance
-    if not isinstance(details_instance, protocol_models.ExchangeAccount):
+    specifics_instance = protocol_account.specifics.actual_instance
+    if not isinstance(specifics_instance, protocol_models.ExchangeAccount):
         raise node_errors.InvalidUserActionPayloadError(
-            f"Only EXCHANGE accounts are supported for this translation; got {type(details_instance).__name__}."
+            f"Only EXCHANGE accounts are supported for this translation; got {type(specifics_instance).__name__}."
         )
 
-    exchange_payload = details_instance
+    exchange_payload = specifics_instance
     account_identifier = account_id_override if account_id_override is not None else protocol_account.id
 
     exchange_details = commons_profile_data.ExchangeData(internal_name=exchange_payload.exchange)
@@ -214,10 +222,14 @@ def exchange_protocol_account_to_apply_configuration_dict(
     if protocol_account.is_simulated:
         auth_details = exchange_data_module.ExchangeAuthDetails()
     else:
+        authentication = account_authentication_resolver.get_exchange_authentication(
+            wallet_address,
+            protocol_account,
+        )
         auth_details = exchange_data_module.ExchangeAuthDetails(
-            api_key=exchange_payload.api_key,
-            api_secret=exchange_payload.api_secret,
-            api_password=exchange_payload.api_passphrase or "",
+            api_key=authentication.api_key,
+            api_secret=authentication.api_secret,
+            api_password=authentication.api_passphrase or "",
         )
 
     exchange_account_details = flow_entities.ExchangeAccountDetails(
@@ -228,7 +240,7 @@ def exchange_protocol_account_to_apply_configuration_dict(
         ),
         exchange_details=exchange_details,
         auth_details=auth_details,
-        portfolio=flow_entities.ExchangeAccountPortfolio(unit=portfolio_unit or ""),
+        portfolio=flow_entities.ExchangeAccountPortfolio(unit=reference_market or ""),
     )
 
     return {
@@ -240,15 +252,16 @@ def market_making_profile_data_factory(
     *,
     protocol_account: protocol_models.Account,
     market_making_configuration: protocol_models.MarketMakingConfiguration,
+    reference_market: str,
 ) -> commons_profile_data.ProfileData:
-    if protocol_account.details is None or protocol_account.details.actual_instance is None:
+    if protocol_account.specifics is None or protocol_account.specifics.actual_instance is None:
         raise node_errors.InvalidAutomationConfigurationError(
-            "Account.details.actual_instance is required to build market making profile data."
+            "Account.specifics.actual_instance is required to build market making profile data."
         )
-    details_instance = protocol_account.details.actual_instance
-    if not isinstance(details_instance, protocol_models.ExchangeAccount):
+    specifics_instance = protocol_account.specifics.actual_instance
+    if not isinstance(specifics_instance, protocol_models.ExchangeAccount):
         raise node_errors.InvalidAutomationConfigurationError(
-            f"Market making requires an exchange account; got {type(details_instance).__name__}"
+            f"Market making requires an exchange account; got {type(specifics_instance).__name__}"
         )
 
     symbols = [entry.trading_pair for entry in (market_making_configuration.pair_settings or [])]
@@ -257,13 +270,10 @@ def market_making_profile_data_factory(
             "MarketMakingConfiguration.pair_settings must not be empty."
         )
 
-    reference_market = _infer_reference_unit(details_instance.assets or [])
-    if reference_market is None:
-        raise node_errors.InvalidAutomationConfigurationError(
-            "Unable to infer reference market from account assets for market making."
-        )
+    reference_market_value = reference_market
 
-    starting_portfolio = {asset.symbol: float(asset.total) for asset in (details_instance.assets or [])}
+    portfolio_assets = _portfolio_assets_from_account(protocol_account)
+    starting_portfolio = {asset.symbol: float(asset.total) for asset in portfolio_assets}
 
     profile_identifier = f"market_making_{protocol_account.id}"
     profile_details = commons_profile_data.ProfileDetailsData(
@@ -276,7 +286,7 @@ def market_making_profile_data_factory(
         enabled=True,
     )
     exchange_entry = commons_profile_data.ExchangeData(
-        internal_name=details_instance.exchange,
+        internal_name=specifics_instance.exchange,
         exchange_type=commons_constants.DEFAULT_EXCHANGE_TYPE,
     )
     trader = commons_profile_data.TraderData(enabled=False)
@@ -287,7 +297,7 @@ def market_making_profile_data_factory(
         taker_fees=0.0,
     )
     trading = commons_profile_data.TradingData(
-        reference_market=reference_market,
+        reference_market=reference_market_value,
         risk=1.0,
         paused=False,
     )
@@ -329,7 +339,20 @@ def _translate_workflow_action(
     )
 
 
-def _portfolio_content_from_assets(assets: list[protocol_models.Asset]) -> dict[str, dict[str, float]]:
+def _portfolio_assets_from_account(
+    protocol_account: protocol_models.Account,
+) -> list[protocol_models.DetailedAsset]:
+    account_assets = protocol_account.assets
+    if not account_assets:
+        raise node_errors.InvalidAutomationConfigurationError(
+            "Account.assets is required to build automation configuration."
+        )
+    return list(account_assets)
+
+
+def _portfolio_content_from_detailed_assets(
+    assets: list[protocol_models.DetailedAsset],
+) -> dict[str, dict[str, float]]:
     content: dict[str, dict[str, float]] = {}
     for asset in assets:
         content[str(asset.symbol)] = {
@@ -339,40 +362,36 @@ def _portfolio_content_from_assets(assets: list[protocol_models.Asset]) -> dict[
     return content
 
 
-def _infer_reference_unit(assets: list[protocol_models.Asset]) -> str | None:
-    for asset in assets:
-        if asset.unit:
-            return str(asset.unit)
-    return None
-
-
 def _exchange_auth_data_list_from_protocol_account(
     protocol_account: protocol_models.Account,
+    wallet_address: str,
 ) -> list[dict] | None:
     """
-    Build ``exchange_auth_data`` for ``run_octobot_process`` from the same protocol
-    ``Account`` payload that ``AccountProvider`` returned (no extra provider fetch).
-    Simulated accounts omit credentials (``None``). For non-simulated accounts,
-    ``Account.details`` must wrap an ``ExchangeAccount`` or this raises.
+    Build ``exchange_auth_data`` for ``run_octobot_process`` from AccountProvider data
+    and AccountAuthenticationProvider credentials.
     """
     if protocol_account.is_simulated:
         return None
-    account_details = protocol_account.details
-    if account_details is None or account_details.actual_instance is None:
+    account_specifics = protocol_account.specifics
+    if account_specifics is None or account_specifics.actual_instance is None:
         raise node_errors.InvalidAutomationConfigurationError(
-            "Account.details.actual_instance is required to build exchange_auth_data for a live account."
+            "Account.specifics.actual_instance is required to build exchange_auth_data for a live account."
         )
-    details_instance = account_details.actual_instance
-    if not isinstance(details_instance, protocol_models.ExchangeAccount):
+    specifics_instance = account_specifics.actual_instance
+    if not isinstance(specifics_instance, protocol_models.ExchangeAccount):
         raise node_errors.InvalidAutomationConfigurationError(
-            f"exchange_auth_data requires an exchange account; got {type(details_instance).__name__}."
+            f"exchange_auth_data requires an exchange account; got {type(specifics_instance).__name__}."
         )
+    authentication = account_authentication_resolver.get_exchange_authentication(
+        wallet_address,
+        protocol_account,
+    )
     return [
         {
-            "internal_name": details_instance.exchange,
-            "api_key": details_instance.api_key,
-            "api_secret": details_instance.api_secret,
-            "api_password": details_instance.api_passphrase or "",
+            "internal_name": specifics_instance.exchange,
+            "api_key": authentication.api_key,
+            "api_secret": authentication.api_secret,
+            "api_password": authentication.api_passphrase or "",
             "exchange_type": commons_constants.DEFAULT_EXCHANGE_TYPE,
             "sandboxed": False,
         }

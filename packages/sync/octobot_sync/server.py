@@ -45,6 +45,8 @@ import octobot_protocol.models as protocol_models
 import octobot_node.protocol.user_actions as user_actions_protocol
 import octobot_node.protocol.user_data as user_data_protocol
 import octobot_node.protocol.accounts as accounts_protocol
+import octobot_node.protocol.accounts_authentication as accounts_auth_protocol
+import octobot_node.protocol.accounts_trading as accounts_trading_protocol
 
 
 _get_data: Callable[[str, StoreContext | None], Awaitable[str | None]] | None = None
@@ -61,6 +63,12 @@ def _get_collection(context: StoreContext | None) -> str:
     if context and context.collection:
         return context.collection
     raise errors.OctobotSyncCollectionMissingError("Collection is missing from the context")
+
+
+def _get_account_id(context: StoreContext | None) -> str:
+    if context and context.params.get("account_id"):
+        return str(context.params["account_id"])
+    raise errors.OctobotSyncAccountIdMissingError("account_id is missing from the context")
 
 
 def _get_wallet_private_key(address: str) -> str:
@@ -141,6 +149,17 @@ async def get_data(key: str, context: StoreContext | None = None) -> str | None:
         case enums.Collections.USER_ACCOUNTS.value:
             encrypted_blob = accounts_protocol.get_accounts_state_encrypted(
                 _get_address(context)
+            )
+            already_encrypted_payload = json.dumps(encrypted_blob)
+        case enums.Collections.USER_ACCOUNTS_AUTH.value:
+            encrypted_blob = accounts_auth_protocol.get_accounts_authentication_state_encrypted(
+                _get_address(context)
+            )
+            already_encrypted_payload = json.dumps(encrypted_blob)
+        case enums.Collections.USER_ACCOUNTS_TRADING.value:
+            encrypted_blob = accounts_trading_protocol.get_account_trading_state_encrypted(
+                _get_address(context),
+                _get_account_id(context),
             )
             already_encrypted_payload = json.dumps(encrypted_blob)
         case enums.Collections.USER_ACTIONS.value:

@@ -7,7 +7,7 @@ CancelPolicy
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **type** | [**CancelPolicyType**](CancelPolicyType.md) |  | 
-**details** | **object** |  | [optional] 
+**specifics** | **object** |  | [optional] 
 
 ## Example
 

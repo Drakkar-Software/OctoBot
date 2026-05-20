@@ -27,7 +27,6 @@ import octobot_protocol.models as protocol_models
 import octobot_trading.constants as octobot_trading_constants
 import octobot_trading.enums as octobot_trading_enums
 import octobot_trading.personal_data.portfolios.protocol as octobot_trading_portfolios_protocol
-import octobot_trading.exchanges.util.exchange_data as exchange_data_import
 
 
 logger = octobot_commons_logging.get_logger("AutomationsProtocol")
@@ -158,23 +157,60 @@ def _protocol_action_from_flow(
     )
 
 
-def _enrich_protocol_assets(
-    base_assets: list[protocol_models.Asset],
-    portfolio: exchange_data_import.PortfolioDetails,
-    unit: typing.Optional[str],
-) -> list[protocol_models.Asset]:
-    enriched: list[protocol_models.Asset] = []
-    for asset in base_assets:
-        update_fields: dict[str, typing.Any] = {}
-        if asset.symbol in portfolio.asset_values:
-            update_fields["value"] = float(portfolio.asset_values[asset.symbol])
-        if unit:
-            update_fields["unit"] = unit
-        if update_fields:
-            enriched.append(asset.model_copy(update=update_fields))
-        else:
-            enriched.append(asset)
-    return enriched
+def _fill_protocol_automation_state(
+    protocol_automation_state: protocol_models.AutomationState,
+    flow_automation_state: flow_entities.AutomationState,
+) -> protocol_models.AutomationState:
+    # Resolve automation status and map DAG / priority actions to protocol actions.
+    status = _automation_task_status(flow_automation_state)
+    actions_dag = flow_automation_state.automation.actions_dag
+    executable_ids = {action.id for action in actions_dag.get_executable_actions()}
+    dag_actions = [
+        _protocol_action_from_flow(action, priority_lane=False, executable_ids=executable_ids)
+        for action in actions_dag.actions
+    ]
+    priority_actions: typing.Optional[list[protocol_models.Action]] = None
+    if flow_automation_state.priority_actions:
+        priority_actions = [
+            _protocol_action_from_flow(priority_action, priority_lane=True, executable_ids=None)
+            for priority_action in flow_automation_state.priority_actions
+        ]
+    # Attach exchange identifiers when account details exist on the flow state.
+    exchange_details = flow_automation_state.exchange_account_details
+    exchanges: typing.Optional[list[str]] = None
+    exchange_account_ids: typing.Optional[list[str]] = None
+    if exchange_details:
+        internal_name = exchange_details.exchange_details.internal_name
+        if internal_name:
+            exchanges = [internal_name]
+        if exchange_details.metadata.id:
+            exchange_account_ids = [exchange_details.metadata.id]
+    # Derive portfolio and trading summaries from automation exchange elements.
+    exchange_elements = flow_automation_state.automation.exchange_account_elements
+    assets: typing.Optional[list[protocol_models.DetailedAsset]] = None
+    orders: typing.Optional[list[protocol_models.OrderSummary]] = None
+    trades: typing.Optional[list[protocol_models.TradeSummary]] = None
+    positions: typing.Optional[list[protocol_models.PositionSummary]] = None
+    if exchange_elements:
+        portfolio = exchange_elements.portfolio
+        if portfolio.content:
+            assets = octobot_trading_portfolios_protocol.to_protocol_assets(portfolio.content)
+        orders = _order_summaries_from_open_orders(exchange_elements.orders.open_orders) or None
+        positions = _position_summaries(exchange_elements.positions) or None
+        trades = _trade_summaries(exchange_elements.trades) or None
+    return protocol_automation_state.model_copy(
+        update={
+            "status": status,
+            "actions": dag_actions or None,
+            "priority_actions": priority_actions or None,
+            "exchanges": exchanges,
+            "exchange_account_ids": exchange_account_ids,
+            "assets": assets,
+            "orders": orders,
+            "trades": trades,
+            "positions": positions,
+        }
+    )
 
 
 def _order_summaries_from_open_orders(open_orders: list[dict]) -> list[protocol_models.OrderSummary]:
@@ -215,61 +251,3 @@ def _trade_summaries(trades: list[dict]) -> list[protocol_models.TradeSummary]:
             continue
         summaries.append(protocol_models.TradeSummary(id=str(trade_id), symbol=str(symbol)))
     return summaries
-
-
-def _fill_protocol_automation_state(
-    protocol_automation_state: protocol_models.AutomationState,
-    flow_automation_state: flow_entities.AutomationState,
-) -> protocol_models.AutomationState:
-    # Resolve automation status and map DAG / priority actions to protocol actions.
-    status = _automation_task_status(flow_automation_state)
-    actions_dag = flow_automation_state.automation.actions_dag
-    executable_ids = {action.id for action in actions_dag.get_executable_actions()}
-    dag_actions = [
-        _protocol_action_from_flow(action, priority_lane=False, executable_ids=executable_ids)
-        for action in actions_dag.actions
-    ]
-    priority_actions: typing.Optional[list[protocol_models.Action]] = None
-    if flow_automation_state.priority_actions:
-        priority_actions = [
-            _protocol_action_from_flow(priority_action, priority_lane=True, executable_ids=None)
-            for priority_action in flow_automation_state.priority_actions
-        ]
-    # Attach exchange identifiers when account details exist on the flow state.
-    exchange_details = flow_automation_state.exchange_account_details
-    exchanges: typing.Optional[list[str]] = None
-    exchange_account_ids: typing.Optional[list[str]] = None
-    if exchange_details:
-        internal_name = exchange_details.exchange_details.internal_name
-        if internal_name:
-            exchanges = [internal_name]
-        if exchange_details.metadata.id:
-            exchange_account_ids = [exchange_details.metadata.id]
-    # Derive portfolio and trading summaries from automation exchange elements.
-    exchange_elements = flow_automation_state.automation.exchange_account_elements
-    assets: typing.Optional[list[protocol_models.Asset]] = None
-    orders: typing.Optional[list[protocol_models.OrderSummary]] = None
-    trades: typing.Optional[list[protocol_models.TradeSummary]] = None
-    positions: typing.Optional[list[protocol_models.PositionSummary]] = None
-    if exchange_elements:
-        portfolio = exchange_elements.portfolio
-        if portfolio.content:
-            base_assets = octobot_trading_portfolios_protocol.to_protocol_assets(portfolio.content)
-            unit_for_assets = exchange_details.portfolio.unit if exchange_details else None
-            assets = _enrich_protocol_assets(base_assets, portfolio, unit_for_assets)
-        orders = _order_summaries_from_open_orders(exchange_elements.orders.open_orders) or None
-        positions = _position_summaries(exchange_elements.positions) or None
-        trades = _trade_summaries(exchange_elements.trades) or None
-    return protocol_automation_state.model_copy(
-        update={
-            "status": status,
-            "actions": dag_actions or None,
-            "priority_actions": priority_actions or None,
-            "exchanges": exchanges,
-            "exchange_account_ids": exchange_account_ids,
-            "assets": assets,
-            "orders": orders,
-            "trades": trades,
-            "positions": positions,
-        }
-    )

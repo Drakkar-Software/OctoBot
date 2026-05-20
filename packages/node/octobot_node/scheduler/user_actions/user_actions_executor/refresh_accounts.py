@@ -50,6 +50,6 @@ class RefreshAccountsActionExecutor(account_user_action_executor.AccountUserActi
         ]
         for account_id in account_ids_to_refresh:
             account = account_provider.get_item(self._wallet_address, account_id)
-            checked_account = await account_state_updater.update_account_state(account)
+            checked_account = await account_state_updater.update_account_state(account, self._wallet_address)
             account_provider.update_item(self._wallet_address, checked_account)
         self._mark_user_action_completed(user_action)

@@ -132,6 +132,8 @@ class CreateAutomationActionExecutor(automation_user_action_executor.AutomationU
             automation_id=user_action.id,
             protocol_account=protocol_account,
             strategy_reference=automation_configuration.strategy,
+            wallet_address=self._wallet_address,
+            reference_market=stored_strategy.reference_market,
         )
 
         match inner_configuration:
@@ -162,6 +164,8 @@ class CreateAutomationActionExecutor(automation_user_action_executor.AutomationU
                         init_action,
                         market_making_configuration,
                         protocol_account,
+                        self._wallet_address,
+                        stored_strategy.reference_market,
                     ),
                 ]
             case _:
