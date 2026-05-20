@@ -291,7 +291,9 @@ class ExchangeManager(util.Initializable):
         if self.exchange.symbols and self.exchange.time_frames:
             self.client_symbols = list(self.exchange.symbols)
             self.client_time_frames = list(self.exchange.time_frames)
-        elif not self.exchange_only:
+        elif not self.exchange_only and not self.exchange.get_option_value(
+            enums.ExchangeClientOptions.REQUIRES_CONFIGURATION
+        ):
             err_message = "Failed to load exchange symbols or time frames"
             self.logger.error(err_message)
             self._raise_exchange_load_error(err_message)

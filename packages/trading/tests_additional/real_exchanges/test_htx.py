@@ -41,6 +41,9 @@ class TestHTXRealExchangeTester(real_exchange_tester.RealExchangeTester):
             commons_enums.TimeFrames.ONE_MONTH,
         ])
 
+    async def test_supports_order_type(self):
+        await self.assert_supports_order_type()
+
     async def test_active_symbols(self):
         await self.inner_test_active_symbols(850, 1900)
 

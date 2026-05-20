@@ -197,7 +197,13 @@ class ExchangeConstantsTickersColumns(enum.Enum):
     AVERAGE = "average"
     BASE_VOLUME = "baseVolume"
     QUOTE_VOLUME = "quoteVolume"
+    EXTRA = "extra" # not always present, contains ExchangeConstantsTickersExtraColumns
     INFO = "info"
+
+
+class ExchangeConstantsTickersExtraColumns(enum.Enum):
+    NAME = "name"   # full name of the coin (e.g. "Bitcoin")
+    LOGO_URL = "logoUrl" # URL to the coin logo
 
 
 class ExchangeConstantsTickersInfoColumns(enum.Enum):
@@ -717,6 +723,7 @@ class ExchangeClientOptions(enum.StrEnum):
     HAS_BROKER = "hasBroker"
     SUPPORTS_FORCED_SIGNING_ALL_REQUESTS = "supportsForcedSigningAllRequests"
     ENABLE_FORCED_SIGNING_ALL_REQUESTS = "enableForcedSigningAllRequests"
+    REQUIRES_CONFIGURATION = "requiresConfiguration"
     SUPPORTED_ELEMENTS = "supportedElements"
 
 
@@ -811,6 +818,8 @@ DEFAULT_EXCHANGE_OPTION_VALUES = {
     ExchangeClientOptions.SUPPORTS_FORCED_SIGNING_ALL_REQUESTS: False,
     # set True when the exchange requires signing all requests (when supported)
     ExchangeClientOptions.ENABLE_FORCED_SIGNING_ALL_REQUESTS: False,
+    # set True when the exchange requires configuration to work properly
+    ExchangeClientOptions.REQUIRES_CONFIGURATION: False,
     ExchangeClientOptions.SUPPORTED_ELEMENTS: {
         ExchangeSupportedElements.FUTURES: {
             ExchangeSupportedElements.ORDERS: [TradeOrderType.MARKET.value, TradeOrderType.LIMIT.value],

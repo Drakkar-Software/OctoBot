@@ -106,6 +106,9 @@ class TestPolymarketRealExchangeTester(RealOptionExchangeTester):
             common_enums.TimeFrames.ONE_WEEK.value,
         ))
 
+    async def test_supports_order_type(self):
+        await self.assert_supports_order_type()
+
     async def test_active_symbols(self):
         await self.inner_test_active_symbols(50000, 60000)
 

@@ -18,6 +18,7 @@ import dataclasses
 import decimal
 import enum
 import time
+from types import NoneType
 import typing
 
 import pytest
@@ -146,6 +147,13 @@ def _market_precision_decimal_places_or_tick(value: typing.Any) -> None:
     raise AssertionError(f"unexpected precision/tick type: {type(value).__name__} {value!r}")
 
 
+ORDER_TYPES_WITH_STOP_LOSS = [
+    trading_enums.TradeOrderType.MARKET,
+    trading_enums.TradeOrderType.LIMIT,
+    trading_enums.TradeOrderType.STOP_LOSS,
+]
+
+
 class RealExchangeTester:
     # enter exchange name as a class variable here
     EXCHANGE_NAME = None
@@ -165,6 +173,7 @@ class RealExchangeTester:
     DEFAULT_CUSTOM_BOOK_LIMIT = 50
     ORDER_BOOK_DESYNC_ALLOWANCE = 60    # allow 60s desync
     USES_TENTACLE = False  # set True when an exchange tentacles should be used in this test
+    MIN_TICKERS_TIMESTAMP_ALLOWANCE = 1704067200 # 1 January 2024 00:00:00
 
     # Public methods: to be implemented as tests
     # Use await self._[method_name] to get the test request result
@@ -172,6 +181,9 @@ class RealExchangeTester:
 
     # unauthenticated API
     async def test_time_frames(self):
+        pass
+
+    async def test_supports_order_type(self):
         pass
 
     async def test_get_market_status(self):
@@ -413,6 +425,19 @@ class RealExchangeTester:
     async def test_active_symbols(self):
         raise NotImplementedError("test_active_symbols is not implemented")
 
+    async def assert_supports_order_type(
+        self, order_types: typing.Optional[list[trading_enums.TradeOrderType]] = None,
+    ):
+        order_types = [
+            trading_enums.TradeOrderType.MARKET,
+            trading_enums.TradeOrderType.LIMIT,
+        ] if order_types is None else order_types
+        async with self.get_exchange_manager() as exchange_manager:
+            for order_type in order_types:
+                assert exchange_manager.exchange.supports_order_type(order_type), (
+                    f"exchange must support order type {order_type.value!r}"
+                )
+
     async def inner_test_active_symbols(self, expected_active_symbols_count: int, expected_total_symbols_count: int):
         async with self.get_exchange_manager() as exchange_manager:
             # ensure active symbols are correctly parsed by ccxt
@@ -428,6 +453,18 @@ class RealExchangeTester:
                 f"{len(all_symbols)} not in "
                 f"[{expected_total_symbols_count}, {expected_total_symbols_count * 1.5}]"
             )
+
+    async def assert_get_exchange_symbol(
+        self,
+        expectations: dict[str, tuple[str, str, str]],
+    ):
+        async with self.get_exchange_manager() as exchange_manager:
+            for input_symbol, (expected_symbol, expected_base, expected_quote) in expectations.items():
+                resolved_symbol = exchange_manager.get_exchange_symbol(input_symbol)
+                assert resolved_symbol == expected_symbol
+                base, quote = exchange_manager.get_exchange_quote_and_base(input_symbol)
+                assert base == expected_base
+                assert quote == expected_quote
 
     async def get_market_statuses(self):
         # return 2 different market status with different traded pairs to reduce possible
@@ -815,22 +852,29 @@ class RealExchangeTester:
         )
         self.ensure_elements_order(recent_trades, trading_enums.ExchangeConstantsTickersColumns.TIMESTAMP.value)
 
-    async def get_price_ticker(self):
+    async def get_price_ticker(self, symbol: typing.Optional[str] = None):
         async with self.get_exchange_manager() as exchange_manager:
-            return await exchange_manager.exchange.get_price_ticker(self.SYMBOL)
+            return await exchange_manager.exchange.get_price_ticker(symbol or self.SYMBOL)
 
     async def assert_get_price_ticker(
         self,
         extra_checks: typing.Optional[typing.Callable[[dict], None]] = None,
         *,
+        symbol: typing.Optional[str] = None,
         ticker_expectations: typing.Optional[TickerRequiredExpectations] = None,
     ):
-        ticker = await self.get_price_ticker()
-        self._check_ticker(ticker, self.SYMBOL, extra_checks=extra_checks)
+        symbol = symbol or self.SYMBOL
+        ticker = await self.get_price_ticker(symbol=symbol)
+        self._check_ticker(ticker, symbol, extra_checks=extra_checks)
         self._check_ticker_required_content(ticker, ticker_expectations=ticker_expectations)
 
-    @staticmethod
-    def _check_ticker(ticker, symbol, extra_checks: typing.Optional[typing.Callable[[dict], None]] = None):
+    @classmethod
+    def _check_ticker(
+        cls,
+        ticker, symbol,
+        extra_checks: typing.Optional[typing.Callable[[dict], None]] = None,
+        allowed_failed_tickers_typing_checks_percentage: int = 0,
+    ):
         assert ticker[Ectc.SYMBOL.value] == symbol, (
             f"ticker symbol mismatch: expected {symbol!r}, got {ticker.get(Ectc.SYMBOL.value)!r}"
         )
@@ -848,6 +892,22 @@ class RealExchangeTester:
         )
         missing = [key for key in required_columns if key not in ticker]
         assert not missing, f"ticker dict missing required columns {missing} (have keys {list(ticker)})"
+        failed_tickers_count = 0
+        allowed_failed_tickers_typing_checks = len(ticker) * allowed_failed_tickers_typing_checks_percentage / 100
+        try:
+            cls.check_ticker_typing(
+                ticker,
+                check_close=True, # check close and timestamp only
+                check_open=False, check_high=False, check_low=False, check_base_volume=False, check_last=True
+            )
+        except AssertionError as e:
+            failed_tickers_count += 1
+            if failed_tickers_count > allowed_failed_tickers_typing_checks:
+                raise AssertionError(
+                    f"ticker {symbol} typing check failed: {e} (allowed "
+                    f"{allowed_failed_tickers_typing_checks_percentage}% failed tickers, "
+                    f"{failed_tickers_count} failed out of {len(ticker)} tickers)"
+                )
         if extra_checks:
             extra_checks(ticker)
 
@@ -887,10 +947,21 @@ class RealExchangeTester:
         async with self.get_exchange_manager() as exchange_manager:
             return await exchange_manager.exchange.get_all_currencies_price_ticker(**kwargs)
 
-    async def assert_get_all_currencies_price_ticker(self):
-        tickers = await self.get_all_currencies_price_ticker()
+    async def assert_get_all_currencies_price_ticker(
+        self,
+        symbols: typing.Optional[list[str]] = None,
+        extra_checks: typing.Optional[typing.Callable[[dict], None]] = None,
+        allowed_failed_tickers_typing_checks_percentage: int = 0,
+    ):
+        tickers = await self.get_all_currencies_price_ticker(symbols=symbols)
+        if symbols:
+            assert sorted(tickers.keys()) == sorted(symbols)
         for symbol, ticker in tickers.items():
-            self._check_ticker(ticker, symbol)
+            self._check_ticker(
+                ticker, symbol,
+                extra_checks=extra_checks,
+                allowed_failed_tickers_typing_checks_percentage=allowed_failed_tickers_typing_checks_percentage,
+            )
 
     async def get_user_recent_trades(self):
         async with self.get_exchange_manager() as exchange_manager:
@@ -1012,17 +1083,30 @@ class RealExchangeTester:
                     f"({min_price=} {min_cost=} {market_status[Ecmsc.SYMBOL.value]=})"
                 )
 
-    @staticmethod
+    @classmethod
     def check_ticker_typing(
+        cls,
         ticker, check_open=True, check_high=True, check_low=True,
         check_close=True, check_last=False, check_base_volume=True,
         check_quote_volume=False
     ):
-        # timestamp is always set
+        symbol = ticker.get(Ectc.SYMBOL.value)
+        assert symbol, f"ticker symbol must be set: {ticker!r}"
+        # timestamp must always be set
         value = ticker[Ectc.TIMESTAMP.value]
         assert isinstance(value, (float, int)), (
             f"ticker timestamp must be numeric epoch; got {type(value).__name__} {value!r}"
         )
+        # ensure timestamp is within 24 hours of current time and is in seconds
+        assert (
+            cls.MIN_TICKERS_TIMESTAMP_ALLOWANCE
+            <= ticker[Ectc.TIMESTAMP.value]
+            <= time.time() + constants.DAYS_TO_SECONDS
+        ), (
+            f"{symbol} ticker timestamp must be within {constants.DAYS_TO_SECONDS} seconds of current time: "
+            f"{cls.MIN_TICKERS_TIMESTAMP_ALLOWANCE} <= {ticker[Ectc.TIMESTAMP.value]} <= {time.time() + constants.DAYS_TO_SECONDS}"
+        )
+        has_volume = ticker.get(Ectc.BASE_VOLUME.value) or ticker.get(Ectc.QUOTE_VOLUME.value)
         if check_open:
             value = ticker[Ectc.OPEN.value]
             assert isinstance(value, (float, int)), (
@@ -1040,13 +1124,21 @@ class RealExchangeTester:
             )
         if check_close:
             value = ticker[Ectc.CLOSE.value]
-            assert isinstance(value, (float, int)), (
-                f"ticker close must be numeric; got {type(value).__name__} {value!r}"
+            if has_volume:
+                expected_type = (float, int)
+            else:
+                expected_type = (float, int, NoneType) # close can be None when no volume
+            assert isinstance(value, tuple(expected_type)), (
+                f"{symbol} ticker close must be {tuple(expected_type)!r}; got {type(value).__name__} {value!r}"
             )
         if check_last:
             value = ticker[Ectc.LAST.value]
-            assert isinstance(value, (float, int)), (
-                f"ticker last must be numeric; got {type(value).__name__} {value!r}"
+            if has_volume:
+                expected_type = (float, int)
+            else:
+                expected_type = (float, int, NoneType) # last can be None when no volume
+            assert isinstance(value, tuple(expected_type)), (
+                f"{symbol} ticker last must be {tuple(expected_type)!r}; got {type(value).__name__} {value!r}"
             )
         if check_base_volume:
             value = ticker[Ectc.BASE_VOLUME.value]

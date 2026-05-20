@@ -1,4 +1,4 @@
-#  Drakkar-Software OctoBot-Trading
+#  Drakkar-Software OctoBot-Tentacles
 #  Copyright (c) Drakkar-Software, All rights reserved.
 #
 #  This library is free software; you can redistribute it and/or
@@ -13,19 +13,23 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-import pytest
 
-import tests_additional.real_exchanges.test_okx as test_okx
-
-# All test coroutines will be treated as marked.
-pytestmark = pytest.mark.asyncio
+import octobot_trading.exchanges as exchanges
+import octobot_trading.exchanges.connectors.ccxt.constants as ccxt_constants
 
 
-class TestMyOkxRealExchangeTester(test_okx.TestOkxRealExchangeTester):
-    EXCHANGE_NAME = "myokx"
+class Coingecko(exchanges.RestExchange):
+    @classmethod
+    def get_name(cls):
+        return "coingecko"
 
-    async def test_supports_order_type(self):
-        await self.assert_supports_order_type()
-
-    async def test_active_symbols(self):
-        await self.inner_test_active_symbols(2400, 2400)
+    def get_additional_connector_config(self):
+        tentacle_config = self.tentacle_config or {}
+        vs_currency = tentacle_config.get("vsCurrency")
+        if not vs_currency:
+            return {}
+        return {
+            ccxt_constants.CCXT_OPTIONS: {
+                "vsCurrency": vs_currency,
+            },
+        }

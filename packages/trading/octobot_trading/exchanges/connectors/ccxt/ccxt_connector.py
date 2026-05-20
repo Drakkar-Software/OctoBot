@@ -681,6 +681,10 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
             } if symbols else self.all_currencies_price_ticker
         except ccxt.async_support.NotSupported:
             raise octobot_trading.errors.NotSupported
+        except ccxt.async_support.ArgumentsRequired as e:
+            raise octobot_trading.errors.NotSupported(
+                f"Failed to get_all_currencies_price_ticker {html_util.get_html_summary_if_relevant(e)}"
+            ) from e
         except ccxt.async_support.BaseError as e:
             raise octobot_trading.errors.FailedRequest(
                 f"Failed to get_all_currencies_price_ticker {html_util.get_html_summary_if_relevant(e)}"
