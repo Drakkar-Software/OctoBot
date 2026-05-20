@@ -565,10 +565,9 @@ def supports_order_type(
     client: async_ccxt.Exchange, trading_type: enums.ExchangeTypes, order_type: enums.TradeOrderType
 ) -> bool:
     if supported_elements := _get_supported_elements(client, trading_type):
-        if supported_orders := supported_elements.get(
-            enums.ExchangeSupportedElements.ORDERS.value
-        ):
-            return order_type.value in supported_orders
+        supported_order_types = supported_elements.get(enums.ExchangeSupportedElements.ORDERS.value)
+        if supported_order_types is not None:
+            return order_type.value in supported_order_types
     # default to True for market and limit orders
     return order_type in [enums.TradeOrderType.MARKET, enums.TradeOrderType.LIMIT]
 

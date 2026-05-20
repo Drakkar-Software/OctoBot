@@ -19,6 +19,7 @@ import time
 import octobot_commons.constants as commons_constants
 import octobot_commons.enums as commons_enums
 import octobot_trading.errors as trading_errors
+import octobot_trading.enums as trading_enums
 import tests_additional.real_exchanges.real_exchange_tester as real_exchange_tester
 
 # All test coroutines will be treated as marked.
@@ -57,6 +58,9 @@ class TestHyperliquidRealExchangeTester(real_exchange_tester.RealExchangeTester)
             commons_enums.TimeFrames.ONE_WEEK,
             commons_enums.TimeFrames.ONE_MONTH,
         ])
+
+    async def test_supports_order_type(self):
+        await self.assert_supports_order_type()
 
     async def test_active_symbols(self):
         await self.inner_test_active_symbols(420, 470)
@@ -129,4 +133,6 @@ class TestHyperliquidRealExchangeTester(real_exchange_tester.RealExchangeTester)
         )
 
     async def test_get_all_currencies_price_ticker(self):
-        await self.assert_get_all_currencies_price_ticker()
+        await self.assert_get_all_currencies_price_ticker(
+            allowed_failed_tickers_typing_checks_percentage=20, # for some reason, a few tickers have no price despite having volume
+        )

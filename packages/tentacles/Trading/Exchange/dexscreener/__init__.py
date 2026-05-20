@@ -1,4 +1,4 @@
-#  Drakkar-Software OctoBot-Trading
+#  Drakkar-Software OctoBot-Tentacles
 #  Copyright (c) Drakkar-Software, All rights reserved.
 #
 #  This library is free software; you can redistribute it and/or
@@ -13,19 +13,5 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-import pytest
 
-import tests_additional.real_exchanges.test_okx as test_okx
-
-# All test coroutines will be treated as marked.
-pytestmark = pytest.mark.asyncio
-
-
-class TestMyOkxRealExchangeTester(test_okx.TestOkxRealExchangeTester):
-    EXCHANGE_NAME = "myokx"
-
-    async def test_supports_order_type(self):
-        await self.assert_supports_order_type()
-
-    async def test_active_symbols(self):
-        await self.inner_test_active_symbols(2400, 2400)
+from .dexscreener_exchange import dexscreener

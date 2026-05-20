@@ -24,5 +24,8 @@ pytestmark = pytest.mark.asyncio
 class TestOkxUsRealExchangeTester(test_okx.TestOkxRealExchangeTester):
     EXCHANGE_NAME = "okxus"
 
+    async def test_supports_order_type(self):
+        await self.assert_supports_order_type()
+
     async def test_active_symbols(self):
         await self.inner_test_active_symbols(2400, 2400)
